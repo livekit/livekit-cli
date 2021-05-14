@@ -17,7 +17,7 @@ var (
 			Usage:  "joins a room as a client",
 			Action: joinRoom,
 			Flags: []cli.Flag{
-				hostFlag,
+				urlFlag,
 				roomFlag,
 				identityFlag,
 				apiKeyFlag,
@@ -28,7 +28,7 @@ var (
 )
 
 func joinRoom(c *cli.Context) error {
-	room, err := lksdk.ConnectToRoom(c.String("host"), lksdk.ConnectInfo{
+	room, err := lksdk.ConnectToRoom(c.String("url"), lksdk.ConnectInfo{
 		APIKey:              c.String("api-key"),
 		APISecret:           c.String("api-secret"),
 		RoomName:            c.String("room"),

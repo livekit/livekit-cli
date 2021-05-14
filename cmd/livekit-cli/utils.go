@@ -16,9 +16,10 @@ var (
 		Usage:    "name of the room",
 		Required: true,
 	}
-	hostFlag = &cli.StringFlag{
-		Name:    "host",
-		EnvVars: []string{"LIVEKIT_HOST"},
+	urlFlag = &cli.StringFlag{
+		Name:    "url",
+		Usage:   "url to LiveKit instance",
+		EnvVars: []string{"LIVEKIT_URL"},
 		Value:   "http://localhost:7880",
 	}
 	apiKeyFlag = &cli.StringFlag{

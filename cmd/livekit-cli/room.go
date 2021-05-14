@@ -17,7 +17,7 @@ var (
 			Before: createRoomClient,
 			Action: createRoom,
 			Flags: []cli.Flag{
-				hostFlag,
+				urlFlag,
 				&cli.StringFlag{
 					Name:     "name",
 					Usage:    "name of the room",
@@ -32,7 +32,7 @@ var (
 			Before: createRoomClient,
 			Action: listRooms,
 			Flags: []cli.Flag{
-				hostFlag,
+				urlFlag,
 				apiKeyFlag,
 				secretFlag,
 			},
@@ -43,7 +43,7 @@ var (
 			Action: deleteRoom,
 			Flags: []cli.Flag{
 				roomFlag,
-				hostFlag,
+				urlFlag,
 				apiKeyFlag,
 				secretFlag,
 			},
@@ -54,7 +54,7 @@ var (
 			Action: listParticipants,
 			Flags: []cli.Flag{
 				roomFlag,
-				hostFlag,
+				urlFlag,
 				apiKeyFlag,
 				secretFlag,
 			},
@@ -66,7 +66,7 @@ var (
 			Flags: []cli.Flag{
 				roomFlag,
 				identityFlag,
-				hostFlag,
+				urlFlag,
 				apiKeyFlag,
 				secretFlag,
 			},
@@ -78,7 +78,7 @@ var (
 			Flags: []cli.Flag{
 				roomFlag,
 				identityFlag,
-				hostFlag,
+				urlFlag,
 				apiKeyFlag,
 				secretFlag,
 			},
@@ -99,7 +99,7 @@ var (
 					Name:  "muted",
 					Usage: "set to true to mute, false to unmute",
 				},
-				hostFlag,
+				urlFlag,
 				apiKeyFlag,
 				secretFlag,
 			},
@@ -110,17 +110,17 @@ var (
 )
 
 func createRoomClient(c *cli.Context) error {
-	host := c.String("host")
+	url := c.String("url")
 	apiKey := c.String("api-key")
 	apiSecret := c.String("api-secret")
 
 	if c.Bool("verbose") {
 		fmt.Printf("creating client to %s, with api-key: %s, secret: %s\n",
-			host,
+			url,
 			masker.ID(apiKey),
 			masker.ID(apiSecret))
 	}
-	roomClient = lksdk.NewRoomServiceClient(host, apiKey, apiSecret)
+	roomClient = lksdk.NewRoomServiceClient(url, apiKey, apiSecret)
 	return nil
 }
 
