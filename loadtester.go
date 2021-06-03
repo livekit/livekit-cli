@@ -2,20 +2,23 @@ package livekit_cli
 
 import (
 	"fmt"
+	"math/rand"
 	"sync/atomic"
+	"time"
 
 	lksdk "github.com/livekit/livekit-sdk-go"
 	"github.com/pion/webrtc/v3"
 )
 
 type LoadTesterParams struct {
-	URL          string
-	APIKey       string
-	APISecret    string
-	Room         string
-	AudioBitrate uint64
-	VideoBitrate uint64
-	Sequence     int
+	URL            string
+	APIKey         string
+	APISecret      string
+	Room           string
+	IdentityPrefix string
+	AudioBitrate   uint64
+	VideoBitrate   uint64
+	Sequence       int
 }
 
 type LoadTester struct {
@@ -38,7 +41,7 @@ func (t *LoadTester) Start() error {
 		APIKey:              t.params.APIKey,
 		APISecret:           t.params.APISecret,
 		RoomName:            t.params.Room,
-		ParticipantIdentity: fmt.Sprintf("tester_%d", t.params.Sequence),
+		ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.Sequence),
 	})
 	if err != nil {
 		return err
@@ -105,7 +108,7 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication lksdk.TrackPublication, rp *lksdk.RemoteParticipant) {
 	numSubscribed := 0
 	numTotal := 0
-	for _, p := range t.room.Participants {
+	for _, p := range t.room.GetParticipants() {
 		tracks := p.Tracks()
 		numTotal += len(tracks)
 		for _, t := range tracks {
@@ -127,4 +130,8 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
 			return
 		}
 	}
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
@@ -52,6 +53,10 @@ func main() {
 				Usage: "number of participants to spin up",
 				Value: 1,
 			},
+			&cli.StringFlag{
+				Name:  "identity-prefix",
+				Usage: "identity prefix of tester participants, defaults to a random name",
+			},
 			&cli.Uint64Flag{
 				Name:  "video-bitrate",
 				Usage: "bitrate (bps) of video track to publish, 0 to disable",
@@ -74,16 +79,20 @@ func main() {
 
 func loadTest(c *cli.Context) error {
 	params := livekit_cli.LoadTesterParams{
-		URL:          c.String("url"),
-		APIKey:       c.String("api-key"),
-		APISecret:    c.String("api-secret"),
-		Room:         c.String("room"),
-		AudioBitrate: c.Uint64("audio-bitrate"),
-		VideoBitrate: c.Uint64("video-bitrate"),
+		URL:            c.String("url"),
+		APIKey:         c.String("api-key"),
+		APISecret:      c.String("api-secret"),
+		IdentityPrefix: c.String("identity-prefix"),
+		Room:           c.String("room"),
+		AudioBitrate:   c.Uint64("audio-bitrate"),
+		VideoBitrate:   c.Uint64("video-bitrate"),
 	}
 	if !c.Bool("publish") {
 		params.AudioBitrate = 0
 		params.VideoBitrate = 0
+	}
+	if params.IdentityPrefix == "" {
+		params.IdentityPrefix = RandStringRunes(5)
 	}
 
 	duration := c.Duration("duration")
@@ -138,4 +147,14 @@ func loadTest(c *cli.Context) error {
 	}
 
 	return nil
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }
