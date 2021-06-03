@@ -101,12 +101,25 @@ func loadTest(c *cli.Context) error {
 		}
 
 		if c.Bool("publish") {
-			err := tester.PublishTrack("track", lksdk.TrackKindVideo, uint32(c.Uint64("video-bitrate")))
-			if err != nil {
-				return err
+			videoBitrate := uint32(c.Uint64("video-bitrate"))
+			if videoBitrate > 0 {
+				err := tester.PublishTrack("video", lksdk.TrackKindVideo, videoBitrate)
+				if err != nil {
+					return err
+				}
+			}
+
+			audioBitrate := uint32(c.Uint64("audio-bitrate"))
+			if audioBitrate > 0 {
+				err := tester.PublishTrack("audio", lksdk.TrackKindAudio, audioBitrate)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
+
+	fmt.Printf("started all %d clients\n", count)
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

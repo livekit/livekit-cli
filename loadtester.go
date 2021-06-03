@@ -71,15 +71,25 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 		return nil
 	}
 	sampleProvider := lksdk.NewNullSampleProvider(bitrate)
-	track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
-		MimeType:    webrtc.MimeTypeVP8,
-		ClockRate:   33,
-		SDPFmtpLine: "",
-		RTCPFeedback: []webrtc.RTCPFeedback{
-			{Type: webrtc.TypeRTCPFBNACK},
-			{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
-		},
-	}, sampleProvider)
+	var codecCapability webrtc.RTPCodecCapability
+	if kind == lksdk.TrackKindVideo {
+		codecCapability = webrtc.RTPCodecCapability{
+			MimeType:    webrtc.MimeTypeVP8,
+			ClockRate:   33,
+			SDPFmtpLine: "",
+			RTCPFeedback: []webrtc.RTCPFeedback{
+				{Type: webrtc.TypeRTCPFBNACK},
+				{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
+			},
+		}
+	} else {
+		codecCapability = webrtc.RTPCodecCapability{
+			MimeType:    webrtc.MimeTypeOpus,
+			ClockRate:   20,
+			SDPFmtpLine: "",
+		}
+	}
+	track, err := lksdk.NewLocalSampleTrack(codecCapability, sampleProvider)
 	if err != nil {
 		return err
 	}
@@ -93,7 +103,19 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 }
 
 func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication lksdk.TrackPublication, rp *lksdk.RemoteParticipant) {
-	fmt.Println("subscribed to track", publication.SID(), publication.Kind())
+	numSubscribed := 0
+	numTotal := 0
+	for _, p := range t.room.Participants {
+		tracks := p.Tracks()
+		numTotal += len(tracks)
+		for _, t := range tracks {
+			if t.IsSubscribed() {
+				numSubscribed++
+			}
+		}
+	}
+
+	fmt.Println("subscribed to track", t.room.LocalParticipant.Identity(), publication.SID(), publication.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
 	// consume track
 	go t.consumeTrack(track)
 }
