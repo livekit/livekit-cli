@@ -7,5 +7,7 @@ endif
 cli:
 	go build -o bin/livekit-cli ./cmd/livekit-cli
 	go build -o bin/livekit-load-tester ./cmd/livekit-load-tester
-	mv bin/livekit-cli $(GOBIN)/
-	mv bin/livekit-load-tester $(GOBIN)/
+
+install: cli
+	cp bin/livekit-cli $(GOBIN)/
+	cp bin/livekit-load-tester $(GOBIN)/
