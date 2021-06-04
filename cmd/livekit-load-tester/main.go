@@ -8,9 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	livekit_cli "github.com/livekit/livekit-cli"
-	lksdk "github.com/livekit/livekit-sdk-go"
 	"github.com/urfave/cli/v2"
+
+	lksdk "github.com/livekit/livekit-sdk-go"
+
+	livekit_cli "github.com/livekit/livekit-cli"
 )
 
 func main() {

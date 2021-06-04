@@ -6,8 +6,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	lksdk "github.com/livekit/livekit-sdk-go"
 	"github.com/pion/webrtc/v3"
+
+	lksdk "github.com/livekit/livekit-sdk-go"
 )
 
 type LoadTesterParams struct {
@@ -73,7 +74,7 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 	if !t.IsRunning() {
 		return nil
 	}
-	sampleProvider := lksdk.NewNullSampleProvider(bitrate)
+	sampleProvider := lksdk.NewCountingSampleProvider(bitrate)
 	var codecCapability webrtc.RTPCodecCapability
 	if kind == lksdk.TrackKindVideo {
 		codecCapability = webrtc.RTPCodecCapability{
@@ -124,11 +125,36 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication lk
 }
 
 func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
+	var received int
+	var outOfOrder int
+	defer func() {
+		if received == 0 {
+			fmt.Printf("track %v: received no packets", track.ID())
+		}
+		if outOfOrder > 0 {
+			fmt.Printf("track %v: %d of %d packets out of order", track.ID(), outOfOrder, received)
+		}
+	}()
+
+	// doesn't start at 0 if client connected after stream started
+	pkt, _, err := track.ReadRTP()
+	if err != nil {
+		return
+	}
+	count := pkt.Payload[len(pkt.Payload)-1]
+	received++
+
 	for {
-		_, _, err := track.ReadRTP()
+		pkt, _, err = track.ReadRTP()
 		if err != nil {
 			return
 		}
+		next := pkt.Payload[len(pkt.Payload)-1]
+		received++
+		if next != count + byte(1) {
+			outOfOrder++
+		}
+		count = next
 	}
 }
 
