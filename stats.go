@@ -53,10 +53,10 @@ func (s *Stats) Print(summary bool) {
 	var w *tabwriter.Writer
 	if summary {
 		w = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks \t| Latency \t| Total OOO \t| Total Dropped\n")
+		_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Latency\t| Total OOO\t| Total Dropped\n")
 	} else {
 		w = tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		_, _ = fmt.Fprintf(w, "\n%s\t| Track \t| Packets \t| Latency \t| OOO \t| Dropped\n", s.name)
+		_, _ = fmt.Fprintf(w, "\n%s\t| Track\t| Packets\t| Latency\t| OOO\t| Dropped\n", s.name)
 	}
 
 	for _, child := range s.children {

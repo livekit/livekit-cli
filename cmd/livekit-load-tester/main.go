@@ -126,9 +126,9 @@ func loadTest(c *cli.Context) error {
 		expectedTracks := expectedTotalTracks
 		if i < publishers {
 			expectedTracks -= tracksPerPublisher
-			name = fmt.Sprintf("Publisher %d", i+1)
+			name = fmt.Sprintf("Pub %d", i+1)
 		} else {
-			name = fmt.Sprintf("Subscriber %d", i-publishers+1)
+			name = fmt.Sprintf("Sub %d", i-publishers+1)
 		}
 
 		tester := livekit_cli.NewLoadTester(name, expectedTracks, testerParams)

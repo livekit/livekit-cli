@@ -6,7 +6,7 @@ require (
 	github.com/ggwhite/go-masker v1.0.4
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
-	github.com/livekit/livekit-sdk-go v0.5.6
+	github.com/livekit/livekit-sdk-go v0.5.7
 	github.com/livekit/protocol v0.5.1
 	github.com/pion/webrtc/v3 v3.0.29
 	github.com/twitchtv/twirp v8.0.0+incompatible // indirect
