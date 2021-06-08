@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -30,7 +31,7 @@ type LoadTester struct {
 	room    *lksdk.Room
 	running atomic.Value
 
-	stats map[string]*Stats
+	stats sync.Map
 }
 
 type Stats struct {
@@ -48,7 +49,7 @@ func NewLoadTester(id int, params LoadTesterParams) *LoadTester {
 	return &LoadTester{
 		ID:     id,
 		params: params,
-		stats:  make(map[string]*Stats),
+		stats:  sync.Map{},
 	}
 }
 
@@ -89,10 +90,14 @@ func (t *LoadTester) Stop() {
 }
 
 func (t *LoadTester) Stats() map[string]*Stats {
-	for _, stats := range t.stats {
-		stats.Dropped = int64(len(stats.missing))
-	}
-	return t.stats
+	stats := make(map[string]*Stats)
+	t.stats.Range(func(key, value interface{}) bool {
+		s := value.(*Stats)
+		s.Dropped = int64(len(s.missing))
+		stats[key.(string)] = s
+		return true
+	})
+	return stats
 }
 
 func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uint32) error {
@@ -159,7 +164,7 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
 		trackID: track.ID(),
 		missing: make(map[int64]bool),
 	}
-	t.stats[track.ID()] = stats
+	t.stats.Store(track.ID(), stats)
 
 	var max, resets int64
 	for {
