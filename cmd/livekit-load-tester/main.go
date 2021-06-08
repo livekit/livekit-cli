@@ -88,12 +88,6 @@ func loadTest(c *cli.Context) error {
 		APISecret:      c.String("api-secret"),
 		IdentityPrefix: c.String("identity-prefix"),
 		Room:           c.String("room"),
-		AudioBitrate:   c.Uint64("audio-bitrate"),
-		VideoBitrate:   c.Uint64("video-bitrate"),
-	}
-	if !c.Bool("publish") {
-		params.AudioBitrate = 0
-		params.VideoBitrate = 0
 	}
 	if params.IdentityPrefix == "" {
 		params.IdentityPrefix = RandStringRunes(5)
@@ -104,20 +98,19 @@ func loadTest(c *cli.Context) error {
 	subscribers := c.Int("subscribers")
 	testers := make([]*livekit_cli.LoadTester, 0, publishers+subscribers)
 
-	var videoBitrate, audioBitrate uint32
+	var tracksPerPublisher int
+	var audioBitrate, videoBitrate uint32
 	if publishers > 0 {
-		videoBitrate = uint32(c.Uint64("video-bitrate"))
 		audioBitrate = uint32(c.Uint64("audio-bitrate"))
+		if audioBitrate > 0 {
+			tracksPerPublisher++
+		}
+		videoBitrate = uint32(c.Uint64("video-bitrate"))
+		if videoBitrate > 0 {
+			tracksPerPublisher++
+		}
 	} else if subscribers == 0 {
 		subscribers = 1
-	}
-
-	var tracksPerPublisher int
-	if videoBitrate > 0 {
-		tracksPerPublisher++
-	}
-	if audioBitrate > 0 {
-		tracksPerPublisher++
 	}
 
 	expectedTotalTracks := c.Int("expected-tracks")

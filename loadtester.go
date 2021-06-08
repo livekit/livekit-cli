@@ -19,8 +19,6 @@ type LoadTesterParams struct {
 	APISecret      string
 	Room           string
 	IdentityPrefix string
-	AudioBitrate   uint64
-	VideoBitrate   uint64
 	Sequence       int
 }
 
