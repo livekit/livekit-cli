@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/rand"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,30 +25,22 @@ type LoadTesterParams struct {
 }
 
 type LoadTester struct {
-	ID      int
 	params  LoadTesterParams
 	room    *lksdk.Room
 	running atomic.Value
 
-	stats sync.Map
+	stats    *Stats
+	children sync.Map
 }
 
-type Stats struct {
-	Tracks  int64
-	Packets int64
-	Latency int64
-	OOO     int64
-	Dropped int64
-
-	trackID string
-	missing map[int64]bool
-}
-
-func NewLoadTester(id int, params LoadTesterParams) *LoadTester {
+func NewLoadTester(name string, expectedTracks int, params LoadTesterParams) *LoadTester {
 	return &LoadTester{
-		ID:     id,
 		params: params,
-		stats:  sync.Map{},
+		stats: &Stats{
+			name:           name,
+			expectedTracks: expectedTracks,
+		},
+		children: sync.Map{},
 	}
 }
 
@@ -87,17 +78,6 @@ func (t *LoadTester) Stop() {
 	}
 	t.running.Store(false)
 	t.room.Disconnect()
-}
-
-func (t *LoadTester) Stats() map[string]*Stats {
-	stats := make(map[string]*Stats)
-	t.stats.Range(func(key, value interface{}) bool {
-		s := value.(*Stats)
-		s.Dropped = int64(len(s.missing))
-		stats[key.(string)] = s
-		return true
-	})
-	return stats
 }
 
 func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uint32) error {
@@ -164,7 +144,7 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
 		trackID: track.ID(),
 		missing: make(map[int64]bool),
 	}
-	t.stats.Store(track.ID(), stats)
+	t.children.Store(track.ID(), stats)
 
 	var max, resets int64
 	for {
@@ -201,40 +181,14 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
 	}
 }
 
-func (s *Stats) AddFrom(other *Stats) {
-	s.Tracks += other.Tracks
-	s.Packets += other.Packets
-	s.Latency += other.Latency
-	s.OOO += other.OOO
-	s.Dropped += other.Dropped
-}
-
-func (s *Stats) Print() string {
-	latency, ooo, dropped := s.format()
-	return fmt.Sprintf("\t| %s\t| %d\t| %s\t| %s\t| %s\n", s.trackID, s.Packets, latency, ooo, dropped)
-}
-
-func (s *Stats) PrintSummary(summary string, expectedTracks int) string {
-	latency, ooo, dropped := s.format()
-	return fmt.Sprintf("\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
-		summary, s.Tracks, expectedTracks, latency, ooo, dropped)
-}
-
-func (s *Stats) format() (latency, ooo, dropped string) {
-	latency = " - "
-	ooo = " - "
-	dropped = " - "
-
-	if s.Packets > 0 {
-		latency = fmt.Sprint(time.Duration(s.Latency / s.Packets))
-		ooo = fmt.Sprintf("%d (%s%%)", s.OOO, formatFloat(s.OOO, s.Packets))
-		dropped = fmt.Sprintf("%d (%s%%)", s.Dropped, formatFloat(s.Dropped, s.Packets))
-	}
-	return
-}
-
-func formatFloat(num int64, total int64) string {
-	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.4f", float64(num)/float64(total)), "0"), ".")
+func (t *LoadTester) collectStats() *Stats {
+	t.children.Range(func(key, value interface{}) bool {
+		s := value.(*Stats)
+		s.Dropped = int64(len(s.missing))
+		t.stats.AddChild(s)
+		return true
+	})
+	return t.stats
 }
 
 func init() {

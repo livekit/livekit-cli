@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"text/tabwriter"
 	"time"
 
 	lksdk "github.com/livekit/livekit-sdk-go"
@@ -46,14 +45,13 @@ func main() {
 				Usage: "duration to run, 1m, 1h, 0 to keep running",
 				Value: 0,
 			},
-			&cli.BoolFlag{
-				Name:  "publish",
-				Usage: "publish tracks to the room, default false",
+			&cli.IntFlag{
+				Name:  "publishers",
+				Usage: "number of participants to publish tracks to the room",
 			},
 			&cli.IntFlag{
-				Name:  "count",
-				Usage: "number of participants to spin up",
-				Value: 1,
+				Name:  "subscribers",
+				Usage: "number of participants to join the room",
 			},
 			&cli.StringFlag{
 				Name:  "identity-prefix",
@@ -68,6 +66,10 @@ func main() {
 				Name:  "audio-bitrate",
 				Usage: "bitrate (bps) of audio track to publish, 0 to disable",
 				Value: 50000,
+			},
+			&cli.IntFlag{
+				Name:  "expected-tracks",
+				Usage: "total number of expected tracks in the room; use for multi-node tests",
 			},
 		},
 		Action:  loadTest,
@@ -98,48 +100,68 @@ func loadTest(c *cli.Context) error {
 	}
 
 	duration := c.Duration("duration")
-	count := c.Int("count")
-	testers := make([]*livekit_cli.LoadTester, 0, count)
+	publishers := c.Int("publishers")
+	subscribers := c.Int("subscribers")
+	testers := make([]*livekit_cli.LoadTester, 0, publishers+subscribers)
 
-	var tracksPerTester int
 	var videoBitrate, audioBitrate uint32
-	if c.Bool("publish") {
+	if publishers > 0 {
 		videoBitrate = uint32(c.Uint64("video-bitrate"))
 		audioBitrate = uint32(c.Uint64("audio-bitrate"))
-	}
-	if videoBitrate > 0 {
-		tracksPerTester++
-	}
-	if audioBitrate > 0 {
-		tracksPerTester++
+	} else if subscribers == 0 {
+		subscribers = 1
 	}
 
-	for i := 0; i < count; i++ {
+	var tracksPerPublisher int
+	if videoBitrate > 0 {
+		tracksPerPublisher++
+	}
+	if audioBitrate > 0 {
+		tracksPerPublisher++
+	}
+
+	expectedTotalTracks := c.Int("expected-tracks")
+	if expectedTotalTracks == 0 {
+		expectedTotalTracks = tracksPerPublisher * publishers
+	}
+
+	for i := 0; i < publishers+subscribers; i++ {
 		testerParams := params
 		testerParams.Sequence = i
 
-		tester := livekit_cli.NewLoadTester(i, testerParams)
+		var name string
+		expectedTracks := expectedTotalTracks
+		if i < publishers {
+			expectedTracks -= tracksPerPublisher
+			name = fmt.Sprintf("Publisher %d", i+1)
+		} else {
+			name = fmt.Sprintf("Subscriber %d", i-publishers+1)
+		}
+
+		tester := livekit_cli.NewLoadTester(name, expectedTracks, testerParams)
 		testers = append(testers, tester)
 		if err := tester.Start(); err != nil {
 			return err
 		}
 
-		if videoBitrate > 0 {
-			err := tester.PublishTrack("video", lksdk.TrackKindVideo, videoBitrate)
-			if err != nil {
-				return err
+		if i < publishers {
+			if videoBitrate > 0 {
+				err := tester.PublishTrack("video", lksdk.TrackKindVideo, videoBitrate)
+				if err != nil {
+					return err
+				}
 			}
-		}
 
-		if audioBitrate > 0 {
-			err := tester.PublishTrack("audio", lksdk.TrackKindAudio, audioBitrate)
-			if err != nil {
-				return err
+			if audioBitrate > 0 {
+				err := tester.PublishTrack("audio", lksdk.TrackKindAudio, audioBitrate)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 
-	fmt.Printf("started all %d clients\n", count)
+	fmt.Printf("started all %d clients\n", publishers+subscribers)
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -157,37 +179,8 @@ func loadTest(c *cli.Context) error {
 		t.Stop()
 	}
 
-	printResults(testers, tracksPerTester)
+	livekit_cli.PrintResults(testers)
 	return nil
-}
-
-func printResults(testers []*livekit_cli.LoadTester, tracksPerTester int) {
-	expectedTracks := (len(testers) - 1) * tracksPerTester
-
-	testerStats := make([]*livekit_cli.Stats, 0, len(testers))
-	for _, t := range testers {
-		w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		_, _ = fmt.Fprintf(w, "\nTester %d\t| Track \t| Packets \t| Latency \t| OOO \t| Dropped\n", t.ID)
-
-		trackStats := &livekit_cli.Stats{}
-		for _, s := range t.Stats() {
-			trackStats.AddFrom(s)
-			_, _ = fmt.Fprint(w, s.Print())
-		}
-		testerStats = append(testerStats, trackStats)
-		_ = w.Flush()
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks \t| Average Latency \t| Total OOO \t| Total Dropped\n")
-
-	allStats := &livekit_cli.Stats{}
-	for i, trackStats := range testerStats {
-		_, _ = fmt.Fprint(w, trackStats.PrintSummary(fmt.Sprint(i), expectedTracks))
-		allStats.AddFrom(trackStats)
-	}
-	_, _ = fmt.Fprint(w, allStats.PrintSummary("Total", len(testers)*expectedTracks))
-	_ = w.Flush()
 }
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
