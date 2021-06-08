@@ -140,11 +140,11 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
 	stats := &Stats{
 		Tracks:  1,
 		trackID: track.ID(),
-		missing: make(map[int64]bool),
+		missing: make(map[uint16]bool),
 	}
 	t.children.Store(track.ID(), stats)
 
-	var max, resets int64
+	var maxSequenceNumber uint16
 	for {
 		pkt, _, err := track.ReadRTP()
 		if err != nil {
@@ -152,29 +152,23 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
 		}
 
 		payload := pkt.Payload
-		c := int64(payload[len(payload)-1])
-		sentAt := int64(binary.LittleEndian.Uint64(payload[:8]))
-		stats.Latency += time.Now().UnixNano() - sentAt
+		sentAt := int64(binary.LittleEndian.Uint64(payload[len(payload)-8:]))
+		latency := time.Now().UnixNano() - sentAt
+		if latency > 0 && latency < 1000000000 {
+			stats.Latency += time.Now().UnixNano() - sentAt
+			stats.LatencyCount++
+		}
 
-		// stats will break if dropping massive amounts
-		if max%256 > 200 && c < 100 {
-			resets++
-		}
-		num := c + resets*256
-		if num > max+200 {
-			// handle OOO packets just after reset
-			num -= 256
-		}
-		if num != max+1 && stats.Packets > 0 {
-			if stats.missing[num] {
-				delete(stats.missing, num)
+		if pkt.SequenceNumber != maxSequenceNumber+1 && stats.Packets > 0 {
+			if stats.missing[pkt.SequenceNumber] {
+				delete(stats.missing, pkt.SequenceNumber)
 				stats.OOO++
 			}
-			stats.missing[max+1] = true
+			stats.missing[maxSequenceNumber+1] = true
 		}
 		stats.Packets++
-		if num > max {
-			max = num
+		if pkt.SequenceNumber > maxSequenceNumber {
+			maxSequenceNumber = pkt.SequenceNumber
 		}
 	}
 }

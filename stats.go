@@ -9,11 +9,12 @@ import (
 )
 
 type Stats struct {
-	Tracks  int64
-	Packets int64
-	Latency int64
-	OOO     int64
-	Dropped int64
+	Tracks       int64
+	Packets      int64
+	Latency      int64
+	LatencyCount int64
+	OOO          int64
+	Dropped      int64
 
 	// parent
 	name           string
@@ -22,13 +23,14 @@ type Stats struct {
 
 	// children
 	trackID string
-	missing map[int64]bool
+	missing map[uint16]bool
 }
 
 func (s *Stats) AddChild(child *Stats) {
 	s.Tracks += child.Tracks
 	s.Packets += child.Packets
 	s.Latency += child.Latency
+	s.LatencyCount += child.LatencyCount
 	s.OOO += child.OOO
 	s.Dropped += child.Dropped
 
@@ -79,7 +81,9 @@ func (s *Stats) PrintRow(w *tabwriter.Writer, summary, total bool) {
 	dropped := " - "
 
 	if s.Packets > 0 {
-		latency = fmt.Sprint(time.Duration(s.Latency / s.Packets))
+		if s.LatencyCount > 0 {
+			latency = fmt.Sprint(time.Duration(s.Latency / s.LatencyCount))
+		}
 		ooo = fmt.Sprintf("%d (%s%%)", s.OOO, formatFloat(s.OOO, s.Packets))
 		dropped = fmt.Sprintf("%d (%s%%)", s.Dropped, formatFloat(s.Dropped, s.Packets))
 	}
