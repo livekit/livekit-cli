@@ -159,12 +159,16 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
 			stats.LatencyCount++
 		}
 
-		if pkt.SequenceNumber != maxSequenceNumber+1 && stats.Packets > 0 {
+		expected := maxSequenceNumber + 1
+		if pkt.SequenceNumber != expected && stats.Packets > 0 {
 			if stats.missing[pkt.SequenceNumber] {
 				delete(stats.missing, pkt.SequenceNumber)
 				stats.OOO++
+			} else {
+				for i := expected; i <= pkt.SequenceNumber; i++ {
+					stats.missing[i] = true
+				}
 			}
-			stats.missing[maxSequenceNumber+1] = true
 		}
 		stats.Packets++
 		if pkt.SequenceNumber > maxSequenceNumber {

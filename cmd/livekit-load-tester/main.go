@@ -38,7 +38,6 @@ func main() {
 			&cli.StringFlag{
 				Name:  "room",
 				Usage: "name of the room",
-				Value: "testroom",
 			},
 			&cli.DurationFlag{
 				Name:  "duration",
@@ -91,6 +90,9 @@ func loadTest(c *cli.Context) error {
 	}
 	if params.IdentityPrefix == "" {
 		params.IdentityPrefix = RandStringRunes(5)
+	}
+	if params.Room == "" {
+		params.Room = fmt.Sprintf("testroom%d", rand.Int31n(1000))
 	}
 
 	duration := c.Duration("duration")

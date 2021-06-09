@@ -79,13 +79,13 @@ func (s *Stats) PrintRow(w *tabwriter.Writer, summary, total bool) {
 	latency := " - "
 	ooo := " - "
 	dropped := " - "
-
+	totalPackets := s.Packets + s.Dropped
 	if s.Packets > 0 {
 		if s.LatencyCount > 0 {
 			latency = fmt.Sprint(time.Duration(s.Latency / s.LatencyCount))
 		}
-		ooo = fmt.Sprintf("%d (%s%%)", s.OOO, formatFloat(s.OOO, s.Packets))
-		dropped = fmt.Sprintf("%d (%s%%)", s.Dropped, formatFloat(s.Dropped, s.Packets))
+		ooo = fmt.Sprintf("%d (%s%%)", s.OOO, formatFloat(s.OOO, totalPackets))
+		dropped = fmt.Sprintf("%d (%s%%)", s.Dropped, formatFloat(s.Dropped, totalPackets))
 	}
 
 	if summary {
@@ -98,5 +98,5 @@ func (s *Stats) PrintRow(w *tabwriter.Writer, summary, total bool) {
 }
 
 func formatFloat(num int64, total int64) string {
-	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.4f", float64(num)/float64(total)), "0"), ".")
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", float64(num)/float64(total)*100), "0"), ".")
 }
