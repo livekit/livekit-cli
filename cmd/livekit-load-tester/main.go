@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"text/tabwriter"
 	"time"
 
 	lksdk "github.com/livekit/livekit-sdk-go"
@@ -43,6 +44,10 @@ func main() {
 				Name:  "duration",
 				Usage: "duration to run, 1m, 1h, 0 to keep running",
 				Value: 0,
+			},
+			&cli.Float64Flag{
+				Name:  "max-drop-rate",
+				Usage: "finds the max number of publishers without going above max drop rate",
 			},
 			&cli.IntFlag{
 				Name:  "publishers",
@@ -102,17 +107,17 @@ func loadTest(c *cli.Context) error {
 
 	var tracksPerPublisher int
 	var audioBitrate, videoBitrate uint32
-	if publishers > 0 {
-		audioBitrate = uint32(c.Uint64("audio-bitrate"))
-		if audioBitrate > 0 {
-			tracksPerPublisher++
-		}
-		videoBitrate = uint32(c.Uint64("video-bitrate"))
-		if videoBitrate > 0 {
-			tracksPerPublisher++
-		}
-	} else if subscribers == 0 {
-		subscribers = 1
+	audioBitrate = uint32(c.Uint64("audio-bitrate"))
+	if audioBitrate > 0 {
+		tracksPerPublisher++
+	}
+	videoBitrate = uint32(c.Uint64("video-bitrate"))
+	if videoBitrate > 0 {
+		tracksPerPublisher++
+	}
+
+	if maxDropRate := c.Float64("max-drop-rate"); maxDropRate > 0 {
+		return findMaxSubs(publishers, maxDropRate, audioBitrate, videoBitrate, params)
 	}
 
 	expectedTotalTracks := c.Int("expected-tracks")
@@ -175,6 +180,72 @@ func loadTest(c *cli.Context) error {
 	}
 
 	livekit_cli.PrintResults(testers)
+	return nil
+}
+
+func findMaxSubs(pubs int, maxDropRate float64, audioBitrate, videoBitrate uint32, params livekit_cli.LoadTesterParams) error {
+	testers := make([]*livekit_cli.LoadTester, 0)
+
+	if pubs == 0 {
+		pubs = 1
+	}
+
+	for i := 0; i < pubs; i++ {
+		fmt.Printf("Starting publisher %d\n", i)
+
+		testerParams := params
+		testerParams.Sequence = i
+		tester := livekit_cli.NewLoadTester("Pub", 0, testerParams)
+		testers = append(testers, tester)
+		if err := tester.Start(); err != nil {
+			return err
+		}
+		if videoBitrate > 0 {
+			err := tester.PublishTrack("video", lksdk.TrackKindVideo, videoBitrate)
+			if err != nil {
+				return err
+			}
+		}
+		if audioBitrate > 0 {
+			err := tester.PublishTrack("audio", lksdk.TrackKindAudio, audioBitrate)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	_, _ = fmt.Fprint(w, "\nTesters\t| Tracks\t| Latency\t| Total OOO\t| Total Dropped\n")
+	for i := 0; ; i++ {
+		fmt.Printf("Starting subscriber %d\n", i)
+		testerParams := params
+		testerParams.Sequence = i + pubs
+
+		name := fmt.Sprintf("Sub %d", i)
+		tester := livekit_cli.NewLoadTester(name, 0, testerParams)
+		testers = append(testers, tester)
+		if err := tester.Start(); err != nil {
+			return err
+		}
+
+		time.Sleep(time.Second * 30)
+
+		tracks, latency, oooRate, dropRate := livekit_cli.GetSummary(testers)
+		_, _ = fmt.Fprintf(w, "%d\t| %d\t| %v\t| %.2f%%\t| %.2f%%\n", i+1, tracks, latency, oooRate, dropRate)
+		if dropRate < maxDropRate {
+			for _, t := range testers {
+				t.ResetStats()
+			}
+		} else {
+			break
+		}
+	}
+
+	for _, t := range testers {
+		t.Stop()
+	}
+	_ = w.Flush()
+
 	return nil
 }
 

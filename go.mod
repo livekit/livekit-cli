@@ -8,6 +8,7 @@ require (
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
 	github.com/livekit/livekit-sdk-go v0.5.7
 	github.com/livekit/protocol v0.5.1
+	github.com/pion/rtp v1.6.5 // indirect
 	github.com/pion/webrtc/v3 v3.0.29
 	github.com/twitchtv/twirp v8.0.0+incompatible // indirect
 	github.com/urfave/cli/v2 v2.3.0

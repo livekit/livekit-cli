@@ -1,11 +1,12 @@
 package livekit_cli
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math/rand"
+	"os"
 	"sync"
 	"sync/atomic"
+	"text/tabwriter"
 	"time"
 
 	"github.com/pion/webrtc/v3"
@@ -27,8 +28,7 @@ type LoadTester struct {
 	room    *lksdk.Room
 	running atomic.Value
 
-	stats    *Stats
-	children sync.Map
+	stats *Stats
 }
 
 func NewLoadTester(name string, expectedTracks int, params LoadTesterParams) *LoadTester {
@@ -37,8 +37,8 @@ func NewLoadTester(name string, expectedTracks int, params LoadTesterParams) *Lo
 		stats: &Stats{
 			name:           name,
 			expectedTracks: expectedTracks,
+			trackStats:     &sync.Map{},
 		},
-		children: sync.Map{},
 	}
 }
 
@@ -118,6 +118,10 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 	return nil
 }
 
+func (t *LoadTester) ResetStats() {
+	t.stats.Reset()
+}
+
 func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication lksdk.TrackPublication, rp *lksdk.RemoteParticipant) {
 	numSubscribed := 0
 	numTotal := 0
@@ -130,61 +134,84 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication lk
 			}
 		}
 	}
-
+	t.stats.AddTrack(track.ID())
 	fmt.Println("subscribed to track", t.room.LocalParticipant.Identity(), publication.SID(), publication.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
+
 	// consume track
 	go t.consumeTrack(track)
 }
 
 func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
-	stats := &Stats{
-		Tracks:  1,
-		trackID: track.ID(),
-		missing: make(map[uint16]bool),
-	}
-	t.children.Store(track.ID(), stats)
-
-	var maxSequenceNumber uint16
 	for {
 		pkt, _, err := track.ReadRTP()
 		if err != nil {
 			return
 		}
-
-		payload := pkt.Payload
-		sentAt := int64(binary.LittleEndian.Uint64(payload[len(payload)-8:]))
-		latency := time.Now().UnixNano() - sentAt
-		if latency > 0 && latency < 1000000000 {
-			stats.Latency += time.Now().UnixNano() - sentAt
-			stats.LatencyCount++
-		}
-
-		expected := maxSequenceNumber + 1
-		if pkt.SequenceNumber != expected && stats.Packets > 0 {
-			if stats.missing[pkt.SequenceNumber] {
-				delete(stats.missing, pkt.SequenceNumber)
-				stats.OOO++
-			} else {
-				for i := expected; i <= pkt.SequenceNumber; i++ {
-					stats.missing[i] = true
-				}
-			}
-		}
-		stats.Packets++
-		if pkt.SequenceNumber > maxSequenceNumber {
-			maxSequenceNumber = pkt.SequenceNumber
-		}
+		t.stats.Record(track.ID(), pkt)
 	}
 }
 
-func (t *LoadTester) collectStats() *Stats {
-	t.children.Range(func(key, value interface{}) bool {
-		s := value.(*Stats)
-		s.Dropped = int64(len(s.missing))
-		t.stats.AddChild(s)
-		return true
-	})
-	return t.stats
+func GetSummary(testers []*LoadTester) (int64, time.Duration, float64, float64) {
+	var tracks, packets, latency, latencyCount, ooo, dropped int64
+	for _, tester := range testers {
+		t, p, l, lc, o, d := tester.stats.GetSummary()
+
+		tracks += t
+		packets += p
+		latency += l
+		latencyCount += lc
+		ooo += o
+		dropped += d
+	}
+
+	var avgLatency time.Duration
+	if latencyCount > 0 {
+		avgLatency = time.Duration(latency / latencyCount)
+	}
+
+	var oooRate, dropRate float64
+	total := float64(packets + dropped)
+	if packets > 0 {
+		oooRate = float64(ooo) / total * 100
+		dropRate = float64(dropped) / total * 100
+	} else {
+		oooRate = 100
+		dropRate = 100
+	}
+
+	return tracks, avgLatency, oooRate, dropRate
+}
+
+func PrintResults(testers []*LoadTester) {
+	for _, tester := range testers {
+		tester.stats.PrintTrackStats()
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Latency\t| Total OOO\t| Total Dropped\n")
+
+	var expected int
+	var tracks, packets, latency, latencyCount, ooo, dropped int64
+	for _, tester := range testers {
+		t, p, l, lc, o, d := tester.stats.GetSummary()
+
+		tracks += t
+		expected += tester.stats.expectedTracks
+		packets += p
+		latency += l
+		latencyCount += lc
+		ooo += o
+		dropped += d
+
+		sLatency, sOOO, sDropped := stringFormat(p, l, lc, o, d)
+		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
+			tester.stats.name, t, tester.stats.expectedTracks, sLatency, sOOO, sDropped)
+	}
+
+	sLatency, sOOO, sDropped := stringFormat(packets, latency, latencyCount, ooo, dropped)
+	_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
+		"Total", tracks, expected, sLatency, sOOO, sDropped)
+	_ = w.Flush()
 }
 
 func init() {
