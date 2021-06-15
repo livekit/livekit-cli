@@ -45,9 +45,9 @@ func main() {
 				Usage: "duration to run, 1m, 1h, 0 to keep running",
 				Value: 0,
 			},
-			&cli.Float64Flag{
-				Name:  "max-drop-rate",
-				Usage: "finds the max number of publishers without going above max drop rate",
+			&cli.DurationFlag{
+				Name:  "max-latency",
+				Usage: "max number of subscribers without going above max latency (e.g. 400ms)",
 			},
 			&cli.IntFlag{
 				Name:  "publishers",
@@ -69,11 +69,15 @@ func main() {
 			&cli.Uint64Flag{
 				Name:  "audio-bitrate",
 				Usage: "bitrate (bps) of audio track to publish, 0 to disable",
-				Value: 50000,
+				Value: 20000,
 			},
 			&cli.IntFlag{
 				Name:  "expected-tracks",
 				Usage: "total number of expected tracks in the room; use for multi-node tests",
+			},
+			&cli.BoolFlag{
+				Name:  "run-all",
+				Usage: "runs set list of load test cases",
 			},
 		},
 		Action:  loadTest,
@@ -92,6 +96,8 @@ func loadTest(c *cli.Context) error {
 		APISecret:      c.String("api-secret"),
 		IdentityPrefix: c.String("identity-prefix"),
 		Room:           c.String("room"),
+		AudioBitrate:   uint32(c.Uint64("audio-bitrate")),
+		VideoBitrate:   uint32(c.Uint64("video-bitrate")),
 	}
 	if params.IdentityPrefix == "" {
 		params.IdentityPrefix = RandStringRunes(5)
@@ -100,24 +106,24 @@ func loadTest(c *cli.Context) error {
 		params.Room = fmt.Sprintf("testroom%d", rand.Int31n(1000))
 	}
 
-	duration := c.Duration("duration")
+	if c.Bool("run-all") {
+		return runAll(params)
+	}
+
 	publishers := c.Int("publishers")
+	if maxLatency := c.Duration("max-latency"); maxLatency > 0 {
+		return findMaxSubs(publishers, maxLatency, params)
+	}
+
+	duration := c.Duration("duration")
 	subscribers := c.Int("subscribers")
-	testers := make([]*livekit_cli.LoadTester, 0, publishers+subscribers)
 
 	var tracksPerPublisher int
-	var audioBitrate, videoBitrate uint32
-	audioBitrate = uint32(c.Uint64("audio-bitrate"))
-	if audioBitrate > 0 {
+	if params.AudioBitrate > 0 {
 		tracksPerPublisher++
 	}
-	videoBitrate = uint32(c.Uint64("video-bitrate"))
-	if videoBitrate > 0 {
+	if params.VideoBitrate > 0 {
 		tracksPerPublisher++
-	}
-
-	if maxDropRate := c.Float64("max-drop-rate"); maxDropRate > 0 {
-		return findMaxSubs(publishers, maxDropRate, audioBitrate, videoBitrate, params)
 	}
 
 	expectedTotalTracks := c.Int("expected-tracks")
@@ -125,6 +131,7 @@ func loadTest(c *cli.Context) error {
 		expectedTotalTracks = tracksPerPublisher * publishers
 	}
 
+	testers := make([]*livekit_cli.LoadTester, 0, publishers+subscribers)
 	for i := 0; i < publishers+subscribers; i++ {
 		testerParams := params
 		testerParams.Sequence = i
@@ -145,15 +152,15 @@ func loadTest(c *cli.Context) error {
 		}
 
 		if i < publishers {
-			if videoBitrate > 0 {
-				err := tester.PublishTrack("video", lksdk.TrackKindVideo, videoBitrate)
+			if params.VideoBitrate > 0 {
+				err := tester.PublishTrack("video", lksdk.TrackKindVideo, params.VideoBitrate)
 				if err != nil {
 					return err
 				}
 			}
 
-			if audioBitrate > 0 {
-				err := tester.PublishTrack("audio", lksdk.TrackKindAudio, audioBitrate)
+			if params.AudioBitrate > 0 {
+				err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
 				if err != nil {
 					return err
 				}
@@ -183,7 +190,7 @@ func loadTest(c *cli.Context) error {
 	return nil
 }
 
-func findMaxSubs(pubs int, maxDropRate float64, audioBitrate, videoBitrate uint32, params livekit_cli.LoadTesterParams) error {
+func findMaxSubs(pubs int, maxLatency time.Duration, params livekit_cli.LoadTesterParams) error {
 	testers := make([]*livekit_cli.LoadTester, 0)
 
 	if pubs == 0 {
@@ -200,14 +207,14 @@ func findMaxSubs(pubs int, maxDropRate float64, audioBitrate, videoBitrate uint3
 		if err := tester.Start(); err != nil {
 			return err
 		}
-		if videoBitrate > 0 {
-			err := tester.PublishTrack("video", lksdk.TrackKindVideo, videoBitrate)
+		if params.VideoBitrate > 0 {
+			err := tester.PublishTrack("video", lksdk.TrackKindVideo, params.VideoBitrate)
 			if err != nil {
 				return err
 			}
 		}
-		if audioBitrate > 0 {
-			err := tester.PublishTrack("audio", lksdk.TrackKindAudio, audioBitrate)
+		if params.AudioBitrate > 0 {
+			err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
 			if err != nil {
 				return err
 			}
@@ -216,6 +223,8 @@ func findMaxSubs(pubs int, maxDropRate float64, audioBitrate, videoBitrate uint3
 
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	_, _ = fmt.Fprint(w, "\nTesters\t| Tracks\t| Latency\t| Total OOO\t| Total Dropped\n")
+
+	measure := 5000 / pubs
 	for i := 0; ; i++ {
 		fmt.Printf("Starting subscriber %d\n", i)
 		testerParams := params
@@ -228,21 +237,125 @@ func findMaxSubs(pubs int, maxDropRate float64, audioBitrate, videoBitrate uint3
 			return err
 		}
 
-		time.Sleep(time.Second * 30)
+		if i == measure {
+			time.Sleep(time.Second * 30)
+			tracks, latency, oooRate, dropRate := livekit_cli.GetSummary(testers)
+			_, _ = fmt.Fprintf(w, "%d\t| %d\t| %v\t| %.4f%%\t| %.4f%%\n", i, tracks, latency, oooRate, dropRate)
 
-		tracks, latency, oooRate, dropRate := livekit_cli.GetSummary(testers)
-		_, _ = fmt.Fprintf(w, "%d\t| %d\t| %v\t| %.2f%%\t| %.2f%%\n", i+1, tracks, latency, oooRate, dropRate)
-		if dropRate < maxDropRate {
+			next := measure
+			if latency > maxLatency {
+				break
+			} else if latency < maxLatency/4 {
+				next += 1000 / pubs
+			} else if latency < maxLatency/2 {
+				next += 500 / pubs
+			} else if latency < maxLatency*3/4 {
+				next += 100 / pubs
+			} else if latency < maxLatency*7/8 {
+				next += 10 / pubs
+			}
+			if next == measure {
+				next++
+			}
+			measure = next
+
 			for _, t := range testers {
 				t.ResetStats()
 			}
-		} else {
-			break
 		}
 	}
 
 	for _, t := range testers {
 		t.Stop()
+	}
+	_ = w.Flush()
+
+	return nil
+}
+
+func runAll(params livekit_cli.LoadTesterParams) error {
+	cases := []*struct {
+		publishers  int
+		subscribers int
+		video       bool
+
+		tracks  int64
+		latency time.Duration
+		dropped float64
+	}{
+		{publishers: 1, subscribers: 1, video: false},
+		{publishers: 9, subscribers: 0, video: false},
+		{publishers: 9, subscribers: 0, video: true},
+		{publishers: 9, subscribers: 100, video: false},
+		{publishers: 9, subscribers: 100, video: true},
+		{publishers: 50, subscribers: 0, video: false},
+		{publishers: 9, subscribers: 500, video: false},
+		{publishers: 50, subscribers: 0, video: true},
+		{publishers: 9, subscribers: 500, video: true},
+		{publishers: 100, subscribers: 0, video: false},
+	}
+
+	for _, c := range cases {
+		params.Room = fmt.Sprintf("testroom%d", rand.Int31n(1000))
+		params.IdentityPrefix = RandStringRunes(5)
+
+		tracksPerPublisher := 1
+		if c.video {
+			tracksPerPublisher++
+		}
+		expectedTotalTracks := tracksPerPublisher * c.publishers
+
+		testers := make([]*livekit_cli.LoadTester, 0)
+		for i := 0; i < c.publishers+c.subscribers; i++ {
+			testerParams := params
+			testerParams.Sequence = i
+
+			var name string
+			expectedTracks := expectedTotalTracks
+			if i < c.publishers {
+				expectedTracks -= tracksPerPublisher
+				name = fmt.Sprintf("Pub %d", i+1)
+			} else {
+				name = fmt.Sprintf("Sub %d", i-c.publishers+1)
+			}
+
+			tester := livekit_cli.NewLoadTester(name, expectedTracks, testerParams)
+			testers = append(testers, tester)
+			if err := tester.Start(); err != nil {
+				return err
+			}
+
+			if i < c.publishers {
+				err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
+				if err != nil {
+					return err
+				}
+
+				if c.video {
+					err := tester.PublishTrack("video", lksdk.TrackKindVideo, params.VideoBitrate)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		time.Sleep(time.Second * 30)
+		for _, t := range testers {
+			t.Stop()
+		}
+		c.tracks, c.latency, _, c.dropped = livekit_cli.GetSummary(testers)
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	_, _ = fmt.Fprint(w, "\nPublishers\t| Subscribers\t| Tracks\t| Audio\t| Video\t| Latency\t| Packet loss\n")
+	for _, c := range cases {
+		v := "No"
+		if c.video {
+			v = "Yes"
+		}
+		_, _ = fmt.Fprintf(w, "%d\t| %d\t| %d\t| Yes\t| %s\t| %v\t| %.4f%%\n",
+			c.publishers, c.subscribers, c.tracks, v, c.latency.Round(time.Microsecond*100), c.dropped)
 	}
 	_ = w.Flush()
 

@@ -21,6 +21,8 @@ type LoadTesterParams struct {
 	Room           string
 	IdentityPrefix string
 	Sequence       int
+	AudioBitrate   uint32
+	VideoBitrate   uint32
 }
 
 type LoadTester struct {

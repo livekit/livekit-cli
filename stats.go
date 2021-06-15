@@ -21,20 +21,21 @@ type Stats struct {
 type TrackStats struct {
 	trackID string
 
-	first uint16
-	max   uint16
+	resets int64
+	first  int64
+	max    int64
 
 	packets      int64
 	latency      int64
 	latencyCount int64
 	ooo          int64
-	missing      map[uint16]bool
+	missing      map[int64]bool
 }
 
 func (s *Stats) AddTrack(trackID string) {
 	t := &TrackStats{
 		trackID: trackID,
-		missing: make(map[uint16]bool),
+		missing: make(map[int64]bool),
 	}
 	s.trackStats.Store(trackID, t)
 }
@@ -52,20 +53,30 @@ func (s *Stats) Record(trackID string, pkt *rtp.Packet) {
 		ts.latencyCount++
 	}
 
+	if ts.max%65535 > 48000 && pkt.SequenceNumber < 16000 {
+		ts.resets++
+	}
+
 	expected := ts.max + 1
-	if pkt.SequenceNumber != expected && ts.packets > 0 {
-		if ts.missing[pkt.SequenceNumber] {
-			delete(ts.missing, pkt.SequenceNumber)
+	sequence := int64(pkt.SequenceNumber) + ts.resets*65536
+	// correct for when sequence just reset and then a high sequence number came late
+	if sequence > expected+32000 {
+		sequence -= 65536
+	}
+
+	if sequence != expected && ts.packets > 0 {
+		if ts.missing[sequence] {
+			delete(ts.missing, sequence)
 			ts.ooo++
 		} else {
-			for i := expected; i <= pkt.SequenceNumber; i++ {
+			for i := expected; i <= sequence; i++ {
 				ts.missing[i] = true
 			}
 		}
 	}
 	ts.packets++
-	if pkt.SequenceNumber > ts.max {
-		ts.max = pkt.SequenceNumber
+	if sequence > ts.max {
+		ts.max = sequence
 	}
 }
 
@@ -103,7 +114,7 @@ func (s *Stats) Reset() {
 		old := value.(*TrackStats)
 		trackStats.Store(key, &TrackStats{
 			trackID: old.trackID,
-			missing: make(map[uint16]bool),
+			missing: make(map[int64]bool),
 		})
 		return true
 	})
@@ -127,8 +138,6 @@ func stringFormat(packets, latency, latencyCount, ooo, dropped int64) (sLatency,
 		}
 		sOOO = fmt.Sprintf("%d (%s%%)", ooo, formatFloat(ooo, totalPackets))
 		sDropped = fmt.Sprintf("%d (%s%%)", dropped, formatFloat(dropped, totalPackets))
-	} else {
-		sDropped = fmt.Sprintf("%d (100%%)", dropped)
 	}
 
 	return
