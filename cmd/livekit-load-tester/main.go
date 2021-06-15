@@ -300,6 +300,8 @@ func runAll(params livekit_cli.LoadTesterParams) error {
 		{publishers: 50, subscribers: 0, video: true},
 		{publishers: 9, subscribers: 500, video: true},
 		{publishers: 100, subscribers: 0, video: false},
+		{publishers: 5, subscribers: 1000, video: true},
+		{publishers: 10, subscribers: 1000, video: false},
 	}
 
 	for _, c := range cases {
