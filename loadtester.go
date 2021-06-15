@@ -153,17 +153,20 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
 	}
 }
 
-func GetSummary(testers []*LoadTester) (int64, time.Duration, float64, float64) {
-	var tracks, packets, latency, latencyCount, ooo, dropped int64
+func GetSummary(testers []*LoadTester) (int64, int64, time.Duration, time.Duration, float64, float64) {
+	var tracks, packets, latency, latencyCount, ooo, dropped, bytes int64
+	var elapsed time.Duration
 	for _, tester := range testers {
-		t, p, l, lc, o, d := tester.stats.GetSummary()
+		res := tester.stats.GetSummary()
 
-		tracks += t
-		packets += p
-		latency += l
-		latencyCount += lc
-		ooo += o
-		dropped += d
+		tracks += res.Tracks
+		packets += res.Packets
+		latency += res.Latency
+		latencyCount += res.LatencyCount
+		ooo += res.OOO
+		dropped += res.Dropped
+		bytes += res.Bytes
+		elapsed += res.Elapsed
 	}
 
 	var avgLatency time.Duration
@@ -181,7 +184,7 @@ func GetSummary(testers []*LoadTester) (int64, time.Duration, float64, float64) 
 		dropRate = 100
 	}
 
-	return tracks, avgLatency, oooRate, dropRate
+	return tracks, bytes, elapsed, avgLatency, oooRate, dropRate
 }
 
 func PrintResults(testers []*LoadTester) {
@@ -193,21 +196,24 @@ func PrintResults(testers []*LoadTester) {
 	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Latency\t| Total OOO\t| Total Dropped\n")
 
 	var expected int
-	var tracks, packets, latency, latencyCount, ooo, dropped int64
+	var tracks, packets, latency, latencyCount, ooo, dropped, bytes int64
+	var elapsed time.Duration
 	for _, tester := range testers {
-		t, p, l, lc, o, d := tester.stats.GetSummary()
+		res := tester.stats.GetSummary()
 
-		tracks += t
+		tracks += res.Tracks
 		expected += tester.stats.expectedTracks
-		packets += p
-		latency += l
-		latencyCount += lc
-		ooo += o
-		dropped += d
+		packets += res.Packets
+		latency += res.Latency
+		latencyCount += res.LatencyCount
+		ooo += res.OOO
+		dropped += res.Dropped
+		bytes += res.Bytes
+		elapsed += res.Elapsed
 
-		sLatency, sOOO, sDropped := stringFormat(p, l, lc, o, d)
+		sLatency, sOOO, sDropped := stringFormat(res.Packets, res.Latency, res.LatencyCount, res.OOO, res.Dropped)
 		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
-			tester.stats.name, t, tester.stats.expectedTracks, sLatency, sOOO, sDropped)
+			tester.stats.name, res.Tracks, tester.stats.expectedTracks, sLatency, sOOO, sDropped)
 	}
 
 	sLatency, sOOO, sDropped := stringFormat(packets, latency, latencyCount, ooo, dropped)

@@ -250,7 +250,7 @@ func findMaxSubs(pubs int, maxLatency time.Duration, params livekit_cli.LoadTest
 			}
 
 			time.Sleep(time.Second * 30)
-			tracks, latency, oooRate, dropRate := livekit_cli.GetSummary(testers)
+			tracks, _, _, latency, oooRate, dropRate := livekit_cli.GetSummary(testers)
 			_, _ = fmt.Fprintf(w, "%d\t| %d\t| %v\t| %.4f%%\t| %.4f%%\n", i, tracks, latency, oooRate, dropRate)
 
 			next := measure
@@ -353,7 +353,7 @@ func runAll(params livekit_cli.LoadTesterParams) error {
 		for _, t := range testers {
 			t.Stop()
 		}
-		c.tracks, c.latency, _, c.dropped = livekit_cli.GetSummary(testers)
+		c.tracks, _, _, c.latency, _, c.dropped = livekit_cli.GetSummary(testers)
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
