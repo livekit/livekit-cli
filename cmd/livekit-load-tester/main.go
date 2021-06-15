@@ -224,7 +224,13 @@ func findMaxSubs(pubs int, maxLatency time.Duration, params livekit_cli.LoadTest
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	_, _ = fmt.Fprint(w, "\nTesters\t| Tracks\t| Latency\t| Total OOO\t| Total Dropped\n")
 
-	measure := 5000 / pubs
+	pubTracks := pubs
+	if params.VideoBitrate > 0 {
+		pubTracks *= 2
+	}
+
+	// expected to handle about 10k tracks, start with 5k
+	measure := 5000 / pubTracks
 	for i := 0; ; i++ {
 		fmt.Printf("Starting subscriber %d\n", i)
 		testerParams := params
@@ -238,6 +244,11 @@ func findMaxSubs(pubs int, maxLatency time.Duration, params livekit_cli.LoadTest
 		}
 
 		if i == measure {
+			// reset stats before measuring
+			for _, t := range testers {
+				t.ResetStats()
+			}
+
 			time.Sleep(time.Second * 30)
 			tracks, latency, oooRate, dropRate := livekit_cli.GetSummary(testers)
 			_, _ = fmt.Fprintf(w, "%d\t| %d\t| %v\t| %.4f%%\t| %.4f%%\n", i, tracks, latency, oooRate, dropRate)
@@ -246,22 +257,18 @@ func findMaxSubs(pubs int, maxLatency time.Duration, params livekit_cli.LoadTest
 			if latency > maxLatency {
 				break
 			} else if latency < maxLatency/4 {
-				next += 1000 / pubs
+				next += 1000 / pubTracks
 			} else if latency < maxLatency/2 {
-				next += 500 / pubs
+				next += 500 / pubTracks
 			} else if latency < maxLatency*3/4 {
-				next += 100 / pubs
+				next += 100 / pubTracks
 			} else if latency < maxLatency*7/8 {
-				next += 10 / pubs
+				next += 10 / pubTracks
 			}
 			if next == measure {
 				next++
 			}
 			measure = next
-
-			for _, t := range testers {
-				t.ResetStats()
-			}
 		}
 	}
 
