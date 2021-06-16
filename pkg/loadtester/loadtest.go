@@ -210,8 +210,14 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 }
 
 func (t *LoadTest) FindMax(maxLatency time.Duration) error {
-	testers := make([]*LoadTester, 0)
+	if t.Room == "" {
+		t.Room = fmt.Sprintf("testroom%d", rand.Int31n(1000))
+	}
+	if t.IdentityPrefix == "" {
+		t.IdentityPrefix = randStringRunes(5)
+	}
 
+	testers := make([]*LoadTester, 0)
 	if t.Publishers == 0 {
 		t.Publishers = 1
 	}
