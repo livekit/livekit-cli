@@ -49,7 +49,7 @@ var (
 				},
 				&cli.StringFlag{
 					Name:  "valid-for",
-					Usage: "amount of time that the token is valid for. i.e. \"5m\", \"1h10m\"",
+					Usage: "amount of time that the token is valid for. i.e. \"5m\", \"1h10m\" (s: seconds, m: minutes, h: hours)",
 					Value: "5m",
 				},
 			},
@@ -96,7 +96,10 @@ func createToken(c *cli.Context) error {
 	}
 	if validFor != "" {
 		if dur, err := time.ParseDuration(validFor); err == nil {
+			fmt.Println("valid for (mins): ", int(dur/time.Minute))
 			at.SetValidFor(dur)
+		} else {
+			return err
 		}
 	}
 
