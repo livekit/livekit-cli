@@ -104,6 +104,27 @@ var (
 				secretFlag,
 			},
 		},
+		{
+			Name:   "update-subscriptions",
+			Before: createRoomClient,
+			Action: updateSubscriptions,
+			Flags: []cli.Flag{
+				roomFlag,
+				identityFlag,
+				&cli.StringSliceFlag{
+					Name:     "track",
+					Usage:    "track sid to subscribe/unsubscribe",
+					Required: true,
+				},
+				&cli.BoolFlag{
+					Name:  "subscribe",
+					Usage: "set to true to subscribe, otherwise it'll unsubscribe",
+				},
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+			},
+		},
 	}
 
 	roomClient *lksdk.RoomServiceClient
@@ -224,6 +245,32 @@ func muteTrack(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("muted track", trackSid)
+	verb := "muted"
+	if !c.Bool("muted") {
+		verb = "unmuted"
+	}
+	fmt.Println(verb, "track: ", trackSid)
+	return nil
+}
+
+func updateSubscriptions(c *cli.Context) error {
+	roomName := c.String("room")
+	identity := c.String("identity")
+	trackSids := c.StringSlice("track")
+	_, err := roomClient.UpdateSubscriptions(context.Background(), &livekit.UpdateSubscriptionsRequest{
+		Room:      roomName,
+		Identity:  identity,
+		TrackSids: trackSids,
+		Subscribe: c.Bool("subscribe"),
+	})
+	if err != nil {
+		return err
+	}
+
+	verb := "subscribed to"
+	if !c.Bool("subscribe") {
+		verb = "unsubscribed from"
+	}
+	fmt.Println(verb, "tracks: ", trackSids)
 	return nil
 }
