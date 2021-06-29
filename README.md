@@ -8,7 +8,10 @@ A command line utility to interact with LiveKit. `livekit-cli` allows you to:
 
 ## Installation
 
-
+```shell
+$ go install github.com/livekit/livekit-cli/cmd/livekit-cli
+$ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester
+```
 
 ## Usage
 
@@ -23,7 +26,7 @@ USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.5.1
+   0.5.0
 
 COMMANDS:
    create-token        creates an access token
