@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/ggwhite/go-masker v1.0.4
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
-	github.com/livekit/livekit-sdk-go v0.5.8
+	github.com/livekit/server-sdk-go v0.5.8
 	github.com/livekit/protocol v0.5.4
 	github.com/pion/webrtc/v3 v3.0.29
 	github.com/twitchtv/twirp v8.0.0+incompatible // indirect
@@ -16,4 +16,4 @@ require (
 	google.golang.org/protobuf v1.26.0 // indirect
 )
 
-//replace github.com/livekit/livekit-sdk-go => ../livekit-sdk-go
+//replace github.com/livekit/server-sdk-go => ../server-sdk-go

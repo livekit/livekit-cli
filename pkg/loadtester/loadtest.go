@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	lksdk "github.com/livekit/livekit-sdk-go"
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 type LoadTest struct {

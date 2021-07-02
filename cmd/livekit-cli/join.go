@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	lksdk "github.com/livekit/livekit-sdk-go"
+	lksdk "github.com/livekit/server-sdk-go"
 	"github.com/urfave/cli/v2"
 )
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/pion/webrtc/v3"
 
-	lksdk "github.com/livekit/livekit-sdk-go"
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 type LoadTester struct {
