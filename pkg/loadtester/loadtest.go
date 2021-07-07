@@ -88,18 +88,19 @@ func (t *LoadTest) RunSuite() error {
 		latency time.Duration
 		dropped float64
 	}{
-		{publishers: 1, subscribers: 1, video: false},
 		{publishers: 9, subscribers: 0, video: false},
-		{publishers: 9, subscribers: 0, video: true},
 		{publishers: 9, subscribers: 100, video: false},
-		{publishers: 9, subscribers: 100, video: true},
 		{publishers: 50, subscribers: 0, video: false},
 		{publishers: 9, subscribers: 500, video: false},
-		{publishers: 50, subscribers: 0, video: true},
-		{publishers: 9, subscribers: 500, video: true},
 		{publishers: 100, subscribers: 0, video: false},
-		{publishers: 5, subscribers: 1000, video: true},
 		{publishers: 10, subscribers: 1000, video: false},
+		{publishers: 10, subscribers: 2500, video: false},
+
+		// {publishers: 9, subscribers: 0, video: true},
+		// {publishers: 9, subscribers: 100, video: true},
+		// {publishers: 50, subscribers: 0, video: true},
+		// {publishers: 9, subscribers: 500, video: true},
+		// {publishers: 5, subscribers: 1000, video: true},
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
@@ -161,7 +162,12 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		testerParams.sequence = i
 		testerParams.expectedTracks = expectedTracks
 		if i < params.Publishers {
-			testerParams.expectedTracks -= 2
+			if params.VideoBitrate > 0 {
+				testerParams.expectedTracks -= 2
+			} else {
+				testerParams.expectedTracks--
+			}
+
 			testerParams.name = fmt.Sprintf("Pub %d", i)
 		} else {
 			testerParams.name = fmt.Sprintf("Sub %d", i-params.Publishers)

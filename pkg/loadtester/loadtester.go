@@ -57,6 +57,9 @@ func (t *LoadTester) Start() error {
 	t.room = room
 	t.running.Store(true)
 	room.Callback.OnTrackSubscribed = t.onTrackSubscribed
+	room.Callback.OnTrackSubscriptionFailed = func(sid string, rp *lksdk.RemoteParticipant) {
+		fmt.Printf("track subscription failed, sid:%v, rp:%v", sid, rp.Identity())
+	}
 
 	return nil
 }
