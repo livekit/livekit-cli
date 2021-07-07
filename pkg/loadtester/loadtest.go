@@ -138,7 +138,7 @@ func (t *LoadTest) RunSuite() error {
 		latency := time.Duration(totalLatency / latencyCount)
 
 		_, _ = fmt.Fprintf(w, "%d\t| %d\t| %d\t| Yes\t| %s\t| %v\t| %.3f%%\n",
-			c.publishers, c.subscribers, tracks, videoString, latency.Round(time.Microsecond*100), float64(dropped)/float64(dropped+packets))
+			c.publishers, c.subscribers, tracks, videoString, latency.Round(time.Microsecond*100), 100*float64(dropped)/float64(dropped+packets))
 	}
 
 	_ = w.Flush()
