@@ -88,19 +88,18 @@ func (t *LoadTest) RunSuite() error {
 		latency time.Duration
 		dropped float64
 	}{
-		{publishers: 9, subscribers: 0, video: false},
-		{publishers: 9, subscribers: 100, video: false},
+		{publishers: 10, subscribers: 0, video: false},
+		{publishers: 10, subscribers: 100, video: false},
 		{publishers: 50, subscribers: 0, video: false},
-		{publishers: 9, subscribers: 500, video: false},
+		{publishers: 10, subscribers: 500, video: false},
 		{publishers: 100, subscribers: 0, video: false},
 		{publishers: 10, subscribers: 1000, video: false},
-		{publishers: 10, subscribers: 2500, video: false},
 
-		// {publishers: 9, subscribers: 0, video: true},
-		// {publishers: 9, subscribers: 100, video: true},
-		// {publishers: 50, subscribers: 0, video: true},
-		// {publishers: 9, subscribers: 500, video: true},
-		// {publishers: 5, subscribers: 1000, video: true},
+		{publishers: 9, subscribers: 0, video: true},
+		{publishers: 1, subscribers: 100, video: true},
+		{publishers: 9, subscribers: 100, video: true},
+		{publishers: 1, subscribers: 1000, video: true},
+		{publishers: 9, subscribers: 500, video: true},
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
