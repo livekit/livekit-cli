@@ -7,7 +7,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	livekit_cli "github.com/livekit/livekit-cli"
+	livekitcli "github.com/livekit/livekit-cli"
 	"github.com/livekit/livekit-cli/pkg/loadtester"
 )
 
@@ -73,7 +73,7 @@ func main() {
 			},
 		},
 		Action:  loadTest,
-		Version: livekit_cli.Version,
+		Version: livekitcli.Version,
 	}
 
 	if err := app.Run(os.Args); err != nil {

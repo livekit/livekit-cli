@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	livekit_cli "github.com/livekit/livekit-cli"
 	"github.com/urfave/cli/v2"
+
+	livekit_cli "github.com/livekit/livekit-cli"
 )
 
 func main() {
@@ -23,6 +24,7 @@ func main() {
 	app.Commands = append(app.Commands, TokenCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, JoinCommands...)
+	app.Commands = append(app.Commands, RecordCommands...)
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Println(err)
