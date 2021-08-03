@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/ggwhite/go-masker"
 	lksdk "github.com/livekit/server-sdk-go"
 	livekit "github.com/livekit/server-sdk-go/proto"
 	"github.com/urfave/cli/v2"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var (
@@ -25,6 +27,11 @@ var (
 				},
 				apiKeyFlag,
 				secretFlag,
+				&cli.StringFlag{
+					Name:     "recording-config",
+					Usage:    "path to json recording config file",
+					Required: false,
+				},
 			},
 		},
 		{
@@ -141,13 +148,28 @@ func createRoomClient(c *cli.Context) error {
 			masker.ID(apiKey),
 			masker.ID(apiSecret))
 	}
+
 	roomClient = lksdk.NewRoomServiceClient(url, apiKey, apiSecret)
 	return nil
 }
 
 func createRoom(c *cli.Context) error {
+	var record *livekit.RecordRoomRequest
+	if recFile := c.String("recording-config"); recFile != "" {
+		conf, err := ioutil.ReadFile(recFile)
+		if err != nil {
+			return err
+		}
+		record = &livekit.RecordRoomRequest{}
+		err = protojson.Unmarshal(conf, record)
+		if err != nil {
+			return err
+		}
+	}
+
 	room, err := roomClient.CreateRoom(context.Background(), &livekit.CreateRoomRequest{
-		Name: c.String("name"),
+		Name:      c.String("name"),
+		Recording: record,
 	})
 	if err != nil {
 		return err
