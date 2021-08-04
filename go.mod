@@ -14,4 +14,4 @@ require (
 	google.golang.org/protobuf v1.26.0
 )
 
-//replace github.com/livekit/server-sdk-go => ../server-sdk-go
+replace github.com/livekit/server-sdk-go => ../server-sdk-go
