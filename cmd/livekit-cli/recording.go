@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/ggwhite/go-masker"
+	lksdk "github.com/livekit/server-sdk-go"
 	livekit "github.com/livekit/server-sdk-go/proto"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -15,7 +17,7 @@ var (
 		{
 			Name:   "start-recording",
 			Usage:  "starts a recording with a deployed recorder service",
-			Before: createRoomClient,
+			Before: createRecordingClient,
 			Action: startRecording,
 			Flags: []cli.Flag{
 				urlFlag,
@@ -30,7 +32,7 @@ var (
 		},
 		{
 			Name:   "end-recording",
-			Before: createRoomClient,
+			Before: createRecordingClient,
 			Action: endRecording,
 			Flags: []cli.Flag{
 				urlFlag,
@@ -44,7 +46,25 @@ var (
 			},
 		},
 	}
+
+	recordingClient *lksdk.RecordingServiceClient
 )
+
+func createRecordingClient(c *cli.Context) error {
+	url := c.String("url")
+	apiKey := c.String("api-key")
+	apiSecret := c.String("api-secret")
+
+	if c.Bool("verbose") {
+		fmt.Printf("creating client to %s, with api-key: %s, secret: %s\n",
+			url,
+			masker.ID(apiKey),
+			masker.ID(apiSecret))
+	}
+
+	recordingClient = lksdk.NewRecordingServiceClient(url, apiKey, apiSecret)
+	return nil
+}
 
 func startRecording(c *cli.Context) error {
 	configFile := c.String("config")
@@ -52,15 +72,17 @@ func startRecording(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	req := &livekit.RecordRoomRequest{}
+	req := &livekit.StartRecordingRequest{}
 	err = protojson.Unmarshal(config, req)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Recording config: %+v\n", req)
+	if c.Bool("verbose") {
+		PrintJSON(req)
+	}
 
-	resp, err := roomClient.StartRecording(context.Background(), req)
+	resp, err := recordingClient.StartRecording(context.Background(), req)
 	if err != nil {
 		return err
 	}
@@ -70,7 +92,7 @@ func startRecording(c *cli.Context) error {
 }
 
 func endRecording(c *cli.Context) error {
-	_, err := roomClient.EndRecording(context.Background(), &livekit.EndRecordingRequest{
+	_, err := recordingClient.EndRecording(context.Background(), &livekit.EndRecordingRequest{
 		RecordingId: c.String("id"),
 	})
 	return err
