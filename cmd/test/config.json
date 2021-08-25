@@ -1,0 +1,17 @@
+{
+  "input": {
+    "template": {
+      "layout": "speaker-dark",
+      "ws_url": "wss://url.livekit.io",
+      "token": "token"
+    }
+  },
+  "output": {
+    "s3": {
+      "access_key": "access_key",
+      "secret": "secret",
+      "bucket": "bucket",
+      "key": "key"
+    }
+  }
+}
