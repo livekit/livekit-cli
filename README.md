@@ -26,10 +26,10 @@ USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.5.0
+   0.5.3
 
 COMMANDS:
-   create-token        creates an access token
+   create-token          creates an access token
    create-room
    list-rooms
    delete-room
@@ -37,8 +37,45 @@ COMMANDS:
    get-participant
    remove-participant
    mute-track
-   join-room           joins a room as a client
-   help, h             Shows a list of commands or help for one command
+   update-subscriptions
+   join-room             joins a room as a client
+   start-recording       starts a recording with a deployed recorder service
+   end-recording
+   help, h               Shows a list of commands or help for one command
+```
+
+### Recording
+
+```shell
+% ./bin/livekit-cli start-recording --help
+NAME:
+   livekit-cli start-recording - starts a recording with a deployed recorder service
+
+USAGE:
+   livekit-cli start-recording [command options] [arguments...]
+
+OPTIONS:
+   --url value         url to LiveKit instance (default: "http://localhost:7880") [$LIVEKIT_URL]
+   --api-key value      [$LIVEKIT_API_KEY]
+   --api-secret value   [$LIVEKIT_API_SECRET]
+   --request value     StartRecordingRequest as json file (see https://github.com/livekit/protocol/blob/main/livekit_recording.proto#L16)
+   --help, -h          show help (default: false)
+```
+
+Sample `request` config file:
+
+```json
+{
+  "input": {
+    "template": {
+      "layout": "speaker-dark",
+      "token": "token"
+    }
+  },
+  "output": {
+    "s3_path": "bucket/key"
+  }
+}
 ```
 
 ## livekit-load-tester

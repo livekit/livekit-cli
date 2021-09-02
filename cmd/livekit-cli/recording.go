@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 
 	"github.com/ggwhite/go-masker"
+	livekit "github.com/livekit/protocol/proto"
 	lksdk "github.com/livekit/server-sdk-go"
-	livekit "github.com/livekit/server-sdk-go/proto"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -24,8 +24,8 @@ var (
 				apiKeyFlag,
 				secretFlag,
 				&cli.StringFlag{
-					Name:     "config",
-					Usage:    "recording config file path (see https://github.com/livekit/livekit-recorder/tree/main/recorder)",
+					Name:     "request",
+					Usage:    "StartRecordingRequest as json file (see https://github.com/livekit/protocol/blob/main/livekit_recording.proto#L16)",
 					Required: true,
 				},
 			},
@@ -67,13 +67,13 @@ func createRecordingClient(c *cli.Context) error {
 }
 
 func startRecording(c *cli.Context) error {
-	configFile := c.String("config")
-	config, err := ioutil.ReadFile(configFile)
+	reqFile := c.String("request")
+	reqBytes, err := ioutil.ReadFile(reqFile)
 	if err != nil {
 		return err
 	}
 	req := &livekit.StartRecordingRequest{}
-	err = protojson.Unmarshal(config, req)
+	err = protojson.Unmarshal(reqBytes, req)
 	if err != nil {
 		return err
 	}

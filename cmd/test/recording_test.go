@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	livekit "github.com/livekit/server-sdk-go/proto"
+	livekit "github.com/livekit/protocol/proto"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -17,5 +17,5 @@ func TestUnmarshal(t *testing.T) {
 	require.NoError(t, protojson.Unmarshal(config, req))
 
 	require.Equal(t, "speaker-dark", req.Input.Template.Layout)
-	require.Equal(t, "bucket", req.Output.S3.Bucket)
+	require.Equal(t, "bucket/key", req.Output.S3Path)
 }

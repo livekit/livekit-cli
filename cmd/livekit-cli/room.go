@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/ggwhite/go-masker"
+	livekit "github.com/livekit/protocol/proto"
 	lksdk "github.com/livekit/server-sdk-go"
-	livekit "github.com/livekit/server-sdk-go/proto"
 	"github.com/urfave/cli/v2"
 )
 
