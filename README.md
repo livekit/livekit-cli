@@ -62,7 +62,21 @@ OPTIONS:
    --help, -h          show help (default: false)
 ```
 
-There is a sample `request` config file at `cmd/test/config.json`
+Sample `request` config file:
+
+```json
+{
+  "input": {
+    "template": {
+      "layout": "speaker-dark",
+      "token": "token"
+    }
+  },
+  "output": {
+    "s3_path": "bucket/key"
+  }
+}
+```
 
 ## livekit-load-tester
 

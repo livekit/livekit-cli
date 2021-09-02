@@ -2,7 +2,6 @@
   "input": {
     "template": {
       "layout": "speaker-dark",
-      "ws_url": "wss://url.livekit.io",
       "token": "token"
     }
   },
