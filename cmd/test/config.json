@@ -7,11 +7,6 @@
     }
   },
   "output": {
-    "s3": {
-      "access_key": "access_key",
-      "secret": "secret",
-      "bucket": "bucket",
-      "key": "key"
-    }
+    "s3_path": "bucket/key"
   }
 }
