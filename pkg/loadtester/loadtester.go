@@ -98,8 +98,11 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 			SDPFmtpLine: "",
 		}
 	}
-	track, err := lksdk.NewLocalSampleTrack(codecCapability, sampleProvider)
+	track, err := lksdk.NewLocalSampleTrack(codecCapability)
 	if err != nil {
+		return "", err
+	}
+	if err := track.StartWrite(sampleProvider, nil); err != nil {
 		return "", err
 	}
 
