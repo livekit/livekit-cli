@@ -26,25 +26,46 @@ USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.5.3
+   0.6.0
 
 COMMANDS:
    create-token          creates an access token
-   create-room
-   list-rooms
-   delete-room
-   list-participants
-   get-participant
-   remove-participant
-   mute-track
-   update-subscriptions
+   create-room           
+   list-rooms            
+   delete-room           
+   list-participants     
+   get-participant       
+   remove-participant    
+   mute-track            
+   update-subscriptions  
    join-room             joins a room as a client
    start-recording       starts a recording with a deployed recorder service
-   end-recording
+   end-recording         
    help, h               Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --verbose      (default: false)
+   --help, -h     show help (default: false)
+   --version, -v  print the version (default: false)
 ```
 
+### Publishing to a room
+
+You can publish audio/video files as tracks to the room. These tracks files need to be encoded in supported codecs.
+Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
+
+```shell
+% ./bin/livekit-cli join-room --room yourroom --identity publisher \
+  --publish path/to/video.ivf \
+  --publish path/to/audio.ogg \
+  --fps 23.98
+```
+
+This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. 
+
 ### Recording
+
+Recording requires a [recorder-service](https://docs.livekit.io/guides/recording/#service) to be set up first
 
 ```shell
 % ./bin/livekit-cli start-recording --help
