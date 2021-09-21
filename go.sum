@@ -62,6 +62,8 @@ github.com/livekit/protocol v0.9.1 h1:Ebt17AbmDux5Exc6xmk2uixuQoYxqRMhXNQGeaJ7Xr
 github.com/livekit/protocol v0.9.1/go.mod h1:MEKn847Iu/2U8ClZyUmEm2oHn8k9fnSHy81Wv8kkSDo=
 github.com/livekit/server-sdk-go v0.6.4-0.20210920204647-b86db5df6621 h1:qPMPB44P5a5tB7kVAItn+uZLevv7Ot97givQH4cvF4Y=
 github.com/livekit/server-sdk-go v0.6.4-0.20210920204647-b86db5df6621/go.mod h1:byn6x4nvsVUmlkkNzxIAURvQMgdxZfTku18Y2qVE6bs=
+github.com/livekit/server-sdk-go v0.7.0 h1:mN2W2Jekl36/3MpbA++CP/W84+9rbSARvPM7JSWgBoQ=
+github.com/livekit/server-sdk-go v0.7.0/go.mod h1:byn6x4nvsVUmlkkNzxIAURvQMgdxZfTku18Y2qVE6bs=
 github.com/magefile/mage v1.11.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
 github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0/go.mod h1:fcEyUyXZXoV4Abw8DX0t7wyL8mCDxXyU4iAFZfT3IHw=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWbfPhv4DMiApHyliiK5xCTNVSPiaAs=
