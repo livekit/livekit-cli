@@ -25,7 +25,7 @@ jobs:
         env:
           CGO_ENABLED: "0"
         with:
-          platforms: 'linux/386, linux/amd64, linux/arm, linux/arm64, darwin/amd64, windows/amd64'
+          platforms: 'linux/amd64, linux/arm64, darwin/amd64, windows/amd64' # linux/386, linux/arm are not supported
           package: 'cmd/livekit-cli'
           dest: 'dist'
           name: 'livekit-cli'
@@ -35,7 +35,7 @@ jobs:
         env:
           CGO_ENABLED: "0"
         with:
-          platforms: 'linux/386, linux/amd64, linux/arm, linux/arm64, darwin/amd64, windows/amd64'
+          platforms: 'linux/amd64, linux/arm64, darwin/amd64, windows/amd64' # linux/386, linux/arm are not supported
           package: 'cmd/livekit-load-tester'
           dest: 'dist'
           name: 'livekit-load-tester'
