@@ -9,8 +9,8 @@ A command line utility to interact with LiveKit. `livekit-cli` allows you to:
 ## Installation
 
 ```shell
-$ go install github.com/livekit/livekit-cli/cmd/livekit-cli
-$ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester
+$ go install github.com/livekit/livekit-cli/cmd/livekit-cli@latest
+$ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester@latest
 ```
 
 ## Usage
