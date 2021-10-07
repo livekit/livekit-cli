@@ -31,6 +31,46 @@ var (
 			},
 		},
 		{
+			Name:   "add-output",
+			Before: createRecordingClient,
+			Action: addOutput,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				&cli.StringFlag{
+					Name:     "id",
+					Usage:    "id of the recording",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "url",
+					Usage:    "rtmp url to add",
+					Required: true,
+				},
+			},
+		},
+		{
+			Name:   "remove-output",
+			Before: createRecordingClient,
+			Action: removeOutput,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				&cli.StringFlag{
+					Name:     "id",
+					Usage:    "id of the recording",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "url",
+					Usage:    "rtmp url to remove",
+					Required: true,
+				},
+			},
+		},
+		{
 			Name:   "end-recording",
 			Before: createRecordingClient,
 			Action: endRecording,
@@ -82,13 +122,29 @@ func startRecording(c *cli.Context) error {
 		PrintJSON(req)
 	}
 
-	resp, err := recordingClient.StartRecording(context.Background(), req)
+	res, err := recordingClient.StartRecording(context.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Recording started. Recording ID: %s\n", resp.RecordingId)
+	fmt.Printf("Recording started. Recording ID: %s\n", res.RecordingId)
 	return nil
+}
+
+func addOutput(c *cli.Context) error {
+	_, err := recordingClient.AddOutput(context.Background(), &livekit.AddOutputRequest{
+		RecordingId: c.String("id"),
+		RtmpUrl:     c.String("url"),
+	})
+	return err
+}
+
+func removeOutput(c *cli.Context) error {
+	_, err := recordingClient.RemoveOutput(context.Background(), &livekit.RemoveOutputRequest{
+		RecordingId: c.String("id"),
+		RtmpUrl:     c.String("url"),
+	})
+	return err
 }
 
 func endRecording(c *cli.Context) error {
