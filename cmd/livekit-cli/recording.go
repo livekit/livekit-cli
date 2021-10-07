@@ -16,7 +16,7 @@ var (
 	RecordCommands = []*cli.Command{
 		{
 			Name:   "start-recording",
-			Usage:  "starts a recording with a deployed recorder service",
+			Usage:  "Starts a recording with a deployed recorder service",
 			Before: createRecordingClient,
 			Action: startRecording,
 			Flags: []cli.Flag{
@@ -32,6 +32,7 @@ var (
 		},
 		{
 			Name:   "add-output",
+			Usage:  "Adds an rtmp output url to a live recording",
 			Before: createRecordingClient,
 			Action: addOutput,
 			Flags: []cli.Flag{
@@ -52,6 +53,7 @@ var (
 		},
 		{
 			Name:   "remove-output",
+			Usage:  "Removes an rtmp output url from a live recording",
 			Before: createRecordingClient,
 			Action: removeOutput,
 			Flags: []cli.Flag{
@@ -72,6 +74,7 @@ var (
 		},
 		{
 			Name:   "end-recording",
+			Usage:  "Ends a recording",
 			Before: createRecordingClient,
 			Action: endRecording,
 			Flags: []cli.Flag{
