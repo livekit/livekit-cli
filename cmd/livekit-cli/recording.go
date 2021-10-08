@@ -25,7 +25,7 @@ var (
 				secretFlag,
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "StartRecordingRequest as json file (see https://github.com/livekit/protocol/blob/main/livekit_recording.proto#L16)",
+					Usage:    "StartRecordingRequest as json file (see https://github.com/livekit/livekit-recorder#request)",
 					Required: true,
 				},
 			},
@@ -45,7 +45,7 @@ var (
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "url",
+					Name:     "rtmp-url",
 					Usage:    "rtmp url to add",
 					Required: true,
 				},
@@ -66,7 +66,7 @@ var (
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "url",
+					Name:     "rtmp-url",
 					Usage:    "rtmp url to remove",
 					Required: true,
 				},
@@ -137,7 +137,7 @@ func startRecording(c *cli.Context) error {
 func addOutput(c *cli.Context) error {
 	_, err := recordingClient.AddOutput(context.Background(), &livekit.AddOutputRequest{
 		RecordingId: c.String("id"),
-		RtmpUrl:     c.String("url"),
+		RtmpUrl:     c.String("rtmp-url"),
 	})
 	return err
 }
@@ -145,7 +145,7 @@ func addOutput(c *cli.Context) error {
 func removeOutput(c *cli.Context) error {
 	_, err := recordingClient.RemoveOutput(context.Background(), &livekit.RemoveOutputRequest{
 		RecordingId: c.String("id"),
-		RtmpUrl:     c.String("url"),
+		RtmpUrl:     c.String("rtmp-url"),
 	})
 	return err
 }
