@@ -16,7 +16,7 @@ var (
 	RecordCommands = []*cli.Command{
 		{
 			Name:   "start-recording",
-			Usage:  "starts a recording with a deployed recorder service",
+			Usage:  "Starts a recording with a deployed recorder service",
 			Before: createRecordingClient,
 			Action: startRecording,
 			Flags: []cli.Flag{
@@ -25,13 +25,56 @@ var (
 				secretFlag,
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "StartRecordingRequest as json file (see https://github.com/livekit/protocol/blob/main/livekit_recording.proto#L16)",
+					Usage:    "StartRecordingRequest as json file (see https://github.com/livekit/livekit-recorder#request)",
+					Required: true,
+				},
+			},
+		},
+		{
+			Name:   "add-output",
+			Usage:  "Adds an rtmp output url to a live recording",
+			Before: createRecordingClient,
+			Action: addOutput,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				&cli.StringFlag{
+					Name:     "id",
+					Usage:    "id of the recording",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "rtmp-url",
+					Usage:    "rtmp url to add",
+					Required: true,
+				},
+			},
+		},
+		{
+			Name:   "remove-output",
+			Usage:  "Removes an rtmp output url from a live recording",
+			Before: createRecordingClient,
+			Action: removeOutput,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				&cli.StringFlag{
+					Name:     "id",
+					Usage:    "id of the recording",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "rtmp-url",
+					Usage:    "rtmp url to remove",
 					Required: true,
 				},
 			},
 		},
 		{
 			Name:   "end-recording",
+			Usage:  "Ends a recording",
 			Before: createRecordingClient,
 			Action: endRecording,
 			Flags: []cli.Flag{
@@ -82,13 +125,29 @@ func startRecording(c *cli.Context) error {
 		PrintJSON(req)
 	}
 
-	resp, err := recordingClient.StartRecording(context.Background(), req)
+	res, err := recordingClient.StartRecording(context.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Recording started. Recording ID: %s\n", resp.RecordingId)
+	fmt.Printf("Recording started. Recording ID: %s\n", res.RecordingId)
 	return nil
+}
+
+func addOutput(c *cli.Context) error {
+	_, err := recordingClient.AddOutput(context.Background(), &livekit.AddOutputRequest{
+		RecordingId: c.String("id"),
+		RtmpUrl:     c.String("rtmp-url"),
+	})
+	return err
+}
+
+func removeOutput(c *cli.Context) error {
+	_, err := recordingClient.RemoveOutput(context.Background(), &livekit.RemoveOutputRequest{
+		RecordingId: c.String("id"),
+		RtmpUrl:     c.String("rtmp-url"),
+	})
+	return err
 }
 
 func endRecording(c *cli.Context) error {

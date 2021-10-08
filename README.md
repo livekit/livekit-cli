@@ -26,7 +26,7 @@ USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.6.0
+   0.6.1
 
 COMMANDS:
    create-token          creates an access token
@@ -38,9 +38,11 @@ COMMANDS:
    remove-participant    
    mute-track            
    update-subscriptions  
-   join-room             joins a room as a client
-   start-recording       starts a recording with a deployed recorder service
-   end-recording         
+   join-room             Joins a room as a client
+   start-recording       Starts a recording with a deployed recorder service
+   add-output            Adds an rtmp output url to a live recording
+   remove-output         Removes an rtmp output url from a live recording
+   end-recording         Ends a recording         
    help, h               Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -65,7 +67,7 @@ This will publish the pre-encoded ivf and ogg files to the room, indicating vide
 
 ### Recording
 
-Recording requires a [recorder-service](https://docs.livekit.io/guides/recording/#service) to be set up first
+Recording requires a [recorder service](https://docs.livekit.io/guides/recording/#service) to be set up first.
 
 ```shell
 % ./bin/livekit-cli start-recording --help
@@ -79,23 +81,19 @@ OPTIONS:
    --url value         url to LiveKit instance (default: "http://localhost:7880") [$LIVEKIT_URL]
    --api-key value      [$LIVEKIT_API_KEY]
    --api-secret value   [$LIVEKIT_API_SECRET]
-   --request value     StartRecordingRequest as json file (see https://github.com/livekit/protocol/blob/main/livekit_recording.proto#L16)
+   --request value     StartRecordingRequest as json file (see https://github.com/livekit/livekit-recorder#request)
    --help, -h          show help (default: false)
 ```
 
-Sample `request` config file:
+Sample `request` json file:
 
 ```json
 {
-  "input": {
     "template": {
-      "layout": "speaker-dark",
-      "token": "token"
-    }
-  },
-  "output": {
-    "s3_path": "bucket/key"
-  }
+        "layout": "speaker-dark",
+        "token": "token"
+    },
+    "s3_url": "s3://bucket/path/filename.mp4"
 }
 ```
 
@@ -110,7 +108,7 @@ USAGE:
    livekit-load-tester [global options] command [command options] [arguments...]
 
 VERSION:
-   0.5.0
+   0.6.1
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
