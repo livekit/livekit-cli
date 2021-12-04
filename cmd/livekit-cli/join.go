@@ -8,7 +8,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/livekit/protocol/logger"
+	livekit "github.com/livekit/protocol/proto"
 	lksdk "github.com/livekit/server-sdk-go"
+	"github.com/pion/webrtc/v3"
 	"github.com/urfave/cli/v2"
 )
 
@@ -48,12 +51,24 @@ func joinRoom(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("connected to room", room.Name)
+	logger.Infow("connected to room", room.Name)
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	room.Callback.OnDataReceived = func(data []byte, rp *lksdk.RemoteParticipant) {
-
+		logger.Infow("received data", "bytes", len(data))
+	}
+	room.Callback.OnConnectionQualityChanged = func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
+		logger.Infow("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
+	}
+	room.Callback.OnRoomMetadataChanged = func(metadata string) {
+		logger.Infow("room metadata changed", "metadata", metadata)
+	}
+	room.Callback.OnTrackSubscribed = func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
+		logger.Infow("track subscribed", "kind", pub.Kind(), "trackID", pub.SID(), "source", pub.Source())
+	}
+	room.Callback.OnTrackUnsubscribed = func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
+		logger.Infow("track unsubscribed", "kind", pub.Kind(), "trackID", pub.SID(), "source", pub.Source())
 	}
 	files := c.StringSlice("publish")
 	for _, f := range files {
