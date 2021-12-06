@@ -147,7 +147,7 @@ func (t *LoadTester) Stop() {
 	t.room.Disconnect()
 }
 
-func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication lksdk.TrackPublication, rp *lksdk.RemoteParticipant) {
+func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	numSubscribed := 0
 	numTotal := 0
 	for _, p := range t.room.GetParticipants() {
