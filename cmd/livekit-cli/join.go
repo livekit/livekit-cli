@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
-	livekit "github.com/livekit/protocol/proto"
 	lksdk "github.com/livekit/server-sdk-go"
 	"github.com/pion/webrtc/v3"
 	"github.com/urfave/cli/v2"
