@@ -51,7 +51,7 @@ func joinRoom(c *cli.Context) error {
 		return err
 	}
 
-	logger.Infow("connected to room", room.Name)
+	logger.Infow("connected to room", "room", room.Name)
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -59,7 +59,7 @@ func joinRoom(c *cli.Context) error {
 		logger.Infow("received data", "bytes", len(data))
 	}
 	room.Callback.OnConnectionQualityChanged = func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
-		logger.Infow("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
+		logger.Debugw("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
 	}
 	room.Callback.OnRoomMetadataChanged = func(metadata string) {
 		logger.Infow("room metadata changed", "metadata", metadata)

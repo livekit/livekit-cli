@@ -6,7 +6,7 @@ require (
 	github.com/ggwhite/go-masker v1.0.4
 	github.com/go-logr/stdr v1.2.0
 	github.com/livekit/protocol v0.11.5
-	github.com/livekit/server-sdk-go v0.8.4
+	github.com/livekit/server-sdk-go v0.8.5-0.20220201081656-5d302e6e57a3
 	github.com/pion/webrtc/v3 v3.1.19
 	github.com/urfave/cli/v2 v2.3.0
 	google.golang.org/protobuf v1.27.1
