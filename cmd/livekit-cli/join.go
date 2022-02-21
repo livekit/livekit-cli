@@ -94,7 +94,9 @@ func joinRoom(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
-		if pub, err = room.LocalParticipant.PublishTrack(track, f); err != nil {
+		if pub, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+			Name: f,
+		}); err != nil {
 			return err
 		}
 	}
