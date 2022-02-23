@@ -26,15 +26,22 @@ type Params struct {
 	AudioBitrate uint32
 	VideoBitrate uint32
 	Duration     time.Duration
+	// number of seconds to spin up per second
+	NumPerSecond float64
 
 	TesterParams
 }
 
 func NewLoadTest(params Params) *LoadTest {
-	return &LoadTest{
+	l := &LoadTest{
 		Params:     params,
 		trackNames: make(map[string]string),
 	}
+	if l.Params.NumPerSecond == 0 {
+		// sane default
+		l.Params.NumPerSecond = 10
+	}
+	return l
 }
 
 func (t *LoadTest) Run() error {
@@ -176,6 +183,8 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 
 	testers := make([]*LoadTester, 0)
 	group := errgroup.Group{}
+	startedAt := time.Now()
+	numStarted := float64(0)
 	for i := 0; i < params.Publishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
 		testerParams.sequence = i
@@ -218,6 +227,17 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 			}
 			return nil
 		})
+		numStarted++
+
+		for {
+			secondsElapsed := float64(time.Now().Sub(startedAt)) / float64(time.Second)
+			startRate := numStarted / secondsElapsed
+			if startRate > params.NumPerSecond {
+				time.Sleep(time.Second)
+			} else {
+				break
+			}
+		}
 	}
 	if err := group.Wait(); err != nil {
 		return nil, err

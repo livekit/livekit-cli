@@ -26,17 +26,17 @@ type LoadTester struct {
 	stats *sync.Map
 }
 
-type Layout int
+type Layout string
 
 const (
 	// LayoutSpeaker - one user at 1280x720, 5 at 356x200
-	LayoutSpeaker Layout = 0
+	LayoutSpeaker Layout = "speaker"
 	// LayoutGrid3x3 - 9 participants at 400x225
-	LayoutGrid3x3 Layout = 1
+	LayoutGrid3x3 Layout = "3x3"
 	// LayoutGrid4x4 - 16 participants at 320x180
-	LayoutGrid4x4 Layout = 2
+	LayoutGrid4x4 Layout = "4x4"
 	// LayoutGrid5x5 - 25 participants at 256x144
-	LayoutGrid5x5 Layout = 3
+	LayoutGrid5x5 Layout = "5x5"
 
 	highWidth    = 1280
 	highHeight   = 720
@@ -45,6 +45,17 @@ const (
 	lowWidth     = 320
 	lowHeight    = 180
 )
+
+func LayoutFromString(str string) Layout {
+	if str == string(LayoutGrid3x3) {
+		return LayoutGrid3x3
+	} else if str == string(LayoutGrid4x4) {
+		return LayoutGrid4x4
+	} else if str == string(LayoutGrid5x5) {
+		return LayoutGrid5x5
+	}
+	return LayoutSpeaker
+}
 
 type TesterParams struct {
 	URL            string
