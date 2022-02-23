@@ -1,6 +1,9 @@
 package loadtester
 
-import "time"
+import (
+	"sync/atomic"
+	"time"
+)
 
 type testerStats struct {
 	expectedTracks int
@@ -10,16 +13,12 @@ type testerStats struct {
 type trackStats struct {
 	trackID string
 
-	startedAt time.Time
-	resets    int64
-	max       int64
-
+	startedAt    time.Time
 	packets      int64
 	bytes        int64
 	latency      int64
 	latencyCount int64
-	ooo          int64
-	missing      map[int64]bool
+	dropped      int64
 }
 
 type summary struct {
@@ -29,7 +28,6 @@ type summary struct {
 	bytes        int64
 	latency      int64
 	latencyCount int64
-	ooo          int64
 	dropped      int64
 	elapsed      time.Duration
 }
@@ -43,7 +41,6 @@ func getTestSummary(summaries map[string]*summary) *summary {
 		s.bytes += testerSummary.bytes
 		s.latency += testerSummary.latency
 		s.latencyCount += testerSummary.latencyCount
-		s.ooo += testerSummary.ooo
 		s.dropped += testerSummary.dropped
 		s.elapsed += testerSummary.elapsed
 	}
@@ -56,12 +53,11 @@ func getTesterSummary(testerStats *testerStats) *summary {
 	}
 	for _, trackStats := range testerStats.trackStats {
 		s.tracks++
-		s.packets += trackStats.packets
-		s.bytes += trackStats.bytes
-		s.latency += trackStats.latency
-		s.latencyCount += trackStats.latencyCount
-		s.ooo += trackStats.ooo
-		s.dropped += int64(len(trackStats.missing))
+		s.packets += atomic.LoadInt64(&trackStats.packets)
+		s.bytes += atomic.LoadInt64(&trackStats.bytes)
+		s.latency += atomic.LoadInt64(&trackStats.latency)
+		s.latencyCount += atomic.LoadInt64(&trackStats.latencyCount)
+		s.dropped += atomic.LoadInt64(&trackStats.dropped)
 		s.elapsed += time.Since(trackStats.startedAt)
 	}
 	return s

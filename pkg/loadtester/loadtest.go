@@ -5,11 +5,14 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"sort"
+	"strings"
 	"syscall"
 	"text/tabwriter"
 	"time"
 
 	lksdk "github.com/livekit/server-sdk-go"
+	"golang.org/x/sync/errgroup"
 )
 
 type LoadTest struct {
@@ -23,15 +26,22 @@ type Params struct {
 	AudioBitrate uint32
 	VideoBitrate uint32
 	Duration     time.Duration
+	// number of seconds to spin up per second
+	NumPerSecond float64
 
 	TesterParams
 }
 
 func NewLoadTest(params Params) *LoadTest {
-	return &LoadTest{
+	l := &LoadTest{
 		Params:     params,
 		trackNames: make(map[string]string),
 	}
+	if l.Params.NumPerSecond == 0 {
+		// sane default
+		l.Params.NumPerSecond = 10
+	}
+	return l
 }
 
 func (t *LoadTest) Run() error {
@@ -42,37 +52,53 @@ func (t *LoadTest) Run() error {
 
 	// tester results
 	summaries := make(map[string]*summary)
-	for name, testerStats := range stats {
+	names := make([]string, 0, len(stats))
+	for name := range stats {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		testerStats := stats[name]
 		summaries[name] = getTesterSummary(testerStats)
 
 		w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		_, _ = fmt.Fprintf(w, "\n%s\t| Track\t| Pkts\t| Bitrate\t| Latency\t| OOO\t| Dropped\n", name)
-		for _, trackStats := range testerStats.trackStats {
-			latency, ooo, dropped := formatStrings(
-				trackStats.packets, trackStats.latency, trackStats.latencyCount, trackStats.ooo, int64(len(trackStats.missing)))
+		_, _ = fmt.Fprintf(w, "\n%s\t| Track\t| Pkts\t| Bitrate\t| Latency\t| Dropped\n", name)
+		trackStatsSlice := make([]*trackStats, 0, len(testerStats.trackStats))
+		for _, ts := range testerStats.trackStats {
+			trackStatsSlice = append(trackStatsSlice, ts)
+		}
+		sort.Slice(trackStatsSlice, func(i, j int) bool {
+			nameI := t.trackNames[trackStatsSlice[i].trackID]
+			nameJ := t.trackNames[trackStatsSlice[j].trackID]
+			return strings.Compare(nameI, nameJ) < 0
+		})
+		for _, trackStats := range trackStatsSlice {
+			latency, dropped := formatStrings(
+				trackStats.packets, trackStats.latency, trackStats.latencyCount, trackStats.dropped)
 
 			trackName := t.trackNames[trackStats.trackID]
-			_, _ = fmt.Fprintf(w, "\t| %s %s\t| %d\t| %s\t| %s\t| %s\t| %s\n",
+			_, _ = fmt.Fprintf(w, "\t| %s %s\t| %d\t| %s\t| %s\t| %s\n",
 				trackName, trackStats.trackID, trackStats.packets,
-				formatBitrate(trackStats.bytes, time.Since(trackStats.startedAt)), latency, ooo, dropped)
+				formatBitrate(trackStats.bytes, time.Since(trackStats.startedAt)), latency, dropped)
 		}
 		_ = w.Flush()
 	}
 
 	// summary
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Latency\t| Total OOO\t| Total Dropped\n")
+	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Latency\t| Total Dropped\n")
 
-	for name, s := range summaries {
-		sLatency, sOOO, sDropped := formatStrings(s.packets, s.latency, s.latencyCount, s.ooo, s.dropped)
-		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
-			name, s.tracks, s.expected, sLatency, sOOO, sDropped)
+	for _, name := range names {
+		s := summaries[name]
+		sLatency, sDropped := formatStrings(s.packets, s.latency, s.latencyCount, s.dropped)
+		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\n",
+			name, s.tracks, s.expected, sLatency, sDropped)
 	}
 
 	s := getTestSummary(summaries)
-	sLatency, sOOO, sDropped := formatStrings(s.packets, s.latency, s.latencyCount, s.ooo, s.dropped)
-	_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
-		"Total", s.tracks, s.expected, sLatency, sOOO, sDropped)
+	sLatency, sDropped := formatStrings(s.packets, s.latency, s.latencyCount, s.dropped)
+	_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\n",
+		"Total", s.tracks, s.expected, sLatency, sDropped)
 
 	_ = w.Flush()
 	return nil
@@ -129,7 +155,7 @@ func (t *LoadTest) RunSuite() error {
 			for _, trackStats := range testerStats.trackStats {
 				tracks++
 				packets += trackStats.packets
-				dropped += int64(len(trackStats.missing))
+				dropped += trackStats.dropped
 				totalLatency += trackStats.latency
 				latencyCount += trackStats.latencyCount
 			}
@@ -156,6 +182,9 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	}
 
 	testers := make([]*LoadTester, 0)
+	group := errgroup.Group{}
+	startedAt := time.Now()
+	numStarted := float64(0)
 	for i := 0; i < params.Publishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
 		testerParams.sequence = i
@@ -174,25 +203,44 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 
 		tester := NewLoadTester(testerParams)
 		testers = append(testers, tester)
-		if err := tester.Start(); err != nil {
-			return nil, err
-		}
 
-		if i < params.Publishers {
-			audio, err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
-			if err != nil {
-				return nil, err
+		idx := i
+		group.Go(func() error {
+			if err := tester.Start(); err != nil {
+				return err
 			}
-			t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.sequence)
 
-			if params.VideoBitrate > 0 {
-				video, err := tester.PublishTrack("video", lksdk.TrackKindVideo, params.VideoBitrate)
+			if idx < params.Publishers {
+				audio, err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
 				if err != nil {
-					return nil, err
+					return err
 				}
-				t.trackNames[video] = fmt.Sprintf("%dV", testerParams.sequence)
+				t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.sequence)
+
+				if params.VideoBitrate > 0 {
+					video, err := tester.PublishTrack("video", lksdk.TrackKindVideo, params.VideoBitrate)
+					if err != nil {
+						return err
+					}
+					t.trackNames[video] = fmt.Sprintf("%dV", testerParams.sequence)
+				}
+			}
+			return nil
+		})
+		numStarted++
+
+		for {
+			secondsElapsed := float64(time.Now().Sub(startedAt)) / float64(time.Second)
+			startRate := numStarted / secondsElapsed
+			if startRate > params.NumPerSecond {
+				time.Sleep(time.Second)
+			} else {
+				break
 			}
 		}
+	}
+	if err := group.Wait(); err != nil {
+		return nil, err
 	}
 
 	done := make(chan os.Signal, 1)
@@ -292,10 +340,9 @@ func (t *LoadTest) FindMax(maxLatency time.Duration) error {
 			summary := getTestSummary(summaries)
 
 			latency := time.Duration(summary.latency / summary.latencyCount)
-			oooRate := formatPercentage(summary.ooo, summary.packets)
 			dropRate := formatPercentage(summary.dropped, summary.dropped+summary.packets)
-			_, _ = fmt.Fprintf(w, "%d\t| %d\t| %v\t| %s%%\t| %s%%\n",
-				i, summary.tracks, latency.Round(time.Microsecond*100), oooRate, dropRate)
+			_, _ = fmt.Fprintf(w, "%d\t| %d\t| %v\t| %s%%\n",
+				i, summary.tracks, latency.Round(time.Microsecond*100), dropRate)
 
 			// add more subs (or break)
 			next := measure

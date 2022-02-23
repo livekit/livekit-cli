@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/livekit/protocol/livekit"
+	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
 	"github.com/pion/webrtc/v3"
 
 	lksdk "github.com/livekit/server-sdk-go"
@@ -15,10 +17,44 @@ import (
 type LoadTester struct {
 	params TesterParams
 
+	lock    sync.Mutex
 	room    *lksdk.Room
 	running atomic.Value
+	// participant ID => quality
+	trackQualities map[string]livekit.VideoQuality
 
 	stats *sync.Map
+}
+
+type Layout string
+
+const (
+	// LayoutSpeaker - one user at 1280x720, 5 at 356x200
+	LayoutSpeaker Layout = "speaker"
+	// LayoutGrid3x3 - 9 participants at 400x225
+	LayoutGrid3x3 Layout = "3x3"
+	// LayoutGrid4x4 - 16 participants at 320x180
+	LayoutGrid4x4 Layout = "4x4"
+	// LayoutGrid5x5 - 25 participants at 256x144
+	LayoutGrid5x5 Layout = "5x5"
+
+	highWidth    = 1280
+	highHeight   = 720
+	mediumWidth  = 640
+	mediumHeight = 360
+	lowWidth     = 320
+	lowHeight    = 180
+)
+
+func LayoutFromString(str string) Layout {
+	if str == string(LayoutGrid3x3) {
+		return LayoutGrid3x3
+	} else if str == string(LayoutGrid4x4) {
+		return LayoutGrid4x4
+	} else if str == string(LayoutGrid5x5) {
+		return LayoutGrid5x5
+	}
+	return LayoutSpeaker
 }
 
 type TesterParams struct {
@@ -27,6 +63,7 @@ type TesterParams struct {
 	APISecret      string
 	Room           string
 	IdentityPrefix string
+	Layout         Layout
 
 	name           string
 	sequence       int
@@ -35,8 +72,9 @@ type TesterParams struct {
 
 func NewLoadTester(params TesterParams) *LoadTester {
 	return &LoadTester{
-		params: params,
-		stats:  &sync.Map{},
+		params:         params,
+		stats:          &sync.Map{},
+		trackQualities: make(map[string]livekit.VideoQuality),
 	}
 }
 
@@ -75,30 +113,47 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 	if !t.IsRunning() {
 		return "", nil
 	}
-	sampleProvider, err := lksdk.NewLoadTestProvider(bitrate)
-	if err != nil {
-		return "", err
-	}
 
-	var codecCapability webrtc.RTPCodecCapability
-	if kind == lksdk.TrackKindVideo {
-		codecCapability = webrtc.RTPCodecCapability{
-			MimeType:    webrtc.MimeTypeVP8,
-			ClockRate:   33,
-			SDPFmtpLine: "",
-			RTCPFeedback: []webrtc.RTCPFeedback{
-				{Type: webrtc.TypeRTCPFBNACK},
-				{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
-			},
+	if kind == lksdk.TrackKindAudio {
+		sampleProvider, err := NewLoadTestProvider(bitrate)
+		if err != nil {
+			return "", err
 		}
-	} else {
-		codecCapability = webrtc.RTPCodecCapability{
+		track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
 			MimeType:    webrtc.MimeTypeOpus,
 			ClockRate:   20,
 			SDPFmtpLine: "",
+		})
+		if err != nil {
+			return "", err
 		}
+		if err := track.StartWrite(sampleProvider, nil); err != nil {
+			return "", err
+		}
+
+		p, err := t.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+			Name: name,
+		})
+		if err != nil {
+			return "", err
+		}
+		return p.SID(), nil
 	}
-	track, err := lksdk.NewLocalSampleTrack(codecCapability)
+
+	// video
+	sampleProvider, err := NewLoadTestProvider(bitrate)
+	if err != nil {
+		return "", err
+	}
+	track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
+		MimeType:    webrtc.MimeTypeVP8,
+		ClockRate:   33,
+		SDPFmtpLine: "",
+		RTCPFeedback: []webrtc.RTCPFeedback{
+			{Type: webrtc.TypeRTCPFBNACK},
+			{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
+		},
+	})
 	if err != nil {
 		return "", err
 	}
@@ -106,7 +161,9 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 		return "", err
 	}
 
-	p, err := t.room.LocalParticipant.PublishTrack(track, name)
+	p, err := t.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+		Name: name,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -132,7 +189,6 @@ func (t *LoadTester) Reset() {
 		old := value.(*trackStats)
 		stats.Store(key, &trackStats{
 			trackID: old.trackID,
-			missing: make(map[int64]bool),
 		})
 		return true
 	})
@@ -147,7 +203,7 @@ func (t *LoadTester) Stop() {
 	t.room.Disconnect()
 }
 
-func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
+func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	numSubscribed := 0
 	numTotal := 0
 	for _, p := range t.room.GetParticipants() {
@@ -162,61 +218,98 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, publication *l
 
 	s := &trackStats{
 		trackID: track.ID(),
-		missing: make(map[int64]bool),
 	}
 	t.stats.Store(track.ID(), s)
-	fmt.Println("subscribed to track", t.room.LocalParticipant.Identity(), publication.SID(), publication.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
+	fmt.Println("subscribed to track", t.room.LocalParticipant.Identity(), pub.SID(), pub.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
 
 	// consume track
-	go t.consumeTrack(track)
+	go t.consumeTrack(track, rp)
+
+	if pub.Kind() != lksdk.TrackKindVideo {
+		return
+	}
+
+	// ensure it's using the right layer
+	qualityCounts := make(map[livekit.VideoQuality]int)
+	t.lock.Lock()
+	for _, q := range t.trackQualities {
+		if count, ok := qualityCounts[q]; ok {
+			qualityCounts[q] = count + 1
+		} else {
+			qualityCounts[q] = 1
+		}
+	}
+
+	targetQuality := livekit.VideoQuality_OFF
+	switch t.params.Layout {
+	case LayoutSpeaker:
+		if qualityCounts[livekit.VideoQuality_HIGH] == 0 {
+			targetQuality = livekit.VideoQuality_HIGH
+		} else if qualityCounts[livekit.VideoQuality_LOW] < 5 {
+			targetQuality = livekit.VideoQuality_LOW
+		}
+	case LayoutGrid3x3:
+		if qualityCounts[livekit.VideoQuality_MEDIUM] < 9 {
+			targetQuality = livekit.VideoQuality_MEDIUM
+		}
+	case LayoutGrid4x4:
+		if qualityCounts[livekit.VideoQuality_LOW] < 16 {
+			targetQuality = livekit.VideoQuality_LOW
+		}
+	case LayoutGrid5x5:
+		if qualityCounts[livekit.VideoQuality_LOW] < 25 {
+			targetQuality = livekit.VideoQuality_LOW
+		}
+	}
+	t.trackQualities[rp.SID()] = targetQuality
+	t.lock.Unlock()
+
+	// switch quality and/or enable/disable
+	switch targetQuality {
+	case livekit.VideoQuality_HIGH:
+		pub.SetVideoDimensions(highWidth, highHeight)
+	case livekit.VideoQuality_MEDIUM:
+		pub.SetVideoDimensions(mediumWidth, mediumHeight)
+	case livekit.VideoQuality_LOW:
+		fmt.Println("setting video resolution to low")
+		pub.SetVideoDimensions(lowWidth, lowHeight)
+	case livekit.VideoQuality_OFF:
+		pub.SetEnabled(false)
+	}
 }
 
-func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote) {
+func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, rp *lksdk.RemoteParticipant) {
+	rp.WritePLI(track.SSRC())
+
+	sb := samplebuilder.New(10, &depacketizer{}, track.Codec().ClockRate, samplebuilder.WithPacketDroppedHandler(func() {
+		value, _ := t.stats.Load(track.ID())
+		ts := value.(*trackStats)
+		atomic.AddInt64(&ts.dropped, 1)
+		rp.WritePLI(track.SSRC())
+	}))
+	dpkt := depacketizer{}
+	value, _ := t.stats.Load(track.ID())
+	ts := value.(*trackStats)
+	ts.startedAt = time.Now()
 	for {
 		pkt, _, err := track.ReadRTP()
 		if err != nil {
 			return
 		}
 
-		payload := pkt.Payload
+		sb.Push(pkt)
 
 		value, _ := t.stats.Load(track.ID())
 		ts := value.(*trackStats)
-
-		sentAt := int64(binary.LittleEndian.Uint64(payload[len(payload)-8:]))
-		latency := time.Now().UnixNano() - sentAt
-		if latency > 0 && latency < 1000000000 {
-			ts.latency += time.Now().UnixNano() - sentAt
-			ts.latencyCount++
-		}
-
-		if ts.max%65535 > 48000 && pkt.SequenceNumber < 16000 {
-			ts.resets++
-		}
-
-		expected := ts.max + 1
-		sequence := int64(pkt.SequenceNumber) + ts.resets*65536
-		// correct for when sequence just reset and then a high sequence number came late
-		if sequence > expected+32000 {
-			sequence -= 65536
-		}
-
-		if ts.packets == 0 {
-			ts.startedAt = time.Now()
-		} else if sequence != expected {
-			if ts.missing[sequence] {
-				delete(ts.missing, sequence)
-				ts.ooo++
-			} else {
-				for i := expected; i <= sequence; i++ {
-					ts.missing[i] = true
-				}
+		for _, p := range sb.PopPackets() {
+			atomic.AddInt64(&ts.packets, 1)
+			atomic.AddInt64(&ts.bytes, int64(len(p.Payload)))
+			if dpkt.IsPartitionTail(false, p.Payload) {
+				sentAt := int64(binary.LittleEndian.Uint64(p.Payload[len(p.Payload)-8:]))
+				latency := time.Now().UnixNano() - sentAt
+				atomic.AddInt64(&ts.latency, latency)
+				atomic.AddInt64(&ts.latencyCount, 1)
 			}
-		}
-		ts.packets++
-		ts.bytes += int64(len(payload))
-		if sequence > ts.max {
-			ts.max = sequence
 		}
 	}
 }
