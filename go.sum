@@ -119,8 +119,8 @@ github.com/lithammer/shortuuid/v3 v3.0.7 h1:trX0KTHy4Pbwo/6ia8fscyHoGA+mf1jWbPJV
 github.com/lithammer/shortuuid/v3 v3.0.7/go.mod h1:vMk8ke37EmiewwolSO1NLW8vP4ZaKlRuDIi8tWWmAts=
 github.com/livekit/protocol v0.11.13 h1:5iWXKTeFMfERpE/0ocoLUOQtPV1BKwas151nZm0YVt0=
 github.com/livekit/protocol v0.11.13/go.mod h1:YoHW9YbWbPnuVsgwBB4hAINKT+V68jmfh9zXBSSn6Wg=
-github.com/livekit/server-sdk-go v0.8.6-0.20220221051941-ec7bcdfe7a9a h1:6rv293UlXfrCNKy+QIOtMDI2eM3wCWjU8/oB98hhBoE=
-github.com/livekit/server-sdk-go v0.8.6-0.20220221051941-ec7bcdfe7a9a/go.mod h1:Zl9w36mB2EUQ3PjrnRYFlC10CfmGLffuvwJgi8FBMI8=
+github.com/livekit/server-sdk-go v0.8.6-0.20220223013843-3830f18e5ba3 h1:UbiaiufQzep6twZSX38zlEW64WnjyqqC71UXaBYUbCM=
+github.com/livekit/server-sdk-go v0.8.6-0.20220223013843-3830f18e5ba3/go.mod h1:Zl9w36mB2EUQ3PjrnRYFlC10CfmGLffuvwJgi8FBMI8=
 github.com/magefile/mage v1.11.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
 github.com/matttproud/golang_protobuf_extensions v1.0.1 h1:4hp9jkHxhMHkqkrB3Ix0jegS5sx/RkqARlsWZ6pIwiU=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=

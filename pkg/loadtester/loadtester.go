@@ -3,7 +3,6 @@ package loadtester
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -131,48 +130,27 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 	}
 
 	// video
-	var tracks []*lksdk.LocalSampleTrack
-
-	// assume 3 layers simulcast
-	for q := livekit.VideoQuality_HIGH; q >= livekit.VideoQuality_LOW; q-- {
-		sampleProvider, err := NewLoadTestProvider(bitrate / uint32(math.Pow(2, float64(q))))
-		if err != nil {
-			return "", err
-		}
-		layer := &livekit.VideoLayer{
-			Quality: q,
-		}
-		switch q {
-		case livekit.VideoQuality_HIGH:
-			layer.Width = highWidth
-			layer.Height = highHeight
-		case livekit.VideoQuality_MEDIUM:
-			layer.Width = mediumWidth
-			layer.Height = mediumHeight
-		case livekit.VideoQuality_LOW:
-			layer.Width = lowWidth
-			layer.Height = lowHeight
-		}
-		track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
-			MimeType:    webrtc.MimeTypeVP8,
-			ClockRate:   33,
-			SDPFmtpLine: "",
-			RTCPFeedback: []webrtc.RTCPFeedback{
-				{Type: webrtc.TypeRTCPFBNACK},
-				{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
-			},
-		}, lksdk.WithSimulcast(name, layer))
-		if err != nil {
-			return "", err
-		}
-		if err := track.StartWrite(sampleProvider, nil); err != nil {
-			return "", err
-		}
-
-		tracks = append(tracks, track)
+	sampleProvider, err := NewLoadTestProvider(bitrate)
+	if err != nil {
+		return "", err
+	}
+	track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
+		MimeType:    webrtc.MimeTypeVP8,
+		ClockRate:   33,
+		SDPFmtpLine: "",
+		RTCPFeedback: []webrtc.RTCPFeedback{
+			{Type: webrtc.TypeRTCPFBNACK},
+			{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if err := track.StartWrite(sampleProvider, nil); err != nil {
+		return "", err
 	}
 
-	p, err := t.room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
+	p, err := t.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
 		Name: name,
 	})
 	if err != nil {
