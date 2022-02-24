@@ -61,12 +61,12 @@ func main() {
 			&cli.Uint64Flag{
 				Name:  "video-bitrate",
 				Usage: "bitrate (bps) of video track to publish, 0 to disable",
-				Value: 1000000,
+				Value: 1500000,
 			},
 			&cli.Uint64Flag{
 				Name:  "audio-bitrate",
 				Usage: "bitrate (bps) of audio track to publish, 0 to disable",
-				Value: 20000,
+				Value: 10000,
 			},
 			&cli.Float64Flag{
 				Name:  "num-per-second",

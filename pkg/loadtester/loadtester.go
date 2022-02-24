@@ -3,6 +3,7 @@ package loadtester
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -140,29 +141,46 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 		return p.SID(), nil
 	}
 
-	// video
-	sampleProvider, err := NewLoadTestProvider(bitrate)
-	if err != nil {
-		return "", err
-	}
-	track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
-		MimeType:    webrtc.MimeTypeVP8,
-		ClockRate:   33,
-		SDPFmtpLine: "",
-		RTCPFeedback: []webrtc.RTCPFeedback{
-			{Type: webrtc.TypeRTCPFBNACK},
-			{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-	if err := track.StartWrite(sampleProvider, nil); err != nil {
-		return "", err
+	var tracks []*lksdk.LocalSampleTrack
+
+	// for video, publish three simulcast layers
+	for i := livekit.VideoQuality_LOW; i <= livekit.VideoQuality_HIGH; i++ {
+		// scale by 1, 2, 4
+		scaleBy := uint32(math.Pow(2, 2-float64(i)))
+		layer := &livekit.VideoLayer{
+			Quality: i,
+			// bitrate scales by /4, /16
+			Bitrate: bitrate / (scaleBy * scaleBy),
+			Width:   highWidth / scaleBy,
+			Height:  highHeight / scaleBy,
+		}
+
+		sampleProvider, err := NewLoadTestProvider(layer.Bitrate)
+		if err != nil {
+			return "", err
+		}
+
+		track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
+			MimeType:    webrtc.MimeTypeVP8,
+			ClockRate:   33,
+			SDPFmtpLine: "",
+			RTCPFeedback: []webrtc.RTCPFeedback{
+				{Type: webrtc.TypeRTCPFBNACK},
+				{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
+			},
+		}, lksdk.WithSimulcast("loadtest-video", layer))
+		if err != nil {
+			return "", err
+		}
+		if err := track.StartWrite(sampleProvider, nil); err != nil {
+			return "", err
+		}
+		tracks = append(tracks, track)
 	}
 
-	p, err := t.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
-		Name: name,
+	p, err := t.room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
+		Name:   name,
+		Source: livekit.TrackSource_CAMERA,
 	})
 	if err != nil {
 		return "", err
@@ -271,7 +289,6 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 	case livekit.VideoQuality_MEDIUM:
 		pub.SetVideoDimensions(mediumWidth, mediumHeight)
 	case livekit.VideoQuality_LOW:
-		fmt.Println("setting video resolution to low")
 		pub.SetVideoDimensions(lowWidth, lowHeight)
 	case livekit.VideoQuality_OFF:
 		pub.SetEnabled(false)

@@ -7,11 +7,13 @@ require (
 	github.com/go-logr/stdr v1.2.0
 	github.com/livekit/protocol v0.11.13
 	github.com/livekit/server-sdk-go v0.8.6-0.20220223014057-0169a734c07c
-	github.com/pion/webrtc/v3 v3.1.23
+	github.com/pion/webrtc/v3 v3.1.24-0.20220224064458-2a11ce2c400a
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/protobuf v1.27.1
 )
+
+replace github.com/livekit/server-sdk-go => ../server-sdk-go
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
