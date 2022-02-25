@@ -230,7 +230,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		numStarted++
 
 		for {
-			secondsElapsed := float64(time.Now().Sub(startedAt)) / float64(time.Second)
+			secondsElapsed := float64(time.Since(startedAt)) / float64(time.Second)
 			startRate := numStarted / secondsElapsed
 			if startRate > params.NumPerSecond {
 				time.Sleep(time.Second)
