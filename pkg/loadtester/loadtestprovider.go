@@ -17,14 +17,14 @@ type LoadTestProvider struct {
 }
 
 func NewLoadTestProvider(bitrate uint32) (*LoadTestProvider, error) {
-	bps := bitrate / 8 / 30
-	if bps < 8 {
+	bytesPerSample := bitrate / 8 / 30
+	if bytesPerSample < 8 {
 		return nil, errors.New("bitrate lower than minimum of 1920")
 	}
 
 	return &LoadTestProvider{
 		SampleDuration: time.Second / 30,
-		BytesPerSample: bps,
+		BytesPerSample: bytesPerSample,
 	}, nil
 }
 

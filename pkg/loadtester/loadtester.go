@@ -154,6 +154,7 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 			Width:   highWidth / scaleBy,
 			Height:  highHeight / scaleBy,
 		}
+		fmt.Println("using simulcast quality ", i, "bitrate", layer.Bitrate)
 
 		sampleProvider, err := NewLoadTestProvider(layer.Bitrate)
 		if err != nil {
