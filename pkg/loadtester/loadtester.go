@@ -132,12 +132,13 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 			SDPFmtpLine: "",
 		})
 	} else if kind == lksdk.TrackKindVideo {
-		loopProvider, err := provider2.ButterflyLooperForBitrate(bitrate)
+		var loopProvider *provider2.H264VideoLooper
+		loopProvider, err = provider2.ButterflyLooperForBitrate(bitrate)
 		if err != nil {
 			return "", err
 		}
-		track, err = lksdk.NewLocalSampleTrack(loopProvider.Codec())
 		sampleProvider = loopProvider
+		track, err = lksdk.NewLocalSampleTrack(loopProvider.Codec())
 	}
 	if err != nil {
 		return "", err
