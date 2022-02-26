@@ -1,10 +1,11 @@
-# LiveKit CLI
+# LiveKit CLI & Load Tester
 
-A command line utility to interact with LiveKit. `livekit-cli` allows you to:
+This package includes command line utilities that interacts with LiveKit. It allows you to:
 
-- Access LiveKit APIs, create, delete rooms, etc
 - Create access tokens
-- Join a room as a participant, verifying in-room events are getting fired
+- Access LiveKit APIs, create, delete rooms, etc
+- Join a room as a participant, inspecting in-room events
+- Perform load testing, efficiently simulating real-world load
 
 ## Installation
 
@@ -19,14 +20,11 @@ $ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester@latest
 
 ```shell
 % ./bin/livekit-cli --help
-NAME:
-   livekit-cli - CLI client to LiveKit
-
 USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.6.1
+   0.7.0
 
 COMMANDS:
    create-token          creates an access token
@@ -38,22 +36,24 @@ COMMANDS:
    remove-participant    
    mute-track            
    update-subscriptions  
-   join-room             Joins a room as a client
+   join-room             joins a room as a client
    start-recording       Starts a recording with a deployed recorder service
    add-output            Adds an rtmp output url to a live recording
    remove-output         Removes an rtmp output url from a live recording
-   end-recording         Ends a recording         
+   end-recording         Ends a recording
    help, h               Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --verbose      (default: false)
-   --help, -h     show help (default: false)
-   --version, -v  print the version (default: false)
 ```
 
 ### Publishing to a room
 
-You can publish audio/video files as tracks to the room. These tracks files need to be encoded in supported codecs.
+To publish a demo video as a participant's track, use the following:
+
+```shell
+% ./bin/livekit-cli join-room --room yourroom --identity publisher \
+  --publish-demo
+```
+
+You can publish your own audio/video files. These tracks files need to be encoded in supported codecs.
 Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
 
 ```shell

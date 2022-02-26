@@ -8,9 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	provider2 "github.com/livekit/livekit-cli/pkg/provider"
 	"github.com/livekit/protocol/livekit"
-	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
 	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v3/pkg/media/samplebuilder"
 
 	lksdk "github.com/livekit/server-sdk-go"
 )
@@ -65,6 +66,8 @@ type TesterParams struct {
 	Room           string
 	IdentityPrefix string
 	Layout         Layout
+	// true to subscribe to all published tracks
+	Subscribe bool
 
 	name           string
 	sequence       int
@@ -88,7 +91,7 @@ func (t *LoadTester) Start() error {
 		APISecret:           t.params.APISecret,
 		RoomName:            t.params.Room,
 		ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.sequence),
-	})
+	}, lksdk.WithAutoSubscribe(t.params.Subscribe))
 	if err != nil {
 		return err
 	}
@@ -115,61 +118,58 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 		return "", nil
 	}
 
+	var track *lksdk.LocalSampleTrack
+	var err error
+	var sampleProvider lksdk.SampleProvider
 	if kind == lksdk.TrackKindAudio {
-		sampleProvider, err := NewLoadTestProvider(bitrate)
+		sampleProvider, err = NewLoadTestProvider(bitrate)
 		if err != nil {
 			return "", err
 		}
-		track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
+		track, err = lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
 			MimeType:    webrtc.MimeTypeOpus,
 			ClockRate:   20,
 			SDPFmtpLine: "",
 		})
+	} else if kind == lksdk.TrackKindVideo {
+		loopProvider, err := provider2.ButterflyLooperForBitrate(bitrate)
 		if err != nil {
 			return "", err
 		}
-		if err := track.StartWrite(sampleProvider, nil); err != nil {
-			return "", err
-		}
-
-		p, err := t.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
-			Name: name,
-		})
-		if err != nil {
-			return "", err
-		}
-		return p.SID(), nil
+		track, err = lksdk.NewLocalSampleTrack(loopProvider.Codec())
+		sampleProvider = loopProvider
+	}
+	if err != nil {
+		return "", err
+	}
+	if err := track.StartWrite(sampleProvider, nil); err != nil {
+		return "", err
 	}
 
+	p, err := t.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+		Name: name,
+	})
+	if err != nil {
+		return "", err
+	}
+	return p.SID(), nil
+}
+
+func (t *LoadTester) PublishSimulcastTrack(name string, bitrate uint32) (string, error) {
 	var tracks []*lksdk.LocalSampleTrack
 
 	// for video, publish three simulcast layers
 	for i := livekit.VideoQuality_LOW; i <= livekit.VideoQuality_HIGH; i++ {
 		// scale by 1, 2, 4
 		scaleBy := uint32(math.Pow(2, 2-float64(i)))
-		layer := &livekit.VideoLayer{
-			Quality: i,
-			// bitrate scales by /4, /16
-			Bitrate: bitrate / (scaleBy * scaleBy),
-			Width:   highWidth / scaleBy,
-			Height:  highHeight / scaleBy,
-		}
-		fmt.Println("using simulcast quality ", i, "bitrate", layer.Bitrate)
-
-		sampleProvider, err := NewLoadTestProvider(layer.Bitrate)
+		sampleProvider, err := provider2.ButterflyLooperForBitrate(bitrate / (scaleBy * scaleBy))
 		if err != nil {
 			return "", err
 		}
+		layer := sampleProvider.ToLayer(i)
 
-		track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
-			MimeType:    webrtc.MimeTypeVP8,
-			ClockRate:   33,
-			SDPFmtpLine: "",
-			RTCPFeedback: []webrtc.RTCPFeedback{
-				{Type: webrtc.TypeRTCPFBNACK},
-				{Type: webrtc.TypeRTCPFBNACK, Parameter: "pli"},
-			},
-		}, lksdk.WithSimulcast("loadtest-video", layer))
+		track, err := lksdk.NewLocalSampleTrack(sampleProvider.Codec(),
+			lksdk.WithSimulcast("loadtest-video", layer))
 		if err != nil {
 			return "", err
 		}
@@ -299,13 +299,7 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, rp *lksdk.RemoteParticipant) {
 	rp.WritePLI(track.SSRC())
 
-	sb := samplebuilder.New(10, &depacketizer{}, track.Codec().ClockRate, samplebuilder.WithPacketDroppedHandler(func() {
-		value, _ := t.stats.Load(track.ID())
-		ts := value.(*trackStats)
-		atomic.AddInt64(&ts.dropped, 1)
-		rp.WritePLI(track.SSRC())
-	}))
-	dpkt := depacketizer{}
+	sb := samplebuilder.New(10, &depacketizer{}, track.Codec().ClockRate)
 	value, _ := t.stats.Load(track.ID())
 	ts := value.(*trackStats)
 	ts.startedAt = time.Now()
@@ -314,17 +308,25 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, rp *lksdk.RemotePar
 		if err != nil {
 			return
 		}
-
+		if pkt == nil {
+			continue
+		}
 		sb.Push(pkt)
 
 		value, _ := t.stats.Load(track.ID())
 		ts := value.(*trackStats)
-		for _, p := range sb.PopPackets() {
+		sample := sb.Pop()
+		if sample != nil {
 			atomic.AddInt64(&ts.packets, 1)
-			atomic.AddInt64(&ts.bytes, int64(len(p.Payload)))
-			if dpkt.IsPartitionTail(false, p.Payload) {
-				sentAt := int64(binary.LittleEndian.Uint64(p.Payload[len(p.Payload)-8:]))
-				latency := time.Now().UnixNano() - sentAt
+			atomic.AddInt64(&ts.bytes, int64(len(sample.Data)))
+			atomic.AddInt64(&ts.dropped, int64(sample.PrevDroppedPackets))
+			if sample.PrevDroppedPackets > 0 {
+				rp.WritePLI(track.SSRC())
+			}
+			sentAt := int64(binary.LittleEndian.Uint64(sample.Data[len(sample.Data)-8:]))
+			latency := time.Now().UnixNano() - sentAt
+			// check for correct values
+			if latency < 100*1000*1000 {
 				atomic.AddInt64(&ts.latency, latency)
 				atomic.AddInt64(&ts.latencyCount, 1)
 			}

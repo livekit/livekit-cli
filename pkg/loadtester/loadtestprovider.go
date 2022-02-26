@@ -83,12 +83,12 @@ func (d *depacketizer) IsPartitionTail(marker bool, payload []byte) bool {
 	if size < 10 {
 		return false
 	}
-	lastIdx := size - 1
+
 	// two 0 bytes followed by 8 bytes of ts
-	if payload[lastIdx-10] != 0 || payload[lastIdx-9] != 0 {
+	if payload[size-10] != 0 || payload[size-9] != 0 {
 		return false
 	}
 	// parse timestamp
-	ts := binary.LittleEndian.Uint64(payload[lastIdx-8:])
-	return ts > uint64(time.Now().Add(-time.Minute).UnixNano())
+	ts := binary.LittleEndian.Uint64(payload[size-8:])
+	return ts > uint64(time.Now().Add(-time.Minute).UnixNano()) && ts < uint64(time.Now().UnixNano())
 }

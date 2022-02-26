@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/go-logr/logr"
+	lksdk "github.com/livekit/server-sdk-go"
 	"github.com/urfave/cli/v2"
 
 	livekitcli "github.com/livekit/livekit-cli"
@@ -52,7 +56,7 @@ func main() {
 			},
 			&cli.IntFlag{
 				Name:  "subscribers",
-				Usage: "number of participants to join the room",
+				Usage: "number of participants that would subscribe to tracks",
 			},
 			&cli.StringFlag{
 				Name:  "identity-prefix",
@@ -61,7 +65,7 @@ func main() {
 			&cli.Uint64Flag{
 				Name:  "video-bitrate",
 				Usage: "bitrate (bps) of video track to publish, 0 to disable",
-				Value: 1500000,
+				Value: 1000000,
 			},
 			&cli.Uint64Flag{
 				Name:  "audio-bitrate",
@@ -71,7 +75,7 @@ func main() {
 			&cli.Float64Flag{
 				Name:  "num-per-second",
 				Usage: "number of testers to start every second",
-				Value: 10,
+				Value: 5,
 			},
 			&cli.StringFlag{
 				Name:  "layout",
@@ -79,8 +83,15 @@ func main() {
 				Value: "speaker",
 			},
 			&cli.BoolFlag{
+				Name:  "simulcast",
+				Usage: "true to enable simulcast publishing, only used when publishing video",
+			},
+			&cli.BoolFlag{
 				Name:  "run-all",
 				Usage: "runs set list of load test cases",
+			},
+			&cli.BoolFlag{
+				Name: "verbose",
 			},
 		},
 		Action:  loadTest,
@@ -93,38 +104,27 @@ func main() {
 }
 
 func loadTest(c *cli.Context) error {
-	_ = raiseULimit()
-	layout := loadtester.LayoutFromString(c.String("layout"))
-	if c.Bool("run-all") {
-		// leave out room name and pub/sub counts
-		test := loadtester.NewLoadTest(loadtester.Params{
-			AudioBitrate: uint32(c.Uint64("audio-bitrate")),
-			VideoBitrate: uint32(c.Uint64("video-bitrate")),
-			Duration:     c.Duration("duration"),
-			NumPerSecond: c.Float64("num-per-second"),
-			TesterParams: loadtester.TesterParams{
-				URL:            c.String("url"),
-				APIKey:         c.String("api-key"),
-				APISecret:      c.String("api-secret"),
-				IdentityPrefix: c.String("identity-prefix"),
-				Layout:         layout,
-			},
-		})
-
-		if test.Duration == 0 {
-			test.Duration = time.Second * 10
-		}
-
-		return test.RunSuite()
+	if !c.Bool("verbose") {
+		lksdk.SetLogger(logr.Discard())
 	}
+	_ = raiseULimit()
 
-	test := loadtester.NewLoadTest(loadtester.Params{
-		Publishers:   c.Int("publishers"),
-		Subscribers:  c.Int("subscribers"),
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		<-done
+		cancel()
+	}()
+
+	layout := loadtester.LayoutFromString(c.String("layout"))
+	params := loadtester.Params{
+		Context:      ctx,
 		AudioBitrate: uint32(c.Uint64("audio-bitrate")),
 		VideoBitrate: uint32(c.Uint64("video-bitrate")),
 		Duration:     c.Duration("duration"),
 		NumPerSecond: c.Float64("num-per-second"),
+		Simulcast:    c.Bool("simulcast"),
 		TesterParams: loadtester.TesterParams{
 			URL:            c.String("url"),
 			APIKey:         c.String("api-key"),
@@ -133,13 +133,22 @@ func loadTest(c *cli.Context) error {
 			IdentityPrefix: c.String("identity-prefix"),
 			Layout:         layout,
 		},
-	})
-
-	if maxLatency := c.Duration("max-latency"); maxLatency > 0 {
-		return test.FindMax(maxLatency)
-	} else {
-		return test.Run()
 	}
+
+	if c.Bool("run-all") {
+		// leave out room name and pub/sub counts
+		test := loadtester.NewLoadTest(params)
+		if test.Params.Duration == 0 {
+			test.Params.Duration = time.Second * 15
+		}
+		return test.RunSuite()
+	}
+
+	params.Publishers = c.Int("publishers")
+	params.Subscribers = c.Int("subscribers")
+	test := loadtester.NewLoadTest(params)
+
+	return test.Run()
 }
 
 func raiseULimit() error {
@@ -149,7 +158,7 @@ func raiseULimit() error {
 	if err != nil {
 		return err
 	}
-	rLimit.Max = 10000
-	rLimit.Cur = 10000
+	rLimit.Max = 65535
+	rLimit.Cur = 65535
 	return syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 }
