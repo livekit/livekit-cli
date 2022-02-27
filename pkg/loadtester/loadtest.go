@@ -12,6 +12,7 @@ import (
 	"time"
 
 	lksdk "github.com/livekit/server-sdk-go"
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -71,7 +72,7 @@ func (t *LoadTest) Run() error {
 		summaries[name] = getTesterSummary(testerStats)
 
 		w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		_, _ = fmt.Fprintf(w, "\n%s\t| Track\t| Pkts\t| Bitrate\t| Latency\t| Dropped\n", name)
+		_, _ = fmt.Fprintf(w, "\n%s\t| Track\t| Kind\t| Pkts\t| Bitrate\t| Latency\t| Dropped\n", name)
 		trackStatsSlice := make([]*trackStats, 0, len(testerStats.trackStats))
 		for _, ts := range testerStats.trackStats {
 			trackStatsSlice = append(trackStatsSlice, ts)
@@ -86,8 +87,8 @@ func (t *LoadTest) Run() error {
 				trackStats.packets, trackStats.latency, trackStats.latencyCount, trackStats.dropped)
 
 			trackName := t.trackNames[trackStats.trackID]
-			_, _ = fmt.Fprintf(w, "\t| %s %s\t| %d\t| %s\t| %s\t| %s\n",
-				trackName, trackStats.trackID, trackStats.packets,
+			_, _ = fmt.Fprintf(w, "\t| %s %s\t| %s\t| %d\t| %s\t| %s\t| %s\n",
+				trackName, trackStats.trackID, trackStats.kind, trackStats.packets,
 				formatBitrate(trackStats.bytes, time.Since(trackStats.startedAt)), latency, dropped)
 		}
 		_ = w.Flush()
@@ -218,7 +219,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
-				return err
+				return errors.Wrapf(err, "could not connect")
 			}
 
 			if isPublisher {

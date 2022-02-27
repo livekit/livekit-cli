@@ -3,6 +3,8 @@ package loadtester
 import (
 	"sync/atomic"
 	"time"
+
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 type testerStats struct {
@@ -11,8 +13,8 @@ type testerStats struct {
 }
 
 type trackStats struct {
-	trackID string
-
+	trackID      string
+	kind         lksdk.TrackKind
 	startedAt    time.Time
 	packets      int64
 	bytes        int64

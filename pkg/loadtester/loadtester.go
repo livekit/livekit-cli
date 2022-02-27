@@ -10,6 +10,8 @@ import (
 
 	provider2 "github.com/livekit/livekit-cli/pkg/provider"
 	"github.com/livekit/protocol/livekit"
+	"github.com/pion/rtp"
+	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media/samplebuilder"
 
@@ -238,12 +240,13 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 
 	s := &trackStats{
 		trackID: track.ID(),
+		kind:    pub.Kind(),
 	}
 	t.stats.Store(track.ID(), s)
 	fmt.Println("subscribed to track", t.room.LocalParticipant.Identity(), pub.SID(), pub.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
 
 	// consume track
-	go t.consumeTrack(track, rp)
+	go t.consumeTrack(track, pub, rp)
 
 	if pub.Kind() != lksdk.TrackKindVideo {
 		return
@@ -297,10 +300,16 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 	}
 }
 
-func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, rp *lksdk.RemoteParticipant) {
+func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	rp.WritePLI(track.SSRC())
 
-	sb := samplebuilder.New(10, &depacketizer{}, track.Codec().ClockRate)
+	var dpkt rtp.Depacketizer
+	if pub.Kind() == lksdk.TrackKindVideo {
+		dpkt = &codecs.H264Packet{}
+	} else {
+		dpkt = &depacketizer{}
+	}
+	sb := samplebuilder.New(25, dpkt, track.Codec().ClockRate)
 	value, _ := t.stats.Load(track.ID())
 	ts := value.(*trackStats)
 	ts.startedAt = time.Now()
@@ -314,10 +323,10 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, rp *lksdk.RemotePar
 		}
 		sb.Push(pkt)
 
-		value, _ := t.stats.Load(track.ID())
-		ts := value.(*trackStats)
 		sample := sb.Pop()
 		if sample != nil {
+			value, _ := t.stats.Load(track.ID())
+			ts := value.(*trackStats)
 			atomic.AddInt64(&ts.packets, 1)
 			atomic.AddInt64(&ts.bytes, int64(len(sample.Data)))
 			atomic.AddInt64(&ts.dropped, int64(sample.PrevDroppedPackets))
@@ -327,7 +336,7 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, rp *lksdk.RemotePar
 			sentAt := int64(binary.LittleEndian.Uint64(sample.Data[len(sample.Data)-8:]))
 			latency := time.Now().UnixNano() - sentAt
 			// check for correct values
-			if latency < 100*1000*1000 {
+			if latency < 100*1000*1000 && latency > 0 {
 				atomic.AddInt64(&ts.latency, latency)
 				atomic.AddInt64(&ts.latencyCount, 1)
 			}
