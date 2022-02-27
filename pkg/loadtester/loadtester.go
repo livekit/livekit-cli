@@ -4,12 +4,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
 	"github.com/pion/webrtc/v3"
+	"go.uber.org/atomic"
 
 	lksdk "github.com/livekit/server-sdk-go"
 )
@@ -19,7 +19,7 @@ type LoadTester struct {
 
 	lock    sync.Mutex
 	room    *lksdk.Room
-	running atomic.Value
+	running atomic.Bool
 	// participant ID => quality
 	trackQualities map[string]livekit.VideoQuality
 
@@ -103,10 +103,7 @@ func (t *LoadTester) Start() error {
 }
 
 func (t *LoadTester) IsRunning() bool {
-	if r, ok := t.running.Load().(bool); ok {
-		return r
-	}
-	return false
+	return t.running.Load()
 }
 
 func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uint32) (string, error) {
@@ -284,13 +281,13 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, rp *lksdk.RemotePar
 	sb := samplebuilder.New(10, &depacketizer{}, track.Codec().ClockRate, samplebuilder.WithPacketDroppedHandler(func() {
 		value, _ := t.stats.Load(track.ID())
 		ts := value.(*trackStats)
-		atomic.AddInt64(&ts.dropped, 1)
+		ts.dropped.Inc()
 		rp.WritePLI(track.SSRC())
 	}))
 	dpkt := depacketizer{}
 	value, _ := t.stats.Load(track.ID())
 	ts := value.(*trackStats)
-	ts.startedAt = time.Now()
+	ts.startedAt.Store(time.Now())
 	for {
 		pkt, _, err := track.ReadRTP()
 		if err != nil {
@@ -302,13 +299,13 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, rp *lksdk.RemotePar
 		value, _ := t.stats.Load(track.ID())
 		ts := value.(*trackStats)
 		for _, p := range sb.PopPackets() {
-			atomic.AddInt64(&ts.packets, 1)
-			atomic.AddInt64(&ts.bytes, int64(len(p.Payload)))
+			ts.packets.Inc()
+			ts.bytes.Add(int64(len(p.Payload)))
 			if dpkt.IsPartitionTail(false, p.Payload) {
 				sentAt := int64(binary.LittleEndian.Uint64(p.Payload[len(p.Payload)-8:]))
 				latency := time.Now().UnixNano() - sentAt
-				atomic.AddInt64(&ts.latency, latency)
-				atomic.AddInt64(&ts.latencyCount, 1)
+				ts.latency.Add(latency)
+				ts.latencyCount.Inc()
 			}
 		}
 	}

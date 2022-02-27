@@ -74,12 +74,12 @@ func (t *LoadTest) Run() error {
 		})
 		for _, trackStats := range trackStatsSlice {
 			latency, dropped := formatStrings(
-				trackStats.packets, trackStats.latency, trackStats.latencyCount, trackStats.dropped)
+				trackStats.packets.Load(), trackStats.latency.Load(), trackStats.latencyCount.Load(), trackStats.dropped.Load())
 
 			trackName := t.trackNames[trackStats.trackID]
 			_, _ = fmt.Fprintf(w, "\t| %s %s\t| %d\t| %s\t| %s\t| %s\n",
 				trackName, trackStats.trackID, trackStats.packets,
-				formatBitrate(trackStats.bytes, time.Since(trackStats.startedAt)), latency, dropped)
+				formatBitrate(trackStats.bytes.Load(), time.Since(trackStats.startedAt.Load())), latency, dropped)
 		}
 		_ = w.Flush()
 	}
@@ -154,10 +154,10 @@ func (t *LoadTest) RunSuite() error {
 		for _, testerStats := range stats {
 			for _, trackStats := range testerStats.trackStats {
 				tracks++
-				packets += trackStats.packets
-				dropped += trackStats.dropped
-				totalLatency += trackStats.latency
-				latencyCount += trackStats.latencyCount
+				packets += trackStats.packets.Load()
+				dropped += trackStats.dropped.Load()
+				totalLatency += trackStats.latency.Load()
+				latencyCount += trackStats.latencyCount.Load()
 			}
 		}
 		latency := time.Duration(totalLatency / latencyCount)
