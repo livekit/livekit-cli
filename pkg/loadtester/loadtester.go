@@ -10,10 +10,10 @@ import (
 
 	provider2 "github.com/livekit/livekit-cli/pkg/provider"
 	"github.com/livekit/protocol/livekit"
+	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"
-	"github.com/pion/webrtc/v3/pkg/media/samplebuilder"
 
 	lksdk "github.com/livekit/server-sdk-go"
 )
@@ -88,12 +88,22 @@ func (t *LoadTester) Start() error {
 	if t.IsRunning() {
 		return nil
 	}
-	room, err := lksdk.ConnectToRoom(t.params.URL, lksdk.ConnectInfo{
-		APIKey:              t.params.APIKey,
-		APISecret:           t.params.APISecret,
-		RoomName:            t.params.Room,
-		ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.sequence),
-	}, lksdk.WithAutoSubscribe(t.params.Subscribe))
+
+	var room *lksdk.Room
+	var err error
+	// make up to 3 reconnect attempts
+	for i := 0; i < 3; i++ {
+		room, err = lksdk.ConnectToRoom(t.params.URL, lksdk.ConnectInfo{
+			APIKey:              t.params.APIKey,
+			APISecret:           t.params.APISecret,
+			RoomName:            t.params.Room,
+			ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.sequence),
+		}, lksdk.WithAutoSubscribe(t.params.Subscribe))
+		if err == nil {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
 	if err != nil {
 		return err
 	}
@@ -102,7 +112,7 @@ func (t *LoadTester) Start() error {
 	t.running.Store(true)
 	room.Callback.OnTrackSubscribed = t.onTrackSubscribed
 	room.Callback.OnTrackSubscriptionFailed = func(sid string, rp *lksdk.RemoteParticipant) {
-		fmt.Printf("track subscription failed, sid:%v, rp:%v", sid, rp.Identity())
+		fmt.Printf("track subscription failed, sid:%v, rp:%v\n", sid, rp.Identity())
 	}
 
 	return nil
@@ -303,13 +313,24 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	rp.WritePLI(track.SSRC())
 
+	go func() {
+		if e := recover(); e != nil {
+			fmt.Println("caught panic in consumeTrack", e)
+		}
+	}()
+
 	var dpkt rtp.Depacketizer
 	if pub.Kind() == lksdk.TrackKindVideo {
 		dpkt = &codecs.H264Packet{}
 	} else {
 		dpkt = &depacketizer{}
 	}
-	sb := samplebuilder.New(25, dpkt, track.Codec().ClockRate)
+	sb := samplebuilder.New(100, dpkt, track.Codec().ClockRate, samplebuilder.WithPacketDroppedHandler(func() {
+		value, _ := t.stats.Load(track.ID())
+		ts := value.(*trackStats)
+		atomic.AddInt64(&ts.dropped, 1)
+		rp.WritePLI(track.SSRC())
+	}))
 	value, _ := t.stats.Load(track.ID())
 	ts := value.(*trackStats)
 	ts.startedAt = time.Now()
@@ -323,22 +344,19 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTr
 		}
 		sb.Push(pkt)
 
-		sample := sb.Pop()
-		if sample != nil {
+		for _, pkt := range sb.PopPackets() {
 			value, _ := t.stats.Load(track.ID())
 			ts := value.(*trackStats)
+			atomic.AddInt64(&ts.bytes, int64(len(pkt.Payload)))
 			atomic.AddInt64(&ts.packets, 1)
-			atomic.AddInt64(&ts.bytes, int64(len(sample.Data)))
-			atomic.AddInt64(&ts.dropped, int64(sample.PrevDroppedPackets))
-			if sample.PrevDroppedPackets > 0 {
-				rp.WritePLI(track.SSRC())
-			}
-			sentAt := int64(binary.LittleEndian.Uint64(sample.Data[len(sample.Data)-8:]))
-			latency := time.Now().UnixNano() - sentAt
-			// check for correct values
-			if latency < 100*1000*1000 && latency > 0 {
-				atomic.AddInt64(&ts.latency, latency)
-				atomic.AddInt64(&ts.latencyCount, 1)
+			if pub.Kind() == lksdk.TrackKindAudio && dpkt.IsPartitionTail(pkt.Marker, pkt.Payload) {
+				sentAt := int64(binary.LittleEndian.Uint64(pkt.Payload[len(pkt.Payload)-8:]))
+				latency := time.Now().UnixNano() - sentAt
+				// check for correct values
+				if latency < 100*1000*1000 && latency > 0 {
+					atomic.AddInt64(&ts.latency, latency)
+					atomic.AddInt64(&ts.latencyCount, 1)
+				}
 			}
 		}
 	}

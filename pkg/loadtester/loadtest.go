@@ -96,19 +96,25 @@ func (t *LoadTest) Run() error {
 
 	// summary
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Latency\t| Total Dropped\n")
+	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Bitrate\t| Latency\t| Total Dropped\n")
 
 	for _, name := range names {
 		s := summaries[name]
 		sLatency, sDropped := formatStrings(s.packets, s.latency, s.latencyCount, s.dropped)
-		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\n",
-			name, s.tracks, s.expected, sLatency, sDropped)
+		sBitrate := formatBitrate(s.bytes, s.elapsed)
+		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
+			name, s.tracks, s.expected, sBitrate, sLatency, sDropped)
 	}
 
 	s := getTestSummary(summaries)
 	sLatency, sDropped := formatStrings(s.packets, s.latency, s.latencyCount, s.dropped)
-	_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\n",
-		"Total", s.tracks, s.expected, sLatency, sDropped)
+	// avg bitrate per sub
+	sBitrate := fmt.Sprintf("%s (%s avg)",
+		formatBitrate(s.bytes, s.elapsed),
+		formatBitrate(s.bytes/int64(len(summaries)), s.elapsed),
+	)
+	_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
+		"Total", s.tracks, s.expected, sBitrate, sLatency, sDropped)
 
 	_ = w.Flush()
 	return nil
@@ -194,7 +200,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	}
 
 	testers := make([]*LoadTester, 0)
-	group := errgroup.Group{}
+	group, _ := errgroup.WithContext(t.Params.Context)
 	startedAt := time.Now()
 	numStarted := float64(0)
 	for i := 0; i < params.Publishers+params.Subscribers; i++ {
@@ -219,7 +225,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
-				return errors.Wrapf(err, "could not connect")
+				return errors.Wrapf(err, "could not connect %s", testerParams.name)
 			}
 
 			if isPublisher {
@@ -253,6 +259,9 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		for {
 			secondsElapsed := float64(time.Since(startedAt)) / float64(time.Second)
 			startRate := numStarted / secondsElapsed
+			if err := t.Params.Context.Err(); err != nil {
+				return nil, err
+			}
 			if startRate > params.NumPerSecond {
 				time.Sleep(time.Second)
 			} else {
