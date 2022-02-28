@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	provider2 "github.com/livekit/livekit-cli/pkg/provider"
@@ -14,6 +13,7 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"
+	"go.uber.org/atomic"
 
 	lksdk "github.com/livekit/server-sdk-go"
 )
@@ -23,7 +23,7 @@ type LoadTester struct {
 
 	lock    sync.Mutex
 	room    *lksdk.Room
-	running atomic.Value
+	running atomic.Bool
 	// participant ID => quality
 	trackQualities map[string]livekit.VideoQuality
 
@@ -119,10 +119,7 @@ func (t *LoadTester) Start() error {
 }
 
 func (t *LoadTester) IsRunning() bool {
-	if r, ok := t.running.Load().(bool); ok {
-		return r
-	}
-	return false
+	return t.running.Load()
 }
 
 func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uint32) (string, error) {
@@ -328,12 +325,12 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTr
 	sb := samplebuilder.New(100, dpkt, track.Codec().ClockRate, samplebuilder.WithPacketDroppedHandler(func() {
 		value, _ := t.stats.Load(track.ID())
 		ts := value.(*trackStats)
-		atomic.AddInt64(&ts.dropped, 1)
+		ts.dropped.Inc()
 		rp.WritePLI(track.SSRC())
 	}))
 	value, _ := t.stats.Load(track.ID())
 	ts := value.(*trackStats)
-	ts.startedAt = time.Now()
+	ts.startedAt.Store(time.Now())
 	for {
 		pkt, _, err := track.ReadRTP()
 		if err != nil {
@@ -347,15 +344,15 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTr
 		for _, pkt := range sb.PopPackets() {
 			value, _ := t.stats.Load(track.ID())
 			ts := value.(*trackStats)
-			atomic.AddInt64(&ts.bytes, int64(len(pkt.Payload)))
-			atomic.AddInt64(&ts.packets, 1)
+			ts.bytes.Add(int64(len(pkt.Payload)))
+			ts.packets.Inc()
 			if pub.Kind() == lksdk.TrackKindAudio && dpkt.IsPartitionTail(pkt.Marker, pkt.Payload) {
 				sentAt := int64(binary.LittleEndian.Uint64(pkt.Payload[len(pkt.Payload)-8:]))
 				latency := time.Now().UnixNano() - sentAt
 				// check for correct values
 				if latency < 100*1000*1000 && latency > 0 {
-					atomic.AddInt64(&ts.latency, latency)
-					atomic.AddInt64(&ts.latencyCount, 1)
+					ts.latency.Add(latency)
+					ts.latencyCount.Inc()
 				}
 			}
 		}

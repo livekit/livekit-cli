@@ -1,10 +1,10 @@
 package loadtester
 
 import (
-	"sync/atomic"
 	"time"
 
 	lksdk "github.com/livekit/server-sdk-go"
+	"go.uber.org/atomic"
 )
 
 type testerStats struct {
@@ -15,12 +15,12 @@ type testerStats struct {
 type trackStats struct {
 	trackID      string
 	kind         lksdk.TrackKind
-	startedAt    time.Time
-	packets      int64
-	bytes        int64
-	latency      int64
-	latencyCount int64
-	dropped      int64
+	startedAt    atomic.Time
+	packets      atomic.Int64
+	bytes        atomic.Int64
+	latency      atomic.Int64
+	latencyCount atomic.Int64
+	dropped      atomic.Int64
 }
 
 type summary struct {
@@ -57,12 +57,12 @@ func getTesterSummary(testerStats *testerStats) *summary {
 	}
 	for _, trackStats := range testerStats.trackStats {
 		s.tracks++
-		s.packets += atomic.LoadInt64(&trackStats.packets)
-		s.bytes += atomic.LoadInt64(&trackStats.bytes)
-		s.latency += atomic.LoadInt64(&trackStats.latency)
-		s.latencyCount += atomic.LoadInt64(&trackStats.latencyCount)
-		s.dropped += atomic.LoadInt64(&trackStats.dropped)
-		elapsed := time.Since(trackStats.startedAt)
+		s.packets += trackStats.packets.Load()
+		s.bytes += trackStats.bytes.Load()
+		s.latency += trackStats.latency.Load()
+		s.latencyCount += trackStats.latencyCount.Load()
+		s.dropped += trackStats.dropped.Load()
+		elapsed := time.Since(trackStats.startedAt.Load())
 		if elapsed > s.elapsed {
 			s.elapsed = elapsed
 		}
