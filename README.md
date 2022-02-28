@@ -1,10 +1,11 @@
-# LiveKit CLI
+# LiveKit CLI & Load Tester
 
-A command line utility to interact with LiveKit. `livekit-cli` allows you to:
+This package includes command line utilities that interacts with LiveKit. It allows you to:
 
-- Access LiveKit APIs, create, delete rooms, etc
 - Create access tokens
-- Join a room as a participant, verifying in-room events are getting fired
+- Access LiveKit APIs, create, delete rooms, etc
+- Join a room as a participant, inspecting in-room events
+- Perform load testing, efficiently simulating real-world load
 
 ## Installation
 
@@ -19,14 +20,11 @@ $ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester@latest
 
 ```shell
 % ./bin/livekit-cli --help
-NAME:
-   livekit-cli - CLI client to LiveKit
-
 USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.6.1
+   0.7.0
 
 COMMANDS:
    create-token          creates an access token
@@ -38,22 +36,30 @@ COMMANDS:
    remove-participant    
    mute-track            
    update-subscriptions  
-   join-room             Joins a room as a client
+   join-room             joins a room as a client
    start-recording       Starts a recording with a deployed recorder service
    add-output            Adds an rtmp output url to a live recording
    remove-output         Removes an rtmp output url from a live recording
-   end-recording         Ends a recording         
+   end-recording         Ends a recording
    help, h               Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --verbose      (default: false)
-   --help, -h     show help (default: false)
-   --version, -v  print the version (default: false)
 ```
 
 ### Publishing to a room
 
-You can publish audio/video files as tracks to the room. These tracks files need to be encoded in supported codecs.
+#### Demo video track 
+
+To publish a demo video as a participant's track, use the following.
+
+```shell
+% ./bin/livekit-cli join-room --room yourroom --identity publisher \
+  --publish-demo
+```
+
+It'll publish the video track with Simulcast, at 720p, 360p, and 180p.
+
+#### Publish files as tracks
+
+You can publish your own audio/video files. These tracks files need to be encoded in supported codecs.
 Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
 
 ```shell
@@ -99,56 +105,92 @@ Sample `request` json file:
 
 ## livekit-load-tester
 
+Load testing utility for LiveKit. This tool is quite versatile and is able to simulate various types of load.
+
+### Quickstart
+
+This guide requires a LiveKit server instance to be set up. You can start a load tester with:
+
 ```shell
-% ./bin/livekit-load-tester --help
-NAME:
-   livekit-cli - LiveKit load tester
-
-USAGE:
-   livekit-load-tester [global options] command [command options] [arguments...]
-
-VERSION:
-   0.6.1
-
-COMMANDS:
-   help, h  Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --url value              URL of LiveKit server [$LIVEKIT_URL]
-   --api-key value           [$LIVEKIT_API_KEY]
-   --api-secret value        [$LIVEKIT_API_SECRET]
-   --room value             name of the room
-   --duration value         duration to run, 1m, 1h, 0 to keep running (default: 0s)
-   --max-latency value      max number of subscribers without going above max latency (e.g. 400ms) (default: 0s)
-   --publishers value       number of participants to publish tracks to the room (default: 0)
-   --subscribers value      number of participants to join the room (default: 0)
-   --identity-prefix value  identity prefix of tester participants, defaults to a random name
-   --video-bitrate value    bitrate (bps) of video track to publish, 0 to disable (default: 1000000)
-   --audio-bitrate value    bitrate (bps) of audio track to publish, 0 to disable (default: 20000)
-   --expected-tracks value  total number of expected tracks in the room; use for multi-node tests (default: 0)
-   --run-all                runs set list of load test cases (default: false)
-   --help, -h               show help (default: false)
-   --version, -v            print the version (default: false)
+$ ./livekit-load-tester --url wss://<your-url> --api-key <key> --api-secret <secret> --room test-room --publishers 8
 ```
 
-### Load test results
+This simulates 8 video publishers to the room, with no subscribers. Video tracks are published with simulcast, at 720p, 360p, and 180p.
 
-* server: gke, c2-standard-8
-* network latency: 7.3ms
-* audio bitrate: 20kbps
-* video bitrate: 1mbps
+#### Watch the test
 
-| Publishers | Subscribers | Audio | Video | Tracks | Latency | Packet loss
-|---         |---          |---    |---    |---     |---      |---
-| 1          | 1           | Yes   | No    | 1      | 47.9ms  | 0.0000%
-| 9          | 0           | Yes   | No    | 72     | 46.6ms  | 0.0000%
-| 9          | 0           | Yes   | Yes   | 144    | 47.2ms  | 0.0059%
-| 9          | 100         | Yes   | No    | 972    | 47.6ms  | 0.0002%
-| 50         | 0           | Yes   | No    | 2450   | 47.7ms  | 0.0005%
-| 9          | 100         | Yes   | Yes   | 1944   | 104.8ms | 0.0001%
-| 9          | 500         | Yes   | No    | 4572   | 186.9ms | 0.0010%
-| 50         | 0           | Yes   | Yes   | 4900   | 324.8ms | 0.0034%
-| 9          | 500         | Yes   | Yes   | 9144   | 363.2ms | 0.0002%
-| 100        | 0           | Yes   | No    | 9900   | 368.9ms | 0.0002%
-| 5          | 1000        | Yes   | Yes   | 10040  | 381.8ms | 0.0002%
-| 10         | 1000        | Yes   | No    | 10090  | 384.0ms | 0.0001%
+Use `livekit-cli` to generate a token so you can log into the room:
+
+```shell
+$ ./livekit-cli create-token --join --api-key <key> --api-secret <secret> --room test-room --identity user  
+```
+
+Head over to the [example web client](https://example.livekit.io) and paste in the token, you can see the fake tracks published by the load tester.
+
+![Load tester screenshot](misc/load-test-screenshot.png?raw=true)
+
+### Configuring system settings
+
+Prior to running the load tests, it's important to ensure file descriptor limits have been set correctly. See [Performance tuning docs](https://docs.livekit.io/deploy/test-monitor#performance-tuning).
+
+On the machine that you are running the load tester, they would also need to be applied:
+
+```shell
+ulimit -n 65535
+sysctl -w net.core.rmem_max=25165824
+sysctl -w fs.file-max=2097152
+sysctl -w net.core.somaxconn=65535
+sysctl -w net.core.netdev_max_backlog=65535
+sysctl -w net.core.optmem_max=25165824
+sysctl -w net.core.rmem_max=25165824
+sysctl -w net.core.wmem_max=25165824
+sysctl -w net.core.rmem_default=1048576
+sysctl -w net.core.wmem_default=1048576
+```
+
+### Simulate subscribers
+
+You can run the load tester on multiple machines, each simulating any number of publishers or subscribers.
+
+LiveKit SFU's performance is [measured by](https://docs.livekit.io/deploy/benchmark#measuring-performance) the amount
+of data sent to its subscribers.
+
+Use this command to simulate a load test of 5 publishers, and 500 subscribers:
+
+```shell
+$ ./livekit-load-tester --url wss://<your-instance> \
+  --api-key <key> \
+  --api-secret <secret> \
+  --duration 1m \
+  --publishers 5 \
+  --subscribers 500
+```
+
+It'll print a report like the following. (this run was performed on a 16 core, 32GB memory VM)
+
+```
+Summary | Tester  | Tracks    | Bitrate                 | Latency     | Total Dropped
+        | Sub 0   | 10/10     | 2.2mbps                 | 78.86829ms  | 0 (0%)
+        | Sub 1   | 10/10     | 2.2mbps                 | 78.796542ms | 0 (0%)
+        | Sub 10  | 10/10     | 2.2mbps                 | 79.361718ms | 0 (0%)
+        | Sub 100 | 10/10     | 2.2mbps                 | 79.449831ms | 0 (0%)
+        | Sub 101 | 10/10     | 2.2mbps                 | 80.001104ms | 0 (0%)
+        | Sub 102 | 10/10     | 2.2mbps                 | 79.833373ms | 0 (0%)
+...
+        | Sub 97  | 10/10     | 2.2mbps                 | 79.374331ms | 0 (0%)
+        | Sub 98  | 10/10     | 2.2mbps                 | 79.418816ms | 0 (0%)
+        | Sub 99  | 10/10     | 2.2mbps                 | 79.768568ms | 0 (0%)
+        | Total   | 5000/5000 | 678.7mbps (1.4mbps avg) | 79.923769ms | 0 (0%)
+```
+
+### Advanced usage
+
+You could customize various parameters of the test such as
+
+* --publishers: number of publishers
+* --subscribers: number of publishers
+* --audio-bitrate: bitrate of audio track
+* --video-bitrate: bitrate of video track
+* --no-simulcast: disables simulcast
+* --num-per-second: number of testers to start each second
+* --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)

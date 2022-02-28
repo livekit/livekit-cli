@@ -17,14 +17,14 @@ type LoadTestProvider struct {
 }
 
 func NewLoadTestProvider(bitrate uint32) (*LoadTestProvider, error) {
-	bps := bitrate / 8 / 30
-	if bps < 8 {
+	bytesPerSample := bitrate / 8 / 30
+	if bytesPerSample < 8 {
 		return nil, errors.New("bitrate lower than minimum of 1920")
 	}
 
 	return &LoadTestProvider{
 		SampleDuration: time.Second / 30,
-		BytesPerSample: bps,
+		BytesPerSample: bytesPerSample,
 	}, nil
 }
 
@@ -83,15 +83,12 @@ func (d *depacketizer) IsPartitionTail(marker bool, payload []byte) bool {
 	if size < 10 {
 		return false
 	}
-	lastIdx := size - 1
+
 	// two 0 bytes followed by 8 bytes of ts
-	if payload[lastIdx-10] != 0 || payload[lastIdx-9] != 0 {
+	if payload[size-10] != 0 || payload[size-9] != 0 {
 		return false
 	}
 	// parse timestamp
-	ts := binary.LittleEndian.Uint64(payload[lastIdx-8:])
-	if ts > uint64(time.Now().Add(-time.Minute).UnixNano()) {
-		return true
-	}
-	return false
+	ts := binary.LittleEndian.Uint64(payload[size-8:])
+	return ts > uint64(time.Now().Add(-time.Minute).UnixNano()) && ts < uint64(time.Now().UnixNano())
 }
