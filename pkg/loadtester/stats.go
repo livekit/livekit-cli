@@ -3,6 +3,8 @@ package loadtester
 import (
 	"sync/atomic"
 	"time"
+
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 type testerStats struct {
@@ -11,8 +13,8 @@ type testerStats struct {
 }
 
 type trackStats struct {
-	trackID string
-
+	trackID      string
+	kind         lksdk.TrackKind
 	startedAt    time.Time
 	packets      int64
 	bytes        int64
@@ -42,7 +44,9 @@ func getTestSummary(summaries map[string]*summary) *summary {
 		s.latency += testerSummary.latency
 		s.latencyCount += testerSummary.latencyCount
 		s.dropped += testerSummary.dropped
-		s.elapsed += testerSummary.elapsed
+		if testerSummary.elapsed > s.elapsed {
+			s.elapsed = testerSummary.elapsed
+		}
 	}
 	return s
 }
@@ -58,7 +62,10 @@ func getTesterSummary(testerStats *testerStats) *summary {
 		s.latency += atomic.LoadInt64(&trackStats.latency)
 		s.latencyCount += atomic.LoadInt64(&trackStats.latencyCount)
 		s.dropped += atomic.LoadInt64(&trackStats.dropped)
-		s.elapsed += time.Since(trackStats.startedAt)
+		elapsed := time.Since(trackStats.startedAt)
+		if elapsed > s.elapsed {
+			s.elapsed = elapsed
+		}
 	}
 	return s
 }

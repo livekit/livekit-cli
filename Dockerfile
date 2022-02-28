@@ -1,5 +1,9 @@
 FROM golang:1.17-alpine as builder
 
+ARG TARGETPLATFORM
+ARG TARGETARCH
+RUN echo building for "$TARGETPLATFORM"
+
 WORKDIR /workspace
 
 # Copy the Go Modules manifests
@@ -14,7 +18,7 @@ COPY cmd/ cmd/
 COPY pkg/ pkg/
 COPY version.go version.go
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o livekit-load-tester ./cmd/livekit-load-tester
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH GO111MODULE=on go build -a -o livekit-load-tester ./cmd/livekit-load-tester
 
 FROM alpine
 
