@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -77,18 +78,27 @@ func joinRoom(c *cli.Context) error {
 	}
 
 	if c.Bool("publish-demo") {
-		provider, err := provider2.ButterflyLooper(720)
-		if err != nil {
-			return err
+		var tracks []*lksdk.LocalSampleTrack
+		for q := livekit.VideoQuality_LOW; q <= livekit.VideoQuality_HIGH; q++ {
+			height := 180 * int(math.Pow(2, float64(q)))
+			provider, err := provider2.ButterflyLooper(height)
+			if err != nil {
+				return err
+			}
+			track, err := lksdk.NewLocalSampleTrack(provider.Codec(),
+				lksdk.WithSimulcast("demo-video", provider.ToLayer(q)),
+			)
+			fmt.Println("simulcast layer", provider.ToLayer(q))
+			if err != nil {
+				return err
+			}
+			if err = track.StartWrite(provider, nil); err != nil {
+				return err
+			}
+			tracks = append(tracks, track)
 		}
-		track, err := lksdk.NewLocalSampleTrack(provider.Codec())
-		if err != nil {
-			return err
-		}
-		if err = track.StartWrite(provider, nil); err != nil {
-			return err
-		}
-		_, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+
+		_, err = room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
 			Name: "demo",
 		})
 		if err != nil {

@@ -48,6 +48,10 @@ func NewLoadTest(params Params) *LoadTest {
 	if l.Params.NumPerSecond > 10 {
 		l.Params.NumPerSecond = 10
 	}
+	if l.Params.Publishers == 0 && l.Params.Subscribers == 0 {
+		l.Params.Publishers = 1
+		l.Params.Subscribers = 1
+	}
 	return l
 }
 
@@ -92,6 +96,10 @@ func (t *LoadTest) Run() error {
 				formatBitrate(trackStats.bytes, time.Since(trackStats.startedAt)), latency, dropped)
 		}
 		_ = w.Flush()
+	}
+
+	if len(summaries) == 0 {
+		return nil
 	}
 
 	// summary
@@ -198,6 +206,9 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	if params.VideoBitrate > 0 {
 		expectedTracks *= 2
 	}
+
+	fmt.Printf("Starting load test with %d publishers, %d subscribers, room: %s\n",
+		t.Params.Publishers, t.Params.Subscribers, t.Params.Room)
 
 	testers := make([]*LoadTester, 0)
 	group, _ := errgroup.WithContext(t.Params.Context)

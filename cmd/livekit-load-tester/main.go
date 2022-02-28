@@ -46,10 +46,6 @@ func main() {
 				Usage: "duration to run, 1m, 1h, 0 to keep running",
 				Value: 0,
 			},
-			&cli.DurationFlag{
-				Name:  "max-latency",
-				Usage: "max number of subscribers without going above max latency (e.g. 400ms)",
-			},
 			&cli.IntFlag{
 				Name:  "publishers",
 				Usage: "number of participants to publish tracks to the room",
@@ -83,8 +79,8 @@ func main() {
 				Value: "speaker",
 			},
 			&cli.BoolFlag{
-				Name:  "simulcast",
-				Usage: "true to enable simulcast publishing, only used when publishing video",
+				Name:  "no-simulcast",
+				Usage: "disables simulcast publishing",
 			},
 			&cli.BoolFlag{
 				Name:  "run-all",
@@ -124,7 +120,7 @@ func loadTest(c *cli.Context) error {
 		VideoBitrate: uint32(c.Uint64("video-bitrate")),
 		Duration:     c.Duration("duration"),
 		NumPerSecond: c.Float64("num-per-second"),
-		Simulcast:    c.Bool("simulcast"),
+		Simulcast:    !c.Bool("no-simulcast"),
 		TesterParams: loadtester.TesterParams{
 			URL:            c.String("url"),
 			APIKey:         c.String("api-key"),
