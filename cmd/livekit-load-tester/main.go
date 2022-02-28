@@ -146,15 +146,3 @@ func loadTest(c *cli.Context) error {
 
 	return test.Run()
 }
-
-func raiseULimit() error {
-	// raise ulimit if on Mac
-	var rLimit syscall.Rlimit
-	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-	if err != nil {
-		return err
-	}
-	rLimit.Max = 65535
-	rLimit.Cur = 65535
-	return syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
-}

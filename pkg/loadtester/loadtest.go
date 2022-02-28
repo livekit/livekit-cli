@@ -240,16 +240,19 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 			}
 
 			if isPublisher {
-				audio, err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
-				if err != nil {
-					return err
+				if params.AudioBitrate > 0 {
+					audio, err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
+					if err != nil {
+						return err
+					}
+					t.lock.Lock()
+					t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.sequence)
+					t.lock.Unlock()
 				}
-				t.lock.Lock()
-				t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.sequence)
-				t.lock.Unlock()
 
 				if params.VideoBitrate > 0 {
 					var video string
+					var err error
 					if params.Simulcast {
 						video, err = tester.PublishSimulcastTrack("video-simulcast", params.VideoBitrate)
 					} else {
