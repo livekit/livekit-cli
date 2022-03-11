@@ -6,8 +6,9 @@ import (
 	"os"
 
 	"github.com/go-logr/stdr"
-	"github.com/livekit/protocol/logger"
 	"github.com/urfave/cli/v2"
+
+	"github.com/livekit/protocol/logger"
 
 	livekit_cli "github.com/livekit/livekit-cli"
 )
@@ -30,6 +31,7 @@ func main() {
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, JoinCommands...)
 	app.Commands = append(app.Commands, RecordCommands...)
+	app.Commands = append(app.Commands, EgressCommands...)
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Println(err)

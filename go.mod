@@ -12,6 +12,7 @@ require (
 	github.com/pion/webrtc/v3 v3.1.25-0.20220225075517-37e16a3b15a3
 	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli/v2 v2.3.0
+	go.uber.org/atomic v1.9.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/protobuf v1.27.1
 )
@@ -54,7 +55,6 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/thoas/go-funk v0.9.0 // indirect
 	github.com/twitchtv/twirp v8.1.0+incompatible // indirect
-	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
