@@ -27,6 +27,7 @@ var (
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "StartEgressRequest as json file (see https://github.com/livekit/livekit-recorder#request)",
@@ -164,9 +165,13 @@ func startEgress(c *cli.Context) error {
 }
 
 func listEgress(c *cli.Context) error {
-	_, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
+	res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
 		RoomName: c.String("room"),
 	})
+
+	for _, item := range res.Items {
+		fmt.Printf("%v (%v)\n", item.EgressId, item.Status)
+	}
 	return err
 }
 
