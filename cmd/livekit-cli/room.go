@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/ggwhite/go-masker"
@@ -10,12 +11,15 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const roomCategory = "RoomService"
+
 var (
 	RoomCommands = []*cli.Command{
 		{
-			Name:   "create-room",
-			Before: createRoomClient,
-			Action: createRoom,
+			Name:     "create-room",
+			Before:   createRoomClient,
+			Action:   createRoom,
+			Category: roomCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				&cli.StringFlag{
@@ -33,9 +37,10 @@ var (
 			},
 		},
 		{
-			Name:   "list-rooms",
-			Before: createRoomClient,
-			Action: listRooms,
+			Name:     "list-rooms",
+			Before:   createRoomClient,
+			Action:   listRooms,
+			Category: roomCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
@@ -43,20 +48,10 @@ var (
 			},
 		},
 		{
-			Name:   "delete-room",
-			Before: createRoomClient,
-			Action: deleteRoom,
-			Flags: []cli.Flag{
-				roomFlag,
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
-			},
-		},
-		{
-			Name:   "list-participants",
-			Before: createRoomClient,
-			Action: listParticipants,
+			Name:     "delete-room",
+			Before:   createRoomClient,
+			Action:   deleteRoom,
+			Category: roomCategory,
 			Flags: []cli.Flag{
 				roomFlag,
 				urlFlag,
@@ -65,21 +60,22 @@ var (
 			},
 		},
 		{
-			Name:   "get-participant",
-			Before: createRoomClient,
-			Action: getParticipant,
+			Name:     "list-participants",
+			Before:   createRoomClient,
+			Action:   listParticipants,
+			Category: roomCategory,
 			Flags: []cli.Flag{
 				roomFlag,
-				identityFlag,
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
 			},
 		},
 		{
-			Name:   "remove-participant",
-			Before: createRoomClient,
-			Action: removeParticipant,
+			Name:     "get-participant",
+			Before:   createRoomClient,
+			Action:   getParticipant,
+			Category: roomCategory,
 			Flags: []cli.Flag{
 				roomFlag,
 				identityFlag,
@@ -89,9 +85,43 @@ var (
 			},
 		},
 		{
-			Name:   "mute-track",
-			Before: createRoomClient,
-			Action: muteTrack,
+			Name:     "remove-participant",
+			Before:   createRoomClient,
+			Action:   removeParticipant,
+			Category: roomCategory,
+			Flags: []cli.Flag{
+				roomFlag,
+				identityFlag,
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+			},
+		},
+		{
+			Name:     "update-participant",
+			Before:   createRoomClient,
+			Action:   updateParticipant,
+			Category: roomCategory,
+			Flags: []cli.Flag{
+				roomFlag,
+				identityFlag,
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				&cli.StringFlag{
+					Name: "metadata",
+				},
+				&cli.StringFlag{
+					Name:  "permissions",
+					Usage: "JSON describing participant permissions (existing values for unset fields)",
+				},
+			},
+		},
+		{
+			Name:     "mute-track",
+			Before:   createRoomClient,
+			Action:   muteTrack,
+			Category: roomCategory,
 			Flags: []cli.Flag{
 				roomFlag,
 				identityFlag,
@@ -110,9 +140,10 @@ var (
 			},
 		},
 		{
-			Name:   "update-subscriptions",
-			Before: createRoomClient,
-			Action: updateSubscriptions,
+			Name:     "update-subscriptions",
+			Before:   createRoomClient,
+			Action:   updateSubscriptions,
+			Category: roomCategory,
 			Flags: []cli.Flag{
 				roomFlag,
 				identityFlag,
@@ -206,8 +237,7 @@ func listParticipants(c *cli.Context) error {
 }
 
 func getParticipant(c *cli.Context) error {
-	roomName := c.String("room")
-	identity := c.String("identity")
+	roomName, identity := participantInfoFromCli(c)
 	res, err := roomClient.GetParticipant(context.Background(), &livekit.RoomParticipantIdentity{
 		Room:     roomName,
 		Identity: identity,
@@ -221,9 +251,49 @@ func getParticipant(c *cli.Context) error {
 	return nil
 }
 
+func updateParticipant(c *cli.Context) error {
+	roomName, identity := participantInfoFromCli(c)
+	metadata := c.String("metadata")
+	permissions := c.String("permissions")
+	if metadata == "" && permissions == "" {
+		return fmt.Errorf("either metadata or permissions must be set")
+	}
+
+	req := &livekit.UpdateParticipantRequest{
+		Room:     roomName,
+		Identity: identity,
+		Metadata: metadata,
+	}
+	if permissions != "" {
+		// load existing participant
+		participant, err := roomClient.GetParticipant(c.Context, &livekit.RoomParticipantIdentity{
+			Room:     roomName,
+			Identity: identity,
+		})
+		if err != nil {
+			return err
+		}
+
+		req.Permission = participant.Permission
+		if req.Permission != nil {
+			if err = json.Unmarshal([]byte(permissions), req.Permission); err != nil {
+				return err
+			}
+		}
+	}
+
+	fmt.Println("updating participant...")
+	PrintJSON(req)
+	if _, err := roomClient.UpdateParticipant(c.Context, req); err != nil {
+		return err
+	}
+	fmt.Println("participant updated.")
+
+	return nil
+}
+
 func removeParticipant(c *cli.Context) error {
-	roomName := c.String("room")
-	identity := c.String("identity")
+	roomName, identity := participantInfoFromCli(c)
 	_, err := roomClient.RemoveParticipant(context.Background(), &livekit.RoomParticipantIdentity{
 		Room:     roomName,
 		Identity: identity,
@@ -238,8 +308,7 @@ func removeParticipant(c *cli.Context) error {
 }
 
 func muteTrack(c *cli.Context) error {
-	roomName := c.String("room")
-	identity := c.String("identity")
+	roomName, identity := participantInfoFromCli(c)
 	trackSid := c.String("track")
 	_, err := roomClient.MutePublishedTrack(context.Background(), &livekit.MuteRoomTrackRequest{
 		Room:     roomName,
@@ -260,8 +329,7 @@ func muteTrack(c *cli.Context) error {
 }
 
 func updateSubscriptions(c *cli.Context) error {
-	roomName := c.String("room")
-	identity := c.String("identity")
+	roomName, identity := participantInfoFromCli(c)
 	trackSids := c.StringSlice("track")
 	_, err := roomClient.UpdateSubscriptions(context.Background(), &livekit.UpdateSubscriptionsRequest{
 		Room:      roomName,
@@ -279,4 +347,8 @@ func updateSubscriptions(c *cli.Context) error {
 	}
 	fmt.Println(verb, "tracks: ", trackSids)
 	return nil
+}
+
+func participantInfoFromCli(c *cli.Context) (string, string) {
+	return c.String("room"), c.String("identity")
 }

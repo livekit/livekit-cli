@@ -11,9 +11,10 @@ import (
 var (
 	TokenCommands = []*cli.Command{
 		{
-			Name:   "create-token",
-			Usage:  "creates an access token",
-			Action: createToken,
+			Name:     "create-token",
+			Usage:    "creates an access token",
+			Action:   createToken,
+			Category: "Token",
 			Flags: []cli.Flag{
 				apiKeyFlag,
 				secretFlag,

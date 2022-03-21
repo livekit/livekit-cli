@@ -12,13 +12,16 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+const recordingCategory = "Recording"
+
 var (
 	RecordCommands = []*cli.Command{
 		{
-			Name:   "start-recording",
-			Usage:  "Starts a recording with a deployed recorder service",
-			Before: createRecordingClient,
-			Action: startRecording,
+			Name:     "start-recording",
+			Usage:    "Starts a recording with a deployed recorder service",
+			Before:   createRecordingClient,
+			Action:   startRecording,
+			Category: recordingCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
@@ -31,10 +34,11 @@ var (
 			},
 		},
 		{
-			Name:   "add-output",
-			Usage:  "Adds an rtmp output url to a live recording",
-			Before: createRecordingClient,
-			Action: addOutput,
+			Name:     "add-output",
+			Usage:    "Adds an rtmp output url to a live recording",
+			Before:   createRecordingClient,
+			Action:   addOutput,
+			Category: recordingCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
@@ -52,10 +56,11 @@ var (
 			},
 		},
 		{
-			Name:   "remove-output",
-			Usage:  "Removes an rtmp output url from a live recording",
-			Before: createRecordingClient,
-			Action: removeOutput,
+			Name:     "remove-output",
+			Usage:    "Removes an rtmp output url from a live recording",
+			Before:   createRecordingClient,
+			Action:   removeOutput,
+			Category: recordingCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
@@ -73,10 +78,11 @@ var (
 			},
 		},
 		{
-			Name:   "end-recording",
-			Usage:  "Ends a recording",
-			Before: createRecordingClient,
-			Action: endRecording,
+			Name:     "end-recording",
+			Usage:    "Ends a recording",
+			Before:   createRecordingClient,
+			Action:   endRecording,
+			Category: recordingCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
