@@ -6,9 +6,10 @@ import (
 	"fmt"
 
 	"github.com/ggwhite/go-masker"
+	"github.com/urfave/cli/v2"
+
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go"
-	"github.com/urfave/cli/v2"
 )
 
 const roomCategory = "RoomService"
@@ -22,13 +23,14 @@ var (
 			Category: roomCategory,
 			Flags: []cli.Flag{
 				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				verboseFlag,
 				&cli.StringFlag{
 					Name:     "name",
 					Usage:    "name of the room",
 					Required: true,
 				},
-				apiKeyFlag,
-				secretFlag,
 				&cli.StringFlag{
 					Name:     "recording-config",
 					Usage:    "path to json recording config file",
@@ -45,6 +47,7 @@ var (
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
 			},
 		},
 		{
@@ -53,10 +56,11 @@ var (
 			Action:   deleteRoom,
 			Category: roomCategory,
 			Flags: []cli.Flag{
-				roomFlag,
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
+				roomFlag,
 			},
 		},
 		{
@@ -65,10 +69,11 @@ var (
 			Action:   listParticipants,
 			Category: roomCategory,
 			Flags: []cli.Flag{
-				roomFlag,
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
+				roomFlag,
 			},
 		},
 		{
@@ -77,11 +82,12 @@ var (
 			Action:   getParticipant,
 			Category: roomCategory,
 			Flags: []cli.Flag{
-				roomFlag,
-				identityFlag,
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
+				roomFlag,
+				identityFlag,
 			},
 		},
 		{
@@ -90,11 +96,12 @@ var (
 			Action:   removeParticipant,
 			Category: roomCategory,
 			Flags: []cli.Flag{
-				roomFlag,
-				identityFlag,
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
+				roomFlag,
+				identityFlag,
 			},
 		},
 		{
@@ -103,11 +110,12 @@ var (
 			Action:   updateParticipant,
 			Category: roomCategory,
 			Flags: []cli.Flag{
-				roomFlag,
-				identityFlag,
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
+				roomFlag,
+				identityFlag,
 				&cli.StringFlag{
 					Name: "metadata",
 				},
@@ -123,6 +131,10 @@ var (
 			Action:   muteTrack,
 			Category: roomCategory,
 			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				verboseFlag,
 				roomFlag,
 				identityFlag,
 				&cli.StringFlag{
@@ -134,9 +146,6 @@ var (
 					Name:  "muted",
 					Usage: "set to true to mute, false to unmute",
 				},
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
 			},
 		},
 		{
@@ -145,6 +154,10 @@ var (
 			Action:   updateSubscriptions,
 			Category: roomCategory,
 			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				verboseFlag,
 				roomFlag,
 				identityFlag,
 				&cli.StringSliceFlag{
@@ -156,9 +169,6 @@ var (
 					Name:  "subscribe",
 					Usage: "set to true to subscribe, otherwise it'll unsubscribe",
 				},
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
 			},
 		},
 	}

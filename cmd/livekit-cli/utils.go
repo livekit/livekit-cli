@@ -37,6 +37,10 @@ var (
 		Usage:    "identity of participant",
 		Required: true,
 	}
+	verboseFlag = &cli.BoolFlag{
+		Name:     "verbose",
+		Required: false,
+	}
 )
 
 func PrintJSON(obj interface{}) {

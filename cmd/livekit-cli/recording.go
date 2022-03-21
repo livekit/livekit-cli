@@ -6,10 +6,11 @@ import (
 	"io/ioutil"
 
 	"github.com/ggwhite/go-masker"
-	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/livekit/protocol/livekit"
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 const recordingCategory = "Recording"
@@ -26,6 +27,7 @@ var (
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "StartRecordingRequest as json file (see https://github.com/livekit/livekit-recorder#request)",
@@ -43,6 +45,7 @@ var (
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "id of the recording",
@@ -65,6 +68,7 @@ var (
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "id of the recording",
@@ -87,6 +91,7 @@ var (
 				urlFlag,
 				apiKeyFlag,
 				secretFlag,
+				verboseFlag,
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "id of the recording",
