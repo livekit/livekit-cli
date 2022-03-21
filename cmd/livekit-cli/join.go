@@ -20,9 +20,10 @@ import (
 var (
 	JoinCommands = []*cli.Command{
 		{
-			Name:   "join-room",
-			Usage:  "joins a room as a client",
-			Action: joinRoom,
+			Name:     "join-room",
+			Usage:    "joins a room as a participant",
+			Action:   joinRoom,
+			Category: "Participant",
 			Flags: []cli.Flag{
 				urlFlag,
 				roomFlag,

@@ -13,13 +13,16 @@ import (
 	lksdk "github.com/livekit/server-sdk-go"
 )
 
+const egressCategory = "Egress"
+
 var (
 	EgressCommands = []*cli.Command{
 		{
-			Name:   "start-egress",
-			Usage:  "Start egress",
-			Before: createEgressClient,
-			Action: startEgress,
+			Name:     "start-egress",
+			Usage:    "Start egress",
+			Before:   createEgressClient,
+			Action:   startEgress,
+			Category: egressCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
@@ -32,10 +35,11 @@ var (
 			},
 		},
 		{
-			Name:   "list-egress",
-			Usage:  "List all active egress",
-			Before: createEgressClient,
-			Action: listEgress,
+			Name:     "list-egress",
+			Usage:    "List all active egress",
+			Before:   createEgressClient,
+			Action:   listEgress,
+			Category: egressCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
@@ -48,10 +52,11 @@ var (
 			},
 		},
 		{
-			Name:   "update-layout",
-			Usage:  "Updates layout for a live web composite egress",
-			Before: createEgressClient,
-			Action: updateLayout,
+			Name:     "update-layout",
+			Usage:    "Updates layout for a live web composite egress",
+			Before:   createEgressClient,
+			Action:   updateLayout,
+			Category: egressCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
@@ -69,10 +74,11 @@ var (
 			},
 		},
 		{
-			Name:   "update-stream",
-			Usage:  "Adds or removes rtmp output urls from a live stream",
-			Before: createEgressClient,
-			Action: updateStream,
+			Name:     "update-stream",
+			Usage:    "Adds or removes rtmp output urls from a live stream",
+			Before:   createEgressClient,
+			Action:   updateStream,
+			Category: egressCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,
@@ -95,10 +101,11 @@ var (
 			},
 		},
 		{
-			Name:   "stop-egress",
-			Usage:  "Stop egress",
-			Before: createEgressClient,
-			Action: stopEgress,
+			Name:     "stop-egress",
+			Usage:    "Stop egress",
+			Before:   createEgressClient,
+			Action:   stopEgress,
+			Category: egressCategory,
 			Flags: []cli.Flag{
 				urlFlag,
 				apiKeyFlag,

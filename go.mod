@@ -6,8 +6,9 @@ require (
 	github.com/ggwhite/go-masker v1.0.4
 	github.com/go-logr/logr v1.2.0
 	github.com/go-logr/stdr v1.2.0
-	github.com/livekit/protocol v0.11.14-0.20220223195254-d8c251e13231
-	github.com/livekit/server-sdk-go v0.9.1
+	// TODO: update versions after merge
+	github.com/livekit/protocol v0.11.15-0.20220320074808-41056286643d
+	github.com/livekit/server-sdk-go v0.9.2-0.20220321055731-4dfa4494c0b8
 	github.com/pion/rtp v1.7.4
 	github.com/pion/webrtc/v3 v3.1.25-0.20220225075517-37e16a3b15a3
 	github.com/pkg/errors v0.9.1
