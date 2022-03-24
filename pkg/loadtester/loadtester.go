@@ -97,7 +97,7 @@ func (t *LoadTester) Start() error {
 			APIKey:              t.params.APIKey,
 			APISecret:           t.params.APISecret,
 			RoomName:            t.params.Room,
-			ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.sequence),
+			ParticipantIdentity: fmt.Sprintf("%d", t.params.sequence),
 		}, lksdk.WithAutoSubscribe(t.params.Subscribe))
 		if err == nil {
 			break
