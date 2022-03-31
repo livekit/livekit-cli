@@ -54,7 +54,7 @@ var (
 		},
 		{
 			Name:     "update-layout",
-			Usage:    "Updates layout for a live web composite egress",
+			Usage:    "Updates layout for a live room composite egress",
 			Before:   createEgressClient,
 			Action:   updateLayout,
 			Category: egressCategory,
@@ -145,7 +145,7 @@ func startEgress(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	req := &livekit.WebCompositeEgressRequest{}
+	req := &livekit.RoomCompositeEgressRequest{}
 	err = protojson.Unmarshal(reqBytes, req)
 	if err != nil {
 		return err
@@ -155,7 +155,7 @@ func startEgress(c *cli.Context) error {
 		PrintJSON(req)
 	}
 
-	res, err := egressClient.StartWebCompositeEgress(context.Background(), req)
+	res, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
 	if err != nil {
 		return err
 	}
