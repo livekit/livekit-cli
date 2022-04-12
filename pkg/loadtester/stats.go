@@ -3,13 +3,15 @@ package loadtester
 import (
 	"time"
 
-	lksdk "github.com/livekit/server-sdk-go"
 	"go.uber.org/atomic"
+
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 type testerStats struct {
 	expectedTracks int
 	trackStats     map[string]*trackStats
+	err            error
 }
 
 type trackStats struct {
@@ -32,6 +34,8 @@ type summary struct {
 	latencyCount int64
 	dropped      int64
 	elapsed      time.Duration
+	errString    string
+	errCount     int64
 }
 
 func getTestSummary(summaries map[string]*summary) *summary {
@@ -47,6 +51,7 @@ func getTestSummary(summaries map[string]*summary) *summary {
 		if testerSummary.elapsed > s.elapsed {
 			s.elapsed = testerSummary.elapsed
 		}
+		s.errCount += testerSummary.errCount
 	}
 	return s
 }
@@ -66,6 +71,12 @@ func getTesterSummary(testerStats *testerStats) *summary {
 		if elapsed > s.elapsed {
 			s.elapsed = elapsed
 		}
+	}
+	if testerStats.err == nil {
+		s.errString = "-"
+	} else {
+		s.errString = testerStats.err.Error()
+		s.errCount = 1
 	}
 	return s
 }
