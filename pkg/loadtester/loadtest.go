@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/syncmap"
 
 	lksdk "github.com/livekit/server-sdk-go"
 )
@@ -218,7 +219,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	group, _ := errgroup.WithContext(t.Params.Context)
 	startedAt := time.Now()
 	numStarted := float64(0)
-	errs := map[string]error{}
+	errs := syncmap.Map{}
 	for i := 0; i < params.Publishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
 		testerParams.sequence = i
@@ -241,7 +242,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
-				errs[testerParams.name] = errors.Wrapf(err, "could not connect %s", testerParams.name)
+				errs.Store(testerParams.name, errors.Wrapf(err, "could not connect %s", testerParams.name))
 				return nil
 			}
 
@@ -249,7 +250,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 				if params.AudioBitrate > 0 {
 					audio, err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
 					if err != nil {
-						errs[testerParams.name] = err
+						errs.Store(testerParams.name, err)
 						return nil
 					}
 					t.lock.Lock()
@@ -266,7 +267,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 						video, err = tester.PublishTrack("video", lksdk.TrackKindVideo, params.VideoBitrate)
 					}
 					if err != nil {
-						errs[testerParams.name] = err
+						errs.Store(testerParams.name, err)
 						return nil
 					}
 					t.lock.Lock()
@@ -313,7 +314,10 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	for _, t := range testers {
 		t.Stop()
 		stats[t.params.name] = t.GetStats()
-		stats[t.params.name].err = errs[t.params.name]
+		if e, _ := errs.Load(t.params.name); e != nil {
+			stats[t.params.name].err = e.(error)
+		}
+
 	}
 
 	return stats, nil
