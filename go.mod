@@ -10,6 +10,7 @@ require (
 	github.com/livekit/server-sdk-go v0.9.3
 	github.com/pion/rtp v1.7.4
 	github.com/pion/webrtc/v3 v3.1.25-0.20220225075517-37e16a3b15a3
+	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli/v2 v2.3.0
 	go.uber.org/atomic v1.9.0
@@ -47,7 +48,6 @@ require (
 	github.com/pion/transport v0.13.0 // indirect
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.1 // indirect
-	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.26.0 // indirect
