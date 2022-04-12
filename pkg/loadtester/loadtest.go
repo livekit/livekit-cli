@@ -300,6 +300,8 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		// a really long time
 		duration = 1000 * time.Hour
 	}
+	fmt.Printf("Finished connecting to room, waiting %s\n", duration.String())
+
 	select {
 	case <-params.Context.Done():
 		// canceled
