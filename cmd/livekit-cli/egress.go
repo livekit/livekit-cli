@@ -4,11 +4,20 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math"
+	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/ggwhite/go-masker"
+	"github.com/pkg/browser"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	provider2 "github.com/livekit/livekit-cli/pkg/provider"
+	"github.com/livekit/protocol/egress"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go"
 )
@@ -118,6 +127,44 @@ var (
 				},
 			},
 		},
+		{
+			Name:     "test-egress-template",
+			Usage:    "See what your egress template will look like in a recording",
+			Category: egressCategory,
+			Action:   testEgressTemplate,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				&cli.StringFlag{
+					Name:     "base-url (e.g. https://recorder.livekit.io/#)",
+					Usage:    "base template url",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "layout",
+					Usage:    "layout name",
+					Required: true,
+				},
+				&cli.IntFlag{
+					Name:     "publishers",
+					Usage:    "number of publishers",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "room",
+					Usage:    "name of the room",
+					Required: false,
+				},
+			},
+			SkipFlagParsing:        false,
+			HideHelp:               false,
+			HideHelpCommand:        false,
+			Hidden:                 false,
+			UseShortOptionHandling: false,
+			HelpName:               "",
+			CustomHelpTemplate:     "",
+		},
 	}
 
 	egressClient *lksdk.EgressClient
@@ -197,4 +244,82 @@ func stopEgress(c *cli.Context) error {
 		EgressId: c.String("id"),
 	})
 	return err
+}
+
+func testEgressTemplate(c *cli.Context) error {
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	numPublishers := c.Int("publishers")
+	rooms := make([]*lksdk.Room, 0, numPublishers)
+	defer func() {
+		for _, room := range rooms {
+			room.Disconnect()
+		}
+	}()
+
+	roomName := c.String("room")
+	if roomName == "" {
+		roomName = fmt.Sprintf("layout-demo-%v", time.Now().Unix())
+	}
+
+	serverURL := c.String("url")
+	apiKey := c.String("api-key")
+	apiSecret := c.String("api-secret")
+
+	for i := 0; i < numPublishers; i++ {
+		room, err := lksdk.ConnectToRoom(serverURL, lksdk.ConnectInfo{
+			APIKey:              apiKey,
+			APISecret:           apiSecret,
+			RoomName:            roomName,
+			ParticipantIdentity: fmt.Sprintf("demo-publisher-%d", i),
+		})
+		if err != nil {
+			return err
+		}
+
+		rooms = append(rooms, room)
+
+		var tracks []*lksdk.LocalSampleTrack
+		for q := livekit.VideoQuality_LOW; q <= livekit.VideoQuality_HIGH; q++ {
+			height := 180 * int(math.Pow(2, float64(q)))
+			provider, err := provider2.ButterflyLooper(height)
+			if err != nil {
+				return err
+			}
+			track, err := lksdk.NewLocalSampleTrack(provider.Codec(),
+				lksdk.WithSimulcast(fmt.Sprintf("demo-video-%d", i), provider.ToLayer(q)),
+			)
+			if err != nil {
+				return err
+			}
+			if err = track.StartWrite(provider, nil); err != nil {
+				return err
+			}
+			tracks = append(tracks, track)
+		}
+
+		_, err = room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
+			Name: fmt.Sprintf("demo-%d", i),
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	token, err := egress.BuildEgressToken("template_test", apiKey, apiSecret, roomName)
+	if err != nil {
+		return err
+	}
+
+	templateURL := fmt.Sprintf(
+		"%s/%s?url=%s&token=%s",
+		c.String("base-url"), c.String("layout"), url.QueryEscape(serverURL), token,
+	)
+	if err := browser.OpenURL(templateURL); err != nil {
+		return err
+	}
+
+	<-done
+	return nil
 }

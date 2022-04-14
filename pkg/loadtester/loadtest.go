@@ -11,9 +11,11 @@ import (
 	"text/tabwriter"
 	"time"
 
-	lksdk "github.com/livekit/server-sdk-go"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/syncmap"
+
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 type LoadTest struct {
@@ -104,14 +106,14 @@ func (t *LoadTest) Run() error {
 
 	// summary
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Bitrate\t| Latency\t| Total Dropped\n")
+	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Bitrate\t| Latency\t| Total Dropped\t| Error\n")
 
 	for _, name := range names {
 		s := summaries[name]
 		sLatency, sDropped := formatStrings(s.packets, s.latency, s.latencyCount, s.dropped)
 		sBitrate := formatBitrate(s.bytes, s.elapsed)
-		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
-			name, s.tracks, s.expected, sBitrate, sLatency, sDropped)
+		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\t| %s\n",
+			name, s.tracks, s.expected, sBitrate, sLatency, sDropped, s.errString)
 	}
 
 	s := getTestSummary(summaries)
@@ -121,8 +123,8 @@ func (t *LoadTest) Run() error {
 		formatBitrate(s.bytes, s.elapsed),
 		formatBitrate(s.bytes/int64(len(summaries)), s.elapsed),
 	)
-	_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
-		"Total", s.tracks, s.expected, sBitrate, sLatency, sDropped)
+	_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\t| %d\n",
+		"Total", s.tracks, s.expected, sBitrate, sLatency, sDropped, s.errCount)
 
 	_ = w.Flush()
 	return nil
@@ -153,7 +155,7 @@ func (t *LoadTest) RunSuite() error {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	_, _ = fmt.Fprint(w, "\nPubs\t| Subs\t| Tracks\t| Audio\t| Video\t| Packet loss\n")
+	_, _ = fmt.Fprint(w, "\nPubs\t| Subs\t| Tracks\t| Audio\t| Video\t| Packet loss\t| Errors\n")
 
 	for _, c := range cases {
 		caseParams := t.Params
@@ -178,7 +180,7 @@ func (t *LoadTest) RunSuite() error {
 			return err
 		}
 
-		var tracks, packets, dropped, totalLatency, latencyCount int64
+		var tracks, packets, dropped, totalLatency, latencyCount, errCount int64
 		for _, testerStats := range stats {
 			for _, trackStats := range testerStats.trackStats {
 				tracks++
@@ -187,9 +189,12 @@ func (t *LoadTest) RunSuite() error {
 				totalLatency += trackStats.latency.Load()
 				latencyCount += trackStats.latencyCount.Load()
 			}
+			if testerStats.err != nil {
+				errCount++
+			}
 		}
-		_, _ = fmt.Fprintf(w, "%d\t| %d\t| %d\t| Yes\t| %s\t| %.3f%%\n",
-			c.publishers, c.subscribers, tracks, videoString, 100*float64(dropped)/float64(dropped+packets))
+		_, _ = fmt.Fprintf(w, "%d\t| %d\t| %d\t| Yes\t| %s\t| %.3f%%| %d\t\n",
+			c.publishers, c.subscribers, tracks, videoString, 100*float64(dropped)/float64(dropped+packets), errCount)
 	}
 
 	_ = w.Flush()
@@ -214,6 +219,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	group, _ := errgroup.WithContext(t.Params.Context)
 	startedAt := time.Now()
 	numStarted := float64(0)
+	errs := syncmap.Map{}
 	for i := 0; i < params.Publishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
 		testerParams.sequence = i
@@ -236,14 +242,16 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
-				return errors.Wrapf(err, "could not connect %s", testerParams.name)
+				errs.Store(testerParams.name, errors.Wrapf(err, "could not connect %s", testerParams.name))
+				return nil
 			}
 
 			if isPublisher {
 				if params.AudioBitrate > 0 {
 					audio, err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
 					if err != nil {
-						return err
+						errs.Store(testerParams.name, err)
+						return nil
 					}
 					t.lock.Lock()
 					t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.sequence)
@@ -259,7 +267,8 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 						video, err = tester.PublishTrack("video", lksdk.TrackKindVideo, params.VideoBitrate)
 					}
 					if err != nil {
-						return err
+						errs.Store(testerParams.name, err)
+						return nil
 					}
 					t.lock.Lock()
 					t.trackNames[video] = fmt.Sprintf("%dV", testerParams.sequence)
@@ -292,6 +301,8 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		// a really long time
 		duration = 1000 * time.Hour
 	}
+	fmt.Printf("Finished connecting to room, waiting %s\n", duration.String())
+
 	select {
 	case <-params.Context.Done():
 		// canceled
@@ -303,6 +314,10 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	for _, t := range testers {
 		t.Stop()
 		stats[t.params.name] = t.GetStats()
+		if e, _ := errs.Load(t.params.name); e != nil {
+			stats[t.params.name].err = e.(error)
+		}
+
 	}
 
 	return stats, nil

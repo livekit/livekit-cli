@@ -7,13 +7,14 @@ import (
 	"sync"
 	"time"
 
-	provider2 "github.com/livekit/livekit-cli/pkg/provider"
-	"github.com/livekit/protocol/livekit"
-	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"
 	"go.uber.org/atomic"
+
+	provider2 "github.com/livekit/livekit-cli/pkg/provider"
+	"github.com/livekit/protocol/livekit"
+	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
 
 	lksdk "github.com/livekit/server-sdk-go"
 )
@@ -310,7 +311,7 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	rp.WritePLI(track.SSRC())
 
-	go func() {
+	defer func() {
 		if e := recover(); e != nil {
 			fmt.Println("caught panic in consumeTrack", e)
 		}
