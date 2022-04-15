@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: livekit-load-tester
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: livekit-load-tester
+  template:
+    metadata:
+      labels:
+        app: livekit-load-tester
+    spec:
+      containers:
+        - name: container
+          image: livekit/load-tester:latest
+          args:
+            - --url=wss://
+            - --api-key=
+            - --api-secret=
+            - --subscribers=200
+            - --num-per-second=1
+      affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - livekit-load-tester
+                topologyKey: "kubernetes.io/hostname"

@@ -2,7 +2,8 @@
 
 set -euxo pipefail
 
-docker build -t load-tester .
+docker buildx build --platform linux/amd64 -t livekit/load-tester:latest .
 IMG=$(docker images -q | awk 'NR==1')
-docker tag load-tester:latest 203125320322.dkr.ecr.us-west-2.amazonaws.com/lk-load-tester:"$IMG"
-docker push 203125320322.dkr.ecr.us-west-2.amazonaws.com/lk-load-tester:"$IMG"
+docker tag livekit/load-tester:latest livekit/load-tester:"$IMG"
+docker push livekit/load-tester:"$IMG"
+docker push livekit/load-tester:latest
