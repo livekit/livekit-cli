@@ -64,6 +64,22 @@ var (
 			},
 		},
 		{
+			Name:     "update-room-metadata",
+			Before:   createRoomClient,
+			Action:   updateRoomMetadata,
+			Category: roomCategory,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				verboseFlag,
+				roomFlag,
+				&cli.StringFlag{
+					Name: "metadata",
+				},
+			},
+		},
+		{
 			Name:     "list-participants",
 			Before:   createRoomClient,
 			Action:   listParticipants,
@@ -228,6 +244,21 @@ func deleteRoom(c *cli.Context) error {
 	}
 
 	fmt.Println("deleted room", roomId)
+	return nil
+}
+
+func updateRoomMetadata(c *cli.Context) error {
+	roomName := c.String("room")
+	res, err := roomClient.UpdateRoomMetadata(context.Background(), &livekit.UpdateRoomMetadataRequest{
+		Room:     roomName,
+		Metadata: c.String("metadata"),
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Updated room metadata")
+	PrintJSON(res)
 	return nil
 }
 
