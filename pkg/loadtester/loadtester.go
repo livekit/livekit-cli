@@ -92,8 +92,8 @@ func (t *LoadTester) Start() error {
 
 	var room *lksdk.Room
 	var err error
-	// make up to 3 reconnect attempts
-	for i := 0; i < 3; i++ {
+	// make up to 10 reconnect attempts
+	for i := 0; i < 10; i++ {
 		room, err = lksdk.ConnectToRoom(t.params.URL, lksdk.ConnectInfo{
 			APIKey:              t.params.APIKey,
 			APISecret:           t.params.APISecret,
@@ -103,7 +103,7 @@ func (t *LoadTester) Start() error {
 		if err == nil {
 			break
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 	}
 	if err != nil {
 		return err
