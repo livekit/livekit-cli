@@ -242,7 +242,8 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
-				errs.Store(testerParams.name, errors.Wrapf(err, "could not connect %s", testerParams.name))
+				fmt.Println(errors.Wrapf(err, "could not connect %s", testerParams.name))
+				errs.Store(testerParams.name, err)
 				return nil
 			}
 
