@@ -9,6 +9,8 @@ This package includes command line utilities that interacts with LiveKit. It all
 
 ## Installation
 
+This repo uses Git LFS for embedded video resources. Please ensure git-lfs is installed on your machine.
+
 ```shell
 $ go install github.com/livekit/livekit-cli/cmd/livekit-cli@latest
 $ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester@latest

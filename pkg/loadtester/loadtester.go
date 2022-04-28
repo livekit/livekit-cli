@@ -3,7 +3,6 @@ package loadtester
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 	"sync"
 	"time"
 
@@ -123,33 +122,20 @@ func (t *LoadTester) IsRunning() bool {
 	return t.running.Load()
 }
 
-func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uint32) (string, error) {
+func (t *LoadTester) PublishAudioTrack(name string, bitrate uint32) (string, error) {
 	if !t.IsRunning() {
 		return "", nil
 	}
 
-	var track *lksdk.LocalSampleTrack
-	var err error
-	var sampleProvider lksdk.SampleProvider
-	if kind == lksdk.TrackKindAudio {
-		sampleProvider, err = NewLoadTestProvider(bitrate)
-		if err != nil {
-			return "", err
-		}
-		track, err = lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
-			MimeType:    webrtc.MimeTypeOpus,
-			ClockRate:   20,
-			SDPFmtpLine: "",
-		})
-	} else if kind == lksdk.TrackKindVideo {
-		var loopProvider *provider2.H264VideoLooper
-		loopProvider, err = provider2.ButterflyLooperForBitrate(bitrate)
-		if err != nil {
-			return "", err
-		}
-		sampleProvider = loopProvider
-		track, err = lksdk.NewLocalSampleTrack(loopProvider.Codec())
+	sampleProvider, err := NewLoadTestProvider(bitrate)
+	if err != nil {
+		return "", err
 	}
+	track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
+		MimeType:    webrtc.MimeTypeOpus,
+		ClockRate:   20,
+		SDPFmtpLine: "",
+	})
 	if err != nil {
 		return "", err
 	}
@@ -166,25 +152,49 @@ func (t *LoadTester) PublishTrack(name string, kind lksdk.TrackKind, bitrate uin
 	return p.SID(), nil
 }
 
-func (t *LoadTester) PublishSimulcastTrack(name string, bitrate uint32) (string, error) {
+func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, error) {
+	if !t.IsRunning() {
+		return "", nil
+	}
+
+	loopers, err := provider2.CreateLoopers(resolution, codec, false)
+	if err != nil {
+		return "", err
+	}
+	track, err := lksdk.NewLocalSampleTrack(loopers[0].Codec())
+	if err != nil {
+		return "", err
+	}
+	if err := track.StartWrite(loopers[0], nil); err != nil {
+		return "", err
+	}
+
+	p, err := t.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+		Name: name,
+	})
+	if err != nil {
+		return "", err
+	}
+	return p.SID(), nil
+}
+
+func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (string, error) {
 	var tracks []*lksdk.LocalSampleTrack
 
+	loopers, err := provider2.CreateLoopers(resolution, codec, true)
+	if err != nil {
+		return "", err
+	}
 	// for video, publish three simulcast layers
-	for i := livekit.VideoQuality_LOW; i <= livekit.VideoQuality_HIGH; i++ {
-		// scale by 1, 2, 4
-		scaleBy := uint32(math.Pow(2, 2-float64(i)))
-		sampleProvider, err := provider2.ButterflyLooperForBitrate(bitrate / (scaleBy * scaleBy))
-		if err != nil {
-			return "", err
-		}
-		layer := sampleProvider.ToLayer(i)
+	for i, looper := range loopers {
+		layer := looper.ToLayer(livekit.VideoQuality(i))
 
-		track, err := lksdk.NewLocalSampleTrack(sampleProvider.Codec(),
+		track, err := lksdk.NewLocalSampleTrack(looper.Codec(),
 			lksdk.WithSimulcast("loadtest-video", layer))
 		if err != nil {
 			return "", err
 		}
-		if err := track.StartWrite(sampleProvider, nil); err != nil {
+		if err := track.StartWrite(looper, nil); err != nil {
 			return "", err
 		}
 		tracks = append(tracks, track)
