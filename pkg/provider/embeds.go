@@ -4,10 +4,10 @@ import (
 	"embed"
 	"fmt"
 	"math"
-	"math/rand"
 	"os"
 	"strconv"
-	"time"
+
+	"go.uber.org/atomic"
 
 	"github.com/livekit/protocol/livekit"
 )
@@ -96,22 +96,23 @@ var (
 	//go:embed resources
 	res embed.FS
 
-	videoSpecs = map[string][]*videoSpec{}
+	videoSpecs [][]*videoSpec
+	videoIndex atomic.Int64
 )
 
 func init() {
-	videoSpecs["circles"] = []*videoSpec{
-		circlesSpec(180, 200, 15),
-		circlesSpec(360, 700, 20),
-		circlesSpec(540, 2000, 30),
+	videoSpecs = [][]*videoSpec{
+		createSpecs("butterfly", h264Codec, 150, 400, 2000),
+		createSpecs("cartoon", h264Codec, 120, 400, 1500),
+		createSpecs("crescent", vp8Codec, 150, 600, 2000),
+		createSpecs("neon", vp8Codec, 150, 600, 2000),
+		createSpecs("tunnel", vp8Codec, 150, 600, 2000),
+		{
+			circlesSpec(180, 200, 15),
+			circlesSpec(360, 700, 20),
+			circlesSpec(540, 2000, 30),
+		},
 	}
-	videoSpecs["butterfly"] = createSpecs("butterfly", h264Codec, 150, 400, 2000)
-	videoSpecs["cartoon"] = createSpecs("cartoon", h264Codec, 120, 400, 1500)
-	videoSpecs["crescent"] = createSpecs("crescent", vp8Codec, 150, 600, 2000)
-	videoSpecs["neon"] = createSpecs("neon", vp8Codec, 150, 600, 2000)
-	videoSpecs["tunnel"] = createSpecs("tunnel", vp8Codec, 150, 600, 2000)
-
-	rand.Seed(time.Now().UnixNano())
 }
 
 func randomSpecsForCodec(videoCodec string) []*videoSpec {
@@ -121,7 +122,8 @@ func randomSpecsForCodec(videoCodec string) []*videoSpec {
 			filtered = append(filtered, specs)
 		}
 	}
-	return filtered[rand.Intn(len(filtered))]
+	chosen := int(videoIndex.Inc()) % len(filtered)
+	return filtered[chosen]
 }
 
 func CreateLoopers(resolution string, codecFilter string, simulcast bool) ([]VideoLooper, error) {
@@ -165,7 +167,7 @@ func CreateLoopers(resolution string, codecFilter string, simulcast bool) ([]Vid
 
 func ButterflyLooper(height int) (*H264VideoLooper, error) {
 	var spec *videoSpec
-	for _, s := range videoSpecs["butterfly"] {
+	for _, s := range videoSpecs[0] {
 		if s.height == height {
 			spec = s
 			break
