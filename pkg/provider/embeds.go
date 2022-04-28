@@ -51,17 +51,6 @@ func (v *videoSpec) bitrate() uint32 {
 	return uint32(v.kbps * 1000)
 }
 
-func butterflySpec(height, kbps, fps int) *videoSpec {
-	return &videoSpec{
-		codec:  h264Codec,
-		prefix: "butterfly",
-		height: height,
-		width:  height * 16 / 9,
-		kbps:   kbps,
-		fps:    fps,
-	}
-}
-
 func circlesSpec(width, kbps, fps int) *videoSpec {
 	return &videoSpec{
 		codec:  h264Codec,
