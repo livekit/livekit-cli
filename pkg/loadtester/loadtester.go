@@ -13,9 +13,8 @@ import (
 
 	provider2 "github.com/livekit/livekit-cli/pkg/provider"
 	"github.com/livekit/protocol/livekit"
-	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
-
 	lksdk "github.com/livekit/server-sdk-go"
+	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
 )
 
 type LoadTester struct {

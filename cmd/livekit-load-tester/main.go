@@ -11,10 +11,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/urfave/cli/v2"
 
-	lksdk "github.com/livekit/server-sdk-go"
-
 	livekitcli "github.com/livekit/livekit-cli"
 	"github.com/livekit/livekit-cli/pkg/loadtester"
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 func main() {

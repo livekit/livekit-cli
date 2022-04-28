@@ -5,11 +5,12 @@ import (
 	"io"
 	"time"
 
-	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/pion/webrtc/v3/pkg/media/h264reader"
+
+	"github.com/livekit/protocol/livekit"
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 type H264VideoLooper struct {
