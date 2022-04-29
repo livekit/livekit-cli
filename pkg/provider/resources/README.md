@@ -1,6 +1,13 @@
 ## Static videos
 
-Source: https://pixabay.com/videos/butterfly-wing-clap-loop-color-6887/
+Sources:
+* [butterfly](https://pixabay.com/videos/butterfly-wing-clap-loop-color-6887/)
+* [cartoon](https://pixabay.com/videos/kids-cartoon-background-landscape-26796/)
+* [circles](https://pixabay.com/videos/circles-tunnel-neon-glow-abstract-53209/)
+* [crescent](https://pixabay.com/videos/crescent-moon-clouds-night-kids-27186/)
+* [neon](https://pixabay.com/videos/neon-terrain-80-retro-abstract-21368/)
+* [tunnel](https://pixabay.com/videos/tunnel-4k-uhd-60fps-65771/)
+
 License: [Pixabay license](https://pixabay.com/service/license/)
 
 Encoding command

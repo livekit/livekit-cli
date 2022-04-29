@@ -14,8 +14,13 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/syncmap"
+)
 
-	lksdk "github.com/livekit/server-sdk-go"
+const (
+	resolutionOff    = "off"
+	resolutionLow    = "low"
+	resolutionMedium = "medium"
+	resolutionHigh   = "high"
 )
 
 type LoadTest struct {
@@ -25,12 +30,13 @@ type LoadTest struct {
 }
 
 type Params struct {
-	Context      context.Context
-	Publishers   int
-	Subscribers  int
-	AudioBitrate uint32
-	VideoBitrate uint32
-	Duration     time.Duration
+	Context         context.Context
+	Publishers      int
+	Subscribers     int
+	AudioBitrate    uint32
+	VideoResolution string
+	VideoCodec      string
+	Duration        time.Duration
 	// number of seconds to spin up per second
 	NumPerSecond float64
 	Simulcast    bool
@@ -167,7 +173,7 @@ func (t *LoadTest) RunSuite() error {
 		}
 		videoString := "Yes"
 		if !c.video {
-			caseParams.VideoBitrate = 0
+			caseParams.VideoResolution = resolutionOff
 			videoString = "No"
 		}
 		fmt.Printf("\nRunning test: %d pub, %d sub, video: %s\n", c.publishers, c.subscribers, videoString)
@@ -208,7 +214,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	params.IdentityPrefix = randStringRunes(5)
 
 	expectedTracks := params.Publishers
-	if params.VideoBitrate > 0 {
+	if params.VideoResolution != resolutionOff {
 		expectedTracks *= 2
 	}
 
@@ -226,7 +232,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		testerParams.expectedTracks = expectedTracks
 		isPublisher := i < params.Publishers
 		if isPublisher {
-			if params.VideoBitrate > 0 {
+			if params.VideoResolution != resolutionOff {
 				testerParams.expectedTracks -= 2
 			} else {
 				testerParams.expectedTracks--
@@ -242,13 +248,14 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
-				errs.Store(testerParams.name, errors.Wrapf(err, "could not connect %s", testerParams.name))
+				fmt.Println(errors.Wrapf(err, "could not connect %s", testerParams.name))
+				errs.Store(testerParams.name, err)
 				return nil
 			}
 
 			if isPublisher {
 				if params.AudioBitrate > 0 {
-					audio, err := tester.PublishTrack("audio", lksdk.TrackKindAudio, params.AudioBitrate)
+					audio, err := tester.PublishAudioTrack("audio", params.AudioBitrate)
 					if err != nil {
 						errs.Store(testerParams.name, err)
 						return nil
@@ -258,13 +265,13 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 					t.lock.Unlock()
 				}
 
-				if params.VideoBitrate > 0 {
+				if params.VideoResolution != resolutionOff {
 					var video string
 					var err error
 					if params.Simulcast {
-						video, err = tester.PublishSimulcastTrack("video-simulcast", params.VideoBitrate)
+						video, err = tester.PublishSimulcastTrack("video-simulcast", params.VideoResolution, params.VideoCodec)
 					} else {
-						video, err = tester.PublishTrack("video", lksdk.TrackKindVideo, params.VideoBitrate)
+						video, err = tester.PublishVideoTrack("video", params.VideoResolution, params.VideoCodec)
 					}
 					if err != nil {
 						errs.Store(testerParams.name, err)

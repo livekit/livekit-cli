@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	lksdk "github.com/livekit/server-sdk-go"
 	"github.com/urfave/cli/v2"
 
 	livekitcli "github.com/livekit/livekit-cli"
 	"github.com/livekit/livekit-cli/pkg/loadtester"
+	lksdk "github.com/livekit/server-sdk-go"
 )
 
 func main() {
@@ -58,10 +58,14 @@ func main() {
 				Name:  "identity-prefix",
 				Usage: "identity prefix of tester participants, defaults to a random name",
 			},
-			&cli.Uint64Flag{
-				Name:  "video-bitrate",
-				Usage: "bitrate (bps) of video track to publish, 0 to disable",
-				Value: 1000000,
+			&cli.StringFlag{
+				Name:  "video-resolution",
+				Usage: "high, medium, low, or off to disable. publishes sample video in H.264 and VP8",
+				Value: "high",
+			},
+			&cli.StringFlag{
+				Name:  "video-codec",
+				Usage: "h264 or vp8, both will be used when unset",
 			},
 			&cli.Uint64Flag{
 				Name:  "audio-bitrate",
@@ -115,12 +119,13 @@ func loadTest(c *cli.Context) error {
 
 	layout := loadtester.LayoutFromString(c.String("layout"))
 	params := loadtester.Params{
-		Context:      ctx,
-		AudioBitrate: uint32(c.Uint64("audio-bitrate")),
-		VideoBitrate: uint32(c.Uint64("video-bitrate")),
-		Duration:     c.Duration("duration"),
-		NumPerSecond: c.Float64("num-per-second"),
-		Simulcast:    !c.Bool("no-simulcast"),
+		Context:         ctx,
+		AudioBitrate:    uint32(c.Uint64("audio-bitrate")),
+		VideoResolution: c.String("video-resolution"),
+		VideoCodec:      c.String("video-codec"),
+		Duration:        c.Duration("duration"),
+		NumPerSecond:    c.Float64("num-per-second"),
+		Simulcast:       !c.Bool("no-simulcast"),
 		TesterParams: loadtester.TesterParams{
 			URL:            c.String("url"),
 			APIKey:         c.String("api-key"),
