@@ -92,6 +92,7 @@ var (
 func init() {
 	videoSpecs = [][]*videoSpec{
 		createSpecs("butterfly", h264Codec, 150, 400, 2000),
+		createSpecs("stock", h264Codec, 150, 400, 2000),
 		createSpecs("cartoon", h264Codec, 120, 400, 1500),
 		createSpecs("crescent", vp8Codec, 150, 600, 2000),
 		createSpecs("neon", vp8Codec, 150, 600, 2000),
