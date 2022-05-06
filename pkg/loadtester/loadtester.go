@@ -2,7 +2,9 @@ package loadtester
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -60,6 +62,9 @@ func LayoutFromString(str string) Layout {
 	return LayoutSpeaker
 }
 
+type BrightToken struct {
+	Token string
+}
 type TesterParams struct {
 	URL            string
 	APIKey         string
@@ -68,7 +73,10 @@ type TesterParams struct {
 	IdentityPrefix string
 	Layout         Layout
 	// true to subscribe to all published tracks
-	Subscribe bool
+	Subscribe         bool
+	BrightUrl         string
+	BrightSharedToken string
+	BrightBotStartId  int
 
 	name           string
 	sequence       int
@@ -83,7 +91,7 @@ func NewLoadTester(params TesterParams) *LoadTester {
 	}
 }
 
-func (t *LoadTester) Start() error {
+func (t *LoadTester) Start(botId int) error {
 	if t.IsRunning() {
 		return nil
 	}
@@ -92,12 +100,34 @@ func (t *LoadTester) Start() error {
 	var err error
 	// make up to 10 reconnect attempts
 	for i := 0; i < 10; i++ {
-		room, err = lksdk.ConnectToRoom(t.params.URL, lksdk.ConnectInfo{
-			APIKey:              t.params.APIKey,
-			APISecret:           t.params.APISecret,
-			RoomName:            t.params.Room,
-			ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.sequence),
-		}, lksdk.WithAutoSubscribe(t.params.Subscribe))
+		getTokenUrl := fmt.Sprintf("%s%s?testUser=%d", t.params.BrightUrl, t.params.Room, botId)
+		fmt.Println(fmt.Sprintf("Connecting to url: %s", getTokenUrl))
+		req, err := http.NewRequest("GET", getTokenUrl, nil)
+		if err != nil {
+			//panic(err)
+			fmt.Println(err)
+		}
+		bearerToken := fmt.Sprintf("Bearer %s", t.params.BrightSharedToken)
+		req.Header.Set("Authorization", bearerToken)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			//panic(err)
+			return err
+		}
+
+		var bt BrightToken
+		err = json.NewDecoder(resp.Body).Decode(&bt)
+		if err != nil {
+			fmt.Println(resp)
+			fmt.Println(err)
+			return err
+			//panic(err)
+		}
+
+		defer resp.Body.Close()
+
+		room, err = lksdk.ConnectToRoomWithToken(t.params.URL, bt.Token, lksdk.WithAutoSubscribe(t.params.Subscribe))
 		if err == nil {
 			break
 		}

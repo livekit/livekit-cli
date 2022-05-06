@@ -82,6 +82,21 @@ func main() {
 				Usage: "layout to simulate, choose from speaker, 3x3, 4x4, 5x5",
 				Value: "speaker",
 			},
+			&cli.StringFlag{
+				Name:  "bright-url",
+				Usage: "BrightLive url to hit so the bot user is added to the 'session'",
+				Value: "https://us-central1-bright-live-staging.cloudfunctions.net/livekit-qa/video/token-bot/",
+			},
+			&cli.StringFlag{
+				Name:  "bright-shared-token",
+				Usage: "BrightLive shared secret token for bots",
+				Value: "tBdzYbo7cQXUh7hrWb921WCIj9TUtlkO",
+			},
+			&cli.IntFlag{
+				Name:  "bright-bot-start-id",
+				Usage: "what id to start the bot at, defaults to 1",
+				Value: 1,
+			},
 			&cli.BoolFlag{
 				Name:  "no-simulcast",
 				Usage: "disables simulcast publishing",
@@ -127,12 +142,15 @@ func loadTest(c *cli.Context) error {
 		NumPerSecond:    c.Float64("num-per-second"),
 		Simulcast:       !c.Bool("no-simulcast"),
 		TesterParams: loadtester.TesterParams{
-			URL:            c.String("url"),
-			APIKey:         c.String("api-key"),
-			APISecret:      c.String("api-secret"),
-			Room:           c.String("room"),
-			IdentityPrefix: c.String("identity-prefix"),
-			Layout:         layout,
+			URL:               c.String("url"),
+			APIKey:            c.String("api-key"),
+			APISecret:         c.String("api-secret"),
+			Room:              c.String("room"),
+			IdentityPrefix:    c.String("identity-prefix"),
+			Layout:            layout,
+			BrightUrl:         c.String("bright-url"),
+			BrightSharedToken: c.String("bright-shared-token"),
+			BrightBotStartId:  c.Int("bright-bot-start-id"),
 		},
 	}
 
