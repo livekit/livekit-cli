@@ -247,7 +247,9 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		testers = append(testers, tester)
 
 		group.Go(func() error {
-			if err := tester.Start(testerParams.BrightBotStartId + i); err != nil {
+			startId := testerParams.BrightBotStartId + testerParams.sequence
+			fmt.Printf("Starting bot id: %d\n", startId)
+			if err := tester.Start(startId); err != nil {
 				fmt.Println(errors.Wrapf(err, "could not connect %s", testerParams.name))
 				errs.Store(testerParams.name, err)
 				return nil

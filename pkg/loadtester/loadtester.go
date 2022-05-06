@@ -101,7 +101,7 @@ func (t *LoadTester) Start(botId int) error {
 	// make up to 10 reconnect attempts
 	for i := 0; i < 10; i++ {
 		getTokenUrl := fmt.Sprintf("%s%s?testUser=%d", t.params.BrightUrl, t.params.Room, botId)
-		fmt.Println(fmt.Sprintf("Connecting to url: %s", getTokenUrl))
+		fmt.Printf("Connecting to url: %s\n", getTokenUrl)
 		req, err := http.NewRequest("GET", getTokenUrl, nil)
 		if err != nil {
 			//panic(err)
