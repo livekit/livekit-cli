@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -27,10 +28,10 @@ const egressCategory = "Egress"
 var (
 	EgressCommands = []*cli.Command{
 		{
-			Name:     "start-egress",
-			Usage:    "Start egress",
+			Name:     "start-room-composite-egress",
+			Usage:    "Start room composite egress",
 			Before:   createEgressClient,
-			Action:   startEgress,
+			Action:   startRoomCompositeEgress,
 			Category: egressCategory,
 			Flags: []cli.Flag{
 				urlFlag,
@@ -39,7 +40,43 @@ var (
 				verboseFlag,
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "StartEgressRequest as json file (see https://github.com/livekit/livekit-recorder#request)",
+					Usage:    "RoomCompositeEgressRequest as json file (see livekit-cli/examples)",
+					Required: true,
+				},
+			},
+		},
+		{
+			Name:     "start-track-composite-egress",
+			Usage:    "Start track composite egress",
+			Before:   createEgressClient,
+			Action:   startTrackCompositeEgress,
+			Category: egressCategory,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				verboseFlag,
+				&cli.StringFlag{
+					Name:     "request",
+					Usage:    "TrackCompositeEgressRequest as json file (see livekit-cli/examples)",
+					Required: true,
+				},
+			},
+		},
+		{
+			Name:     "start-track-egress",
+			Usage:    "Start track egress",
+			Before:   createEgressClient,
+			Action:   startTrackEgress,
+			Category: egressCategory,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				verboseFlag,
+				&cli.StringFlag{
+					Name:     "request",
+					Usage:    "TrackEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
 			},
@@ -186,12 +223,13 @@ func createEgressClient(c *cli.Context) error {
 	return nil
 }
 
-func startEgress(c *cli.Context) error {
+func startRoomCompositeEgress(c *cli.Context) error {
 	reqFile := c.String("request")
 	reqBytes, err := ioutil.ReadFile(reqFile)
 	if err != nil {
 		return err
 	}
+
 	req := &livekit.RoomCompositeEgressRequest{}
 	err = protojson.Unmarshal(reqBytes, req)
 	if err != nil {
@@ -203,6 +241,67 @@ func startEgress(c *cli.Context) error {
 	}
 
 	res, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
+	if err == nil && res.Error != "" {
+		err = errors.New(res.Error)
+	}
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Egress started. Egress ID: %s\n", res.EgressId)
+	return nil
+}
+
+func startTrackCompositeEgress(c *cli.Context) error {
+	reqFile := c.String("request")
+	reqBytes, err := ioutil.ReadFile(reqFile)
+	if err != nil {
+		return err
+	}
+
+	req := &livekit.TrackCompositeEgressRequest{}
+	err = protojson.Unmarshal(reqBytes, req)
+	if err != nil {
+		return err
+	}
+
+	if c.Bool("verbose") {
+		PrintJSON(req)
+	}
+
+	res, err := egressClient.StartTrackCompositeEgress(context.Background(), req)
+	if err == nil && res.Error != "" {
+		err = errors.New(res.Error)
+	}
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Egress started. Egress ID: %s\n", res.EgressId)
+	return nil
+}
+
+func startTrackEgress(c *cli.Context) error {
+	reqFile := c.String("request")
+	reqBytes, err := ioutil.ReadFile(reqFile)
+	if err != nil {
+		return err
+	}
+
+	req := &livekit.TrackEgressRequest{}
+	err = protojson.Unmarshal(reqBytes, req)
+	if err != nil {
+		return err
+	}
+
+	if c.Bool("verbose") {
+		PrintJSON(req)
+	}
+
+	res, err := egressClient.StartTrackEgress(context.Background(), req)
+	if err == nil && res.Error != "" {
+		err = errors.New(res.Error)
+	}
 	if err != nil {
 		return err
 	}

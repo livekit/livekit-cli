@@ -1,0 +1,15 @@
+{
+  "room_name": "my-room",
+  "audio_track_id": "TR_XXXXXXXXXXXX",
+  "video_track_id": "TR_XXXXXXXXXXXX",
+  "file": {
+    "file_type": "MP4",
+    "filepath": "livekit-demo/track-composite-test.mp4",
+    "s3": {
+      "access_key": "aws-access-key",
+      "secret": "aws-access-secret",
+      "region": "aws-region",
+      "bucket": "my-bucket"
+    }
+  }
+}
