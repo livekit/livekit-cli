@@ -22,28 +22,51 @@ $ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester@latest
 
 ```shell
 % ./bin/livekit-cli --help
+NAME:
+   livekit-cli - CLI client to LiveKit
+
 USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.7.0
+   0.7.2
 
 COMMANDS:
-   create-token          creates an access token
-   create-room           
-   list-rooms            
-   delete-room           
-   list-participants     
-   get-participant       
-   remove-participant    
-   mute-track            
-   update-subscriptions  
-   join-room             joins a room as a client
-   start-recording       Starts a recording with a deployed recorder service
-   add-output            Adds an rtmp output url to a live recording
-   remove-output         Removes an rtmp output url from a live recording
-   end-recording         Ends a recording
-   help, h               Shows a list of commands or help for one command
+   help, h  Shows a list of commands or help for one command
+   Egress:
+     start-room-composite-egress   Start room composite egress
+     start-track-composite-egress  Start track composite egress
+     start-track-egress            Start track egress
+     list-egress                   List all active egress
+     update-layout                 Updates layout for a live room composite egress
+     update-stream                 Adds or removes rtmp output urls from a live stream
+     stop-egress                   Stop egress
+     test-egress-template          See what your egress template will look like in a recording
+   Participant:
+     join-room  joins a room as a participant
+   Recording:
+     start-recording  Starts a recording with a deployed recorder service
+     add-output       Adds an rtmp output url to a live recording
+     remove-output    Removes an rtmp output url from a live recording
+     end-recording    Ends a recording
+   RoomService:
+     create-room
+     list-rooms
+     delete-room
+     update-room-metadata
+     list-participants
+     get-participant
+     remove-participant
+     update-participant
+     mute-track
+     update-subscriptions
+   Token:
+     create-token  creates an access token
+
+GLOBAL OPTIONS:
+   --verbose      (default: false)
+   --help, -h     show help (default: false)
+   --version, -v  print the version (default: false)
 ```
 
 ### Publishing to a room
