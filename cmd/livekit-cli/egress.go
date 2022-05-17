@@ -40,7 +40,7 @@ var (
 				verboseFlag,
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "RoomCompositeEgressRequest as json file (see https://github.com/livekit/protocol/blob/main/livekit_egress.proto#L28)",
+					Usage:    "RoomCompositeEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
 			},
@@ -58,7 +58,7 @@ var (
 				verboseFlag,
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "Request as json file (see https://github.com/livekit/protocol/blob/main/livekit_egress.proto#L45)",
+					Usage:    "TrackCompositeEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
 			},
@@ -76,7 +76,7 @@ var (
 				verboseFlag,
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "Request as json file (see https://github.com/livekit/protocol/blob/main/livekit_egress.proto#L60)",
+					Usage:    "TrackEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
 			},
