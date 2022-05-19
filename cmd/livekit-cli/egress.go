@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"net/url"
 	"os"
 	"os/signal"
@@ -17,7 +16,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	provider2 "github.com/livekit/livekit-cli/pkg/provider"
+	"github.com/livekit/livekit-cli/pkg/loadtester"
 	"github.com/livekit/protocol/egress"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go"
@@ -365,43 +364,26 @@ func testEgressTemplate(c *cli.Context) error {
 	serverURL := c.String("url")
 	apiKey := c.String("api-key")
 	apiSecret := c.String("api-secret")
-
+	
+	var testers []*loadtester.LoadTester
 	for i := 0; i < numPublishers; i++ {
-		room, err := lksdk.ConnectToRoom(serverURL, lksdk.ConnectInfo{
-			APIKey:              apiKey,
-			APISecret:           apiSecret,
-			RoomName:            roomName,
-			ParticipantIdentity: fmt.Sprintf("demo-publisher-%d", i),
+		lt := loadtester.NewLoadTester(loadtester.TesterParams{
+			URL:            serverURL,
+			APIKey:         apiKey,
+			APISecret:      apiSecret,
+			Room:           roomName,
+			IdentityPrefix: "demo-publisher",
+			Sequence:       i,
 		})
+
+		err := lt.Start()
 		if err != nil {
 			return err
 		}
 
-		rooms = append(rooms, room)
-
-		var tracks []*lksdk.LocalSampleTrack
-		for q := livekit.VideoQuality_LOW; q <= livekit.VideoQuality_HIGH; q++ {
-			height := 180 * int(math.Pow(2, float64(q)))
-			provider, err := provider2.ButterflyLooper(height)
-			if err != nil {
-				return err
-			}
-			track, err := lksdk.NewLocalSampleTrack(provider.Codec(),
-				lksdk.WithSimulcast(fmt.Sprintf("demo-video-%d", i), provider.ToLayer(q)),
-			)
-			if err != nil {
-				return err
-			}
-			if err = track.StartWrite(provider, nil); err != nil {
-				return err
-			}
-			tracks = append(tracks, track)
-		}
-
-		_, err = room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
-			Name: fmt.Sprintf("demo-%d", i),
-		})
-		if err != nil {
+		//rooms = append(rooms, room)
+		testers = append(testers, lt)
+		if _, err = lt.PublishSimulcastTrack("demo-video", "high", ""); err != nil {
 			return err
 		}
 	}
@@ -412,8 +394,8 @@ func testEgressTemplate(c *cli.Context) error {
 	}
 
 	templateURL := fmt.Sprintf(
-		"%s/%s?url=%s&token=%s",
-		c.String("base-url"), c.String("layout"), url.QueryEscape(serverURL), token,
+		"%s/?url=%s&layout=%s&token=%s",
+		c.String("base-url"), url.QueryEscape(serverURL), c.String("layout"), token,
 	)
 	if err := browser.OpenURL(templateURL); err != nil {
 		return err
