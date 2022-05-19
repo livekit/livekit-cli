@@ -380,7 +380,6 @@ func testEgressTemplate(c *cli.Context) error {
 			return err
 		}
 
-		//rooms = append(rooms, room)
 		testers = append(testers, lt)
 		if _, err = lt.PublishSimulcastTrack("demo-video", "high", ""); err != nil {
 			return err
@@ -401,5 +400,9 @@ func testEgressTemplate(c *cli.Context) error {
 	}
 
 	<-done
+
+	for _, lt := range testers {
+		lt.Stop()
+	}
 	return nil
 }
