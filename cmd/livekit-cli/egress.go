@@ -178,9 +178,8 @@ var (
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "layout",
-					Usage:    "layout name",
-					Required: true,
+					Name:  "layout",
+					Usage: "layout name",
 				},
 				&cli.IntFlag{
 					Name:     "publishers",
@@ -364,7 +363,7 @@ func testEgressTemplate(c *cli.Context) error {
 	serverURL := c.String("url")
 	apiKey := c.String("api-key")
 	apiSecret := c.String("api-secret")
-	
+
 	var testers []*loadtester.LoadTester
 	for i := 0; i < numPublishers; i++ {
 		lt := loadtester.NewLoadTester(loadtester.TesterParams{
