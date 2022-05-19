@@ -71,7 +71,7 @@ type TesterParams struct {
 	Subscribe bool
 
 	name           string
-	sequence       int
+	Sequence       int
 	expectedTracks int
 }
 
@@ -96,7 +96,7 @@ func (t *LoadTester) Start() error {
 			APIKey:              t.params.APIKey,
 			APISecret:           t.params.APISecret,
 			RoomName:            t.params.Room,
-			ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.sequence),
+			ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.Sequence),
 		}, lksdk.WithAutoSubscribe(t.params.Subscribe))
 		if err == nil {
 			break
