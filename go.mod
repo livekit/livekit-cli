@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.2.2
 	github.com/go-logr/stdr v1.2.0
 	github.com/livekit/protocol v0.13.2
-	github.com/livekit/server-sdk-go v0.10.0
+	github.com/livekit/server-sdk-go v0.10.1
 	github.com/pion/rtp v1.7.13
 	github.com/pion/webrtc/v3 v3.1.25-0.20220225075517-37e16a3b15a3
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
