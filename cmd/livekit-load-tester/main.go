@@ -18,7 +18,7 @@ import (
 
 func main() {
 	app := &cli.App{
-		Name:  "livekit-cli",
+		Name:  "livekit-load-tester",
 		Usage: "LiveKit load tester",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
