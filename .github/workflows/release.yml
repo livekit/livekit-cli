@@ -12,8 +12,15 @@ jobs:
     name: Generate cross-platform builds
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the repository
+      - name: Checkout Git LFS
         uses: actions/checkout@v2
+        with:
+          lfs: 'true'
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - run: git lfs pull
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
