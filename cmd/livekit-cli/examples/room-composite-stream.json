@@ -1,0 +1,9 @@
+{
+  "room_name": "my-room",
+  "layout": "speaker-dark",
+  "stream": {
+    "urls": [
+      "rtmp://live.twitch.tv/app/<stream-key>"
+    ]
+  }
+}

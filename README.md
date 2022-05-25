@@ -22,28 +22,51 @@ $ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester@latest
 
 ```shell
 % ./bin/livekit-cli --help
+NAME:
+   livekit-cli - CLI client to LiveKit
+
 USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.7.0
+   0.7.2
 
 COMMANDS:
-   create-token          creates an access token
-   create-room           
-   list-rooms            
-   delete-room           
-   list-participants     
-   get-participant       
-   remove-participant    
-   mute-track            
-   update-subscriptions  
-   join-room             joins a room as a client
-   start-recording       Starts a recording with a deployed recorder service
-   add-output            Adds an rtmp output url to a live recording
-   remove-output         Removes an rtmp output url from a live recording
-   end-recording         Ends a recording
-   help, h               Shows a list of commands or help for one command
+   help, h  Shows a list of commands or help for one command
+   Egress:
+     start-room-composite-egress   Start room composite egress
+     start-track-composite-egress  Start track composite egress
+     start-track-egress            Start track egress
+     list-egress                   List all active egress
+     update-layout                 Updates layout for a live room composite egress
+     update-stream                 Adds or removes rtmp output urls from a live stream
+     stop-egress                   Stop egress
+     test-egress-template          See what your egress template will look like in a recording
+   Participant:
+     join-room  joins a room as a participant
+   Recording:
+     start-recording  Starts a recording with a deployed recorder service
+     add-output       Adds an rtmp output url to a live recording
+     remove-output    Removes an rtmp output url from a live recording
+     end-recording    Ends a recording
+   RoomService:
+     create-room
+     list-rooms
+     delete-room
+     update-room-metadata
+     list-participants
+     get-participant
+     remove-participant
+     update-participant
+     mute-track
+     update-subscriptions
+   Token:
+     create-token  creates an access token
+
+GLOBAL OPTIONS:
+   --verbose      (default: false)
+   --help, -h     show help (default: false)
+   --version, -v  print the version (default: false)
 ```
 
 ### Publishing to a room
@@ -73,36 +96,21 @@ Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/m
 
 This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. 
 
-### Recording
+### Recording & egress
 
-Recording requires a [recorder service](https://docs.livekit.io/guides/recording/#service) to be set up first.
+Recording requires [egress service](https://docs.livekit.io/guides/egress/) to be set up first.
+
+Example request.json files are [located here](https://github.com/livekit/livekit-cli/tree/main/cmd/livekit-cli/examples).
 
 ```shell
-% ./bin/livekit-cli start-recording --help
-NAME:
-   livekit-cli start-recording - starts a recording with a deployed recorder service
+# start room composite (recording of room UI)
+livekit-cli start-room-composite-egress --url <your-url> --api-key <key> --api-secret <secret> --request request.json
 
-USAGE:
-   livekit-cli start-recording [command options] [arguments...]
+# start track composite (audio + video)
+livekit-cli start-track-composite-egress --url <your-url> --api-key <key> --api-secret <secret> --request request.json
 
-OPTIONS:
-   --url value         url to LiveKit instance (default: "http://localhost:7880") [$LIVEKIT_URL]
-   --api-key value      [$LIVEKIT_API_KEY]
-   --api-secret value   [$LIVEKIT_API_SECRET]
-   --request value     StartRecordingRequest as json file (see https://github.com/livekit/livekit-recorder#request)
-   --help, -h          show help (default: false)
-```
-
-Sample `request` json file:
-
-```json
-{
-    "template": {
-        "layout": "speaker-dark",
-        "token": "token"
-    },
-    "s3_url": "s3://bucket/path/filename.mp4"
-}
+# start track egress (single audio or video track)
+livekit-cli start-track-egress --url <your-url> --api-key <key> --api-secret <secret> --request request.json
 ```
 
 ## livekit-load-tester
@@ -114,7 +122,9 @@ Load testing utility for LiveKit. This tool is quite versatile and is able to si
 This guide requires a LiveKit server instance to be set up. You can start a load tester with:
 
 ```shell
-$ ./livekit-load-tester --url wss://<your-url> --api-key <key> --api-secret <secret> --room test-room --publishers 8
+$ ./livekit-load-tester --url <your-url> \
+    --api-key <key> --api-secret <secret> \
+    --room test-room --publishers 24
 ```
 
 This simulates 8 video publishers to the room, with no subscribers. Video tracks are published with simulcast, at 720p, 360p, and 180p.
@@ -124,12 +134,21 @@ This simulates 8 video publishers to the room, with no subscribers. Video tracks
 Use `livekit-cli` to generate a token so you can log into the room:
 
 ```shell
-$ ./livekit-cli create-token --join --api-key <key> --api-secret <secret> --room test-room --identity user  
+$ ./livekit-cli create-token --join --api-key <key> --api-secret <secret> \
+    --room test-room --identity user  
 ```
 
-Head over to the [example web client](https://example.livekit.io) and paste in the token, you can see the fake tracks published by the load tester.
+Head over to the [example web client](https://example.livekit.io) and paste in the token, you can see the simulated tracks published by the load tester.
 
-![Load tester screenshot](misc/load-test-screenshot.png?raw=true)
+![Load tester screenshot](misc/load-test-screenshot.jpg?raw=true)
+
+### Running on a cloud VM
+
+Due to bandwidth limitations of your ISP, most of us wouldn't have sufficient bandwidth to be able to simulate 100s of users download/uploading from the internet.
+
+We recommend running the load tester from a VM on a cloud instance, where there isn't a bandwidth constraint.
+
+To make this simple, `make` will generate a linux amd64 binary in `bin/`. You can scp the binary to a server instance and run the test there.
 
 ### Configuring system settings
 
@@ -139,15 +158,10 @@ On the machine that you are running the load tester, they would also need to be 
 
 ```shell
 ulimit -n 65535
-sysctl -w net.core.rmem_max=25165824
 sysctl -w fs.file-max=2097152
 sysctl -w net.core.somaxconn=65535
-sysctl -w net.core.netdev_max_backlog=65535
-sysctl -w net.core.optmem_max=25165824
 sysctl -w net.core.rmem_max=25165824
 sysctl -w net.core.wmem_max=25165824
-sysctl -w net.core.rmem_default=1048576
-sysctl -w net.core.wmem_default=1048576
 ```
 
 ### Simulate subscribers
@@ -160,7 +174,7 @@ of data sent to its subscribers.
 Use this command to simulate a load test of 5 publishers, and 500 subscribers:
 
 ```shell
-$ ./livekit-load-tester --url wss://<your-instance> \
+$ ./livekit-load-tester --url <your-url> \
   --api-key <key> \
   --api-secret <secret> \
   --duration 1m \
@@ -191,8 +205,8 @@ You could customize various parameters of the test such as
 
 * --publishers: number of publishers
 * --subscribers: number of publishers
-* --audio-bitrate: bitrate of audio track
-* --video-bitrate: bitrate of video track
+* --audio-bitrate: publishing audio bitrate; 0 to disable
+* --video-resolution: publishing video resolution. low, medium, high; none to disable
 * --no-simulcast: disables simulcast
 * --num-per-second: number of testers to start each second
 * --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)

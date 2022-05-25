@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/livekit/protocol/auth"
 	"github.com/urfave/cli/v2"
+
+	"github.com/livekit/protocol/auth"
 )
 
 var (
@@ -40,6 +41,11 @@ var (
 					Usage:   "unique identity of the participant, used with --join",
 				},
 				&cli.StringFlag{
+					Name:    "name",
+					Aliases: []string{"n"},
+					Usage:   "name of the participant, used with --join. defaults to identity",
+				},
+				&cli.StringFlag{
 					Name:    "room",
 					Aliases: []string{"r"},
 					Usage:   "name of the room to join",
@@ -63,6 +69,7 @@ func createToken(c *cli.Context) error {
 		return fmt.Errorf("api-key and api-secret are required")
 	}
 	p := c.String("identity") // required only for join
+	name := c.String("name")
 	room := c.String("room")
 	metadata := c.String("metadata")
 	validFor := c.String("valid-for")
@@ -75,7 +82,7 @@ func createToken(c *cli.Context) error {
 		grant.RoomJoin = true
 		grant.Room = room
 		if p == "" {
-			return fmt.Errorf("participant name is required")
+			return fmt.Errorf("participant identity is required")
 		}
 	}
 	if c.Bool("admin") {
@@ -95,6 +102,10 @@ func createToken(c *cli.Context) error {
 	if metadata != "" {
 		at.SetMetadata(metadata)
 	}
+	if name == "" {
+		name = p
+	}
+	at.SetName(name)
 	if validFor != "" {
 		if dur, err := time.ParseDuration(validFor); err == nil {
 			fmt.Println("valid for (mins): ", int(dur/time.Minute))

@@ -105,6 +105,8 @@ var (
 )
 
 func createRecordingClient(c *cli.Context) error {
+	fmt.Println("Warning: recording service is deprecated (use egress service instead)")
+
 	url := c.String("url")
 	apiKey := c.String("api-key")
 	apiSecret := c.String("api-secret")

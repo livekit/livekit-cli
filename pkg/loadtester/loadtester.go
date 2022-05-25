@@ -71,7 +71,7 @@ type TesterParams struct {
 	Subscribe bool
 
 	name           string
-	sequence       int
+	Sequence       int
 	expectedTracks int
 }
 

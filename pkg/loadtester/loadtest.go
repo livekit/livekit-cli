@@ -228,7 +228,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	errs := syncmap.Map{}
 	for i := 0; i < params.Publishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
-		testerParams.sequence = i
+		testerParams.Sequence = i
 		testerParams.expectedTracks = expectedTracks
 		isPublisher := i < params.Publishers
 		if isPublisher {
@@ -261,7 +261,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 						return nil
 					}
 					t.lock.Lock()
-					t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.sequence)
+					t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.Sequence)
 					t.lock.Unlock()
 				}
 
@@ -278,7 +278,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 						return nil
 					}
 					t.lock.Lock()
-					t.trackNames[video] = fmt.Sprintf("%dV", testerParams.sequence)
+					t.trackNames[video] = fmt.Sprintf("%dV", testerParams.Sequence)
 					t.lock.Unlock()
 				}
 			}
