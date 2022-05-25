@@ -9,11 +9,15 @@ This package includes command line utilities that interacts with LiveKit. It all
 
 ## Installation
 
-This repo uses Git LFS for embedded video resources. Please ensure git-lfs is installed on your machine.
+You can download [latest release here](https://github.com/livekit/livekit-cli/releases/latest). 
+
+### Building from source
+
+This repo uses [Git LFS](https://git-lfs.github.com/) for embedded video resources. Please ensure git-lfs is installed on your machine.
 
 ```shell
-$ go install github.com/livekit/livekit-cli/cmd/livekit-cli@latest
-$ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester@latest
+git clone github.com/livekit/livekit-cli
+make install
 ```
 
 ## Usage
@@ -21,7 +25,7 @@ $ go install github.com/livekit/livekit-cli/cmd/livekit-load-tester@latest
 ## livekit-cli
 
 ```shell
-% ./bin/livekit-cli --help
+% livekit-cli --help
 NAME:
    livekit-cli - CLI client to LiveKit
 
@@ -29,7 +33,7 @@ USAGE:
    livekit-cli [global options] command [command options] [arguments...]
 
 VERSION:
-   0.7.2
+   0.8.1
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command
@@ -76,7 +80,7 @@ GLOBAL OPTIONS:
 To publish a demo video as a participant's track, use the following.
 
 ```shell
-% ./bin/livekit-cli join-room --room yourroom --identity publisher \
+% livekit-cli join-room --room yourroom --identity publisher \
   --publish-demo
 ```
 
@@ -88,7 +92,7 @@ You can publish your own audio/video files. These tracks files need to be encode
 Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
 
 ```shell
-% ./bin/livekit-cli join-room --room yourroom --identity publisher \
+% livekit-cli join-room --room yourroom --identity publisher \
   --publish path/to/video.ivf \
   --publish path/to/audio.ogg \
   --fps 23.98
@@ -122,7 +126,7 @@ Load testing utility for LiveKit. This tool is quite versatile and is able to si
 This guide requires a LiveKit server instance to be set up. You can start a load tester with:
 
 ```shell
-$ ./livekit-load-tester --url <your-url> \
+$ livekit-load-tester --url <your-url> \
     --api-key <key> --api-secret <secret> \
     --room test-room --publishers 24
 ```
@@ -134,7 +138,7 @@ This simulates 8 video publishers to the room, with no subscribers. Video tracks
 Use `livekit-cli` to generate a token so you can log into the room:
 
 ```shell
-$ ./livekit-cli create-token --join --api-key <key> --api-secret <secret> \
+$ livekit-cli create-token --join --api-key <key> --api-secret <secret> \
     --room test-room --identity user  
 ```
 
@@ -174,7 +178,7 @@ of data sent to its subscribers.
 Use this command to simulate a load test of 5 publishers, and 500 subscribers:
 
 ```shell
-$ ./livekit-load-tester --url <your-url> \
+$ livekit-load-tester --url <your-url> \
   --api-key <key> \
   --api-secret <secret> \
   --duration 1m \
