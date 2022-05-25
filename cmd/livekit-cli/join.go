@@ -144,8 +144,8 @@ func publishFiles(room *lksdk.Room, files []string, fps float64) error {
 
 		// Configure provider
 		var pub *lksdk.LocalTrackPublication
-		opts := []lksdk.MediaSampleProviderOption{
-			lksdk.MediaTrackWithOnWriteComplete(func() {
+		opts := []lksdk.ReaderSampleProviderOption{
+			lksdk.ReaderTrackWithOnWriteComplete(func() {
 				fmt.Println("finished writing file", f)
 				if pub != nil {
 					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
@@ -158,7 +158,7 @@ func publishFiles(room *lksdk.Room, files []string, fps float64) error {
 		if ext == ".h264" || ext == ".ivf" {
 			if fps != 0 {
 				frameDuration := time.Second / time.Duration(fps)
-				opts = append(opts, lksdk.MediaTrackWithFrameDuration(frameDuration))
+				opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
 			}
 		}
 
@@ -179,8 +179,8 @@ func publishFiles(room *lksdk.Room, files []string, fps float64) error {
 func publishStream(room *lksdk.Room, in io.ReadCloser, mime string, fps float64) error {
 	// Configure provider
 	var pub *lksdk.LocalTrackPublication
-	opts := []lksdk.MediaSampleProviderOption{
-		lksdk.MediaTrackWithOnWriteComplete(func() {
+	opts := []lksdk.ReaderSampleProviderOption{
+		lksdk.ReaderTrackWithOnWriteComplete(func() {
 			fmt.Println("finished writing stream")
 			if pub != nil {
 				_ = room.LocalParticipant.UnpublishTrack(pub.SID())
@@ -204,7 +204,7 @@ func publishStream(room *lksdk.Room, in io.ReadCloser, mime string, fps float64)
 	if strings.EqualFold(mime, webrtc.MimeTypeVP8) || strings.EqualFold(mime, webrtc.MimeTypeH264) {
 		if fps != 0 {
 			frameDuration := time.Second / time.Duration(fps)
-			opts = append(opts, lksdk.MediaTrackWithFrameDuration(frameDuration))
+			opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
 		}
 	}
 
