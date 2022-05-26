@@ -111,7 +111,7 @@ publisher \
 
 If you need to handle multiple streams, you can use Unix socket. In this mode, the CLI acts as socket listener. The socket name must contain one of the keywords (`opus`, `vp8` or `h264`) so the CLI can infer which codec reader to use.
 
-The following example uses `cat` and `netcat (nc)` to publish video & audio tracks. For use in your application, you can look up how to send data to Unix domain socket in your language (yes, any language!).
+The following example uses `cat` and `netcat (nc)` to publish video & audio tracks. For use in your application, you can look up how to send data to Unix Domain Socket (UDS) in your language (yes, any language!).
 
 Video:
 
@@ -128,7 +128,7 @@ Audio:
 LiveKit CLI:
 
 ```shell
-./bin/livekit-cli join-room --room yourroom --identity
+% ./bin/livekit-cli join-room --room yourroom --identity
 publisher \
   --publish-socket /tmp/livekit-opus.sock \
   --publish-socket /tmp/livekit-h264.sock \
