@@ -2,10 +2,10 @@
 
 This package includes command line utilities that interacts with LiveKit. It allows you to:
 
-- Create access tokens
-- Access LiveKit APIs, create, delete rooms, etc
-- Join a room as a participant, inspecting in-room events
-- Perform load testing, efficiently simulating real-world load
+-   Create access tokens
+-   Access LiveKit APIs, create, delete rooms, etc
+-   Join a room as a participant, inspecting in-room events
+-   Perform load testing, efficiently simulating real-world load
 
 ## Installation
 
@@ -71,7 +71,7 @@ GLOBAL OPTIONS:
 
 ### Publishing to a room
 
-#### Demo video track 
+#### Demo video track
 
 To publish a demo video as a participant's track, use the following.
 
@@ -89,12 +89,57 @@ Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/m
 
 ```shell
 % ./bin/livekit-cli join-room --room yourroom --identity publisher \
-  --publish path/to/video.ivf \
-  --publish path/to/audio.ogg \
+  --publish-file path/to/video.ivf \
+  --publish-file path/to/audio.ogg \
   --fps 23.98
 ```
 
-This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. 
+This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98.
+
+#### Publish stream via stdin
+
+You can pipe a single stream of video / audio data from another process to the CLI. The following example uses `cat`, but instead of publishing as a file, we're using Unix pipe.
+
+```shell
+% cat /path/to/video.h264 | ./bin/livekit-cli join-room --room yourroom --identity
+publisher \
+  --publish-stdin {one of video/h264, video/vp8, audio/opus} \
+  --fps 23.98
+```
+
+#### Publish stream via Unix socket
+
+If you need to handle multiple streams, you can use Unix socket. In this mode, the CLI acts as socket listener. The socket name must contain one of the keywords (`opus`, `vp8` or `h264`) so the CLI can infer which codec reader to use.
+
+The following example uses `cat` and `netcat (nc)` to publish video & audio tracks. For use in your application, you can look up how to send data to Unix domain socket in your language (yes, any language!).
+
+Video:
+
+```shell
+% cat /path/to/video.h264 | nc -l -U /tmp/livekit-h264.sock
+```
+
+Audio:
+
+```shell
+% cat /path/to/audio.ogg | nc -l -U /tmp/livekit-opus.sock
+```
+
+LiveKit CLI:
+
+```shell
+./bin/livekit-cli join-room --room yourroom --identity
+publisher \
+  --publish-socket /tmp/livekit-opus.sock \
+  --publish-socket /tmp/livekit-h264.sock \
+  --fps 23.98
+```
+
+Note that with `netcat`, you need to remove the socket files when you want to reuse it, otherwise you'll get `bind: address already in use` error:
+
+```shell
+% rm /tmp/livekit-opus.sock /tmp/livekit-h264.sock
+```
 
 ### Recording & egress
 
@@ -135,7 +180,7 @@ Use `livekit-cli` to generate a token so you can log into the room:
 
 ```shell
 $ ./livekit-cli create-token --join --api-key <key> --api-secret <secret> \
-    --room test-room --identity user  
+    --room test-room --identity user
 ```
 
 Head over to the [example web client](https://example.livekit.io) and paste in the token, you can see the simulated tracks published by the load tester.
@@ -203,10 +248,10 @@ Summary | Tester  | Tracks    | Bitrate                 | Latency     | Total Dr
 
 You could customize various parameters of the test such as
 
-* --publishers: number of publishers
-* --subscribers: number of publishers
-* --audio-bitrate: publishing audio bitrate; 0 to disable
-* --video-resolution: publishing video resolution. low, medium, high; none to disable
-* --no-simulcast: disables simulcast
-* --num-per-second: number of testers to start each second
-* --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)
+-   --publishers: number of publishers
+-   --subscribers: number of publishers
+-   --audio-bitrate: publishing audio bitrate; 0 to disable
+-   --video-resolution: publishing video resolution. low, medium, high; none to disable
+-   --no-simulcast: disables simulcast
+-   --num-per-second: number of testers to start each second
+-   --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)
