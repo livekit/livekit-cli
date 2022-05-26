@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -48,6 +51,10 @@ var (
 				&cli.Float64Flag{
 					Name:  "fps",
 					Usage: "if video files are published, indicates FPS of video",
+				},
+				&cli.StringFlag{
+					Name:  "publish-socket",
+					Usage: "specify socket address that contains one of the following: h264, vp8, opus",
 				},
 			},
 		},
@@ -102,6 +109,32 @@ func joinRoom(c *cli.Context) error {
 		fps := c.Float64("fps")
 		// Extract data stream from stdin, which is an io.ReadCloser
 		if err = publishStream(room, os.Stdin, codec, fps); err != nil {
+			return err
+		}
+	}
+	if c.String("publish-socket") != "" {
+		socketAddr := c.String("publish-socket")
+		var codec string
+		switch {
+		case strings.Contains(socketAddr, "vp8"):
+			codec = "video/vp8"
+		case strings.Contains(socketAddr, "h264"):
+			codec = "video/h264"
+		case strings.Contains(socketAddr, "opus"):
+			codec = "audio/opus"
+		default:
+			return errors.New("codec must be one of `vp8`, `h264`, or `opus`")
+		}
+		fps := c.Float64("fps")
+
+		socket, err := net.Dial("unix", socketAddr)
+		if err != nil {
+			log.Fatal("listen error:", err)
+		} else {
+			log.Printf("socket received: %s:%s\n", socket.RemoteAddr().Network(), socket.RemoteAddr().String())
+		}
+		log.Printf("codec: %s\n", codec)
+		if err = publishStream(room, socket, codec, fps); err != nil {
 			return err
 		}
 	}
