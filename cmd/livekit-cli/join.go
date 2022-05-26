@@ -1,10 +1,8 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net"
 	"os"
@@ -45,16 +43,16 @@ var (
 					Usage: "files to publish as tracks to room (supports .h264, .ivf, .ogg). can be used multiple times to publish multiple files",
 				},
 				&cli.StringFlag{
-					Name:  "publish-stream",
-					Usage: "can only be one of the following (must be lower-case): video/h264, video/vp8, audio/opus",
+					Name:  "publish-stdin",
+					Usage: "use OS stdin to publish a single track to room (must be one of: video/h264, video/vp8, audio/opus). can only be one stream",
+				},
+				&cli.StringSliceFlag{
+					Name:  "publish-socket",
+					Usage: "use Unix socket as channel to publish tracks to room (must contain one of the keywords: h264, vp8, opus). can be used multiple times to publish multiple tracks",
 				},
 				&cli.Float64Flag{
 					Name:  "fps",
 					Usage: "if video files are published, indicates FPS of video",
-				},
-				&cli.StringFlag{
-					Name:  "publish-socket",
-					Usage: "specify socket address that contains one of the following: h264, vp8, opus",
 				},
 			},
 		},
@@ -71,6 +69,7 @@ func joinRoom(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defer room.Disconnect()
 
 	logger.Infow("connected to room", "room", room.Name)
 
@@ -104,43 +103,22 @@ func joinRoom(c *cli.Context) error {
 			return err
 		}
 	}
-	if c.String("publish-stream") != "" {
-		codec := c.String("publish-stream")
+	if c.String("publish-stdin") != "" {
+		mime := c.String("publish-stdin")
 		fps := c.Float64("fps")
-		// Extract data stream from stdin, which is an io.ReadCloser
-		if err = publishStream(room, os.Stdin, codec, fps); err != nil {
+		if err = publishStdin(room, mime, fps); err != nil {
 			return err
 		}
 	}
-	if c.String("publish-socket") != "" {
-		socketAddr := c.String("publish-socket")
-		var codec string
-		switch {
-		case strings.Contains(socketAddr, "vp8"):
-			codec = "video/vp8"
-		case strings.Contains(socketAddr, "h264"):
-			codec = "video/h264"
-		case strings.Contains(socketAddr, "opus"):
-			codec = "audio/opus"
-		default:
-			return errors.New("codec must be one of `vp8`, `h264`, or `opus`")
-		}
+	if c.StringSlice("publish-socket") != nil {
+		addrs := c.StringSlice("publish-socket")
 		fps := c.Float64("fps")
-
-		socket, err := net.Dial("unix", socketAddr)
-		if err != nil {
-			log.Fatal("listen error:", err)
-		} else {
-			log.Printf("socket received: %s:%s\n", socket.RemoteAddr().Network(), socket.RemoteAddr().String())
-		}
-		log.Printf("codec: %s\n", codec)
-		if err = publishStream(room, socket, codec, fps); err != nil {
+		if err = publishSocket(room, addrs, fps); err != nil {
 			return err
 		}
 	}
 
 	<-done
-	room.Disconnect()
 	return nil
 }
 
@@ -209,32 +187,54 @@ func publishFiles(room *lksdk.Room, files []string, fps float64) error {
 	return nil
 }
 
-func publishStream(room *lksdk.Room, in io.ReadCloser, mime string, fps float64) error {
+func publishStdin(room *lksdk.Room, mime string, fps float64) error {
+	return publishReader(room, os.Stdin, mime, fps)
+}
+
+func publishSocket(room *lksdk.Room, addrs []string, fps float64) error {
+	for _, addr := range addrs {
+		// Dial Unix socket
+		sock, err := net.Dial("unix", addr)
+		if err != nil {
+			return err
+		}
+
+		// Determine mime type
+		var mime string
+		switch {
+		case strings.Contains(addr, "h264"):
+			mime = webrtc.MimeTypeH264
+		case strings.Contains(addr, "vp8"):
+			mime = webrtc.MimeTypeVP8
+		case strings.Contains(addr, "opus"):
+			mime = webrtc.MimeTypeOpus
+		default:
+			return lksdk.ErrUnsupportedFileType
+		}
+
+		// Publish to room
+		if err = publishReader(room, sock, mime, fps); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func publishReader(room *lksdk.Room, in io.ReadCloser, mime string, fps float64) error {
 	// Configure provider
 	var pub *lksdk.LocalTrackPublication
 	opts := []lksdk.ReaderSampleProviderOption{
 		lksdk.ReaderTrackWithOnWriteComplete(func() {
-			fmt.Println("finished writing stream")
+			fmt.Printf("finished writing %s stream\n", mime)
 			if pub != nil {
 				_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 			}
 		}),
 	}
 
-	// Map CLI mime type (lower-case) to webrtc's mime type (upper-case)
-	switch mime {
-	case "video/h264":
-		mime = webrtc.MimeTypeH264
-	case "video/vp8":
-		mime = webrtc.MimeTypeVP8
-	case "audio/opus":
-		mime = webrtc.MimeTypeOpus
-	default:
-		return lksdk.ErrUnsupportedFileType
-	}
-
 	// Set frame rate if it's a video stream and FPS is set
-	if strings.EqualFold(mime, webrtc.MimeTypeVP8) || strings.EqualFold(mime, webrtc.MimeTypeH264) {
+	if strings.EqualFold(mime, webrtc.MimeTypeVP8) ||
+		strings.EqualFold(mime, webrtc.MimeTypeH264) {
 		if fps != 0 {
 			frameDuration := time.Second / time.Duration(fps)
 			opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
