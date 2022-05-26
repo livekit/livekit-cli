@@ -188,7 +188,20 @@ func publishFiles(room *lksdk.Room, files []string, fps float64) error {
 }
 
 func publishStdin(room *lksdk.Room, mime string, fps float64) error {
-	return publishReader(room, os.Stdin, mime, fps)
+	// Determine mime type
+	var codec string
+	switch {
+	case strings.Contains(mime, "h264"):
+		mime = webrtc.MimeTypeH264
+	case strings.Contains(mime, "vp8"):
+		mime = webrtc.MimeTypeVP8
+	case strings.Contains(mime, "opus"):
+		mime = webrtc.MimeTypeOpus
+	default:
+		return lksdk.ErrUnsupportedFileType
+	}
+
+	return publishReader(room, os.Stdin, codec, fps)
 }
 
 func publishSocket(room *lksdk.Room, addrs []string, fps float64) error {
