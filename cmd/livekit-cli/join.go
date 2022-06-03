@@ -112,8 +112,8 @@ func joinRoom(c *cli.Context) error {
 	for _, f := range files {
 		f := f
 		var pub *lksdk.LocalTrackPublication
-		opts := []lksdk.FileSampleProviderOption{
-			lksdk.FileTrackWithOnWriteComplete(func() {
+		opts := []lksdk.ReaderSampleProviderOption{
+			lksdk.ReaderTrackWithOnWriteComplete(func() {
 				fmt.Println("finished writing file", f)
 				if pub != nil {
 					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
@@ -125,7 +125,7 @@ func joinRoom(c *cli.Context) error {
 			fps := c.Float64("fps")
 			if fps != 0 {
 				frameDuration := time.Second / time.Duration(fps)
-				opts = append(opts, lksdk.FileTrackWithFrameDuration(frameDuration))
+				opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
 			}
 		}
 		track, err := lksdk.NewLocalFileTrack(f, opts...)
