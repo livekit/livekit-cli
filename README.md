@@ -82,34 +82,24 @@ To publish a demo video as a participant's track, use the following.
 
 It'll publish the video track with Simulcast, at 720p, 360p, and 180p.
 
-#### Publish files as tracks
+#### Publish files
 
 You can publish your own audio/video files. These tracks files need to be encoded in supported codecs.
 Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
 
 ```shell
 % ./bin/livekit-cli join-room --room yourroom --identity publisher \
-  --publish-file path/to/video.ivf \
-  --publish-file path/to/audio.ogg \
+  --publish path/to/video.ivf \
+  --publish path/to/audio.ogg \
   --fps 23.98
 ```
 
 This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98.
 
-#### Publish stream via stdin
+#### Publish Unix sockets
 
-You can pipe a single stream of video / audio data from another process to the CLI. The following example uses `cat`, but instead of publishing as a file, we're using Unix pipe.
-
-```shell
-% cat /path/to/video.h264 | ./bin/livekit-cli join-room --room yourroom --identity
-publisher \
-  --publish-stdin {one of video/h264, video/vp8, audio/opus} \
-  --fps 23.98
-```
-
-#### Publish stream via Unix socket
-
-If you need to handle multiple streams, you can use Unix socket. In this mode, the CLI acts as socket listener. The socket name must contain one of the keywords (`opus`, `vp8` or `h264`) so the CLI can infer which codec reader to use.
+If you need to handle streams from your application, you can use Unix socket. In this mode, the CLI acts as socket listeners.
+The argument passed should be in the format `--publish unix:{socket-name}`. The socket name must contain one of the keywords (`opus`, `vp8` or `h264`) so the CLI can infer which codec reader to use.
 
 The following example uses `cat` and `netcat (nc)` to publish video & audio tracks. For use in your application, you can look up how to send data to Unix Domain Socket (UDS) in your language (yes, any language!).
 
@@ -130,8 +120,8 @@ LiveKit CLI:
 ```shell
 % ./bin/livekit-cli join-room --room yourroom --identity
 publisher \
-  --publish-socket /tmp/livekit-opus.sock \
-  --publish-socket /tmp/livekit-h264.sock \
+  --publish unix:/tmp/livekit-opus.sock \
+  --publish unix:/tmp/livekit-h264.sock \
   --fps 23.98
 ```
 

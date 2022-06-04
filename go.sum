@@ -123,8 +123,8 @@ github.com/lithammer/shortuuid/v3 v3.0.7 h1:trX0KTHy4Pbwo/6ia8fscyHoGA+mf1jWbPJV
 github.com/lithammer/shortuuid/v3 v3.0.7/go.mod h1:vMk8ke37EmiewwolSO1NLW8vP4ZaKlRuDIi8tWWmAts=
 github.com/livekit/protocol v0.13.2 h1:0rTlqdkiWiuGKRoLJzKxsVRfGjspyjFzpudWSYOnLEM=
 github.com/livekit/protocol v0.13.2/go.mod h1:BLtSeVmn2rLP37xjzw7gHgaAmkWl3L/L9bPvgSbaOfo=
-github.com/livekit/server-sdk-go v0.10.0 h1:YL+SXr/xZV8y0SB6Nh6Je3guH+7JURJS01kbX2P9qQA=
-github.com/livekit/server-sdk-go v0.10.0/go.mod h1:z09cpBfyYoqqrqtQASxzcB1/gOMFA2Guts/LhO6kjnI=
+github.com/livekit/server-sdk-go v0.10.1 h1:0SX/z2nFi7VRz/VbUY7gXbT1ZfzyxDS4S7hh6RLjIfI=
+github.com/livekit/server-sdk-go v0.10.1/go.mod h1:z09cpBfyYoqqrqtQASxzcB1/gOMFA2Guts/LhO6kjnI=
 github.com/matttproud/golang_protobuf_extensions v1.0.1 h1:4hp9jkHxhMHkqkrB3Ix0jegS5sx/RkqARlsWZ6pIwiU=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/maxbrunsfeld/counterfeiter/v6 v6.3.0/go.mod h1:fcEyUyXZXoV4Abw8DX0t7wyL8mCDxXyU4iAFZfT3IHw=
