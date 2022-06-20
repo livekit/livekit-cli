@@ -94,42 +94,61 @@ Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/m
   --fps 23.98
 ```
 
-This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98.
+This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; audio is saved using preset bitrate.
 
-#### Publish Unix sockets
+#### Publish from Unix sockets
 
-If you need to handle streams from your application, you can use Unix socket. In this mode, the CLI acts as socket listeners.
+If you need to handle live media in your application, you can use Unix Domain Socket (UDS), which is a shared memory in a Unix-based OS. In this mode, the CLI listens to the socket and pushes incoming data to the room.
+
 The argument passed should be in the format `--publish unix:{socket-name}`. The socket name must contain one of the keywords (`opus`, `vp8` or `h264`) so the CLI can infer which codec reader to use.
 
-The following example uses `cat` and `netcat (nc)` to publish video & audio tracks. For use in your application, you can look up how to send data to Unix Domain Socket (UDS) in your language (yes, any language!).
+##### FFMPEG
 
-Video:
+We pass `-listen 1` so that FFMPEG manages the socket lifecycle for us; it will remove the socket when either of the process exits.
+
+Video (need to disable B-frames `-bf 0` and buffered write `-max_delay 0`):
 
 ```shell
-% cat /path/to/video.h264 | nc -l -U /tmp/livekit-h264.sock
+% ffmpeg -i /path/to/video.h264 \
+    -bf 0 -max_delay 0 -listen 1 \
+    -f h264 \
+    unix:/tmp/ffmpeg-h264.sock
 ```
 
-Audio:
+Audio (`page_duration` needs to be set to prevent premature exit due to DTX):
 
 ```shell
-% cat /path/to/audio.ogg | nc -l -U /tmp/livekit-opus.sock
+% ffmpeg -i /path/to/audio.ogg \
+    -c:a libopus -page_duration 20000 -listen 1 \
+    -f opus \
+    unix:/tmp/ffmpeg-opus.sock
 ```
 
 LiveKit CLI:
 
 ```shell
-% ./bin/livekit-cli join-room --room yourroom --identity
+% ./bin/livekit-cli join-room --room myroom --identity
 publisher \
-  --publish unix:/tmp/livekit-opus.sock \
-  --publish unix:/tmp/livekit-h264.sock \
+  --publish unix:/tmp/ffmpeg-opus.sock \
+  --publish unix:/tmp/ffmpeg-h264.sock \
   --fps 23.98
 ```
 
-Note that with `netcat`, you need to remove the socket files when you want to reuse it, otherwise you'll get `bind: address already in use` error:
+##### Custom application
+
+1. In your preferred language, google how to create a Unix socket. For instance, check out this [site](https://pymotw.com/2/socket/uds.html) for Python. Once a socket is created, any other process that try to create the same socket will result in an error like `bind: address already in use`. You can now push data to the socket.
+
+2. For debugging purpose, it's a good idea to verify that the stream is playable before pushing to LiveKit. Given H.264 data pushed to the socket `unix:/tmp/myapp-h264.sock`, we can play it using `ffplay unix:/tmp/myapp-h264.sock`. Once you're happy with the result, make sure the `ffplay` process is closed.
+
+3. Once the stream is verified, execute the following Shell command in your chosen language:
 
 ```shell
-% rm /tmp/livekit-opus.sock /tmp/livekit-h264.sock
+% ./bin/livekit-cli join-room --room myroom --identity publisher \
+  --publish unix:/tmp/myapp-h264.sock \
+  --fps 23.98
 ```
+
+4. When the UDS pipeline finishes, ensure you delete the socket `rm /tmp/myapp-h264.sock` to clean up and avoid the `bind: address already in use` error.
 
 ### Recording & egress
 
