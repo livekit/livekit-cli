@@ -6,8 +6,8 @@ require (
 	github.com/ggwhite/go-masker v1.0.4
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/stdr v1.2.2
-	github.com/livekit/protocol v0.13.2
-	github.com/livekit/server-sdk-go v0.10.1-0.20220603080600-bf77157fb5af
+	github.com/livekit/protocol v0.13.3
+	github.com/livekit/server-sdk-go v0.10.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtp v1.7.13
 	github.com/pion/webrtc/v3 v3.1.41
@@ -34,6 +34,7 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jxskiss/base62 v1.1.0 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
+	github.com/magefile/mage v1.13.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/pion/datachannel v1.5.2 // indirect
