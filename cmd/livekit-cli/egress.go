@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ggwhite/go-masker"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -238,15 +238,12 @@ func startRoomCompositeEgress(c *cli.Context) error {
 		PrintJSON(req)
 	}
 
-	res, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
-	if err == nil && res.Error != "" {
-		err = errors.New(res.Error)
-	}
+	info, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Egress started. Egress ID: %s\n", res.EgressId)
+	printInfo(info)
 	return nil
 }
 
@@ -267,15 +264,12 @@ func startTrackCompositeEgress(c *cli.Context) error {
 		PrintJSON(req)
 	}
 
-	res, err := egressClient.StartTrackCompositeEgress(context.Background(), req)
-	if err == nil && res.Error != "" {
-		err = errors.New(res.Error)
-	}
+	info, err := egressClient.StartTrackCompositeEgress(context.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Egress started. Egress ID: %s\n", res.EgressId)
+	printInfo(info)
 	return nil
 }
 
@@ -296,15 +290,12 @@ func startTrackEgress(c *cli.Context) error {
 		PrintJSON(req)
 	}
 
-	res, err := egressClient.StartTrackEgress(context.Background(), req)
-	if err == nil && res.Error != "" {
-		err = errors.New(res.Error)
-	}
+	info, err := egressClient.StartTrackEgress(context.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Egress started. Egress ID: %s\n", res.EgressId)
+	printInfo(info)
 	return nil
 }
 
@@ -312,35 +303,67 @@ func listEgress(c *cli.Context) error {
 	res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
 		RoomName: c.String("room"),
 	})
-
-	for _, item := range res.Items {
-		fmt.Printf("%v (%v)\n", item.EgressId, item.Status)
+	if err != nil {
+		return err
 	}
-	return err
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"EgressID", "Status", "Started At", "Error"})
+	for _, item := range res.Items {
+		var startedAt string
+		if item.StartedAt != 0 {
+			startedAt = fmt.Sprint(time.Unix(0, item.StartedAt))
+		}
+
+		table.Append([]string{
+			item.EgressId,
+			item.Status.String(),
+			startedAt,
+			item.Error,
+		})
+	}
+	table.Render()
+
+	return nil
 }
 
 func updateLayout(c *cli.Context) error {
-	_, err := egressClient.UpdateLayout(context.Background(), &livekit.UpdateLayoutRequest{
+	info, err := egressClient.UpdateLayout(context.Background(), &livekit.UpdateLayoutRequest{
 		EgressId: c.String("id"),
 		Layout:   c.String("layout"),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
 }
 
 func updateStream(c *cli.Context) error {
-	_, err := egressClient.UpdateStream(context.Background(), &livekit.UpdateStreamRequest{
+	info, err := egressClient.UpdateStream(context.Background(), &livekit.UpdateStreamRequest{
 		EgressId:         c.String("id"),
 		AddOutputUrls:    c.StringSlice("add-urls"),
 		RemoveOutputUrls: c.StringSlice("remove-urls"),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
 }
 
 func stopEgress(c *cli.Context) error {
-	_, err := egressClient.StopEgress(context.Background(), &livekit.StopEgressRequest{
+	info, err := egressClient.StopEgress(context.Background(), &livekit.StopEgressRequest{
 		EgressId: c.String("id"),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
 }
 
 func testEgressTemplate(c *cli.Context) error {
@@ -405,4 +428,12 @@ func testEgressTemplate(c *cli.Context) error {
 		lt.Stop()
 	}
 	return nil
+}
+
+func printInfo(info *livekit.EgressInfo) {
+	if info.Error == "" {
+		fmt.Printf("EgressID: %v Status: %v\n", info.EgressId, info.Status)
+	} else {
+		fmt.Printf("EgressID: %v Error: %v\n", info.EgressId, info.Error)
+	}
 }

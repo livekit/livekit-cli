@@ -90,6 +90,7 @@ func joinRoom(c *cli.Context) error {
 			return err
 		}
 	}
+
 	if c.StringSlice("publish") != nil {
 		fps := c.Float64("fps")
 		for _, pub := range c.StringSlice("publish") {

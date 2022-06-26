@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -59,6 +60,10 @@ var (
 					Usage: "amount of time that the token is valid for. i.e. \"5m\", \"1h10m\" (s: seconds, m: minutes, h: hours)",
 					Value: "5m",
 				},
+				&cli.StringFlag{
+					Name:  "grant",
+					Usage: "additional VideoGrant fields. It'll be merged with other arguments (JSON formatted)",
+				},
 			},
 		},
 	}
@@ -91,6 +96,12 @@ func createToken(c *cli.Context) error {
 	}
 	if c.Bool("list") {
 		grant.RoomList = true
+	}
+
+	if str := c.String("grant"); str != "" {
+		if err := json.Unmarshal([]byte(str), grant); err != nil {
+			return err
+		}
 	}
 
 	if !grant.RoomJoin && !grant.RoomCreate && !grant.RoomAdmin && !grant.RoomList {
