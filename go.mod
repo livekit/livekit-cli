@@ -10,7 +10,8 @@ require (
 	github.com/livekit/server-sdk-go v0.10.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtp v1.7.13
-	github.com/pion/webrtc/v3 v3.1.41
+	// 3.1.40 broke sender-side simulcast
+	github.com/pion/webrtc/v3 v3.1.39
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli/v2 v2.3.0
