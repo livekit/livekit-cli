@@ -2,10 +2,10 @@
 
 This package includes command line utilities that interacts with LiveKit. It allows you to:
 
-- Create access tokens
-- Access LiveKit APIs, create, delete rooms, etc
-- Join a room as a participant, inspecting in-room events
-- Perform load testing, efficiently simulating real-world load
+-   Create access tokens
+-   Access LiveKit APIs, create, delete rooms, etc
+-   Join a room as a participant, inspecting in-room events
+-   Perform load testing, efficiently simulating real-world load
 
 ## Installation
 
@@ -75,7 +75,7 @@ GLOBAL OPTIONS:
 
 ### Publishing to a room
 
-#### Demo video track 
+#### Demo video track
 
 To publish a demo video as a participant's track, use the following.
 
@@ -86,7 +86,7 @@ To publish a demo video as a participant's track, use the following.
 
 It'll publish the video track with Simulcast, at 720p, 360p, and 180p.
 
-#### Publish files as tracks
+#### Publish files
 
 You can publish your own audio/video files. These tracks files need to be encoded in supported codecs.
 Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
@@ -98,7 +98,61 @@ Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/m
   --fps 23.98
 ```
 
-This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. 
+This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; audio is saved using preset bitrate.
+
+#### Publish from Unix sockets
+
+If you need to handle live media in your application, you can use Unix Domain Socket (UDS), which is a shared memory in a Unix-based OS. In this mode, the CLI listens to the socket and pushes incoming data to the room.
+
+The argument passed should be in the format `--publish unix:{socket-name}`. The socket name must contain one of the keywords (`opus`, `vp8` or `h264`) so the CLI can infer which codec reader to use.
+
+##### FFMPEG
+
+We pass `-listen 1` so that FFMPEG manages the socket lifecycle for us; it will remove the socket when either of the process exits.
+
+Video (need to disable B-frames `-bf 0` and buffered write `-max_delay 0`):
+
+```shell
+% ffmpeg -i /path/to/video.h264 \
+    -bf 0 -max_delay 0 -listen 1 \
+    -f h264 \
+    unix:/tmp/ffmpeg-h264.sock
+```
+
+Audio (`page_duration` needs to be set to prevent premature exit due to DTX):
+
+```shell
+% ffmpeg -i /path/to/audio.ogg \
+    -c:a libopus -page_duration 20000 -listen 1 \
+    -f opus \
+    unix:/tmp/ffmpeg-opus.sock
+```
+
+LiveKit CLI:
+
+```shell
+% ./bin/livekit-cli join-room --room myroom --identity
+publisher \
+  --publish unix:/tmp/ffmpeg-opus.sock \
+  --publish unix:/tmp/ffmpeg-h264.sock \
+  --fps 23.98
+```
+
+##### Custom application
+
+1. In your preferred language, google how to create a Unix socket. For instance, check out this [site](https://pymotw.com/2/socket/uds.html) for Python. Once a socket is created, any other process that try to create the same socket will result in an error like `bind: address already in use`. You can now push data to the socket.
+
+2. For debugging purpose, it's a good idea to verify that the stream is playable before pushing to LiveKit. Given H.264 data pushed to the socket `unix:/tmp/myapp-h264.sock`, we can play it using `ffplay unix:/tmp/myapp-h264.sock`. Once you're happy with the result, make sure the `ffplay` process is closed.
+
+3. Once the stream is verified, execute the following Shell command in your chosen language:
+
+```shell
+% ./bin/livekit-cli join-room --room myroom --identity publisher \
+  --publish unix:/tmp/myapp-h264.sock \
+  --fps 23.98
+```
+
+4. When the UDS pipeline finishes, ensure you delete the socket `rm /tmp/myapp-h264.sock` to clean up and avoid the `bind: address already in use` error.
 
 ### Recording & egress
 
@@ -207,10 +261,10 @@ Summary | Tester  | Tracks    | Bitrate                 | Latency     | Total Dr
 
 You could customize various parameters of the test such as
 
-* --publishers: number of publishers
-* --subscribers: number of publishers
-* --audio-bitrate: publishing audio bitrate; 0 to disable
-* --video-resolution: publishing video resolution. low, medium, high; none to disable
-* --no-simulcast: disables simulcast
-* --num-per-second: number of testers to start each second
-* --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)
+-   --publishers: number of publishers
+-   --subscribers: number of publishers
+-   --audio-bitrate: publishing audio bitrate; 0 to disable
+-   --video-resolution: publishing video resolution. low, medium, high; none to disable
+-   --no-simulcast: disables simulcast
+-   --num-per-second: number of testers to start each second
+-   --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)

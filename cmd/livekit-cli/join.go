@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"math"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -31,13 +34,15 @@ var (
 				identityFlag,
 				apiKeyFlag,
 				secretFlag,
-				&cli.StringSliceFlag{
-					Name:  "publish",
-					Usage: "files to publish as tracks to room (supports .h264, .ivf, .ogg). can be used multiple times to publish multiple files",
-				},
 				&cli.BoolFlag{
 					Name:  "publish-demo",
 					Usage: "publish demo video as a loop",
+				},
+				&cli.StringSliceFlag{
+					Name: "publish",
+					Usage: "files to publish as tracks to room (supports .h264, .ivf, .ogg). " +
+						"can be used multiple times to publish multiple files. " +
+						"can publish from Unix socket using the format `unix:{socket-name}`; socket name must contain one of the keywords: h264, vp8, opus",
 				},
 				&cli.Float64Flag{
 					Name:  "fps",
@@ -58,6 +63,7 @@ func joinRoom(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defer room.Disconnect()
 
 	logger.Infow("connected to room", "room", room.Name)
 
@@ -80,66 +86,147 @@ func joinRoom(c *cli.Context) error {
 	}
 
 	if c.Bool("publish-demo") {
-		var tracks []*lksdk.LocalSampleTrack
-		for q := livekit.VideoQuality_LOW; q <= livekit.VideoQuality_HIGH; q++ {
-			height := 180 * int(math.Pow(2, float64(q)))
-			provider, err := provider2.ButterflyLooper(height)
-			if err != nil {
-				return err
-			}
-			track, err := lksdk.NewLocalSampleTrack(provider.Codec(),
-				lksdk.WithSimulcast("demo-video", provider.ToLayer(q)),
-			)
-			fmt.Println("simulcast layer", provider.ToLayer(q))
-			if err != nil {
-				return err
-			}
-			if err = track.StartWrite(provider, nil); err != nil {
-				return err
-			}
-			tracks = append(tracks, track)
-		}
-
-		_, err = room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
-			Name: "demo",
-		})
-		if err != nil {
+		if err = publishDemo(room); err != nil {
 			return err
 		}
 	}
 
-	files := c.StringSlice("publish")
-	for _, f := range files {
-		f := f
-		var pub *lksdk.LocalTrackPublication
-		opts := []lksdk.ReaderSampleProviderOption{
-			lksdk.ReaderTrackWithOnWriteComplete(func() {
-				fmt.Println("finished writing file", f)
-				if pub != nil {
-					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
-				}
-			}),
-		}
-		ext := filepath.Ext(f)
-		if ext == ".h264" || ext == ".ivf" {
-			fps := c.Float64("fps")
-			if fps != 0 {
-				frameDuration := time.Second / time.Duration(fps)
-				opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
+	if c.StringSlice("publish") != nil {
+		fps := c.Float64("fps")
+		for _, pub := range c.StringSlice("publish") {
+			if err = handlePublish(room, pub, fps); err != nil {
+				return err
 			}
-		}
-		track, err := lksdk.NewLocalFileTrack(f, opts...)
-		if err != nil {
-			return err
-		}
-		if pub, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
-			Name: f,
-		}); err != nil {
-			return err
 		}
 	}
 
 	<-done
-	room.Disconnect()
+	return nil
+}
+
+func handlePublish(room *lksdk.Room, name string, fps float64) error {
+	// Handle socket
+	if strings.Contains(name, "unix:") {
+		addr := strings.ReplaceAll(name, "unix:", "")
+		return publishSocket(room, addr, fps)
+	}
+	// Else, handle file
+	return publishFile(room, name, fps)
+}
+
+func publishDemo(room *lksdk.Room) error {
+	var tracks []*lksdk.LocalSampleTrack
+	for q := livekit.VideoQuality_LOW; q <= livekit.VideoQuality_HIGH; q++ {
+		height := 180 * int(math.Pow(2, float64(q)))
+		provider, err := provider2.ButterflyLooper(height)
+		if err != nil {
+			return err
+		}
+		track, err := lksdk.NewLocalSampleTrack(provider.Codec(),
+			lksdk.WithSimulcast("demo-video", provider.ToLayer(q)),
+		)
+		fmt.Println("simulcast layer", provider.ToLayer(q))
+		if err != nil {
+			return err
+		}
+		if err = track.StartWrite(provider, nil); err != nil {
+			return err
+		}
+		tracks = append(tracks, track)
+	}
+
+	_, err := room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
+		Name: "demo",
+	})
+	return err
+}
+
+func publishFile(room *lksdk.Room, filename string, fps float64) error {
+	// Configure provider
+	var pub *lksdk.LocalTrackPublication
+	opts := []lksdk.ReaderSampleProviderOption{
+		lksdk.ReaderTrackWithOnWriteComplete(func() {
+			fmt.Println("finished writing file", filename)
+			if pub != nil {
+				_ = room.LocalParticipant.UnpublishTrack(pub.SID())
+			}
+		}),
+	}
+
+	// Set frame rate if it's a video stream and FPS is set
+	ext := filepath.Ext(filename)
+	if ext == ".h264" || ext == ".ivf" {
+		if fps != 0 {
+			frameDuration := time.Second / time.Duration(fps)
+			opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
+		}
+	}
+
+	// Create track and publish
+	track, err := lksdk.NewLocalFileTrack(filename, opts...)
+	if err != nil {
+		return err
+	}
+	pub, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+		Name: filename,
+	})
+	return err
+}
+
+func publishSocket(room *lksdk.Room, addr string, fps float64) error {
+	// Dial Unix socket
+	sock, err := net.Dial("unix", addr)
+	if err != nil {
+		return err
+	}
+
+	// Determine mime type
+	var mime string
+	switch {
+	case strings.Contains(addr, "h264"):
+		mime = webrtc.MimeTypeH264
+	case strings.Contains(addr, "vp8"):
+		mime = webrtc.MimeTypeVP8
+	case strings.Contains(addr, "opus"):
+		mime = webrtc.MimeTypeOpus
+	default:
+		return lksdk.ErrUnsupportedFileType
+	}
+
+	// Publish to room
+	err = publishReader(room, sock, mime, fps)
+	return err
+}
+
+func publishReader(room *lksdk.Room, in io.ReadCloser, mime string, fps float64) error {
+	// Configure provider
+	var pub *lksdk.LocalTrackPublication
+	opts := []lksdk.ReaderSampleProviderOption{
+		lksdk.ReaderTrackWithOnWriteComplete(func() {
+			fmt.Printf("finished writing %s stream\n", mime)
+			if pub != nil {
+				_ = room.LocalParticipant.UnpublishTrack(pub.SID())
+			}
+		}),
+	}
+
+	// Set frame rate if it's a video stream and FPS is set
+	if strings.EqualFold(mime, webrtc.MimeTypeVP8) ||
+		strings.EqualFold(mime, webrtc.MimeTypeH264) {
+		if fps != 0 {
+			frameDuration := time.Second / time.Duration(fps)
+			opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
+		}
+	}
+
+	// Create track and publish
+	track, err := lksdk.NewLocalReaderTrack(in, mime, opts...)
+	if err != nil {
+		return err
+	}
+	pub, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{})
+	if err != nil {
+		return err
+	}
 	return nil
 }
