@@ -286,6 +286,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		})
 		numStarted++
 
+		// throttle pace of join events
 		for {
 			secondsElapsed := float64(time.Since(startedAt)) / float64(time.Second)
 			startRate := numStarted / secondsElapsed

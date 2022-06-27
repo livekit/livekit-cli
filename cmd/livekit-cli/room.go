@@ -12,7 +12,7 @@ import (
 	lksdk "github.com/livekit/server-sdk-go"
 )
 
-const roomCategory = "RoomService"
+const roomCategory = "Room Server API"
 
 var (
 	RoomCommands = []*cli.Command{
