@@ -54,12 +54,31 @@ var (
 )
 
 func joinRoom(c *cli.Context) error {
+	roomCB := &lksdk.RoomCallback{
+		ParticipantCallback: lksdk.ParticipantCallback{
+			OnDataReceived: func(data []byte, rp *lksdk.RemoteParticipant) {
+				logger.Infow("received data", "bytes", len(data))
+			},
+			OnConnectionQualityChanged: func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
+				logger.Debugw("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
+			},
+			OnTrackSubscribed: func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
+				logger.Infow("track subscribed", "kind", pub.Kind(), "trackID", pub.SID(), "source", pub.Source())
+			},
+			OnTrackUnsubscribed: func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
+				logger.Infow("track unsubscribed", "kind", pub.Kind(), "trackID", pub.SID(), "source", pub.Source())
+			},
+		},
+		OnRoomMetadataChanged: func(metadata string) {
+			logger.Infow("room metadata changed", "metadata", metadata)
+		},
+	}
 	room, err := lksdk.ConnectToRoom(c.String("url"), lksdk.ConnectInfo{
 		APIKey:              c.String("api-key"),
 		APISecret:           c.String("api-secret"),
 		RoomName:            c.String("room"),
 		ParticipantIdentity: c.String("identity"),
-	})
+	}, roomCB)
 	if err != nil {
 		return err
 	}
@@ -69,21 +88,6 @@ func joinRoom(c *cli.Context) error {
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	room.Callback.OnDataReceived = func(data []byte, rp *lksdk.RemoteParticipant) {
-		logger.Infow("received data", "bytes", len(data))
-	}
-	room.Callback.OnConnectionQualityChanged = func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
-		logger.Debugw("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
-	}
-	room.Callback.OnRoomMetadataChanged = func(metadata string) {
-		logger.Infow("room metadata changed", "metadata", metadata)
-	}
-	room.Callback.OnTrackSubscribed = func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
-		logger.Infow("track subscribed", "kind", pub.Kind(), "trackID", pub.SID(), "source", pub.Source())
-	}
-	room.Callback.OnTrackUnsubscribed = func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
-		logger.Infow("track unsubscribed", "kind", pub.Kind(), "trackID", pub.SID(), "source", pub.Source())
-	}
 
 	if c.Bool("publish-demo") {
 		if err = publishDemo(room); err != nil {
