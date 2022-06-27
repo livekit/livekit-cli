@@ -10,8 +10,7 @@ require (
 	github.com/livekit/server-sdk-go v0.10.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtp v1.7.13
-	// 3.1.40 broke sender-side simulcast
-	github.com/pion/webrtc/v3 v3.1.39
+	github.com/pion/webrtc/v3 v3.1.42
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli/v2 v2.3.0
@@ -50,7 +49,7 @@ require (
 	github.com/pion/sdp/v3 v3.0.5 // indirect
 	github.com/pion/srtp/v2 v2.0.9 // indirect
 	github.com/pion/stun v0.3.5 // indirect
-	github.com/pion/transport v0.13.0 // indirect
+	github.com/pion/transport v0.13.1 // indirect
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.1 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect
@@ -63,9 +62,9 @@ require (
 	github.com/twitchtv/twirp v8.1.2+incompatible // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
-	golang.org/x/net v0.0.0-20220531201128-c960675eff93 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
+	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	google.golang.org/genproto v0.0.0-20220602131408-e326c6e8e9c8 // indirect
