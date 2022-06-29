@@ -22,7 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH GO111MODULE=on go build -a -o li
 
 FROM alpine
 
-COPY --from=builder /workspace/livekit-load-tester /livekit-load-tester
+COPY --from=builder /workspace/livekit-cli /livekit-cli
 
 # Run the binary.
 ENTRYPOINT ["/livekit-cli"]
