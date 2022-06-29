@@ -1,4 +1,4 @@
-# LiveKit CLI & Load Tester
+# LiveKit CLI
 
 This package includes command line utilities that interacts with LiveKit. It allows you to:
 
@@ -7,11 +7,11 @@ This package includes command line utilities that interacts with LiveKit. It all
 -   Join a room as a participant, inspecting in-room events
 -   Perform load testing, efficiently simulating real-world load
 
-## Installation
+# Installation
 
 You can download [latest release here](https://github.com/livekit/livekit-cli/releases/latest). 
 
-### Building from source
+## Building from source
 
 This repo uses [Git LFS](https://git-lfs.github.com/) for embedded video resources. Please ensure git-lfs is installed on your machine.
 
@@ -20,62 +20,13 @@ git clone github.com/livekit/livekit-cli
 make install
 ```
 
-## Usage
+# Usage
 
-## livekit-cli
+See `livekit-cli --help` for a complete list of subcommands.
 
-```shell
-% livekit-cli --help
-NAME:
-   livekit-cli - CLI client to LiveKit
+## Publishing to a room
 
-USAGE:
-   livekit-cli [global options] command [command options] [arguments...]
-
-VERSION:
-   0.8.1
-
-COMMANDS:
-   help, h  Shows a list of commands or help for one command
-   Egress:
-     start-room-composite-egress   Start room composite egress
-     start-track-composite-egress  Start track composite egress
-     start-track-egress            Start track egress
-     list-egress                   List all active egress
-     update-layout                 Updates layout for a live room composite egress
-     update-stream                 Adds or removes rtmp output urls from a live stream
-     stop-egress                   Stop egress
-     test-egress-template          See what your egress template will look like in a recording
-   Participant:
-     join-room  joins a room as a participant
-   Recording:
-     start-recording  Starts a recording with a deployed recorder service
-     add-output       Adds an rtmp output url to a live recording
-     remove-output    Removes an rtmp output url from a live recording
-     end-recording    Ends a recording
-   RoomService:
-     create-room
-     list-rooms
-     delete-room
-     update-room-metadata
-     list-participants
-     get-participant
-     remove-participant
-     update-participant
-     mute-track
-     update-subscriptions
-   Token:
-     create-token  creates an access token
-
-GLOBAL OPTIONS:
-   --verbose      (default: false)
-   --help, -h     show help (default: false)
-   --version, -v  print the version (default: false)
-```
-
-### Publishing to a room
-
-#### Demo video track
+### Publish demo video track
 
 To publish a demo video as a participant's track, use the following.
 
@@ -84,9 +35,9 @@ To publish a demo video as a participant's track, use the following.
   --publish-demo
 ```
 
-It'll publish the video track with Simulcast, at 720p, 360p, and 180p.
+It'll publish the video track with [simulcast](https://blog.livekit.io/an-introduction-to-webrtc-simulcast-6c5f1f6402eb/), at 720p, 360p, and 180p.
 
-#### Publish files
+### Publish media files
 
 You can publish your own audio/video files. These tracks files need to be encoded in supported codecs.
 Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
@@ -98,63 +49,51 @@ Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/m
   --fps 23.98
 ```
 
-This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; audio is saved using preset bitrate.
+This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; it's important to match video framerate with the source to prevent out of sync issues. 
 
-#### Publish from Unix sockets
+### Publish from FFmpeg
 
-If you need to handle live media in your application, you can use Unix Domain Socket (UDS), which is a shared memory in a Unix-based OS. In this mode, the CLI listens to the socket and pushes incoming data to the room.
+It's possible to publish any source that FFmpeg supports (including live sources such as RTSP) by using it as a transcoder.
 
-The argument passed should be in the format `--publish unix:{socket-name}`. The socket name must contain one of the keywords (`opus`, `vp8` or `h264`) so the CLI can infer which codec reader to use.
+This is done by running FFmpeg in a separate process, encoding to a Unix socket. (not available on Windows). 
+`livekit-cli` can then read transcoded data from the socket and publishing them to the room.
 
-##### FFMPEG
-
-We pass `-listen 1` so that FFMPEG manages the socket lifecycle for us; it will remove the socket when either of the process exits.
-
-Video (need to disable B-frames `-bf 0` and buffered write `-max_delay 0`):
+First run FFmpeg like this:
 
 ```shell
-% ffmpeg -i /path/to/video.h264 \
-    -bf 0 -max_delay 0 -listen 1 \
-    -f h264 \
-    unix:/tmp/ffmpeg-h264.sock
+$ ffmpeg -i <video-file | rtsp://url> \
+  -c:v libx264 -bsf:v h264_mp4toannexb -b:v 2M -profile:v baseline -pix_fmt yuv420p \
+    -x264-params keyint=120 -max_delay 0 -bf 0 \
+    -listen 1 -f h264 unix:/tmp/myvideo.h264.sock \
+  -c:a libopus -page_duration 20000 -vn \
+  	-listen 1 -f opus unix:/tmp/myvideo.opus.sock
 ```
 
-Audio (`page_duration` needs to be set to prevent premature exit due to DTX):
+This transcodes the input into H.264 baseline profile and Opus. 
+Your output sockets must contain the string `opus`, `h264`, or `vp8`, as the CLI infers encoding from socket path.
+
+Then, run `livekit-cli` like this:
 
 ```shell
-% ffmpeg -i /path/to/audio.ogg \
-    -c:a libopus -page_duration 20000 -listen 1 \
-    -f opus \
-    unix:/tmp/ffmpeg-opus.sock
-```
+$ livekit-cli join-room --room yourroom --identity bot \
+  --publish unix:/tmp/myvideo.h264.sock \
+  --publish unix:/tmp/myvideo.opus.sock
+````
 
-LiveKit CLI:
+You should now see both video and audio tracks published to the room.
 
-```shell
-% ./bin/livekit-cli join-room --room myroom --identity
-publisher \
-  --publish unix:/tmp/ffmpeg-opus.sock \
-  --publish unix:/tmp/ffmpeg-h264.sock \
-  --fps 23.98
-```
+### Publish streams from your application
 
-##### Custom application
+Using unix sockets, it's also possible to publish streams from your application. The tracks need to be encoded into
+a format that WebRTC clients could playback (VP8, H.264, and Opus).
 
-1. In your preferred language, google how to create a Unix socket. For instance, check out this [site](https://pymotw.com/2/socket/uds.html) for Python. Once a socket is created, any other process that try to create the same socket will result in an error like `bind: address already in use`. You can now push data to the socket.
-
-2. For debugging purpose, it's a good idea to verify that the stream is playable before pushing to LiveKit. Given H.264 data pushed to the socket `unix:/tmp/myapp-h264.sock`, we can play it using `ffplay unix:/tmp/myapp-h264.sock`. Once you're happy with the result, make sure the `ffplay` process is closed.
-
-3. Once the stream is verified, execute the following Shell command in your chosen language:
+Once you are writing to the socket, you could use `ffplay` to test the stream.
 
 ```shell
-% ./bin/livekit-cli join-room --room myroom --identity publisher \
-  --publish unix:/tmp/myapp-h264.sock \
-  --fps 23.98
+$ ffplay -i unix:/tmp/myvideo.h264.sock
 ```
 
-4. When the UDS pipeline finishes, ensure you delete the socket `rm /tmp/myapp-h264.sock` to clean up and avoid the `bind: address already in use` error.
-
-### Recording & egress
+## Recording & egress
 
 Recording requires [egress service](https://docs.livekit.io/guides/egress/) to be set up first.
 
@@ -171,16 +110,39 @@ livekit-cli start-track-composite-egress --url <your-url> --api-key <key> --api-
 livekit-cli start-track-egress --url <your-url> --api-key <key> --api-secret <secret> --request request.json
 ```
 
-## livekit-load-tester
+### Testing egress templates
+
+In order to speed up the development cycle of your recording templates, we provide a sub-command `test-egress-template` that
+helps you to validate your templates.
+
+The command will spin up a few virtual publishers, and then simulate them joining your room
+It'll then open a browser to the template URL, with the correct parameters filled in.
+
+Here's an example:
+
+```shell
+$ livekit-cli test-egress-template
+  --base-url http://localhost:3000 \
+  --url <livekit-instance>
+  --api-key <key>
+  --api-secret <secret>
+  --room <your-room> --layout <your-layout> --publishers 3
+```
+
+This command will launch a browser pointed at `http://localhost:3000`, while simulating 3 publishers publishing to your livekit instance.
+
+## Load Testing
 
 Load testing utility for LiveKit. This tool is quite versatile and is able to simulate various types of load.
+
+Note: `livekit-load-tester` has been renamed to sub-command `livekit-cli load-test`
 
 ### Quickstart
 
 This guide requires a LiveKit server instance to be set up. You can start a load tester with:
 
 ```shell
-$ livekit-load-tester --url <your-url> \
+$ livekit-cli load-test --url <your-url> \
     --api-key <key> --api-secret <secret> \
     --room test-room --publishers 24
 ```
@@ -189,7 +151,7 @@ This simulates 8 video publishers to the room, with no subscribers. Video tracks
 
 #### Watch the test
 
-Use `livekit-cli` to generate a token so you can log into the room:
+Generate a token so you can log into the room:
 
 ```shell
 $ livekit-cli create-token --join --api-key <key> --api-secret <secret> \
@@ -232,7 +194,7 @@ of data sent to its subscribers.
 Use this command to simulate a load test of 5 publishers, and 500 subscribers:
 
 ```shell
-$ livekit-load-tester --url <your-url> \
+$ livekit-cli load-test --url <your-url> \
   --api-key <key> \
   --api-secret <secret> \
   --duration 1m \

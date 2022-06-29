@@ -17,8 +17,8 @@ import (
 var LoadTestCommands = []*cli.Command{
 	{
 		Name:     "load-test",
-		Usage:    "Run load tests against LiveKit",
-		Category: "Load Testing",
+		Usage:    "Run load tests against LiveKit with simulated publishers & subscribers",
+		Category: "Simulate",
 		Action:   loadTest,
 		Flags: []cli.Flag{
 			urlFlag,

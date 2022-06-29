@@ -8,9 +8,8 @@ import (
 	"github.com/go-logr/stdr"
 	"github.com/urfave/cli/v2"
 
+	livekitcli "github.com/livekit/livekit-cli"
 	"github.com/livekit/protocol/logger"
-
-	livekit_cli "github.com/livekit/livekit-cli"
 )
 
 func main() {
@@ -22,7 +21,7 @@ func main() {
 				Name: "verbose",
 			},
 		},
-		Version: livekit_cli.Version,
+		Version: livekitcli.Version,
 	}
 
 	logger.SetLogger(stdr.New(log.Default()), "livekit-cli")
@@ -30,7 +29,6 @@ func main() {
 	app.Commands = append(app.Commands, TokenCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, JoinCommands...)
-	app.Commands = append(app.Commands, RecordCommands...)
 	app.Commands = append(app.Commands, EgressCommands...)
 	app.Commands = append(app.Commands, LoadTestCommands...)
 
