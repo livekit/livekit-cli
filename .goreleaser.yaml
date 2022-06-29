@@ -36,7 +36,7 @@ nfpms:
 release:
   github:
     owner: livekit
-    name: livekit
+    name: livekit-cli
   draft: true
   prerelease: auto
 changelog:
