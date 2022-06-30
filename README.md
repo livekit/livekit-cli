@@ -9,7 +9,9 @@ This package includes command line utilities that interacts with LiveKit. It all
 
 # Installation
 
-You can download [latest release here](https://github.com/livekit/livekit-cli/releases/latest). 
+You can download [latest release here](https://github.com/livekit/livekit-cli/releases/latest).
+
+On Mac, due to security restrictions, you'll need to build it from source.
 
 ## Building from source
 

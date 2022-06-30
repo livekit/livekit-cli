@@ -13,7 +13,6 @@ builds:
     goos:
       - linux
       - windows
-      - darwin
 archives:
   - format_overrides:
       - goos: windows
@@ -27,7 +26,7 @@ nfpms:
     vendor: LiveKit
     homepage: https://livekit.io
     description: |-
-      CLI for LiveKit.
+      CLI for LiveKit
     license: Apache 2.0
     maintainer: "LiveKit Team <hello@livekit.io>"
     formats:
@@ -46,8 +45,7 @@ changelog:
       - '^docs:'
       - '^test:'
 gomod:
-  proxy: true
-  mod: mod
+  proxy: false
 checksum:
   name_template: 'checksums.txt'
 snapshot:
