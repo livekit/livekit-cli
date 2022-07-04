@@ -10,7 +10,6 @@ on:
 # workflow tasks
 jobs:
   intall-test:
-    name: Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

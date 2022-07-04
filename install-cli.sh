@@ -59,8 +59,8 @@ fi
 VERSION=$(get_latest_version)
 ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${REPO}_${VERSION}_linux_${ARCH}.tar.gz"
 
-log "Installing ${VERSION}"
-log "fetching from $ARCHIVE_URL"
+log "Installing ${REPO} ${VERSION}"
+log "Downloading from ${ARCHIVE_URL}..."
 
 curl -s -L "${ARCHIVE_URL}" | tar xzf - -C "${INSTALL_PATH}" --wildcards --no-anchored "$REPO*"
 
