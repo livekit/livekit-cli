@@ -7,9 +7,12 @@ builds:
       - CGO_ENABLED=0
     main: ./cmd/livekit-cli
     binary: livekit-cli
+    goarm:
+      - "7"
     goarch:
       - amd64
       - arm64
+      - arm
     goos:
       - linux
       - windows
@@ -21,17 +24,6 @@ archives:
       darwin: mac
     files:
       - LICENSE
-nfpms:
-  - package_name: livekit-cli
-    vendor: LiveKit
-    homepage: https://livekit.io
-    description: |-
-      CLI for LiveKit
-    license: Apache 2.0
-    maintainer: "LiveKit Team <hello@livekit.io>"
-    formats:
-      - deb
-      - rpm
 release:
   github:
     owner: livekit
