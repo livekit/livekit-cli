@@ -3,7 +3,7 @@ module github.com/livekit/livekit-cli
 go 1.17
 
 require (
-	github.com/ggwhite/go-masker v1.0.4
+	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/stdr v1.2.2
 	github.com/livekit/protocol v0.13.3
