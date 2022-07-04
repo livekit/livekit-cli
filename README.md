@@ -9,11 +9,23 @@ This package includes command line utilities that interacts with LiveKit. It all
 
 # Installation
 
-You can download [latest release here](https://github.com/livekit/livekit-cli/releases/latest).
+## Mac
 
-On Mac, due to security restrictions, you'll need to build it from source.
+```shell
+brew install livekit-cli
+```
 
-## Building from source
+## Linux
+
+```shell
+curl -sSL https://get.livekit.io/cli | bash
+```
+
+## Windows
+
+Download [latest release here](https://github.com/livekit/livekit-cli/releases/latest)
+
+## Build from source
 
 This repo uses [Git LFS](https://git-lfs.github.com/) for embedded video resources. Please ensure git-lfs is installed on your machine.
 
