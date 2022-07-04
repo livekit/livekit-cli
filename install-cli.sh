@@ -59,6 +59,12 @@ fi
 VERSION=$(get_latest_version)
 ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${REPO}_${VERSION}_linux_${ARCH}.tar.gz"
 
+# Ensure version follows SemVer
+if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+then
+  abort "Invalid version: ${VERSION}"
+fi
+
 log "Installing ${REPO} ${VERSION}"
 log "Downloading from ${ARCHIVE_URL}..."
 
