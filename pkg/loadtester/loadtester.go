@@ -88,22 +88,22 @@ func (t *LoadTester) Start() error {
 		return nil
 	}
 
-	var room *lksdk.Room
+	t.room = lksdk.CreateRoom(&lksdk.RoomCallback{
+		ParticipantCallback: lksdk.ParticipantCallback{
+			OnTrackSubscribed: t.onTrackSubscribed,
+			OnTrackSubscriptionFailed: func(sid string, rp *lksdk.RemoteParticipant) {
+				fmt.Printf("track subscription failed, sid:%v, rp:%v\n", sid, rp.Identity())
+			},
+		},
+	})
 	var err error
 	// make up to 10 reconnect attempts
 	for i := 0; i < 10; i++ {
-		room, err = lksdk.ConnectToRoom(t.params.URL, lksdk.ConnectInfo{
+		err = t.room.Join(t.params.URL, lksdk.ConnectInfo{
 			APIKey:              t.params.APIKey,
 			APISecret:           t.params.APISecret,
 			RoomName:            t.params.Room,
 			ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.Sequence),
-		}, &lksdk.RoomCallback{
-			ParticipantCallback: lksdk.ParticipantCallback{
-				OnTrackSubscribed: t.onTrackSubscribed,
-				OnTrackSubscriptionFailed: func(sid string, rp *lksdk.RemoteParticipant) {
-					fmt.Printf("track subscription failed, sid:%v, rp:%v\n", sid, rp.Identity())
-				},
-			},
 		}, lksdk.WithAutoSubscribe(t.params.Subscribe))
 		if err == nil {
 			break
@@ -114,7 +114,6 @@ func (t *LoadTester) Start() error {
 		return err
 	}
 
-	t.room = room
 	t.running.Store(true)
 
 	return nil
