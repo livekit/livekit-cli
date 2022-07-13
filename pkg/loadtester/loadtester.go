@@ -88,11 +88,12 @@ func (t *LoadTester) Start() error {
 		return nil
 	}
 
+	identity := fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.Sequence)
 	t.room = lksdk.CreateRoom(&lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnTrackSubscribed: t.onTrackSubscribed,
 			OnTrackSubscriptionFailed: func(sid string, rp *lksdk.RemoteParticipant) {
-				fmt.Printf("track subscription failed, sid:%v, rp:%v\n", sid, rp.Identity())
+				fmt.Printf("track subscription failed, lp:%v, sid:%v, rp:%v/%v\n", identity, sid, rp.Identity(), rp.SID())
 			},
 		},
 	})
@@ -103,7 +104,7 @@ func (t *LoadTester) Start() error {
 			APIKey:              t.params.APIKey,
 			APISecret:           t.params.APISecret,
 			RoomName:            t.params.Room,
-			ParticipantIdentity: fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.Sequence),
+			ParticipantIdentity: identity,
 		}, lksdk.WithAutoSubscribe(t.params.Subscribe))
 		if err == nil {
 			break
