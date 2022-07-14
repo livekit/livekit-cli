@@ -10,7 +10,7 @@ require (
 	github.com/livekit/server-sdk-go v0.10.5-0.20220713082711-d564d99d80b2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtp v1.7.13
-	github.com/pion/webrtc/v3 v3.1.42
+	github.com/pion/webrtc/v3 v3.1.43
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli/v2 v2.11.0
