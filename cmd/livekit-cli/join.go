@@ -182,7 +182,8 @@ func parseSocketFromName(name string) (string, string, string, error) {
 	// e.g. h264://192.168.0.1:1234 (tcp)
 	// e.g. opus:///tmp/my.socket (unix domain socket)
 
-	mime_delimiter_offset := strings.Index(name, "://")
+	const mime_delimiter = "://"
+	mime_delimiter_offset := strings.Index(name, mime_delimiter)
 	if (mime_delimiter_offset == -1) {
 		return "", "", "", errors.New("bad format")
 	}
@@ -193,7 +194,7 @@ func parseSocketFromName(name string) (string, string, string, error) {
 		return "", "", "", errors.New("unsupported mime type")
 	}
 
-	address := name[mime_delimiter_offset+3:]
+	address := name[mime_delimiter_offset+len(mime_delimiter):]
 
 	// If the address doesn't contain a ':' we assume it's a unix socket
 	if (strings.Index(address, ":") == -1) {
