@@ -196,18 +196,9 @@ func publishSocket(room *lksdk.Room, name string, fps float64) error {
 		return err
 	}
 
-	// Determine mime type
-	var mime string
-	switch {
-	case strings.Contains(addr, "h264"):
-		mime = webrtc.MimeTypeH264
-	case strings.Contains(addr, "vp8"):
-		mime = webrtc.MimeTypeVP8
-	case strings.Contains(addr, "opus"):
-		mime = webrtc.MimeTypeOpus
-	default:
-		return lksdk.ErrUnsupportedFileType
-	}
+	// TODO (bsirang) extract mime from name string similar to socket type above
+	// Default to H264 for now
+	mime := webrtc.MimeTypeH264
 
 	// Publish to room
 	err = publishReader(room, sock, mime, fps)
