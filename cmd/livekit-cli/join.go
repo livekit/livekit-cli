@@ -198,7 +198,7 @@ func parseSocketFromName(name string) (string, string, string, error) {
 	address := name[mime_delimiter_offset+len(mime_delimiter):]
 
 	// If the address doesn't contain a ':' we assume it's a unix socket
-	if (strings.Index(address, ":") == -1) {
+	if !strings.Contains(address, ":") {
 		return mime_type, "unix", address, nil
 	}
 
@@ -207,10 +207,7 @@ func parseSocketFromName(name string) (string, string, string, error) {
 
 func isSocketFormat(name string) bool {
 	const mime_delimiter = "://"
-	if strings.Index(name, mime_delimiter) != -1 {
-		return true
-	}
-	return false
+	return strings.Contains(name, mime_delimiter)
 }
 
 func publishSocket(room *lksdk.Room, mime_type string, socket_type string, address string, fps float64) error {
