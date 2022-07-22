@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -187,13 +186,13 @@ func parseSocketFromName(name string) (string, string, string, error) {
 	const mime_delimiter = "://"
 	mime_delimiter_offset := strings.Index(name, mime_delimiter)
 	if (mime_delimiter_offset == -1) {
-		return "", "", "", errors.New("bad format")
+		return "", "", "", fmt.Errorf("did not find delimiter %s in %s", mime_delimiter, name)
 	}
 
 	mime_type := name[:mime_delimiter_offset]
 
 	if (mime_type != "h264" && mime_type != "vp8" && mime_type != "opus") {
-		return "", "", "", errors.New("unsupported mime type")
+		return "", "", "", fmt.Errorf("unsupported mime type: %s", mime_type)
 	}
 
 	address := name[mime_delimiter_offset+len(mime_delimiter):]
