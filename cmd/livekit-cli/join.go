@@ -42,7 +42,7 @@ var (
 					Name: "publish",
 					Usage: "files to publish as tracks to room (supports .h264, .ivf, .ogg). " +
 						"can be used multiple times to publish multiple files. " +
-						"can publish from Unix socket using the format `unix:{socket-name}`; socket name must contain one of the keywords: h264, vp8, opus",
+						"can publish from Unix or TCP socket using the format `codec://socket_name` or `codec://host:address` respectively.",
 				},
 				&cli.Float64Flag{
 					Name:  "fps",
@@ -179,9 +179,9 @@ func publishFile(room *lksdk.Room, filename string, fps float64) error {
 
 func parseSocketFromName(name string) (string, string, string, error) {
 	// Extract mime type, socket type, and address
-
 	// e.g. h264://192.168.0.1:1234 (tcp)
 	// e.g. opus:///tmp/my.socket (unix domain socket)
+
 	mime_delimiter_offset := strings.Index(name, "://")
 	if (mime_delimiter_offset == -1) {
 		return "", "", "", errors.New("bad format")
