@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -108,10 +109,12 @@ func joinRoom(c *cli.Context) error {
 }
 
 func handlePublish(room *lksdk.Room, name string, fps float64) error {
-	// Handle socket (either unix domain socket )
-	if strings.Contains(name, "unix:") || strings.Contains(name, "tcp:") {
-		return publishSocket(room, name, fps)
+	// See if we're dealing with a socket
+	mime_type, socket_type, address, err := parseSocketFromName(name)
+	if (err == nil) {
+		return publishSocket(room, mime_type, socket_type, address, fps)
 	}
+
 	// Else, handle file
 	return publishFile(room, name, fps)
 }
@@ -174,27 +177,50 @@ func publishFile(room *lksdk.Room, filename string, fps float64) error {
 	return err
 }
 
-func publishSocket(room *lksdk.Room, name string, fps float64) error {
-	// Precondition that name starts with unix: or tcp:
-	var addr = ""
-	var sock_type = ""
+func parseSocketFromName(name string) (string, string, string, error) {
+	// Extract mime type, socket type, and address
 
-	if strings.Contains(name, "unix:") {
-		addr = strings.ReplaceAll(name, "unix:", "")
-		sock_type = "unix"
-	} else if strings.Contains(name, "tcp:") {
-		addr = strings.ReplaceAll(name, "tcp:", "")
-		sock_type = "tcp"
+	// e.g. h264://192.168.0.1:1234 (tcp)
+	// e.g. opus:///tmp/my.socket (unix domain socket)
+	mime_delimiter_offset := strings.Index(name, "://")
+	if (mime_delimiter_offset == -1) {
+		return "", "", "", errors.New("bad format")
 	}
 
-	// Dial Unix socket
-	sock, err := net.Dial(sock_type, addr)
+	mime_type := name[:mime_delimiter_offset]
+
+	if (mime_type != "h264" && mime_type != "vp8" && mime_type != "opus") {
+		return "", "", "", errors.New("unsupported mime type")
+	}
+
+	address := name[mime_delimiter_offset+3:]
+
+	// If the address doesn't contain a ':' we assume it's a unix socket
+	if (strings.Index(address, ":") == -1) {
+		return mime_type, "unix", address, nil
+	}
+
+	return mime_type, "tcp", address, nil
+}
+
+func publishSocket(room *lksdk.Room, mime_type string, socket_type string, address string, fps float64) error {
+	var mime string
+	switch {
+	case strings.Contains(mime_type, "h264"):
+		mime = webrtc.MimeTypeH264
+	case strings.Contains(mime_type, "vp8"):
+		mime = webrtc.MimeTypeVP8
+	case strings.Contains(mime_type, "opus"):
+		mime = webrtc.MimeTypeOpus
+	default:
+		return lksdk.ErrUnsupportedFileType
+	}
+
+	// Dial socket
+	sock, err := net.Dial(socket_type, address)
 	if err != nil {
 		return err
 	}
-
-	// TODO (bsirang) extract mime type from name string (forcing h264 for now)
-	mime := webrtc.MimeTypeH264
 
 	// Publish to room
 	err = publishReader(room, sock, mime, fps)
