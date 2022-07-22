@@ -110,11 +110,13 @@ func joinRoom(c *cli.Context) error {
 
 func handlePublish(room *lksdk.Room, name string, fps float64) error {
 	// See if we're dealing with a socket
-	mime_type, socket_type, address, err := parseSocketFromName(name)
-	if (err == nil) {
+	if isSocketFormat(name) {
+		mime_type, socket_type, address, err := parseSocketFromName(name)
+		if (err != nil) {
+			return err
+		}
 		return publishSocket(room, mime_type, socket_type, address, fps)
 	}
-
 	// Else, handle file
 	return publishFile(room, name, fps)
 }
@@ -202,6 +204,14 @@ func parseSocketFromName(name string) (string, string, string, error) {
 	}
 
 	return mime_type, "tcp", address, nil
+}
+
+func isSocketFormat(name string) bool {
+	const mime_delimiter = "://"
+	if strings.Index(name, mime_delimiter) != -1 {
+		return true
+	}
+	return false
 }
 
 func publishSocket(room *lksdk.Room, mime_type string, socket_type string, address string, fps float64) error {
