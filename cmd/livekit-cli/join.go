@@ -109,9 +109,8 @@ func joinRoom(c *cli.Context) error {
 
 func handlePublish(room *lksdk.Room, name string, fps float64) error {
 	// Handle socket
-	if strings.Contains(name, "unix:") {
-		addr := strings.ReplaceAll(name, "unix:", "")
-		return publishSocket(room, addr, fps)
+	if strings.Contains(name, "unix:") || strings.Contains(name, "tcp:") || strings.Contains(name, "udp:") {
+		return publishSocket(room, name, fps)
 	}
 	// Else, handle file
 	return publishFile(room, name, fps)
@@ -175,9 +174,24 @@ func publishFile(room *lksdk.Room, filename string, fps float64) error {
 	return err
 }
 
-func publishSocket(room *lksdk.Room, addr string, fps float64) error {
+func publishSocket(room *lksdk.Room, name string, fps float64) error {
+	// Precondition that name starts with unix:, tcp:, or udp:
+	var addr = ""
+	var sock_type = ""
+
+	if strings.Contains(name, "unix:") {
+		addr = strings.ReplaceAll(name, "unix:", "")
+		sock_type = "unix"
+	} else if strings.Contains(name, "tcp:") {
+		addr = strings.ReplaceAll(name, "tcp:", "")
+		sock_type = "tcp"
+	} else if strings.Contains(name, "udp:") {
+		sock_type = "udp"
+		addr = strings.ReplaceAll(name, "udp:", "")
+	}
+
 	// Dial Unix socket
-	sock, err := net.Dial("unix", addr)
+	sock, err := net.Dial(sock_type, addr)
 	if err != nil {
 		return err
 	}
