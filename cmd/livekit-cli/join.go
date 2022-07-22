@@ -108,8 +108,8 @@ func joinRoom(c *cli.Context) error {
 }
 
 func handlePublish(room *lksdk.Room, name string, fps float64) error {
-	// Handle socket
-	if strings.Contains(name, "unix:") || strings.Contains(name, "tcp:") || strings.Contains(name, "udp:") {
+	// Handle socket (either unix domain socket )
+	if strings.Contains(name, "unix:") || strings.Contains(name, "tcp:") {
 		return publishSocket(room, name, fps)
 	}
 	// Else, handle file
@@ -175,7 +175,7 @@ func publishFile(room *lksdk.Room, filename string, fps float64) error {
 }
 
 func publishSocket(room *lksdk.Room, name string, fps float64) error {
-	// Precondition that name starts with unix:, tcp:, or udp:
+	// Precondition that name starts with unix: or tcp:
 	var addr = ""
 	var sock_type = ""
 
@@ -185,9 +185,6 @@ func publishSocket(room *lksdk.Room, name string, fps float64) error {
 	} else if strings.Contains(name, "tcp:") {
 		addr = strings.ReplaceAll(name, "tcp:", "")
 		sock_type = "tcp"
-	} else if strings.Contains(name, "udp:") {
-		sock_type = "udp"
-		addr = strings.ReplaceAll(name, "udp:", "")
 	}
 
 	// Dial Unix socket
@@ -196,8 +193,7 @@ func publishSocket(room *lksdk.Room, name string, fps float64) error {
 		return err
 	}
 
-	// TODO (bsirang) extract mime from name string similar to socket type above
-	// Default to H264 for now
+	// TODO (bsirang) extract mime type from name string (forcing h264 for now)
 	mime := webrtc.MimeTypeH264
 
 	// Publish to room
