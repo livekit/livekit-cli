@@ -41,7 +41,7 @@ var (
 					Name: "publish",
 					Usage: "files to publish as tracks to room (supports .h264, .ivf, .ogg). " +
 						"can be used multiple times to publish multiple files. " +
-						"can publish from Unix or TCP socket using the format `codec://socket_name` or `codec://host:address` respectively.",
+						"can publish from Unix or TCP socket using the format `codec://socket_name` or `codec://host:address` respectively. Valid codecs are h264, vp8, opus",
 				},
 				&cli.Float64Flag{
 					Name:  "fps",
