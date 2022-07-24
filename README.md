@@ -92,9 +92,30 @@ Then, run `livekit-cli` like this:
 $ livekit-cli join-room --room yourroom --identity bot \
   --publish unix:/tmp/myvideo.h264.sock \
   --publish unix:/tmp/myvideo.opus.sock
-````
+```
 
 You should now see both video and audio tracks published to the room.
+
+### Publish from GStreamer
+
+You can also integrate GStreamer into LiveKit via Unix sockets (not available on Windows). For this approach, we will need FFmpeg as socket publisher since we could not play the video from `shmsink`.
+
+Firstly, set up your GStreamer pipeline and pipe it to FFmpeg via stdin. Here we are encoding it to H.264:
+
+```shell
+$ gst-launch-1.0 videotestsrc ! x264enc ! fdsink | \
+  ffmpeg -f h264 -i - -max_delay 0 -f h264 -listen 1 \
+    unix:/tmp/videotest.h264.sock
+```
+
+In `ffmpeg -f h264 -i - ...`, the `-f h264 -i -` statement says "I want my input to be from stdin, and it will be in H.264". We then publish it to a Unix socket.
+
+Then run `livekit-cli` as before:
+
+```shell
+$ livekit-cli join-room --room yourroom --identity bot \
+  --publish unix:/tmp/videotest.h264.sock
+```
 
 ### Publish streams from your application
 
