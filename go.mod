@@ -1,6 +1,6 @@
 module github.com/livekit/livekit-cli
 
-go 1.17
+go 1.19
 
 require (
 	github.com/ggwhite/go-masker v1.0.9
