@@ -197,6 +197,10 @@ func parseSocketFromName(name string) (string, string, string, error) {
 
 	address := name[mime_delimiter_offset+len(mime_delimiter):]
 
+	if len(address) == 0 {
+		return "", "", "", fmt.Errorf("address cannot be empty. input was: %s", name)
+	}
+
 	// If the address doesn't contain a ':' we assume it's a unix socket
 	if !strings.Contains(address, ":") {
 		return mime_type, "unix", address, nil
