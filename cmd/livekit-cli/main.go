@@ -30,6 +30,7 @@ func main() {
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, JoinCommands...)
 	app.Commands = append(app.Commands, EgressCommands...)
+	app.Commands = append(app.Commands, IngressCommands...)
 	app.Commands = append(app.Commands, LoadTestCommands...)
 
 	if err := app.Run(os.Args); err != nil {
