@@ -6,13 +6,14 @@ require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/stdr v1.2.2
-	github.com/livekit/protocol v0.13.4
+	github.com/livekit/protocol v1.0.0
 	github.com/livekit/server-sdk-go v0.10.5-0.20220713082711-d564d99d80b2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtp v1.7.13
 	github.com/pion/webrtc/v3 v3.1.43
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.11.1
 	go.uber.org/atomic v1.9.0
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
@@ -24,6 +25,7 @@ require (
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/eapache/channels v1.1.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
@@ -52,10 +54,11 @@ require (
 	github.com/pion/transport v0.13.1 // indirect
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.1 // indirect
-	github.com/prometheus/client_golang v1.12.2 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/prometheus/client_golang v1.13.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.36.0 // indirect
-	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/prometheus/common v0.37.0 // indirect
+	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/thoas/go-funk v0.9.2 // indirect
 	github.com/twitchtv/twirp v8.1.2+incompatible // indirect
