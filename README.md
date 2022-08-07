@@ -78,20 +78,19 @@ First run FFmpeg like this:
 $ ffmpeg -i <video-file | rtsp://url> \
   -c:v libx264 -bsf:v h264_mp4toannexb -b:v 2M -profile:v baseline -pix_fmt yuv420p \
     -x264-params keyint=120 -max_delay 0 -bf 0 \
-    -listen 1 -f h264 unix:/tmp/myvideo.h264.sock \
+    -listen 1 -f h264 unix:/tmp/myvideo.sock \
   -c:a libopus -page_duration 20000 -vn \
-  	-listen 1 -f opus unix:/tmp/myvideo.opus.sock
+  	-listen 1 -f opus unix:/tmp/myaudio.sock
 ```
 
 This transcodes the input into H.264 baseline profile and Opus.
-Your output sockets must contain the string `opus`, `h264`, or `vp8`, as the CLI infers encoding from socket path.
 
 Then, run `livekit-cli` like this:
 
 ```shell
 $ livekit-cli join-room --room yourroom --identity bot \
-  --publish h264:///tmp/myvideo.h264.sock \
-  --publish opus:///tmp/myvideo.opus.sock
+  --publish h264:///tmp/myvideo.sock \
+  --publish opus:///tmp/myaudio.sock
 ````
 
 You should now see both video and audio tracks published to the room.
@@ -115,7 +114,7 @@ a format that WebRTC clients could playback (VP8, H.264, and Opus).
 Once you are writing to the socket, you could use `ffplay` to test the stream.
 
 ```shell
-$ ffplay -i unix:/tmp/myvideo.h264.sock
+$ ffplay -i unix:/tmp/myvideo.sock
 ```
 
 ## Recording & egress

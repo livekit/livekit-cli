@@ -52,6 +52,8 @@ var (
 	}
 )
 
+const mimeDelimiter = "://"
+
 func joinRoom(c *cli.Context) error {
 	roomCB := &lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
@@ -110,11 +112,11 @@ func joinRoom(c *cli.Context) error {
 func handlePublish(room *lksdk.Room, name string, fps float64) error {
 	// See if we're dealing with a socket
 	if isSocketFormat(name) {
-		mime_type, socket_type, address, err := parseSocketFromName(name)
-		if (err != nil) {
+		mimeType, socketType, address, err := parseSocketFromName(name)
+		if err != nil {
 			return err
 		}
-		return publishSocket(room, mime_type, socket_type, address, fps)
+		return publishSocket(room, mimeType, socketType, address, fps)
 	}
 	// Else, handle file
 	return publishFile(room, name, fps)
@@ -183,19 +185,18 @@ func parseSocketFromName(name string) (string, string, string, error) {
 	// e.g. h264://192.168.0.1:1234 (tcp)
 	// e.g. opus:///tmp/my.socket (unix domain socket)
 
-	const mime_delimiter = "://"
-	mime_delimiter_offset := strings.Index(name, mime_delimiter)
-	if (mime_delimiter_offset == -1) {
-		return "", "", "", fmt.Errorf("did not find delimiter %s in %s", mime_delimiter, name)
+	offset := strings.Index(name, mimeDelimiter)
+	if offset == -1 {
+		return "", "", "", fmt.Errorf("did not find delimiter %s in %s", mimeDelimiter, name)
 	}
 
-	mime_type := name[:mime_delimiter_offset]
+	mimeType := name[:offset]
 
-	if (mime_type != "h264" && mime_type != "vp8" && mime_type != "opus") {
-		return "", "", "", fmt.Errorf("unsupported mime type: %s", mime_type)
+	if mimeType != "h264" && mimeType != "vp8" && mimeType != "opus" {
+		return "", "", "", fmt.Errorf("unsupported mime type: %s", mimeType)
 	}
 
-	address := name[mime_delimiter_offset+len(mime_delimiter):]
+	address := name[offset+len(mimeDelimiter):]
 
 	if len(address) == 0 {
 		return "", "", "", fmt.Errorf("address cannot be empty. input was: %s", name)
@@ -203,32 +204,31 @@ func parseSocketFromName(name string) (string, string, string, error) {
 
 	// If the address doesn't contain a ':' we assume it's a unix socket
 	if !strings.Contains(address, ":") {
-		return mime_type, "unix", address, nil
+		return mimeType, "unix", address, nil
 	}
 
-	return mime_type, "tcp", address, nil
+	return mimeType, "tcp", address, nil
 }
 
 func isSocketFormat(name string) bool {
-	const mime_delimiter = "://"
-	return strings.Contains(name, mime_delimiter)
+	return strings.Contains(name, mimeDelimiter)
 }
 
-func publishSocket(room *lksdk.Room, mime_type string, socket_type string, address string, fps float64) error {
+func publishSocket(room *lksdk.Room, mimeType string, socketType string, address string, fps float64) error {
 	var mime string
 	switch {
-	case strings.Contains(mime_type, "h264"):
+	case strings.Contains(mimeType, "h264"):
 		mime = webrtc.MimeTypeH264
-	case strings.Contains(mime_type, "vp8"):
+	case strings.Contains(mimeType, "vp8"):
 		mime = webrtc.MimeTypeVP8
-	case strings.Contains(mime_type, "opus"):
+	case strings.Contains(mimeType, "opus"):
 		mime = webrtc.MimeTypeOpus
 	default:
 		return lksdk.ErrUnsupportedFileType
 	}
 
 	// Dial socket
-	sock, err := net.Dial(socket_type, address)
+	sock, err := net.Dial(socketType, address)
 	if err != nil {
 		return err
 	}
