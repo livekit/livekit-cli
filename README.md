@@ -63,13 +63,13 @@ Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/m
   --fps 23.98
 ```
 
-This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; it's important to match video framerate with the source to prevent out of sync issues. 
+This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; it's important to match video framerate with the source to prevent out of sync issues.
 
 ### Publish from FFmpeg
 
 It's possible to publish any source that FFmpeg supports (including live sources such as RTSP) by using it as a transcoder.
 
-This is done by running FFmpeg in a separate process, encoding to a Unix socket. (not available on Windows). 
+This is done by running FFmpeg in a separate process, encoding to a Unix socket. (not available on Windows).
 `livekit-cli` can then read transcoded data from the socket and publishing them to the room.
 
 First run FFmpeg like this:
@@ -78,23 +78,33 @@ First run FFmpeg like this:
 $ ffmpeg -i <video-file | rtsp://url> \
   -c:v libx264 -bsf:v h264_mp4toannexb -b:v 2M -profile:v baseline -pix_fmt yuv420p \
     -x264-params keyint=120 -max_delay 0 -bf 0 \
-    -listen 1 -f h264 unix:/tmp/myvideo.h264.sock \
+    -listen 1 -f h264 unix:/tmp/myvideo.sock \
   -c:a libopus -page_duration 20000 -vn \
-  	-listen 1 -f opus unix:/tmp/myvideo.opus.sock
+  	-listen 1 -f opus unix:/tmp/myaudio.sock
 ```
 
-This transcodes the input into H.264 baseline profile and Opus. 
-Your output sockets must contain the string `opus`, `h264`, or `vp8`, as the CLI infers encoding from socket path.
+This transcodes the input into H.264 baseline profile and Opus.
 
 Then, run `livekit-cli` like this:
 
 ```shell
 $ livekit-cli join-room --room yourroom --identity bot \
-  --publish unix:/tmp/myvideo.h264.sock \
-  --publish unix:/tmp/myvideo.opus.sock
+  --publish h264:///tmp/myvideo.sock \
+  --publish opus:///tmp/myaudio.sock
 ````
 
 You should now see both video and audio tracks published to the room.
+
+### Publish from TCP (i.e. gstreamer)
+
+It's possible to publish from video streams coming over a TCP socket. `livekit-cli` can act as a TCP client. For example, with a gstreamer pipeline ending in `! tcpserversink port=16400` and streaming H.264.
+
+Run `livekit-cli` like this:
+
+```shell
+$ livekit-cli join-room --room yourroom --identity bot \
+  --publish h264:///127.0.0.1:16400
+```
 
 ### Publish streams from your application
 
@@ -104,7 +114,7 @@ a format that WebRTC clients could playback (VP8, H.264, and Opus).
 Once you are writing to the socket, you could use `ffplay` to test the stream.
 
 ```shell
-$ ffplay -i unix:/tmp/myvideo.h264.sock
+$ ffplay -i unix:/tmp/myvideo.sock
 ```
 
 ## Recording & egress
