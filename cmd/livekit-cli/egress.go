@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"net/url"
 	"os"
 	"os/signal"
@@ -12,11 +11,12 @@ import (
 	"time"
 
 	"github.com/ggwhite/go-masker"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	provider2 "github.com/livekit/livekit-cli/pkg/provider"
+	"github.com/livekit/livekit-cli/pkg/loadtester"
 	"github.com/livekit/protocol/egress"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go"
@@ -27,10 +27,10 @@ const egressCategory = "Egress"
 var (
 	EgressCommands = []*cli.Command{
 		{
-			Name:     "start-egress",
-			Usage:    "Start egress",
+			Name:     "start-room-composite-egress",
+			Usage:    "Start room composite egress",
 			Before:   createEgressClient,
-			Action:   startEgress,
+			Action:   startRoomCompositeEgress,
 			Category: egressCategory,
 			Flags: []cli.Flag{
 				urlFlag,
@@ -39,7 +39,43 @@ var (
 				verboseFlag,
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "StartEgressRequest as json file (see https://github.com/livekit/livekit-recorder#request)",
+					Usage:    "RoomCompositeEgressRequest as json file (see livekit-cli/examples)",
+					Required: true,
+				},
+			},
+		},
+		{
+			Name:     "start-track-composite-egress",
+			Usage:    "Start track composite egress",
+			Before:   createEgressClient,
+			Action:   startTrackCompositeEgress,
+			Category: egressCategory,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				verboseFlag,
+				&cli.StringFlag{
+					Name:     "request",
+					Usage:    "TrackCompositeEgressRequest as json file (see livekit-cli/examples)",
+					Required: true,
+				},
+			},
+		},
+		{
+			Name:     "start-track-egress",
+			Usage:    "Start track egress",
+			Before:   createEgressClient,
+			Action:   startTrackEgress,
+			Category: egressCategory,
+			Flags: []cli.Flag{
+				urlFlag,
+				apiKeyFlag,
+				secretFlag,
+				verboseFlag,
+				&cli.StringFlag{
+					Name:     "request",
+					Usage:    "TrackEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
 			},
@@ -142,9 +178,8 @@ var (
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "layout",
-					Usage:    "layout name",
-					Required: true,
+					Name:  "layout",
+					Usage: "layout name",
 				},
 				&cli.IntFlag{
 					Name:     "publishers",
@@ -186,12 +221,13 @@ func createEgressClient(c *cli.Context) error {
 	return nil
 }
 
-func startEgress(c *cli.Context) error {
+func startRoomCompositeEgress(c *cli.Context) error {
 	reqFile := c.String("request")
 	reqBytes, err := ioutil.ReadFile(reqFile)
 	if err != nil {
 		return err
 	}
+
 	req := &livekit.RoomCompositeEgressRequest{}
 	err = protojson.Unmarshal(reqBytes, req)
 	if err != nil {
@@ -202,12 +238,64 @@ func startEgress(c *cli.Context) error {
 		PrintJSON(req)
 	}
 
-	res, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
+	info, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Egress started. Egress ID: %s\n", res.EgressId)
+	printInfo(info)
+	return nil
+}
+
+func startTrackCompositeEgress(c *cli.Context) error {
+	reqFile := c.String("request")
+	reqBytes, err := ioutil.ReadFile(reqFile)
+	if err != nil {
+		return err
+	}
+
+	req := &livekit.TrackCompositeEgressRequest{}
+	err = protojson.Unmarshal(reqBytes, req)
+	if err != nil {
+		return err
+	}
+
+	if c.Bool("verbose") {
+		PrintJSON(req)
+	}
+
+	info, err := egressClient.StartTrackCompositeEgress(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
+}
+
+func startTrackEgress(c *cli.Context) error {
+	reqFile := c.String("request")
+	reqBytes, err := ioutil.ReadFile(reqFile)
+	if err != nil {
+		return err
+	}
+
+	req := &livekit.TrackEgressRequest{}
+	err = protojson.Unmarshal(reqBytes, req)
+	if err != nil {
+		return err
+	}
+
+	if c.Bool("verbose") {
+		PrintJSON(req)
+	}
+
+	info, err := egressClient.StartTrackEgress(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
 	return nil
 }
 
@@ -215,35 +303,67 @@ func listEgress(c *cli.Context) error {
 	res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
 		RoomName: c.String("room"),
 	})
-
-	for _, item := range res.Items {
-		fmt.Printf("%v (%v)\n", item.EgressId, item.Status)
+	if err != nil {
+		return err
 	}
-	return err
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"EgressID", "Status", "Started At", "Error"})
+	for _, item := range res.Items {
+		var startedAt string
+		if item.StartedAt != 0 {
+			startedAt = fmt.Sprint(time.Unix(0, item.StartedAt))
+		}
+
+		table.Append([]string{
+			item.EgressId,
+			item.Status.String(),
+			startedAt,
+			item.Error,
+		})
+	}
+	table.Render()
+
+	return nil
 }
 
 func updateLayout(c *cli.Context) error {
-	_, err := egressClient.UpdateLayout(context.Background(), &livekit.UpdateLayoutRequest{
+	info, err := egressClient.UpdateLayout(context.Background(), &livekit.UpdateLayoutRequest{
 		EgressId: c.String("id"),
 		Layout:   c.String("layout"),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
 }
 
 func updateStream(c *cli.Context) error {
-	_, err := egressClient.UpdateStream(context.Background(), &livekit.UpdateStreamRequest{
+	info, err := egressClient.UpdateStream(context.Background(), &livekit.UpdateStreamRequest{
 		EgressId:         c.String("id"),
 		AddOutputUrls:    c.StringSlice("add-urls"),
 		RemoveOutputUrls: c.StringSlice("remove-urls"),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
 }
 
 func stopEgress(c *cli.Context) error {
-	_, err := egressClient.StopEgress(context.Background(), &livekit.StopEgressRequest{
+	info, err := egressClient.StopEgress(context.Background(), &livekit.StopEgressRequest{
 		EgressId: c.String("id"),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
 }
 
 func testEgressTemplate(c *cli.Context) error {
@@ -267,42 +387,24 @@ func testEgressTemplate(c *cli.Context) error {
 	apiKey := c.String("api-key")
 	apiSecret := c.String("api-secret")
 
+	var testers []*loadtester.LoadTester
 	for i := 0; i < numPublishers; i++ {
-		room, err := lksdk.ConnectToRoom(serverURL, lksdk.ConnectInfo{
-			APIKey:              apiKey,
-			APISecret:           apiSecret,
-			RoomName:            roomName,
-			ParticipantIdentity: fmt.Sprintf("demo-publisher-%d", i),
+		lt := loadtester.NewLoadTester(loadtester.TesterParams{
+			URL:            serverURL,
+			APIKey:         apiKey,
+			APISecret:      apiSecret,
+			Room:           roomName,
+			IdentityPrefix: "demo-publisher",
+			Sequence:       i,
 		})
+
+		err := lt.Start(1)
 		if err != nil {
 			return err
 		}
 
-		rooms = append(rooms, room)
-
-		var tracks []*lksdk.LocalSampleTrack
-		for q := livekit.VideoQuality_LOW; q <= livekit.VideoQuality_HIGH; q++ {
-			height := 180 * int(math.Pow(2, float64(q)))
-			provider, err := provider2.ButterflyLooper(height)
-			if err != nil {
-				return err
-			}
-			track, err := lksdk.NewLocalSampleTrack(provider.Codec(),
-				lksdk.WithSimulcast(fmt.Sprintf("demo-video-%d", i), provider.ToLayer(q)),
-			)
-			if err != nil {
-				return err
-			}
-			if err = track.StartWrite(provider, nil); err != nil {
-				return err
-			}
-			tracks = append(tracks, track)
-		}
-
-		_, err = room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
-			Name: fmt.Sprintf("demo-%d", i),
-		})
-		if err != nil {
+		testers = append(testers, lt)
+		if _, err = lt.PublishSimulcastTrack("demo-video", "high", ""); err != nil {
 			return err
 		}
 	}
@@ -313,13 +415,25 @@ func testEgressTemplate(c *cli.Context) error {
 	}
 
 	templateURL := fmt.Sprintf(
-		"%s/%s?url=%s&token=%s",
-		c.String("base-url"), c.String("layout"), url.QueryEscape(serverURL), token,
+		"%s/?url=%s&layout=%s&token=%s",
+		c.String("base-url"), url.QueryEscape(serverURL), c.String("layout"), token,
 	)
 	if err := browser.OpenURL(templateURL); err != nil {
 		return err
 	}
 
 	<-done
+
+	for _, lt := range testers {
+		lt.Stop()
+	}
 	return nil
+}
+
+func printInfo(info *livekit.EgressInfo) {
+	if info.Error == "" {
+		fmt.Printf("EgressID: %v Status: %v\n", info.EgressId, info.Status)
+	} else {
+		fmt.Printf("EgressID: %v Error: %v\n", info.EgressId, info.Error)
+	}
 }

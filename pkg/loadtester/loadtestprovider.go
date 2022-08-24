@@ -10,7 +10,7 @@ import (
 )
 
 // LoadTestProvider is designed to be used with the load tester.
-// It provides packets that are encoded with sequence and timing information, in order determine RTT and loss
+// It provides packets that are encoded with Sequence and timing information, in order determine RTT and loss
 type LoadTestProvider struct {
 	BytesPerSample uint32
 	SampleDuration time.Duration

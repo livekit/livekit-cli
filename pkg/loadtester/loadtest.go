@@ -228,7 +228,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	errs := syncmap.Map{}
 	for i := 0; i < params.Publishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
-		testerParams.sequence = i
+		testerParams.Sequence = i
 		testerParams.expectedTracks = expectedTracks
 		isPublisher := i < params.Publishers
 		if isPublisher {
@@ -247,7 +247,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		testers = append(testers, tester)
 
 		group.Go(func() error {
-			startId := testerParams.BrightBotStartId + testerParams.sequence
+			startId := testerParams.BrightBotStartId + testerParams.Sequence
 			fmt.Printf("Starting bot id: %d\n", startId)
 			if err := tester.Start(startId); err != nil {
 				fmt.Println(errors.Wrapf(err, "could not connect %s", testerParams.name))
@@ -263,7 +263,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 						return nil
 					}
 					t.lock.Lock()
-					t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.sequence)
+					t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.Sequence)
 					t.lock.Unlock()
 				}
 
@@ -280,7 +280,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 						return nil
 					}
 					t.lock.Lock()
-					t.trackNames[video] = fmt.Sprintf("%dV", testerParams.sequence)
+					t.trackNames[video] = fmt.Sprintf("%dV", testerParams.Sequence)
 					t.lock.Unlock()
 				}
 			}
@@ -288,6 +288,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		})
 		numStarted++
 
+		// throttle pace of join events
 		for {
 			secondsElapsed := float64(time.Since(startedAt)) / float64(time.Second)
 			startRate := numStarted / secondsElapsed

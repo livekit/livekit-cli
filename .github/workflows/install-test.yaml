@@ -1,0 +1,22 @@
+name: Installer test
+
+# on events
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# workflow tasks
+jobs:
+  intall-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run installer
+        run: bash install-cli.sh
+
+      - name: Checking installation
+        run: '(test -f /usr/local/bin/livekit-cli && echo Install success) || exit 1'

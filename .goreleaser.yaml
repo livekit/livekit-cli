@@ -1,0 +1,44 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: livekit-cli
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/livekit-cli
+    binary: livekit-cli
+    goarm:
+      - "7"
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goos:
+      - linux
+      - windows
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      darwin: mac
+    files:
+      - LICENSE
+release:
+  github:
+    owner: livekit
+    name: livekit-cli
+  draft: true
+  prerelease: auto
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+gomod:
+  proxy: false
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"

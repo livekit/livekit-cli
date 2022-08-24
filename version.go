@@ -1,5 +1,5 @@
-package livekit_cli
+package livekitcli
 
 const (
-	Version = "0.7.2"
+	Version = "1.1.0"
 )

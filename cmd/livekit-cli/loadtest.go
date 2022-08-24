@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,39 +10,27 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/urfave/cli/v2"
 
-	livekitcli "github.com/livekit/livekit-cli"
 	"github.com/livekit/livekit-cli/pkg/loadtester"
 	lksdk "github.com/livekit/server-sdk-go"
 )
 
-func main() {
-	app := &cli.App{
-		Name:  "livekit-cli",
-		Usage: "LiveKit load tester",
+var LoadTestCommands = []*cli.Command{
+	{
+		Name:     "load-test",
+		Usage:    "Run load tests against LiveKit with simulated publishers & subscribers",
+		Category: "Simulate",
+		Action:   loadTest,
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "url",
-				Usage:    "URL of LiveKit server",
-				EnvVars:  []string{"LIVEKIT_URL"},
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "api-key",
-				EnvVars:  []string{"LIVEKIT_API_KEY"},
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "api-secret",
-				EnvVars:  []string{"LIVEKIT_API_SECRET"},
-				Required: true,
-			},
+			urlFlag,
+			apiKeyFlag,
+			secretFlag,
 			&cli.StringFlag{
 				Name:  "room",
-				Usage: "name of the room",
+				Usage: "name of the room (default to random name)",
 			},
 			&cli.DurationFlag{
 				Name:  "duration",
-				Usage: "duration to run, 1m, 1h, 0 to keep running",
+				Usage: "duration to run, 1m, 1h (by default will run until canceled)",
 				Value: 0,
 			},
 			&cli.IntFlag{
@@ -56,11 +43,11 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:  "identity-prefix",
-				Usage: "identity prefix of tester participants, defaults to a random name",
+				Usage: "identity prefix of tester participants (defaults to a random prefix)",
 			},
 			&cli.StringFlag{
 				Name:  "video-resolution",
-				Usage: "high, medium, low, or off to disable. publishes sample video in H.264 and VP8",
+				Usage: "high, medium, low, or off to disable. publishes sample video in H.264 or VP8",
 				Value: "high",
 			},
 			&cli.StringFlag{
@@ -69,8 +56,8 @@ func main() {
 			},
 			&cli.Uint64Flag{
 				Name:  "audio-bitrate",
-				Usage: "bitrate (bps) of audio track to publish, 0 to disable",
-				Value: 10000,
+				Usage: "average bitrate (bps) of audio track to publish, 0 to disable",
+				Value: 8000,
 			},
 			&cli.Float64Flag{
 				Name:  "num-per-second",
@@ -99,23 +86,18 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:  "no-simulcast",
-				Usage: "disables simulcast publishing",
+				Usage: "disables simulcast publishing (simulcast is enabled by default)",
 			},
 			&cli.BoolFlag{
-				Name:  "run-all",
-				Usage: "runs set list of load test cases",
+				Name:   "run-all",
+				Usage:  "runs set list of load test cases",
+				Hidden: true,
 			},
 			&cli.BoolFlag{
 				Name: "verbose",
 			},
 		},
-		Action:  loadTest,
-		Version: livekitcli.Version,
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		fmt.Println(err)
-	}
+	},
 }
 
 func loadTest(c *cli.Context) error {

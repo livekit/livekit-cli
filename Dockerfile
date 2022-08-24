@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine as builder
+FROM golang:1.19-alpine as builder
 
 ARG TARGETPLATFORM
 ARG TARGETARCH
@@ -18,11 +18,11 @@ COPY cmd/ cmd/
 COPY pkg/ pkg/
 COPY version.go version.go
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH GO111MODULE=on go build -a -o livekit-load-tester ./cmd/livekit-load-tester
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH GO111MODULE=on go build -a -o livekit-cli ./cmd/livekit-cli
 
 FROM alpine
 
-COPY --from=builder /workspace/livekit-load-tester /livekit-load-tester
+COPY --from=builder /workspace/livekit-cli /livekit-cli
 
 # Run the binary.
-ENTRYPOINT ["/livekit-load-tester"]
+ENTRYPOINT ["/livekit-cli"]
