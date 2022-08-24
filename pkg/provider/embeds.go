@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"strconv"
 
@@ -112,7 +113,9 @@ func randomSpecsForCodec(videoCodec string) []*videoSpec {
 			filtered = append(filtered, specs)
 		}
 	}
-	chosen := int(videoIndex.Inc()) % len(filtered)
+	min := 0
+	max := len(filtered)
+	chosen := rand.Intn(max-min+min) % len(filtered)
 	return filtered[chosen]
 }
 

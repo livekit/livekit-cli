@@ -85,7 +85,7 @@ func main() {
 			&cli.StringFlag{
 				Name:  "bright-url",
 				Usage: "BrightLive url to hit so the bot user is added to the 'session'",
-				Value: "https://us-central1-bright-live-staging.cloudfunctions.net/livekit-qa/video/token-bot/",
+				Value: "https://us-central1-bright-live-staging.cloudfunctions.net/api/sessions/{{id}}/join-instant-test",
 			},
 			&cli.StringFlag{
 				Name:  "bright-shared-token",

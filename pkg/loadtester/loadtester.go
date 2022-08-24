@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -100,7 +101,8 @@ func (t *LoadTester) Start(botId int) error {
 	var err error
 	// make up to 10 reconnect attempts
 	for i := 0; i < 10; i++ {
-		getTokenUrl := fmt.Sprintf("%s%s?testUser=%d", t.params.BrightUrl, t.params.Room, botId)
+		url := strings.ReplaceAll(t.params.BrightUrl, "{{id}}", t.params.Room)
+		getTokenUrl := fmt.Sprintf("%s?testUser=%d", url, botId)
 		fmt.Printf("Connecting to url: %s\n", getTokenUrl)
 		req, err := http.NewRequest("GET", getTokenUrl, nil)
 		if err != nil {
@@ -130,6 +132,8 @@ func (t *LoadTester) Start(botId int) error {
 		room, err = lksdk.ConnectToRoomWithToken(t.params.URL, bt.Token, lksdk.WithAutoSubscribe(t.params.Subscribe))
 		if err == nil {
 			break
+		} else {
+			fmt.Println(err)
 		}
 		time.Sleep(1 * time.Second)
 	}
