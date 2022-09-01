@@ -13,7 +13,7 @@ install: cli
 
 check_lfs:
 	@{ \
-	if [ ! -f "pkg/provider/resources/neon_720_2000.ivf" ]; then \
+	if [ ! -n $(find pkg/provider/resources -name neon_720_2000.ivf -size +100) ]; then \
 		echo "Video resources not found. Ensure Git LFS is installed"; \
 		exit 1; \
 	fi \
