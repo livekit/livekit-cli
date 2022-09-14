@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -70,9 +71,6 @@ var (
 )
 
 func createToken(c *cli.Context) error {
-	if !c.IsSet("api-key") || !c.IsSet("api-secret") {
-		return fmt.Errorf("api-key and api-secret are required")
-	}
 	p := c.String("identity") // required only for join
 	name := c.String("name")
 	room := c.String("room")
@@ -87,7 +85,10 @@ func createToken(c *cli.Context) error {
 		grant.RoomJoin = true
 		grant.Room = room
 		if p == "" {
-			return fmt.Errorf("participant identity is required")
+			return errors.New("participant identity is required")
+		}
+		if room == "" {
+			return errors.New("room is required")
 		}
 	}
 	if c.Bool("admin") {
@@ -105,10 +106,15 @@ func createToken(c *cli.Context) error {
 	}
 
 	if !grant.RoomJoin && !grant.RoomCreate && !grant.RoomAdmin && !grant.RoomList {
-		return fmt.Errorf("at least one of --list, --join, --create, or --admin is required")
+		return errors.New("at least one of --list, --join, --create, or --admin is required")
 	}
 
-	at := accessToken(c, grant, p)
+	pc, err := loadProjectDetails(c, ignoreURL)
+	if err != nil {
+		return err
+	}
+
+	at := accessToken(pc.APIKey, pc.APISecret, grant, p)
 
 	if metadata != "" {
 		at.SetMetadata(metadata)
@@ -138,9 +144,7 @@ func createToken(c *cli.Context) error {
 	return nil
 }
 
-func accessToken(c *cli.Context, grant *auth.VideoGrant, identity string) *auth.AccessToken {
-	apiKey := c.String("api-key")
-	apiSecret := c.String("api-secret")
+func accessToken(apiKey, apiSecret string, grant *auth.VideoGrant, identity string) *auth.AccessToken {
 	if apiKey == "" && apiSecret == "" {
 		// not provided, don't sign request
 		return nil

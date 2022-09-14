@@ -27,12 +27,9 @@ var (
 			Usage:    "Joins a room as a participant",
 			Action:   joinRoom,
 			Category: "Simulate",
-			Flags: []cli.Flag{
-				urlFlag,
+			Flags: withDefaultFlags(
 				roomFlag,
 				identityFlag,
-				apiKeyFlag,
-				secretFlag,
 				&cli.BoolFlag{
 					Name:  "publish-demo",
 					Usage: "publish demo video as a loop",
@@ -47,7 +44,7 @@ var (
 					Name:  "fps",
 					Usage: "if video files are published, indicates FPS of video",
 				},
-			},
+			),
 		},
 	}
 )
@@ -55,6 +52,11 @@ var (
 const mimeDelimiter = "://"
 
 func joinRoom(c *cli.Context) error {
+	pc, err := loadProjectDetails(c)
+	if err != nil {
+		return err
+	}
+
 	roomCB := &lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnDataReceived: func(data []byte, rp *lksdk.RemoteParticipant) {
@@ -74,9 +76,9 @@ func joinRoom(c *cli.Context) error {
 			logger.Infow("room metadata changed", "metadata", metadata)
 		},
 	}
-	room, err := lksdk.ConnectToRoom(c.String("url"), lksdk.ConnectInfo{
-		APIKey:              c.String("api-key"),
-		APISecret:           c.String("api-secret"),
+	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
+		APIKey:              pc.APIKey,
+		APISecret:           pc.APISecret,
 		RoomName:            c.String("room"),
 		ParticipantIdentity: c.String("identity"),
 	}, roomCB)
@@ -85,7 +87,7 @@ func joinRoom(c *cli.Context) error {
 	}
 	defer room.Disconnect()
 
-	logger.Infow("connected to room", "room", room.Name)
+	logger.Infow("connected to room", "room", room.Name())
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
