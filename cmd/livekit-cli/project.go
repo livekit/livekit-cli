@@ -27,6 +27,22 @@ var (
 					Name:   "add",
 					Usage:  "add a new project",
 					Action: addProject,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:  "url",
+							Usage: "URL of the LiveKit server",
+						},
+						&cli.StringFlag{
+							Name: "api-key",
+						},
+						&cli.StringFlag{
+							Name: "api-secret",
+						},
+						&cli.StringFlag{
+							Name:  "name",
+							Usage: "name given to this project (for later reference).",
+						},
+					},
 				},
 				{
 					Name:   "list",
@@ -74,65 +90,95 @@ func loadProjectConfig(c *cli.Context) error {
 
 func addProject(c *cli.Context) error {
 	p := config.ProjectConfig{}
-	fmt.Println("Enter project details")
-	prompt := promptui.Prompt{
-		Label: "URL",
-		Validate: func(val string) error {
-			if !strings.HasPrefix(val, "http") && !strings.HasPrefix(val, "ws") {
-				return errors.New("scheme must be http(s) or ws(s)")
-			}
-			_, err := url.Parse(val)
-			return err
-		},
-	}
+	var prompt promptui.Prompt
+
+	// URL
 	var err error
-	if p.URL, err = prompt.Run(); err != nil {
+	validateURL := func(val string) error {
+		if !strings.HasPrefix(val, "http") && !strings.HasPrefix(val, "ws") {
+			return errors.New("URL must start with http(s) or ws(s)")
+		}
+		_, err := url.Parse(val)
 		return err
+	}
+	if p.URL = c.String("url"); p.URL != "" {
+		if err = validateURL(p.URL); err != nil {
+			return err
+		}
+		fmt.Println("URL:", p.URL)
+	} else {
+		prompt = promptui.Prompt{
+			Label:    "URL",
+			Validate: validateURL,
+		}
+		if p.URL, err = prompt.Run(); err != nil {
+			return err
+		}
 	}
 
-	prompt = promptui.Prompt{
-		Label: "API Key",
-		Validate: func(val string) error {
-			if len(val) < 3 {
-				return errors.New("API key must be at least 3 characters")
-			}
-			return nil
-		},
+	// API key
+	validateKey := func(val string) error {
+		if len(val) < 3 {
+			return errors.New("API key must be at least 3 characters")
+		}
+		return nil
 	}
-	if p.APIKey, err = prompt.Run(); err != nil {
-		return err
-	}
-
-	prompt = promptui.Prompt{
-		Label: "API APISecret",
-		Validate: func(val string) error {
-			if len(val) < 3 {
-				return errors.New("API secret must be at least 3 characters")
-			}
-			return nil
-		},
-	}
-	if p.APISecret, err = prompt.Run(); err != nil {
-		return err
+	if p.APIKey = c.String("api-key"); p.APIKey != "" {
+		if err = validateKey(p.APIKey); err != nil {
+			return err
+		}
+		fmt.Println("API Key:", p.APIKey)
+	} else {
+		prompt = promptui.Prompt{
+			Label:    "API Key",
+			Validate: validateKey,
+		}
+		if p.APIKey, err = prompt.Run(); err != nil {
+			return err
+		}
 	}
 
-	prompt = promptui.Prompt{
-		Label: "Name",
-		Validate: func(val string) error {
-			if !nameRegex.MatchString(val) {
-				return errors.New("name can only contain alphanumeric characters, dashes and underscores")
-			}
-			// cannot conflict with existing projects
-			for _, p := range cliConfig.Projects {
-				if p.Name == val {
-					return errors.New("name already exists")
-				}
-			}
-			return nil
-		},
+	// API Secret
+	if p.APISecret = c.String("api-secret"); p.APISecret != "" {
+		if err = validateKey(p.APISecret); err != nil {
+			return err
+		}
+		fmt.Println("API Secret:", p.APISecret)
+	} else {
+		prompt = promptui.Prompt{
+			Label:    "API APISecret",
+			Validate: validateKey,
+		}
+		if p.APISecret, err = prompt.Run(); err != nil {
+			return err
+		}
 	}
-	if p.Name, err = prompt.Run(); err != nil {
-		return err
+
+	// Name
+	validateName := func(val string) error {
+		if !nameRegex.MatchString(val) {
+			return errors.New("name can only contain alphanumeric characters, dashes and underscores")
+		}
+		// cannot conflict with existing projects
+		for _, p := range cliConfig.Projects {
+			if p.Name == val {
+				return errors.New("name already exists")
+			}
+		}
+		return nil
+	}
+	if p.Name = c.String("name"); p.Name != "" {
+		if err = validateName(p.Name); err != nil {
+			return err
+		}
+	} else {
+		prompt = promptui.Prompt{
+			Label:    "Give it a name for later reference",
+			Validate: validateName,
+		}
+		if p.Name, err = prompt.Run(); err != nil {
+			return err
+		}
 	}
 
 	// if it's first project, make it default
@@ -180,6 +226,7 @@ func listProjects(c *cli.Context) error {
 
 func removeProject(c *cli.Context) error {
 	if c.NArg() == 0 {
+		_ = cli.ShowSubcommandHelp(c)
 		return errors.New("project name is required")
 	}
 	name := c.Args().First()
@@ -208,6 +255,7 @@ func removeProject(c *cli.Context) error {
 
 func setDefaultProject(c *cli.Context) error {
 	if c.NArg() == 0 {
+		_ = cli.ShowSubcommandHelp(c)
 		return errors.New("project name is required")
 	}
 	name := c.Args().First()
