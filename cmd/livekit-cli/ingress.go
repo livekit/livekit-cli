@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/ggwhite/go-masker"
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -25,17 +24,13 @@ var (
 			Before:   createIngressClient,
 			Action:   createIngress,
 			Category: ingressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
-				verboseFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "CreateIngressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
-			},
+			),
 		},
 		{
 			Name:     "update-ingress",
@@ -43,17 +38,13 @@ var (
 			Before:   createIngressClient,
 			Action:   updateIngress,
 			Category: ingressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
-				verboseFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "UpdateIngressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
-			},
+			),
 		},
 		{
 			Name:     "list-ingress",
@@ -61,16 +52,13 @@ var (
 			Before:   createIngressClient,
 			Action:   listIngress,
 			Category: ingressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "room",
 					Usage:    "limits list to a certain room name ",
 					Required: false,
 				},
-			},
+			),
 		},
 		{
 			Name:     "delete-ingress",
@@ -78,16 +66,13 @@ var (
 			Before:   createIngressClient,
 			Action:   deleteIngress,
 			Category: ingressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "Ingress ID",
 					Required: true,
 				},
-			},
+			),
 		},
 	}
 
@@ -95,18 +80,12 @@ var (
 )
 
 func createIngressClient(c *cli.Context) error {
-	url := c.String("url")
-	apiKey := c.String("api-key")
-	apiSecret := c.String("api-secret")
-
-	if c.Bool("verbose") {
-		fmt.Printf("creating client to %s, with api-key: %s, secret: %s\n",
-			url,
-			masker.ID(apiKey),
-			masker.ID(apiSecret))
+	pc, err := loadProjectDetails(c)
+	if err != nil {
+		return err
 	}
 
-	ingressClient = lksdk.NewIngressClient(url, apiKey, apiSecret)
+	ingressClient = lksdk.NewIngressClient(pc.URL, pc.APIKey, pc.APISecret)
 	return nil
 }
 

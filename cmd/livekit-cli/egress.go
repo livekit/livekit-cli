@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ggwhite/go-masker"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v2"
@@ -32,17 +31,13 @@ var (
 			Before:   createEgressClient,
 			Action:   startRoomCompositeEgress,
 			Category: egressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
-				verboseFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "RoomCompositeEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
-			},
+			),
 		},
 		{
 			Name:     "start-track-composite-egress",
@@ -50,17 +45,13 @@ var (
 			Before:   createEgressClient,
 			Action:   startTrackCompositeEgress,
 			Category: egressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
-				verboseFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "TrackCompositeEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
-			},
+			),
 		},
 		{
 			Name:     "start-track-egress",
@@ -68,17 +59,13 @@ var (
 			Before:   createEgressClient,
 			Action:   startTrackEgress,
 			Category: egressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
-				verboseFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "TrackEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
-			},
+			),
 		},
 		{
 			Name:     "list-egress",
@@ -86,16 +73,13 @@ var (
 			Before:   createEgressClient,
 			Action:   listEgress,
 			Category: egressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "room",
 					Usage:    "limits list to a certain room name",
 					Required: false,
 				},
-			},
+			),
 		},
 		{
 			Name:     "update-layout",
@@ -103,10 +87,7 @@ var (
 			Before:   createEgressClient,
 			Action:   updateLayout,
 			Category: egressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "Egress ID",
@@ -117,7 +98,7 @@ var (
 					Usage:    "new web layout",
 					Required: true,
 				},
-			},
+			),
 		},
 		{
 			Name:     "update-stream",
@@ -125,10 +106,7 @@ var (
 			Before:   createEgressClient,
 			Action:   updateStream,
 			Category: egressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "Egress ID",
@@ -144,7 +122,7 @@ var (
 					Usage:    "urls to remove",
 					Required: false,
 				},
-			},
+			),
 		},
 		{
 			Name:     "stop-egress",
@@ -152,26 +130,20 @@ var (
 			Before:   createEgressClient,
 			Action:   stopEgress,
 			Category: egressCategory,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "Egress ID",
 					Required: true,
 				},
-			},
+			),
 		},
 		{
 			Name:     "test-egress-template",
 			Usage:    "See what your egress template will look like in a recording",
 			Category: egressCategory,
 			Action:   testEgressTemplate,
-			Flags: []cli.Flag{
-				urlFlag,
-				apiKeyFlag,
-				secretFlag,
+			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "base-url (e.g. https://recorder.livekit.io/#)",
 					Usage:    "base template url",
@@ -191,7 +163,7 @@ var (
 					Usage:    "name of the room",
 					Required: false,
 				},
-			},
+			),
 			SkipFlagParsing:        false,
 			HideHelp:               false,
 			HideHelpCommand:        false,
@@ -206,18 +178,12 @@ var (
 )
 
 func createEgressClient(c *cli.Context) error {
-	url := c.String("url")
-	apiKey := c.String("api-key")
-	apiSecret := c.String("api-secret")
-
-	if c.Bool("verbose") {
-		fmt.Printf("creating client to %s, with api-key: %s, secret: %s\n",
-			url,
-			masker.ID(apiKey),
-			masker.ID(apiSecret))
+	pc, err := loadProjectDetails(c)
+	if err != nil {
+		return err
 	}
 
-	egressClient = lksdk.NewEgressClient(url, apiKey, apiSecret)
+	egressClient = lksdk.NewEgressClient(pc.URL, pc.APIKey, pc.APISecret)
 	return nil
 }
 

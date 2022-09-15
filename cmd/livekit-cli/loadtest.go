@@ -20,10 +20,7 @@ var LoadTestCommands = []*cli.Command{
 		Usage:    "Run load tests against LiveKit with simulated publishers & subscribers",
 		Category: "Simulate",
 		Action:   loadTest,
-		Flags: []cli.Flag{
-			urlFlag,
-			apiKeyFlag,
-			secretFlag,
+		Flags: withDefaultFlags(
 			&cli.StringFlag{
 				Name:  "room",
 				Usage: "name of the room (default to random name)",
@@ -78,14 +75,16 @@ var LoadTestCommands = []*cli.Command{
 				Usage:  "runs set list of load test cases",
 				Hidden: true,
 			},
-			&cli.BoolFlag{
-				Name: "verbose",
-			},
-		},
+		),
 	},
 }
 
 func loadTest(c *cli.Context) error {
+	pc, err := loadProjectDetails(c)
+	if err != nil {
+		return err
+	}
+
 	if !c.Bool("verbose") {
 		lksdk.SetLogger(logr.Discard())
 	}
@@ -109,9 +108,9 @@ func loadTest(c *cli.Context) error {
 		NumPerSecond:    c.Float64("num-per-second"),
 		Simulcast:       !c.Bool("no-simulcast"),
 		TesterParams: loadtester.TesterParams{
-			URL:            c.String("url"),
-			APIKey:         c.String("api-key"),
-			APISecret:      c.String("api-secret"),
+			URL:            pc.URL,
+			APIKey:         pc.APIKey,
+			APISecret:      pc.APISecret,
 			Room:           c.String("room"),
 			IdentityPrefix: c.String("identity-prefix"),
 			Layout:         layout,
