@@ -113,7 +113,7 @@ func loadProjectDetails(c *cli.Context, opts ...loadOption) (*config.ProjectConf
 	if pc.APIKey != "" && pc.APISecret != "" && (pc.URL != "" || !p.requireURL) {
 		var envVars []string
 		// if it's set via env, we should let users know
-		if os.Getenv("LIVEKIT_URL") == pc.URL {
+		if os.Getenv("LIVEKIT_URL") == pc.URL && pc.URL != "" {
 			envVars = append(envVars, "url")
 		}
 		if os.Getenv("LIVEKIT_API_KEY") == pc.APIKey {
