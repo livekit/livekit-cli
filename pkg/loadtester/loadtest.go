@@ -237,6 +237,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 			} else {
 				testerParams.expectedTracks--
 			}
+			testerParams.IdentityPrefix += "_pub"
 			testerParams.name = fmt.Sprintf("Pub %d", i)
 		} else {
 			testerParams.Subscribe = true
