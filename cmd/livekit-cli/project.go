@@ -146,7 +146,7 @@ func addProject(c *cli.Context) error {
 		fmt.Println("API Secret:", p.APISecret)
 	} else {
 		prompt = promptui.Prompt{
-			Label:    "API APISecret",
+			Label:    "API Secret",
 			Validate: validateKey,
 		}
 		if p.APISecret, err = prompt.Run(); err != nil {
