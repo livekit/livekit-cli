@@ -100,6 +100,18 @@ func loadProjectDetails(c *cli.Context, opts ...loadOption) (*config.ProjectConf
 		}
 
 	}
+
+	// if explicit project is defined, then use it
+	if c.String("project") != "" {
+		pc, err := config.LoadProject(c.String("project"))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("Using project:", c.String("project"))
+		logDetails(c, pc)
+		return pc, nil
+	}
+
 	pc := &config.ProjectConfig{}
 	if val := c.String("url"); val != "" {
 		pc.URL = val
@@ -129,16 +141,7 @@ func loadProjectDetails(c *cli.Context, opts ...loadOption) (*config.ProjectConf
 		return pc, nil
 	}
 
-	if c.String("project") != "" {
-		pc, err := config.LoadProject(c.String("project"))
-		if err != nil {
-			return nil, err
-		}
-		logDetails(c, pc)
-		return pc, nil
-	}
-
-	// load from defaults
+	// load default project
 	dp, err := config.LoadDefaultProject()
 	if err == nil {
 		fmt.Println("Using default project", dp.Name)
