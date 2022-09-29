@@ -203,8 +203,8 @@ github.com/lithammer/shortuuid/v3 v3.0.7 h1:trX0KTHy4Pbwo/6ia8fscyHoGA+mf1jWbPJV
 github.com/lithammer/shortuuid/v3 v3.0.7/go.mod h1:vMk8ke37EmiewwolSO1NLW8vP4ZaKlRuDIi8tWWmAts=
 github.com/livekit/livekit-server v1.2.1 h1:eyhjpQe9HBrEH2iVhMsOlrzorgW+T0XG71CKrYBNqWw=
 github.com/livekit/livekit-server v1.2.1/go.mod h1:DzyJyStwd1+F/5x95DacrVCtsgTh2FlXaSyDr+3js5Q=
-github.com/livekit/protocol v1.0.3 h1:duJ1mWu+/hApB2eeK6f51iBCCgpETZ6sxA8x0rQNvwg=
-github.com/livekit/protocol v1.0.3/go.mod h1:eburCdz6ZtbgKSKYkAeCdWP1z33DB9clTphz7uNaxp0=
+github.com/livekit/protocol v1.1.2 h1:LDEFKK16T57pwDwxlJkkWMpbgvR0DJ3PozjOnvq29CI=
+github.com/livekit/protocol v1.1.2/go.mod h1:eburCdz6ZtbgKSKYkAeCdWP1z33DB9clTphz7uNaxp0=
 github.com/livekit/server-sdk-go v1.0.0 h1:bcWTcvbAc4QgA1d8a9iyJVFeN8uIh5y23IeJIK+nvI0=
 github.com/livekit/server-sdk-go v1.0.0/go.mod h1:i8Jt7XX3JOQndZLDLOQwQkFqecTq428qsg6Aq3MY+Fo=
 github.com/magefile/mage v1.13.0 h1:XtLJl8bcCM7EFoO8FyH8XK3t7G5hQAeK+i4tq+veT9M=
