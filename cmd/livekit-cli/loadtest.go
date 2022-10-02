@@ -33,11 +33,11 @@ var LoadTestCommands = []*cli.Command{
 			&cli.IntFlag{
 				Name:    "video-publishers",
 				Aliases: []string{"publishers"},
-				Usage:   "number of participants to publish video tracks to the room",
+				Usage:   "number of participants that would publish video tracks",
 			},
 			&cli.IntFlag{
 				Name:  "audio-publishers",
-				Usage: "number of participants that publishes audio tracks to the room",
+				Usage: "number of participants that would publish audio tracks",
 			},
 			&cli.IntFlag{
 				Name:  "subscribers",
@@ -49,7 +49,7 @@ var LoadTestCommands = []*cli.Command{
 			},
 			&cli.StringFlag{
 				Name:  "video-resolution",
-				Usage: "high, medium, or low. publishes sample video in H.264 or VP8",
+				Usage: "resolution of video to publish. valid values are: high, medium, or low",
 				Value: "high",
 			},
 			&cli.StringFlag{
