@@ -54,17 +54,14 @@ func (p *LoadTestProvider) OnUnbind() error {
 	return nil
 }
 
-type depacketizer struct {
+type LoadTestDepacketizer struct {
 }
 
-func (d *depacketizer) Unmarshal(packet []byte) ([]byte, error) {
+func (d *LoadTestDepacketizer) Unmarshal(packet []byte) ([]byte, error) {
 	return packet, nil
 }
 
-// Checks if the packet is at the beginning of a partition.  This
-// should return false if the result could not be determined, in
-// which case the caller will detect timestamp discontinuities.
-func (d *depacketizer) IsPartitionHead(payload []byte) bool {
+func (d *LoadTestDepacketizer) IsPartitionHead(payload []byte) bool {
 	if len(payload) < 4 {
 		return false
 	}
@@ -76,9 +73,7 @@ func (d *depacketizer) IsPartitionHead(payload []byte) bool {
 	return true
 }
 
-// Checks if the packet is at the end of a partition.  This should
-// return false if the result could not be determined.
-func (d *depacketizer) IsPartitionTail(marker bool, payload []byte) bool {
+func (d *LoadTestDepacketizer) IsPartitionTail(marker bool, payload []byte) bool {
 	size := len(payload)
 	if size < 10 {
 		return false

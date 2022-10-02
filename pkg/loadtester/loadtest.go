@@ -16,12 +16,6 @@ import (
 	"golang.org/x/sync/syncmap"
 )
 
-const (
-	resolutionLow    = "low"
-	resolutionMedium = "medium"
-	resolutionHigh   = "high"
-)
-
 type LoadTest struct {
 	Params     Params
 	trackNames map[string]string
