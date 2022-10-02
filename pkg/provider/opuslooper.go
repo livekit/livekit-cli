@@ -18,10 +18,9 @@ const (
 
 type OpusAudioLooper struct {
 	lksdk.BaseSampleProvider
-	buffer        []byte
-	frameDuration time.Duration
-	reader        *oggreader.OggReader
-	lastGranule   uint64
+	buffer      []byte
+	reader      *oggreader.OggReader
+	lastGranule uint64
 }
 
 func NewOpusAudioLooper(input io.Reader) (*OpusAudioLooper, error) {
