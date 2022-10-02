@@ -31,8 +31,13 @@ var LoadTestCommands = []*cli.Command{
 				Value: 0,
 			},
 			&cli.IntFlag{
-				Name:  "publishers",
-				Usage: "number of participants to publish tracks to the room",
+				Name:    "video-publishers",
+				Aliases: []string{"publishers"},
+				Usage:   "number of participants that would publish video tracks",
+			},
+			&cli.IntFlag{
+				Name:  "audio-publishers",
+				Usage: "number of participants that would publish audio tracks",
 			},
 			&cli.IntFlag{
 				Name:  "subscribers",
@@ -44,17 +49,12 @@ var LoadTestCommands = []*cli.Command{
 			},
 			&cli.StringFlag{
 				Name:  "video-resolution",
-				Usage: "high, medium, low, or off to disable. publishes sample video in H.264 or VP8",
+				Usage: "resolution of video to publish. valid values are: high, medium, or low",
 				Value: "high",
 			},
 			&cli.StringFlag{
 				Name:  "video-codec",
 				Usage: "h264 or vp8, both will be used when unset",
-			},
-			&cli.Uint64Flag{
-				Name:  "audio-bitrate",
-				Usage: "average bitrate (bps) of audio track to publish, 0 to disable",
-				Value: 8000,
 			},
 			&cli.Float64Flag{
 				Name:  "num-per-second",
@@ -101,7 +101,6 @@ func loadTest(c *cli.Context) error {
 	layout := loadtester.LayoutFromString(c.String("layout"))
 	params := loadtester.Params{
 		Context:         ctx,
-		AudioBitrate:    uint32(c.Uint64("audio-bitrate")),
 		VideoResolution: c.String("video-resolution"),
 		VideoCodec:      c.String("video-codec"),
 		Duration:        c.Duration("duration"),
@@ -126,7 +125,8 @@ func loadTest(c *cli.Context) error {
 		return test.RunSuite()
 	}
 
-	params.Publishers = c.Int("publishers")
+	params.VideoPublishers = c.Int("video-publishers")
+	params.AudioPublishers = c.Int("audio-publishers")
 	params.Subscribers = c.Int("subscribers")
 	test := loadtester.NewLoadTest(params)
 
