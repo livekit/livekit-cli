@@ -4,7 +4,6 @@ import (
 	"embed"
 	"fmt"
 	"math"
-	"os"
 	"strconv"
 
 	"go.uber.org/atomic"
@@ -87,6 +86,8 @@ var (
 
 	videoSpecs [][]*videoSpec
 	videoIndex atomic.Int64
+	audioNames []string
+	audioIndex atomic.Int64
 )
 
 func init() {
@@ -102,9 +103,18 @@ func init() {
 			circlesSpec(540, 2000, 30),
 		},
 	}
+	audioNames = []string{
+		"change-amelia",
+		"change-benjamin",
+		"change-elena",
+		"change-clint",
+		"change-emma",
+		"change-ken",
+		"change-sophie",
+	}
 }
 
-func randomSpecsForCodec(videoCodec string) []*videoSpec {
+func randomVideoSpecsForCodec(videoCodec string) []*videoSpec {
 	filtered := make([][]*videoSpec, 0)
 	for _, specs := range videoSpecs {
 		if videoCodec == "" || specs[0].codec == videoCodec {
@@ -115,8 +125,8 @@ func randomSpecsForCodec(videoCodec string) []*videoSpec {
 	return filtered[chosen]
 }
 
-func CreateLoopers(resolution string, codecFilter string, simulcast bool) ([]VideoLooper, error) {
-	specs := randomSpecsForCodec(codecFilter)
+func CreateVideoLoopers(resolution string, codecFilter string, simulcast bool) ([]VideoLooper, error) {
+	specs := randomVideoSpecsForCodec(codecFilter)
 	numToKeep := 0
 	switch resolution {
 	case "medium":
@@ -154,22 +164,13 @@ func CreateLoopers(resolution string, codecFilter string, simulcast bool) ([]Vid
 	return loopers, nil
 }
 
-func ButterflyLooper(height int) (*H264VideoLooper, error) {
-	var spec *videoSpec
-	for _, s := range videoSpecs[0] {
-		if s.height == height {
-			spec = s
-			break
-		}
-	}
-	if spec == nil {
-		return nil, os.ErrNotExist
-	}
-	f, err := res.Open(spec.Name())
+func CreateAudioLooper() (*OpusAudioLooper, error) {
+	chosenName := audioNames[int(audioIndex.Load())%len(audioNames)]
+	audioIndex.Inc()
+	f, err := res.Open(fmt.Sprintf("resources/%s.ogg", chosenName))
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-
-	return NewH264VideoLooper(f, spec)
+	return NewOpusAudioLooper(f)
 }

@@ -1,7 +1,6 @@
 package loadtester
 
 import (
-	"encoding/binary"
 	"fmt"
 	"sync"
 	"time"
@@ -124,24 +123,21 @@ func (t *LoadTester) IsRunning() bool {
 	return t.running.Load()
 }
 
-func (t *LoadTester) PublishAudioTrack(name string, bitrate uint32) (string, error) {
+func (t *LoadTester) PublishAudioTrack(name string) (string, error) {
 	if !t.IsRunning() {
 		return "", nil
 	}
 
-	sampleProvider, err := NewLoadTestProvider(bitrate)
+	fmt.Println("publishing audio track -", t.room.LocalParticipant.Identity())
+	audioLooper, err := provider2.CreateAudioLooper()
 	if err != nil {
 		return "", err
 	}
-	track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
-		MimeType:    webrtc.MimeTypeOpus,
-		ClockRate:   20,
-		SDPFmtpLine: "",
-	})
+	track, err := lksdk.NewLocalSampleTrack(audioLooper.Codec())
 	if err != nil {
 		return "", err
 	}
-	if err := track.StartWrite(sampleProvider, nil); err != nil {
+	if err := track.StartWrite(audioLooper, nil); err != nil {
 		return "", err
 	}
 
@@ -159,7 +155,8 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 		return "", nil
 	}
 
-	loopers, err := provider2.CreateLoopers(resolution, codec, false)
+	fmt.Println("publishing video track -", t.room.LocalParticipant.Identity())
+	loopers, err := provider2.CreateVideoLoopers(resolution, codec, false)
 	if err != nil {
 		return "", err
 	}
@@ -183,7 +180,8 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (string, error) {
 	var tracks []*lksdk.LocalSampleTrack
 
-	loopers, err := provider2.CreateLoopers(resolution, codec, true)
+	fmt.Println("publishing simulcast video track -", t.room.LocalParticipant.Identity())
+	loopers, err := provider2.CreateVideoLoopers(resolution, codec, true)
 	if err != nil {
 		return "", err
 	}
@@ -213,7 +211,7 @@ func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (stri
 	return p.SID(), nil
 }
 
-func (t *LoadTester) GetStats() *testerStats {
+func (t *LoadTester) getStats() *testerStats {
 	stats := &testerStats{
 		expectedTracks: t.params.expectedTracks,
 		trackStats:     make(map[string]*trackStats),
@@ -330,16 +328,20 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTr
 	}()
 
 	var dpkt rtp.Depacketizer
+	isVideo := false
 	if pub.Kind() == lksdk.TrackKindVideo {
 		dpkt = &codecs.H264Packet{}
+		isVideo = true
 	} else {
-		dpkt = &depacketizer{}
+		dpkt = &codecs.OpusPacket{}
 	}
 	sb := samplebuilder.New(100, dpkt, track.Codec().ClockRate, samplebuilder.WithPacketDroppedHandler(func() {
 		value, _ := t.stats.Load(track.ID())
 		ts := value.(*trackStats)
 		ts.dropped.Inc()
-		rp.WritePLI(track.SSRC())
+		if isVideo {
+			rp.WritePLI(track.SSRC())
+		}
 	}))
 	value, _ := t.stats.Load(track.ID())
 	ts := value.(*trackStats)
@@ -359,15 +361,6 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTr
 			ts := value.(*trackStats)
 			ts.bytes.Add(int64(len(pkt.Payload)))
 			ts.packets.Inc()
-			if pub.Kind() == lksdk.TrackKindAudio && dpkt.IsPartitionTail(pkt.Marker, pkt.Payload) {
-				sentAt := int64(binary.LittleEndian.Uint64(pkt.Payload[len(pkt.Payload)-8:]))
-				latency := time.Now().UnixNano() - sentAt
-				// check for correct values
-				if latency < 100*1000*1000 && latency > 0 {
-					ts.latency.Add(latency)
-					ts.latencyCount.Inc()
-				}
-			}
 		}
 	}
 }

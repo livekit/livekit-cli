@@ -7,8 +7,12 @@ import (
 	lksdk "github.com/livekit/server-sdk-go"
 )
 
-type VideoLooper interface {
+type Looper interface {
 	lksdk.SampleProvider
 	Codec() webrtc.RTPCodecCapability
+}
+
+type VideoLooper interface {
+	Looper
 	ToLayer(quality livekit.VideoQuality) *livekit.VideoLayer
 }
