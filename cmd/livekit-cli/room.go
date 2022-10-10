@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/urfave/cli/v2"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go"
@@ -25,6 +27,16 @@ var (
 					Name:     "name",
 					Usage:    "name of the room",
 					Required: true,
+				},
+				&cli.StringFlag{
+					Name:     "room-egress-file",
+					Usage:    "RoomCompositeRequest json file (see examples/room-composite-file.json)",
+					Required: false,
+				},
+				&cli.StringFlag{
+					Name:     "track-egress-file",
+					Usage:    "AutoTrackEgress json file (see examples/auto-track-egress.json)",
+					Required: false,
 				},
 			),
 		},
@@ -156,9 +168,38 @@ func createRoomClient(c *cli.Context) error {
 }
 
 func createRoom(c *cli.Context) error {
-	room, err := roomClient.CreateRoom(context.Background(), &livekit.CreateRoomRequest{
+	req := &livekit.CreateRoomRequest{
 		Name: c.String("name"),
-	})
+	}
+
+	if roomEgressFile := c.String("room-egress-file"); roomEgressFile != "" {
+		roomEgress := &livekit.RoomCompositeEgressRequest{}
+		b, err := os.ReadFile(roomEgressFile)
+		if err != nil {
+			return err
+		}
+		if err = protojson.Unmarshal(b, roomEgress); err != nil {
+			return err
+		}
+		req.Egress = &livekit.RoomEgress{Room: roomEgress}
+	}
+
+	if trackEgressFile := c.String("track-egress-file"); trackEgressFile != "" {
+		trackEgress := &livekit.AutoTrackEgress{}
+		b, err := os.ReadFile(trackEgressFile)
+		if err != nil {
+			return err
+		}
+		if err = protojson.Unmarshal(b, trackEgress); err != nil {
+			return err
+		}
+		if req.Egress == nil {
+			req.Egress = &livekit.RoomEgress{}
+		}
+		req.Egress.Tracks = trackEgress
+	}
+
+	room, err := roomClient.CreateRoom(context.Background(), req)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,9 @@
+{
+  "filepath": "{room_name}-{track_id}",
+  "s3": {
+    "access_key": "aws-access-key",
+    "secret": "aws-access-secret",
+    "region": "aws-region",
+    "bucket": "my-bucket"
+  }
+}
