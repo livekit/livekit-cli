@@ -30,12 +30,12 @@ var (
 				},
 				&cli.StringFlag{
 					Name:     "room-egress-file",
-					Usage:    "RoomCompositeRequest json file",
+					Usage:    "RoomCompositeRequest json file (see examples/room-composite-file.json)",
 					Required: false,
 				},
 				&cli.StringFlag{
 					Name:     "track-egress-file",
-					Usage:    "AutoTrackEgress json file",
+					Usage:    "AutoTrackEgress json file (see examples/auto-track-egress.json)",
 					Required: false,
 				},
 			),
