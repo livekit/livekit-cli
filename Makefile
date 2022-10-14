@@ -18,3 +18,6 @@ check_lfs:
 		exit 1; \
 	fi \
 	}
+
+fish_autocomplete: cli
+	./bin/livekit-cli generate-fish-completion -o autocomplete/fish_autocomplete
