@@ -16,3 +16,5 @@
 bin/
 .idea/
 dist/
+
+.DS_Store
