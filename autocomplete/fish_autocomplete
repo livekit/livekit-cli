@@ -1,0 +1,271 @@
+# livekit-cli fish shell completion
+
+function __fish_livekit-cli_no_subcommand --description 'Test if there has been any subcommand yet'
+    for i in (commandline -opc)
+        if contains -- $i create-token create-room list-rooms delete-room update-room-metadata list-participants get-participant remove-participant update-participant mute-track update-subscriptions join-room start-room-composite-egress start-track-composite-egress start-track-egress list-egress update-layout update-stream stop-egress test-egress-template create-ingress update-ingress list-ingress delete-ingress load-test project add list remove set-default help h
+            return 1
+        end
+    end
+    return 0
+end
+
+complete -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -f -l verbose
+complete -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -f -l help -s h -d 'show help'
+complete -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -f -l version -s v -d 'print the version'
+complete -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -f -l help -s h -d 'show help'
+complete -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -f -l version -s v -d 'print the version'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'create-token' -d 'creates an access token'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l create -d 'enable token to be used to create rooms'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l list -d 'enable token to be used to list rooms'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l join -d 'enable token to be used to join a room (requires --room and --identity)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l admin -d 'enable token to be used to manage a room (requires --room)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l identity -s i -r -d 'unique identity of the participant, used with --join'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l name -s n -r -d 'name of the participant, used with --join. defaults to identity'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l room -s r -r -d 'name of the room to join'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l metadata -r -d 'JSON metadata to encode in the token, will be passed to participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l valid-for -r -d 'amount of time that the token is valid for. i.e. "5m", "1h10m" (s: seconds, m: minutes, h: hours)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-token' -f -l grant -r -d 'additional VideoGrant fields. It\'ll be merged with other arguments (JSON formatted)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'create-room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l name -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l room-egress-file -r -d 'RoomCompositeRequest json file (see examples/room-composite-file.json)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-room' -f -l track-egress-file -r -d 'AutoTrackEgress json file (see examples/auto-track-egress.json)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-rooms' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'list-rooms'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-rooms' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-rooms' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-rooms' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-rooms' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-rooms' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-room' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'delete-room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-room' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-room' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-room' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-room' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-room' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-room' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-room-metadata' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'update-room-metadata'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-room-metadata' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-room-metadata' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-room-metadata' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-room-metadata' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-room-metadata' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-room-metadata' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-room-metadata' -f -l metadata -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-participants' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'list-participants'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-participants' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-participants' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-participants' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-participants' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-participants' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-participants' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from get-participant' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'get-participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from get-participant' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from get-participant' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from get-participant' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from get-participant' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from get-participant' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from get-participant' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from get-participant' -f -l identity -r -d 'identity of participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove-participant' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'remove-participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove-participant' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove-participant' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove-participant' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove-participant' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove-participant' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove-participant' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove-participant' -f -l identity -r -d 'identity of participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'update-participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l identity -r -d 'identity of participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l metadata -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-participant' -f -l permissions -r -d 'JSON describing participant permissions (existing values for unset fields)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'mute-track'
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l identity -r -d 'identity of participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l track -r -d 'track sid to mute'
+complete -c livekit-cli -n '__fish_seen_subcommand_from mute-track' -f -l muted -d 'set to true to mute, false to unmute'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'update-subscriptions'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l identity -r -d 'identity of participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l track -r -d 'track sid to subscribe/unsubscribe'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-subscriptions' -f -l subscribe -d 'set to true to subscribe, otherwise it\'ll unsubscribe'
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'join-room' -d 'Joins a room as a participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l identity -r -d 'identity of participant'
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l publish-demo -d 'publish demo video as a loop'
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l publish -r -d 'files to publish as tracks to room (supports .h264, .ivf, .ogg). can be used multiple times to publish multiple files. can publish from Unix or TCP socket using the format `codec://socket_name` or `codec://host:address` respectively. Valid codecs are h264, vp8, opus'
+complete -c livekit-cli -n '__fish_seen_subcommand_from join-room' -f -l fps -r -d 'if video files are published, indicates FPS of video'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-room-composite-egress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'start-room-composite-egress' -d 'Start room composite egress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-room-composite-egress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-room-composite-egress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-room-composite-egress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-room-composite-egress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-room-composite-egress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-room-composite-egress' -f -l request -r -d 'RoomCompositeEgressRequest as json file (see livekit-cli/examples)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-composite-egress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'start-track-composite-egress' -d 'Start track composite egress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-composite-egress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-composite-egress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-composite-egress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-composite-egress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-composite-egress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-composite-egress' -f -l request -r -d 'TrackCompositeEgressRequest as json file (see livekit-cli/examples)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-egress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'start-track-egress' -d 'Start track egress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-egress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-egress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-egress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-egress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-egress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from start-track-egress' -f -l request -r -d 'TrackEgressRequest as json file (see livekit-cli/examples)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-egress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'list-egress' -d 'List all active egress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-egress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-egress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-egress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-egress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-egress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-egress' -f -l room -r -d 'limits list to a certain room name'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-layout' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'update-layout' -d 'Updates layout for a live room composite egress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-layout' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-layout' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-layout' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-layout' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-layout' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-layout' -f -l id -r -d 'Egress ID'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-layout' -f -l layout -r -d 'new web layout'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'update-stream' -d 'Adds or removes rtmp output urls from a live stream'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l id -r -d 'Egress ID'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l add-urls -r -d 'urls to add'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-stream' -f -l remove-urls -r -d 'urls to remove'
+complete -c livekit-cli -n '__fish_seen_subcommand_from stop-egress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'stop-egress' -d 'Stop egress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from stop-egress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from stop-egress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from stop-egress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from stop-egress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from stop-egress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from stop-egress' -f -l id -r -d 'Egress ID'
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'test-egress-template' -d 'See what your egress template will look like in a recording'
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l base-url -r -d 'base template url'
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l layout -r -d 'layout name'
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l publishers -r -d 'number of publishers'
+complete -c livekit-cli -n '__fish_seen_subcommand_from test-egress-template' -f -l room -r -d 'name of the room'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-ingress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'create-ingress' -d 'Create an ingress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-ingress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-ingress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-ingress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-ingress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-ingress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from create-ingress' -f -l request -r -d 'CreateIngressRequest as json file (see livekit-cli/examples)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-ingress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'update-ingress' -d 'Update an ingress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-ingress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-ingress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-ingress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-ingress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-ingress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from update-ingress' -f -l request -r -d 'UpdateIngressRequest as json file (see livekit-cli/examples)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-ingress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'list-ingress' -d 'List all active ingress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-ingress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-ingress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-ingress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-ingress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-ingress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from list-ingress' -f -l room -r -d 'limits list to a certain room name '
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-ingress' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'delete-ingress' -d 'Delete ingress'
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-ingress' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-ingress' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-ingress' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-ingress' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-ingress' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from delete-ingress' -f -l id -r -d 'Ingress ID'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'load-test' -d 'Run load tests against LiveKit with simulated publishers & subscribers'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l url -r -d 'url to LiveKit instance'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l project -r -d 'name of a configured project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l verbose
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l room -r -d 'name of the room (default to random name)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l duration -r -d 'duration to run, 1m, 1h (by default will run until canceled)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l video-publishers -s publishers -r -d 'number of participants that would publish video tracks'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l audio-publishers -r -d 'number of participants that would publish audio tracks'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l subscribers -r -d 'number of participants that would subscribe to tracks'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l identity-prefix -r -d 'identity prefix of tester participants (defaults to a random prefix)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l video-resolution -r -d 'resolution of video to publish. valid values are: high, medium, or low'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l video-codec -r -d 'h264 or vp8, both will be used when unset'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l num-per-second -r -d 'number of testers to start every second'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l layout -r -d 'layout to simulate, choose from speaker, 3x3, 4x4, 5x5'
+complete -c livekit-cli -n '__fish_seen_subcommand_from load-test' -f -l no-simulcast -d 'disables simulcast publishing (simulcast is enabled by default)'
+complete -c livekit-cli -n '__fish_seen_subcommand_from project' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'project' -d 'subcommand for project management'
+complete -c livekit-cli -n '__fish_seen_subcommand_from add' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_seen_subcommand_from project' -a 'add' -d 'add a new project'
+complete -c livekit-cli -n '__fish_seen_subcommand_from add' -f -l url -r -d 'URL of the LiveKit server'
+complete -c livekit-cli -n '__fish_seen_subcommand_from add' -f -l api-key -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from add' -f -l api-secret -r
+complete -c livekit-cli -n '__fish_seen_subcommand_from add' -f -l name -r -d 'name given to this project (for later reference).'
+complete -c livekit-cli -n '__fish_seen_subcommand_from list' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_seen_subcommand_from project' -a 'list' -d 'list all configured projects'
+complete -c livekit-cli -n '__fish_seen_subcommand_from remove' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_seen_subcommand_from project' -a 'remove' -d 'remove an existing project from config'
+complete -c livekit-cli -n '__fish_seen_subcommand_from set-default' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_seen_subcommand_from project' -a 'set-default' -d 'set a project as default to use with other commands'
+complete -c livekit-cli -n '__fish_seen_subcommand_from help h' -f -l help -s h -d 'show help'
+complete -r -c livekit-cli -n '__fish_livekit-cli_no_subcommand' -a 'help h' -d 'Shows a list of commands or help for one command'
