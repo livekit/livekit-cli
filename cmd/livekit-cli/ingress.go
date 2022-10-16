@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
@@ -91,7 +90,7 @@ func createIngressClient(c *cli.Context) error {
 
 func createIngress(c *cli.Context) error {
 	reqFile := c.String("request")
-	reqBytes, err := ioutil.ReadFile(reqFile)
+	reqBytes, err := os.ReadFile(reqFile)
 	if err != nil {
 		return err
 	}
@@ -117,7 +116,7 @@ func createIngress(c *cli.Context) error {
 
 func updateIngress(c *cli.Context) error {
 	reqFile := c.String("request")
-	reqBytes, err := ioutil.ReadFile(reqFile)
+	reqBytes, err := os.ReadFile(reqFile)
 	if err != nil {
 		return err
 	}
