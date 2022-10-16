@@ -100,7 +100,7 @@ then
 
   if [ -d "${ZSH_COMPLETION_PATH}" ]
   then
-    mv "${TEMP_DIR_PATH}/autocomplete/zsh_autocomplete" "${BASH_COMPLETION_PATH}/_livekit-cli"
+    mv "${TEMP_DIR_PATH}/autocomplete/zsh_autocomplete" "${ZSH_COMPLETION_PATH}/_livekit-cli"
   fi
 
   if [ -d "${FISH_COMPLETION_PATH}" ]
