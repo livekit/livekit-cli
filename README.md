@@ -23,7 +23,7 @@ curl -sSL https://get.livekit.io/cli | bash
 
 ## Windows
 
-Download [latest release here](https://github.com/livekit/livekit-cli/releases/latest)
+Download the [latest release here](https://github.com/livekit/livekit-cli/releases/latest)
 
 ## Build from source
 
