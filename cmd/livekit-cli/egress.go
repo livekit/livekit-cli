@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/signal"
@@ -189,7 +188,7 @@ func createEgressClient(c *cli.Context) error {
 
 func startRoomCompositeEgress(c *cli.Context) error {
 	reqFile := c.String("request")
-	reqBytes, err := ioutil.ReadFile(reqFile)
+	reqBytes, err := os.ReadFile(reqFile)
 	if err != nil {
 		return err
 	}
@@ -215,7 +214,7 @@ func startRoomCompositeEgress(c *cli.Context) error {
 
 func startTrackCompositeEgress(c *cli.Context) error {
 	reqFile := c.String("request")
-	reqBytes, err := ioutil.ReadFile(reqFile)
+	reqBytes, err := os.ReadFile(reqFile)
 	if err != nil {
 		return err
 	}
@@ -241,7 +240,7 @@ func startTrackCompositeEgress(c *cli.Context) error {
 
 func startTrackEgress(c *cli.Context) error {
 	reqFile := c.String("request")
-	reqBytes, err := ioutil.ReadFile(reqFile)
+	reqBytes, err := os.ReadFile(reqFile)
 	if err != nil {
 		return err
 	}
