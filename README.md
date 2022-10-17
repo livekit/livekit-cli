@@ -5,6 +5,7 @@ This package includes command line utilities that interacts with LiveKit. It all
 -   Create access tokens
 -   Access LiveKit APIs, create, delete rooms, etc
 -   Join a room as a participant, inspecting in-room events
+-   Start and manage Egress
 -   Perform load testing, efficiently simulating real-world load
 
 # Installation
@@ -39,8 +40,6 @@ make install
 See `livekit-cli --help` for a complete list of subcommands.
 
 ## Set up your project [new]
-
-livekit-cli introduces the concept of projects, where it could save your connection information including API keys and secrets.
 
 When a default project is set up, you can omit `url`, `api-key`, and `api-secret` when using the CLI.
 You could also set up multiple projects, and switch the active project used with the `--project` flag.
