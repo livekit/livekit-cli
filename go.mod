@@ -6,7 +6,7 @@ require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/stdr v1.2.2
-	github.com/livekit/protocol v1.1.3-0.20221013203258-19dd0a128e43
+	github.com/livekit/protocol v1.1.3-0.20221026061756-e5d7144e26da
 	github.com/livekit/server-sdk-go v1.0.4
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
@@ -14,7 +14,7 @@ require (
 	github.com/pion/webrtc/v3 v3.1.47
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.20.3
 	go.uber.org/atomic v1.10.0
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
@@ -32,6 +32,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/eapache/channels v1.1.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
+	github.com/frostbyte73/go-throttle v0.0.0-20210621200530-8018c891361d // indirect
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -41,6 +42,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20221007030528-7440725c362b // indirect
+	github.com/mackerelio/go-osstat v0.2.3 // indirect
 	github.com/magefile/mage v1.14.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
