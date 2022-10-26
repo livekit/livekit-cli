@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/livekit/livekit-cli/pkg/loadtester"
 	"github.com/livekit/protocol/egress"
@@ -62,6 +63,20 @@ var (
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "TrackEgressRequest as json file (see livekit-cli/examples)",
+					Required: true,
+				},
+			),
+		},
+		{
+			Name:     "start-web-egress",
+			Usage:    "Start web egress",
+			Before:   createEgressClient,
+			Action:   startWebEgress,
+			Category: egressCategory,
+			Flags: withDefaultFlags(
+				&cli.StringFlag{
+					Name:     "request",
+					Usage:    "WebEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
 			),
@@ -187,20 +202,9 @@ func createEgressClient(c *cli.Context) error {
 }
 
 func startRoomCompositeEgress(c *cli.Context) error {
-	reqFile := c.String("request")
-	reqBytes, err := os.ReadFile(reqFile)
-	if err != nil {
-		return err
-	}
-
 	req := &livekit.RoomCompositeEgressRequest{}
-	err = protojson.Unmarshal(reqBytes, req)
-	if err != nil {
+	if err := unmarshalEgressRequest(c, req); err != nil {
 		return err
-	}
-
-	if c.Bool("verbose") {
-		PrintJSON(req)
 	}
 
 	info, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
@@ -213,20 +217,9 @@ func startRoomCompositeEgress(c *cli.Context) error {
 }
 
 func startTrackCompositeEgress(c *cli.Context) error {
-	reqFile := c.String("request")
-	reqBytes, err := os.ReadFile(reqFile)
-	if err != nil {
-		return err
-	}
-
 	req := &livekit.TrackCompositeEgressRequest{}
-	err = protojson.Unmarshal(reqBytes, req)
-	if err != nil {
+	if err := unmarshalEgressRequest(c, req); err != nil {
 		return err
-	}
-
-	if c.Bool("verbose") {
-		PrintJSON(req)
 	}
 
 	info, err := egressClient.StartTrackCompositeEgress(context.Background(), req)
@@ -239,20 +232,9 @@ func startTrackCompositeEgress(c *cli.Context) error {
 }
 
 func startTrackEgress(c *cli.Context) error {
-	reqFile := c.String("request")
-	reqBytes, err := os.ReadFile(reqFile)
-	if err != nil {
-		return err
-	}
-
 	req := &livekit.TrackEgressRequest{}
-	err = protojson.Unmarshal(reqBytes, req)
-	if err != nil {
+	if err := unmarshalEgressRequest(c, req); err != nil {
 		return err
-	}
-
-	if c.Bool("verbose") {
-		PrintJSON(req)
 	}
 
 	info, err := egressClient.StartTrackEgress(context.Background(), req)
@@ -261,6 +243,37 @@ func startTrackEgress(c *cli.Context) error {
 	}
 
 	printInfo(info)
+	return nil
+}
+
+func startWebEgress(c *cli.Context) error {
+	req := &livekit.WebEgressRequest{}
+	if err := unmarshalEgressRequest(c, req); err != nil {
+		return err
+	}
+
+	info, err := egressClient.StartWebEgress(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
+}
+
+func unmarshalEgressRequest(c *cli.Context, req proto.Message) error {
+	reqFile := c.String("request")
+	reqBytes, err := os.ReadFile(reqFile)
+	if err != nil {
+		return err
+	}
+	if err = protojson.Unmarshal(reqBytes, req); err != nil {
+		return err
+	}
+
+	if c.Bool("verbose") {
+		PrintJSON(req)
+	}
 	return nil
 }
 
