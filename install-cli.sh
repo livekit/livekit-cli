@@ -62,7 +62,7 @@ then
   abort "Installer is only supported on Linux."
 fi
 
-ARCH="$(/usr/bin/uname -m)"
+ARCH="$(uname -m)"
 
 # fix arch on linux
 if [[ "${ARCH}" == "aarch64" ]]
