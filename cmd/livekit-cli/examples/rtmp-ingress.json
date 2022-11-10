@@ -1,0 +1,14 @@
+{
+  "name": "ingress-name",
+  "room_name": "room-name",
+  "participant_identity": "ingress",
+  "participant_name": "Ingress",
+  "audio": {
+    "name": "ingress-audio",
+    "bitrate": 64000,
+    "channels": 2
+  },
+  "video": {
+    "name": "ingress-video"
+  }
+}
