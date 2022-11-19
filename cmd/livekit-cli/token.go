@@ -65,6 +65,7 @@ var (
 					Name:  "grant",
 					Usage: "additional VideoGrant fields. It'll be merged with other arguments (JSON formatted)",
 				},
+				projectFlag,
 			},
 		},
 	}
