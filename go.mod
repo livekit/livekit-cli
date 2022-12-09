@@ -5,9 +5,8 @@ go 1.18
 require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.3
-	github.com/go-logr/stdr v1.2.2
 	github.com/livekit/protocol v1.3.0
-	github.com/livekit/server-sdk-go v1.0.5
+	github.com/livekit/server-sdk-go v1.0.6
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtp v1.7.13
@@ -22,8 +21,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-replace github.com/livekit/server-sdk-go => ../server-sdk-go
-
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
@@ -35,6 +32,7 @@ require (
 	github.com/eapache/channels v1.1.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/frostbyte73/go-throttle v0.0.0-20210621200530-8018c891361d // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect

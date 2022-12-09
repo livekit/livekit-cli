@@ -202,6 +202,8 @@ github.com/livekit/mediatransportutil v0.0.0-20221007030528-7440725c362b h1:RBNV
 github.com/livekit/mediatransportutil v0.0.0-20221007030528-7440725c362b/go.mod h1:1Dlx20JPoIKGP45eo+yuj0HjeE25zmyeX/EWHiPCjFw=
 github.com/livekit/protocol v1.3.0 h1:9rzcKrLxZQIsL5Us2ZARmAkTw1dZJMF3WJoS6MCZUIw=
 github.com/livekit/protocol v1.3.0/go.mod h1:87MLIMbKaZs0SbDebMw1b7n/gD5utwEDq3zIRYcHJHA=
+github.com/livekit/server-sdk-go v1.0.6 h1:V4ACLjLkC7KwjijhoP/XQrM84SMCMpR/9DICWeEuygs=
+github.com/livekit/server-sdk-go v1.0.6/go.mod h1:SmgKlx/oOLy9ryjp/n0lOSaa9Dq0qH4veYzQU/jSS8A=
 github.com/mackerelio/go-osstat v0.2.3 h1:jAMXD5erlDE39kdX2CU7YwCGRcxIO33u/p8+Fhe5dJw=
 github.com/mackerelio/go-osstat v0.2.3/go.mod h1:DQbPOnsss9JHIXgBStc/dnhhir3gbd3YH+Dbdi7ptMA=
 github.com/magefile/mage v1.14.0 h1:6QDX3g6z1YvJ4olPhT1wksUcSa/V0a1B+pJb73fBjyo=
