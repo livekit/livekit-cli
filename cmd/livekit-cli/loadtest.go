@@ -11,6 +11,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/livekit/livekit-cli/pkg/loadtester"
+	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go"
 )
 
@@ -86,7 +87,7 @@ func loadTest(c *cli.Context) error {
 	}
 
 	if !c.Bool("verbose") {
-		lksdk.SetLogger(logr.Discard())
+		lksdk.SetLogger(logger.LogRLogger(logr.Discard()))
 	}
 	_ = raiseULimit()
 
