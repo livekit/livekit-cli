@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/go-logr/stdr"
 	"github.com/urfave/cli/v2"
 
 	livekitcli "github.com/livekit/livekit-cli"
@@ -39,7 +37,9 @@ func main() {
 		},
 	}
 
-	logger.SetLogger(stdr.New(log.Default()), "livekit-cli")
+	logger.InitFromConfig(logger.Config{
+		Level: "info",
+	}, "livekit-cli")
 
 	app.Commands = append(app.Commands, TokenCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
