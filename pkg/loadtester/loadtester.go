@@ -41,13 +41,12 @@ const (
 	// LayoutGrid5x5 - 25 participants at 256x144
 	LayoutGrid5x5 Layout = "5x5"
 
-	maxSubscribedParticipants = 24 // for 5x5 grid
-	highWidth                 = 1280
-	highHeight                = 720
-	mediumWidth               = 640
-	mediumHeight              = 360
-	lowWidth                  = 320
-	lowHeight                 = 180
+	highWidth    = 1280
+	highHeight   = 720
+	mediumWidth  = 640
+	mediumHeight = 360
+	lowWidth     = 320
+	lowHeight    = 180
 )
 
 func LayoutFromString(str string) Layout {
@@ -254,9 +253,24 @@ func (t *LoadTester) Stop() {
 	t.room.Disconnect()
 }
 
+func (t *LoadTester) numToSubscribe() int {
+	switch t.params.Layout {
+	case LayoutSpeaker:
+		return 6
+	case LayoutGrid3x3:
+		return 9
+	case LayoutGrid4x4:
+		return 16
+	case LayoutGrid5x5:
+		return 25
+	default:
+		return 1
+	}
+}
+
 func (t *LoadTester) onTrackPublished(publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	t.lock.Lock()
-	if len(t.subscribedParticipants) >= maxSubscribedParticipants && t.subscribedParticipants[rp.Identity()] == nil {
+	if len(t.subscribedParticipants) >= t.numToSubscribe() && t.subscribedParticipants[rp.Identity()] == nil {
 		t.lock.Unlock()
 		return
 	}
