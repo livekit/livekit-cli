@@ -19,9 +19,10 @@ import (
 type LoadTester struct {
 	params TesterParams
 
-	lock    sync.Mutex
-	room    *lksdk.Room
-	running atomic.Bool
+	subscribedParticipants map[string]*lksdk.RemoteParticipant
+	lock                   sync.Mutex
+	room                   *lksdk.Room
+	running                atomic.Bool
 	// participant ID => quality
 	trackQualities map[string]livekit.VideoQuality
 
@@ -40,12 +41,13 @@ const (
 	// LayoutGrid5x5 - 25 participants at 256x144
 	LayoutGrid5x5 Layout = "5x5"
 
-	highWidth    = 1280
-	highHeight   = 720
-	mediumWidth  = 640
-	mediumHeight = 360
-	lowWidth     = 320
-	lowHeight    = 180
+	maxSubscribedParticipants = 24 // for 5x5 grid
+	highWidth                 = 1280
+	highHeight                = 720
+	mediumWidth               = 640
+	mediumHeight              = 360
+	lowWidth                  = 320
+	lowHeight                 = 180
 )
 
 func LayoutFromString(str string) Layout {
@@ -76,9 +78,10 @@ type TesterParams struct {
 
 func NewLoadTester(params TesterParams) *LoadTester {
 	return &LoadTester{
-		params:         params,
-		stats:          &sync.Map{},
-		trackQualities: make(map[string]livekit.VideoQuality),
+		params:                 params,
+		stats:                  &sync.Map{},
+		trackQualities:         make(map[string]livekit.VideoQuality),
+		subscribedParticipants: make(map[string]*lksdk.RemoteParticipant),
 	}
 }
 
@@ -94,6 +97,7 @@ func (t *LoadTester) Start() error {
 			OnTrackSubscriptionFailed: func(sid string, rp *lksdk.RemoteParticipant) {
 				fmt.Printf("track subscription failed, lp:%v, sid:%v, rp:%v/%v\n", identity, sid, rp.Identity(), rp.SID())
 			},
+			OnTrackPublished: t.onTrackPublished,
 		},
 	})
 	var err error
@@ -104,7 +108,7 @@ func (t *LoadTester) Start() error {
 			APISecret:           t.params.APISecret,
 			RoomName:            t.params.Room,
 			ParticipantIdentity: identity,
-		}, lksdk.WithAutoSubscribe(t.params.Subscribe))
+		}, lksdk.WithAutoSubscribe(false))
 		if err == nil {
 			break
 		}
@@ -115,6 +119,13 @@ func (t *LoadTester) Start() error {
 	}
 
 	t.running.Store(true)
+	for _, p := range t.room.GetParticipants() {
+		for _, pub := range p.Tracks() {
+			if remotePub, ok := pub.(*lksdk.RemoteTrackPublication); ok {
+				t.onTrackPublished(remotePub, p)
+			}
+		}
+	}
 
 	return nil
 }
@@ -243,10 +254,23 @@ func (t *LoadTester) Stop() {
 	t.room.Disconnect()
 }
 
+func (t *LoadTester) onTrackPublished(publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
+	t.lock.Lock()
+	if len(t.subscribedParticipants) >= maxSubscribedParticipants && t.subscribedParticipants[rp.Identity()] == nil {
+		t.lock.Unlock()
+		return
+	}
+	t.subscribedParticipants[rp.Identity()] = rp
+	t.lock.Unlock()
+
+	publication.SetSubscribed(true)
+}
+
 func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	numSubscribed := 0
 	numTotal := 0
-	for _, p := range t.room.GetParticipants() {
+	t.lock.Lock()
+	for _, p := range t.subscribedParticipants {
 		tracks := p.Tracks()
 		numTotal += len(tracks)
 		for _, t := range tracks {
@@ -255,6 +279,7 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 			}
 		}
 	}
+	t.lock.Unlock()
 
 	s := &trackStats{
 		trackID: track.ID(),
