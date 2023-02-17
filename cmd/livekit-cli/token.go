@@ -37,6 +37,10 @@ var (
 					Name:  "admin",
 					Usage: "enable token to be used to manage a room (requires --room)",
 				},
+				&cli.BoolFlag{
+					Name:  "recorder",
+					Usage: "enable token to be used to record a room (requires --room)",
+				},
 				&cli.StringFlag{
 					Name:    "identity",
 					Aliases: []string{"i"},
@@ -78,13 +82,14 @@ func createToken(c *cli.Context) error {
 	metadata := c.String("metadata")
 	validFor := c.String("valid-for")
 
-	grant := &auth.VideoGrant{}
+	grant := &auth.VideoGrant{
+		Room: room,
+	}
 	if c.Bool("create") {
 		grant.RoomCreate = true
 	}
 	if c.Bool("join") {
 		grant.RoomJoin = true
-		grant.Room = room
 		if p == "" {
 			return errors.New("participant identity is required")
 		}
@@ -94,10 +99,14 @@ func createToken(c *cli.Context) error {
 	}
 	if c.Bool("admin") {
 		grant.RoomAdmin = true
-		grant.Room = room
 	}
 	if c.Bool("list") {
 		grant.RoomList = true
+	}
+	if c.Bool("recorder") {
+		grant.RoomRecord = true
+		grant.Recorder = true
+		grant.Hidden = true
 	}
 
 	if str := c.String("grant"); str != "" {
@@ -106,8 +115,8 @@ func createToken(c *cli.Context) error {
 		}
 	}
 
-	if !grant.RoomJoin && !grant.RoomCreate && !grant.RoomAdmin && !grant.RoomList {
-		return errors.New("at least one of --list, --join, --create, or --admin is required")
+	if !grant.RoomJoin && !grant.RoomCreate && !grant.RoomAdmin && !grant.RoomList && !grant.RoomRecord {
+		return errors.New("at least one of --list, --join, --create, --admin, or --recorder is required. use --grant to set a custom video grant")
 	}
 
 	pc, err := loadProjectDetails(c, ignoreURL)
