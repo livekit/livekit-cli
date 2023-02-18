@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.3
-	github.com/livekit/protocol v1.4.1
+	github.com/livekit/protocol v1.4.2
 	github.com/livekit/server-sdk-go v1.0.7
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
@@ -38,12 +38,18 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jxskiss/base62 v1.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
 	github.com/lithammer/shortuuid/v4 v4.0.0 // indirect
+	github.com/livekit/mageutil v0.0.0-20230125210925-54e8a70427c1 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20230111071722-904079e94a7c // indirect
+	github.com/livekit/psrpc v0.2.6 // indirect
 	github.com/mackerelio/go-osstat v0.2.3 // indirect
 	github.com/magefile/mage v1.14.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/nats-io/nats.go v1.21.0 // indirect
+	github.com/nats-io/nkeys v0.3.0 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.4 // indirect
 	github.com/pion/ice/v2 v2.3.0 // indirect
