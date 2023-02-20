@@ -218,7 +218,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		participantStrings = append(participantStrings, fmt.Sprintf("%d subscribers", t.Params.Subscribers))
 	}
 	fmt.Printf("Starting load test with %s, room: %s\n",
-		strings.Join(participantStrings, ", "), t.Params.Room)
+		strings.Join(participantStrings, ", "), params.Room)
 
 	testers := make([]*LoadTester, 0)
 	group, _ := errgroup.WithContext(t.Params.Context)
