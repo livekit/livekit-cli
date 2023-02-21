@@ -23,7 +23,6 @@ type LoadTest struct {
 }
 
 type Params struct {
-	Context         context.Context
 	VideoPublishers int
 	AudioPublishers int
 	Subscribers     int
@@ -56,8 +55,8 @@ func NewLoadTest(params Params) *LoadTest {
 	return l
 }
 
-func (t *LoadTest) Run() error {
-	stats, err := t.run(t.Params)
+func (t *LoadTest) Run(ctx context.Context) error {
+	stats, err := t.run(ctx, t.Params)
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,7 @@ func (t *LoadTest) Run() error {
 	return nil
 }
 
-func (t *LoadTest) RunSuite() error {
+func (t *LoadTest) RunSuite(ctx context.Context) error {
 	cases := []*struct {
 		publishers  int
 		subscribers int
@@ -172,11 +171,11 @@ func (t *LoadTest) RunSuite() error {
 		}
 		fmt.Printf("\nRunning test: %d pub, %d sub, video: %s\n", c.publishers, c.subscribers, videoString)
 
-		stats, err := t.run(caseParams)
+		stats, err := t.run(ctx, caseParams)
 		if err != nil {
 			return err
 		}
-		if t.Params.Context.Err() != nil {
+		if ctx.Err() != nil {
 			return err
 		}
 
@@ -199,7 +198,7 @@ func (t *LoadTest) RunSuite() error {
 	return nil
 }
 
-func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
+func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerStats, error) {
 	if params.Room == "" {
 		params.Room = fmt.Sprintf("testroom%d", rand.Int31n(1000))
 	}
@@ -208,20 +207,20 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	expectedTracks := params.VideoPublishers + params.AudioPublishers
 
 	var participantStrings []string
-	if t.Params.VideoPublishers > 0 {
-		participantStrings = append(participantStrings, fmt.Sprintf("%d video publishers", t.Params.VideoPublishers))
+	if params.VideoPublishers > 0 {
+		participantStrings = append(participantStrings, fmt.Sprintf("%d video publishers", params.VideoPublishers))
 	}
-	if t.Params.AudioPublishers > 0 {
-		participantStrings = append(participantStrings, fmt.Sprintf("%d audio publishers", t.Params.AudioPublishers))
+	if params.AudioPublishers > 0 {
+		participantStrings = append(participantStrings, fmt.Sprintf("%d audio publishers", params.AudioPublishers))
 	}
-	if t.Params.Subscribers > 0 {
-		participantStrings = append(participantStrings, fmt.Sprintf("%d subscribers", t.Params.Subscribers))
+	if params.Subscribers > 0 {
+		participantStrings = append(participantStrings, fmt.Sprintf("%d subscribers", params.Subscribers))
 	}
 	fmt.Printf("Starting load test with %s, room: %s\n",
 		strings.Join(participantStrings, ", "), params.Room)
 
 	testers := make([]*LoadTester, 0)
-	group, _ := errgroup.WithContext(t.Params.Context)
+	group, _ := errgroup.WithContext(ctx)
 	startedAt := time.Now()
 	numStarted := float64(0)
 	errs := syncmap.Map{}
@@ -289,7 +288,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		for {
 			secondsElapsed := float64(time.Since(startedAt)) / float64(time.Second)
 			startRate := numStarted / secondsElapsed
-			if err := t.Params.Context.Err(); err != nil {
+			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
 			if startRate > params.NumPerSecond {
@@ -311,7 +310,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	fmt.Printf("Finished connecting to room, waiting %s\n", duration.String())
 
 	select {
-	case <-params.Context.Done():
+	case <-ctx.Done():
 		// canceled
 	case <-time.After(duration):
 		// finished
@@ -324,7 +323,6 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		if e, _ := errs.Load(t.params.name); e != nil {
 			stats[t.params.name].err = e.(error)
 		}
-
 	}
 
 	return stats, nil

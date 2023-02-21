@@ -80,18 +80,18 @@ var LoadTestCommands = []*cli.Command{
 	},
 }
 
-func loadTest(c *cli.Context) error {
-	pc, err := loadProjectDetails(c)
+func loadTest(cCtx *cli.Context) error {
+	pc, err := loadProjectDetails(cCtx)
 	if err != nil {
 		return err
 	}
 
-	if !c.Bool("verbose") {
+	if !cCtx.Bool("verbose") {
 		lksdk.SetLogger(logger.LogRLogger(logr.Discard()))
 	}
 	_ = raiseULimit()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(cCtx.Context)
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
@@ -99,37 +99,35 @@ func loadTest(c *cli.Context) error {
 		cancel()
 	}()
 
-	layout := loadtester.LayoutFromString(c.String("layout"))
 	params := loadtester.Params{
-		Context:         ctx,
-		VideoResolution: c.String("video-resolution"),
-		VideoCodec:      c.String("video-codec"),
-		Duration:        c.Duration("duration"),
-		NumPerSecond:    c.Float64("num-per-second"),
-		Simulcast:       !c.Bool("no-simulcast"),
+		VideoResolution: cCtx.String("video-resolution"),
+		VideoCodec:      cCtx.String("video-codec"),
+		Duration:        cCtx.Duration("duration"),
+		NumPerSecond:    cCtx.Float64("num-per-second"),
+		Simulcast:       !cCtx.Bool("no-simulcast"),
 		TesterParams: loadtester.TesterParams{
 			URL:            pc.URL,
 			APIKey:         pc.APIKey,
 			APISecret:      pc.APISecret,
-			Room:           c.String("room"),
-			IdentityPrefix: c.String("identity-prefix"),
-			Layout:         layout,
+			Room:           cCtx.String("room"),
+			IdentityPrefix: cCtx.String("identity-prefix"),
+			Layout:         loadtester.LayoutFromString(cCtx.String("layout")),
 		},
 	}
 
-	if c.Bool("run-all") {
+	if cCtx.Bool("run-all") {
 		// leave out room name and pub/sub counts
-		test := loadtester.NewLoadTest(params)
-		if test.Params.Duration == 0 {
-			test.Params.Duration = time.Second * 15
+		if params.Duration == 0 {
+			params.Duration = time.Second * 15
 		}
-		return test.RunSuite()
+		test := loadtester.NewLoadTest(params)
+		return test.RunSuite(ctx)
 	}
 
-	params.VideoPublishers = c.Int("video-publishers")
-	params.AudioPublishers = c.Int("audio-publishers")
-	params.Subscribers = c.Int("subscribers")
-	test := loadtester.NewLoadTest(params)
+	params.VideoPublishers = cCtx.Int("video-publishers")
+	params.AudioPublishers = cCtx.Int("audio-publishers")
+	params.Subscribers = cCtx.Int("subscribers")
 
-	return test.Run()
+	test := loadtester.NewLoadTest(params)
+	return test.Run(ctx)
 }
