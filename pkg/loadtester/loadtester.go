@@ -19,9 +19,10 @@ import (
 type LoadTester struct {
 	params TesterParams
 
-	lock    sync.Mutex
-	room    *lksdk.Room
-	running atomic.Bool
+	lock           sync.Mutex
+	room           *lksdk.Room
+	running        atomic.Bool
+	dataPublishing atomic.Bool
 	// participant ID => quality
 	trackQualities map[string]livekit.VideoQuality
 
@@ -94,6 +95,7 @@ func (t *LoadTester) Start() error {
 			OnTrackSubscriptionFailed: func(sid string, rp *lksdk.RemoteParticipant) {
 				fmt.Printf("track subscription failed, lp:%v, sid:%v, rp:%v/%v\n", identity, sid, rp.Identity(), rp.SID())
 			},
+			OnDataReceived: t.onDataReceived,
 		},
 	})
 	var err error
@@ -121,6 +123,10 @@ func (t *LoadTester) Start() error {
 
 func (t *LoadTester) IsRunning() bool {
 	return t.running.Load()
+}
+
+func (t *LoadTester) LocalParticipantSID() string {
+	return t.room.LocalParticipant.SID()
 }
 
 func (t *LoadTester) PublishAudioTrack(name string) (string, error) {
@@ -209,6 +215,45 @@ func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (stri
 	}
 
 	return p.SID(), nil
+}
+
+func (t *LoadTester) PublishData(packetSizeInByte, bitrate int, kind livekit.DataPacket_Kind, ready chan struct{}) error {
+	if !t.IsRunning() {
+		return nil
+	}
+
+	packetBits := packetSizeInByte * 8
+	sendInterval := time.Duration(float64(time.Second) / float64(bitrate) * float64(packetBits))
+	if sendInterval < time.Millisecond {
+		return fmt.Errorf("packet size too small for bitrate, packets to send per second should be less than 1000")
+	}
+	fmt.Println("publishing data track -", t.room.LocalParticipant.Identity())
+	if err := t.room.LocalParticipant.PublishData([]byte("ensure connect"), kind, []string{"unexist"}); err != nil {
+		return err
+	}
+	go func() {
+		if !t.dataPublishing.CompareAndSwap(false, true) {
+			return // already publishing
+		}
+		ticker := time.NewTicker(sendInterval)
+		defer func() {
+			ticker.Stop()
+			t.dataPublishing.Store(false)
+		}()
+
+		<-ready
+		data := make([]byte, packetSizeInByte)
+		for range ticker.C {
+			if !t.IsRunning() {
+				return
+			}
+			err := t.room.LocalParticipant.PublishData(data, kind, nil)
+			if err != nil {
+				fmt.Println("error publishing data", err, "participant", t.room.LocalParticipant.Identity())
+			}
+		}
+	}()
+	return nil
 }
 
 func (t *LoadTester) getStats() *testerStats {
@@ -363,4 +408,17 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTr
 			ts.packets.Inc()
 		}
 	}
+}
+
+func (t *LoadTester) onDataReceived(data []byte, rp *lksdk.RemoteParticipant) {
+	value, loaded := t.stats.LoadOrStore(rp.SID(), &trackStats{
+		trackID:       rp.SID(),
+		isDataChannel: true,
+	})
+	ts := value.(*trackStats)
+	if !loaded {
+		ts.startedAt.Store(time.Now())
+	}
+	ts.bytes.Add(int64(len(data)))
+	ts.packets.Inc()
 }

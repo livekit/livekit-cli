@@ -11,6 +11,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/livekit/protocol/livekit"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/syncmap"
@@ -23,13 +24,17 @@ type LoadTest struct {
 }
 
 type Params struct {
-	Context         context.Context
-	VideoPublishers int
-	AudioPublishers int
-	Subscribers     int
-	VideoResolution string
-	VideoCodec      string
-	Duration        time.Duration
+	Context            context.Context
+	VideoPublishers    int
+	AudioPublishers    int
+	DataPublishers     int
+	Subscribers        int
+	VideoResolution    string
+	VideoCodec         string
+	DataPacketByteSize int
+	DataBitrate        int
+	LossyData          bool
+	Duration           time.Duration
 	// number of seconds to spin up per second
 	NumPerSecond float64
 	Simulcast    bool
@@ -52,6 +57,12 @@ func NewLoadTest(params Params) *LoadTest {
 	if l.Params.VideoPublishers == 0 && l.Params.AudioPublishers == 0 && l.Params.Subscribers == 0 {
 		l.Params.VideoPublishers = 1
 		l.Params.Subscribers = 1
+	}
+	if l.Params.DataPacketByteSize == 0 {
+		l.Params.DataPacketByteSize = 1024
+	}
+	if l.Params.DataBitrate == 0 {
+		l.Params.DataBitrate = 1024 * 1024 // 1Mbps
 	}
 	return l
 }
@@ -214,6 +225,10 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	if t.Params.AudioPublishers > 0 {
 		participantStrings = append(participantStrings, fmt.Sprintf("%d audio publishers", t.Params.AudioPublishers))
 	}
+	if t.Params.DataPublishers > 0 {
+		participantStrings = append(participantStrings, fmt.Sprintf("%d data publishers", t.Params.DataPublishers))
+		expectedTracks += 1
+	}
 	if t.Params.Subscribers > 0 {
 		participantStrings = append(participantStrings, fmt.Sprintf("%d subscribers", t.Params.Subscribers))
 	}
@@ -229,13 +244,18 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 	if params.AudioPublishers > maxPublishers {
 		maxPublishers = params.AudioPublishers
 	}
+	if params.DataPublishers > maxPublishers {
+		maxPublishers = params.DataPublishers
+	}
+	ready := make(chan struct{})
 	for i := 0; i < maxPublishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
 		testerParams.Sequence = i
 		testerParams.expectedTracks = expectedTracks
 		isVideoPublisher := i < params.VideoPublishers
 		isAudioPublisher := i < params.AudioPublishers
-		if isVideoPublisher || isAudioPublisher {
+		isDataPublisher := i < params.DataPublishers
+		if isVideoPublisher || isAudioPublisher || isDataPublisher {
 			// publishers would not get their own tracks
 			testerParams.expectedTracks = 0
 			testerParams.IdentityPrefix += "_pub"
@@ -281,6 +301,19 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 				t.trackNames[video] = fmt.Sprintf("%dV", testerParams.Sequence)
 				t.lock.Unlock()
 			}
+			if isDataPublisher {
+				kind := livekit.DataPacket_RELIABLE
+				if params.LossyData {
+					kind = livekit.DataPacket_LOSSY
+				}
+				if err := tester.PublishData(params.DataPacketByteSize, params.DataBitrate, kind, ready); err != nil {
+					errs.Store(testerParams.name, err)
+					return nil
+				}
+				t.lock.Lock()
+				t.trackNames[tester.LocalParticipantSID()] = fmt.Sprintf("%dD", testerParams.Sequence)
+				t.lock.Unlock()
+			}
 			return nil
 		})
 		numStarted++
@@ -290,6 +323,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 			secondsElapsed := float64(time.Since(startedAt)) / float64(time.Second)
 			startRate := numStarted / secondsElapsed
 			if err := t.Params.Context.Err(); err != nil {
+				close(ready)
 				return nil, err
 			}
 			if startRate > params.NumPerSecond {
@@ -300,6 +334,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		}
 	}
 	if err := group.Wait(); err != nil {
+		close(ready)
 		return nil, err
 	}
 
@@ -309,6 +344,7 @@ func (t *LoadTest) run(params Params) (map[string]*testerStats, error) {
 		duration = 1000 * time.Hour
 	}
 	fmt.Printf("Finished connecting to room, waiting %s\n", duration.String())
+	close(ready)
 
 	select {
 	case <-params.Context.Done():

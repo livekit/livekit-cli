@@ -41,6 +41,10 @@ var LoadTestCommands = []*cli.Command{
 				Usage: "number of participants that would publish audio tracks",
 			},
 			&cli.IntFlag{
+				Name:  "data-publishers",
+				Usage: "number of participants that would publish data packets",
+			},
+			&cli.IntFlag{
 				Name:  "subscribers",
 				Usage: "number of participants that would subscribe to tracks",
 			},
@@ -56,6 +60,20 @@ var LoadTestCommands = []*cli.Command{
 			&cli.StringFlag{
 				Name:  "video-codec",
 				Usage: "h264 or vp8, both will be used when unset",
+			},
+			&cli.BoolFlag{
+				Name:  "data-lossy",
+				Usage: "whether use lossy data channel",
+			},
+			&cli.IntFlag{
+				Name:  "data-packet-bytes",
+				Usage: "size of data packet in bytes to publish",
+				Value: 1024,
+			},
+			&cli.IntFlag{
+				Name:  "data-bitrate",
+				Usage: "bitrate in kbps of data channel to publish",
+				Value: 1024,
 			},
 			&cli.Float64Flag{
 				Name:  "num-per-second",
@@ -128,7 +146,11 @@ func loadTest(c *cli.Context) error {
 
 	params.VideoPublishers = c.Int("video-publishers")
 	params.AudioPublishers = c.Int("audio-publishers")
+	params.DataPublishers = c.Int("data-publishers")
 	params.Subscribers = c.Int("subscribers")
+	params.DataPacketByteSize = c.Int("data-packet-bytes")
+	params.DataBitrate = c.Int("data-bitrate") * 1024
+	params.LossyData = c.Bool("data-lossy")
 	test := loadtester.NewLoadTest(params)
 
 	return test.Run()

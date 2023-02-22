@@ -15,12 +15,13 @@ type testerStats struct {
 }
 
 type trackStats struct {
-	trackID   string
-	kind      lksdk.TrackKind
-	startedAt atomic.Time
-	packets   atomic.Int64
-	bytes     atomic.Int64
-	dropped   atomic.Int64
+	trackID       string
+	kind          lksdk.TrackKind
+	isDataChannel bool
+	startedAt     atomic.Time
+	packets       atomic.Int64
+	bytes         atomic.Int64
+	dropped       atomic.Int64
 }
 
 type summary struct {
