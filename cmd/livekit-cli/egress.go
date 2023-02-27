@@ -89,6 +89,11 @@ var (
 			Category: egressCategory,
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
+					Name:     "id",
+					Usage:    "list a specific egress id",
+					Required: false,
+				},
+				&cli.StringFlag{
 					Name:     "room",
 					Usage:    "limits list to a certain room name",
 					Required: false,
@@ -280,6 +285,7 @@ func unmarshalEgressRequest(c *cli.Context, req proto.Message) error {
 func listEgress(c *cli.Context) error {
 	res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
 		RoomName: c.String("room"),
+		EgressId: c.String("id"),
 	})
 	if err != nil {
 		return err
