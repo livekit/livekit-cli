@@ -17,7 +17,7 @@ require (
 	github.com/urfave/cli/v2 v2.25.0
 	go.uber.org/atomic v1.10.0
 	golang.org/x/sync v0.1.0
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
