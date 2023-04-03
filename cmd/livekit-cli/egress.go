@@ -89,14 +89,16 @@ var (
 			Category: egressCategory,
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
-					Name:     "id",
-					Usage:    "list a specific egress id",
-					Required: false,
+					Name:  "id",
+					Usage: "list a specific egress id",
 				},
 				&cli.StringFlag{
-					Name:     "room",
-					Usage:    "limits list to a certain room name",
-					Required: false,
+					Name:  "room",
+					Usage: "limits list to a certain room name",
+				},
+				&cli.BoolFlag{
+					Name:  "active",
+					Usage: "lists only active egresses",
 				},
 			),
 		},
@@ -286,6 +288,7 @@ func listEgress(c *cli.Context) error {
 	res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
 		RoomName: c.String("room"),
 		EgressId: c.String("id"),
+		Active:   c.Bool("active"),
 	})
 	if err != nil {
 		return err
@@ -367,9 +370,14 @@ func testEgressTemplate(c *cli.Context) error {
 		roomName = fmt.Sprintf("layout-demo-%v", time.Now().Unix())
 	}
 
-	serverURL := c.String("url")
-	apiKey := c.String("api-key")
-	apiSecret := c.String("api-secret")
+	pc, err := loadProjectDetails(c)
+	if err != nil {
+		return err
+	}
+
+	serverURL := pc.URL
+	apiKey := pc.APIKey
+	apiSecret := pc.APISecret
 
 	var testers []*loadtester.LoadTester
 	for i := 0; i < numPublishers; i++ {
