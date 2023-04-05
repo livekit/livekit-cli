@@ -1,4 +1,8 @@
+<!--BEGIN_BANNER_IMAGE--><!--END_BANNER_IMAGE-->
+
 # LiveKit CLI
+
+<!--BEGIN_DESCRIPTION--><!--END_DESCRIPTION-->
 
 This package includes command line utilities that interacts with LiveKit. It allows you to:
 
@@ -284,3 +288,5 @@ You could customize various parameters of the test such as
 -   --no-simulcast: disables simulcast
 -   --num-per-second: number of testers to start each second
 -   --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)
+
+<!--BEGIN_REPO_NAV--><!--END_REPO_NAV-->
