@@ -30,8 +30,9 @@ type Params struct {
 	VideoCodec      string
 	Duration        time.Duration
 	// number of seconds to spin up per second
-	NumPerSecond float64
-	Simulcast    bool
+	NumPerSecond     float64
+	Simulcast        bool
+	SimulateSpeakers bool
 
 	TesterParams
 }
@@ -219,7 +220,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 	fmt.Printf("Starting load test with %s, room: %s\n",
 		strings.Join(participantStrings, ", "), params.Room)
 
-	testers := make([]*LoadTester, 0)
+	var publishers, testers []*LoadTester
 	group, _ := errgroup.WithContext(ctx)
 	startedAt := time.Now()
 	numStarted := float64(0)
@@ -246,6 +247,9 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 
 		tester := NewLoadTester(testerParams)
 		testers = append(testers, tester)
+		if isVideoPublisher || isAudioPublisher {
+			publishers = append(publishers, tester)
+		}
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
@@ -298,6 +302,14 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 			}
 		}
 	}
+
+	var speakerSim *SpeakerSimulator
+	if len(publishers) > 0 && t.Params.SimulateSpeakers {
+		speakerSim = NewSpeakerSimulator(SpeakerSimulatorParams{
+			Testers: publishers,
+		})
+		speakerSim.Start()
+	}
 	if err := group.Wait(); err != nil {
 		return nil, err
 	}
@@ -314,6 +326,10 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		// canceled
 	case <-time.After(duration):
 		// finished
+	}
+
+	if speakerSim != nil {
+		speakerSim.Stop()
 	}
 
 	stats := make(map[string]*testerStats)

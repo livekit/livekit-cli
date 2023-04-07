@@ -254,6 +254,9 @@ func (t *LoadTester) Stop() {
 }
 
 func (t *LoadTester) numToSubscribe() int {
+	if !t.params.Subscribe {
+		return 0
+	}
 	switch t.params.Layout {
 	case LayoutSpeaker:
 		return 6

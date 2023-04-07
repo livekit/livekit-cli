@@ -3,6 +3,7 @@ module github.com/livekit/livekit-cli
 go 1.18
 
 require (
+	github.com/frostbyte73/core v0.0.5
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.4
 	github.com/livekit/protocol v1.5.1
@@ -31,7 +32,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/eapache/channels v1.1.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/frostbyte73/core v0.0.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
