@@ -414,8 +414,15 @@ func testEgressTemplate(c *cli.Context) error {
 		return err
 	}
 
+	sim := loadtester.NewSpeakerSimulator(loadtester.SpeakerSimulatorParams{
+		Testers: testers,
+	})
+	sim.Start()
+	fmt.Println("simulating speakers...")
+
 	<-done
 
+	sim.Stop()
 	for _, lt := range testers {
 		lt.Stop()
 	}

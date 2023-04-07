@@ -72,6 +72,10 @@ var LoadTestCommands = []*cli.Command{
 				Usage: "disables simulcast publishing (simulcast is enabled by default)",
 			},
 			&cli.BoolFlag{
+				Name:  "simulate-speakers",
+				Usage: "fire random speaker events to simulate speaker changes",
+			},
+			&cli.BoolFlag{
 				Name:   "run-all",
 				Usage:  "runs set list of load test cases",
 				Hidden: true,
@@ -100,11 +104,12 @@ func loadTest(cCtx *cli.Context) error {
 	}()
 
 	params := loadtester.Params{
-		VideoResolution: cCtx.String("video-resolution"),
-		VideoCodec:      cCtx.String("video-codec"),
-		Duration:        cCtx.Duration("duration"),
-		NumPerSecond:    cCtx.Float64("num-per-second"),
-		Simulcast:       !cCtx.Bool("no-simulcast"),
+		VideoResolution:  cCtx.String("video-resolution"),
+		VideoCodec:       cCtx.String("video-codec"),
+		Duration:         cCtx.Duration("duration"),
+		NumPerSecond:     cCtx.Float64("num-per-second"),
+		Simulcast:        !cCtx.Bool("no-simulcast"),
+		SimulateSpeakers: cCtx.Bool("simulate-speakers"),
 		TesterParams: loadtester.TesterParams{
 			URL:            pc.URL,
 			APIKey:         pc.APIKey,
