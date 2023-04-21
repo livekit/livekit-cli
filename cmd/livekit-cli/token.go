@@ -44,7 +44,7 @@ var (
 				},
 				&cli.StringSliceFlag{
 					Name:  "allow-source",
-					Usage: "allow one or more sources to be published (i.e. --allow-source camera --allow-source microphone). if left blank, all sources are allowed",
+					Usage: "allow one or more sources to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
 				},
 				&cli.StringFlag{
 					Name:    "identity",
