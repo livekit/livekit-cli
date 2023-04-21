@@ -48,7 +48,7 @@ var (
 				},
 				&cli.BoolFlag{
 					Name:  "allow-update-metadata",
-					Usage: "allow participant to update their own name and metadata from the client-side",
+					Usage: "allow participant to update their own name and metadata from the client side",
 				},
 				&cli.StringFlag{
 					Name:    "identity",
