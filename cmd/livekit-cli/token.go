@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/livekit/protocol/auth"
+	"github.com/livekit/protocol/livekit"
 )
 
 var (
@@ -40,6 +41,14 @@ var (
 				&cli.BoolFlag{
 					Name:  "recorder",
 					Usage: "enable token to be used to record a room (requires --room)",
+				},
+				&cli.StringSliceFlag{
+					Name:  "allow-source",
+					Usage: "allow one or more sources to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
+				},
+				&cli.BoolFlag{
+					Name:  "allow-update-metadata",
+					Usage: "allow participant to update their own name and metadata from the client side",
 				},
 				&cli.StringFlag{
 					Name:    "identity",
@@ -107,6 +116,30 @@ func createToken(c *cli.Context) error {
 		grant.RoomRecord = true
 		grant.Recorder = true
 		grant.Hidden = true
+	}
+	if c.IsSet("allow-source") {
+		sourcesStr := c.StringSlice("allow-source")
+		sources := make([]livekit.TrackSource, 0, len(sourcesStr))
+		for _, s := range sourcesStr {
+			var source livekit.TrackSource
+			switch s {
+			case "camera":
+				source = livekit.TrackSource_CAMERA
+			case "microphone":
+				source = livekit.TrackSource_MICROPHONE
+			case "screen_share":
+				source = livekit.TrackSource_SCREEN_SHARE
+			case "screen_share_audio":
+				source = livekit.TrackSource_SCREEN_SHARE_AUDIO
+			default:
+				return fmt.Errorf("invalid source: %s", s)
+			}
+			sources = append(sources, source)
+		}
+		grant.SetCanPublishSources(sources)
+	}
+	if c.Bool("allow-update-metadata") {
+		grant.SetCanUpdateOwnMetadata(true)
 	}
 
 	if str := c.String("grant"); str != "" {
