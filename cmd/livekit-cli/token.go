@@ -46,6 +46,10 @@ var (
 					Name:  "allow-source",
 					Usage: "allow one or more sources to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
 				},
+				&cli.BoolFlag{
+					Name:  "allow-update-metadata",
+					Usage: "allow participant to update their own name and metadata from the client-side",
+				},
 				&cli.StringFlag{
 					Name:    "identity",
 					Aliases: []string{"i"},
@@ -133,6 +137,9 @@ func createToken(c *cli.Context) error {
 			sources = append(sources, source)
 		}
 		grant.SetCanPublishSources(sources)
+	}
+	if c.Bool("allow-update-metadata") {
+		grant.SetCanUpdateOwnMetadata(true)
 	}
 
 	if str := c.String("grant"); str != "" {
