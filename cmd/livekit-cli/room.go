@@ -152,6 +152,28 @@ var (
 				},
 			),
 		},
+		{
+			Name:     "send-data",
+			Before:   createRoomClient,
+			Action:   sendData,
+			Category: roomCategory,
+			Flags: withDefaultFlags(
+				roomFlag,
+				&cli.StringFlag{
+					Name:     "data",
+					Usage:    "payload to send to client",
+					Required: true,
+				},
+				&cli.StringFlag{
+					Name:  "topic",
+					Usage: "topic of the message",
+				},
+				&cli.StringSliceFlag{
+					Name:  "participantID",
+					Usage: "list of participantID to send the message to",
+				},
+			),
+		},
 	}
 
 	roomClient *lksdk.RoomServiceClient
@@ -375,6 +397,28 @@ func updateSubscriptions(c *cli.Context) error {
 		verb = "unsubscribed from"
 	}
 	fmt.Println(verb, "tracks: ", trackSids)
+	return nil
+}
+
+func sendData(c *cli.Context) error {
+	roomName, _ := participantInfoFromCli(c)
+	pIDs := c.StringSlice("participantID")
+	data := c.String("data")
+	topic := c.String("topic")
+	req := &livekit.SendDataRequest{
+		Room:            roomName,
+		Data:            []byte(data),
+		DestinationSids: pIDs,
+	}
+	if topic != "" {
+		req.Topic = &topic
+	}
+	_, err := roomClient.SendData(c.Context, req)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("successfully sent data to room", roomName)
 	return nil
 }
 

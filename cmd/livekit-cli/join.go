@@ -60,7 +60,7 @@ func joinRoom(c *cli.Context) error {
 	roomCB := &lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnDataReceived: func(data []byte, rp *lksdk.RemoteParticipant) {
-				logger.Infow("received data", "bytes", len(data))
+				logger.Infow("received data", "data", data)
 			},
 			OnConnectionQualityChanged: func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
 				logger.Debugw("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
