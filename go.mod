@@ -7,7 +7,7 @@ require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.4
 	github.com/livekit/protocol v1.5.8-0.20230601212100-a186ecb11a98
-	github.com/livekit/server-sdk-go v1.0.10
+	github.com/livekit/server-sdk-go v1.0.12-0.20230608000117-7bb24becd264
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtp v1.7.13
@@ -21,8 +21,6 @@ require (
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/livekit/server-sdk-go => ../server-sdk-go
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
