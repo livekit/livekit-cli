@@ -14,7 +14,7 @@ require (
 	github.com/pion/webrtc/v3 v3.2.8
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.25.6
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.2.0
