@@ -66,10 +66,44 @@ func joinRoom(c *cli.Context) error {
 				logger.Debugw("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
 			},
 			OnTrackSubscribed: func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
-				logger.Infow("track subscribed", "kind", pub.Kind(), "trackID", pub.SID(), "source", pub.Source())
+				logger.Infow("track subscribed",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
 			},
 			OnTrackUnsubscribed: func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
-				logger.Infow("track unsubscribed", "kind", pub.Kind(), "trackID", pub.SID(), "source", pub.Source())
+				logger.Infow("track unsubscribed",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
+			},
+			OnTrackUnpublished: func(pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
+				logger.Infow("track unpublished",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
+			},
+			OnTrackMuted: func(pub lksdk.TrackPublication, participant lksdk.Participant) {
+				logger.Infow("track muted",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
+			},
+			OnTrackUnmuted: func(pub lksdk.TrackPublication, participant lksdk.Participant) {
+				logger.Infow("track unmuted",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
 			},
 		},
 		OnRoomMetadataChanged: func(metadata string) {
