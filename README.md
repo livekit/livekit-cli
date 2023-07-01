@@ -294,6 +294,7 @@ You could customize various parameters of the test such as
 -   --no-simulcast: disables simulcast
 -   --num-per-second: number of testers to start each second
 -   --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)
+-   --simulate-speakers: randomly rotate publishers to speak
 
 <!--BEGIN_REPO_NAV-->
 <br/><table>
