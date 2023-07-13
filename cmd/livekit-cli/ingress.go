@@ -57,6 +57,11 @@ var (
 					Usage:    "limits list to a certain room name ",
 					Required: false,
 				},
+				&cli.StringFlag{
+					Name:     "id",
+					Usage:    "list a specific ingress id",
+					Required: false,
+				},
 			),
 		},
 		{
@@ -142,7 +147,8 @@ func updateIngress(c *cli.Context) error {
 
 func listIngress(c *cli.Context) error {
 	res, err := ingressClient.ListIngress(context.Background(), &livekit.ListIngressRequest{
-		RoomName: c.String("room"),
+		RoomName:  c.String("room"),
+		IngressId: c.String("id"),
 	})
 	if err != nil {
 		return err
@@ -162,6 +168,10 @@ func listIngress(c *cli.Context) error {
 		})
 	}
 	table.Render()
+
+	if c.Bool("verbose") {
+		PrintJSON(res)
+	}
 
 	return nil
 }
