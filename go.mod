@@ -6,7 +6,7 @@ require (
 	github.com/frostbyte73/core v0.0.9
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.4
-	github.com/livekit/protocol v1.5.8
+	github.com/livekit/protocol v1.5.10-0.20230714010226-3c53edc91962
 	github.com/livekit/server-sdk-go v1.0.13
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
@@ -18,7 +18,7 @@ require (
 	github.com/urfave/cli/v2 v2.25.7
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.3.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -44,7 +44,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.0.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20230125210925-54e8a70427c1 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20230612070454-d5299b956135 // indirect
-	github.com/livekit/psrpc v0.3.1 // indirect
+	github.com/livekit/psrpc v0.3.2 // indirect
 	github.com/mackerelio/go-osstat v0.2.4 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
@@ -67,10 +67,10 @@ require (
 	github.com/pion/transport/v2 v2.2.1 // indirect
 	github.com/pion/turn/v2 v2.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.15.1 // indirect
+	github.com/prometheus/client_golang v1.16.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
-	github.com/prometheus/procfs v0.9.0 // indirect
+	github.com/prometheus/procfs v0.10.1 // indirect
 	github.com/redis/go-redis/v9 v9.0.5 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/thoas/go-funk v0.9.3 // indirect
@@ -79,11 +79,11 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
-	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
-	google.golang.org/genproto v0.0.0-20230403163135-c38d8f061ccd // indirect
-	google.golang.org/grpc v1.55.0 // indirect
+	golang.org/x/crypto v0.10.0 // indirect
+	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
+	golang.org/x/net v0.11.0 // indirect
+	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/text v0.10.0 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/grpc v1.56.2 // indirect
 )
