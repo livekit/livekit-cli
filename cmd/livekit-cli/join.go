@@ -60,7 +60,11 @@ func joinRoom(c *cli.Context) error {
 	roomCB := &lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnDataReceived: func(data []byte, rp *lksdk.RemoteParticipant) {
-				logger.Infow("received data", "data", data)
+				identity := ""
+				if rp != nil {
+					identity = rp.Identity()
+				}
+				logger.Infow("received data", "data", data, "participant", identity)
 			},
 			OnConnectionQualityChanged: func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
 				logger.Debugw("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
@@ -108,6 +112,15 @@ func joinRoom(c *cli.Context) error {
 		},
 		OnRoomMetadataChanged: func(metadata string) {
 			logger.Infow("room metadata changed", "metadata", metadata)
+		},
+		OnReconnecting: func() {
+			logger.Infow("reconnecting to room")
+		},
+		OnReconnected: func() {
+			logger.Infow("reconnected to room")
+		},
+		OnDisconnected: func() {
+			logger.Infow("disconnected from room")
 		},
 	}
 	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
