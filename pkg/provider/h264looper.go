@@ -72,6 +72,9 @@ func (l *H264VideoLooper) nextSample(rewindEOF bool) (media.Sample, error) {
 		l.reader = nil
 		return l.nextSample(false)
 	}
+	if err != nil {
+		return sample, err
+	}
 
 	isFrame := false
 	switch nal.UnitType {
