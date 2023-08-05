@@ -25,6 +25,9 @@ import (
 )
 
 func main() {
+	logConfig := &logger.Config{
+		Level: "info",
+	}
 	app := &cli.App{
 		Name:                 "livekit-cli",
 		Usage:                "CLI client to LiveKit",
@@ -51,9 +54,7 @@ func main() {
 		},
 	}
 
-	logger.InitFromConfig(logger.Config{
-		Level: "info",
-	}, "livekit-cli")
+	logger.InitFromConfig(logConfig, "livekit-cli")
 
 	app.Commands = append(app.Commands, TokenCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
