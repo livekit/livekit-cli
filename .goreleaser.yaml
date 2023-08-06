@@ -34,8 +34,6 @@ archives:
   - format_overrides:
       - goos: windows
         format: zip
-    replacements:
-      darwin: mac
     files:
       - LICENSE
       - 'autocomplete/*'
