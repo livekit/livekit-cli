@@ -224,7 +224,7 @@ livekit-cli create-token --join \
   --room test-room --identity user  
 ```
 
-Head over to the [example web client](https://example.livekit.io) and paste in the token, you can see the simulated tracks published by the load tester.
+Head over to the [example web client](https://meet.livekit.io/?tab=custom) and paste in the token, you can see the simulated tracks published by the load tester.
 
 ![Load tester screenshot](misc/load-test-screenshot.jpg?raw=true)
 
