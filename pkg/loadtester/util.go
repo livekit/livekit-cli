@@ -23,10 +23,6 @@ import (
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 func randStringRunes(n int) string {
 	b := make([]rune, n)
 	for i := range b {
