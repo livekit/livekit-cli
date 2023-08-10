@@ -6,7 +6,7 @@ require (
 	github.com/frostbyte73/core v0.0.9
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.4
-	github.com/livekit/protocol v1.6.0
+	github.com/livekit/protocol v1.6.1-0.20230810044621-3892d269462a
 	github.com/livekit/server-sdk-go v1.0.15
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
@@ -77,10 +77,10 @@ require (
 	github.com/twitchtv/twirp v8.1.3+incompatible // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.24.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/zap v1.25.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b // indirect
+	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.11.0 // indirect

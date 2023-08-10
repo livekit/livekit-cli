@@ -171,14 +171,24 @@ func listIngress(c *cli.Context) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"IngressID", "Name", "Room", "StreamKey", "URL", "Status", "Error"})
 	for _, item := range res.Items {
+		if item == nil {
+			continue
+		}
+
+		var status, errorStr string
+		if item.State != nil {
+			status = item.State.Status.String()
+			errorStr = item.State.Error
+		}
+
 		table.Append([]string{
 			item.IngressId,
 			item.Name,
 			item.RoomName,
 			item.StreamKey,
 			item.Url,
-			item.State.Status.String(),
-			item.State.Error,
+			status,
+			errorStr,
 		})
 	}
 	table.Render()
@@ -203,10 +213,17 @@ func deleteIngress(c *cli.Context) error {
 }
 
 func printIngressInfo(info *livekit.IngressInfo) {
-	if info.State.Error == "" {
-		fmt.Printf("IngressID: %v Status: %v\n", info.IngressId, info.State.Status)
+	var status, errorStr string
+
+	if info.State != nil {
+		errorStr = info.State.Error
+		status = info.State.Status.String()
+	}
+
+	if errorStr == "" {
+		fmt.Printf("IngressID: %v Status: %v\n", info.IngressId, status)
 		fmt.Printf("URL: %v Stream Key: %s\n", info.Url, info.StreamKey)
 	} else {
-		fmt.Printf("IngressID: %v Error: %v\n", info.IngressId, info.State.Error)
+		fmt.Printf("IngressID: %v Error: %v\n", info.IngressId, errorStr)
 	}
 }
