@@ -39,6 +39,8 @@ type LoadTest struct {
 type Params struct {
 	VideoPublishers int
 	AudioPublishers int
+	AudioTracks     int
+	VideoTracks     int
 	Subscribers     int
 	VideoResolution string
 	VideoCodec      string
@@ -273,30 +275,34 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 			}
 
 			if isAudioPublisher {
-				audio, err := tester.PublishAudioTrack("audio")
-				if err != nil {
-					errs.Store(testerParams.name, err)
-					return nil
+				for i := 0; i < params.AudioTracks; i++ {
+					audio, err := tester.PublishAudioTrack(fmt.Sprintf("audio-%d", i))
+					if err != nil {
+						errs.Store(testerParams.name, err)
+						return nil
+					}
+					t.lock.Lock()
+					t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.Sequence)
+					t.lock.Unlock()
 				}
-				t.lock.Lock()
-				t.trackNames[audio] = fmt.Sprintf("%dA", testerParams.Sequence)
-				t.lock.Unlock()
 			}
 			if isVideoPublisher {
-				var video string
-				var err error
-				if params.Simulcast {
-					video, err = tester.PublishSimulcastTrack("video-simulcast", params.VideoResolution, params.VideoCodec)
-				} else {
-					video, err = tester.PublishVideoTrack("video", params.VideoResolution, params.VideoCodec)
+				for i := 0; i < params.VideoTracks; i++ {
+					var video string
+					var err error
+					if params.Simulcast {
+						video, err = tester.PublishSimulcastTrack(fmt.Sprintf("video-simulcast-%d", i), params.VideoResolution, params.VideoCodec)
+					} else {
+						video, err = tester.PublishVideoTrack(fmt.Sprintf("video-%d", i), params.VideoResolution, params.VideoCodec)
+					}
+					if err != nil {
+						errs.Store(testerParams.name, err)
+						return nil
+					}
+					t.lock.Lock()
+					t.trackNames[video] = fmt.Sprintf("%dV", testerParams.Sequence)
+					t.lock.Unlock()
 				}
-				if err != nil {
-					errs.Store(testerParams.name, err)
-					return nil
-				}
-				t.lock.Lock()
-				t.trackNames[video] = fmt.Sprintf("%dV", testerParams.Sequence)
-				t.lock.Unlock()
 			}
 			return nil
 		})

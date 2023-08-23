@@ -51,8 +51,18 @@ var LoadTestCommands = []*cli.Command{
 				Usage:   "number of participants that would publish video tracks",
 			},
 			&cli.IntFlag{
+				Name:  "video-tracks",
+				Usage: "number of video tracks to publish per participant",
+				Value: 1,
+			},
+			&cli.IntFlag{
 				Name:  "audio-publishers",
 				Usage: "number of participants that would publish audio tracks",
+			},
+			&cli.IntFlag{
+				Name:  "audio-tracks",
+				Usage: "number of audio tracks to publish per participant",
+				Value: 1,
 			},
 			&cli.IntFlag{
 				Name:  "subscribers",
@@ -145,6 +155,8 @@ func loadTest(cCtx *cli.Context) error {
 
 	params.VideoPublishers = cCtx.Int("video-publishers")
 	params.AudioPublishers = cCtx.Int("audio-publishers")
+	params.AudioTracks = cCtx.Int("audio-tracks")
+	params.VideoTracks = cCtx.Int("video-tracks")
 	params.Subscribers = cCtx.Int("subscribers")
 
 	test := loadtester.NewLoadTest(params)
