@@ -99,6 +99,8 @@ livekit-cli join-room --room yourroom --identity publisher \
 
 This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; it's important to match video framerate with the source to prevent out of sync issues.
 
+Note: For files uploaded via CLI, expect an initial delay before the video becomes visible to the remote viewer. This delay is attributed to the pre-encoded video's fixed keyframe intervals. Video encoded with LiveKit client SDKs do not have this delay.
+
 ### Publish from FFmpeg
 
 It's possible to publish any source that FFmpeg supports (including live sources such as RTSP) by using it as a transcoder.
