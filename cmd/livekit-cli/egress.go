@@ -54,6 +54,34 @@ var (
 			),
 		},
 		{
+			Name:     "start-web-egress",
+			Usage:    "Start web egress",
+			Before:   createEgressClient,
+			Action:   startWebEgress,
+			Category: egressCategory,
+			Flags: withDefaultFlags(
+				&cli.StringFlag{
+					Name:     "request",
+					Usage:    "WebEgressRequest as json file (see livekit-cli/examples)",
+					Required: true,
+				},
+			),
+		},
+		{
+			Name:     "start-participant-egress",
+			Usage:    "Start participant egress",
+			Before:   createEgressClient,
+			Action:   startParticipantEgress,
+			Category: egressCategory,
+			Flags: withDefaultFlags(
+				&cli.StringFlag{
+					Name:     "request",
+					Usage:    "ParticipantEgressRequest as json file (see livekit-cli/examples)",
+					Required: true,
+				},
+			),
+		},
+		{
 			Name:     "start-track-composite-egress",
 			Usage:    "Start track composite egress",
 			Before:   createEgressClient,
@@ -77,20 +105,6 @@ var (
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "TrackEgressRequest as json file (see livekit-cli/examples)",
-					Required: true,
-				},
-			),
-		},
-		{
-			Name:     "start-web-egress",
-			Usage:    "Start web egress",
-			Before:   createEgressClient,
-			Action:   startWebEgress,
-			Category: egressCategory,
-			Flags: withDefaultFlags(
-				&cli.StringFlag{
-					Name:     "request",
-					Usage:    "WebEgressRequest as json file (see livekit-cli/examples)",
 					Required: true,
 				},
 			),
@@ -237,6 +251,36 @@ func startRoomCompositeEgress(c *cli.Context) error {
 	return nil
 }
 
+func startWebEgress(c *cli.Context) error {
+	req := &livekit.WebEgressRequest{}
+	if err := unmarshalEgressRequest(c, req); err != nil {
+		return err
+	}
+
+	info, err := egressClient.StartWebEgress(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
+}
+
+func startParticipantEgress(c *cli.Context) error {
+	req := &livekit.ParticipantEgressRequest{}
+	if err := unmarshalEgressRequest(c, req); err != nil {
+		return err
+	}
+
+	info, err := egressClient.StartParticipantEgress(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
+}
+
 func startTrackCompositeEgress(c *cli.Context) error {
 	req := &livekit.TrackCompositeEgressRequest{}
 	if err := unmarshalEgressRequest(c, req); err != nil {
@@ -259,21 +303,6 @@ func startTrackEgress(c *cli.Context) error {
 	}
 
 	info, err := egressClient.StartTrackEgress(context.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	printInfo(info)
-	return nil
-}
-
-func startWebEgress(c *cli.Context) error {
-	req := &livekit.WebEgressRequest{}
-	if err := unmarshalEgressRequest(c, req); err != nil {
-		return err
-	}
-
-	info, err := egressClient.StartWebEgress(context.Background(), req)
 	if err != nil {
 		return err
 	}

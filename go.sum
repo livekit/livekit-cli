@@ -84,10 +84,8 @@ github.com/livekit/protocol v1.7.2 h1:TPk8rIv5ZZSx1IU5jaGA2W+RdoDlE8dp4CFHE0MKoG
 github.com/livekit/protocol v1.7.2/go.mod h1:zbh0QPUcLGOeZeIO/VeigwWWbudz4Lv+Px94FnVfQH0=
 github.com/livekit/psrpc v0.3.3 h1:+lltbuN39IdaynXhLLxRShgYqYsRMWeeXKzv60oqyWo=
 github.com/livekit/psrpc v0.3.3/go.mod h1:n6JntEg+zT6Ji8InoyTpV7wusPNwGqqtxmHlkNhDN0U=
-github.com/livekit/server-sdk-go v1.0.16 h1:o3lCl3ZR+aegPDaf8/0WNhAaGApGnh7waoUXdS1Rr4o=
-github.com/livekit/server-sdk-go v1.0.16/go.mod h1:lLDZe/p7v4xaVTRMAXXDFWg3PQwGKZQ3hCcLYbVD27k=
-github.com/livekit/server-sdk-go v1.0.17-0.20230909175755-a30cb3fe73ff h1:vf+1Bz+VRdM25tj1jr2ddlK2xCVvOvcrjLh3Ahz0CYA=
-github.com/livekit/server-sdk-go v1.0.17-0.20230909175755-a30cb3fe73ff/go.mod h1:lLDZe/p7v4xaVTRMAXXDFWg3PQwGKZQ3hCcLYbVD27k=
+github.com/livekit/server-sdk-go v1.0.17-0.20230918212012-3a26309be9c5 h1:JZttHKxyzGFuMpsl3Mmt84WU+DZsZg00FCOPfr6CmBY=
+github.com/livekit/server-sdk-go v1.0.17-0.20230918212012-3a26309be9c5/go.mod h1:hx8+3zlGcKAmQFUOnmHA1kY4mi67W8L0dp/OrNGt3mc=
 github.com/mackerelio/go-osstat v0.2.4 h1:qxGbdPkFo65PXOb/F/nhDKpF2nGmGaCFDLXoZjJTtUs=
 github.com/mackerelio/go-osstat v0.2.4/go.mod h1:Zy+qzGdZs3A9cuIqmgbJvwbmLQH9dJvtio5ZjJTbdlQ=
 github.com/magefile/mage v1.15.0 h1:BvGheCMAsG3bWUDbZ8AyXXpCNwU9u5CB6sM+HNb9HYg=
@@ -159,8 +157,8 @@ github.com/pion/transport/v3 v3.0.1 h1:gDTlPJwROfSfz6QfSi0ZmeCSkFcnWWiiR9ES0ouAN
 github.com/pion/transport/v3 v3.0.1/go.mod h1:UY7kiITrlMv7/IKgd5eTUcaahZx5oUN3l9SzK5f5xE0=
 github.com/pion/turn/v2 v2.1.3 h1:pYxTVWG2gpC97opdRc5IGsQ1lJ9O/IlNhkzj7MMrGAA=
 github.com/pion/turn/v2 v2.1.3/go.mod h1:huEpByKKHix2/b9kmTAM3YoX6MKP+/D//0ClgUYR2fY=
-github.com/pion/webrtc/v3 v3.2.19 h1:XNu5e62mkzafw1qYuKtQ+Dviw4JpbzC/SLx3zZt49JY=
-github.com/pion/webrtc/v3 v3.2.19/go.mod h1:vVURQTBOG5BpWKOJz3nlr23NfTDeyKVmubRNqzQp+Tg=
+github.com/pion/webrtc/v3 v3.2.20 h1:BQJiXQsJq9LgLp3op7rLy1y8d2WD+LtiS9cpY0uQ22A=
+github.com/pion/webrtc/v3 v3.2.20/go.mod h1:vVURQTBOG5BpWKOJz3nlr23NfTDeyKVmubRNqzQp+Tg=
 github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 h1:KoWmjvw+nsYOo29YJK9vDA65RGE3NrOnUtO7a+RF9HU=
 github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8/go.mod h1:HKlIX3XHQyzLZPlr7++PzdhaXEj94dEiJgZDTsxEqUI=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
