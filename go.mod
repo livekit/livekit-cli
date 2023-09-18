@@ -7,11 +7,11 @@ require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.4
 	github.com/livekit/protocol v1.7.2
-	github.com/livekit/server-sdk-go v1.0.17-0.20230909175755-a30cb3fe73ff
+	github.com/livekit/server-sdk-go v1.0.17-0.20230918212012-3a26309be9c5
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtp v1.8.1
-	github.com/pion/webrtc/v3 v3.2.19
+	github.com/pion/webrtc/v3 v3.2.20
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
