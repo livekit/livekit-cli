@@ -52,6 +52,11 @@ var (
 					Usage:    "AutoTrackEgress json file (see examples/auto-track-egress.json)",
 					Required: false,
 				},
+				&cli.UintFlag{
+					Name:     "min-playout-delay",
+					Usage:    "minimum playout delay",
+					Required: false,
+				},
 			),
 		},
 		{
@@ -60,6 +65,15 @@ var (
 			Action:   listRooms,
 			Category: roomCategory,
 			Flags:    withDefaultFlags(),
+		},
+		{
+			Name:     "list-room",
+			Before:   createRoomClient,
+			Action:   listRoom,
+			Category: roomCategory,
+			Flags: withDefaultFlags(
+				roomFlag,
+			),
 		},
 		{
 			Name:     "delete-room",
@@ -235,6 +249,11 @@ func createRoom(c *cli.Context) error {
 		req.Egress.Tracks = trackEgress
 	}
 
+	if c.Uint("min-playout-delay") != 0 {
+		fmt.Printf("setting min playout delay: %d\n", c.Uint("min-playout-delay"))
+		req.MinPlayoutDelay = uint32(c.Uint("min-playout-delay"))
+	}
+
 	room, err := roomClient.CreateRoom(context.Background(), req)
 	if err != nil {
 		return err
@@ -254,6 +273,26 @@ func listRooms(c *cli.Context) error {
 	}
 	for _, rm := range res.Rooms {
 		fmt.Printf("%s\t%s\t%d participants\n", rm.Sid, rm.Name, rm.NumParticipants)
+	}
+	return nil
+}
+
+func listRoom(c *cli.Context) error {
+	res, err := roomClient.ListRooms(context.Background(), &livekit.ListRoomsRequest{
+		Names: []string{c.String("room")},
+	})
+	if err != nil {
+		return err
+	}
+	if len(res.Rooms) == 0 {
+		fmt.Printf("there is no matching room with name: %s\n", c.String("room"))
+		return nil
+	}
+	rm := res.Rooms[0]
+	PrintJSON(rm)
+	playoutDelay := rm.GetPlayoutDelay()
+	if playoutDelay != nil {
+		fmt.Printf("playout delay: %s\n", playoutDelay.String())
 	}
 	return nil
 }
