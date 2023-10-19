@@ -25,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
 	"github.com/urfave/cli/v2"
 
@@ -58,6 +59,10 @@ var (
 					Name:  "fps",
 					Usage: "if video files are published, indicates FPS of video",
 				},
+				&cli.BoolFlag{
+					Name:  "exit-after-publish",
+					Usage: "when publishing, exit after file or stream is complete",
+				},
 			),
 		},
 	}
@@ -71,6 +76,7 @@ func joinRoom(c *cli.Context) error {
 		return err
 	}
 
+	done := make(chan os.Signal, 1)
 	roomCB := &lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnDataReceived: func(data []byte, rp *lksdk.RemoteParticipant) {
@@ -135,6 +141,7 @@ func joinRoom(c *cli.Context) error {
 		},
 		OnDisconnected: func() {
 			logger.Infow("disconnected from room")
+			close(done)
 		},
 	}
 	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
@@ -150,7 +157,6 @@ func joinRoom(c *cli.Context) error {
 
 	logger.Infow("connected to room", "room", room.Name())
 
-	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	if c.Bool("publish-demo") {
@@ -162,7 +168,20 @@ func joinRoom(c *cli.Context) error {
 	if c.StringSlice("publish") != nil {
 		fps := c.Float64("fps")
 		for _, pub := range c.StringSlice("publish") {
-			if err = handlePublish(room, pub, fps); err != nil {
+			var onPublishComplete func(pub *lksdk.LocalTrackPublication)
+			if c.Bool("exit-after-publish") {
+				onPublishComplete = func(pub *lksdk.LocalTrackPublication) {
+					if c.Bool("exit-after-publish") {
+						close(done)
+						return
+					}
+					if pub != nil {
+						fmt.Printf("finished writing %s\n", pub.Name())
+						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
+					}
+				}
+			}
+			if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
 				return err
 			}
 		}
@@ -172,17 +191,19 @@ func joinRoom(c *cli.Context) error {
 	return nil
 }
 
-func handlePublish(room *lksdk.Room, name string, fps float64) error {
-	// See if we're dealing with a socket
+func handlePublish(room *lksdk.Room,
+	name string,
+	fps float64,
+	onPublishComplete func(pub *lksdk.LocalTrackPublication),
+) error {
 	if isSocketFormat(name) {
 		mimeType, socketType, address, err := parseSocketFromName(name)
 		if err != nil {
 			return err
 		}
-		return publishSocket(room, mimeType, socketType, address, fps)
+		return publishSocket(room, mimeType, socketType, address, fps, onPublishComplete)
 	}
-	// Else, handle file
-	return publishFile(room, name, fps)
+	return publishFile(room, name, fps, onPublishComplete)
 }
 
 func publishDemo(room *lksdk.Room) error {
@@ -211,16 +232,25 @@ func publishDemo(room *lksdk.Room) error {
 	return err
 }
 
-func publishFile(room *lksdk.Room, filename string, fps float64) error {
+func publishFile(room *lksdk.Room,
+	filename string,
+	fps float64,
+	onPublishComplete func(pub *lksdk.LocalTrackPublication),
+) error {
 	// Configure provider
-	var pub *lksdk.LocalTrackPublication
 	opts := []lksdk.ReaderSampleProviderOption{
-		lksdk.ReaderTrackWithOnWriteComplete(func() {
-			fmt.Println("finished writing file", filename)
-			if pub != nil {
-				_ = room.LocalParticipant.UnpublishTrack(pub.SID())
+		lksdk.ReaderTrackWithRTCPHandler(func(packet rtcp.Packet) {
+			switch packet.(type) {
+			case *rtcp.PictureLossIndication:
+				logger.Infow("received PLI", "filename", filename)
 			}
 		}),
+	}
+	var pub *lksdk.LocalTrackPublication
+	if onPublishComplete != nil {
+		opts = append(opts, lksdk.ReaderTrackWithOnWriteComplete(func() {
+			onPublishComplete(pub)
+		}))
 	}
 
 	// Set frame rate if it's a video stream and FPS is set
@@ -277,7 +307,13 @@ func isSocketFormat(name string) bool {
 	return strings.Contains(name, mimeDelimiter)
 }
 
-func publishSocket(room *lksdk.Room, mimeType string, socketType string, address string, fps float64) error {
+func publishSocket(room *lksdk.Room,
+	mimeType string,
+	socketType string,
+	address string,
+	fps float64,
+	onPublishComplete func(pub *lksdk.LocalTrackPublication),
+) error {
 	var mime string
 	switch {
 	case strings.Contains(mimeType, "h264"):
@@ -297,25 +333,27 @@ func publishSocket(room *lksdk.Room, mimeType string, socketType string, address
 	}
 
 	// Publish to room
-	err = publishReader(room, sock, mime, fps)
+	err = publishReader(room, sock, mime, fps, onPublishComplete)
 	return err
 }
 
-func publishReader(room *lksdk.Room, in io.ReadCloser, mime string, fps float64) error {
+func publishReader(room *lksdk.Room,
+	in io.ReadCloser,
+	mime string,
+	fps float64,
+	onPublishComplete func(pub *lksdk.LocalTrackPublication),
+) error {
 	// Configure provider
+	var opts []lksdk.ReaderSampleProviderOption
 	var pub *lksdk.LocalTrackPublication
-	opts := []lksdk.ReaderSampleProviderOption{
-		lksdk.ReaderTrackWithOnWriteComplete(func() {
-			fmt.Printf("finished writing %s stream\n", mime)
-			if pub != nil {
-				_ = room.LocalParticipant.UnpublishTrack(pub.SID())
-			}
-		}),
+	if onPublishComplete != nil {
+		opts = append(opts, lksdk.ReaderTrackWithOnWriteComplete(func() {
+			onPublishComplete(pub)
+		}))
 	}
 
 	// Set frame rate if it's a video stream and FPS is set
-	if strings.EqualFold(mime, webrtc.MimeTypeVP8) ||
-		strings.EqualFold(mime, webrtc.MimeTypeH264) {
+	if strings.HasPrefix(strings.ToLower(mime), "video") {
 		if fps != 0 {
 			frameDuration := time.Second / time.Duration(fps)
 			opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))

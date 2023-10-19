@@ -43,19 +43,24 @@ var (
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "room-egress-file",
-					Usage:    "RoomCompositeRequest json file (see examples/room-composite-file.json)",
-					Required: false,
+					Name:  "room-egress-file",
+					Usage: "RoomCompositeRequest json file (see examples/room-composite-file.json)",
 				},
 				&cli.StringFlag{
-					Name:     "track-egress-file",
-					Usage:    "AutoTrackEgress json file (see examples/auto-track-egress.json)",
-					Required: false,
+					Name:  "participant-egress-file",
+					Usage: "ParticipantEgress json file (see examples/auto-participant-egress.json)",
+				},
+				&cli.StringFlag{
+					Name:  "track-egress-file",
+					Usage: "AutoTrackEgress json file (see examples/auto-track-egress.json)",
 				},
 				&cli.UintFlag{
-					Name:     "min-playout-delay",
-					Usage:    "minimum playout delay",
-					Required: false,
+					Name:  "min-playout-delay",
+					Usage: "minimum playout delay for video (in ms), unsupported for audio",
+				},
+				&cli.BoolFlag{
+					Name:  "sync-streams",
+					Usage: "improve A/V sync by placing them in the same stream. when enabled, transceivers will not be reused",
 				},
 			),
 		},
@@ -254,6 +259,11 @@ func createRoom(c *cli.Context) error {
 		req.MinPlayoutDelay = uint32(c.Uint("min-playout-delay"))
 	}
 
+	if syncStreams := c.Bool("sync-streams"); syncStreams {
+		fmt.Printf("setting sync streams: %t\n", syncStreams)
+		req.SyncStreams = syncStreams
+	}
+
 	room, err := roomClient.CreateRoom(context.Background(), req)
 	if err != nil {
 		return err
@@ -290,10 +300,6 @@ func listRoom(c *cli.Context) error {
 	}
 	rm := res.Rooms[0]
 	PrintJSON(rm)
-	playoutDelay := rm.GetPlayoutDelay()
-	if playoutDelay != nil {
-		fmt.Printf("playout delay: %s\n", playoutDelay.String())
-	}
 	return nil
 }
 
