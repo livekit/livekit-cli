@@ -168,17 +168,14 @@ func joinRoom(c *cli.Context) error {
 	if c.StringSlice("publish") != nil {
 		fps := c.Float64("fps")
 		for _, pub := range c.StringSlice("publish") {
-			var onPublishComplete func(pub *lksdk.LocalTrackPublication)
-			if c.Bool("exit-after-publish") {
-				onPublishComplete = func(pub *lksdk.LocalTrackPublication) {
-					if c.Bool("exit-after-publish") {
-						close(done)
-						return
-					}
-					if pub != nil {
-						fmt.Printf("finished writing %s\n", pub.Name())
-						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
-					}
+			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
+				if c.Bool("exit-after-publish") {
+					close(done)
+					return
+				}
+				if pub != nil {
+					fmt.Printf("finished writing %s\n", pub.Name())
+					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 				}
 			}
 			if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
