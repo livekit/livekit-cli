@@ -6,12 +6,12 @@ require (
 	github.com/frostbyte73/core v0.0.9
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.2.4
-	github.com/livekit/protocol v1.7.2
-	github.com/livekit/server-sdk-go v1.0.17-0.20230918212012-3a26309be9c5
+	github.com/livekit/protocol v1.8.0
+	github.com/livekit/server-sdk-go v1.1.1
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/pion/rtp v1.8.1
-	github.com/pion/webrtc/v3 v3.2.20
+	github.com/pion/rtp v1.8.2
+	github.com/pion/webrtc/v3 v3.2.21
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
@@ -43,7 +43,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/lithammer/shortuuid/v4 v4.0.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20230125210925-54e8a70427c1 // indirect
-	github.com/livekit/mediatransportutil v0.0.0-20230906055425-e81fd5f6fb3f // indirect
+	github.com/livekit/mediatransportutil v0.0.0-20231017082622-43f077b4e60e // indirect
 	github.com/livekit/psrpc v0.3.3 // indirect
 	github.com/mackerelio/go-osstat v0.2.4 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
 	github.com/pion/ice/v2 v2.3.11 // indirect
-	github.com/pion/interceptor v0.1.19 // indirect
+	github.com/pion/interceptor v0.1.21 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.9 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
