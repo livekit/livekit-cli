@@ -10,9 +10,9 @@ require (
 	github.com/livekit/server-sdk-go v1.1.2-0.20231101095512-c80fd8cf5dfc
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/pion/rtcp v1.2.10
-	github.com/pion/rtp v1.8.2
-	github.com/pion/webrtc/v3 v3.2.21
+	github.com/pion/rtcp v1.2.12
+	github.com/pion/rtp v1.8.3
+	github.com/pion/webrtc/v3 v3.2.22
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
@@ -62,7 +62,7 @@ require (
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/sctp v1.8.9 // indirect
 	github.com/pion/sdp/v3 v3.0.6 // indirect
-	github.com/pion/srtp/v2 v2.0.17 // indirect
+	github.com/pion/srtp/v2 v2.0.18 // indirect
 	github.com/pion/stun v0.6.1 // indirect
 	github.com/pion/transport/v2 v2.2.4 // indirect
 	github.com/pion/turn/v2 v2.1.4 // indirect
