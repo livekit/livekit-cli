@@ -16,6 +16,7 @@ package provider
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"time"
 
@@ -56,7 +57,7 @@ func (l *OpusAudioLooper) Codec() webrtc.RTPCodecCapability {
 	}
 }
 
-func (l *OpusAudioLooper) NextSample() (media.Sample, error) {
+func (l *OpusAudioLooper) NextSample(_ctx context.Context) (media.Sample, error) {
 	return l.nextSample(true)
 }
 
