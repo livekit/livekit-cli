@@ -16,6 +16,7 @@ package provider
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"time"
 
@@ -64,7 +65,7 @@ func (l *VP8VideoLooper) Codec() webrtc.RTPCodecCapability {
 	}
 }
 
-func (l *VP8VideoLooper) NextSample() (media.Sample, error) {
+func (l *VP8VideoLooper) NextSample(_ctx context.Context) (media.Sample, error) {
 	return l.nextSample(true)
 }
 

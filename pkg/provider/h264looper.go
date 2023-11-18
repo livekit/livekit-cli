@@ -16,6 +16,7 @@ package provider
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"time"
 
@@ -64,7 +65,7 @@ func (l *H264VideoLooper) Codec() webrtc.RTPCodecCapability {
 	}
 }
 
-func (l *H264VideoLooper) NextSample() (media.Sample, error) {
+func (l *H264VideoLooper) NextSample(_ctx context.Context) (media.Sample, error) {
 	return l.nextSample(true)
 }
 
