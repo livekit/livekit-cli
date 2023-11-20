@@ -7,7 +7,7 @@ require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.3.0
 	github.com/livekit/protocol v1.9.1
-	github.com/livekit/server-sdk-go v1.1.2-0.20231120143656-86b7cf883b89
+	github.com/livekit/server-sdk-go v1.1.2-0.20231120081246-65f60f39ed60
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.12
