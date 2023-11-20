@@ -7,7 +7,7 @@ require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.3.0
 	github.com/livekit/protocol v1.9.1
-	github.com/livekit/server-sdk-go v1.1.2-0.20231116164929-fa537419c3ba
+	github.com/livekit/server-sdk-go v1.1.2-0.20231120143656-86b7cf883b89
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.12
@@ -45,7 +45,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.0.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20230125210925-54e8a70427c1 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20231017082622-43f077b4e60e // indirect
-	github.com/livekit/psrpc v0.5.1 // indirect
+	github.com/livekit/psrpc v0.5.2 // indirect
 	github.com/mackerelio/go-osstat v0.2.4 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
