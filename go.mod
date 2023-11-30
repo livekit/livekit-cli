@@ -1,6 +1,6 @@
 module github.com/livekit/livekit-cli
 
-go 1.20
+go 1.21
 
 require (
 	github.com/frostbyte73/core v0.0.9
