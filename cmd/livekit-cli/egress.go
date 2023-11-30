@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -116,9 +117,9 @@ var (
 			Action:   listEgress,
 			Category: egressCategory,
 			Flags: withDefaultFlags(
-				&cli.StringFlag{
+				&cli.StringSliceFlag{
 					Name:  "id",
-					Usage: "list a specific egress id",
+					Usage: "list a specific egress id, can be used multiple times",
 				},
 				&cli.StringFlag{
 					Name:  "room",
@@ -180,9 +181,9 @@ var (
 			Action:   stopEgress,
 			Category: egressCategory,
 			Flags: withDefaultFlags(
-				&cli.StringFlag{
+				&cli.StringSliceFlag{
 					Name:     "id",
-					Usage:    "Egress ID",
+					Usage:    "Egress ID to stop, can be specified multiple times",
 					Required: true,
 				},
 			),
@@ -328,26 +329,66 @@ func unmarshalEgressRequest(c *cli.Context, req proto.Message) error {
 }
 
 func listEgress(c *cli.Context) error {
-	res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
-		RoomName: c.String("room"),
-		EgressId: c.String("id"),
-		Active:   c.Bool("active"),
-	})
-	if err != nil {
-		return err
+	var items []*livekit.EgressInfo
+	if c.IsSet("id") {
+		for _, id := range c.StringSlice("id") {
+			res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
+				EgressId: id,
+			})
+			if err != nil {
+				return err
+			}
+			items = append(items, res.Items...)
+		}
+	} else {
+		res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
+			RoomName: c.String("room"),
+			Active:   c.Bool("active"),
+		})
+		if err != nil {
+			return err
+		}
+		items = res.Items
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"EgressID", "Status", "Started At", "Error"})
-	for _, item := range res.Items {
+	table.SetHeader([]string{"EgressID", "Status", "Type", "Source", "Started At", "Error"})
+	for _, item := range items {
 		var startedAt string
 		if item.StartedAt != 0 {
 			startedAt = fmt.Sprint(time.Unix(0, item.StartedAt))
+		}
+		var egressType, egressSource string
+		switch req := item.Request.(type) {
+		case *livekit.EgressInfo_RoomComposite:
+			egressType = "room_composite"
+			egressSource = req.RoomComposite.RoomName
+		case *livekit.EgressInfo_Web:
+			egressType = "web"
+			egressSource = req.Web.Url
+		case *livekit.EgressInfo_Participant:
+			egressType = "participant"
+			egressSource = fmt.Sprintf("%s/%s", req.Participant.RoomName, req.Participant.Identity)
+		case *livekit.EgressInfo_TrackComposite:
+			egressType = "track_composite"
+			trackIDs := make([]string, 0)
+			if req.TrackComposite.VideoTrackId != "" {
+				trackIDs = append(trackIDs, req.TrackComposite.VideoTrackId)
+			}
+			if req.TrackComposite.AudioTrackId != "" {
+				trackIDs = append(trackIDs, req.TrackComposite.AudioTrackId)
+			}
+			egressSource = fmt.Sprintf("%s/%s", req.TrackComposite.RoomName, strings.Join(trackIDs, ","))
+		case *livekit.EgressInfo_Track:
+			egressType = "track"
+			egressSource = fmt.Sprintf("%s/%s", req.Track.RoomName, req.Track.TrackId)
 		}
 
 		table.Append([]string{
 			item.EgressId,
 			item.Status.String(),
+			egressType,
+			egressSource,
 			startedAt,
 			item.Error,
 		})
@@ -385,14 +426,17 @@ func updateStream(c *cli.Context) error {
 }
 
 func stopEgress(c *cli.Context) error {
-	info, err := egressClient.StopEgress(context.Background(), &livekit.StopEgressRequest{
-		EgressId: c.String("id"),
-	})
-	if err != nil {
-		return err
+	ids := c.StringSlice("id")
+	for _, id := range ids {
+		_, err := egressClient.StopEgress(context.Background(), &livekit.StopEgressRequest{
+			EgressId: id,
+		})
+		if err != nil {
+			fmt.Println("Error stopping Egress", id, err)
+		} else {
+			fmt.Println("Stopping Egress", id)
+		}
 	}
-
-	printInfo(info)
 	return nil
 }
 
