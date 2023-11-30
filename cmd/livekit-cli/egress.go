@@ -427,15 +427,20 @@ func updateStream(c *cli.Context) error {
 
 func stopEgress(c *cli.Context) error {
 	ids := c.StringSlice("id")
+	var errors []error
 	for _, id := range ids {
 		_, err := egressClient.StopEgress(context.Background(), &livekit.StopEgressRequest{
 			EgressId: id,
 		})
 		if err != nil {
+			errors = append(errors, err)
 			fmt.Println("Error stopping Egress", id, err)
 		} else {
 			fmt.Println("Stopping Egress", id)
 		}
+	}
+	if len(errors) != 0 {
+		return errors[0]
 	}
 	return nil
 }
