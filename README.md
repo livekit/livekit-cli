@@ -41,7 +41,7 @@ Download the [latest release here](https://github.com/livekit/livekit-cli/releas
 This repo uses [Git LFS](https://git-lfs.github.com/) for embedded video resources. Please ensure git-lfs is installed on your machine.
 
 ```shell
-git clone github.com/livekit/livekit-cli
+git clone https://github.com/livekit/livekit-cli
 make install
 ```
 
