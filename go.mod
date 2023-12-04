@@ -1,13 +1,13 @@
 module github.com/livekit/livekit-cli
 
-go 1.20
+go 1.21
 
 require (
 	github.com/frostbyte73/core v0.0.9
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.3.0
 	github.com/livekit/protocol v1.9.3
-	github.com/livekit/server-sdk-go v1.1.2
+	github.com/livekit/server-sdk-go v1.1.3
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.12

@@ -56,6 +56,14 @@ var (
 					Name:  "recorder",
 					Usage: "enable token to be used to record a room (requires --room)",
 				},
+				&cli.BoolFlag{
+					Name:  "egress",
+					Usage: "enable token to interact with EgressService",
+				},
+				&cli.BoolFlag{
+					Name:  "ingress",
+					Usage: "enable token to interact with IngressService",
+				},
 				&cli.StringSliceFlag{
 					Name:  "allow-source",
 					Usage: "allow one or more sources to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
@@ -108,8 +116,10 @@ func createToken(c *cli.Context) error {
 	grant := &auth.VideoGrant{
 		Room: room,
 	}
+	hasPerms := false
 	if c.Bool("create") {
 		grant.RoomCreate = true
+		hasPerms = true
 	}
 	if c.Bool("join") {
 		grant.RoomJoin = true
@@ -119,17 +129,30 @@ func createToken(c *cli.Context) error {
 		if room == "" {
 			return errors.New("room is required")
 		}
+		hasPerms = true
 	}
 	if c.Bool("admin") {
 		grant.RoomAdmin = true
+		hasPerms = true
 	}
 	if c.Bool("list") {
 		grant.RoomList = true
+		hasPerms = true
 	}
 	if c.Bool("recorder") {
 		grant.RoomRecord = true
 		grant.Recorder = true
 		grant.Hidden = true
+		hasPerms = true
+	}
+	// in the future, this will change to more room specific permissions
+	if c.Bool("egress") {
+		grant.RoomRecord = true
+		hasPerms = true
+	}
+	if c.Bool("ingress") {
+		grant.IngressAdmin = true
+		hasPerms = true
 	}
 	if c.IsSet("allow-source") {
 		sourcesStr := c.StringSlice("allow-source")
@@ -160,10 +183,11 @@ func createToken(c *cli.Context) error {
 		if err := json.Unmarshal([]byte(str), grant); err != nil {
 			return err
 		}
+		hasPerms = true
 	}
 
-	if !grant.RoomJoin && !grant.RoomCreate && !grant.RoomAdmin && !grant.RoomList && !grant.RoomRecord {
-		return errors.New("at least one of --list, --join, --create, --admin, or --recorder is required. use --grant to set a custom video grant")
+	if !hasPerms {
+		return errors.New("no permissions were given in this grant, see --help")
 	}
 
 	pc, err := loadProjectDetails(c, ignoreURL)
