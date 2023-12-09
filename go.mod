@@ -10,7 +10,7 @@ require (
 	github.com/livekit/server-sdk-go v1.1.3
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/pion/rtcp v1.2.12
+	github.com/pion/rtcp v1.2.13
 	github.com/pion/rtp v1.8.3
 	github.com/pion/webrtc/v3 v3.2.23
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
