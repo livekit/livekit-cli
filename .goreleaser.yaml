@@ -30,6 +30,8 @@ builds:
     goos:
       - linux
       - windows
+    ldflags:
+      - -s -w
 archives:
   - format_overrides:
       - goos: windows
