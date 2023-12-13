@@ -32,9 +32,9 @@ COPY cmd/ cmd/
 COPY pkg/ pkg/
 COPY version.go version.go
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH GO111MODULE=on go build -a -o livekit-cli ./cmd/livekit-cli
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -a -o livekit-cli ./cmd/livekit-cli
 
-FROM alpine
+FROM alpine:3.19
 
 COPY --from=builder /workspace/livekit-cli /livekit-cli
 
