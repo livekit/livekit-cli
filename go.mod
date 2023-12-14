@@ -12,7 +12,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.12
 	github.com/pion/rtp v1.8.3
-	github.com/pion/webrtc/v3 v3.2.23
+	github.com/pion/webrtc/v3 v3.2.24
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
