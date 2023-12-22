@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/frostbyte73/core v0.0.9
-	github.com/ggwhite/go-masker v1.0.9
+	github.com/ggwhite/go-masker v1.1.0
 	github.com/go-logr/logr v1.4.1
 	github.com/livekit/protocol v1.9.3
 	github.com/livekit/server-sdk-go v1.1.4
