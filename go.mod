@@ -7,10 +7,10 @@ require (
 	github.com/ggwhite/go-masker v1.0.9
 	github.com/go-logr/logr v1.4.1
 	github.com/livekit/protocol v1.9.4
-	github.com/livekit/server-sdk-go v1.1.5
+	github.com/livekit/server-sdk-go v1.1.6
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/pion/rtcp v1.2.12
+	github.com/pion/rtcp v1.2.13
 	github.com/pion/rtp v1.8.3
 	github.com/pion/webrtc/v3 v3.2.24
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
@@ -54,7 +54,7 @@ require (
 	github.com/nats-io/nkeys v0.4.6 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pion/datachannel v1.5.5 // indirect
-	github.com/pion/dtls/v2 v2.2.8 // indirect
+	github.com/pion/dtls/v2 v2.2.9 // indirect
 	github.com/pion/ice/v2 v2.3.11 // indirect
 	github.com/pion/interceptor v0.1.25 // indirect
 	github.com/pion/logging v0.2.2 // indirect
