@@ -204,7 +204,7 @@ func handlePublish(room *lksdk.Room,
 }
 
 func publishDemo(room *lksdk.Room) error {
-	var tracks []*lksdk.LocalSampleTrack
+	var tracks []*lksdk.LocalTrack
 
 	loopers, err := provider2.CreateVideoLoopers("high", "", true)
 	if err != nil {
@@ -212,7 +212,7 @@ func publishDemo(room *lksdk.Room) error {
 	}
 	for i, looper := range loopers {
 		layer := looper.ToLayer(livekit.VideoQuality(i))
-		track, err := lksdk.NewLocalSampleTrack(looper.Codec(),
+		track, err := lksdk.NewLocalTrack(looper.Codec(),
 			lksdk.WithSimulcast("demo-video", layer),
 		)
 		if err != nil {

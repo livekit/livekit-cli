@@ -157,7 +157,7 @@ func (t *LoadTester) PublishAudioTrack(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	track, err := lksdk.NewLocalSampleTrack(audioLooper.Codec())
+	track, err := lksdk.NewLocalTrack(audioLooper.Codec())
 	if err != nil {
 		return "", err
 	}
@@ -184,7 +184,7 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 	if err != nil {
 		return "", err
 	}
-	track, err := lksdk.NewLocalSampleTrack(loopers[0].Codec())
+	track, err := lksdk.NewLocalTrack(loopers[0].Codec())
 	if err != nil {
 		return "", err
 	}
@@ -202,7 +202,7 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 }
 
 func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (string, error) {
-	var tracks []*lksdk.LocalSampleTrack
+	var tracks []*lksdk.LocalTrack
 
 	fmt.Println("publishing simulcast video track -", t.room.LocalParticipant.Identity())
 	loopers, err := provider2.CreateVideoLoopers(resolution, codec, true)
@@ -213,7 +213,7 @@ func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (stri
 	for i, looper := range loopers {
 		layer := looper.ToLayer(livekit.VideoQuality(i))
 
-		track, err := lksdk.NewLocalSampleTrack(looper.Codec(),
+		track, err := lksdk.NewLocalTrack(looper.Codec(),
 			lksdk.WithSimulcast("loadtest-video", layer))
 		if err != nil {
 			return "", err
