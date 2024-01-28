@@ -13,7 +13,7 @@ require (
 	github.com/pion/rtcp v1.2.13
 	github.com/pion/rtp v1.8.3
 	github.com/pion/webrtc/v3 v3.2.24
-	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.27.1
