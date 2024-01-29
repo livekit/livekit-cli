@@ -20,6 +20,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
@@ -117,28 +118,6 @@ var (
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "CreateSIPParticipantRequest as json file (see livekit-cli/examples)",
-					Required: true,
-				},
-			),
-		},
-		{
-			Name:     "list-sip-participant",
-			Usage:    "List all SIP Participant",
-			Before:   createSIPClient,
-			Action:   listSipParticipant,
-			Category: sipCategory,
-			Flags:    withDefaultFlags(),
-		},
-		{
-			Name:     "delete-sip-participant",
-			Usage:    "Delete SIP Participant",
-			Before:   createSIPClient,
-			Action:   deleteSIPParticipant,
-			Category: sipCategory,
-			Flags: withDefaultFlags(
-				&cli.StringFlag{
-					Name:     "id",
-					Usage:    "SIPParticipant ID",
 					Required: true,
 				},
 			),
@@ -340,43 +319,12 @@ func createSIPParticipant(c *cli.Context) error {
 		PrintJSON(req)
 	}
 
-	info, err := sipClient.CreateSIPParticipant(context.Background(), req)
-	if err != nil {
-		return err
-	}
+	// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
+	// Thus, we must set a higher deadline for it.
+	ctx, cancel := context.WithTimeout(c.Context, 30*time.Second)
+	defer cancel()
 
-	printSIPParticipantInfo(info)
-	return nil
-}
-
-func listSipParticipant(c *cli.Context) error {
-	res, err := sipClient.ListSIPParticipant(context.Background(), &livekit.ListSIPParticipantRequest{})
-	if err != nil {
-		return err
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"SipParticipantId", "SipTrunkId", "CallTo", "RoomName", "Identity"})
-	for _, item := range res.Items {
-		if item == nil {
-			continue
-		}
-
-		table.Append([]string{item.SipParticipantId, item.SipTrunkId, item.SipCallTo, item.RoomName, item.ParticipantIdentity})
-	}
-	table.Render()
-
-	if c.Bool("verbose") {
-		PrintJSON(res)
-	}
-
-	return nil
-}
-
-func deleteSIPParticipant(c *cli.Context) error {
-	info, err := sipClient.DeleteSIPParticipant(context.Background(), &livekit.DeleteSIPParticipantRequest{
-		SipParticipantId: c.String("id"),
-	})
+	info, err := sipClient.CreateSIPParticipant(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -386,5 +334,7 @@ func deleteSIPParticipant(c *cli.Context) error {
 }
 
 func printSIPParticipantInfo(info *livekit.SIPParticipantInfo) {
-	fmt.Printf("SIPParticipantID: %v\n", info.SipParticipantId)
+	fmt.Printf("ParticipantID: %v\n", info.ParticipantId)
+	fmt.Printf("ParticipantIdentity: %v\n", info.ParticipantIdentity)
+	fmt.Printf("RoomName: %v\n", info.RoomName)
 }

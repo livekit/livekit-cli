@@ -4,16 +4,16 @@ go 1.21
 
 require (
 	github.com/frostbyte73/core v0.0.9
-	github.com/ggwhite/go-masker v1.0.9
+	github.com/ggwhite/go-masker v1.1.0
 	github.com/go-logr/logr v1.4.1
 	github.com/livekit/protocol v1.9.7
-	github.com/livekit/server-sdk-go v1.1.6-0.20240118071736-5aa55701bf29
+	github.com/livekit/server-sdk-go v1.1.7
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.13
 	github.com/pion/rtp v1.8.3
 	github.com/pion/webrtc/v3 v3.2.24
-	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.27.1
