@@ -77,7 +77,9 @@ func (t *LoadTest) Run(ctx context.Context) error {
 		return err
 	}
 	if strings.HasSuffix(parsedUrl.Hostname(), ".livekit.cloud") {
-		return errors.New("Unable to perform load test on LiveKit Cloud. Load testing is prohibited by our acceptable use policy: https://livekit.io/legal/acceptable-use-policy")
+		if t.Params.VideoPublishers > 50 || t.Params.Subscribers > 50 || t.Params.AudioPublishers > 50 {
+			return errors.New("Unable to perform load test on LiveKit Cloud. Load testing is prohibited by our acceptable use policy: https://livekit.io/legal/acceptable-use-policy")
+		}
 	}
 
 	stats, err := t.run(ctx, t.Params)
