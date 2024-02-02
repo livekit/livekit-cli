@@ -25,7 +25,7 @@ import (
 	"github.com/pion/webrtc/v3/pkg/media/h264reader"
 
 	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 type H264VideoLooper struct {

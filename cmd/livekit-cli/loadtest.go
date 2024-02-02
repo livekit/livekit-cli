@@ -26,7 +26,7 @@ import (
 
 	"github.com/livekit/livekit-cli/pkg/loadtester"
 	"github.com/livekit/protocol/logger"
-	lksdk "github.com/livekit/server-sdk-go"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 var LoadTestCommands = []*cli.Command{
