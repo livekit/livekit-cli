@@ -26,8 +26,8 @@ import (
 
 	provider2 "github.com/livekit/livekit-cli/pkg/provider"
 	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go"
-	"github.com/livekit/server-sdk-go/pkg/samplebuilder"
+	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/livekit/server-sdk-go/v2/pkg/samplebuilder"
 )
 
 type LoadTester struct {
@@ -104,7 +104,7 @@ func (t *LoadTester) Start() error {
 	}
 
 	identity := fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.Sequence)
-	t.room = lksdk.CreateRoom(&lksdk.RoomCallback{
+	t.room = lksdk.NewRoom(&lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnTrackSubscribed: t.onTrackSubscribed,
 			OnTrackSubscriptionFailed: func(sid string, rp *lksdk.RemoteParticipant) {
@@ -132,8 +132,8 @@ func (t *LoadTester) Start() error {
 	}
 
 	t.running.Store(true)
-	for _, p := range t.room.GetParticipants() {
-		for _, pub := range p.Tracks() {
+	for _, p := range t.room.GetRemoteParticipants() {
+		for _, pub := range p.TrackPublications() {
 			if remotePub, ok := pub.(*lksdk.RemoteTrackPublication); ok {
 				t.onTrackPublished(remotePub, p)
 			}
@@ -302,7 +302,7 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 	numTotal := 0
 	t.lock.Lock()
 	for _, p := range t.subscribedParticipants {
-		tracks := p.Tracks()
+		tracks := p.TrackPublications()
 		numTotal += len(tracks)
 		for _, t := range tracks {
 			if t.IsSubscribed() {

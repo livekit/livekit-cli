@@ -20,7 +20,7 @@ import (
 
 	"github.com/frostbyte73/core"
 
-	lksdk "github.com/livekit/server-sdk-go"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 type SpeakerSimulatorParams struct {

@@ -32,7 +32,7 @@ import (
 	provider2 "github.com/livekit/livekit-cli/pkg/provider"
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
-	lksdk "github.com/livekit/server-sdk-go"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 var (
@@ -79,11 +79,8 @@ func joinRoom(c *cli.Context) error {
 	done := make(chan os.Signal, 1)
 	roomCB := &lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
-			OnDataReceived: func(data []byte, rp *lksdk.RemoteParticipant) {
-				identity := ""
-				if rp != nil {
-					identity = rp.Identity()
-				}
+			OnDataReceived: func(data []byte, params lksdk.DataReceiveParams) {
+				identity := params.SenderIdentity
 				logger.Infow("received data", "data", data, "participant", identity)
 			},
 			OnConnectionQualityChanged: func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {

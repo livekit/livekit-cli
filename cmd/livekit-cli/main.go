@@ -22,12 +22,10 @@ import (
 
 	livekitcli "github.com/livekit/livekit-cli"
 	"github.com/livekit/protocol/logger"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 func main() {
-	logConfig := &logger.Config{
-		Level: "info",
-	}
 	app := &cli.App{
 		Name:                 "livekit-cli",
 		Usage:                "CLI client to LiveKit",
@@ -52,9 +50,19 @@ func main() {
 				},
 			},
 		},
-	}
+		Before: func(c *cli.Context) error {
+			logConfig := &logger.Config{
+				Level: "info",
+			}
+			if c.Bool("verbose") {
+				logConfig.Level = "debug"
+			}
+			logger.InitFromConfig(logConfig, "livekit-cli")
+			lksdk.SetLogger(logger.GetLogger())
 
-	logger.InitFromConfig(logConfig, "livekit-cli")
+			return nil
+		},
+	}
 
 	app.Commands = append(app.Commands, TokenCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)

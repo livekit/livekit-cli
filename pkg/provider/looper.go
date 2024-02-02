@@ -18,7 +18,7 @@ import (
 	"github.com/pion/webrtc/v3"
 
 	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 type Looper interface {
