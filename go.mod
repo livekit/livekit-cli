@@ -6,13 +6,13 @@ require (
 	github.com/frostbyte73/core v0.0.9
 	github.com/ggwhite/go-masker v1.1.0
 	github.com/go-logr/logr v1.4.1
-	github.com/livekit/protocol v1.9.7
+	github.com/livekit/protocol v1.9.9
 	github.com/livekit/server-sdk-go/v2 v2.0.1
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.13
 	github.com/pion/rtp v1.8.3
-	github.com/pion/webrtc/v3 v3.2.24
+	github.com/pion/webrtc/v3 v3.2.26
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
@@ -45,7 +45,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.0.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20230125210925-54e8a70427c1 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20231213075826-cccbf2b93d3f // indirect
-	github.com/livekit/psrpc v0.5.3-0.20231214055026-06ce27a934c9 // indirect
+	github.com/livekit/psrpc v0.5.3-0.20240129223932-473b29cda289 // indirect
 	github.com/mackerelio/go-osstat v0.2.4 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
@@ -55,10 +55,10 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.9 // indirect
-	github.com/pion/ice/v2 v2.3.11 // indirect
+	github.com/pion/ice/v2 v2.3.13 // indirect
 	github.com/pion/interceptor v0.1.25 // indirect
 	github.com/pion/logging v0.2.2 // indirect
-	github.com/pion/mdns v0.0.9 // indirect
+	github.com/pion/mdns v0.0.12 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/sctp v1.8.9 // indirect
 	github.com/pion/sdp/v3 v3.0.6 // indirect
@@ -79,7 +79,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
+	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
