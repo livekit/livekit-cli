@@ -72,6 +72,7 @@ func main() {
 	app.Commands = append(app.Commands, LoadTestCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, SIPCommands...)
+	app.Commands = append(app.Commands, ObfuscatedCommands...)
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Println(err)
