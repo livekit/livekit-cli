@@ -31,7 +31,7 @@ type SpeakerSimulatorParams struct {
 
 type SpeakerSimulator struct {
 	params SpeakerSimulatorParams
-	fuse   core.Fuse
+	fuse   *core.Fuse
 }
 
 func NewSpeakerSimulator(params SpeakerSimulatorParams) *SpeakerSimulator {
@@ -47,7 +47,7 @@ func (s *SpeakerSimulator) Start() {
 	if s.fuse != nil {
 		return
 	}
-	s.fuse = core.NewFuse()
+	s.fuse = new(core.Fuse)
 	go s.worker()
 }
 
