@@ -183,17 +183,22 @@ func listSipTrunk(c *cli.Context) error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{
 		"SipTrunkId",
-		"InboundAddresses", "InboundNumbersRegex", "InboundAuth",
+		"InboundAddresses", "InboundNumbers", "InboundAuth",
 		"OutboundAddress", "OutboundNumber", "OutboundAuth",
 	})
 	for _, item := range res.Items {
 		if item == nil {
 			continue
 		}
+		inboundNumbers := item.InboundNumbers
+		//lint:ignore SA1019 we still want to display old ones
+		for _, re := range item.InboundNumbersRegex {
+			inboundNumbers = append(inboundNumbers, "regexp("+re+")")
+		}
 
 		table.Append([]string{
 			item.SipTrunkId,
-			strings.Join(item.InboundAddresses, ","), strings.Join(item.InboundNumbersRegex, ","), userPass(item.InboundUsername, item.InboundPassword != ""),
+			strings.Join(item.InboundAddresses, ","), strings.Join(inboundNumbers, ","), userPass(item.InboundUsername, item.InboundPassword != ""),
 			item.OutboundAddress, item.OutboundNumber, userPass(item.OutboundUsername, item.OutboundPassword != ""),
 		})
 	}
