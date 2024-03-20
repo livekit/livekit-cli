@@ -35,6 +35,7 @@ github.com/gammazero/deque v0.2.1 h1:qSdsbG6pgp6nL7A0+K/B7s12mcCY/5l5SIUpMOl+dC0
 github.com/gammazero/deque v0.2.1/go.mod h1:LFroj8x4cMYCukHJDbxFCkT+r9AndaJnFMuZDV34tuU=
 github.com/ggwhite/go-masker v1.1.0 h1:kN/KIvktu2U+hd3KWrSlLj7xBGD1iBfc9/xdbVgFbRc=
 github.com/ggwhite/go-masker v1.1.0/go.mod h1:xnTRHwrIU9FtBADwEjUC5Dy/BVedvoTxyOE7/d3CNwY=
+github.com/ggwhite/go-masker/v2 v2.0.0/go.mod h1:Xky8hDSkBwV7pwCJvFsJaiFVwU9GCt0yIAx6yuAc6xY=
 github.com/go-jose/go-jose/v3 v3.0.3 h1:fFKWeig/irsp7XD2zBxvnmA/XaRWp5V3CBsZXJF7G7k=
 github.com/go-jose/go-jose/v3 v3.0.3/go.mod h1:5b+7YgP7ZICgJDBdfjZaIt+H/9L9T/YQrVfLAMboGkQ=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
