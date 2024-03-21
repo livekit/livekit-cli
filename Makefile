@@ -5,7 +5,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 cli: check_lfs
-	go build -o bin/livekit-cli ./cmd/livekit-cli
+	go build -ldflags "-w -s" -o bin/livekit-cli ./cmd/livekit-cli
 	GOOS=linux GOARCH=amd64 go build -o bin/livekit-cli-linux ./cmd/livekit-cli
 
 install: cli
