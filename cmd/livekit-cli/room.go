@@ -56,11 +56,23 @@ var (
 				},
 				&cli.UintFlag{
 					Name:  "min-playout-delay",
-					Usage: "minimum playout delay for video (in ms), unsupported for audio",
+					Usage: "minimum playout delay for video (in ms)",
+				},
+				&cli.UintFlag{
+					Name:  "max-playout-delay",
+					Usage: "maximum playout delay for video (in ms)",
 				},
 				&cli.BoolFlag{
 					Name:  "sync-streams",
 					Usage: "improve A/V sync by placing them in the same stream. when enabled, transceivers will not be reused",
+				},
+				&cli.UintFlag{
+					Name:  "empty-timeout",
+					Usage: "number of seconds to keep the room open before any participant joins",
+				},
+				&cli.UintFlag{
+					Name:  "departure-timeout",
+					Usage: "number of seconds to keep the room open after the last participant leaves",
 				},
 			),
 		},
@@ -259,9 +271,24 @@ func createRoom(c *cli.Context) error {
 		req.MinPlayoutDelay = uint32(c.Uint("min-playout-delay"))
 	}
 
+	if maxPlayoutDelay := c.Uint("max-playout-delay"); maxPlayoutDelay != 0 {
+		fmt.Printf("setting max playout delay: %d\n", maxPlayoutDelay)
+		req.MaxPlayoutDelay = uint32(maxPlayoutDelay)
+	}
+
 	if syncStreams := c.Bool("sync-streams"); syncStreams {
 		fmt.Printf("setting sync streams: %t\n", syncStreams)
 		req.SyncStreams = syncStreams
+	}
+
+	if emptyTimeout := c.Uint("empty-timeout"); emptyTimeout != 0 {
+		fmt.Printf("setting empty timeout: %d\n", emptyTimeout)
+		req.EmptyTimeout = uint32(emptyTimeout)
+	}
+
+	if departureTimeout := c.Uint("departure-timeout"); departureTimeout != 0 {
+		fmt.Printf("setting departure timeout: %d\n", departureTimeout)
+		req.DepartureTimeout = uint32(departureTimeout)
 	}
 
 	room, err := roomClient.CreateRoom(context.Background(), req)
