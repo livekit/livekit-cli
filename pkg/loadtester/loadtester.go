@@ -40,7 +40,9 @@ type LoadTester struct {
 	// participant ID => quality
 	trackQualities map[string]livekit.VideoQuality
 
-	stats *sync.Map
+	stats      *sync.Map
+	startTime  time.Time
+	timeToJoin time.Duration
 }
 
 type Layout string
@@ -95,6 +97,7 @@ func NewLoadTester(params TesterParams) *LoadTester {
 		stats:                  &sync.Map{},
 		trackQualities:         make(map[string]livekit.VideoQuality),
 		subscribedParticipants: make(map[string]*lksdk.RemoteParticipant),
+		startTime:              time.Now(),
 	}
 }
 
@@ -130,6 +133,7 @@ func (t *LoadTester) Start() error {
 	if err != nil {
 		return err
 	}
+	t.timeToJoin = time.Since(t.startTime)
 
 	t.running.Store(true)
 	for _, p := range t.room.GetRemoteParticipants() {

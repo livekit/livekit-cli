@@ -352,6 +352,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		speakerSim.Stop()
 	}
 
+  var timeToJoin time.Duration
 	stats := make(map[string]*testerStats)
 	for _, t := range testers {
 		t.Stop()
@@ -359,7 +360,13 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		if e, _ := errs.Load(t.params.name); e != nil {
 			stats[t.params.name].err = e.(error)
 		}
+
+    if t.timeToJoin > timeToJoin {
+      timeToJoin = t.timeToJoin
+    }
 	}
+
+  fmt.Println("max timeToJoin:", timeToJoin)
 
 	return stats, nil
 }
