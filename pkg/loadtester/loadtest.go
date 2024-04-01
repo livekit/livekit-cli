@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/syncmap"
+	"golang.org/x/time/rate"
 )
 
 type LoadTest struct {
@@ -247,13 +248,14 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 
 	var publishers, testers []*LoadTester
 	group, _ := errgroup.WithContext(ctx)
-	startedAt := time.Now()
-	numStarted := float64(0)
 	errs := syncmap.Map{}
 	maxPublishers := params.VideoPublishers
 	if params.AudioPublishers > maxPublishers {
 		maxPublishers = params.AudioPublishers
 	}
+
+	// throttle pace of join events
+	limiter := rate.NewLimiter(rate.Limit(params.NumPerSecond), 1)
 	for i := 0; i < maxPublishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
 		testerParams.Sequence = i
@@ -311,21 +313,14 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 			}
 			return nil
 		})
-		numStarted++
 
-		// throttle pace of join events
-		for {
-			secondsElapsed := float64(time.Since(startedAt)) / float64(time.Second)
-			startRate := numStarted / secondsElapsed
-			if err := ctx.Err(); err != nil {
-				return nil, err
-			}
-			if startRate > params.NumPerSecond {
-				time.Sleep(time.Second)
-			} else {
-				break
-			}
-		}
+    if err := ctx.Err(); err != nil {
+      return nil, err
+    }
+    
+    if err := limiter.Wait(ctx); err != nil {
+      return nil, err
+    }
 	}
 
 	var speakerSim *SpeakerSimulator
