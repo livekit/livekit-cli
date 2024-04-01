@@ -73,19 +73,46 @@ func NewLoadTest(params Params) *LoadTest {
 }
 
 func (t *LoadTest) Run(ctx context.Context) error {
-	parsedUrl, err := url.Parse(t.Params.URL)
+	_, err := url.Parse(t.Params.URL)
 	if err != nil {
 		return err
 	}
-	if strings.HasSuffix(parsedUrl.Hostname(), ".livekit.cloud") {
-		if t.Params.VideoPublishers > 50 || t.Params.Subscribers > 50 || t.Params.AudioPublishers > 50 {
-			return errors.New("Unable to perform load test on LiveKit Cloud. Load testing is prohibited by our acceptable use policy: https://livekit.io/legal/acceptable-use-policy")
-		}
+	// if strings.HasSuffix(parsedUrl.Hostname(), ".livekit.cloud") {
+	// 	if t.Params.VideoPublishers > 50 || t.Params.Subscribers > 50 || t.Params.AudioPublishers > 50 {
+	// 		return errors.New("Unable to perform load test on LiveKit Cloud. Load testing is prohibited by our acceptable use policy: https://livekit.io/legal/acceptable-use-policy")
+	// 	}
+	// }
+
+	group, _ := errgroup.WithContext(ctx)
+	// simulate bot loads
+	rooms := t.Params.Subscribers / 2
+	t.Params.Subscribers = 2
+	limiter := rate.NewLimiter(rate.Limit(t.Params.NumPerSecond), 1)
+	var wg sync.WaitGroup
+	wg.Add(rooms)
+	stats := make(map[string]*testerStats)
+	statsCh := make(chan map[string]*testerStats, rooms)
+	for roomIdx := 0; roomIdx < rooms; roomIdx++ {
+		// Each task will create 1 bot and 1 "user".
+		// In total there will be #Subscribers / 2 rooms
+		group.Go(func() error {
+			s, err := t.run(ctx, t.Params)
+			if err != nil {
+				return err
+			}
+			statsCh <- s
+      wg.Done()
+			return nil
+		})
+		limiter.Wait(ctx)
 	}
 
-	stats, err := t.run(ctx, t.Params)
-	if err != nil {
-		return err
+	wg.Wait()
+	close(statsCh)
+	for s := range statsCh {
+		for k, v := range s {
+			stats[k] = v
+		}
 	}
 
 	// tester results
@@ -352,7 +379,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		speakerSim.Stop()
 	}
 
-  var timeToJoin time.Duration
+	var timeToJoin time.Duration
 	stats := make(map[string]*testerStats)
 	for _, t := range testers {
 		t.Stop()
@@ -361,12 +388,12 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 			stats[t.params.name].err = e.(error)
 		}
 
-    if t.timeToJoin > timeToJoin {
-      timeToJoin = t.timeToJoin
-    }
+		if t.timeToJoin > timeToJoin {
+			timeToJoin = t.timeToJoin
+		}
 	}
 
-  fmt.Println("max timeToJoin:", timeToJoin)
+	fmt.Println("max timeToJoin:", timeToJoin)
 
 	return stats, nil
 }
