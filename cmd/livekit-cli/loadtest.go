@@ -122,6 +122,7 @@ func loadTest(cCtx *cli.Context) error {
 		VideoCodec:       cCtx.String("video-codec"),
 		Duration:         cCtx.Duration("duration"),
 		NumPerSecond:     cCtx.Float64("num-per-second"),
+		BurstAllowance:   cCtx.Int("burst-allowance"),
 		Simulcast:        !cCtx.Bool("no-simulcast"),
 		SimulateSpeakers: cCtx.Bool("simulate-speakers"),
 		TesterParams: loadtester.TesterParams{

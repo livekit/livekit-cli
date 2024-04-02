@@ -47,6 +47,7 @@ type Params struct {
 	Duration        time.Duration
 	// number of seconds to spin up per second
 	NumPerSecond     float64
+	BurstAllowance   int
 	Simulcast        bool
 	SimulateSpeakers bool
 
@@ -87,7 +88,7 @@ func (t *LoadTest) Run(ctx context.Context) error {
 	// simulate bot loads
 	rooms := t.Params.Subscribers / 2
 	t.Params.Subscribers = 2
-	limiter := rate.NewLimiter(rate.Limit(t.Params.NumPerSecond), 1)
+	limiter := rate.NewLimiter(rate.Limit(t.Params.NumPerSecond), t.Params.BurstAllowance)
 	var wg sync.WaitGroup
 	wg.Add(rooms)
 	stats := make(map[string]*testerStats)
@@ -101,7 +102,7 @@ func (t *LoadTest) Run(ctx context.Context) error {
 				return err
 			}
 			statsCh <- s
-      wg.Done()
+			wg.Done()
 			return nil
 		})
 		limiter.Wait(ctx)
@@ -253,9 +254,10 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 }
 
 func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerStats, error) {
-	if params.Room == "" {
-		params.Room = fmt.Sprintf("testroom%d", rand.Int31n(1000))
-	}
+  if params.Room == "" {
+    params.Room = "testroom"
+  }
+	params.Room = fmt.Sprintf("%s-%d", params.Room, rand.Int31n(1000))
 	params.IdentityPrefix = randStringRunes(5)
 
 	expectedTracks := params.VideoPublishers + params.AudioPublishers
@@ -282,7 +284,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 	}
 
 	// throttle pace of join events
-	limiter := rate.NewLimiter(rate.Limit(params.NumPerSecond), 1)
+	limiter := rate.NewLimiter(rate.Limit(params.NumPerSecond), 2)
 	for i := 0; i < maxPublishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
 		testerParams.Sequence = i
@@ -341,13 +343,13 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 			return nil
 		})
 
-    if err := ctx.Err(); err != nil {
-      return nil, err
-    }
-    
-    if err := limiter.Wait(ctx); err != nil {
-      return nil, err
-    }
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if err := limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	var speakerSim *SpeakerSimulator

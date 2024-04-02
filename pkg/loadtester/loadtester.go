@@ -15,7 +15,10 @@
 package loadtester
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
+	"os"
 	"sync"
 	"time"
 
@@ -41,7 +44,6 @@ type LoadTester struct {
 	trackQualities map[string]livekit.VideoQuality
 
 	stats      *sync.Map
-	startTime  time.Time
 	timeToJoin time.Duration
 }
 
@@ -97,7 +99,6 @@ func NewLoadTester(params TesterParams) *LoadTester {
 		stats:                  &sync.Map{},
 		trackQualities:         make(map[string]livekit.VideoQuality),
 		subscribedParticipants: make(map[string]*lksdk.RemoteParticipant),
-		startTime:              time.Now(),
 	}
 }
 
@@ -107,6 +108,8 @@ func (t *LoadTester) Start() error {
 	}
 
 	identity := fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.Sequence)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger.With("room", t.params.Room, "participant", identity)
 	t.room = lksdk.NewRoom(&lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnTrackSubscribed: t.onTrackSubscribed,
@@ -117,6 +120,7 @@ func (t *LoadTester) Start() error {
 		},
 	})
 	var err error
+	startTime := time.Now()
 	// make up to 10 reconnect attempts
 	for i := 0; i < 10; i++ {
 		err = t.room.Join(t.params.URL, lksdk.ConnectInfo{
@@ -128,12 +132,14 @@ func (t *LoadTester) Start() error {
 		if err == nil {
 			break
 		}
+		fmt.Println("[WARN] failed to join, retrying:", err)
 		time.Sleep(1 * time.Second)
 	}
 	if err != nil {
 		return err
 	}
-	t.timeToJoin = time.Since(t.startTime)
+	timeToJoin := time.Since(startTime)
+	logger.Log(context.Background(), slog.LevelInfo, "participant joined", "timeToJoin", timeToJoin)
 
 	t.running.Store(true)
 	for _, p := range t.room.GetRemoteParticipants() {
