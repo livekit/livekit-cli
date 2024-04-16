@@ -257,7 +257,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
   if params.Room == "" {
     params.Room = "testroom"
   }
-	params.Room = fmt.Sprintf("%s-%d", params.Room, rand.Int31n(1000))
+	params.Room = fmt.Sprintf("%s-%d", params.Room, rand.Uint32())
 	params.IdentityPrefix = randStringRunes(5)
 
 	expectedTracks := params.VideoPublishers + params.AudioPublishers
@@ -284,7 +284,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 	}
 
 	// throttle pace of join events
-	limiter := rate.NewLimiter(rate.Limit(params.NumPerSecond), 2)
+	// limiter := rate.NewLimiter(rate.Limit(params.NumPerSecond), 2)
 	for i := 0; i < maxPublishers+params.Subscribers; i++ {
 		testerParams := params.TesterParams
 		testerParams.Sequence = i
@@ -347,9 +347,10 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 			return nil, err
 		}
 
-		if err := limiter.Wait(ctx); err != nil {
-			return nil, err
-		}
+    time.Sleep(time.Second)
+		// if err := limiter.Wait(ctx); err != nil {
+		// 	return nil, err
+		// }
 	}
 
 	var speakerSim *SpeakerSimulator
@@ -381,7 +382,6 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		speakerSim.Stop()
 	}
 
-	var timeToJoin time.Duration
 	stats := make(map[string]*testerStats)
 	for _, t := range testers {
 		t.Stop()
@@ -389,13 +389,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		if e, _ := errs.Load(t.params.name); e != nil {
 			stats[t.params.name].err = e.(error)
 		}
-
-		if t.timeToJoin > timeToJoin {
-			timeToJoin = t.timeToJoin
-		}
 	}
-
-	fmt.Println("max timeToJoin:", timeToJoin)
 
 	return stats, nil
 }

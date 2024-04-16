@@ -44,7 +44,6 @@ type LoadTester struct {
 	trackQualities map[string]livekit.VideoQuality
 
 	stats      *sync.Map
-	timeToJoin time.Duration
 }
 
 type Layout string
@@ -109,7 +108,7 @@ func (t *LoadTester) Start() error {
 
 	identity := fmt.Sprintf("%s_%d", t.params.IdentityPrefix, t.params.Sequence)
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	logger.With("room", t.params.Room, "participant", identity)
+	logger = logger.With("room", t.params.Room, "participant", identity)
 	t.room = lksdk.NewRoom(&lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnTrackSubscribed: t.onTrackSubscribed,
@@ -132,14 +131,14 @@ func (t *LoadTester) Start() error {
 		if err == nil {
 			break
 		}
-		fmt.Println("[WARN] failed to join, retrying:", err)
+		logger.Warn("failed to join, retrying...", "err", err)
 		time.Sleep(1 * time.Second)
 	}
 	if err != nil {
 		return err
 	}
 	timeToJoin := time.Since(startTime)
-	logger.Log(context.Background(), slog.LevelInfo, "participant joined", "timeToJoin", timeToJoin)
+	logger.Log(context.Background(), slog.LevelInfo, "participant joined", "timeToJoinMs", timeToJoin.Milliseconds())
 
 	t.running.Store(true)
 	for _, p := range t.room.GetRemoteParticipants() {

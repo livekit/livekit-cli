@@ -76,6 +76,11 @@ var LoadTestCommands = []*cli.Command{
 				Usage: "number of testers to start every second",
 				Value: 5,
 			},
+			&cli.IntFlag{
+				Name:  "burst-allowance",
+				Usage: "allowed burst",
+				Value: 1,
+			},
 			&cli.StringFlag{
 				Name:  "layout",
 				Usage: "layout to simulate, choose from speaker, 3x3, 4x4, 5x5",
