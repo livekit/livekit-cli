@@ -251,6 +251,21 @@ func createRoom(c *cli.Context) error {
 		req.Egress = &livekit.RoomEgress{Room: roomEgress}
 	}
 
+	if participantEgressFile := c.String("participant-egress-file"); participantEgressFile != "" {
+		participantEgress := &livekit.AutoParticipantEgress{}
+		b, err := os.ReadFile(participantEgressFile)
+		if err != nil {
+			return err
+		}
+		if err = protojson.Unmarshal(b, participantEgress); err != nil {
+			return err
+		}
+		if req.Egress == nil {
+			req.Egress = &livekit.RoomEgress{}
+		}
+		req.Egress.Participant = participantEgress
+	}
+
 	if trackEgressFile := c.String("track-egress-file"); trackEgressFile != "" {
 		trackEgress := &livekit.AutoTrackEgress{}
 		b, err := os.ReadFile(trackEgressFile)
