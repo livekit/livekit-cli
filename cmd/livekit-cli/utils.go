@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ggwhite/go-masker"
 	"github.com/urfave/cli/v2"
 
 	"github.com/livekit/livekit-cli/pkg/config"
@@ -110,7 +109,8 @@ func loadProjectDetails(c *cli.Context, opts ...loadOption) (*config.ProjectConf
 			fmt.Printf("URL: %s, api-key: %s, api-secret: %s\n",
 				pc.URL,
 				pc.APIKey,
-				masker.ID(pc.APISecret))
+				"************",
+			)
 		}
 
 	}
