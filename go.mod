@@ -1,12 +1,14 @@
 module github.com/livekit/livekit-cli
 
-go 1.21
+go 1.22
+
+toolchain go1.22.2
 
 require (
 	github.com/frostbyte73/core v0.0.10
 	github.com/ggwhite/go-masker v1.1.0
 	github.com/go-logr/logr v1.4.1
-	github.com/livekit/protocol v1.12.0
+	github.com/livekit/protocol v1.12.1-0.20240425173505-6d5a8047e6d8
 	github.com/livekit/server-sdk-go/v2 v2.0.6
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
@@ -25,6 +27,7 @@ require (
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -79,10 +82,11 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.20.0 // indirect
+	go.uber.org/zap/exp v0.2.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240228224816-df926f6c8641 // indirect
 	google.golang.org/grpc v1.62.0 // indirect
