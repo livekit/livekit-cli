@@ -182,9 +182,10 @@ func listSipTrunk(c *cli.Context) error {
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{
-		"SipTrunkId",
+		"SipTrunkId", "Name",
 		"InboundAddresses", "InboundNumbers", "InboundAuth",
 		"OutboundAddress", "OutboundNumber", "OutboundAuth",
+		"Metadata",
 	})
 	for _, item := range res.Items {
 		if item == nil {
@@ -197,9 +198,10 @@ func listSipTrunk(c *cli.Context) error {
 		}
 
 		table.Append([]string{
-			item.SipTrunkId,
+			item.SipTrunkId, item.Name,
 			strings.Join(item.InboundAddresses, ","), strings.Join(inboundNumbers, ","), userPass(item.InboundUsername, item.InboundPassword != ""),
 			item.OutboundAddress, item.OutboundNumber, userPass(item.OutboundUsername, item.OutboundPassword != ""),
+			item.Metadata,
 		})
 	}
 	table.Render()
@@ -260,7 +262,7 @@ func listSipDispatchRule(c *cli.Context) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"SipDispatchRuleId", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone"})
+	table.SetHeader([]string{"SipDispatchRuleId", "Name", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone", "Metadata"})
 	for _, item := range res.Items {
 		if item == nil {
 			continue
@@ -280,7 +282,7 @@ func listSipDispatchRule(c *cli.Context) error {
 		if trunks == "" {
 			trunks = "<any>"
 		}
-		table.Append([]string{item.SipDispatchRuleId, trunks, typ, room, pin, strconv.FormatBool(item.HidePhoneNumber)})
+		table.Append([]string{item.SipDispatchRuleId, item.Name, trunks, typ, room, pin, strconv.FormatBool(item.HidePhoneNumber), item.Metadata})
 	}
 	table.Render()
 
@@ -339,6 +341,7 @@ func createSIPParticipant(c *cli.Context) error {
 }
 
 func printSIPParticipantInfo(info *livekit.SIPParticipantInfo) {
+	fmt.Printf("SIPCallID: %v\n", info.SipCallId)
 	fmt.Printf("ParticipantID: %v\n", info.ParticipantId)
 	fmt.Printf("ParticipantIdentity: %v\n", info.ParticipantIdentity)
 	fmt.Printf("RoomName: %v\n", info.RoomName)
