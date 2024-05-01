@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/livekit/protocol/utils/interceptors"
+	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v2"
 
 	"github.com/livekit/livekit-cli/pkg/config"
@@ -60,6 +62,13 @@ var (
 		Name:     "verbose",
 		Required: false,
 	}
+	printCurl bool
+	curlFlag  = &cli.BoolFlag{
+		Name:        "curl",
+		Usage:       "print curl commands for API actions",
+		Destination: &printCurl,
+		Required:    false,
+	}
 )
 
 func withDefaultFlags(flags ...cli.Flag) []cli.Flag {
@@ -68,8 +77,23 @@ func withDefaultFlags(flags ...cli.Flag) []cli.Flag {
 		apiKeyFlag,
 		secretFlag,
 		projectFlag,
+		curlFlag,
 		verboseFlag,
 	}, flags...)
+}
+
+func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
+	var (
+		opts []twirp.ClientOption
+		ics  []twirp.Interceptor
+	)
+	if printCurl {
+		ics = append(ics, interceptors.NewCurlPrinter(os.Stdout, c.URL))
+	}
+	if len(ics) != 0 {
+		opts = append(opts, twirp.WithClientInterceptors(ics...))
+	}
+	return opts
 }
 
 func PrintJSON(obj interface{}) {

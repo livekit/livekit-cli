@@ -230,7 +230,7 @@ func createRoomClient(c *cli.Context) error {
 		return err
 	}
 
-	roomClient = lksdk.NewRoomServiceClient(pc.URL, pc.APIKey, pc.APISecret)
+	roomClient = lksdk.NewRoomServiceClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
 	return nil
 }
 

@@ -103,7 +103,7 @@ func createIngressClient(c *cli.Context) error {
 		return err
 	}
 
-	ingressClient = lksdk.NewIngressClient(pc.URL, pc.APIKey, pc.APISecret)
+	ingressClient = lksdk.NewIngressClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
 	return nil
 }
 
