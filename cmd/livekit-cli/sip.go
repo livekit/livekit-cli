@@ -133,7 +133,7 @@ func createSIPClient(c *cli.Context) error {
 		return err
 	}
 
-	sipClient = lksdk.NewSIPClient(pc.URL, pc.APIKey, pc.APISecret)
+	sipClient = lksdk.NewSIPClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
 	return nil
 }
 

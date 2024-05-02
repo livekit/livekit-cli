@@ -30,10 +30,11 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/livekit/livekit-cli/pkg/loadtester"
 	"github.com/livekit/protocol/egress"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+
+	"github.com/livekit/livekit-cli/pkg/loadtester"
 )
 
 const egressCategory = "Egress"
@@ -233,7 +234,7 @@ func createEgressClient(c *cli.Context) error {
 		return err
 	}
 
-	egressClient = lksdk.NewEgressClient(pc.URL, pc.APIKey, pc.APISecret)
+	egressClient = lksdk.NewEgressClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
 	return nil
 }
 

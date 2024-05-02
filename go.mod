@@ -7,8 +7,8 @@ toolchain go1.22.2
 require (
 	github.com/frostbyte73/core v0.0.10
 	github.com/go-logr/logr v1.4.1
-	github.com/livekit/protocol v1.14.1-0.20240426104403-e7962f444464
-	github.com/livekit/server-sdk-go/v2 v2.1.2
+	github.com/livekit/protocol v1.14.1-0.20240501190830-e0c63d76982c
+	github.com/livekit/server-sdk-go/v2 v2.1.3-0.20240430213107-857de3e1d247
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.14
@@ -17,6 +17,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.9.0
+	github.com/twitchtv/twirp v8.1.3+incompatible
 	github.com/urfave/cli/v2 v2.27.1
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.7.0
@@ -75,7 +76,6 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.1.0 // indirect
 	github.com/redis/go-redis/v9 v9.5.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/twitchtv/twirp v8.1.3+incompatible // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
