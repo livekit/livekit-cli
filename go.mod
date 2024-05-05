@@ -12,7 +12,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.14
-	github.com/pion/rtp v1.8.5
+	github.com/pion/rtp v1.8.6
 	github.com/pion/webrtc/v3 v3.2.40
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
