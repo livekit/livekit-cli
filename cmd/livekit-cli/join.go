@@ -55,7 +55,7 @@ var (
 						"can be used multiple times to publish multiple files. " +
 						"can publish from Unix or TCP socket using the format `codec://socket_name` or `codec://host:address` respectively. Valid codecs are h264, vp8, opus",
 				},
-				&cli.StringFlag{
+				&cli.StringSliceFlag{
 					Name: "publish-user-data",
 					Usage: "files to publish as data to room. " +
 						"the file must contain protocol DataPacket encoded in JSON. " +
