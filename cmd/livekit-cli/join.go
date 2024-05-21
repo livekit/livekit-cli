@@ -55,6 +55,12 @@ var (
 						"can be used multiple times to publish multiple files. " +
 						"can publish from Unix or TCP socket using the format `codec://socket_name` or `codec://host:address` respectively. Valid codecs are h264, vp8, opus",
 				},
+				&cli.StringSliceFlag{
+					Name: "publish-user-data",
+					Usage: "files to publish as data to room. " +
+						"the file must contain protocol DataPacket encoded in JSON. " +
+						"can be used multiple times to publish multiple files. ",
+				},
 				&cli.Float64Flag{
 					Name:  "fps",
 					Usage: "if video files are published, indicates FPS of video",
@@ -62,6 +68,20 @@ var (
 				&cli.BoolFlag{
 					Name:  "exit-after-publish",
 					Usage: "when publishing, exit after file or stream is complete",
+				},
+				&cli.BoolFlag{
+					Name:  "reliable",
+					Usage: "when publishing data, whether to use reliable delivery",
+				},
+				&cli.TimestampFlag{
+					Name:   "user-data-start-time",
+					Usage:  "optional start time of the user data, using the RFC3339 format with nanoseconds precision.",
+					Layout: time.RFC3339Nano,
+				},
+				&cli.TimestampFlag{
+					Name:   "user-data-end-time",
+					Usage:  "optional end time of the user data, using the RFC3339 format with nanoseconds precision.",
+					Layout: time.RFC3339Nano,
 				},
 			),
 		},
@@ -176,6 +196,14 @@ func joinRoom(c *cli.Context) error {
 				}
 			}
 			if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
+				return err
+			}
+		}
+	}
+
+	if c.StringSlice("publish-user-data") != nil {
+		for _, dataFile := range c.StringSlice("publish-user-data") {
+			if err = publishUserDataFromFile(room, dataFile, c.Bool("reliable"), c.Timestamp("user-data-start-time"), c.Timestamp("user-data-end-time")); err != nil {
 				return err
 			}
 		}
@@ -363,5 +391,38 @@ func publishReader(room *lksdk.Room,
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func publishUserDataFromFile(room *lksdk.Room,
+	filename string,
+	reliable bool,
+	startTime *time.Time,
+	endTime *time.Time,
+) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	buf, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
+
+	dataMsg := lksdk.UserData(buf)
+	if startTime != nil && !startTime.IsZero() {
+		dataMsg.StartTime = startTime
+	}
+	if endTime != nil && !endTime.IsZero() {
+		dataMsg.EndTime = endTime
+	}
+
+	err = room.LocalParticipant.PublishDataPacket(dataMsg, lksdk.WithDataPublishReliable(reliable))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
