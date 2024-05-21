@@ -101,9 +101,9 @@ log "Downloading from ${ARCHIVE_URL}..."
 
 TEMP_DIR_PATH="$(mktemp -d)"
 
-curl -s -L "${ARCHIVE_URL}" | ${SUDO_PREFIX} tar xzf - -C "${TEMP_DIR_PATH}" --wildcards --no-anchored "$REPO*"
+curl -s -L "${ARCHIVE_URL}" | tar xzf - -C "${TEMP_DIR_PATH}" --wildcards --no-anchored "$REPO*"
 
-mv "${TEMP_DIR_PATH}/livekit-cli" "${INSTALL_PATH}/livekit-cli"
+${SUDO_PREFIX} mv "${TEMP_DIR_PATH}/livekit-cli" "${INSTALL_PATH}/livekit-cli"
 
 if [ -d "${TEMP_DIR_PATH}/autocomplete" ]
 then
