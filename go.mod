@@ -7,8 +7,8 @@ toolchain go1.22.2
 require (
 	github.com/frostbyte73/core v0.0.10
 	github.com/go-logr/logr v1.4.2
-	github.com/livekit/protocol v1.15.0
-	github.com/livekit/server-sdk-go/v2 v2.1.3-0.20240507072004-e3121c9908be
+	github.com/livekit/protocol v1.17.1-0.20240606023900-429fec77a69b
+	github.com/livekit/server-sdk-go/v2 v2.1.3-0.20240606032036-f82bbf7d2bce
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.14
@@ -49,7 +49,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.0.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20230125210925-54e8a70427c1 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20240501132628-6105557bbb9a // indirect
-	github.com/livekit/psrpc v0.5.3-0.20240228172457-3724cb4adbc4 // indirect
+	github.com/livekit/psrpc v0.5.3-0.20240526192918-fbdaf10e6aa5 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/nats-io/nats.go v1.33.1 // indirect
@@ -82,10 +82,9 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.uber.org/zap/exp v0.2.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
+	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240228224816-df926f6c8641 // indirect
 	google.golang.org/grpc v1.63.2 // indirect
 )
