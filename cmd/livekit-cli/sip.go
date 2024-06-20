@@ -30,6 +30,8 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
+//lint:file-ignore SA1019 we still support older APIs for compatibility
+
 const sipCategory = "SIP"
 
 var (
@@ -192,7 +194,6 @@ func listSipTrunk(c *cli.Context) error {
 			continue
 		}
 		inboundNumbers := item.InboundNumbers
-		//lint:ignore SA1019 we still want to display old ones
 		for _, re := range item.InboundNumbersRegex {
 			inboundNumbers = append(inboundNumbers, "regexp("+re+")")
 		}
