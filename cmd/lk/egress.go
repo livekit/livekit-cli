@@ -50,7 +50,7 @@ var (
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "RoomCompositeEgressRequest as json file (see livekit-cli/examples)",
+					Usage:    "RoomCompositeEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
 			),
@@ -64,7 +64,7 @@ var (
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "WebEgressRequest as json file (see livekit-cli/examples)",
+					Usage:    "WebEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
 			),
@@ -78,7 +78,7 @@ var (
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "ParticipantEgressRequest as json file (see livekit-cli/examples)",
+					Usage:    "ParticipantEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
 			),
@@ -92,7 +92,7 @@ var (
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "TrackCompositeEgressRequest as json file (see livekit-cli/examples)",
+					Usage:    "TrackCompositeEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
 			),
@@ -106,7 +106,7 @@ var (
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "TrackEgressRequest as json file (see livekit-cli/examples)",
+					Usage:    "TrackEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
 			),

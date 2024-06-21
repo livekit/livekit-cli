@@ -27,7 +27,7 @@ import (
 
 func main() {
 	app := &cli.App{
-		Name:                 "livekit-cli",
+		Name:                 "lk",
 		Usage:                "CLI client to LiveKit",
 		Version:              livekitcli.Version,
 		EnableBashCompletion: true,

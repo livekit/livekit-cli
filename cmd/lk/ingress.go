@@ -40,7 +40,7 @@ var (
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "CreateIngressRequest as json file (see livekit-cli/examples)",
+					Usage:    "CreateIngressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
 			),
@@ -54,7 +54,7 @@ var (
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "UpdateIngressRequest as json file (see livekit-cli/examples)",
+					Usage:    "UpdateIngressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
 			),

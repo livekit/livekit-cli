@@ -32,11 +32,11 @@ COPY cmd/ cmd/
 COPY pkg/ pkg/
 COPY version.go version.go
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -a -o livekit-cli ./cmd/livekit-cli
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -a -o lk ./cmd/lk
 
 FROM alpine:3.20
 
-COPY --from=builder /workspace/livekit-cli /livekit-cli
+COPY --from=builder /workspace/lk /lk
 
 # Run the binary.
-ENTRYPOINT ["/livekit-cli"]
+ENTRYPOINT ["/lk"]

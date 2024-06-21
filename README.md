@@ -25,7 +25,7 @@ This package includes command line utilities that interacts with LiveKit. It all
 ## Mac
 
 ```shell
-brew install livekit-cli
+brew install lk
 ```
 
 ## Linux
@@ -49,7 +49,7 @@ make install
 
 # Usage
 
-See `livekit-cli --help` for a complete list of subcommands.
+See `lk --help` for a complete list of subcommands.
 
 ## Set up your project [new]
 
@@ -59,19 +59,19 @@ You could also set up multiple projects, and switch the active project used with
 ### Adding a project
 
 ```shell
-livekit-cli project add
+lk project add
 ```
 
 ### Listing projects
 
 ```shell
-livekit-cli project list
+lk project list
 ```
 
 ### Switching defaults
     
 ```shell
-livekit-cli project set-default <project-name>
+lk project set-default <project-name>
 ```
 
 ## Publishing to a room
@@ -81,7 +81,7 @@ livekit-cli project set-default <project-name>
 To publish a demo video as a participant's track, use the following.
 
 ```shell
-livekit-cli join-room --room yourroom --identity publisher \
+lk join-room --room yourroom --identity publisher \
   --publish-demo
 ```
 
@@ -93,7 +93,7 @@ You can publish your own audio/video files. These tracks files need to be encode
 Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
 
 ```shell
-livekit-cli join-room --room yourroom --identity publisher \
+lk join-room --room yourroom --identity publisher \
   --publish path/to/video.ivf \
   --publish path/to/audio.ogg \
   --fps 23.98
@@ -108,7 +108,7 @@ Note: For files uploaded via CLI, expect an initial delay before the video becom
 It's possible to publish any source that FFmpeg supports (including live sources such as RTSP) by using it as a transcoder.
 
 This is done by running FFmpeg in a separate process, encoding to a Unix socket. (not available on Windows).
-`livekit-cli` can then read transcoded data from the socket and publishing them to the room.
+`lk` can then read transcoded data from the socket and publishing them to the room.
 
 First run FFmpeg like this:
 
@@ -123,10 +123,10 @@ ffmpeg -i <video-file | rtsp://url> \
 
 This transcodes the input into H.264 baseline profile and Opus.
 
-Then, run `livekit-cli` like this:
+Then, run `lk` like this:
 
 ```shell
-livekit-cli join-room --room yourroom --identity bot \
+lk join-room --room yourroom --identity bot \
   --publish h264:///tmp/myvideo.sock \
   --publish opus:///tmp/myaudio.sock
 ````
@@ -135,12 +135,12 @@ You should now see both video and audio tracks published to the room.
 
 ### Publish from TCP (i.e. gstreamer)
 
-It's possible to publish from video streams coming over a TCP socket. `livekit-cli` can act as a TCP client. For example, with a gstreamer pipeline ending in `! tcpserversink port=16400` and streaming H.264.
+It's possible to publish from video streams coming over a TCP socket. `lk` can act as a TCP client. For example, with a gstreamer pipeline ending in `! tcpserversink port=16400` and streaming H.264.
 
-Run `livekit-cli` like this:
+Run `lk` like this:
 
 ```shell
-livekit-cli join-room --room yourroom --identity bot \
+lk join-room --room yourroom --identity bot \
   --publish h264:///127.0.0.1:16400
 ```
 
@@ -159,17 +159,17 @@ ffplay -i unix:/tmp/myvideo.sock
 
 Recording requires [egress service](https://docs.livekit.io/guides/egress/) to be set up first.
 
-Example request.json files are [located here](https://github.com/livekit/livekit-cli/tree/main/cmd/livekit-cli/examples).
+Example request.json files are [located here](https://github.com/livekit/livekit-cli/tree/main/cmd/lk/examples).
 
 ```shell
 # start room composite (recording of room UI)
-livekit-cli start-room-composite-egress --request request.json
+lk start-room-composite-egress --request request.json
 
 # start track composite (audio + video)
-livekit-cli start-track-composite-egress --request request.json
+lk start-track-composite-egress --request request.json
 
 # start track egress (single audio or video track)
-livekit-cli start-track-egress --request request.json
+lk start-track-egress --request request.json
 ```
 
 ### Testing egress templates
@@ -183,7 +183,7 @@ It'll then open a browser to the template URL, with the correct parameters fille
 Here's an example:
 
 ```shell
-livekit-cli test-egress-template \
+lk test-egress-template \
   --base-url http://localhost:3000 \
   --room <your-room> --layout <your-layout> --video-publishers 3
 ```
@@ -194,14 +194,14 @@ This command will launch a browser pointed at `http://localhost:3000`, while sim
 
 Load testing utility for LiveKit. This tool is quite versatile and is able to simulate various types of load.
 
-Note: `livekit-load-tester` has been renamed to sub-command `livekit-cli load-test`
+Note: `livekit-load-tester` has been renamed to sub-command `lk load-test`
 
 ### Quickstart
 
 This guide requires a LiveKit server instance to be set up. You can start a load tester with:
 
 ```shell
-livekit-cli load-test \
+lk load-test \
   --room test-room --video-publishers 8
 ```
 
@@ -212,7 +212,7 @@ This simulates 8 video publishers to the room, with no subscribers. Video tracks
 To test audio capabilities in your app, you can also simulate simultaneous speakers to the room.
 
 ```shell
-livekit-cli load-test \
+lk load-test \
   --room test-room --audio-publishers 5
 ```
 
@@ -224,7 +224,7 @@ In a meeting, typically there's only one active speaker at a time, but this can 
 Generate a token so you can log into the room:
 
 ```shell
-livekit-cli create-token --join \
+lk create-token --join \
   --room test-room --identity user  
 ```
 
@@ -264,7 +264,7 @@ of data sent to its subscribers.
 Use this command to simulate a load test of 5 publishers, and 500 subscribers:
 
 ```shell
-livekit-cli load-test \
+lk load-test \
   --duration 1m \
   --video-publishers 5 \
   --subscribers 500

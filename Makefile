@@ -5,11 +5,11 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 cli: check_lfs
-	go build -ldflags "-w -s" -o bin/livekit-cli ./cmd/livekit-cli
-	GOOS=linux GOARCH=amd64 go build -o bin/livekit-cli-linux ./cmd/livekit-cli
+	go build -ldflags "-w -s" -o bin/lk ./cmd/lk
+	GOOS=linux GOARCH=amd64 go build -o bin/lk-linux ./cmd/lk
 
 install: cli
-	cp bin/livekit-cli $(GOBIN)/
+	cp bin/lk $(GOBIN)/
 
 check_lfs:
 	@{ \
@@ -20,4 +20,4 @@ check_lfs:
 	}
 
 fish_autocomplete: cli
-	./bin/livekit-cli generate-fish-completion -o autocomplete/fish_autocomplete
+	./bin/lk generate-fish-completion -o autocomplete/fish_autocomplete
