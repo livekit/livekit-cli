@@ -8,7 +8,7 @@ require (
 	github.com/frostbyte73/core v0.0.10
 	github.com/go-logr/logr v1.4.2
 	github.com/livekit/protocol v1.19.0
-	github.com/livekit/server-sdk-go/v2 v2.1.4-0.20240620195734-45a8670af734
+	github.com/livekit/server-sdk-go/v2 v2.1.3
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.14
