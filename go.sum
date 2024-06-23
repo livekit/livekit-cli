@@ -72,8 +72,8 @@ github.com/livekit/protocol v1.19.0 h1:EPcFQAa6ymVknKn21NbSeFuUsHTA8r3DH+RmP72yR
 github.com/livekit/protocol v1.19.0/go.mod h1:cN8WmGQR+kWz1+UWcAQdFFUcbW76PnfZDdkLAbYIqd4=
 github.com/livekit/psrpc v0.5.3-0.20240526192918-fbdaf10e6aa5 h1:mTZyrjk5WEWMsvaYtJ42pG7DuxysKj21DKPINpGSIto=
 github.com/livekit/psrpc v0.5.3-0.20240526192918-fbdaf10e6aa5/go.mod h1:CQUBSPfYYAaevg1TNCc6/aYsa8DJH4jSRFdCeSZk5u0=
-github.com/livekit/server-sdk-go/v2 v2.1.4-0.20240620195734-45a8670af734 h1:QBzC6cTJYGDbmZQ4+V2bfJ5kFzMFzZgtNUhVAkJDxOI=
-github.com/livekit/server-sdk-go/v2 v2.1.4-0.20240620195734-45a8670af734/go.mod h1:nYjTi34qkgUvvS9T83KtkQEHTXPEsKoNZ0MQIskVD48=
+github.com/livekit/server-sdk-go/v2 v2.2.0 h1:E0Yp45v6Yjhzt0ixGltuQQuBk7ToJkyxIe0931Y7aU4=
+github.com/livekit/server-sdk-go/v2 v2.2.0/go.mod h1:nYjTi34qkgUvvS9T83KtkQEHTXPEsKoNZ0MQIskVD48=
 github.com/magefile/mage v1.15.0 h1:BvGheCMAsG3bWUDbZ8AyXXpCNwU9u5CB6sM+HNb9HYg=
 github.com/magefile/mage v1.15.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
 github.com/manifoldco/promptui v0.9.0 h1:3V4HzJk1TtXW1MTZMP7mdlwbBpIinw3HztaIlYthEiA=
