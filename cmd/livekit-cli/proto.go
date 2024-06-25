@@ -15,9 +15,12 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"os"
 	"reflect"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -25,11 +28,17 @@ import (
 
 const flagRequest = "request"
 
-func ReadRequest[T any, P interface {
+type protoType[T any] interface {
 	*T
 	proto.Message
-}](c *cli.Context) (*T, error) {
-	reqBytes, err := os.ReadFile(c.String(flagRequest))
+}
+
+func ReadRequest[T any, P protoType[T]](c *cli.Context) (*T, error) {
+	return ReadRequestFile[T, P](c.String(flagRequest))
+}
+
+func ReadRequestFile[T any, P protoType[T]](path string) (*T, error) {
+	reqBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -42,14 +51,121 @@ func ReadRequest[T any, P interface {
 	return req, nil
 }
 
-func RequestFlag[T any, _ interface {
-	*T
-	proto.Message
-}]() *cli.StringFlag {
-	typ := reflect.TypeFor[T]().Name()
+func RequestFlag[T any, P protoType[T]]() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:     flagRequest,
-		Usage:    typ + " as JSON file (see livekit-cli/examples)",
+		Usage:    RequestDesc[T, P](),
 		Required: true,
 	}
+}
+
+func RequestDesc[T any, _ protoType[T]]() string {
+	typ := reflect.TypeFor[T]().Name()
+	return typ + " as JSON file (see livekit-cli/examples)"
+}
+
+func createAndPrint[T any, P protoType[T], R any](
+	c *cli.Context, file string,
+	create func(ctx context.Context, p P) (R, error),
+	print func(r R),
+) error {
+	req, err := ReadRequestFile[T, P](file)
+	if err != nil {
+		return err
+	}
+	if c.Bool("verbose") {
+		PrintJSON(req)
+	}
+	info, err := create(c.Context, req)
+	if err != nil {
+		return err
+	}
+	print(info)
+	return nil
+}
+
+func createAndPrintLegacy[T any, P protoType[T], R any](
+	c *cli.Context,
+	create func(ctx context.Context, p P) (R, error),
+	print func(r R),
+) error {
+	req, err := ReadRequest[T, P](c)
+	if err != nil {
+		return err
+	}
+	if c.Bool("verbose") {
+		PrintJSON(req)
+	}
+	info, err := create(c.Context, req)
+	if err != nil {
+		return err
+	}
+	print(info)
+	return nil
+}
+
+func createAndPrintReqs[T any, P protoType[T], R any](
+	c *cli.Context,
+	create func(ctx context.Context, p P) (R, error),
+	print func(r R),
+) error {
+	args := c.Args()
+	if !args.Present() {
+		return errors.New("at least one JSON request file is required")
+	}
+	for _, file := range args.Slice() {
+		if err := createAndPrint(c, file, create, print); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func forEachID(c *cli.Context, fnc func(ctx context.Context, id string) error) error {
+	args := c.Args()
+	if !args.Present() {
+		return errors.New("at least one ID is required")
+	}
+	for _, id := range args.Slice() {
+		if err := fnc(c.Context, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func listAndPrint[
+	ReqT any, Req protoType[ReqT],
+	T any, _ protoType[T],
+	Resp interface {
+		proto.Message
+		GetItems() []*T
+	},
+](
+	c *cli.Context,
+	getList func(ctx context.Context, req Req) (Resp, error), req Req,
+	header []string, tableRow func(item *T) []string,
+) error {
+	res, err := getList(c.Context, req)
+	if err != nil {
+		return err
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(header)
+	for _, item := range res.GetItems() {
+		if item == nil {
+			continue
+		}
+		row := tableRow(item)
+		if len(row) == 0 {
+			continue
+		}
+		table.Append(row)
+	}
+	table.Render()
+	if c.Bool("verbose") {
+		PrintJSON(res)
+	}
+	return nil
 }
