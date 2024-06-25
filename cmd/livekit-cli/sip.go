@@ -17,52 +17,164 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/olekukonko/tablewriter"
-	"github.com/urfave/cli/v2"
-	"google.golang.org/protobuf/encoding/protojson"
-
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/urfave/cli/v2"
 )
 
 //lint:file-ignore SA1019 we still support older APIs for compatibility
 
-const sipCategory = "SIP"
+const (
+	sipCategory            = "SIP"
+	sipTrunkCategory       = "Trunks"
+	sipDispatchCategory    = "Dispatch Rules"
+	sipParticipantCategory = "Participants"
+)
 
 var (
 	SIPCommands = []*cli.Command{
 		{
+			Name:     "sip",
+			Usage:    "SIP management",
+			Category: sipCategory,
+			Subcommands: []*cli.Command{
+				{
+					Name:     "inbound",
+					Aliases:  []string{"in", "inbound-trunk"},
+					Usage:    "Inbound SIP Trunk management",
+					Category: sipTrunkCategory,
+					Subcommands: []*cli.Command{
+						{
+							Name:   "list",
+							Usage:  "List all inbound SIP Trunk",
+							Action: listSipInboundTrunk,
+							Flags:  withDefaultFlags(),
+						},
+						{
+							Name:      "create",
+							Usage:     "Create a inbound SIP Trunk",
+							Action:    createSIPInboundTrunk,
+							Flags:     withDefaultFlags(),
+							Args:      true,
+							ArgsUsage: RequestDesc[livekit.CreateSIPInboundTrunkRequest](),
+						},
+						{
+							Name:      "delete",
+							Usage:     "Delete SIP Trunk",
+							Action:    deleteSIPTrunk,
+							Flags:     withDefaultFlags(),
+							Args:      true,
+							ArgsUsage: "SIPTrunk ID to delete",
+						},
+					},
+				},
+				{
+					Name:     "outbound",
+					Aliases:  []string{"out", "outbound-trunk"},
+					Usage:    "Outbound SIP Trunk management",
+					Category: sipTrunkCategory,
+					Subcommands: []*cli.Command{
+						{
+							Name:   "list",
+							Usage:  "List all outbound SIP Trunk",
+							Action: listSipOutboundTrunk,
+							Flags:  withDefaultFlags(),
+						},
+						{
+							Name:      "create",
+							Usage:     "Create a outbound SIP Trunk",
+							Action:    createSIPOutboundTrunk,
+							Flags:     withDefaultFlags(),
+							Args:      true,
+							ArgsUsage: RequestDesc[livekit.CreateSIPOutboundTrunkRequest](),
+						},
+						{
+							Name:      "delete",
+							Usage:     "Delete SIP Trunk",
+							Action:    deleteSIPTrunk,
+							Flags:     withDefaultFlags(),
+							Args:      true,
+							ArgsUsage: "SIPTrunk ID to delete",
+						},
+					},
+				},
+				{
+					Name:     "dispatch",
+					Usage:    "SIP Dispatch Rule management",
+					Aliases:  []string{"dispatch-rule"},
+					Category: sipDispatchCategory,
+					Subcommands: []*cli.Command{
+						{
+							Name:   "list",
+							Usage:  "List all SIP Dispatch Rule",
+							Action: listSipDispatchRule,
+							Flags:  withDefaultFlags(),
+						},
+						{
+							Name:      "create",
+							Usage:     "Create a SIP Dispatch Rule",
+							Action:    createSIPDispatchRule,
+							Flags:     withDefaultFlags(),
+							Args:      true,
+							ArgsUsage: RequestDesc[livekit.CreateSIPDispatchRuleRequest](),
+						},
+						{
+							Name:      "delete",
+							Usage:     "Delete SIP Dispatch Rule",
+							Action:    deleteSIPDispatchRule,
+							Flags:     withDefaultFlags(),
+							Args:      true,
+							ArgsUsage: "SIPTrunk ID to delete",
+						},
+					},
+				},
+				{
+					Name:     "participant",
+					Usage:    "SIP Participant management",
+					Category: sipParticipantCategory,
+					Subcommands: []*cli.Command{
+						{
+							Name:      "create",
+							Usage:     "Create a SIP Participant",
+							Action:    createSIPParticipant,
+							Flags:     withDefaultFlags(),
+							Args:      true,
+							ArgsUsage: RequestDesc[livekit.CreateSIPParticipantRequest](),
+						},
+					},
+				},
+			},
+		},
+
+		// Deprecated commands kept for compatibility
+		{
+			Hidden:   true, // deprecated: use "sip trunk create"
 			Name:     "create-sip-trunk",
 			Usage:    "Create a SIP Trunk",
-			Before:   createSIPClient,
-			Action:   createSIPTrunk,
+			Action:   createSIPTrunkLegacy,
 			Category: sipCategory,
 			Flags: withDefaultFlags(
-				&cli.StringFlag{
-					Name:     "request",
-					Usage:    "CreateSIPTrunkRequest as json file (see livekit-cli/examples)",
-					Required: true,
-				},
+				//lint:ignore SA1019 we still support it
+				RequestFlag[livekit.CreateSIPTrunkRequest](),
 			),
 		},
 		{
+			Hidden:   true, // deprecated: use "sip trunk list"
 			Name:     "list-sip-trunk",
 			Usage:    "List all SIP trunk",
-			Before:   createSIPClient,
 			Action:   listSipTrunk,
 			Category: sipCategory,
 			Flags:    withDefaultFlags(),
 		},
 		{
+			Hidden:   true, // deprecated: use "sip trunk delete"
 			Name:     "delete-sip-trunk",
 			Usage:    "Delete SIP Trunk",
-			Before:   createSIPClient,
-			Action:   deleteSIPTrunk,
+			Action:   deleteSIPTrunkLegacy,
 			Category: sipCategory,
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
@@ -72,34 +184,29 @@ var (
 				},
 			),
 		},
-
 		{
+			Hidden:   true, // deprecated: use "sip dispatch create"
 			Name:     "create-sip-dispatch-rule",
 			Usage:    "Create a SIP Dispatch Rule",
-			Before:   createSIPClient,
-			Action:   createSIPDispatchRule,
+			Action:   createSIPDispatchRuleLegacy,
 			Category: sipCategory,
 			Flags: withDefaultFlags(
-				&cli.StringFlag{
-					Name:     "request",
-					Usage:    "CreateSIPDispatchRuleRequest as json file (see livekit-cli/examples)",
-					Required: true,
-				},
+				RequestFlag[livekit.CreateSIPDispatchRuleRequest](),
 			),
 		},
 		{
+			Hidden:   true, // deprecated: use "sip dispatch list"
 			Name:     "list-sip-dispatch-rule",
 			Usage:    "List all SIP Dispatch Rule",
-			Before:   createSIPClient,
 			Action:   listSipDispatchRule,
 			Category: sipCategory,
 			Flags:    withDefaultFlags(),
 		},
 		{
+			Hidden:   true, // deprecated: use "sip dispatch delete"
 			Name:     "delete-sip-dispatch-rule",
 			Usage:    "Delete SIP Dispatch Rule",
-			Before:   createSIPClient,
-			Action:   deleteSIPDispatchRule,
+			Action:   deleteSIPDispatchRuleLegacy,
 			Category: sipCategory,
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
@@ -109,60 +216,50 @@ var (
 				},
 			),
 		},
-
 		{
+			Hidden:   true, // deprecated: use "sip participant create"
 			Name:     "create-sip-participant",
 			Usage:    "Create a SIP Participant",
-			Before:   createSIPClient,
-			Action:   createSIPParticipant,
+			Action:   createSIPParticipantLegacy,
 			Category: sipCategory,
 			Flags: withDefaultFlags(
-				&cli.StringFlag{
-					Name:     "request",
-					Usage:    "CreateSIPParticipantRequest as json file (see livekit-cli/examples)",
-					Required: true,
-				},
+				RequestFlag[livekit.CreateSIPParticipantRequest](),
 			),
 		},
 	}
-
-	sipClient *lksdk.SIPClient
 )
 
-func createSIPClient(c *cli.Context) error {
+func createSIPClient(c *cli.Context) (*lksdk.SIPClient, error) {
 	pc, err := loadProjectDetails(c)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	sipClient = lksdk.NewSIPClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
-	return nil
+	return lksdk.NewSIPClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...), nil
 }
 
-func createSIPTrunk(c *cli.Context) error {
-	reqFile := c.String("request")
-	reqBytes, err := os.ReadFile(reqFile)
+func createSIPTrunkLegacy(c *cli.Context) error {
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
+	//lint:ignore SA1019 we still support it
+	return createAndPrintLegacy(c, cli.CreateSIPTrunk, printSIPTrunkID)
+}
 
-	req := &livekit.CreateSIPTrunkRequest{}
-	err = protojson.Unmarshal(reqBytes, req)
+func createSIPInboundTrunk(c *cli.Context) error {
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
+	return createAndPrintReqs(c, cli.CreateSIPInboundTrunk, printSIPInboundTrunkID)
+}
 
-	if c.Bool("verbose") {
-		PrintJSON(req)
-	}
-
-	info, err := sipClient.CreateSIPTrunk(context.Background(), req)
+func createSIPOutboundTrunk(c *cli.Context) error {
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
-
-	printSIPTrunkInfo(info)
-	return nil
+	return createAndPrintReqs(c, cli.CreateSIPOutboundTrunk, printSIPOutboundTrunkID)
 }
 
 func userPass(user string, hasPass bool) string {
@@ -177,97 +274,140 @@ func userPass(user string, hasPass bool) string {
 }
 
 func listSipTrunk(c *cli.Context) error {
-	res, err := sipClient.ListSIPTrunk(context.Background(), &livekit.ListSIPTrunkRequest{})
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{
-		"SipTrunkId", "Name",
-		"InboundAddresses", "InboundNumbers", "InboundAuth",
-		"OutboundAddress", "OutboundNumber", "OutboundAuth",
+	//lint:ignore SA1019 we still support it
+	return listAndPrint(c, cli.ListSIPTrunk, &livekit.ListSIPTrunkRequest{}, []string{
+		"SipTrunkId", "Name", "Kind", "Number",
+		"AllowAddresses", "AllowNumbers", "InboundAuth",
+		"OutboundAddress", "OutboundAuth",
 		"Metadata",
-	})
-	for _, item := range res.Items {
-		if item == nil {
-			continue
-		}
+	}, func(item *livekit.SIPTrunkInfo) []string {
 		inboundNumbers := item.InboundNumbers
 		for _, re := range item.InboundNumbersRegex {
 			inboundNumbers = append(inboundNumbers, "regexp("+re+")")
 		}
-
-		table.Append([]string{
-			item.SipTrunkId, item.Name,
+		return []string{
+			item.SipTrunkId, item.Name, strings.TrimPrefix(item.Kind.String(), "TRUNK_"), item.OutboundNumber,
 			strings.Join(item.InboundAddresses, ","), strings.Join(inboundNumbers, ","), userPass(item.InboundUsername, item.InboundPassword != ""),
-			item.OutboundAddress, item.OutboundNumber, userPass(item.OutboundUsername, item.OutboundPassword != ""),
+			item.OutboundAddress, userPass(item.OutboundUsername, item.OutboundPassword != ""),
 			item.Metadata,
-		})
-	}
-	table.Render()
+		}
+	})
+}
 
-	if c.Bool("verbose") {
-		PrintJSON(res)
+func listSipInboundTrunk(c *cli.Context) error {
+	cli, err := createSIPClient(c)
+	if err != nil {
+		return err
 	}
+	return listAndPrint(c, cli.ListSIPInboundTrunk, &livekit.ListSIPInboundTrunkRequest{}, []string{
+		"SipTrunkId", "Name", "Numbers",
+		"AllowedAddresses", "AllowedNumbers",
+		"Authentication",
+		"Metadata",
+	}, func(item *livekit.SIPInboundTrunkInfo) []string {
+		return []string{
+			item.SipTrunkId, item.Name, strings.Join(item.Numbers, ","),
+			strings.Join(item.AllowedAddresses, ","), strings.Join(item.AllowedNumbers, ","),
+			userPass(item.AuthUsername, item.AuthPassword != ""),
+			item.Metadata,
+		}
+	})
+}
 
-	return nil
+func listSipOutboundTrunk(c *cli.Context) error {
+	cli, err := createSIPClient(c)
+	if err != nil {
+		return err
+	}
+	return listAndPrint(c, cli.ListSIPOutboundTrunk, &livekit.ListSIPOutboundTrunkRequest{}, []string{
+		"SipTrunkId", "Name",
+		"Address", "Transport",
+		"Numbers",
+		"Authentication",
+		"Metadata",
+	}, func(item *livekit.SIPOutboundTrunkInfo) []string {
+		return []string{
+			item.SipTrunkId, item.Name,
+			item.Address, strings.TrimPrefix(item.Transport.String(), "SIP_TRANSPORT_"),
+			strings.Join(item.Numbers, ","),
+			userPass(item.AuthUsername, item.AuthPassword != ""),
+			item.Metadata,
+		}
+	})
 }
 
 func deleteSIPTrunk(c *cli.Context) error {
-	info, err := sipClient.DeleteSIPTrunk(context.Background(), &livekit.DeleteSIPTrunkRequest{
+	cli, err := createSIPClient(c)
+	if err != nil {
+		return err
+	}
+	return forEachID(c, func(ctx context.Context, id string) error {
+		info, err := cli.DeleteSIPTrunk(c.Context, &livekit.DeleteSIPTrunkRequest{
+			SipTrunkId: id,
+		})
+		if err != nil {
+			return err
+		}
+		printSIPTrunkID(info)
+		return nil
+	})
+}
+
+func deleteSIPTrunkLegacy(c *cli.Context) error {
+	cli, err := createSIPClient(c)
+	if err != nil {
+		return err
+	}
+	info, err := cli.DeleteSIPTrunk(c.Context, &livekit.DeleteSIPTrunkRequest{
 		SipTrunkId: c.String("id"),
 	})
 	if err != nil {
 		return err
 	}
-
-	printSIPTrunkInfo(info)
+	printSIPTrunkID(info)
 	return nil
 }
 
-func printSIPTrunkInfo(info *livekit.SIPTrunkInfo) {
-	fmt.Printf("SIPTrunkID: %v\n", info.SipTrunkId)
+func printSIPTrunkID(info *livekit.SIPTrunkInfo) {
+	fmt.Printf("SIPTrunkID: %v\n", info.GetSipTrunkId())
+}
+
+func printSIPInboundTrunkID(info *livekit.SIPInboundTrunkInfo) {
+	fmt.Printf("SIPTrunkID: %v\n", info.GetSipTrunkId())
+}
+
+func printSIPOutboundTrunkID(info *livekit.SIPOutboundTrunkInfo) {
+	fmt.Printf("SIPTrunkID: %v\n", info.GetSipTrunkId())
 }
 
 func createSIPDispatchRule(c *cli.Context) error {
-	reqFile := c.String("request")
-	reqBytes, err := os.ReadFile(reqFile)
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
+	return createAndPrintReqs(c, cli.CreateSIPDispatchRule, printSIPDispatchRuleID)
+}
 
-	req := &livekit.CreateSIPDispatchRuleRequest{}
-	err = protojson.Unmarshal(reqBytes, req)
+func createSIPDispatchRuleLegacy(c *cli.Context) error {
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
-
-	if c.Bool("verbose") {
-		PrintJSON(req)
-	}
-
-	info, err := sipClient.CreateSIPDispatchRule(context.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	printSIPDispatchRuleInfo(info)
-	return nil
+	return createAndPrintLegacy(c, cli.CreateSIPDispatchRule, printSIPDispatchRuleID)
 }
 
 func listSipDispatchRule(c *cli.Context) error {
-	res, err := sipClient.ListSIPDispatchRule(context.Background(), &livekit.ListSIPDispatchRuleRequest{})
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"SipDispatchRuleId", "Name", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone", "Metadata"})
-	for _, item := range res.Items {
-		if item == nil {
-			continue
-		}
+	return listAndPrint(c, cli.ListSIPDispatchRule, &livekit.ListSIPDispatchRuleRequest{}, []string{
+		"SipDispatchRuleId", "Name", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone", "Metadata",
+	}, func(item *livekit.SIPDispatchRuleInfo) []string {
 		var room, typ, pin string
 		switch r := item.GetRule().GetRule().(type) {
 		case *livekit.SIPDispatchRule_DispatchRuleDirect:
@@ -283,62 +423,74 @@ func listSipDispatchRule(c *cli.Context) error {
 		if trunks == "" {
 			trunks = "<any>"
 		}
-		table.Append([]string{item.SipDispatchRuleId, item.Name, trunks, typ, room, pin, strconv.FormatBool(item.HidePhoneNumber), item.Metadata})
-	}
-	table.Render()
-
-	if c.Bool("verbose") {
-		PrintJSON(res)
-	}
-
-	return nil
+		return []string{item.SipDispatchRuleId, item.Name, trunks, typ, room, pin, strconv.FormatBool(item.HidePhoneNumber), item.Metadata}
+	})
 }
 
 func deleteSIPDispatchRule(c *cli.Context) error {
-	info, err := sipClient.DeleteSIPDispatchRule(context.Background(), &livekit.DeleteSIPDispatchRuleRequest{
+	cli, err := createSIPClient(c)
+	if err != nil {
+		return err
+	}
+	return forEachID(c, func(ctx context.Context, id string) error {
+		info, err := cli.DeleteSIPDispatchRule(c.Context, &livekit.DeleteSIPDispatchRuleRequest{
+			SipDispatchRuleId: id,
+		})
+		if err != nil {
+			return err
+		}
+		printSIPDispatchRuleID(info)
+		return nil
+	})
+}
+
+func deleteSIPDispatchRuleLegacy(c *cli.Context) error {
+	cli, err := createSIPClient(c)
+	if err != nil {
+		return err
+	}
+	info, err := cli.DeleteSIPDispatchRule(c.Context, &livekit.DeleteSIPDispatchRuleRequest{
 		SipDispatchRuleId: c.String("id"),
 	})
 	if err != nil {
 		return err
 	}
-
-	printSIPDispatchRuleInfo(info)
+	printSIPDispatchRuleID(info)
 	return nil
 }
 
-func printSIPDispatchRuleInfo(info *livekit.SIPDispatchRuleInfo) {
+func printSIPDispatchRuleID(info *livekit.SIPDispatchRuleInfo) {
 	fmt.Printf("SIPDispatchRuleID: %v\n", info.SipDispatchRuleId)
 }
 
 func createSIPParticipant(c *cli.Context) error {
-	reqFile := c.String("request")
-	reqBytes, err := os.ReadFile(reqFile)
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
+	return createAndPrintReqs(c, func(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error) {
+		// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
+		// Default deadline is too short, thus, we must set a higher deadline for it.
+		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
 
-	req := &livekit.CreateSIPParticipantRequest{}
-	err = protojson.Unmarshal(reqBytes, req)
+		return cli.CreateSIPParticipant(ctx, req)
+	}, printSIPParticipantInfo)
+}
+
+func createSIPParticipantLegacy(c *cli.Context) error {
+	cli, err := createSIPClient(c)
 	if err != nil {
 		return err
 	}
+	return createAndPrintLegacy(c, func(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error) {
+		// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
+		// Default deadline is too short, thus, we must set a higher deadline for it.
+		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
 
-	if c.Bool("verbose") {
-		PrintJSON(req)
-	}
-
-	// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
-	// Thus, we must set a higher deadline for it.
-	ctx, cancel := context.WithTimeout(c.Context, 30*time.Second)
-	defer cancel()
-
-	info, err := sipClient.CreateSIPParticipant(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	printSIPParticipantInfo(info)
-	return nil
+		return cli.CreateSIPParticipant(ctx, req)
+	}, printSIPParticipantInfo)
 }
 
 func printSIPParticipantInfo(info *livekit.SIPParticipantInfo) {

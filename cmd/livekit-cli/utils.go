@@ -96,7 +96,7 @@ func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 	return opts
 }
 
-func PrintJSON(obj interface{}) {
+func PrintJSON(obj any) {
 	txt, _ := json.MarshalIndent(obj, "", "  ")
 	fmt.Println(string(txt))
 }
