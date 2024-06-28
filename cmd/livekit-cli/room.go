@@ -55,6 +55,10 @@ var (
 					Usage: "AutoTrackEgress json file (see examples/auto-track-egress.json)",
 				},
 				&cli.StringFlag{
+					Name:  "agents-file",
+					Usage: "Agents configuration json file",
+				},
+				&cli.StringFlag{
 					Name:  "room-configuration",
 					Usage: "Name of the room configuration to associate with the created room",
 				},
@@ -283,6 +287,18 @@ func createRoom(c *cli.Context) error {
 			req.Egress = &livekit.RoomEgress{}
 		}
 		req.Egress.Tracks = trackEgress
+	}
+
+	if agentsFile := c.String("agents-file"); agentsFile != "" {
+		agent := &livekit.RoomAgent{}
+		b, err := os.ReadFile(agentsFile)
+		if err != nil {
+			return err
+		}
+		if err = protojson.Unmarshal(b, agent); err != nil {
+			return err
+		}
+		req.Agent = agent
 	}
 
 	if roomConfig := c.String("room-configuration"); roomConfig != "" {
