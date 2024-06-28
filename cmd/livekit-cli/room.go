@@ -54,6 +54,10 @@ var (
 					Name:  "track-egress-file",
 					Usage: "AutoTrackEgress json file (see examples/auto-track-egress.json)",
 				},
+				&cli.StringFlag{
+					Name:  "room-configuration",
+					Usage: "Name of the room configuration to associate with the created room",
+				},
 				&cli.UintFlag{
 					Name:  "min-playout-delay",
 					Usage: "minimum playout delay for video (in ms)",
@@ -279,6 +283,10 @@ func createRoom(c *cli.Context) error {
 			req.Egress = &livekit.RoomEgress{}
 		}
 		req.Egress.Tracks = trackEgress
+	}
+
+	if roomConfig := c.String("room-configuration"); roomConfig != "" {
+		req.ConfigName = roomConfig
 	}
 
 	if c.Uint("min-playout-delay") != 0 {
