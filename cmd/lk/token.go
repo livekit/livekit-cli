@@ -29,76 +29,160 @@ import (
 var (
 	TokenCommands = []*cli.Command{
 		{
-			Name:     "create-token",
-			Usage:    "creates an access token",
-			Action:   createToken,
-			Category: "Token",
+			Name:            "token",
+			Usage:           "Create access tokens with granular capabilities",
+			Category:        "Core",
+			Before:          loadProjectConfig,
+			HideHelpCommand: true,
+			Subcommands: []*cli.Command{
+				{
+					Name:   "create",
+					Usage:  "Creates an access token",
+					Action: createToken,
+					Flags: []cli.Flag{
+						&cli.BoolFlag{
+							Name:  "create",
+							Usage: "Enable token to be used to create rooms",
+						},
+						&cli.BoolFlag{
+							Name:  "list",
+							Usage: "Enable token to be used to list rooms",
+						},
+						&cli.BoolFlag{
+							Name:  "join",
+							Usage: "Enable token to be used to join a room (requires --room and --identity)",
+						},
+						&cli.BoolFlag{
+							Name:  "admin",
+							Usage: "Enable token to be used to manage a room (requires --room)",
+						},
+						&cli.BoolFlag{
+							Name:  "recorder",
+							Usage: "Enable token to be used to record a room (requires --room)",
+						},
+						&cli.BoolFlag{
+							Name:  "egress",
+							Usage: "Enable token to interact with EgressService",
+						},
+						&cli.BoolFlag{
+							Name:  "ingress",
+							Usage: "Enable token to interact with IngressService",
+						},
+						&cli.StringSliceFlag{
+							Name:  "allow-source",
+							Usage: "Allow one or more `SOURCE`s to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
+						},
+						&cli.BoolFlag{
+							Name:  "allow-update-metadata",
+							Usage: "Allow participant to update their own name and metadata from the client side",
+						},
+						&cli.StringFlag{
+							Name:    "identity",
+							Aliases: []string{"i"},
+							Usage:   "Unique `ID` of the participant, used with --join",
+						},
+						&cli.StringFlag{
+							Name:    "name",
+							Aliases: []string{"n"},
+							Usage:   "`NAME` of the participant, used with --join. defaults to identity",
+						},
+						&cli.StringFlag{
+							Name:    "room",
+							Aliases: []string{"r"},
+							Usage:   "`NAME` of the room to join",
+						},
+						&cli.StringFlag{
+							Name:  "metadata",
+							Usage: "`JSON` metadata to encode in the token, will be passed to participant",
+						},
+						&cli.StringFlag{
+							Name:  "valid-for",
+							Usage: "Amount of `TIME` that the token is valid for. i.e. \"5m\", \"1h10m\" (s: seconds, m: minutes, h: hours)",
+							Value: "5m",
+						},
+						&cli.StringFlag{
+							Name:  "grant",
+							Usage: "Additional `VIDEO_GRANT` fields. It'll be merged with other arguments (JSON formatted)",
+						},
+						projectFlag,
+						apiKeyFlag,
+						secretFlag,
+					},
+				},
+			},
+		},
+
+		// Deprecated commands kept for compatibility
+		{
+			Name:   "create-token",
+			Usage:  "Creates an access token",
+			Action: createToken,
 			Flags: []cli.Flag{
 				apiKeyFlag,
 				secretFlag,
 				&cli.BoolFlag{
 					Name:  "create",
-					Usage: "enable token to be used to create rooms",
+					Usage: "Enable token to be used to create rooms",
 				},
 				&cli.BoolFlag{
 					Name:  "list",
-					Usage: "enable token to be used to list rooms",
+					Usage: "Enable token to be used to list rooms",
 				},
 				&cli.BoolFlag{
 					Name:  "join",
-					Usage: "enable token to be used to join a room (requires --room and --identity)",
+					Usage: "Enable token to be used to join a room (requires --room and --identity)",
 				},
 				&cli.BoolFlag{
 					Name:  "admin",
-					Usage: "enable token to be used to manage a room (requires --room)",
+					Usage: "Enable token to be used to manage a room (requires --room)",
 				},
 				&cli.BoolFlag{
 					Name:  "recorder",
-					Usage: "enable token to be used to record a room (requires --room)",
+					Usage: "Enable token to be used to record a room (requires --room)",
 				},
 				&cli.BoolFlag{
 					Name:  "egress",
-					Usage: "enable token to interact with EgressService",
+					Usage: "Enable token to interact with EgressService",
 				},
 				&cli.BoolFlag{
 					Name:  "ingress",
-					Usage: "enable token to interact with IngressService",
+					Usage: "Enable token to interact with IngressService",
 				},
 				&cli.StringSliceFlag{
 					Name:  "allow-source",
-					Usage: "allow one or more sources to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
+					Usage: "Allow one or more `SOURCE`s to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
 				},
 				&cli.BoolFlag{
 					Name:  "allow-update-metadata",
-					Usage: "allow participant to update their own name and metadata from the client side",
+					Usage: "Allow participant to update their own name and metadata from the client side",
 				},
 				&cli.StringFlag{
 					Name:    "identity",
 					Aliases: []string{"i"},
-					Usage:   "unique identity of the participant, used with --join",
+					Usage:   "Unique `ID` of the participant, used with --join",
 				},
 				&cli.StringFlag{
 					Name:    "name",
 					Aliases: []string{"n"},
-					Usage:   "name of the participant, used with --join. defaults to identity",
+					Usage:   "`NAME` of the participant, used with --join. defaults to identity",
 				},
 				&cli.StringFlag{
 					Name:    "room",
 					Aliases: []string{"r"},
-					Usage:   "name of the room to join",
+					Usage:   "`NAME` of the room to join",
 				},
 				&cli.StringFlag{
 					Name:  "metadata",
-					Usage: "JSON metadata to encode in the token, will be passed to participant",
+					Usage: "`JSON` metadata to encode in the token, will be passed to participant",
 				},
 				&cli.StringFlag{
 					Name:  "valid-for",
-					Usage: "amount of time that the token is valid for. i.e. \"5m\", \"1h10m\" (s: seconds, m: minutes, h: hours)",
+					Usage: "Amount of `TIME` that the token is valid for. i.e. \"5m\", \"1h10m\" (s: seconds, m: minutes, h: hours)",
 					Value: "5m",
 				},
 				&cli.StringFlag{
 					Name:  "grant",
-					Usage: "additional VideoGrant fields. It'll be merged with other arguments (JSON formatted)",
+					Usage: "Additional `VIDEO_GRANT` fields. It'll be merged with other arguments (JSON formatted)",
 				},
 				projectFlag,
 			},
