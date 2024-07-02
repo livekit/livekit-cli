@@ -56,7 +56,7 @@ func main() {
 			if cmd.Bool("verbose") {
 				logConfig.Level = "debug"
 			}
-			logger.InitFromConfig(logConfig, "livekit-cli")
+			logger.InitFromConfig(logConfig, "lk")
 			lksdk.SetLogger(logger.GetLogger())
 
 			return nil
@@ -73,7 +73,7 @@ func main() {
 	app.Commands = append(app.Commands, SIPCommands...)
 
 	if err := app.Run(context.Background(), os.Args); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 	}
 }
 
