@@ -23,7 +23,7 @@ on:
 
 # workflow tasks
 jobs:
-  intall-test:
+  install-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,4 +33,4 @@ jobs:
         run: bash install-cli.sh
 
       - name: Checking installation
-        run: '(test -f /usr/local/bin/lk && test -f /usr/local/livekit-cli && echo Install success) || exit 1'
+        run: '(test -f /usr/local/bin/livekit-cli && echo Install success) || exit 1'

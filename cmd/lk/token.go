@@ -114,6 +114,7 @@ var (
 
 		// Deprecated commands kept for compatibility
 		{
+			Hidden: true, // deprecated: use `token create`
 			Name:   "create-token",
 			Usage:  "Creates an access token",
 			Action: createToken,

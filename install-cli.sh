@@ -21,8 +21,6 @@ set -o errexit
 set -o pipefail
 
 REPO="livekit-cli"
-BIN_NAME="lk"
-DUMMY_BIN_NAME="livekit-cli" # a simple binary that prints a relocation message
 INSTALL_PATH="/usr/local/bin"
 BASH_COMPLETION_PATH="/usr/share/bash-completion/completions"
 ZSH_COMPLETION_PATH="/usr/share/zsh/site-functions"
@@ -90,8 +88,7 @@ then
 fi
 
 VERSION=$(get_latest_version)
-ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${BIN_NAME}_${VERSION}_linux_${ARCH}.tar.gz"
-DUMMY_ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${DUMMY_BIN_NAME}_${VERSION}_linux_${ARCH}.tar.gz"
+ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${REPO}_${VERSION}_linux_${ARCH}.tar.gz"
 
 # Ensure version follows SemVer
 if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
@@ -105,25 +102,24 @@ log "Downloading from ${ARCHIVE_URL}..."
 TEMP_DIR_PATH="$(mktemp -d)"
 
 curl -s -L "${ARCHIVE_URL}" | tar xzf - -C "${TEMP_DIR_PATH}" --wildcards --no-anchored "$REPO*"
-curl -s -L "${DUMMY_ARCHIVE_URL}" | tar xzf - -C "${TEMP_DIR_PATH}" --wildcards --no-anchored "$REPO*"
 
-${SUDO_PREFIX} mv "${TEMP_DIR_PATH}/${BIN_NAME}" "${INSTALL_PATH}/${BIN_NAME}"
+${SUDO_PREFIX} mv "${TEMP_DIR_PATH}/livekit-cli" "${INSTALL_PATH}/livekit-cli"
 
 if [ -d "${TEMP_DIR_PATH}/autocomplete" ]
 then
   if [ -d "${BASH_COMPLETION_PATH}" ]
   then
-    mv "${TEMP_DIR_PATH}/autocomplete/bash_autocomplete" "${BASH_COMPLETION_PATH}/${BIN_NAME}"
+    mv "${TEMP_DIR_PATH}/autocomplete/bash_autocomplete" "${BASH_COMPLETION_PATH}/livekit-cli"
   fi
 
   if [ -d "${ZSH_COMPLETION_PATH}" ]
   then
-    mv "${TEMP_DIR_PATH}/autocomplete/zsh_autocomplete" "${ZSH_COMPLETION_PATH}/_${BIN_NAME}"
+    mv "${TEMP_DIR_PATH}/autocomplete/zsh_autocomplete" "${ZSH_COMPLETION_PATH}/_livekit-cli"
   fi
 
   if [ -d "${FISH_COMPLETION_PATH}" ]
   then
-    ${BIN_NAME} generate-fish-completion -o "${FISH_COMPLETION_PATH}/${BIN_NAME}.fish"
+    livekit-cli generate-fish-completion -o "${FISH_COMPLETION_PATH}/livekit-cli.fish"
   fi
 fi
 
