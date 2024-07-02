@@ -16,9 +16,6 @@ package main
 
 import (
 	"context"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -108,14 +105,6 @@ func loadTest(ctx context.Context, cmd *cli.Command) error {
 		lksdk.SetLogger(logger.LogRLogger(logr.Discard()))
 	}
 	_ = raiseULimit()
-
-	ctx, cancel := context.WithCancel(ctx)
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go func() {
-		<-done
-		cancel()
-	}()
 
 	params := loadtester.Params{
 		VideoResolution:  cmd.String("video-resolution"),

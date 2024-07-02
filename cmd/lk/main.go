@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/urfave/cli/v3"
 
@@ -72,7 +74,22 @@ func main() {
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, SIPCommands...)
 
-	if err := app.Run(context.Background(), os.Args); err != nil {
+	// Register cleanup hook for SIGINT, SIGTERM
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
+	)
+	// defer stop()
+
+	// Cleanup on hooked signals, remembering to flush stdout
+	// before exit to prevent line rag in case of SIGINT
+	go func() {
+		<-ctx.Done()
+		stop()
+		fmt.Println()
+	}()
+
+	if err := app.Run(ctx, os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 }

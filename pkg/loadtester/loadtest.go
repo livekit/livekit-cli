@@ -101,6 +101,7 @@ func (t *LoadTest) Run(ctx context.Context) error {
 	for _, name := range names {
 		testerStats := stats[name]
 		summaries[name] = getTesterSummary(testerStats)
+		fmt.Println(testerStats, summaries[name])
 
 		w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 		_, _ = fmt.Fprintf(w, "\n%s\t| Track\t| Kind\t| Pkts\t| Bitrate\t| Dropped\n", name)
@@ -314,13 +315,13 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 			return nil
 		})
 
-    if err := ctx.Err(); err != nil {
-      return nil, err
-    }
-    
-    if err := limiter.Wait(ctx); err != nil {
-      return nil, err
-    }
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if err := limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	var speakerSim *SpeakerSimulator
