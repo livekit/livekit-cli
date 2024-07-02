@@ -24,7 +24,7 @@ import (
 
 	"github.com/livekit/protocol/utils/interceptors"
 	"github.com/twitchtv/twirp"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/config"
 )
@@ -32,31 +32,33 @@ import (
 var (
 	roomFlag = &cli.StringFlag{
 		Name:     "room",
-		Usage:    "name of the room",
+		Usage:    "`NAME` of the room",
 		Required: true,
 	}
 	urlFlag = &cli.StringFlag{
 		Name:    "url",
-		Usage:   "url to LiveKit instance",
-		EnvVars: []string{"LIVEKIT_URL"},
+		Usage:   "`URL` to LiveKit instance",
+		Sources: cli.EnvVars("LIVEKIT_URL"),
 		Value:   "http://localhost:7880",
 	}
 	apiKeyFlag = &cli.StringFlag{
 		Name:    "api-key",
-		EnvVars: []string{"LIVEKIT_API_KEY"},
+		Usage:   "Your `KEY`",
+		Sources: cli.EnvVars("LIVEKIT_API_KEY"),
 	}
 	secretFlag = &cli.StringFlag{
 		Name:    "api-secret",
-		EnvVars: []string{"LIVEKIT_API_SECRET"},
+		Usage:   "Your `SECRET`",
+		Sources: cli.EnvVars("LIVEKIT_API_SECRET"),
 	}
 	identityFlag = &cli.StringFlag{
 		Name:     "identity",
-		Usage:    "identity of participant",
+		Usage:    "`ID` of participant",
 		Required: true,
 	}
 	projectFlag = &cli.StringFlag{
 		Name:  "project",
-		Usage: "name of a configured project",
+		Usage: "`NAME` of a configured project",
 	}
 	verboseFlag = &cli.BoolFlag{
 		Name:     "verbose",
@@ -65,21 +67,21 @@ var (
 	printCurl bool
 	curlFlag  = &cli.BoolFlag{
 		Name:        "curl",
-		Usage:       "print curl commands for API actions",
+		Usage:       "Print curl commands for API actions",
 		Destination: &printCurl,
 		Required:    false,
 	}
 )
 
 func withDefaultFlags(flags ...cli.Flag) []cli.Flag {
-	return append([]cli.Flag{
+	return append(flags, []cli.Flag{
 		urlFlag,
 		apiKeyFlag,
 		secretFlag,
 		projectFlag,
 		curlFlag,
 		verboseFlag,
-	}, flags...)
+	}...)
 }
 
 func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
@@ -94,6 +96,34 @@ func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 		opts = append(opts, twirp.WithClientInterceptors(ics...))
 	}
 	return opts
+}
+
+func extractArg(c *cli.Command) (*string, error) {
+	if !c.Args().Present() {
+		return nil, errors.New("no argument provided")
+	}
+	return &c.Args().Slice()[0], nil
+}
+
+func extractArgs(c *cli.Command) ([]string, error) {
+	if !c.Args().Present() {
+		return nil, errors.New("no arguments provided")
+	}
+	return c.Args().Slice(), nil
+}
+
+func mapStrings(strs []string, fn func(string) string) []string {
+	res := make([]string, len(strs))
+	for i, str := range strs {
+		res[i] = fn(str)
+	}
+	return res
+}
+
+func wrapWith(wrap string) func(string) string {
+	return func(str string) string {
+		return wrap + str + wrap
+	}
 }
 
 func PrintJSON(obj any) {
@@ -123,12 +153,12 @@ var ignoreURL = func(p *loadParams) {
 // attempt to load connection config, it'll prioritize
 // 1. command line flags (or env var)
 // 2. default project config
-func loadProjectDetails(c *cli.Context, opts ...loadOption) (*config.ProjectConfig, error) {
+func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
 	p := loadParams{requireURL: true}
 	for _, opt := range opts {
 		opt(&p)
 	}
-	logDetails := func(c *cli.Context, pc *config.ProjectConfig) {
+	logDetails := func(c *cli.Command, pc *config.ProjectConfig) {
 		if c.Bool("verbose") {
 			fmt.Printf("URL: %s, api-key: %s, api-secret: %s\n",
 				pc.URL,

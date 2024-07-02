@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/livekit/protocol/livekit"
@@ -32,6 +32,73 @@ const ingressCategory = "Ingress"
 var (
 	IngressCommands = []*cli.Command{
 		{
+			Name:     "ingress",
+			Usage:    "Import outside media sources into a LiveKit room",
+			Category: "I/O",
+			Commands: []*cli.Command{
+				{
+					Name:   "create",
+					Usage:  "Create an ingress",
+					Before: createIngressClient,
+					Action: createIngress,
+					Flags: withDefaultFlags(
+						&cli.StringFlag{
+							Name:     "request",
+							Usage:    "CreateIngressRequest as json file (see cmd/livekit-cli/examples)",
+							Required: true,
+						},
+					),
+				},
+				{
+					Name:   "update",
+					Usage:  "Update an ingress",
+					Before: createIngressClient,
+					Action: updateIngress,
+					Flags: withDefaultFlags(
+						&cli.StringFlag{
+							Name:     "request",
+							Usage:    "UpdateIngressRequest as json file (see cmd/livekit-cli/examples)",
+							Required: true,
+						},
+					),
+				},
+				{
+					Name:   "list",
+					Usage:  "List all active ingress",
+					Before: createIngressClient,
+					Action: listIngress,
+					Flags: withDefaultFlags(
+						&cli.StringFlag{
+							Name:     "room",
+							Usage:    "limits list to a certain room name ",
+							Required: false,
+						},
+						&cli.StringFlag{
+							Name:     "id",
+							Usage:    "list a specific ingress id",
+							Required: false,
+						},
+					),
+				},
+				{
+					Name:   "delete",
+					Usage:  "Delete an ingress",
+					Before: createIngressClient,
+					Action: deleteIngress,
+					Flags: withDefaultFlags(
+						&cli.StringFlag{
+							Name:     "id",
+							Usage:    "Ingress ID",
+							Required: true,
+						},
+					),
+				},
+			},
+		},
+
+		// Deprecated commands kept for compatibility
+		{
+			Hidden:   true, // deprecated: use `ingress create`
 			Name:     "create-ingress",
 			Usage:    "Create an ingress",
 			Before:   createIngressClient,
@@ -46,6 +113,7 @@ var (
 			),
 		},
 		{
+			Hidden:   true, // deprecated: use `ingress update`
 			Name:     "update-ingress",
 			Usage:    "Update an ingress",
 			Before:   createIngressClient,
@@ -60,6 +128,7 @@ var (
 			),
 		},
 		{
+			Hidden:   true, // deprecated: use `ingress list`
 			Name:     "list-ingress",
 			Usage:    "List all active ingress",
 			Before:   createIngressClient,
@@ -79,6 +148,7 @@ var (
 			),
 		},
 		{
+			Hidden:   true, // deprecated: use `ingress delete`
 			Name:     "delete-ingress",
 			Usage:    "Delete ingress",
 			Before:   createIngressClient,
@@ -97,8 +167,8 @@ var (
 	ingressClient *lksdk.IngressClient
 )
 
-func createIngressClient(c *cli.Context) error {
-	pc, err := loadProjectDetails(c)
+func createIngressClient(ctx context.Context, cmd *cli.Command) error {
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
 	}
@@ -107,8 +177,8 @@ func createIngressClient(c *cli.Context) error {
 	return nil
 }
 
-func createIngress(c *cli.Context) error {
-	reqFile := c.String("request")
+func createIngress(ctx context.Context, cmd *cli.Command) error {
+	reqFile := cmd.String("request")
 	reqBytes, err := os.ReadFile(reqFile)
 	if err != nil {
 		return err
@@ -120,7 +190,7 @@ func createIngress(c *cli.Context) error {
 		return err
 	}
 
-	if c.Bool("verbose") {
+	if cmd.Bool("verbose") {
 		PrintJSON(req)
 	}
 
@@ -133,8 +203,8 @@ func createIngress(c *cli.Context) error {
 	return nil
 }
 
-func updateIngress(c *cli.Context) error {
-	reqFile := c.String("request")
+func updateIngress(ctx context.Context, cmd *cli.Command) error {
+	reqFile := cmd.String("request")
 	reqBytes, err := os.ReadFile(reqFile)
 	if err != nil {
 		return err
@@ -146,7 +216,7 @@ func updateIngress(c *cli.Context) error {
 		return err
 	}
 
-	if c.Bool("verbose") {
+	if cmd.Bool("verbose") {
 		PrintJSON(req)
 	}
 
@@ -159,10 +229,10 @@ func updateIngress(c *cli.Context) error {
 	return nil
 }
 
-func listIngress(c *cli.Context) error {
+func listIngress(ctx context.Context, cmd *cli.Command) error {
 	res, err := ingressClient.ListIngress(context.Background(), &livekit.ListIngressRequest{
-		RoomName:  c.String("room"),
-		IngressId: c.String("id"),
+		RoomName:  cmd.String("room"),
+		IngressId: cmd.String("id"),
 	})
 	if err != nil {
 		return err
@@ -193,16 +263,16 @@ func listIngress(c *cli.Context) error {
 	}
 	table.Render()
 
-	if c.Bool("verbose") {
+	if cmd.Bool("verbose") {
 		PrintJSON(res)
 	}
 
 	return nil
 }
 
-func deleteIngress(c *cli.Context) error {
+func deleteIngress(ctx context.Context, cmd *cli.Command) error {
 	info, err := ingressClient.DeleteIngress(context.Background(), &livekit.DeleteIngressRequest{
-		IngressId: c.String("id"),
+		IngressId: cmd.String("id"),
 	})
 	if err != nil {
 		return err

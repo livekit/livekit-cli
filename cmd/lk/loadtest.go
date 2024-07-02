@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/loadtester"
 	"github.com/livekit/protocol/logger"
@@ -71,7 +71,7 @@ var LoadTestCommands = []*cli.Command{
 				Name:  "video-codec",
 				Usage: "h264 or vp8, both will be used when unset",
 			},
-			&cli.Float64Flag{
+			&cli.FloatFlag{
 				Name:  "num-per-second",
 				Usage: "number of testers to start every second",
 				Value: 5,
@@ -98,18 +98,18 @@ var LoadTestCommands = []*cli.Command{
 	},
 }
 
-func loadTest(cCtx *cli.Context) error {
-	pc, err := loadProjectDetails(cCtx)
+func loadTest(ctx context.Context, cmd *cli.Command) error {
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
 	}
 
-	if !cCtx.Bool("verbose") {
+	if !cmd.Bool("verbose") {
 		lksdk.SetLogger(logger.LogRLogger(logr.Discard()))
 	}
 	_ = raiseULimit()
 
-	ctx, cancel := context.WithCancel(cCtx.Context)
+	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
@@ -118,23 +118,23 @@ func loadTest(cCtx *cli.Context) error {
 	}()
 
 	params := loadtester.Params{
-		VideoResolution:  cCtx.String("video-resolution"),
-		VideoCodec:       cCtx.String("video-codec"),
-		Duration:         cCtx.Duration("duration"),
-		NumPerSecond:     cCtx.Float64("num-per-second"),
-		Simulcast:        !cCtx.Bool("no-simulcast"),
-		SimulateSpeakers: cCtx.Bool("simulate-speakers"),
+		VideoResolution:  cmd.String("video-resolution"),
+		VideoCodec:       cmd.String("video-codec"),
+		Duration:         cmd.Duration("duration"),
+		NumPerSecond:     cmd.Float("num-per-second"),
+		Simulcast:        !cmd.Bool("no-simulcast"),
+		SimulateSpeakers: cmd.Bool("simulate-speakers"),
 		TesterParams: loadtester.TesterParams{
 			URL:            pc.URL,
 			APIKey:         pc.APIKey,
 			APISecret:      pc.APISecret,
-			Room:           cCtx.String("room"),
-			IdentityPrefix: cCtx.String("identity-prefix"),
-			Layout:         loadtester.LayoutFromString(cCtx.String("layout")),
+			Room:           cmd.String("room"),
+			IdentityPrefix: cmd.String("identity-prefix"),
+			Layout:         loadtester.LayoutFromString(cmd.String("layout")),
 		},
 	}
 
-	if cCtx.Bool("run-all") {
+	if cmd.Bool("run-all") {
 		// leave out room name and pub/sub counts
 		if params.Duration == 0 {
 			params.Duration = time.Second * 15
@@ -143,9 +143,9 @@ func loadTest(cCtx *cli.Context) error {
 		return test.RunSuite(ctx)
 	}
 
-	params.VideoPublishers = cCtx.Int("video-publishers")
-	params.AudioPublishers = cCtx.Int("audio-publishers")
-	params.Subscribers = cCtx.Int("subscribers")
+	params.VideoPublishers = int(cmd.Int("video-publishers"))
+	params.AudioPublishers = int(cmd.Int("audio-publishers"))
+	params.Subscribers = int(cmd.Int("subscribers"))
 
 	test := loadtester.NewLoadTest(params)
 	return test.Run(ctx)

@@ -19,23 +19,223 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
-const roomCategory = "Room Server API"
-
 var (
 	RoomCommands = []*cli.Command{
 		{
-			Name:     "create-room",
-			Before:   createRoomClient,
-			Action:   createRoom,
-			Category: roomCategory,
+			Name:        "room",
+			Description: "The Rooms API TKTK",
+			Usage:       "Create or delete rooms and manage existing room properties",
+			Category:    "Core",
+			Commands: []*cli.Command{
+				{
+					Name:   "create",
+					Usage:  "Create a room",
+					Before: createRoomClient,
+					Action: createRoom,
+					Flags: withDefaultFlags(
+						&cli.StringFlag{
+							Name:  "room-egress-file",
+							Usage: "RoomCompositeRequest `JSON` file (see examples/room-composite-file.json)",
+						},
+						&cli.StringFlag{
+							Name:  "participant-egress-file",
+							Usage: "ParticipantEgress `JSON` file (see examples/auto-participant-egress.json)",
+						},
+						&cli.StringFlag{
+							Name:  "track-egress-file",
+							Usage: "AutoTrackEgress `JSON` file (see examples/auto-track-egress.json)",
+						},
+						&cli.StringFlag{
+							Name:  "agents-file",
+							Usage: "Agents configuration `JSON` file",
+						},
+						&cli.StringFlag{
+							Name:  "room-configuration",
+							Usage: "`NAME` of the room configuration to associate with the created room",
+						},
+						&cli.UintFlag{
+							Name:  "min-playout-delay",
+							Usage: "Minimum playout delay for video (in `MS`)",
+						},
+						&cli.UintFlag{
+							Name:  "max-playout-delay",
+							Usage: "Maximum playout delay for video (in `MS`)",
+						},
+						&cli.BoolFlag{
+							Name:  "sync-streams",
+							Usage: "Improve A/V sync by placing them in the same stream. when enabled, transceivers will not be reused",
+						},
+						&cli.UintFlag{
+							Name:  "empty-timeout",
+							Usage: "Number of `SECS` to keep the room open before any participant joins",
+						},
+						&cli.UintFlag{
+							Name:  "departure-timeout",
+							Usage: "Number of `SECS` to keep the room open after the last participant leaves",
+						},
+					),
+					ArgsUsage: " ROOM_NAME",
+				},
+				{
+					Name:      "list",
+					Usage:     "List or search for active rooms by name",
+					Before:    createRoomClient,
+					Action:    listRooms,
+					Flags:     withDefaultFlags(),
+					ArgsUsage: " [ROOM_NAME ...]",
+				},
+				{
+					Name:   "update",
+					Usage:  "Modify properties of an active room",
+					Before: createRoomClient,
+					Action: updateRoomMetadata,
+					Flags: withDefaultFlags(
+						&cli.StringFlag{
+							Name:     "metadata",
+							Required: true,
+						},
+					),
+					ArgsUsage: " ROOM_NAME",
+				},
+				{
+					Name:      "delete",
+					Usage:     "Delete a room",
+					Before:    createRoomClient,
+					Action:    deleteRoom,
+					Flags:     withDefaultFlags(),
+					ArgsUsage: " ROOM_NAME_OR_ID",
+				},
+				{
+					Name:  "participants",
+					Usage: "Manage room participants",
+					Commands: []*cli.Command{
+						{
+							Name:      "list",
+							Usage:     "List or search for active rooms by name",
+							Before:    createRoomClient,
+							Action:    listParticipants,
+							Flags:     withDefaultFlags(),
+							ArgsUsage: " [ROOM_NAME ...]",
+						},
+					},
+				},
+				{
+					Name:   "list-participants",
+					Before: createRoomClient,
+					Action: _deprecatedListParticipants,
+					Flags: withDefaultFlags(
+						roomFlag,
+					),
+				},
+				{
+					Name:   "get-participant",
+					Before: createRoomClient,
+					Action: getParticipant,
+					Flags: withDefaultFlags(
+						roomFlag,
+						identityFlag,
+					),
+				},
+				{
+					Name:   "remove-participant",
+					Before: createRoomClient,
+					Action: removeParticipant,
+					Flags: withDefaultFlags(
+						roomFlag,
+						identityFlag,
+					),
+				},
+				{
+					Name:   "update-participant",
+					Before: createRoomClient,
+					Action: updateParticipant,
+					Flags: withDefaultFlags(
+						roomFlag,
+						identityFlag,
+						&cli.StringFlag{
+							Name: "metadata",
+						},
+						&cli.StringFlag{
+							Name:  "permissions",
+							Usage: "JSON describing participant permissions (existing values for unset fields)",
+						},
+					),
+				},
+				{
+					Name:   "mute-track",
+					Before: createRoomClient,
+					Action: muteTrack,
+					Flags: withDefaultFlags(
+						roomFlag,
+						identityFlag,
+						&cli.StringFlag{
+							Name:     "track",
+							Usage:    "track sid to mute",
+							Required: true,
+						},
+						&cli.BoolFlag{
+							Name:  "muted",
+							Usage: "set to true to mute, false to unmute",
+						},
+					),
+				},
+				{
+					Name:   "update-subscriptions",
+					Before: createRoomClient,
+					Action: updateSubscriptions,
+					Flags: withDefaultFlags(
+						roomFlag,
+						identityFlag,
+						&cli.StringSliceFlag{
+							Name:     "track",
+							Usage:    "track sid to subscribe/unsubscribe",
+							Required: true,
+						},
+						&cli.BoolFlag{
+							Name:  "subscribe",
+							Usage: "set to true to subscribe, otherwise it'll unsubscribe",
+						},
+					),
+				},
+				{
+					Name:   "send-data",
+					Before: createRoomClient,
+					Action: sendData,
+					Flags: withDefaultFlags(
+						roomFlag,
+						&cli.StringFlag{
+							Name:     "data",
+							Usage:    "payload to send to client",
+							Required: true,
+						},
+						&cli.StringFlag{
+							Name:  "topic",
+							Usage: "topic of the message",
+						},
+						&cli.StringSliceFlag{
+							Name:  "participantID",
+							Usage: "list of participantID to send the message to",
+						},
+					),
+				},
+			},
+		},
+
+		// Deprecated commands kept for compatibility
+		{
+			Hidden: true, // deprecated: use `room create`
+			Name:   "create-room",
+			Before: createRoomClient,
+			Action: createRoom,
 			Flags: withDefaultFlags(
 				&cli.StringFlag{
 					Name:     "name",
@@ -85,145 +285,30 @@ var (
 			),
 		},
 		{
-			Name:     "list-rooms",
-			Before:   createRoomClient,
-			Action:   listRooms,
-			Category: roomCategory,
-			Flags:    withDefaultFlags(),
+			Hidden: true, // deprecated: use `room list``
+			Name:   "list-rooms",
+			Before: createRoomClient,
+			Action: listRooms,
+			Flags:  withDefaultFlags(),
 		},
 		{
-			Name:     "list-room",
-			Before:   createRoomClient,
-			Action:   listRoom,
-			Category: roomCategory,
+			Hidden: true, // deprecated: use `room list`
+			Name:   "list-room",
+			Before: createRoomClient,
+			Action: _deprecatedListRoom,
 			Flags: withDefaultFlags(
 				roomFlag,
 			),
 		},
 		{
-			Name:     "delete-room",
-			Before:   createRoomClient,
-			Action:   deleteRoom,
-			Category: roomCategory,
-			Flags: withDefaultFlags(
-				roomFlag,
-			),
-		},
-		{
-			Name:     "update-room-metadata",
-			Before:   createRoomClient,
-			Action:   updateRoomMetadata,
-			Category: roomCategory,
+			Hidden: true, // deprecated: use `room update-metadata`
+			Name:   "update-room-metadata",
+			Before: createRoomClient,
+			Action: _deprecatedUpdateRoomMetadata,
 			Flags: withDefaultFlags(
 				roomFlag,
 				&cli.StringFlag{
 					Name: "metadata",
-				},
-			),
-		},
-		{
-			Name:     "list-participants",
-			Before:   createRoomClient,
-			Action:   listParticipants,
-			Category: roomCategory,
-			Flags: withDefaultFlags(
-				roomFlag,
-			),
-		},
-		{
-			Name:     "get-participant",
-			Before:   createRoomClient,
-			Action:   getParticipant,
-			Category: roomCategory,
-			Flags: withDefaultFlags(
-				roomFlag,
-				identityFlag,
-			),
-		},
-		{
-			Name:     "remove-participant",
-			Before:   createRoomClient,
-			Action:   removeParticipant,
-			Category: roomCategory,
-			Flags: withDefaultFlags(
-				roomFlag,
-				identityFlag,
-			),
-		},
-		{
-			Name:     "update-participant",
-			Before:   createRoomClient,
-			Action:   updateParticipant,
-			Category: roomCategory,
-			Flags: withDefaultFlags(
-				roomFlag,
-				identityFlag,
-				&cli.StringFlag{
-					Name: "metadata",
-				},
-				&cli.StringFlag{
-					Name:  "permissions",
-					Usage: "JSON describing participant permissions (existing values for unset fields)",
-				},
-			),
-		},
-		{
-			Name:     "mute-track",
-			Before:   createRoomClient,
-			Action:   muteTrack,
-			Category: roomCategory,
-			Flags: withDefaultFlags(
-				roomFlag,
-				identityFlag,
-				&cli.StringFlag{
-					Name:     "track",
-					Usage:    "track sid to mute",
-					Required: true,
-				},
-				&cli.BoolFlag{
-					Name:  "muted",
-					Usage: "set to true to mute, false to unmute",
-				},
-			),
-		},
-		{
-			Name:     "update-subscriptions",
-			Before:   createRoomClient,
-			Action:   updateSubscriptions,
-			Category: roomCategory,
-			Flags: withDefaultFlags(
-				roomFlag,
-				identityFlag,
-				&cli.StringSliceFlag{
-					Name:     "track",
-					Usage:    "track sid to subscribe/unsubscribe",
-					Required: true,
-				},
-				&cli.BoolFlag{
-					Name:  "subscribe",
-					Usage: "set to true to subscribe, otherwise it'll unsubscribe",
-				},
-			),
-		},
-		{
-			Name:     "send-data",
-			Before:   createRoomClient,
-			Action:   sendData,
-			Category: roomCategory,
-			Flags: withDefaultFlags(
-				roomFlag,
-				&cli.StringFlag{
-					Name:     "data",
-					Usage:    "payload to send to client",
-					Required: true,
-				},
-				&cli.StringFlag{
-					Name:  "topic",
-					Usage: "topic of the message",
-				},
-				&cli.StringSliceFlag{
-					Name:  "participantID",
-					Usage: "list of participantID to send the message to",
 				},
 			),
 		},
@@ -232,8 +317,8 @@ var (
 	roomClient *lksdk.RoomServiceClient
 )
 
-func createRoomClient(c *cli.Context) error {
-	pc, err := loadProjectDetails(c)
+func createRoomClient(ctx context.Context, cmd *cli.Command) error {
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
 	}
@@ -242,12 +327,17 @@ func createRoomClient(c *cli.Context) error {
 	return nil
 }
 
-func createRoom(c *cli.Context) error {
-	req := &livekit.CreateRoomRequest{
-		Name: c.String("name"),
+func createRoom(ctx context.Context, cmd *cli.Command) error {
+	name, err := extractArg(cmd)
+	if err != nil {
+		return err
 	}
 
-	if roomEgressFile := c.String("room-egress-file"); roomEgressFile != "" {
+	req := &livekit.CreateRoomRequest{
+		Name: *name,
+	}
+
+	if roomEgressFile := cmd.String("room-egress-file"); roomEgressFile != "" {
 		roomEgress := &livekit.RoomCompositeEgressRequest{}
 		b, err := os.ReadFile(roomEgressFile)
 		if err != nil {
@@ -259,7 +349,7 @@ func createRoom(c *cli.Context) error {
 		req.Egress = &livekit.RoomEgress{Room: roomEgress}
 	}
 
-	if participantEgressFile := c.String("participant-egress-file"); participantEgressFile != "" {
+	if participantEgressFile := cmd.String("participant-egress-file"); participantEgressFile != "" {
 		participantEgress := &livekit.AutoParticipantEgress{}
 		b, err := os.ReadFile(participantEgressFile)
 		if err != nil {
@@ -274,7 +364,7 @@ func createRoom(c *cli.Context) error {
 		req.Egress.Participant = participantEgress
 	}
 
-	if trackEgressFile := c.String("track-egress-file"); trackEgressFile != "" {
+	if trackEgressFile := cmd.String("track-egress-file"); trackEgressFile != "" {
 		trackEgress := &livekit.AutoTrackEgress{}
 		b, err := os.ReadFile(trackEgressFile)
 		if err != nil {
@@ -289,7 +379,7 @@ func createRoom(c *cli.Context) error {
 		req.Egress.Tracks = trackEgress
 	}
 
-	if agentsFile := c.String("agents-file"); agentsFile != "" {
+	if agentsFile := cmd.String("agents-file"); agentsFile != "" {
 		agent := &livekit.RoomAgent{}
 		b, err := os.ReadFile(agentsFile)
 		if err != nil {
@@ -301,31 +391,31 @@ func createRoom(c *cli.Context) error {
 		req.Agent = agent
 	}
 
-	if roomConfig := c.String("room-configuration"); roomConfig != "" {
+	if roomConfig := cmd.String("room-configuration"); roomConfig != "" {
 		req.ConfigName = roomConfig
 	}
 
-	if c.Uint("min-playout-delay") != 0 {
-		fmt.Printf("setting min playout delay: %d\n", c.Uint("min-playout-delay"))
-		req.MinPlayoutDelay = uint32(c.Uint("min-playout-delay"))
+	if cmd.Uint("min-playout-delay") != 0 {
+		fmt.Printf("setting min playout delay: %d\n", cmd.Uint("min-playout-delay"))
+		req.MinPlayoutDelay = uint32(cmd.Uint("min-playout-delay"))
 	}
 
-	if maxPlayoutDelay := c.Uint("max-playout-delay"); maxPlayoutDelay != 0 {
+	if maxPlayoutDelay := cmd.Uint("max-playout-delay"); maxPlayoutDelay != 0 {
 		fmt.Printf("setting max playout delay: %d\n", maxPlayoutDelay)
 		req.MaxPlayoutDelay = uint32(maxPlayoutDelay)
 	}
 
-	if syncStreams := c.Bool("sync-streams"); syncStreams {
+	if syncStreams := cmd.Bool("sync-streams"); syncStreams {
 		fmt.Printf("setting sync streams: %t\n", syncStreams)
 		req.SyncStreams = syncStreams
 	}
 
-	if emptyTimeout := c.Uint("empty-timeout"); emptyTimeout != 0 {
+	if emptyTimeout := cmd.Uint("empty-timeout"); emptyTimeout != 0 {
 		fmt.Printf("setting empty timeout: %d\n", emptyTimeout)
 		req.EmptyTimeout = uint32(emptyTimeout)
 	}
 
-	if departureTimeout := c.Uint("departure-timeout"); departureTimeout != 0 {
+	if departureTimeout := cmd.Uint("departure-timeout"); departureTimeout != 0 {
 		fmt.Printf("setting departure timeout: %d\n", departureTimeout)
 		req.DepartureTimeout = uint32(departureTimeout)
 	}
@@ -339,13 +429,26 @@ func createRoom(c *cli.Context) error {
 	return nil
 }
 
-func listRooms(c *cli.Context) error {
-	res, err := roomClient.ListRooms(context.Background(), &livekit.ListRoomsRequest{})
+func listRooms(ctx context.Context, cmd *cli.Command) error {
+	names, _ := extractArgs(cmd)
+	req := livekit.ListRoomsRequest{}
+	if len(names) > 0 {
+		req.Names = names
+	}
+
+	res, err := roomClient.ListRooms(context.Background(), &req)
 	if err != nil {
 		return err
 	}
 	if len(res.Rooms) == 0 {
-		fmt.Println("there are no active rooms")
+		if len(names) > 0 {
+			fmt.Printf(
+				"there are no rooms matching %s",
+				strings.Join(mapStrings(names, wrapWith("\"")), ", "),
+			)
+		} else {
+			fmt.Println("there are no active rooms")
+		}
 	}
 	for _, rm := range res.Rooms {
 		fmt.Printf("%s\t%s\t%d participants\n", rm.Sid, rm.Name, rm.NumParticipants)
@@ -353,15 +456,15 @@ func listRooms(c *cli.Context) error {
 	return nil
 }
 
-func listRoom(c *cli.Context) error {
+func _deprecatedListRoom(ctx context.Context, cmd *cli.Command) error {
 	res, err := roomClient.ListRooms(context.Background(), &livekit.ListRoomsRequest{
-		Names: []string{c.String("room")},
+		Names: []string{cmd.String("room")},
 	})
 	if err != nil {
 		return err
 	}
 	if len(res.Rooms) == 0 {
-		fmt.Printf("there is no matching room with name: %s\n", c.String("room"))
+		fmt.Printf("there is no matching room with name: %s\n", cmd.String("room"))
 		return nil
 	}
 	rm := res.Rooms[0]
@@ -369,10 +472,14 @@ func listRoom(c *cli.Context) error {
 	return nil
 }
 
-func deleteRoom(c *cli.Context) error {
-	roomId := c.String("room")
-	_, err := roomClient.DeleteRoom(context.Background(), &livekit.DeleteRoomRequest{
-		Room: roomId,
+func deleteRoom(ctx context.Context, cmd *cli.Command) error {
+	roomId, err := extractArg(cmd)
+	if err != nil {
+		return err
+	}
+
+	_, err = roomClient.DeleteRoom(context.Background(), &livekit.DeleteRoomRequest{
+		Room: *roomId,
 	})
 	if err != nil {
 		return err
@@ -382,11 +489,11 @@ func deleteRoom(c *cli.Context) error {
 	return nil
 }
 
-func updateRoomMetadata(c *cli.Context) error {
-	roomName := c.String("room")
+func updateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
+	roomName, _ := extractArg(cmd)
 	res, err := roomClient.UpdateRoomMetadata(context.Background(), &livekit.UpdateRoomMetadataRequest{
-		Room:     roomName,
-		Metadata: c.String("metadata"),
+		Room:     *roomName,
+		Metadata: cmd.String("metadata"),
 	})
 	if err != nil {
 		return err
@@ -397,8 +504,42 @@ func updateRoomMetadata(c *cli.Context) error {
 	return nil
 }
 
-func listParticipants(c *cli.Context) error {
-	roomName := c.String("room")
+func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
+	roomName := cmd.String("room")
+	res, err := roomClient.UpdateRoomMetadata(context.Background(), &livekit.UpdateRoomMetadataRequest{
+		Room:     roomName,
+		Metadata: cmd.String("metadata"),
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Updated room metadata")
+	PrintJSON(res)
+	return nil
+}
+
+func listParticipants(ctx context.Context, cmd *cli.Command) error {
+	roomName, err := extractArg(cmd)
+	if err != nil {
+		return err
+	}
+
+	res, err := roomClient.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
+		Room: *roomName,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, p := range res.Participants {
+		fmt.Printf("%s (%s)\t tracks: %d\n", p.Identity, p.State.String(), len(p.Tracks))
+	}
+	return nil
+}
+
+func _deprecatedListParticipants(ctx context.Context, cmd *cli.Command) error {
+	roomName := cmd.String("room")
 	res, err := roomClient.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
 		Room: roomName,
 	})
@@ -412,8 +553,8 @@ func listParticipants(c *cli.Context) error {
 	return nil
 }
 
-func getParticipant(c *cli.Context) error {
-	roomName, identity := participantInfoFromCli(c)
+func getParticipant(ctx context.Context, cmd *cli.Command) error {
+	roomName, identity := participantInfoFromCli(cmd)
 	res, err := roomClient.GetParticipant(context.Background(), &livekit.RoomParticipantIdentity{
 		Room:     roomName,
 		Identity: identity,
@@ -427,10 +568,10 @@ func getParticipant(c *cli.Context) error {
 	return nil
 }
 
-func updateParticipant(c *cli.Context) error {
-	roomName, identity := participantInfoFromCli(c)
-	metadata := c.String("metadata")
-	permissions := c.String("permissions")
+func updateParticipant(ctx context.Context, cmd *cli.Command) error {
+	roomName, identity := participantInfoFromCli(cmd)
+	metadata := cmd.String("metadata")
+	permissions := cmd.String("permissions")
 	if metadata == "" && permissions == "" {
 		return fmt.Errorf("either metadata or permissions must be set")
 	}
@@ -442,7 +583,7 @@ func updateParticipant(c *cli.Context) error {
 	}
 	if permissions != "" {
 		// load existing participant
-		participant, err := roomClient.GetParticipant(c.Context, &livekit.RoomParticipantIdentity{
+		participant, err := roomClient.GetParticipant(ctx, &livekit.RoomParticipantIdentity{
 			Room:     roomName,
 			Identity: identity,
 		})
@@ -460,7 +601,7 @@ func updateParticipant(c *cli.Context) error {
 
 	fmt.Println("updating participant...")
 	PrintJSON(req)
-	if _, err := roomClient.UpdateParticipant(c.Context, req); err != nil {
+	if _, err := roomClient.UpdateParticipant(ctx, req); err != nil {
 		return err
 	}
 	fmt.Println("participant updated.")
@@ -468,8 +609,8 @@ func updateParticipant(c *cli.Context) error {
 	return nil
 }
 
-func removeParticipant(c *cli.Context) error {
-	roomName, identity := participantInfoFromCli(c)
+func removeParticipant(ctx context.Context, cmd *cli.Command) error {
+	roomName, identity := participantInfoFromCli(cmd)
 	_, err := roomClient.RemoveParticipant(context.Background(), &livekit.RoomParticipantIdentity{
 		Room:     roomName,
 		Identity: identity,
@@ -483,53 +624,53 @@ func removeParticipant(c *cli.Context) error {
 	return nil
 }
 
-func muteTrack(c *cli.Context) error {
-	roomName, identity := participantInfoFromCli(c)
-	trackSid := c.String("track")
+func muteTrack(ctx context.Context, cmd *cli.Command) error {
+	roomName, identity := participantInfoFromCli(cmd)
+	trackSid := cmd.String("track")
 	_, err := roomClient.MutePublishedTrack(context.Background(), &livekit.MuteRoomTrackRequest{
 		Room:     roomName,
 		Identity: identity,
 		TrackSid: trackSid,
-		Muted:    c.Bool("muted"),
+		Muted:    cmd.Bool("muted"),
 	})
 	if err != nil {
 		return err
 	}
 
 	verb := "muted"
-	if !c.Bool("muted") {
+	if !cmd.Bool("muted") {
 		verb = "unmuted"
 	}
 	fmt.Println(verb, "track: ", trackSid)
 	return nil
 }
 
-func updateSubscriptions(c *cli.Context) error {
-	roomName, identity := participantInfoFromCli(c)
-	trackSids := c.StringSlice("track")
+func updateSubscriptions(ctx context.Context, cmd *cli.Command) error {
+	roomName, identity := participantInfoFromCli(cmd)
+	trackSids := cmd.StringSlice("track")
 	_, err := roomClient.UpdateSubscriptions(context.Background(), &livekit.UpdateSubscriptionsRequest{
 		Room:      roomName,
 		Identity:  identity,
 		TrackSids: trackSids,
-		Subscribe: c.Bool("subscribe"),
+		Subscribe: cmd.Bool("subscribe"),
 	})
 	if err != nil {
 		return err
 	}
 
 	verb := "subscribed to"
-	if !c.Bool("subscribe") {
+	if !cmd.Bool("subscribe") {
 		verb = "unsubscribed from"
 	}
 	fmt.Println(verb, "tracks: ", trackSids)
 	return nil
 }
 
-func sendData(c *cli.Context) error {
-	roomName, _ := participantInfoFromCli(c)
-	pIDs := c.StringSlice("participantID")
-	data := c.String("data")
-	topic := c.String("topic")
+func sendData(ctx context.Context, cmd *cli.Command) error {
+	roomName, _ := participantInfoFromCli(cmd)
+	pIDs := cmd.StringSlice("participantID")
+	data := cmd.String("data")
+	topic := cmd.String("topic")
 	req := &livekit.SendDataRequest{
 		Room:            roomName,
 		Data:            []byte(data),
@@ -538,7 +679,7 @@ func sendData(c *cli.Context) error {
 	if topic != "" {
 		req.Topic = &topic
 	}
-	_, err := roomClient.SendData(c.Context, req)
+	_, err := roomClient.SendData(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -547,6 +688,6 @@ func sendData(c *cli.Context) error {
 	return nil
 }
 
-func participantInfoFromCli(c *cli.Context) (string, string) {
+func participantInfoFromCli(c *cli.Command) (string, string) {
 	return c.String("room"), c.String("identity")
 }

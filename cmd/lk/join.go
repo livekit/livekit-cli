@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -27,7 +28,7 @@ import (
 
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	provider2 "github.com/livekit/livekit-cli/pkg/provider"
 	"github.com/livekit/protocol/livekit"
@@ -55,7 +56,7 @@ var (
 						"can be used multiple times to publish multiple files. " +
 						"can publish from Unix or TCP socket using the format `codec://socket_name` or `codec://host:address` respectively. Valid codecs are h264, vp8, opus",
 				},
-				&cli.Float64Flag{
+				&cli.FloatFlag{
 					Name:  "fps",
 					Usage: "if video files are published, indicates FPS of video",
 				},
@@ -70,8 +71,8 @@ var (
 
 const mimeDelimiter = "://"
 
-func joinRoom(c *cli.Context) error {
-	pc, err := loadProjectDetails(c)
+func joinRoom(ctx context.Context, cmd *cli.Command) error {
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
 	}
@@ -144,8 +145,8 @@ func joinRoom(c *cli.Context) error {
 	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
 		APIKey:              pc.APIKey,
 		APISecret:           pc.APISecret,
-		RoomName:            c.String("room"),
-		ParticipantIdentity: c.String("identity"),
+		RoomName:            cmd.String("room"),
+		ParticipantIdentity: cmd.String("identity"),
 	}, roomCB)
 	if err != nil {
 		return err
@@ -156,17 +157,17 @@ func joinRoom(c *cli.Context) error {
 
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	if c.Bool("publish-demo") {
+	if cmd.Bool("publish-demo") {
 		if err = publishDemo(room); err != nil {
 			return err
 		}
 	}
 
-	if c.StringSlice("publish") != nil {
-		fps := c.Float64("fps")
-		for _, pub := range c.StringSlice("publish") {
+	if cmd.StringSlice("publish") != nil {
+		fps := cmd.Float("fps")
+		for _, pub := range cmd.StringSlice("publish") {
 			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
-				if c.Bool("exit-after-publish") {
+				if cmd.Bool("exit-after-publish") {
 					close(done)
 					return
 				}

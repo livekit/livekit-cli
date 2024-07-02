@@ -15,12 +15,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
@@ -29,12 +30,11 @@ import (
 var (
 	TokenCommands = []*cli.Command{
 		{
-			Name:            "token",
-			Usage:           "Create access tokens with granular capabilities",
-			Category:        "Core",
-			Before:          loadProjectConfig,
-			HideHelpCommand: true,
-			Subcommands: []*cli.Command{
+			Name:     "token",
+			Usage:    "Create access tokens with granular capabilities",
+			Category: "Core",
+			Before:   loadProjectConfig,
+			Commands: []*cli.Command{
 				{
 					Name:   "create",
 					Usage:  "Creates an access token",
@@ -42,35 +42,35 @@ var (
 					Flags: []cli.Flag{
 						&cli.BoolFlag{
 							Name:  "create",
-							Usage: "Enable token to be used to create rooms",
+							Usage: "Token bearer can create rooms",
 						},
 						&cli.BoolFlag{
 							Name:  "list",
-							Usage: "Enable token to be used to list rooms",
+							Usage: "Token bearer can list rooms",
 						},
 						&cli.BoolFlag{
 							Name:  "join",
-							Usage: "Enable token to be used to join a room (requires --room and --identity)",
+							Usage: "Token bearer can join a room (requires --room and --identity)",
 						},
 						&cli.BoolFlag{
 							Name:  "admin",
-							Usage: "Enable token to be used to manage a room (requires --room)",
+							Usage: "Token bearer can manage a room (requires --room)",
 						},
 						&cli.BoolFlag{
 							Name:  "recorder",
-							Usage: "Enable token to be used to record a room (requires --room)",
+							Usage: "Token bearer can record a room (requires --room)",
 						},
 						&cli.BoolFlag{
 							Name:  "egress",
-							Usage: "Enable token to interact with EgressService",
+							Usage: "Token bearer can interact with EgressService",
 						},
 						&cli.BoolFlag{
 							Name:  "ingress",
-							Usage: "Enable token to interact with IngressService",
+							Usage: "Token bearer can interact with IngressService",
 						},
 						&cli.StringSliceFlag{
 							Name:  "allow-source",
-							Usage: "Allow one or more `SOURCE`s to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
+							Usage: "Restric publishing to only `SOURCE` types (e.g. --allow-source camera,microphone), defaults to all",
 						},
 						&cli.BoolFlag{
 							Name:  "allow-update-metadata",
@@ -97,7 +97,7 @@ var (
 						},
 						&cli.StringFlag{
 							Name:  "valid-for",
-							Usage: "Amount of `TIME` that the token is valid for. i.e. \"5m\", \"1h10m\" (s: seconds, m: minutes, h: hours)",
+							Usage: "`TIME` that the token is valid for, e.g. \"5m\", \"1h10m\" (s: seconds, m: minutes, h: hours)",
 							Value: "5m",
 						},
 						&cli.StringFlag{
@@ -122,31 +122,31 @@ var (
 				secretFlag,
 				&cli.BoolFlag{
 					Name:  "create",
-					Usage: "Enable token to be used to create rooms",
+					Usage: "Token bearer can create rooms",
 				},
 				&cli.BoolFlag{
 					Name:  "list",
-					Usage: "Enable token to be used to list rooms",
+					Usage: "Token bearer can list rooms",
 				},
 				&cli.BoolFlag{
 					Name:  "join",
-					Usage: "Enable token to be used to join a room (requires --room and --identity)",
+					Usage: "Token bearer can join a room (requires --room and --identity)",
 				},
 				&cli.BoolFlag{
 					Name:  "admin",
-					Usage: "Enable token to be used to manage a room (requires --room)",
+					Usage: "Token bearer can manage a room (requires --room)",
 				},
 				&cli.BoolFlag{
 					Name:  "recorder",
-					Usage: "Enable token to be used to record a room (requires --room)",
+					Usage: "Token bearer can record a room (requires --room)",
 				},
 				&cli.BoolFlag{
 					Name:  "egress",
-					Usage: "Enable token to interact with EgressService",
+					Usage: "Token bearer can interact with EgressService",
 				},
 				&cli.BoolFlag{
 					Name:  "ingress",
-					Usage: "Enable token to interact with IngressService",
+					Usage: "Token bearer can interact with IngressService",
 				},
 				&cli.StringSliceFlag{
 					Name:  "allow-source",
@@ -190,7 +190,7 @@ var (
 	}
 )
 
-func createToken(c *cli.Context) error {
+func createToken(ctx context.Context, c *cli.Command) error {
 	p := c.String("identity") // required only for join
 	name := c.String("name")
 	room := c.String("room")

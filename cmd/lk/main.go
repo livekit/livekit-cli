@@ -15,10 +15,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	livekitcli "github.com/livekit/livekit-cli"
 	"github.com/livekit/protocol/logger"
@@ -26,12 +27,14 @@ import (
 )
 
 func main() {
-	app := &cli.App{
-		Name:                 "lk",
-		Usage:                "CLI client to LiveKit",
-		Version:              livekitcli.Version,
-		EnableBashCompletion: true,
-		Suggest:              true,
+	app := &cli.Command{
+		Name:                  "lk",
+		Usage:                 "CLI client to LiveKit",
+		Description:           "A suite of command line utilities allowing you to access LiveKit APIs services, interact with rooms in realtime, and perform load testing simulations.",
+		Version:               livekitcli.Version,
+		EnableShellCompletion: true,
+		Suggest:               true,
+		HideHelpCommand:       true,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name: "verbose",
@@ -50,11 +53,11 @@ func main() {
 				},
 			},
 		},
-		Before: func(c *cli.Context) error {
+		Before: func(ctx context.Context, cmd *cli.Command) error {
 			logConfig := &logger.Config{
 				Level: "info",
 			}
-			if c.Bool("verbose") {
+			if cmd.Bool("verbose") {
 				logConfig.Level = "debug"
 			}
 			logger.InitFromConfig(logConfig, "livekit-cli")
@@ -73,18 +76,18 @@ func main() {
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, SIPCommands...)
 
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run(context.Background(), os.Args); err != nil {
 		fmt.Println(err)
 	}
 }
 
-func generateFishCompletion(c *cli.Context) error {
-	fishScript, err := c.App.ToFishCompletion()
+func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
+	fishScript, err := cmd.ToFishCompletion()
 	if err != nil {
 		return err
 	}
 
-	outPath := c.String("out")
+	outPath := cmd.String("out")
 	if outPath != "" {
 		if err := os.WriteFile(outPath, []byte(fishScript), 0o644); err != nil {
 			return err
