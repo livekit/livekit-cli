@@ -31,17 +31,17 @@ import (
 var (
 	RoomCommands = []*cli.Command{
 		{
-			Name:        "room",
-			Description: "The Rooms API TKTK",
-			Usage:       "Create or delete rooms and manage existing room properties",
-			Category:    "Core",
+			Name:            "room",
+			Usage:           "Create or delete rooms and manage existing room properties",
+			Category:        "Core",
+			HideHelpCommand: true,
 			Commands: []*cli.Command{
 				{
 					Name:   "create",
 					Usage:  "Create a room",
 					Before: createRoomClient,
 					Action: createRoom,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "room-egress-file",
 							Usage: "RoomCompositeRequest `JSON` file (see examples/room-composite-file.json)",
@@ -82,7 +82,7 @@ var (
 							Name:  "departure-timeout",
 							Usage: "Number of `SECS` to keep the room open after the last participant leaves",
 						},
-					),
+					},
 					ArgsUsage: " ROOM_NAME",
 				},
 				{
@@ -90,7 +90,6 @@ var (
 					Usage:     "List or search for active rooms by name",
 					Before:    createRoomClient,
 					Action:    listRooms,
-					Flags:     withDefaultFlags(),
 					ArgsUsage: " [ROOM_NAME ...]",
 				},
 				{
@@ -98,12 +97,12 @@ var (
 					Usage:  "Modify properties of an active room",
 					Before: createRoomClient,
 					Action: updateRoomMetadata,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "metadata",
 							Required: true,
 						},
-					),
+					},
 					ArgsUsage: " ROOM_NAME",
 				},
 				{
@@ -111,19 +110,17 @@ var (
 					Usage:     "Delete a room",
 					Before:    createRoomClient,
 					Action:    deleteRoom,
-					Flags:     withDefaultFlags(),
 					ArgsUsage: " ROOM_NAME_OR_ID",
 				},
 				{
-					Name:  "participants",
-					Usage: "Manage room participants",
+					Name:   "participants",
+					Usage:  "Manage room participants",
+					Before: createRoomClient,
 					Commands: []*cli.Command{
 						{
 							Name:      "list",
 							Usage:     "List or search for active rooms by name",
-							Before:    createRoomClient,
 							Action:    listParticipants,
-							Flags:     withDefaultFlags(),
 							ArgsUsage: " [ROOM_NAME ...]",
 						},
 					},
@@ -132,33 +129,33 @@ var (
 					Name:   "list-participants",
 					Before: createRoomClient,
 					Action: _deprecatedListParticipants,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						roomFlag,
-					),
+					},
 				},
 				{
 					Name:   "get-participant",
 					Before: createRoomClient,
 					Action: getParticipant,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						roomFlag,
 						identityFlag,
-					),
+					},
 				},
 				{
 					Name:   "remove-participant",
 					Before: createRoomClient,
 					Action: removeParticipant,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						roomFlag,
 						identityFlag,
-					),
+					},
 				},
 				{
 					Name:   "update-participant",
 					Before: createRoomClient,
 					Action: updateParticipant,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						roomFlag,
 						identityFlag,
 						&cli.StringFlag{
@@ -168,13 +165,13 @@ var (
 							Name:  "permissions",
 							Usage: "JSON describing participant permissions (existing values for unset fields)",
 						},
-					),
+					},
 				},
 				{
 					Name:   "mute-track",
 					Before: createRoomClient,
 					Action: muteTrack,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						roomFlag,
 						identityFlag,
 						&cli.StringFlag{
@@ -186,13 +183,13 @@ var (
 							Name:  "muted",
 							Usage: "set to true to mute, false to unmute",
 						},
-					),
+					},
 				},
 				{
 					Name:   "update-subscriptions",
 					Before: createRoomClient,
 					Action: updateSubscriptions,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						roomFlag,
 						identityFlag,
 						&cli.StringSliceFlag{
@@ -204,13 +201,13 @@ var (
 							Name:  "subscribe",
 							Usage: "set to true to subscribe, otherwise it'll unsubscribe",
 						},
-					),
+					},
 				},
 				{
 					Name:   "send-data",
 					Before: createRoomClient,
 					Action: sendData,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						roomFlag,
 						&cli.StringFlag{
 							Name:     "data",
@@ -225,7 +222,7 @@ var (
 							Name:  "participantID",
 							Usage: "list of participantID to send the message to",
 						},
-					),
+					},
 				},
 			},
 		},
@@ -236,7 +233,7 @@ var (
 			Name:   "create-room",
 			Before: createRoomClient,
 			Action: createRoom,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "name",
 					Usage:    "name of the room",
@@ -282,35 +279,34 @@ var (
 					Name:  "departure-timeout",
 					Usage: "number of seconds to keep the room open after the last participant leaves",
 				},
-			),
+			},
 		},
 		{
 			Hidden: true, // deprecated: use `room list``
 			Name:   "list-rooms",
 			Before: createRoomClient,
 			Action: listRooms,
-			Flags:  withDefaultFlags(),
 		},
 		{
 			Hidden: true, // deprecated: use `room list`
 			Name:   "list-room",
 			Before: createRoomClient,
 			Action: _deprecatedListRoom,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				roomFlag,
-			),
+			},
 		},
 		{
 			Hidden: true, // deprecated: use `room update-metadata`
 			Name:   "update-room-metadata",
 			Before: createRoomClient,
 			Action: _deprecatedUpdateRoomMetadata,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				roomFlag,
 				&cli.StringFlag{
 					Name: "metadata",
 				},
-			),
+			},
 		},
 	}
 
@@ -334,7 +330,7 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := &livekit.CreateRoomRequest{
-		Name: *name,
+		Name: name,
 	}
 
 	if roomEgressFile := cmd.String("room-egress-file"); roomEgressFile != "" {
@@ -479,7 +475,7 @@ func deleteRoom(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	_, err = roomClient.DeleteRoom(context.Background(), &livekit.DeleteRoomRequest{
-		Room: *roomId,
+		Room: roomId,
 	})
 	if err != nil {
 		return err
@@ -492,7 +488,7 @@ func deleteRoom(ctx context.Context, cmd *cli.Command) error {
 func updateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
 	roomName, _ := extractArg(cmd)
 	res, err := roomClient.UpdateRoomMetadata(context.Background(), &livekit.UpdateRoomMetadataRequest{
-		Room:     *roomName,
+		Room:     roomName,
 		Metadata: cmd.String("metadata"),
 	})
 	if err != nil {
@@ -526,7 +522,7 @@ func listParticipants(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	res, err := roomClient.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
-		Room: *roomName,
+		Room: roomName,
 	})
 	if err != nil {
 		return err

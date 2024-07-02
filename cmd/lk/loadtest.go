@@ -35,7 +35,7 @@ var LoadTestCommands = []*cli.Command{
 		Usage:    "Run load tests against LiveKit with simulated publishers & subscribers",
 		Category: "Simulate",
 		Action:   loadTest,
-		Flags: withDefaultFlags(
+		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "room",
 				Usage: "name of the room (default to random name)",
@@ -94,7 +94,7 @@ var LoadTestCommands = []*cli.Command{
 				Usage:  "runs set list of load test cases",
 				Hidden: true,
 			},
-		),
+		},
 	},
 }
 

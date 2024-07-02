@@ -41,33 +41,33 @@ var (
 					Usage:  "Create an ingress",
 					Before: createIngressClient,
 					Action: createIngress,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "request",
 							Usage:    "CreateIngressRequest as json file (see cmd/livekit-cli/examples)",
 							Required: true,
 						},
-					),
+					},
 				},
 				{
 					Name:   "update",
 					Usage:  "Update an ingress",
 					Before: createIngressClient,
 					Action: updateIngress,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "request",
 							Usage:    "UpdateIngressRequest as json file (see cmd/livekit-cli/examples)",
 							Required: true,
 						},
-					),
+					},
 				},
 				{
 					Name:   "list",
 					Usage:  "List all active ingress",
 					Before: createIngressClient,
 					Action: listIngress,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "room",
 							Usage:    "limits list to a certain room name ",
@@ -78,20 +78,20 @@ var (
 							Usage:    "list a specific ingress id",
 							Required: false,
 						},
-					),
+					},
 				},
 				{
 					Name:   "delete",
 					Usage:  "Delete an ingress",
 					Before: createIngressClient,
 					Action: deleteIngress,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "id",
 							Usage:    "Ingress ID",
 							Required: true,
 						},
-					),
+					},
 				},
 			},
 		},
@@ -104,13 +104,13 @@ var (
 			Before:   createIngressClient,
 			Action:   createIngress,
 			Category: ingressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "CreateIngressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprecated: use `ingress update`
@@ -119,13 +119,13 @@ var (
 			Before:   createIngressClient,
 			Action:   updateIngress,
 			Category: ingressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "UpdateIngressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprecated: use `ingress list`
@@ -134,7 +134,7 @@ var (
 			Before:   createIngressClient,
 			Action:   listIngress,
 			Category: ingressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "room",
 					Usage:    "limits list to a certain room name ",
@@ -145,7 +145,7 @@ var (
 					Usage:    "list a specific ingress id",
 					Required: false,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprecated: use `ingress delete`
@@ -154,13 +154,13 @@ var (
 			Before:   createIngressClient,
 			Action:   deleteIngress,
 			Category: ingressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "Ingress ID",
 					Required: true,
 				},
-			),
+			},
 		},
 	}
 

@@ -52,20 +52,17 @@ var (
 							Name:   "list",
 							Usage:  "List all inbound SIP Trunks",
 							Action: listSipInboundTrunk,
-							Flags:  withDefaultFlags(),
 						},
 						{
 							Name:      "create",
 							Usage:     "Create an inbound SIP Trunk",
 							Action:    createSIPInboundTrunk,
-							Flags:     withDefaultFlags(),
 							ArgsUsage: " " + RequestDesc[livekit.CreateSIPInboundTrunkRequest](),
 						},
 						{
 							Name:      "delete",
 							Usage:     "Delete a SIP Trunk",
 							Action:    deleteSIPTrunk,
-							Flags:     withDefaultFlags(),
 							ArgsUsage: " SIPTrunk ID to delete",
 						},
 					},
@@ -80,20 +77,17 @@ var (
 							Name:   "list",
 							Usage:  "List all outbound SIP Trunk",
 							Action: listSipOutboundTrunk,
-							Flags:  withDefaultFlags(),
 						},
 						{
 							Name:      "create",
 							Usage:     "Create a outbound SIP Trunk",
 							Action:    createSIPOutboundTrunk,
-							Flags:     withDefaultFlags(),
 							ArgsUsage: " " + RequestDesc[livekit.CreateSIPOutboundTrunkRequest](),
 						},
 						{
 							Name:      "delete",
 							Usage:     "Delete SIP Trunk",
 							Action:    deleteSIPTrunk,
-							Flags:     withDefaultFlags(),
 							ArgsUsage: " SIPTrunk ID to delete",
 						},
 					},
@@ -108,20 +102,17 @@ var (
 							Name:   "list",
 							Usage:  "List all SIP Dispatch Rule",
 							Action: listSipDispatchRule,
-							Flags:  withDefaultFlags(),
 						},
 						{
 							Name:      "create",
 							Usage:     "Create a SIP Dispatch Rule",
 							Action:    createSIPDispatchRule,
-							Flags:     withDefaultFlags(),
 							ArgsUsage: " " + RequestDesc[livekit.CreateSIPDispatchRuleRequest](),
 						},
 						{
 							Name:      "delete",
 							Usage:     "Delete SIP Dispatch Rule",
 							Action:    deleteSIPDispatchRule,
-							Flags:     withDefaultFlags(),
 							ArgsUsage: " SIPTrunk ID to delete",
 						},
 					},
@@ -135,7 +126,6 @@ var (
 							Name:      "create",
 							Usage:     "Create a SIP Participant",
 							Action:    createSIPParticipant,
-							Flags:     withDefaultFlags(),
 							ArgsUsage: " " + RequestDesc[livekit.CreateSIPParticipantRequest](),
 						},
 					},
@@ -150,10 +140,10 @@ var (
 			Usage:    "Create a SIP Trunk",
 			Action:   createSIPTrunkLegacy,
 			Category: sipCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				//lint:ignore SA1019 we still support it
 				RequestFlag[livekit.CreateSIPTrunkRequest](),
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprecated: use `sip trunk list`
@@ -161,7 +151,6 @@ var (
 			Usage:    "List all SIP trunk",
 			Action:   listSipTrunk,
 			Category: sipCategory,
-			Flags:    withDefaultFlags(),
 		},
 		{
 			Hidden:   true, // deprecated: use `sip trunk delete`
@@ -169,13 +158,13 @@ var (
 			Usage:    "Delete SIP Trunk",
 			Action:   deleteSIPTrunkLegacy,
 			Category: sipCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "SIPTrunk ID",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprecated: use `sip dispatch create`
@@ -183,9 +172,9 @@ var (
 			Usage:    "Create a SIP Dispatch Rule",
 			Action:   createSIPDispatchRuleLegacy,
 			Category: sipCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				RequestFlag[livekit.CreateSIPDispatchRuleRequest](),
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprecated: use `sip dispatch list`
@@ -193,7 +182,6 @@ var (
 			Usage:    "List all SIP Dispatch Rule",
 			Action:   listSipDispatchRule,
 			Category: sipCategory,
-			Flags:    withDefaultFlags(),
 		},
 		{
 			Hidden:   true, // deprecated: use `sip dispatch delete`
@@ -201,13 +189,13 @@ var (
 			Usage:    "Delete SIP Dispatch Rule",
 			Action:   deleteSIPDispatchRuleLegacy,
 			Category: sipCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "SIPDispatchRule ID",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprecated: use `sip participant create`
@@ -215,9 +203,9 @@ var (
 			Usage:    "Create a SIP Participant",
 			Action:   createSIPParticipantLegacy,
 			Category: sipCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				RequestFlag[livekit.CreateSIPParticipantRequest](),
-			),
+			},
 		},
 	}
 )

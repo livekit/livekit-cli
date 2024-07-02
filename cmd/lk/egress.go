@@ -81,13 +81,13 @@ var (
 					Description: egressStartDescription,
 					Before:      createEgressClient,
 					Action:      handleEgressStart,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "type",
 							Usage: "Specify `TYPE` of egress (see above)",
 							Value: string(EgressTypeRoomComposite),
 						},
-					),
+					},
 					ArgsUsage: " REQUEST_JSON",
 				},
 				{
@@ -95,7 +95,7 @@ var (
 					Usage:  "List and search active egress",
 					Before: createEgressClient,
 					Action: listEgress,
-					Flags: withDefaultFlags(
+					Flags: []cli.Flag{
 						&cli.StringSliceFlag{
 							Name:  "id",
 							Usage: "List a specific egress `ID`, can be used multiple times",
@@ -108,7 +108,7 @@ var (
 							Name:  "active",
 							Usage: "Lists only active egresses",
 						},
-					),
+					},
 				},
 			},
 			HideHelpCommand: true,
@@ -122,13 +122,13 @@ var (
 			Before:   createEgressClient,
 			Action:   _deprecatedStartRoomCompositeEgress,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    RequestDesc[livekit.RoomCompositeEgressRequest](),
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprectated: use `egress start --web`
@@ -137,13 +137,13 @@ var (
 			Before:   createEgressClient,
 			Action:   _deprecatedStartWebEgress,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "WebEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprectated: use `egress start --participant`
@@ -152,13 +152,13 @@ var (
 			Before:   createEgressClient,
 			Action:   _deprecatedStartParticipantEgress,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "ParticipantEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprectated: use `egress start --track-composite`
@@ -167,13 +167,13 @@ var (
 			Before:   createEgressClient,
 			Action:   _deprecatedStartTrackCompositeEgress,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "TrackCompositeEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprectated: use `egress start --track`
@@ -182,13 +182,13 @@ var (
 			Before:   createEgressClient,
 			Action:   _deprecatedStartTrackEgress,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
 					Usage:    "TrackEgressRequest as json file (see cmd/livekit-cli/examples)",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprectated: use `egress list`
@@ -197,7 +197,7 @@ var (
 			Before:   createEgressClient,
 			Action:   listEgress,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringSliceFlag{
 					Name:  "id",
 					Usage: "list a specific egress id, can be used multiple times",
@@ -210,7 +210,7 @@ var (
 					Name:  "active",
 					Usage: "lists only active egresses",
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprectated: use `egress update`
@@ -219,7 +219,7 @@ var (
 			Before:   createEgressClient,
 			Action:   updateLayout,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "Egress ID",
@@ -230,7 +230,7 @@ var (
 					Usage:    "new web layout",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprectated: use `egress update`
@@ -239,7 +239,7 @@ var (
 			Before:   createEgressClient,
 			Action:   updateStream,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
 					Usage:    "Egress ID",
@@ -255,7 +255,7 @@ var (
 					Usage:    "urls to remove",
 					Required: false,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprectated: use `egress stop`
@@ -264,13 +264,13 @@ var (
 			Before:   createEgressClient,
 			Action:   stopEgress,
 			Category: egressCategory,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringSliceFlag{
 					Name:     "id",
 					Usage:    "Egress ID to stop, can be specified multiple times",
 					Required: true,
 				},
-			),
+			},
 		},
 		{
 			Hidden:   true, // deprecated: use `egress test-template`
@@ -278,7 +278,7 @@ var (
 			Usage:    "See what your egress template will look like in a recording",
 			Category: egressCategory,
 			Action:   testEgressTemplate,
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "base-url (e.g. https://recorder.livekit.io/#)",
 					Usage:    "base template url",
@@ -298,7 +298,7 @@ var (
 					Usage:    "name of the room",
 					Required: false,
 				},
-			),
+			},
 			SkipFlagParsing:        false,
 			HideHelp:               false,
 			HideHelpCommand:        false,

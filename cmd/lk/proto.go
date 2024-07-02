@@ -42,7 +42,7 @@ func ReadRequestArg[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ReadRequestFile[T, P](*reqFile)
+	return ReadRequestFile[T, P](reqFile)
 }
 
 func ReadRequestFile[T any, P protoType[T]](path string) (*T, error) {

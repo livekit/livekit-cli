@@ -39,23 +39,22 @@ var (
 			Before:   loadProjectConfig,
 			Commands: []*cli.Command{
 				{
-					Name:   "add",
-					Usage:  "add a new project",
-					Action: addProject,
+					Name:      "add",
+					Usage:     "add a new project",
+					Action:    addProject,
+					ArgsUsage: " NAME",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "url",
-							Usage: "URL of the LiveKit server",
+							Usage: "`URL` of the LiveKit server",
 						},
 						&cli.StringFlag{
-							Name: "api-key",
+							Name:  "api-key",
+							Usage: "Project `KEY`",
 						},
 						&cli.StringFlag{
-							Name: "api-secret",
-						},
-						&cli.StringFlag{
-							Name:  "name",
-							Usage: "name given to this project (for later reference).",
+							Name:  "api-secret",
+							Usage: "Project `SECRET`",
 						},
 					},
 				},
@@ -182,7 +181,8 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		}
 		return nil
 	}
-	if p.Name = cmd.String("name"); p.Name != "" {
+
+	if p.Name = cmd.Args().Get(0); p.Name != "" {
 		if err = validateName(p.Name); err != nil {
 			return err
 		}
@@ -225,7 +225,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 
 func listProjects(ctx context.Context, cmd *cli.Command) error {
 	if len(cliConfig.Projects) == 0 {
-		fmt.Println("No projects configured, use `livekit-cli project add` to add a new project.")
+		fmt.Println("No projects configured, use `lk project add` to add a new project.")
 		return nil
 	}
 

@@ -43,7 +43,7 @@ var (
 			Usage:    "Joins a room as a participant",
 			Action:   joinRoom,
 			Category: "Simulate",
-			Flags: withDefaultFlags(
+			Flags: []cli.Flag{
 				roomFlag,
 				identityFlag,
 				&cli.BoolFlag{
@@ -64,7 +64,7 @@ var (
 					Name:  "exit-after-publish",
 					Usage: "when publishing, exit after file or stream is complete",
 				},
-			),
+			},
 		},
 	}
 )

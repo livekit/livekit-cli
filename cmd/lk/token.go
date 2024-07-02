@@ -104,9 +104,6 @@ var (
 							Name:  "grant",
 							Usage: "Additional `VIDEO_GRANT` fields. It'll be merged with other arguments (JSON formatted)",
 						},
-						projectFlag,
-						apiKeyFlag,
-						secretFlag,
 					},
 				},
 			},
@@ -119,8 +116,6 @@ var (
 			Usage:  "Creates an access token",
 			Action: createToken,
 			Flags: []cli.Flag{
-				apiKeyFlag,
-				secretFlag,
 				&cli.BoolFlag{
 					Name:  "create",
 					Usage: "Token bearer can create rooms",
@@ -185,7 +180,6 @@ var (
 					Name:  "grant",
 					Usage: "Additional `VIDEO_GRANT` fields. It'll be merged with other arguments (JSON formatted)",
 				},
-				projectFlag,
 			},
 		},
 	}

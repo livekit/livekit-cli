@@ -35,11 +35,7 @@ func main() {
 		EnableShellCompletion: true,
 		Suggest:               true,
 		HideHelpCommand:       true,
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name: "verbose",
-			},
-		},
+		Flags:                 persistentFlags,
 		Commands: []*cli.Command{
 			{
 				Name:   "generate-fish-completion",

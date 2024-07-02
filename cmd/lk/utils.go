@@ -35,54 +35,51 @@ var (
 		Usage:    "`NAME` of the room",
 		Required: true,
 	}
-	urlFlag = &cli.StringFlag{
-		Name:    "url",
-		Usage:   "`URL` to LiveKit instance",
-		Sources: cli.EnvVars("LIVEKIT_URL"),
-		Value:   "http://localhost:7880",
-	}
-	apiKeyFlag = &cli.StringFlag{
-		Name:    "api-key",
-		Usage:   "Your `KEY`",
-		Sources: cli.EnvVars("LIVEKIT_API_KEY"),
-	}
-	secretFlag = &cli.StringFlag{
-		Name:    "api-secret",
-		Usage:   "Your `SECRET`",
-		Sources: cli.EnvVars("LIVEKIT_API_SECRET"),
-	}
 	identityFlag = &cli.StringFlag{
 		Name:     "identity",
 		Usage:    "`ID` of participant",
 		Required: true,
 	}
-	projectFlag = &cli.StringFlag{
-		Name:  "project",
-		Usage: "`NAME` of a configured project",
-	}
-	verboseFlag = &cli.BoolFlag{
-		Name:     "verbose",
-		Required: false,
-	}
-	printCurl bool
-	curlFlag  = &cli.BoolFlag{
-		Name:        "curl",
-		Usage:       "Print curl commands for API actions",
-		Destination: &printCurl,
-		Required:    false,
+	printCurl       bool
+	persistentFlags = []cli.Flag{
+		&cli.StringFlag{
+			Name:       "url",
+			Usage:      "`URL` to LiveKit instance",
+			Sources:    cli.EnvVars("LIVEKIT_URL"),
+			Value:      "http://localhost:7880",
+			Persistent: true,
+		},
+		&cli.StringFlag{
+			Name:       "api-key",
+			Usage:      "Your `KEY`",
+			Sources:    cli.EnvVars("LIVEKIT_API_KEY"),
+			Persistent: true,
+		},
+		&cli.StringFlag{
+			Name:       "api-secret",
+			Usage:      "Your `SECRET`",
+			Sources:    cli.EnvVars("LIVEKIT_API_SECRET"),
+			Persistent: true,
+		},
+		&cli.StringFlag{
+			Name:       "project",
+			Usage:      "`NAME` of a configured project",
+			Persistent: true,
+		},
+		&cli.BoolFlag{
+			Name:        "curl",
+			Usage:       "Print curl commands for API actions",
+			Destination: &printCurl,
+			Required:    false,
+			Persistent:  true,
+		},
+		&cli.BoolFlag{
+			Name:       "verbose",
+			Required:   false,
+			Persistent: true,
+		},
 	}
 )
-
-func withDefaultFlags(flags ...cli.Flag) []cli.Flag {
-	return append(flags, []cli.Flag{
-		urlFlag,
-		apiKeyFlag,
-		secretFlag,
-		projectFlag,
-		curlFlag,
-		verboseFlag,
-	}...)
-}
 
 func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 	var (
@@ -98,11 +95,11 @@ func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 	return opts
 }
 
-func extractArg(c *cli.Command) (*string, error) {
+func extractArg(c *cli.Command) (string, error) {
 	if !c.Args().Present() {
-		return nil, errors.New("no argument provided")
+		return "", errors.New("no argument provided")
 	}
-	return &c.Args().Slice()[0], nil
+	return c.Args().First(), nil
 }
 
 func extractArgs(c *cli.Command) ([]string, error) {
