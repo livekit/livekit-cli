@@ -32,22 +32,6 @@ builds:
       - windows
     ldflags:
       - -s -w
-  - id: livekit-cli
-    env:
-      - CGO_ENABLED=0
-    main: ./cmd/livekit-cli
-    binary: livekit-cli
-    goarm:
-      - "7"
-    goarch:
-      - amd64
-      - arm64
-      - arm
-    goos:
-      - linux
-      - windows
-    ldflags:
-      - -s -w
 archives:
   - format_overrides:
       - goos: windows

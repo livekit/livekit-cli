@@ -7,12 +7,10 @@ endif
 cli: check_lfs
 	go build -ldflags "-w -s" -o bin/lk ./cmd/lk
 	GOOS=linux GOARCH=amd64 go build -o bin/lk-linux ./cmd/lk
-	go build -ldflags "-w -s" -o bin/livekit-cli ./cmd/livekit-cli
-	GOOS=linux GOARCH=amd64 go build -o bin/livekit-cli-linux ./cmd/livekit-cli
 
 install: cli
 	cp bin/lk $(GOBIN)/
-	cp bin/livekit-cli $(GOBIN)/
+	ln -sf $(GOBIN)/lk $(GOBIN)/livekit-cli
 
 check_lfs:
 	@{ \

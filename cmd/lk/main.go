@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/urfave/cli/v3"
@@ -90,8 +91,23 @@ func main() {
 		fmt.Println()
 	}()
 
+	checkForLegacyName()
+
 	if err := app.Run(ctx, os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+	}
+}
+
+func checkForLegacyName() {
+	if !strings.HasSuffix(os.Args[0], "lk") {
+		fmt.Fprintf(
+			os.Stderr,
+			"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEPRECATION NOTICE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
+				"The `livekit-cli` binary has been renamed to `lk`, and some of the options and\n"+
+				"commands have changed. Though legacy commands my continue to work, they have\n"+
+				"been hidden from the USAGE notes and may be removed in future releases."+
+				"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n",
+		)
 	}
 }
 
