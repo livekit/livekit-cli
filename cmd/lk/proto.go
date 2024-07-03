@@ -34,7 +34,7 @@ type protoType[T any] interface {
 }
 
 func ReadRequest[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
-	return ReadRequestFile[T, P](cmd.String(flagRequest))
+	return ReadRequestFileOrLiteral[T, P](cmd.String(flagRequest))
 }
 
 func ReadRequestArg[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
@@ -42,11 +42,27 @@ func ReadRequestArg[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ReadRequestFile[T, P](reqFile)
+	return ReadRequestFileOrLiteral[T, P](reqFile)
 }
 
-func ReadRequestFile[T any, P protoType[T]](path string) (*T, error) {
-	reqBytes, err := os.ReadFile(path)
+func ReadRequestArgOrFlag[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
+	reqFile, err := extractArg(cmd)
+	if err != nil {
+		return ReadRequest[T, P](cmd)
+	}
+	return ReadRequestFileOrLiteral[T, P](reqFile)
+}
+
+func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (*T, error) {
+	var reqBytes []byte
+	var err error
+
+	// This allows us to read JSON from either CLI arg or FS
+	if _, err = os.Stat(pathOrLiteral); err != nil {
+		reqBytes, err = os.ReadFile(pathOrLiteral)
+	} else {
+		reqBytes = []byte(pathOrLiteral)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +94,7 @@ func createAndPrint[T any, P protoType[T], R any](
 	create func(ctx context.Context, p P) (R, error),
 	print func(r R),
 ) error {
-	req, err := ReadRequestFile[T, P](file)
+	req, err := ReadRequestFileOrLiteral[T, P](file)
 	if err != nil {
 		return err
 	}

@@ -35,60 +35,60 @@ var LoadTestCommands = []*cli.Command{
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "room",
-				Usage: "name of the room (default to random name)",
+				Usage: "`NAME` of the room (default to random name)",
 			},
 			&cli.DurationFlag{
 				Name:  "duration",
-				Usage: "duration to run, 1m, 1h (by default will run until canceled)",
+				Usage: "`TIME` duration to run, 1m, 1h (by default will run until canceled)",
 				Value: 0,
 			},
 			&cli.IntFlag{
 				Name:    "video-publishers",
 				Aliases: []string{"publishers"},
-				Usage:   "number of participants that would publish video tracks",
+				Usage:   "`NUMBER` of participants that would publish video tracks",
 			},
 			&cli.IntFlag{
 				Name:  "audio-publishers",
-				Usage: "number of participants that would publish audio tracks",
+				Usage: "`NUMBER` of participants that would publish audio tracks",
 			},
 			&cli.IntFlag{
 				Name:  "subscribers",
-				Usage: "number of participants that would subscribe to tracks",
+				Usage: "`NUMBER` of participants that would subscribe to tracks",
 			},
 			&cli.StringFlag{
 				Name:  "identity-prefix",
-				Usage: "identity prefix of tester participants (defaults to a random prefix)",
+				Usage: "Identity `PREFIX` of tester participants (defaults to a random prefix)",
 			},
 			&cli.StringFlag{
 				Name:  "video-resolution",
-				Usage: "resolution of video to publish. valid values are: high, medium, or low",
+				Usage: "Resolution `QUALITY` of video to publish (\"high\", \"medium\", or \"low\")",
 				Value: "high",
 			},
 			&cli.StringFlag{
 				Name:  "video-codec",
-				Usage: "h264 or vp8, both will be used when unset",
+				Usage: "`CODEC` \"h264\" or \"vp8\", both will be used when unset",
 			},
 			&cli.FloatFlag{
 				Name:  "num-per-second",
-				Usage: "number of testers to start every second",
+				Usage: "`NUMBER` of testers to start every second",
 				Value: 5,
 			},
 			&cli.StringFlag{
 				Name:  "layout",
-				Usage: "layout to simulate, choose from speaker, 3x3, 4x4, 5x5",
+				Usage: "`LAYOUT` to simulate, choose from \"speaker\", \"3x3\", \"4x4\", \"5x5\"",
 				Value: "speaker",
 			},
 			&cli.BoolFlag{
 				Name:  "no-simulcast",
-				Usage: "disables simulcast publishing (simulcast is enabled by default)",
+				Usage: "Disables simulcast publishing (simulcast is enabled by default)",
 			},
 			&cli.BoolFlag{
 				Name:  "simulate-speakers",
-				Usage: "fire random speaker events to simulate speaker changes",
+				Usage: "Fire random speaker events to simulate speaker changes",
 			},
 			&cli.BoolFlag{
 				Name:   "run-all",
-				Usage:  "runs set list of load test cases",
+				Usage:  "Runs set list of load test cases",
 				Hidden: true,
 			},
 		},

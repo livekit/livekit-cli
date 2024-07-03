@@ -25,7 +25,7 @@ This package includes command line utilities that interacts with LiveKit. It all
 ## Mac
 
 ```shell
-brew install lk
+brew install livekit-cli
 ```
 
 ## Linux

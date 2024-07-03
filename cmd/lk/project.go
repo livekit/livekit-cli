@@ -40,9 +40,10 @@ var (
 			Commands: []*cli.Command{
 				{
 					Name:      "add",
-					Usage:     "add a new project",
+					Usage:     "Add a new project",
+					UsageText: "lk project add PROJECT_NAME",
+					ArgsUsage: "PROJECT_NAME",
 					Action:    addProject,
-					ArgsUsage: " NAME",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "url",
@@ -59,20 +60,23 @@ var (
 					},
 				},
 				{
-					Name:   "list",
-					Usage:  "list all configured projects",
-					Action: listProjects,
+					Name:      "list",
+					Usage:     "List all configured projects",
+					UsageText: "lk project list",
+					Action:    listProjects,
 				},
 				{
 					Name:      "remove",
-					Usage:     "remove an existing project from config",
-					UsageText: "livekit-cli project remove <project-name>",
+					Usage:     "Remove an existing project from config",
+					UsageText: "lk project remove PROJECT_NAME",
+					ArgsUsage: "PROJECT_NAME",
 					Action:    removeProject,
 				},
 				{
 					Name:      "set-default",
-					Usage:     "set a project as default to use with other commands",
-					UsageText: "livekit-cli project set-default <project-name>",
+					Usage:     "Set a project as default to use with other commands",
+					UsageText: "lk project set-default PROJECT_NAME",
+					ArgsUsage: "PROJECT_NAME",
 					Action:    setDefaultProject,
 				},
 			},

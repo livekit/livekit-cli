@@ -39,9 +39,10 @@ import (
 var (
 	JoinCommands = []*cli.Command{
 		{
+			Hidden:   true, // deprecated: use `lk room join`
 			Name:     "join-room",
 			Usage:    "Joins a room as a participant",
-			Action:   joinRoom,
+			Action:   _deprecatedJoinRoom,
 			Category: "Simulate",
 			Flags: []cli.Flag{
 				roomFlag,
@@ -51,10 +52,11 @@ var (
 					Usage: "publish demo video as a loop",
 				},
 				&cli.StringSliceFlag{
-					Name: "publish",
-					Usage: "files to publish as tracks to room (supports .h264, .ivf, .ogg). " +
+					Name:      "publish",
+					TakesFile: true,
+					Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
 						"can be used multiple times to publish multiple files. " +
-						"can publish from Unix or TCP socket using the format `codec://socket_name` or `codec://host:address` respectively. Valid codecs are h264, vp8, opus",
+						"can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\"",
 				},
 				&cli.FloatFlag{
 					Name:  "fps",
@@ -71,7 +73,7 @@ var (
 
 const mimeDelimiter = "://"
 
-func joinRoom(ctx context.Context, cmd *cli.Command) error {
+func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err

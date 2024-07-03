@@ -30,14 +30,15 @@ import (
 
 func main() {
 	app := &cli.Command{
-		Name:                  "lk",
-		Usage:                 "CLI client to LiveKit",
-		Description:           "A suite of command line utilities allowing you to access LiveKit APIs services, interact with rooms in realtime, and perform load testing simulations.",
-		Version:               livekitcli.Version,
-		EnableShellCompletion: true,
-		Suggest:               true,
-		HideHelpCommand:       true,
-		Flags:                 persistentFlags,
+		Name:                   "lk",
+		Usage:                  "CLI client to LiveKit",
+		Description:            "A suite of command line utilities allowing you to access LiveKit APIs services, interact with rooms in realtime, and perform load testing simulations.",
+		Version:                livekitcli.Version,
+		EnableShellCompletion:  true,
+		Suggest:                true,
+		HideHelpCommand:        true,
+		UseShortOptionHandling: true,
+		Flags:                  persistentFlags,
 		Commands: []*cli.Command{
 			{
 				Name:   "generate-fish-completion",
@@ -74,12 +75,12 @@ func main() {
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, SIPCommands...)
 
-	// Register cleanup hook for SIGINT, SIGTERM
+	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
 	)
-	// defer stop()
+	defer stop()
 
 	// Cleanup on hooked signals, remembering to flush stdout
 	// before exit to prevent line rag in case of SIGINT
