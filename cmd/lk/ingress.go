@@ -21,7 +21,6 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -37,61 +36,63 @@ var (
 			Category: "I/O",
 			Commands: []*cli.Command{
 				{
-					Name:   "create",
-					Usage:  "Create an ingress",
-					Before: createIngressClient,
-					Action: createIngress,
+					Name:      "create",
+					Usage:     "Create an ingress",
+					UsageText: "lk ingress create [OPTIONS] JSON",
+					ArgsUsage: "JSON",
+					Before:    createIngressClient,
+					Action:    createIngress,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:     "request",
-							Usage:    "CreateIngressRequest as json file (see cmd/livekit-cli/examples)",
-							Required: true,
+							Hidden:    true, // deprecated: use ARG0
+							Name:      "request",
+							Usage:     "CreateIngressRequest as json file (see cmd/lk/examples)",
+							TakesFile: true,
 						},
 					},
 				},
 				{
-					Name:   "update",
-					Usage:  "Update an ingress",
-					Before: createIngressClient,
-					Action: updateIngress,
+					Name:      "update",
+					Usage:     "Update an ingress",
+					UsageText: "lk ingress update [OPTIONS] JSON",
+					ArgsUsage: "JSON",
+					Before:    createIngressClient,
+					Action:    updateIngress,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:     "request",
-							Usage:    "UpdateIngressRequest as json file (see cmd/livekit-cli/examples)",
-							Required: true,
+							Hidden:    true, // deprecated: use ARG0
+							Name:      "request",
+							Usage:     "UpdateIngressRequest as json file (see cmd/lk/examples)",
+							TakesFile: true,
 						},
 					},
 				},
 				{
-					Name:   "list",
-					Usage:  "List all active ingress",
-					Before: createIngressClient,
-					Action: listIngress,
+					Name:      "list",
+					Usage:     "List all active ingress",
+					UsageText: "lk ingress list [OPTIONS]",
+					Before:    createIngressClient,
+					Action:    listIngress,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "room",
-							Usage:    "limits list to a certain room name ",
+							Usage:    "Limits list to a certain room `NAME`",
 							Required: false,
 						},
 						&cli.StringFlag{
 							Name:     "id",
-							Usage:    "list a specific ingress id",
+							Usage:    "List a specific ingress `ID`",
 							Required: false,
 						},
 					},
 				},
 				{
-					Name:   "delete",
-					Usage:  "Delete an ingress",
-					Before: createIngressClient,
-					Action: deleteIngress,
-					Flags: []cli.Flag{
-						&cli.StringFlag{
-							Name:     "id",
-							Usage:    "Ingress ID",
-							Required: true,
-						},
-					},
+					Name:      "delete",
+					Usage:     "Delete an ingress",
+					UsageText: "lk ingress delete ID",
+					ArgsUsage: "ID",
+					Before:    createIngressClient,
+					Action:    deleteIngress,
 				},
 			},
 		},
@@ -107,7 +108,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "CreateIngressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "CreateIngressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -122,7 +123,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "UpdateIngressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "UpdateIngressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -178,14 +179,7 @@ func createIngressClient(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createIngress(ctx context.Context, cmd *cli.Command) error {
-	reqFile := cmd.String("request")
-	reqBytes, err := os.ReadFile(reqFile)
-	if err != nil {
-		return err
-	}
-
-	req := &livekit.CreateIngressRequest{}
-	err = protojson.Unmarshal(reqBytes, req)
+	req, err := ReadRequestArgOrFlag[livekit.CreateIngressRequest](cmd)
 	if err != nil {
 		return err
 	}
@@ -204,14 +198,7 @@ func createIngress(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateIngress(ctx context.Context, cmd *cli.Command) error {
-	reqFile := cmd.String("request")
-	reqBytes, err := os.ReadFile(reqFile)
-	if err != nil {
-		return err
-	}
-
-	req := &livekit.UpdateIngressRequest{}
-	err = protojson.Unmarshal(reqBytes, req)
+	req, err := ReadRequestArgOrFlag[livekit.UpdateIngressRequest](cmd)
 	if err != nil {
 		return err
 	}
@@ -271,8 +258,12 @@ func listIngress(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteIngress(ctx context.Context, cmd *cli.Command) error {
-	info, err := ingressClient.DeleteIngress(context.Background(), &livekit.DeleteIngressRequest{
-		IngressId: cmd.String("id"),
+	id := cmd.String("id")
+	if id == "" {
+		id = cmd.Args().First()
+	}
+	info, err := ingressClient.DeleteIngress(ctx, &livekit.DeleteIngressRequest{
+		IngressId: id,
 	})
 	if err != nil {
 		return err
