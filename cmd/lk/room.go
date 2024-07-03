@@ -1001,10 +1001,6 @@ func sendData(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func participantInfoFromArg(c *cli.Command) (string, string) {
-	return c.String("room"), c.Args().First()
-}
-
 func participantInfoFromFlags(c *cli.Command) (string, string) {
 	return c.String("room"), c.String("identity")
 }
