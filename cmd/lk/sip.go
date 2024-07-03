@@ -57,13 +57,13 @@ var (
 							Name:      "create",
 							Usage:     "Create an inbound SIP Trunk",
 							Action:    createSIPInboundTrunk,
-							ArgsUsage: " " + RequestDesc[livekit.CreateSIPInboundTrunkRequest](),
+							ArgsUsage: RequestDesc[livekit.CreateSIPInboundTrunkRequest](),
 						},
 						{
 							Name:      "delete",
 							Usage:     "Delete a SIP Trunk",
 							Action:    deleteSIPTrunk,
-							ArgsUsage: " SIPTrunk ID to delete",
+							ArgsUsage: "SIPTrunk ID to delete",
 						},
 					},
 				},
@@ -82,13 +82,13 @@ var (
 							Name:      "create",
 							Usage:     "Create a outbound SIP Trunk",
 							Action:    createSIPOutboundTrunk,
-							ArgsUsage: " " + RequestDesc[livekit.CreateSIPOutboundTrunkRequest](),
+							ArgsUsage: RequestDesc[livekit.CreateSIPOutboundTrunkRequest](),
 						},
 						{
 							Name:      "delete",
 							Usage:     "Delete SIP Trunk",
 							Action:    deleteSIPTrunk,
-							ArgsUsage: " SIPTrunk ID to delete",
+							ArgsUsage: "SIPTrunk ID to delete",
 						},
 					},
 				},
@@ -107,13 +107,13 @@ var (
 							Name:      "create",
 							Usage:     "Create a SIP Dispatch Rule",
 							Action:    createSIPDispatchRule,
-							ArgsUsage: " " + RequestDesc[livekit.CreateSIPDispatchRuleRequest](),
+							ArgsUsage: RequestDesc[livekit.CreateSIPDispatchRuleRequest](),
 						},
 						{
 							Name:      "delete",
 							Usage:     "Delete SIP Dispatch Rule",
 							Action:    deleteSIPDispatchRule,
-							ArgsUsage: " SIPTrunk ID to delete",
+							ArgsUsage: "SIPTrunk ID to delete",
 						},
 					},
 				},
@@ -126,7 +126,7 @@ var (
 							Name:      "create",
 							Usage:     "Create a SIP Participant",
 							Action:    createSIPParticipant,
-							ArgsUsage: " " + RequestDesc[livekit.CreateSIPParticipantRequest](),
+							ArgsUsage: RequestDesc[livekit.CreateSIPParticipantRequest](),
 						},
 					},
 				},
@@ -210,7 +210,7 @@ var (
 	}
 )
 
-func createSIPClient(ctx context.Context, cmd *cli.Command) (*lksdk.SIPClient, error) {
+func createSIPClient(cmd *cli.Command) (*lksdk.SIPClient, error) {
 	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func createSIPClient(ctx context.Context, cmd *cli.Command) (*lksdk.SIPClient, e
 }
 
 func createSIPTrunkLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -228,7 +228,7 @@ func createSIPTrunkLegacy(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -255,7 +255,7 @@ func userPass(user string, hasPass bool) string {
 }
 
 func listSipTrunk(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -280,7 +280,7 @@ func listSipTrunk(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listSipInboundTrunk(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func listSipInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -322,7 +322,7 @@ func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteSIPTrunk(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -339,7 +339,7 @@ func deleteSIPTrunk(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteSIPTrunkLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -366,7 +366,7 @@ func printSIPOutboundTrunkID(info *livekit.SIPOutboundTrunkInfo) {
 }
 
 func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -374,7 +374,7 @@ func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -382,7 +382,7 @@ func createSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -409,7 +409,7 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -426,7 +426,7 @@ func deleteSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -445,7 +445,7 @@ func printSIPDispatchRuleID(info *livekit.SIPDispatchRuleInfo) {
 }
 
 func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
@@ -460,7 +460,7 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createSIPParticipantLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}

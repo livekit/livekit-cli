@@ -19,8 +19,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
+	"github.com/livekit/protocol/logger"
+	"github.com/pion/webrtc/v3"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -37,26 +41,31 @@ var (
 			HideHelpCommand: true,
 			Commands: []*cli.Command{
 				{
-					Name:   "create",
-					Usage:  "Create a room",
-					Before: createRoomClient,
-					Action: createRoom,
+					Name:      "create",
+					Usage:     "Create a room",
+					ArgsUsage: "ROOM_NAME",
+					Before:    createRoomClient,
+					Action:    createRoom,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:  "room-egress-file",
-							Usage: "RoomCompositeRequest `JSON` file (see examples/room-composite-file.json)",
+							Name:      "room-egress-file",
+							Usage:     "RoomCompositeRequest `JSON` file (see examples/room-composite-file.json)",
+							TakesFile: true,
 						},
 						&cli.StringFlag{
-							Name:  "participant-egress-file",
-							Usage: "ParticipantEgress `JSON` file (see examples/auto-participant-egress.json)",
+							Name:      "participant-egress-file",
+							Usage:     "ParticipantEgress `JSON` file (see examples/auto-participant-egress.json)",
+							TakesFile: true,
 						},
 						&cli.StringFlag{
-							Name:  "track-egress-file",
-							Usage: "AutoTrackEgress `JSON` file (see examples/auto-track-egress.json)",
+							Name:      "track-egress-file",
+							Usage:     "AutoTrackEgress `JSON` file (see examples/auto-track-egress.json)",
+							TakesFile: true,
 						},
 						&cli.StringFlag{
-							Name:  "agents-file",
-							Usage: "Agents configuration `JSON` file",
+							Name:      "agents-file",
+							Usage:     "Agents configuration `JSON` file",
+							TakesFile: true,
 						},
 						&cli.StringFlag{
 							Name:  "room-configuration",
@@ -83,14 +92,13 @@ var (
 							Usage: "Number of `SECS` to keep the room open after the last participant leaves",
 						},
 					},
-					ArgsUsage: " ROOM_NAME",
 				},
 				{
 					Name:      "list",
 					Usage:     "List or search for active rooms by name",
 					Before:    createRoomClient,
 					Action:    listRooms,
-					ArgsUsage: " [ROOM_NAME ...]",
+					ArgsUsage: "[ROOM_NAME ...]",
 				},
 				{
 					Name:   "update",
@@ -103,14 +111,44 @@ var (
 							Required: true,
 						},
 					},
-					ArgsUsage: " ROOM_NAME",
+					ArgsUsage: "ROOM_NAME",
 				},
 				{
 					Name:      "delete",
 					Usage:     "Delete a room",
+					UsageText: "lk room delete [OPTIONS] ROOM_NAME",
 					Before:    createRoomClient,
 					Action:    deleteRoom,
-					ArgsUsage: " ROOM_NAME_OR_ID",
+					ArgsUsage: "ROOM_NAME_OR_ID",
+				},
+				{
+					Name:      "join",
+					Usage:     "Joins a room as a participant",
+					UsageText: "lk room join [OPTIONS] ROOM_NAME",
+					Action:    joinRoom,
+					ArgsUsage: "ROOM_NAME",
+					Flags: []cli.Flag{
+						identityFlag,
+						&cli.BoolFlag{
+							Name:  "publish-demo",
+							Usage: "Publish demo video as a loop",
+						},
+						&cli.StringSliceFlag{
+							Name:      "publish",
+							TakesFile: true,
+							Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
+								"Can be used multiple times to publish multiple files. " +
+								"Can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\"",
+						},
+						&cli.FloatFlag{
+							Name:  "fps",
+							Usage: "If video files are published, indicates `FPS` of video",
+						},
+						&cli.BoolFlag{
+							Name:  "exit-after-publish",
+							Usage: "When publishing, exit after file or stream is complete",
+						},
+					},
 				},
 				{
 					Name:   "participants",
@@ -121,106 +159,128 @@ var (
 							Name:      "list",
 							Usage:     "List or search for active rooms by name",
 							Action:    listParticipants,
-							ArgsUsage: " [ROOM_NAME ...]",
+							ArgsUsage: "ROOM_NAME",
+						},
+						{
+							Name:      "get",
+							Usage:     "Fetch metadata of a room participant",
+							ArgsUsage: "ID",
+							Before:    createRoomClient,
+							Action:    getParticipant,
+							Flags: []cli.Flag{
+								roomFlag,
+							},
+						},
+						{
+							Name:      "remove",
+							Usage:     "Remove a participant from a room",
+							ArgsUsage: "ID",
+							Before:    createRoomClient,
+							Action:    removeParticipant,
+							Flags: []cli.Flag{
+								roomFlag,
+							},
+						},
+						{
+							Name:      "update",
+							Usage:     "Change the metadata and permissions for a room participant",
+							ArgsUsage: "ID",
+							Before:    createRoomClient,
+							Action:    updateParticipant,
+							Flags: []cli.Flag{
+								roomFlag,
+								&cli.StringFlag{
+									Name:  "metadata",
+									Usage: "JSON describing participant metadata (existing values for unset fields)",
+								},
+								&cli.StringFlag{
+									Name:  "permissions",
+									Usage: "JSON describing participant permissions (existing values for unset fields)",
+								},
+							},
 						},
 					},
 				},
 				{
-					Name:   "list-participants",
-					Before: createRoomClient,
-					Action: _deprecatedListParticipants,
-					Flags: []cli.Flag{
-						roomFlag,
-					},
-				},
-				{
-					Name:   "get-participant",
-					Before: createRoomClient,
-					Action: getParticipant,
-					Flags: []cli.Flag{
-						roomFlag,
-						identityFlag,
-					},
-				},
-				{
-					Name:   "remove-participant",
-					Before: createRoomClient,
-					Action: removeParticipant,
-					Flags: []cli.Flag{
-						roomFlag,
-						identityFlag,
-					},
-				},
-				{
-					Name:   "update-participant",
-					Before: createRoomClient,
-					Action: updateParticipant,
+					Name:      "mute-track",
+					Usage:     "Mute or unmute a track",
+					UsageText: "lk room mute-track OPTIONS TRACK_SID",
+					ArgsUsage: "TRACK_SID",
+					Before:    createRoomClient,
+					Action:    muteTrack,
+					MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{{
+						Flags: [][]cli.Flag{
+							{
+								&cli.BoolFlag{
+									Name:    "m",
+									Aliases: []string{"mute", "muted"},
+									Usage:   "Mute the track",
+								},
+								&cli.BoolFlag{
+									Name:    "u",
+									Aliases: []string{"unmute"},
+									Usage:   "Unmute the track",
+								},
+							},
+						},
+					}},
 					Flags: []cli.Flag{
 						roomFlag,
 						identityFlag,
 						&cli.StringFlag{
-							Name: "metadata",
-						},
-						&cli.StringFlag{
-							Name:  "permissions",
-							Usage: "JSON describing participant permissions (existing values for unset fields)",
+							Hidden: true, // deprecated: use ARG0
+							Name:   "track",
+							Usage:  "Track `SID` to mute",
 						},
 					},
 				},
 				{
-					Name:   "mute-track",
-					Before: createRoomClient,
-					Action: muteTrack,
-					Flags: []cli.Flag{
-						roomFlag,
-						identityFlag,
-						&cli.StringFlag{
-							Name:     "track",
-							Usage:    "track sid to mute",
-							Required: true,
-						},
-						&cli.BoolFlag{
-							Name:  "muted",
-							Usage: "set to true to mute, false to unmute",
-						},
-					},
-				},
-				{
-					Name:   "update-subscriptions",
-					Before: createRoomClient,
-					Action: updateSubscriptions,
+					Name:      "update-subscriptions",
+					Usage:     "Subscribe or unsubscribe from a track",
+					UsageText: "lk room update-subscriptions OPTIONS TRACK_SID",
+					ArgsUsage: "TRACK_SID",
+					Before:    createRoomClient,
+					Action:    updateSubscriptions,
 					Flags: []cli.Flag{
 						roomFlag,
 						identityFlag,
 						&cli.StringSliceFlag{
-							Name:     "track",
-							Usage:    "track sid to subscribe/unsubscribe",
-							Required: true,
+							Hidden: true, // deprecated: use ARG0
+							Name:   "track",
+							Usage:  "Track `SID` to subscribe/unsubscribe",
 						},
 						&cli.BoolFlag{
 							Name:  "subscribe",
-							Usage: "set to true to subscribe, otherwise it'll unsubscribe",
+							Usage: "Set to true to subscribe, otherwise it'll unsubscribe",
 						},
 					},
 				},
 				{
-					Name:   "send-data",
-					Before: createRoomClient,
-					Action: sendData,
+					Name:      "send-data",
+					Before:    createRoomClient,
+					Action:    sendData,
+					Usage:     "Send arbitrary JSON data to client",
+					UsageText: "lk room send-data [OPTIONS] DATA",
+					ArgsUsage: "JSON",
 					Flags: []cli.Flag{
 						roomFlag,
 						&cli.StringFlag{
-							Name:     "data",
-							Usage:    "payload to send to client",
-							Required: true,
+							Hidden: true, // deprecated: use ARG0
+							Name:   "data",
+							Usage:  "`JSON` payload to send to client",
 						},
 						&cli.StringFlag{
 							Name:  "topic",
-							Usage: "topic of the message",
+							Usage: "`TOPIC` of the message",
 						},
 						&cli.StringSliceFlag{
-							Name:  "participantID",
-							Usage: "list of participantID to send the message to",
+							Hidden: true, // deprecated: use `--participant-ids`
+							Name:   "participantID",
+							Usage:  "list of participantID to send the message to",
+						},
+						&cli.StringSliceFlag{
+							Name:  "participant-ids",
+							Usage: "List of participant `ID`s to send the message to",
 						},
 					},
 				},
@@ -305,6 +365,139 @@ var (
 				roomFlag,
 				&cli.StringFlag{
 					Name: "metadata",
+				},
+			},
+		},
+		{
+			Hidden: true, // deprecated: use `room participants list`
+			Name:   "list-participants",
+			Before: createRoomClient,
+			Action: _deprecatedListParticipants,
+			Flags: []cli.Flag{
+				roomFlag,
+			},
+		},
+		{
+			Hidden: true, // deprecated: use `room participants get`
+			Name:   "get-participant",
+			Before: createRoomClient,
+			Action: getParticipant,
+			Flags: []cli.Flag{
+				roomFlag,
+				identityFlag,
+			},
+		},
+		{
+			Hidden: true, // deprecated: use `room participants remove`
+			Name:   "remove-participant",
+			Before: createRoomClient,
+			Action: removeParticipant,
+			Flags: []cli.Flag{
+				roomFlag,
+				identityFlag,
+			},
+		},
+		{
+			Hidden: true, // deprecated: use `room participants update`
+			Name:   "update-participant",
+			Before: createRoomClient,
+			Action: updateParticipant,
+			Flags: []cli.Flag{
+				roomFlag,
+				identityFlag,
+				&cli.StringFlag{
+					Name:  "metadata",
+					Usage: "`JSON` describing participant metadata",
+				},
+				&cli.StringFlag{
+					Name:  "permissions",
+					Usage: "`JSON` describing participant permissions (existing values for unset fields)",
+				},
+			},
+		},
+		{
+			Hidden:    true, // deprecated: use `room mute-track`
+			Name:      "mute-track",
+			Usage:     "Mute or unmute a track",
+			UsageText: "lk room mute-track OPTIONS TRACK_SID",
+			ArgsUsage: "TRACK_SID",
+			Before:    createRoomClient,
+			Action:    muteTrack,
+			MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{{
+				Flags: [][]cli.Flag{
+					{
+						&cli.BoolFlag{
+							Name:    "m",
+							Aliases: []string{"mute", "muted"},
+							Usage:   "Mute the track",
+						},
+						&cli.BoolFlag{
+							Name:    "u",
+							Aliases: []string{"unmute"},
+							Usage:   "Unmute the track",
+						},
+					},
+				},
+			}},
+			Flags: []cli.Flag{
+				roomFlag,
+				identityFlag,
+				&cli.StringFlag{
+					Hidden: true, // deprecated: use ARG0
+					Name:   "track",
+					Usage:  "Track `SID` to mute",
+				},
+			},
+		},
+		{
+			Hidden:    true, // deprecated: use `room update-subscriptions`
+			Name:      "update-subscriptions",
+			Usage:     "Subscribe or unsubscribe from a track",
+			UsageText: "lk room update-subscriptions OPTIONS TRACK_SID",
+			ArgsUsage: "TRACK_SID",
+			Before:    createRoomClient,
+			Action:    updateSubscriptions,
+			Flags: []cli.Flag{
+				roomFlag,
+				identityFlag,
+				&cli.StringSliceFlag{
+					Hidden: true, // deprecated: use ARG0
+					Name:   "track",
+					Usage:  "Track `SID` to subscribe/unsubscribe",
+				},
+				&cli.BoolFlag{
+					Name:  "subscribe",
+					Usage: "Set to true to subscribe, otherwise it'll unsubscribe",
+				},
+			},
+		},
+		{
+			Hidden:    true, // deprecated: use `room send-data`
+			Name:      "send-data",
+			Before:    createRoomClient,
+			Action:    sendData,
+			Usage:     "Send arbitrary JSON data to client",
+			UsageText: "lk room send-data [OPTIONS] DATA",
+			ArgsUsage: "JSON",
+			Flags: []cli.Flag{
+				roomFlag,
+				&cli.StringFlag{
+					Hidden: true, // deprecated: use ARG0
+					Name:   "data",
+					Usage:  "`JSON` payload to send to client",
+				},
+				&cli.StringFlag{
+					Name:  "topic",
+					Usage: "`TOPIC` of the message",
+				},
+				&cli.StringSliceFlag{
+					Hidden: true, // deprecated: use `--participant-ids`
+					Name:   "participantID",
+					Usage:  "list of participantID to send the message to",
+				},
+				&cli.StringSliceFlag{
+					Name:  "participant-ids",
+					Usage: "List of participant `ID`s to send the message to",
 				},
 			},
 		},
@@ -515,13 +708,128 @@ func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error 
 	return nil
 }
 
+func joinRoom(ctx context.Context, cmd *cli.Command) error {
+	pc, err := loadProjectDetails(cmd)
+	if err != nil {
+		return err
+	}
+
+	done := make(chan os.Signal, 1)
+	roomCB := &lksdk.RoomCallback{
+		ParticipantCallback: lksdk.ParticipantCallback{
+			OnDataReceived: func(data []byte, params lksdk.DataReceiveParams) {
+				identity := params.SenderIdentity
+				logger.Infow("received data", "data", data, "participant", identity)
+			},
+			OnConnectionQualityChanged: func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
+				logger.Debugw("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
+			},
+			OnTrackSubscribed: func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
+				logger.Infow("track subscribed",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
+			},
+			OnTrackUnsubscribed: func(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
+				logger.Infow("track unsubscribed",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
+			},
+			OnTrackUnpublished: func(pub *lksdk.RemoteTrackPublication, participant *lksdk.RemoteParticipant) {
+				logger.Infow("track unpublished",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
+			},
+			OnTrackMuted: func(pub lksdk.TrackPublication, participant lksdk.Participant) {
+				logger.Infow("track muted",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
+			},
+			OnTrackUnmuted: func(pub lksdk.TrackPublication, participant lksdk.Participant) {
+				logger.Infow("track unmuted",
+					"kind", pub.Kind(),
+					"trackID", pub.SID(),
+					"source", pub.Source(),
+					"participant", participant.Identity(),
+				)
+			},
+		},
+		OnRoomMetadataChanged: func(metadata string) {
+			logger.Infow("room metadata changed", "metadata", metadata)
+		},
+		OnReconnecting: func() {
+			logger.Infow("reconnecting to room")
+		},
+		OnReconnected: func() {
+			logger.Infow("reconnected to room")
+		},
+		OnDisconnected: func() {
+			logger.Infow("disconnected from room")
+			close(done)
+		},
+	}
+	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
+		APIKey:              pc.APIKey,
+		APISecret:           pc.APISecret,
+		RoomName:            cmd.String("room"),
+		ParticipantIdentity: cmd.String("identity"),
+	}, roomCB)
+	if err != nil {
+		return err
+	}
+	defer room.Disconnect()
+
+	logger.Infow("connected to room", "room", room.Name())
+
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	if cmd.Bool("publish-demo") {
+		if err = publishDemo(room); err != nil {
+			return err
+		}
+	}
+
+	if cmd.StringSlice("publish") != nil {
+		fps := cmd.Float("fps")
+		for _, pub := range cmd.StringSlice("publish") {
+			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
+				if cmd.Bool("exit-after-publish") {
+					close(done)
+					return
+				}
+				if pub != nil {
+					fmt.Printf("finished writing %s\n", pub.Name())
+					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
+				}
+			}
+			if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
+				return err
+			}
+		}
+	}
+
+	<-done
+	return nil
+}
+
 func listParticipants(ctx context.Context, cmd *cli.Command) error {
 	roomName, err := extractArg(cmd)
 	if err != nil {
 		return err
 	}
 
-	res, err := roomClient.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
+	res, err := roomClient.ListParticipants(ctx, &livekit.ListParticipantsRequest{
 		Room: roomName,
 	})
 	if err != nil {
@@ -536,7 +844,7 @@ func listParticipants(ctx context.Context, cmd *cli.Command) error {
 
 func _deprecatedListParticipants(ctx context.Context, cmd *cli.Command) error {
 	roomName := cmd.String("room")
-	res, err := roomClient.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
+	res, err := roomClient.ListParticipants(ctx, &livekit.ListParticipantsRequest{
 		Room: roomName,
 	})
 	if err != nil {
@@ -550,7 +858,8 @@ func _deprecatedListParticipants(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getParticipant(ctx context.Context, cmd *cli.Command) error {
-	roomName, identity := participantInfoFromCli(cmd)
+	_ = ctx
+	roomName, identity := participantInfoFromArgOrFlags(cmd)
 	res, err := roomClient.GetParticipant(context.Background(), &livekit.RoomParticipantIdentity{
 		Room:     roomName,
 		Identity: identity,
@@ -565,7 +874,7 @@ func getParticipant(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateParticipant(ctx context.Context, cmd *cli.Command) error {
-	roomName, identity := participantInfoFromCli(cmd)
+	roomName, identity := participantInfoFromArgOrFlags(cmd)
 	metadata := cmd.String("metadata")
 	permissions := cmd.String("permissions")
 	if metadata == "" && permissions == "" {
@@ -606,7 +915,8 @@ func updateParticipant(ctx context.Context, cmd *cli.Command) error {
 }
 
 func removeParticipant(ctx context.Context, cmd *cli.Command) error {
-	roomName, identity := participantInfoFromCli(cmd)
+	_ = ctx
+	roomName, identity := participantInfoFromArgOrFlags(cmd)
 	_, err := roomClient.RemoveParticipant(context.Background(), &livekit.RoomParticipantIdentity{
 		Room:     roomName,
 		Identity: identity,
@@ -621,13 +931,17 @@ func removeParticipant(ctx context.Context, cmd *cli.Command) error {
 }
 
 func muteTrack(ctx context.Context, cmd *cli.Command) error {
-	roomName, identity := participantInfoFromCli(cmd)
+	roomName, identity := participantInfoFromFlags(cmd)
+	muted := (!cmd.IsSet("m") && !cmd.IsSet("u")) || cmd.Bool("m") || !cmd.Bool("u")
 	trackSid := cmd.String("track")
+	if trackSid == "" {
+		trackSid = cmd.Args().First()
+	}
 	_, err := roomClient.MutePublishedTrack(context.Background(), &livekit.MuteRoomTrackRequest{
 		Room:     roomName,
 		Identity: identity,
 		TrackSid: trackSid,
-		Muted:    cmd.Bool("muted"),
+		Muted:    muted,
 	})
 	if err != nil {
 		return err
@@ -642,7 +956,7 @@ func muteTrack(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateSubscriptions(ctx context.Context, cmd *cli.Command) error {
-	roomName, identity := participantInfoFromCli(cmd)
+	roomName, identity := participantInfoFromFlags(cmd)
 	trackSids := cmd.StringSlice("track")
 	_, err := roomClient.UpdateSubscriptions(context.Background(), &livekit.UpdateSubscriptionsRequest{
 		Room:      roomName,
@@ -663,9 +977,12 @@ func updateSubscriptions(ctx context.Context, cmd *cli.Command) error {
 }
 
 func sendData(ctx context.Context, cmd *cli.Command) error {
-	roomName, _ := participantInfoFromCli(cmd)
+	roomName, _ := participantInfoFromFlags(cmd)
 	pIDs := cmd.StringSlice("participantID")
 	data := cmd.String("data")
+	if data == "" {
+		data = cmd.Args().First()
+	}
 	topic := cmd.String("topic")
 	req := &livekit.SendDataRequest{
 		Room:            roomName,
@@ -684,6 +1001,19 @@ func sendData(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func participantInfoFromCli(c *cli.Command) (string, string) {
+func participantInfoFromArg(c *cli.Command) (string, string) {
+	return c.String("room"), c.Args().First()
+}
+
+func participantInfoFromFlags(c *cli.Command) (string, string) {
 	return c.String("room"), c.String("identity")
+}
+
+func participantInfoFromArgOrFlags(c *cli.Command) (string, string) {
+	room := c.String("room")
+	id := c.String("identity")
+	if id == "" {
+		id = c.Args().First()
+	}
+	return room, id
 }
