@@ -88,11 +88,11 @@ var (
 							Value: string(EgressTypeRoomComposite),
 						},
 					},
-					ArgsUsage: " REQUEST_JSON",
+					ArgsUsage: "REQUEST_JSON",
 				},
 				{
 					Name:   "list",
-					Usage:  "List and search active egress",
+					Usage:  "List and search active egresses",
 					Before: createEgressClient,
 					Action: listEgress,
 					Flags: []cli.Flag{
@@ -281,21 +281,21 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "base-url (e.g. https://recorder.livekit.io/#)",
-					Usage:    "base template url",
+					Usage:    "Base template `URL`",
 					Required: true,
 				},
 				&cli.StringFlag{
 					Name:  "layout",
-					Usage: "layout name",
+					Usage: "Layout `TYPE`",
 				},
 				&cli.IntFlag{
 					Name:     "publishers",
-					Usage:    "number of publishers",
+					Usage:    "`NUMBER` of publishers",
 					Required: true,
 				},
 				&cli.StringFlag{
 					Name:     "room",
-					Usage:    "name of the room",
+					Usage:    "`NAME` of the room",
 					Required: false,
 				},
 			},
@@ -338,12 +338,13 @@ func handleEgressStart(ctx context.Context, cmd *cli.Command) error {
 }
 
 func startRoomCompositeEgress(ctx context.Context, cmd *cli.Command) error {
+	_ = ctx
 	req, err := ReadRequestArg[livekit.RoomCompositeEgressRequest](cmd)
 	if err != nil {
 		return err
 	}
 
-	info, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
+	info, err := egressClient.StartRoomCompositeEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -358,7 +359,7 @@ func _deprecatedStartRoomCompositeEgress(ctx context.Context, cmd *cli.Command) 
 		return err
 	}
 
-	info, err := egressClient.StartRoomCompositeEgress(context.Background(), req)
+	info, err := egressClient.StartRoomCompositeEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -373,7 +374,7 @@ func startWebEgress(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	info, err := egressClient.StartWebEgress(context.Background(), req)
+	info, err := egressClient.StartWebEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -388,7 +389,7 @@ func _deprecatedStartWebEgress(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	info, err := egressClient.StartWebEgress(context.Background(), req)
+	info, err := egressClient.StartWebEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -403,7 +404,7 @@ func startParticipantEgress(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	info, err := egressClient.StartParticipantEgress(context.Background(), req)
+	info, err := egressClient.StartParticipantEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -418,7 +419,7 @@ func _deprecatedStartParticipantEgress(ctx context.Context, cmd *cli.Command) er
 		return err
 	}
 
-	info, err := egressClient.StartParticipantEgress(context.Background(), req)
+	info, err := egressClient.StartParticipantEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -433,7 +434,7 @@ func startTrackCompositeEgress(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	info, err := egressClient.StartTrackCompositeEgress(context.Background(), req)
+	info, err := egressClient.StartTrackCompositeEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -448,7 +449,7 @@ func _deprecatedStartTrackCompositeEgress(ctx context.Context, cmd *cli.Command)
 		return err
 	}
 
-	info, err := egressClient.StartTrackCompositeEgress(context.Background(), req)
+	info, err := egressClient.StartTrackCompositeEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -463,7 +464,7 @@ func startTrackEgress(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	info, err := egressClient.StartTrackEgress(context.Background(), req)
+	info, err := egressClient.StartTrackEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -478,7 +479,7 @@ func _deprecatedStartTrackEgress(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	info, err := egressClient.StartTrackEgress(context.Background(), req)
+	info, err := egressClient.StartTrackEgress(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -506,7 +507,7 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 	var items []*livekit.EgressInfo
 	if cmd.IsSet("id") {
 		for _, id := range cmd.StringSlice("id") {
-			res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
+			res, err := egressClient.ListEgress(ctx, &livekit.ListEgressRequest{
 				EgressId: id,
 			})
 			if err != nil {
@@ -515,7 +516,7 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 			items = append(items, res.Items...)
 		}
 	} else {
-		res, err := egressClient.ListEgress(context.Background(), &livekit.ListEgressRequest{
+		res, err := egressClient.ListEgress(ctx, &livekit.ListEgressRequest{
 			RoomName: cmd.String("room"),
 			Active:   cmd.Bool("active"),
 		})
@@ -573,7 +574,7 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateLayout(ctx context.Context, cmd *cli.Command) error {
-	info, err := egressClient.UpdateLayout(context.Background(), &livekit.UpdateLayoutRequest{
+	info, err := egressClient.UpdateLayout(ctx, &livekit.UpdateLayoutRequest{
 		EgressId: cmd.String("id"),
 		Layout:   cmd.String("layout"),
 	})
@@ -586,7 +587,7 @@ func updateLayout(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateStream(ctx context.Context, cmd *cli.Command) error {
-	info, err := egressClient.UpdateStream(context.Background(), &livekit.UpdateStreamRequest{
+	info, err := egressClient.UpdateStream(ctx, &livekit.UpdateStreamRequest{
 		EgressId:         cmd.String("id"),
 		AddOutputUrls:    cmd.StringSlice("add-urls"),
 		RemoveOutputUrls: cmd.StringSlice("remove-urls"),
@@ -603,7 +604,7 @@ func stopEgress(ctx context.Context, cmd *cli.Command) error {
 	ids := cmd.StringSlice("id")
 	var errors []error
 	for _, id := range ids {
-		_, err := egressClient.StopEgress(context.Background(), &livekit.StopEgressRequest{
+		_, err := egressClient.StopEgress(ctx, &livekit.StopEgressRequest{
 			EgressId: id,
 		})
 		if err != nil {
