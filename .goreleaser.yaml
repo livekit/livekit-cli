@@ -33,7 +33,8 @@ builds:
     ldflags:
       - -s -w
 archives:
-  - format_overrides:
+  - name_template: "lk_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
       - goos: windows
         format: zip
     files:
@@ -42,7 +43,7 @@ archives:
 release:
   github:
     owner: livekit
-    name: lk
+    name: livekit-cli
   draft: true
   prerelease: auto
 changelog:
