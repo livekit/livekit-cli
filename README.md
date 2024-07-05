@@ -15,7 +15,7 @@
 This package includes command line utilities that interacts with LiveKit. It allows you to:
 
 -   Create access tokens
--   Access LiveKit APIs, create, delete rooms, etc
+-   Access LiveKit APIs, create, delete rooms, etc.
 -   Join a room as a participant, inspecting in-room events
 -   Start and manage Egress
 -   Perform load testing, efficiently simulating real-world load
@@ -49,29 +49,28 @@ make install
 
 # Usage
 
-See `livekit-cli --help` for a complete list of subcommands.
+See `lk --help` for a complete list of subcommands.
 
 ## Set up your project [new]
 
 When a default project is set up, you can omit `url`, `api-key`, and `api-secret` when using the CLI.
-You could also set up multiple projects, and switch the active project used with the `--project` flag.
+You can also set up multiple projects, and temporarily switch the active project used with the `--project` flag, or persistently using `lk project set-default`.
 
 ### Adding a project
 
 ```shell
-livekit-cli project add
+lk project add --api-key <key> --api-secret <secret> <project_name>
 ```
-
 ### Listing projects
 
 ```shell
-livekit-cli project list
+lk project list
 ```
 
 ### Switching defaults
     
 ```shell
-livekit-cli project set-default <project-name>
+lk project set-default <project_name>
 ```
 
 ## Publishing to a room
@@ -81,11 +80,10 @@ livekit-cli project set-default <project-name>
 To publish a demo video as a participant's track, use the following.
 
 ```shell
-livekit-cli join-room --room yourroom --identity publisher \
-  --publish-demo
+lk room join --identity publisher --publish-demo <room_name>
 ```
 
-It'll publish the video track with [simulcast](https://blog.livekit.io/an-introduction-to-webrtc-simulcast-6c5f1f6402eb/), at 720p, 360p, and 180p.
+This will publish the demo video track with [simulcast](https://blog.livekit.io/an-introduction-to-webrtc-simulcast-6c5f1f6402eb/), at 720p, 360p, and 180p.
 
 ### Publish media files
 
@@ -93,13 +91,14 @@ You can publish your own audio/video files. These tracks files need to be encode
 Refer to [encoding instructions](https://github.com/livekit/server-sdk-go/tree/main#publishing-tracks-to-room)
 
 ```shell
-livekit-cli join-room --room yourroom --identity publisher \
-  --publish path/to/video.ivf \
-  --publish path/to/audio.ogg \
-  --fps 23.98
+lk room join --identity publisher \
+  --publish <path/to/video.ivf> \
+  --publish <path/to/audio.ogg> \
+  --fps 23.98 \
+  <room_name>
 ```
 
-This will publish the pre-encoded ivf and ogg files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; it's important to match video framerate with the source to prevent out of sync issues.
+This will publish the pre-encoded `.ivf` and `.ogg` files to the room, indicating video FPS of 23.98. Note that the FPS only affects the video; it's important to match video framerate with the source to prevent out of sync issues.
 
 Note: For files uploaded via CLI, expect an initial delay before the video becomes visible to the remote viewer. This delay is attributed to the pre-encoded video's fixed keyframe intervals. Video encoded with LiveKit client SDKs do not have this delay.
 
@@ -108,7 +107,7 @@ Note: For files uploaded via CLI, expect an initial delay before the video becom
 It's possible to publish any source that FFmpeg supports (including live sources such as RTSP) by using it as a transcoder.
 
 This is done by running FFmpeg in a separate process, encoding to a Unix socket. (not available on Windows).
-`livekit-cli` can then read transcoded data from the socket and publishing them to the room.
+`lk` can then read transcoded data from the socket and publishing them to the room.
 
 First run FFmpeg like this:
 
@@ -123,25 +122,27 @@ ffmpeg -i <video-file | rtsp://url> \
 
 This transcodes the input into H.264 baseline profile and Opus.
 
-Then, run `livekit-cli` like this:
+Then, run `lk` like this:
 
 ```shell
-livekit-cli join-room --room yourroom --identity bot \
+lk room join --identity bot \
   --publish h264:///tmp/myvideo.sock \
-  --publish opus:///tmp/myaudio.sock
+  --publish opus:///tmp/myaudio.sock \
+  <room_name>
 ````
 
 You should now see both video and audio tracks published to the room.
 
 ### Publish from TCP (i.e. gstreamer)
 
-It's possible to publish from video streams coming over a TCP socket. `livekit-cli` can act as a TCP client. For example, with a gstreamer pipeline ending in `! tcpserversink port=16400` and streaming H.264.
+It's possible to publish from video streams coming over a TCP socket. `lk` can act as a TCP client. For example, with a gstreamer pipeline ending in `! tcpserversink port=16400` and streaming H.264.
 
-Run `livekit-cli` like this:
+Run `lk` like this:
 
 ```shell
-livekit-cli join-room --room yourroom --identity bot \
-  --publish h264:///127.0.0.1:16400
+lk room join --identity bot \
+  --publish h264:///127.0.0.1:16400 \
+  <room_name>
 ```
 
 ### Publish streams from your application
@@ -159,17 +160,17 @@ ffplay -i unix:/tmp/myvideo.sock
 
 Recording requires [egress service](https://docs.livekit.io/guides/egress/) to be set up first.
 
-Example request.json files are [located here](https://github.com/livekit/livekit-cli/tree/main/cmd/livekit-cli/examples).
+Example request.json files are [located here](https://github.com/livekit/livekit-cli/tree/main/cmd/lk/examples).
 
 ```shell
-# start room composite (recording of room UI)
-livekit-cli start-room-composite-egress --request request.json
+# Start room composite (recording of room UI)
+lk egress start --type room-composite <path/to/request.json>
 
-# start track composite (audio + video)
-livekit-cli start-track-composite-egress --request request.json
+# Start track composite (audio + video)
+lk egress start --type track-composite <path/to/request.json>
 
-# start track egress (single audio or video track)
-livekit-cli start-track-egress --request request.json
+# Start track egress (single audio or video track)
+lk egress start --type track <path/to/request.json>
 ```
 
 ### Testing egress templates
@@ -183,9 +184,9 @@ It'll then open a browser to the template URL, with the correct parameters fille
 Here's an example:
 
 ```shell
-livekit-cli test-egress-template \
+lk egress test-template \
   --base-url http://localhost:3000 \
-  --room <your-room> --layout <your-layout> --video-publishers 3
+  --room test-room --layout speaker --video-publishers 3
 ```
 
 This command will launch a browser pointed at `http://localhost:3000`, while simulating 3 publishers publishing to your livekit instance.
@@ -194,14 +195,14 @@ This command will launch a browser pointed at `http://localhost:3000`, while sim
 
 Load testing utility for LiveKit. This tool is quite versatile and is able to simulate various types of load.
 
-Note: `livekit-load-tester` has been renamed to sub-command `livekit-cli load-test`
+Note: `livekit-load-tester` has been renamed to sub-command `lk load-test`
 
 ### Quickstart
 
 This guide requires a LiveKit server instance to be set up. You can start a load tester with:
 
 ```shell
-livekit-cli load-test \
+lk load-test \
   --room test-room --video-publishers 8
 ```
 
@@ -212,7 +213,7 @@ This simulates 8 video publishers to the room, with no subscribers. Video tracks
 To test audio capabilities in your app, you can also simulate simultaneous speakers to the room.
 
 ```shell
-livekit-cli load-test \
+lk load-test \
   --room test-room --audio-publishers 5
 ```
 
@@ -224,8 +225,8 @@ In a meeting, typically there's only one active speaker at a time, but this can 
 Generate a token so you can log into the room:
 
 ```shell
-livekit-cli create-token --join \
-  --room test-room --identity user  
+lk token create --join \
+  --room test-room --identity test-user
 ```
 
 Head over to the [example web client](https://meet.livekit.io/?tab=custom) and paste in the token, you can see the simulated tracks published by the load tester.
@@ -264,7 +265,7 @@ of data sent to its subscribers.
 Use this command to simulate a load test of 5 publishers, and 500 subscribers:
 
 ```shell
-livekit-cli load-test \
+lk load-test \
   --duration 1m \
   --video-publishers 5 \
   --subscribers 500
@@ -289,16 +290,16 @@ Summary | Tester  | Tracks    | Bitrate                 | Latency     | Total Dr
 
 ### Advanced usage
 
-You could customize various parameters of the test such as
+You can customize various parameters of the test such as
 
--   --video-publishers: number of video publishers
--   --audio-publishers: number of audio publishers
--   --subscribers: number of subscribers
--   --video-resolution: publishing video resolution. low, medium, high
--   --no-simulcast: disables simulcast
--   --num-per-second: number of testers to start each second
--   --layout: layout to simulate (speaker, 3x3, 4x4, or 5x5)
--   --simulate-speakers: randomly rotate publishers to speak
+-   `--video-publishers`: number of video publishers
+-   `--audio-publishers`: number of audio publishers
+-   `--subscribers`: number of subscribers
+-   `--video-resolution`: publishing video resolution. low, medium, high
+-   `--no-simulcast`: disables simulcast
+-   `--num-per-second`: number of testers to start each second
+-   `--layout`: layout to simulate (speaker, 3x3, 4x4, or 5x5)
+-   `--simulate-speakers`: randomly rotate publishers to speak
 
 <!--BEGIN_REPO_NAV-->
 <br/><table>

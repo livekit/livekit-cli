@@ -23,7 +23,7 @@ on:
 
 # workflow tasks
 jobs:
-  intall-test:
+  install-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

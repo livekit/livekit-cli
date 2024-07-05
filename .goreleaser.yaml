@@ -16,11 +16,11 @@ before:
   hooks:
     - go mod tidy
 builds:
-  - id: livekit-cli
+  - id: lk
     env:
       - CGO_ENABLED=0
-    main: ./cmd/livekit-cli
-    binary: livekit-cli
+    main: ./cmd/lk
+    binary: lk
     goarm:
       - "7"
     goarch:
@@ -42,7 +42,7 @@ archives:
 release:
   github:
     owner: livekit
-    name: livekit-cli
+    name: lk
   draft: true
   prerelease: auto
 changelog:

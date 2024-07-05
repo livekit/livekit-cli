@@ -21,7 +21,7 @@ import (
 	"reflect"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -33,12 +33,36 @@ type protoType[T any] interface {
 	proto.Message
 }
 
-func ReadRequest[T any, P protoType[T]](c *cli.Context) (*T, error) {
-	return ReadRequestFile[T, P](c.String(flagRequest))
+func ReadRequest[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
+	return ReadRequestFileOrLiteral[T, P](cmd.String(flagRequest))
 }
 
-func ReadRequestFile[T any, P protoType[T]](path string) (*T, error) {
-	reqBytes, err := os.ReadFile(path)
+func ReadRequestArg[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
+	reqFile, err := extractArg(cmd)
+	if err != nil {
+		return nil, err
+	}
+	return ReadRequestFileOrLiteral[T, P](reqFile)
+}
+
+func ReadRequestArgOrFlag[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
+	reqFile, err := extractArg(cmd)
+	if err != nil {
+		return ReadRequest[T, P](cmd)
+	}
+	return ReadRequestFileOrLiteral[T, P](reqFile)
+}
+
+func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (*T, error) {
+	var reqBytes []byte
+	var err error
+
+	// This allows us to read JSON from either CLI arg or FS
+	if _, err = os.Stat(pathOrLiteral); err != nil {
+		reqBytes, err = os.ReadFile(pathOrLiteral)
+	} else {
+		reqBytes = []byte(pathOrLiteral)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -61,22 +85,23 @@ func RequestFlag[T any, P protoType[T]]() *cli.StringFlag {
 
 func RequestDesc[T any, _ protoType[T]]() string {
 	typ := reflect.TypeFor[T]().Name()
-	return typ + " as JSON file (see livekit-cli/examples)"
+	return typ + " as JSON file (see cmd/lk/examples)"
 }
 
 func createAndPrint[T any, P protoType[T], R any](
-	c *cli.Context, file string,
+	ctx context.Context,
+	cmd *cli.Command, file string,
 	create func(ctx context.Context, p P) (R, error),
 	print func(r R),
 ) error {
-	req, err := ReadRequestFile[T, P](file)
+	req, err := ReadRequestFileOrLiteral[T, P](file)
 	if err != nil {
 		return err
 	}
-	if c.Bool("verbose") {
+	if cmd.Bool("verbose") {
 		PrintJSON(req)
 	}
-	info, err := create(c.Context, req)
+	info, err := create(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -85,18 +110,19 @@ func createAndPrint[T any, P protoType[T], R any](
 }
 
 func createAndPrintLegacy[T any, P protoType[T], R any](
-	c *cli.Context,
+	ctx context.Context,
+	cmd *cli.Command,
 	create func(ctx context.Context, p P) (R, error),
 	print func(r R),
 ) error {
-	req, err := ReadRequest[T, P](c)
+	req, err := ReadRequest[T, P](cmd)
 	if err != nil {
 		return err
 	}
-	if c.Bool("verbose") {
+	if cmd.Bool("verbose") {
 		PrintJSON(req)
 	}
-	info, err := create(c.Context, req)
+	info, err := create(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -105,29 +131,30 @@ func createAndPrintLegacy[T any, P protoType[T], R any](
 }
 
 func createAndPrintReqs[T any, P protoType[T], R any](
-	c *cli.Context,
+	ctx context.Context,
+	cmd *cli.Command,
 	create func(ctx context.Context, p P) (R, error),
 	print func(r R),
 ) error {
-	args := c.Args()
+	args := cmd.Args()
 	if !args.Present() {
 		return errors.New("at least one JSON request file is required")
 	}
 	for _, file := range args.Slice() {
-		if err := createAndPrint(c, file, create, print); err != nil {
+		if err := createAndPrint(ctx, cmd, file, create, print); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func forEachID(c *cli.Context, fnc func(ctx context.Context, id string) error) error {
-	args := c.Args()
+func forEachID(ctx context.Context, cmd *cli.Command, fnc func(ctx context.Context, id string) error) error {
+	args := cmd.Args()
 	if !args.Present() {
 		return errors.New("at least one ID is required")
 	}
 	for _, id := range args.Slice() {
-		if err := fnc(c.Context, id); err != nil {
+		if err := fnc(ctx, id); err != nil {
 			return err
 		}
 	}
@@ -142,11 +169,12 @@ func listAndPrint[
 		GetItems() []*T
 	},
 ](
-	c *cli.Context,
+	ctx context.Context,
+	cmd *cli.Command,
 	getList func(ctx context.Context, req Req) (Resp, error), req Req,
 	header []string, tableRow func(item *T) []string,
 ) error {
-	res, err := getList(c.Context, req)
+	res, err := getList(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -164,7 +192,7 @@ func listAndPrint[
 		table.Append(row)
 	}
 	table.Render()
-	if c.Bool("verbose") {
+	if cmd.Bool("verbose") {
 		PrintJSON(res)
 	}
 	return nil

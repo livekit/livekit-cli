@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -24,7 +25,7 @@ import (
 
 	"github.com/manifoldco/promptui"
 	"github.com/olekukonko/tablewriter"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/config"
 )
@@ -33,46 +34,49 @@ var (
 	ProjectCommands = []*cli.Command{
 		{
 			Name:     "project",
-			Usage:    "subcommand for project management",
-			Category: "Project Management",
+			Usage:    "Add or remove projects and view existing project properties",
+			Category: "Core",
 			Before:   loadProjectConfig,
-			Subcommands: []*cli.Command{
+			Commands: []*cli.Command{
 				{
-					Name:   "add",
-					Usage:  "add a new project",
-					Action: addProject,
+					Name:      "add",
+					Usage:     "Add a new project",
+					UsageText: "lk project add PROJECT_NAME",
+					ArgsUsage: "PROJECT_NAME",
+					Action:    addProject,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "url",
-							Usage: "URL of the LiveKit server",
+							Usage: "`URL` of the LiveKit server",
 						},
 						&cli.StringFlag{
-							Name: "api-key",
+							Name:  "api-key",
+							Usage: "Project `KEY`",
 						},
 						&cli.StringFlag{
-							Name: "api-secret",
-						},
-						&cli.StringFlag{
-							Name:  "name",
-							Usage: "name given to this project (for later reference).",
+							Name:  "api-secret",
+							Usage: "Project `SECRET`",
 						},
 					},
 				},
 				{
-					Name:   "list",
-					Usage:  "list all configured projects",
-					Action: listProjects,
+					Name:      "list",
+					Usage:     "List all configured projects",
+					UsageText: "lk project list",
+					Action:    listProjects,
 				},
 				{
 					Name:      "remove",
-					Usage:     "remove an existing project from config",
-					UsageText: "livekit-cli project remove <project-name>",
+					Usage:     "Remove an existing project from config",
+					UsageText: "lk project remove PROJECT_NAME",
+					ArgsUsage: "PROJECT_NAME",
 					Action:    removeProject,
 				},
 				{
 					Name:      "set-default",
-					Usage:     "set a project as default to use with other commands",
-					UsageText: "livekit-cli project set-default <project-name>",
+					Usage:     "Set a project as default to use with other commands",
+					UsageText: "lk project set-default PROJECT_NAME",
+					ArgsUsage: "PROJECT_NAME",
 					Action:    setDefaultProject,
 				},
 			},
@@ -84,7 +88,7 @@ var (
 	nameRegex      = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 )
 
-func loadProjectConfig(c *cli.Context) error {
+func loadProjectConfig(ctx context.Context, cmd *cli.Command) error {
 	conf, err := config.LoadOrCreate()
 	if err != nil {
 		return err
@@ -102,7 +106,7 @@ func loadProjectConfig(c *cli.Context) error {
 	return nil
 }
 
-func addProject(c *cli.Context) error {
+func addProject(ctx context.Context, cmd *cli.Command) error {
 	p := config.ProjectConfig{}
 	var prompt promptui.Prompt
 
@@ -115,7 +119,7 @@ func addProject(c *cli.Context) error {
 		_, err := url.Parse(val)
 		return err
 	}
-	if p.URL = c.String("url"); p.URL != "" {
+	if p.URL = cmd.String("url"); p.URL != "" {
 		if err = validateURL(p.URL); err != nil {
 			return err
 		}
@@ -137,7 +141,7 @@ func addProject(c *cli.Context) error {
 		}
 		return nil
 	}
-	if p.APIKey = c.String("api-key"); p.APIKey != "" {
+	if p.APIKey = cmd.String("api-key"); p.APIKey != "" {
 		if err = validateKey(p.APIKey); err != nil {
 			return err
 		}
@@ -153,7 +157,7 @@ func addProject(c *cli.Context) error {
 	}
 
 	// API Secret
-	if p.APISecret = c.String("api-secret"); p.APISecret != "" {
+	if p.APISecret = cmd.String("api-secret"); p.APISecret != "" {
 		if err = validateKey(p.APISecret); err != nil {
 			return err
 		}
@@ -181,7 +185,8 @@ func addProject(c *cli.Context) error {
 		}
 		return nil
 	}
-	if p.Name = c.String("name"); p.Name != "" {
+
+	if p.Name = cmd.Args().Get(0); p.Name != "" {
 		if err = validateName(p.Name); err != nil {
 			return err
 		}
@@ -222,9 +227,9 @@ func addProject(c *cli.Context) error {
 	return nil
 }
 
-func listProjects(c *cli.Context) error {
+func listProjects(ctx context.Context, cmd *cli.Command) error {
 	if len(cliConfig.Projects) == 0 {
-		fmt.Println("No projects configured, use `livekit-cli project add` to add a new project.")
+		fmt.Println("No projects configured, use `lk project add` to add a new project.")
 		return nil
 	}
 
@@ -238,12 +243,12 @@ func listProjects(c *cli.Context) error {
 	return nil
 }
 
-func removeProject(c *cli.Context) error {
-	if c.NArg() == 0 {
-		_ = cli.ShowSubcommandHelp(c)
+func removeProject(ctx context.Context, cmd *cli.Command) error {
+	if cmd.NArg() == 0 {
+		_ = cli.ShowSubcommandHelp(cmd)
 		return errors.New("project name is required")
 	}
-	name := c.Args().First()
+	name := cmd.Args().First()
 
 	var newProjects []config.ProjectConfig
 	for _, p := range cliConfig.Projects {
@@ -267,12 +272,12 @@ func removeProject(c *cli.Context) error {
 	return nil
 }
 
-func setDefaultProject(c *cli.Context) error {
-	if c.NArg() == 0 {
-		_ = cli.ShowSubcommandHelp(c)
+func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
+	if cmd.NArg() == 0 {
+		_ = cli.ShowSubcommandHelp(cmd)
 		return errors.New("project name is required")
 	}
-	name := c.Args().First()
+	name := cmd.Args().First()
 
 	for _, p := range cliConfig.Projects {
 		if p.Name == name {
