@@ -21,6 +21,7 @@ set -o errexit
 set -o pipefail
 
 REPO="livekit-cli"
+BIN_NAME="lk"
 INSTALL_PATH="/usr/local/bin"
 BASH_COMPLETION_PATH="/usr/share/bash-completion/completions"
 ZSH_COMPLETION_PATH="/usr/share/zsh/site-functions"
@@ -88,7 +89,7 @@ then
 fi
 
 VERSION=$(get_latest_version)
-ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${REPO}_${VERSION}_linux_${ARCH}.tar.gz"
+ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${BIN_NAME}_${VERSION}_linux_${ARCH}.tar.gz"
 
 # Ensure version follows SemVer
 if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
@@ -101,9 +102,10 @@ log "Downloading from ${ARCHIVE_URL}..."
 
 TEMP_DIR_PATH="$(mktemp -d)"
 
-curl -s -L "${ARCHIVE_URL}" | tar xzf - -C "${TEMP_DIR_PATH}" --wildcards --no-anchored "$REPO*"
+curl -s -L "${ARCHIVE_URL}" | tar xzf - -C "${TEMP_DIR_PATH}" --wildcards --no-anchored "$BIN_NAME*"
 
-${SUDO_PREFIX} mv "${TEMP_DIR_PATH}/livekit-cli" "${INSTALL_PATH}/livekit-cli"
+${SUDO_PREFIX} mv "${TEMP_DIR_PATH}/lk" "${INSTALL_PATH}/lk"
+${SUDO_PREFIX} ln -sf "${INSTALL_PATH}/lk" "${INSTALL_PATH}/livekit-cli"
 
 if [ -d "${TEMP_DIR_PATH}/autocomplete" ]
 then
@@ -119,8 +121,8 @@ then
 
   if [ -d "${FISH_COMPLETION_PATH}" ]
   then
-    livekit-cli generate-fish-completion -o "${FISH_COMPLETION_PATH}/livekit-cli.fish"
+    lk generate-fish-completion -o "${FISH_COMPLETION_PATH}/livekit-cli.fish"
   fi
 fi
 
-log "\n$REPO is installed to $INSTALL_PATH\n"
+log "\n$BIN_NAME is installed to $INSTALL_PATH\n"
