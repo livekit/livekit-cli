@@ -47,7 +47,6 @@ const (
 	EgressTypeTrack          egressType = "track"
 	EgressTypeTrackComposite egressType = "track-composite"
 	EgressTypeWeb            egressType = "web"
-	egressCategory                      = "Egress"
 )
 
 var (
@@ -110,18 +109,98 @@ var (
 						},
 					},
 				},
+				{
+					Name:   "stop",
+					Usage:  "Stop an active egress",
+					Before: createEgressClient,
+					Action: stopEgress,
+					Flags: []cli.Flag{
+						&cli.StringSliceFlag{
+							Name:     "id",
+							Usage:    "Egress ID to stop, can be specified multiple times",
+							Required: true,
+						},
+					},
+				},
+				{
+					Name:   "test-template",
+					Usage:  "See what your egress template will look like in a recording",
+					Action: testEgressTemplate,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:     "base-url (e.g. https://recorder.livekit.io/#)",
+							Usage:    "Base template `URL`",
+							Required: true,
+						},
+						&cli.StringFlag{
+							Name:  "layout",
+							Usage: "Layout `TYPE`",
+						},
+						&cli.IntFlag{
+							Name:     "publishers",
+							Usage:    "`NUMBER` of publishers",
+							Required: true,
+						},
+						&cli.StringFlag{
+							Name:     "room",
+							Usage:    "`NAME` of the room",
+							Required: false,
+						},
+					},
+				},
+				{
+					Name:      "update-layout",
+					Usage:     "Updates layout for a live room composite egress",
+					ArgsUsage: "ID",
+					Before:    createEgressClient,
+					Action:    updateLayout,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:     "id",
+							Usage:    "Egress ID",
+							Required: true,
+						},
+						&cli.StringFlag{
+							Name:     "layout",
+							Usage:    "new web layout",
+							Required: true,
+						},
+					},
+				},
+				{
+					Name:   "update-stream",
+					Usage:  "Adds or removes RTMP output urls from a live stream",
+					Before: createEgressClient,
+					Action: updateStream,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:     "id",
+							Usage:    "Egress ID",
+							Required: true,
+						},
+						&cli.StringSliceFlag{
+							Name:     "add-urls",
+							Usage:    "urls to add",
+							Required: false,
+						},
+						&cli.StringSliceFlag{
+							Name:     "remove-urls",
+							Usage:    "urls to remove",
+							Required: false,
+						},
+					},
+				},
 			},
 			HideHelpCommand: true,
 		},
 
 		// Deprecated commands kept for compatibility
 		{
-			Hidden:   true, // deprectated: use `egress start --room-composite`
-			Name:     "start-room-composite-egress",
-			Usage:    "Start room composite egress",
-			Before:   createEgressClient,
-			Action:   _deprecatedStartRoomCompositeEgress,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress start --room-composite`
+			Name:   "start-room-composite-egress",
+			Usage:  "Start room composite egress",
+			Before: createEgressClient,
+			Action: _deprecatedStartRoomCompositeEgress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
@@ -131,12 +210,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprectated: use `egress start --web`
-			Name:     "start-web-egress",
-			Usage:    "Start web egress",
-			Before:   createEgressClient,
-			Action:   _deprecatedStartWebEgress,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress start --web`
+			Name:   "start-web-egress",
+			Usage:  "Start web egress",
+			Before: createEgressClient,
+			Action: _deprecatedStartWebEgress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
@@ -146,12 +224,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprectated: use `egress start --participant`
-			Name:     "start-participant-egress",
-			Usage:    "Start participant egress",
-			Before:   createEgressClient,
-			Action:   _deprecatedStartParticipantEgress,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress start --participant`
+			Name:   "start-participant-egress",
+			Usage:  "Start participant egress",
+			Before: createEgressClient,
+			Action: _deprecatedStartParticipantEgress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
@@ -161,12 +238,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprectated: use `egress start --track-composite`
-			Name:     "start-track-composite-egress",
-			Usage:    "Start track composite egress",
-			Before:   createEgressClient,
-			Action:   _deprecatedStartTrackCompositeEgress,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress start --track-composite`
+			Name:   "start-track-composite-egress",
+			Usage:  "Start track composite egress",
+			Before: createEgressClient,
+			Action: _deprecatedStartTrackCompositeEgress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
@@ -176,12 +252,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprectated: use `egress start --track`
-			Name:     "start-track-egress",
-			Usage:    "Start track egress",
-			Before:   createEgressClient,
-			Action:   _deprecatedStartTrackEgress,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress start --track`
+			Name:   "start-track-egress",
+			Usage:  "Start track egress",
+			Before: createEgressClient,
+			Action: _deprecatedStartTrackEgress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
@@ -191,12 +266,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprectated: use `egress list`
-			Name:     "list-egress",
-			Usage:    "List all active egress",
-			Before:   createEgressClient,
-			Action:   listEgress,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress list`
+			Name:   "list-egress",
+			Usage:  "List all active egress",
+			Before: createEgressClient,
+			Action: listEgress,
 			Flags: []cli.Flag{
 				&cli.StringSliceFlag{
 					Name:  "id",
@@ -213,12 +287,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprectated: use `egress update`
-			Name:     "update-layout",
-			Usage:    "Updates layout for a live room composite egress",
-			Before:   createEgressClient,
-			Action:   updateLayout,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress update-layout`
+			Name:   "update-layout",
+			Usage:  "Updates layout for a live room composite egress",
+			Before: createEgressClient,
+			Action: updateLayout,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
@@ -233,12 +306,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprectated: use `egress update`
-			Name:     "update-stream",
-			Usage:    "Adds or removes rtmp output urls from a live stream",
-			Before:   createEgressClient,
-			Action:   updateStream,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress update-stream`
+			Name:   "update-stream",
+			Usage:  "Adds or removes rtmp output urls from a live stream",
+			Before: createEgressClient,
+			Action: updateStream,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
@@ -258,12 +330,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprectated: use `egress stop`
-			Name:     "stop-egress",
-			Usage:    "Stop egress",
-			Before:   createEgressClient,
-			Action:   stopEgress,
-			Category: egressCategory,
+			Hidden: true, // deprectated: use `egress stop`
+			Name:   "stop-egress",
+			Usage:  "Stop egress",
+			Before: createEgressClient,
+			Action: stopEgress,
 			Flags: []cli.Flag{
 				&cli.StringSliceFlag{
 					Name:     "id",
@@ -273,11 +344,10 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprecated: use `egress test-template`
-			Name:     "test-egress-template",
-			Usage:    "See what your egress template will look like in a recording",
-			Category: egressCategory,
-			Action:   testEgressTemplate,
+			Hidden: true, // deprecated: use `egress test-template`
+			Name:   "test-egress-template",
+			Usage:  "See what your egress template will look like in a recording",
+			Action: testEgressTemplate,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "base-url (e.g. https://recorder.livekit.io/#)",
@@ -574,8 +644,12 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateLayout(ctx context.Context, cmd *cli.Command) error {
+	egressId := cmd.String("id")
+	if egressId == "" {
+		egressId = cmd.Args().First()
+	}
 	info, err := egressClient.UpdateLayout(ctx, &livekit.UpdateLayoutRequest{
-		EgressId: cmd.String("id"),
+		EgressId: egressId,
 		Layout:   cmd.String("layout"),
 	})
 	if err != nil {
@@ -587,8 +661,12 @@ func updateLayout(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateStream(ctx context.Context, cmd *cli.Command) error {
+	egressId := cmd.String("id")
+	if egressId == "" {
+		egressId = cmd.Args().First()
+	}
 	info, err := egressClient.UpdateStream(ctx, &livekit.UpdateStreamRequest{
-		EgressId:         cmd.String("id"),
+		EgressId:         egressId,
 		AddOutputUrls:    cmd.StringSlice("add-urls"),
 		RemoveOutputUrls: cmd.StringSlice("remove-urls"),
 	})
