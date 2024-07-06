@@ -28,6 +28,10 @@ import (
 
 const flagRequest = "request"
 
+var unmarshaller = protojson.UnmarshalOptions{
+	AllowPartial: true,
+}
+
 type protoType[T any] interface {
 	*T
 	proto.Message
@@ -68,7 +72,7 @@ func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (*T, 
 	}
 
 	var req P = new(T)
-	err = protojson.Unmarshal(reqBytes, req)
+	err = unmarshaller.Unmarshal(reqBytes, req)
 	if err != nil {
 		return nil, err
 	}
