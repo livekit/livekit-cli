@@ -28,6 +28,10 @@ import (
 
 const flagRequest = "request"
 
+var unmarshaller = protojson.UnmarshalOptions{
+	AllowPartial: true,
+}
+
 type protoType[T any] interface {
 	*T
 	proto.Message
@@ -58,7 +62,7 @@ func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (*T, 
 	var err error
 
 	// This allows us to read JSON from either CLI arg or FS
-	if _, err = os.Stat(pathOrLiteral); err != nil {
+	if _, err = os.Stat(pathOrLiteral); err == nil {
 		reqBytes, err = os.ReadFile(pathOrLiteral)
 	} else {
 		reqBytes = []byte(pathOrLiteral)
@@ -68,7 +72,7 @@ func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (*T, 
 	}
 
 	var req P = new(T)
-	err = protojson.Unmarshal(reqBytes, req)
+	err = unmarshaller.Unmarshal(reqBytes, req)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +89,7 @@ func RequestFlag[T any, P protoType[T]]() *cli.StringFlag {
 
 func RequestDesc[T any, _ protoType[T]]() string {
 	typ := reflect.TypeFor[T]().Name()
-	return typ + " as JSON file (see cmd/lk/examples)"
+	return typ + " as JSON file"
 }
 
 func createAndPrint[T any, P protoType[T], R any](
