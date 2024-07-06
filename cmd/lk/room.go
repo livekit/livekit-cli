@@ -23,10 +23,11 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/livekit/protocol/logger"
 	"github.com/pion/webrtc/v3"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	"github.com/livekit/protocol/logger"
 
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -274,13 +275,8 @@ var (
 							Usage: "`TOPIC` of the message",
 						},
 						&cli.StringSliceFlag{
-							Hidden: true, // deprecated: use `--participant-ids`
-							Name:   "participantID",
-							Usage:  "list of participantID to send the message to",
-						},
-						&cli.StringSliceFlag{
-							Name:  "participant-ids",
-							Usage: "List of participant `ID`s to send the message to",
+							Name:  "identity",
+							Usage: "One or more participant identities to send the message to. When empty, broadcasts to the entire room",
 						},
 					},
 				},
@@ -494,10 +490,6 @@ var (
 					Hidden: true, // deprecated: use `--participant-ids`
 					Name:   "participantID",
 					Usage:  "list of participantID to send the message to",
-				},
-				&cli.StringSliceFlag{
-					Name:  "participant-ids",
-					Usage: "List of participant `ID`s to send the message to",
 				},
 			},
 		},
@@ -978,16 +970,18 @@ func updateSubscriptions(ctx context.Context, cmd *cli.Command) error {
 
 func sendData(ctx context.Context, cmd *cli.Command) error {
 	roomName, _ := participantInfoFromFlags(cmd)
-	pIDs := cmd.StringSlice("participantID")
+	identities := cmd.StringSlice("identity")
 	data := cmd.String("data")
 	if data == "" {
 		data = cmd.Args().First()
 	}
 	topic := cmd.String("topic")
 	req := &livekit.SendDataRequest{
-		Room:            roomName,
-		Data:            []byte(data),
-		DestinationSids: pIDs,
+		Room:                  roomName,
+		Data:                  []byte(data),
+		DestinationIdentities: identities,
+		// deprecated
+		DestinationSids: cmd.StringSlice("participantID"),
 	}
 	if topic != "" {
 		req.Topic = &topic
