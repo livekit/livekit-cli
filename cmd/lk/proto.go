@@ -58,7 +58,7 @@ func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (*T, 
 	var err error
 
 	// This allows us to read JSON from either CLI arg or FS
-	if _, err = os.Stat(pathOrLiteral); err != nil {
+	if _, err = os.Stat(pathOrLiteral); err == nil {
 		reqBytes, err = os.ReadFile(pathOrLiteral)
 	} else {
 		reqBytes = []byte(pathOrLiteral)
@@ -85,7 +85,7 @@ func RequestFlag[T any, P protoType[T]]() *cli.StringFlag {
 
 func RequestDesc[T any, _ protoType[T]]() string {
 	typ := reflect.TypeFor[T]().Name()
-	return typ + " as JSON file (see cmd/lk/examples)"
+	return typ + " as JSON file"
 }
 
 func createAndPrint[T any, P protoType[T], R any](
