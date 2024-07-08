@@ -34,7 +34,8 @@ COPY version.go version.go
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -a -o lk ./cmd/lk
 
-FROM alpine:3.20
+# FROM alpine:3.20 # Original base image for the livekit
+FROM python:3.11.6-slim
 
 COPY --from=builder /workspace/lk /lk
 
