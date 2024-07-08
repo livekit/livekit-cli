@@ -20,6 +20,12 @@ This package includes command line utilities that interacts with LiveKit. It all
 -   Start and manage Egress
 -   Perform load testing, efficiently simulating real-world load
 
+## Gigaverse Modification
+Some funcationality was missing, so we added them for our products.
+- Add --token argument to the `lk join-room` command.
+- Disable --room and --identity arguments in the `lk join-room` command.
+- Use `python:3.11.6-slim` as base image
+
 # Installation
 
 ## Mac
@@ -28,28 +34,39 @@ This package includes command line utilities that interacts with LiveKit. It all
 brew install livekit-cli
 ```
 
-## Linux
+## Linux - Build from source
 
-```shell
-curl -sSL https://get.livekit.io/cli | bash
-```
-
-## Windows
-
-Download the [latest release here](https://github.com/livekit/livekit-cli/releases/latest)
-
-## Build from source
-
-This repo uses [Git LFS](https://git-lfs.github.com/) for embedded video resources. Please ensure git-lfs is installed on your machine.
-
-```shell
-git clone https://github.com/livekit/livekit-cli
-make install
+```bash
+export CLI_VERSION=0.1.0 # Set the version manually
+docker build -t gv_livekit_cli:$CLI_VERSION .
 ```
 
 # Usage
 
 See `lk --help` for a complete list of subcommands.
+
+** 1. Run the container**
+  ```bash
+  export CLI_VERSION=0.1.0
+
+  docker run --rm -it --name gv_livekit_cli_test -v ${env:HOME}/.livekit:/.livekit -v ./data:/data --entrypoint /bin/bash gv_livekit_cli:$CLI_VERSION
+  ```
+  > ** IMPORTANT:** In the .livekit folder put the livekit api key, secret and url. Use `source` command to populate the keys as env variables. Alternativly, use the following bash commands:
+  ```bash
+  export LIVEKIT_API_KEY=
+  export LIVEKIT_API_SECRET=
+  export LIVEKIT_URL=
+  ```
+** 2. Run the cli commands**
+```bash
+export IDENTITY=test-bot
+export ROOM_NAME=livestream:Honey_Badger-5whrV_pcI17OgRWxKou6z
+export METADATA='{is_on_stage: True}'
+
+export token_output=$(/lk create-token --api-key $LIVEKIT_API_KEY --api-secret $LIVEKIT_API_SECRET --join --identity $IDENTITY --room $ROOM_NAME --metadata "$METADATA" | grep "access token:" | awk -F':  ' '{print $2}')
+
+/lk join-room --token $token_output --publish
+```
 
 ## Set up your project [new]
 
