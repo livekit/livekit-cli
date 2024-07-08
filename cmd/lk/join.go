@@ -45,8 +45,8 @@ var (
 			Action:   _deprecatedJoinRoom,
 			Category: "Simulate",
 			Flags: []cli.Flag{
-				roomFlag,
-				identityFlag,
+				// roomFlag,
+				// identityFlag,
 				&cli.BoolFlag{
 					Name:  "publish-demo",
 					Usage: "publish demo video as a loop",
@@ -65,6 +65,10 @@ var (
 				&cli.BoolFlag{
 					Name:  "exit-after-publish",
 					Usage: "when publishing, exit after file or stream is complete",
+				},
+				&cli.StringFlag{
+					Name: "token",
+					Usage: "Token as string",
 				},
 			},
 		},
@@ -144,12 +148,7 @@ func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 			close(done)
 		},
 	}
-	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
-		APIKey:              pc.APIKey,
-		APISecret:           pc.APISecret,
-		RoomName:            cmd.String("room"),
-		ParticipantIdentity: cmd.String("identity"),
-	}, roomCB)
+	room, err := lksdk.ConnectToRoomWithToken(pc.URL, cmd.String("token"), roomCB)
 	if err != nil {
 		return err
 	}
