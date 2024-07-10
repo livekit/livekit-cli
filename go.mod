@@ -7,7 +7,7 @@ toolchain go1.22.2
 require (
 	github.com/frostbyte73/core v0.0.10
 	github.com/go-logr/logr v1.4.2
-	github.com/livekit/protocol v1.19.1-0.20240627173058-82786f41fdb6
+	github.com/livekit/protocol v1.19.2-0.20240708223954-14b61d08b08f
 	github.com/livekit/server-sdk-go/v2 v2.2.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/olekukonko/tablewriter v0.0.5
