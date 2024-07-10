@@ -48,6 +48,7 @@ var (
 					Before:    createRoomClient,
 					Action:    createRoom,
 					Flags: []cli.Flag{
+						hidden(optional(roomFlag)),
 						&cli.StringFlag{
 							Name:      "room-egress-file",
 							Usage:     "RoomCompositeRequest `JSON` file (see examples/room-composite-file.json)",
@@ -107,6 +108,7 @@ var (
 					Before: createRoomClient,
 					Action: updateRoomMetadata,
 					Flags: []cli.Flag{
+						hidden(optional(roomFlag)),
 						&cli.StringFlag{
 							Name:     "metadata",
 							Required: true,
@@ -130,6 +132,7 @@ var (
 					ArgsUsage: "ROOM_NAME",
 					Flags: []cli.Flag{
 						identityFlag,
+						hidden(optional(roomFlag)),
 						&cli.BoolFlag{
 							Name:  "publish-demo",
 							Usage: "Publish demo video as a loop",
@@ -509,7 +512,7 @@ func createRoomClient(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createRoom(ctx context.Context, cmd *cli.Command) error {
-	name, err := extractArg(cmd)
+	name, err := extractFlagOrArg(cmd, "room")
 	if err != nil {
 		return err
 	}
@@ -601,7 +604,7 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 		req.DepartureTimeout = uint32(departureTimeout)
 	}
 
-	room, err := roomClient.CreateRoom(context.Background(), req)
+	room, err := roomClient.CreateRoom(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -617,7 +620,7 @@ func listRooms(ctx context.Context, cmd *cli.Command) error {
 		req.Names = names
 	}
 
-	res, err := roomClient.ListRooms(context.Background(), &req)
+	res, err := roomClient.ListRooms(ctx, &req)
 	if err != nil {
 		return err
 	}
@@ -638,7 +641,7 @@ func listRooms(ctx context.Context, cmd *cli.Command) error {
 }
 
 func _deprecatedListRoom(ctx context.Context, cmd *cli.Command) error {
-	res, err := roomClient.ListRooms(context.Background(), &livekit.ListRoomsRequest{
+	res, err := roomClient.ListRooms(ctx, &livekit.ListRoomsRequest{
 		Names: []string{cmd.String("room")},
 	})
 	if err != nil {
@@ -659,7 +662,7 @@ func deleteRoom(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	_, err = roomClient.DeleteRoom(context.Background(), &livekit.DeleteRoomRequest{
+	_, err = roomClient.DeleteRoom(ctx, &livekit.DeleteRoomRequest{
 		Room: roomId,
 	})
 	if err != nil {
@@ -672,7 +675,7 @@ func deleteRoom(ctx context.Context, cmd *cli.Command) error {
 
 func updateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
 	roomName, _ := extractArg(cmd)
-	res, err := roomClient.UpdateRoomMetadata(context.Background(), &livekit.UpdateRoomMetadataRequest{
+	res, err := roomClient.UpdateRoomMetadata(ctx, &livekit.UpdateRoomMetadataRequest{
 		Room:     roomName,
 		Metadata: cmd.String("metadata"),
 	})
@@ -687,7 +690,7 @@ func updateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
 
 func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
 	roomName := cmd.String("room")
-	res, err := roomClient.UpdateRoomMetadata(context.Background(), &livekit.UpdateRoomMetadataRequest{
+	res, err := roomClient.UpdateRoomMetadata(ctx, &livekit.UpdateRoomMetadataRequest{
 		Room:     roomName,
 		Metadata: cmd.String("metadata"),
 	})
@@ -705,6 +708,13 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+
+	roomName, err := extractFlagOrArg(cmd, "room")
+	if err != nil {
+		return err
+	}
+
+	participantIdentity := cmd.String("identity")
 
 	done := make(chan os.Signal, 1)
 	roomCB := &lksdk.RoomCallback{
@@ -774,8 +784,8 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
 		APIKey:              pc.APIKey,
 		APISecret:           pc.APISecret,
-		RoomName:            cmd.String("room"),
-		ParticipantIdentity: cmd.String("identity"),
+		RoomName:            roomName,
+		ParticipantIdentity: participantIdentity,
 	}, roomCB)
 	if err != nil {
 		return err
@@ -852,7 +862,7 @@ func _deprecatedListParticipants(ctx context.Context, cmd *cli.Command) error {
 func getParticipant(ctx context.Context, cmd *cli.Command) error {
 	_ = ctx
 	roomName, identity := participantInfoFromArgOrFlags(cmd)
-	res, err := roomClient.GetParticipant(context.Background(), &livekit.RoomParticipantIdentity{
+	res, err := roomClient.GetParticipant(ctx, &livekit.RoomParticipantIdentity{
 		Room:     roomName,
 		Identity: identity,
 	})
@@ -909,7 +919,7 @@ func updateParticipant(ctx context.Context, cmd *cli.Command) error {
 func removeParticipant(ctx context.Context, cmd *cli.Command) error {
 	_ = ctx
 	roomName, identity := participantInfoFromArgOrFlags(cmd)
-	_, err := roomClient.RemoveParticipant(context.Background(), &livekit.RoomParticipantIdentity{
+	_, err := roomClient.RemoveParticipant(ctx, &livekit.RoomParticipantIdentity{
 		Room:     roomName,
 		Identity: identity,
 	})
@@ -929,7 +939,7 @@ func muteTrack(ctx context.Context, cmd *cli.Command) error {
 	if trackSid == "" {
 		trackSid = cmd.Args().First()
 	}
-	_, err := roomClient.MutePublishedTrack(context.Background(), &livekit.MuteRoomTrackRequest{
+	_, err := roomClient.MutePublishedTrack(ctx, &livekit.MuteRoomTrackRequest{
 		Room:     roomName,
 		Identity: identity,
 		TrackSid: trackSid,
@@ -950,7 +960,7 @@ func muteTrack(ctx context.Context, cmd *cli.Command) error {
 func updateSubscriptions(ctx context.Context, cmd *cli.Command) error {
 	roomName, identity := participantInfoFromFlags(cmd)
 	trackSids := cmd.StringSlice("track")
-	_, err := roomClient.UpdateSubscriptions(context.Background(), &livekit.UpdateSubscriptionsRequest{
+	_, err := roomClient.UpdateSubscriptions(ctx, &livekit.UpdateSubscriptionsRequest{
 		Room:      roomName,
 		Identity:  identity,
 		TrackSids: trackSids,
