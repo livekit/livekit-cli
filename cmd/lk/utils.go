@@ -81,6 +81,18 @@ var (
 	}
 )
 
+func optional[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
+	newFlag := flag
+	newFlag.Required = false
+	return newFlag
+}
+
+func hidden[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
+	newFlag := flag
+	newFlag.Hidden = true
+	return newFlag
+}
+
 func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 	var (
 		opts []twirp.ClientOption
@@ -107,6 +119,18 @@ func extractArgs(c *cli.Command) ([]string, error) {
 		return nil, errors.New("no arguments provided")
 	}
 	return c.Args().Slice(), nil
+}
+
+func extractFlagOrArg(c *cli.Command, flag string) (string, error) {
+	value := c.String(flag)
+	if value == "" {
+		argValue := c.Args().First()
+		if argValue == "" {
+			return "", fmt.Errorf("no option or argument found for \"--%s\"", flag)
+		}
+		value = argValue
+	}
+	return value, nil
 }
 
 func mapStrings(strs []string, fn func(string) string) []string {
