@@ -19,12 +19,25 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
+	"github.com/charmbracelet/huh"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
+)
+
+const (
+	usageCreate   = "Token bearer can create or delete rooms"
+	usageList     = "Token bearer can list rooms"
+	usageJoin     = "Token bearer can join a room (requires --room and --identity)"
+	usageAdmin    = "Token bearer can moderate a room (requires --room)"
+	usageRecorder = "Token bearer can record a room (requires --room)"
+	usageEgress   = "Token bearer can interact with Egress services"
+	usageIngress  = "Token bearer can interact with Ingress services"
+	usageMetadata = "Token bearer can update their own name and metadata"
 )
 
 var (
@@ -42,39 +55,39 @@ var (
 					Flags: []cli.Flag{
 						&cli.BoolFlag{
 							Name:  "create",
-							Usage: "Token bearer can create rooms",
+							Usage: usageCreate,
 						},
 						&cli.BoolFlag{
 							Name:  "list",
-							Usage: "Token bearer can list rooms",
+							Usage: usageList,
 						},
 						&cli.BoolFlag{
 							Name:  "join",
-							Usage: "Token bearer can join a room (requires --room and --identity)",
+							Usage: usageJoin,
 						},
 						&cli.BoolFlag{
 							Name:  "admin",
-							Usage: "Token bearer can manage a room (requires --room)",
+							Usage: usageAdmin,
 						},
 						&cli.BoolFlag{
 							Name:  "recorder",
-							Usage: "Token bearer can record a room (requires --room)",
+							Usage: usageRecorder,
 						},
 						&cli.BoolFlag{
 							Name:  "egress",
-							Usage: "Token bearer can interact with EgressService",
+							Usage: usageEgress,
 						},
 						&cli.BoolFlag{
 							Name:  "ingress",
-							Usage: "Token bearer can interact with IngressService",
+							Usage: usageIngress,
+						},
+						&cli.BoolFlag{
+							Name:  "allow-update-metadata",
+							Usage: usageMetadata,
 						},
 						&cli.StringSliceFlag{
 							Name:  "allow-source",
 							Usage: "Restric publishing to only `SOURCE` types (e.g. --allow-source camera,microphone), defaults to all",
-						},
-						&cli.BoolFlag{
-							Name:  "allow-update-metadata",
-							Usage: "Allow participant to update their own name and metadata from the client side",
 						},
 						&cli.StringFlag{
 							Name:    "identity",
@@ -118,39 +131,39 @@ var (
 			Flags: []cli.Flag{
 				&cli.BoolFlag{
 					Name:  "create",
-					Usage: "Token bearer can create rooms",
+					Usage: usageCreate,
 				},
 				&cli.BoolFlag{
 					Name:  "list",
-					Usage: "Token bearer can list rooms",
+					Usage: usageList,
 				},
 				&cli.BoolFlag{
 					Name:  "join",
-					Usage: "Token bearer can join a room (requires --room and --identity)",
+					Usage: usageJoin,
 				},
 				&cli.BoolFlag{
 					Name:  "admin",
-					Usage: "Token bearer can manage a room (requires --room)",
+					Usage: usageAdmin,
 				},
 				&cli.BoolFlag{
 					Name:  "recorder",
-					Usage: "Token bearer can record a room (requires --room)",
+					Usage: usageRecorder,
 				},
 				&cli.BoolFlag{
 					Name:  "egress",
-					Usage: "Token bearer can interact with EgressService",
+					Usage: usageEgress,
 				},
 				&cli.BoolFlag{
 					Name:  "ingress",
-					Usage: "Token bearer can interact with IngressService",
+					Usage: usageIngress,
+				},
+				&cli.BoolFlag{
+					Name:  "allow-update-metadata",
+					Usage: usageMetadata,
 				},
 				&cli.StringSliceFlag{
 					Name:  "allow-source",
 					Usage: "Allow one or more `SOURCE`s to be published (i.e. --allow-source camera,microphone). if left blank, all sources are allowed",
-				},
-				&cli.BoolFlag{
-					Name:  "allow-update-metadata",
-					Usage: "Allow participant to update their own name and metadata from the client side",
 				},
 				&cli.StringFlag{
 					Name:    "identity",
@@ -266,7 +279,61 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 
 	if !hasPerms {
-		return errors.New("no permissions were given in this grant, see --help")
+		type permission uint
+
+		const (
+			pCreate permission = iota
+			pList
+			pJoin
+			pAdmin
+			pRecord
+			pEgress
+			pIngress
+			pMetadata
+		)
+
+		permissions := make([]permission, 0)
+
+		if err := huh.NewMultiSelect[permission]().
+			Options(
+				huh.NewOption("Create", pCreate),
+				huh.NewOption("List", pList),
+				huh.NewOption("Join", pJoin),
+				huh.NewOption("Admin", pAdmin),
+				huh.NewOption("Record", pRecord),
+				huh.NewOption("Egress", pEgress),
+				huh.NewOption("Ingress", pIngress),
+				huh.NewOption("Update metadata", pMetadata),
+			).
+			Title("Token Permissions").
+			Description("See https://docs.livekit.io/home/get-started/authentication/#Video-grant").
+			Value(&permissions).
+			WithTheme(theme).
+			Run(); err != nil || len(permissions) == 0 {
+			return errors.New("no permissions were given in this grant, see --help")
+		} else {
+			grant.RoomCreate = slices.Contains(permissions, pCreate)
+			if slices.Contains(permissions, pJoin) {
+				grant.RoomJoin = true
+				if p == "" {
+					return errors.New("participant identity is required")
+				}
+				if room == "" {
+					return errors.New("room is required")
+				}
+			}
+			grant.RoomAdmin = slices.Contains(permissions, pAdmin)
+			grant.RoomList = slices.Contains(permissions, pList)
+			if slices.Contains(permissions, pRecord) {
+				grant.RoomRecord = true
+				grant.Recorder = true
+				grant.Hidden = true
+			}
+			if slices.Contains(permissions, pEgress) {
+				grant.RoomRecord = true
+			}
+			grant.SetCanUpdateOwnMetadata(slices.Contains(permissions, pMetadata))
+		}
 	}
 
 	pc, err := loadProjectDetails(c, ignoreURL)
@@ -297,10 +364,10 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("token grants")
+	fmt.Println("Token grants:")
 	PrintJSON(grant)
 	fmt.Println()
-	fmt.Println("access token: ", token)
+	fmt.Println("Access token:", token)
 	return nil
 }
 
