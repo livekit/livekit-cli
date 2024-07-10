@@ -706,6 +706,11 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	name, err := extractArg(cmd)
+	if err != nil {
+		return err
+	}
+
 	done := make(chan os.Signal, 1)
 	roomCB := &lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
@@ -774,7 +779,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
 		APIKey:              pc.APIKey,
 		APISecret:           pc.APISecret,
-		RoomName:            cmd.String("room"),
+		RoomName:            name,
 		ParticipantIdentity: cmd.String("identity"),
 	}, roomCB)
 	if err != nil {
