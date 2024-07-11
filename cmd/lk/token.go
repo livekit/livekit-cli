@@ -30,14 +30,13 @@ import (
 )
 
 const (
-	usageCreate   = "Token bearer can create or delete rooms"
-	usageList     = "Token bearer can list rooms"
-	usageJoin     = "Token bearer can join a room (requires --room and --identity)"
-	usageAdmin    = "Token bearer can moderate a room (requires --room)"
-	usageRecorder = "Token bearer can record a room (requires --room)"
-	usageEgress   = "Token bearer can interact with Egress services"
-	usageIngress  = "Token bearer can interact with Ingress services"
-	usageMetadata = "Token bearer can update their own name and metadata"
+	usageCreate   = "Ability to create or delete rooms"
+	usageList     = "Ability to list rooms"
+	usageJoin     = "Ability to join a room (requires --room and --identity)"
+	usageAdmin    = "Ability to moderate a room (requires --room)"
+	usageEgress   = "Ability to interact with Egress services"
+	usageIngress  = "Ability to interact with Ingress services"
+	usageMetadata = "Ability to update their own name and metadata"
 )
 
 var (
@@ -68,10 +67,6 @@ var (
 						&cli.BoolFlag{
 							Name:  "admin",
 							Usage: usageAdmin,
-						},
-						&cli.BoolFlag{
-							Name:  "recorder",
-							Usage: usageRecorder,
 						},
 						&cli.BoolFlag{
 							Name:  "egress",
@@ -147,7 +142,7 @@ var (
 				},
 				&cli.BoolFlag{
 					Name:  "recorder",
-					Usage: usageRecorder,
+					Usage: "UNUSED",
 				},
 				&cli.BoolFlag{
 					Name:  "egress",
@@ -231,12 +226,6 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		grant.RoomList = true
 		hasPerms = true
 	}
-	if c.Bool("recorder") {
-		grant.RoomRecord = true
-		grant.Recorder = true
-		grant.Hidden = true
-		hasPerms = true
-	}
 	// in the future, this will change to more room specific permissions
 	if c.Bool("egress") {
 		grant.RoomRecord = true
@@ -286,7 +275,6 @@ func createToken(ctx context.Context, c *cli.Command) error {
 			pList
 			pJoin
 			pAdmin
-			pRecord
 			pEgress
 			pIngress
 			pMetadata
@@ -300,7 +288,6 @@ func createToken(ctx context.Context, c *cli.Command) error {
 				huh.NewOption("List", pList),
 				huh.NewOption("Join", pJoin),
 				huh.NewOption("Admin", pAdmin),
-				huh.NewOption("Record", pRecord),
 				huh.NewOption("Egress", pEgress),
 				huh.NewOption("Ingress", pIngress),
 				huh.NewOption("Update metadata", pMetadata),
@@ -324,11 +311,6 @@ func createToken(ctx context.Context, c *cli.Command) error {
 			}
 			grant.RoomAdmin = slices.Contains(permissions, pAdmin)
 			grant.RoomList = slices.Contains(permissions, pList)
-			if slices.Contains(permissions, pRecord) {
-				grant.RoomRecord = true
-				grant.Recorder = true
-				grant.Hidden = true
-			}
 			if slices.Contains(permissions, pEgress) {
 				grant.RoomRecord = true
 			}
