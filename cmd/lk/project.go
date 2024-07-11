@@ -231,7 +231,6 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	// fmt.Println("Added project", p.Name)
 	listProjects(ctx, cmd)
 
 	return nil
