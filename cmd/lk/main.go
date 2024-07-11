@@ -72,6 +72,7 @@ func main() {
 	app.Commands = append(app.Commands, JoinCommands...)
 	app.Commands = append(app.Commands, EgressCommands...)
 	app.Commands = append(app.Commands, IngressCommands...)
+	app.Commands = append(app.Commands, ReplayCommands...)
 	app.Commands = append(app.Commands, LoadTestCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, SIPCommands...)
