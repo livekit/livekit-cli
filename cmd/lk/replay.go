@@ -36,17 +36,17 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "id",
-							Usage:    "replay ID",
+							Usage:    "Replay `ID`",
 							Required: true,
 						},
 						&cli.StringFlag{
 							Name:     "room",
-							Usage:    "playback room name",
+							Usage:    "Playback room name",
 							Required: true,
 						},
 						&cli.IntFlag{
 							Name:     "pts",
-							Usage:    "playback start time",
+							Usage:    "Playback start time",
 							Required: false,
 						},
 					},
@@ -58,12 +58,12 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "id",
-							Usage:    "playback ID",
+							Usage:    "Playback `ID`",
 							Required: true,
 						},
 						&cli.IntFlag{
 							Name:     "pts",
-							Usage:    "playback start time",
+							Usage:    "Playback start time",
 							Required: true,
 						},
 					},
@@ -75,7 +75,7 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "id",
-							Usage:    "playback ID",
+							Usage:    "Playback `ID`",
 							Required: true,
 						},
 					},
@@ -87,7 +87,7 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "id",
-							Usage:    "replay ID",
+							Usage:    "Replay `ID`",
 							Required: true,
 						},
 					},
