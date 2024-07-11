@@ -168,6 +168,10 @@ var (
 					Usage:   "`NAME` of the room to join",
 				},
 				&cli.StringFlag{
+					Name:  "room-configuration",
+					Usage: "name of the room configuration to use when creating a room",
+				},
+				&cli.StringFlag{
 					Name:  "metadata",
 					Usage: "`JSON` metadata to encode in the token, will be passed to participant",
 				},
@@ -193,7 +197,8 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	validFor := c.String("valid-for")
 
 	grant := &auth.VideoGrant{
-		Room: room,
+		Room:              room,
+		RoomConfiguration: c.String("room-configuration"),
 	}
 	hasPerms := false
 	if c.Bool("create") {
