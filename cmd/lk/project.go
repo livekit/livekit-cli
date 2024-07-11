@@ -21,9 +21,8 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"strings"
 
-	"github.com/manifoldco/promptui"
+	"github.com/charmbracelet/huh"
 	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v3"
 
@@ -57,6 +56,10 @@ var (
 							Name:  "api-secret",
 							Usage: "Project `SECRET`",
 						},
+						&cli.BoolFlag{
+							Name:  "default",
+							Usage: "Set this project as the default",
+						},
 					},
 				},
 				{
@@ -86,6 +89,7 @@ var (
 	cliConfig      *config.CLIConfig
 	defaultProject *config.ProjectConfig
 	nameRegex      = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+	urlRegex       = regexp.MustCompile(`^(http|https|ws|wss)://[^\s/$.?#].[^\s]*$`)
 )
 
 func loadProjectConfig(ctx context.Context, cmd *cli.Command) error {
@@ -108,69 +112,8 @@ func loadProjectConfig(ctx context.Context, cmd *cli.Command) error {
 
 func addProject(ctx context.Context, cmd *cli.Command) error {
 	p := config.ProjectConfig{}
-	var prompt promptui.Prompt
-
-	// URL
 	var err error
-	validateURL := func(val string) error {
-		if !strings.HasPrefix(val, "http") && !strings.HasPrefix(val, "ws") {
-			return errors.New("URL must start with http(s) or ws(s)")
-		}
-		_, err := url.Parse(val)
-		return err
-	}
-	if p.URL = cmd.String("url"); p.URL != "" {
-		if err = validateURL(p.URL); err != nil {
-			return err
-		}
-		fmt.Println("URL:", p.URL)
-	} else {
-		prompt = promptui.Prompt{
-			Label:    "URL",
-			Validate: validateURL,
-		}
-		if p.URL, err = prompt.Run(); err != nil {
-			return err
-		}
-	}
-
-	// API key
-	validateKey := func(val string) error {
-		if len(val) < 3 {
-			return errors.New("API key must be at least 3 characters")
-		}
-		return nil
-	}
-	if p.APIKey = cmd.String("api-key"); p.APIKey != "" {
-		if err = validateKey(p.APIKey); err != nil {
-			return err
-		}
-		fmt.Println("API Key:", p.APIKey)
-	} else {
-		prompt = promptui.Prompt{
-			Label:    "API Key",
-			Validate: validateKey,
-		}
-		if p.APIKey, err = prompt.Run(); err != nil {
-			return err
-		}
-	}
-
-	// API Secret
-	if p.APISecret = cmd.String("api-secret"); p.APISecret != "" {
-		if err = validateKey(p.APISecret); err != nil {
-			return err
-		}
-		fmt.Println("API Secret:", p.APISecret)
-	} else {
-		prompt = promptui.Prompt{
-			Label:    "API Secret",
-			Validate: validateKey,
-		}
-		if p.APISecret, err = prompt.Run(); err != nil {
-			return err
-		}
-	}
+	var prompts []huh.Field
 
 	// Name
 	validateName := func(val string) error {
@@ -190,31 +133,97 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		if err = validateName(p.Name); err != nil {
 			return err
 		}
+		fmt.Println("  Project Name:", p.Name)
 	} else {
-		prompt = promptui.Prompt{
-			Label:    "Give it a name for later reference",
-			Validate: validateName,
+		prompts = append(prompts, huh.NewInput().
+			Title("Project Name").
+			Placeholder("my-project").
+			Validate(validateName).
+			Value(&p.Name))
+	}
+
+	// URL
+	validateURL := func(val string) error {
+		if !urlRegex.MatchString(val) {
+			return errors.New("URL must start with http[s]:// or ws[s]://")
 		}
-		if p.Name, err = prompt.Run(); err != nil {
+		_, err := url.Parse(val)
+		return err
+	}
+	if p.URL = cmd.String("url"); p.URL != "" {
+		if err = validateURL(p.URL); err != nil {
 			return err
 		}
+		fmt.Println("  URL:", p.URL)
+	} else {
+		prompts = append(prompts, huh.NewInput().
+			Title("Project URL").
+			Placeholder("wss://my-project.livekit.cloud").
+			Validate(validateURL).
+			Value(&p.URL))
+	}
+
+	// API key
+	validateKey := func(val string) error {
+		if len(val) < 3 {
+			return errors.New("value must be at least 3 characters")
+		}
+		return nil
+	}
+	if p.APIKey = cmd.String("api-key"); p.APIKey != "" {
+		if err = validateKey(p.APIKey); err != nil {
+			return err
+		}
+		fmt.Println("  API Key:", p.APIKey)
+	} else {
+		prompts = append(prompts, huh.NewInput().
+			Title("API Key").
+			Placeholder("APIxxxxxxxxxxxx").
+			Validate(validateKey).
+			Value(&p.APIKey))
+	}
+
+	// API Secret
+	if p.APISecret = cmd.String("api-secret"); p.APISecret != "" {
+		if err = validateKey(p.APISecret); err != nil {
+			return err
+		}
+		fmt.Println("  API Secret:", p.APISecret)
+	} else {
+		prompts = append(prompts, huh.NewInput().
+			Title("API Secret").
+			Placeholder("****************************").
+			Validate(validateKey).
+			Value(&p.APISecret))
 	}
 
 	// if it's first project, make it default
-	if defaultProject != nil {
-		prompt = promptui.Prompt{
-			Label:     "Make this project default?",
-			IsConfirm: true,
+	isDefault := false
+	if cmd.Bool("default") || defaultProject == nil {
+		cliConfig.DefaultProject = p.Name
+	} else if !cmd.IsSet("default") {
+		prompts = append(prompts, huh.NewConfirm().
+			Title("Make this project default?").
+			Value(&isDefault).
+			WithTheme(theme))
+	}
+
+	if len(prompts) > 0 {
+		var groups []*huh.Group
+		for _, p := range prompts {
+			groups = append(groups, huh.NewGroup(p))
 		}
-		if _, err = prompt.Run(); err != nil && err != promptui.ErrAbort {
+		err = huh.NewForm(groups...).
+			WithTheme(theme).
+			RunWithContext(ctx)
+		if err != nil {
 			return err
 		}
-		if err == nil {
+		if isDefault {
 			cliConfig.DefaultProject = p.Name
 		}
-	} else {
-		cliConfig.DefaultProject = p.Name
 	}
+
 	cliConfig.Projects = append(cliConfig.Projects, p)
 
 	// save config
@@ -222,7 +231,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("Added project", p.Name)
+	listProjects(ctx, cmd)
 
 	return nil
 }

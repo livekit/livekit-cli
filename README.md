@@ -34,9 +34,15 @@ brew install livekit-cli
 curl -sSL https://get.livekit.io/cli | bash
 ```
 
+Or download a precompiled binary for the [latest release](https://github.com/livekit/livekit-cli/releases/latest)
+
 ## Windows
 
-Download the [latest release here](https://github.com/livekit/livekit-cli/releases/latest)
+```shell
+winget install LiveKit.LiveKitCLI
+```
+
+Or download a precompiled binary for the [latest release](https://github.com/livekit/livekit-cli/releases/latest)
 
 ## Build from source
 
