@@ -178,7 +178,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 	} else {
 		prompts = append(prompts, huh.NewInput().
 			Title("API Key").
-			Placeholder("APIGwek9pfUvb2s").
+			Placeholder("APIxxxxxxxxxxxx").
 			Validate(validateKey).
 			Value(&p.APIKey))
 	}
@@ -192,7 +192,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 	} else {
 		prompts = append(prompts, huh.NewInput().
 			Title("API Secret").
-			Placeholder("B7CZPLqWNoNMnXGWuJeFoBYIvBdPkAnyOGMzpcrfzApn").
+			Placeholder("****************************").
 			Validate(validateKey).
 			Value(&p.APISecret))
 	}
