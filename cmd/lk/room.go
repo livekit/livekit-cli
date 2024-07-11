@@ -48,7 +48,10 @@ var (
 					Before:    createRoomClient,
 					Action:    createRoom,
 					Flags: []cli.Flag{
-						hidden(optional(roomFlag)),
+						&cli.StringFlag{
+							Name:   "name",
+							Hidden: true,
+						},
 						&cli.StringFlag{
 							Name:      "room-egress-file",
 							Usage:     "RoomCompositeRequest `JSON` file (see examples/room-composite-file.json)",
@@ -512,7 +515,7 @@ func createRoomClient(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createRoom(ctx context.Context, cmd *cli.Command) error {
-	name, err := extractFlagOrArg(cmd, "room")
+	name, err := extractFlagOrArg(cmd, "name")
 	if err != nil {
 		return err
 	}
