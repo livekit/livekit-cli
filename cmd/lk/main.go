@@ -67,6 +67,7 @@ func main() {
 		},
 	}
 
+	app.Commands = append(app.Commands, AuthCommands...)
 	app.Commands = append(app.Commands, TokenCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, JoinCommands...)
