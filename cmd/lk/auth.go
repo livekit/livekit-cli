@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/charmbracelet/huh/spinner"
 	"github.com/urfave/cli/v3"
 )
 
@@ -34,6 +35,43 @@ const (
 	createTokenEndpoint  = "/cli/auth"
 	confirmAuthEndpoint  = "/cli/confirm-auth"
 	claimSessionEndpoint = "/cli/claim"
+)
+
+var (
+	disconnect   bool
+	timeout      int64
+	interval     int64
+	authClient   AuthClient
+	AuthCommands = []*cli.Command{
+		{
+			Name:     "auth",
+			Usage:    "Authenticate the CLI via the browser to permit advanced actions",
+			Category: "Core",
+			Before:   createAuthClient,
+			Action:   handleAuth,
+			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:        "d",
+					Aliases:     []string{"disconnect"},
+					Destination: &disconnect,
+				},
+				&cli.IntFlag{
+					Name:        "t",
+					Aliases:     []string{"timeout"},
+					Usage:       "Number of `SECONDS` to attempt authentication before giving up",
+					Destination: &timeout,
+					Value:       60,
+				},
+				&cli.IntFlag{
+					Name:        "i",
+					Aliases:     []string{"poll-interval"},
+					Usage:       "Number of `SECONDS` between poll requests to verify authentication",
+					Destination: &interval,
+					Value:       4,
+				},
+			},
+		},
+	}
 )
 
 type CreateTokenResponse struct {
@@ -78,7 +116,7 @@ func (a *AuthClient) GetVerificationToken(subdomain string) (*CreateTokenRespons
 	return &a.verificationToken, nil
 }
 
-func (a *AuthClient) ClaimSession() (*CreateTokenResponse, error) {
+func (a *AuthClient) ClaimSession(ctx context.Context) (*CreateTokenResponse, error) {
 	if a.verificationToken.Token == "" || time.Now().Unix() > a.verificationToken.Expires {
 		return nil, errors.New("session expired")
 	}
@@ -92,9 +130,18 @@ func (a *AuthClient) ClaimSession() (*CreateTokenResponse, error) {
 	params.Add("t", a.verificationToken.Token)
 	reqURL.RawQuery = params.Encode()
 
-	resp, err := a.client.Get(reqURL.String())
+	req, err := http.NewRequestWithContext(ctx, "GET", reqURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		// Not yet approved
+		return nil, nil
 	}
 
 	sessionToken := &CreateTokenResponse{}
@@ -120,27 +167,6 @@ func NewAuthClient(client *http.Client, baseURL string) *AuthClient {
 	}
 	return a
 }
-
-var (
-	disconnect   bool
-	authClient   AuthClient
-	AuthCommands = []*cli.Command{
-		{
-			Name:     "auth",
-			Usage:    "Add or remove projects and view existing project properties",
-			Category: "Core",
-			Before:   createAuthClient,
-			Action:   handleAuth,
-			Flags: []cli.Flag{
-				&cli.BoolFlag{
-					Name:        "d",
-					Aliases:     []string{"disconnect"},
-					Destination: &disconnect,
-				},
-			},
-		},
-	}
-)
 
 func createAuthClient(ctx context.Context, cmd *cli.Command) error {
 	if err := loadProjectConfig(ctx, cmd); err != nil {
@@ -179,30 +205,37 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	params.Add("t", token.Token)
 	authURL.RawQuery = params.Encode()
 
-	fmt.Println(authURL)
+	fmt.Printf("Please confirm access by visiting:\n\n   %s\n\n", authURL.String())
 
-	return pollClaim(ctx, cmd)
+	if err := spinner.New().
+		Title("Awaiting confirmation...").
+		Action(func() { err = pollClaim(ctx, cmd) }).
+		Run(); err != nil {
+		return err
+	}
+
+	return err
 }
 
-func pollClaim(context.Context, *cli.Command) error {
+func pollClaim(ctx context.Context, _ *cli.Command) error {
 	claim := make(chan *CreateTokenResponse)
 	cancel := make(chan error)
 	go func() {
 		for {
-			fmt.Println("Polling...")
-			time.Sleep(10 * time.Second)
-			session, err := authClient.ClaimSession()
+			time.Sleep(time.Duration(interval) * time.Second)
+			session, err := authClient.ClaimSession(ctx)
 			if err != nil {
 				cancel <- err
 				return
 			}
-			fmt.Println(session)
-			claim <- session
+			if session != nil {
+				claim <- session
+			}
 		}
 	}()
 
 	select {
-	case <-time.After(1 * time.Minute):
+	case <-time.After(time.Duration(timeout) * time.Second):
 		return errors.New("session claim timed out")
 	case err := <-cancel:
 		return err
