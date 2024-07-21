@@ -14,6 +14,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.7
+	github.com/pion/rtp/v2 v2.0.0
 	github.com/pion/webrtc/v3 v3.2.49
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
