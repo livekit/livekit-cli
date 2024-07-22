@@ -23,7 +23,7 @@ import (
 	"regexp"
 
 	"github.com/charmbracelet/huh"
-	"github.com/olekukonko/tablewriter"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/config"
@@ -242,13 +242,28 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetHeader([]string{"Name", "URL", "API Key", "Default"})
+	re := lipgloss.NewRenderer(os.Stdout)
+	baseStyle := re.NewStyle().Padding(0, 1)
+	headerStyle := baseStyle.Bold(true)
+	selectedStyle := baseStyle.Foreground(cyan)
+
+	table := CreateTable().
+		StyleFunc(func(row, col int) lipgloss.Style {
+			switch {
+			case row == 0:
+				return headerStyle
+			case cliConfig.Projects[row-1].Name == cliConfig.DefaultProject:
+				return selectedStyle
+			default:
+				return baseStyle
+			}
+		}).
+		Headers("Name", "URL", "API Key", "Default")
 	for _, p := range cliConfig.Projects {
-		table.Append([]string{p.Name, p.URL, p.APIKey, fmt.Sprint(p.Name == cliConfig.DefaultProject)})
+		table.Row(p.Name, p.URL, p.APIKey, fmt.Sprint(p.Name == cliConfig.DefaultProject))
 	}
-	table.Render()
+	fmt.Println(table)
+
 	return nil
 }
 

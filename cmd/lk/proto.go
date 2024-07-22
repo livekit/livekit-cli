@@ -17,10 +17,10 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -183,8 +183,8 @@ func listAndPrint[
 		return err
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(header)
+	table := CreateTable().
+		Headers(header...)
 	for _, item := range res.GetItems() {
 		if item == nil {
 			continue
@@ -193,11 +193,13 @@ func listAndPrint[
 		if len(row) == 0 {
 			continue
 		}
-		table.Append(row)
+		table.Row(row...)
 	}
-	table.Render()
+	fmt.Println(table)
+
 	if cmd.Bool("verbose") {
 		PrintJSON(res)
 	}
+
 	return nil
 }

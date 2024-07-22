@@ -261,7 +261,7 @@ func listSipTrunk(ctx context.Context, cmd *cli.Command) error {
 	}
 	//lint:ignore SA1019 we still support it
 	return listAndPrint(ctx, cmd, cli.ListSIPTrunk, &livekit.ListSIPTrunkRequest{}, []string{
-		"SipTrunkId", "Name", "Kind", "Number",
+		"SipTrunkID", "Name", "Kind", "Number",
 		"AllowAddresses", "AllowNumbers", "InboundAuth",
 		"OutboundAddress", "OutboundAuth",
 		"Metadata",
@@ -285,7 +285,7 @@ func listSipInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return listAndPrint(ctx, cmd, cli.ListSIPInboundTrunk, &livekit.ListSIPInboundTrunkRequest{}, []string{
-		"SipTrunkId", "Name", "Numbers",
+		"SipTrunkID", "Name", "Numbers",
 		"AllowedAddresses", "AllowedNumbers",
 		"Authentication",
 		"Metadata",
@@ -305,7 +305,7 @@ func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return listAndPrint(ctx, cmd, cli.ListSIPOutboundTrunk, &livekit.ListSIPOutboundTrunkRequest{}, []string{
-		"SipTrunkId", "Name",
+		"SipTrunkID", "Name",
 		"Address", "Transport",
 		"Numbers",
 		"Authentication",
@@ -387,7 +387,7 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return listAndPrint(ctx, cmd, cli.ListSIPDispatchRule, &livekit.ListSIPDispatchRuleRequest{}, []string{
-		"SipDispatchRuleId", "Name", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone", "Metadata",
+		"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone", "Metadata",
 	}, func(item *livekit.SIPDispatchRuleInfo) []string {
 		var room, typ, pin string
 		switch r := item.GetRule().GetRule().(type) {

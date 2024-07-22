@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
@@ -127,14 +125,11 @@ func listReplays(ctx context.Context, _ *cli.Command) error {
 		return err
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"ReplayID"})
+	table := CreateTable().Headers("ReplayID")
 	for _, info := range res.Replays {
-		table.Append([]string{
-			info.ReplayId,
-		})
+		table.Row(info.ReplayId)
 	}
-	table.Render()
+	fmt.Println(table)
 
 	return nil
 }
