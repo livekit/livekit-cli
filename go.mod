@@ -6,12 +6,12 @@ toolchain go1.22.2
 
 require (
 	github.com/charmbracelet/huh v0.5.1
+	github.com/charmbracelet/huh/spinner v0.0.0-20240714135825-43e9eb5aeab6
 	github.com/charmbracelet/lipgloss v0.12.1
 	github.com/frostbyte73/core v0.0.10
 	github.com/go-logr/logr v1.4.2
 	github.com/livekit/protocol v1.19.2-0.20240710171229-73ece66d30e0
 	github.com/livekit/server-sdk-go/v2 v2.2.0
-	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.7
 	github.com/pion/webrtc/v3 v3.2.49
