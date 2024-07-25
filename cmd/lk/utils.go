@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/livekit/protocol/utils/interceptors"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
@@ -150,6 +152,26 @@ func wrapWith(wrap string) func(string) string {
 func PrintJSON(obj any) {
 	txt, _ := json.MarshalIndent(obj, "", "  ")
 	fmt.Println(string(txt))
+}
+
+func CreateTable() *table.Table {
+	re := lipgloss.NewRenderer(os.Stdout)
+	baseStyle := re.NewStyle().Padding(0, 1)
+	headerStyle := baseStyle.Bold(true)
+
+	styleFunc := func(row, col int) lipgloss.Style {
+		if row == 0 {
+			return headerStyle
+		}
+		return baseStyle
+	}
+
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(re.NewStyle().Foreground(normalFg)).
+		StyleFunc(styleFunc)
+
+	return t
 }
 
 func ExpandUser(p string) string {

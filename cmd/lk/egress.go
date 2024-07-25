@@ -26,7 +26,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -596,8 +595,8 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 		items = res.Items
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"EgressID", "Status", "Type", "Source", "Started At", "Error"})
+	table := CreateTable().
+		Headers("EgressID", "Status", "Type", "Source", "Started At", "Error")
 	for _, item := range items {
 		var startedAt string
 		if item.StartedAt != 0 {
@@ -628,17 +627,16 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 			egressType = "track"
 			egressSource = fmt.Sprintf("%s/%s", req.Track.RoomName, req.Track.TrackId)
 		}
-
-		table.Append([]string{
+		table.Row(
 			item.EgressId,
 			item.Status.String(),
 			egressType,
 			egressSource,
 			startedAt,
 			item.Error,
-		})
+		)
 	}
-	table.Render()
+	fmt.Println(table)
 
 	return nil
 }

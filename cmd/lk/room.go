@@ -48,7 +48,10 @@ var (
 					Before:    createRoomClient,
 					Action:    createRoom,
 					Flags: []cli.Flag{
-						hidden(optional(roomFlag)),
+						&cli.StringFlag{
+							Name:   "name",
+							Hidden: true,
+						},
 						&cli.StringFlag{
 							Name:      "room-egress-file",
 							Usage:     "RoomCompositeRequest `JSON` file (see examples/room-composite-file.json)",
@@ -92,6 +95,11 @@ var (
 						&cli.UintFlag{
 							Name:  "departure-timeout",
 							Usage: "Number of `SECS` to keep the room open after the last participant leaves",
+						},
+						&cli.BoolFlag{
+							Name:   "replay-enabled",
+							Usage:  "experimental (not yet available)",
+							Hidden: true,
 						},
 					},
 				},
@@ -338,6 +346,11 @@ var (
 					Name:  "departure-timeout",
 					Usage: "number of seconds to keep the room open after the last participant leaves",
 				},
+				&cli.BoolFlag{
+					Name:   "replay-enabled",
+					Usage:  "experimental (not yet available)",
+					Hidden: true,
+				},
 			},
 		},
 		{
@@ -512,7 +525,7 @@ func createRoomClient(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createRoom(ctx context.Context, cmd *cli.Command) error {
-	name, err := extractFlagOrArg(cmd, "room")
+	name, err := extractFlagOrArg(cmd, "name")
 	if err != nil {
 		return err
 	}
@@ -602,6 +615,11 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 	if departureTimeout := cmd.Uint("departure-timeout"); departureTimeout != 0 {
 		fmt.Printf("setting departure timeout: %d\n", departureTimeout)
 		req.DepartureTimeout = uint32(departureTimeout)
+	}
+
+	if replayEnabled := cmd.Bool("replay-enabled"); replayEnabled {
+		fmt.Printf("setting replay enabled: %t\n", replayEnabled)
+		req.ReplayEnabled = replayEnabled
 	}
 
 	room, err := roomClient.CreateRoom(ctx, req)

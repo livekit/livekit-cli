@@ -17,9 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/livekit"
@@ -225,8 +223,8 @@ func listIngress(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"IngressID", "Name", "Room", "StreamKey", "URL", "Status", "Error"})
+	table := CreateTable().
+		Headers("IngressID", "Name", "Room", "StreamKey", "URL", "Status", "Error")
 	for _, item := range res.Items {
 		if item == nil {
 			continue
@@ -238,7 +236,7 @@ func listIngress(ctx context.Context, cmd *cli.Command) error {
 			errorStr = item.State.Error
 		}
 
-		table.Append([]string{
+		table.Row(
 			item.IngressId,
 			item.Name,
 			item.RoomName,
@@ -246,9 +244,9 @@ func listIngress(ctx context.Context, cmd *cli.Command) error {
 			item.Url,
 			status,
 			errorStr,
-		})
+		)
 	}
-	table.Render()
+	fmt.Println(table)
 
 	if cmd.Bool("verbose") {
 		PrintJSON(res)
