@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.12.1
 	github.com/frostbyte73/core v0.0.10
 	github.com/go-logr/logr v1.4.2
-	github.com/livekit/protocol v1.19.2-0.20240710171229-73ece66d30e0
+	github.com/livekit/protocol v1.19.2-0.20240723043112-bacbd15bfb3a
 	github.com/livekit/server-sdk-go/v2 v2.2.0
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.7
@@ -53,7 +53,7 @@ require (
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.3 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/cel-go v0.20.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
