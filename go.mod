@@ -1,5 +1,9 @@
 module github.com/livekit/livekit-cli
 
+replace github.com/livekit/protocol => ../protocol
+
+replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
+
 go 1.22
 
 toolchain go1.22.2
@@ -53,7 +57,7 @@ require (
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.3 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/cel-go v0.20.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
