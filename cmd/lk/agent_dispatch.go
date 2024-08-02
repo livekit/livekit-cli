@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/urfave/cli/v3"
 
@@ -31,6 +32,30 @@ var (
 			Usage:    "Manage agent dispatches for a room",
 			Category: "Agents",
 			Commands: []*cli.Command{
+				{
+					Name:      "create",
+					Usage:     "Create an agent dispatches",
+					UsageText: "lk agentdispatch create [OPTIONS]",
+					Before:    createAgentDispatchClient,
+					Action:    createAgentDispatch,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:     "room",
+							Usage:    "`Name` of the room to create the dispatch in",
+							Required: true,
+						},
+						&cli.StringFlag{
+							Name:     "agent-name",
+							Usage:    "`Agent Name` to dispatch the job to",
+							Required: false,
+						},
+						&cli.StringFlag{
+							Name:     "metadata",
+							Usage:    "`Metadata` to pass to the agent workers",
+							Required: false,
+						},
+					},
+				},
 				{
 					Name:      "list",
 					Usage:     "List all active agent dispatches",
@@ -68,7 +93,7 @@ func createAgentDispatchClient(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listAgentDispatches(ctx context.Context, cmd *cli.Command) error {
-	res, err := agentDispatchClient.ListDispatch(context.Background(), &livekit.ListAgentDispatchRequesst{
+	res, err := agentDispatchClient.ListDispatch(context.Background(), &livekit.ListAgentDispatchRequest{
 		Room:       cmd.String("room"),
 		DispatchId: cmd.String("id"),
 	})
@@ -96,4 +121,41 @@ func listAgentDispatches(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return nil
+}
+
+func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
+	res, err := agentDispatchClient.CreateDispatch(context.Background(), &livekit.CreateAgentDispatchRequest{
+		Room:      cmd.String("room"),
+		AgentName: cmd.String("agent-name"),
+		Metadata:  cmd.String("metadata"),
+	})
+	if err != nil {
+		return err
+	}
+
+	printAgentDispatch(res)
+
+	if cmd.Bool("verbose") {
+		PrintJSON(res)
+	}
+
+	return nil
+}
+
+func printAgentDispatch(ad *livekit.AgentDispatch) {
+	var createdAt time.Time
+
+	if ad.State != nil {
+		createdAt = time.Unix(0, ad.State.CreatedAt)
+
+		for _, item := range ad.State.Jobs {
+			if item == nil {
+				continue
+			}
+		}
+	}
+
+	fmt.Printf("DispatchID: %v CreatedAt: %v\n", ad.Id, createdAt)
+	fmt.Println(table)
+
 }
