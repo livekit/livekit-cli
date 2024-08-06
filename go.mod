@@ -2,7 +2,7 @@ module github.com/livekit/livekit-cli
 
 go 1.22
 
-toolchain go1.22.2
+toolchain go1.22.6
 
 require (
 	github.com/charmbracelet/huh v0.5.1
