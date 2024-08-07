@@ -48,7 +48,7 @@ var (
 	AuthCommands = []*cli.Command{
 		{
 			Name:     "cloud",
-			Usage:    "Manage hosted services and authentication",
+			Usage:    "Interacting with LiveKit Cloud",
 			Category: "Core",
 			Commands: []*cli.Command{
 				{
