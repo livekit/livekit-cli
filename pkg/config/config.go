@@ -37,6 +37,19 @@ type ProjectConfig struct {
 	APISecret string `yaml:"api_secret"`
 }
 
+type Project struct {
+	Subdomain string
+}
+
+type AccessKey struct {
+	Key         string
+	Secret      string
+	ProjectId   string
+	Project     Project
+	OwnerId     string
+	Description string
+}
+
 func LoadDefaultProject() (*ProjectConfig, error) {
 	conf, err := LoadOrCreate()
 	if err != nil {
