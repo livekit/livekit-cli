@@ -28,30 +28,30 @@ import (
 var (
 	AgentDispatchCommands = []*cli.Command{
 		{
-			Name:     "agentdispatch",
+			Name:     "dispatch",
 			Usage:    "Manage agent dispatches for a room",
 			Category: "Agents",
 			Commands: []*cli.Command{
 				{
 					Name:      "create",
-					Usage:     "Create an agent dispatches",
+					Usage:     "Create an agent dispatch",
 					UsageText: "lk agentdispatch create [OPTIONS]",
 					Before:    createAgentDispatchClient,
 					Action:    createAgentDispatch,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "room",
-							Usage:    "`Name` of the room to create the dispatch in",
+							Usage:    "`NAME` of the room to create the dispatch in",
 							Required: true,
 						},
 						&cli.StringFlag{
 							Name:     "agent-name",
-							Usage:    "`Agent Name` to dispatch the job to",
+							Usage:    "`AGENT_NAME` to dispatch the job to",
 							Required: false,
 						},
 						&cli.StringFlag{
 							Name:     "metadata",
-							Usage:    "`Metadata` to pass to the agent workers",
+							Usage:    "`METADATA` to pass to the agent workers",
 							Required: false,
 						},
 					},
@@ -65,7 +65,7 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "room",
-							Usage:    "`Name` of the room to create the dispatch in",
+							Usage:    "`NAME` of the room to delete the dispatch from",
 							Required: true,
 						},
 						&cli.StringFlag{
@@ -85,7 +85,7 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "room",
-							Usage:    "List agents dispatches for room `Name`",
+							Usage:    "List agents dispatches for room `NAME`",
 							Required: true,
 						},
 						&cli.StringFlag{
@@ -96,6 +96,15 @@ var (
 					},
 				},
 			},
+		},
+	}
+
+	AgentCommands = []*cli.Command{
+		{
+			Name:     "agent",
+			Usage:    "Manage agents for a room",
+			Category: "Agents",
+			Commands: AgentDispatchCommands,
 		},
 	}
 
