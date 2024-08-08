@@ -57,6 +57,26 @@ var (
 					},
 				},
 				{
+					Name:      "delete",
+					Usage:     "Delete an agent dispatch",
+					UsageText: "lk agentdispatch delete [OPTIONS]",
+					Before:    createAgentDispatchClient,
+					Action:    deleteAgentDispatch,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:     "room",
+							Usage:    "`Name` of the room to create the dispatch in",
+							Required: true,
+						},
+						&cli.StringFlag{
+							Name:     "id",
+							Usage:    "`ID` of the dispatch to delete",
+							Required: true,
+						},
+					},
+				},
+
+				{
 					Name:      "list",
 					Usage:     "List all active agent dispatches",
 					UsageText: "lk agentdispatch list [OPTIONS]",
@@ -142,16 +162,44 @@ func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
+func deleteAgentDispatch(ctx context.Context, cmd *cli.Command) error {
+	res, err := agentDispatchClient.DeleteDispatch(context.Background(), &livekit.DeleteAgentDispatchRequest{
+		Room:       cmd.String("room"),
+		DispatchId: cmd.String("id"),
+	})
+	if err != nil {
+		return err
+	}
+
+	printAgentDispatch(res)
+
+	if cmd.Bool("verbose") {
+		PrintJSON(res)
+	}
+
+	return nil
+}
+
 func printAgentDispatch(ad *livekit.AgentDispatch) {
 	var createdAt time.Time
+
+	table := CreateTable().
+		Headers("JobID", "Job Type", "Participant Identity")
 
 	if ad.State != nil {
 		createdAt = time.Unix(0, ad.State.CreatedAt)
 
 		for _, item := range ad.State.Jobs {
-			if item == nil {
-				continue
+			identity := ""
+			if item.Participant != nil {
+				identity = item.Participant.Identity
 			}
+
+			table.Row(
+				item.Id,
+				item.Type.String(),
+				identity,
+			)
 		}
 	}
 
