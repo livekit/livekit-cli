@@ -28,6 +28,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/config"
+	"github.com/pkg/browser"
 )
 
 const (
@@ -237,6 +238,11 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 
 	// poll for keys
 	fmt.Printf("Please confirm access by visiting:\n\n   %s\n\n", authURL.String())
+
+	if err := browser.OpenURL(authURL.String()); err != nil {
+		return err
+	}
+
 	var key *config.AccessKey
 	var pollErr error
 	if err := spinner.New().
@@ -244,9 +250,11 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Action(func() {
 			key, pollErr = pollClaim(ctx, cmd)
 		}).
+		Context(ctx).
 		Run(); err != nil {
 		return err
 	}
+
 	if pollErr != nil {
 		return pollErr
 	}
