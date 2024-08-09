@@ -238,7 +238,6 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 
 	// poll for keys
 	fmt.Printf("Please confirm access by visiting:\n\n   %s\n\n", authURL.String())
-
 	if err := browser.OpenURL(authURL.String()); err != nil {
 		return err
 	}
@@ -254,9 +253,11 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Run(); err != nil {
 		return err
 	}
-
 	if pollErr != nil {
 		return pollErr
+	}
+	if key == nil {
+		return errors.New("operation cancelled")
 	}
 
 	var isDefault bool
