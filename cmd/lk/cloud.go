@@ -59,6 +59,7 @@ var (
 	authClient   AuthClient
 	AuthCommands = []*cli.Command{
 		{
+			Hidden:   true,
 			Name:     "cloud",
 			Usage:    "Interacting with LiveKit Cloud",
 			Category: "Core",
