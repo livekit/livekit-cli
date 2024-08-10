@@ -37,19 +37,6 @@ type ProjectConfig struct {
 	APISecret string `yaml:"api_secret"`
 }
 
-type Project struct {
-	Subdomain string
-}
-
-type AccessKey struct {
-	Key         string
-	Secret      string
-	ProjectId   string
-	Project     Project
-	OwnerId     string
-	Description string
-}
-
 func LoadDefaultProject() (*ProjectConfig, error) {
 	conf, err := LoadOrCreate()
 	if err != nil {
@@ -112,6 +99,28 @@ func LoadOrCreate() (*CLIConfig, error) {
 	c.hasPersisted = true
 
 	return c, nil
+}
+
+func (c *CLIConfig) RemoveProject(name string) error {
+	var newProjects []ProjectConfig
+	for _, p := range c.Projects {
+		if p.Name == name {
+			continue
+		}
+		newProjects = append(newProjects, p)
+	}
+	c.Projects = newProjects
+
+	if c.DefaultProject == name {
+		c.DefaultProject = ""
+	}
+
+	if err := c.PersistIfNeeded(); err != nil {
+		return err
+	}
+
+	fmt.Println("Removed project", name)
+	return nil
 }
 
 func (c *CLIConfig) PersistIfNeeded() error {

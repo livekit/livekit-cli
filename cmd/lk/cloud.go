@@ -28,19 +28,30 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/config"
+	"github.com/livekit/protocol/auth"
 	"github.com/pkg/browser"
 )
 
+type ClaimAccessKeyResponse struct {
+	Key         string
+	Secret      string
+	ProjectId   string
+	OwnerId     string
+	Description string
+	URL         string
+}
+
 const (
-	cloudAPIServerURL    = "https://cloud-api.livekit.io"
-	cloudDashboardURL    = "https://cloud.livekit.io"
-	createTokenEndpoint  = "/cli/auth"
-	confirmAuthEndpoint  = "/cli/confirm-auth"
-	claimSessionEndpoint = "/cli/claim"
+	cloudAPIServerURL   = "https://cloud-api.livekit.io"
+	cloudDashboardURL   = "https://cloud.livekit.io"
+	createTokenEndpoint = "/cli/auth"
+	claimKeyEndpoint    = "/cli/claim"
+	confirmAuthEndpoint = "/cli/confirm-auth"
+	revokeKeyEndpoint   = "/cli/revoke"
 )
 
 var (
-	disconnect   bool
+	revoke       bool
 	timeout      int64
 	interval     int64
 	serverURL    string
@@ -61,7 +72,7 @@ var (
 						&cli.BoolFlag{
 							Name:        "R",
 							Aliases:     []string{"revoke"},
-							Destination: &disconnect,
+							Destination: &revoke,
 						},
 						&cli.IntFlag{
 							Name:        "t",
@@ -139,12 +150,12 @@ func (a *AuthClient) GetVerificationToken(deviceName string) (*VerificationToken
 	return &a.verificationToken, nil
 }
 
-func (a *AuthClient) ClaimCliKey(ctx context.Context) (*config.AccessKey, error) {
+func (a *AuthClient) ClaimCliKey(ctx context.Context) (*ClaimAccessKeyResponse, error) {
 	if a.verificationToken.Token == "" || time.Now().Unix() > a.verificationToken.Expires {
 		return nil, errors.New("session expired")
 	}
 
-	reqURL, err := url.Parse(a.baseURL + claimSessionEndpoint)
+	reqURL, err := url.Parse(a.baseURL + claimKeyEndpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +181,7 @@ func (a *AuthClient) ClaimCliKey(ctx context.Context) (*config.AccessKey, error)
 		return nil, nil
 	}
 
-	ak := &config.AccessKey{}
+	ak := &ClaimAccessKeyResponse{}
 	err = json.NewDecoder(resp.Body).Decode(&ak)
 	if err != nil {
 		return nil, err
@@ -179,9 +190,26 @@ func (a *AuthClient) ClaimCliKey(ctx context.Context) (*config.AccessKey, error)
 	return ak, nil
 }
 
-func (a *AuthClient) Deauthenticate() error {
-	// TODO: revoke any session token
-	return nil
+func (a *AuthClient) Deauthenticate(ctx context.Context, projectName, token string) error {
+	reqURL, err := url.Parse(a.baseURL + revokeKeyEndpoint)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", reqURL.String(), nil)
+	req.Header = newHeaderWithToken(token)
+	if err != nil {
+		return err
+	}
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 {
+		return errors.New("access denied")
+	}
+	return cliConfig.RemoveProject(projectName)
 }
 
 func NewAuthClient(client *http.Client, baseURL string) *AuthClient {
@@ -193,23 +221,41 @@ func NewAuthClient(client *http.Client, baseURL string) *AuthClient {
 }
 
 func initAuth(ctx context.Context, cmd *cli.Command) error {
-	if err := loadProjectConfig(ctx, cmd); err != nil {
-		return err
-	}
 	authClient = *NewAuthClient(&http.Client{}, serverURL)
 	return nil
 }
 
 func handleAuth(ctx context.Context, cmd *cli.Command) error {
-	if disconnect {
-		return authClient.Deauthenticate()
+	if revoke {
+		if err := loadProjectConfig(ctx, cmd); err != nil {
+			return err
+		}
+		cfg, token, err := requireToken(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		return authClient.Deauthenticate(ctx, cfg.Name, token)
 	}
 	return tryAuthIfNeeded(ctx, cmd)
 }
 
-func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
-	_, err := loadProjectDetails(cmd)
+func requireToken(_ context.Context, cmd *cli.Command) (*config.ProjectConfig, string, error) {
+	cfg, err := loadProjectDetails(cmd)
 	if err != nil {
+		return nil, "", err
+	}
+
+	at := auth.NewAccessToken(cfg.APIKey, cfg.APISecret)
+	token, err := at.ToJWT()
+	if err != nil {
+		return nil, "", err
+	}
+
+	return cfg, token, nil
+}
+
+func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
+	if err := loadProjectConfig(ctx, cmd); err != nil {
 		return err
 	}
 
@@ -242,14 +288,13 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	var key *config.AccessKey
+	var key *ClaimAccessKeyResponse
 	var pollErr error
 	if err := spinner.New().
 		Title("Awaiting confirmation...").
 		Action(func() {
 			key, pollErr = pollClaim(ctx, cmd)
 		}).
-		Context(ctx).
 		Run(); err != nil {
 		return err
 	}
@@ -274,8 +319,9 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Name:      key.Description,
 		APIKey:    key.Key,
 		APISecret: key.Secret,
-		URL:       "ws://" + key.Project.Subdomain + ".livekit:7800",
+		URL:       key.URL,
 	})
+
 	if isDefault {
 		cliConfig.DefaultProject = key.Description
 	}
@@ -298,8 +344,8 @@ func generateConfirmURL(token string) (*url.URL, error) {
 	return base, nil
 }
 
-func pollClaim(ctx context.Context, _ *cli.Command) (*config.AccessKey, error) {
-	claim := make(chan *config.AccessKey)
+func pollClaim(ctx context.Context, _ *cli.Command) (*ClaimAccessKeyResponse, error) {
+	claim := make(chan *ClaimAccessKeyResponse)
 	cancel := make(chan error)
 
 	// every <interval> seconds, poll
