@@ -101,6 +101,28 @@ func LoadOrCreate() (*CLIConfig, error) {
 	return c, nil
 }
 
+func (c *CLIConfig) RemoveProject(name string) error {
+	var newProjects []ProjectConfig
+	for _, p := range c.Projects {
+		if p.Name == name {
+			continue
+		}
+		newProjects = append(newProjects, p)
+	}
+	c.Projects = newProjects
+
+	if c.DefaultProject == name {
+		c.DefaultProject = ""
+	}
+
+	if err := c.PersistIfNeeded(); err != nil {
+		return err
+	}
+
+	fmt.Println("Removed project", name)
+	return nil
+}
+
 func (c *CLIConfig) PersistIfNeeded() error {
 	if len(c.Projects) == 0 && !c.hasPersisted {
 		// doesn't need to be persisted

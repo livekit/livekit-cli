@@ -273,27 +273,7 @@ func removeProject(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("project name is required")
 	}
 	name := cmd.Args().First()
-
-	var newProjects []config.ProjectConfig
-	for _, p := range cliConfig.Projects {
-		if p.Name == name {
-			continue
-		}
-		newProjects = append(newProjects, p)
-	}
-	cliConfig.Projects = newProjects
-
-	if cliConfig.DefaultProject == name {
-		cliConfig.DefaultProject = ""
-	}
-
-	if err := cliConfig.PersistIfNeeded(); err != nil {
-		return err
-	}
-
-	fmt.Println("Removed project", name)
-
-	return nil
+	return cliConfig.RemoveProject(name)
 }
 
 func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
