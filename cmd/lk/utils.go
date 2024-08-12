@@ -15,6 +15,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -147,6 +149,15 @@ func wrapWith(wrap string) func(string) string {
 	return func(str string) string {
 		return wrap + str + wrap
 	}
+}
+
+func hashString(str string) (string, error) {
+	hash := sha256.New()
+	if _, err := hash.Write([]byte(str)); err != nil {
+		return "", err
+	}
+	bytes := hash.Sum(nil)
+	return hex.EncodeToString(bytes), nil
 }
 
 func PrintJSON(obj any) {

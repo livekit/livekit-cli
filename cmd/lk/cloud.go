@@ -246,7 +246,14 @@ func requireToken(_ context.Context, cmd *cli.Command) (*config.ProjectConfig, s
 		return nil, "", err
 	}
 
-	at := auth.NewAccessToken(cfg.APIKey, cfg.APISecret)
+	// construct a token from the chosen project, using the hashed secret as the identity
+	// as a means of preventing any old token generated with this key/secret pair from
+	// deleting it
+	hash, err := hashString(cfg.APISecret)
+	if err != nil {
+		return nil, "", err
+	}
+	at := auth.NewAccessToken(cfg.APIKey, cfg.APISecret).SetIdentity(hash)
 	token, err := at.ToJWT()
 	if err != nil {
 		return nil, "", err
