@@ -5,8 +5,10 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 cli: check_lfs
-	go build -ldflags "-w -s" -o bin/lk ./cmd/lk
-	GOOS=linux GOARCH=amd64 go build -o bin/lk-linux ./cmd/lk
+	GOOS=darwin GOARCH=arm64 go build -ldflags "-w -s" -o bin/lk ./cmd/lk
+	GOOS=linux GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk-linux ./cmd/lk
+	GOOS=windows GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk.exe ./cmd/lk
+
 
 install: cli
 	cp bin/lk $(GOBIN)/

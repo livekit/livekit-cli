@@ -83,7 +83,7 @@ func LoadOrCreate() (*CLIConfig, error) {
 		return c, nil
 	} else if err != nil {
 		return nil, err
-	} else if s.Mode().Perm()&0077 != 0 {
+	} else if s.Mode().Perm()&0600 != 0600 {
 		return nil, fmt.Errorf("config file %s should be 0600", configPath)
 	}
 
