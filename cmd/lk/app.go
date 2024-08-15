@@ -28,7 +28,6 @@ import (
 	"github.com/livekit/livekit-cli/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/pkg/config"
 	"github.com/urfave/cli/v3"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -65,19 +64,8 @@ var (
 					},
 				},
 				{
-					Hidden: true,
-					Name:   "emit",
-					Action: func(ctx context.Context, cmd *cli.Command) error {
-						data, err := yaml.Marshal(bootstrap.DefaultNextAgentsBootstrapComponent)
-						if err != nil {
-							return err
-						}
-						return os.WriteFile("/Users/tobiasfried/Desktop/.bootstrap.yaml", data, 0700)
-					},
-				},
-				{
 					Name:      "install",
-					Usage:     "Execute installation defined in " + bootstrap.BootstrapFile,
+					Usage:     "Execute installation defined in " + bootstrap.BootstrapPath(),
 					ArgsUsage: "`DIR` location or the project directory",
 					Action: func(ctx context.Context, cmd *cli.Command) error {
 						appPath := cmd.Args().First()
@@ -172,7 +160,7 @@ func cloneRepository(_ context.Context, cmd *cli.Command, templateName, appName 
 func setupRepository(ctx context.Context, cmd *cli.Command, cfg *config.ProjectConfig, appPath string) error {
 	verbose := cmd.Bool("verbose")
 
-	bootstrapPath := path.Join(appPath, bootstrap.BootstrapFile)
+	bootstrapPath := path.Join(appPath, bootstrap.BootstrapPath())
 	bc, err := bootstrap.ParseBootstrapConfig(bootstrapPath)
 	if err != nil {
 		return err
