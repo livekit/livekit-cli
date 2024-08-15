@@ -32,7 +32,8 @@ import (
 )
 
 const (
-	BootstrapFile  = ".bootstrap.yaml"
+	LiveKitDir     = ".livekit"
+	BootstrapFile  = "bootstrap.yaml"
 	EnvExampleFile = ".env.example"
 	EnvLocalFile   = ".env.local"
 )
@@ -40,11 +41,11 @@ const (
 type Target string
 
 const (
-	WebTarget     = "web"
-	PythonTarget  = "python"
-	GoTarget      = "go"
-	IOSTarget     = "ios"
-	AndroidTarget = "android"
+	TargetWeb     Target = "web"
+	TargetPython  Target = "python"
+	TargetGo      Target = "go"
+	TargetIOS     Target = "ios"
+	TargetAndroid Target = "android"
 )
 
 type BootstrapConfig struct {
@@ -67,36 +68,6 @@ type BootstrapConfig struct {
 	// keys representig directories to `cd` into before running.
 	Components map[string]BootstrapConfig `yaml:"components,omitempty"`
 }
-
-var (
-	DefaultWebBootstrapComponent = &BootstrapConfig{
-		Target:   WebTarget,
-		Requires: []string{"pnpm"},
-		Install:  []string{"pnpm install"},
-		Dev:      []string{"pnpm dev"},
-	}
-	DefaultPythonBootstrapComponent = &BootstrapConfig{
-		Target:   PythonTarget,
-		Requires: []string{"python3", "pip3"},
-		Install: []string{
-			"python3 -m venv .venv",
-			"bash -c \"source .venv/bin/activate\"",
-			"pip3 install -r requirements.txt",
-		},
-		InstallWin: []string{
-			"python3 -m venv .venv",
-			"powershell .\\.venv\\bin\\Activate.ps1",
-			"pip3 install -r requirements.txt",
-		},
-		Dev: []string{"python3 agent.py start"},
-	}
-	DefaultNextAgentsBootstrapComponent = &BootstrapConfig{
-		Components: map[string]BootstrapConfig{
-			"client": *DefaultWebBootstrapComponent,
-			"server": *DefaultPythonBootstrapComponent,
-		},
-	}
-)
 
 // Assert that all elements of `Requires` are present in the PATH.
 // Does not recurse through child components.
@@ -135,8 +106,7 @@ func (b *BootstrapConfig) ExecuteInstall(ctx context.Context, componentName, com
 		cmd.Dir = componentDir
 
 		if verbose {
-			// TODO: prefix each out/err statement with the command name, and pipe
-			// the outputs to some static onscreen log
+			// TODO: pipe the outputs to a scrolling onscreen log a la `tail -f`
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 		}
@@ -160,6 +130,7 @@ func (b *BootstrapConfig) ExecuteInstall(ctx context.Context, componentName, com
 	for childName, component := range b.Components {
 		childDir := path.Join(componentDir, childName)
 		childComponent := componentName + "/" + childName
+		// TODO: should this be parallelized?
 		err := component.ExecuteInstall(ctx, childComponent, childDir, verbose)
 		if err != nil {
 			return err
@@ -200,6 +171,10 @@ func (b *BootstrapConfig) WriteDotEnv(ctx context.Context, dirName string, subst
 	}
 
 	return nil
+}
+
+func BootstrapPath() string {
+	return path.Join(LiveKitDir, BootstrapFile)
 }
 
 // `cmd` is a binary in PATH or a known alias

@@ -26,6 +26,15 @@ const (
 	Yarn WebPackageManager = "yarn"
 )
 
+var (
+	DefaultWebBootstrapComponent = &BootstrapConfig{
+		Target:   TargetWeb,
+		Requires: []string{"pnpm"},
+		Install:  []string{"pnpm install"},
+		Dev:      []string{"pnpm dev"},
+	}
+)
+
 func AutodetectWebPackageManagers() ([]WebPackageManager, error) {
 	var pms []WebPackageManager
 	if CommandExists(string(PNPM)) {
