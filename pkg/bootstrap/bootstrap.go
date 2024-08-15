@@ -54,6 +54,8 @@ type BootstrapConfig struct {
 	Target Target `yaml:"target,omitempty"`
 	// These executables must be present on $PATH
 	Requires []string `yaml:"requires,omitempty"`
+	// TODO: aaa
+	Env map[string]string `yaml:"env,omitempty"`
 	// These commands will be run once during setup
 	Install []string `yaml:"install,omitempty"`
 	// These commands will be run once during setup (Windows-specific)
