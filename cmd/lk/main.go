@@ -101,7 +101,7 @@ func main() {
 }
 
 func checkForLegacyName() {
-	if !strings.HasSuffix(os.Args[0], "lk") {
+	if !(strings.HasSuffix(os.Args[0], "lk") || strings.HasSuffix(os.Args[0], "lk.exe")) {
 		fmt.Fprintf(
 			os.Stderr,
 			"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEPRECATION NOTICE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+

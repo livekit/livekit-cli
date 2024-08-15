@@ -84,7 +84,9 @@ func LoadOrCreate() (*CLIConfig, error) {
 	} else if err != nil {
 		return nil, err
 	} else if s.Mode().Perm()&0077 != 0 {
-		return nil, fmt.Errorf("config file %s should be 0600", configPath)
+		// because this file contains private keys, warn that
+		// only the owner should have permission to access it
+		fmt.Fprintf(os.Stderr, "WARNING: config file %s should have permissions %o\n", configPath, 0600)
 	}
 
 	content, err := os.ReadFile(configPath)
