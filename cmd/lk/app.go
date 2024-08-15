@@ -22,19 +22,13 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
-	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh/spinner"
+	"github.com/livekit/livekit-cli/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/pkg/config"
 	"github.com/urfave/cli/v3"
-)
-
-type PackageManager string
-
-const (
-	NPM  PackageManager = "npm"
-	PNPM PackageManager = "pnpm"
-	Yarn PackageManager = "yarn"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -42,11 +36,10 @@ const (
 )
 
 var (
-	template       string
-	appName        string
-	appNameRegex   = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
-	packageManager PackageManager
-	AppCommands    = []*cli.Command{
+	template     string
+	appName      string
+	appNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
+	AppCommands  = []*cli.Command{
 		{
 			Hidden:   true,
 			Name:     "app",
@@ -71,6 +64,35 @@ var (
 						},
 					},
 				},
+				{
+					Hidden: true,
+					Name:   "emit",
+					Action: func(ctx context.Context, cmd *cli.Command) error {
+						data, err := yaml.Marshal(bootstrap.DefaultNextAgentsBootstrapComponent)
+						if err != nil {
+							return err
+						}
+						return os.WriteFile("/Users/tobiasfried/Desktop/.bootstrap.yaml", data, 0700)
+					},
+				},
+				{
+					Name:      "install",
+					Usage:     "Execute installation defined in " + bootstrap.BootstrapFile,
+					ArgsUsage: "`DIR` location or the project directory",
+					Action: func(ctx context.Context, cmd *cli.Command) error {
+						appPath := cmd.Args().First()
+						if appPath == "" {
+							appPath = "."
+						}
+
+						cfg, err := loadProjectDetails(cmd)
+						if err != nil {
+							return err
+						}
+
+						return setupRepository(ctx, cmd, cfg, appPath)
+					},
+				},
 			},
 		},
 	}
@@ -82,11 +104,11 @@ func bootstrapApplication(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	var prompts []huh.Field
+	var preinstallPrompts []huh.Field
 
 	appName = cmd.Args().First()
 	if appName == "" {
-		prompts = append(prompts, huh.NewInput().
+		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
 			Title("Application Name").
 			Placeholder("my-app").
 			Value(&appName).
@@ -105,31 +127,9 @@ func bootstrapApplication(ctx context.Context, cmd *cli.Command) error {
 			WithTheme(theme))
 	}
 
-	pm := cmd.String("package-manager")
-	if pm == "" {
-		pms, err := autodetectPackageManagers()
-		if err != nil {
-			return err
-		}
-		var opts []huh.Option[PackageManager]
-		for _, p := range pms {
-			opts = append(opts, huh.NewOption(string(p), p))
-		}
-		prompts = append(prompts, huh.NewSelect[PackageManager]().
-			Title("Node Package Manager").
-			Description("Some description").
-			Options(opts...).
-			Value(&packageManager).
-			WithTheme(theme))
-	} else {
-		if !(pm == string(PNPM) || pm == string(NPM) || pm == string(Yarn)) {
-			return errors.New("invalid package manager")
-		}
-	}
-
-	if len(prompts) > 0 {
+	if len(preinstallPrompts) > 0 {
 		var groups []*huh.Group
-		for _, p := range prompts {
+		for _, p := range preinstallPrompts {
 			groups = append(groups, huh.NewGroup(p))
 		}
 		if err := huh.NewForm(groups...).
@@ -139,94 +139,54 @@ func bootstrapApplication(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	if err := cloneRepository(template, appName); err != nil {
+	if err := cloneRepository(ctx, cmd, template, appName); err != nil {
 		return err
 	}
 
-	if err := installDependencies(appName, packageManager); err != nil {
-		return err
-	}
-
-	if err := writeEnvironment(cfg, appName); err != nil {
-		return err
-	}
-
-	if err := startDevServer(packageManager); err != nil {
+	if err := setupRepository(ctx, cmd, cfg, appName); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func cloneRepository(templateName, appName string) error {
+func cloneRepository(_ context.Context, cmd *cli.Command, templateName, appName string) error {
 	url := templateBaseUrl + "/" + templateName
-	cmd := exec.Command("git", "clone", url, appName)
-	if o, err := cmd.CombinedOutput(); err != nil {
+	var cmdErr error
+	if err := spinner.New().
+		Title("Cloning template from " + url).
+		Action(func() {
+			c := exec.Command("git", "clone", url, appName)
+			var out []byte
+			if out, cmdErr = c.CombinedOutput(); len(out) > 0 && cmd.Bool("verbose") {
+				fmt.Println(string(out))
+			}
+			cmdErr = c.Run()
+		}).
+		Run(); err != nil {
 		return err
-	} else {
-		fmt.Println(string(o))
 	}
-
-	return nil
+	return cmdErr
 }
 
-func writeEnvironment(cfg *config.ProjectConfig, appName string) error {
-	env := strings.Builder{}
-	if _, err := env.WriteString("LIVEKIT_API_KEY=" + cfg.APIKey); err != nil {
-		return err
-	}
-	if _, err := env.WriteString("\nLIVEKIT_API_SECRET=" + cfg.APISecret); err != nil {
-		return err
-	}
-	if _, err := env.WriteString("\nLIVEKIT_URL=" + cfg.URL); err != nil {
-		return err
-	}
-	envPath := path.Join(appName, ".env.local")
-	return os.WriteFile(envPath, []byte(env.String()), 0700)
-}
+func setupRepository(ctx context.Context, cmd *cli.Command, cfg *config.ProjectConfig, appPath string) error {
+	verbose := cmd.Bool("verbose")
 
-func commandExists(command string) bool {
-	_, err := exec.LookPath(command)
-	return err == nil
-}
-
-func autodetectPackageManagers() ([]PackageManager, error) {
-	var pms []PackageManager
-	if commandExists(string(PNPM)) {
-		pms = append(pms, PNPM)
-	}
-	if commandExists(string(NPM)) {
-		pms = append(pms, NPM)
-	}
-	if commandExists(string(Yarn)) {
-		pms = append(pms, Yarn)
-	}
-	if len(pms) == 0 {
-		return pms, errors.New("must have one of pnpm, npm, or yarn installed")
-	}
-	return pms, nil
-}
-
-func installDependencies(appName string, pm PackageManager) error {
-	if o, err := exec.Command("cd", appName).CombinedOutput(); err != nil {
-		return err
-	} else {
-		fmt.Println(string(o))
-	}
-	if o, err := exec.Command(string(pm), "install").CombinedOutput(); err != nil {
-		return err
-	} else {
-		fmt.Println(string(o))
-	}
-
-	return nil
-}
-
-func startDevServer(pm PackageManager) error {
-	cmd := exec.Command(string(pm), "dev")
-	if err := cmd.Run(); err != nil {
+	bootstrapPath := path.Join(appPath, bootstrap.BootstrapFile)
+	bc, err := bootstrap.ParseBootstrapConfig(bootstrapPath)
+	if err != nil {
 		return err
 	}
 
-	return nil
+	if err := bc.ExecuteInstall(ctx, "root", appPath, verbose); err != nil {
+		return err
+	}
+
+	env := map[string]string{
+		"$LIVEKIT_API_KEY":    cfg.APIKey,
+		"$LIVEKIT_API_SECRET": cfg.APISecret,
+		"$LIVEKIT_URL":        cfg.URL,
+		"$LIVEKIT_SANDBOX":    "TODO",
+	}
+	return bc.WriteDotEnv(ctx, appPath, env, verbose)
 }
