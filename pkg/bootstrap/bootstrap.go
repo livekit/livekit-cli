@@ -20,6 +20,7 @@ package bootstrap
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -27,11 +28,14 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh/spinner"
+	"github.com/go-task/task/v3"
+	"github.com/go-task/task/v3/taskfile/ast"
 	"github.com/mattn/go-shellwords"
 	"gopkg.in/yaml.v3"
 )
 
 const (
+	TaskFile       = "taskfile.yaml"
 	LiveKitDir     = ".livekit"
 	BootstrapFile  = "bootstrap.yaml"
 	EnvExampleFile = ".env.example"
@@ -52,10 +56,10 @@ type BootstrapConfig struct {
 	// The Target environment this component will run in.
 	// Informs other configuration options and setup prompts.
 	Target Target `yaml:"target,omitempty"`
-	// These executables must be present on $PATH
-	Requires []string `yaml:"requires,omitempty"`
 	// TODO: aaa
 	Env map[string]string `yaml:"env,omitempty"`
+	// These executables must be present on $PATH
+	Requires []string `yaml:"requires,omitempty"`
 	// These commands will be run once during setup
 	Install []string `yaml:"install,omitempty"`
 	// These commands will be run once during setup (Windows-specific)
@@ -209,4 +213,99 @@ func ParseBootstrapConfig(path string) (*BootstrapConfig, error) {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
+	file, err := os.ReadFile(path.Join(rootPath, TaskFile))
+	if err != nil {
+		return nil, err
+	}
+	tf := &ast.Taskfile{}
+	if err := yaml.Unmarshal(file, tf); err != nil {
+		return nil, err
+	}
+	return tf, nil
+}
+
+func NewTaskExecutor(tf *ast.Taskfile, dir string, verbose bool) *task.Executor {
+	var o io.Writer = io.Discard
+	var e io.Writer = os.Stderr
+	if verbose {
+		o = os.Stdout
+	}
+	return &task.Executor{
+		Taskfile:  tf,
+		Dir:       dir,
+		Force:     false,
+		ForceAll:  false,
+		Insecure:  false,
+		Download:  false,
+		Offline:   false,
+		Watch:     false,
+		Verbose:   false,
+		Silent:    !verbose,
+		AssumeYes: false,
+		Dry:       false,
+		Summary:   false,
+		Parallel:  false,
+		Color:     true,
+
+		Stdin:  os.Stdin,
+		Stdout: o,
+		Stderr: e,
+	}
+}
+
+func ExecuteInstallTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) error {
+	exe := NewTaskExecutor(tf, dir, verbose)
+	err := exe.Setup()
+	if err != nil {
+		return err
+	}
+
+	if verbose {
+		return exe.Run(ctx, &ast.Call{
+			Task: "install",
+		})
+	} else {
+		var cmdErr error
+		if err := spinner.New().
+			Title("Installing...").
+			Action(func() {
+				cmdErr = exe.Run(ctx, &ast.Call{
+					Task: "install",
+				})
+			}).
+			Run(); err != nil {
+			return err
+		}
+		return cmdErr
+	}
+}
+
+func ExecuteDevTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) error {
+	exe := NewTaskExecutor(tf, dir, verbose)
+	err := exe.Setup()
+	if err != nil {
+		return err
+	}
+
+	if verbose {
+		return exe.Run(ctx, &ast.Call{
+			Task: "dev",
+		})
+	} else {
+		var cmdErr error
+		if err := spinner.New().
+			Title("Running...").
+			Action(func() {
+				cmdErr = exe.Run(ctx, &ast.Call{
+					Task: "dev",
+				})
+			}).
+			Run(); err != nil {
+			return err
+		}
+		return cmdErr
+	}
 }
