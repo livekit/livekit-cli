@@ -38,6 +38,7 @@ var (
 	template     string
 	appName      string
 	appNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
+	project      *config.ProjectConfig
 	AppCommands  = []*cli.Command{
 		{
 			Hidden:   true,
@@ -64,7 +65,8 @@ var (
 				{
 					Name:      "create",
 					Usage:     "Bootstrap a new application from a template or through guided creation",
-					Action:    bootstrapApplication,
+					Before:    requireProject,
+					Action:    bootstrapTemplate,
 					ArgsUsage: "`APP_NAME`",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
@@ -84,31 +86,21 @@ var (
 					Name:      "install",
 					Usage:     "Execute installation defined in " + bootstrap.BootstrapPath(),
 					ArgsUsage: "`DIR` location or the project directory",
-					Action: func(ctx context.Context, cmd *cli.Command) error {
-						appPath := cmd.Args().First()
-						if appPath == "" {
-							appPath = "."
-						}
-
-						cfg, err := loadProjectDetails(cmd)
-						if err != nil {
-							return err
-						}
-
-						return setupRepository(ctx, cmd, cfg, appPath)
-					},
+					Before:    requireProject,
+					Action:    installTemplate,
 				},
 			},
 		},
 	}
 )
 
-func bootstrapApplication(ctx context.Context, cmd *cli.Command) error {
-	cfg, err := loadProjectDetails(cmd)
-	if err != nil {
-		return err
-	}
+func requireProject(_ context.Context, cmd *cli.Command) error {
+	var err error
+	project, err = loadProjectDetails(cmd)
+	return err
+}
 
+func bootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 	var preinstallPrompts []huh.Field
 
 	appName = cmd.Args().First()
@@ -148,9 +140,54 @@ func bootstrapApplication(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if err := setupRepository(ctx, cmd, cfg, appName); err != nil {
+	if err := setupRepository(ctx, cmd, project, appName); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func installTemplate(ctx context.Context, cmd *cli.Command) error {
+	rootPath := cmd.Args().First()
+	if rootPath == "" {
+		rootPath = "."
+	}
+
+	tf, err := bootstrap.ParseTaskfile(rootPath)
+	if err != nil {
+		return err
+	}
+
+	install, err := bootstrap.CreateInstallTask(ctx, tf, rootPath, cmd.Bool("verbose"))
+	if err != nil {
+		return err
+	}
+
+	var cmdErr error
+	if err := spinner.New().
+		Title("Running...").
+		Action(func() { cmdErr = install() }).
+		Type(spinner.Dots).
+		Run(); err != nil {
+		return err
+	}
+	if cmdErr != nil {
+		return cmdErr
+	}
+
+	fmt.Println("Installed project at " + rootPath)
+
+	// appPath := cmd.Args().First()
+	// if appPath == "" {
+	// 	appPath = "."
+	// }
+	//
+	// cfg, err := loadProjectDetails(cmd)
+	// if err != nil {
+	// 	return err
+	// }
+	//
+	// return setupRepository(ctx, cmd, cfg, appPath)
 
 	return nil
 }

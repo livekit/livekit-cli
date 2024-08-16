@@ -242,9 +242,9 @@ func NewTaskExecutor(tf *ast.Taskfile, dir string, verbose bool) *task.Executor 
 		Download:  false,
 		Offline:   false,
 		Watch:     false,
-		Verbose:   false,
+		Verbose:   true,
 		Silent:    !verbose,
-		AssumeYes: false,
+		AssumeYes: true,
 		Dry:       false,
 		Summary:   false,
 		Parallel:  false,
@@ -256,31 +256,27 @@ func NewTaskExecutor(tf *ast.Taskfile, dir string, verbose bool) *task.Executor 
 	}
 }
 
-func ExecuteInstallTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) error {
+func CreateInstallTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) (func() error, error) {
 	exe := NewTaskExecutor(tf, dir, verbose)
 	err := exe.Setup()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if verbose {
+	return func() error {
 		return exe.Run(ctx, &ast.Call{
 			Task: "install",
 		})
-	} else {
-		var cmdErr error
-		if err := spinner.New().
-			Title("Installing...").
-			Action(func() {
-				cmdErr = exe.Run(ctx, &ast.Call{
-					Task: "install",
-				})
-			}).
-			Run(); err != nil {
-			return err
-		}
-		return cmdErr
+
+	}, nil
+}
+
+func ExecuteInstallTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) error {
+	install, err := CreateInstallTask(ctx, tf, dir, verbose)
+	if err != nil {
+		return err
 	}
+	return install()
 }
 
 func ExecuteDevTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) error {
