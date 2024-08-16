@@ -45,6 +45,23 @@ var (
 			Category: "Core",
 			Commands: []*cli.Command{
 				{
+					Hidden: true,
+					Name:   "task",
+					Action: func(ctx context.Context, c *cli.Command) error {
+						rootPath := c.Args().First()
+						tf, err := bootstrap.ParseTaskfile(rootPath)
+						if err != nil {
+							return err
+						}
+						if err := bootstrap.ExecuteInstallTask(ctx, tf, rootPath, c.Bool("verbose")); err != nil {
+							return err
+						}
+
+						fmt.Println("Installed project at " + rootPath)
+						return nil
+					},
+				},
+				{
 					Name:      "create",
 					Usage:     "Bootstrap a new application from a template or through guided creation",
 					Action:    bootstrapApplication,
