@@ -19,200 +19,58 @@ package bootstrap
 
 import (
 	"context"
-	"errors"
 	"io"
+	"io/fs"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 
-	"github.com/charmbracelet/huh/spinner"
 	"github.com/go-task/task/v3"
 	"github.com/go-task/task/v3/taskfile/ast"
-	"github.com/mattn/go-shellwords"
+	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	TaskFile       = "taskfile.yaml"
-	LiveKitDir     = ".livekit"
-	BootstrapFile  = "bootstrap.yaml"
-	EnvExampleFile = ".env.example"
-	EnvLocalFile   = ".env.local"
+	EnvExampleFile    = ".env.example"
+	EnvLocalFile      = ".env.local"
+	TaskFile          = "taskfile.yaml"
+	TemplateIndexFile = "templates.yaml"
+	TemplateIndexURL  = "https://raw.githubusercontent.com/livekit-examples/index/main"
 )
 
-type Target string
+type KnownTask string
 
 const (
-	TargetWeb     Target = "web"
-	TargetPython  Target = "python"
-	TargetGo      Target = "go"
-	TargetIOS     Target = "ios"
-	TargetAndroid Target = "android"
+	TaskInstall        = "install"
+	TaskInstallSandbox = "install_sandbox"
+	TaskDev            = "dev"
+	TaskDevSandbox     = "dev_sandbox"
 )
 
-type BootstrapConfig struct {
-	// The Target environment this component will run in.
-	// Informs other configuration options and setup prompts.
-	Target Target `yaml:"target,omitempty"`
-	// TODO: aaa
-	Env map[string]string `yaml:"env,omitempty"`
-	// These executables must be present on $PATH
-	Requires []string `yaml:"requires,omitempty"`
-	// These commands will be run once during setup
-	Install []string `yaml:"install,omitempty"`
-	// These commands will be run once during setup (Windows-specific)
-	// If absent, falls back to `Install`
-	InstallWin []string `yaml:"install_win,omitempty"`
-	// These commands will be run during local development
-	Dev []string `yaml:"dev,omitempty"`
-	// These commands will be run during local development (Windows-specific)
-	// If absent, falls back to `Install`
-	DevWin []string `yaml:"dev_win,omitempty"`
-	// This map includes subcomponents to be run recursively, with
-	// keys representig directories to `cd` into before running.
-	Components map[string]BootstrapConfig `yaml:"components,omitempty"`
+type Template struct {
+	Name  string `yaml:"name"`
+	Desc  string `yaml:"desc"`
+	URL   string `yaml:"url"`
+	Docs  string `yaml:"docs"`
+	Image string `yaml:"image"`
 }
 
-// Assert that all elements of `Requires` are present in the PATH.
-// Does not recurse through child components.
-func (b *BootstrapConfig) CheckRequirements() error {
-	for _, reqStr := range b.Requires {
-		if !CommandExists(reqStr) {
-			return errors.New("could not locate `" + reqStr + "` in path")
-		}
-	}
-	return nil
-}
-
-// Recursively execute a BootstrapConfig's `Install` instuctions.
-func (b *BootstrapConfig) ExecuteInstall(ctx context.Context, componentName, componentDir string, verbose bool) error {
-	//  1. Assert that all elements of `Requires` are present in the PATH.
-	if err := b.CheckRequirements(); err != nil {
-		return err
-	}
-
-	parser := shellwords.NewParser()
-
-	installCommands := b.Install
-	if runtime.GOOS == "windows" && len(b.InstallWin) > 0 {
-		installCommands = b.InstallWin
-	}
-
-	//  2. Execute each element of `Install` in series, capturing stdout and stderr and
-	//     printing them if verbose is specified.
-	for _, cmdStr := range installCommands {
-		parts, err := parser.Parse(cmdStr)
-		if err != nil {
-			return err
-		}
-
-		cmd := exec.CommandContext(ctx, parts[0], parts[1:]...)
-		cmd.Dir = componentDir
-
-		if verbose {
-			// TODO: pipe the outputs to a scrolling onscreen log a la `tail -f`
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-		}
-
-		var cmdErr error
-		if err := spinner.New().
-			Title(componentName + ": " + cmdStr).
-			Action(func() {
-				cmdErr = cmd.Run()
-			}).
-			Run(); err != nil {
-			return err
-		}
-		if cmdErr != nil {
-			return cmdErr
-		}
-	}
-
-	//  3. For each of `Components`, spawn a goroutine that executes this procedure in
-	//     the child context, reporting any errors on dedicated chan.
-	for childName, component := range b.Components {
-		childDir := path.Join(componentDir, childName)
-		childComponent := componentName + "/" + childName
-		// TODO: should this be parallelized?
-		err := component.ExecuteInstall(ctx, childComponent, childDir, verbose)
-		if err != nil {
-			return err
-		}
-	}
-
-	//  4. Report any errors on dedicated chan.
-	return nil
-}
-
-// Recursively walk the BootstrapConfig's `Components`, reading in any .env.example file if present
-// in that directory, replacing all `substitutions`, and writing to .env.local in that directory.
-func (b *BootstrapConfig) WriteDotEnv(ctx context.Context, dirName string, substitutions map[string]string, verbose bool) error {
-	envPath := path.Join(dirName, EnvLocalFile)
-	examplePath := path.Join(dirName, EnvExampleFile)
-
-	if stat, _ := os.Stat(examplePath); stat != nil {
-		envData, err := os.ReadFile(examplePath)
-		if err != nil {
-			return err
-		}
-
-		envContents := string(envData)
-		for key, value := range substitutions {
-			envContents = strings.ReplaceAll(envContents, key, value)
-		}
-
-		if err := os.WriteFile(envPath, []byte(envContents), 0700); err != nil {
-			return err
-		}
-	}
-
-	for childName, childComponent := range b.Components {
-		childDir := path.Join(dirName, childName)
-		if err := childComponent.WriteDotEnv(ctx, childDir, substitutions, verbose); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func BootstrapPath() string {
-	return path.Join(LiveKitDir, BootstrapFile)
-}
-
-// `cmd` is a binary in PATH or a known alias
-func CommandExists(cmd string) bool {
-	_, err := exec.LookPath(cmd)
-	return (err == nil || CommandIsAlias(cmd))
-}
-
-// `cmd` is a known alias
-func CommandIsAlias(cmd string) bool {
-	if runtime.GOOS == "windows" {
-		return false
-	}
-	out, err := exec.Command("alias", cmd).Output()
-	if err != nil {
-		return false
-	}
-	output := strings.TrimSpace(string(out))
-	return strings.HasPrefix(output, cmd+"=")
-}
-
-// Attempt to parse a BootstrapConfig yaml file at `path`
-func ParseBootstrapConfig(path string) (*BootstrapConfig, error) {
-	file, err := os.ReadFile(path)
+func FetchTemplates(ctx context.Context) ([]Template, error) {
+	resp, err := http.Get(TemplateIndexURL + "/" + TemplateIndexFile)
 	if err != nil {
 		return nil, err
 	}
-	cfg := &BootstrapConfig{}
-	if err := yaml.Unmarshal(file, cfg); err != nil {
+	defer resp.Body.Close()
+	var templates []Template
+	if err := yaml.NewDecoder(resp.Body).Decode(&templates); err != nil {
 		return nil, err
 	}
-	return cfg, nil
+	return templates, nil
 }
 
 func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
@@ -227,14 +85,13 @@ func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
 	return tf, nil
 }
 
-func NewTaskExecutor(tf *ast.Taskfile, dir string, verbose bool) *task.Executor {
+func NewTaskExecutor(dir string, verbose bool) *task.Executor {
 	var o io.Writer = io.Discard
 	var e io.Writer = os.Stderr
 	if verbose {
 		o = os.Stdout
 	}
 	return &task.Executor{
-		Taskfile:  tf,
 		Dir:       dir,
 		Force:     false,
 		ForceAll:  false,
@@ -256,8 +113,8 @@ func NewTaskExecutor(tf *ast.Taskfile, dir string, verbose bool) *task.Executor 
 	}
 }
 
-func CreateInstallTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) (func() error, error) {
-	exe := NewTaskExecutor(tf, dir, verbose)
+func NewTask(ctx context.Context, tf *ast.Taskfile, dir, taskName string, verbose bool) (func() error, error) {
+	exe := NewTaskExecutor(dir, verbose)
 	err := exe.Setup()
 	if err != nil {
 		return nil, err
@@ -265,43 +122,78 @@ func CreateInstallTask(ctx context.Context, tf *ast.Taskfile, dir string, verbos
 
 	return func() error {
 		return exe.Run(ctx, &ast.Call{
-			Task: "install",
+			Task: taskName,
 		})
-
 	}, nil
 }
 
-func ExecuteInstallTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) error {
-	install, err := CreateInstallTask(ctx, tf, dir, verbose)
-	if err != nil {
-		return err
-	}
-	return install()
-}
+type PromptFunc func(key string, value string) (string, error)
 
-func ExecuteDevTask(ctx context.Context, tf *ast.Taskfile, dir string, verbose bool) error {
-	exe := NewTaskExecutor(tf, dir, verbose)
-	err := exe.Setup()
-	if err != nil {
-		return err
-	}
+// Recursively walk the repo, reading in any .env.example file if present in
+// that directory, replacing all `substitutions`, prompting for others, and
+// writing to .env.local in that directory.
+func InstantiateDotEnv(ctx context.Context, rootDir string, substitutions map[string]string, verbose bool, prompt PromptFunc) error {
+	promptedVars := map[string]string{}
 
-	if verbose {
-		return exe.Run(ctx, &ast.Call{
-			Task: "dev",
-		})
-	} else {
-		var cmdErr error
-		if err := spinner.New().
-			Title("Running...").
-			Action(func() {
-				cmdErr = exe.Run(ctx, &ast.Call{
-					Task: "dev",
-				})
-			}).
-			Run(); err != nil {
+	return filepath.WalkDir(rootDir, func(filePath string, d fs.DirEntry, err error) error {
+		if err != nil {
 			return err
 		}
-		return cmdErr
+
+		if d.Name() == EnvExampleFile {
+			envMap, err := godotenv.Read(filePath)
+			if err != nil {
+				return err
+			}
+
+			for key, oldValue := range envMap {
+				// if key is a substitution, replace it
+				if value, ok := substitutions[key]; ok {
+					envMap[key] = value
+					// if key was already promped, use that value
+				} else if alreadyPromptedValue, ok := promptedVars[key]; ok {
+					envMap[key] = alreadyPromptedValue
+				} else {
+					// prompt for value
+					newValue, err := prompt(key, oldValue)
+					if err != nil {
+						return err
+					}
+					envMap[key] = newValue
+					promptedVars[key] = newValue
+				}
+			}
+
+			envContents, err := godotenv.Marshal(envMap)
+			if err != nil {
+				return err
+			}
+
+			envLocalPath := path.Join(path.Dir(filePath), EnvLocalFile)
+			if err := os.WriteFile(envLocalPath, []byte(envContents), 0700); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+// Determine if `cmd` is a binary in PATH or a known alias
+func CommandExists(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return (err == nil || CommandIsAlias(cmd))
+}
+
+// Determine if `cmd` is a known alias
+func CommandIsAlias(cmd string) bool {
+	if runtime.GOOS == "windows" {
+		return false
 	}
+	out, err := exec.Command("alias", cmd).Output()
+	if err != nil {
+		return false
+	}
+	output := strings.TrimSpace(string(out))
+	return strings.HasPrefix(output, cmd+"=")
 }
