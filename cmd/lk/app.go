@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 
@@ -263,11 +264,12 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, templateURL, appName str
 	if err := spinner.New().
 		Title("Cloning template from " + templateURL).
 		Action(func() {
-			c := exec.Command("git", "clone", templateURL, appName)
+			c := exec.Command("git", "clone", "--depth=1", templateURL, appName)
 			var out []byte
 			if out, cmdErr = c.CombinedOutput(); len(out) > 0 && cmd.Bool("verbose") {
 				fmt.Println(string(out))
 			}
+			os.RemoveAll(path.Join(appName, ".git"))
 		}).
 		Run(); err != nil {
 		return err
