@@ -10,8 +10,8 @@ require (
 	github.com/charmbracelet/lipgloss v0.12.1
 	github.com/frostbyte73/core v0.0.12
 	github.com/go-logr/logr v1.4.2
-	github.com/livekit/protocol v1.19.3
-	github.com/livekit/server-sdk-go/v2 v2.2.0
+	github.com/livekit/protocol v1.19.4-0.20240808180722-581b59b65309
+	github.com/livekit/server-sdk-go/v2 v2.2.1
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.9
 	github.com/pion/webrtc/v3 v3.2.51
