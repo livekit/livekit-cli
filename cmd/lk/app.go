@@ -322,13 +322,13 @@ func installTemplate(ctx context.Context, cmd *cli.Command) error {
 	return doInstall(ctx, bootstrap.TaskInstall, rootPath, verbose)
 }
 
-func doInstall(ctx context.Context, task, rootPath string, verbose bool) error {
+func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, verbose bool) error {
 	tf, err := bootstrap.ParseTaskfile(rootPath)
 	if err != nil {
 		return err
 	}
 
-	install, err := bootstrap.NewTask(ctx, tf, rootPath, task, verbose)
+	install, err := bootstrap.NewTask(ctx, tf, rootPath, string(task), verbose)
 	if err != nil {
 		return err
 	}

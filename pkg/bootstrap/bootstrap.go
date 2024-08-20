@@ -46,10 +46,10 @@ const (
 type KnownTask string
 
 const (
-	TaskInstall        = "install"
-	TaskInstallSandbox = "install_sandbox"
-	TaskDev            = "dev"
-	TaskDevSandbox     = "dev_sandbox"
+	TaskInstall        KnownTask = "install"
+	TaskInstallSandbox KnownTask = "install_sandbox"
+	TaskDev            KnownTask = "dev"
+	TaskDevSandbox     KnownTask = "dev_sandbox"
 )
 
 type Template struct {
