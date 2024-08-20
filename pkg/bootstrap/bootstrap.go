@@ -53,11 +53,12 @@ const (
 )
 
 type Template struct {
-	Name  string `yaml:"name"`
-	Desc  string `yaml:"desc"`
-	URL   string `yaml:"url"`
-	Docs  string `yaml:"docs"`
-	Image string `yaml:"image"`
+	Name  string   `yaml:"name"`
+	Desc  string   `yaml:"desc"`
+	URL   string   `yaml:"url"`
+	Docs  string   `yaml:"docs"`
+	Image string   `yaml:"image"`
+	Tags  []string `yaml:"tags"`
 }
 
 func FetchTemplates(ctx context.Context) ([]Template, error) {

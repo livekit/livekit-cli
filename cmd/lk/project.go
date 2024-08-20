@@ -205,6 +205,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		prompts = append(prompts, huh.NewConfirm().
 			Title("Make this project default?").
 			Value(&isDefault).
+			Inline(true).
 			WithTheme(theme))
 	}
 

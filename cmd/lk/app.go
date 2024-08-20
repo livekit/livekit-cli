@@ -113,9 +113,51 @@ var (
 	}
 )
 
-func requireProject(_ context.Context, cmd *cli.Command) error {
+func requireProject(ctx context.Context, cmd *cli.Command) error {
 	var err error
-	project, err = loadProjectDetails(cmd)
+	if project, err = loadProjectDetails(cmd); err != nil {
+		if err = loadProjectConfig(ctx, cmd); err != nil {
+			// something is wrong with config file
+			return err
+		}
+
+		// choose from existing credentials or authenticate
+		if len(cliConfig.Projects) > 0 {
+			var options []huh.Option[*config.ProjectConfig]
+			for _, p := range cliConfig.Projects {
+				options = append(options, huh.NewOption(p.Name+" ["+p.APIKey+"]", &p))
+			}
+			if err = huh.NewSelect[*config.ProjectConfig]().
+				Title("Select a project to use for this app").
+				Description("If you'd like to use a different project, run `lk cloud auth` to add credentials").
+				Options(options...).
+				Value(&project).
+				WithTheme(theme).
+				Run(); err != nil {
+				return err
+			}
+		} else {
+			shouldAuth := true
+			if err = huh.NewConfirm().
+				Title("No local projects found. Authenticate one now?").
+				Inline(true).
+				Value(&shouldAuth).
+				WithTheme(theme).
+				Run(); err != nil {
+				return err
+			}
+			if shouldAuth {
+				initAuth(ctx, cmd)
+				if err = tryAuthIfNeeded(ctx, cmd); err != nil {
+					return err
+				}
+				return requireProject(ctx, cmd)
+			} else {
+				return errors.New("no project selected")
+			}
+		}
+	}
+
 	return err
 }
 
@@ -201,7 +243,7 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Installing template...")
-	if err := installTemplate(ctx, cmd); err != nil {
+	if err := doInstall(ctx, bootstrap.TaskInstall, appName, cmd.Bool("verbose")); err != nil {
 		return err
 	}
 
@@ -209,39 +251,9 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 }
 
 func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
-	var preinstallPrompts []huh.Field
-
-	appName = cmd.Args().First()
-	if appName == "" {
-		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
-			Title("Application Name").
-			Placeholder("my-app").
-			Value(&appName).
-			Validate(func(s string) error {
-				if len(s) < 3 {
-					return errors.New("name is too short")
-				}
-				if !appNameRegex.MatchString(s) {
-					return errors.New("try a simpler name")
-				}
-				if s, _ := os.Stat(s); s != nil {
-					return errors.New("that name is in use")
-				}
-				return nil
-			}).
-			WithTheme(theme))
-	}
-
-	if len(preinstallPrompts) > 0 {
-		var groups []*huh.Group
-		for _, p := range preinstallPrompts {
-			groups = append(groups, huh.NewGroup(p))
-		}
-		if err := huh.NewForm(groups...).
-			WithTheme(theme).
-			RunWithContext(ctx); err != nil {
-			return err
-		}
+	// TODO: implement endpoints to fetch sandbox Template for authorized users
+	if true {
+		return errors.New("not implemented")
 	}
 
 	if err := cloneTemplate(ctx, cmd, templateName, appName); err != nil {
@@ -252,7 +264,7 @@ func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if err := installSandboxTemplate(ctx, cmd); err != nil {
+	if err := doInstall(ctx, bootstrap.TaskInstallSandbox, appName, cmd.Bool("verbose")); err != nil {
 		return err
 	}
 
@@ -307,13 +319,16 @@ func installTemplate(ctx context.Context, cmd *cli.Command) error {
 	if rootPath == "" {
 		rootPath = "."
 	}
+	return doInstall(ctx, bootstrap.TaskInstall, rootPath, verbose)
+}
 
+func doInstall(ctx context.Context, task, rootPath string, verbose bool) error {
 	tf, err := bootstrap.ParseTaskfile(rootPath)
 	if err != nil {
 		return err
 	}
 
-	install, err := bootstrap.NewTask(ctx, tf, rootPath, bootstrap.TaskInstall, verbose)
+	install, err := bootstrap.NewTask(ctx, tf, rootPath, task, verbose)
 	if err != nil {
 		return err
 	}
@@ -338,50 +353,7 @@ func installTemplate(ctx context.Context, cmd *cli.Command) error {
 
 	fullPath, err := filepath.Abs(rootPath)
 	if fullPath != "" {
-		fmt.Println("Installed project at " + fullPath)
-	}
-
-	return err
-}
-
-func installSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
-	verbose := cmd.Bool("verbose")
-	rootPath := cmd.Args().First()
-	if rootPath == "" {
-		rootPath = "."
-	}
-
-	tf, err := bootstrap.ParseTaskfile(rootPath)
-	if err != nil {
-		return err
-	}
-
-	install, err := bootstrap.NewTask(ctx, tf, rootPath, bootstrap.TaskInstallSandbox, verbose)
-	if err != nil {
-		return err
-	}
-
-	if verbose {
-		if err := install(); err != nil {
-			return err
-		}
-	} else {
-		var cmdErr error
-		if err := spinner.New().
-			Title("Installing Sandbox...").
-			Action(func() { cmdErr = install() }).
-			Type(spinner.Dots).
-			Run(); err != nil {
-			return err
-		}
-		if cmdErr != nil {
-			return cmdErr
-		}
-	}
-
-	fullPath, err := filepath.Abs(rootPath)
-	if fullPath != "" {
-		fmt.Println("Installed sandbox at " + fullPath)
+		fmt.Println("Installed template to " + fullPath)
 	}
 
 	return err
@@ -393,12 +365,13 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("task name is required")
 	}
 
-	tf, err := bootstrap.ParseTaskfile(".")
+	rootDir := "."
+	tf, err := bootstrap.ParseTaskfile(rootDir)
 	if err != nil {
 		return err
 	}
 
-	task, err := bootstrap.NewTask(ctx, tf, ".", taskName, cmd.Bool("verbose"))
+	task, err := bootstrap.NewTask(ctx, tf, rootDir, taskName, cmd.Bool("verbose"))
 	if err != nil {
 		return err
 	}
