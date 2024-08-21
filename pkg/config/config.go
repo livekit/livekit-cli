@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -105,7 +106,7 @@ func LoadOrCreate() (*CLIConfig, error) {
 
 func (c *CLIConfig) ProjectExists(name string) bool {
 	for _, p := range c.Projects {
-		if p.Name == name {
+		if strings.EqualFold(p.Name, name) {
 			return true
 		}
 	}
