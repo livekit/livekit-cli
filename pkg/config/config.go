@@ -103,6 +103,15 @@ func LoadOrCreate() (*CLIConfig, error) {
 	return c, nil
 }
 
+func (c *CLIConfig) ProjectExists(name string) bool {
+	for _, p := range c.Projects {
+		if p.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *CLIConfig) RemoveProject(name string) error {
 	var newProjects []ProjectConfig
 	for _, p := range c.Projects {
