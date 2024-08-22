@@ -57,12 +57,19 @@ make install
 
 See `lk --help` for a complete list of subcommands.
 
-## Set up your project [new]
+## Set up your project (new)
 
-When a default project is set up, you can omit `url`, `api-key`, and `api-secret` when using the CLI.
-You can also set up multiple projects, and temporarily switch the active project used with the `--project` flag, or persistently using `lk project set-default`.
+The quickest way to get started is to authenticate with your LiveKit Cloud account and link an existing project. If you haven't created an account or project yet, head [here](https://cloud.livekit.io) first. Then run the following:
 
-### Adding a project
+```shell
+lk cloud auth
+```
+
+Follow the URL to login in the browser and choose your project to link. When you return to your terminal, you'll have the option to use this project as the default.
+
+When a default project is set up, you can omit `url`, `api-key`, and `api-secret` when using the CLI. You can also set up multiple projects, and temporarily switch the active project used with the `--project` flag, or persistently using `lk project set-default`.
+
+### Adding a project manually
 
 ```shell
 lk project add --api-key <key> --api-secret <secret> <project_name>
@@ -83,7 +90,7 @@ lk project set-default <project_name>
 
 ### Publish demo video track
 
-To publish a demo video as a participant's track, use the following.
+To publish a demo video as a participant's track, use the following:
 
 ```shell
 lk room join --identity publisher --publish-demo <room_name>

@@ -349,7 +349,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	})
 
 	if isDefault {
-		cliConfig.DefaultProject = ak.Description
+		cliConfig.DefaultProject = name
 	}
 	if err = cliConfig.PersistIfNeeded(); err != nil {
 		return err
