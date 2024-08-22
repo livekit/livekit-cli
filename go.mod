@@ -6,8 +6,8 @@ toolchain go1.22.2
 
 require (
 	github.com/charmbracelet/huh v0.5.2
-	github.com/charmbracelet/huh/spinner v0.0.0-20240819144924-03b9fb7b7e9b
-	github.com/charmbracelet/lipgloss v0.12.1
+	github.com/charmbracelet/huh/spinner v0.0.0-20240821193529-5fd70815c13f
+	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/frostbyte73/core v0.0.12
 	github.com/go-logr/logr v1.4.2
 	github.com/livekit/protocol v1.19.4-0.20240808180722-581b59b65309
@@ -39,7 +39,7 @@ require (
 	github.com/bufbuild/protoyaml-go v0.1.10 // indirect
 	github.com/catppuccin/go v0.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/charmbracelet/bubbles v0.18.0 // indirect
+	github.com/charmbracelet/bubbles v0.19.0 // indirect
 	github.com/charmbracelet/bubbletea v0.27.0 // indirect
 	github.com/charmbracelet/x/ansi v0.1.4 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240809174237-9ab0ca04ce0c // indirect
