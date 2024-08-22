@@ -152,6 +152,14 @@ var (
 								"Can be used multiple times to publish multiple files. " +
 								"Can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\"",
 						},
+						&cli.StringFlag{
+							Name:  "publish-data",
+							Usage: "Publish user data to the room.",
+						},
+						&cli.StringFlag{
+							Name:  "publish-dtmf",
+							Usage: "Publish DTMF digits to the room. Character 'w' adds 0.5 sec delay.",
+						},
 						&cli.FloatFlag{
 							Name:  "fps",
 							Usage: "If video files are published, indicates `FPS` of video",
@@ -737,9 +745,16 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	done := make(chan os.Signal, 1)
 	roomCB := &lksdk.RoomCallback{
 		ParticipantCallback: lksdk.ParticipantCallback{
-			OnDataReceived: func(data []byte, params lksdk.DataReceiveParams) {
+			OnDataPacket: func(p lksdk.DataPacket, params lksdk.DataReceiveParams) {
 				identity := params.SenderIdentity
-				logger.Infow("received data", "data", data, "participant", identity)
+				switch p := p.(type) {
+				case *lksdk.UserDataPacket:
+					logger.Infow("received data", "data", p.Payload, "participant", identity)
+				case *livekit.SipDTMF:
+					logger.Infow("received dtmf", "digits", p.Digit, "participant", identity)
+				default:
+					logger.Infow("received unsupported data", "data", p, "participant", identity)
+				}
 			},
 			OnConnectionQualityChanged: func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
 				logger.Debugw("connection quality changed", "participant", p.Identity(), "quality", update.Quality)
@@ -820,11 +835,12 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	if cmd.StringSlice("publish") != nil {
+	exitAfterPublish := cmd.Bool("exit-after-publish")
+	if publish := cmd.StringSlice("publish"); publish != nil {
 		fps := cmd.Float("fps")
-		for _, pub := range cmd.StringSlice("publish") {
+		for _, pub := range publish {
 			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
-				if cmd.Bool("exit-after-publish") {
+				if exitAfterPublish {
 					close(done)
 					return
 				}
@@ -836,6 +852,26 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 			if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
 				return err
 			}
+		}
+	}
+
+	publishPacket := func(p lksdk.DataPacket) error {
+		if err = room.LocalParticipant.PublishDataPacket(p, lksdk.WithDataPublishReliable(true)); err != nil {
+			return err
+		}
+		if exitAfterPublish {
+			close(done)
+		}
+		return nil
+	}
+	if data := cmd.String("publish-data"); data != "" {
+		if err = publishPacket(&lksdk.UserDataPacket{Payload: []byte(data)}); err != nil {
+			return err
+		}
+	}
+	if dtmf := cmd.String("publish-dtmf"); dtmf != "" {
+		if err = publishPacket(&livekit.SipDTMF{Digit: dtmf}); err != nil {
+			return err
 		}
 	}
 
