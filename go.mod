@@ -10,6 +10,8 @@ require (
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/frostbyte73/core v0.0.12
 	github.com/go-logr/logr v1.4.2
+	github.com/go-task/task/v3 v3.38.0
+	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.19.4-0.20240808180722-581b59b65309
 	github.com/livekit/server-sdk-go/v2 v2.2.1
 	github.com/pion/rtcp v1.2.14
@@ -29,6 +31,9 @@ require (
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2 // indirect
+	github.com/Ladicle/tabwriter v1.0.0 // indirect
+	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/alecthomas/chroma/v2 v2.14.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
@@ -46,14 +51,19 @@ require (
 	github.com/charmbracelet/x/term v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/dlclark/regexp2 v1.11.0 // indirect
+	github.com/dominikbraun/graph v0.23.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/eapache/channels v1.1.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
+	github.com/fatih/color v1.17.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
+	github.com/go-task/template v0.0.0-20240602015157-960e6f576656 // indirect
 	github.com/google/cel-go v0.21.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
@@ -66,9 +76,11 @@ require (
 	github.com/livekit/psrpc v0.5.3-0.20240616012458-ac39c8549a0a // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/mattn/go-zglob v0.0.4 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
@@ -96,8 +108,11 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.4.0 // indirect
+	github.com/radovskyb/watcher v1.0.7 // indirect
 	github.com/redis/go-redis/v9 v9.6.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/sajari/fuzzy v1.0.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/wlynxg/anet v0.0.3 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
@@ -109,8 +124,10 @@ require (
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240808171019-573a1156607a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240808171019-573a1156607a // indirect
 	google.golang.org/grpc v1.65.0 // indirect
+	mvdan.cc/sh/v3 v3.8.0 // indirect
 )

@@ -53,16 +53,16 @@ const (
 
 var (
 	revoke       bool
-	timeout      int64
-	interval     int64
-	serverURL    string
-	dashboardURL string
+	timeout      int64  = 60 * 15
+	interval     int64  = 4
+	serverURL    string = cloudAPIServerURL
+	dashboardURL string = cloudDashboardURL
 	authClient   AuthClient
 	AuthCommands = []*cli.Command{
 		{
 			Name:     "cloud",
 			Usage:    "Interacting with LiveKit Cloud",
-			Category: "Core",
+			Category: "Cloud",
 			Commands: []*cli.Command{
 				{
 					Name:   "auth",
@@ -317,6 +317,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	if err := huh.NewConfirm().
 		Title("Make this project default?").
 		Value(&isDefault).
+		Inline(true).
 		WithTheme(theme).
 		Run(); err != nil {
 		return err
