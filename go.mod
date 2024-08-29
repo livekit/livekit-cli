@@ -6,7 +6,7 @@ toolchain go1.22.2
 
 require (
 	github.com/charmbracelet/huh v0.5.3
-	github.com/charmbracelet/huh/spinner v0.0.0-20240821193529-5fd70815c13f
+	github.com/charmbracelet/huh/spinner v0.0.0-20240829113522-b963c398e1f1
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/frostbyte73/core v0.0.12
 	github.com/go-logr/logr v1.4.2
