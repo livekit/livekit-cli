@@ -5,9 +5,9 @@ go 1.22
 toolchain go1.22.2
 
 require (
-	github.com/charmbracelet/huh v0.5.2
-	github.com/charmbracelet/huh/spinner v0.0.0-20240819144924-03b9fb7b7e9b
-	github.com/charmbracelet/lipgloss v0.12.1
+	github.com/charmbracelet/huh v0.5.3
+	github.com/charmbracelet/huh/spinner v0.0.0-20240829113522-b963c398e1f1
+	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/frostbyte73/core v0.0.12
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.38.0
@@ -44,13 +44,11 @@ require (
 	github.com/bufbuild/protoyaml-go v0.1.10 // indirect
 	github.com/catppuccin/go v0.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/charmbracelet/bubbles v0.18.0 // indirect
+	github.com/charmbracelet/bubbles v0.19.0 // indirect
 	github.com/charmbracelet/bubbletea v0.27.0 // indirect
-	github.com/charmbracelet/x/ansi v0.1.4 // indirect
+	github.com/charmbracelet/x/ansi v0.2.2 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240809174237-9ab0ca04ce0c // indirect
-	github.com/charmbracelet/x/input v0.1.3 // indirect
-	github.com/charmbracelet/x/term v0.1.1 // indirect
-	github.com/charmbracelet/x/windows v0.1.2 // indirect
+	github.com/charmbracelet/x/term v0.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
@@ -86,7 +84,7 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/muesli/termenv v0.15.2 // indirect
+	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nats-io/nats.go v1.36.0 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
@@ -117,7 +115,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/wlynxg/anet v0.0.3 // indirect
-	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

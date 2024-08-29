@@ -86,15 +86,15 @@ var (
 )
 
 func optional[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
-	newFlag := flag
+	newFlag := *flag
 	newFlag.Required = false
-	return newFlag
+	return &newFlag
 }
 
 func hidden[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
-	newFlag := flag
+	newFlag := *flag
 	newFlag.Hidden = true
-	return newFlag
+	return &newFlag
 }
 
 func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {

@@ -36,6 +36,7 @@ type ClaimAccessKeyResponse struct {
 	Key         string
 	Secret      string
 	ProjectId   string
+	ProjectName string
 	OwnerId     string
 	Description string
 	URL         string
@@ -65,7 +66,7 @@ var (
 			Commands: []*cli.Command{
 				{
 					Name:   "auth",
-					Usage:  "Authenticate the CLI via the browser to permit advanced actions",
+					Usage:  "Authenticate LiveKit Cloud account to link your projects",
 					Before: initAuth,
 					Action: handleAuth,
 					Flags: []cli.Flag{
@@ -295,12 +296,12 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	var key *ClaimAccessKeyResponse
+	var ak *ClaimAccessKeyResponse
 	var pollErr error
 	if err := spinner.New().
 		Title("Awaiting confirmation...").
 		Action(func() {
-			key, pollErr = pollClaim(ctx, cmd)
+			ak, pollErr = pollClaim(ctx, cmd)
 		}).
 		Run(); err != nil {
 		return err
@@ -308,7 +309,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	if pollErr != nil {
 		return pollErr
 	}
-	if key == nil {
+	if ak == nil {
 		return errors.New("operation cancelled")
 	}
 
@@ -322,16 +323,34 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	// make sure name is unique
+	var name = ak.ProjectName
+	if cliConfig.ProjectExists(name) {
+		if err := huh.NewInput().
+			Title("Project name already exists, please choose a different name").
+			Value(&name).
+			Validate(func(s string) error {
+				if cliConfig.ProjectExists(s) {
+					return errors.New("project name already exists")
+				}
+				return nil
+			}).
+			WithTheme(theme).
+			Run(); err != nil {
+			return err
+		}
+	}
+
 	// persist to config file
 	cliConfig.Projects = append(cliConfig.Projects, config.ProjectConfig{
-		Name:      key.Description,
-		APIKey:    key.Key,
-		APISecret: key.Secret,
-		URL:       key.URL,
+		Name:      name,
+		APIKey:    ak.Key,
+		APISecret: ak.Secret,
+		URL:       ak.URL,
 	})
 
 	if isDefault {
-		cliConfig.DefaultProject = key.Description
+		cliConfig.DefaultProject = name
 	}
 	if err = cliConfig.PersistIfNeeded(); err != nil {
 		return err
@@ -360,13 +379,13 @@ func pollClaim(ctx context.Context, _ *cli.Command) (*ClaimAccessKeyResponse, er
 	go func() {
 		for {
 			time.Sleep(time.Duration(interval) * time.Second)
-			session, err := authClient.ClaimCliKey(ctx)
+			ak, err := authClient.ClaimCliKey(ctx)
 			if err != nil {
 				cancel <- err
 				return
 			}
-			if session != nil {
-				claim <- session
+			if ak != nil {
+				claim <- ak
 			}
 		}
 	}()
