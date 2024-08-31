@@ -396,9 +396,16 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 			pin = r.DispatchRuleDirect.Pin
 			typ = "Direct"
 		case *livekit.SIPDispatchRule_DispatchRuleIndividual:
-			room = r.DispatchRuleIndividual.RoomPrefix + "*"
+			room = r.DispatchRuleIndividual.RoomPrefix + "_<caller>_<random>"
 			pin = r.DispatchRuleIndividual.Pin
-			typ = "Individual"
+			typ = "Individual (Caller)"
+		case *livekit.SIPDispatchRule_DispatchRuleCallee:
+			room = r.DispatchRuleCallee.RoomPrefix + "<callee>"
+			if r.DispatchRuleCallee.Randomize {
+				room += "_<random>"
+			}
+			pin = r.DispatchRuleCallee.Pin
+			typ = "Callee"
 		}
 		trunks := strings.Join(item.TrunkIds, ",")
 		if trunks == "" {
