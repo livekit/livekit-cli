@@ -16,8 +16,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -32,7 +34,9 @@ import (
 )
 
 const (
-	templateBaseUrl = "https://github.com/livekit-examples"
+	templateBaseURL         = "https://github.com/livekit-examples"
+	sandboxDashboardURL     = "https://cloud.livekit.io/projects/p_/v2/sandbox"
+	sandboxTemplateEndpoint = "/api/sandbox/template"
 )
 
 var (
@@ -58,7 +62,7 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:        "template",
-							Usage:       "`TEMPLATE` to instantiate, see " + templateBaseUrl,
+							Usage:       "`TEMPLATE` to instantiate, see " + templateBaseURL,
 							Destination: &templateName,
 						},
 						&cli.StringFlag{
@@ -80,6 +84,20 @@ var (
 							Usage:       "`ID` of the sandbox, see your cloud dashboard",
 							Destination: &sandboxID,
 							Required:    true,
+						},
+						&cli.StringFlag{
+							// Use "http://cloud-api.livekit.run" in local dev
+							Name:        "server-url",
+							Value:       cloudAPIServerURL,
+							Destination: &serverURL,
+							Hidden:      true,
+						},
+						&cli.StringFlag{
+							// Use "https://cloud.livekit.run" in local dev
+							Name:        "dashboard-url",
+							Value:       cloudDashboardURL,
+							Destination: &dashboardURL,
+							Hidden:      true,
 						},
 					},
 				},
@@ -251,32 +269,61 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 }
 
 func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
-	// TODO: implement endpoints to fetch sandbox Template for authorized users
-	if true {
-		return errors.New("not implemented")
+	if sandboxID == "" {
+		return errors.New("sandbox ID is required")
 	}
 
-	if err := cloneTemplate(ctx, cmd, templateName, appName); err != nil {
+	_, token, err := requireToken(ctx, cmd)
+	if err != nil {
 		return err
 	}
 
-	if err := instantiateEnv(ctx, cmd, appName); err != nil {
+	req, err := http.NewRequestWithContext(ctx, "GET", serverURL+sandboxTemplateEndpoint, nil)
+	req.Header = newHeaderWithToken(token)
+	query := req.URL.Query()
+	query.Add("id", sandboxID)
+	req.URL.RawQuery = query.Encode()
+	if err != nil {
 		return err
 	}
 
-	if err := doInstall(ctx, bootstrap.TaskInstallSandbox, appName, cmd.Bool("verbose")); err != nil {
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 200 {
+		return errors.New("access denied")
+	}
+
+	var template bootstrap.Template
+	if err := json.NewDecoder(resp.Body).Decode(&template); err != nil {
+		return err
+	}
+
+	fmt.Println("Cloning template...")
+	if err := cloneTemplate(ctx, cmd, template.URL, template.Name); err != nil {
+		return err
+	}
+
+	fmt.Println("Instantiating environment...")
+	if err := instantiateEnv(ctx, cmd, template.Name); err != nil {
+		return err
+	}
+
+	fmt.Println("Installing template...")
+	if err := doInstall(ctx, bootstrap.TaskInstallSandbox, template.Name, cmd.Bool("verbose")); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func cloneTemplate(_ context.Context, cmd *cli.Command, templateURL, appName string) error {
+func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
 	var cmdErr error
 	if err := spinner.New().
-		Title("Cloning template from " + templateURL).
+		Title("Cloning template from " + url).
 		Action(func() {
-			c := exec.Command("git", "clone", "--depth=1", templateURL, appName)
+			c := exec.Command("git", "clone", "--depth=1", url, appName)
 			var out []byte
 			if out, cmdErr = c.CombinedOutput(); len(out) > 0 && cmd.Bool("verbose") {
 				fmt.Println(string(out))
@@ -294,7 +341,6 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string) erro
 		"LIVEKIT_API_KEY":    project.APIKey,
 		"LIVEKIT_API_SECRET": project.APISecret,
 		"LIVEKIT_URL":        project.URL,
-		"LIVEKIT_SANDBOX":    "TODO",
 	}
 
 	prompt := func(key, oldValue string) (string, error) {
