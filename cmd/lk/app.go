@@ -86,8 +86,6 @@ var (
 							Required:    true,
 						},
 						&cli.StringFlag{
-							// Use "http://cloud-api.livekit.run" in local dev
-							// Use "https://cloud-api-server-staging.ochicago1a.staging.livekit.app" in staging
 							Name:        "server-url",
 							Value:       cloudAPIServerURL,
 							Destination: &serverURL,
