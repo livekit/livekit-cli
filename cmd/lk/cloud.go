@@ -305,6 +305,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Action(func() {
 			ak, pollErr = pollClaim(ctx, cmd)
 		}).
+		Style(theme.Focused.Title).
 		Run(); err != nil {
 		return err
 	}

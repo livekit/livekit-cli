@@ -326,6 +326,7 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 			}
 			os.RemoveAll(path.Join(appName, ".git"))
 		}).
+		Style(theme.Focused.Title).
 		Run(); err != nil {
 		return err
 	}
@@ -384,7 +385,7 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 		if err := spinner.New().
 			Title("Installing...").
 			Action(func() { cmdErr = install() }).
-			Type(spinner.Dots).
+			Style(theme.Focused.Title).
 			Run(); err != nil {
 			return err
 		}
@@ -425,7 +426,7 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 		if err := spinner.New().
 			Title("Running task " + taskName + "...").
 			Action(func() { cmdErr = task() }).
-			Type(spinner.Dots).
+			Style(theme.Focused.Title).
 			Run(); err != nil {
 			return err
 		}
