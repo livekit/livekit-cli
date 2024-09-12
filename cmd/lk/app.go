@@ -109,22 +109,18 @@ var (
 					Action:    installTemplate,
 				},
 				{
+					Name:   "env",
+					Usage:  "Manage environment variables",
+					Before: requireProject,
+					Action: func(ctx context.Context, cmd *cli.Command) error {
+						return instantiateEnv(ctx, cmd, ".")
+					},
+				},
+				{
 					Name:      "run",
 					Usage:     "Execute a task defined in " + bootstrap.TaskFile,
 					ArgsUsage: "`DIR` location or the project directory (default: current directory)",
 					Action:    runTask,
-				},
-				{
-					Name: "test",
-					Action: func(ctx context.Context, c *cli.Command) error {
-						templates, err := bootstrap.FetchTemplates(ctx)
-						if err != nil {
-							return err
-						}
-
-						fmt.Printf("Fetched templates: %+v\n", templates)
-						return nil
-					},
 				},
 			},
 		},
@@ -406,6 +402,7 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 }
 
 func runTask(ctx context.Context, cmd *cli.Command) error {
+	verbose := cmd.Bool("verbose")
 	taskName := cmd.Args().First()
 	if taskName == "" {
 		return errors.New("task name is required")
@@ -421,5 +418,17 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return task()
+	if verbose {
+		return task()
+	} else {
+		var cmdErr error
+		if err := spinner.New().
+			Title("Running task " + taskName + "...").
+			Action(func() { cmdErr = task() }).
+			Type(spinner.Dots).
+			Run(); err != nil {
+			return err
+		}
+		return cmdErr
+	}
 }
