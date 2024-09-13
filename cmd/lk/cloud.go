@@ -90,14 +90,12 @@ var (
 							Value:       4,
 						},
 						&cli.StringFlag{
-							// Use "http://cloud-api.livekit.run" in local dev
 							Name:        "server-url",
 							Value:       cloudAPIServerURL,
 							Destination: &serverURL,
 							Hidden:      true,
 						},
 						&cli.StringFlag{
-							// Use "https://cloud.livekit.run" in local dev
 							Name:        "dashboard-url",
 							Value:       cloudDashboardURL,
 							Destination: &dashboardURL,
@@ -303,6 +301,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Action(func() {
 			ak, pollErr = pollClaim(ctx, cmd)
 		}).
+		Style(theme.Focused.Title).
 		Run(); err != nil {
 		return err
 	}
