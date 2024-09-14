@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/huh v0.6.0
 	github.com/charmbracelet/huh/spinner v0.0.0-20240912161303-b56e9290a68e
 	github.com/charmbracelet/lipgloss v0.13.0
-	github.com/frostbyte73/core v0.0.12
+	github.com/frostbyte73/core v0.0.13
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.39.0
 	github.com/joho/godotenv v1.5.1
