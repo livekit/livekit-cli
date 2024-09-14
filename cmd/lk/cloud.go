@@ -25,11 +25,12 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
+	"github.com/pkg/browser"
 	"github.com/urfave/cli/v3"
 
+	authutil "github.com/livekit/livekit-cli/pkg/auth"
 	"github.com/livekit/livekit-cli/pkg/config"
 	"github.com/livekit/protocol/auth"
-	"github.com/pkg/browser"
 )
 
 type ClaimAccessKeyResponse struct {
@@ -196,7 +197,7 @@ func (a *AuthClient) Deauthenticate(ctx context.Context, projectName, token stri
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "DELETE", reqURL.String(), nil)
-	req.Header = newHeaderWithToken(token)
+	req.Header = authutil.NewHeaderWithToken(token)
 	if err != nil {
 		return err
 	}

@@ -19,6 +19,8 @@ package bootstrap
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"io"
 	"io/fs"
 	"net/http"
@@ -33,14 +35,19 @@ import (
 	"github.com/go-task/task/v3/taskfile/ast"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
+
+	authutil "github.com/livekit/livekit-cli/pkg/auth"
 )
 
 const (
-	EnvExampleFile    = ".env.example"
-	EnvLocalFile      = ".env.local"
-	TaskFile          = "taskfile.yaml"
-	TemplateIndexFile = "templates.yaml"
-	TemplateIndexURL  = "https://raw.githubusercontent.com/livekit-examples/index/main"
+	EnvExampleFile          = ".env.example"
+	EnvLocalFile            = ".env.local"
+	TaskFile                = "taskfile.yaml"
+	TemplateIndexFile       = "templates.yaml"
+	TemplateIndexURL        = "https://raw.githubusercontent.com/livekit-examples/index/main"
+	TemplateBaseURL         = "https://github.com/livekit-examples"
+	SandboxDashboardURL     = "https://cloud.livekit.io/projects/p_/sandbox"
+	SandboxTemplateEndpoint = "/api/sandbox/template"
 )
 
 type KnownTask string
@@ -62,6 +69,11 @@ type Template struct {
 	IsSandbox bool     `yaml:"is_sandbox" json:"is_sandbox,omitempty"`
 }
 
+type SandboxDetails struct {
+	Name     string   `json:"name"`
+	Template Template `json:"template"`
+}
+
 func FetchTemplates(ctx context.Context) ([]Template, error) {
 	resp, err := http.Get(TemplateIndexURL + "/" + TemplateIndexFile)
 	if err != nil {
@@ -73,6 +85,31 @@ func FetchTemplates(ctx context.Context) ([]Template, error) {
 		return nil, err
 	}
 	return templates, nil
+}
+
+func FetchSandboxDetails(ctx context.Context, sid, token, serverURL string) (*SandboxDetails, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", serverURL+SandboxTemplateEndpoint, nil)
+	req.Header = authutil.NewHeaderWithToken(token)
+	query := req.URL.Query()
+	query.Add("id", sid)
+	req.URL.RawQuery = query.Encode()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, errors.New(resp.Status)
+	}
+
+	var details SandboxDetails
+	if err := json.NewDecoder(resp.Body).Decode(&details); err != nil {
+		return nil, err
+	}
+	return &details, nil
 }
 
 func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {

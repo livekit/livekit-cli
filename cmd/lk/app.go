@@ -16,10 +16,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -31,12 +29,6 @@ import (
 	"github.com/livekit/livekit-cli/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/pkg/config"
 	"github.com/urfave/cli/v3"
-)
-
-const (
-	templateBaseURL         = "https://github.com/livekit-examples"
-	sandboxDashboardURL     = "https://cloud.livekit.io/projects/p_/v2/sandbox"
-	sandboxTemplateEndpoint = "/api/sandbox/template"
 )
 
 var (
@@ -62,7 +54,7 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:        "template",
-							Usage:       "`TEMPLATE` to instantiate, see " + templateBaseURL,
+							Usage:       "`TEMPLATE` to instantiate, see " + bootstrap.TemplateBaseURL,
 							Destination: &templateName,
 						},
 						&cli.StringFlag{
@@ -266,40 +258,24 @@ func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", serverURL+sandboxTemplateEndpoint, nil)
-	req.Header = newHeaderWithToken(token)
-	query := req.URL.Query()
-	query.Add("id", sandboxID)
-	req.URL.RawQuery = query.Encode()
+	details, err := bootstrap.FetchSandboxDetails(ctx, sandboxID, token, serverURL)
 	if err != nil {
 		return err
 	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != 200 {
-		return errors.New("access denied")
-	}
-
-	var template bootstrap.Template
-	if err := json.NewDecoder(resp.Body).Decode(&template); err != nil {
-		return err
-	}
+	template = &details.Template
 
 	fmt.Println("Cloning template...")
-	if err := cloneTemplate(ctx, cmd, template.URL, template.Name); err != nil {
+	if err := cloneTemplate(ctx, cmd, template.URL, details.Name); err != nil {
 		return err
 	}
 
 	fmt.Println("Instantiating environment...")
-	if err := instantiateEnv(ctx, cmd, template.Name); err != nil {
+	if err := instantiateEnv(ctx, cmd, details.Name); err != nil {
 		return err
 	}
 
 	fmt.Println("Installing template...")
-	if err := doInstall(ctx, bootstrap.TaskInstallSandbox, template.Name, cmd.Bool("verbose")); err != nil {
+	if err := doInstall(ctx, bootstrap.TaskInstallSandbox, details.Name, cmd.Bool("verbose")); err != nil {
 		return err
 	}
 

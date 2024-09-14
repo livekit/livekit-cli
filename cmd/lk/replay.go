@@ -8,6 +8,7 @@ import (
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
+	authutil "github.com/livekit/livekit-cli/pkg/auth"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/replay"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -208,11 +209,5 @@ func (c *replayServiceClient) withAuth(ctx context.Context) (context.Context, er
 		return nil, err
 	}
 
-	return twirp.WithHTTPRequestHeaders(ctx, newHeaderWithToken(token))
-}
-
-func newHeaderWithToken(token string) http.Header {
-	header := make(http.Header)
-	header.Set("Authorization", "Bearer "+token)
-	return header
+	return twirp.WithHTTPRequestHeaders(ctx, authutil.NewHeaderWithToken(token))
 }
