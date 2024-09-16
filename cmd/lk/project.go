@@ -242,7 +242,7 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	baseStyle := theme.Form.Foreground(normalFg).Padding(0, 1)
+	baseStyle := theme.Form.Foreground(fg).Padding(0, 1)
 	headerStyle := baseStyle.Bold(true)
 	selectedStyle := theme.Focused.Title.Padding(0, 1)
 

@@ -166,8 +166,7 @@ func PrintJSON(obj any) {
 }
 
 func CreateTable() *table.Table {
-	re := lipgloss.NewRenderer(os.Stdout)
-	baseStyle := re.NewStyle().Padding(0, 1)
+	baseStyle := theme.Form.Foreground(fg).Padding(0, 1)
 	headerStyle := baseStyle.Bold(true)
 
 	styleFunc := func(row, col int) lipgloss.Style {
@@ -179,7 +178,7 @@ func CreateTable() *table.Table {
 
 	t := table.New().
 		Border(lipgloss.NormalBorder()).
-		BorderStyle(re.NewStyle().Foreground(normalFg)).
+		BorderStyle(theme.Form.Foreground(fg)).
 		StyleFunc(styleFunc)
 
 	return t
