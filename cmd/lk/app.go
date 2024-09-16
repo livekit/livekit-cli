@@ -253,7 +253,7 @@ func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("sandbox ID is required")
 	}
 
-	_, token, err := requireToken(ctx, cmd)
+	token, err := requireToken(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -364,7 +364,10 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 
 	fullPath, err := filepath.Abs(rootPath)
 	if fullPath != "" {
-		fmt.Println("Installed template to " + fullPath)
+		fmt.Println("Installed template to " + fullPath + ". To start your sandbox:\n")
+		fmt.Println("   cd " + fullPath)
+		fmt.Println("   lk app run dev_sandbox")
+		fmt.Println("")
 	}
 
 	return err
