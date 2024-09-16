@@ -91,7 +91,6 @@ func main() {
 	go func() {
 		<-ctx.Done()
 		stop()
-		fmt.Println()
 	}()
 
 	checkForLegacyName()

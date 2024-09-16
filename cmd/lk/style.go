@@ -30,6 +30,10 @@ var (
 	green         = lipgloss.AdaptiveColor{Light: "#036D26", Dark: "#06DB4D"}
 
 	theme = func() *huh.Theme {
+		t := huh.ThemeBase16()
+		return t
+	}()
+	themeBranded = func() *huh.Theme {
 		t := huh.ThemeBase()
 
 		t.Focused.Base = t.Focused.Base.BorderForeground(lipgloss.Color("238"))
@@ -52,7 +56,6 @@ var (
 		t.Focused.Next = t.Focused.FocusedButton
 		t.Focused.BlurredButton = t.Focused.BlurredButton.Foreground(normalFg).Background(lipgloss.AdaptiveColor{Light: "252", Dark: "237"})
 
-		// t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(yellow)
 		t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(placeholderFg)
 		t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(yellow)
 
