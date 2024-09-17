@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"regexp"
 
 	"github.com/charmbracelet/huh"
@@ -62,6 +61,11 @@ var (
 							Usage:       "`URL` to instantiate, must contain a taskfile.yaml",
 							Destination: &templateURL,
 						},
+						&cli.BoolFlag{
+							Name:   "install",
+							Usage:  "Run installation tasks after creating the app",
+							Hidden: true,
+						},
 					},
 				},
 				{
@@ -82,6 +86,11 @@ var (
 							Value:       cloudAPIServerURL,
 							Destination: &serverURL,
 							Hidden:      true,
+						},
+						&cli.BoolFlag{
+							Name:   "install",
+							Usage:  "Run installation tasks after creating the app",
+							Hidden: true,
 						},
 					},
 				},
@@ -161,6 +170,9 @@ func requireProject(ctx context.Context, cmd *cli.Command) error {
 }
 
 func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
+	verbose := cmd.Bool("verbose")
+	install := cmd.Bool("install")
+
 	var preinstallPrompts []huh.Field
 
 	appName = cmd.Args().First()
@@ -200,7 +212,9 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 			WithTheme(theme)
 		var options []huh.Option[string]
 		for _, t := range templates {
-			options = append(options, huh.NewOption(t.Name, t.URL))
+			if t.IsSandbox {
+				options = append(options, huh.NewOption(t.Name, t.URL))
+			}
 		}
 		templateSelect.(*huh.Select[string]).Options(options...)
 		preinstallPrompts = append(preinstallPrompts, templateSelect)
@@ -241,15 +255,18 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("Installing template...")
-	if err := doInstall(ctx, bootstrap.TaskInstall, appName, cmd.Bool("verbose")); err != nil {
-		return err
+	if install {
+		fmt.Println("Installing template...")
+		return doInstall(ctx, bootstrap.TaskInstall, appName, verbose)
+	} else {
+		return doPostCreate(ctx, cmd, appName, false)
 	}
-
-	return nil
 }
 
 func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
+	verbose := cmd.Bool("verbose")
+	install := cmd.Bool("install")
+
 	if sandboxID == "" {
 		return errors.New("sandbox ID is required")
 	}
@@ -275,12 +292,12 @@ func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("Installing template...")
-	if err := doInstall(ctx, bootstrap.TaskInstallSandbox, details.Name, cmd.Bool("verbose")); err != nil {
-		return err
+	if install {
+		fmt.Println("Installing template...")
+		return doInstall(ctx, bootstrap.TaskInstallSandbox, details.Name, verbose)
+	} else {
+		return doPostCreate(ctx, cmd, details.Name, false)
 	}
-
-	return nil
 }
 
 func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
@@ -334,6 +351,33 @@ func installTemplate(ctx context.Context, cmd *cli.Command) error {
 	return doInstall(ctx, bootstrap.TaskInstall, rootPath, verbose)
 }
 
+func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, isBootstrap bool) error {
+	tf, err := bootstrap.ParseTaskfile(rootPath)
+	if err != nil {
+		return err
+	}
+
+	taskName := string(bootstrap.TaskPostCreateSandbox)
+	if isBootstrap {
+		taskName = string(bootstrap.TaskPostCreate)
+	}
+
+	task, err := bootstrap.NewTask(ctx, tf, rootPath, taskName, true)
+	if err != nil {
+		return err
+	}
+	var cmdErr error
+	if err := spinner.New().
+		Title("Running task " + taskName + "...").
+		Action(func() { cmdErr = task() }).
+		Style(theme.Focused.Title).
+		Accessible(true).
+		Run(); err != nil {
+		return err
+	}
+	return cmdErr
+}
+
 func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, verbose bool) error {
 	tf, err := bootstrap.ParseTaskfile(rootPath)
 	if err != nil {
@@ -345,33 +389,16 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 		return err
 	}
 
-	if verbose {
-		if err := install(); err != nil {
-			return err
-		}
-	} else {
-		var cmdErr error
-		if err := spinner.New().
-			Title("Installing...").
-			Action(func() { cmdErr = install() }).
-			Style(theme.Focused.Title).
-			Run(); err != nil {
-			return err
-		}
-		if cmdErr != nil {
-			return cmdErr
-		}
+	var cmdErr error
+	if err := spinner.New().
+		Title("Installing...").
+		Action(func() { cmdErr = install() }).
+		Style(theme.Focused.Title).
+		Accessible(verbose).
+		Run(); err != nil {
+		return err
 	}
-
-	fullPath, err := filepath.Abs(rootPath)
-	if fullPath != "" {
-		fmt.Println("Installed template to " + fullPath + ". To start your sandbox:\n")
-		fmt.Println("   cd " + fullPath)
-		fmt.Println("   lk app run dev_sandbox")
-		fmt.Println("")
-	}
-
-	return err
+	return cmdErr
 }
 
 func runTask(ctx context.Context, cmd *cli.Command) error {
@@ -399,21 +426,18 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	task, err := bootstrap.NewTask(ctx, tf, rootDir, taskName, cmd.Bool("verbose"))
+	task, err := bootstrap.NewTask(ctx, tf, rootDir, taskName, verbose)
 	if err != nil {
 		return err
 	}
-	if verbose {
-		return task()
-	} else {
-		var cmdErr error
-		if err := spinner.New().
-			Title("Running task " + taskName + "...").
-			Action(func() { cmdErr = task() }).
-			Style(theme.Focused.Title).
-			Run(); err != nil {
-			return err
-		}
-		return cmdErr
+	var cmdErr error
+	if err := spinner.New().
+		Title("Running task " + taskName + "...").
+		Action(func() { cmdErr = task() }).
+		Style(theme.Focused.Title).
+		Accessible(verbose).
+		Run(); err != nil {
+		return err
 	}
+	return cmdErr
 }

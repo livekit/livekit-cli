@@ -53,10 +53,12 @@ const (
 type KnownTask string
 
 const (
-	TaskInstall        KnownTask = "install"
-	TaskInstallSandbox KnownTask = "install_sandbox"
-	TaskDev            KnownTask = "dev"
-	TaskDevSandbox     KnownTask = "dev_sandbox"
+	TaskPostCreate        KnownTask = "post_create"
+	TaskPostCreateSandbox KnownTask = "post_create_sandbox"
+	TaskInstall           KnownTask = "install"
+	TaskInstallSandbox    KnownTask = "install_sandbox"
+	TaskDev               KnownTask = "dev"
+	TaskDevSandbox        KnownTask = "dev_sandbox"
 )
 
 type Template struct {
@@ -159,10 +161,15 @@ func NewTask(ctx context.Context, tf *ast.Taskfile, dir, taskName string, verbos
 		return nil, err
 	}
 
+	task := &ast.Call{
+		Task: taskName,
+	}
+	if _, err := exe.GetTask(task); err != nil {
+		return nil, err
+	}
+
 	return func() error {
-		return exe.Run(ctx, &ast.Call{
-			Task: taskName,
-		})
+		return exe.Run(ctx, task)
 	}, nil
 }
 
