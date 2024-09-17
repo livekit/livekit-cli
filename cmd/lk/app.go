@@ -88,9 +88,16 @@ var (
 				{
 					Name:      "install",
 					Usage:     "Execute installation defined in " + bootstrap.TaskFile,
-					ArgsUsage: "`DIR` location or the project directory (default: current directory)",
+					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
 					Before:    requireProject,
 					Action:    installTemplate,
+				},
+				{
+					Hidden:    true,
+					Name:      "run",
+					Usage:     "Execute a task defined in " + bootstrap.TaskFile,
+					ArgsUsage: "[TASK] to run in the project's taskfile.yaml",
+					Action:    runTask,
 				},
 				{
 					Name:   "env",
@@ -99,12 +106,6 @@ var (
 					Action: func(ctx context.Context, cmd *cli.Command) error {
 						return instantiateEnv(ctx, cmd, ".")
 					},
-				},
-				{
-					Name:      "run",
-					Usage:     "Execute a task defined in " + bootstrap.TaskFile,
-					ArgsUsage: "`DIR` location or the project directory (default: current directory)",
-					Action:    runTask,
 				},
 			},
 		},
@@ -253,7 +254,7 @@ func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("sandbox ID is required")
 	}
 
-	_, token, err := requireToken(ctx, cmd)
+	token, err := requireToken(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -364,7 +365,10 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 
 	fullPath, err := filepath.Abs(rootPath)
 	if fullPath != "" {
-		fmt.Println("Installed template to " + fullPath)
+		fmt.Println("Installed template to " + fullPath + ". To start your sandbox:\n")
+		fmt.Println("   cd " + fullPath)
+		fmt.Println("   lk app run dev_sandbox")
+		fmt.Println("")
 	}
 
 	return err
@@ -372,15 +376,27 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 
 func runTask(ctx context.Context, cmd *cli.Command) error {
 	verbose := cmd.Bool("verbose")
-	taskName := cmd.Args().First()
-	if taskName == "" {
-		return errors.New("task name is required")
-	}
-
 	rootDir := "."
 	tf, err := bootstrap.ParseTaskfile(rootDir)
 	if err != nil {
 		return err
+	}
+
+	taskName := cmd.Args().First()
+	if taskName == "" {
+		var options []huh.Option[string]
+		for _, name := range tf.Tasks.Keys() {
+			options = append(options, huh.NewOption(name, name))
+		}
+
+		if err := huh.NewSelect[string]().
+			Title("Select Task").
+			Options(options...).
+			Value(&taskName).
+			WithTheme(theme).
+			Run(); err != nil {
+			return err
+		}
 	}
 
 	task, err := bootstrap.NewTask(ctx, tf, rootDir, taskName, cmd.Bool("verbose"))
