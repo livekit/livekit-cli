@@ -109,11 +109,12 @@ var (
 					Action:    runTask,
 				},
 				{
+					Hidden: true,
 					Name:   "env",
 					Usage:  "Manage environment variables",
 					Before: requireProject,
 					Action: func(ctx context.Context, cmd *cli.Command) error {
-						return instantiateEnv(ctx, cmd, ".")
+						return instantiateEnv(ctx, cmd, ".", nil)
 					},
 				},
 			},
@@ -251,7 +252,7 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Instantiating environment...")
-	if err := instantiateEnv(ctx, cmd, appName); err != nil {
+	if err := instantiateEnv(ctx, cmd, appName, nil); err != nil {
 		return err
 	}
 
@@ -288,7 +289,8 @@ func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Instantiating environment...")
-	if err := instantiateEnv(ctx, cmd, details.Name); err != nil {
+	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": details.Name}
+	if err := instantiateEnv(ctx, cmd, details.Name, addlEnv); err != nil {
 		return err
 	}
 
@@ -319,11 +321,16 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 	return cmdErr
 }
 
-func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string) error {
+func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) error {
 	env := map[string]string{
 		"LIVEKIT_API_KEY":    project.APIKey,
 		"LIVEKIT_API_SECRET": project.APISecret,
 		"LIVEKIT_URL":        project.URL,
+	}
+	if addlEnv != nil {
+		for k, v := range *addlEnv {
+			env[k] = v
+		}
 	}
 
 	prompt := func(key, oldValue string) (string, error) {
