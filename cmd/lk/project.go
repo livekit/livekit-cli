@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"regexp"
 
 	"github.com/charmbracelet/huh"
@@ -243,10 +242,9 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	re := lipgloss.NewRenderer(os.Stdout)
-	baseStyle := re.NewStyle().Padding(0, 1)
+	baseStyle := theme.Form.Foreground(fg).Padding(0, 1)
 	headerStyle := baseStyle.Bold(true)
-	selectedStyle := baseStyle.Foreground(cyan)
+	selectedStyle := theme.Focused.Title.Padding(0, 1)
 
 	table := CreateTable().
 		StyleFunc(func(row, col int) lipgloss.Style {

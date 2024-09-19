@@ -16,14 +16,11 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"regexp"
 
 	"github.com/charmbracelet/huh"
@@ -31,12 +28,6 @@ import (
 	"github.com/livekit/livekit-cli/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/pkg/config"
 	"github.com/urfave/cli/v3"
-)
-
-const (
-	templateBaseURL         = "https://github.com/livekit-examples"
-	sandboxDashboardURL     = "https://cloud.livekit.io/projects/p_/v2/sandbox"
-	sandboxTemplateEndpoint = "/api/sandbox/template"
 )
 
 var (
@@ -62,13 +53,18 @@ var (
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:        "template",
-							Usage:       "`TEMPLATE` to instantiate, see " + templateBaseURL,
+							Usage:       "`TEMPLATE` to instantiate, see " + bootstrap.TemplateBaseURL,
 							Destination: &templateName,
 						},
 						&cli.StringFlag{
 							Name:        "template-url",
 							Usage:       "`URL` to instantiate, must contain a taskfile.yaml",
 							Destination: &templateURL,
+						},
+						&cli.BoolFlag{
+							Name:   "install",
+							Usage:  "Run installation tasks after creating the app",
+							Hidden: true,
 						},
 					},
 				},
@@ -91,28 +87,35 @@ var (
 							Destination: &serverURL,
 							Hidden:      true,
 						},
+						&cli.BoolFlag{
+							Name:   "install",
+							Usage:  "Run installation tasks after creating the app",
+							Hidden: true,
+						},
 					},
 				},
 				{
 					Name:      "install",
 					Usage:     "Execute installation defined in " + bootstrap.TaskFile,
-					ArgsUsage: "`DIR` location or the project directory (default: current directory)",
+					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
 					Before:    requireProject,
 					Action:    installTemplate,
 				},
 				{
+					Hidden:    true,
+					Name:      "run",
+					Usage:     "Execute a task defined in " + bootstrap.TaskFile,
+					ArgsUsage: "[TASK] to run in the project's taskfile.yaml",
+					Action:    runTask,
+				},
+				{
+					Hidden: true,
 					Name:   "env",
 					Usage:  "Manage environment variables",
 					Before: requireProject,
 					Action: func(ctx context.Context, cmd *cli.Command) error {
-						return instantiateEnv(ctx, cmd, ".")
+						return instantiateEnv(ctx, cmd, ".", nil)
 					},
-				},
-				{
-					Name:      "run",
-					Usage:     "Execute a task defined in " + bootstrap.TaskFile,
-					ArgsUsage: "`DIR` location or the project directory (default: current directory)",
-					Action:    runTask,
 				},
 			},
 		},
@@ -168,6 +171,9 @@ func requireProject(ctx context.Context, cmd *cli.Command) error {
 }
 
 func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
+	verbose := cmd.Bool("verbose")
+	install := cmd.Bool("install")
+
 	var preinstallPrompts []huh.Field
 
 	appName = cmd.Args().First()
@@ -207,7 +213,9 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 			WithTheme(theme)
 		var options []huh.Option[string]
 		for _, t := range templates {
-			options = append(options, huh.NewOption(t.Name, t.URL))
+			if t.IsSandbox {
+				options = append(options, huh.NewOption(t.Name, t.URL))
+			}
 		}
 		templateSelect.(*huh.Select[string]).Options(options...)
 		preinstallPrompts = append(preinstallPrompts, templateSelect)
@@ -244,66 +252,54 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Instantiating environment...")
-	if err := instantiateEnv(ctx, cmd, appName); err != nil {
+	if err := instantiateEnv(ctx, cmd, appName, nil); err != nil {
 		return err
 	}
 
-	fmt.Println("Installing template...")
-	if err := doInstall(ctx, bootstrap.TaskInstall, appName, cmd.Bool("verbose")); err != nil {
-		return err
+	if install {
+		fmt.Println("Installing template...")
+		return doInstall(ctx, bootstrap.TaskInstall, appName, verbose)
+	} else {
+		return doPostCreate(ctx, cmd, appName, false)
 	}
-
-	return nil
 }
 
 func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
+	verbose := cmd.Bool("verbose")
+	install := cmd.Bool("install")
+
 	if sandboxID == "" {
 		return errors.New("sandbox ID is required")
 	}
 
-	_, token, err := requireToken(ctx, cmd)
+	token, err := requireToken(ctx, cmd)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", serverURL+sandboxTemplateEndpoint, nil)
-	req.Header = newHeaderWithToken(token)
-	query := req.URL.Query()
-	query.Add("id", sandboxID)
-	req.URL.RawQuery = query.Encode()
+	details, err := bootstrap.FetchSandboxDetails(ctx, sandboxID, token, serverURL)
 	if err != nil {
 		return err
 	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != 200 {
-		return errors.New("access denied")
-	}
-
-	var template bootstrap.Template
-	if err := json.NewDecoder(resp.Body).Decode(&template); err != nil {
-		return err
-	}
+	template = &details.Template
 
 	fmt.Println("Cloning template...")
-	if err := cloneTemplate(ctx, cmd, template.URL, template.Name); err != nil {
+	if err := cloneTemplate(ctx, cmd, template.URL, details.Name); err != nil {
 		return err
 	}
 
 	fmt.Println("Instantiating environment...")
-	if err := instantiateEnv(ctx, cmd, template.Name); err != nil {
+	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": details.Name}
+	if err := instantiateEnv(ctx, cmd, details.Name, addlEnv); err != nil {
 		return err
 	}
 
-	fmt.Println("Installing template...")
-	if err := doInstall(ctx, bootstrap.TaskInstallSandbox, template.Name, cmd.Bool("verbose")); err != nil {
-		return err
+	if install {
+		fmt.Println("Installing template...")
+		return doInstall(ctx, bootstrap.TaskInstallSandbox, details.Name, verbose)
+	} else {
+		return doPostCreate(ctx, cmd, details.Name, false)
 	}
-
-	return nil
 }
 
 func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
@@ -325,11 +321,16 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 	return cmdErr
 }
 
-func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string) error {
+func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) error {
 	env := map[string]string{
 		"LIVEKIT_API_KEY":    project.APIKey,
 		"LIVEKIT_API_SECRET": project.APISecret,
 		"LIVEKIT_URL":        project.URL,
+	}
+	if addlEnv != nil {
+		for k, v := range *addlEnv {
+			env[k] = v
+		}
 	}
 
 	prompt := func(key, oldValue string) (string, error) {
@@ -357,6 +358,33 @@ func installTemplate(ctx context.Context, cmd *cli.Command) error {
 	return doInstall(ctx, bootstrap.TaskInstall, rootPath, verbose)
 }
 
+func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, isBootstrap bool) error {
+	tf, err := bootstrap.ParseTaskfile(rootPath)
+	if err != nil {
+		return err
+	}
+
+	taskName := string(bootstrap.TaskPostCreateSandbox)
+	if isBootstrap {
+		taskName = string(bootstrap.TaskPostCreate)
+	}
+
+	task, err := bootstrap.NewTask(ctx, tf, rootPath, taskName, true)
+	if err != nil {
+		return err
+	}
+	var cmdErr error
+	if err := spinner.New().
+		Title("Running task " + taskName + "...").
+		Action(func() { cmdErr = task() }).
+		Style(theme.Focused.Title).
+		Accessible(true).
+		Run(); err != nil {
+		return err
+	}
+	return cmdErr
+}
+
 func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, verbose bool) error {
 	tf, err := bootstrap.ParseTaskfile(rootPath)
 	if err != nil {
@@ -368,60 +396,55 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 		return err
 	}
 
-	if verbose {
-		if err := install(); err != nil {
-			return err
-		}
-	} else {
-		var cmdErr error
-		if err := spinner.New().
-			Title("Installing...").
-			Action(func() { cmdErr = install() }).
-			Style(theme.Focused.Title).
-			Run(); err != nil {
-			return err
-		}
-		if cmdErr != nil {
-			return cmdErr
-		}
+	var cmdErr error
+	if err := spinner.New().
+		Title("Installing...").
+		Action(func() { cmdErr = install() }).
+		Style(theme.Focused.Title).
+		Accessible(verbose).
+		Run(); err != nil {
+		return err
 	}
-
-	fullPath, err := filepath.Abs(rootPath)
-	if fullPath != "" {
-		fmt.Println("Installed template to " + fullPath)
-	}
-
-	return err
+	return cmdErr
 }
 
 func runTask(ctx context.Context, cmd *cli.Command) error {
 	verbose := cmd.Bool("verbose")
-	taskName := cmd.Args().First()
-	if taskName == "" {
-		return errors.New("task name is required")
-	}
-
 	rootDir := "."
 	tf, err := bootstrap.ParseTaskfile(rootDir)
 	if err != nil {
 		return err
 	}
 
-	task, err := bootstrap.NewTask(ctx, tf, rootDir, taskName, cmd.Bool("verbose"))
-	if err != nil {
-		return err
-	}
-	if verbose {
-		return task()
-	} else {
-		var cmdErr error
-		if err := spinner.New().
-			Title("Running task " + taskName + "...").
-			Action(func() { cmdErr = task() }).
-			Style(theme.Focused.Title).
+	taskName := cmd.Args().First()
+	if taskName == "" {
+		var options []huh.Option[string]
+		for _, name := range tf.Tasks.Keys() {
+			options = append(options, huh.NewOption(name, name))
+		}
+
+		if err := huh.NewSelect[string]().
+			Title("Select Task").
+			Options(options...).
+			Value(&taskName).
+			WithTheme(theme).
 			Run(); err != nil {
 			return err
 		}
-		return cmdErr
 	}
+
+	task, err := bootstrap.NewTask(ctx, tf, rootDir, taskName, verbose)
+	if err != nil {
+		return err
+	}
+	var cmdErr error
+	if err := spinner.New().
+		Title("Running task " + taskName + "...").
+		Action(func() { cmdErr = task() }).
+		Style(theme.Focused.Title).
+		Accessible(verbose).
+		Run(); err != nil {
+		return err
+	}
+	return cmdErr
 }

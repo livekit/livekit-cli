@@ -25,11 +25,12 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
+	"github.com/pkg/browser"
 	"github.com/urfave/cli/v3"
 
+	authutil "github.com/livekit/livekit-cli/pkg/auth"
 	"github.com/livekit/livekit-cli/pkg/config"
 	"github.com/livekit/protocol/auth"
-	"github.com/pkg/browser"
 )
 
 type ClaimAccessKeyResponse struct {
@@ -196,7 +197,7 @@ func (a *AuthClient) Deauthenticate(ctx context.Context, projectName, token stri
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "DELETE", reqURL.String(), nil)
-	req.Header = newHeaderWithToken(token)
+	req.Header = authutil.NewHeaderWithToken(token)
 	if err != nil {
 		return err
 	}
@@ -229,35 +230,38 @@ func handleAuth(ctx context.Context, cmd *cli.Command) error {
 		if err := loadProjectConfig(ctx, cmd); err != nil {
 			return err
 		}
-		cfg, token, err := requireToken(ctx, cmd)
+		token, err := requireToken(ctx, cmd)
 		if err != nil {
 			return err
 		}
-		return authClient.Deauthenticate(ctx, cfg.Name, token)
+		return authClient.Deauthenticate(ctx, project.Name, token)
 	}
 	return tryAuthIfNeeded(ctx, cmd)
 }
 
-func requireToken(_ context.Context, cmd *cli.Command) (*config.ProjectConfig, string, error) {
-	cfg, err := loadProjectDetails(cmd)
-	if err != nil {
-		return nil, "", err
+func requireToken(_ context.Context, cmd *cli.Command) (string, error) {
+	if project == nil {
+		var err error
+		project, err = loadProjectDetails(cmd)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// construct a token from the chosen project, using the hashed secret as the identity
 	// as a means of preventing any old token generated with this key/secret pair from
 	// deleting it
-	hash, err := hashString(cfg.APISecret)
+	hash, err := hashString(project.APISecret)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
-	at := auth.NewAccessToken(cfg.APIKey, cfg.APISecret).SetIdentity(hash)
+	at := auth.NewAccessToken(project.APIKey, project.APISecret).SetIdentity(hash)
 	token, err := at.ToJWT()
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
-	return cfg, token, nil
+	return token, nil
 }
 
 func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {

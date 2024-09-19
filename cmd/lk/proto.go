@@ -37,6 +37,11 @@ type protoType[T any] interface {
 	proto.Message
 }
 
+type protoTypeValidator[T any] interface {
+	protoType[T]
+	Validate() error
+}
+
 func ReadRequest[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
 	return ReadRequestFileOrLiteral[T, P](cmd.String(flagRequest))
 }
@@ -57,7 +62,7 @@ func ReadRequestArgOrFlag[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
 	return ReadRequestFileOrLiteral[T, P](reqFile)
 }
 
-func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (*T, error) {
+func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (P, error) {
 	var reqBytes []byte
 	var err error
 
@@ -92,7 +97,7 @@ func RequestDesc[T any, _ protoType[T]]() string {
 	return typ + " as JSON file"
 }
 
-func createAndPrint[T any, P protoType[T], R any](
+func createAndPrint[T any, P protoTypeValidator[T], R any](
 	ctx context.Context,
 	cmd *cli.Command, file string,
 	create func(ctx context.Context, p P) (R, error),
@@ -100,10 +105,13 @@ func createAndPrint[T any, P protoType[T], R any](
 ) error {
 	req, err := ReadRequestFileOrLiteral[T, P](file)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not read request: %w", err)
 	}
 	if cmd.Bool("verbose") {
 		PrintJSON(req)
+	}
+	if err = req.Validate(); err != nil {
+		return err
 	}
 	info, err := create(ctx, req)
 	if err != nil {
@@ -134,7 +142,7 @@ func createAndPrintLegacy[T any, P protoType[T], R any](
 	return nil
 }
 
-func createAndPrintReqs[T any, P protoType[T], R any](
+func createAndPrintReqs[T any, P protoTypeValidator[T], R any](
 	ctx context.Context,
 	cmd *cli.Command,
 	create func(ctx context.Context, p P) (R, error),
