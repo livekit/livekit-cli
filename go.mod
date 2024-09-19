@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/frostbyte73/core v0.0.13
 	github.com/go-logr/logr v1.4.2
-	github.com/go-task/task/v3 v3.39.0
+	github.com/go-task/task/v3 v3.39.1
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.21.1-0.20240914183102-9675e0cf335b
 	github.com/livekit/server-sdk-go/v2 v2.2.1
