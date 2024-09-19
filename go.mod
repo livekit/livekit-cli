@@ -4,6 +4,10 @@ go 1.22
 
 toolchain go1.22.2
 
+replace github.com/livekit/protocol => ../protocol
+
+replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
+
 require (
 	github.com/charmbracelet/huh v0.6.0
 	github.com/charmbracelet/huh/spinner v0.0.0-20240912161303-b56e9290a68e
@@ -121,7 +125,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.uber.org/zap/exp v0.2.0 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
-	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
+	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/term v0.23.0 // indirect
