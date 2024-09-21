@@ -53,12 +53,9 @@ const (
 type KnownTask string
 
 const (
-	TaskPostCreate        KnownTask = "post_create"
-	TaskPostCreateSandbox KnownTask = "post_create_sandbox"
-	TaskInstall           KnownTask = "install"
-	TaskInstallSandbox    KnownTask = "install_sandbox"
-	TaskDev               KnownTask = "dev"
-	TaskDevSandbox        KnownTask = "dev_sandbox"
+	TaskPostCreate KnownTask = "post_create"
+	TaskInstall    KnownTask = "install"
+	TaskDev        KnownTask = "dev"
 )
 
 type Template struct {
@@ -129,11 +126,8 @@ func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
 }
 
 func NewTaskExecutor(dir string, verbose bool) *task.Executor {
-	var o io.Writer = io.Discard
+	var o io.Writer = os.Stdout
 	var e io.Writer = os.Stderr
-	if verbose {
-		o = os.Stdout
-	}
 	return &task.Executor{
 		Dir:       dir,
 		Force:     false,
@@ -164,7 +158,8 @@ func NewTask(ctx context.Context, tf *ast.Taskfile, dir, taskName string, verbos
 	}
 
 	task := &ast.Call{
-		Task: taskName,
+		Task:   taskName,
+		Silent: !verbose,
 	}
 	if _, err := exe.GetTask(task); err != nil {
 		return nil, err

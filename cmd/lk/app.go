@@ -261,45 +261,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		fmt.Println("Installing template...")
 		return doInstall(ctx, bootstrap.TaskInstall, appName, verbose)
 	} else {
-		return doPostCreate(ctx, cmd, appName, false)
-	}
-}
-
-func setupSandboxTemplate(ctx context.Context, cmd *cli.Command) error {
-	verbose := cmd.Bool("verbose")
-	install := cmd.Bool("install")
-
-	if sandboxID == "" {
-		return errors.New("sandbox ID is required")
-	}
-
-	token, err := requireToken(ctx, cmd)
-	if err != nil {
-		return err
-	}
-
-	details, err := bootstrap.FetchSandboxDetails(ctx, sandboxID, token, serverURL)
-	if err != nil {
-		return err
-	}
-	template = &details.Template
-
-	fmt.Println("Cloning template...")
-	if err := cloneTemplate(ctx, cmd, template.URL, details.Name); err != nil {
-		return err
-	}
-
-	fmt.Println("Instantiating environment...")
-	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": details.Name}
-	if err := instantiateEnv(ctx, cmd, details.Name, addlEnv); err != nil {
-		return err
-	}
-
-	if install {
-		fmt.Println("Installing template...")
-		return doInstall(ctx, bootstrap.TaskInstallSandbox, details.Name, verbose)
-	} else {
-		return doPostCreate(ctx, cmd, details.Name, false)
+		return doPostCreate(ctx, cmd, appName, verbose)
 	}
 }
 
@@ -359,13 +321,13 @@ func installTemplate(ctx context.Context, cmd *cli.Command) error {
 	return doInstall(ctx, bootstrap.TaskInstall, rootPath, verbose)
 }
 
-func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, _ bool) error {
+func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose bool) error {
 	tf, err := bootstrap.ParseTaskfile(rootPath)
 	if err != nil {
 		return err
 	}
 
-	task, err := bootstrap.NewTask(ctx, tf, rootPath, string(bootstrap.TaskPostCreate), true)
+	task, err := bootstrap.NewTask(ctx, tf, rootPath, string(bootstrap.TaskPostCreate), verbose)
 	if task == nil || err != nil {
 		return nil
 	}
@@ -398,7 +360,7 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 		Title("Installing...").
 		Action(func() { cmdErr = install() }).
 		Style(theme.Focused.Title).
-		Accessible(verbose).
+		Accessible(true).
 		Run(); err != nil {
 		return err
 	}
