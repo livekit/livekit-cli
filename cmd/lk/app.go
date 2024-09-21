@@ -48,7 +48,7 @@ var (
 					Name:      "create",
 					Usage:     "Bootstrap a new application from a template or through guided creation",
 					Before:    requireProject,
-					Action:    setupBootstrapTemplate,
+					Action:    setupTemplate,
 					ArgsUsage: "`APP_NAME`",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
@@ -61,25 +61,10 @@ var (
 							Usage:       "`URL` to instantiate, must contain a taskfile.yaml",
 							Destination: &templateURL,
 						},
-						&cli.BoolFlag{
-							Name:   "install",
-							Usage:  "Run installation tasks after creating the app",
-							Hidden: true,
-						},
-					},
-				},
-				{
-					Name:      "sandbox",
-					Usage:     "Bootstrap a sandbox application created on your cloud dashboard",
-					Before:    requireProject,
-					Action:    setupSandboxTemplate,
-					ArgsUsage: "`APP_NAME`",
-					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:        "id",
-							Usage:       "`ID` of the sandbox, see your cloud dashboard",
+							Name:        "sandbox",
+							Usage:       "`NAME` of the sandbox, see your cloud dashboard",
 							Destination: &sandboxID,
-							Required:    true,
 						},
 						&cli.StringFlag{
 							Name:        "server-url",
@@ -95,6 +80,7 @@ var (
 					},
 				},
 				{
+					Hidden:    true,
 					Name:      "install",
 					Usage:     "Execute installation defined in " + bootstrap.TaskFile,
 					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
@@ -170,14 +156,42 @@ func requireProject(ctx context.Context, cmd *cli.Command) error {
 	return err
 }
 
-func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
+func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	verbose := cmd.Bool("verbose")
 	install := cmd.Bool("install")
+	isSandbox := sandboxID != ""
 
 	var preinstallPrompts []huh.Field
+	var templateOptions []bootstrap.Template
+
+	if templateName != "" && templateURL != "" {
+		return errors.New("only one of template or template-url can be specified")
+	}
+
+	if isSandbox {
+		token, err := requireToken(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		details, err := bootstrap.FetchSandboxDetails(ctx, sandboxID, token, serverURL)
+		if err != nil {
+			return err
+		}
+		if len(details.ChildTemplates) == 0 {
+			return errors.New("no child templates found for sandbox")
+		}
+		templateOptions = details.ChildTemplates
+	} else {
+		var err error
+		templateOptions, err = bootstrap.FetchTemplates(ctx)
+		if err != nil {
+			return err
+		}
+	}
 
 	appName = cmd.Args().First()
 	if appName == "" {
+		appName = sandboxID
 		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
 			Title("Application Name").
 			Placeholder("my-app").
@@ -197,35 +211,21 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 			WithTheme(theme))
 	}
 
-	if templateName != "" && templateURL != "" {
-		return errors.New("only one of template or template-url can be specified")
-	}
-
-	// if no template name or URL is specified, fetch template index and prompt user
+	// if no template name or URL is specified, prompt user to choose from available templates
 	if templateName == "" && templateURL == "" {
-		templates, err := bootstrap.FetchTemplates(ctx)
-		if err != nil {
-			return err
-		}
 		templateSelect := huh.NewSelect[string]().
 			Title("Select Template").
 			Value(&templateURL).
 			WithTheme(theme)
 		var options []huh.Option[string]
-		for _, t := range templates {
-			if t.IsSandbox {
-				options = append(options, huh.NewOption(t.Name, t.URL))
-			}
+		for _, t := range templateOptions {
+			options = append(options, huh.NewOption(t.Name, t.URL))
 		}
 		templateSelect.(*huh.Select[string]).Options(options...)
 		preinstallPrompts = append(preinstallPrompts, templateSelect)
-		// if templateName is specified, fetch template index and find it
+		// if templateName is specified, locate it in the list of templates
 	} else if templateName != "" {
-		templates, err := bootstrap.FetchTemplates(ctx)
-		if err != nil {
-			return err
-		}
-		for _, t := range templates {
+		for _, t := range templateOptions {
 			if t.Name == templateName {
 				template = &t
 				templateURL = t.URL
@@ -252,7 +252,8 @@ func setupBootstrapTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Instantiating environment...")
-	if err := instantiateEnv(ctx, cmd, appName, nil); err != nil {
+	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": sandboxID}
+	if err := instantiateEnv(ctx, cmd, appName, addlEnv); err != nil {
 		return err
 	}
 
@@ -358,24 +359,20 @@ func installTemplate(ctx context.Context, cmd *cli.Command) error {
 	return doInstall(ctx, bootstrap.TaskInstall, rootPath, verbose)
 }
 
-func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, isBootstrap bool) error {
+func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, _ bool) error {
 	tf, err := bootstrap.ParseTaskfile(rootPath)
 	if err != nil {
 		return err
 	}
 
-	taskName := string(bootstrap.TaskPostCreateSandbox)
-	if isBootstrap {
-		taskName = string(bootstrap.TaskPostCreate)
+	task, err := bootstrap.NewTask(ctx, tf, rootPath, string(bootstrap.TaskPostCreate), true)
+	if task == nil || err != nil {
+		return nil
 	}
 
-	task, err := bootstrap.NewTask(ctx, tf, rootPath, taskName, true)
-	if err != nil {
-		return err
-	}
 	var cmdErr error
 	if err := spinner.New().
-		Title("Running task " + taskName + "...").
+		Title("Cleaning up...").
 		Action(func() { cmdErr = task() }).
 		Style(theme.Focused.Title).
 		Accessible(true).

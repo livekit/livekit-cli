@@ -68,12 +68,14 @@ type Template struct {
 	Docs      string   `yaml:"docs" json:"docs_url,omitempty"`
 	Image     string   `yaml:"image" json:"image_ref,omitempty"`
 	Tags      []string `yaml:"tags" json:"tags,omitempty"`
+	Requires  []string `yaml:"requires" json:"requires,omitempty"`
 	IsSandbox bool     `yaml:"is_sandbox" json:"is_sandbox,omitempty"`
 }
 
 type SandboxDetails struct {
-	Name     string   `json:"name"`
-	Template Template `json:"template"`
+	Name           string     `json:"name"`
+	Template       Template   `json:"template"`
+	ChildTemplates []Template `json:"childTemplates"`
 }
 
 func FetchTemplates(ctx context.Context) ([]Template, error) {
