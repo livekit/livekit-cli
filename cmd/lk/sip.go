@@ -24,7 +24,6 @@ import (
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 //lint:file-ignore SA1019 we still support older APIs for compatibility
@@ -130,10 +129,18 @@ var (
 							ArgsUsage: RequestDesc[livekit.CreateSIPParticipantRequest](),
 						},
 						{
-							Name:      "transfer",
-							Usage:     "Transfer a SIP Participant",
-							Action:    transferSIPParticipant,
-							ArgsUsage: RequestDesc[livekit.TransferSIPParticipantRequest](),
+							Name:   "transfer",
+							Usage:  "Transfer a SIP Participant",
+							Action: transferSIPParticipant,
+							Flags: []cli.Flag{
+								roomFlag,
+								identityFlag,
+								&cli.StringFlag{
+									Name:     "to",
+									Required: true,
+									Usage:    "`SIP URL` to transfer the call to. Use 'tel:<phone number>' to transfer to a phone",
+								},
+							},
 						},
 					},
 				},
@@ -489,18 +496,26 @@ func createSIPParticipantLegacy(ctx context.Context, cmd *cli.Command) error {
 }
 
 func transferSIPParticipant(ctx context.Context, cmd *cli.Command) error {
+	roomName, identity := participantInfoFromArgOrFlags(cmd)
+	to := cmd.String("to")
+
+	req := livekit.TransferSIPParticipantRequest{
+		RoomName:            roomName,
+		ParticipantIdentity: identity,
+		TransferTo:          to,
+	}
+
 	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
-	return createAndPrintReqs(ctx, cmd, func(ctx context.Context, req *livekit.TransferSIPParticipantRequest) (*emptypb.Empty, error) {
-		// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
-		// Default deadline is too short, thus, we must set a higher deadline for it.
-		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-		defer cancel()
 
-		return cli.TransferSIPParticipant(ctx, req)
-	}, func(r *emptypb.Empty) {})
+	_, err = cli.TransferSIPParticipant(ctx, &req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func printSIPParticipantInfo(info *livekit.SIPParticipantInfo) {
