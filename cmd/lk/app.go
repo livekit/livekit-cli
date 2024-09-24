@@ -173,42 +173,22 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		details, err := bootstrap.FetchSandboxDetails(ctx, sandboxID, token, serverURL)
-		if err != nil {
-			return err
+		if templateURL == "" {
+			details, err := bootstrap.FetchSandboxDetails(ctx, sandboxID, token, serverURL)
+			if err != nil {
+				return err
+			}
+			if len(details.ChildTemplates) == 0 {
+				return errors.New("no child templates found for sandbox")
+			}
+			templateOptions = details.ChildTemplates
 		}
-		if len(details.ChildTemplates) == 0 {
-			return errors.New("no child templates found for sandbox")
-		}
-		templateOptions = details.ChildTemplates
 	} else {
 		var err error
 		templateOptions, err = bootstrap.FetchTemplates(ctx)
 		if err != nil {
 			return err
 		}
-	}
-
-	appName = cmd.Args().First()
-	if appName == "" {
-		appName = sandboxID
-		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
-			Title("Application Name").
-			Placeholder("my-app").
-			Value(&appName).
-			Validate(func(s string) error {
-				if len(s) < 3 {
-					return errors.New("name is too short")
-				}
-				if !appNameRegex.MatchString(s) {
-					return errors.New("try a simpler name")
-				}
-				if s, _ := os.Stat(s); s != nil {
-					return errors.New("that name is in use")
-				}
-				return nil
-			}).
-			WithTheme(theme))
 	}
 
 	// if no template name or URL is specified, prompt user to choose from available templates
@@ -235,6 +215,28 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		if template == nil {
 			return errors.New("template not found: " + templateName)
 		}
+	}
+
+	appName = cmd.Args().First()
+	if appName == "" {
+		appName = sandboxID
+		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
+			Title("Application Name").
+			Placeholder("my-app").
+			Value(&appName).
+			Validate(func(s string) error {
+				if len(s) < 3 {
+					return errors.New("name is too short")
+				}
+				if !appNameRegex.MatchString(s) {
+					return errors.New("try a simpler name")
+				}
+				if s, _ := os.Stat(s); s != nil {
+					return errors.New("that name is in use")
+				}
+				return nil
+			}).
+			WithTheme(theme))
 	}
 
 	if len(preinstallPrompts) > 0 {
