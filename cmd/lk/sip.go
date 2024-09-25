@@ -128,6 +128,20 @@ var (
 							Action:    createSIPParticipant,
 							ArgsUsage: RequestDesc[livekit.CreateSIPParticipantRequest](),
 						},
+						{
+							Name:   "transfer",
+							Usage:  "Transfer a SIP Participant",
+							Action: transferSIPParticipant,
+							Flags: []cli.Flag{
+								roomFlag,
+								identityFlag,
+								&cli.StringFlag{
+									Name:     "to",
+									Required: true,
+									Usage:    "`SIP URL` to transfer the call to. Use 'tel:<phone number>' to transfer to a phone",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -479,6 +493,29 @@ func createSIPParticipantLegacy(ctx context.Context, cmd *cli.Command) error {
 
 		return cli.CreateSIPParticipant(ctx, req)
 	}, printSIPParticipantInfo)
+}
+
+func transferSIPParticipant(ctx context.Context, cmd *cli.Command) error {
+	roomName, identity := participantInfoFromArgOrFlags(cmd)
+	to := cmd.String("to")
+
+	req := livekit.TransferSIPParticipantRequest{
+		RoomName:            roomName,
+		ParticipantIdentity: identity,
+		TransferTo:          to,
+	}
+
+	cli, err := createSIPClient(cmd)
+	if err != nil {
+		return err
+	}
+
+	_, err = cli.TransferSIPParticipant(ctx, &req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func printSIPParticipantInfo(info *livekit.SIPParticipantInfo) {

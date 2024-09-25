@@ -12,8 +12,8 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.39.2
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.22.0
-	github.com/livekit/server-sdk-go/v2 v2.2.1
+	github.com/livekit/protocol v1.22.1-0.20240920184753-71b9c184e5c8
+	github.com/livekit/server-sdk-go/v2 v2.2.2-0.20240920185319-a83c50186010
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.9
 	github.com/pion/webrtc/v3 v3.3.3
@@ -121,7 +121,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.uber.org/zap/exp v0.2.0 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
-	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
+	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/term v0.24.0 // indirect
