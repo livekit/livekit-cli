@@ -17,6 +17,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -36,6 +37,19 @@ type ProjectConfig struct {
 	URL       string `yaml:"url"`
 	APIKey    string `yaml:"api_key"`
 	APISecret string `yaml:"api_secret"`
+}
+
+func (p *ProjectConfig) URLSafeName() (string, error) {
+	parsed, err := url.Parse(p.URL)
+	if err != nil {
+		return "", errors.New("invalid URL")
+	}
+	subdomain := strings.Split(parsed.Hostname(), ".")[0]
+	lastHyphen := strings.LastIndex(subdomain, "-")
+	if lastHyphen == -1 {
+		return subdomain, nil
+	}
+	return subdomain[:lastHyphen], nil
 }
 
 func LoadDefaultProject() (*ProjectConfig, error) {
@@ -64,6 +78,9 @@ func LoadProject(name string) (*ProjectConfig, error) {
 
 	for _, p := range conf.Projects {
 		if p.Name == name {
+			return &p, nil
+		}
+		if prefix, _ := p.URLSafeName(); prefix == name {
 			return &p, nil
 		}
 	}

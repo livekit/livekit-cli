@@ -259,7 +259,11 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 		}).
 		Headers("Name", "URL", "API Key", "Default")
 	for _, p := range cliConfig.Projects {
-		table.Row(p.Name, p.URL, p.APIKey, fmt.Sprint(p.Name == cliConfig.DefaultProject))
+		name, err := p.URLSafeName()
+		if err != nil {
+			return err
+		}
+		table.Row(name, p.URL, p.APIKey, fmt.Sprint(p.Name == cliConfig.DefaultProject))
 	}
 	fmt.Println(table)
 
