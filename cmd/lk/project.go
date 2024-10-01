@@ -287,14 +287,19 @@ func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
 	name := cmd.Args().First()
 
 	for _, p := range cliConfig.Projects {
-		if p.Name == name {
-			cliConfig.DefaultProject = name
-			if err := cliConfig.PersistIfNeeded(); err != nil {
-				return err
+		if p.Name != name {
+			slug, err := p.URLSafeName()
+			if err != nil || slug != name {
+				continue
 			}
-			fmt.Println("Default project set to", name)
-			return nil
 		}
+
+		cliConfig.DefaultProject = p.Name
+		if err := cliConfig.PersistIfNeeded(); err != nil {
+			return err
+		}
+		fmt.Println("Default project set to [" + theme.Focused.Title.Render(p.Name) + "]")
+		return nil
 	}
 
 	return errors.New("project not found")
