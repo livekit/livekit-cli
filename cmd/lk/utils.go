@@ -228,7 +228,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project:", c.String("project"))
+		fmt.Println("Using project [" + theme.Focused.Title.Render(c.String("project")) + "]")
 		logDetails(c, pc)
 		return pc, nil
 	}
