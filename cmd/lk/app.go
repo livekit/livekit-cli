@@ -40,7 +40,6 @@ var (
 	project      *config.ProjectConfig
 	AppCommands  = []*cli.Command{
 		{
-			Hidden:   true,
 			Name:     "app",
 			Category: "Core",
 			Commands: []*cli.Command{
