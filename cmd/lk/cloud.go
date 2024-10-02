@@ -294,9 +294,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 
 	// poll for keys
 	fmt.Printf("Please confirm access by visiting:\n\n   %s\n\n", authURL.String())
-	if err := browser.OpenURL(authURL.String()); err != nil {
-		return err
-	}
+	browser.OpenURL(authURL.String()) // discard result; this will fail in headless environments
 
 	var ak *ClaimAccessKeyResponse
 	var pollErr error
