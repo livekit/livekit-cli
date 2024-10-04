@@ -294,7 +294,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 
 	// poll for keys
 	fmt.Printf("Please confirm access by visiting:\n\n   %s\n\n", authURL.String())
-	browser.OpenURL(authURL.String()) // discard result; this will fail in headless environments
+	_ = browser.OpenURL(authURL.String()) // discard result; this will fail in headless environments
 
 	var ak *ClaimAccessKeyResponse
 	var pollErr error
@@ -325,7 +325,10 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// make sure name is unique
-	var name = ak.ProjectName
+	name, err := URLSafeName(ak.URL)
+	if err != nil {
+		return err
+	}
 	if cliConfig.ProjectExists(name) {
 		if err := huh.NewInput().
 			Title("Project name already exists, please choose a different name").
