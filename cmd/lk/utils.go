@@ -20,15 +20,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
-	"github.com/livekit/protocol/utils/interceptors"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
+
+	"github.com/livekit/protocol/utils/interceptors"
 
 	"github.com/livekit/livekit-cli/pkg/config"
 )
@@ -282,4 +284,17 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 
 	// cannot happen
 	return pc, nil
+}
+
+func URLSafeName(projectURL string) (string, error) {
+	parsed, err := url.Parse(projectURL)
+	if err != nil {
+		return "", errors.New("invalid URL")
+	}
+	subdomain := strings.Split(parsed.Hostname(), ".")[0]
+	lastHyphen := strings.LastIndex(subdomain, "-")
+	if lastHyphen == -1 {
+		return subdomain, nil
+	}
+	return subdomain[:lastHyphen], nil
 }
