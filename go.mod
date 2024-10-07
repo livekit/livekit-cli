@@ -16,7 +16,7 @@ require (
 	github.com/livekit/server-sdk-go/v2 v2.2.2-0.20240927014254-c420c0625a7a
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.9
-	github.com/pion/webrtc/v3 v3.3.3
+	github.com/pion/webrtc/v3 v3.3.4
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.9.0
@@ -87,7 +87,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pion/datachannel v1.5.8 // indirect
 	github.com/pion/dtls/v2 v2.2.12 // indirect
-	github.com/pion/ice/v2 v2.3.35 // indirect
+	github.com/pion/ice/v2 v2.3.36 // indirect
 	github.com/pion/interceptor v0.1.30 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.12 // indirect
