@@ -129,8 +129,8 @@ github.com/livekit/protocol v1.24.0 h1:GyRCWsqsmgGXbWGou1uv2A2xKmHJWSDXwz0yIpZQz
 github.com/livekit/protocol v1.24.0/go.mod h1:nxRzmQBKSYK64gqr7ABWwt78hvrgiO2wYuCojRYb7Gs=
 github.com/livekit/psrpc v0.6.1-0.20240924010758-9f0a4268a3b9 h1:33oBjGpVD9tYkDXQU42tnHl8eCX9G6PVUToBVuCUyOs=
 github.com/livekit/psrpc v0.6.1-0.20240924010758-9f0a4268a3b9/go.mod h1:CQUBSPfYYAaevg1TNCc6/aYsa8DJH4jSRFdCeSZk5u0=
-github.com/livekit/server-sdk-go/v2 v2.2.2-0.20240927014254-c420c0625a7a h1:y/vSV2aMndLxIY9pGJLxeqRWcmhfOT58mdwKrvjVOZ8=
-github.com/livekit/server-sdk-go/v2 v2.2.2-0.20240927014254-c420c0625a7a/go.mod h1:LjZPbNnUGUIUeAqjQb2CozRK3yOXc07pLsLyK1VqdoU=
+github.com/livekit/server-sdk-go/v2 v2.2.2-0.20241007155002-76007e61480f h1:7Vb/gkzVnnNdsV3K47LsWOCQpMfqM927V3XogwUM3jI=
+github.com/livekit/server-sdk-go/v2 v2.2.2-0.20241007155002-76007e61480f/go.mod h1:AERqUiaZiAZjMxB5bxZn+M8PJlDD3TAOZn0PieQjnXk=
 github.com/lucasb-eyer/go-colorful v1.2.0 h1:1nnpGOrhyZZuNyfu1QjKiUICQ74+3FNCN69Aj6K7nkY=
 github.com/lucasb-eyer/go-colorful v1.2.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/magefile/mage v1.15.0 h1:BvGheCMAsG3bWUDbZ8AyXXpCNwU9u5CB6sM+HNb9HYg=
@@ -338,8 +338,8 @@ google.golang.org/genproto/googleapis/rpc v0.0.0-20240808171019-573a1156607a h1:
 google.golang.org/genproto/googleapis/rpc v0.0.0-20240808171019-573a1156607a/go.mod h1:Ue6ibwXGpU+dqIcODieyLOcgj7z8+IcskoNIgZxtrFY=
 google.golang.org/grpc v1.65.0 h1:bs/cUb4lp1G5iImFFd3u5ixQzweKizoZJAwBNLR42lc=
 google.golang.org/grpc v1.65.0/go.mod h1:WgYC2ypjlB0EiQi6wdKixMqukr6lBc0Vo+oOgjrM5ZQ=
-google.golang.org/protobuf v1.34.2 h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=
-google.golang.org/protobuf v1.34.2/go.mod h1:qYOHts0dSfpeUzUFpOMr/WGzszTmLH+DiWniOlNbLDw=
+google.golang.org/protobuf v1.35.1 h1:m3LfL6/Ca+fqnjnlqQXNpFPABW1UD7mjh8KO2mKFytA=
+google.golang.org/protobuf v1.35.1/go.mod h1:9fA7Ob0pmnwhb644+1+CVWFRbNajQ6iRojtC/QF5bRE=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=

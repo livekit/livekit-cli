@@ -13,7 +13,7 @@ require (
 	github.com/go-task/task/v3 v3.39.2
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.24.0
-	github.com/livekit/server-sdk-go/v2 v2.2.2-0.20240927014254-c420c0625a7a
+	github.com/livekit/server-sdk-go/v2 v2.2.2-0.20241007155002-76007e61480f
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.9
 	github.com/pion/webrtc/v3 v3.3.3
@@ -25,7 +25,7 @@ require (
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/time v0.6.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
