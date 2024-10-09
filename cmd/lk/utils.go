@@ -20,10 +20,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
@@ -151,6 +154,32 @@ func wrapWith(wrap string) func(string) string {
 	return func(str string) string {
 		return wrap + str + wrap
 	}
+}
+
+func randomID() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	seed := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(seed)
+
+	result := make([]byte, 16)
+	for i := range result {
+		result[i] = charset[r.Intn(len(charset))]
+	}
+	return string(result)
+}
+
+func useTempPath(permanentPath string) (string, func() error) {
+	tempPath := path.Join(os.TempDir(), randomID())
+	relocate := func() error {
+		if err := os.Rename(tempPath, permanentPath); err != nil {
+			// NOTE: on macOS, `os.TempDir()` points to `/var/folders/...`.
+			// Because this directory is not automatically cleaned up, we need
+			// to remove it explicitly on a failure to relocate.
+			return os.RemoveAll(tempPath)
+		}
+		return nil
+	}
+	return tempPath, relocate
 }
 
 func hashString(str string) (string, error) {
