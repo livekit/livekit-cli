@@ -158,6 +158,20 @@ lk room join --identity bot \
   <room_name>
 ```
 
+### Publish audio from UDP Multicast
+
+It's possible to publish audio in the Opus codec from a multicast packet stream over a UDP socket. `lk` can act as a multicast listener and publish receiving audio packets. For example, if you want to publish audio packets that are being sent to multicast address `225.8.11.101` and port `9001` on a network connection `en0`,
+
+Run `lk` like this:
+
+```shell
+lk room join --identity bot \
+  --publish-multicast \
+  --multicast-endpoint 225.8.11.101:9001 \
+  --multicast-network-name en0 \
+  <room_name>
+```
+
 ### Publish streams from your application
 
 Using unix sockets, it's also possible to publish streams from your application. The tracks need to be encoded into
