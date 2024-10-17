@@ -267,22 +267,32 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 }
 
 func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
+	var out []byte
 	var cmdErr error
+
+	tempName, relocate, cleanup := useTempPath(appName)
+	defer cleanup()
+
 	if err := spinner.New().
 		Title("Cloning template from " + url).
 		Action(func() {
-			c := exec.Command("git", "clone", "--depth=1", url, appName)
-			var out []byte
-			if out, cmdErr = c.CombinedOutput(); len(out) > 0 && cmd.Bool("verbose") {
-				fmt.Println(string(out))
-			}
-			os.RemoveAll(path.Join(appName, ".git"))
+			c := exec.Command("git", "clone", "--depth=1", url, tempName)
+			out, cmdErr = c.CombinedOutput()
+			os.RemoveAll(path.Join(tempName, ".git"))
 		}).
 		Style(theme.Focused.Title).
 		Run(); err != nil {
 		return err
 	}
-	return cmdErr
+
+	if len(out) > 0 && (cmdErr != nil || cmd.Bool("verbose")) {
+		fmt.Println(string(out))
+	}
+
+	if cmdErr != nil {
+		return cmdErr
+	}
+	return relocate()
 }
 
 func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) error {
