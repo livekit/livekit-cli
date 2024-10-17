@@ -20,19 +20,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/protocol/utils/guid"
 	"github.com/livekit/protocol/utils/interceptors"
 
 	"github.com/livekit/livekit-cli/pkg/config"
@@ -156,30 +155,18 @@ func wrapWith(wrap string) func(string) string {
 	}
 }
 
-func randomID() string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	seed := rand.NewSource(time.Now().UnixNano())
-	r := rand.New(seed)
-
-	result := make([]byte, 16)
-	for i := range result {
-		result[i] = charset[r.Intn(len(charset))]
-	}
-	return string(result)
-}
-
-func useTempPath(permanentPath string) (string, func() error) {
-	tempPath := path.Join(os.TempDir(), randomID())
+// Provides a temporary path, a function to relocate it to a permanent path,
+// and a function to clean up the temporary path that should always be deferred
+// in the case of a failure to relocate.
+func useTempPath(permanentPath string) (string, func() error, func() error) {
+	tempPath := path.Join(os.TempDir(), guid.New("LK_"))
 	relocate := func() error {
-		if err := os.Rename(tempPath, permanentPath); err != nil {
-			// NOTE: on macOS, `os.TempDir()` points to `/var/folders/...`.
-			// Because this directory is not automatically cleaned up, we need
-			// to remove it explicitly on a failure to relocate.
-			return os.RemoveAll(tempPath)
-		}
-		return nil
+		return os.Rename(tempPath, permanentPath)
 	}
-	return tempPath, relocate
+	cleanup := func() error {
+		return os.RemoveAll(tempPath)
+	}
+	return tempPath, relocate, cleanup
 }
 
 func hashString(str string) (string, error) {
