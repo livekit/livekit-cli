@@ -1,8 +1,8 @@
 module github.com/livekit/livekit-cli
 
-go 1.22.0
+go 1.22.7
 
-toolchain go1.23.1
+toolchain go1.23.2
 
 require (
 	github.com/charmbracelet/huh v0.6.0
@@ -12,8 +12,8 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.39.2
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.24.0
-	github.com/livekit/server-sdk-go/v2 v2.2.2-0.20241007155002-76007e61480f
+	github.com/livekit/protocol v1.26.0
+	github.com/livekit/server-sdk-go/v2 v2.3.0
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.9
 	github.com/pion/webrtc/v3 v3.3.4
