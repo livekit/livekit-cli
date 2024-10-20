@@ -149,17 +149,6 @@ var (
 
 		// Deprecated commands kept for compatibility
 		{
-			Hidden:   true, // deprecated: use `sip trunk create`
-			Name:     "create-sip-trunk",
-			Usage:    "Create a SIP Trunk",
-			Action:   createSIPTrunkLegacy,
-			Category: sipCategory,
-			Flags: []cli.Flag{
-				//lint:ignore SA1019 we still support it
-				RequestFlag[livekit.CreateSIPTrunkRequest](),
-			},
-		},
-		{
 			Hidden:   true, // deprecated: use `sip trunk list`
 			Name:     "list-sip-trunk",
 			Usage:    "List all SIP trunk",
@@ -230,15 +219,6 @@ func createSIPClient(cmd *cli.Command) (*lksdk.SIPClient, error) {
 		return nil, err
 	}
 	return lksdk.NewSIPClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...), nil
-}
-
-func createSIPTrunkLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(cmd)
-	if err != nil {
-		return err
-	}
-	//lint:ignore SA1019 we still support it
-	return createAndPrintLegacy(ctx, cmd, cli.CreateSIPTrunk, printSIPTrunkID)
 }
 
 func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
