@@ -28,6 +28,7 @@ import (
 
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/livekit"
@@ -269,6 +270,57 @@ func publishFile(room *lksdk.Room,
 		Name: filename,
 	})
 	return err
+}
+
+func publishMulticast(room *lksdk.Room,
+	multicastEndpoint string,
+	networkName string,
+	packetDuration int64,
+) error {
+	track, err := lksdk.NewLocalTrack(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus})
+	if err != nil {
+		return err
+	}
+
+	_, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+		Source: livekit.TrackSource_MICROPHONE,
+	})
+	if err != nil {
+		return err
+	}
+
+	addr, err := net.ResolveUDPAddr("udp4", multicastEndpoint)
+	if err != nil {
+		return err
+	}
+	iface, err := net.InterfaceByName(networkName)
+	if err != nil {
+		return err
+	}
+
+	conn, err := net.ListenMulticastUDP("udp4", iface, addr)
+	if err != nil {
+		return err
+	}
+	go publishMulticastPackets(conn, track, packetDuration)
+	return nil
+}
+
+func publishMulticastPackets(conn *net.UDPConn,
+	track *lksdk.LocalTrack,
+	packetDuration int64,
+) {
+	buff := make([]byte, 1500)
+	for {
+		n, _, err := conn.ReadFromUDP(buff)
+		if err != nil {
+			logger.Errorw("Read from UDP error:", err)
+		}
+
+		if err = track.WriteSample(media.Sample{Data: buff[:n], Duration: time.Millisecond * time.Duration(packetDuration)}, &lksdk.SampleWriteOptions{}); err != nil {
+			logger.Errorw("Write sample error:", err)
+		}
+	}
 }
 
 func parseSocketFromName(name string) (string, string, string, error) {
