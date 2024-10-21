@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/protocol/utils/guid"
 	"github.com/livekit/protocol/utils/interceptors"
 
 	"github.com/livekit/livekit-cli/pkg/config"
@@ -151,6 +153,20 @@ func wrapWith(wrap string) func(string) string {
 	return func(str string) string {
 		return wrap + str + wrap
 	}
+}
+
+// Provides a temporary path, a function to relocate it to a permanent path,
+// and a function to clean up the temporary path that should always be deferred
+// in the case of a failure to relocate.
+func useTempPath(permanentPath string) (string, func() error, func() error) {
+	tempPath := path.Join(os.TempDir(), guid.New("LK_"))
+	relocate := func() error {
+		return os.Rename(tempPath, permanentPath)
+	}
+	cleanup := func() error {
+		return os.RemoveAll(tempPath)
+	}
+	return tempPath, relocate, cleanup
 }
 
 func hashString(str string) (string, error) {
