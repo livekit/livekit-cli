@@ -140,6 +140,10 @@ var (
 									Required: true,
 									Usage:    "`SIP URL` to transfer the call to. Use 'tel:<phone number>' to transfer to a phone",
 								},
+								&cli.BoolFlag{
+									Name:  "play-ringtone",
+									Usage: "if set, a ring tone will be played to the SIP participant while the transfer is being attempted",
+								},
 							},
 						},
 					},
@@ -148,6 +152,17 @@ var (
 		},
 
 		// Deprecated commands kept for compatibility
+		{
+			Hidden:   true, // deprecated: use `sip trunk create`
+			Name:     "create-sip-trunk",
+			Usage:    "Create a SIP Trunk",
+			Action:   createSIPTrunkLegacy,
+			Category: sipCategory,
+			Flags: []cli.Flag{
+				//lint:ignore SA1019 we still support it
+				RequestFlag[livekit.CreateSIPTrunkRequest](),
+			},
+		},
 		{
 			Hidden:   true, // deprecated: use `sip trunk list`
 			Name:     "list-sip-trunk",
@@ -219,6 +234,10 @@ func createSIPClient(cmd *cli.Command) (*lksdk.SIPClient, error) {
 		return nil, err
 	}
 	return lksdk.NewSIPClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...), nil
+}
+
+func createSIPTrunkLegacy(ctx context.Context, cmd *cli.Command) error {
+	return fmt.Errorf("create-sip-trunk is deprecated and not supported anymore. Use 'sip in create' or 'sip out create' instead.")
 }
 
 func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
@@ -478,11 +497,13 @@ func createSIPParticipantLegacy(ctx context.Context, cmd *cli.Command) error {
 func transferSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 	roomName, identity := participantInfoFromArgOrFlags(cmd)
 	to := cmd.String("to")
+	ringtone := cmd.Bool("play-ringtone")
 
 	req := livekit.TransferSIPParticipantRequest{
 		RoomName:            roomName,
 		ParticipantIdentity: identity,
 		TransferTo:          to,
+		PlayRingtone:        ringtone,
 	}
 
 	cli, err := createSIPClient(cmd)
