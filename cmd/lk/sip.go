@@ -141,7 +141,7 @@ var (
 									Usage:    "`SIP URL` to transfer the call to. Use 'tel:<phone number>' to transfer to a phone",
 								},
 								&cli.BoolFlag{
-									Name:  "play-ringtone",
+									Name:  "play-dialtone",
 									Usage: "if set, a ring tone will be played to the SIP participant while the transfer is being attempted",
 								},
 							},
@@ -482,13 +482,13 @@ func createSIPParticipantLegacy(ctx context.Context, cmd *cli.Command) error {
 func transferSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 	roomName, identity := participantInfoFromArgOrFlags(cmd)
 	to := cmd.String("to")
-	ringtone := cmd.Bool("play-ringtone")
+	dialtone := cmd.Bool("play-dialtone")
 
 	req := livekit.TransferSIPParticipantRequest{
 		RoomName:            roomName,
 		ParticipantIdentity: identity,
 		TransferTo:          to,
-		PlayRingtone:        ringtone,
+		PlayDialtone:        dialtone,
 	}
 
 	cli, err := createSIPClient(cmd)
