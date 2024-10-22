@@ -142,7 +142,7 @@ var (
 								},
 								&cli.BoolFlag{
 									Name:  "play-dialtone",
-									Usage: "if set, a ring tone will be played to the SIP participant while the transfer is being attempted",
+									Usage: "if set, a dial tone will be played to the SIP participant while the transfer is being attempted",
 								},
 							},
 						},
