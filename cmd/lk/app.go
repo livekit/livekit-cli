@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -218,7 +219,9 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			WithTheme(theme)
 		var options []huh.Option[string]
 		for _, t := range templateOptions {
-			options = append(options, huh.NewOption(t.Name, t.URL))
+			descStyle := theme.Help.ShortDesc
+			optionText := t.Name + " " + descStyle.Render("#"+strings.Join(t.Tags, " #"))
+			options = append(options, huh.NewOption(optionText, t.URL))
 		}
 		templateSelect.(*huh.Select[string]).Options(options...)
 		preinstallPrompts = append(preinstallPrompts, templateSelect)
