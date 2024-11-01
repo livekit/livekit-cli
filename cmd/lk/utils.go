@@ -188,7 +188,7 @@ func CreateTable() *table.Table {
 	headerStyle := baseStyle.Bold(true)
 
 	styleFunc := func(row, col int) lipgloss.Style {
-		if row == 0 {
+		if row == table.HeaderRow {
 			return headerStyle
 		}
 		return baseStyle
