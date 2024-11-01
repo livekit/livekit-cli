@@ -23,6 +23,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/config"
@@ -249,9 +250,9 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 	table := CreateTable().
 		StyleFunc(func(row, col int) lipgloss.Style {
 			switch {
-			case row == 0:
+			case row == table.HeaderRow:
 				return headerStyle
-			case cliConfig.Projects[row-1].Name == cliConfig.DefaultProject:
+			case cliConfig.Projects[row].Name == cliConfig.DefaultProject:
 				return selectedStyle
 			default:
 				return baseStyle
