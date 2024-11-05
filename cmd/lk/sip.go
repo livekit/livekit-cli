@@ -286,12 +286,14 @@ func listSipInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		"SipTrunkID", "Name", "Numbers",
 		"AllowedAddresses", "AllowedNumbers",
 		"Authentication",
+		"Headers",
 		"Metadata",
 	}, func(item *livekit.SIPInboundTrunkInfo) []string {
 		return []string{
 			item.SipTrunkId, item.Name, strings.Join(item.Numbers, ","),
 			strings.Join(item.AllowedAddresses, ","), strings.Join(item.AllowedNumbers, ","),
 			userPass(item.AuthUsername, item.AuthPassword != ""),
+			fmt.Sprintf("%v, %v", item.Headers, item.HeadersToAttributes),
 			item.Metadata,
 		}
 	})
@@ -307,6 +309,7 @@ func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		"Address", "Transport",
 		"Numbers",
 		"Authentication",
+		"Headers",
 		"Metadata",
 	}, func(item *livekit.SIPOutboundTrunkInfo) []string {
 		return []string{
@@ -314,6 +317,7 @@ func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 			item.Address, strings.TrimPrefix(item.Transport.String(), "SIP_TRANSPORT_"),
 			strings.Join(item.Numbers, ","),
 			userPass(item.AuthUsername, item.AuthPassword != ""),
+			fmt.Sprintf("%v, %v", item.Headers, item.HeadersToAttributes),
 			item.Metadata,
 		}
 	})
@@ -385,7 +389,8 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return listAndPrint(ctx, cmd, cli.ListSIPDispatchRule, &livekit.ListSIPDispatchRuleRequest{}, []string{
-		"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone", "Metadata",
+		"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone",
+		"Attributes", "Metadata",
 	}, func(item *livekit.SIPDispatchRuleInfo) []string {
 		var room, typ, pin string
 		switch r := item.GetRule().GetRule().(type) {
@@ -409,7 +414,10 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		if trunks == "" {
 			trunks = "<any>"
 		}
-		return []string{item.SipDispatchRuleId, item.Name, trunks, typ, room, pin, strconv.FormatBool(item.HidePhoneNumber), item.Metadata}
+		return []string{
+			item.SipDispatchRuleId, item.Name, trunks, typ, room, pin, strconv.FormatBool(item.HidePhoneNumber),
+			fmt.Sprintf("%v", item.Attributes), item.Metadata,
+		}
 	})
 }
 
