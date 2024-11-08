@@ -24,7 +24,7 @@ require (
 	github.com/urfave/cli/v3 v3.0.0-alpha9
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.8.0
-	golang.org/x/time v0.6.0
+	golang.org/x/time v0.8.0
 	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v3 v3.0.1
 )
