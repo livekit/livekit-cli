@@ -660,7 +660,7 @@ func listRooms(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(res.Rooms)
+		PrintJSON(res)
 	} else {
 		table := CreateTable().Headers("RoomID", "Name", "Participants", "Publishers")
 		for _, rm := range res.Rooms {

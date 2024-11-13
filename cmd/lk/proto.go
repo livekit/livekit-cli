@@ -192,7 +192,7 @@ func listAndPrint[
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(res.GetItems())
+		PrintJSON(res)
 	} else {
 		table := CreateTable().
 			Headers(header...)
