@@ -27,6 +27,7 @@ var (
 					Name:   "list",
 					Before: createReplayClient,
 					Action: listReplays,
+					Flags:  []cli.Flag{jsonFlag},
 				},
 				{
 					Name:   "load",
@@ -114,7 +115,7 @@ func createReplayClient(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func listReplays(ctx context.Context, _ *cli.Command) error {
+func listReplays(ctx context.Context, cmd *cli.Command) error {
 	ctx, err := replayClient.withAuth(ctx)
 	if err != nil {
 		return err
@@ -126,11 +127,15 @@ func listReplays(ctx context.Context, _ *cli.Command) error {
 		return err
 	}
 
-	table := CreateTable().Headers("ReplayID")
-	for _, info := range res.Replays {
-		table.Row(info.ReplayId)
+	if cmd.Bool("json") {
+		PrintJSON(res.Replays)
+	} else {
+		table := CreateTable().Headers("ReplayID")
+		for _, info := range res.Replays {
+			table.Row(info.ReplayId)
+		}
+		fmt.Println(table)
 	}
-	fmt.Println(table)
 
 	return nil
 }

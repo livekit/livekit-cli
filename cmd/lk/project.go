@@ -67,6 +67,7 @@ var (
 					Usage:     "List all configured projects",
 					UsageText: "lk project list",
 					Action:    listProjects,
+					Flags:     []cli.Flag{jsonFlag},
 				},
 				{
 					Name:      "remove",
@@ -247,22 +248,26 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 	headerStyle := baseStyle.Bold(true)
 	selectedStyle := theme.Focused.Title.Padding(0, 1)
 
-	table := CreateTable().
-		StyleFunc(func(row, col int) lipgloss.Style {
-			switch {
-			case row == table.HeaderRow:
-				return headerStyle
-			case cliConfig.Projects[row].Name == cliConfig.DefaultProject:
-				return selectedStyle
-			default:
-				return baseStyle
-			}
-		}).
-		Headers("Name", "URL", "API Key", "Default")
-	for _, p := range cliConfig.Projects {
-		table.Row(p.Name, p.URL, p.APIKey, fmt.Sprint(p.Name == cliConfig.DefaultProject))
+	if cmd.Bool("json") {
+		PrintJSON(cliConfig.Projects)
+	} else {
+		table := CreateTable().
+			StyleFunc(func(row, col int) lipgloss.Style {
+				switch {
+				case row == table.HeaderRow:
+					return headerStyle
+				case cliConfig.Projects[row].Name == cliConfig.DefaultProject:
+					return selectedStyle
+				default:
+					return baseStyle
+				}
+			}).
+			Headers("Name", "URL", "API Key", "Default")
+		for _, p := range cliConfig.Projects {
+			table.Row(p.Name, p.URL, p.APIKey, fmt.Sprint(p.Name == cliConfig.DefaultProject))
+		}
+		fmt.Println(table)
 	}
-	fmt.Println(table)
 
 	return nil
 }

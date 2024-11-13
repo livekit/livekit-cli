@@ -72,20 +72,20 @@ var (
 					Action: handleAuth,
 					Flags: []cli.Flag{
 						&cli.BoolFlag{
-							Name:        "R",
-							Aliases:     []string{"revoke"},
+							Name:        "revoke",
+							Aliases:     []string{"R"},
 							Destination: &revoke,
 						},
 						&cli.IntFlag{
-							Name:        "t",
-							Aliases:     []string{"timeout"},
+							Name:        "timeout",
+							Aliases:     []string{"t"},
 							Usage:       "Number of `SECONDS` to attempt authentication before giving up",
 							Destination: &timeout,
 							Value:       60 * 15,
 						},
 						&cli.IntFlag{
-							Name:        "i",
-							Aliases:     []string{"poll-interval"},
+							Name:        "poll-interval",
+							Aliases:     []string{"i"},
 							Usage:       "Number of `SECONDS` between poll requests to verify authentication",
 							Destination: &interval,
 							Value:       4,

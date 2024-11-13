@@ -191,22 +191,22 @@ func listAndPrint[
 		return err
 	}
 
-	table := CreateTable().
-		Headers(header...)
-	for _, item := range res.GetItems() {
-		if item == nil {
-			continue
+	if cmd.Bool("json") {
+		PrintJSON(res.GetItems())
+	} else {
+		table := CreateTable().
+			Headers(header...)
+		for _, item := range res.GetItems() {
+			if item == nil {
+				continue
+			}
+			row := tableRow(item)
+			if len(row) == 0 {
+				continue
+			}
+			table.Row(row...)
 		}
-		row := tableRow(item)
-		if len(row) == 0 {
-			continue
-		}
-		table.Row(row...)
-	}
-	fmt.Println(table)
-
-	if cmd.Bool("verbose") {
-		PrintJSON(res)
+		fmt.Println(table)
 	}
 
 	return nil

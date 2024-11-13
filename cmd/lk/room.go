@@ -109,6 +109,7 @@ var (
 					Before:    createRoomClient,
 					Action:    listRooms,
 					ArgsUsage: "[ROOM_NAME ...]",
+					Flags:     []cli.Flag{jsonFlag},
 				},
 				{
 					Name:   "update",
@@ -641,6 +642,13 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 
 func listRooms(ctx context.Context, cmd *cli.Command) error {
 	names, _ := extractArgs(cmd)
+	if cmd.Bool("verbose") && len(names) > 0 {
+		fmt.Printf(
+			"Querying rooms matching %s",
+			strings.Join(mapStrings(names, wrapWith("\"")), ", "),
+		)
+	}
+
 	req := livekit.ListRoomsRequest{}
 	if len(names) > 0 {
 		req.Names = names
@@ -650,19 +658,22 @@ func listRooms(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if len(res.Rooms) == 0 {
-		if len(names) > 0 {
-			fmt.Printf(
-				"there are no rooms matching %s",
-				strings.Join(mapStrings(names, wrapWith("\"")), ", "),
+
+	if cmd.Bool("json") {
+		PrintJSON(res.Rooms)
+	} else {
+		table := CreateTable().Headers("RoomID", "Name", "Participants", "Publishers")
+		for _, rm := range res.Rooms {
+			table.Row(
+				rm.Sid,
+				rm.Name,
+				fmt.Sprintf("%d", rm.NumParticipants),
+				fmt.Sprintf("%d", rm.NumPublishers),
 			)
-		} else {
-			fmt.Println("there are no active rooms")
 		}
+		fmt.Println(table)
 	}
-	for _, rm := range res.Rooms {
-		fmt.Printf("%s\t%s\t%d participants\n", rm.Sid, rm.Name, rm.NumParticipants)
-	}
+
 	return nil
 }
 
