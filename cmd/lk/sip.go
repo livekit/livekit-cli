@@ -52,6 +52,7 @@ var (
 							Name:   "list",
 							Usage:  "List all inbound SIP Trunks",
 							Action: listSipInboundTrunk,
+							Flags:  []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",
@@ -77,6 +78,7 @@ var (
 							Name:   "list",
 							Usage:  "List all outbound SIP Trunk",
 							Action: listSipOutboundTrunk,
+							Flags:  []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",
@@ -102,6 +104,7 @@ var (
 							Name:   "list",
 							Usage:  "List all SIP Dispatch Rule",
 							Action: listSipDispatchRule,
+							Flags:  []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",

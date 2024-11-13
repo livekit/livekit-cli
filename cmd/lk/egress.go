@@ -103,9 +103,11 @@ var (
 							Usage: "Limits list to a certain room `NAME`",
 						},
 						&cli.BoolFlag{
-							Name:  "active",
-							Usage: "Lists only active egresses",
+							Name:    "active",
+							Aliases: []string{"a"},
+							Usage:   "Lists only active egresses",
 						},
+						jsonFlag,
 					},
 				},
 				{
@@ -595,48 +597,52 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 		items = res.Items
 	}
 
-	table := CreateTable().
-		Headers("EgressID", "Status", "Type", "Source", "Started At", "Error")
-	for _, item := range items {
-		var startedAt string
-		if item.StartedAt != 0 {
-			startedAt = fmt.Sprint(time.Unix(0, item.StartedAt))
-		}
-		var egressType, egressSource string
-		switch req := item.Request.(type) {
-		case *livekit.EgressInfo_RoomComposite:
-			egressType = "room_composite"
-			egressSource = req.RoomComposite.RoomName
-		case *livekit.EgressInfo_Web:
-			egressType = "web"
-			egressSource = req.Web.Url
-		case *livekit.EgressInfo_Participant:
-			egressType = "participant"
-			egressSource = fmt.Sprintf("%s/%s", req.Participant.RoomName, req.Participant.Identity)
-		case *livekit.EgressInfo_TrackComposite:
-			egressType = "track_composite"
-			trackIDs := make([]string, 0)
-			if req.TrackComposite.VideoTrackId != "" {
-				trackIDs = append(trackIDs, req.TrackComposite.VideoTrackId)
+	if cmd.Bool("json") {
+		PrintJSON(items)
+	} else {
+		table := CreateTable().
+			Headers("EgressID", "Status", "Type", "Source", "Started At", "Error")
+		for _, item := range items {
+			var startedAt string
+			if item.StartedAt != 0 {
+				startedAt = fmt.Sprint(time.Unix(0, item.StartedAt))
 			}
-			if req.TrackComposite.AudioTrackId != "" {
-				trackIDs = append(trackIDs, req.TrackComposite.AudioTrackId)
+			var egressType, egressSource string
+			switch req := item.Request.(type) {
+			case *livekit.EgressInfo_RoomComposite:
+				egressType = "room_composite"
+				egressSource = req.RoomComposite.RoomName
+			case *livekit.EgressInfo_Web:
+				egressType = "web"
+				egressSource = req.Web.Url
+			case *livekit.EgressInfo_Participant:
+				egressType = "participant"
+				egressSource = fmt.Sprintf("%s/%s", req.Participant.RoomName, req.Participant.Identity)
+			case *livekit.EgressInfo_TrackComposite:
+				egressType = "track_composite"
+				trackIDs := make([]string, 0)
+				if req.TrackComposite.VideoTrackId != "" {
+					trackIDs = append(trackIDs, req.TrackComposite.VideoTrackId)
+				}
+				if req.TrackComposite.AudioTrackId != "" {
+					trackIDs = append(trackIDs, req.TrackComposite.AudioTrackId)
+				}
+				egressSource = fmt.Sprintf("%s/%s", req.TrackComposite.RoomName, strings.Join(trackIDs, ","))
+			case *livekit.EgressInfo_Track:
+				egressType = "track"
+				egressSource = fmt.Sprintf("%s/%s", req.Track.RoomName, req.Track.TrackId)
 			}
-			egressSource = fmt.Sprintf("%s/%s", req.TrackComposite.RoomName, strings.Join(trackIDs, ","))
-		case *livekit.EgressInfo_Track:
-			egressType = "track"
-			egressSource = fmt.Sprintf("%s/%s", req.Track.RoomName, req.Track.TrackId)
+			table.Row(
+				item.EgressId,
+				item.Status.String(),
+				egressType,
+				egressSource,
+				startedAt,
+				item.Error,
+			)
 		}
-		table.Row(
-			item.EgressId,
-			item.Status.String(),
-			egressType,
-			egressSource,
-			startedAt,
-			item.Error,
-		)
+		fmt.Println(table)
 	}
-	fmt.Println(table)
 
 	return nil
 }

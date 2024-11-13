@@ -48,6 +48,11 @@ var (
 		Usage:    "`ID` of participant",
 		Required: true,
 	}
+	jsonFlag = &cli.BoolFlag{
+		Name:    "json",
+		Aliases: []string{"j"},
+		Usage:   "Output as JSON",
+	}
 	printCurl       bool
 	persistentFlags = []cli.Flag{
 		&cli.StringFlag{
@@ -273,7 +278,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if os.Getenv("LIVEKIT_API_SECRET") == pc.APISecret {
 			envVars = append(envVars, "api-secret")
 		}
-		if len(envVars) > 0 {
+		if c.Bool("verbose") && len(envVars) > 0 {
 			fmt.Printf("Using %s from environment\n", strings.Join(envVars, ", "))
 			logDetails(c, pc)
 		}
@@ -283,8 +288,10 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	// load default project
 	dp, err := config.LoadDefaultProject()
 	if err == nil {
-		fmt.Println("Using default project [" + theme.Focused.Title.Render(dp.Name) + "]")
-		logDetails(c, dp)
+		if c.Bool("verbose") {
+			fmt.Println("Using default project [" + theme.Focused.Title.Render(dp.Name) + "]")
+			logDetails(c, dp)
+		}
 		return dp, nil
 	}
 

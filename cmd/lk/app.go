@@ -72,9 +72,10 @@ var (
 							Hidden:      true,
 						},
 						&cli.BoolFlag{
-							Name:   "install",
-							Usage:  "Run installation tasks after creating the app",
-							Hidden: true,
+							Name:    "install",
+							Aliases: []string{"i"},
+							Usage:   "Run installation tasks after creating the app",
+							Hidden:  true,
 						},
 					},
 				},

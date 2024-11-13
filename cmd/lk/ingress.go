@@ -82,6 +82,7 @@ var (
 							Usage:    "List a specific ingress `ID`",
 							Required: false,
 						},
+						jsonFlag,
 					},
 				},
 				{
@@ -223,33 +224,36 @@ func listIngress(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	table := CreateTable().
-		Headers("IngressID", "Name", "Room", "StreamKey", "URL", "Status", "Error")
-	for _, item := range res.Items {
-		if item == nil {
-			continue
-		}
-
-		var status, errorStr string
-		if item.State != nil {
-			status = item.State.Status.String()
-			errorStr = item.State.Error
-		}
-
-		table.Row(
-			item.IngressId,
-			item.Name,
-			item.RoomName,
-			item.StreamKey,
-			item.Url,
-			status,
-			errorStr,
-		)
-	}
-	fmt.Println(table)
-
-	if cmd.Bool("verbose") {
+	// NOTE: previously, the `verbose` flag was used to output JSON in addition to the table.
+	// This is inconsistent with other commands in which verbose is used for debug info, but is
+	// kept for compatibility with the previous behavior.
+	if cmd.Bool("verbose") || cmd.Bool("json") {
 		PrintJSON(res)
+	} else {
+		table := CreateTable().
+			Headers("IngressID", "Name", "Room", "StreamKey", "URL", "Status", "Error")
+		for _, item := range res.Items {
+			if item == nil {
+				continue
+			}
+
+			var status, errorStr string
+			if item.State != nil {
+				status = item.State.Status.String()
+				errorStr = item.State.Error
+			}
+
+			table.Row(
+				item.IngressId,
+				item.Name,
+				item.RoomName,
+				item.StreamKey,
+				item.Url,
+				status,
+				errorStr,
+			)
+		}
+		fmt.Println(table)
 	}
 
 	return nil
