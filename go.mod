@@ -19,7 +19,7 @@ require (
 	github.com/pion/webrtc/v3 v3.3.4
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/twitchtv/twirp v8.1.3+incompatible
 	github.com/urfave/cli/v3 v3.0.0-alpha9
 	go.uber.org/atomic v1.11.0
