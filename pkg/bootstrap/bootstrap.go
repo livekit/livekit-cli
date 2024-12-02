@@ -58,6 +58,14 @@ const (
 	TaskDev        KnownTask = "dev"
 )
 
+// Files to remove after cloning a template
+var templateIgnoreFiles = []string{
+	".git",
+	"renovate.json",
+	"taskfile.yaml",
+	"TEMPLATE.md",
+}
+
 type Template struct {
 	Name      string   `yaml:"name" json:"name"`
 	Desc      string   `yaml:"desc" json:"description,omitempty"`
@@ -220,6 +228,26 @@ func InstantiateDotEnv(ctx context.Context, rootDir string, substitutions map[st
 
 		return nil
 	})
+}
+
+func CloneTemplate(url, dir string) (string, string, error) {
+	var stdout = strings.Builder{}
+	var stderr = strings.Builder{}
+
+	cmd := exec.Command("git", "clone", "--depth=1", url, dir)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	return stdout.String(), stderr.String(), cmd.Run()
+}
+
+func CleanupTemplate(dir string) error {
+	// Remove files that are only needed for template instantiation
+	for _, cleanup := range templateIgnoreFiles {
+		if err := os.RemoveAll(path.Join(dir, cleanup)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Determine if `cmd` is a binary in PATH or a known alias

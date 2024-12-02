@@ -19,12 +19,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"path"
 	"regexp"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/livekit/livekit-cli/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/pkg/config"
 	"github.com/urfave/cli/v3"
@@ -261,14 +260,21 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 
 	if install {
 		fmt.Println("Installing template...")
-		return doInstall(ctx, bootstrap.TaskInstall, appName, verbose)
+		if err := doInstall(ctx, bootstrap.TaskInstall, appName, verbose); err != nil {
+			return err
+		}
 	} else {
-		return doPostCreate(ctx, cmd, appName, verbose)
+		if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
+			return err
+		}
 	}
+
+	return cleanupTemplate(ctx, cmd, appName)
 }
 
 func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
-	var out []byte
+	var stdout string
+	var stderr string
 	var cmdErr error
 
 	tempName, relocate, cleanup := useTempPath(appName)
@@ -277,23 +283,28 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 	if err := spinner.New().
 		Title("Cloning template from " + url).
 		Action(func() {
-			c := exec.Command("git", "clone", "--depth=1", url, tempName)
-			out, cmdErr = c.CombinedOutput()
-			os.RemoveAll(path.Join(tempName, ".git"))
+			stdout, stderr, cmdErr = bootstrap.CloneTemplate(url, tempName)
 		}).
 		Style(theme.Focused.Title).
 		Run(); err != nil {
 		return err
 	}
 
-	if len(out) > 0 && (cmdErr != nil || cmd.Bool("verbose")) {
-		fmt.Println(string(out))
+	if len(stdout) > 0 && cmd.Bool("verbose") {
+		fmt.Println(string(stdout))
+	}
+	if len(stderr) > 0 && cmd.Bool("verbose") {
+		fmt.Fprintln(os.Stderr, string(stderr))
 	}
 
 	if cmdErr != nil {
 		return cmdErr
 	}
 	return relocate()
+}
+
+func cleanupTemplate(ctx context.Context, cmd *cli.Command, appName string) error {
+	return bootstrap.CleanupTemplate(appName)
 }
 
 func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) error {
@@ -311,6 +322,7 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 	prompt := func(key, oldValue string) (string, error) {
 		var newValue string
 		if err := huh.NewInput().
+			EchoMode(huh.EchoModePassword).
 			Title("Enter " + key + "?").
 			Placeholder(oldValue).
 			Value(&newValue).
@@ -347,8 +359,9 @@ func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose 
 	var cmdErr error
 	if err := spinner.New().
 		Title("Cleaning up...").
+		TitleStyle(lipgloss.NewStyle()).
+		Style(lipgloss.NewStyle()).
 		Action(func() { cmdErr = task() }).
-		Style(theme.Focused.Title).
 		Accessible(true).
 		Run(); err != nil {
 		return err
