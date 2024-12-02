@@ -311,6 +311,7 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 	prompt := func(key, oldValue string) (string, error) {
 		var newValue string
 		if err := huh.NewInput().
+			EchoMode(huh.EchoModePassword).
 			Title("Enter " + key + "?").
 			Placeholder(oldValue).
 			Value(&newValue).
