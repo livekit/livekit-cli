@@ -23,6 +23,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/livekit/livekit-cli/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/pkg/config"
 	"github.com/urfave/cli/v3"
@@ -259,10 +260,16 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 
 	if install {
 		fmt.Println("Installing template...")
-		return doInstall(ctx, bootstrap.TaskInstall, appName, verbose)
+		if err := doInstall(ctx, bootstrap.TaskInstall, appName, verbose); err != nil {
+			return err
+		}
 	} else {
-		return doPostCreate(ctx, cmd, appName, verbose)
+		if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
+			return err
+		}
 	}
+
+	return cleanupTemplate(ctx, cmd, appName)
 }
 
 func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
@@ -294,6 +301,10 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 		return cmdErr
 	}
 	return relocate()
+}
+
+func cleanupTemplate(ctx context.Context, cmd *cli.Command, appName string) error {
+	return bootstrap.CleanupTemplate(appName)
 }
 
 func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) error {
@@ -348,8 +359,9 @@ func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose 
 	var cmdErr error
 	if err := spinner.New().
 		Title("Cleaning up...").
+		TitleStyle(lipgloss.NewStyle()).
+		Style(lipgloss.NewStyle()).
 		Action(func() { cmdErr = task() }).
-		Style(theme.Focused.Title).
 		Accessible(true).
 		Run(); err != nil {
 		return err
