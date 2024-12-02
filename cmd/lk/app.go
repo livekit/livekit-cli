@@ -19,8 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"path"
 	"regexp"
 
 	"github.com/charmbracelet/huh"
@@ -268,7 +266,8 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 }
 
 func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
-	var out []byte
+	var stdout string
+	var stderr string
 	var cmdErr error
 
 	tempName, relocate, cleanup := useTempPath(appName)
@@ -277,17 +276,18 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 	if err := spinner.New().
 		Title("Cloning template from " + url).
 		Action(func() {
-			c := exec.Command("git", "clone", "--depth=1", url, tempName)
-			out, cmdErr = c.CombinedOutput()
-			os.RemoveAll(path.Join(tempName, ".git"))
+			stdout, stderr, cmdErr = bootstrap.CloneTemplate(url, tempName)
 		}).
 		Style(theme.Focused.Title).
 		Run(); err != nil {
 		return err
 	}
 
-	if len(out) > 0 && (cmdErr != nil || cmd.Bool("verbose")) {
-		fmt.Println(string(out))
+	if len(stdout) > 0 && cmd.Bool("verbose") {
+		fmt.Println(string(stdout))
+	}
+	if len(stderr) > 0 && cmd.Bool("verbose") {
+		fmt.Fprintln(os.Stderr, string(stderr))
 	}
 
 	if cmdErr != nil {
