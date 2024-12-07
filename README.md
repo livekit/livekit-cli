@@ -14,10 +14,11 @@
 
 This package includes command line utilities that interacts with LiveKit. It allows you to:
 
+-   Bootstrap new applications from templates
 -   Create access tokens
--   Access LiveKit APIs, create, delete rooms, etc.
+-   Access LiveKit APIs, create and delete rooms, etc.
 -   Join a room as a participant, inspecting in-room events
--   Start and manage Egress
+-   Start and manage Egresses
 -   Perform load testing, efficiently simulating real-world load
 
 # Installation
@@ -55,7 +56,7 @@ make install
 
 # Usage
 
-See `lk --help` for a complete list of subcommands.
+See `lk --help` for a complete list of subcommands. The `--help` flag can also be used on any subcommand for more information.
 
 ## Set up your project (new)
 
@@ -85,6 +86,61 @@ lk project list
 ```shell
 lk project set-default <project_name>
 ```
+
+## Bootstrapping an application
+
+The LiveKit CLI can help you bootstrap applications from a number of convenient template repositories, using your project credentials to set up required environment variables and other configuration automatically. To create an application from a template, run the following:
+
+```shell
+lk app create --template <template_name> my-app
+```
+
+Then follow the CLI prompts to finish your setup.
+
+The `--template` flag may be omitted to see a list of all available templates, or can be chosen from a selection of our first-party templates:
+
+<table>
+  <thead><tr><th>Template Name</th><th>Language/Framework</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><a href="https://github.com/livekit-examples/voice-assistant-frontend">voice-assistant-frontend</a></td>
+      <td>TypeScript/Next.js</td>
+      <td>Voice assistant frontend with integrated token server</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/livekit-examples/meet">meet</a></td>
+      <td>TypeScript/Next.js</td>
+      <td>Video conferencing frontend with integrated token server</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/livekit-examples/multimodal-agent-python">multimodal-agent-python</a></td>
+      <td>Python</td>
+      <td>Multimodal agent with speech-to-speech and transcription capabilities</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/livekit-examples/voice-pipeline-agent-python">voice-pipeline-agent-python</a></td>
+      <td>Python</td>
+      <td>Voice agent using modular TTS, LLM, and STT capabilities</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/livekit-examples/multimodal-agent-node">multimodal-agent-node</a></td>
+      <td>Node.js/TypeScript</td>
+      <td>Multimodal agent with speech-to-speech and transcription capabilities</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/livekit-examples/token-server-node">token-server-node</a></td>
+      <td>Node.js/TypeScript</td>
+      <td>Token server for generating access tokens</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/livekit-examples/android-voice-assistant">android-voice-assistant</a></td>
+      <td>Kotlin/Android</td>
+      <td>Voice assistant mobile application</td>
+    </tr>
+  </tbody>
+</table>
+
+For more information on templates, see the [LiveKit Template Index](https://github.com/livekit-examples/index?tab=readme-ov-file).
 
 ## Publishing to a room
 
