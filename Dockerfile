@@ -34,7 +34,7 @@ COPY version.go version.go
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -a -o lk ./cmd/lk
 
-FROM alpine:3.20
+FROM alpine:3.21
 
 COPY --from=builder /workspace/lk /lk
 
