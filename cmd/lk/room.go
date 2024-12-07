@@ -146,6 +146,10 @@ var (
 							Name:  "publish-demo",
 							Usage: "Publish demo video as a loop",
 						},
+						&cli.BoolFlag{
+							Name:  "publish-multicast",
+							Usage: "Publish multicast audio in Opus codec",
+						},
 						&cli.StringSliceFlag{
 							Name:      "publish",
 							TakesFile: true,
@@ -168,6 +172,19 @@ var (
 						&cli.BoolFlag{
 							Name:  "exit-after-publish",
 							Usage: "When publishing, exit after file or stream is complete",
+						},
+						&cli.StringFlag{
+							Name:  "multicast-endpoint",
+							Usage: "Multicast `ENDPOINT` to open the UDP socket. Should be of the format <MulticastIpAddress:MulticastPort>",
+						},
+						&cli.StringFlag{
+							Name:  "multicast-network-name",
+							Usage: "`NETWORK NAME` on which the UDP socket should be opened for multicast audio publishing",
+						},
+						&cli.IntFlag{
+							Name:  "multiast-packet-duration",
+							Usage: "Audio packet `DURATION` in milliseconds to be published from multicast",
+							Value: 20,
 						},
 					},
 				},
@@ -839,6 +856,21 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	logger.Infow("connected to room", "room", room.Name())
 
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	if cmd.Bool("publish-multicast") {
+		multicastEndpoint := cmd.String("multicast-endpoint")
+		if multicastEndpoint == "" {
+			return fmt.Errorf("no multicast endpoint provided name provided")
+		}
+		networkName := cmd.String("network-name")
+		if networkName == "" {
+			return fmt.Errorf("no network name provided")
+		}
+		packetDuration := cmd.Int("packet-duration")
+		if err = publishMulticast(room, multicastEndpoint, networkName, packetDuration); err != nil {
+			return err
+		}
+	}
 
 	if cmd.Bool("publish-demo") {
 		if err = publishDemo(room); err != nil {
