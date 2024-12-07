@@ -203,10 +203,10 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	room := c.String("room")
 	metadata := c.String("metadata")
 	validFor := c.String("valid-for")
+	roomPreset := c.String("room-preset")
 
 	grant := &auth.VideoGrant{
-		Room:              room,
-		RoomConfiguration: c.String("room-configuration"),
+		Room: room,
 	}
 	hasPerms := false
 	if c.Bool("create") {
@@ -333,6 +333,9 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	if metadata != "" {
 		at.SetMetadata(metadata)
 	}
+	if roomPreset != "" {
+		at.SetRoomPreset(roomPreset)
+	}
 	if name == "" {
 		name = p
 	}
@@ -364,7 +367,7 @@ func accessToken(apiKey, apiSecret string, grant *auth.VideoGrant, identity stri
 		return nil
 	}
 	at := auth.NewAccessToken(apiKey, apiSecret).
-		AddGrant(grant).
+		SetVideoGrant(grant).
 		SetIdentity(identity)
 	return at
 }
