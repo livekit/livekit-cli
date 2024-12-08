@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/pion/rtcp"
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/livekit"

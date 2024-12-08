@@ -78,6 +78,7 @@ func main() {
 	app.Commands = append(app.Commands, LoadTestCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, SIPCommands...)
+	app.Commands = append(app.Commands, DispatchCommands...)
 
 	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
 	ctx, stop := signal.NotifyContext(
