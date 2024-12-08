@@ -16,7 +16,7 @@ var (
 	DispatchCommands = []*cli.Command{
 		{
 			Name:     "dispatch",
-			Usage:    "Create, list, and delete Agent Dispatches",
+			Usage:    "Create, list, and delete agent dispatches",
 			Category: "Agent",
 
 			Commands: []*cli.Command{
