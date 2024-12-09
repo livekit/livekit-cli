@@ -67,14 +67,15 @@ var templateIgnoreFiles = []string{
 }
 
 type Template struct {
-	Name      string   `yaml:"name" json:"name"`
-	Desc      string   `yaml:"desc" json:"description,omitempty"`
-	URL       string   `yaml:"url" json:"url,omitempty"`
-	Docs      string   `yaml:"docs" json:"docs_url,omitempty"`
-	Image     string   `yaml:"image" json:"image_ref,omitempty"`
-	Tags      []string `yaml:"tags" json:"tags,omitempty"`
-	Requires  []string `yaml:"requires" json:"requires,omitempty"`
-	IsSandbox bool     `yaml:"is_sandbox" json:"is_sandbox,omitempty"`
+	Name      string            `yaml:"name" json:"name"`
+	Desc      string            `yaml:"desc" json:"description,omitempty"`
+	URL       string            `yaml:"url" json:"url,omitempty"`
+	Docs      string            `yaml:"docs" json:"docs_url,omitempty"`
+	Image     string            `yaml:"image" json:"image_ref,omitempty"`
+	Tags      []string          `yaml:"tags" json:"tags,omitempty"`
+	Attrs     map[string]string `yaml:"attrs" json:"attrs,omitempty"`
+	Requires  []string          `yaml:"requires" json:"requires,omitempty"`
+	IsSandbox bool              `yaml:"is_sandbox" json:"is_sandbox,omitempty"`
 }
 
 type SandboxDetails struct {

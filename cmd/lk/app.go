@@ -80,6 +80,12 @@ var (
 					},
 				},
 				{
+					Name:   "list-templates",
+					Usage:  "List available templates to bootstrap a new application",
+					Flags:  []cli.Flag{jsonFlag},
+					Action: listTemplates,
+				},
+				{
 					Hidden:    true,
 					Name:      "install",
 					Usage:     "Execute installation defined in " + bootstrap.TaskFile,
@@ -174,6 +180,29 @@ func requireProject(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return err
+}
+
+func listTemplates(ctx context.Context, cmd *cli.Command) error {
+	templates, err := bootstrap.FetchTemplates(ctx)
+	if err != nil {
+		return err
+	}
+
+	if cmd.Bool("json") {
+		PrintJSON(templates)
+	} else {
+		const maxDescLength = 40
+		table := CreateTable().Headers("Template", "Description", "Tags")
+		for _, t := range templates {
+			table.Row(
+				t.Name,
+				strings.Join(wrapToLines(t.Desc, 40), "\n"),
+				strings.Join(t.Tags, ", "),
+			)
+		}
+		fmt.Println(table)
+	}
+	return nil
 }
 
 func setupTemplate(ctx context.Context, cmd *cli.Command) error {

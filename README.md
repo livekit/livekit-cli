@@ -97,50 +97,13 @@ lk app create --template <template_name> my-app
 
 Then follow the CLI prompts to finish your setup.
 
-The `--template` flag may be omitted to see a list of all available templates, or can be chosen from a selection of our first-party templates:
+For a list of all available templates, run:
 
-<table>
-  <thead><tr><th>Template Name</th><th>Language/Framework</th><th>Description</th></tr></thead>
-  <tbody>
-    <tr>
-      <td><a href="https://github.com/livekit-examples/voice-assistant-frontend">voice-assistant-frontend</a></td>
-      <td>TypeScript/Next.js</td>
-      <td>Voice assistant frontend with integrated token server</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/livekit-examples/meet">meet</a></td>
-      <td>TypeScript/Next.js</td>
-      <td>Video conferencing frontend with integrated token server</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/livekit-examples/multimodal-agent-python">multimodal-agent-python</a></td>
-      <td>Python</td>
-      <td>Multimodal agent with speech-to-speech and transcription capabilities</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/livekit-examples/voice-pipeline-agent-python">voice-pipeline-agent-python</a></td>
-      <td>Python</td>
-      <td>Voice agent using modular TTS, LLM, and STT capabilities</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/livekit-examples/multimodal-agent-node">multimodal-agent-node</a></td>
-      <td>Node.js/TypeScript</td>
-      <td>Multimodal agent with speech-to-speech and transcription capabilities</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/livekit-examples/token-server-node">token-server-node</a></td>
-      <td>Node.js/TypeScript</td>
-      <td>Token server for generating access tokens</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/livekit-examples/android-voice-assistant">android-voice-assistant</a></td>
-      <td>Kotlin/Android</td>
-      <td>Voice assistant mobile application</td>
-    </tr>
-  </tbody>
-</table>
+```shell
+lk app list-templates
+```
 
-For more information on templates, see the [LiveKit Template Index](https://github.com/livekit-examples/index?tab=readme-ov-file).
+See the [LiveKit Templates Index](https://github.com/livekit-examples/index?tab=readme-ov-file) for details about templates, and for instructions on how to contribute your own.
 
 ## Publishing to a room
 
