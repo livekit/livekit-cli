@@ -21,13 +21,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -180,54 +179,62 @@ func NewTask(ctx context.Context, tf *ast.Taskfile, dir, taskName string, verbos
 
 type PromptFunc func(key string, value string) (string, error)
 
-// Recursively walk the repo, reading in any .env.example file if present in
-// that directory, replacing all `substitutions`, prompting for others, and
-// writing to .env.local in that directory.
-func InstantiateDotEnv(ctx context.Context, rootDir string, substitutions map[string]string, verbose bool, prompt PromptFunc) error {
+// Read .env.example file if present in rootDir, replacing all `substitutions`,
+// prompting for others, and returning the result as a map.
+func InstantiateDotEnv(ctx context.Context, rootDir string, substitutions map[string]string, verbose bool, prompt PromptFunc) (map[string]string, error) {
 	promptedVars := map[string]string{}
 
-	return filepath.WalkDir(rootDir, func(filePath string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+	envExamplePath := path.Join(rootDir, EnvExampleFile)
+	stat, err := os.Stat(envExamplePath)
+	if err != nil {
+		return nil, err
+	}
+	if stat.IsDir() {
+		return nil, errors.New("env.example file is a directory")
+	}
 
-		if d.Name() == EnvExampleFile {
-			envMap, err := godotenv.Read(filePath)
+	envMap, err := godotenv.Read(envExamplePath)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, oldValue := range envMap {
+		// if key is a substitution, replace it
+		if value, ok := substitutions[key]; ok {
+			envMap[key] = value
+			// if key was already promped, use that value
+		} else if alreadyPromptedValue, ok := promptedVars[key]; ok {
+			envMap[key] = alreadyPromptedValue
+		} else {
+			// prompt for value
+			newValue, err := prompt(key, oldValue)
 			if err != nil {
-				return err
+				return nil, err
 			}
-
-			for key, oldValue := range envMap {
-				// if key is a substitution, replace it
-				if value, ok := substitutions[key]; ok {
-					envMap[key] = value
-					// if key was already promped, use that value
-				} else if alreadyPromptedValue, ok := promptedVars[key]; ok {
-					envMap[key] = alreadyPromptedValue
-				} else {
-					// prompt for value
-					newValue, err := prompt(key, oldValue)
-					if err != nil {
-						return err
-					}
-					envMap[key] = newValue
-					promptedVars[key] = newValue
-				}
-			}
-
-			envContents, err := godotenv.Marshal(envMap)
-			if err != nil {
-				return err
-			}
-
-			envLocalPath := path.Join(path.Dir(filePath), EnvLocalFile)
-			if err := os.WriteFile(envLocalPath, []byte(envContents), 0700); err != nil {
-				return err
-			}
+			envMap[key] = newValue
+			promptedVars[key] = newValue
 		}
+	}
 
-		return nil
-	})
+	return envMap, nil
+}
+
+func PrintDotEnv(envMap map[string]string) error {
+	envContents, err := godotenv.Marshal(envMap)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Println(envContents)
+	return err
+}
+
+func WriteDotEnv(rootDir string, envMap map[string]string) error {
+	envContents, err := godotenv.Marshal(envMap)
+	if err != nil {
+		return err
+	}
+	envLocalPath := path.Join(rootDir, EnvLocalFile)
+	return os.WriteFile(envLocalPath, []byte(envContents), 0700)
 }
 
 func CloneTemplate(url, dir string) (string, string, error) {
