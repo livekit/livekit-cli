@@ -366,6 +366,9 @@ func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose 
 	if err != nil {
 		return err
 	}
+	if tf == nil {
+		return nil
+	}
 
 	task, err := bootstrap.NewTask(ctx, tf, rootPath, string(bootstrap.TaskPostCreate), verbose)
 	if task == nil || err != nil {

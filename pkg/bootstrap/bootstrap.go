@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -121,7 +122,14 @@ func FetchSandboxDetails(ctx context.Context, sid, token, serverURL string) (*Sa
 }
 
 func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
-	file, err := os.ReadFile(path.Join(rootPath, TaskFile))
+	taskfilePath := path.Join(rootPath, TaskFile)
+
+	// taskfile.yaml is optional
+	if _, err := os.Stat(taskfilePath); err != nil && errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+
+	file, err := os.ReadFile(taskfilePath)
 	if err != nil {
 		return nil, err
 	}
