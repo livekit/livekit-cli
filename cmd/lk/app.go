@@ -103,14 +103,20 @@ var (
 							Usage:   "Write environment variables to .env.local file",
 						},
 					},
-					Before: requireProject,
+					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
+					Before:    requireProject,
 					Action: func(ctx context.Context, cmd *cli.Command) error {
-						env, err := instantiateEnv(ctx, cmd, ".", nil)
+						rootDir := cmd.Args().First()
+						if rootDir == "" {
+							rootDir = "."
+						}
+
+						env, err := instantiateEnv(ctx, cmd, rootDir, nil)
 						if err != nil {
 							return err
 						}
 						if cmd.Bool("write") {
-							return bootstrap.WriteDotEnv(".", env)
+							return bootstrap.WriteDotEnv(rootDir, env)
 						} else {
 							return bootstrap.PrintDotEnv(env)
 						}
