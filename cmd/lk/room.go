@@ -23,7 +23,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -73,8 +73,8 @@ var (
 							TakesFile: true,
 						},
 						&cli.StringFlag{
-							Name:  "room-configuration",
-							Usage: "`NAME` of the room configuration to associate with the created room",
+							Name:  "room-preset",
+							Usage: "`NAME` of the room configuration preset to associate with the created room",
 						},
 						&cli.UintFlag{
 							Name:  "min-playout-delay",
@@ -594,11 +594,11 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 		if err = protojson.Unmarshal(b, agent); err != nil {
 			return err
 		}
-		req.Agent = agent
+		req.Agents = agent.Dispatches
 	}
 
-	if roomConfig := cmd.String("room-configuration"); roomConfig != "" {
-		req.ConfigName = roomConfig
+	if roomPreset := cmd.String("room-preset"); roomPreset != "" {
+		req.RoomPreset = roomPreset
 	}
 
 	if cmd.Uint("min-playout-delay") != 0 {
