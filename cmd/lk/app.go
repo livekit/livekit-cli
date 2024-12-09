@@ -94,12 +94,32 @@ var (
 					Action:    runTask,
 				},
 				{
-					Hidden: true,
-					Name:   "env",
-					Usage:  "Manage environment variables",
-					Before: requireProject,
+					Name:  "env",
+					Usage: "Print project environment variables expanded from a .env.example file",
+					Flags: []cli.Flag{
+						&cli.BoolFlag{
+							Name:    "w",
+							Aliases: []string{"write"},
+							Usage:   "Write environment variables to .env.local file",
+						},
+					},
+					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
+					Before:    requireProject,
 					Action: func(ctx context.Context, cmd *cli.Command) error {
-						return instantiateEnv(ctx, cmd, ".", nil)
+						rootDir := cmd.Args().First()
+						if rootDir == "" {
+							rootDir = "."
+						}
+
+						env, err := instantiateEnv(ctx, cmd, rootDir, nil)
+						if err != nil {
+							return err
+						}
+						if cmd.Bool("write") {
+							return bootstrap.WriteDotEnv(rootDir, env)
+						} else {
+							return bootstrap.PrintDotEnv(env)
+						}
 					},
 				},
 			},
@@ -254,9 +274,11 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 
 	fmt.Println("Instantiating environment...")
 	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": sandboxID}
-	if err := instantiateEnv(ctx, cmd, appName, addlEnv); err != nil {
+	env, err := instantiateEnv(ctx, cmd, appName, addlEnv)
+	if err != nil {
 		return err
 	}
+	bootstrap.WriteDotEnv(appName, env)
 
 	if install {
 		fmt.Println("Installing template...")
@@ -307,7 +329,7 @@ func cleanupTemplate(ctx context.Context, cmd *cli.Command, appName string) erro
 	return bootstrap.CleanupTemplate(appName)
 }
 
-func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) error {
+func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) (map[string]string, error) {
 	env := map[string]string{
 		"LIVEKIT_API_KEY":    project.APIKey,
 		"LIVEKIT_API_SECRET": project.APISecret,
@@ -349,6 +371,9 @@ func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose 
 	tf, err := bootstrap.ParseTaskfile(rootPath)
 	if err != nil {
 		return err
+	}
+	if tf == nil {
+		return nil
 	}
 
 	task, err := bootstrap.NewTask(ctx, tf, rootPath, string(bootstrap.TaskPostCreate), verbose)
