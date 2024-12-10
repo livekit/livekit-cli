@@ -191,13 +191,15 @@ func listTemplates(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("json") {
 		PrintJSON(templates)
 	} else {
-		const maxDescLength = 40
-		table := CreateTable().Headers("Template", "Description", "Tags")
+		const maxDescLength = 64
+		table := CreateTable().Headers("Template", "Description").BorderRow(true)
 		for _, t := range templates {
+			desc := strings.Join(wrapToLines(t.Desc, maxDescLength), "\n")
+			url := theme.Focused.Title.Render(t.URL)
+			tags := theme.Help.ShortDesc.Render("#" + strings.Join(t.Tags, " #"))
 			table.Row(
 				t.Name,
-				strings.Join(wrapToLines(t.Desc, maxDescLength), "\n"),
-				strings.Join(t.Tags, ", "),
+				desc+"\n\n"+url+"\n"+tags,
 			)
 		}
 		fmt.Println(table)
