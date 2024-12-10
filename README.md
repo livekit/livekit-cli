@@ -14,10 +14,11 @@
 
 This package includes command line utilities that interacts with LiveKit. It allows you to:
 
+-   Bootstrap new applications from templates
 -   Create access tokens
--   Access LiveKit APIs, create, delete rooms, etc.
+-   Access LiveKit APIs, create and delete rooms, etc.
 -   Join a room as a participant, inspecting in-room events
--   Start and manage Egress
+-   Start and manage Egresses
 -   Perform load testing, efficiently simulating real-world load
 
 # Installation
@@ -55,7 +56,7 @@ make install
 
 # Usage
 
-See `lk --help` for a complete list of subcommands.
+See `lk --help` for a complete list of subcommands. The `--help` flag can also be used on any subcommand for more information.
 
 ## Set up your project (new)
 
@@ -85,6 +86,24 @@ lk project list
 ```shell
 lk project set-default <project_name>
 ```
+
+## Bootstrapping an application
+
+The LiveKit CLI can help you bootstrap applications from a number of convenient template repositories, using your project credentials to set up required environment variables and other configuration automatically. To create an application from a template, run the following:
+
+```shell
+lk app create --template <template_name> my-app
+```
+
+Then follow the CLI prompts to finish your setup.
+
+For a list of all available templates, run:
+
+```shell
+lk app list-templates
+```
+
+See the [LiveKit Templates Index](https://github.com/livekit-examples/index?tab=readme-ov-file) for details about templates, and for instructions on how to contribute your own.
 
 ## Publishing to a room
 

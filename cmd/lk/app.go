@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
@@ -77,6 +78,12 @@ var (
 							Hidden:  true,
 						},
 					},
+				},
+				{
+					Name:   "list-templates",
+					Usage:  "List available templates to bootstrap a new application",
+					Flags:  []cli.Flag{jsonFlag},
+					Action: listTemplates,
 				},
 				{
 					Hidden:    true,
@@ -175,6 +182,31 @@ func requireProject(ctx context.Context, cmd *cli.Command) error {
 	return err
 }
 
+func listTemplates(ctx context.Context, cmd *cli.Command) error {
+	templates, err := bootstrap.FetchTemplates(ctx)
+	if err != nil {
+		return err
+	}
+
+	if cmd.Bool("json") {
+		PrintJSON(templates)
+	} else {
+		const maxDescLength = 64
+		table := CreateTable().Headers("Template", "Description").BorderRow(true)
+		for _, t := range templates {
+			desc := strings.Join(wrapToLines(t.Desc, maxDescLength), "\n")
+			url := theme.Focused.Title.Render(t.URL)
+			tags := theme.Help.ShortDesc.Render("#" + strings.Join(t.Tags, " #"))
+			table.Row(
+				t.Name,
+				desc+"\n\n"+url+"\n"+tags,
+			)
+		}
+		fmt.Println(table)
+	}
+	return nil
+}
+
 func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	verbose := cmd.Bool("verbose")
 	install := cmd.Bool("install")
@@ -218,7 +250,9 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			WithTheme(theme)
 		var options []huh.Option[string]
 		for _, t := range templateOptions {
-			options = append(options, huh.NewOption(t.Name, t.URL))
+			descStyle := theme.Help.ShortDesc
+			optionText := t.Name + " " + descStyle.Render("#"+strings.Join(t.Tags, " #"))
+			options = append(options, huh.NewOption(optionText, t.URL))
 		}
 		templateSelect.(*huh.Select[string]).Options(options...)
 		preinstallPrompts = append(preinstallPrompts, templateSelect)

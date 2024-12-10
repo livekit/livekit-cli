@@ -160,6 +160,38 @@ func wrapWith(wrap string) func(string) string {
 	}
 }
 
+func ellipsizeTo(str string, maxLength int) string {
+	if len(str) <= maxLength {
+		return str
+	}
+	ellipsis := "..."
+	contentLen := max(0, min(len(str), maxLength-len(ellipsis)))
+	return str[:contentLen] + ellipsis
+}
+
+func wrapToLines(input string, maxLineLength int) []string {
+	words := strings.Fields(input)
+	var lines []string
+	var currentLine strings.Builder
+
+	for _, word := range words {
+		if currentLine.Len()+len(word)+1 > maxLineLength {
+			lines = append(lines, currentLine.String())
+			currentLine.Reset()
+		}
+		if currentLine.Len() > 0 {
+			currentLine.WriteString(" ")
+		}
+		currentLine.WriteString(word)
+	}
+
+	if currentLine.Len() > 0 {
+		lines = append(lines, currentLine.String())
+	}
+
+	return lines
+}
+
 // Provides a temporary path, a function to relocate it to a permanent path,
 // and a function to clean up the temporary path that should always be deferred
 // in the case of a failure to relocate.
