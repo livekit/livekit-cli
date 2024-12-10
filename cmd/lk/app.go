@@ -196,7 +196,7 @@ func listTemplates(ctx context.Context, cmd *cli.Command) error {
 		for _, t := range templates {
 			table.Row(
 				t.Name,
-				strings.Join(wrapToLines(t.Desc, 40), "\n"),
+				strings.Join(wrapToLines(t.Desc, maxDescLength), "\n"),
 				strings.Join(t.Tags, ", "),
 			)
 		}

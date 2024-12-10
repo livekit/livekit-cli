@@ -56,3 +56,34 @@ func TestMapStrings(t *testing.T) {
 		t.Error("mapStrings should apply the function to all elements")
 	}
 }
+
+func TestEllipziseTo(t *testing.T) {
+	str := "This is some long string that should be ellipsized"
+	ellipsized := ellipsizeTo(str, 12)
+	if len(ellipsized) != 12 {
+		t.Error("ellipsizeTo should return a string of the specified length")
+	}
+	if ellipsized != "This is s..." {
+		t.Error("ellipsizeTo should ellipsize the string")
+	}
+}
+
+func TestWrapToLines(t *testing.T) {
+	str := "This is a long string that should be wrapped to multiple lines"
+	wrapped := wrapToLines(str, 10)
+	if len(wrapped) != 8 {
+		t.Error("wrapToLines should return a slice of lines")
+	}
+	if !slices.Equal([]string{
+		"This is a",
+		"long",
+		"string",
+		"that",
+		"should be",
+		"wrapped to",
+		"multiple",
+		"lines",
+	}, wrapped) {
+		t.Error("wrapToLines should wrap the string to the specified width")
+	}
+}
