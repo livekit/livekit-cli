@@ -192,40 +192,42 @@ type PromptFunc func(key string, value string) (string, error)
 // prompting for others, and returning the result as a map.
 func InstantiateDotEnv(ctx context.Context, rootDir string, substitutions map[string]string, verbose bool, prompt PromptFunc) (map[string]string, error) {
 	promptedVars := map[string]string{}
-
 	envExamplePath := path.Join(rootDir, EnvExampleFile)
+
 	stat, err := os.Stat(envExamplePath)
-	if err != nil {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
-	}
-	if stat.IsDir() {
-		return nil, errors.New("env.example file is a directory")
-	}
-
-	envMap, err := godotenv.Read(envExamplePath)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, oldValue := range envMap {
-		// if key is a substitution, replace it
-		if value, ok := substitutions[key]; ok {
-			envMap[key] = value
-			// if key was already promped, use that value
-		} else if alreadyPromptedValue, ok := promptedVars[key]; ok {
-			envMap[key] = alreadyPromptedValue
-		} else {
-			// prompt for value
-			newValue, err := prompt(key, oldValue)
-			if err != nil {
-				return nil, err
-			}
-			envMap[key] = newValue
-			promptedVars[key] = newValue
+	} else if stat != nil {
+		if stat.IsDir() {
+			return nil, errors.New("env.example file is a directory")
 		}
-	}
 
-	return envMap, nil
+		envMap, err := godotenv.Read(envExamplePath)
+		if err != nil {
+			return nil, err
+		}
+
+		for key, oldValue := range envMap {
+			// if key is a substitution, replace it
+			if value, ok := substitutions[key]; ok {
+				envMap[key] = value
+				// if key was already promped, use that value
+			} else if alreadyPromptedValue, ok := promptedVars[key]; ok {
+				envMap[key] = alreadyPromptedValue
+			} else {
+				// prompt for value
+				newValue, err := prompt(key, oldValue)
+				if err != nil {
+					return nil, err
+				}
+				envMap[key] = newValue
+				promptedVars[key] = newValue
+			}
+		}
+		return envMap, nil
+	} else {
+		return substitutions, nil
+	}
 }
 
 func PrintDotEnv(envMap map[string]string) error {
@@ -243,7 +245,7 @@ func WriteDotEnv(rootDir string, envMap map[string]string) error {
 		return err
 	}
 	envLocalPath := path.Join(rootDir, EnvLocalFile)
-	return os.WriteFile(envLocalPath, []byte(envContents), 0700)
+	return os.WriteFile(envLocalPath, []byte(envContents+"\n"), 0700)
 }
 
 func CloneTemplate(url, dir string) (string, string, error) {
