@@ -102,7 +102,7 @@ var (
 				},
 				{
 					Name:  "env",
-					Usage: "Print project environment variables expanded from a .env.example file",
+					Usage: "Expand environment variables from the current project, and if present, the .env.example file",
 					Flags: []cli.Flag{
 						&cli.BoolFlag{
 							Name:    "w",
@@ -112,22 +112,7 @@ var (
 					},
 					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
 					Before:    requireProject,
-					Action: func(ctx context.Context, cmd *cli.Command) error {
-						rootDir := cmd.Args().First()
-						if rootDir == "" {
-							rootDir = "."
-						}
-
-						env, err := instantiateEnv(ctx, cmd, rootDir, nil)
-						if err != nil {
-							return err
-						}
-						if cmd.Bool("write") {
-							return bootstrap.WriteDotEnv(rootDir, env)
-						} else {
-							return bootstrap.PrintDotEnv(env)
-						}
-					},
+					Action:    manageEnv,
 				},
 			},
 		},
@@ -361,6 +346,24 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 
 func cleanupTemplate(ctx context.Context, cmd *cli.Command, appName string) error {
 	return bootstrap.CleanupTemplate(appName)
+}
+
+func manageEnv(ctx context.Context, cmd *cli.Command) error {
+	rootDir := cmd.Args().First()
+	if rootDir == "" {
+		rootDir = "."
+	}
+
+	env, err := instantiateEnv(ctx, cmd, rootDir, nil)
+	if err != nil {
+		return err
+	}
+
+	if cmd.Bool("write") {
+		return bootstrap.WriteDotEnv(rootDir, env)
+	} else {
+		return bootstrap.PrintDotEnv(env)
+	}
 }
 
 func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) (map[string]string, error) {
