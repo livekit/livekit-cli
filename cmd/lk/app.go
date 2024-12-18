@@ -408,7 +408,6 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 		"LIVEKIT_URL":             project.URL,
 		"NEXT_PUBLIC_LIVEKIT_URL": project.URL,
 	}
-
 	if addlEnv != nil {
 		for k, v := range *addlEnv {
 			env[k] = v
