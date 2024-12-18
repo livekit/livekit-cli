@@ -19,7 +19,6 @@ var (
 		{
 			Name:            "replay",
 			Usage:           "experimental (not yet available)",
-			Category:        "I/O",
 			Hidden:          true,
 			HideHelpCommand: true,
 			Commands: []*cli.Command{

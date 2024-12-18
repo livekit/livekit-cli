@@ -28,25 +28,16 @@ import (
 
 //lint:file-ignore SA1019 we still support older APIs for compatibility
 
-const (
-	sipCategory            = "I/O"
-	sipTrunkCategory       = "Trunks"
-	sipDispatchCategory    = "Dispatch Rules"
-	sipParticipantCategory = "Participants"
-)
-
 var (
 	SIPCommands = []*cli.Command{
 		{
-			Name:     "sip",
-			Usage:    "Manage SIP Trunks, Dispatch Rules, and Participants",
-			Category: sipCategory,
+			Name:  "sip",
+			Usage: "Manage SIP Trunks, Dispatch Rules, and Participants",
 			Commands: []*cli.Command{
 				{
-					Name:     "inbound",
-					Aliases:  []string{"in", "inbound-trunk"},
-					Usage:    "Inbound SIP Trunk management",
-					Category: sipTrunkCategory,
+					Name:    "inbound",
+					Aliases: []string{"in", "inbound-trunk"},
+					Usage:   "Inbound SIP Trunk management",
 					Commands: []*cli.Command{
 						{
 							Name:   "list",
@@ -69,10 +60,9 @@ var (
 					},
 				},
 				{
-					Name:     "outbound",
-					Aliases:  []string{"out", "outbound-trunk"},
-					Usage:    "Outbound SIP Trunk management",
-					Category: sipTrunkCategory,
+					Name:    "outbound",
+					Aliases: []string{"out", "outbound-trunk"},
+					Usage:   "Outbound SIP Trunk management",
 					Commands: []*cli.Command{
 						{
 							Name:   "list",
@@ -95,10 +85,9 @@ var (
 					},
 				},
 				{
-					Name:     "dispatch",
-					Usage:    "SIP Dispatch Rule management",
-					Aliases:  []string{"dispatch-rule"},
-					Category: sipDispatchCategory,
+					Name:    "dispatch",
+					Usage:   "SIP Dispatch Rule management",
+					Aliases: []string{"dispatch-rule"},
 					Commands: []*cli.Command{
 						{
 							Name:   "list",
@@ -121,9 +110,8 @@ var (
 					},
 				},
 				{
-					Name:     "participant",
-					Usage:    "SIP Participant management",
-					Category: sipParticipantCategory,
+					Name:  "participant",
+					Usage: "SIP Participant management",
 					Commands: []*cli.Command{
 						{
 							Name:      "create",
@@ -156,18 +144,16 @@ var (
 
 		// Deprecated commands kept for compatibility
 		{
-			Hidden:   true, // deprecated: use `sip trunk list`
-			Name:     "list-sip-trunk",
-			Usage:    "List all SIP trunk",
-			Action:   listSipTrunk,
-			Category: sipCategory,
+			Hidden: true, // deprecated: use `sip trunk list`
+			Name:   "list-sip-trunk",
+			Usage:  "List all SIP trunk",
+			Action: listSipTrunk,
 		},
 		{
-			Hidden:   true, // deprecated: use `sip trunk delete`
-			Name:     "delete-sip-trunk",
-			Usage:    "Delete SIP Trunk",
-			Action:   deleteSIPTrunkLegacy,
-			Category: sipCategory,
+			Hidden: true, // deprecated: use `sip trunk delete`
+			Name:   "delete-sip-trunk",
+			Usage:  "Delete SIP Trunk",
+			Action: deleteSIPTrunkLegacy,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
@@ -177,28 +163,25 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprecated: use `sip dispatch create`
-			Name:     "create-sip-dispatch-rule",
-			Usage:    "Create a SIP Dispatch Rule",
-			Action:   createSIPDispatchRuleLegacy,
-			Category: sipCategory,
+			Hidden: true, // deprecated: use `sip dispatch create`
+			Name:   "create-sip-dispatch-rule",
+			Usage:  "Create a SIP Dispatch Rule",
+			Action: createSIPDispatchRuleLegacy,
 			Flags: []cli.Flag{
 				RequestFlag[livekit.CreateSIPDispatchRuleRequest](),
 			},
 		},
 		{
-			Hidden:   true, // deprecated: use `sip dispatch list`
-			Name:     "list-sip-dispatch-rule",
-			Usage:    "List all SIP Dispatch Rule",
-			Action:   listSipDispatchRule,
-			Category: sipCategory,
+			Hidden: true, // deprecated: use `sip dispatch list`
+			Name:   "list-sip-dispatch-rule",
+			Usage:  "List all SIP Dispatch Rule",
+			Action: listSipDispatchRule,
 		},
 		{
-			Hidden:   true, // deprecated: use `sip dispatch delete`
-			Name:     "delete-sip-dispatch-rule",
-			Usage:    "Delete SIP Dispatch Rule",
-			Action:   deleteSIPDispatchRuleLegacy,
-			Category: sipCategory,
+			Hidden: true, // deprecated: use `sip dispatch delete`
+			Name:   "delete-sip-dispatch-rule",
+			Usage:  "Delete SIP Dispatch Rule",
+			Action: deleteSIPDispatchRuleLegacy,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
@@ -208,11 +191,10 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprecated: use `sip participant create`
-			Name:     "create-sip-participant",
-			Usage:    "Create a SIP Participant",
-			Action:   createSIPParticipantLegacy,
-			Category: sipCategory,
+			Hidden: true, // deprecated: use `sip participant create`
+			Name:   "create-sip-participant",
+			Usage:  "Create a SIP Participant",
+			Action: createSIPParticipantLegacy,
 			Flags: []cli.Flag{
 				RequestFlag[livekit.CreateSIPParticipantRequest](),
 			},
