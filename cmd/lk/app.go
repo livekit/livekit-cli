@@ -40,8 +40,8 @@ var (
 	project      *config.ProjectConfig
 	AppCommands  = []*cli.Command{
 		{
-			Name:     "app",
-			Category: "Core",
+			Name:  "app",
+			Usage: "Initialize and manage applications",
 			Commands: []*cli.Command{
 				{
 					Name:      "create",
@@ -292,7 +292,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Instantiating environment...")
-	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": sandboxID}
+	addlEnv := &map[string]string{
+		"LIVEKIT_SANDBOX_ID":             sandboxID,
+		"NEXT_PUBLIC_LIVEKIT_SANDBOX_ID": sandboxID,
+	}
 	env, err := instantiateEnv(ctx, cmd, appName, addlEnv)
 	if err != nil {
 		return err
@@ -368,9 +371,10 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 
 func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) (map[string]string, error) {
 	env := map[string]string{
-		"LIVEKIT_API_KEY":    project.APIKey,
-		"LIVEKIT_API_SECRET": project.APISecret,
-		"LIVEKIT_URL":        project.URL,
+		"LIVEKIT_API_KEY":         project.APIKey,
+		"LIVEKIT_API_SECRET":      project.APISecret,
+		"LIVEKIT_URL":             project.URL,
+		"NEXT_PUBLIC_LIVEKIT_URL": project.URL,
 	}
 	if addlEnv != nil {
 		for k, v := range *addlEnv {
