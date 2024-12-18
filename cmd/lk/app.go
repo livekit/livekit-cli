@@ -31,16 +31,16 @@ import (
 )
 
 var (
-	template     *bootstrap.Template
-	templateName string
-	templateURL  string
-	sandboxID    string
-	appName      string
-	appNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
-	outputFile   string
-	exampleFile  string
-	project      *config.ProjectConfig
-	AppCommands  = []*cli.Command{
+	template        *bootstrap.Template
+	templateName    string
+	templateURL     string
+	sandboxID       string
+	appName         string
+	appNameRegex    = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
+	destinationFile string
+	exampleFile     string
+	project         *config.ProjectConfig
+	AppCommands     = []*cli.Command{
 		{
 			Name:     "app",
 			Category: "Core",
@@ -117,7 +117,7 @@ var (
 							Usage:       "Destination file path, when used with --write",
 							Value:       ".env.local",
 							TakesFile:   true,
-							Destination: &outputFile,
+							Destination: &destinationFile,
 						},
 						&cli.StringFlag{
 							Name:        "example",
@@ -392,7 +392,7 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("write") {
-		return bootstrap.WriteDotEnv(rootDir, outputFile, env)
+		return bootstrap.WriteDotEnv(rootDir, destinationFile, env)
 	} else {
 		return bootstrap.PrintDotEnv(env)
 	}
