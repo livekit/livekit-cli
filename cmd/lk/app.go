@@ -31,14 +31,16 @@ import (
 )
 
 var (
-	template     *bootstrap.Template
-	templateName string
-	templateURL  string
-	sandboxID    string
-	appName      string
-	appNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
-	project      *config.ProjectConfig
-	AppCommands  = []*cli.Command{
+	template        *bootstrap.Template
+	templateName    string
+	templateURL     string
+	sandboxID       string
+	appName         string
+	appNameRegex    = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
+	destinationFile string
+	exampleFile     string
+	project         *config.ProjectConfig
+	AppCommands     = []*cli.Command{
 		{
 			Name:  "app",
 			Usage: "Initialize and manage applications",
@@ -102,12 +104,28 @@ var (
 				},
 				{
 					Name:  "env",
-					Usage: "Expand environment variables from the current project, and if present, the .env.example file",
+					Usage: "Fill environment variables based on .env.example (optional) and project credentials",
 					Flags: []cli.Flag{
 						&cli.BoolFlag{
-							Name:    "w",
-							Aliases: []string{"write"},
-							Usage:   "Write environment variables to .env.local file",
+							Name:    "write",
+							Aliases: []string{"w"},
+							Usage:   "Write environment variables to file",
+						},
+						&cli.StringFlag{
+							Name:        "destination",
+							Aliases:     []string{"d"},
+							Usage:       "Destination file path, when used with --write",
+							Value:       ".env.local",
+							TakesFile:   true,
+							Destination: &destinationFile,
+						},
+						&cli.StringFlag{
+							Name:        "example",
+							Aliases:     []string{"e"},
+							Usage:       "Example file path",
+							Value:       ".env.example",
+							TakesFile:   true,
+							Destination: &exampleFile,
 						},
 					},
 					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
@@ -291,16 +309,32 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	tf, err := bootstrap.ParseTaskfile(appName)
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Instantiating environment...")
 	addlEnv := &map[string]string{
 		"LIVEKIT_SANDBOX_ID":             sandboxID,
 		"NEXT_PUBLIC_LIVEKIT_SANDBOX_ID": sandboxID,
 	}
-	env, err := instantiateEnv(ctx, cmd, appName, addlEnv)
+	envOutputFile := ".env.local"
+	envExampleFile := ".env.example"
+	if tf != nil {
+		if customOutput, ok := tf.Vars.Get("env_file").Value.(string); ok {
+			envOutputFile = customOutput
+		}
+		if customExample, ok := tf.Vars.Get("env_example").Value.(string); ok {
+			envExampleFile = customExample
+		}
+	}
+	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile)
 	if err != nil {
 		return err
 	}
-	bootstrap.WriteDotEnv(appName, env)
+
+	bootstrap.WriteDotEnv(appName, envOutputFile, env)
 
 	if install {
 		fmt.Println("Installing template...")
@@ -357,19 +391,19 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 		rootDir = "."
 	}
 
-	env, err := instantiateEnv(ctx, cmd, rootDir, nil)
+	env, err := instantiateEnv(ctx, cmd, rootDir, nil, exampleFile)
 	if err != nil {
 		return err
 	}
 
 	if cmd.Bool("write") {
-		return bootstrap.WriteDotEnv(rootDir, env)
+		return bootstrap.WriteDotEnv(rootDir, destinationFile, env)
 	} else {
 		return bootstrap.PrintDotEnv(env)
 	}
 }
 
-func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) (map[string]string, error) {
+func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string) (map[string]string, error) {
 	env := map[string]string{
 		"LIVEKIT_API_KEY":         project.APIKey,
 		"LIVEKIT_API_SECRET":      project.APISecret,
@@ -396,7 +430,7 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 		return newValue, nil
 	}
 
-	return bootstrap.InstantiateDotEnv(ctx, rootPath, env, cmd.Bool("verbose"), prompt)
+	return bootstrap.InstantiateDotEnv(ctx, rootPath, exampleFile, env, cmd.Bool("verbose"), prompt)
 }
 
 func installTemplate(ctx context.Context, cmd *cli.Command) error {
