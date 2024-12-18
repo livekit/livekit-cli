@@ -53,17 +53,16 @@ const (
 )
 
 var (
-	revoke       bool
-	timeout      int64  = 60 * 15
-	interval     int64  = 4
-	serverURL    string = cloudAPIServerURL
-	dashboardURL string = cloudDashboardURL
-	authClient   AuthClient
-	AuthCommands = []*cli.Command{
+	revoke        bool
+	timeout       int64  = 60 * 15
+	interval      int64  = 4
+	serverURL     string = cloudAPIServerURL
+	dashboardURL  string = cloudDashboardURL
+	authClient    AuthClient
+	CloudCommands = []*cli.Command{
 		{
-			Name:     "cloud",
-			Usage:    "Interacting with LiveKit Cloud",
-			Category: "Cloud",
+			Name:  "cloud",
+			Usage: "Interact with LiveKit Cloud services",
 			Commands: []*cli.Command{
 				{
 					Name:   "auth",

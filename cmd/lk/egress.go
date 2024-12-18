@@ -69,9 +69,8 @@ See cmd/livekit-cli/examples`
 var (
 	EgressCommands = []*cli.Command{
 		{
-			Name:     "egress",
-			Usage:    "Record or stream media from LiveKit to elsewhere",
-			Category: "I/O",
+			Name:  "egress",
+			Usage: "Record or stream media from LiveKit to elsewhere",
 			Commands: []*cli.Command{
 				{
 					Name:        "start",

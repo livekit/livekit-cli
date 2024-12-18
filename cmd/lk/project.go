@@ -32,10 +32,9 @@ import (
 var (
 	ProjectCommands = []*cli.Command{
 		{
-			Name:     "project",
-			Usage:    "Add or remove projects and view existing project properties",
-			Category: "Core",
-			Before:   loadProjectConfig,
+			Name:   "project",
+			Usage:  "Add or remove projects and view existing project properties",
+			Before: loadProjectConfig,
 			Commands: []*cli.Command{
 				{
 					Name:      "add",

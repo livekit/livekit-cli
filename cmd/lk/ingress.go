@@ -24,14 +24,11 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
-const ingressCategory = "Ingress"
-
 var (
 	IngressCommands = []*cli.Command{
 		{
-			Name:     "ingress",
-			Usage:    "Import outside media sources into a LiveKit room",
-			Category: "I/O",
+			Name:  "ingress",
+			Usage: "Import outside media sources into a LiveKit room",
 			Commands: []*cli.Command{
 				{
 					Name:      "create",
@@ -98,12 +95,11 @@ var (
 
 		// Deprecated commands kept for compatibility
 		{
-			Hidden:   true, // deprecated: use `ingress create`
-			Name:     "create-ingress",
-			Usage:    "Create an ingress",
-			Before:   createIngressClient,
-			Action:   createIngress,
-			Category: ingressCategory,
+			Hidden: true, // deprecated: use `ingress create`
+			Name:   "create-ingress",
+			Usage:  "Create an ingress",
+			Before: createIngressClient,
+			Action: createIngress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
@@ -113,12 +109,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprecated: use `ingress update`
-			Name:     "update-ingress",
-			Usage:    "Update an ingress",
-			Before:   createIngressClient,
-			Action:   updateIngress,
-			Category: ingressCategory,
+			Hidden: true, // deprecated: use `ingress update`
+			Name:   "update-ingress",
+			Usage:  "Update an ingress",
+			Before: createIngressClient,
+			Action: updateIngress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
@@ -128,12 +123,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprecated: use `ingress list`
-			Name:     "list-ingress",
-			Usage:    "List all active ingress",
-			Before:   createIngressClient,
-			Action:   listIngress,
-			Category: ingressCategory,
+			Hidden: true, // deprecated: use `ingress list`
+			Name:   "list-ingress",
+			Usage:  "List all active ingress",
+			Before: createIngressClient,
+			Action: listIngress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "room",
@@ -148,12 +142,11 @@ var (
 			},
 		},
 		{
-			Hidden:   true, // deprecated: use `ingress delete`
-			Name:     "delete-ingress",
-			Usage:    "Delete ingress",
-			Before:   createIngressClient,
-			Action:   deleteIngress,
-			Category: ingressCategory,
+			Hidden: true, // deprecated: use `ingress delete`
+			Name:   "delete-ingress",
+			Usage:  "Delete ingress",
+			Before: createIngressClient,
+			Action: deleteIngress,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",

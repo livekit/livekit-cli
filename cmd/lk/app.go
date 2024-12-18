@@ -42,8 +42,8 @@ var (
 	project         *config.ProjectConfig
 	AppCommands     = []*cli.Command{
 		{
-			Name:     "app",
-			Category: "Core",
+			Name:  "app",
+			Usage: "Initialize and manage applications",
 			Commands: []*cli.Command{
 				{
 					Name:      "create",
@@ -315,7 +315,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Instantiating environment...")
-	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": sandboxID}
+	addlEnv := &map[string]string{
+		"LIVEKIT_SANDBOX_ID":             sandboxID,
+		"NEXT_PUBLIC_LIVEKIT_SANDBOX_ID": sandboxID,
+	}
 	envOutputFile := ".env.local"
 	if customOutput, ok := tf.Vars.Get("env_file").Value.(string); ok {
 		envOutputFile = customOutput
@@ -399,12 +402,11 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 }
 
 func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string) (map[string]string, error) {
-	env := map[string]string{}
-
-	env = map[string]string{
-		"LIVEKIT_API_KEY":    project.APIKey,
-		"LIVEKIT_API_SECRET": project.APISecret,
-		"LIVEKIT_URL":        project.URL,
+	env := map[string]string{
+		"LIVEKIT_API_KEY":         project.APIKey,
+		"LIVEKIT_API_SECRET":      project.APISecret,
+		"LIVEKIT_URL":             project.URL,
+		"NEXT_PUBLIC_LIVEKIT_URL": project.URL,
 	}
 
 	if addlEnv != nil {

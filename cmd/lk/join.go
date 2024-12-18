@@ -40,11 +40,10 @@ import (
 var (
 	JoinCommands = []*cli.Command{
 		{
-			Hidden:   true, // deprecated: use `lk room join`
-			Name:     "join-room",
-			Usage:    "Joins a room as a participant",
-			Action:   _deprecatedJoinRoom,
-			Category: "Simulate",
+			Hidden: true, // deprecated: use `lk room join`
+			Name:   "join-room",
+			Usage:  "Joins a room as a participant",
+			Action: _deprecatedJoinRoom,
 			Flags: []cli.Flag{
 				roomFlag,
 				identityFlag,

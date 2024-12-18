@@ -15,10 +15,8 @@ import (
 var (
 	DispatchCommands = []*cli.Command{
 		{
-			Name:     "dispatch",
-			Usage:    "Create, list, and delete agent dispatches",
-			Category: "Agent",
-
+			Name:  "dispatch",
+			Usage: "Create, list, and delete agent dispatches",
 			Commands: []*cli.Command{
 				{
 					Name:      "list",

@@ -42,10 +42,9 @@ const (
 var (
 	TokenCommands = []*cli.Command{
 		{
-			Name:     "token",
-			Usage:    "Create access tokens with granular capabilities",
-			Category: "Core",
-			Before:   loadProjectConfig,
+			Name:   "token",
+			Usage:  "Create access tokens with granular capabilities",
+			Before: loadProjectConfig,
 			Commands: []*cli.Command{
 				{
 					Name:   "create",

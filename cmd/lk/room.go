@@ -38,7 +38,6 @@ var (
 		{
 			Name:            "room",
 			Usage:           "Create or delete rooms and manage existing room properties",
-			Category:        "Core",
 			HideHelpCommand: true,
 			Commands: []*cli.Command{
 				{
