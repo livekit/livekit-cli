@@ -40,8 +40,8 @@ var (
 	project      *config.ProjectConfig
 	AppCommands  = []*cli.Command{
 		{
-			Name:     "app",
-			Category: "Core",
+			Name:  "app",
+			Usage: "Initialize and manage applications",
 			Commands: []*cli.Command{
 				{
 					Name:      "create",
