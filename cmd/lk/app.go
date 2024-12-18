@@ -31,14 +31,17 @@ import (
 )
 
 var (
-	template     *bootstrap.Template
-	templateName string
-	templateURL  string
-	sandboxID    string
-	appName      string
-	appNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
-	project      *config.ProjectConfig
-	AppCommands  = []*cli.Command{
+	template        *bootstrap.Template
+	templateName    string
+	templateURL     string
+	sandboxID       string
+	appName         string
+	appNameRegex    = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
+	outputFile      string
+	exampleFile     string
+	skipLiveKitKeys bool
+	project         *config.ProjectConfig
+	AppCommands     = []*cli.Command{
 		{
 			Name:     "app",
 			Category: "Core",
@@ -108,6 +111,24 @@ var (
 							Name:    "w",
 							Aliases: []string{"write"},
 							Usage:   "Write environment variables to .env.local file",
+						},
+						&cli.StringFlag{
+							Name:        "output",
+							Usage:       "Specify a custom file name for the environment variables file",
+							Value:       ".env.local",
+							Destination: &outputFile,
+						},
+						&cli.StringFlag{
+							Name:        "example",
+							Usage:       "Specify a custom file name for the environment variables template file",
+							Value:       ".env.example",
+							Destination: &exampleFile,
+						},
+						&cli.BoolFlag{
+							Name:        "skip-livekit-keys",
+							Usage:       "Don't add LiveKit API keys to the environment",
+							Value:       false,
+							Destination: &skipLiveKitKeys,
 						},
 					},
 					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
@@ -291,13 +312,28 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("Instantiating environment...")
-	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": sandboxID}
-	env, err := instantiateEnv(ctx, cmd, appName, addlEnv)
+	tf, err := bootstrap.ParseTaskfile(appName)
 	if err != nil {
 		return err
 	}
-	bootstrap.WriteDotEnv(appName, env)
+
+	fmt.Println("Instantiating environment...")
+	addlEnv := &map[string]string{"LIVEKIT_SANDBOX_ID": sandboxID}
+	envOutputFile := ".env.local"
+	if customOutput, ok := tf.Vars.Get("env_file").Value.(string); ok {
+		envOutputFile = customOutput
+	}
+	envExampleFile := ".env.example"
+	if customExample, ok := tf.Vars.Get("env_example").Value.(string); ok {
+		envExampleFile = customExample
+	}
+	skipLiveKitKeys := tf.Vars.Get("env_no_livekit_keys").Value.(bool)
+	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile, skipLiveKitKeys)
+	if err != nil {
+		return err
+	}
+
+	bootstrap.WriteDotEnv(appName, envOutputFile, env)
 
 	if install {
 		fmt.Println("Installing template...")
@@ -354,24 +390,31 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 		rootDir = "."
 	}
 
-	env, err := instantiateEnv(ctx, cmd, rootDir, nil)
+	env, err := instantiateEnv(ctx, cmd, rootDir, nil, exampleFile, skipLiveKitKeys)
 	if err != nil {
 		return err
 	}
 
 	if cmd.Bool("write") {
-		return bootstrap.WriteDotEnv(rootDir, env)
+		return bootstrap.WriteDotEnv(rootDir, outputFile, env)
 	} else {
 		return bootstrap.PrintDotEnv(env)
 	}
 }
 
-func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string) (map[string]string, error) {
-	env := map[string]string{
-		"LIVEKIT_API_KEY":    project.APIKey,
-		"LIVEKIT_API_SECRET": project.APISecret,
-		"LIVEKIT_URL":        project.URL,
+func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string, skipLiveKitKeys bool) (map[string]string, error) {
+	// Initialize with default values
+	env := map[string]string{}
+
+	// Only add LiveKit credentials if not disabled in taskfile
+	if !skipLiveKitKeys {
+		env = map[string]string{
+			"LIVEKIT_API_KEY":    project.APIKey,
+			"LIVEKIT_API_SECRET": project.APISecret,
+			"LIVEKIT_URL":        project.URL,
+		}
 	}
+
 	if addlEnv != nil {
 		for k, v := range *addlEnv {
 			env[k] = v
@@ -392,7 +435,7 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 		return newValue, nil
 	}
 
-	return bootstrap.InstantiateDotEnv(ctx, rootPath, env, cmd.Bool("verbose"), prompt)
+	return bootstrap.InstantiateDotEnv(ctx, rootPath, exampleFile, env, cmd.Bool("verbose"), prompt)
 }
 
 func installTemplate(ctx context.Context, cmd *cli.Command) error {

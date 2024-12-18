@@ -40,8 +40,6 @@ import (
 )
 
 const (
-	EnvExampleFile          = ".env.example"
-	EnvLocalFile            = ".env.local"
 	TaskFile                = "taskfile.yaml"
 	TemplateIndexFile       = "templates.yaml"
 	TemplateIndexURL        = "https://raw.githubusercontent.com/livekit-examples/index/main"
@@ -190,16 +188,16 @@ type PromptFunc func(key string, value string) (string, error)
 
 // Read .env.example file if present in rootDir, replacing all `substitutions`,
 // prompting for others, and returning the result as a map.
-func InstantiateDotEnv(ctx context.Context, rootDir string, substitutions map[string]string, verbose bool, prompt PromptFunc) (map[string]string, error) {
+func InstantiateDotEnv(ctx context.Context, rootDir string, exampleFilePath string, substitutions map[string]string, verbose bool, prompt PromptFunc) (map[string]string, error) {
 	promptedVars := map[string]string{}
-	envExamplePath := path.Join(rootDir, EnvExampleFile)
+	envExamplePath := path.Join(rootDir, exampleFilePath)
 
 	stat, err := os.Stat(envExamplePath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	} else if stat != nil {
 		if stat.IsDir() {
-			return nil, errors.New("env.example file is a directory")
+			return nil, errors.New(".env.example file is a directory")
 		}
 
 		envMap, err := godotenv.Read(envExamplePath)
@@ -239,12 +237,12 @@ func PrintDotEnv(envMap map[string]string) error {
 	return err
 }
 
-func WriteDotEnv(rootDir string, envMap map[string]string) error {
+func WriteDotEnv(rootDir string, filePath string, envMap map[string]string) error {
 	envContents, err := godotenv.Marshal(envMap)
 	if err != nil {
 		return err
 	}
-	envLocalPath := path.Join(rootDir, EnvLocalFile)
+	envLocalPath := path.Join(rootDir, filePath)
 	return os.WriteFile(envLocalPath, []byte(envContents+"\n"), 0700)
 }
 
