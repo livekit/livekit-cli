@@ -320,12 +320,14 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		"NEXT_PUBLIC_LIVEKIT_SANDBOX_ID": sandboxID,
 	}
 	envOutputFile := ".env.local"
-	if customOutput, ok := tf.Vars.Get("env_file").Value.(string); ok {
-		envOutputFile = customOutput
-	}
 	envExampleFile := ".env.example"
-	if customExample, ok := tf.Vars.Get("env_example").Value.(string); ok {
-		envExampleFile = customExample
+	if tf != nil {
+		if customOutput, ok := tf.Vars.Get("env_file").Value.(string); ok {
+			envOutputFile = customOutput
+		}
+		if customExample, ok := tf.Vars.Get("env_example").Value.(string); ok {
+			envExampleFile = customExample
+		}
 	}
 	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile)
 	if err != nil {
