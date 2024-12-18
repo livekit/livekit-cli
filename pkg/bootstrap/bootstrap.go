@@ -109,6 +109,9 @@ func FetchSandboxDetails(ctx context.Context, sid, token, serverURL string) (*Sa
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode == 404 {
+		return nil, fmt.Errorf("sandbox not found: %s", sid)
+	}
 	if resp.StatusCode != 200 {
 		return nil, errors.New(resp.Status)
 	}
