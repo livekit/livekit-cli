@@ -403,10 +403,8 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 }
 
 func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string, skipLiveKitKeys bool) (map[string]string, error) {
-	// Initialize with default values
 	env := map[string]string{}
 
-	// Only add LiveKit credentials if not disabled in taskfile
 	if !skipLiveKitKeys {
 		env = map[string]string{
 			"LIVEKIT_API_KEY":    project.APIKey,
