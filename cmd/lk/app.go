@@ -31,17 +31,16 @@ import (
 )
 
 var (
-	template        *bootstrap.Template
-	templateName    string
-	templateURL     string
-	sandboxID       string
-	appName         string
-	appNameRegex    = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
-	outputFile      string
-	exampleFile     string
-	skipLiveKitKeys bool
-	project         *config.ProjectConfig
-	AppCommands     = []*cli.Command{
+	template     *bootstrap.Template
+	templateName string
+	templateURL  string
+	sandboxID    string
+	appName      string
+	appNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
+	outputFile   string
+	exampleFile  string
+	project      *config.ProjectConfig
+	AppCommands  = []*cli.Command{
 		{
 			Name:     "app",
 			Category: "Core",
@@ -105,30 +104,28 @@ var (
 				},
 				{
 					Name:  "env",
-					Usage: "Expand environment variables from the current project, and if present, the .env.example file",
+					Usage: "Fill environment variables based on .env.example (optional) and project credentials",
 					Flags: []cli.Flag{
 						&cli.BoolFlag{
-							Name:    "w",
-							Aliases: []string{"write"},
-							Usage:   "Write environment variables to .env.local file",
+							Name:    "write",
+							Aliases: []string{"w"},
+							Usage:   "Write environment variables to file",
 						},
 						&cli.StringFlag{
-							Name:        "output",
-							Usage:       "Specify a custom file name for the environment variables file",
+							Name:        "destination",
+							Aliases:     []string{"d"},
+							Usage:       "Destination file path, when used with --write",
 							Value:       ".env.local",
+							TakesFile:   true,
 							Destination: &outputFile,
 						},
 						&cli.StringFlag{
 							Name:        "example",
-							Usage:       "Specify a custom file name for the environment variables template file",
+							Aliases:     []string{"e"},
+							Usage:       "Example file path",
 							Value:       ".env.example",
+							TakesFile:   true,
 							Destination: &exampleFile,
-						},
-						&cli.BoolFlag{
-							Name:        "skip-livekit-keys",
-							Usage:       "Don't add LiveKit API keys to the environment",
-							Value:       false,
-							Destination: &skipLiveKitKeys,
 						},
 					},
 					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
@@ -327,8 +324,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	if customExample, ok := tf.Vars.Get("env_example").Value.(string); ok {
 		envExampleFile = customExample
 	}
-	skipLiveKitKeys := tf.Vars.Get("env_no_livekit_keys").Value.(bool)
-	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile, skipLiveKitKeys)
+	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile)
 	if err != nil {
 		return err
 	}
@@ -390,7 +386,7 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 		rootDir = "."
 	}
 
-	env, err := instantiateEnv(ctx, cmd, rootDir, nil, exampleFile, skipLiveKitKeys)
+	env, err := instantiateEnv(ctx, cmd, rootDir, nil, exampleFile)
 	if err != nil {
 		return err
 	}
@@ -402,15 +398,13 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 	}
 }
 
-func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string, skipLiveKitKeys bool) (map[string]string, error) {
+func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string) (map[string]string, error) {
 	env := map[string]string{}
 
-	if !skipLiveKitKeys {
-		env = map[string]string{
-			"LIVEKIT_API_KEY":    project.APIKey,
-			"LIVEKIT_API_SECRET": project.APISecret,
-			"LIVEKIT_URL":        project.URL,
-		}
+	env = map[string]string{
+		"LIVEKIT_API_KEY":    project.APIKey,
+		"LIVEKIT_API_SECRET": project.APISecret,
+		"LIVEKIT_URL":        project.URL,
 	}
 
 	if addlEnv != nil {
