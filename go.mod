@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/huh v0.6.0
 	github.com/charmbracelet/huh/spinner v0.0.0-20241011224433-983a50776b31
 	github.com/charmbracelet/lipgloss v1.0.0
-	github.com/frostbyte73/core v0.0.13
+	github.com/frostbyte73/core v0.1.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.40.1
 	github.com/joho/godotenv v1.5.1
@@ -63,7 +63,7 @@ require (
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/gammazero/deque v0.2.1 // indirect
+	github.com/gammazero/deque v1.0.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.0 // indirect
 	github.com/go-git/go-git/v5 v5.12.0 // indirect
