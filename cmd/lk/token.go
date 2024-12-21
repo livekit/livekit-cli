@@ -81,7 +81,7 @@ var (
 						},
 						&cli.StringSliceFlag{
 							Name:  "allow-source",
-							Usage: "Restric publishing to only `SOURCE` types (e.g. --allow-source camera,microphone), defaults to all",
+							Usage: "Restrict publishing to only `SOURCE` types (e.g. --allow-source camera,microphone), defaults to all",
 						},
 						&cli.StringFlag{
 							Name:    "identity",
