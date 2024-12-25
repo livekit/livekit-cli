@@ -236,8 +236,8 @@ github.com/pion/transport/v3 v3.0.7 h1:iRbMH05BzSNwhILHoBoAPxoB9xQgOaJk+591KC9P1
 github.com/pion/transport/v3 v3.0.7/go.mod h1:YleKiTZ4vqNxVwh77Z0zytYi7rXHl7j6uPLGhhz9rwo=
 github.com/pion/turn/v4 v4.0.0 h1:qxplo3Rxa9Yg1xXDxxH8xaqcyGUtbHYw4QSCvmFWvhM=
 github.com/pion/turn/v4 v4.0.0/go.mod h1:MuPDkm15nYSklKpN8vWJ9W2M0PlyQZqYt1McGuxG7mA=
-github.com/pion/webrtc/v4 v4.0.6 h1:OfxfGeZGhneUDnZEoebLGDkzwjowSJ0avbOu2xaIUeM=
-github.com/pion/webrtc/v4 v4.0.6/go.mod h1:j7oMHYvjl7lESJ/nYiE4d2URyjFbAo3uqJ6Xse6hbSg=
+github.com/pion/webrtc/v4 v4.0.7 h1:aeq78uVnFZd2umXW0O9A2VFQYuS7+BZxWetQvSp2jPo=
+github.com/pion/webrtc/v4 v4.0.7/go.mod h1:oFVBBVSHU3vAEwSgnk3BuKCwAUwpDwQhko1EDwyZWbU=
 github.com/pjbgf/sha1cd v0.3.0 h1:4D5XXmUUBUl/xQ6IjCkEAbqXskkq/4O7LmGn0AqMDs4=
 github.com/pjbgf/sha1cd v0.3.0/go.mod h1:nZ1rrWOcGJ5uZgEEVL1VUM9iRQiZvWdbZjkKyFzPPsI=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c h1:+mdjkGKdHQG3305AYmdv1U2eRNDiU2ErMBj1gwrq8eQ=
