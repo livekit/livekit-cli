@@ -12,11 +12,11 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.40.1
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.29.5-0.20241219224350-c87b1afc6161
-	github.com/livekit/server-sdk-go/v2 v2.4.1-0.20241220014747-45a2dabd5161
+	github.com/livekit/protocol v1.30.0
+	github.com/livekit/server-sdk-go/v2 v2.4.1
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.10
-	github.com/pion/webrtc/v4 v4.0.6
+	github.com/pion/webrtc/v4 v4.0.7
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
@@ -25,7 +25,7 @@ require (
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/time v0.8.0
-	google.golang.org/protobuf v1.36.0
+	google.golang.org/protobuf v1.36.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
