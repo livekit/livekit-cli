@@ -27,6 +27,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/config"
+	"github.com/livekit/livekit-cli/pkg/util"
 )
 
 var (
@@ -248,7 +249,7 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 	selectedStyle := theme.Focused.Title.Padding(0, 1)
 
 	if cmd.Bool("json") {
-		PrintJSON(cliConfig.Projects)
+		util.PrintJSON(cliConfig.Projects)
 	} else {
 		table := CreateTable().
 			StyleFunc(func(row, col int) lipgloss.Style {

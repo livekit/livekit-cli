@@ -1,0 +1,103 @@
+package util
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"path"
+	"path/filepath"
+
+	"github.com/livekit/protocol/utils/guid"
+)
+
+// Safely copy a file across filesystems, preserving permissions
+func CopyFile(src, dest string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open source file: %w", err)
+	}
+	defer srcFile.Close()
+
+	destFile, err := os.Create(dest)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file: %w", err)
+	}
+	defer destFile.Close()
+
+	if _, err := io.Copy(destFile, srcFile); err != nil {
+		return fmt.Errorf("failed to copy file: %w", err)
+	}
+
+	// Preserve the file permissions
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return fmt.Errorf("failed to stat source file: %w", err)
+	}
+	if err := os.Chmod(dest, srcInfo.Mode()); err != nil {
+		return fmt.Errorf("failed to chmod destination file: %w", err)
+	}
+
+	return nil
+}
+
+// Safely move a directory across filesystems, preserving permissions
+func MoveDir(src, dest string) error {
+	if _, err := os.Stat(dest); err == nil {
+		return fmt.Errorf("destination directory already exists: %s", dest)
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("failed to stat destination directory: %w", err)
+	}
+
+	if err := os.MkdirAll(dest, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return fmt.Errorf("failed to compute relative path: %w", err)
+		}
+		targetPath := filepath.Join(dest, relPath)
+
+		if info.IsDir() {
+			if err := os.MkdirAll(targetPath, info.Mode()); err != nil {
+				return fmt.Errorf("failed to create directory: %w", err)
+			}
+		} else {
+			if err := CopyFile(path, targetPath); err != nil {
+				return fmt.Errorf("failed to copy file: %w", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := os.RemoveAll(src); err != nil {
+		return fmt.Errorf("failed to remove source directory: %w", err)
+	}
+
+	return nil
+}
+
+// Provides a temporary path, a function to relocate it to a permanent path,
+// and a function to clean up the temporary path that should always be deferred
+// in the case of a failure to relocate.
+func UseTempPath(permanentPath string) (string, func() error, func() error) {
+	tempPath := path.Join(os.TempDir(), guid.New("LK_"))
+	relocate := func() error {
+		return MoveDir(tempPath, permanentPath)
+	}
+	cleanup := func() error {
+		if err := os.RemoveAll(tempPath); err != nil {
+			return fmt.Errorf("failed to remove temporary directory: %w", err)
+		}
+		return nil
+	}
+	return tempPath, relocate, cleanup
+}

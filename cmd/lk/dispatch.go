@@ -7,6 +7,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/utils"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -118,14 +119,14 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 		return cli.ShowSubcommandHelp(cmd)
 	}
 	if cmd.Bool("verbose") {
-		PrintJSON(req)
+		util.PrintJSON(req)
 	}
 	res, err := dispatchClient.ListDispatch(context.Background(), req)
 	if err != nil {
 		return err
 	}
 	if cmd.Bool("json") {
-		PrintJSON(res)
+		util.PrintJSON(res)
 	} else {
 		table := CreateTable().
 			Headers("DispatchID", "Room", "AgentName", "Metadata")
@@ -164,7 +165,7 @@ func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("agent-name is required")
 	}
 	if cmd.Bool("verbose") {
-		PrintJSON(req)
+		util.PrintJSON(req)
 	}
 
 	info, err := dispatchClient.CreateDispatch(context.Background(), req)
@@ -173,7 +174,7 @@ func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(info)
+		util.PrintJSON(info)
 	} else {
 		fmt.Printf("Dispatch created: %v\n", info)
 	}
@@ -204,7 +205,7 @@ func deleteAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(info)
+		util.PrintJSON(info)
 	} else {
 		fmt.Printf("Dispatch deleted: %v\n", info)
 	}

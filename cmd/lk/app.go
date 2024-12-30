@@ -27,6 +27,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/livekit/livekit-cli/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/pkg/config"
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/urfave/cli/v3"
 )
 
@@ -192,12 +193,12 @@ func listTemplates(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(templates)
+		util.PrintJSON(templates)
 	} else {
 		const maxDescLength = 64
 		table := CreateTable().Headers("Template", "Description").BorderRow(true)
 		for _, t := range templates {
-			desc := strings.Join(wrapToLines(t.Desc, maxDescLength), "\n")
+			desc := strings.Join(util.WrapToLines(t.Desc, maxDescLength), "\n")
 			url := theme.Focused.Title.Render(t.URL)
 			tags := theme.Help.ShortDesc.Render("#" + strings.Join(t.Tags, " #"))
 			table.Row(
@@ -355,7 +356,7 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 	var stderr string
 	var cmdErr error
 
-	tempName, relocate, cleanup := useTempPath(appName)
+	tempName, relocate, cleanup := util.UseTempPath(appName)
 	defer cleanup()
 
 	if err := spinner.New().

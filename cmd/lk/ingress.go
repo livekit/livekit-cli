@@ -20,6 +20,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
@@ -177,7 +178,7 @@ func createIngress(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("verbose") {
-		PrintJSON(req)
+		util.PrintJSON(req)
 	}
 
 	info, err := ingressClient.CreateIngress(context.Background(), req)
@@ -196,7 +197,7 @@ func updateIngress(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("verbose") {
-		PrintJSON(req)
+		util.PrintJSON(req)
 	}
 
 	info, err := ingressClient.UpdateIngress(context.Background(), req)
@@ -221,7 +222,7 @@ func listIngress(ctx context.Context, cmd *cli.Command) error {
 	// This is inconsistent with other commands in which verbose is used for debug info, but is
 	// kept for compatibility with the previous behavior.
 	if cmd.Bool("verbose") || cmd.Bool("json") {
-		PrintJSON(res)
+		util.PrintJSON(res)
 	} else {
 		table := CreateTable().
 			Headers("IngressID", "Name", "Room", "StreamKey", "URL", "Status", "Error")

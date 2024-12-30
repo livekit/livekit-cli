@@ -15,15 +15,9 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -31,10 +25,8 @@ import (
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
-	"github.com/livekit/protocol/utils/guid"
-	"github.com/livekit/protocol/utils/interceptors"
-
 	"github.com/livekit/livekit-cli/pkg/config"
+	"github.com/livekit/protocol/utils/interceptors"
 )
 
 var (
@@ -146,80 +138,6 @@ func extractFlagOrArg(c *cli.Command, flag string) (string, error) {
 	return value, nil
 }
 
-func mapStrings(strs []string, fn func(string) string) []string {
-	res := make([]string, len(strs))
-	for i, str := range strs {
-		res[i] = fn(str)
-	}
-	return res
-}
-
-func wrapWith(wrap string) func(string) string {
-	return func(str string) string {
-		return wrap + str + wrap
-	}
-}
-
-func ellipsizeTo(str string, maxLength int) string {
-	if len(str) <= maxLength {
-		return str
-	}
-	ellipsis := "..."
-	contentLen := max(0, min(len(str), maxLength-len(ellipsis)))
-	return str[:contentLen] + ellipsis
-}
-
-func wrapToLines(input string, maxLineLength int) []string {
-	words := strings.Fields(input)
-	var lines []string
-	var currentLine strings.Builder
-
-	for _, word := range words {
-		if currentLine.Len()+len(word)+1 > maxLineLength {
-			lines = append(lines, currentLine.String())
-			currentLine.Reset()
-		}
-		if currentLine.Len() > 0 {
-			currentLine.WriteString(" ")
-		}
-		currentLine.WriteString(word)
-	}
-
-	if currentLine.Len() > 0 {
-		lines = append(lines, currentLine.String())
-	}
-
-	return lines
-}
-
-// Provides a temporary path, a function to relocate it to a permanent path,
-// and a function to clean up the temporary path that should always be deferred
-// in the case of a failure to relocate.
-func useTempPath(permanentPath string) (string, func() error, func() error) {
-	tempPath := path.Join(os.TempDir(), guid.New("LK_"))
-	relocate := func() error {
-		return os.Rename(tempPath, permanentPath)
-	}
-	cleanup := func() error {
-		return os.RemoveAll(tempPath)
-	}
-	return tempPath, relocate, cleanup
-}
-
-func hashString(str string) (string, error) {
-	hash := sha256.New()
-	if _, err := hash.Write([]byte(str)); err != nil {
-		return "", err
-	}
-	bytes := hash.Sum(nil)
-	return hex.EncodeToString(bytes), nil
-}
-
-func PrintJSON(obj any) {
-	txt, _ := json.MarshalIndent(obj, "", "  ")
-	fmt.Println(string(txt))
-}
-
 func CreateTable() *table.Table {
 	baseStyle := theme.Form.Foreground(fg).Padding(0, 1)
 	headerStyle := baseStyle.Bold(true)
@@ -237,15 +155,6 @@ func CreateTable() *table.Table {
 		StyleFunc(styleFunc)
 
 	return t
-}
-
-func ExpandUser(p string) string {
-	if strings.HasPrefix(p, "~") {
-		home, _ := os.UserHomeDir()
-		return filepath.Join(home, p[1:])
-	}
-
-	return p
 }
 
 type loadParams struct {
@@ -339,17 +248,4 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 
 	// cannot happen
 	return pc, nil
-}
-
-func URLSafeName(projectURL string) (string, error) {
-	parsed, err := url.Parse(projectURL)
-	if err != nil {
-		return "", errors.New("invalid URL")
-	}
-	subdomain := strings.Split(parsed.Hostname(), ".")[0]
-	lastHyphen := strings.LastIndex(subdomain, "-")
-	if lastHyphen == -1 {
-		return subdomain, nil
-	}
-	return subdomain[:lastHyphen], nil
 }
