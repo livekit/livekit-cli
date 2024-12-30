@@ -27,6 +27,7 @@ import (
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/livekit/protocol/logger"
 
 	"github.com/livekit/protocol/livekit"
@@ -635,7 +636,7 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	PrintJSON(room)
+	util.PrintJSON(room)
 	return nil
 }
 
@@ -644,7 +645,7 @@ func listRooms(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("verbose") && len(names) > 0 {
 		fmt.Printf(
 			"Querying rooms matching %s",
-			strings.Join(mapStrings(names, wrapWith("\"")), ", "),
+			strings.Join(util.MapStrings(names, util.WrapWith("\"")), ", "),
 		)
 	}
 
@@ -659,7 +660,7 @@ func listRooms(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(res)
+		util.PrintJSON(res)
 	} else {
 		table := CreateTable().Headers("RoomID", "Name", "Participants", "Publishers")
 		for _, rm := range res.Rooms {
@@ -688,7 +689,7 @@ func _deprecatedListRoom(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 	rm := res.Rooms[0]
-	PrintJSON(rm)
+	util.PrintJSON(rm)
 	return nil
 }
 
@@ -720,7 +721,7 @@ func updateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Updated room metadata")
-	PrintJSON(res)
+	util.PrintJSON(res)
 	return nil
 }
 
@@ -735,7 +736,7 @@ func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error 
 	}
 
 	fmt.Println("Updated room metadata")
-	PrintJSON(res)
+	util.PrintJSON(res)
 	return nil
 }
 
@@ -934,7 +935,7 @@ func getParticipant(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	PrintJSON(res)
+	util.PrintJSON(res)
 
 	return nil
 }
@@ -971,7 +972,7 @@ func updateParticipant(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("updating participant...")
-	PrintJSON(req)
+	util.PrintJSON(req)
 	if _, err := roomClient.UpdateParticipant(ctx, req); err != nil {
 		return err
 	}

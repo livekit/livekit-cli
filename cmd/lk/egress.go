@@ -36,6 +36,7 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
 	"github.com/livekit/livekit-cli/pkg/loadtester"
+	"github.com/livekit/livekit-cli/pkg/util"
 )
 
 type egressType string
@@ -403,7 +404,7 @@ func handleEgressStart(ctx context.Context, cmd *cli.Command) error {
 	case string(EgressTypeTrackComposite):
 		return startTrackCompositeEgress(ctx, cmd)
 	default:
-		return errors.New("unrecognized egress type " + wrapWith("\"")(cmd.String("type")))
+		return errors.New("unrecognized egress type " + util.WrapWith("\"")(cmd.String("type")))
 	}
 }
 
@@ -568,7 +569,7 @@ func unmarshalEgressRequest(cmd *cli.Command, req proto.Message) error {
 	}
 
 	if cmd.Bool("verbose") {
-		PrintJSON(req)
+		util.PrintJSON(req)
 	}
 	return nil
 }
@@ -597,7 +598,7 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(items)
+		util.PrintJSON(items)
 	} else {
 		table := CreateTable().
 			Headers("EgressID", "Status", "Type", "Source", "Started At", "Error")

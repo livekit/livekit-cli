@@ -30,6 +30,7 @@ import (
 
 	authutil "github.com/livekit/livekit-cli/pkg/auth"
 	"github.com/livekit/livekit-cli/pkg/config"
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/livekit/protocol/auth"
 )
 
@@ -250,7 +251,7 @@ func requireToken(_ context.Context, cmd *cli.Command) (string, error) {
 	// construct a token from the chosen project, using the hashed secret as the identity
 	// as a means of preventing any old token generated with this key/secret pair from
 	// deleting it
-	hash, err := hashString(project.APISecret)
+	hash, err := util.HashString(project.APISecret)
 	if err != nil {
 		return "", err
 	}
@@ -324,7 +325,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// make sure name is unique
-	name, err := URLSafeName(ak.URL)
+	name, err := util.URLSafeName(ak.URL)
 	if err != nil {
 		return err
 	}

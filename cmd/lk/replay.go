@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	authutil "github.com/livekit/livekit-cli/pkg/auth"
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/replay"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -127,7 +128,7 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(res.Replays)
+		util.PrintJSON(res.Replays)
 	} else {
 		table := CreateTable().Headers("ReplayID")
 		for _, info := range res.Replays {

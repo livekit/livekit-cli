@@ -25,6 +25,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
 )
@@ -354,7 +355,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 
 	fmt.Println("Token grants:")
-	PrintJSON(grant)
+	util.PrintJSON(grant)
 	fmt.Println()
 	fmt.Println("Access token:", token)
 	return nil

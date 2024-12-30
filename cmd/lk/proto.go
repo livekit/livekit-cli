@@ -21,6 +21,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -108,7 +109,7 @@ func createAndPrint[T any, P protoTypeValidator[T], R any](
 		return fmt.Errorf("could not read request: %w", err)
 	}
 	if cmd.Bool("verbose") {
-		PrintJSON(req)
+		util.PrintJSON(req)
 	}
 	if err = req.Validate(); err != nil {
 		return err
@@ -132,7 +133,7 @@ func createAndPrintLegacy[T any, P protoType[T], R any](
 		return err
 	}
 	if cmd.Bool("verbose") {
-		PrintJSON(req)
+		util.PrintJSON(req)
 	}
 	info, err := create(ctx, req)
 	if err != nil {
@@ -192,7 +193,7 @@ func listAndPrint[
 	}
 
 	if cmd.Bool("json") {
-		PrintJSON(res)
+		util.PrintJSON(res)
 	} else {
 		table := CreateTable().
 			Headers(header...)
