@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,13 +19,15 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
-	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
-	"text/tabwriter"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/syncmap"
@@ -98,61 +100,86 @@ func (t *LoadTest) Run(ctx context.Context) error {
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	for _, name := range names {
+
+	fmt.Println("\nTrack loading:")
+	testerTable := util.CreateTable().
+		Headers("Tester", "Track", "Kind", "Pkts.", "Bitrate", "Pkt. Loss")
+	for n, name := range names {
 		testerStats := stats[name]
 		summaries[name] = getTesterSummary(testerStats)
-		fmt.Println(testerStats, summaries[name])
-
-		w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-		_, _ = fmt.Fprintf(w, "\n%s\t| Track\t| Kind\t| Pkts\t| Bitrate\t| Dropped\n", name)
 		trackStatsSlice := make([]*trackStats, 0, len(testerStats.trackStats))
 		for _, ts := range testerStats.trackStats {
 			trackStatsSlice = append(trackStatsSlice, ts)
 		}
 		sort.Slice(trackStatsSlice, func(i, j int) bool {
-			nameI := t.trackNames[trackStatsSlice[i].trackID]
-			nameJ := t.trackNames[trackStatsSlice[j].trackID]
-			return strings.Compare(nameI, nameJ) < 0
+			return strings.Compare(
+				string(trackStatsSlice[i].kind),
+				string(trackStatsSlice[j].kind),
+			) < 0
 		})
-		for _, trackStats := range trackStatsSlice {
-			dropped := formatStrings(
+		for i, trackStats := range trackStatsSlice {
+			dropped := formatLossRate(
 				trackStats.packets.Load(), trackStats.dropped.Load())
 
-			trackName := t.trackNames[trackStats.trackID]
-			_, _ = fmt.Fprintf(w, "\t| %s %s\t| %s\t| %d\t| %s\t| %s\n",
-				trackName, trackStats.trackID, trackStats.kind, trackStats.packets.Load(),
-				formatBitrate(trackStats.bytes.Load(), time.Since(trackStats.startedAt.Load())), dropped)
+			trackName := ""
+			if i == 0 {
+				trackName = name
+			}
+			testerTable.Row(
+				trackName,
+				trackStats.trackID,
+				string(trackStats.kind),
+				strconv.FormatInt(trackStats.packets.Load(), 10),
+				formatBitrate(
+					trackStats.bytes.Load(),
+					time.Since(trackStats.startedAt.Load()),
+				),
+				dropped,
+			)
 		}
-		_ = w.Flush()
+		if n != len(names)-1 {
+			testerTable.Row("", "", "", "", "", "")
+		}
+
 	}
+	fmt.Println(testerTable)
 
 	if len(summaries) == 0 {
 		return nil
 	}
 
-	// summary
-	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	_, _ = fmt.Fprint(w, "\nSummary\t| Tester\t| Tracks\t| Bitrate\t| Total Dropped\t| Error\n")
-
+	// tester summary
+	fmt.Println("\nSubscriber summaries:")
+	summaryTable := util.CreateTable().
+		Headers("Tester", "Tracks", "Bitrate", "Total Pkt. Loss", "Error").
+		StyleFunc(func(row, col int) lipgloss.Style {
+			if row == table.HeaderRow {
+				return util.FormHeaderStyle
+			}
+			if row == len(names) {
+				return util.FormBaseStyle.Bold(true).Reverse(true)
+			}
+			return util.FormBaseStyle
+		})
 	for _, name := range names {
 		s := summaries[name]
-		sDropped := formatStrings(s.packets, s.dropped)
+		sDropped := formatLossRate(s.packets, s.dropped)
 		sBitrate := formatBitrate(s.bytes, s.elapsed)
-		_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %s\n",
-			name, s.tracks, s.expected, sBitrate, sDropped, s.errString)
+		summaryTable.Row(name, fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, s.errString)
 	}
+	{
+		// totals row
+		s := getTestSummary(summaries)
+		sDropped := formatLossRate(s.packets, s.dropped)
+		// avg bitrate per sub
+		sBitrate := fmt.Sprintf("%s (%s avg)",
+			formatBitrate(s.bytes, s.elapsed),
+			formatBitrate(s.bytes/int64(len(summaries)), s.elapsed),
+		)
+		summaryTable.Row("Total", fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, string(s.errCount))
+	}
+	fmt.Println(summaryTable)
 
-	s := getTestSummary(summaries)
-	sDropped := formatStrings(s.packets, s.dropped)
-	// avg bitrate per sub
-	sBitrate := fmt.Sprintf("%s (%s avg)",
-		formatBitrate(s.bytes, s.elapsed),
-		formatBitrate(s.bytes/int64(len(summaries)), s.elapsed),
-	)
-	_, _ = fmt.Fprintf(w, "\t| %s\t| %d/%d\t| %s\t| %s\t| %d\n",
-		"Total", s.tracks, s.expected, sBitrate, sDropped, s.errCount)
-
-	_ = w.Flush()
 	return nil
 }
 
@@ -180,8 +207,8 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 		{publishers: 1, subscribers: 1000, video: true},
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	_, _ = fmt.Fprint(w, "\nPubs\t| Subs\t| Tracks\t| Audio\t| Video\t| Packet loss\t| Errors\n")
+	table := util.CreateTable().
+		Headers("Pubs", "Subs", "Tracks", "Audio", "Video", "Pkt. Loss", "Errors")
 
 	for _, c := range cases {
 		caseParams := t.Params
@@ -218,11 +245,18 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 				errCount++
 			}
 		}
-		_, _ = fmt.Fprintf(w, "%d\t| %d\t| %d\t| Yes\t| %s\t| %.3f%%| %d\t\n",
-			c.publishers, c.subscribers, tracks, videoString, 100*float64(dropped)/float64(dropped+packets), errCount)
+		table.Row(
+			strconv.Itoa(c.publishers),
+			strconv.Itoa(c.subscribers),
+			strconv.FormatInt(tracks, 10),
+			"Yes",
+			videoString,
+			formatLossRate(packets, dropped),
+			strconv.FormatInt(errCount, 10),
+		)
 	}
 
-	_ = w.Flush()
+	fmt.Println(table)
 	return nil
 }
 
