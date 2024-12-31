@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,10 +93,10 @@ var (
 	urlRegex       = regexp.MustCompile(`^(http|https|ws|wss)://[^\s/$.?#].[^\s]*$`)
 )
 
-func loadProjectConfig(ctx context.Context, cmd *cli.Command) error {
+func loadProjectConfig(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	conf, err := config.LoadOrCreate()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	cliConfig = conf
 
@@ -108,7 +108,7 @@ func loadProjectConfig(ctx context.Context, cmd *cli.Command) error {
 			}
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func addProject(ctx context.Context, cmd *cli.Command) error {
@@ -207,7 +207,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 			Title("Make this project default?").
 			Value(&isDefault).
 			Inline(true).
-			WithTheme(theme))
+			WithTheme(util.Theme))
 	}
 
 	if len(prompts) > 0 {
@@ -216,7 +216,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 			groups = append(groups, huh.NewGroup(p))
 		}
 		err = huh.NewForm(groups...).
-			WithTheme(theme).
+			WithTheme(util.Theme).
 			RunWithContext(ctx)
 		if err != nil {
 			return err
@@ -244,14 +244,14 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	baseStyle := theme.Form.Foreground(fg).Padding(0, 1)
+	baseStyle := util.Theme.Form.Foreground(util.Fg).Padding(0, 1)
 	headerStyle := baseStyle.Bold(true)
-	selectedStyle := theme.Focused.Title.Padding(0, 1)
+	selectedStyle := util.Theme.Focused.Title.Padding(0, 1)
 
 	if cmd.Bool("json") {
 		util.PrintJSON(cliConfig.Projects)
 	} else {
-		table := CreateTable().
+		table := util.CreateTable().
 			StyleFunc(func(row, col int) lipgloss.Style {
 				switch {
 				case row == table.HeaderRow:
@@ -303,7 +303,7 @@ func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
 		if err := cliConfig.PersistIfNeeded(); err != nil {
 			return err
 		}
-		fmt.Println("Default project set to [" + theme.Focused.Title.Render(p.Name) + "]")
+		fmt.Println("Default project set to [" + util.Theme.Focused.Title.Render(p.Name) + "]")
 		return nil
 	}
 

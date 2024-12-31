@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ func main() {
 		Suggest:                true,
 		HideHelpCommand:        true,
 		UseShortOptionHandling: true,
-		Flags:                  persistentFlags,
+		Flags:                  globalFlags,
 		Commands: []*cli.Command{
 			{
 				Name:   "generate-fish-completion",
@@ -53,18 +53,7 @@ func main() {
 				},
 			},
 		},
-		Before: func(ctx context.Context, cmd *cli.Command) error {
-			logConfig := &logger.Config{
-				Level: "info",
-			}
-			if cmd.Bool("verbose") {
-				logConfig.Level = "debug"
-			}
-			logger.InitFromConfig(logConfig, "lk")
-			lksdk.SetLogger(logger.GetLogger())
-
-			return nil
-		},
+		Before: initLogger,
 	}
 
 	app.Commands = append(app.Commands, AppCommands...)
@@ -112,6 +101,19 @@ func checkForLegacyName() {
 				"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n",
 		)
 	}
+}
+
+func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+	logConfig := &logger.Config{
+		Level: "info",
+	}
+	if cmd.Bool("verbose") {
+		logConfig.Level = "debug"
+	}
+	logger.InitFromConfig(logConfig, "lk")
+	lksdk.SetLogger(logger.GetLogger())
+
+	return nil, nil
 }
 
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {

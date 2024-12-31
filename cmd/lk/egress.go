@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -381,14 +381,14 @@ var (
 	egressClient *lksdk.EgressClient
 )
 
-func createEgressClient(ctx context.Context, c *cli.Command) error {
-	pc, err := loadProjectDetails(c)
+func createEgressClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	egressClient = lksdk.NewEgressClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
-	return nil
+	return nil, nil
 }
 
 func handleEgressStart(ctx context.Context, cmd *cli.Command) error {
@@ -600,7 +600,7 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("json") {
 		util.PrintJSON(items)
 	} else {
-		table := CreateTable().
+		table := util.CreateTable().
 			Headers("EgressID", "Status", "Type", "Source", "Started At", "Error")
 		for _, item := range items {
 			var startedAt string

@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package util
 
 import (
-	"net/http"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 )
 
-func NewHeaderWithToken(token string) http.Header {
-	header := make(http.Header)
-	header.Set("Authorization", "Bearer "+token)
-	return header
-}
+var (
+	Theme = func() *huh.Theme {
+		t := huh.ThemeBase16()
+		return t
+	}()
+
+	Fg              = lipgloss.AdaptiveColor{Light: "235", Dark: "252"}
+	FormBaseStyle   = Theme.Form.Foreground(Fg).Padding(0, 1)
+	FormHeaderStyle = FormBaseStyle.Bold(true)
+)
