@@ -21,7 +21,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/twitchtv/twirp v8.1.3+incompatible
-	github.com/urfave/cli/v3 v3.0.0-alpha9.7
+	github.com/urfave/cli/v3 v3.0.0-beta1
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/time v0.8.0
