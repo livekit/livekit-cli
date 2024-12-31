@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2021-2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -300,7 +300,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 			Title("Token Permissions").
 			Description("See https://docs.livekit.io/home/get-started/authentication/#Video-grant").
 			Value(&permissions).
-			WithTheme(theme).
+			WithTheme(util.Theme).
 			Run(); err != nil || len(permissions) == 0 {
 			return errors.New("no permissions were given in this grant, see --help")
 		} else {

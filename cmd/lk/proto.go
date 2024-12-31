@@ -195,7 +195,7 @@ func listAndPrint[
 	if cmd.Bool("json") {
 		util.PrintJSON(res)
 	} else {
-		table := CreateTable().
+		table := util.CreateTable().
 			Headers(header...)
 		for _, item := range res.GetItems() {
 			if item == nil {

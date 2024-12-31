@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2021-2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,9 +37,8 @@ import (
 var (
 	RoomCommands = []*cli.Command{
 		{
-			Name:            "room",
-			Usage:           "Create or delete rooms and manage existing room properties",
-			HideHelpCommand: true,
+			Name:  "room",
+			Usage: "Create or delete rooms and manage existing room properties",
 			Commands: []*cli.Command{
 				{
 					Name:      "create",
@@ -523,14 +522,14 @@ var (
 	roomClient *lksdk.RoomServiceClient
 )
 
-func createRoomClient(ctx context.Context, cmd *cli.Command) error {
+func createRoomClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	pc, err := loadProjectDetails(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	roomClient = lksdk.NewRoomServiceClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
-	return nil
+	return nil, nil
 }
 
 func createRoom(ctx context.Context, cmd *cli.Command) error {
@@ -662,7 +661,7 @@ func listRooms(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("json") {
 		util.PrintJSON(res)
 	} else {
-		table := CreateTable().Headers("RoomID", "Name", "Participants", "Publishers")
+		table := util.CreateTable().Headers("RoomID", "Name", "Participants", "Publishers")
 		for _, rm := range res.Rooms {
 			table.Row(
 				rm.Sid,

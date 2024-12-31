@@ -12,17 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package util
 
 import (
-	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 )
 
-var (
-	fg    = lipgloss.AdaptiveColor{Light: "235", Dark: "252"}
-	theme = func() *huh.Theme {
-		t := huh.ThemeBase16()
-		return t
-	}()
-)
+func CreateTable() *table.Table {
+	styleFunc := func(row, col int) lipgloss.Style {
+		if row == table.HeaderRow {
+			return FormHeaderStyle
+		}
+		return FormBaseStyle
+	}
+
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(Theme.Form.Foreground(Fg)).
+		StyleFunc(styleFunc)
+
+	return t
+}

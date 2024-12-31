@@ -220,14 +220,14 @@ func NewAuthClient(client *http.Client, baseURL string) *AuthClient {
 	return a
 }
 
-func initAuth(ctx context.Context, cmd *cli.Command) error {
+func initAuth(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	authClient = *NewAuthClient(&http.Client{}, serverURL)
-	return nil
+	return nil, nil
 }
 
 func handleAuth(ctx context.Context, cmd *cli.Command) error {
 	if revoke {
-		if err := loadProjectConfig(ctx, cmd); err != nil {
+		if _, err := loadProjectConfig(ctx, cmd); err != nil {
 			return err
 		}
 		token, err := requireToken(ctx, cmd)
@@ -265,7 +265,7 @@ func requireToken(_ context.Context, cmd *cli.Command) (string, error) {
 }
 
 func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
-	if err := loadProjectConfig(ctx, cmd); err != nil {
+	if _, err := loadProjectConfig(ctx, cmd); err != nil {
 		return err
 	}
 
@@ -274,7 +274,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	if err := huh.NewInput().
 		Title("What is the name of this device?").
 		Value(&deviceName).
-		WithTheme(theme).
+		WithTheme(util.Theme).
 		Run(); err != nil {
 		return err
 	}
@@ -303,7 +303,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Action(func() {
 			ak, pollErr = pollClaim(ctx, cmd)
 		}).
-		Style(theme.Focused.Title).
+		Style(util.Theme.Focused.Title).
 		Run(); err != nil {
 		return err
 	}
@@ -319,7 +319,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Title("Make this project default?").
 		Value(&isDefault).
 		Inline(true).
-		WithTheme(theme).
+		WithTheme(util.Theme).
 		Run(); err != nil {
 		return err
 	}
@@ -339,7 +339,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 				}
 				return nil
 			}).
-			WithTheme(theme).
+			WithTheme(util.Theme).
 			Run(); err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2022-2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -161,14 +161,14 @@ var (
 	ingressClient *lksdk.IngressClient
 )
 
-func createIngressClient(ctx context.Context, cmd *cli.Command) error {
+func createIngressClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	pc, err := loadProjectDetails(cmd)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ingressClient = lksdk.NewIngressClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
-	return nil
+	return nil, nil
 }
 
 func createIngress(ctx context.Context, cmd *cli.Command) error {
@@ -224,7 +224,7 @@ func listIngress(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("verbose") || cmd.Bool("json") {
 		util.PrintJSON(res)
 	} else {
-		table := CreateTable().
+		table := util.CreateTable().
 			Headers("IngressID", "Name", "Room", "StreamKey", "URL", "Status", "Error")
 		for _, item := range res.Items {
 			if item == nil {

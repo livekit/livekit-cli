@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2021-2023 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ func randStringRunes(n int) string {
 	return string(b)
 }
 
-func formatStrings(packets, dropped int64) (sDropped string) {
+func formatLossRate(packets, dropped int64) (sDropped string) {
 	sDropped = " - "
 
 	if packets > 0 {
@@ -43,6 +43,9 @@ func formatStrings(packets, dropped int64) (sDropped string) {
 }
 
 func formatPercentage(num int64, total int64) string {
+	if total == 0 {
+		return "0"
+	}
 	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.3f", float64(num)/float64(total)*100), "0"), ".")
 }
 

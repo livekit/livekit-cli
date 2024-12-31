@@ -138,12 +138,12 @@ var (
 	}
 )
 
-func requireProject(ctx context.Context, cmd *cli.Command) error {
+func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
 	if project, err = loadProjectDetails(cmd); err != nil {
-		if err = loadProjectConfig(ctx, cmd); err != nil {
+		if _, err = loadProjectConfig(ctx, cmd); err != nil {
 			// something is wrong with config file
-			return err
+			return nil, err
 		}
 
 		// choose from existing credentials or authenticate
@@ -157,9 +157,9 @@ func requireProject(ctx context.Context, cmd *cli.Command) error {
 				Description("If you'd like to use a different project, run `lk cloud auth` to add credentials").
 				Options(options...).
 				Value(&project).
-				WithTheme(theme).
+				WithTheme(util.Theme).
 				Run(); err != nil {
-				return err
+				return nil, err
 			}
 		} else {
 			shouldAuth := true
@@ -167,23 +167,23 @@ func requireProject(ctx context.Context, cmd *cli.Command) error {
 				Title("No local projects found. Authenticate one now?").
 				Inline(true).
 				Value(&shouldAuth).
-				WithTheme(theme).
+				WithTheme(util.Theme).
 				Run(); err != nil {
-				return err
+				return nil, err
 			}
 			if shouldAuth {
 				initAuth(ctx, cmd)
 				if err = tryAuthIfNeeded(ctx, cmd); err != nil {
-					return err
+					return nil, err
 				}
 				return requireProject(ctx, cmd)
 			} else {
-				return errors.New("no project selected")
+				return nil, errors.New("no project selected")
 			}
 		}
 	}
 
-	return err
+	return nil, err
 }
 
 func listTemplates(ctx context.Context, cmd *cli.Command) error {
@@ -196,11 +196,11 @@ func listTemplates(ctx context.Context, cmd *cli.Command) error {
 		util.PrintJSON(templates)
 	} else {
 		const maxDescLength = 64
-		table := CreateTable().Headers("Template", "Description").BorderRow(true)
+		table := util.CreateTable().Headers("Template", "Description").BorderRow(true)
 		for _, t := range templates {
 			desc := strings.Join(util.WrapToLines(t.Desc, maxDescLength), "\n")
-			url := theme.Focused.Title.Render(t.URL)
-			tags := theme.Help.ShortDesc.Render("#" + strings.Join(t.Tags, " #"))
+			url := util.Theme.Focused.Title.Render(t.URL)
+			tags := util.Theme.Help.ShortDesc.Render("#" + strings.Join(t.Tags, " #"))
 			table.Row(
 				t.Name,
 				desc+"\n\n"+url+"\n"+tags,
@@ -251,10 +251,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		templateSelect := huh.NewSelect[string]().
 			Title("Select Template").
 			Value(&templateURL).
-			WithTheme(theme)
+			WithTheme(util.Theme)
 		var options []huh.Option[string]
 		for _, t := range templateOptions {
-			descStyle := theme.Help.ShortDesc
+			descStyle := util.Theme.Help.ShortDesc
 			optionText := t.Name + " " + descStyle.Render("#"+strings.Join(t.Tags, " #"))
 			options = append(options, huh.NewOption(optionText, t.URL))
 		}
@@ -293,13 +293,13 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 				}
 				return nil
 			}).
-			WithTheme(theme))
+			WithTheme(util.Theme))
 	}
 
 	if len(preinstallPrompts) > 0 {
 		group := huh.NewGroup(preinstallPrompts...)
 		if err := huh.NewForm(group).
-			WithTheme(theme).
+			WithTheme(util.Theme).
 			RunWithContext(ctx); err != nil {
 			return err
 		}
@@ -364,7 +364,7 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 		Action(func() {
 			stdout, stderr, cmdErr = bootstrap.CloneTemplate(url, tempName)
 		}).
-		Style(theme.Focused.Title).
+		Style(util.Theme.Focused.Title).
 		Run(); err != nil {
 		return err
 	}
@@ -424,7 +424,7 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 			Title("Enter " + key + "?").
 			Placeholder(oldValue).
 			Value(&newValue).
-			WithTheme(theme).
+			WithTheme(util.Theme).
 			Run(); err != nil || newValue == "" {
 			return oldValue, err
 		}
@@ -485,7 +485,7 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 	if err := spinner.New().
 		Title("Installing...").
 		Action(func() { cmdErr = install() }).
-		Style(theme.Focused.Title).
+		Style(util.Theme.Focused.Title).
 		Accessible(true).
 		Run(); err != nil {
 		return err
@@ -512,7 +512,7 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 			Title("Select Task").
 			Options(options...).
 			Value(&taskName).
-			WithTheme(theme).
+			WithTheme(util.Theme).
 			Run(); err != nil {
 			return err
 		}
@@ -526,7 +526,7 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 	if err := spinner.New().
 		Title("Running task " + taskName + "...").
 		Action(func() { cmdErr = task() }).
-		Style(theme.Focused.Title).
+		Style(util.Theme.Focused.Title).
 		Accessible(verbose).
 		Run(); err != nil {
 		return err

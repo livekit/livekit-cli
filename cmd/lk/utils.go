@@ -1,4 +1,4 @@
-// Copyright 2023 LiveKit, Inc.
+// Copyright 2021-2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,12 +20,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/pkg/config"
+	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/livekit/protocol/utils/interceptors"
 )
 
@@ -45,43 +44,37 @@ var (
 		Aliases: []string{"j"},
 		Usage:   "Output as JSON",
 	}
-	printCurl       bool
-	persistentFlags = []cli.Flag{
+	printCurl   bool
+	globalFlags = []cli.Flag{
 		&cli.StringFlag{
-			Name:       "url",
-			Usage:      "`URL` to LiveKit instance",
-			Sources:    cli.EnvVars("LIVEKIT_URL"),
-			Value:      "http://localhost:7880",
-			Persistent: true,
+			Name:    "url",
+			Usage:   "`URL` to LiveKit instance",
+			Sources: cli.EnvVars("LIVEKIT_URL"),
+			Value:   "http://localhost:7880",
 		},
 		&cli.StringFlag{
-			Name:       "api-key",
-			Usage:      "Your `KEY`",
-			Sources:    cli.EnvVars("LIVEKIT_API_KEY"),
-			Persistent: true,
+			Name:    "api-key",
+			Usage:   "Your `KEY`",
+			Sources: cli.EnvVars("LIVEKIT_API_KEY"),
 		},
 		&cli.StringFlag{
-			Name:       "api-secret",
-			Usage:      "Your `SECRET`",
-			Sources:    cli.EnvVars("LIVEKIT_API_SECRET"),
-			Persistent: true,
+			Name:    "api-secret",
+			Usage:   "Your `SECRET`",
+			Sources: cli.EnvVars("LIVEKIT_API_SECRET"),
 		},
 		&cli.StringFlag{
-			Name:       "project",
-			Usage:      "`NAME` of a configured project",
-			Persistent: true,
+			Name:  "project",
+			Usage: "`NAME` of a configured project",
 		},
 		&cli.BoolFlag{
 			Name:        "curl",
 			Usage:       "Print curl commands for API actions",
 			Destination: &printCurl,
 			Required:    false,
-			Persistent:  true,
 		},
 		&cli.BoolFlag{
-			Name:       "verbose",
-			Required:   false,
-			Persistent: true,
+			Name:     "verbose",
+			Required: false,
 		},
 	}
 )
@@ -138,25 +131,6 @@ func extractFlagOrArg(c *cli.Command, flag string) (string, error) {
 	return value, nil
 }
 
-func CreateTable() *table.Table {
-	baseStyle := theme.Form.Foreground(fg).Padding(0, 1)
-	headerStyle := baseStyle.Bold(true)
-
-	styleFunc := func(row, col int) lipgloss.Style {
-		if row == table.HeaderRow {
-			return headerStyle
-		}
-		return baseStyle
-	}
-
-	t := table.New().
-		Border(lipgloss.NormalBorder()).
-		BorderStyle(theme.Form.Foreground(fg)).
-		StyleFunc(styleFunc)
-
-	return t
-}
-
 type loadParams struct {
 	requireURL bool
 }
@@ -192,7 +166,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + theme.Focused.Title.Render(c.String("project")) + "]")
+		fmt.Println("Using project [" + util.Theme.Focused.Title.Render(c.String("project")) + "]")
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -230,7 +204,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	dp, err := config.LoadDefaultProject()
 	if err == nil {
 		if c.Bool("verbose") {
-			fmt.Println("Using default project [" + theme.Focused.Title.Render(dp.Name) + "]")
+			fmt.Println("Using default project [" + util.Theme.Focused.Title.Render(dp.Name) + "]")
 			logDetails(c, dp)
 		}
 		return dp, nil
