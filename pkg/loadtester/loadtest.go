@@ -101,9 +101,9 @@ func (t *LoadTest) Run(ctx context.Context) error {
 	}
 	sort.Strings(names)
 
-	fmt.Println("\nTrack loading:")
 	testerTable := util.CreateTable().
 		Headers("Tester", "Track", "Kind", "Pkts.", "Bitrate", "Pkt. Loss")
+
 	for n, name := range names {
 		testerStats := stats[name]
 		summaries[name] = getTesterSummary(testerStats)
@@ -142,14 +142,17 @@ func (t *LoadTest) Run(ctx context.Context) error {
 		}
 
 	}
-	fmt.Println(testerTable)
+
+	if len(names) > 0 {
+		fmt.Println("\nTrack loading:")
+		fmt.Println(testerTable)
+	}
 
 	if len(summaries) == 0 {
 		return nil
 	}
 
 	// tester summary
-	fmt.Println("\nSubscriber summaries:")
 	summaryTable := util.CreateTable().
 		Headers("Tester", "Tracks", "Bitrate", "Total Pkt. Loss", "Error").
 		StyleFunc(func(row, col int) lipgloss.Style {
@@ -178,6 +181,7 @@ func (t *LoadTest) Run(ctx context.Context) error {
 		)
 		summaryTable.Row("Total", fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, string(s.errCount))
 	}
+	fmt.Println("\nSubscriber summaries:")
 	fmt.Println(summaryTable)
 
 	return nil
@@ -209,6 +213,7 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 
 	table := util.CreateTable().
 		Headers("Pubs", "Subs", "Tracks", "Audio", "Video", "Pkt. Loss", "Errors")
+	showTrackStats := false
 
 	for _, c := range cases {
 		caseParams := t.Params
@@ -245,18 +250,24 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 				errCount++
 			}
 		}
-		table.Row(
-			strconv.Itoa(c.publishers),
-			strconv.Itoa(c.subscribers),
-			strconv.FormatInt(tracks, 10),
-			"Yes",
-			videoString,
-			formatLossRate(packets, dropped),
-			strconv.FormatInt(errCount, 10),
-		)
+		if tracks > 0 {
+			showTrackStats = true
+			table.Row(
+				strconv.Itoa(c.publishers),
+				strconv.Itoa(c.subscribers),
+				strconv.FormatInt(tracks, 10),
+				"Yes",
+				videoString,
+				formatLossRate(packets, dropped),
+				strconv.FormatInt(errCount, 10),
+			)
+		}
 	}
 
-	fmt.Println(table)
+	if showTrackStats {
+		fmt.Println("\nSuite results:")
+		fmt.Println(table)
+	}
 	return nil
 }
 
@@ -264,7 +275,9 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 	if params.Room == "" {
 		params.Room = fmt.Sprintf("testroom%d", rand.Int31n(1000))
 	}
-	params.IdentityPrefix = randStringRunes(5)
+	if params.IdentityPrefix == "" {
+		params.IdentityPrefix = randStringRunes(5)
+	}
 
 	expectedTracks := params.VideoPublishers + params.AudioPublishers
 
