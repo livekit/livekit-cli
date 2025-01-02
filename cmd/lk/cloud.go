@@ -270,25 +270,23 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// get devicename
-	deviceName := cliConfig.DeviceName
 	if err := huh.NewInput().
 		Title("What is the name of this device?").
-		Value(&deviceName).
+		Value(&cliConfig.DeviceName).
 		WithTheme(util.Theme).
 		Run(); err != nil {
 		return err
 	}
 
 	// remember device name for next time
-	cliConfig.DeviceName = deviceName
 	if err := cliConfig.PersistIfNeeded(); err != nil {
 		return err
 	}
-	fmt.Println("Device:", deviceName)
+	fmt.Println("Device:", cliConfig.DeviceName)
 
 	// request token
 	fmt.Println("Requesting verification token...")
-	token, err := authClient.GetVerificationToken(deviceName)
+	token, err := authClient.GetVerificationToken(cliConfig.DeviceName)
 	if err != nil {
 		return err
 	}
