@@ -39,7 +39,7 @@ var (
 			Commands: []*cli.Command{
 				{
 					Name:      "add",
-					Usage:     "Add a new project",
+					Usage:     "Add a new project (for LiveKit Cloud projects, also see `lk cloud auth`)",
 					UsageText: "lk project add PROJECT_NAME",
 					ArgsUsage: "PROJECT_NAME",
 					Action:    addProject,
