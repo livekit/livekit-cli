@@ -27,6 +27,7 @@ import (
 type CLIConfig struct {
 	DefaultProject string          `yaml:"default_project"`
 	Projects       []ProjectConfig `yaml:"projects"`
+	DeviceName     string          `yaml:"device_name"`
 	// absent from YAML
 	hasPersisted bool
 }
