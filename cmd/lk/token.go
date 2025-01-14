@@ -297,7 +297,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 				huh.NewOption("Ingress", pIngress),
 				huh.NewOption("Update metadata", pMetadata),
 			).
-			Title("Token Permissions").
+			Title("Token permissions").
 			Description("See https://docs.livekit.io/home/get-started/authentication/#Video-grant").
 			Value(&permissions).
 			WithTheme(util.Theme).

@@ -249,7 +249,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	// if no template name or URL is specified, prompt user to choose from available templates
 	if templateName == "" && templateURL == "" {
 		templateSelect := huh.NewSelect[string]().
-			Title("Select Template").
+			Title("Select a template").
 			Value(&templateURL).
 			WithTheme(util.Theme)
 		var options []huh.Option[string]
@@ -278,7 +278,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	if appName == "" {
 		appName = sandboxID
 		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
-			Title("Application Name").
+			Title("Application name").
 			Placeholder("my-app").
 			Value(&appName).
 			Validate(func(s string) error {
@@ -513,7 +513,7 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		if err := huh.NewSelect[string]().
-			Title("Select Task").
+			Title("Select task").
 			Options(options...).
 			Value(&taskName).
 			WithTheme(util.Theme).

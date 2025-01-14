@@ -79,7 +79,7 @@ var (
 				{
 					Name:      "set-default",
 					Usage:     "Set a project as default to use with other commands",
-					UsageText: "lk project set-default PROJECT_NAME",
+					UsageText: "lk project set-default [PROJECT_NAME]",
 					ArgsUsage: "PROJECT_NAME",
 					Action:    setDefaultProject,
 				},
@@ -289,11 +289,34 @@ func removeProject(ctx context.Context, cmd *cli.Command) error {
 
 func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
 	if cmd.NArg() == 0 {
-		_ = cli.ShowSubcommandHelp(cmd)
-		return errors.New("project name is required")
-	}
-	name := cmd.Args().First()
+		// prompt from saved projects
+		if len(cliConfig.Projects) == 0 {
+			return errors.New("no projects configured")
+		}
 
+		var options []huh.Option[string]
+		for _, p := range cliConfig.Projects {
+			descStyle := util.Theme.Help.ShortDesc
+			optionText := p.Name + " " + descStyle.Render(p.URL)
+			options = append(options, huh.NewOption(optionText, p.Name))
+		}
+		if err := huh.NewSelect[string]().
+			Title("Choose the default project").
+			Value(&cliConfig.DefaultProject).
+			Options(options...).
+			WithTheme(util.Theme).
+			Run(); err != nil {
+			return err
+		}
+
+		if err := cliConfig.PersistIfNeeded(); err != nil {
+			return err
+		}
+		fmt.Println("Default project set to [" + util.Theme.Focused.Title.Render(cliConfig.DefaultProject) + "]")
+		return nil
+	}
+
+	name := cmd.Args().First()
 	for _, p := range cliConfig.Projects {
 		if p.Name != name {
 			continue
