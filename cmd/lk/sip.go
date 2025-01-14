@@ -17,6 +17,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -118,6 +120,24 @@ var (
 							Usage:     "Create a SIP Participant",
 							Action:    createSIPParticipant,
 							ArgsUsage: RequestDesc[livekit.CreateSIPParticipantRequest](),
+							Flags: []cli.Flag{
+								&cli.StringFlag{
+									Name:  "trunk",
+									Usage: "`SIP_TRUNK_ID` to use for the call (overrides json config)",
+								},
+								&cli.StringFlag{
+									Name:  "number",
+									Usage: "`SIP_NUMBER` to use for the call (overrides json config)",
+								},
+								&cli.StringFlag{
+									Name:  "call",
+									Usage: "`SIP_CALL_TO` number to use (overrides json config)",
+								},
+								&cli.StringFlag{
+									Name:  "room",
+									Usage: "`ROOM_NAME` to place the call to (overrides json config)",
+								},
+							},
 						},
 						{
 							Name:   "transfer",
@@ -215,7 +235,7 @@ func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return createAndPrintReqs(ctx, cmd, cli.CreateSIPInboundTrunk, printSIPInboundTrunkID)
+	return createAndPrintReqs(ctx, cmd, nil, cli.CreateSIPInboundTrunk, printSIPInboundTrunkID)
 }
 
 func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
@@ -223,7 +243,7 @@ func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return createAndPrintReqs(ctx, cmd, cli.CreateSIPOutboundTrunk, printSIPOutboundTrunkID)
+	return createAndPrintReqs(ctx, cmd, nil, cli.CreateSIPOutboundTrunk, printSIPOutboundTrunkID)
 }
 
 func userPass(user string, hasPass bool) string {
@@ -235,6 +255,40 @@ func userPass(user string, hasPass bool) string {
 		passStr = "****"
 	}
 	return user + " / " + passStr
+}
+
+func printHeaders(m map[string]string) string {
+	if len(m) == 0 {
+		return ""
+	}
+	keys := slices.Collect(maps.Keys(m))
+	slices.Sort(keys)
+	var buf strings.Builder
+	for i, key := range keys {
+		if i != 0 {
+			buf.WriteString("\n")
+		}
+		v := m[key]
+		buf.WriteString(key)
+		buf.WriteString("=")
+		buf.WriteString(v)
+	}
+	return buf.String()
+}
+
+func printHeaderMaps(arr ...map[string]string) string {
+	var out []string
+	for _, m := range arr {
+		s := printHeaders(m)
+		if s == "" {
+			continue
+		}
+		out = append(out, s)
+	}
+	if len(out) == 0 {
+		return ""
+	}
+	return strings.Join(out, "\n\n")
 }
 
 func listSipTrunk(ctx context.Context, cmd *cli.Command) error {
@@ -271,6 +325,7 @@ func listSipInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		"SipTrunkID", "Name", "Numbers",
 		"AllowedAddresses", "AllowedNumbers",
 		"Authentication",
+		"Encryption",
 		"Headers",
 		"Metadata",
 	}, func(item *livekit.SIPInboundTrunkInfo) []string {
@@ -278,7 +333,8 @@ func listSipInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 			item.SipTrunkId, item.Name, strings.Join(item.Numbers, ","),
 			strings.Join(item.AllowedAddresses, ","), strings.Join(item.AllowedNumbers, ","),
 			userPass(item.AuthUsername, item.AuthPassword != ""),
-			fmt.Sprintf("%v, %v", item.Headers, item.HeadersToAttributes),
+			strings.TrimPrefix(item.MediaEncryption.String(), "SIP_MEDIA_ENCRYPT_"),
+			printHeaderMaps(item.Headers, item.HeadersToAttributes),
 			item.Metadata,
 		}
 	})
@@ -294,6 +350,7 @@ func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		"Address", "Transport",
 		"Numbers",
 		"Authentication",
+		"Encryption",
 		"Headers",
 		"Metadata",
 	}, func(item *livekit.SIPOutboundTrunkInfo) []string {
@@ -302,7 +359,8 @@ func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 			item.Address, strings.TrimPrefix(item.Transport.String(), "SIP_TRANSPORT_"),
 			strings.Join(item.Numbers, ","),
 			userPass(item.AuthUsername, item.AuthPassword != ""),
-			fmt.Sprintf("%v, %v", item.Headers, item.HeadersToAttributes),
+			strings.TrimPrefix(item.MediaEncryption.String(), "SIP_MEDIA_ENCRYPT_"),
+			printHeaderMaps(item.Headers, item.HeadersToAttributes),
 			item.Metadata,
 		}
 	})
@@ -357,7 +415,7 @@ func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return createAndPrintReqs(ctx, cmd, cli.CreateSIPDispatchRule, printSIPDispatchRuleID)
+	return createAndPrintReqs(ctx, cmd, nil, cli.CreateSIPDispatchRule, printSIPDispatchRuleID)
 }
 
 func createSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
@@ -447,7 +505,21 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return createAndPrintReqs(ctx, cmd, func(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error) {
+	return createAndPrintReqs(ctx, cmd, func(req *livekit.CreateSIPParticipantRequest) error {
+		if v := cmd.String("trunk"); v != "" {
+			req.SipTrunkId = v
+		}
+		if v := cmd.String("number"); v != "" {
+			req.SipNumber = v
+		}
+		if v := cmd.String("call"); v != "" {
+			req.SipCallTo = v
+		}
+		if v := cmd.String("room"); v != "" {
+			req.RoomName = v
+		}
+		return req.Validate()
+	}, func(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error) {
 		// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
 		// Default deadline is too short, thus, we must set a higher deadline for it.
 		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
