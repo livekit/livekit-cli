@@ -27,11 +27,11 @@ import (
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/livekit/livekit-cli/pkg/util"
-	"github.com/livekit/protocol/logger"
-
 	"github.com/livekit/protocol/livekit"
+	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+
+	"github.com/livekit/livekit-cli/pkg/util"
 )
 
 var (
@@ -754,6 +754,20 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 
 	done := make(chan os.Signal, 1)
 	roomCB := &lksdk.RoomCallback{
+		OnParticipantConnected: func(p *lksdk.RemoteParticipant) {
+			logger.Infow("participant connected",
+				"kind", p.Kind(),
+				"pID", p.SID(),
+				"participant", p.Identity(),
+			)
+		},
+		OnParticipantDisconnected: func(p *lksdk.RemoteParticipant) {
+			logger.Infow("participant disconnected",
+				"kind", p.Kind(),
+				"pID", p.SID(),
+				"participant", p.Identity(),
+			)
+		},
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnDataPacket: func(p lksdk.DataPacket, params lksdk.DataReceiveParams) {
 				identity := params.SenderIdentity
