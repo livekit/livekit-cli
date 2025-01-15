@@ -21,10 +21,11 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/livekit/livekit-cli/pkg/util"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/livekit/livekit-cli/pkg/util"
 )
 
 const flagRequest = "request"
@@ -98,9 +99,10 @@ func RequestDesc[T any, _ protoType[T]]() string {
 	return typ + " as JSON file"
 }
 
-func createAndPrint[T any, P protoTypeValidator[T], R any](
+func createAndPrintFile[T any, P protoTypeValidator[T], R any](
 	ctx context.Context,
 	cmd *cli.Command, file string,
+	fill func(p P) error,
 	create func(ctx context.Context, p P) (R, error),
 	print func(r R),
 ) error {
@@ -108,10 +110,25 @@ func createAndPrint[T any, P protoTypeValidator[T], R any](
 	if err != nil {
 		return fmt.Errorf("could not read request: %w", err)
 	}
+	return createAndPrintReq(ctx, cmd, req, fill, create, print)
+}
+
+func createAndPrintReq[T any, P protoTypeValidator[T], R any](
+	ctx context.Context,
+	cmd *cli.Command, req P,
+	fill func(p P) error,
+	create func(ctx context.Context, p P) (R, error),
+	print func(r R),
+) error {
+	if fill != nil {
+		if err := fill(req); err != nil {
+			return err
+		}
+	}
 	if cmd.Bool("verbose") {
 		util.PrintJSON(req)
 	}
-	if err = req.Validate(); err != nil {
+	if err := req.Validate(); err != nil {
 		return err
 	}
 	info, err := create(ctx, req)
@@ -146,15 +163,20 @@ func createAndPrintLegacy[T any, P protoType[T], R any](
 func createAndPrintReqs[T any, P protoTypeValidator[T], R any](
 	ctx context.Context,
 	cmd *cli.Command,
+	fill func(p P) error,
 	create func(ctx context.Context, p P) (R, error),
 	print func(r R),
 ) error {
 	args := cmd.Args()
 	if !args.Present() {
-		return errors.New("at least one JSON request file is required")
+		if fill == nil {
+			return errors.New("at least one JSON request file is required")
+		}
+		var req P = new(T)
+		return createAndPrintReq(ctx, cmd, req, fill, create, print)
 	}
 	for _, file := range args.Slice() {
-		if err := createAndPrint(ctx, cmd, file, create, print); err != nil {
+		if err := createAndPrintFile(ctx, cmd, file, fill, create, print); err != nil {
 			return err
 		}
 	}
