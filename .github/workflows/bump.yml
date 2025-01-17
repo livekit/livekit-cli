@@ -16,3 +16,4 @@ jobs:
       - uses: nbsp/ilo@v2
         with:
           packages: ${{ github.event.inputs.packages }}
+          prefix: v
