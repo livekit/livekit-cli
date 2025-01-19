@@ -323,11 +323,15 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	envOutputFile := ".env.local"
 	envExampleFile := ".env.example"
 	if tf != nil {
-		if customOutput, ok := tf.Vars.Get("env_file").Value.(string); ok {
-			envOutputFile = customOutput
+		if envFile, ok := tf.Vars.Get("env_file"); ok {
+			if customOutput, ok := envFile.Value.(string); ok {
+				envOutputFile = customOutput
+			}
 		}
-		if customExample, ok := tf.Vars.Get("env_example").Value.(string); ok {
-			envExampleFile = customExample
+		if envExample, ok := tf.Vars.Get("env_example"); ok {
+			if customExample, ok := envExample.Value.(string); ok {
+				envExampleFile = customExample
+			}
 		}
 	}
 	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile)
