@@ -2,11 +2,11 @@ module github.com/livekit/livekit-cli
 
 go 1.23
 
-toolchain go1.23.3
+toolchain go1.23.5
 
 require (
 	github.com/charmbracelet/huh v0.6.0
-	github.com/charmbracelet/huh/spinner v0.0.0-20241216182847-438e4f741435
+	github.com/charmbracelet/huh/spinner v0.0.0-20250109160224-6c6b31916f8e
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/frostbyte73/core v0.1.0
 	github.com/go-logr/logr v1.4.2
@@ -24,8 +24,8 @@ require (
 	github.com/urfave/cli/v3 v3.0.0-beta1
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.10.0
-	golang.org/x/time v0.8.0
-	google.golang.org/protobuf v1.36.1
+	golang.org/x/time v0.9.0
+	google.golang.org/protobuf v1.36.3
 	gopkg.in/yaml.v3 v3.0.1
 )
 
