@@ -29,6 +29,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+replace github.com/go-task/task/v3 => ../task/
+
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.0-20241127180247-a33202765966.1 // indirect
 	buf.build/go/protoyaml v0.3.1 // indirect

@@ -30,6 +30,7 @@ import (
 )
 
 func main() {
+	_ = os.Setenv("TASK_X_REMOTE_TASKFILES", "1")
 	app := &cli.Command{
 		Name:                   "lk",
 		Usage:                  "CLI client to LiveKit",

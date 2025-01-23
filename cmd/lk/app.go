@@ -531,7 +531,7 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 		Title("Running task " + taskName + "...").
 		Action(func() { cmdErr = task() }).
 		Style(util.Theme.Focused.Title).
-		Accessible(verbose).
+		Accessible(true).
 		Run(); err != nil {
 		return err
 	}

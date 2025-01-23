@@ -155,7 +155,7 @@ func NewTaskExecutor(dir string, verbose bool) *task.Executor {
 		Watch:     false,
 		Verbose:   false,
 		Silent:    !verbose,
-		AssumeYes: false,
+		AssumeYes: true,
 		Dry:       false,
 		Summary:   false,
 		Parallel:  false,
