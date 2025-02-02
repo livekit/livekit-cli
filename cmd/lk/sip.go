@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -432,8 +431,8 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return listAndPrint(ctx, cmd, cli.ListSIPDispatchRule, &livekit.ListSIPDispatchRuleRequest{}, []string{
-		"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin", "HidePhone",
-		"Attributes", "Metadata",
+		"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin",
+		"Attributes", "Agents",
 	}, func(item *livekit.SIPDispatchRuleInfo) []string {
 		var room, typ, pin string
 		switch r := item.GetRule().GetRule().(type) {
@@ -457,9 +456,15 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		if trunks == "" {
 			trunks = "<any>"
 		}
+		var agents []string
+		if item.RoomConfig != nil {
+			for _, agent := range item.RoomConfig.Agents {
+				agents = append(agents, agent.AgentName)
+			}
+		}
 		return []string{
-			item.SipDispatchRuleId, item.Name, trunks, typ, room, pin, strconv.FormatBool(item.HidePhoneNumber),
-			fmt.Sprintf("%v", item.Attributes), item.Metadata,
+			item.SipDispatchRuleId, item.Name, trunks, typ, room, pin,
+			fmt.Sprintf("%v", item.Attributes), strings.Join(agents, ","),
 		}
 	})
 }
