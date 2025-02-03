@@ -12,7 +12,7 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.41.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.32.1-0.20250127091625-9a579a69ba38
+	github.com/livekit/protocol v1.32.1
 	github.com/livekit/server-sdk-go/v2 v2.4.2
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.11
