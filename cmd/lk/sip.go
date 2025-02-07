@@ -136,6 +136,15 @@ var (
 									Name:  "room",
 									Usage: "`ROOM_NAME` to place the call to (overrides json config)",
 								},
+								&cli.BoolFlag{
+									Name:  "wait",
+									Usage: "wait for the call to dial (overrides json config)",
+								},
+								&cli.DurationFlag{
+									Name:  "timeout",
+									Usage: "timeout for the call to dial (requires wait flag)",
+									Value: 80 * time.Second,
+								},
 							},
 						},
 						{
@@ -523,14 +532,32 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		if v := cmd.String("room"); v != "" {
 			req.RoomName = v
 		}
+		if cmd.Bool("wait") {
+			req.WaitUntilAnswered = true
+		}
 		return req.Validate()
 	}, func(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error) {
 		// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
 		// Default deadline is too short, thus, we must set a higher deadline for it.
-		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		timeout := 30 * time.Second
+		if req.WaitUntilAnswered {
+			if dt := cmd.Duration("timeout"); dt != 0 {
+				timeout = dt
+			}
+		}
+		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 
-		return cli.CreateSIPParticipant(ctx, req)
+		resp, err := cli.CreateSIPParticipant(ctx, req)
+		if e := lksdk.SIPStatusFrom(err); e != nil {
+			msg := e.Status
+			if msg == "" {
+				msg = e.Code.ShortName()
+			}
+			fmt.Printf("SIPStatusCode: %d\n", e.Code)
+			fmt.Printf("SIPStatus: %s\n", msg)
+		}
+		return resp, err
 	}, printSIPParticipantInfo)
 }
 
