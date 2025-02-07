@@ -24,9 +24,10 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	livekitcli "github.com/livekit/livekit-cli"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+
+	livekitcli "github.com/livekit/livekit-cli"
 )
 
 func main() {
@@ -87,6 +88,7 @@ func main() {
 
 	if err := app.Run(ctx, os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 
