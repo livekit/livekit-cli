@@ -35,8 +35,8 @@ import (
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
-	"github.com/livekit/livekit-cli/pkg/loadtester"
-	"github.com/livekit/livekit-cli/pkg/util"
+	"github.com/livekit/livekit-cli/v2/pkg/loadtester"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 type egressType string

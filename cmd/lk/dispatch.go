@@ -21,7 +21,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/livekit/livekit-cli/pkg/util"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/utils"
 	lksdk "github.com/livekit/server-sdk-go/v2"

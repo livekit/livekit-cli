@@ -25,9 +25,9 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/huh/spinner"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/livekit/livekit-cli/pkg/bootstrap"
-	"github.com/livekit/livekit-cli/pkg/config"
-	"github.com/livekit/livekit-cli/pkg/util"
+	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/urfave/cli/v3"
 )
 

@@ -26,8 +26,8 @@ import (
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/urfave/cli/v3"
 
-	"github.com/livekit/livekit-cli/pkg/config"
-	"github.com/livekit/livekit-cli/pkg/util"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 var (

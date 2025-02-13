@@ -27,7 +27,7 @@ import (
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
-	livekitcli "github.com/livekit/livekit-cli"
+	livekitcli "github.com/livekit/livekit-cli/v2"
 )
 
 func main() {

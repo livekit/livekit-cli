@@ -36,7 +36,7 @@ import (
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 
-	authutil "github.com/livekit/livekit-cli/pkg/auth"
+	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
 )
 
 const (

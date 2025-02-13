@@ -22,8 +22,8 @@ import (
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
-	authutil "github.com/livekit/livekit-cli/pkg/auth"
-	"github.com/livekit/livekit-cli/pkg/util"
+	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/replay"
 	lksdk "github.com/livekit/server-sdk-go/v2"
