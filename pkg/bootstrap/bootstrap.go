@@ -64,6 +64,7 @@ var templateIgnoreFiles = []string{
 	"TEMPLATE.md",
 	"LICENSE",
 	"LICENSE.md",
+	"NOTICE",
 }
 
 type Template struct {
