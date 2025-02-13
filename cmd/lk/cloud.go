@@ -28,9 +28,9 @@ import (
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v3"
 
-	authutil "github.com/livekit/livekit-cli/pkg/auth"
-	"github.com/livekit/livekit-cli/pkg/config"
-	"github.com/livekit/livekit-cli/pkg/util"
+	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 )
 

@@ -1,4 +1,4 @@
-module github.com/livekit/livekit-cli
+module github.com/livekit/livekit-cli/v2
 
 go 1.23
 

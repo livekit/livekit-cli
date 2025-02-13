@@ -34,7 +34,7 @@ import (
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
-	provider2 "github.com/livekit/livekit-cli/pkg/provider"
+	provider2 "github.com/livekit/livekit-cli/v2/pkg/provider"
 )
 
 var (

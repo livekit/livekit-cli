@@ -25,7 +25,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/urfave/cli/v3"
 
-	"github.com/livekit/livekit-cli/pkg/util"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
 )

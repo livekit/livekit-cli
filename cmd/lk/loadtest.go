@@ -21,7 +21,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/urfave/cli/v3"
 
-	"github.com/livekit/livekit-cli/pkg/loadtester"
+	"github.com/livekit/livekit-cli/v2/pkg/loadtester"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
