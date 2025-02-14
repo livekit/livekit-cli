@@ -62,6 +62,9 @@ var templateIgnoreFiles = []string{
 	"renovate.json",
 	"taskfile.yaml",
 	"TEMPLATE.md",
+	"LICENSE",
+	"LICENSE.md",
+	"NOTICE",
 }
 
 type Template struct {
