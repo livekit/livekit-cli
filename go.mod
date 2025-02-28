@@ -2,11 +2,11 @@ module github.com/livekit/livekit-cli/v2
 
 go 1.23
 
-toolchain go1.23.6
+toolchain go1.24.0
 
 require (
 	github.com/charmbracelet/huh v0.6.0
-	github.com/charmbracelet/huh/spinner v0.0.0-20250204190110-031e39c29dad
+	github.com/charmbracelet/huh/spinner v0.0.0-20250228115947-334300b07206
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/frostbyte73/core v0.1.1
 	github.com/go-logr/logr v1.4.2
@@ -49,7 +49,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chainguard-dev/git-urls v1.0.2 // indirect
 	github.com/charmbracelet/bubbles v0.20.0 // indirect
-	github.com/charmbracelet/bubbletea v1.2.5-0.20241205214244-9306010a31ee // indirect
+	github.com/charmbracelet/bubbletea v1.3.3 // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240809174237-9ab0ca04ce0c // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
@@ -97,7 +97,7 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
+	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/nats-io/nats.go v1.38.0 // indirect
 	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
