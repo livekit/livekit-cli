@@ -236,7 +236,7 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 			return err
 		}
 		if ctx.Err() != nil {
-			return err
+			return ctx.Err()
 		}
 
 		var tracks, packets, dropped, errCount int64
