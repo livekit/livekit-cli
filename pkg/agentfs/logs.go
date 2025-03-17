@@ -57,7 +57,10 @@ func LogHelper(ctx context.Context, id string, name string, logType string, proj
 		return err
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s", fullUrl), nil)
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -85,7 +88,7 @@ func LogHelper(ctx context.Context, id string, name string, logType string, proj
 
 			line := scanner.Text()
 			if strings.HasPrefix(line, "ERROR:") {
-				return fmt.Errorf(strings.TrimPrefix(line, "ERROR: "))
+				return fmt.Errorf("%s", strings.TrimPrefix(line, "ERROR: "))
 			}
 			fmt.Println(line)
 		}

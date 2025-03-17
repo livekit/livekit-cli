@@ -245,7 +245,7 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 	}
 
 	agentsClient, err = lksdk.NewAgentClient(globalProjectConfig.URL, globalProjectConfig.APIKey, globalProjectConfig.APISecret)
-	return nil, nil
+	return ctx, err
 }
 
 func loadTomlFile(dir string, tomlFileName string) (*AgentTOML, error) {
@@ -322,7 +322,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		if !useExisting {
-			return fmt.Errorf(fmt.Sprintf("%s already exists.", cmd.String("toml")))
+			return fmt.Errorf("%s already exists", cmd.String("toml"))
 		}
 
 		if cmd.String("name") != "" && agentConfig.Name != cmd.String("name") {
@@ -348,7 +348,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		if !createFile {
-			return fmt.Errorf(fmt.Sprintf("%s required to create agent", cmd.String("toml")))
+			return fmt.Errorf("%s required to create agent", cmd.String("toml"))
 		}
 
 		f, err := os.Create(filepath.Join(workingDir, cmd.String("toml")))
@@ -469,7 +469,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		if !createDockerfile {
-			return fmt.Errorf("Dockerfile required to create agent")
+			return fmt.Errorf("dockerfile is required to create agent")
 		}
 
 		err = agentfs.CreateDockerfile(workingDir)
@@ -500,7 +500,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println(fmt.Sprintf("created agent %s", resp.AgentId))
+	fmt.Printf("created agent %s\n", resp.AgentId)
 	err = agentfs.Build(ctx, resp.AgentId, agentConfig.Name, "deploy", globalProjectConfig)
 	if err != nil {
 		return err
@@ -589,7 +589,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if !tomlExists {
-		return fmt.Errorf("%s required to update agent.", cmd.String("toml"))
+		return fmt.Errorf("%s required to update agent", cmd.String("toml"))
 	}
 
 	secrets := make(map[string]*lkproto.AgentSecret)
@@ -647,7 +647,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println(fmt.Sprintf("updated agent %s", resp.AgentId))
+	fmt.Printf("updated agent %s\n", resp.AgentId)
 	err = agentfs.Build(ctx, resp.AgentId, agentConfig.Name, "update", globalProjectConfig)
 	if err != nil {
 		return err
@@ -728,7 +728,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if !tomlExists {
-		return fmt.Errorf("%s required to update agent.", cmd.String("toml"))
+		return fmt.Errorf("%s required to update agent", cmd.String("toml"))
 	}
 
 	req := &lkproto.UpdateAgentRequest{
@@ -1019,7 +1019,7 @@ func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (strin
 		}
 
 		if !tomlExists {
-			return "", fmt.Errorf("Agent name or %s required.", tomlFileName)
+			return "", fmt.Errorf("agent name or %s required", tomlFileName)
 		}
 
 		agentName = agentConfig.Name
@@ -1027,7 +1027,7 @@ func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (strin
 
 	if agentName == "" {
 		// shouldn't happen, but check to ensure we have a name
-		return "", fmt.Errorf("Agent name or %s required.", tomlFileName)
+		return "", fmt.Errorf("agent name or %s required", tomlFileName)
 	}
 
 	return agentName, nil

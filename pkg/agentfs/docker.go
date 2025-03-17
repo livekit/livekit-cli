@@ -44,7 +44,7 @@ func CreateDockerfile(dir string) error {
 	} else if isPython(dir) {
 		projectType = "python"
 	} else {
-		return fmt.Errorf("Unable to determine project type. Please create a Dockerfile in the current directory.")
+		return fmt.Errorf("unable to determine project type, please create a Dockerfile in the current directory")
 	}
 
 	var dockerfileContent []byte

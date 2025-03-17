@@ -58,6 +58,9 @@ func Build(ctx context.Context, id string, name string, action string, projectCo
 	}
 
 	req, err := http.NewRequest("POST", fullUrl, nil)
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -87,7 +90,7 @@ func Build(ctx context.Context, id string, name string, action string, projectCo
 		for scanner.Scan() {
 			line := scanner.Text()
 			if strings.HasPrefix(line, "BUILD ERROR:") {
-				return fmt.Errorf(strings.TrimPrefix(line, "BUILD ERROR: "))
+				return fmt.Errorf("%s", strings.TrimPrefix(line, "BUILD ERROR: "))
 			}
 
 			var status bkclient.SolveStatus
