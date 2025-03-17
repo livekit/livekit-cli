@@ -265,8 +265,8 @@ func loadTomlFile(dir string, tomlFileName string) (*AgentTOML, error) {
 
 func createAgent(ctx context.Context, cmd *cli.Command) error {
 	subdomainPattern := regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-	matches := subdomainPattern.FindStringSubmatch(globalProjectConfig.URL)
-	if len(matches) < 1 {
+	subdomainMatches := subdomainPattern.FindStringSubmatch(globalProjectConfig.URL)
+	if len(subdomainMatches) < 1 {
 		return fmt.Errorf("invalid project URL: %s", globalProjectConfig.URL)
 	}
 
@@ -274,7 +274,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewConfirm().
-				Title(fmt.Sprintf("Use project: %s with subdomain: %s to create agent?", globalProjectConfig.Name, matches[1])).
+				Title(fmt.Sprintf("Use project: %s with subdomain: %s to create agent?", globalProjectConfig.Name, subdomainMatches[1])).
 				Value(&useProject).
 				Inline(true),
 		),
@@ -357,15 +357,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 		defer f.Close()
 
-		subdomainPattern := regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-		matches := subdomainPattern.FindStringSubmatch(globalProjectConfig.URL)
-		if len(matches) < 1 {
-			return fmt.Errorf("invalid project URL: %s", globalProjectConfig.URL)
-		}
-
 		agentConfig = &AgentTOML{
 			LocalProjectName: globalProjectConfig.Name,
-			ProjectSubdomain: matches[1],
+			ProjectSubdomain: subdomainMatches[1],
 			Name:             cmd.String("name"),
 			CPU:              clientDefaults_CPU,
 			Replicas:         clientDefaults_Replicas,
