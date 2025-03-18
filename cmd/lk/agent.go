@@ -331,6 +331,10 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 		logger.Debugw("using existing agent toml")
 	} else if !exists && !cmd.Bool("silent") {
+		if cmd.String("name") == "" {
+			return fmt.Errorf("name is required")
+		}
+
 		var createFile bool
 		form := huh.NewForm(
 			huh.NewGroup(
@@ -472,7 +476,17 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("dockerfile is required to create agent")
 		}
 
-		err = agentfs.CreateDockerfile(workingDir)
+		clientSettingsResponse, err := agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
+		if err != nil {
+			return err
+		}
+
+		settingsMap := make(map[string]string)
+		for _, setting := range clientSettingsResponse.Params {
+			settingsMap[setting.Name] = setting.Value
+		}
+
+		err = agentfs.CreateDockerfile(workingDir, settingsMap)
 		if err != nil {
 			return err
 		}

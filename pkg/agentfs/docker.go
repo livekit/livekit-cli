@@ -15,14 +15,6 @@ import (
 	"github.com/livekit/protocol/logger"
 )
 
-const (
-	pythonDockerfileURL   = "https://raw.githubusercontent.com/livekit-examples/agent-deployment/refs/heads/main/python-agent-example-app/Dockerfile"
-	pythonDockerIgnoreURL = "https://raw.githubusercontent.com/livekit-examples/agent-deployment/refs/heads/main/python-agent-example-app/.dockerignore"
-	pythonEntrypoint      = "main.py"
-	nodeDockerfileURL     = "https://raw.githubusercontent.com/livekit-examples/agent-deployment/refs/heads/main/node-agent-example-docker/Dockerfile"
-	nodeDockerIgnoreURL   = "https://raw.githubusercontent.com/livekit-examples/agent-deployment/refs/heads/main/node-agent-example-docker/.dockerignore"
-)
-
 func FindDockerfile(dir string) (bool, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -37,7 +29,11 @@ func FindDockerfile(dir string) (bool, error) {
 	return false, nil
 }
 
-func CreateDockerfile(dir string) error {
+func CreateDockerfile(dir string, settingsMap map[string]string) error {
+	if len(settingsMap) == 0 {
+		return fmt.Errorf("unable to fetch client settings from server, please try again later")
+	}
+
 	projectType := ""
 	if isNode(dir) {
 		projectType = "node"
@@ -52,27 +48,37 @@ func CreateDockerfile(dir string) error {
 	var err error
 	switch projectType {
 	case "python":
-		dockerfileContent, err = downloadFile(pythonDockerfileURL)
+		err = validateSettingsMap(settingsMap, []string{"python_docker_file", "python_docker_ignore"})
 		if err != nil {
 			return err
 		}
-		dockerIgnoreContent, err = downloadFile(pythonDockerIgnoreURL)
+		dockerfileContent, err = downloadFile(settingsMap["python_docker_file"])
+		if err != nil {
+			return err
+		}
+
+		dockerIgnoreContent, err = downloadFile(settingsMap["python_docker_ignore"])
 		if err != nil {
 			return err
 		}
 	case "node":
-		dockerfileContent, err = downloadFile(nodeDockerfileURL)
+		err = validateSettingsMap(settingsMap, []string{"node_docker_file", "node_docker_ignore"})
 		if err != nil {
 			return err
 		}
-		dockerIgnoreContent, err = downloadFile(nodeDockerIgnoreURL)
+
+		dockerfileContent, err = downloadFile(settingsMap["node_docker_file"])
+		if err != nil {
+			return err
+		}
+		dockerIgnoreContent, err = downloadFile(settingsMap["node_docker_ignore"])
 		if err != nil {
 			return err
 		}
 	}
 
 	if projectType == "python" {
-		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, projectType)
+		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, projectType, settingsMap)
 		if err != nil {
 			return err
 		}
@@ -110,7 +116,7 @@ func downloadFile(url string) ([]byte, error) {
 	return data, nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, projectType string) ([]byte, error) {
+func validateEntrypoint(dir string, dockerfileContent []byte, projectType string, settingsMap map[string]string) ([]byte, error) {
 	fileList := make(map[string]bool)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -168,6 +174,12 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType string
 		return selected, nil
 	}
 
+	err = validateSettingsMap(settingsMap, []string{"python_entrypoint"})
+	if err != nil {
+		return nil, err
+	}
+
+	pythonEntrypoint := settingsMap["python_entrypoint"]
 	newEntrypoint, err := valFile(pythonEntrypoint)
 	if err != nil {
 		return nil, err
