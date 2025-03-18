@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -90,7 +91,7 @@ func Build(ctx context.Context, id string, name string, action string, projectCo
 		for scanner.Scan() {
 			line := scanner.Text()
 			if strings.HasPrefix(line, "BUILD ERROR:") {
-				return fmt.Errorf("%s", strings.TrimPrefix(line, "BUILD ERROR: "))
+				return errors.New(strings.TrimPrefix(line, "BUILD ERROR: "))
 			}
 
 			var status bkclient.SolveStatus
