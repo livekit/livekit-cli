@@ -532,7 +532,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	response, err := agentsClient.ListAgent(ctx, &lkproto.ListAgentRequest{
+	response, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
 		AgentName: cmd.String("name"),
 	})
 	if err != nil {
@@ -549,7 +549,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	agent := response.Agents[0]
-	regionAgent := agent.RegionalAgents[0]
+	regionAgent := agent.AgentDeployments[0]
 	agentConfig := &AgentTOML{
 		LocalProjectName: globalProjectConfig.Name,
 		ProjectSubdomain: matches[1],
@@ -663,7 +663,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	res, err := agentsClient.ListAgent(ctx, &lkproto.ListAgentRequest{
+	res, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
 		AgentName: agentName,
 	})
 	if err != nil {
@@ -676,7 +676,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 
 	var rows [][]string
 	for _, agent := range res.Agents {
-		for _, regionalAgent := range agent.RegionalAgents {
+		for _, regionalAgent := range agent.AgentDeployments {
 			curCPU, err := agentfs.ParseCpu(regionalAgent.CurCpu)
 			if err != nil {
 				logger.Errorw("error parsing cpu", err)
@@ -853,13 +853,13 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 
 func listAgents(ctx context.Context, cmd *cli.Command) error {
 	var items []*lkproto.AgentInfo
-	req := &lkproto.ListAgentRequest{}
+	req := &lkproto.ListAgentsRequest{}
 	if cmd.IsSet("name") {
 		for _, n := range cmd.StringSlice("name") {
 			if n == "" {
 				continue
 			}
-			res, err := agentsClient.ListAgent(ctx, &lkproto.ListAgentRequest{
+			res, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
 				AgentName: n,
 			})
 			if err != nil {
@@ -868,7 +868,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 			items = append(items, res.Agents...)
 		}
 	} else {
-		agents, err := agentsClient.ListAgent(ctx, req)
+		agents, err := agentsClient.ListAgents(ctx, req)
 		if err != nil {
 			return err
 		}
@@ -883,7 +883,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	var rows [][]string
 	for _, agent := range items {
 		var regions []string
-		for _, regionalAgent := range agent.RegionalAgents {
+		for _, regionalAgent := range agent.AgentDeployments {
 			regions = append(regions, regionalAgent.Region)
 		}
 		rows = append(rows, []string{agent.AgentId, agent.AgentName, strings.Join(regions, ",")})
