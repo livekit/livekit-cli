@@ -14,12 +14,12 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.41.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.35.1-0.20250318204333-4d4ff652a17d
-	github.com/livekit/server-sdk-go/v2 v2.5.1-0.20250318212316-91c09b0802df
+	github.com/livekit/protocol v1.35.1-0.20250319165056-fdacb1a293e5
+	github.com/livekit/server-sdk-go/v2 v2.5.1-0.20250319165849-a5f5f6eb2bde
 	github.com/moby/buildkit v0.20.1
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.13
-	github.com/pion/webrtc/v4 v4.0.13
+	github.com/pion/webrtc/v4 v4.0.14
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.18.0
