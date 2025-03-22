@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -53,6 +54,34 @@ var (
 							ArgsUsage: RequestDesc[livekit.CreateSIPInboundTrunkRequest](),
 						},
 						{
+							Name:      "update",
+							Usage:     "Update an inbound SIP Trunk",
+							Action:    updateSIPInboundTrunk,
+							ArgsUsage: RequestDesc[livekit.UpdateSIPInboundTrunkRequest](),
+							Flags: []cli.Flag{
+								&cli.StringFlag{
+									Name:  "id",
+									Usage: "ID for the trunk to update",
+								},
+								&cli.StringFlag{
+									Name:  "name",
+									Usage: "Sets a new name for the trunk",
+								},
+								&cli.StringSliceFlag{
+									Name:  "numbers",
+									Usage: "Sets a new list of numbers for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "auth-user",
+									Usage: "Set username for authentication",
+								},
+								&cli.StringFlag{
+									Name:  "auth-pass",
+									Usage: "Set password for authentication",
+								},
+							},
+						},
+						{
 							Name:      "delete",
 							Usage:     "Delete a SIP Trunk",
 							Action:    deleteSIPTrunk,
@@ -73,9 +102,45 @@ var (
 						},
 						{
 							Name:      "create",
-							Usage:     "Create a outbound SIP Trunk",
+							Usage:     "Create an outbound SIP Trunk",
 							Action:    createSIPOutboundTrunk,
 							ArgsUsage: RequestDesc[livekit.CreateSIPOutboundTrunkRequest](),
+						},
+						{
+							Name:      "update",
+							Usage:     "Update an outbound SIP Trunk",
+							Action:    updateSIPOutboundTrunk,
+							ArgsUsage: RequestDesc[livekit.UpdateSIPOutboundTrunkRequest](),
+							Flags: []cli.Flag{
+								&cli.StringFlag{
+									Name:  "id",
+									Usage: "ID for the trunk to update",
+								},
+								&cli.StringFlag{
+									Name:  "name",
+									Usage: "Sets a new name for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "address",
+									Usage: "Sets a new destination address for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "transport",
+									Usage: "Sets a new transport for the trunk",
+								},
+								&cli.StringSliceFlag{
+									Name:  "numbers",
+									Usage: "Sets a new list of numbers for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "auth-user",
+									Usage: "Set username for authentication",
+								},
+								&cli.StringFlag{
+									Name:  "auth-pass",
+									Usage: "Set password for authentication",
+								},
+							},
 						},
 						{
 							Name:      "delete",
@@ -101,6 +166,26 @@ var (
 							Usage:     "Create a SIP Dispatch Rule",
 							Action:    createSIPDispatchRule,
 							ArgsUsage: RequestDesc[livekit.CreateSIPDispatchRuleRequest](),
+						},
+						{
+							Name:      "update",
+							Usage:     "Update a SIP Dispatch Rule",
+							Action:    updateSIPDispatchRule,
+							ArgsUsage: RequestDesc[livekit.UpdateSIPDispatchRuleRequest](),
+							Flags: []cli.Flag{
+								&cli.StringFlag{
+									Name:  "id",
+									Usage: "ID for the rule to update",
+								},
+								&cli.StringFlag{
+									Name:  "name",
+									Usage: "Sets a new name for the rule",
+								},
+								&cli.StringSliceFlag{
+									Name:  "trunks",
+									Usage: "Sets a new list of trunk IDs",
+								},
+							},
 						},
 						{
 							Name:      "delete",
@@ -230,6 +315,17 @@ var (
 	}
 )
 
+func listUpdateFlag(cmd *cli.Command, setName string) *livekit.ListUpdate {
+	if !cmd.IsSet(setName) {
+		return nil
+	}
+	val := cmd.StringSlice(setName)
+	if len(val) == 1 && val[0] == "" {
+		val = []string{}
+	}
+	return &livekit.ListUpdate{Set: val}
+}
+
 func createSIPClient(cmd *cli.Command) (*lksdk.SIPClient, error) {
 	pc, err := loadProjectDetails(cmd)
 	if err != nil {
@@ -246,12 +342,151 @@ func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	return createAndPrintReqs(ctx, cmd, nil, cli.CreateSIPInboundTrunk, printSIPInboundTrunkID)
 }
 
+func updateSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
+	cli, err := createSIPClient(cmd)
+	if err != nil {
+		return err
+	}
+	id := cmd.String("id")
+	if cmd.Args().Len() > 1 {
+		return errors.New("expected one JSON file or flags")
+	}
+	if cmd.Args().Len() == 1 {
+		// Update from the JSON
+		req, err := ReadRequestFileOrLiteral[livekit.SIPInboundTrunkInfo](cmd.Args().First())
+		if err != nil {
+			return fmt.Errorf("could not read request: %w", err)
+		}
+		if id == "" {
+			id = req.SipTrunkId
+		}
+		req.SipTrunkId = ""
+		if id == "" {
+			return errors.New("no ID specified, use flag or set it in JSON")
+		}
+		info, err := cli.UpdateSIPInboundTrunk(ctx, &livekit.UpdateSIPInboundTrunkRequest{
+			SipTrunkId: id,
+			Action: &livekit.UpdateSIPInboundTrunkRequest_Replace{
+				Replace: req,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		printSIPInboundTrunkID(info)
+		return err
+	}
+	// Update from flags
+	if id == "" {
+		return errors.New("no ID specified")
+	}
+	req := &livekit.SIPInboundTrunkUpdate{}
+	if val := cmd.String("name"); val != "" {
+		req.Name = &val
+	}
+	if val := cmd.String("auth-user"); val != "" {
+		req.AuthUsername = &val
+	}
+	if val := cmd.String("auth-pass"); val != "" {
+		req.AuthPassword = &val
+	}
+	req.Numbers = listUpdateFlag(cmd, "numbers")
+	info, err := cli.UpdateSIPInboundTrunk(ctx, &livekit.UpdateSIPInboundTrunkRequest{
+		SipTrunkId: id,
+		Action: &livekit.UpdateSIPInboundTrunkRequest_Update{
+			Update: req,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	printSIPInboundTrunkID(info)
+	return err
+}
+
 func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	cli, err := createSIPClient(cmd)
 	if err != nil {
 		return err
 	}
 	return createAndPrintReqs(ctx, cmd, nil, cli.CreateSIPOutboundTrunk, printSIPOutboundTrunkID)
+}
+
+func updateSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
+	cli, err := createSIPClient(cmd)
+	if err != nil {
+		return err
+	}
+	id := cmd.String("id")
+	if cmd.Args().Len() > 1 {
+		return errors.New("expected one JSON file or flags")
+	}
+	if cmd.Args().Len() == 1 {
+		// Update from the JSON
+		req, err := ReadRequestFileOrLiteral[livekit.SIPOutboundTrunkInfo](cmd.Args().First())
+		if err != nil {
+			return fmt.Errorf("could not read request: %w", err)
+		}
+		if id == "" {
+			id = req.SipTrunkId
+		}
+		req.SipTrunkId = ""
+		if id == "" {
+			return errors.New("no ID specified, use flag or set it in JSON")
+		}
+		info, err := cli.UpdateSIPOutboundTrunk(ctx, &livekit.UpdateSIPOutboundTrunkRequest{
+			SipTrunkId: id,
+			Action: &livekit.UpdateSIPOutboundTrunkRequest_Replace{
+				Replace: req,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		printSIPOutboundTrunkID(info)
+		return err
+	}
+	// Update from flags
+	if id == "" {
+		return errors.New("no ID specified")
+	}
+	req := &livekit.SIPOutboundTrunkUpdate{}
+	if val := cmd.String("name"); val != "" {
+		req.Name = &val
+	}
+	if val := cmd.String("address"); val != "" {
+		req.Address = &val
+	}
+	if val := cmd.String("transport"); val != "" {
+		val = strings.ToUpper(val)
+		if !strings.HasPrefix(val, "SIP_TRANSPORT_") {
+			val = "SIP_TRANSPORT_" + val
+		}
+		trv, ok := livekit.SIPTransport_value[val]
+		if !ok {
+			return fmt.Errorf("unsupported transport: %q", val)
+		}
+		tr := livekit.SIPTransport(trv)
+		req.Transport = &tr
+	}
+	if val := cmd.String("auth-user"); val != "" {
+		req.AuthUsername = &val
+	}
+	if val := cmd.String("auth-pass"); val != "" {
+		req.AuthPassword = &val
+	}
+	req.Numbers = listUpdateFlag(cmd, "numbers")
+	info, err := cli.UpdateSIPOutboundTrunk(ctx, &livekit.UpdateSIPOutboundTrunkRequest{
+		SipTrunkId: id,
+		Action: &livekit.UpdateSIPOutboundTrunkRequest_Update{
+			Update: req,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	printSIPOutboundTrunkID(info)
+	return err
 }
 
 func userPass(user string, hasPass bool) string {
@@ -432,6 +667,62 @@ func createSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return createAndPrintLegacy(ctx, cmd, cli.CreateSIPDispatchRule, printSIPDispatchRuleID)
+}
+
+func updateSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
+	cli, err := createSIPClient(cmd)
+	if err != nil {
+		return err
+	}
+	id := cmd.String("id")
+	if cmd.Args().Len() > 1 {
+		return errors.New("expected one JSON file or flags")
+	}
+	if cmd.Args().Len() == 1 {
+		// Update from the JSON
+		req, err := ReadRequestFileOrLiteral[livekit.SIPDispatchRuleInfo](cmd.Args().First())
+		if err != nil {
+			return fmt.Errorf("could not read request: %w", err)
+		}
+		if id == "" {
+			id = req.SipDispatchRuleId
+		}
+		req.SipDispatchRuleId = ""
+		if id == "" {
+			return errors.New("no ID specified, use flag or set it in JSON")
+		}
+		info, err := cli.UpdateSIPDispatchRule(ctx, &livekit.UpdateSIPDispatchRuleRequest{
+			SipDispatchRuleId: id,
+			Action: &livekit.UpdateSIPDispatchRuleRequest_Replace{
+				Replace: req,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		printSIPDispatchRuleID(info)
+		return err
+	}
+	// Update from flags
+	if id == "" {
+		return errors.New("no ID specified")
+	}
+	req := &livekit.SIPDispatchRuleUpdate{}
+	if val := cmd.String("name"); val != "" {
+		req.Name = &val
+	}
+	req.TrunkIds = listUpdateFlag(cmd, "trunks")
+	info, err := cli.UpdateSIPDispatchRule(ctx, &livekit.UpdateSIPDispatchRuleRequest{
+		SipDispatchRuleId: id,
+		Action: &livekit.UpdateSIPDispatchRuleRequest_Update{
+			Update: req,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	printSIPDispatchRuleID(info)
+	return err
 }
 
 func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
