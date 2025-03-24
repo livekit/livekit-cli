@@ -50,6 +50,7 @@ var (
 			Name:    "url",
 			Usage:   "`URL` to LiveKit instance",
 			Sources: cli.EnvVars("LIVEKIT_URL"),
+			Value:   "http://localhost:7880",
 		},
 		&cli.StringFlag{
 			Name:    "api-key",
