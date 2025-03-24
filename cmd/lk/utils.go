@@ -193,7 +193,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if os.Getenv("LIVEKIT_API_SECRET") == pc.APISecret {
 			envVars = append(envVars, "api-secret")
 		}
-		if c.Bool("verbose") && len(envVars) > 0 {
+		if len(envVars) > 0 {
 			fmt.Printf("Using %s from environment\n", strings.Join(envVars, ", "))
 			logDetails(c, pc)
 		}
