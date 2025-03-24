@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	standardTarballExcludeFiles = []string{
+	defaultExcludePatterns = []string{
 		"Dockerfile",
 		".dockerignore",
 		".gitignore",
@@ -26,16 +26,16 @@ var (
 		"*.env",
 	}
 
-	excludeFiles = []string{
+	ignoreFilePatterns = []string{
 		".gitignore",
 		".dockerignore",
 	}
 )
 
 func UploadTarball(directory string, presignedUrl string, excludeFiles []string) error {
-	excludeFiles = append(standardTarballExcludeFiles, excludeFiles...)
+	excludeFiles = append(defaultExcludePatterns, excludeFiles...)
 
-	for _, exclude := range excludeFiles {
+	for _, exclude := range ignoreFilePatterns {
 		ignore := filepath.Join(directory, exclude)
 		if _, err := os.Stat(ignore); err == nil {
 			content, err := os.ReadFile(ignore)
