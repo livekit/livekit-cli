@@ -204,11 +204,6 @@ var (
 					Before: createAgentClient,
 					Flags: []cli.Flag{
 						nameSliceFlag,
-						&cli.StringFlag{
-							Name:     "project",
-							Usage:    "Project to list agents for",
-							Required: false,
-						},
 					},
 				},
 				{
