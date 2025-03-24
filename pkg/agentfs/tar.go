@@ -16,25 +16,34 @@ import (
 	"github.com/livekit/protocol/logger"
 )
 
-var standardTarballExcludeFiles = []string{
-	"Dockerfile",
-	".dockerignore",
-	".gitignore",
-	".git",
-	"node_modules",
-	"*.env",
-}
+var (
+	standardTarballExcludeFiles = []string{
+		"Dockerfile",
+		".dockerignore",
+		".gitignore",
+		".git",
+		"node_modules",
+		"*.env",
+	}
+
+	excludeFiles = []string{
+		".gitignore",
+		".dockerignore",
+	}
+)
 
 func UploadTarball(directory string, presignedUrl string, excludeFiles []string) error {
 	excludeFiles = append(standardTarballExcludeFiles, excludeFiles...)
 
-	dockerIgnore := filepath.Join(directory, ".dockerignore")
-	if _, err := os.Stat(dockerIgnore); err == nil {
-		content, err := os.ReadFile(dockerIgnore)
-		if err != nil {
-			return fmt.Errorf("failed to read .dockerignore: %w", err)
+	for _, exclude := range excludeFiles {
+		ignore := filepath.Join(directory, exclude)
+		if _, err := os.Stat(ignore); err == nil {
+			content, err := os.ReadFile(ignore)
+			if err != nil {
+				return fmt.Errorf("failed to read %s: %w", ignore, err)
+			}
+			excludeFiles = append(excludeFiles, strings.Split(string(content), "\n")...)
 		}
-		excludeFiles = append(excludeFiles, strings.Split(string(content), "\n")...)
 	}
 
 	for i, exclude := range excludeFiles {
