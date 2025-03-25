@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -55,6 +56,37 @@ func LoadDefaultProject() (*ProjectConfig, error) {
 	}
 
 	return nil, errors.New("no default project set")
+}
+
+func LoadProjectBySubdomain(subdomain string) (*ProjectConfig, error) {
+	conf, err := LoadOrCreate()
+	if err != nil {
+		return nil, err
+	}
+
+	if subdomain == "" {
+		return nil, errors.New("invalid URL")
+	}
+
+	fmt.Println("Loading project by subdomain", subdomain)
+
+	extractSubdomain := func(url string) string {
+		subdomainPattern := regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
+		matches := subdomainPattern.FindStringSubmatch(url)
+		if len(matches) > 1 {
+			return matches[1]
+		}
+		return ""
+	}
+
+	for _, p := range conf.Projects {
+		projectSubdomain := extractSubdomain(p.URL)
+		if projectSubdomain == subdomain {
+			return &p, nil
+		}
+	}
+
+	return nil, errors.New("project not found")
 }
 
 func LoadProject(name string) (*ProjectConfig, error) {

@@ -24,7 +24,6 @@ import (
 )
 
 type AgentTOML struct {
-	LocalProjectName string `toml:"local_project_name"`
 	ProjectSubdomain string `toml:"project_subdomain"`
 	Name             string `toml:"name"`
 	CPU              string `toml:"cpu"`
@@ -104,13 +103,14 @@ var (
 				},
 				{
 					Name:   "config",
-					Usage:  fmt.Sprintf("Creates a %s in the current directory for an existing agent.", AgentTOMLFile),
+					Usage:  fmt.Sprintf("Creates a %s in the working directory for an existing agent.", AgentTOMLFile),
 					Before: createAgentClient,
 					Action: createAgentConfig,
 					Flags: []cli.Flag{
 						nameFlag(true),
 						tomlFlag,
 					},
+					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:   "deploy",
@@ -131,6 +131,7 @@ var (
 						nameFlag(false),
 						tomlFlag,
 					},
+					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:   "update",
@@ -159,6 +160,7 @@ var (
 						nameFlag(false),
 						tomlFlag,
 					},
+					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:    "logs",
@@ -170,6 +172,7 @@ var (
 						nameFlag(false),
 						tomlFlag,
 					},
+					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:    "delete",
@@ -181,6 +184,7 @@ var (
 						nameFlag(false),
 						tomlFlag,
 					},
+					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:   "versions",
@@ -191,6 +195,7 @@ var (
 						nameFlag(false),
 						tomlFlag,
 					},
+					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:   "list",
@@ -210,6 +215,7 @@ var (
 						nameFlag(false),
 						tomlFlag,
 					},
+					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:   "update-secrets",
@@ -228,6 +234,7 @@ var (
 							Value:    false,
 						},
 					},
+					ArgsUsage: "[working-dir]",
 				},
 			},
 		},
@@ -239,13 +246,29 @@ var (
 
 func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
+	var agentConfig *AgentTOML
+	if cmd.String("toml") != "" {
+		workingDir := "."
+		if cmd.NArg() > 0 {
+			workingDir = cmd.Args().First()
+		}
+		agentConfig, err = loadTomlFile(workingDir, cmd.String("toml"))
+		if err != nil {
+			return nil, err
+		}
+
+		cmd.Set("subdomain", agentConfig.ProjectSubdomain)
+	} else if cmd.String("project") != "" {
+		cmd.Set("project", cmd.String("project"))
+	}
+
 	globalProjectConfig, err = loadProjectDetails(cmd)
 	if err != nil {
 		return nil, err
 	}
 
 	agentsClient, err = lksdk.NewAgentClient(globalProjectConfig.URL, globalProjectConfig.APIKey, globalProjectConfig.APISecret)
-	return ctx, err
+	return nil, err
 }
 
 func loadTomlFile(dir string, tomlFileName string) (*AgentTOML, error) {
@@ -362,7 +385,6 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		defer f.Close()
 
 		agentConfig = &AgentTOML{
-			LocalProjectName: globalProjectConfig.Name,
 			ProjectSubdomain: subdomainMatches[1],
 			Name:             cmd.String("name"),
 			CPU:              clientDefaults_CPU,
@@ -565,7 +587,6 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	agent := response.Agents[0]
 	regionAgent := agent.AgentDeployments[0]
 	agentConfig := &AgentTOML{
-		LocalProjectName: globalProjectConfig.Name,
 		ProjectSubdomain: matches[1],
 		Name:             agent.AgentName,
 		CPU:              regionAgent.CpuReq,
@@ -672,7 +693,11 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
-	agentName, err := getAgentName(cmd, ".", cmd.String("toml"))
+	workingDir := "."
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+	agentName, err := getAgentName(cmd, workingDir, cmd.String("toml"))
 	if err != nil {
 		return err
 	}
@@ -766,7 +791,12 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
-	agentName, err := getAgentName(cmd, ".", cmd.String("toml"))
+	workingDir := "."
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+
+	agentName, err := getAgentName(cmd, workingDir, cmd.String("toml"))
 	if err != nil {
 		return err
 	}
@@ -790,7 +820,11 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getLogs(ctx context.Context, cmd *cli.Command) error {
-	agentName, err := getAgentName(cmd, ".", cmd.String("toml"))
+	workingDir := "."
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+	agentName, err := getAgentName(cmd, workingDir, cmd.String("toml"))
 	if err != nil {
 		return err
 	}
@@ -799,7 +833,11 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
-	agentName, err := getAgentName(cmd, ".", cmd.String("toml"))
+	workingDir := "."
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+	agentName, err := getAgentName(cmd, workingDir, cmd.String("toml"))
 	if err != nil {
 		return err
 	}
@@ -840,7 +878,11 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
-	agentName, err := getAgentName(cmd, ".", cmd.String("toml"))
+	workingDir := "."
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+	agentName, err := getAgentName(cmd, workingDir, cmd.String("toml"))
 	if err != nil {
 		return err
 	}
@@ -912,7 +954,11 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
-	agentName, err := getAgentName(cmd, ".", cmd.String("toml"))
+	workingDir := "."
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+	agentName, err := getAgentName(cmd, workingDir, cmd.String("toml"))
 	if err != nil {
 		return err
 	}
@@ -938,7 +984,11 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
-	agentName, err := getAgentName(cmd, ".", cmd.String("toml"))
+	workingDir := "."
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+	agentName, err := getAgentName(cmd, workingDir, cmd.String("toml"))
 	if err != nil {
 		return err
 	}

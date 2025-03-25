@@ -66,6 +66,10 @@ var (
 			Name:  "project",
 			Usage: "`NAME` of a configured project",
 		},
+		&cli.StringFlag{
+			Name:  "subdomain",
+			Usage: "`SUBDOMAIN` of a configured project",
+		},
 		&cli.BoolFlag{
 			Name:        "curl",
 			Usage:       "Print curl commands for API actions",
@@ -167,6 +171,17 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 			return nil, err
 		}
 		fmt.Println("Using project [" + util.Theme.Focused.Title.Render(c.String("project")) + "]")
+		logDetails(c, pc)
+		return pc, nil
+	}
+
+	// if explicit subdomain is provided, use it
+	if c.String("subdomain") != "" {
+		pc, err := config.LoadProjectBySubdomain(c.String("subdomain"))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("Using project [" + util.Theme.Focused.Title.Render(pc.Name) + "]")
 		logDetails(c, pc)
 		return pc, nil
 	}
