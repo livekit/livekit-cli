@@ -1152,7 +1152,6 @@ func selectSecrets(secrets map[string]string) (map[string]string, error) {
 		Run(); err != nil {
 		return nil, fmt.Errorf("error running TUI: %w", err)
 	}
-	fmt.Printf("%v\n", keys)
 
 	selected := make(map[string]string)
 	for _, k := range keys {
