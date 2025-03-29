@@ -381,7 +381,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		if !createFile {
-			return fmt.Errorf("Config file [%s] required to create agent", tomlFilename)
+			return fmt.Errorf("config file [%s] required to create agent", tomlFilename)
 		}
 
 		f, err := os.Create(filepath.Join(workingDir, tomlFilename))
@@ -563,7 +563,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		if !overwrite {
-			return fmt.Errorf("Config file [%s] already exists", tomlFilename)
+			return fmt.Errorf("config file [%s] already exists", tomlFilename)
 		}
 	}
 
@@ -628,7 +628,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if !tomlExists {
-		return fmt.Errorf("Config file [%s] required to update agent", tomlFilename)
+		return fmt.Errorf("config file [%s] required to update agent", tomlFilename)
 	}
 
 	secrets := make(map[string]*lkproto.AgentSecret)
@@ -783,7 +783,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if !tomlExists {
-		return fmt.Errorf("Config file [%s] required to update agent", tomlFilename)
+		return fmt.Errorf("config file [%s] required to update agent", tomlFilename)
 	}
 
 	req := &lkproto.UpdateAgentRequest{
