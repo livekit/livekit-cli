@@ -27,8 +27,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
@@ -750,13 +748,13 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				fmt.Sprintf("%s / %s", curMem, memReq),
 				fmt.Sprintf("%d", regionalAgent.Replicas),
 				fmt.Sprintf("%d/%d", regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
-				agent.DeployedAt.AsTime().Local().Format("Jan 2, 2006 15:04:05"),
+				agent.DeployedAt.AsTime().Format(time.RFC3339),
 			})
 		}
 	}
 
-	t := CreateAgentTable().
-		Headers("Region", "Status", "CPU", "Mem", "Replicas current", "Replicas min/max", "Deployed At").
+	t := util.CreateTable().
+		Headers("Region", "Status", "CPU", "Mem", "Repl.", "Repl. min/max", "Deployed").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -923,7 +921,7 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	table := CreateAgentTable().
+	table := util.CreateTable().
 		Headers("Version", "Current", "Created At")
 
 	for _, version := range versions.Versions {
@@ -972,7 +970,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 		rows = append(rows, []string{agent.AgentId, agent.AgentName, strings.Join(regions, ",")})
 	}
 
-	t := CreateAgentTable().
+	t := util.CreateTable().
 		Headers("ID", "Name", "Regions").
 		Rows(rows...)
 
@@ -1003,7 +1001,7 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	table := CreateAgentTable().
+	table := util.CreateTable().
 		Headers("Name", "Created At", "Updated At")
 
 	for _, secret := range secrets.Secrets {
@@ -1086,22 +1084,6 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return fmt.Errorf("failed to update agent secrets: %s", resp.Message)
-}
-
-func CreateAgentTable() *table.Table {
-	return table.New().
-		Border(lipgloss.ThickBorder()).
-		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("36"))).
-		StyleFunc(func(row, col int) lipgloss.Style {
-			switch {
-			case row == -1:
-				return lipgloss.NewStyle().
-					Foreground(lipgloss.Color("63")).
-					Bold(true)
-			default:
-				return lipgloss.NewStyle()
-			}
-		})
 }
 
 func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (string, error) {
