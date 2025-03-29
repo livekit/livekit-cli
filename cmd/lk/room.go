@@ -232,13 +232,13 @@ var (
 						Flags: [][]cli.Flag{
 							{
 								&cli.BoolFlag{
-									Name:    "m",
-									Aliases: []string{"mute", "muted"},
+									Name:    "mute",
+									Aliases: []string{"m"},
 									Usage:   "Mute the track",
 								},
 								&cli.BoolFlag{
-									Name:    "u",
-									Aliases: []string{"unmute"},
+									Name:    "unmute",
+									Aliases: []string{"u"},
 									Usage:   "Unmute the track",
 								},
 							},
@@ -269,11 +269,21 @@ var (
 							Name:   "track",
 							Usage:  "Track `SID` to subscribe/unsubscribe",
 						},
-						&cli.BoolFlag{
-							Name:  "subscribe",
-							Usage: "Set to true to subscribe, otherwise it'll unsubscribe",
-						},
 					},
+					MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{{
+						Flags: [][]cli.Flag{{
+							&cli.BoolFlag{
+								Name:    "subscribe",
+								Aliases: []string{"s"},
+								Usage:   "Subscribe to the track",
+							},
+							&cli.BoolFlag{
+								Name:    "unsubscribe",
+								Aliases: []string{"S"},
+								Usage:   "Unsubscribe to the track",
+							},
+						}},
+					}},
 				},
 				{
 					Name:      "send-data",
@@ -1012,7 +1022,7 @@ func removeParticipant(ctx context.Context, cmd *cli.Command) error {
 
 func muteTrack(ctx context.Context, cmd *cli.Command) error {
 	roomName, identity := participantInfoFromFlags(cmd)
-	muted := (!cmd.IsSet("m") && !cmd.IsSet("u")) || cmd.Bool("m") || !cmd.Bool("u")
+	muted := cmd.Bool("mute") || !cmd.Bool("unmute")
 	trackSid := cmd.String("track")
 	if trackSid == "" {
 		trackSid = cmd.Args().First()
@@ -1027,32 +1037,36 @@ func muteTrack(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	verb := "muted"
-	if !cmd.Bool("muted") {
-		verb = "unmuted"
+	verb := "Muted"
+	if !muted {
+		verb = "Unmuted"
 	}
-	fmt.Println(verb, "track: ", trackSid)
+	fmt.Printf("%s track [%s]\n", verb, trackSid)
 	return nil
 }
 
 func updateSubscriptions(ctx context.Context, cmd *cli.Command) error {
 	roomName, identity := participantInfoFromFlags(cmd)
 	trackSids := cmd.StringSlice("track")
+	if cmd.Args().Len() > 0 {
+		trackSids = append(trackSids, cmd.Args().Slice()...)
+	}
+	subscribe := cmd.Bool("subscribe") || !cmd.Bool("unsubscribe")
 	_, err := roomClient.UpdateSubscriptions(ctx, &livekit.UpdateSubscriptionsRequest{
 		Room:      roomName,
 		Identity:  identity,
 		TrackSids: trackSids,
-		Subscribe: cmd.Bool("subscribe"),
+		Subscribe: subscribe,
 	})
 	if err != nil {
 		return err
 	}
 
-	verb := "subscribed to"
-	if !cmd.Bool("subscribe") {
-		verb = "unsubscribed from"
+	verb := "Subscribed to"
+	if !subscribe {
+		verb = "Unsubscribed from"
 	}
-	fmt.Println(verb, "tracks: ", trackSids)
+	fmt.Printf("%s tracks %v\n", verb, trackSids)
 	return nil
 }
 
