@@ -17,6 +17,7 @@ package agentfs
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -28,6 +29,11 @@ import (
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/logger"
 )
+
+type APIError struct {
+	Message string             `json:"msg"`
+	Meta    *map[string]string `json:"meta,omitempty"`
+}
 
 func LogHelper(ctx context.Context, id string, name string, logType string, projectConfig *config.ProjectConfig) error {
 	if logType == "" {
@@ -85,6 +91,13 @@ func LogHelper(ctx context.Context, id string, name string, logType string, proj
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Debugw("failed to get logs", "status", resp.Status)
+
+		var errorResponse APIError
+		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
+			return fmt.Errorf("failed to parse error response: %w", err)
+		} else {
+			return fmt.Errorf("failed to get logs: %s", errorResponse.Message)
+		}
 	}
 
 	scanner := bufio.NewScanner(resp.Body)

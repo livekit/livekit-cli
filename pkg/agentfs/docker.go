@@ -26,6 +26,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/logger"
 )
 
@@ -176,7 +177,8 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType string
 				huh.NewSelect[string]().
 					Title(fmt.Sprintf("Select %s file to use as entrypoint", projectType)).
 					Options(huh.NewOptions(options...)...).
-					Value(&selected),
+					Value(&selected).
+					WithTheme(util.Theme),
 			),
 		)
 
