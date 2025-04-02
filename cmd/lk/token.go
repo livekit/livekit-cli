@@ -287,20 +287,21 @@ func createToken(ctx context.Context, c *cli.Command) error {
 
 		permissions := make([]permission, 0)
 
-		if err := huh.NewMultiSelect[permission]().
-			Options(
-				huh.NewOption("Create", pCreate),
-				huh.NewOption("List", pList),
-				huh.NewOption("Join", pJoin),
-				huh.NewOption("Admin", pAdmin),
-				huh.NewOption("Egress", pEgress),
-				huh.NewOption("Ingress", pIngress),
-				huh.NewOption("Update metadata", pMetadata),
-			).
-			Title("Token Permissions").
-			Description("See https://docs.livekit.io/home/get-started/authentication/#Video-grant").
-			Value(&permissions).
-			WithTheme(util.Theme).
+		if err := huh.NewForm(
+			huh.NewGroup(huh.NewMultiSelect[permission]().
+				Options(
+					huh.NewOption("Create", pCreate),
+					huh.NewOption("List", pList),
+					huh.NewOption("Join", pJoin),
+					huh.NewOption("Admin", pAdmin),
+					huh.NewOption("Egress", pEgress),
+					huh.NewOption("Ingress", pIngress),
+					huh.NewOption("Update metadata", pMetadata),
+				).
+				Title("Token Permissions").
+				Description("See https://docs.livekit.io/home/get-started/authentication/#Video-grant").
+				Value(&permissions).
+				WithTheme(util.Theme))).
 			Run(); err != nil || len(permissions) == 0 {
 			return errors.New("no permissions were given in this grant, see --help")
 		} else {

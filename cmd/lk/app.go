@@ -152,12 +152,13 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 			for _, p := range cliConfig.Projects {
 				options = append(options, huh.NewOption(p.Name+" ["+p.APIKey+"]", &p))
 			}
-			if err = huh.NewSelect[*config.ProjectConfig]().
-				Title("Select a project to use for this app").
-				Description("If you'd like to use a different project, run `lk cloud auth` to add credentials").
-				Options(options...).
-				Value(&project).
-				WithTheme(util.Theme).
+			if err = huh.NewForm(
+				huh.NewGroup(huh.NewSelect[*config.ProjectConfig]().
+					Title("Select a project to use for this app").
+					Description("If you'd like to use a different project, run `lk cloud auth` to add credentials").
+					Options(options...).
+					Value(&project).
+					WithTheme(util.Theme))).
 				Run(); err != nil {
 				return nil, err
 			}
@@ -512,11 +513,12 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 			options = append(options, huh.NewOption(name, name))
 		}
 
-		if err := huh.NewSelect[string]().
-			Title("Select Task").
-			Options(options...).
-			Value(&taskName).
-			WithTheme(util.Theme).
+		if err := huh.NewForm(
+			huh.NewGroup(huh.NewSelect[string]().
+				Title("Select Task").
+				Options(options...).
+				Value(&taskName).
+				WithTheme(util.Theme))).
 			Run(); err != nil {
 			return err
 		}

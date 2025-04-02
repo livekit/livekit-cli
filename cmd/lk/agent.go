@@ -27,6 +27,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/charmbracelet/huh"
+	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
@@ -362,6 +363,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			if err := huh.NewInput().
 				Title("Agent name").
 				Value(&name).
+				WithTheme(util.Theme).
 				Run(); err != nil {
 				return err
 			}
@@ -524,6 +526,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	resp, err := agentsClient.CreateAgent(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Meta("type") == "agent_hosting_disabled" {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", twerr.Meta("redirect_url"))
+			}
+		}
 		return err
 	}
 
@@ -1124,13 +1131,13 @@ func selectSecrets(secrets map[string]string) (map[string]string, error) {
 		return options[i].Key < options[j].Key
 	})
 
-	if err := huh.NewMultiSelect[string]().
-		Title("Select secrets to include").
-		Description("Press space to toggle, enter to confirm").
-		Options(options...).
-		Value(&keys).
-		Height(6).
-		WithTheme(util.Theme).
+	if err := huh.NewForm(
+		huh.NewGroup(huh.NewMultiSelect[string]().
+			Title("Select secrets to include").
+			Options(options...).
+			Value(&keys).
+			Height(6).
+			WithTheme(util.Theme))).
 		Run(); err != nil {
 		return nil, fmt.Errorf("error running TUI: %w", err)
 	}
