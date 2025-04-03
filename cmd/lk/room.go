@@ -202,10 +202,11 @@ var (
 							},
 						},
 						{
-							Name:   "forward",
-							Usage:  "Forward a participant to a different room",
-							Before: createRoomClient,
-							Action: forwardParticipant,
+							Name:      "forward",
+							Usage:     "Forward a participant to a different room",
+							ArgsUsage: "ROOM_NAME",
+							Before:    createRoomClient,
+							Action:    forwardParticipant,
 							Flags: []cli.Flag{
 								roomFlag,
 								identityFlag,
