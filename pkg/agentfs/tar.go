@@ -154,7 +154,7 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 			}
 		}
 
-		// Handle symlinks and get the real FileInfo if it's a symlink
+		// Follow symlinks and include the actual file contents
 		if info.Mode()&os.ModeSymlink != 0 {
 			realPath, err := filepath.EvalSymlinks(path)
 			if err != nil {
@@ -164,6 +164,28 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 			if err != nil {
 				return fmt.Errorf("failed to stat %s: %w", realPath, err)
 			}
+			// Open the real file instead of the symlink
+			file, err := os.Open(realPath)
+			if err != nil {
+				return fmt.Errorf("failed to open file %s: %w", realPath, err)
+			}
+			defer file.Close()
+
+			header, err := tar.FileInfoHeader(info, "")
+			if err != nil {
+				return fmt.Errorf("failed to create tar header for file %s: %w", path, err)
+			}
+			header.Name = relPath
+			if err := tarWriter.WriteHeader(header); err != nil {
+				return fmt.Errorf("failed to write tar header for file %s: %w", path, err)
+			}
+
+			// Copy file contents directly without progress bar
+			_, err = io.Copy(tarWriter, file)
+			if err != nil {
+				return fmt.Errorf("failed to copy file content for %s: %w", path, err)
+			}
+			return nil
 		}
 
 		// Handle directories
