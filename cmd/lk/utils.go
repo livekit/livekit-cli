@@ -23,9 +23,10 @@ import (
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/protocol/utils/interceptors"
+
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
-	"github.com/livekit/protocol/utils/interceptors"
 )
 
 var (
@@ -61,6 +62,10 @@ var (
 			Name:    "api-secret",
 			Usage:   "Your `SECRET`",
 			Sources: cli.EnvVars("LIVEKIT_API_SECRET"),
+		},
+		&cli.BoolFlag{
+			Name:  "dev",
+			Usage: "Use developer credentials for local LiveKit server",
 		},
 		&cli.StringFlag{
 			Name:  "project",
@@ -166,6 +171,9 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 
 	// if explicit project is defined, then use it
 	if c.String("project") != "" {
+		if c.Bool("dev") {
+			return nil, errors.New("both project and dev flags are set")
+		}
 		pc, err := config.LoadProject(c.String("project"))
 		if err != nil {
 			return nil, err
@@ -177,6 +185,9 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 
 	// if explicit subdomain is provided, use it
 	if c.String("subdomain") != "" {
+		if c.Bool("dev") {
+			return nil, errors.New("both subdomain and dev flags are set")
+		}
 		pc, err := config.LoadProjectBySubdomain(c.String("subdomain"))
 		if err != nil {
 			return nil, err
@@ -191,9 +202,15 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		pc.URL = val
 	}
 	if val := c.String("api-key"); val != "" {
+		if c.Bool("dev") {
+			return nil, errors.New("both api-key and dev flags are set")
+		}
 		pc.APIKey = val
 	}
 	if val := c.String("api-secret"); val != "" {
+		if c.Bool("dev") {
+			return nil, errors.New("both api-secret and dev flags are set")
+		}
 		pc.APISecret = val
 	}
 	if pc.APIKey != "" && pc.APISecret != "" && (pc.URL != "" || !p.requireURL) {
@@ -212,6 +229,12 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 			fmt.Printf("Using %s from environment\n", strings.Join(envVars, ", "))
 			logDetails(c, pc)
 		}
+		return pc, nil
+	}
+	if c.Bool("dev") {
+		pc.APIKey = "devkey"
+		pc.APISecret = "secret"
+		fmt.Println("Using dev credentials")
 		return pc, nil
 	}
 
