@@ -18,7 +18,19 @@ import (
 	"bufio"
 	"os"
 	"strings"
+
+	"github.com/charmbracelet/huh"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
+
+var knownEnvFiles = []string{
+	".env.production",
+	".env",
+	".env.staging",
+	".env.development",
+	".env.local",
+	".env.test",
+}
 
 func ParseEnvFile(file string) (map[string]string, error) {
 	env := make(map[string]string)
@@ -48,4 +60,51 @@ func ParseEnvFile(file string) (map[string]string, error) {
 	}
 
 	return env, nil
+}
+
+func DetectEnvFile(maybeFile string) (string, map[string]string, error) {
+	if maybeFile != "" {
+		env, err := ParseEnvFile(maybeFile)
+		return maybeFile, env, err
+	}
+
+	extantEnvFiles := []string{}
+	for _, file := range knownEnvFiles {
+		if _, err := os.Stat(file); err == nil {
+			extantEnvFiles = append(extantEnvFiles, file)
+		}
+	}
+
+	if len(extantEnvFiles) == 0 {
+		return "", nil, nil
+	}
+
+	var selectedFile string
+	if err := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Select secrets file").
+				OptionsFunc(func() []huh.Option[string] {
+					var options []huh.Option[string]
+					for _, file := range extantEnvFiles {
+						options = append(options, huh.Option[string]{Key: file, Value: file})
+					}
+					options = append(options, huh.Option[string]{Key: "[none]", Value: ""})
+					return options
+				}, nil).
+				Value(&selectedFile).
+				WithHeight(5).
+				WithTheme(util.Theme),
+		),
+	).
+		Run(); err != nil {
+		return "", nil, err
+	}
+
+	if selectedFile == "" {
+		return "", nil, nil
+	}
+
+	env, err := ParseEnvFile(selectedFile)
+	return selectedFile, env, err
 }

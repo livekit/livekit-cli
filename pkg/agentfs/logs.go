@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/logger"
 )
@@ -117,7 +118,7 @@ func LogHelper(ctx context.Context, id string, name string, logType string, proj
 			if strings.HasPrefix(line, "ERROR:") {
 				return fmt.Errorf("%s", strings.TrimPrefix(line, "ERROR: "))
 			}
-			fmt.Println(line)
+			fmt.Println(util.Dimmed(line))
 		}
 	}
 }

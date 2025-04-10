@@ -241,7 +241,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	// load default project
 	dp, err := config.LoadDefaultProject()
 	if err == nil {
-		if c.Bool("verbose") {
+		if !c.Bool("silent") {
 			fmt.Println("Using default project [" + util.Theme.Focused.Title.Render(dp.Name) + "]")
 			logDetails(c, dp)
 		}
