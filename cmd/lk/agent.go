@@ -41,6 +41,7 @@ const (
 	clientDefaults_CPU         = "1"
 	clientDefaults_Replicas    = 1
 	clientDefaults_MaxReplicas = 10
+	cloudAgentsBetaSignupURL   = "https://forms.gle/GkGNNTiMt2qyfnu78"
 )
 
 var (
@@ -309,7 +310,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	logger.Debugw("Creating agent", "working-dir", workingDir)
 	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
-	if err != nil && !configExists {
+	if err != nil && configExists {
 		return err
 	}
 
@@ -392,10 +393,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	resp, err := agentsClient.CreateAgent(ctx, req)
 	if err != nil {
-		fmt.Printf("%+v\n", err)
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Meta("type") == "agent_hosting_disabled" {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", twerr.Meta("redirect_url"))
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
 			}
 		}
 		return err
@@ -459,6 +459,11 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		AgentName: cmd.String("name"),
 	})
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 	if len(response.Agents) == 0 {
@@ -519,6 +524,11 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	resp, err := agentsClient.DeployAgent(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -552,6 +562,11 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 		AgentName: agentName,
 	})
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -614,6 +629,11 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 
 	resp, err := agentsClient.UpdateAgent(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -637,6 +657,11 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 	})
 
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -685,6 +710,11 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		AgentName: agentName,
 	})
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -708,6 +738,11 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 
 	versions, err := agentsClient.ListAgentVersions(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -734,6 +769,11 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 				AgentName: n,
 			})
 			if err != nil {
+				if twerr, ok := err.(twirp.Error); ok {
+					if twerr.Code() == twirp.PermissionDenied {
+						return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+					}
+				}
 				return err
 			}
 			items = append(items, res.Agents...)
@@ -741,6 +781,11 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	} else {
 		agents, err := agentsClient.ListAgents(ctx, req)
 		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				if twerr.Code() == twirp.PermissionDenied {
+					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+				}
+			}
 			return err
 		}
 		items = agents.Agents
@@ -780,6 +825,11 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 
 	secrets, err := agentsClient.ListAgentSecrets(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -817,6 +867,11 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 
 	resp, err := agentsClient.UpdateAgentSecrets(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -916,6 +971,11 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 
 		clientSettingsResponse, err := agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
 		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				if twerr.Code() == twirp.PermissionDenied {
+					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+				}
+			}
 			return err
 		}
 
