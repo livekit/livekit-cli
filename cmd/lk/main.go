@@ -58,6 +58,7 @@ func main() {
 	}
 
 	app.Commands = append(app.Commands, AppCommands...)
+	app.Commands = append(app.Commands, AgentCommands...)
 	app.Commands = append(app.Commands, CloudCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
@@ -69,7 +70,6 @@ func main() {
 	app.Commands = append(app.Commands, SIPCommands...)
 	app.Commands = append(app.Commands, ReplayCommands...)
 	app.Commands = append(app.Commands, LoadTestCommands...)
-	app.Commands = append(app.Commands, AgentCommands...)
 
 	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
 	ctx, stop := signal.NotifyContext(

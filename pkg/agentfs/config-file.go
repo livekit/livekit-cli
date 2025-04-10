@@ -25,13 +25,29 @@ import (
 )
 
 type AgentTOML struct {
-	ProjectSubdomain string `toml:"project_subdomain"`
-	Name             string `toml:"name"`
-	CPU              string `toml:"cpu"`
-	Replicas         int    `toml:"replicas"`
-	MaxReplicas      int    `toml:"max_replicas"`
+	ProjectSubdomain string    `toml:"project_subdomain"`
+	Name             string    `toml:"name"`
+	CPU              CPUString `toml:"cpu"`
+	Replicas         int       `toml:"replicas"`
+	MaxReplicas      int       `toml:"max_replicas"`
 
 	Regions []string `toml:"regions"`
+}
+
+type CPUString string
+
+func (c *CPUString) UnmarshalTOML(v interface{}) error {
+	switch value := v.(type) {
+	case int64:
+		*c = CPUString(fmt.Sprintf("%d", value))
+	case float64:
+		*c = CPUString(fmt.Sprintf("%g", value))
+	case string:
+		*c = CPUString(value)
+	default:
+		return fmt.Errorf("invalid type for cpu: %T", v)
+	}
+	return nil
 }
 
 const (

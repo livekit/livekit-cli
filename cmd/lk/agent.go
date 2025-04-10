@@ -110,7 +110,7 @@ var (
 					Before: createAgentClient,
 					Action: createAgentConfig,
 					Flags: []cli.Flag{
-						nameFlag(true),
+						nameFlag(false),
 						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
@@ -388,7 +388,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		Secrets:     secrets,
 		Replicas:    int32(agentConfig.Replicas),
 		MaxReplicas: int32(agentConfig.MaxReplicas),
-		CpuReq:      agentConfig.CPU,
+		CpuReq:      string(agentConfig.CPU),
 	}
 
 	resp, err := agentsClient.CreateAgent(ctx, req)
@@ -455,8 +455,21 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	name := cmd.String("name")
+	if name == "" {
+		if err := huh.NewInput().
+			Title("Agent name").
+			Value(&name).
+			WithTheme(util.Theme).
+			Run(); err != nil {
+			return err
+		} else if name == "" {
+			return fmt.Errorf("name is required")
+		}
+	}
+
 	response, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
-		AgentName: cmd.String("name"),
+		AgentName: name,
 	})
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
@@ -481,7 +494,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	agentConfig := &agentfs.AgentTOML{
 		ProjectSubdomain: matches[1],
 		Name:             agent.AgentName,
-		CPU:              regionAgent.CpuReq,
+		CPU:              agentfs.CPUString(regionAgent.CpuReq),
 		Replicas:         int(regionAgent.Replicas),
 		MaxReplicas:      int(regionAgent.MaxReplicas),
 	}
@@ -518,7 +531,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		AgentName:   agentConfig.Name,
 		Secrets:     secrets,
 		Replicas:    int32(agentConfig.Replicas),
-		CpuReq:      agentConfig.CPU,
+		CpuReq:      string(agentConfig.CPU),
 		MaxReplicas: int32(agentConfig.MaxReplicas),
 	}
 
@@ -623,7 +636,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	req := &lkproto.UpdateAgentRequest{
 		AgentName:   agentConfig.Name,
 		Replicas:    int32(agentConfig.Replicas),
-		CpuReq:      agentConfig.CPU,
+		CpuReq:      string(agentConfig.CPU),
 		MaxReplicas: int32(agentConfig.MaxReplicas),
 	}
 
