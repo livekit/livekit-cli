@@ -255,6 +255,9 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			WithTheme(util.Theme)
 		var options []huh.Option[string]
 		for _, t := range templateOptions {
+			if t.IsHidden {
+				continue
+			}
 			descStyle := util.Theme.Help.ShortDesc
 			optionText := t.Name + " " + descStyle.Render("#"+strings.Join(t.Tags, " #"))
 			options = append(options, huh.NewOption(optionText, t.URL))
