@@ -69,6 +69,7 @@ func main() {
 	app.Commands = append(app.Commands, SIPCommands...)
 	app.Commands = append(app.Commands, ReplayCommands...)
 	app.Commands = append(app.Commands, LoadTestCommands...)
+	app.Commands = append(app.Commands, AgentLoadTestCommands...)
 	app.Commands = append(app.Commands, AgentCommands...)
 
 	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
