@@ -77,6 +77,7 @@ type Template struct {
 	Attrs     map[string]string `yaml:"attrs" json:"attrs,omitempty"`
 	Requires  []string          `yaml:"requires" json:"requires,omitempty"`
 	IsSandbox bool              `yaml:"is_sandbox" json:"is_sandbox,omitempty"`
+	IsHidden  bool              `yaml:"is_hidden" json:"is_hidden,omitempty"`
 }
 
 type SandboxDetails struct {

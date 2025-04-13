@@ -154,8 +154,8 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 			}
 			if err = huh.NewForm(
 				huh.NewGroup(huh.NewSelect[*config.ProjectConfig]().
-					Title("Select a project to use for this app").
-					Description("If you'd like to use a different project, run `lk cloud auth` to add credentials").
+					Title("Select a project to use for this action").
+					Description("To use a different project, run `lk cloud auth` to add credentials").
 					Options(options...).
 					Value(&project).
 					WithTheme(util.Theme))).
@@ -165,7 +165,7 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 		} else {
 			shouldAuth := true
 			if err = huh.NewConfirm().
-				Title("No local projects found. Authenticate one now?").
+				Title("No local projects found. Authenticate one?").
 				Inline(true).
 				Value(&shouldAuth).
 				WithTheme(util.Theme).
@@ -255,6 +255,9 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			WithTheme(util.Theme)
 		var options []huh.Option[string]
 		for _, t := range templateOptions {
+			if t.IsHidden {
+				continue
+			}
 			descStyle := util.Theme.Help.ShortDesc
 			optionText := t.Name + " " + descStyle.Render("#"+strings.Join(t.Tags, " #"))
 			options = append(options, huh.NewOption(optionText, t.URL))

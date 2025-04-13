@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -37,48 +37,39 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
-type AgentTOML struct {
-	ProjectSubdomain string `toml:"project_subdomain"`
-	Name             string `toml:"name"`
-	CPU              string `toml:"cpu"`
-	Replicas         int    `toml:"replicas"`
-	MaxReplicas      int    `toml:"max_replicas"`
-
-	Regions []string `toml:"regions"`
-}
-
 const (
-	AgentTOMLFile = "livekit.toml"
-
 	clientDefaults_CPU         = "1"
 	clientDefaults_Replicas    = 1
 	clientDefaults_MaxReplicas = 10
+	cloudAgentsBetaSignupURL   = "https://forms.gle/GkGNNTiMt2qyfnu78"
 )
 
 var (
 	tomlFlag = &cli.StringFlag{
-		Name:     "toml",
-		Usage:    fmt.Sprintf("TOML file to use in the working directory. Defaults to %s", AgentTOMLFile),
-		Required: false,
+		Name:        "toml",
+		Usage:       "TOML `FILE` to use in the working directory",
+		Value:       agentfs.AgentTOMLFile,
+		Destination: &tomlFilename,
+		Required:    false,
 	}
 
 	nameFlag = func(required bool) *cli.StringFlag {
 		return &cli.StringFlag{
 			Name:     "name",
-			Usage:    fmt.Sprintf("Name of the agent. If unset, and the %s file is present, will use the name in the %s file.", AgentTOMLFile, AgentTOMLFile),
+			Usage:    fmt.Sprintf("`NAME` of the agent. If unset, and the %s file is present, will use the name found there.", agentfs.AgentTOMLFile),
 			Required: required,
 		}
 	}
 
 	nameSliceFlag = &cli.StringSliceFlag{
 		Name:     "name",
-		Usage:    "Name(s) of the agent",
+		Usage:    "`NAMES` of agent(s)",
 		Required: false,
 	}
 
 	secretsFileFlag = &cli.StringFlag{
 		Name:     "secrets-file",
-		Usage:    "File containing secret KEY=VALUE pairs, one per line. These will be injected as environment variables into the agent.",
+		Usage:    "`FILE` containing secret KEY=VALUE pairs, one per line. These will be injected as environment variables into the agent.",
 		Required: false,
 	}
 
@@ -115,11 +106,11 @@ var (
 				},
 				{
 					Name:   "config",
-					Usage:  fmt.Sprintf("Creates a %s in the working directory for an existing agent.", AgentTOMLFile),
+					Usage:  fmt.Sprintf("Creates a %s in the working directory for an existing agent.", agentfs.AgentTOMLFile),
 					Before: createAgentClient,
 					Action: createAgentConfig,
 					Flags: []cli.Flag{
-						nameFlag(true),
+						nameFlag(false),
 						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
@@ -251,137 +242,104 @@ var (
 			},
 		},
 	}
-
-	agentsClient *lksdk.AgentClient
+	subdomainPattern = regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
+	agentsClient     *lksdk.AgentClient
+	tomlFilename     = agentfs.AgentTOMLFile
+	workingDir       = "."
+	ignoredSecrets   = []string{
+		"LIVEKIT_API_KEY",
+		"LIVEKIT_API_SECRET",
+		"LIVEKIT_URL",
+	}
 )
 
 func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
-	var agentConfig *AgentTOML
+	var agentConfig *agentfs.AgentTOML
 
 	if _, err := requireProject(ctx, cmd); err != nil {
 		return ctx, err
 	}
 
-	if cmd.String("toml") != "" {
-		workingDir := "."
-		if cmd.NArg() > 0 {
-			workingDir = cmd.Args().First()
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+
+	// Verify that the project and agent config match, if it exists.
+	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
+	if configExists {
+		projectSubdomainMatch := subdomainPattern.FindStringSubmatch(project.URL)
+		if len(projectSubdomainMatch) < 2 {
+			return nil, fmt.Errorf("invalid project URL [%s]", project.URL)
 		}
-		agentConfig, err = loadTomlFile(workingDir, cmd.String("toml"))
-		if err != nil {
+		if projectSubdomainMatch[1] != agentConfig.ProjectSubdomain {
+			return nil, fmt.Errorf("project does not match agent subdomain [%s]", agentConfig.ProjectSubdomain)
+		}
+	} else {
+		if !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
-		cmd.Set("subdomain", agentConfig.ProjectSubdomain)
 	}
 
 	agentsClient, err = lksdk.NewAgentClient(project.URL, project.APIKey, project.APISecret)
 	return nil, err
 }
 
-func loadTomlFile(dir string, tomlFileName string) (*AgentTOML, error) {
-	logger.Debugw(fmt.Sprintf("loading %s file", tomlFileName))
-	var agentConfig AgentTOML
-	var err error
-	tomlFile := filepath.Join(dir, tomlFileName)
-	if _, err = os.Stat(tomlFile); err == nil {
-		_, err = toml.DecodeFile(tomlFile, &agentConfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &agentConfig, err
-}
-
 func createAgent(ctx context.Context, cmd *cli.Command) error {
-	subdomainPattern := regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
 	subdomainMatches := subdomainPattern.FindStringSubmatch(project.URL)
-	if len(subdomainMatches) < 1 {
+	if len(subdomainMatches) < 2 {
 		return fmt.Errorf("invalid project URL [%s]", project.URL)
 	}
 
-	useProject := true
-	if err := huh.NewConfirm().
-		Title(fmt.Sprintf("Use project [%s] with subdomain [%s] to create agent?", project.Name, subdomainMatches[1])).
-		Value(&useProject).
-		Inline(false).
-		WithTheme(util.Theme).
-		Run(); err != nil {
-		return err
-	}
-
-	if !useProject {
-		return fmt.Errorf("cancelled")
-	}
-
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
-	}
-
-	logger.Debugw("Creating agent", "working-dir", workingDir)
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
-	agentConfig, err := loadTomlFile(workingDir, tomlFilename)
-	var exists bool
-	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-		exists = false
-	} else {
-		exists = true
-	}
-
-	name := cmd.String("name")
-
-	if exists && !cmd.Bool("silent") {
-		useExisting := true
-		if err := huh.NewConfirm().
-			Title(fmt.Sprintf("[%s] already exists. Would you like to use it?", tomlFilename)).
-			Value(&useExisting).
+	// We have a configured project, but don't need to double-confirm if it was
+	// set via a command line flag, because intent it clear.
+	if !cmd.IsSet("project") {
+		useProject := true
+		if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+			Title(fmt.Sprintf("Use project [%s] with subdomain [%s] to create agent?", project.Name, subdomainMatches[1])).
+			Value(&useProject).
 			Inline(false).
-			WithTheme(util.Theme).
+			WithTheme(util.Theme))).
 			Run(); err != nil {
 			return err
 		}
-
-		if !useExisting {
-			return fmt.Errorf("[%s] already exists", tomlFilename)
+		if !useProject {
+			return fmt.Errorf("cancelled")
 		}
+	}
 
+	logger.Debugw("Creating agent", "working-dir", workingDir)
+	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
+	if err != nil && configExists {
+		return err
+	}
+
+	name := cmd.String("name")
+	silent := cmd.Bool("silent")
+
+	if configExists {
+		// If name was set via command line, it must match the name in the config.
 		if name != "" && agentConfig.Name != name {
 			return fmt.Errorf("agent name passed in command line: [%s] does not match name in [%s]: [%s]", name, tomlFilename, agentConfig.Name)
 		}
 
-		logger.Debugw("using existing agent toml")
-	} else if !exists && !cmd.Bool("silent") {
-		if cmd.String("name") == "" {
-			if err := huh.NewInput().
-				Title("Agent name").
-				Value(&name).
-				WithTheme(util.Theme).
-				Run(); err != nil {
-				return err
+		if !silent {
+			fmt.Printf("Using agent configuration [%s]\n", util.Accented(tomlFilename))
+		}
+	} else {
+		// If name was not set via command line, prompt for it.
+		if name == "" {
+			if silent {
+				return fmt.Errorf("agent name is required")
+			} else {
+				if err := huh.NewInput().
+					Title("Agent name").
+					Value(&name).
+					WithTheme(util.Theme).
+					Run(); err != nil {
+					return err
+				}
 			}
-		}
-
-		var createFile bool
-		if err := huh.NewConfirm().
-			Title(fmt.Sprintf("Config file [%s] required. Create one?", tomlFilename)).
-			Description(fmt.Sprintf("Project [%s]", project.Name)).
-			Value(&createFile).
-			Inline(false).
-			WithTheme(util.Theme).
-			Run(); err != nil {
-			return err
-		}
-
-		if !createFile {
-			return fmt.Errorf("config file [%s] required to create agent", tomlFilename)
 		}
 
 		f, err := os.Create(filepath.Join(workingDir, tomlFilename))
@@ -390,7 +348,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 		defer f.Close()
 
-		agentConfig = &AgentTOML{
+		agentConfig = &agentfs.AgentTOML{
 			ProjectSubdomain: subdomainMatches[1],
 			Name:             name,
 			CPU:              clientDefaults_CPU,
@@ -402,6 +360,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		if err := encoder.Encode(agentConfig); err != nil {
 			return fmt.Errorf("error encoding TOML: %w", err)
 		}
+		fmt.Printf("Creating config file [%s]\n", util.Accented(tomlFilename))
 	}
 
 	if name == "" {
@@ -411,159 +370,83 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	} else {
 		agentConfig.Name = name
 	}
-
-	var livekitApiKey, livekitApiSecret bool
-	secrets := make(map[string]*lkproto.AgentSecret)
-	for _, secret := range cmd.StringSlice("secrets") {
-		secret := strings.Split(secret, "=")
-		agentSecret := &lkproto.AgentSecret{
-			Name:  secret[0],
-			Value: []byte(secret[1]),
-		}
-		secrets[secret[0]] = agentSecret
-		if secret[0] == "LIVEKIT_API_KEY" {
-			livekitApiKey = true
-		}
-		if secret[0] == "LIVEKIT_API_SECRET" {
-			livekitApiSecret = true
-		}
+	if !silent {
+		fmt.Printf("Creating agent [%s]\n", util.Accented(agentConfig.Name))
 	}
 
-	if cmd.String("secrets-file") != "" {
-		env, err := agentfs.ParseEnvFile(cmd.String("secrets-file"))
-		if err != nil {
-			return err
-		}
-		selected, err := selectSecrets(env)
-		if err != nil {
-			return err
-		}
-		for k, v := range selected {
-			if _, exists := secrets[k]; exists {
-				continue
-			}
-
-			secret := &lkproto.AgentSecret{
-				Name:  k,
-				Value: []byte(v),
-			}
-			secrets[k] = secret
-			if k == "LIVEKIT_API_KEY" {
-				livekitApiKey = true
-			}
-			if k == "LIVEKIT_API_SECRET" {
-				livekitApiSecret = true
-			}
-		}
-	}
-
-	if len(secrets) == 0 {
-		logger.Warnw("No secrets provided. You can update your agents later with the update-secrets command.", nil)
-	}
-
-	if !livekitApiKey || !livekitApiSecret {
-		useAutoGeneratedKeys := true
-		if err := huh.NewConfirm().
-			Title("LIVEKIT_API_KEY and LIVEKIT_API_SECRET are unset, would you like to use auto-generated keys?").
-			Value(&useAutoGeneratedKeys).
-			Inline(false).
-			WithTheme(util.Theme).
-			Run(); err != nil {
-			return err
-		}
-
-		if !useAutoGeneratedKeys {
-			return fmt.Errorf("LIVEKIT_API_KEY and LIVEKIT_API_SECRET are required")
-		}
-	}
-
-	dockerfileExists, err := agentfs.FindDockerfile(workingDir)
+	secrets, err := requireSecrets(ctx, cmd)
 	if err != nil {
 		return err
 	}
 
-	if !dockerfileExists {
-		createDockerfile := true
-		if err := huh.NewConfirm().
-			Title("No Dockerfile found in current directory. Would you like to create one?").
-			Value(&createDockerfile).
-			Inline(false).
-			WithTheme(util.Theme).
-			Run(); err != nil {
-			return err
-		}
-
-		if !createDockerfile {
-			return fmt.Errorf("dockerfile is required to create agent")
-		}
-
-		clientSettingsResponse, err := agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
-		if err != nil {
-			return err
-		}
-
-		settingsMap := make(map[string]string)
-		for _, setting := range clientSettingsResponse.Params {
-			settingsMap[setting.Name] = setting.Value
-		}
-
-		if err := agentfs.CreateDockerfile(workingDir, settingsMap); err != nil {
-			return err
-		}
+	if err := requireDockerfile(ctx, cmd, workingDir); err != nil {
+		return err
 	}
 
-	secretsSlice := make([]*lkproto.AgentSecret, 0, len(secrets))
-	for _, secret := range secrets {
-		secretsSlice = append(secretsSlice, secret)
-	}
 	req := &lkproto.CreateAgentRequest{
 		AgentName:   agentConfig.Name,
-		Secrets:     secretsSlice,
+		Secrets:     secrets,
 		Replicas:    int32(agentConfig.Replicas),
 		MaxReplicas: int32(agentConfig.MaxReplicas),
-		CpuReq:      agentConfig.CPU,
+		CpuReq:      string(agentConfig.CPU),
 	}
 
 	resp, err := agentsClient.CreateAgent(ctx, req)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Meta("type") == "agent_hosting_disabled" {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", twerr.Meta("redirect_url"))
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
 			}
 		}
 		return err
 	}
 
-	err = agentfs.UploadTarball(workingDir, resp.PresignedUrl, []string{AgentTOMLFile})
+	err = agentfs.UploadTarball(workingDir, resp.PresignedUrl, []string{agentfs.AgentTOMLFile})
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Created agent [%s]\n", resp.AgentId)
+	fmt.Printf("Created agent [%s] with ID [%s]\n", util.Accented(resp.AgentName), util.Accented(resp.AgentId))
 	err = agentfs.Build(ctx, resp.AgentId, agentConfig.Name, "deploy", project)
 	if err != nil {
 		return err
 	}
 
 	fmt.Println("Build completed")
-	fmt.Println("Deploying agent...")
-	err = agentfs.LogHelper(ctx, "", agentConfig.Name, "deploy", project)
-	return err
+
+	if !silent {
+		var viewLogs bool = true
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title("Agent deploying. Would you like to view logs?").
+					Description("You can view logs later with `lk agent logs`").
+					Value(&viewLogs).
+					WithTheme(util.Theme),
+			),
+		).Run(); err != nil {
+			return err
+		} else if viewLogs {
+			fmt.Println("Tailing logs...safe to exit at any time")
+			return agentfs.LogHelper(ctx, "", agentConfig.Name, "deploy", project)
+		}
+	}
+	return nil
 }
 
 func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
 	if _, err := os.Stat(tomlFilename); err == nil {
 		var overwrite bool
-		if err := huh.NewConfirm().
-			Title(
-				fmt.Sprintf("Config file [%s] file already exists. Overwrite?", tomlFilename),
-			).
-			Value(&overwrite).
-			WithTheme(util.Theme).
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title(
+						fmt.Sprintf("Config file [%s] file already exists. Overwrite?", tomlFilename),
+					).
+					Value(&overwrite).
+					WithTheme(util.Theme),
+			),
+		).
 			Run(); err != nil {
 			return err
 		}
@@ -572,10 +455,28 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	name := cmd.String("name")
+	if name == "" {
+		if err := huh.NewInput().
+			Title("Agent name").
+			Value(&name).
+			WithTheme(util.Theme).
+			Run(); err != nil {
+			return err
+		} else if name == "" {
+			return fmt.Errorf("name is required")
+		}
+	}
+
 	response, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
-		AgentName: cmd.String("name"),
+		AgentName: name,
 	})
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 	if len(response.Agents) == 0 {
@@ -590,15 +491,15 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 
 	agent := response.Agents[0]
 	regionAgent := agent.AgentDeployments[0]
-	agentConfig := &AgentTOML{
+	agentConfig := &agentfs.AgentTOML{
 		ProjectSubdomain: matches[1],
 		Name:             agent.AgentName,
-		CPU:              regionAgent.CpuReq,
+		CPU:              agentfs.CPUString(regionAgent.CpuReq),
 		Replicas:         int(regionAgent.Replicas),
 		MaxReplicas:      int(regionAgent.MaxReplicas),
 	}
 
-	f, err := os.Create(cmd.String("toml"))
+	f, err := os.Create(tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -608,80 +509,39 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("error encoding TOML: %w", err)
 	}
 
-	fmt.Printf("Created config file [%s]\n", tomlFilename)
+	fmt.Printf("Created config file [%s]\n", util.Accented(tomlFilename))
 	return nil
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
+	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
+	if err != nil && configExists {
+		return err
+	}
+	if !configExists {
+		return fmt.Errorf("config file [%s] required to update agent", util.Accented(tomlFilename))
 	}
 
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
-
-	agentConfig, err := loadTomlFile(workingDir, tomlFilename)
-	tomlExists := true
+	secrets, err := requireSecrets(ctx, cmd)
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-		tomlExists = false
+		return err
 	}
 
-	if !tomlExists {
-		return fmt.Errorf("config file [%s] required to update agent", tomlFilename)
-	}
-
-	secrets := make(map[string]*lkproto.AgentSecret)
-	for _, secret := range cmd.StringSlice("secrets") {
-		secret := strings.Split(secret, "=")
-		agentSecret := &lkproto.AgentSecret{
-			Name:  secret[0],
-			Value: []byte(secret[1]),
-		}
-		secrets[secret[0]] = agentSecret
-	}
-
-	if cmd.String("secrets-file") != "" {
-		env, err := agentfs.ParseEnvFile(cmd.String("secrets-file"))
-		if err != nil {
-			return err
-		}
-		selected, err := selectSecrets(env)
-		if err != nil {
-			return err
-		}
-		for k, v := range selected {
-			if _, exists := secrets[k]; exists {
-				continue
-			}
-
-			secret := &lkproto.AgentSecret{
-				Name:  k,
-				Value: []byte(v),
-			}
-			secrets[k] = secret
-		}
-	}
-
-	secretsSlice := make([]*lkproto.AgentSecret, 0, len(secrets))
-	for _, secret := range secrets {
-		secretsSlice = append(secretsSlice, secret)
-	}
 	req := &lkproto.DeployAgentRequest{
 		AgentName:   agentConfig.Name,
-		Secrets:     secretsSlice,
+		Secrets:     secrets,
 		Replicas:    int32(agentConfig.Replicas),
-		CpuReq:      agentConfig.CPU,
+		CpuReq:      string(agentConfig.CPU),
 		MaxReplicas: int32(agentConfig.MaxReplicas),
 	}
 
 	resp, err := agentsClient.DeployAgent(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -690,12 +550,12 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	presignedUrl := resp.PresignedUrl
-	err = agentfs.UploadTarball(workingDir, presignedUrl, []string{AgentTOMLFile})
+	err = agentfs.UploadTarball(workingDir, presignedUrl, []string{agentfs.AgentTOMLFile})
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Updated agent [%s]\n", resp.AgentId)
+	fmt.Printf("Updated agent [%s]\n", util.Accented(resp.AgentId))
 	err = agentfs.Build(ctx, resp.AgentId, agentConfig.Name, "update", project)
 	if err != nil {
 		return err
@@ -706,14 +566,6 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
-	}
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
 	agentName, err := getAgentName(cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
@@ -723,6 +575,11 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 		AgentName: agentName,
 	})
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -753,15 +610,14 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				regionalAgent.Status,
 				fmt.Sprintf("%.4g / %s", curCPU, regionalAgent.CpuReq),
 				fmt.Sprintf("%s / %s", curMem, memReq),
-				fmt.Sprintf("%d", regionalAgent.Replicas),
-				fmt.Sprintf("%d/%d", regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
+				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
 				agent.DeployedAt.AsTime().Format(time.RFC3339),
 			})
 		}
 	}
 
 	t := util.CreateTable().
-		Headers("Region", "Status", "CPU", "Mem", "Repl.", "Repl. min/max", "Deployed").
+		Headers("Region", "Status", "CPU", "Mem", "Replicas/Min/Max", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -769,42 +625,33 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateAgent(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
+	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
+	if err != nil && configExists {
+		return err
 	}
-
-	tomlExists := true
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
-	agentConfig, err := loadTomlFile(workingDir, tomlFilename)
-	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-		tomlExists = false
-	}
-
-	if !tomlExists {
+	if !configExists {
 		return fmt.Errorf("config file [%s] required to update agent", tomlFilename)
 	}
 
 	req := &lkproto.UpdateAgentRequest{
 		AgentName:   agentConfig.Name,
 		Replicas:    int32(agentConfig.Replicas),
-		CpuReq:      agentConfig.CPU,
+		CpuReq:      string(agentConfig.CPU),
 		MaxReplicas: int32(agentConfig.MaxReplicas),
 	}
 
 	resp, err := agentsClient.UpdateAgent(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
 	if resp.Success {
-		fmt.Println("Updated agent")
+		fmt.Printf("Updated agent [%s]\n", util.Accented(agentConfig.Name))
 		return nil
 	}
 
@@ -812,16 +659,6 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
-	}
-
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
-
 	agentName, err := getAgentName(cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
@@ -833,6 +670,11 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 	})
 
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -840,20 +682,12 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to rollback agent %s", resp.Message)
 	}
 
-	fmt.Printf("Rolled back agent [%s] to version %s\n", agentName, cmd.String("version"))
+	fmt.Printf("Rolled back agent [%s] to version %s\n", util.Accented(agentName), cmd.String("version"))
 
 	return nil
 }
 
 func getLogs(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
-	}
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
 	agentName, err := getAgentName(cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
@@ -863,26 +697,21 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
-	}
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
 	agentName, err := getAgentName(cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
 
 	var confirmDelete bool
-	if err := huh.NewConfirm().
-		Title(fmt.Sprintf("Are you sure you want to delete agent %s?", agentName)).
-		Value(&confirmDelete).
-		Inline(false).
-		WithTheme(util.Theme).
-		Run(); err != nil {
+	if err := huh.NewForm(
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentName)).
+				Value(&confirmDelete).
+				Inline(false).
+				WithTheme(util.Theme),
+		),
+	).Run(); err != nil {
 		return err
 	}
 
@@ -894,6 +723,11 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		AgentName: agentName,
 	})
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -901,19 +735,11 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to delete agent %s", resp.Message)
 	}
 
-	fmt.Println("Deleted agent", cmd.String("id"))
+	fmt.Printf("Deleted agent [%s]\n", util.Accented(agentName))
 	return nil
 }
 
 func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
-	}
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
 	agentName, err := getAgentName(cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
@@ -925,6 +751,11 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 
 	versions, err := agentsClient.ListAgentVersions(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -951,6 +782,11 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 				AgentName: n,
 			})
 			if err != nil {
+				if twerr, ok := err.(twirp.Error); ok {
+					if twerr.Code() == twirp.PermissionDenied {
+						return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+					}
+				}
 				return err
 			}
 			items = append(items, res.Agents...)
@@ -958,6 +794,11 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	} else {
 		agents, err := agentsClient.ListAgents(ctx, req)
 		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				if twerr.Code() == twirp.PermissionDenied {
+					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+				}
+			}
 			return err
 		}
 		items = agents.Agents
@@ -986,14 +827,6 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
-	}
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
 	agentName, err := getAgentName(cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
@@ -1005,6 +838,11 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 
 	secrets, err := agentsClient.ListAgentSecrets(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -1012,6 +850,10 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		Headers("Name", "Created At", "Updated At")
 
 	for _, secret := range secrets.Secrets {
+		// NOTE: Maybe these should be omitted on the server side?
+		if slices.Contains(ignoredSecrets, secret.Name) {
+			continue
+		}
 		table.Row(secret.Name, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
 	}
 
@@ -1020,68 +862,29 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
-	workingDir := "."
-	if cmd.NArg() > 0 {
-		workingDir = cmd.Args().First()
-	}
-	tomlFilename := cmd.String("toml")
-	if tomlFilename == "" {
-		tomlFilename = AgentTOMLFile
-	}
 	agentName, err := getAgentName(cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
 
-	if len(cmd.StringSlice("secrets")) == 0 && cmd.String("secrets-file") == "" {
-		return fmt.Errorf("no secrets provided")
-	}
-
-	secrets := make(map[string]*lkproto.AgentSecret)
-	for _, secret := range cmd.StringSlice("secrets") {
-		secret := strings.Split(secret, "=")
-		agentSecret := &lkproto.AgentSecret{
-			Name:  secret[0],
-			Value: []byte(secret[1]),
-		}
-		secrets[secret[0]] = agentSecret
-	}
-
-	if cmd.String("secrets-file") != "" {
-		env, err := agentfs.ParseEnvFile(cmd.String("secrets-file"))
-		if err != nil {
-			return err
-		}
-		selected, err := selectSecrets(env)
-		if err != nil {
-			return err
-		}
-		for k, v := range selected {
-			if _, exists := secrets[k]; exists {
-				continue
-			}
-
-			secret := &lkproto.AgentSecret{
-				Name:  k,
-				Value: []byte(v),
-			}
-			secrets[k] = secret
-		}
-	}
-
-	secretsSlice := make([]*lkproto.AgentSecret, 0, len(secrets))
-	for _, secret := range secrets {
-		secretsSlice = append(secretsSlice, secret)
+	secrets, err := requireSecrets(ctx, cmd)
+	if err != nil {
+		return err
 	}
 
 	req := &lkproto.UpdateAgentSecretsRequest{
 		AgentName: agentName,
-		Secrets:   secretsSlice,
+		Secrets:   secrets,
 		Overwrite: cmd.Bool("overwrite"),
 	}
 
 	resp, err := agentsClient.UpdateAgentSecrets(ctx, req)
 	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
 		return err
 	}
 
@@ -1096,17 +899,12 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (string, error) {
 	agentName := cmd.String("name")
 	if agentName == "" {
-		agentConfig, err := loadTomlFile(agentDir, tomlFileName)
-		tomlExists := true
-		if err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				return "", err
-			}
-			tomlExists = false
+		agentConfig, configExists, err := agentfs.LoadTomlFile(agentDir, tomlFileName)
+		if err != nil && configExists {
+			return "", err
 		}
-
-		if !tomlExists {
-			return "", fmt.Errorf("agent name or %s required", tomlFileName)
+		if !configExists {
+			return "", fmt.Errorf("config file [%s] required to update agent", tomlFileName)
 		}
 
 		agentName = agentConfig.Name
@@ -1120,32 +918,93 @@ func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (strin
 	return agentName, nil
 }
 
-func selectSecrets(secrets map[string]string) (map[string]string, error) {
-	keys := make([]string, 0, len(secrets))
-	options := make([]huh.Option[string], 0, len(secrets))
-	for k := range secrets {
-		keys = append(keys, k)
-		options = append(options, huh.NewOption(k, k))
-	}
-	sort.Slice(options, func(i, j int) bool {
-		return options[i].Key < options[j].Key
-	})
-
-	if err := huh.NewForm(
-		huh.NewGroup(huh.NewMultiSelect[string]().
-			Title("Select secrets to include").
-			Options(options...).
-			Value(&keys).
-			Height(6).
-			WithTheme(util.Theme))).
-		Run(); err != nil {
-		return nil, fmt.Errorf("error running TUI: %w", err)
+func requireSecrets(_ context.Context, cmd *cli.Command) ([]*lkproto.AgentSecret, error) {
+	silent := cmd.Bool("silent")
+	secrets := make(map[string]*lkproto.AgentSecret)
+	for _, secret := range cmd.StringSlice("secrets") {
+		secret := strings.Split(secret, "=")
+		agentSecret := &lkproto.AgentSecret{
+			Name:  secret[0],
+			Value: []byte(secret[1]),
+		}
+		secrets[secret[0]] = agentSecret
 	}
 
-	selected := make(map[string]string)
-	for _, k := range keys {
-		selected[k] = secrets[k]
+	file, env, err := agentfs.DetectEnvFile(cmd.String("secrets-file"))
+	if err != nil {
+		return nil, err
+	}
+	if file != "" && !silent {
+		fmt.Printf("Using secrets file [%s]\n", util.Accented(file))
 	}
 
-	return selected, nil
+	for k, v := range env {
+		if _, exists := secrets[k]; exists {
+			continue
+		}
+
+		secret := &lkproto.AgentSecret{
+			Name:  k,
+			Value: []byte(v),
+		}
+		secrets[k] = secret
+	}
+
+	var secretsSlice []*lkproto.AgentSecret
+	var secretsIgnored bool
+	for _, secret := range secrets {
+		if slices.Contains(ignoredSecrets, secret.Name) {
+			secretsIgnored = true
+			continue
+		}
+		secretsSlice = append(secretsSlice, secret)
+	}
+
+	if len(secretsSlice) == 0 {
+		msg := "no secrets provided"
+		if secretsIgnored {
+			msg = "no valid secrets provided, LIVEKIT_ secrets are ignored and injected automatically to your agent"
+		}
+		return nil, errors.New(msg)
+	}
+
+	return secretsSlice, nil
+}
+
+func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string) error {
+	dockerfileExists, err := agentfs.HasDockerfile(workingDir)
+	if err != nil {
+		return err
+	}
+
+	if !dockerfileExists {
+		if !cmd.Bool("silent") {
+			fmt.Println("Creating Dockerfile")
+		}
+
+		clientSettingsResponse, err := agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
+		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				if twerr.Code() == twirp.PermissionDenied {
+					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+				}
+			}
+			return err
+		}
+
+		settingsMap := make(map[string]string)
+		for _, setting := range clientSettingsResponse.Params {
+			settingsMap[setting.Name] = setting.Value
+		}
+
+		if err := agentfs.CreateDockerfile(workingDir, settingsMap); err != nil {
+			return err
+		}
+	} else {
+		if !cmd.Bool("silent") {
+			fmt.Println("Using existing Dockerfile")
+		}
+	}
+
+	return nil
 }
