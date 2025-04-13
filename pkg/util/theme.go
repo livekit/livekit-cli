@@ -22,8 +22,17 @@ import (
 var (
 	Theme = func() *huh.Theme {
 		t := huh.ThemeBase16()
+		t.Focused.FocusedButton = t.Focused.FocusedButton.Foreground(lipgloss.Color("7")).Background(lipgloss.Color("4"))
+		t.Focused.TextInput.Cursor.Foreground(lipgloss.Color("4"))
 		return t
 	}()
+
+	Accented = func(text string) string {
+		return Theme.Focused.Title.Render(text)
+	}
+	Dimmed = func(text string) string {
+		return Theme.Focused.Description.Render(text)
+	}
 
 	Fg              = lipgloss.AdaptiveColor{Light: "235", Dark: "252"}
 	FormBaseStyle   = Theme.Form.Foreground(Fg).Padding(0, 1)

@@ -30,7 +30,7 @@ import (
 	"github.com/livekit/protocol/logger"
 )
 
-func FindDockerfile(dir string) (bool, error) {
+func HasDockerfile(dir string) (bool, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false, err
