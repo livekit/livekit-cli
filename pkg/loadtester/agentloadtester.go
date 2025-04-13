@@ -252,18 +252,16 @@ func (r *LoadTestRoom) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.R
 
 		go func() {
 			for r.running.Load() {
-				select {
-				case ts, ok := <-sampleChan:
-					if !ok {
-						return
-					}
-					// delay the sample by the echo speech delay
-					delay := time.Until(ts.received.Add(r.params.EchoSpeechDelay))
-					if delay > 0 {
-						time.Sleep(delay)
-					}
-					r.echoTrack.WriteSample(ts.sample, &lksdk.SampleWriteOptions{})
+				ts, ok := <-sampleChan
+				if !ok {
+					return
 				}
+				// delay the sample by the echo speech delay
+				delay := time.Until(ts.received.Add(r.params.EchoSpeechDelay))
+				if delay > 0 {
+					time.Sleep(delay)
+				}
+				r.echoTrack.WriteSample(ts.sample, &lksdk.SampleWriteOptions{})
 			}
 		}()
 	}

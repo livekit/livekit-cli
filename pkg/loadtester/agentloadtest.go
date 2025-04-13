@@ -17,7 +17,6 @@ package loadtester
 import (
 	"context"
 	"log"
-	"sync"
 	"time"
 )
 
@@ -33,7 +32,6 @@ type AgentLoadTestParams struct {
 
 type AgentLoadTest struct {
 	Params AgentLoadTestParams
-	wg     sync.WaitGroup
 }
 
 func NewAgentLoadTest(params AgentLoadTestParams) *AgentLoadTest {
