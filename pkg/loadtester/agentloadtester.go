@@ -223,7 +223,9 @@ func (r *LoadTestRoom) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.R
 	if r.echoTrack != nil && r.firstParticipant == nil && track.Kind() == webrtc.RTPCodecTypeAudio {
 		log.Printf("Subscribing to echo track in room %s, delay: %s", r.room.Name(), r.params.EchoSpeechDelay.String())
 		r.firstParticipant = rp
-		r.stats.agentTrackSubscribed = true
+		if rp.Kind() == lksdk.ParticipantAgent {
+			r.stats.agentTrackSubscribed = true
+		}
 
 		type timestampedSample struct {
 			sample   media.Sample
