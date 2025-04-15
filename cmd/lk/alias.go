@@ -1,4 +1,4 @@
-// Copyright 2022-2023 LiveKit, Inc.
+// Copyright 2021-2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,11 @@
 
 package main
 
-func raiseULimit() error {
-	return nil
-}
+import (
+	"github.com/livekit/livekit-cli/v2/cmd/lk/perf"
+)
+
+var (
+	LoadTestCommands      = perf.LoadTestCommands
+	AgentLoadTestCommands = perf.AgentLoadTestCommands
+)

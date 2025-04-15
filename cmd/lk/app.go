@@ -85,7 +85,7 @@ var (
 				{
 					Name:   "list-templates",
 					Usage:  "List available templates to bootstrap a new application",
-					Flags:  []cli.Flag{jsonFlag},
+					Flags:  []cli.Flag{util.JsonFlag},
 					Action: listTemplates,
 				},
 				{
@@ -140,7 +140,7 @@ var (
 
 func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
-	if project, err = loadProjectDetails(cmd); err != nil {
+	if project, err = util.LoadProjectDetails(cmd); err != nil {
 		if _, err = loadProjectConfig(ctx, cmd); err != nil {
 			// something is wrong with config file
 			return nil, err

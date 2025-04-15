@@ -15,13 +15,13 @@
 //go:build linux || darwin || freebsd
 // +build linux darwin freebsd
 
-package main
+package util
 
 import (
 	"syscall"
 )
 
-func raiseULimit() error {
+func RaiseULimit() error {
 	// raise ulimit
 	var rLimit syscall.Rlimit
 	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)

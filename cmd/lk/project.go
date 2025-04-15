@@ -67,7 +67,7 @@ var (
 					Usage:     "List all configured projects",
 					UsageText: "lk project list",
 					Action:    listProjects,
-					Flags:     []cli.Flag{jsonFlag},
+					Flags:     []cli.Flag{util.JsonFlag},
 				},
 				{
 					Name:      "remove",

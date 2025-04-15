@@ -80,7 +80,7 @@ var (
 							Usage:    "List a specific ingress `ID`",
 							Required: false,
 						},
-						jsonFlag,
+						util.JsonFlag,
 					},
 				},
 				{
@@ -162,12 +162,12 @@ var (
 )
 
 func createIngressClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := loadProjectDetails(cmd)
+	pc, err := util.LoadProjectDetails(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	ingressClient = lksdk.NewIngressClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
+	ingressClient = lksdk.NewIngressClient(pc.URL, pc.APIKey, pc.APISecret, util.WithDefaultClientOpts(pc)...)
 	return nil, nil
 }
 

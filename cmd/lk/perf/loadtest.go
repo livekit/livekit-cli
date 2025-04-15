@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package perf
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/loadtester"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
@@ -95,7 +96,7 @@ var LoadTestCommands = []*cli.Command{
 }
 
 func loadTest(ctx context.Context, cmd *cli.Command) error {
-	pc, err := loadProjectDetails(cmd)
+	pc, err := util.LoadProjectDetails(cmd)
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,7 @@ func loadTest(ctx context.Context, cmd *cli.Command) error {
 	if !cmd.Bool("verbose") {
 		lksdk.SetLogger(logger.LogRLogger(logr.Discard()))
 	}
-	_ = raiseULimit()
+	_ = util.RaiseULimit()
 
 	params := loadtester.Params{
 		VideoResolution:  cmd.String("video-resolution"),

@@ -242,7 +242,7 @@ func handleAuth(ctx context.Context, cmd *cli.Command) error {
 func requireToken(_ context.Context, cmd *cli.Command) (string, error) {
 	if project == nil {
 		var err error
-		project, err = loadProjectDetails(cmd)
+		project, err = util.LoadProjectDetails(cmd)
 		if err != nil {
 			return "", err
 		}

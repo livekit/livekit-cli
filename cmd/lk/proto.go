@@ -49,7 +49,7 @@ func ReadRequest[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
 }
 
 func ReadRequestArg[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
-	reqFile, err := extractArg(cmd)
+	reqFile, err := util.ExtractArg(cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func ReadRequestArg[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
 }
 
 func ReadRequestArgOrFlag[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
-	reqFile, err := extractArg(cmd)
+	reqFile, err := util.ExtractArg(cmd)
 	if err != nil {
 		return ReadRequest[T, P](cmd)
 	}
