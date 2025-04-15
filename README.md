@@ -333,6 +333,32 @@ You can customize various parameters of the test such as
 -   `--layout`: layout to simulate (speaker, 3x3, 4x4, or 5x5)
 -   `--simulate-speakers`: randomly rotate publishers to speak
 
+### Agent Load Testing
+
+The agent load testing utility allows you to dispatch a running agent to a number of rooms and simulate a user in each room that would echo whatever the agent says. 
+
+> **Note**: Before running the test, ensure that:
+> - Your agent is already running using `start` instead of `dev` with the specified `agent_name` configured
+> - The agent is configured to speak something first (e.g., a simple greeting)
+
+To start an agent load test:
+
+```shell
+lk agent-load-test \
+  --rooms 5 \
+  --agent-name test-agent \
+  --echo-speech-delay 10s \
+  --duration 5m
+```
+
+The above simulates 5 concurrent rooms, where each room has:
+- Your agent `test-agent` dispatched
+- An echo participant that receives and plays back the agent's audio
+- A 10-second delay in the echo response from the agent speech
+- The test runs for 5 minutes before automatically stopping
+
+Once the specified duration is over (or if the load test is manually stopped), the load test statistics will be displayed in the form of a table.
+
 <!--BEGIN_REPO_NAV-->
 <br/><table>
 <thead><tr><th colspan="2">LiveKit Ecosystem</th></tr></thead>
