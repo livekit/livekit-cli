@@ -13,8 +13,8 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.41.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.36.2-0.20250409063348-18e676b49301
-	github.com/livekit/server-sdk-go/v2 v2.5.1-0.20250409173856-5949eeff3572
+	github.com/livekit/protocol v1.36.2-0.20250415074849-d67a6a9f9604
+	github.com/livekit/server-sdk-go/v2 v2.5.1-0.20250415210854-6f7a1837b257
 	github.com/moby/buildkit v0.20.1
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.13
@@ -104,7 +104,9 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/in-toto/in-toto-golang v0.5.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jxskiss/base62 v1.1.0 // indirect
