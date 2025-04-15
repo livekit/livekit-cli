@@ -1,4 +1,4 @@
-// Copyright 2024 LiveKit, Inc.
+// Copyright 2021-2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package util
+package main
 
 import (
 	"errors"
@@ -20,30 +20,33 @@ import (
 	"os"
 	"strings"
 
-	"github.com/livekit/livekit-cli/v2/pkg/config"
-	"github.com/livekit/protocol/utils/interceptors"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
+
+	"github.com/livekit/protocol/utils/interceptors"
+
+	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 var (
-	RoomFlag = &cli.StringFlag{
+	roomFlag = &cli.StringFlag{
 		Name:     "room",
 		Usage:    "`NAME` of the room",
 		Required: true,
 	}
-	IdentityFlag = &cli.StringFlag{
+	identityFlag = &cli.StringFlag{
 		Name:     "identity",
 		Usage:    "`ID` of participant",
 		Required: true,
 	}
-	JsonFlag = &cli.BoolFlag{
+	jsonFlag = &cli.BoolFlag{
 		Name:    "json",
 		Aliases: []string{"j"},
 		Usage:   "Output as JSON",
 	}
-	PrintCurl   bool
-	GlobalFlags = []cli.Flag{
+	printCurl   bool
+	globalFlags = []cli.Flag{
 		&cli.StringFlag{
 			Name:    "url",
 			Usage:   "`URL` to LiveKit instance",
@@ -75,7 +78,7 @@ var (
 		&cli.BoolFlag{
 			Name:        "curl",
 			Usage:       "Print curl commands for API actions",
-			Destination: &PrintCurl,
+			Destination: &printCurl,
 			Required:    false,
 		},
 		&cli.BoolFlag{
@@ -85,24 +88,24 @@ var (
 	}
 )
 
-func Optional[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
+func optional[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
 	newFlag := *flag
 	newFlag.Required = false
 	return &newFlag
 }
 
-func Hidden[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
+func hidden[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
 	newFlag := *flag
 	newFlag.Hidden = true
 	return &newFlag
 }
 
-func WithDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
+func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 	var (
 		opts []twirp.ClientOption
 		ics  []twirp.Interceptor
 	)
-	if PrintCurl {
+	if printCurl {
 		ics = append(ics, interceptors.NewCurlPrinter(os.Stdout, c.URL))
 	}
 	if len(ics) != 0 {
@@ -111,21 +114,21 @@ func WithDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 	return opts
 }
 
-func ExtractArg(c *cli.Command) (string, error) {
+func extractArg(c *cli.Command) (string, error) {
 	if !c.Args().Present() {
 		return "", errors.New("no argument provided")
 	}
 	return c.Args().First(), nil
 }
 
-func ExtractArgs(c *cli.Command) ([]string, error) {
+func extractArgs(c *cli.Command) ([]string, error) {
 	if !c.Args().Present() {
 		return nil, errors.New("no arguments provided")
 	}
 	return c.Args().Slice(), nil
 }
 
-func ExtractFlagOrArg(c *cli.Command, flag string) (string, error) {
+func extractFlagOrArg(c *cli.Command, flag string) (string, error) {
 	value := c.String(flag)
 	if value == "" {
 		argValue := c.Args().First()
@@ -143,14 +146,14 @@ type loadParams struct {
 
 type loadOption func(*loadParams)
 
-var IgnoreURL = func(p *loadParams) {
+var ignoreURL = func(p *loadParams) {
 	p.requireURL = false
 }
 
 // attempt to load connection config, it'll prioritize
 // 1. command line flags (or env var)
 // 2. default project config
-func LoadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
+func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
 	p := loadParams{requireURL: true}
 	for _, opt := range opts {
 		opt(&p)
@@ -175,7 +178,7 @@ func LoadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + Theme.Focused.Title.Render(c.String("project")) + "]")
+		fmt.Println("Using project [" + util.Theme.Focused.Title.Render(c.String("project")) + "]")
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -189,7 +192,7 @@ func LoadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + Theme.Focused.Title.Render(pc.Name) + "]")
+		fmt.Println("Using project [" + util.Theme.Focused.Title.Render(pc.Name) + "]")
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -239,7 +242,7 @@ func LoadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	dp, err := config.LoadDefaultProject()
 	if err == nil {
 		if !c.Bool("silent") {
-			fmt.Println("Using default project [" + Theme.Focused.Title.Render(dp.Name) + "]")
+			fmt.Println("Using default project [" + util.Theme.Focused.Title.Render(dp.Name) + "]")
 			logDetails(c, dp)
 		}
 		return dp, nil

@@ -17,7 +17,6 @@ package main
 import (
 	"testing"
 
-	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/urfave/cli/v3"
 )
 
@@ -26,7 +25,7 @@ func TestOptionalFlag(t *testing.T) {
 		Name:     "test",
 		Required: true,
 	}
-	optionalFlag := util.Optional(requiredFlag)
+	optionalFlag := optional(requiredFlag)
 
 	if requiredFlag == optionalFlag {
 		t.Error("optional should return a new flag")
@@ -44,7 +43,7 @@ func TestHiddenFlag(t *testing.T) {
 		Name:   "test",
 		Hidden: false,
 	}
-	hiddenFlag := util.Hidden(visibleFlag)
+	hiddenFlag := hidden(visibleFlag)
 
 	if visibleFlag == hiddenFlag {
 		t.Error("hidden should return a new flag")

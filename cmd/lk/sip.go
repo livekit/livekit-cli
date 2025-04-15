@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/urfave/cli/v3"
@@ -46,7 +45,7 @@ var (
 							Name:   "list",
 							Usage:  "List all inbound SIP Trunks",
 							Action: listSipInboundTrunk,
-							Flags:  []cli.Flag{util.JsonFlag},
+							Flags:  []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",
@@ -99,7 +98,7 @@ var (
 							Name:   "list",
 							Usage:  "List all outbound SIP Trunk",
 							Action: listSipOutboundTrunk,
-							Flags:  []cli.Flag{util.JsonFlag},
+							Flags:  []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",
@@ -160,7 +159,7 @@ var (
 							Name:   "list",
 							Usage:  "List all SIP Dispatch Rule",
 							Action: listSipDispatchRule,
-							Flags:  []cli.Flag{util.JsonFlag},
+							Flags:  []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",
@@ -238,8 +237,8 @@ var (
 							Usage:  "Transfer a SIP Participant",
 							Action: transferSIPParticipant,
 							Flags: []cli.Flag{
-								util.RoomFlag,
-								util.IdentityFlag,
+								roomFlag,
+								identityFlag,
 								&cli.StringFlag{
 									Name:     "to",
 									Required: true,
@@ -328,11 +327,11 @@ func listUpdateFlag(cmd *cli.Command, setName string) *livekit.ListUpdate {
 }
 
 func createSIPClient(cmd *cli.Command) (*lksdk.SIPClient, error) {
-	pc, err := util.LoadProjectDetails(cmd)
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return nil, err
 	}
-	return lksdk.NewSIPClient(pc.URL, pc.APIKey, pc.APISecret, util.WithDefaultClientOpts(pc)...), nil
+	return lksdk.NewSIPClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...), nil
 }
 
 func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {

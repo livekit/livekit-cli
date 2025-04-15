@@ -35,7 +35,6 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
 	provider2 "github.com/livekit/livekit-cli/v2/pkg/provider"
-	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 var (
@@ -46,8 +45,8 @@ var (
 			Usage:  "Joins a room as a participant",
 			Action: _deprecatedJoinRoom,
 			Flags: []cli.Flag{
-				util.RoomFlag,
-				util.IdentityFlag,
+				roomFlag,
+				identityFlag,
 				&cli.BoolFlag{
 					Name:  "publish-demo",
 					Usage: "publish demo video as a loop",
@@ -75,7 +74,7 @@ var (
 const mimeDelimiter = "://"
 
 func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
-	pc, err := util.LoadProjectDetails(cmd)
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
 	}

@@ -28,7 +28,6 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
-	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 func main() {
@@ -41,7 +40,7 @@ func main() {
 		Suggest:                true,
 		HideHelpCommand:        true,
 		UseShortOptionHandling: true,
-		Flags:                  util.GlobalFlags,
+		Flags:                  globalFlags,
 		Commands: []*cli.Command{
 			{
 				Name:   "generate-fish-completion",

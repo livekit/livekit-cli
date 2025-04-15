@@ -41,7 +41,7 @@ var (
 					Name:   "list",
 					Before: createReplayClient,
 					Action: listReplays,
-					Flags:  []cli.Flag{util.JsonFlag},
+					Flags:  []cli.Flag{jsonFlag},
 				},
 				{
 					Name:   "load",
@@ -114,13 +114,13 @@ var (
 )
 
 func createReplayClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := util.LoadProjectDetails(cmd)
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return nil, err
 	}
 
 	url := lksdk.ToHttpURL(pc.URL)
-	client := replay.NewReplayProtobufClient(url, &http.Client{}, util.WithDefaultClientOpts(pc)...)
+	client := replay.NewReplayProtobufClient(url, &http.Client{}, withDefaultClientOpts(pc)...)
 	replayClient = &replayServiceClient{
 		Replay:    client,
 		apiKey:    pc.APIKey,

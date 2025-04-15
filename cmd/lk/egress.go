@@ -107,7 +107,7 @@ var (
 							Aliases: []string{"a"},
 							Usage:   "Lists only active egresses",
 						},
-						util.JsonFlag,
+						jsonFlag,
 					},
 				},
 				{
@@ -382,12 +382,12 @@ var (
 )
 
 func createEgressClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := util.LoadProjectDetails(cmd)
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	egressClient = lksdk.NewEgressClient(pc.URL, pc.APIKey, pc.APISecret, util.WithDefaultClientOpts(pc)...)
+	egressClient = lksdk.NewEgressClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
 	return nil, nil
 }
 
@@ -719,7 +719,7 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 		roomName = fmt.Sprintf("layout-demo-%v", time.Now().Unix())
 	}
 
-	pc, err := util.LoadProjectDetails(cmd)
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
 	}

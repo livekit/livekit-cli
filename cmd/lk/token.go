@@ -324,7 +324,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		}
 	}
 
-	pc, err := util.LoadProjectDetails(c, util.IgnoreURL)
+	pc, err := loadProjectDetails(c, ignoreURL)
 	if err != nil {
 		return err
 	}

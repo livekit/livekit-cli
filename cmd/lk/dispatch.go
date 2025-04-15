@@ -86,12 +86,12 @@ var (
 )
 
 func createDispatchClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := util.LoadProjectDetails(cmd)
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	dispatchClient = lksdk.NewAgentDispatchServiceClient(pc.URL, pc.APIKey, pc.APISecret, util.WithDefaultClientOpts(pc)...)
+	dispatchClient = lksdk.NewAgentDispatchServiceClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
 	return nil, nil
 }
 

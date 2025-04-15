@@ -108,7 +108,7 @@ var (
 					Before:    createRoomClient,
 					Action:    listRooms,
 					ArgsUsage: "[ROOM_NAME ...]",
-					Flags:     []cli.Flag{util.JsonFlag},
+					Flags:     []cli.Flag{jsonFlag},
 				},
 				{
 					Name:   "update",
@@ -116,7 +116,7 @@ var (
 					Before: createRoomClient,
 					Action: updateRoomMetadata,
 					Flags: []cli.Flag{
-						util.Hidden(util.Optional(util.RoomFlag)),
+						hidden(optional(roomFlag)),
 						&cli.StringFlag{
 							Name:     "metadata",
 							Required: true,
@@ -139,8 +139,8 @@ var (
 					Action:    joinRoom,
 					ArgsUsage: "ROOM_NAME",
 					Flags: []cli.Flag{
-						util.IdentityFlag,
-						util.Hidden(util.Optional(util.RoomFlag)),
+						identityFlag,
+						hidden(optional(roomFlag)),
 						&cli.BoolFlag{
 							Name:  "publish-demo",
 							Usage: "Publish demo video as a loop",
@@ -188,7 +188,7 @@ var (
 							Before:    createRoomClient,
 							Action:    getParticipant,
 							Flags: []cli.Flag{
-								util.RoomFlag,
+								roomFlag,
 							},
 						},
 						{
@@ -198,7 +198,7 @@ var (
 							Before:    createRoomClient,
 							Action:    removeParticipant,
 							Flags: []cli.Flag{
-								util.RoomFlag,
+								roomFlag,
 							},
 						},
 						{
@@ -208,8 +208,8 @@ var (
 							Before:    createRoomClient,
 							Action:    forwardParticipant,
 							Flags: []cli.Flag{
-								util.RoomFlag,
-								util.IdentityFlag,
+								roomFlag,
+								identityFlag,
 								&cli.StringFlag{
 									Name:  "destination-room",
 									Usage: "`NAME` of the destination room",
@@ -223,7 +223,7 @@ var (
 							Before:    createRoomClient,
 							Action:    updateParticipant,
 							Flags: []cli.Flag{
-								util.RoomFlag,
+								roomFlag,
 								&cli.StringFlag{
 									Name:  "metadata",
 									Usage: "JSON describing participant metadata (existing values for unset fields)",
@@ -260,8 +260,8 @@ var (
 						},
 					}},
 					Flags: []cli.Flag{
-						util.RoomFlag,
-						util.IdentityFlag,
+						roomFlag,
+						identityFlag,
 						&cli.StringFlag{
 							Hidden: true, // deprecated: use ARG0
 							Name:   "track",
@@ -277,8 +277,8 @@ var (
 					Before:    createRoomClient,
 					Action:    updateSubscriptions,
 					Flags: []cli.Flag{
-						util.RoomFlag,
-						util.IdentityFlag,
+						roomFlag,
+						identityFlag,
 						&cli.StringSliceFlag{
 							Hidden: true, // deprecated: use ARG0
 							Name:   "track",
@@ -308,7 +308,7 @@ var (
 					UsageText: "lk room send-data [OPTIONS] DATA",
 					ArgsUsage: "JSON",
 					Flags: []cli.Flag{
-						util.RoomFlag,
+						roomFlag,
 						&cli.StringFlag{
 							Hidden: true, // deprecated: use ARG0
 							Name:   "data",
@@ -398,7 +398,7 @@ var (
 			Before: createRoomClient,
 			Action: _deprecatedListRoom,
 			Flags: []cli.Flag{
-				util.RoomFlag,
+				roomFlag,
 			},
 		},
 		{
@@ -407,7 +407,7 @@ var (
 			Before: createRoomClient,
 			Action: _deprecatedUpdateRoomMetadata,
 			Flags: []cli.Flag{
-				util.RoomFlag,
+				roomFlag,
 				&cli.StringFlag{
 					Name: "metadata",
 				},
@@ -419,7 +419,7 @@ var (
 			Before: createRoomClient,
 			Action: _deprecatedListParticipants,
 			Flags: []cli.Flag{
-				util.RoomFlag,
+				roomFlag,
 			},
 		},
 		{
@@ -428,8 +428,8 @@ var (
 			Before: createRoomClient,
 			Action: getParticipant,
 			Flags: []cli.Flag{
-				util.RoomFlag,
-				util.IdentityFlag,
+				roomFlag,
+				identityFlag,
 			},
 		},
 		{
@@ -438,8 +438,8 @@ var (
 			Before: createRoomClient,
 			Action: removeParticipant,
 			Flags: []cli.Flag{
-				util.RoomFlag,
-				util.IdentityFlag,
+				roomFlag,
+				identityFlag,
 			},
 		},
 		{
@@ -448,8 +448,8 @@ var (
 			Before: createRoomClient,
 			Action: updateParticipant,
 			Flags: []cli.Flag{
-				util.RoomFlag,
-				util.IdentityFlag,
+				roomFlag,
+				identityFlag,
 				&cli.StringFlag{
 					Name:  "metadata",
 					Usage: "`JSON` describing participant metadata",
@@ -485,8 +485,8 @@ var (
 				},
 			}},
 			Flags: []cli.Flag{
-				util.RoomFlag,
-				util.IdentityFlag,
+				roomFlag,
+				identityFlag,
 				&cli.StringFlag{
 					Hidden: true, // deprecated: use ARG0
 					Name:   "track",
@@ -503,8 +503,8 @@ var (
 			Before:    createRoomClient,
 			Action:    updateSubscriptions,
 			Flags: []cli.Flag{
-				util.RoomFlag,
-				util.IdentityFlag,
+				roomFlag,
+				identityFlag,
 				&cli.StringSliceFlag{
 					Hidden: true, // deprecated: use ARG0
 					Name:   "track",
@@ -525,7 +525,7 @@ var (
 			UsageText: "lk room send-data [OPTIONS] DATA",
 			ArgsUsage: "JSON",
 			Flags: []cli.Flag{
-				util.RoomFlag,
+				roomFlag,
 				&cli.StringFlag{
 					Hidden: true, // deprecated: use ARG0
 					Name:   "data",
@@ -548,17 +548,17 @@ var (
 )
 
 func createRoomClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := util.LoadProjectDetails(cmd)
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	roomClient = lksdk.NewRoomServiceClient(pc.URL, pc.APIKey, pc.APISecret, util.WithDefaultClientOpts(pc)...)
+	roomClient = lksdk.NewRoomServiceClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
 	return nil, nil
 }
 
 func createRoom(ctx context.Context, cmd *cli.Command) error {
-	name, err := util.ExtractFlagOrArg(cmd, "name")
+	name, err := extractFlagOrArg(cmd, "name")
 	if err != nil {
 		return err
 	}
@@ -665,7 +665,7 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listRooms(ctx context.Context, cmd *cli.Command) error {
-	names, _ := util.ExtractArgs(cmd)
+	names, _ := extractArgs(cmd)
 	if cmd.Bool("verbose") && len(names) > 0 {
 		fmt.Printf(
 			"Querying rooms matching %s",
@@ -718,7 +718,7 @@ func _deprecatedListRoom(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteRoom(ctx context.Context, cmd *cli.Command) error {
-	roomId, err := util.ExtractArg(cmd)
+	roomId, err := extractArg(cmd)
 	if err != nil {
 		return err
 	}
@@ -735,7 +735,7 @@ func deleteRoom(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
-	roomName, _ := util.ExtractArg(cmd)
+	roomName, _ := extractArg(cmd)
 	res, err := roomClient.UpdateRoomMetadata(ctx, &livekit.UpdateRoomMetadataRequest{
 		Room:     roomName,
 		Metadata: cmd.String("metadata"),
@@ -765,12 +765,12 @@ func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error 
 }
 
 func joinRoom(ctx context.Context, cmd *cli.Command) error {
-	pc, err := util.LoadProjectDetails(cmd)
+	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
 	}
 
-	roomName, err := util.ExtractFlagOrArg(cmd, "room")
+	roomName, err := extractFlagOrArg(cmd, "room")
 	if err != nil {
 		return err
 	}
@@ -929,7 +929,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listParticipants(ctx context.Context, cmd *cli.Command) error {
-	roomName, err := util.ExtractArg(cmd)
+	roomName, err := extractArg(cmd)
 	if err != nil {
 		return err
 	}
