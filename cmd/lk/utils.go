@@ -25,6 +25,8 @@ import (
 
 	"github.com/livekit/protocol/utils/interceptors"
 
+	lksdk "github.com/livekit/server-sdk-go/v2"
+
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
@@ -106,7 +108,7 @@ func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 		ics  []twirp.Interceptor
 	)
 	if printCurl {
-		ics = append(ics, interceptors.NewCurlPrinter(os.Stdout, c.URL))
+		ics = append(ics, interceptors.NewCurlPrinter(os.Stdout, lksdk.ToHttpURL(c.URL)))
 	}
 	if len(ics) != 0 {
 		opts = append(opts, twirp.WithClientInterceptors(ics...))
