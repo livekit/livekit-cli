@@ -338,7 +338,7 @@ You can customize various parameters of the test such as
 The agent load testing utility allows you to dispatch a running agent to a number of rooms and simulate a user in each room that would echo whatever the agent says. 
 
 > **Note**: Before running the test, ensure that:
-> - Your agent is already running with the specified `agent_name` configured
+> - Your agent is already running using `start` instead of `dev` with the specified `agent_name` configured
 > - The agent is configured to speak something first (e.g., a simple greeting)
 
 To start an agent load test:
