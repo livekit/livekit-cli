@@ -107,6 +107,32 @@ See the [LiveKit Templates Index](https://github.com/livekit-examples/index?tab=
 
 ## Publishing to a room
 
+### Join a room and set participant attributes
+
+```shell
+lk room join --identity publisher \
+  --attribute key1=value1 \
+  --attribute key2=value2 \
+  <room_name>
+```
+
+You can also specify attributes by providing a JSON file:
+
+```shell
+lk room join --identity publisher \
+  --attribute-file attributes.json \
+  <room_name>
+```
+
+Where `attributes.json` contains a JSON object with key-value pairs:
+
+```json
+{
+  "key1": "value1",
+  "key2": "value2"
+}
+```
+
 ### Publish demo video track
 
 To publish a demo video as a participant's track, use the following:

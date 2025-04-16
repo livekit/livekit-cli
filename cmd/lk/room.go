@@ -170,7 +170,12 @@ var (
 						},
 						&cli.StringSliceFlag{
 							Name:  "attribute",
-							Usage: "set attributes",
+							Usage: "set attributes in key=value format, can be used multiple times",
+						},
+						&cli.StringFlag{
+							Name:      "attribute-file",
+							Usage:     "read attributes from a `JSON` file",
+							TakesFile: true,
 						},
 					},
 				},
@@ -875,6 +880,24 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		kv := strings.Split(attr, "=")
 		if len(kv) == 2 {
 			participantAttributes[kv[0]] = kv[1]
+		}
+	}
+
+	// Read attributes from JSON file if specified
+	if attrFile := cmd.String("attribute-file"); attrFile != "" {
+		fileData, err := os.ReadFile(attrFile)
+		if err != nil {
+			return fmt.Errorf("failed to read attribute file: %w", err)
+		}
+
+		var fileAttrs map[string]string
+		if err := json.Unmarshal(fileData, &fileAttrs); err != nil {
+			return fmt.Errorf("failed to parse attribute file as JSON: %w", err)
+		}
+
+		// Add attributes from file to the existing ones
+		for key, value := range fileAttrs {
+			participantAttributes[key] = value
 		}
 	}
 
