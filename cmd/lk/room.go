@@ -168,6 +168,10 @@ var (
 							Name:  "exit-after-publish",
 							Usage: "When publishing, exit after file or stream is complete",
 						},
+						&cli.StringSliceFlag{
+							Name:  "attribute",
+							Usage: "set attributes",
+						},
 					},
 				},
 				{
@@ -863,11 +867,23 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 			close(done)
 		},
 	}
+
+	participantAttributes := make(map[string]string)
+
+	attrs := cmd.StringSlice("attribute")
+	for _, attr := range attrs {
+		kv := strings.Split(attr, "=")
+		if len(kv) == 2 {
+			participantAttributes[kv[0]] = kv[1]
+		}
+	}
+
 	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
-		APIKey:              pc.APIKey,
-		APISecret:           pc.APISecret,
-		RoomName:            roomName,
-		ParticipantIdentity: participantIdentity,
+		APIKey:                pc.APIKey,
+		APISecret:             pc.APISecret,
+		RoomName:              roomName,
+		ParticipantIdentity:   participantIdentity,
+		ParticipantAttributes: participantAttributes,
 	}, roomCB)
 	if err != nil {
 		return err
