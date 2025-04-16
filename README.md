@@ -14,12 +14,12 @@
 
 This package includes command line utilities that interacts with LiveKit. It allows you to:
 
--   Bootstrap new applications from templates
--   Create access tokens
--   Access LiveKit APIs, create and delete rooms, etc.
--   Join a room as a participant, inspecting in-room events
--   Start and manage Egresses
--   Perform load testing, efficiently simulating real-world load
+- Bootstrap new applications from templates
+- Create access tokens
+- Access LiveKit APIs, create and delete rooms, etc.
+- Join a room as a participant, inspecting in-room events
+- Start and manage Egresses
+- Perform load testing, efficiently simulating real-world load
 
 # Installation
 
@@ -75,6 +75,7 @@ When a default project is set up, you can omit `url`, `api-key`, and `api-secret
 ```shell
 lk project add --api-key <key> --api-secret <secret> <project_name>
 ```
+
 ### Listing projects
 
 ```shell
@@ -82,7 +83,7 @@ lk project list
 ```
 
 ### Switching defaults
-    
+
 ```shell
 lk project set-default <project_name>
 ```
@@ -161,7 +162,7 @@ lk room join --identity bot \
   --publish h264:///tmp/myvideo.sock \
   --publish opus:///tmp/myaudio.sock \
   <room_name>
-````
+```
 
 You should now see both video and audio tracks published to the room.
 
@@ -324,27 +325,28 @@ Summary | Tester  | Tracks    | Bitrate                 | Latency     | Total Dr
 
 You can customize various parameters of the test such as
 
--   `--video-publishers`: number of video publishers
--   `--audio-publishers`: number of audio publishers
--   `--subscribers`: number of subscribers
--   `--video-resolution`: publishing video resolution. low, medium, high
--   `--no-simulcast`: disables simulcast
--   `--num-per-second`: number of testers to start each second
--   `--layout`: layout to simulate (speaker, 3x3, 4x4, or 5x5)
--   `--simulate-speakers`: randomly rotate publishers to speak
+- `--video-publishers`: number of video publishers
+- `--audio-publishers`: number of audio publishers
+- `--subscribers`: number of subscribers
+- `--video-resolution`: publishing video resolution. low, medium, high
+- `--no-simulcast`: disables simulcast
+- `--num-per-second`: number of testers to start each second
+- `--layout`: layout to simulate (speaker, 3x3, 4x4, or 5x5)
+- `--simulate-speakers`: randomly rotate publishers to speak
 
 ### Agent Load Testing
 
-The agent load testing utility allows you to dispatch a running agent to a number of rooms and simulate a user in each room that would echo whatever the agent says. 
+The agent load testing utility allows you to dispatch a running agent to a number of rooms and simulate a user in each room that would echo whatever the agent says.
 
 > **Note**: Before running the test, ensure that:
+>
 > - Your agent is already running using `start` instead of `dev` with the specified `agent_name` configured
 > - The agent is configured to speak something first (e.g., a simple greeting)
 
 To start an agent load test:
 
 ```shell
-lk agent-load-test \
+lk perf agent-load-test \
   --rooms 5 \
   --agent-name test-agent \
   --echo-speech-delay 10s \
@@ -352,6 +354,7 @@ lk agent-load-test \
 ```
 
 The above simulates 5 concurrent rooms, where each room has:
+
 - Your agent `test-agent` dispatched
 - An echo participant that receives and plays back the agent's audio
 - A 10-second delay in the echo response from the agent speech
@@ -360,7 +363,9 @@ The above simulates 5 concurrent rooms, where each room has:
 Once the specified duration is over (or if the load test is manually stopped), the load test statistics will be displayed in the form of a table.
 
 <!--BEGIN_REPO_NAV-->
+
 <br/><table>
+
 <thead><tr><th colspan="2">LiveKit Ecosystem</th></tr></thead>
 <tbody>
 <tr><td>LiveKit SDKs</td><td><a href="https://github.com/livekit/client-sdk-js">Browser</a> · <a href="https://github.com/livekit/client-sdk-swift">iOS/macOS/visionOS</a> · <a href="https://github.com/livekit/client-sdk-android">Android</a> · <a href="https://github.com/livekit/client-sdk-flutter">Flutter</a> · <a href="https://github.com/livekit/client-sdk-react-native">React Native</a> · <a href="https://github.com/livekit/rust-sdks">Rust</a> · <a href="https://github.com/livekit/node-sdks">Node.js</a> · <a href="https://github.com/livekit/python-sdks">Python</a> · <a href="https://github.com/livekit/client-sdk-unity">Unity</a> · <a href="https://github.com/livekit/client-sdk-unity-web">Unity (WebGL)</a></td></tr><tr></tr>
