@@ -168,6 +168,15 @@ var (
 							Name:  "exit-after-publish",
 							Usage: "When publishing, exit after file or stream is complete",
 						},
+						&cli.StringSliceFlag{
+							Name:  "attribute",
+							Usage: "set attributes in key=value format, can be used multiple times",
+						},
+						&cli.StringFlag{
+							Name:      "attribute-file",
+							Usage:     "read attributes from a `JSON` file",
+							TakesFile: true,
+						},
 					},
 				},
 				{
@@ -863,11 +872,41 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 			close(done)
 		},
 	}
+
+	participantAttributes := make(map[string]string)
+
+	attrs := cmd.StringSlice("attribute")
+	for _, attr := range attrs {
+		kv := strings.Split(attr, "=")
+		if len(kv) == 2 {
+			participantAttributes[kv[0]] = kv[1]
+		}
+	}
+
+	// Read attributes from JSON file if specified
+	if attrFile := cmd.String("attribute-file"); attrFile != "" {
+		fileData, err := os.ReadFile(attrFile)
+		if err != nil {
+			return fmt.Errorf("failed to read attribute file: %w", err)
+		}
+
+		var fileAttrs map[string]string
+		if err := json.Unmarshal(fileData, &fileAttrs); err != nil {
+			return fmt.Errorf("failed to parse attribute file as JSON: %w", err)
+		}
+
+		// Add attributes from file to the existing ones
+		for key, value := range fileAttrs {
+			participantAttributes[key] = value
+		}
+	}
+
 	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
-		APIKey:              pc.APIKey,
-		APISecret:           pc.APISecret,
-		RoomName:            roomName,
-		ParticipantIdentity: participantIdentity,
+		APIKey:                pc.APIKey,
+		APISecret:             pc.APISecret,
+		RoomName:              roomName,
+		ParticipantIdentity:   participantIdentity,
+		ParticipantAttributes: participantAttributes,
 	}, roomCB)
 	if err != nil {
 		return err
