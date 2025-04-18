@@ -135,12 +135,14 @@ func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
 		return nil, nil
 	}
 
-	file, err := os.ReadFile(taskfilePath)
+	file, err := os.Open(taskfilePath)
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
+
 	tf := &ast.Taskfile{}
-	if err := yaml.Unmarshal(file, tf); err != nil {
+	if err := yaml.NewDecoder(file).Decode(tf); err != nil {
 		return nil, err
 	}
 	return tf, nil
