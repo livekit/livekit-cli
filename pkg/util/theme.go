@@ -35,6 +35,6 @@ var (
 	}
 
 	Fg              = lipgloss.AdaptiveColor{Light: "235", Dark: "252"}
-	FormBaseStyle   = Theme.Form.Foreground(Fg).Padding(0, 1)
+	FormBaseStyle   = Theme.Form.Base.Foreground(Fg).Padding(0, 1)
 	FormHeaderStyle = FormBaseStyle.Bold(true)
 )

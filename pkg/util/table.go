@@ -29,7 +29,7 @@ func CreateTable() *table.Table {
 
 	t := table.New().
 		Border(lipgloss.NormalBorder()).
-		BorderStyle(Theme.Form.Foreground(Fg)).
+		BorderStyle(Theme.Form.Base.Foreground(Fg)).
 		StyleFunc(styleFunc)
 
 	return t

@@ -41,5 +41,8 @@ jobs:
       - name: Download Go modules
         run: go mod download
 
-      - name: Build
-        run: go build -ldflags "-w -s" -o bin/lk ./cmd/lk
+      - name: Static Check
+        uses: dominikh/staticcheck-action@v1.3.1
+        with:
+          version: "latest"
+          install-go: false

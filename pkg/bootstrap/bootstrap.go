@@ -178,7 +178,7 @@ func NewTask(ctx context.Context, tf *ast.Taskfile, dir, taskName string, verbos
 		return nil, err
 	}
 
-	task := &ast.Call{
+	task := &task.Call{
 		Task:   taskName,
 		Silent: !verbose,
 	}
