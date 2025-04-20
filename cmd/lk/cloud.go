@@ -55,8 +55,8 @@ const (
 
 var (
 	revoke        bool
-	timeout       int64  = 60 * 15
-	interval      int64  = 4
+	timeout       int    = 60 * 15
+	interval      int    = 4
 	serverURL     string = cloudAPIServerURL
 	dashboardURL  string = cloudDashboardURL
 	authClient    AuthClient

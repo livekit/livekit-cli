@@ -512,7 +512,7 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 	taskName := cmd.Args().First()
 	if taskName == "" {
 		var options []huh.Option[string]
-		for _, name := range tf.Tasks.Keys() {
+		for name := range tf.Tasks.Keys(nil) {
 			options = append(options, huh.NewOption(name, name))
 		}
 
