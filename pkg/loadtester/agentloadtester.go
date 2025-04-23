@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -115,7 +116,14 @@ func (t *AgentLoadTester) Start(ctx context.Context) error {
 			loadTestRoom.stop()
 			return nil
 		})
-		// time.Sleep(1 * time.Second)
+		for !loadTestRoom.stats.agentJoined {
+			select {
+			case <-groupCtx.Done():
+				return nil
+			default:
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
 	}
 	log.Printf("Agent load tester started successfully, waiting for duration: %s", t.params.Duration.String())
 
@@ -300,8 +308,16 @@ func (t *AgentLoadTester) printStats() {
 	table := util.CreateTable().
 		Headers("#", "Room", "Agent Dispatched At", "Agent Joined", "Agent Join Delay", "Agent Track Subscribed", "Echo Track Published")
 
-	index := 1
+	rooms := make([]*LoadTestRoom, 0, len(t.testRooms))
 	for _, room := range t.testRooms {
+		rooms = append(rooms, room)
+	}
+	sort.Slice(rooms, func(i, j int) bool {
+		return rooms[i].stats.agentDispatchedAt.Before(rooms[j].stats.agentDispatchedAt)
+	})
+
+	index := 1
+	for _, room := range rooms {
 		boolToSymbol := func(b bool) string {
 			if b {
 				return checkStyle.Render("✓")
