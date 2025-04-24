@@ -370,7 +370,7 @@ The agent load testing utility allows you to dispatch a running agent to a numbe
 To start an agent load test:
 
 ```shell
-lk agent-load-test \
+lk perf agent-load-test \
   --rooms 5 \
   --agent-name test-agent \
   --echo-speech-delay 10s \
