@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
+	"github.com/livekit/protocol/logger"
 	"github.com/livekit/protocol/utils"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/webrtc/v4"
@@ -100,11 +102,13 @@ func (t *AgentLoadTester) Start(ctx context.Context) error {
 			}
 			loadTestRoom.stats.echoTrackPublished = true
 
-			err = loadTestRoom.dispatchAgent()
-			if err != nil {
-				log.Printf("Failed to dispatch agent to room %s: %v", roomName, err)
-				loadTestRoom.stop()
-				return err
+			if t.params.AgentName != "" {
+				err = loadTestRoom.dispatchAgent()
+				if err != nil {
+					log.Printf("Failed to dispatch agent to room %s: %v", roomName, err)
+					loadTestRoom.stop()
+					return err
+				}
 			}
 
 			<-groupCtx.Done()
@@ -112,7 +116,14 @@ func (t *AgentLoadTester) Start(ctx context.Context) error {
 			loadTestRoom.stop()
 			return nil
 		})
-		// time.Sleep(1 * time.Second)
+		for !loadTestRoom.stats.agentJoined {
+			select {
+			case <-groupCtx.Done():
+				return nil
+			default:
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
 	}
 	log.Printf("Agent load tester started successfully, waiting for duration: %s", t.params.Duration.String())
 
@@ -178,7 +189,7 @@ func (r *LoadTestRoom) start(roomName string) error {
 
 	meetParticipantToken, _ := newAccessToken(r.params.APIKey, r.params.APISecret, roomName, "meet-participant")
 	r.stats.meetLink = fmt.Sprintf("https://meet.livekit.io/custom?liveKitUrl=%s&token=%s", r.params.URL, meetParticipantToken)
-	log.Printf("\nInspect the room %s in LiveKit Meet using this url: %s\n", roomName, r.stats.meetLink)
+	logger.Debugw("Inspect the room in LiveKit Meet using this url", "room", roomName, "url", r.stats.meetLink)
 	r.running.Store(true)
 	return nil
 }
@@ -221,7 +232,6 @@ func (r *LoadTestRoom) dispatchAgent() error {
 
 func (r *LoadTestRoom) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
 	if r.echoTrack != nil && r.firstParticipant == nil && track.Kind() == webrtc.RTPCodecTypeAudio {
-		log.Printf("Subscribing to echo track in room %s, delay: %s", r.room.Name(), r.params.EchoSpeechDelay.String())
 		r.firstParticipant = rp
 		if rp.Kind() == lksdk.ParticipantAgent {
 			r.stats.agentTrackSubscribed = true
@@ -296,15 +306,27 @@ func (t *AgentLoadTester) printStats() {
 	crossStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1")) // Red
 
 	table := util.CreateTable().
-		Headers("#", "Room", "Agent Dispatched At", "Agent Joined", "Agent Joined At", "Agent Track Subscribed", "Echo Track Published")
+		Headers("#", "Room", "Agent Dispatched At", "Agent Joined", "Agent Join Delay", "Agent Track Subscribed", "Echo Track Published")
+
+	rooms := make([]*LoadTestRoom, 0, len(t.testRooms))
+	for _, room := range t.testRooms {
+		rooms = append(rooms, room)
+	}
+	sort.Slice(rooms, func(i, j int) bool {
+		return rooms[i].stats.agentDispatchedAt.Before(rooms[j].stats.agentDispatchedAt)
+	})
 
 	index := 1
-	for _, room := range t.testRooms {
+	for _, room := range rooms {
 		boolToSymbol := func(b bool) string {
 			if b {
 				return checkStyle.Render("✓")
 			}
 			return crossStyle.Render("✗")
+		}
+		agentJoinDelay := "-"
+		if !room.stats.agentJoinedAt.IsZero() && !room.stats.agentDispatchedAt.IsZero() {
+			agentJoinDelay = room.stats.agentJoinedAt.Sub(room.stats.agentDispatchedAt).String()
 		}
 
 		table.Row(
@@ -312,7 +334,7 @@ func (t *AgentLoadTester) printStats() {
 			room.room.Name(),
 			room.stats.agentDispatchedAt.Format(time.RFC3339),
 			boolToSymbol(room.stats.agentJoined),
-			room.stats.agentJoinedAt.Format(time.RFC3339),
+			agentJoinDelay,
 			boolToSymbol(room.stats.agentTrackSubscribed),
 			boolToSymbol(room.stats.echoTrackPublished),
 		)
