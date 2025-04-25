@@ -68,9 +68,10 @@ var (
 	}
 
 	secretsFileFlag = &cli.StringFlag{
-		Name:     "secrets-file",
-		Usage:    "`FILE` containing secret KEY=VALUE pairs, one per line. These will be injected as environment variables into the agent.",
-		Required: false,
+		Name:      "secrets-file",
+		Usage:     "`FILE` containing secret KEY=VALUE pairs, one per line. These will be injected as environment variables into the agent.",
+		TakesFile: true,
+		Required:  false,
 	}
 
 	secretsFlag = &cli.StringSliceFlag{
@@ -121,6 +122,8 @@ var (
 					Before: createAgentClient,
 					Action: deployAgent,
 					Flags: []cli.Flag{
+						secretsFlag,
+						secretsFileFlag,
 						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
@@ -374,7 +377,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		fmt.Printf("Creating agent [%s]\n", util.Accented(agentConfig.Name))
 	}
 
-	secrets, err := requireSecrets(ctx, cmd)
+	secrets, err := requireSecrets(ctx, cmd, true, false)
 	if err != nil {
 		return err
 	}
@@ -522,17 +525,19 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("config file [%s] required to update agent", util.Accented(tomlFilename))
 	}
 
-	secrets, err := requireSecrets(ctx, cmd)
-	if err != nil {
-		return err
-	}
-
 	req := &lkproto.DeployAgentRequest{
 		AgentName:   agentConfig.Name,
-		Secrets:     secrets,
 		Replicas:    int32(agentConfig.Replicas),
 		CpuReq:      string(agentConfig.CPU),
 		MaxReplicas: int32(agentConfig.MaxReplicas),
+	}
+
+	secrets, err := requireSecrets(ctx, cmd, false, true)
+	if err != nil {
+		return err
+	}
+	if len(secrets) > 0 {
+		req.Secrets = secrets
 	}
 
 	resp, err := agentsClient.DeployAgent(ctx, req)
@@ -638,6 +643,14 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 		Replicas:    int32(agentConfig.Replicas),
 		CpuReq:      string(agentConfig.CPU),
 		MaxReplicas: int32(agentConfig.MaxReplicas),
+	}
+
+	secrets, err := requireSecrets(ctx, cmd, false, true)
+	if err != nil {
+		return err
+	}
+	if len(secrets) > 0 {
+		req.Secrets = secrets
 	}
 
 	resp, err := agentsClient.UpdateAgent(ctx, req)
@@ -867,7 +880,7 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	secrets, err := requireSecrets(ctx, cmd)
+	secrets, err := requireSecrets(ctx, cmd, true, true)
 	if err != nil {
 		return err
 	}
@@ -918,7 +931,7 @@ func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (strin
 	return agentName, nil
 }
 
-func requireSecrets(_ context.Context, cmd *cli.Command) ([]*lkproto.AgentSecret, error) {
+func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([]*lkproto.AgentSecret, error) {
 	silent := cmd.Bool("silent")
 	secrets := make(map[string]*lkproto.AgentSecret)
 	for _, secret := range cmd.StringSlice("secrets") {
@@ -930,24 +943,27 @@ func requireSecrets(_ context.Context, cmd *cli.Command) ([]*lkproto.AgentSecret
 		secrets[secret[0]] = agentSecret
 	}
 
-	file, env, err := agentfs.DetectEnvFile(cmd.String("secrets-file"))
-	if err != nil {
-		return nil, err
-	}
-	if file != "" && !silent {
-		fmt.Printf("Using secrets file [%s]\n", util.Accented(file))
-	}
-
-	for k, v := range env {
-		if _, exists := secrets[k]; exists {
-			continue
+	shouldReadFromDisk := cmd.IsSet("secrets-file") || !lazy || (required && len(secrets) == 0)
+	if shouldReadFromDisk {
+		file, env, err := agentfs.DetectEnvFile(cmd.String("secrets-file"))
+		if err != nil {
+			return nil, err
+		}
+		if file != "" && !silent {
+			fmt.Printf("Using secrets file [%s]\n", util.Accented(file))
 		}
 
-		secret := &lkproto.AgentSecret{
-			Name:  k,
-			Value: []byte(v),
+		for k, v := range env {
+			if _, exists := secrets[k]; exists {
+				continue
+			}
+
+			secret := &lkproto.AgentSecret{
+				Name:  k,
+				Value: []byte(v),
+			}
+			secrets[k] = secret
 		}
-		secrets[k] = secret
 	}
 
 	var secretsSlice []*lkproto.AgentSecret
@@ -960,7 +976,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command) ([]*lkproto.AgentSecret
 		secretsSlice = append(secretsSlice, secret)
 	}
 
-	if len(secretsSlice) == 0 {
+	if required && len(secretsSlice) == 0 {
 		msg := "no secrets provided"
 		if secretsIgnored {
 			msg = "no valid secrets provided, LIVEKIT_ secrets are ignored and injected automatically to your agent"
