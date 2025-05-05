@@ -142,6 +142,14 @@ func extractFlagOrArg(c *cli.Command, flag string) (string, error) {
 	return value, nil
 }
 
+func extractFlagAsBool(c *cli.Command, flag string) (bool, error) {
+	if c.IsSet(flag) {
+		return c.Bool(flag), nil
+	}
+
+	return false, nil
+}
+
 type loadParams struct {
 	requireURL bool
 }
