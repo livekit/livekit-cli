@@ -153,7 +153,7 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 		if len(cliConfig.Projects) > 0 {
 			var options []huh.Option[*config.ProjectConfig]
 			for _, p := range cliConfig.Projects {
-				options = append(options, huh.NewOption(p.Name+" ["+p.APIKey+"]", &p))
+				options = append(options, huh.NewOption(p.Name+" ["+util.ExtractSubdomain(p.URL)+"]", &p))
 			}
 			if err = huh.NewForm(
 				huh.NewGroup(huh.NewSelect[*config.ProjectConfig]().
