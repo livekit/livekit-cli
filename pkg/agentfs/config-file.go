@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/livekit/protocol/logger"
 )
 
@@ -70,6 +71,13 @@ func LoadTomlFile(dir string, tomlFileName string) (*AgentTOML, bool, error) {
 	} else {
 		if errors.Is(err, os.ErrNotExist) {
 			configExists = false
+		}
+	}
+
+	if configExists {
+		// validate config
+		if agentConfig.Replicas > agentConfig.MaxReplicas {
+			return nil, configExists, fmt.Errorf("replicas cannot be greater than max_replicas")
 		}
 	}
 
