@@ -179,8 +179,8 @@ var (
 						},
 						&cli.BoolFlag{
 							Name:  "auto-subscribe",
-							Usage: "Automatically subscribe to published tracks. Default is true.",
-							Value: true,
+							Usage: "Automatically subscribe to published tracks. Default is false.",
+							Value: false,
 						},
 					},
 				},
