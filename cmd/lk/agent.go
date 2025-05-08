@@ -81,7 +81,7 @@ var (
 	}
 
 	logTypeFlag = &cli.StringFlag{
-		Name:     "log_type",
+		Name:     "log-type",
 		Usage:    "Type of logs to retrieve. Valid values are 'deploy' and 'build'",
 		Value:    "deploy",
 		Required: false,
@@ -713,7 +713,7 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	err = agentfs.LogHelper(ctx, "", agentName, cmd.String("log_type"), project)
+	err = agentfs.LogHelper(ctx, "", agentName, cmd.String("log-type"), project)
 	return err
 }
 
