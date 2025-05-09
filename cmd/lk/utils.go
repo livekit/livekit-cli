@@ -32,6 +32,10 @@ import (
 )
 
 var (
+	printCurl    bool
+	workingDir   = "."
+	tomlFilename = config.LiveKitTOMLFile
+
 	roomFlag = &cli.StringFlag{
 		Name:     "room",
 		Usage:    "`NAME` of the room",
@@ -47,7 +51,7 @@ var (
 		Aliases: []string{"j"},
 		Usage:   "Output as JSON",
 	}
-	printCurl   bool
+
 	globalFlags = []cli.Flag{
 		&cli.StringFlag{
 			Name:    "url",
@@ -76,6 +80,13 @@ var (
 		&cli.StringFlag{
 			Name:  "subdomain",
 			Usage: "`SUBDOMAIN` of a configured project",
+		},
+		&cli.StringFlag{
+			Name:        "config",
+			Usage:       "Config `TOML` to use in the working directory",
+			Value:       config.LiveKitTOMLFile,
+			Destination: &tomlFilename,
+			Required:    false,
 		},
 		&cli.BoolFlag{
 			Name:        "curl",
@@ -154,7 +165,8 @@ var ignoreURL = func(p *loadParams) {
 
 // attempt to load connection config, it'll prioritize
 // 1. command line flags (or env var)
-// 2. default project config
+// 2. config file (by default, livekit.toml)
+// 3. default project config
 func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
 	p := loadParams{requireURL: true}
 	for _, opt := range opts {
@@ -238,6 +250,12 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		pc.APISecret = "secret"
 		fmt.Println("Using dev credentials")
 		return pc, nil
+	}
+
+	// load from config file
+	lkConfig, _, _ := config.LoadTomlFile(workingDir, tomlFilename)
+	if lkConfig != nil {
+		return config.LoadProjectBySubdomain(lkConfig.Project.Subdomain)
 	}
 
 	// load default project

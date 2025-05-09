@@ -143,6 +143,9 @@ var (
 
 func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
+	if project != nil {
+		return ctx, nil
+	}
 	if project, err = loadProjectDetails(cmd); err != nil {
 		if _, err = loadProjectConfig(ctx, cmd); err != nil {
 			// something is wrong with config file
