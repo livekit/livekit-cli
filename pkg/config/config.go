@@ -68,11 +68,10 @@ func LoadProjectBySubdomain(subdomain string) (*ProjectConfig, error) {
 		return nil, errors.New("invalid URL")
 	}
 
-	fmt.Println("Loading project by subdomain", subdomain)
-
 	for _, p := range conf.Projects {
 		projectSubdomain := util.ExtractSubdomain(p.URL)
 		if projectSubdomain == subdomain {
+			fmt.Printf("Using project [%s]\n", util.Accented(p.Name))
 			return &p, nil
 		}
 	}
