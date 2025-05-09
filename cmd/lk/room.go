@@ -177,6 +177,11 @@ var (
 							Usage:     "read attributes from a `JSON` file",
 							TakesFile: true,
 						},
+						&cli.BoolFlag{
+							Name:  "auto-subscribe",
+							Usage: "Automatically subscribe to published tracks. Default is false.",
+							Value: false,
+						},
 					},
 				},
 				{
@@ -784,6 +789,11 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	autoSubscribe, err := extractFlagAsBool(cmd, "auto-subscribe")
+	if err != nil {
+		return err
+	}
+
 	participantIdentity := cmd.String("identity")
 
 	done := make(chan os.Signal, 1)
@@ -907,7 +917,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		RoomName:              roomName,
 		ParticipantIdentity:   participantIdentity,
 		ParticipantAttributes: participantAttributes,
-	}, roomCB)
+	}, roomCB, lksdk.WithAutoSubscribe(autoSubscribe))
 	if err != nil {
 		return err
 	}
