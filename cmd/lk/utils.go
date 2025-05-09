@@ -253,7 +253,10 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	}
 
 	// load from config file
-	lkConfig, _, _ := config.LoadTomlFile(workingDir, tomlFilename)
+	lkConfig, _, err := config.LoadTOMLFile(workingDir, tomlFilename)
+	if errors.Is(err, config.ErrInvalidConfig) {
+		return nil, err
+	}
 	if lkConfig != nil {
 		return config.LoadProjectBySubdomain(lkConfig.Project.Subdomain)
 	}

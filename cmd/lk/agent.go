@@ -254,9 +254,9 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 	}
 
 	// Verify that the project and agent config match, if it exists.
-	lkConfig, configExists, err := config.LoadTomlFile(workingDir, tomlFilename)
+	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
 	if err != nil {
-		fmt.Println(err.Error())
+		return nil, err
 	}
 	if configExists {
 		projectSubdomainMatch := subdomainPattern.FindStringSubmatch(project.URL)
@@ -300,7 +300,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	logger.Debugw("Creating agent", "working-dir", workingDir)
-	lkConfig, configExists, err := config.LoadTomlFile(workingDir, tomlFilename)
+	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
 	if err != nil && configExists {
 		return err
 	}
@@ -500,8 +500,8 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
-	lkConfig, configExists, err := config.LoadTomlFile(workingDir, tomlFilename)
-	if err != nil && configExists {
+	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
+	if err != nil {
 		return err
 	}
 	if !configExists {
@@ -616,7 +616,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateAgent(ctx context.Context, cmd *cli.Command) error {
-	lkConfig, configExists, err := config.LoadTomlFile(workingDir, tomlFilename)
+	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
 	if err != nil && configExists {
 		return err
 	}
@@ -901,7 +901,7 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (string, error) {
 	agentName := cmd.String("name")
 	if agentName == "" {
-		lkConfig, configExists, err := config.LoadTomlFile(agentDir, tomlFileName)
+		lkConfig, configExists, err := config.LoadTOMLFile(agentDir, tomlFileName)
 		if err != nil && configExists {
 			return "", err
 		}
