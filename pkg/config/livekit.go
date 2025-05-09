@@ -17,6 +17,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -32,6 +33,11 @@ const (
 	clientDefaults_MaxReplicas = 10
 )
 
+var (
+	ErrInvalidConfig       = errors.New("invalid configuration file")
+	ErrInvalidReplicaCount = fmt.Errorf("replicas cannot be greater than max_replicas: %w", ErrInvalidConfig)
+)
+
 // Deprecated: use LiveKitTOML instead
 type AgentTOML struct {
 	ProjectSubdomain string    `toml:"project_subdomain"`
@@ -39,8 +45,7 @@ type AgentTOML struct {
 	CPU              CPUString `toml:"cpu"`
 	Replicas         int       `toml:"replicas"`
 	MaxReplicas      int       `toml:"max_replicas"`
-
-	Regions []string `toml:"regions"`
+	Regions          []string  `toml:"regions"`
 }
 
 type LiveKitTOML struct {
@@ -57,6 +62,7 @@ type LiveKitTOMLAgentConfig struct {
 	CPU         CPUString `toml:"cpu"`
 	Replicas    int       `toml:"replicas"`
 	MaxReplicas int       `toml:"max_replicas"`
+	Regions     []string  `toml:"regions"`
 }
 
 func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {
@@ -97,15 +103,17 @@ func (c *CPUString) UnmarshalTOML(v interface{}) error {
 	return nil
 }
 
-func LoadTomlFile(dir string, tomlFileName string) (*LiveKitTOML, bool, error) {
+func LoadTOMLFile(dir string, tomlFileName string) (*LiveKitTOML, bool, error) {
 	logger.Debugw(fmt.Sprintf("loading %s file", tomlFileName))
-	var config LiveKitTOML
+	var config *LiveKitTOML = nil
 	var err error
-	var configExists bool = true
+	var configExists bool = false
 
 	tomlFile := filepath.Join(dir, tomlFileName)
 
 	if _, err = os.Stat(tomlFile); err == nil {
+		configExists = true
+
 		_, err = toml.DecodeFile(tomlFile, &config)
 		if config.Project == nil {
 			// Attempt to decode old agent config
@@ -125,17 +133,15 @@ func LoadTomlFile(dir string, tomlFileName string) (*LiveKitTOML, bool, error) {
 			}
 		}
 	} else {
-		if errors.Is(err, os.ErrNotExist) {
-			configExists = false
-		}
+		configExists = !errors.Is(err, fs.ErrNotExist)
 	}
 
 	if configExists {
 		// validate agent config
 		if config.HasAgent() && config.Agent.Replicas > config.Agent.MaxReplicas {
-			return nil, configExists, fmt.Errorf("replicas cannot be greater than max_replicas")
+			return nil, configExists, ErrInvalidReplicaCount
 		}
 	}
 
-	return &config, configExists, err
+	return config, configExists, err
 }

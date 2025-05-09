@@ -79,7 +79,7 @@ func DetectEnvFile(maybeFile string) (string, map[string]string, error) {
 		return "", nil, nil
 	}
 
-	var selectedFile string
+	var selectedFile string = extantEnvFiles[0]
 	if err := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
