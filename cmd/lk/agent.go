@@ -296,6 +296,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 		if !useProject {
 			return fmt.Errorf("cancelled")
+
 		}
 	}
 
@@ -360,7 +361,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		fmt.Printf("Creating agent [%s]\n", util.Accented(lkConfig.Agent.Name))
 	}
 
-	secrets, err := requireSecrets(ctx, cmd, true, false)
+	secrets, err := requireSecrets(ctx, cmd, false, false)
 	if err != nil {
 		return err
 	}
