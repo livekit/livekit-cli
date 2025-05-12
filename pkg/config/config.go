@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -68,20 +68,10 @@ func LoadProjectBySubdomain(subdomain string) (*ProjectConfig, error) {
 		return nil, errors.New("invalid URL")
 	}
 
-	fmt.Println("Loading project by subdomain", subdomain)
-
-	extractSubdomain := func(url string) string {
-		subdomainPattern := regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-		matches := subdomainPattern.FindStringSubmatch(url)
-		if len(matches) > 1 {
-			return matches[1]
-		}
-		return ""
-	}
-
 	for _, p := range conf.Projects {
-		projectSubdomain := extractSubdomain(p.URL)
+		projectSubdomain := util.ExtractSubdomain(p.URL)
 		if projectSubdomain == subdomain {
+			fmt.Printf("Using project [%s]\n", util.Accented(p.Name))
 			return &p, nil
 		}
 	}

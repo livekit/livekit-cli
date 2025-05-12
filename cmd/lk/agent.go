@@ -31,6 +31,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
@@ -38,25 +39,14 @@ import (
 )
 
 const (
-	clientDefaults_CPU         = "1"
-	clientDefaults_Replicas    = 1
-	clientDefaults_MaxReplicas = 10
-	cloudAgentsBetaSignupURL   = "https://forms.gle/GkGNNTiMt2qyfnu78"
+	cloudAgentsBetaSignupURL = "https://forms.gle/GkGNNTiMt2qyfnu78"
 )
 
 var (
-	tomlFlag = &cli.StringFlag{
-		Name:        "toml",
-		Usage:       "TOML `FILE` to use in the working directory",
-		Value:       agentfs.AgentTOMLFile,
-		Destination: &tomlFilename,
-		Required:    false,
-	}
-
 	nameFlag = func(required bool) *cli.StringFlag {
 		return &cli.StringFlag{
 			Name:     "name",
-			Usage:    fmt.Sprintf("`NAME` of the agent. If unset, and the %s file is present, will use the name found there.", agentfs.AgentTOMLFile),
+			Usage:    fmt.Sprintf("`NAME` of the agent. If unset, and the %s file is present, will use the name found there.", config.LiveKitTOMLFile),
 			Required: required,
 		}
 	}
@@ -77,6 +67,13 @@ var (
 	secretsFlag = &cli.StringSliceFlag{
 		Name:     "secrets",
 		Usage:    "KEY=VALUE comma separated secrets. These will be injected as environment variables into the agent. These take precedence over secrets-file.",
+		Required: false,
+	}
+
+	logTypeFlag = &cli.StringFlag{
+		Name:     "log-type",
+		Usage:    "Type of logs to retrieve. Valid values are 'deploy' and 'build'",
+		Value:    "deploy",
 		Required: false,
 	}
 
@@ -101,18 +98,16 @@ var (
 							Required: false,
 							Value:    false,
 						},
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:   "config",
-					Usage:  fmt.Sprintf("Creates a %s in the working directory for an existing agent.", agentfs.AgentTOMLFile),
+					Usage:  fmt.Sprintf("Creates a %s in the working directory for an existing agent.", config.LiveKitTOMLFile),
 					Before: createAgentClient,
 					Action: createAgentConfig,
 					Flags: []cli.Flag{
 						nameFlag(false),
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -124,7 +119,6 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -135,7 +129,6 @@ var (
 					Action: getAgentStatus,
 					Flags: []cli.Flag{
 						nameFlag(false),
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -147,7 +140,6 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -164,7 +156,6 @@ var (
 							Required: true,
 						},
 						nameFlag(false),
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -176,7 +167,7 @@ var (
 					Action:  getLogs,
 					Flags: []cli.Flag{
 						nameFlag(false),
-						tomlFlag,
+						logTypeFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -188,7 +179,6 @@ var (
 					Aliases: []string{"destroy"},
 					Flags: []cli.Flag{
 						nameFlag(false),
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -199,7 +189,6 @@ var (
 					Action: listAgentVersions,
 					Flags: []cli.Flag{
 						nameFlag(false),
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -219,7 +208,6 @@ var (
 					Action: listAgentSecrets,
 					Flags: []cli.Flag{
 						nameFlag(false),
-						tomlFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -232,7 +220,6 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 						nameFlag(false),
-						tomlFlag,
 						&cli.BoolFlag{
 							Name:     "overwrite",
 							Usage:    "If set, will overwrite existing secrets",
@@ -247,8 +234,6 @@ var (
 	}
 	subdomainPattern = regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
 	agentsClient     *lksdk.AgentClient
-	tomlFilename     = agentfs.AgentTOMLFile
-	workingDir       = "."
 	ignoredSecrets   = []string{
 		"LIVEKIT_API_KEY",
 		"LIVEKIT_API_SECRET",
@@ -258,7 +243,7 @@ var (
 
 func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
-	var agentConfig *agentfs.AgentTOML
+	var lkConfig *config.LiveKitTOML
 
 	if _, err := requireProject(ctx, cmd); err != nil {
 		return ctx, err
@@ -269,14 +254,17 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 	}
 
 	// Verify that the project and agent config match, if it exists.
-	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
+	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
+	if err != nil {
+		return nil, err
+	}
 	if configExists {
 		projectSubdomainMatch := subdomainPattern.FindStringSubmatch(project.URL)
 		if len(projectSubdomainMatch) < 2 {
 			return nil, fmt.Errorf("invalid project URL [%s]", project.URL)
 		}
-		if projectSubdomainMatch[1] != agentConfig.ProjectSubdomain {
-			return nil, fmt.Errorf("project does not match agent subdomain [%s]", agentConfig.ProjectSubdomain)
+		if projectSubdomainMatch[1] != lkConfig.Project.Subdomain {
+			return nil, fmt.Errorf("project does not match agent subdomain [%s]", lkConfig.Project.Subdomain)
 		}
 	} else {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -312,7 +300,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	logger.Debugw("Creating agent", "working-dir", workingDir)
-	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
+	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
 	if err != nil && configExists {
 		return err
 	}
@@ -320,10 +308,10 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	name := cmd.String("name")
 	silent := cmd.Bool("silent")
 
-	if configExists {
+	if configExists && lkConfig.Agent != nil {
 		// If name was set via command line, it must match the name in the config.
-		if name != "" && agentConfig.Name != name {
-			return fmt.Errorf("agent name passed in command line: [%s] does not match name in [%s]: [%s]", name, tomlFilename, agentConfig.Name)
+		if name != "" && lkConfig.Agent.Name != name {
+			return fmt.Errorf("agent name passed in command line: [%s] does not match name in [%s]: [%s]", name, tomlFilename, lkConfig.Agent.Name)
 		}
 
 		if !silent {
@@ -351,30 +339,25 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 		defer f.Close()
 
-		agentConfig = &agentfs.AgentTOML{
-			ProjectSubdomain: subdomainMatches[1],
-			Name:             name,
-			CPU:              clientDefaults_CPU,
-			Replicas:         clientDefaults_Replicas,
-			MaxReplicas:      clientDefaults_MaxReplicas,
-		}
+		lkConfig = config.NewLiveKitTOML(subdomainMatches[1]).
+			WithDefaultAgent(name)
 
 		encoder := toml.NewEncoder(f)
-		if err := encoder.Encode(agentConfig); err != nil {
+		if err := encoder.Encode(lkConfig); err != nil {
 			return fmt.Errorf("error encoding TOML: %w", err)
 		}
 		fmt.Printf("Creating config file [%s]\n", util.Accented(tomlFilename))
 	}
 
 	if name == "" {
-		if agentConfig.Name == "" {
+		if lkConfig.Agent.Name == "" {
 			return fmt.Errorf("name is required")
 		}
 	} else {
-		agentConfig.Name = name
+		lkConfig.Agent.Name = name
 	}
 	if !silent {
-		fmt.Printf("Creating agent [%s]\n", util.Accented(agentConfig.Name))
+		fmt.Printf("Creating agent [%s]\n", util.Accented(lkConfig.Agent.Name))
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, true, false)
@@ -387,11 +370,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := &lkproto.CreateAgentRequest{
-		AgentName:   agentConfig.Name,
+		AgentName:   lkConfig.Agent.Name,
 		Secrets:     secrets,
-		Replicas:    int32(agentConfig.Replicas),
-		MaxReplicas: int32(agentConfig.MaxReplicas),
-		CpuReq:      string(agentConfig.CPU),
+		Replicas:    int32(lkConfig.Agent.Replicas),
+		MaxReplicas: int32(lkConfig.Agent.MaxReplicas),
+		CpuReq:      string(lkConfig.Agent.CPU),
 	}
 
 	resp, err := agentsClient.CreateAgent(ctx, req)
@@ -404,13 +387,13 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	err = agentfs.UploadTarball(workingDir, resp.PresignedUrl, []string{agentfs.AgentTOMLFile})
+	err = agentfs.UploadTarball(workingDir, resp.PresignedUrl, []string{config.LiveKitTOMLFile})
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Created agent [%s] with ID [%s]\n", util.Accented(resp.AgentName), util.Accented(resp.AgentId))
-	err = agentfs.Build(ctx, resp.AgentId, agentConfig.Name, "deploy", project)
+	err = agentfs.Build(ctx, resp.AgentId, lkConfig.Agent.Name, "deploy", project)
 	if err != nil {
 		return err
 	}
@@ -431,7 +414,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			fmt.Println("Tailing logs...safe to exit at any time")
-			return agentfs.LogHelper(ctx, "", agentConfig.Name, "deploy", project)
+			return agentfs.LogHelper(ctx, "", lkConfig.Agent.Name, "deploy", project)
 		}
 	}
 	return nil
@@ -494,12 +477,12 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 
 	agent := response.Agents[0]
 	regionAgent := agent.AgentDeployments[0]
-	agentConfig := &agentfs.AgentTOML{
-		ProjectSubdomain: matches[1],
-		Name:             agent.AgentName,
-		CPU:              agentfs.CPUString(regionAgent.CpuReq),
-		Replicas:         int(regionAgent.Replicas),
-		MaxReplicas:      int(regionAgent.MaxReplicas),
+	lkConfig := config.NewLiveKitTOML(matches[1])
+	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
+		Name:        agent.AgentName,
+		CPU:         config.CPUString(regionAgent.CpuReq),
+		Replicas:    int(regionAgent.Replicas),
+		MaxReplicas: int(regionAgent.MaxReplicas),
 	}
 
 	f, err := os.Create(tomlFilename)
@@ -508,7 +491,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	}
 	defer f.Close()
 
-	if err := toml.NewEncoder(f).Encode(agentConfig); err != nil {
+	if err := toml.NewEncoder(f).Encode(lkConfig); err != nil {
 		return fmt.Errorf("error encoding TOML: %w", err)
 	}
 
@@ -517,19 +500,22 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
-	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
-	if err != nil && configExists {
+	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
+	if err != nil {
 		return err
 	}
 	if !configExists {
 		return fmt.Errorf("config file [%s] required to update agent", util.Accented(tomlFilename))
 	}
+	if !lkConfig.HasAgent() {
+		return fmt.Errorf("no agent config found in [%s]", tomlFilename)
+	}
 
 	req := &lkproto.DeployAgentRequest{
-		AgentName:   agentConfig.Name,
-		Replicas:    int32(agentConfig.Replicas),
-		CpuReq:      string(agentConfig.CPU),
-		MaxReplicas: int32(agentConfig.MaxReplicas),
+		AgentName:   lkConfig.Agent.Name,
+		Replicas:    int32(lkConfig.Agent.Replicas),
+		CpuReq:      string(lkConfig.Agent.CPU),
+		MaxReplicas: int32(lkConfig.Agent.MaxReplicas),
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -555,13 +541,13 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	presignedUrl := resp.PresignedUrl
-	err = agentfs.UploadTarball(workingDir, presignedUrl, []string{agentfs.AgentTOMLFile})
+	err = agentfs.UploadTarball(workingDir, presignedUrl, []string{config.LiveKitTOMLFile})
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Updated agent [%s]\n", util.Accented(resp.AgentId))
-	err = agentfs.Build(ctx, resp.AgentId, agentConfig.Name, "update", project)
+	err = agentfs.Build(ctx, resp.AgentId, lkConfig.Agent.Name, "update", project)
 	if err != nil {
 		return err
 	}
@@ -630,19 +616,22 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateAgent(ctx context.Context, cmd *cli.Command) error {
-	agentConfig, configExists, err := agentfs.LoadTomlFile(workingDir, tomlFilename)
+	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
 	if err != nil && configExists {
 		return err
 	}
 	if !configExists {
 		return fmt.Errorf("config file [%s] required to update agent", tomlFilename)
 	}
+	if !lkConfig.HasAgent() {
+		return fmt.Errorf("no agent config found in [%s]", tomlFilename)
+	}
 
 	req := &lkproto.UpdateAgentRequest{
-		AgentName:   agentConfig.Name,
-		Replicas:    int32(agentConfig.Replicas),
-		CpuReq:      string(agentConfig.CPU),
-		MaxReplicas: int32(agentConfig.MaxReplicas),
+		AgentName:   lkConfig.Agent.Name,
+		Replicas:    int32(lkConfig.Agent.Replicas),
+		CpuReq:      string(lkConfig.Agent.CPU),
+		MaxReplicas: int32(lkConfig.Agent.MaxReplicas),
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -664,7 +653,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.Success {
-		fmt.Printf("Updated agent [%s]\n", util.Accented(agentConfig.Name))
+		fmt.Printf("Updated agent [%s]\n", util.Accented(lkConfig.Agent.Name))
 		return nil
 	}
 
@@ -705,7 +694,7 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	err = agentfs.LogHelper(ctx, "", agentName, cmd.String("log_type"), project)
+	err = agentfs.LogHelper(ctx, "", agentName, cmd.String("log-type"), project)
 	return err
 }
 
@@ -912,15 +901,18 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (string, error) {
 	agentName := cmd.String("name")
 	if agentName == "" {
-		agentConfig, configExists, err := agentfs.LoadTomlFile(agentDir, tomlFileName)
+		lkConfig, configExists, err := config.LoadTOMLFile(agentDir, tomlFileName)
 		if err != nil && configExists {
 			return "", err
 		}
 		if !configExists {
 			return "", fmt.Errorf("config file [%s] required to update agent", tomlFileName)
 		}
+		if !lkConfig.HasAgent() {
+			return "", fmt.Errorf("no agent config found in [%s]", tomlFileName)
+		}
 
-		agentName = agentConfig.Name
+		agentName = lkConfig.Agent.Name
 	}
 
 	if agentName == "" {

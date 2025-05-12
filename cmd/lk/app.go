@@ -32,6 +32,10 @@ import (
 )
 
 var (
+	ErrNoProjectSelected = errors.New("no project selected")
+)
+
+var (
 	template        *bootstrap.Template
 	templateName    string
 	templateURL     string
@@ -49,7 +53,6 @@ var (
 				{
 					Name:      "create",
 					Usage:     "Bootstrap a new application from a template or through guided creation",
-					Before:    requireProject,
 					Action:    setupTemplate,
 					ArgsUsage: "`APP_NAME`",
 					Flags: []cli.Flag{
@@ -140,7 +143,13 @@ var (
 
 func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
+	if project != nil {
+		return ctx, nil
+	}
 	if project, err = loadProjectDetails(cmd); err != nil {
+		if errors.Is(err, config.ErrInvalidConfig) {
+			return ctx, err
+		}
 		if _, err = loadProjectConfig(ctx, cmd); err != nil {
 			// something is wrong with config file
 			return nil, err
@@ -150,7 +159,7 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 		if len(cliConfig.Projects) > 0 {
 			var options []huh.Option[*config.ProjectConfig]
 			for _, p := range cliConfig.Projects {
-				options = append(options, huh.NewOption(p.Name+" ["+p.APIKey+"]", &p))
+				options = append(options, huh.NewOption(p.Name+" ["+util.ExtractSubdomain(p.URL)+"]", &p))
 			}
 			if err = huh.NewForm(
 				huh.NewGroup(huh.NewSelect[*config.ProjectConfig]().
@@ -179,7 +188,7 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 				}
 				return requireProject(ctx, cmd)
 			} else {
-				return nil, errors.New("no project selected")
+				return nil, ErrNoProjectSelected
 			}
 		}
 	}
@@ -413,12 +422,21 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 }
 
 func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string) (map[string]string, error) {
-	env := map[string]string{
-		"LIVEKIT_API_KEY":         project.APIKey,
-		"LIVEKIT_API_SECRET":      project.APISecret,
-		"LIVEKIT_URL":             project.URL,
-		"NEXT_PUBLIC_LIVEKIT_URL": project.URL,
+	env := map[string]string{}
+	if _, err := requireProject(ctx, cmd); err != nil {
+		if !errors.Is(err, ErrNoProjectSelected) {
+			return nil, err
+		}
+		// if no project is selected, we prompt for all environment variables including LIVEKIT_ ones
+	} else {
+		env = map[string]string{
+			"LIVEKIT_API_KEY":         project.APIKey,
+			"LIVEKIT_API_SECRET":      project.APISecret,
+			"LIVEKIT_URL":             project.URL,
+			"NEXT_PUBLIC_LIVEKIT_URL": project.URL,
+		}
 	}
+
 	if addlEnv != nil {
 		for k, v := range *addlEnv {
 			env[k] = v
