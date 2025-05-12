@@ -179,7 +179,7 @@ var (
 						},
 						&cli.BoolFlag{
 							Name:  "auto-subscribe",
-							Usage: "Automatically subscribe to published tracks. Default is false.",
+							Usage: "Automatically subscribe to published tracks.",
 							Value: false,
 						},
 					},
@@ -789,10 +789,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	autoSubscribe, err := extractFlagAsBool(cmd, "auto-subscribe")
-	if err != nil {
-		return err
-	}
+	autoSubscribe := cmd.Bool("auto-subscribe")
 
 	participantIdentity := cmd.String("identity")
 
