@@ -21,8 +21,9 @@ import (
 // Call an action and show a spinner while waiting for it to finish.
 func Await(title string, action func()) error {
 	return spinner.New().
-		Title(title).
+		Title(" " + title).
 		Action(action).
+		Type(spinner.Pulse).
 		Style(Theme.Focused.Title).
 		Run()
 }

@@ -243,7 +243,6 @@ var (
 
 func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
-	var lkConfig *config.LiveKitTOML
 
 	if _, err := requireProject(ctx, cmd); err != nil {
 		return ctx, err
@@ -256,22 +255,22 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 	// If a project has been manually selected that conflicts with the agent's config,
 	// or if the config file is malformed, this is an error. If the config does not exist,
 	// we assume it gets created later.
-	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
-	if !errors.Is(err, os.ErrNotExist) {
-		return nil, err
+	configExists, err := requireConfig(workingDir, tomlFilename)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return ctx, err
 	}
 	if configExists {
 		projectSubdomainMatch := subdomainPattern.FindStringSubmatch(project.URL)
 		if len(projectSubdomainMatch) < 2 {
-			return nil, fmt.Errorf("invalid project URL [%s]", project.URL)
+			return ctx, fmt.Errorf("invalid project URL [%s]", project.URL)
 		}
 		if projectSubdomainMatch[1] != lkConfig.Project.Subdomain {
-			return nil, fmt.Errorf("project does not match agent subdomain [%s]", lkConfig.Project.Subdomain)
+			return ctx, fmt.Errorf("project does not match agent subdomain [%s]", lkConfig.Project.Subdomain)
 		}
 	}
 
 	agentsClient, err = lksdk.NewAgentClient(project.URL, project.APIKey, project.APISecret)
-	return nil, err
+	return ctx, err
 }
 
 func createAgent(ctx context.Context, cmd *cli.Command) error {
@@ -296,11 +295,22 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			if _, err := selectProject(ctx, cmd); err != nil {
 				return err
 			}
+			var err error
+			// Recreate the client with the new project
+			agentsClient, err = lksdk.NewAgentClient(project.URL, project.APIKey, project.APISecret)
+			if err != nil {
+				return err
+			}
+			// Re-parse the project URL to get the subdomain
+			subdomainMatches = subdomainPattern.FindStringSubmatch(project.URL)
+			if len(subdomainMatches) < 2 {
+				return fmt.Errorf("invalid project URL [%s]", project.URL)
+			}
 		}
 	}
 
 	logger.Debugw("Creating agent", "working-dir", workingDir)
-	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
+	configExists, err := requireConfig(workingDir, tomlFilename)
 	if err != nil && configExists {
 		return err
 	}
@@ -500,7 +510,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
-	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
+	configExists, err := requireConfig(workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -616,7 +626,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateAgent(ctx context.Context, cmd *cli.Command) error {
-	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
+	configExists, err := requireConfig(workingDir, tomlFilename)
 	if err != nil && configExists {
 		return err
 	}
@@ -913,7 +923,7 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 func getAgentName(cmd *cli.Command, agentDir string, tomlFileName string) (string, error) {
 	agentName := cmd.String("name")
 	if agentName == "" {
-		lkConfig, configExists, err := config.LoadTOMLFile(agentDir, tomlFileName)
+		configExists, err := requireConfig(agentDir, tomlFileName)
 		if err != nil && configExists {
 			return "", err
 		}
@@ -998,18 +1008,29 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 	}
 
 	if !dockerfileExists {
+		var clientSettingsResponse *lkproto.ClientSettingsResponse
+		var innerErr error
+
 		if !cmd.Bool("silent") {
-			fmt.Println("Creating Dockerfile")
+			if err := util.Await(
+				"Loading client settings...",
+				func() {
+					clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
+				},
+			); err != nil {
+				return err
+			}
+		} else {
+			clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
 		}
 
-		clientSettingsResponse, err := agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
-		if err != nil {
-			if twerr, ok := err.(twirp.Error); ok {
+		if innerErr != nil {
+			if twerr, ok := innerErr.(twirp.Error); ok {
 				if twerr.Code() == twirp.PermissionDenied {
 					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
 				}
 			}
-			return err
+			return innerErr
 		}
 
 		settingsMap := make(map[string]string)
@@ -1017,8 +1038,24 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 			settingsMap[setting.Name] = setting.Value
 		}
 
-		if err := agentfs.CreateDockerfile(workingDir, settingsMap); err != nil {
-			return err
+		if !cmd.Bool("silent") {
+			var innerErr error
+			if err := util.Await(
+				"Creating Dockerfile...",
+				func() {
+					innerErr = agentfs.CreateDockerfile(workingDir, settingsMap)
+				},
+			); err != nil {
+				return err
+			}
+			if innerErr != nil {
+				return innerErr
+			}
+			fmt.Println("Created [" + util.Accented("Dockerfile") + "]")
+		} else {
+			if err := agentfs.CreateDockerfile(workingDir, settingsMap); err != nil {
+				return err
+			}
 		}
 	} else {
 		if !cmd.Bool("silent") {
@@ -1027,4 +1064,15 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 	}
 
 	return nil
+}
+
+func requireConfig(workingDir, tomlFilename string) (bool, error) {
+	if lkConfig != nil {
+		return true, nil
+	}
+
+	var exists bool
+	var err error
+	lkConfig, exists, err = config.LoadTOMLFile(workingDir, tomlFilename)
+	return exists, err
 }

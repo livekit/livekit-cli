@@ -43,6 +43,7 @@ var (
 	destinationFile string
 	exampleFile     string
 	project         *config.ProjectConfig
+	lkConfig        *config.LiveKitTOML
 	AppCommands     = []*cli.Command{
 		{
 			Name:  "app",
@@ -145,10 +146,11 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 		return ctx, nil
 	}
 	if _, err = loadProjectConfig(ctx, cmd); err != nil {
-		// something is wrong with config file
+		// something is wrong with CLI config file
 		return nil, err
 	}
 	if project, err = loadProjectDetails(cmd); err != nil {
+		// something is wrong with project config file
 		if errors.Is(err, config.ErrInvalidConfig) {
 			return ctx, err
 		}
@@ -177,6 +179,7 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 			Run(); err != nil {
 			return nil, err
 		}
+		fmt.Println("Using project [" + util.Accented(project.Name) + "]")
 	} else {
 		shouldAuth := true
 		if err = huh.NewConfirm().
@@ -487,14 +490,8 @@ func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose 
 		return nil
 	}
 
-	var cmdErr error
-	if err := util.Await(
-		"Cleaning up...",
-		func() { cmdErr = task() },
-	); err != nil {
-		return err
-	}
-	return cmdErr
+	fmt.Println("Cleaning up...")
+	return task()
 }
 
 func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, verbose bool) error {
