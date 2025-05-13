@@ -253,9 +253,11 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 		workingDir = cmd.Args().First()
 	}
 
-	// Verify that the project and agent config match, if it exists.
+	// If a project has been manually selected that conflicts with the agent's config,
+	// or if the config file is malformed, this is an error. If the config does not exist,
+	// we assume it gets created later.
 	lkConfig, configExists, err := config.LoadTOMLFile(workingDir, tomlFilename)
-	if err != nil {
+	if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
 	if configExists {
@@ -265,10 +267,6 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 		}
 		if projectSubdomainMatch[1] != lkConfig.Project.Subdomain {
 			return nil, fmt.Errorf("project does not match agent subdomain [%s]", lkConfig.Project.Subdomain)
-		}
-	} else {
-		if !errors.Is(err, os.ErrNotExist) {
-			return nil, err
 		}
 	}
 
@@ -295,7 +293,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		if !useProject {
-			return fmt.Errorf("cancelled")
+			if _, err := selectProject(ctx, cmd); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -360,7 +360,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		fmt.Printf("Creating agent [%s]\n", util.Accented(lkConfig.Agent.Name))
 	}
 
-	secrets, err := requireSecrets(ctx, cmd, true, false)
+	secrets, err := requireSecrets(ctx, cmd, false, false)
 	if err != nil {
 		return err
 	}
@@ -721,10 +721,22 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	resp, err := agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
-		AgentName: agentName,
-	})
-	if err != nil {
+	var res *lkproto.DeleteAgentResponse
+	var innerErr error
+	if err := util.Await(
+		"Deleting agent ["+util.Accented(agentName)+"]",
+		func() {
+			if res, innerErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
+				AgentName: agentName,
+			}); err != nil {
+
+			}
+		},
+	); err != nil {
+		return err
+	}
+
+	if innerErr != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			if twerr.Code() == twirp.PermissionDenied {
 				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
@@ -733,8 +745,8 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if !resp.Success {
-		return fmt.Errorf("failed to delete agent %s", resp.Message)
+	if !res.Success {
+		return fmt.Errorf("failed to delete agent %s", res.Message)
 	}
 
 	fmt.Printf("Deleted agent [%s]\n", util.Accented(agentName))

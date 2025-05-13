@@ -192,7 +192,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + util.Theme.Focused.Title.Render(c.String("project")) + "]")
+		fmt.Println("Using project [" + util.Accented(c.String("project")) + "]")
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -206,7 +206,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + util.Theme.Focused.Title.Render(pc.Name) + "]")
+		fmt.Println("Using project [" + util.Accented(pc.Name) + "]")
 		logDetails(c, pc)
 		return pc, nil
 	}
