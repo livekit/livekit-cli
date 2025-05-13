@@ -23,8 +23,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -146,54 +144,61 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 	if project != nil {
 		return ctx, nil
 	}
+	if _, err = loadProjectConfig(ctx, cmd); err != nil {
+		// something is wrong with config file
+		return nil, err
+	}
 	if project, err = loadProjectDetails(cmd); err != nil {
 		if errors.Is(err, config.ErrInvalidConfig) {
 			return ctx, err
 		}
-		if _, err = loadProjectConfig(ctx, cmd); err != nil {
-			// something is wrong with config file
-			return nil, err
-		}
-
 		// choose from existing credentials or authenticate
-		if len(cliConfig.Projects) > 0 {
-			var options []huh.Option[*config.ProjectConfig]
-			for _, p := range cliConfig.Projects {
-				options = append(options, huh.NewOption(p.Name+" ["+util.ExtractSubdomain(p.URL)+"]", &p))
-			}
-			if err = huh.NewForm(
-				huh.NewGroup(huh.NewSelect[*config.ProjectConfig]().
-					Title("Select a project to use for this action").
-					Description("To use a different project, run `lk cloud auth` to add credentials").
-					Options(options...).
-					Value(&project).
-					WithTheme(util.Theme))).
-				Run(); err != nil {
-				return nil, err
-			}
-		} else {
-			shouldAuth := true
-			if err = huh.NewConfirm().
-				Title("No local projects found. Authenticate one?").
-				Inline(true).
-				Value(&shouldAuth).
-				WithTheme(util.Theme).
-				Run(); err != nil {
-				return nil, err
-			}
-			if shouldAuth {
-				initAuth(ctx, cmd)
-				if err = tryAuthIfNeeded(ctx, cmd); err != nil {
-					return nil, err
-				}
-				return requireProject(ctx, cmd)
-			} else {
-				return nil, ErrNoProjectSelected
-			}
-		}
+		return selectProject(ctx, cmd)
 	}
 
 	return nil, err
+}
+
+func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+	var err error
+
+	if cliConfig != nil && len(cliConfig.Projects) > 0 {
+		var options []huh.Option[*config.ProjectConfig]
+		for _, p := range cliConfig.Projects {
+			options = append(options, huh.NewOption(p.Name+" ["+util.ExtractSubdomain(p.URL)+"]", &p))
+		}
+		if err = huh.NewForm(
+			huh.NewGroup(huh.NewSelect[*config.ProjectConfig]().
+				Title("Select a project to use for this action").
+				Description("To use a different project, run `lk cloud auth` to add credentials").
+				Options(options...).
+				Value(&project).
+				WithTheme(util.Theme))).
+			Run(); err != nil {
+			return nil, err
+		}
+	} else {
+		shouldAuth := true
+		if err = huh.NewConfirm().
+			Title("No local projects found. Authenticate one?").
+			Inline(true).
+			Value(&shouldAuth).
+			WithTheme(util.Theme).
+			Run(); err != nil {
+			return nil, err
+		}
+		if shouldAuth {
+			initAuth(ctx, cmd)
+			if err = tryAuthIfNeeded(ctx, cmd); err != nil {
+				return nil, err
+			}
+			return requireProject(ctx, cmd)
+		} else {
+			return nil, ErrNoProjectSelected
+		}
+	}
+
+	return ctx, nil
 }
 
 func listTemplates(ctx context.Context, cmd *cli.Command) error {
@@ -376,13 +381,12 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 	tempName, relocate, cleanup := util.UseTempPath(appName)
 	defer cleanup()
 
-	if err := spinner.New().
-		Title("Cloning template from " + url).
-		Action(func() {
+	if err := util.Await(
+		"Cloning template from "+url,
+		func() {
 			stdout, stderr, cmdErr = bootstrap.CloneTemplate(url, tempName)
-		}).
-		Style(util.Theme.Focused.Title).
-		Run(); err != nil {
+		},
+	); err != nil {
 		return err
 	}
 
@@ -484,13 +488,10 @@ func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose 
 	}
 
 	var cmdErr error
-	if err := spinner.New().
-		Title("Cleaning up...").
-		TitleStyle(lipgloss.NewStyle()).
-		Style(lipgloss.NewStyle()).
-		Action(func() { cmdErr = task() }).
-		Accessible(true).
-		Run(); err != nil {
+	if err := util.Await(
+		"Cleaning up...",
+		func() { cmdErr = task() },
+	); err != nil {
 		return err
 	}
 	return cmdErr
@@ -508,12 +509,10 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 	}
 
 	var cmdErr error
-	if err := spinner.New().
-		Title("Installing...").
-		Action(func() { cmdErr = install() }).
-		Style(util.Theme.Focused.Title).
-		Accessible(true).
-		Run(); err != nil {
+	if err := util.Await(
+		"Installing...",
+		func() { cmdErr = install() },
+	); err != nil {
 		return err
 	}
 	return cmdErr
@@ -550,12 +549,10 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	var cmdErr error
-	if err := spinner.New().
-		Title("Running task " + taskName + "...").
-		Action(func() { cmdErr = task() }).
-		Style(util.Theme.Focused.Title).
-		Accessible(verbose).
-		Run(); err != nil {
+	if err := util.Await(
+		"Running task "+taskName+"...",
+		func() { cmdErr = task() },
+	); err != nil {
 		return err
 	}
 	return cmdErr

@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/huh/spinner"
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v3"
 
@@ -302,13 +301,12 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 
 	var ak *ClaimAccessKeyResponse
 	var pollErr error
-	if err := spinner.New().
-		Title("Awaiting confirmation...").
-		Action(func() {
+	if err := util.Await(
+		"Awaiting confirmation...",
+		func() {
 			ak, pollErr = pollClaim(ctx, cmd)
-		}).
-		Style(util.Theme.Focused.Title).
-		Run(); err != nil {
+		},
+	); err != nil {
 		return err
 	}
 	if pollErr != nil {
