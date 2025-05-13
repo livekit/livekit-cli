@@ -253,7 +253,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	}
 
 	// load from config file
-	lkConfig, _, err := config.LoadTOMLFile(workingDir, tomlFilename)
+	_, err := requireConfig(workingDir, tomlFilename)
 	if errors.Is(err, config.ErrInvalidConfig) {
 		return nil, err
 	}
