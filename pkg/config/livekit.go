@@ -60,7 +60,7 @@ type LiveKitTOMLProjectConfig struct {
 
 type LiveKitTOMLAgentConfig struct {
 	ID          string    `toml:"id"`
-	Name        string    `toml:"name"`
+	Name        string    `toml:"name,omitempty"`
 	CPU         CPUString `toml:"cpu"`
 	Replicas    int       `toml:"replicas"`
 	MaxReplicas int       `toml:"max_replicas"`

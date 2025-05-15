@@ -452,7 +452,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	regionAgent := agent.AgentDeployments[0]
 	lkConfig := config.NewLiveKitTOML(matches[1])
 	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
-		Name:        agent.AgentName,
+		ID:          agent.AgentId,
 		CPU:         config.CPUString(regionAgent.CpuReq),
 		Replicas:    int(regionAgent.Replicas),
 		MaxReplicas: int(regionAgent.MaxReplicas),
@@ -618,7 +618,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.Success {
-		fmt.Printf("Updated agent [%s]\n", util.Accented(lkConfig.Agent.Name))
+		fmt.Printf("Updated agent [%s]\n", util.Accented(lkConfig.Agent.ID))
 		return nil
 	}
 
