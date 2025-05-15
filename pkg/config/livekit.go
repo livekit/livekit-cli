@@ -23,6 +23,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/logger"
 )
 
@@ -58,6 +59,7 @@ type LiveKitTOMLProjectConfig struct {
 }
 
 type LiveKitTOMLAgentConfig struct {
+	ID          string    `toml:"id"`
 	Name        string    `toml:"name"`
 	CPU         CPUString `toml:"cpu"`
 	Replicas    int       `toml:"replicas"`
@@ -73,9 +75,8 @@ func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {
 	}
 }
 
-func (c *LiveKitTOML) WithDefaultAgent(agentName string) *LiveKitTOML {
+func (c *LiveKitTOML) WithDefaultAgent() *LiveKitTOML {
 	c.Agent = &LiveKitTOMLAgentConfig{
-		Name:        agentName,
 		CPU:         CPUString(clientDefaults_CPU),
 		Replicas:    clientDefaults_Replicas,
 		MaxReplicas: clientDefaults_MaxReplicas,
@@ -100,6 +101,20 @@ func (c *CPUString) UnmarshalTOML(v interface{}) error {
 	default:
 		return fmt.Errorf("invalid type for cpu: %T", v)
 	}
+	return nil
+}
+
+func (c *LiveKitTOML) SaveTOMLFile(dir string, tomlFileName string) error {
+	f, err := os.Create(filepath.Join(dir, tomlFileName))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	encoder := toml.NewEncoder(f)
+	if err := encoder.Encode(c); err != nil {
+		return fmt.Errorf("error encoding TOML: %w", err)
+	}
+	fmt.Printf("Saving config file [%s]\n", util.Accented(tomlFileName))
 	return nil
 }
 

@@ -36,7 +36,7 @@ type APIError struct {
 	Meta    *map[string]string `json:"meta,omitempty"`
 }
 
-func LogHelper(ctx context.Context, id string, name string, logType string, projectConfig *config.ProjectConfig) error {
+func LogHelper(ctx context.Context, id string, logType string, projectConfig *config.ProjectConfig) error {
 	if logType == "" {
 		logType = "deploy"
 	}
@@ -61,11 +61,7 @@ func LogHelper(ctx context.Context, id string, name string, logType string, proj
 	logger.Debugw("Connecting to LK hosted agents on", "url", agentsUrl)
 
 	params := url.Values{}
-	if id != "" {
-		params.Add("agent_id", id)
-	} else {
-		params.Add("agent_name", name)
-	}
+	params.Add("agent_id", id)
 	params.Add("log_type", logType)
 	fullUrl := fmt.Sprintf("%s/logs?%s", agentsUrl, params.Encode())
 

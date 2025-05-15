@@ -35,7 +35,7 @@ import (
 	"github.com/livekit/protocol/logger"
 )
 
-func Build(ctx context.Context, id string, name string, action string, projectConfig *config.ProjectConfig) error {
+func Build(ctx context.Context, id string, action string, projectConfig *config.ProjectConfig) error {
 	baseUrl := projectConfig.URL
 	if strings.HasPrefix(projectConfig.URL, "ws") {
 		baseUrl = strings.Replace(projectConfig.URL, "ws", "http", 1)
@@ -55,11 +55,7 @@ func Build(ctx context.Context, id string, name string, action string, projectCo
 	logger.Debugw("Connecting to LK hosted agents on", "url", agentsUrl)
 
 	params := url.Values{}
-	if id != "" {
-		params.Add("agent_id", id)
-	} else {
-		params.Add("agent_name", name)
-	}
+	params.Add("agent_id", id)
 	params.Add("action", action)
 	fullUrl := fmt.Sprintf("%s/build?%s", agentsUrl, params.Encode())
 
