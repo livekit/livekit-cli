@@ -231,6 +231,21 @@ var (
 							},
 						},
 						{
+							Name:      "move",
+							Usage:     "Move a participant to a different room",
+							ArgsUsage: "ROOM_NAME",
+							Before:    createRoomClient,
+							Action:    moveParticipant,
+							Flags: []cli.Flag{
+								roomFlag,
+								identityFlag,
+								&cli.StringFlag{
+									Name:  "destination-room",
+									Usage: "`NAME` of the destination room",
+								},
+							},
+						},
+						{
 							Name:      "update",
 							Usage:     "Change the metadata and permissions for a room participant",
 							ArgsUsage: "ID",
@@ -1099,6 +1114,26 @@ func forwardParticipant(ctx context.Context, cmd *cli.Command) error {
 
 	fmt.Println("successfully forwarded participant", identity, "from", roomName, "to", destinationRoomName)
 
+	return nil
+}
+
+func moveParticipant(ctx context.Context, cmd *cli.Command) error {
+	roomName, identity := participantInfoFromArgOrFlags(cmd)
+	destinationRoomName := cmd.String("destination-room")
+	if destinationRoomName == "" {
+		return fmt.Errorf("destination-room is required")
+	}
+
+	_, err := roomClient.MoveParticipant(ctx, &livekit.MoveParticipantRequest{
+		Room:            roomName,
+		Identity:        identity,
+		DestinationRoom: destinationRoomName,
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("successfully moved participant", identity, "from", roomName, "to", destinationRoomName)
 	return nil
 }
 
