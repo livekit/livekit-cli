@@ -52,6 +52,28 @@ var (
 							Usage:     "Create an inbound SIP Trunk",
 							Action:    createSIPInboundTrunk,
 							ArgsUsage: RequestDesc[livekit.CreateSIPInboundTrunkRequest](),
+							Flags: []cli.Flag{
+								&cli.StringFlag{
+									Name:  "name",
+									Usage: "Sets a new name for the trunk",
+								},
+								&cli.StringSliceFlag{
+									Name:  "numbers",
+									Usage: "Sets a list of numbers for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "media-enc",
+									Usage: "Sets media encryption for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "auth-user",
+									Usage: "Set username for authentication",
+								},
+								&cli.StringFlag{
+									Name:  "auth-pass",
+									Usage: "Set password for authentication",
+								},
+							},
 						},
 						{
 							Name:      "update",
@@ -105,6 +127,36 @@ var (
 							Usage:     "Create an outbound SIP Trunk",
 							Action:    createSIPOutboundTrunk,
 							ArgsUsage: RequestDesc[livekit.CreateSIPOutboundTrunkRequest](),
+							Flags: []cli.Flag{
+								&cli.StringFlag{
+									Name:  "name",
+									Usage: "Sets a new name for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "address",
+									Usage: "Sets a destination address for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "transport",
+									Usage: "Sets a transport for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "media-enc",
+									Usage: "Sets media encryption for the trunk",
+								},
+								&cli.StringSliceFlag{
+									Name:  "numbers",
+									Usage: "Sets a list of numbers for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "auth-user",
+									Usage: "Set username for authentication",
+								},
+								&cli.StringFlag{
+									Name:  "auth-pass",
+									Usage: "Set password for authentication",
+								},
+							},
 						},
 						{
 							Name:      "update",
@@ -166,6 +218,37 @@ var (
 							Usage:     "Create a SIP Dispatch Rule",
 							Action:    createSIPDispatchRule,
 							ArgsUsage: RequestDesc[livekit.CreateSIPDispatchRuleRequest](),
+							Flags: []cli.Flag{
+								&cli.StringFlag{
+									Name:  "name",
+									Usage: "Sets a new name for the dispatch rule",
+								},
+								&cli.StringSliceFlag{
+									Name:  "trunks",
+									Usage: "Sets a list of trunks for the dispatch rule",
+								},
+								&cli.StringFlag{
+									Name:  "direct",
+									Usage: "Sets a direct dispatch to a specified room",
+								},
+								&cli.StringFlag{
+									Name:    "caller",
+									Aliases: []string{"individual"},
+									Usage:   "Sets a individual caller dispatch to a new room with a specific prefix",
+								},
+								&cli.StringFlag{
+									Name:  "callee",
+									Usage: "Sets a callee number dispatch to a new room with a specific prefix",
+								},
+								&cli.BoolFlag{
+									Name:  "pin",
+									Usage: "PIN for a dispatch rule",
+								},
+								&cli.BoolFlag{
+									Name:  "randomize",
+									Usage: "Randomize room name, only applies to callee dispatch",
+								},
+							},
 						},
 						{
 							Name:      "update",
@@ -220,6 +303,14 @@ var (
 								&cli.StringFlag{
 									Name:  "room",
 									Usage: "`ROOM_NAME` to place the call to (overrides json config)",
+								},
+								&cli.StringFlag{
+									Name:  "identity",
+									Usage: "`PARTICIPANT_IDENTITY` to use (overrides json config)",
+								},
+								&cli.StringFlag{
+									Name:  "name",
+									Usage: "`PARTICIPANT_NAME` to use (overrides json config)",
 								},
 								&cli.BoolFlag{
 									Name:  "wait",
@@ -326,6 +417,17 @@ func listUpdateFlag(cmd *cli.Command, setName string) *livekit.ListUpdate {
 	return &livekit.ListUpdate{Set: val}
 }
 
+func listSetFlag(cmd *cli.Command, setName string) ([]string, bool) {
+	if !cmd.IsSet(setName) {
+		return nil, false
+	}
+	val := cmd.StringSlice(setName)
+	if len(val) == 1 && val[0] == "" {
+		val = nil
+	}
+	return val, true
+}
+
 func createSIPClient(cmd *cli.Command) (*lksdk.SIPClient, error) {
 	pc, err := loadProjectDetails(cmd)
 	if err != nil {
@@ -339,7 +441,36 @@ func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return createAndPrintReqs(ctx, cmd, nil, cli.CreateSIPInboundTrunk, printSIPInboundTrunkID)
+	return createAndPrintReqs(ctx, cmd, func(req *livekit.CreateSIPInboundTrunkRequest) error {
+		if req.Trunk == nil {
+			req.Trunk = new(livekit.SIPInboundTrunkInfo)
+		}
+		p := req.Trunk
+		if val := cmd.String("name"); val != "" {
+			p.Name = val
+		}
+		if val, ok := listSetFlag(cmd, "numbers"); ok {
+			p.Numbers = val
+		}
+		if val := cmd.String("media-enc"); val != "" {
+			val = strings.ToUpper(val)
+			v, ok := livekit.SIPMediaEncryption_value[val]
+			if !ok {
+				v, ok = livekit.SIPMediaEncryption_value["SIP_MEDIA_ENCRYPT_"+val]
+			}
+			if !ok {
+				return fmt.Errorf("invalid value for SIP media encryption: %q", val)
+			}
+			p.MediaEncryption = livekit.SIPMediaEncryption(v)
+		}
+		if val := cmd.String("auth-user"); val != "" {
+			p.AuthUsername = val
+		}
+		if val := cmd.String("auth-pass"); val != "" {
+			p.AuthPassword = val
+		}
+		return nil
+	}, cli.CreateSIPInboundTrunk, printSIPInboundTrunkID)
 }
 
 func updateSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
@@ -409,7 +540,50 @@ func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return createAndPrintReqs(ctx, cmd, nil, cli.CreateSIPOutboundTrunk, printSIPOutboundTrunkID)
+	return createAndPrintReqs(ctx, cmd, func(req *livekit.CreateSIPOutboundTrunkRequest) error {
+		if req.Trunk == nil {
+			req.Trunk = new(livekit.SIPOutboundTrunkInfo)
+		}
+		p := req.Trunk
+		if val := cmd.String("name"); val != "" {
+			p.Name = val
+		}
+		if val := cmd.String("address"); val != "" {
+			p.Address = val
+		}
+		if val := cmd.String("transport"); val != "" {
+			val = strings.ToUpper(val)
+			v, ok := livekit.SIPTransport_value[val]
+			if !ok {
+				v, ok = livekit.SIPTransport_value["SIP_TRANSPORT_"+val]
+			}
+			if !ok {
+				return fmt.Errorf("invalid value for SIP transport: %q", val)
+			}
+			p.Transport = livekit.SIPTransport(v)
+		}
+		if val := cmd.String("media-enc"); val != "" {
+			val = strings.ToUpper(val)
+			v, ok := livekit.SIPMediaEncryption_value[val]
+			if !ok {
+				v, ok = livekit.SIPMediaEncryption_value["SIP_MEDIA_ENCRYPT_"+val]
+			}
+			if !ok {
+				return fmt.Errorf("invalid value for SIP media encryption: %q", val)
+			}
+			p.MediaEncryption = livekit.SIPMediaEncryption(v)
+		}
+		if val, ok := listSetFlag(cmd, "numbers"); ok {
+			p.Numbers = val
+		}
+		if val := cmd.String("auth-user"); val != "" {
+			p.AuthUsername = val
+		}
+		if val := cmd.String("auth-pass"); val != "" {
+			p.AuthPassword = val
+		}
+		return nil
+	}, cli.CreateSIPOutboundTrunk, printSIPOutboundTrunkID)
 }
 
 func updateSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
@@ -658,7 +832,56 @@ func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return createAndPrintReqs(ctx, cmd, nil, cli.CreateSIPDispatchRule, printSIPDispatchRuleID)
+	return createAndPrintReqs(ctx, cmd, func(req *livekit.CreateSIPDispatchRuleRequest) error {
+		if req.DispatchRule == nil {
+			req.DispatchRule = new(livekit.SIPDispatchRuleInfo)
+		}
+		p := req.DispatchRule
+		if val := cmd.String("name"); val != "" {
+			p.Name = val
+		}
+		if val, ok := listSetFlag(cmd, "trunks"); ok {
+			p.TrunkIds = val
+		}
+		if val := cmd.String("direct"); val != "" {
+			if p.Rule != nil {
+				return fmt.Errorf("only one dispatch rule type is allowed")
+			}
+			p.Rule = &livekit.SIPDispatchRule{
+				Rule: &livekit.SIPDispatchRule_DispatchRuleDirect{
+					DispatchRuleDirect: &livekit.SIPDispatchRuleDirect{
+						RoomName: val,
+					},
+				},
+			}
+		}
+		if val := cmd.String("caller"); val != "" {
+			if p.Rule != nil {
+				return fmt.Errorf("only one dispatch rule type is allowed")
+			}
+			p.Rule = &livekit.SIPDispatchRule{
+				Rule: &livekit.SIPDispatchRule_DispatchRuleIndividual{
+					DispatchRuleIndividual: &livekit.SIPDispatchRuleIndividual{
+						RoomPrefix: val,
+					},
+				},
+			}
+		}
+		if val := cmd.String("callee"); val != "" {
+			if p.Rule != nil {
+				return fmt.Errorf("only one dispatch rule type is allowed")
+			}
+			p.Rule = &livekit.SIPDispatchRule{
+				Rule: &livekit.SIPDispatchRule_DispatchRuleCallee{
+					DispatchRuleCallee: &livekit.SIPDispatchRuleCallee{
+						RoomPrefix: val,
+						Randomize:  cmd.Bool("randomize"),
+					},
+				},
+			}
+		}
+		return nil
+	}, cli.CreateSIPDispatchRule, printSIPDispatchRuleID)
 }
 
 func createSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
@@ -822,6 +1045,12 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		}
 		if v := cmd.String("room"); v != "" {
 			req.RoomName = v
+		}
+		if v := cmd.String("identity"); v != "" {
+			req.ParticipantIdentity = v
+		}
+		if v := cmd.String("name"); v != "" {
+			req.ParticipantName = v
 		}
 		if cmd.Bool("wait") {
 			req.WaitUntilAnswered = true
