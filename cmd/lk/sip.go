@@ -142,7 +142,7 @@ var (
 								},
 								&cli.StringFlag{
 									Name:  "destination-country",
-									Usage: "Sets a destination country for the trunk",
+									Usage: "Sets a destination country for the trunk as ISO 3166-1 alpha-2 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)",
 								},
 								&cli.StringFlag{
 									Name:  "media-enc",
@@ -186,7 +186,7 @@ var (
 								},
 								&cli.StringFlag{
 									Name:  "destination-country",
-									Usage: "Sets a destination country for the trunk",
+									Usage: "Sets a destination country for the trunk as ISO 3166-1 alpha-2 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)",
 								},
 								&cli.StringSliceFlag{
 									Name:  "numbers",

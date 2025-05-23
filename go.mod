@@ -2,8 +2,6 @@ module github.com/livekit/livekit-cli/v2
 
 go 1.24.2
 
-replace github.com/livekit/protocol => ../protocol
-
 toolchain go1.24.3
 
 require (
@@ -15,7 +13,7 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.43.3
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.38.1-0.20250521234404-0e51bd404a1f
+	github.com/livekit/protocol v1.38.1-0.20250523170657-fa4bb37c0caf
 	github.com/livekit/server-sdk-go/v2 v2.8.2-0.20250515040018-ffbd52b92948
 	github.com/moby/buildkit v0.21.1
 	github.com/pion/rtcp v1.2.15
@@ -193,7 +191,6 @@ require (
 	go.uber.org/zap/exp v0.3.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6 // indirect
-	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
