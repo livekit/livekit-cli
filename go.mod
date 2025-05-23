@@ -13,7 +13,7 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.43.3
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.38.1-0.20250514155317-3ee266441614
+	github.com/livekit/protocol v1.38.1-0.20250523170657-fa4bb37c0caf
 	github.com/livekit/server-sdk-go/v2 v2.8.2-0.20250515040018-ffbd52b92948
 	github.com/moby/buildkit v0.21.1
 	github.com/pion/rtcp v1.2.15
@@ -152,7 +152,7 @@ require (
 	github.com/pion/srtp/v3 v3.0.4 // indirect
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
-	github.com/pion/turn/v4 v4.0.1 // indirect
+	github.com/pion/turn/v4 v4.0.2 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect

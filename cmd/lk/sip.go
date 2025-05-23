@@ -141,6 +141,10 @@ var (
 									Usage: "Sets a transport for the trunk",
 								},
 								&cli.StringFlag{
+									Name:  "destination-country",
+									Usage: "Sets a destination country for the trunk as ISO 3166-1 alpha-2 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)",
+								},
+								&cli.StringFlag{
 									Name:  "media-enc",
 									Usage: "Sets media encryption for the trunk",
 								},
@@ -179,6 +183,10 @@ var (
 								&cli.StringFlag{
 									Name:  "transport",
 									Usage: "Sets a new transport for the trunk",
+								},
+								&cli.StringFlag{
+									Name:  "destination-country",
+									Usage: "Sets a destination country for the trunk as ISO 3166-1 alpha-2 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)",
 								},
 								&cli.StringSliceFlag{
 									Name:  "numbers",
@@ -562,6 +570,9 @@ func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 			}
 			p.Transport = livekit.SIPTransport(v)
 		}
+		if val := cmd.String("destination-country"); val != "" {
+			p.DestinationCountry = val
+		}
 		if val := cmd.String("media-enc"); val != "" {
 			val = strings.ToUpper(val)
 			v, ok := livekit.SIPMediaEncryption_value[val]
@@ -642,6 +653,9 @@ func updateSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		}
 		tr := livekit.SIPTransport(trv)
 		req.Transport = &tr
+	}
+	if val := cmd.String("destination-country"); val != "" {
+		req.DestinationCountry = &val
 	}
 	if val := cmd.String("auth-user"); val != "" {
 		req.AuthUsername = &val
