@@ -276,6 +276,8 @@ github.com/livekit/mediatransportutil v0.0.0-20250511054114-5f8c73435f62 h1:ooME
 github.com/livekit/mediatransportutil v0.0.0-20250511054114-5f8c73435f62/go.mod h1:wD1D23CU9z/WWoHrcd0mwVMayzYtRpkUgtOrgwk4m3c=
 github.com/livekit/protocol v1.38.1-0.20250514155317-3ee266441614 h1:BcC6Wn7l3TWyJTobffPsIEZzuMwM01r+tK4WHnS/5zA=
 github.com/livekit/protocol v1.38.1-0.20250514155317-3ee266441614/go.mod h1:F5GLzgMUFFFgm7ajoYLIEXxlZVnRNusV5Qlnok4dtlc=
+github.com/livekit/protocol v1.38.1-0.20250521234404-0e51bd404a1f h1:p3DJqKJi9wXeWAjiFRRt3HwxSS/h0QYd1C0l9FpJYUI=
+github.com/livekit/protocol v1.38.1-0.20250521234404-0e51bd404a1f/go.mod h1:6HPISM0bkTXTk9RIaQTCe0IDbomBPz7Jwp+N3w5sqL0=
 github.com/livekit/psrpc v0.6.1-0.20250511053145-465289d72c3c h1:WwEr0YBejYbKzk8LSaO9h8h0G9MnE7shyDu8yXQWmEc=
 github.com/livekit/psrpc v0.6.1-0.20250511053145-465289d72c3c/go.mod h1:kmD+AZPkWu0MaXIMv57jhNlbiSZZ/Jx4bzlxBDVmJes=
 github.com/livekit/server-sdk-go/v2 v2.8.2-0.20250515040018-ffbd52b92948 h1:5Ou2QP5DOO1NEg8FnSGYIBYsSs+j+vRWrKEILmNtvvY=
@@ -377,6 +379,8 @@ github.com/pion/transport/v3 v3.0.7 h1:iRbMH05BzSNwhILHoBoAPxoB9xQgOaJk+591KC9P1
 github.com/pion/transport/v3 v3.0.7/go.mod h1:YleKiTZ4vqNxVwh77Z0zytYi7rXHl7j6uPLGhhz9rwo=
 github.com/pion/turn/v4 v4.0.1 h1:01UTBhYToe8PDC8piB++i66q1mmctfhhoeguaFqB84c=
 github.com/pion/turn/v4 v4.0.1/go.mod h1:pMMKP/ieNAG/fN5cZiN4SDuyKsXtNTr0ccN7IToA1zs=
+github.com/pion/turn/v4 v4.0.2 h1:ZqgQ3+MjP32ug30xAbD6Mn+/K4Sxi3SdNOTFf+7mpps=
+github.com/pion/turn/v4 v4.0.2/go.mod h1:pMMKP/ieNAG/fN5cZiN4SDuyKsXtNTr0ccN7IToA1zs=
 github.com/pion/webrtc/v4 v4.1.0 h1:yq/p0G5nKGbHISf0YKNA8Yk+kmijbblBvuSLwaJ4QYg=
 github.com/pion/webrtc/v4 v4.1.0/go.mod h1:cgEGkcpxGkT6Di2ClBYO5lP9mFXbCfEOrkYUpjjCQO4=
 github.com/pjbgf/sha1cd v0.3.2 h1:a9wb0bp1oC2TGwStyn0Umc/IGKQnEgF0vVaZ8QF8eo4=
