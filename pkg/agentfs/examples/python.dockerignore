@@ -1,0 +1,25 @@
+# Python artifacts
+venv/
+__pycache__/
+
+# Local environment & config files
+.env
+.env.local
+.DS_Store
+
+# Logs & temp files
+*.log
+*.gz
+*.tgz
+.tmp
+.cache
+
+# Docker artifacts
+Dockerfile*
+.dockerignore
+
+# Git & Editor files
+.git
+.gitignore
+.idea
+.vscode
