@@ -16,10 +16,9 @@ package agentfs
 
 import (
 	"bytes"
+	"embed"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,6 +28,9 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/logger"
 )
+
+//go:embed examples/*
+var fs embed.FS
 
 func HasDockerfile(dir string) (bool, error) {
 	entries, err := os.ReadDir(dir)
@@ -61,35 +63,14 @@ func CreateDockerfile(dir string, settingsMap map[string]string) error {
 	var dockerfileContent []byte
 	var dockerIgnoreContent []byte
 	var err error
-	switch projectType {
-	case "python":
-		err = validateSettingsMap(settingsMap, []string{"python_docker_file", "python_docker_ignore"})
-		if err != nil {
-			return err
-		}
-		dockerfileContent, err = downloadFile(settingsMap["python_docker_file"])
-		if err != nil {
-			return err
-		}
 
-		dockerIgnoreContent, err = downloadFile(settingsMap["python_docker_ignore"])
-		if err != nil {
-			return err
-		}
-	case "node":
-		err = validateSettingsMap(settingsMap, []string{"node_docker_file", "node_docker_ignore"})
-		if err != nil {
-			return err
-		}
-
-		dockerfileContent, err = downloadFile(settingsMap["node_docker_file"])
-		if err != nil {
-			return err
-		}
-		dockerIgnoreContent, err = downloadFile(settingsMap["node_docker_ignore"])
-		if err != nil {
-			return err
-		}
+	dockerfileContent, err = fs.ReadFile("examples/" + projectType + ".Dockerfile")
+	if err != nil {
+		return err
+	}
+	dockerIgnoreContent, err = fs.ReadFile("examples/" + projectType + ".dockerignore")
+	if err != nil {
+		return err
 	}
 
 	if projectType == "python" {
@@ -110,25 +91,6 @@ func CreateDockerfile(dir string, settingsMap map[string]string) error {
 	}
 
 	return nil
-}
-
-func downloadFile(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch file: HTTP %d", resp.StatusCode)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
 }
 
 func validateEntrypoint(dir string, dockerfileContent []byte, projectType string, settingsMap map[string]string) ([]byte, error) {
