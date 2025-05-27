@@ -289,7 +289,7 @@ lk token create --join \
 
 Head over to the [example web client](https://meet.livekit.io/?tab=custom) and paste in the token, you can see the simulated tracks published by the load tester.
 
-![Load tester screenshot](misc/load-test-screenshot.jpg?raw=true)
+![Load tester screenshot](.github/load-test-screenshot.jpg?raw=true)
 
 ### Running on a cloud VM
 
