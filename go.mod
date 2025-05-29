@@ -13,12 +13,12 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-task/task/v3 v3.43.3
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.38.1-0.20250523170657-fa4bb37c0caf
-	github.com/livekit/server-sdk-go/v2 v2.8.2-0.20250515040018-ffbd52b92948
+	github.com/livekit/protocol v1.39.0
+	github.com/livekit/server-sdk-go/v2 v2.9.0
 	github.com/moby/buildkit v0.21.1
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.15
-	github.com/pion/webrtc/v4 v4.1.0
+	github.com/pion/webrtc/v4 v4.1.1
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.18.0
@@ -117,7 +117,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/lithammer/shortuuid/v4 v4.2.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
-	github.com/livekit/mediatransportutil v0.0.0-20250511054114-5f8c73435f62 // indirect
+	github.com/livekit/mediatransportutil v0.0.0-20250519131108-fb90f5acfded // indirect
 	github.com/livekit/psrpc v0.6.1-0.20250511053145-465289d72c3c // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
