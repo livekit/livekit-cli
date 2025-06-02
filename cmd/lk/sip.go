@@ -26,6 +26,7 @@ import (
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 //lint:file-ignore SA1019 we still support older APIs for compatibility
@@ -326,7 +327,7 @@ var (
 								},
 								&cli.DurationFlag{
 									Name:  "timeout",
-									Usage: "timeout for the call to dial (requires wait flag)",
+									Usage: "timeout for the call to dial",
 									Value: 80 * time.Second,
 								},
 							},
@@ -1077,6 +1078,13 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		if req.WaitUntilAnswered {
 			if dt := cmd.Duration("timeout"); dt != 0 {
 				timeout = dt
+			}
+			req.RingingTimeout = durationpb.New(timeout - 500*time.Millisecond)
+		} else {
+			// For async API we should use a default timeout for the RPC,
+			// and set a ringing timeout for the call instead.
+			if dt := cmd.Duration("timeout"); dt != 0 {
+				req.RingingTimeout = durationpb.New(dt)
 			}
 		}
 		ctx, cancel := context.WithTimeout(ctx, timeout)
