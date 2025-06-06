@@ -365,7 +365,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Printf("Created agent [%s] with ID [%s]\n", util.Accented(resp.AgentName), util.Accented(resp.AgentId))
+	fmt.Printf("Created agent with ID [%s]\n", util.Accented(resp.AgentId))
 	err = agentfs.Build(ctx, resp.AgentId, "deploy", project)
 	if err != nil {
 		return err
