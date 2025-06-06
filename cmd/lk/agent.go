@@ -270,7 +270,7 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 	if err != nil {
 		return ctx, err
 	}
-	return ctx, updateConfig(ctx, agentsClient, workingDir, tomlFilename)
+	return ctx, nil
 }
 
 func createAgent(ctx context.Context, cmd *cli.Command) error {
@@ -339,10 +339,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := &lkproto.CreateAgentRequest{
-		Secrets:     secrets,
-		Replicas:    int32(lkConfig.Agent.Replicas),
-		MaxReplicas: int32(lkConfig.Agent.MaxReplicas),
-		CpuReq:      string(lkConfig.Agent.CPU),
+		Secrets: secrets,
 	}
 
 	resp, err := agentsClient.CreateAgent(ctx, req)
@@ -449,13 +446,9 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	agent := response.Agents[0]
-	regionAgent := agent.AgentDeployments[0]
 	lkConfig := config.NewLiveKitTOML(matches[1])
 	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
-		ID:          agent.AgentId,
-		CPU:         config.CPUString(regionAgent.CpuReq),
-		Replicas:    int(regionAgent.Replicas),
-		MaxReplicas: int(regionAgent.MaxReplicas),
+		ID: agent.AgentId,
 	}
 
 	if err := lkConfig.SaveTOMLFile("", tomlFilename); err != nil {
@@ -477,10 +470,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := &lkproto.DeployAgentRequest{
-		AgentId:     lkConfig.Agent.ID,
-		Replicas:    int32(lkConfig.Agent.Replicas),
-		CpuReq:      string(lkConfig.Agent.CPU),
-		MaxReplicas: int32(lkConfig.Agent.MaxReplicas),
+		AgentId: lkConfig.Agent.ID,
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -593,10 +583,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := &lkproto.UpdateAgentRequest{
-		AgentId:     lkConfig.Agent.ID,
-		Replicas:    int32(lkConfig.Agent.Replicas),
-		CpuReq:      string(lkConfig.Agent.CPU),
-		MaxReplicas: int32(lkConfig.Agent.MaxReplicas),
+		AgentId: lkConfig.Agent.ID,
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -1034,27 +1021,4 @@ func requireConfig(workingDir, tomlFilename string) (bool, error) {
 	var err error
 	lkConfig, exists, err = config.LoadTOMLFile(workingDir, tomlFilename)
 	return exists, err
-}
-
-func updateConfig(ctx context.Context, agentsClient *lksdk.AgentClient, workingDir, tomlFilename string) error {
-	cfg, exists, err := config.LoadTOMLFile(workingDir, tomlFilename)
-	if exists && err == nil && cfg.Agent.Name != "" {
-		fmt.Printf("WARNING: agent name is deprecated\n")
-		agents, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
-			AgentName: cfg.Agent.Name,
-		})
-		if err != nil {
-			return err
-		}
-		if len(agents.Agents) == 0 {
-			return errors.New("agent not found")
-		}
-		cfg.Agent.ID = agents.Agents[0].AgentId
-		cfg.Agent.Name = ""
-		if cfg.Agent.ID == "" {
-			return errors.New("agent id not found")
-		}
-		return cfg.SaveTOMLFile(workingDir, tomlFilename)
-	}
-	return nil
 }
