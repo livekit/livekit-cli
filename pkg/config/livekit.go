@@ -28,10 +28,7 @@ import (
 )
 
 const (
-	LiveKitTOMLFile            = "livekit.toml"
-	clientDefaults_CPU         = "1"
-	clientDefaults_Replicas    = 1
-	clientDefaults_MaxReplicas = 10
+	LiveKitTOMLFile = "livekit.toml"
 )
 
 var (
@@ -41,12 +38,8 @@ var (
 
 // Deprecated: use LiveKitTOML instead
 type AgentTOML struct {
-	ProjectSubdomain string    `toml:"project_subdomain"`
-	Name             string    `toml:"name"`
-	CPU              CPUString `toml:"cpu"`
-	Replicas         int       `toml:"replicas"`
-	MaxReplicas      int       `toml:"max_replicas"`
-	Regions          []string  `toml:"regions"`
+	ProjectSubdomain string   `toml:"project_subdomain"`
+	Regions          []string `toml:"regions"`
 }
 
 type LiveKitTOML struct {
@@ -59,12 +52,8 @@ type LiveKitTOMLProjectConfig struct {
 }
 
 type LiveKitTOMLAgentConfig struct {
-	ID          string    `toml:"id"`
-	Name        string    `toml:"name,omitempty"`
-	CPU         CPUString `toml:"cpu"`
-	Replicas    int       `toml:"replicas"`
-	MaxReplicas int       `toml:"max_replicas"`
-	Regions     []string  `toml:"regions"`
+	ID      string   `toml:"id"`
+	Regions []string `toml:"regions"`
 }
 
 func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {
@@ -76,32 +65,12 @@ func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {
 }
 
 func (c *LiveKitTOML) WithDefaultAgent() *LiveKitTOML {
-	c.Agent = &LiveKitTOMLAgentConfig{
-		CPU:         CPUString(clientDefaults_CPU),
-		Replicas:    clientDefaults_Replicas,
-		MaxReplicas: clientDefaults_MaxReplicas,
-	}
+	c.Agent = &LiveKitTOMLAgentConfig{}
 	return c
 }
 
 func (c *LiveKitTOML) HasAgent() bool {
 	return c.Agent != nil
-}
-
-type CPUString string
-
-func (c *CPUString) UnmarshalTOML(v interface{}) error {
-	switch value := v.(type) {
-	case int64:
-		*c = CPUString(fmt.Sprintf("%d", value))
-	case float64:
-		*c = CPUString(fmt.Sprintf("%g", value))
-	case string:
-		*c = CPUString(value)
-	default:
-		return fmt.Errorf("invalid type for cpu: %T", v)
-	}
-	return nil
 }
 
 func (c *LiveKitTOML) SaveTOMLFile(dir string, tomlFileName string) error {
@@ -140,22 +109,10 @@ func LoadTOMLFile(dir string, tomlFileName string) (*LiveKitTOML, bool, error) {
 			config.Project = &LiveKitTOMLProjectConfig{
 				Subdomain: oldConfig.ProjectSubdomain,
 			}
-			config.Agent = &LiveKitTOMLAgentConfig{
-				Name:        oldConfig.Name,
-				CPU:         oldConfig.CPU,
-				Replicas:    oldConfig.Replicas,
-				MaxReplicas: oldConfig.MaxReplicas,
-			}
+			config.Agent = &LiveKitTOMLAgentConfig{}
 		}
 	} else {
 		configExists = !errors.Is(err, fs.ErrNotExist)
-	}
-
-	if configExists {
-		// validate agent config
-		if config.HasAgent() && config.Agent.Replicas > config.Agent.MaxReplicas {
-			return nil, configExists, ErrInvalidReplicaCount
-		}
 	}
 
 	return config, configExists, err
