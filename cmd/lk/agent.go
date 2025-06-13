@@ -363,7 +363,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Printf("Created agent with ID [%s]\n", util.Accented(resp.AgentId))
-	err = agentfs.Build(ctx, resp.AgentId, "deploy", project)
+	err = agentfs.Build(ctx, resp.AgentId, project)
 	if err != nil {
 		return err
 	}
@@ -502,7 +502,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Printf("Updated agent [%s]\n", util.Accented(resp.AgentId))
-	err = agentfs.Build(ctx, resp.AgentId, "update", project)
+	err = agentfs.Build(ctx, resp.AgentId, project)
 	if err != nil {
 		return err
 	}
