@@ -219,3 +219,93 @@ func TestUploadTarballDotfiles(t *testing.T) {
 
 	require.Empty(t, expectedFiles, "some expected files were not found in tar: %v", expectedFiles)
 }
+
+func TestUploadTarballDeepDirectories(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "tarball-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	dirs := []string{
+		"level1",
+		"level1/level2",
+		"level1/level2/level3",
+		"level1/level2/level3/level4",
+	}
+
+	for _, dir := range dirs {
+		err = os.MkdirAll(filepath.Join(tmpDir, dir), 0755)
+		require.NoError(t, err)
+		initPath := filepath.Join(tmpDir, dir, "__init__.py")
+		err = os.WriteFile(initPath, []byte(""), 0644)
+		require.NoError(t, err)
+	}
+
+	files := []struct {
+		path    string
+		content string
+	}{
+		{filepath.Join(tmpDir, "root.txt"), "root file"},
+		{filepath.Join(tmpDir, "level1", "level1.txt"), "level 1 file"},
+		{filepath.Join(tmpDir, "level1", "level2", "level2.txt"), "level 2 file"},
+		{filepath.Join(tmpDir, "level1", "level2", "level3", "level3.txt"), "level 3 file"},
+		{filepath.Join(tmpDir, "level1", "level2", "level3", "level4", "level4.txt"), "level 4 file"},
+	}
+
+	for _, f := range files {
+		err = os.WriteFile(f.path, []byte(f.content), 0644)
+		require.NoError(t, err)
+	}
+
+	var tarBuffer bytes.Buffer
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.Copy(&tarBuffer, r.Body)
+		require.NoError(t, err)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+
+	err = UploadTarball(tmpDir, mockServer.URL, []string{})
+	require.NoError(t, err)
+
+	contents := readTarContents(t, tarBuffer.Bytes())
+
+	for _, dir := range dirs {
+		found := false
+		for _, content := range contents {
+			if content.Name == dir+"/" && content.IsDir {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "directory not found in tar: %s", dir)
+	}
+
+	for _, f := range files {
+		found := false
+		relPath, err := filepath.Rel(tmpDir, f.path)
+		require.NoError(t, err)
+		for _, content := range contents {
+			if content.Name == relPath {
+				found = true
+				require.Equal(t, int64(len(f.content)), content.Size, "incorrect file size for %s", relPath)
+				require.False(t, content.IsDir, "file marked as directory: %s", relPath)
+				break
+			}
+		}
+		require.True(t, found, "file not found in tar: %s", relPath)
+	}
+
+	for _, dir := range dirs {
+		initPath := filepath.Join(dir, "__init__.py")
+		found := false
+		for _, content := range contents {
+			if content.Name == initPath {
+				found = true
+				require.Equal(t, int64(0), content.Size, "incorrect file size for %s", initPath)
+				require.False(t, content.IsDir, "file marked as directory: %s", initPath)
+				break
+			}
+		}
+		require.True(t, found, "__init__.py not found in tar: %s", initPath)
+	}
+}
