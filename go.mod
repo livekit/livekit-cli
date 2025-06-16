@@ -17,8 +17,8 @@ require (
 	github.com/livekit/server-sdk-go/v2 v2.9.2-0.20250612220331-fb6301c37033
 	github.com/moby/buildkit v0.22.0
 	github.com/pion/rtcp v1.2.15
-	github.com/pion/rtp v1.8.18
-	github.com/pion/webrtc/v4 v4.1.1
+	github.com/pion/rtp v1.8.19
+	github.com/pion/webrtc/v4 v4.1.2
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.18.0
