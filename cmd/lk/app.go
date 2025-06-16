@@ -242,6 +242,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if isSandbox {
+		_, err := requireProject(ctx, cmd)
+		if err != nil {
+			return err
+		}
 		token, err := requireToken(ctx, cmd)
 		if err != nil {
 			return err
