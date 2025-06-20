@@ -546,7 +546,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				logger.Errorw("error parsing mem", err)
 			}
 
-			memReq, err := agentfs.ParseMem(regionalAgent.MemReq, true)
+			memLimit, err := agentfs.ParseMem(regionalAgent.MemLimit, true)
 			if err != nil {
 				logger.Errorw("error parsing mem req", err)
 			}
@@ -554,8 +554,8 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 			rows = append(rows, []string{
 				regionalAgent.Region,
 				regionalAgent.Status,
-				fmt.Sprintf("%.4g / %s", curCPU, regionalAgent.CpuReq),
-				fmt.Sprintf("%s / %s", curMem, memReq),
+				fmt.Sprintf("%.4g / %s", curCPU, regionalAgent.CpuLimit),
+				fmt.Sprintf("%s / %s", curMem, memLimit),
 				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
 				agent.DeployedAt.AsTime().Format(time.RFC3339),
 			})
