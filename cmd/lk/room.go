@@ -18,10 +18,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
+	"regexp"
+	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"syscall"
+	"time"
 
 	"github.com/pion/webrtc/v4"
 	"github.com/urfave/cli/v3"
@@ -150,7 +156,8 @@ var (
 							TakesFile: true,
 							Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
 								"Can be used multiple times to publish multiple files. " +
-								"Can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\"",
+								"Can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\". " +
+								"For simulcast: use 2-3 h264:// URLs with format 'h264://host:port/widthxheight' (quality determined by width order)",
 						},
 						&cli.StringFlag{
 							Name:  "publish-data",
@@ -168,6 +175,7 @@ var (
 							Name:  "exit-after-publish",
 							Usage: "When publishing, exit after file or stream is complete",
 						},
+
 						&cli.StringSliceFlag{
 							Name:  "attribute",
 							Usage: "set attributes in key=value format, can be used multiple times",
@@ -794,6 +802,44 @@ func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error 
 }
 
 func joinRoom(ctx context.Context, cmd *cli.Command) error {
+	// Check for simulcast mode - detected by URLs with simulcast format (dimensions)
+	publishUrls := cmd.StringSlice("publish")
+
+	// Determine simulcast mode by checking if any URL has simulcast format
+	simulcastMode := false
+	for _, url := range publishUrls {
+		if strings.HasPrefix(url, "h264://") {
+			// Check if it has the simulcast format: h264://host:port/widthxheight
+			parts := strings.Split(url, "/")
+			// We expect: ["h264:", "", "host:port", "widthxheight"]
+			if len(parts) == 4 && strings.Contains(parts[3], "x") {
+				simulcastMode = true
+				break
+			}
+		}
+	}
+
+	// Validate publish flags
+	if len(publishUrls) > 3 {
+		return fmt.Errorf("no more than 3 --publish flags can be specified, got %d", len(publishUrls))
+	}
+
+	// If simulcast mode, validate all URLs are h264 format with dimensions
+	if simulcastMode {
+		if len(publishUrls) == 1 {
+			return fmt.Errorf("simulcast mode requires 2-3 streams, but only 1 was provided")
+		}
+		for i, url := range publishUrls {
+			if !strings.HasPrefix(url, "h264://") {
+				return fmt.Errorf("publish flag %d: simulcast mode requires h264:// URLs with dimensions (format: h264://host:port/widthxheight), got: %s", i+1, url)
+			}
+			// Validate the format has dimensions
+			if _, err := parseSimulcastURL(url); err != nil {
+				return fmt.Errorf("publish flag %d: %w", i+1, err)
+			}
+		}
+	}
+
 	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
@@ -946,21 +992,43 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	exitAfterPublish := cmd.Bool("exit-after-publish")
-	if publish := cmd.StringSlice("publish"); publish != nil {
-		fps := cmd.Float("fps")
-		for _, pub := range publish {
+
+	// Handle publishing
+	if len(publishUrls) > 0 {
+		if simulcastMode {
+			// Handle simulcast publishing
+			fps := cmd.Float("fps")
 			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
 				if exitAfterPublish {
 					close(done)
 					return
 				}
 				if pub != nil {
-					fmt.Printf("finished writing %s\n", pub.Name())
+					fmt.Printf("finished simulcast stream %s\n", pub.Name())
 					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 				}
 			}
-			if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
+
+			if err = handleSimulcastPublish(room, publishUrls, fps, onPublishComplete); err != nil {
 				return err
+			}
+		} else {
+			// Handle single publish
+			fps := cmd.Float("fps")
+			for _, pub := range publishUrls {
+				onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
+					if exitAfterPublish {
+						close(done)
+						return
+					}
+					if pub != nil {
+						fmt.Printf("finished writing %s\n", pub.Name())
+						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
+					}
+				}
+				if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -1225,4 +1293,174 @@ func participantInfoFromArgOrFlags(c *cli.Command) (string, string) {
 		id = c.Args().First()
 	}
 	return room, id
+}
+
+// simulcastURLParts represents the parsed components of a simulcast URL
+type simulcastURLParts struct {
+	address string
+	width   uint32
+	height  uint32
+}
+
+// parseSimulcastURL validates and parses a simulcast URL in the format h264://host:port/widthxheight
+func parseSimulcastURL(url string) (*simulcastURLParts, error) {
+	// Regex pattern to match h264://host:port/widthxheight
+	pattern := `^h264://([^/]+):(\d+)/(\d+)x(\d+)$`
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindStringSubmatch(url)
+	if matches == nil {
+		return nil, fmt.Errorf("simulcast URL must be in format h264://host:port/widthxheight, got: %s", url)
+	}
+
+	host, port, widthStr, heightStr := matches[1], matches[2], matches[3], matches[4]
+
+	// Parse dimensions
+	width, err := strconv.ParseUint(widthStr, 10, 32)
+	if err != nil || width == 0 {
+		return nil, fmt.Errorf("invalid width in URL %s: must be > 0", url)
+	}
+
+	height, err := strconv.ParseUint(heightStr, 10, 32)
+	if err != nil || height == 0 {
+		return nil, fmt.Errorf("invalid height in URL %s: must be > 0", url)
+	}
+
+	return &simulcastURLParts{
+		address: fmt.Sprintf("%s:%s", host, port),
+		width:   uint32(width),
+		height:  uint32(height),
+	}, nil
+}
+
+// createSimulcastVideoTrack creates a video track from a TCP H.264 stream for simulcast
+func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.VideoQuality, fps float64, onComplete func()) (*lksdk.LocalTrack, error) {
+	conn, err := net.Dial("tcp", urlParts.address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to %s: %w", urlParts.address, err)
+	}
+
+	var opts []lksdk.ReaderSampleProviderOption
+
+	// Add completion handler if provided
+	if onComplete != nil {
+		opts = append(opts, lksdk.ReaderTrackWithOnWriteComplete(onComplete))
+	}
+
+	// Set frame rate if FPS is set
+	if fps != 0 {
+		frameDuration := time.Second / time.Duration(fps)
+		opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
+	}
+
+	// Configure simulcast layer
+	opts = append(opts, lksdk.ReaderTrackWithSampleOptions(lksdk.WithSimulcast("simulcast", &livekit.VideoLayer{
+		Quality: quality,
+		Width:   urlParts.width,
+		Height:  urlParts.height,
+	})))
+
+	return lksdk.NewLocalReaderTrack(conn, webrtc.MimeTypeH264, opts...)
+}
+
+// simulcastStream represents a parsed H.264 stream with quality info
+type simulcastStream struct {
+	url     string
+	parts   *simulcastURLParts
+	quality livekit.VideoQuality
+	name    string
+}
+
+// handleSimulcastPublish handles publishing multiple H.264 streams as a simulcast track
+func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, onPublishComplete func(*lksdk.LocalTrackPublication)) error {
+	// Parse all URLs
+	var streams []simulcastStream
+	for _, url := range urls {
+		parts, err := parseSimulcastURL(url)
+		if err != nil {
+			return fmt.Errorf("invalid simulcast URL %s: %w", url, err)
+		}
+		if parts != nil {
+			streams = append(streams, simulcastStream{
+				url:   url,
+				parts: parts,
+			})
+		}
+	}
+
+	if len(streams) == 0 {
+		return fmt.Errorf("no valid simulcast URLs provided")
+	}
+
+	// Sort streams by width to determine quality levels
+	sort.Slice(streams, func(i, j int) bool {
+		return streams[i].parts.width < streams[j].parts.width
+	})
+
+	// Assign quality levels based on stream count and order
+	if len(streams) == 2 {
+		// 2 streams: low and high quality (skip medium)
+		streams[0].quality = livekit.VideoQuality_LOW
+		streams[0].name = "low"
+		streams[1].quality = livekit.VideoQuality_HIGH
+		streams[1].name = "high"
+	} else if len(streams) == 3 {
+		// 3 streams: low, medium, high quality
+		streams[0].quality = livekit.VideoQuality_LOW
+		streams[0].name = "low"
+		streams[1].quality = livekit.VideoQuality_MEDIUM
+		streams[1].name = "medium"
+		streams[2].quality = livekit.VideoQuality_HIGH
+		streams[2].name = "high"
+	} else {
+		return fmt.Errorf("simulcast requires 2 or 3 streams, got %d", len(streams))
+	}
+
+	// Create tracks for each stream
+	var tracks []*lksdk.LocalTrack
+	var trackNames []string
+
+	// Track completion - if any stream ends, signal completion
+	var pub *lksdk.LocalTrackPublication
+	completionSignaled := false
+	var completionMutex sync.Mutex
+
+	signalCompletion := func() {
+		completionMutex.Lock()
+		defer completionMutex.Unlock()
+		if !completionSignaled && onPublishComplete != nil {
+			completionSignaled = true
+			onPublishComplete(pub)
+		}
+	}
+
+	for _, stream := range streams {
+		track, err := createSimulcastVideoTrack(stream.parts, stream.quality, fps, signalCompletion)
+		if err != nil {
+			// Clean up any tracks we've already created
+			for _, t := range tracks {
+				t.Close()
+			}
+			return fmt.Errorf("failed to create %s quality track (%dx%d): %w",
+				stream.name, stream.parts.width, stream.parts.height, err)
+		}
+		tracks = append(tracks, track)
+		trackNames = append(trackNames, fmt.Sprintf("%s(%dx%d)", stream.name, stream.parts.width, stream.parts.height))
+	}
+
+	// Publish simulcast track
+	var err error
+	pub, err = room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
+		Name: "h264-simulcast",
+	})
+	if err != nil {
+		// Clean up tracks on publish failure
+		for _, track := range tracks {
+			track.Close()
+		}
+		return fmt.Errorf("failed to publish simulcast track: %w", err)
+	}
+
+	fmt.Printf("Successfully published H.264 simulcast track with qualities: %v\n", trackNames)
+	return nil
 }
