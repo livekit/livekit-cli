@@ -387,7 +387,7 @@ func parseSimulcastURL(url string) (*simulcastURLParts, error) {
 		return nil, fmt.Errorf("simulcast URL must be in format h264://host:port/widthxheight or h264:///path/to/unix/socket/widthxheight, got: %s", url)
 	}
 
-	hostOrPath, widthStr, heightStr := matches[1], matches[2], matches[3]
+	address, widthStr, heightStr := matches[1], matches[2], matches[3]
 
 	// Parse dimensions
 	width, err := strconv.ParseUint(widthStr, 10, 32)
@@ -400,22 +400,9 @@ func parseSimulcastURL(url string) (*simulcastURLParts, error) {
 		return nil, fmt.Errorf("invalid height in URL %s: must be > 0", url)
 	}
 
-	// Determine network type and address
-	var network, address string
-
-	// Check if it's a Unix socket format (starts with /)
-	if strings.HasPrefix(hostOrPath, "/") {
-		// Unix socket format: h264:///path/to/socket/widthxheight
-		network = "unix"
-		address = hostOrPath
-	} else if strings.Contains(hostOrPath, ":") {
-		// TCP format: h264://host:port/widthxheight
+	network := "unix"
+	if strings.Contains(address, ":") {
 		network = "tcp"
-		address = hostOrPath
-	} else {
-		// Assume Unix socket if no port specified: h264://socket_name/widthxheight
-		network = "unix"
-		address = hostOrPath
 	}
 
 	return &simulcastURLParts{
