@@ -17,9 +17,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
+	"runtime/pprof"
 	"strings"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/urfave/cli/v3"
@@ -71,6 +74,28 @@ func main() {
 	app.Commands = append(app.Commands, ReplayCommands...)
 	app.Commands = append(app.Commands, PerfCommands...)
 
+	var cpuProfileFile *os.File
+	var memProfilePath string
+	var memProfileWritten atomic.Bool
+
+	if cpuProfile := os.Getenv("CPU_PROFILE"); cpuProfile != "" {
+		var err error
+		cpuProfileFile, err = os.Create(cpuProfile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		if err := pprof.StartCPUProfile(cpuProfileFile); err != nil {
+			cpuProfileFile.Close()
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		fmt.Fprintf(os.Stderr, "CPU profiling enabled, writing to: %s\n", cpuProfile)
+	}
+
+	if memProfile := os.Getenv("MEM_PROFILE"); memProfile != "" {
+		memProfilePath = memProfile
+		fmt.Fprintf(os.Stderr, "Memory profiling enabled, will write to: %s\n", memProfile)
+	}
+
 	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
@@ -83,11 +108,49 @@ func main() {
 	go func() {
 		<-ctx.Done()
 		stop()
+
+		if memProfilePath != "" && !memProfileWritten.Load() {
+			f, err := os.Create(memProfilePath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "could not create memory profile: %v\n", err)
+			} else {
+				if err := pprof.WriteHeapProfile(f); err != nil {
+					fmt.Fprintf(os.Stderr, "could not write memory profile: %v\n", err)
+				} else {
+					fmt.Fprintf(os.Stderr, "Memory profile written to: %s (signal)\n", memProfilePath)
+					memProfileWritten.Store(true)
+				}
+				f.Close()
+			}
+		}
 	}()
 
 	checkForLegacyName()
 
-	if err := app.Run(ctx, os.Args); err != nil {
+	err := app.Run(ctx, os.Args)
+
+	if cpuProfileFile != nil {
+		pprof.StopCPUProfile()
+		cpuProfileFile.Close()
+		fmt.Fprintf(os.Stderr, "CPU profiling completed\n")
+	}
+
+	if memProfilePath != "" && !memProfileWritten.Load() {
+		f, err := os.Create(memProfilePath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not create memory profile: %v\n", err)
+		} else {
+			if err := pprof.WriteHeapProfile(f); err != nil {
+				fmt.Fprintf(os.Stderr, "could not write memory profile: %v\n", err)
+			} else {
+				fmt.Fprintf(os.Stderr, "Memory profile written to: %s\n", memProfilePath)
+				memProfileWritten.Store(true)
+			}
+			f.Close()
+		}
+	}
+
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
