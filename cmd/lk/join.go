@@ -22,7 +22,10 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -366,5 +369,191 @@ func publishReader(room *lksdk.Room,
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// simulcastURLParts represents the parsed components of a simulcast URL
+type simulcastURLParts struct {
+	network string // "tcp" or "unix"
+	address string
+	width   uint32
+	height  uint32
+}
+
+// parseSimulcastURL validates and parses a simulcast URL in the format h264://host:port/widthxheight or h264:///path/to/unix/socket/widthxheight
+func parseSimulcastURL(url string) (*simulcastURLParts, error) {
+	matches := simulcastURLRegex.FindStringSubmatch(url)
+	if matches == nil {
+		return nil, fmt.Errorf("simulcast URL must be in format h264://host:port/widthxheight or h264:///path/to/unix/socket/widthxheight, got: %s", url)
+	}
+
+	hostOrPath, widthStr, heightStr := matches[1], matches[2], matches[3]
+
+	// Parse dimensions
+	width, err := strconv.ParseUint(widthStr, 10, 32)
+	if err != nil || width == 0 {
+		return nil, fmt.Errorf("invalid width in URL %s: must be > 0", url)
+	}
+
+	height, err := strconv.ParseUint(heightStr, 10, 32)
+	if err != nil || height == 0 {
+		return nil, fmt.Errorf("invalid height in URL %s: must be > 0", url)
+	}
+
+	// Determine network type and address
+	var network, address string
+
+	// Check if it's a Unix socket format (starts with /)
+	if strings.HasPrefix(hostOrPath, "/") {
+		// Unix socket format: h264:///path/to/socket/widthxheight
+		network = "unix"
+		address = hostOrPath
+	} else if strings.Contains(hostOrPath, ":") {
+		// TCP format: h264://host:port/widthxheight
+		network = "tcp"
+		address = hostOrPath
+	} else {
+		// Assume Unix socket if no port specified: h264://socket_name/widthxheight
+		network = "unix"
+		address = hostOrPath
+	}
+
+	return &simulcastURLParts{
+		network: network,
+		address: address,
+		width:   uint32(width),
+		height:  uint32(height),
+	}, nil
+}
+
+// createSimulcastVideoTrack creates a simulcast video track from a TCP or Unix socket H.264 streams
+func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.VideoQuality, fps float64, onComplete func()) (*lksdk.LocalTrack, error) {
+	conn, err := net.Dial(urlParts.network, urlParts.address)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to %s://%s: %w", urlParts.network, urlParts.address, err)
+	}
+
+	var opts []lksdk.ReaderSampleProviderOption
+
+	// Add completion handler if provided
+	if onComplete != nil {
+		opts = append(opts, lksdk.ReaderTrackWithOnWriteComplete(onComplete))
+	}
+
+	// Set frame rate if FPS is set
+	if fps != 0 {
+		frameDuration := time.Second / time.Duration(fps)
+		opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
+	}
+
+	// Configure simulcast layer
+	opts = append(opts, lksdk.ReaderTrackWithSampleOptions(lksdk.WithSimulcast("simulcast", &livekit.VideoLayer{
+		Quality: quality,
+		Width:   urlParts.width,
+		Height:  urlParts.height,
+	})))
+
+	return lksdk.NewLocalReaderTrack(conn, webrtc.MimeTypeH264, opts...)
+}
+
+// simulcastLayer represents a parsed H.264 stream with quality info
+type simulcastLayer struct {
+	url     string
+	parts   *simulcastURLParts
+	quality livekit.VideoQuality
+	name    string
+}
+
+// handleSimulcastPublish handles publishing multiple H.264 streams as a simulcast track
+func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, onPublishComplete func(*lksdk.LocalTrackPublication)) error {
+	// Parse all URLs
+	var layers []simulcastLayer
+	for _, url := range urls {
+		parts, err := parseSimulcastURL(url)
+		if err != nil {
+			return fmt.Errorf("invalid simulcast URL %s: %w", url, err)
+		}
+		if parts != nil {
+			layers = append(layers, simulcastLayer{
+				url:   url,
+				parts: parts,
+			})
+		}
+	}
+
+	if len(layers) == 0 {
+		return fmt.Errorf("no valid simulcast URLs provided")
+	}
+
+	// Sort streams by width to determine quality levels
+	sort.Slice(layers, func(i, j int) bool {
+		return layers[i].parts.width < layers[j].parts.width
+	})
+
+	// Assign quality levels based on stream count and order
+	if len(layers) == 2 {
+		// 2 streams: low and high quality
+		layers[0].quality = livekit.VideoQuality_LOW
+		layers[0].name = "low"
+		layers[1].quality = livekit.VideoQuality_HIGH
+		layers[1].name = "high"
+	} else if len(layers) == 3 {
+		// 3 streams: low, medium, high quality
+		layers[0].quality = livekit.VideoQuality_LOW
+		layers[0].name = "low"
+		layers[1].quality = livekit.VideoQuality_MEDIUM
+		layers[1].name = "medium"
+		layers[2].quality = livekit.VideoQuality_HIGH
+		layers[2].name = "high"
+	} else {
+		return fmt.Errorf("simulcast requires 2 or 3 streams, got %d", len(layers))
+	}
+
+	// Create tracks for each stream
+	var tracks []*lksdk.LocalTrack
+	var trackNames []string
+
+	// Track completion - if any stream ends, signal completion
+	var pub *lksdk.LocalTrackPublication
+	completionSignaled := false
+	var completionMutex sync.Mutex
+
+	signalCompletion := func() {
+		completionMutex.Lock()
+		defer completionMutex.Unlock()
+		if !completionSignaled && onPublishComplete != nil {
+			completionSignaled = true
+			onPublishComplete(pub)
+		}
+	}
+
+	for _, layer := range layers {
+		track, err := createSimulcastVideoTrack(layer.parts, layer.quality, fps, signalCompletion)
+		if err != nil {
+			// Clean up any tracks we've already created
+			for _, t := range tracks {
+				t.Close()
+			}
+			return fmt.Errorf("failed to create %s quality track (%dx%d): %w",
+				layer.name, layer.parts.width, layer.parts.height, err)
+		}
+		tracks = append(tracks, track)
+		trackNames = append(trackNames, fmt.Sprintf("%s(%dx%d)", layer.name, layer.parts.width, layer.parts.height))
+	}
+
+	// Publish simulcast track
+	var err error
+	pub, err = room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
+		Name: "simulcast",
+	})
+	if err != nil {
+		// Clean up tracks on publish failure
+		for _, track := range tracks {
+			track.Close()
+		}
+		return fmt.Errorf("failed to publish simulcast track: %w", err)
+	}
+
+	fmt.Printf("Successfully published H.264 simulcast track with qualities: %v\n", trackNames)
 	return nil
 }
