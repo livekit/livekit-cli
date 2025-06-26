@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	// simulcastURLRegex matches h264 simulcast URLs in format h264://host:port/widthxheight or h264:///path/to/unix/socket/widthxheight
+	// simulcastURLRegex matches h264 simulcast URLs in format h264://<host:port>/<width>x<height> or h264://<socket_path>/<width>x<height>
 	simulcastURLRegex = regexp.MustCompile(`^h264://(.+)/(\d+)x(\d+)$`)
 
 	RoomCommands = []*cli.Command{
@@ -154,8 +154,8 @@ var (
 							TakesFile: true,
 							Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
 								"Can be used multiple times to publish multiple files. " +
-								"Can publish from Unix or TCP socket using the format '<codec>:///<socket_path>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\". " +
-								"For simulcast: use 2-3 h264:// URLs with format 'h264://host:port/widthxheight' or 'h264:///path/to/socket/widthxheight' (quality determined by width order)",
+								"Can publish from Unix or TCP socket using the format '<codec>:///<socket_path>' or '<codec>://<host:port>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\". " +
+								"For simulcast: use 2-3 h264:// URLs with format 'h264://<host:port>/<width>x<height>' or 'h264:///path/to/<socket_path>/<width>x<height>' (quality determined by width order)",
 						},
 						&cli.StringFlag{
 							Name:  "publish-data",
