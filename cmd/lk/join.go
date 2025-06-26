@@ -380,11 +380,11 @@ type simulcastURLParts struct {
 	height  uint32
 }
 
-// parseSimulcastURL validates and parses a simulcast URL in the format h264://host:port/widthxheight or h264:///path/to/unix/socket/widthxheight
+// parseSimulcastURL validates and parses a simulcast URL in the format h264://<host:port>/<width>x<height> or h264://<socket_path>/<width>x<height>
 func parseSimulcastURL(url string) (*simulcastURLParts, error) {
 	matches := simulcastURLRegex.FindStringSubmatch(url)
 	if matches == nil {
-		return nil, fmt.Errorf("simulcast URL must be in format h264://host:port/widthxheight or h264:///path/to/unix/socket/widthxheight, got: %s", url)
+		return nil, fmt.Errorf("simulcast URL must be in format h264://<host:port>/<width>x<height> or h264://<socket_path>/<width>x<height>, got: %s", url)
 	}
 
 	address, widthStr, heightStr := matches[1], matches[2], matches[3]
