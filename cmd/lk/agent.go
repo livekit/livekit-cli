@@ -742,7 +742,6 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 
 func listAgents(ctx context.Context, cmd *cli.Command) error {
 	var items []*lkproto.AgentInfo
-	req := &lkproto.ListAgentsRequest{}
 	if cmd.IsSet("id") {
 		for _, agentID := range cmd.StringSlice("id") {
 			if agentID == "" {
@@ -762,7 +761,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 			items = append(items, res.Agents...)
 		}
 	} else {
-		agents, err := agentsClient.ListAgents(ctx, req)
+		agents, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{})
 		if err != nil {
 			if twerr, ok := err.(twirp.Error); ok {
 				if twerr.Code() == twirp.PermissionDenied {
@@ -955,7 +954,6 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 
 	if !dockerfileExists {
 		var clientSettingsResponse *lkproto.ClientSettingsResponse
-		var innerErr error
 
 		if !cmd.Bool("silent") {
 			if err := util.Await(
@@ -970,13 +968,13 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 			clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
 		}
 
-		if innerErr != nil {
-			if twerr, ok := innerErr.(twirp.Error); ok {
+		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
 				if twerr.Code() == twirp.PermissionDenied {
 					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
 				}
 			}
-			return innerErr
+			return err
 		}
 
 		settingsMap := make(map[string]string)
