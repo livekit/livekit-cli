@@ -83,3 +83,47 @@ func TestParseSocketString(t *testing.T) {
 	assert.Equal(t, address, "foobar.com:1234")
 	assert.Equal(t, err, nil, "Expected no error for valid vp8 TCP socket")
 }
+
+func TestParseSimulcastURL(t *testing.T) {
+	// Test TCP format
+	parts, err := parseSimulcastURL("h264://localhost:8080/640x480")
+	assert.NoError(t, err, "Expected no error for valid TCP simulcast URL")
+	assert.Equal(t, "tcp", parts.network)
+	assert.Equal(t, "localhost:8080", parts.address)
+	assert.Equal(t, uint32(640), parts.width)
+	assert.Equal(t, uint32(480), parts.height)
+
+	// Test Unix socket format with multiple slashes
+	parts, err = parseSimulcastURL("h264:///tmp/my.socket/1280x720")
+	assert.NoError(t, err, "Expected no error for valid Unix socket simulcast URL")
+	assert.Equal(t, "unix", parts.network)
+	assert.Equal(t, "/tmp/my.socket", parts.address)
+	assert.Equal(t, uint32(1280), parts.width)
+	assert.Equal(t, uint32(720), parts.height)
+
+	// Test Unix socket format with nested paths
+	parts, err = parseSimulcastURL("h264:///tmp/deep/nested/path/my.socket/1920x1080")
+	assert.NoError(t, err, "Expected no error for valid nested path Unix socket simulcast URL")
+	assert.Equal(t, "unix", parts.network)
+	assert.Equal(t, "/tmp/deep/nested/path/my.socket", parts.address)
+	assert.Equal(t, uint32(1920), parts.width)
+	assert.Equal(t, uint32(1080), parts.height)
+
+	// Test simple socket name without path
+	parts, err = parseSimulcastURL("h264://mysocket/640x480")
+	assert.NoError(t, err, "Expected no error for simple socket name")
+	assert.Equal(t, "unix", parts.network)
+	assert.Equal(t, "mysocket", parts.address)
+	assert.Equal(t, uint32(640), parts.width)
+	assert.Equal(t, uint32(480), parts.height)
+
+	// Test invalid format
+	_, err = parseSimulcastURL("h264://localhost:8080")
+	assert.Error(t, err, "Expected error for URL without dimensions")
+
+	_, err = parseSimulcastURL("opus:///tmp/socket/640x480")
+	assert.Error(t, err, "Expected error for non-h264 protocol")
+
+	_, err = parseSimulcastURL("h264:///tmp/socket/invalidxinvalid")
+	assert.Error(t, err, "Expected error for invalid dimensions")
+}
