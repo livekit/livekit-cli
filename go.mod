@@ -13,7 +13,7 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/go-task/task/v3 v3.43.3
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.39.3-0.20250620210232-022f52ebc520
+	github.com/livekit/protocol v1.39.4-0.20250630060303-c71f9553b08a
 	github.com/livekit/server-sdk-go/v2 v2.9.2-0.20250612220331-fb6301c37033
 	github.com/moby/buildkit v0.22.0
 	github.com/pion/rtcp v1.2.15
@@ -47,7 +47,6 @@ require (
 	github.com/alecthomas/chroma/v2 v2.16.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
