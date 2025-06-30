@@ -227,57 +227,19 @@ var (
 							Usage:     "Create a SIP Dispatch Rule",
 							Action:    createSIPDispatchRule,
 							ArgsUsage: RequestDesc[livekit.CreateSIPDispatchRuleRequest](),
-							Flags: []cli.Flag{
-								&cli.StringFlag{
-									Name:  "name",
-									Usage: "Sets a new name for the dispatch rule",
-								},
-								&cli.StringSliceFlag{
-									Name:  "trunks",
-									Usage: "Sets a list of trunks for the dispatch rule",
-								},
-								&cli.StringFlag{
-									Name:  "direct",
-									Usage: "Sets a direct dispatch to a specified room",
-								},
-								&cli.StringFlag{
-									Name:    "caller",
-									Aliases: []string{"individual"},
-									Usage:   "Sets a individual caller dispatch to a new room with a specific prefix",
-								},
-								&cli.StringFlag{
-									Name:  "callee",
-									Usage: "Sets a callee number dispatch to a new room with a specific prefix",
-								},
-								&cli.BoolFlag{
-									Name:  "pin",
-									Usage: "PIN for a dispatch rule",
-								},
-								&cli.BoolFlag{
-									Name:  "randomize",
-									Usage: "Randomize room name, only applies to callee dispatch",
-								},
-							},
+							Flags:     sipDispatchRuleBaseFlags,
 						},
 						{
 							Name:      "update",
 							Usage:     "Update a SIP Dispatch Rule",
 							Action:    updateSIPDispatchRule,
 							ArgsUsage: RequestDesc[livekit.UpdateSIPDispatchRuleRequest](),
-							Flags: []cli.Flag{
+							Flags: append([]cli.Flag{
 								&cli.StringFlag{
 									Name:  "id",
 									Usage: "ID for the rule to update",
 								},
-								&cli.StringFlag{
-									Name:  "name",
-									Usage: "Sets a new name for the rule",
-								},
-								&cli.StringSliceFlag{
-									Name:  "trunks",
-									Usage: "Sets a new list of trunk IDs",
-								},
-							},
+							}, sipDispatchRuleBaseFlags...),
 						},
 						{
 							Name:      "delete",
@@ -411,6 +373,47 @@ var (
 			Flags: []cli.Flag{
 				RequestFlag[livekit.CreateSIPParticipantRequest](),
 			},
+		},
+	}
+
+	// Define a shared base flag list for SIP Dispatch Rule create/update
+	sipDispatchRuleBaseFlags = []cli.Flag{
+		&cli.StringFlag{
+			Name:  "name",
+			Usage: "Sets a name for the dispatch rule",
+		},
+		&cli.StringSliceFlag{
+			Name:  "trunks",
+			Usage: "Sets a list of trunks for the dispatch rule",
+		},
+		&cli.StringFlag{
+			Name:  "direct",
+			Usage: "Sets a direct dispatch to a specified room",
+		},
+		&cli.StringFlag{
+			Name:    "caller",
+			Aliases: []string{"individual"},
+			Usage:   "Sets an individual caller dispatch to a new room with a specific prefix",
+		},
+		&cli.StringFlag{
+			Name:  "callee",
+			Usage: "Sets a callee number dispatch to a new room with a specific prefix",
+		},
+		&cli.BoolFlag{
+			Name:  "pin",
+			Usage: "PIN for a dispatch rule",
+		},
+		&cli.BoolFlag{
+			Name:  "randomize",
+			Usage: "Randomize room name, only applies to callee dispatch",
+		},
+		&cli.StringFlag{
+			Name:  "dispatch-url",
+			Usage: "Sets a dynamic dispatch rule with webhook URL (uses POST method)",
+		},
+		&cli.StringFlag{
+			Name:  "method",
+			Usage: "Sets the HTTP method for dynamic dispatch rule (default: POST)",
 		},
 	}
 )
@@ -895,6 +898,23 @@ func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 				},
 			}
 		}
+		if val := cmd.String("dispatch-url"); val != "" {
+			if p.Rule != nil {
+				return fmt.Errorf("only one dispatch rule type is allowed")
+			}
+			method := cmd.String("method")
+			if method == "" {
+				method = "POST"
+			}
+			p.Rule = &livekit.SIPDispatchRule{
+				Rule: &livekit.SIPDispatchRule_DispatchRuleDynamic{
+					DispatchRuleDynamic: &livekit.SIPDispatchRuleDynamic{
+						Url:    val,
+						Method: method,
+					},
+				},
+			}
+		}
 		return nil
 	}, cli.CreateSIPDispatchRule, printSIPDispatchRuleID)
 }
@@ -945,6 +965,71 @@ func updateSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 	if id == "" {
 		return errors.New("no ID specified")
 	}
+
+	// Check if any dispatch rule flags are set
+	hasDispatchRuleFlags := cmd.IsSet("direct") || cmd.IsSet("caller") || cmd.IsSet("callee") || cmd.IsSet("dispatch-url")
+
+	if hasDispatchRuleFlags {
+		// Create a new dispatch rule from flags (similar to create function)
+		rule := &livekit.SIPDispatchRule{}
+
+		if val := cmd.String("direct"); val != "" {
+			rule.Rule = &livekit.SIPDispatchRule_DispatchRuleDirect{
+				DispatchRuleDirect: &livekit.SIPDispatchRuleDirect{
+					RoomName: val,
+					Pin:      cmd.String("pin"),
+				},
+			}
+		} else if val := cmd.String("caller"); val != "" {
+			rule.Rule = &livekit.SIPDispatchRule_DispatchRuleIndividual{
+				DispatchRuleIndividual: &livekit.SIPDispatchRuleIndividual{
+					RoomPrefix: val,
+					Pin:        cmd.String("pin"),
+				},
+			}
+		} else if val := cmd.String("callee"); val != "" {
+			rule.Rule = &livekit.SIPDispatchRule_DispatchRuleCallee{
+				DispatchRuleCallee: &livekit.SIPDispatchRuleCallee{
+					RoomPrefix: val,
+					Randomize:  cmd.Bool("randomize"),
+					Pin:        cmd.String("pin"),
+				},
+			}
+		} else if val := cmd.String("dispatch-url"); val != "" {
+			method := cmd.String("method")
+			if method == "" {
+				method = "POST"
+			}
+			rule.Rule = &livekit.SIPDispatchRule_DispatchRuleDynamic{
+				DispatchRuleDynamic: &livekit.SIPDispatchRuleDynamic{
+					Url:    val,
+					Method: method,
+				},
+			}
+		}
+
+		// Use Update action with the rule field populated
+		req := &livekit.SIPDispatchRuleUpdate{
+			Rule: rule,
+		}
+		if val := cmd.String("name"); val != "" {
+			req.Name = &val
+		}
+		req.TrunkIds = listUpdateFlag(cmd, "trunks")
+
+		info, err := cli.UpdateSIPDispatchRule(ctx, &livekit.UpdateSIPDispatchRuleRequest{
+			SipDispatchRuleId: id,
+			Action: &livekit.UpdateSIPDispatchRuleRequest_Update{
+				Update: req,
+			},
+		})
+		if err != nil {
+			return err
+		}
+		printSIPDispatchRuleID(info)
+		return err
+	}
+
 	req := &livekit.SIPDispatchRuleUpdate{}
 	if val := cmd.String("name"); val != "" {
 		req.Name = &val
@@ -969,10 +1054,10 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return listAndPrint(ctx, cmd, cli.ListSIPDispatchRule, &livekit.ListSIPDispatchRuleRequest{}, []string{
-		"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin",
+		"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin", "DispatchURL",
 		"Attributes", "Agents",
 	}, func(item *livekit.SIPDispatchRuleInfo) []string {
-		var room, typ, pin string
+		var room, typ, pin, dispatchUrl string
 		switch r := item.GetRule().GetRule().(type) {
 		case *livekit.SIPDispatchRule_DispatchRuleDirect:
 			room = r.DispatchRuleDirect.RoomName
@@ -989,6 +1074,10 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 			}
 			pin = r.DispatchRuleCallee.Pin
 			typ = "Callee"
+		case *livekit.SIPDispatchRule_DispatchRuleDynamic:
+			room = ""
+			dispatchUrl = r.DispatchRuleDynamic.Url
+			typ = "Dynamic"
 		}
 		trunks := strings.Join(item.TrunkIds, ",")
 		if trunks == "" {
@@ -1001,7 +1090,7 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 			}
 		}
 		return []string{
-			item.SipDispatchRuleId, item.Name, trunks, typ, room, pin,
+			item.SipDispatchRuleId, item.Name, trunks, typ, room, pin, dispatchUrl,
 			fmt.Sprintf("%v", item.Attributes), strings.Join(agents, ","),
 		}
 	})
