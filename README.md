@@ -58,7 +58,7 @@ make install
 
 See `lk --help` for a complete list of subcommands. The `--help` flag can also be used on any subcommand for more information.
 
-## Set up your project (new)
+## Set up your project
 
 The quickest way to get started is to authenticate with your LiveKit Cloud account and link an existing project. If you haven't created an account or project yet, head [here](https://cloud.livekit.io) first. Then run the following:
 
@@ -198,7 +198,8 @@ It's possible to publish from video streams coming over a TCP socket. `lk` can a
 Run `lk` like this:
 
 ```shell
-lk room join --identity bot \
+lk room join \
+  --identity bot \
   --publish h264:///127.0.0.1:16400 \
   <room_name>
 ```
@@ -285,12 +286,14 @@ Here's an example:
 ```shell
 lk egress test-template \
   --base-url http://localhost:3000 \
-  --room test-room --layout speaker --video-publishers 3
+  --room test-room \
+  --layout speaker \
+  --video-publishers 3
 ```
 
 This command will launch a browser pointed at `http://localhost:3000`, while simulating 3 publishers publishing to your livekit instance.
 
-## Load Testing
+## Load testing
 
 Load testing utility for LiveKit. This tool is quite versatile and is able to simulate various types of load.
 
@@ -302,7 +305,8 @@ This guide requires a LiveKit server instance to be set up. You can start a load
 
 ```shell
 lk load-test \
-  --room test-room --video-publishers 8
+  --room test-room \
+  --video-publishers 8
 ```
 
 This simulates 8 video publishers to the room, with no subscribers. Video tracks are published with simulcast, at 720p, 360p, and 180p.
@@ -313,7 +317,8 @@ To test audio capabilities in your app, you can also simulate simultaneous speak
 
 ```shell
 lk load-test \
-  --room test-room --audio-publishers 5
+  --room test-room \
+  --audio-publishers 5
 ```
 
 The above simulates 5 concurrent speakers, each playing back a pre-recorded audio sample at the same time.
@@ -325,10 +330,12 @@ Generate a token so you can log into the room:
 
 ```shell
 lk token create --join \
-  --room test-room --identity test-user
+  --room test-room \
+  --identity test-user \
+  --open meet
 ```
 
-Head over to the [example web client](https://meet.livekit.io/?tab=custom) and paste in the token, you can see the simulated tracks published by the load tester.
+This will open [Meet](https://meet.livekit.io/?tab=custom), a video conferencing example app, and join the simulated room. Alternatively, you can omit the `--open` parameter, visit the site and paste in the token yourself.
 
 ![Load tester screenshot](.github/load-test-screenshot.jpg?raw=true)
 
@@ -400,9 +407,9 @@ You can customize various parameters of the test such as
 -   `--layout`: layout to simulate (speaker, 3x3, 4x4, or 5x5)
 -   `--simulate-speakers`: randomly rotate publishers to speak
 
-### Agent Load Testing
+### Agent load testing
 
-The agent load testing utility allows you to dispatch a running agent to a number of rooms and simulate a user in each room that would echo whatever the agent says. 
+The agent load testing utility allows you to dispatch a running agent to a number of rooms and simulate a user in each room that would echo whatever the agent says.
 
 > **Note**: Before running the test, ensure that:
 > - Your agent is already running using `start` instead of `dev` with the specified `agent_name` configured
@@ -425,6 +432,45 @@ The above simulates 5 concurrent rooms, where each room has:
 - The test runs for 5 minutes before automatically stopping
 
 Once the specified duration is over (or if the load test is manually stopped), the load test statistics will be displayed in the form of a table.
+
+
+## Additional notes
+
+### Parameter precedence
+
+CLI commands support various ways to set some parameters, including via environment variables, local configuration files, and command line flags. The precedence order is as follows:
+
+1. Command line flags (e.g. `--api-key`, `--room`)
+2. Environment variables (e.g. `LIVEKIT_API_KEY`, `LIVEKIT_URL`)
+3. Local configuration files (by default `./livekit.toml`, override with `--config`)
+4. Default project configuration (set with `lk project set-default`)
+
+If you have multiple projects configured, you can specify which project to use with the `--project` flag. This will override the default project for that command only.
+
+### Template strings
+
+Some command parameters support template strings, which are substituted with real values at runtime. This is useful for generating unique identities and room names, or tagging entities with timestamps and other metadata. Supported template strings include:
+
+- `%t`: Compact timestamp (`"20250702150405"`)
+- `%T`: ISO 8601 timestamp (`"2025-07-02T15:04:05Z07:00"`)
+- `%Y`: Year (`"2025"`)
+- `%m`: Month (`"07"`)
+- `%d`: Day of the month (`"02"`)
+- `%H`: Hour (`"15"`)
+- `%M`: Minute (`"04"`)
+- `%S`: Second (`"05"`)
+- `%x`: Random 6-character hexadecimal string (`"a1b2c3"`)
+- `%U`: Current user (`"username"`)
+- `%h`: Current hostname (`"my-computer.local"`)
+- `%p`: Current PID (`"12345"`)
+
+For example, you can use the following command to generate a token whose identity is your current `user@hostname`, and a room with a random suffix:
+
+```shell
+lk token create --join \
+  --identity "%U@%h" \
+  --room "room-%x"
+```
 
 <!--BEGIN_REPO_NAV-->
 <br/><table>
