@@ -584,7 +584,7 @@ var (
 )
 
 func createRoomClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	ctx, err := requireProject(ctx, cmd)
+	_, err := requireProject(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -801,6 +801,7 @@ func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error 
 }
 
 func joinRoom(ctx context.Context, cmd *cli.Command) error {
+<<<<<<< HEAD
 	publishUrls := cmd.StringSlice("publish")
 
 	// Determine simulcast mode by checking if any URL has simulcast format
@@ -833,7 +834,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	ctx, err := requireProject(ctx, cmd)
+	_, err := requireProject(ctx, cmd)
 	if err != nil {
 		return err
 	}

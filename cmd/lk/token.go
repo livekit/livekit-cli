@@ -318,7 +318,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		}
 	}
 
-	ctx, err := requireProject(ctx, c)
+	_, err := requireProjectWithOpts(ctx, c, ignoreURL)
 	if err != nil {
 		return err
 	}
