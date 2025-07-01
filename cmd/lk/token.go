@@ -112,6 +112,7 @@ var (
 							Name:  "grant",
 							Usage: "Additional `VIDEO_GRANT` fields. It'll be merged with other arguments (JSON formatted)",
 						},
+						openFlag,
 					},
 				},
 			},
@@ -359,6 +360,14 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	util.PrintJSON(grant)
 	fmt.Println()
 	fmt.Println("Access token:", token)
+
+	if c.IsSet("open") {
+		switch c.String("open") {
+		case string(util.OpenTargetMeet):
+			_ = util.OpenInMeet(pc.URL, token)
+		}
+	}
+
 	return nil
 }
 

@@ -145,6 +145,7 @@ var (
 					Flags: []cli.Flag{
 						identityFlag,
 						hidden(optional(roomFlag)),
+						openFlag,
 						&cli.BoolFlag{
 							Name:  "publish-demo",
 							Usage: "Publish demo video as a loop",
@@ -583,12 +584,12 @@ var (
 )
 
 func createRoomClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := loadProjectDetails(cmd)
+	ctx, err := requireProject(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	roomClient = lksdk.NewRoomServiceClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
+	roomClient = lksdk.NewRoomServiceClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...)
 	return nil, nil
 }
 
@@ -832,7 +833,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	pc, err := loadProjectDetails(cmd)
+	ctx, err := requireProject(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -961,9 +962,9 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
-		APIKey:                pc.APIKey,
-		APISecret:             pc.APISecret,
+	room, err := lksdk.ConnectToRoom(project.URL, lksdk.ConnectInfo{
+		APIKey:                project.APIKey,
+		APISecret:             project.APISecret,
 		RoomName:              roomName,
 		ParticipantIdentity:   participantIdentity,
 		ParticipantAttributes: participantAttributes,

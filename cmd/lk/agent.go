@@ -89,12 +89,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
-						&cli.BoolFlag{
-							Name:     "silent",
-							Usage:    "If set, will not prompt for confirmation",
-							Required: false,
-							Value:    false,
-						},
+						silentFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},

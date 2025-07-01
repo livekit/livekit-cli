@@ -51,6 +51,13 @@ var (
 		Aliases: []string{"j"},
 		Usage:   "Output as JSON",
 	}
+	silentFlag = &cli.BoolFlag{
+		Name:     "silent",
+		Usage:    "If set, will not prompt for confirmation",
+		Required: false,
+		Value:    false,
+	}
+	openFlag = util.OpenFlag
 
 	globalFlags = []cli.Flag{
 		&cli.StringFlag{
