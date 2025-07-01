@@ -203,6 +203,70 @@ lk room join --identity bot \
   <room_name>
 ```
 
+### Publish H.264 simulcast track from TCP
+
+You can publish multiple H.264 video tracks from different TCP ports as a single [Simulcast](https://docs.livekit.io/home/client/tracks/advanced/#video-simulcast) track.  This is done by using multiple `--publish` flags.
+
+The track will be published in simulcast mode if multiple `--publish` flags with the syntax `h264://<host>:<port>/<width>x<height>` are passed in as arguments.
+
+Example:
+
+Use Gstreamer to scale a video input to 3 resolutions (1920x1080, 1280x720, 640x360), encode each as a H.264 stream and output each H.264 stream on a different port using `tcpserversink`.
+
+```shell
+gst-launch-1.0 -e -v \
+  v4l2src device=/dev/video4 io-mode=dmabuf ! \
+      video/x-h264,width=1920,height=1080,framerate=60/1 ! \
+  h264parse ! \
+  nvh264dec ! \
+  tee name=t  \
+  t. ! queue ! videorate drop-only=true ! \
+       video/x-raw,framerate=30/1 ! videoconvert ! \
+       'video/x-raw,format=NV12,width=1920,height=1080' ! \
+       nvh264enc rc-mode=vbr bitrate=4000 \
+       gop-size=30 bframes=0 ! \
+      'video/x-h264,stream-format=byte-stream,profile=baseline,alignment=au' ! \
+      h264parse config-interval=1 ! \
+      queue leaky=downstream max-size-buffers=1 max-size-time=0 ! \
+      tcpserversink host=0.0.0.0 port=5005 sync=false async=false \
+  t. ! queue ! videorate drop-only=true ! \
+       video/x-raw,framerate=30/1 ! videoconvert ! \
+       videoscale ! \
+        'video/x-raw,format=NV12,width=1280,height=720' ! \
+      nvh264enc rc-mode=vbr bitrate=2000 \
+                gop-size=30 bframes=0 ! \
+      'video/x-h264,stream-format=byte-stream,profile=baseline,alignment=au' ! \
+      h264parse config-interval=1 ! \
+      queue leaky=downstream max-size-buffers=1 max-size-time=0 ! \
+      tcpserversink host=0.0.0.0 port=5006 sync=false async=false \
+  t. ! queue ! videorate drop-only=true ! \
+       video/x-raw,framerate=30/1 ! videoconvert ! \      
+       videoscale ! \
+        'video/x-raw,format=NV12,width=640,height=380' ! \
+      nvh264enc rc-mode=vbr bitrate=800 \
+                gop-size=30 bframes=0 ! \
+      'video/x-h264,stream-format=byte-stream,profile=baseline,alignment=au' ! \
+      h264parse config-interval=1 ! \
+      queue leaky=downstream max-size-buffers=1 max-size-time=0 ! \
+      tcpserversink host=0.0.0.0 port=5007 sync=false async=false
+```
+
+Use `livekit-cli` to publish the 3 resolution streams to a single Simulcast track.
+
+```shell
+lk room join --identity <name> --url "<url>" --api-key "<key>" --api-secret "<secret>" \
+--publish h264://127.0.0.1:5005/1920x1080 \
+--publish h264://127.0.0.1:5006/1280x720 \
+--publish h264://127.0.0.1:5007/640x480 <room>
+```
+
+Notes:
+- LiveKit CLI can only publish simulcast tracks using H.264 codec.
+- You can only use multiple `--publish` flags to create a simulcast track.
+- Using more than 1 `--publish` flag for other types of streams will not work.
+- Tracks will automatically be set to HIGH/MED/LOW resolution based on the order of their width.
+- If only 2 tracks are published, they will be published as HIGH and LOW resolution layers. 
+
 ### Publish streams from your application
 
 Using unix sockets, it's also possible to publish streams from your application. The tracks need to be encoded into
