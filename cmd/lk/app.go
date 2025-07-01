@@ -141,13 +141,17 @@ var (
 )
 
 func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+	return requireProjectWithOpts(ctx, cmd)
+}
+
+func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
 	var err error
 	if project != nil {
 		return ctx, nil
 	}
-	if _, err = loadProjectConfig(ctx, cmd); err != nil {
+	if ctx, err = loadProjectConfig(ctx, cmd); err != nil {
 		// something is wrong with CLI config file
-		return nil, err
+		return ctx, err
 	}
 	if project, err = loadProjectDetails(cmd); err != nil {
 		// something is wrong with project config file
@@ -158,7 +162,7 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 		return selectProject(ctx, cmd)
 	}
 
-	return nil, err
+	return ctx, err
 }
 
 func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {

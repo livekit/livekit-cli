@@ -842,6 +842,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	roomName = util.ExpandTemplate(roomName)
 
 	autoSubscribe := cmd.Bool("auto-subscribe")
 
