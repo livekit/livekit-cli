@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 
@@ -35,6 +36,9 @@ import (
 )
 
 var (
+	// simulcastURLRegex matches h264 simulcast URLs in format h264://<host:port>/<width>x<height> or h264://<socket_path>/<width>x<height>
+	simulcastURLRegex = regexp.MustCompile(`^h264://(.+)/(\d+)x(\d+)$`)
+
 	RoomCommands = []*cli.Command{
 		{
 			Name:  "room",
@@ -150,7 +154,8 @@ var (
 							TakesFile: true,
 							Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
 								"Can be used multiple times to publish multiple files. " +
-								"Can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\"",
+								"Can publish from Unix or TCP socket using the format '<codec>:///<socket_path>' or '<codec>://<host:port>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\". " +
+								"For simulcast: use 2-3 h264:// URLs with format 'h264://<host:port>/<width>x<height>' or 'h264:///path/to/<socket_path>/<width>x<height>' (quality determined by width order)",
 						},
 						&cli.StringFlag{
 							Name:  "publish-data",
@@ -168,6 +173,7 @@ var (
 							Name:  "exit-after-publish",
 							Usage: "When publishing, exit after file or stream is complete",
 						},
+
 						&cli.StringSliceFlag{
 							Name:  "attribute",
 							Usage: "set attributes in key=value format, can be used multiple times",
@@ -794,6 +800,38 @@ func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error 
 }
 
 func joinRoom(ctx context.Context, cmd *cli.Command) error {
+	publishUrls := cmd.StringSlice("publish")
+
+	// Determine simulcast mode by checking if any URL has simulcast format
+	simulcastMode := false
+	for _, url := range publishUrls {
+		if simulcastURLRegex.MatchString(url) {
+			simulcastMode = true
+			break
+		}
+	}
+
+	// Validate publish flags
+	if len(publishUrls) > 3 {
+		return fmt.Errorf("no more than 3 --publish flags can be specified, got %d", len(publishUrls))
+	}
+
+	// If simulcast mode, validate all URLs are h264 format with dimensions
+	if simulcastMode {
+		if len(publishUrls) == 1 {
+			return fmt.Errorf("simulcast mode requires 2-3 streams, but only 1 was provided")
+		}
+		for i, url := range publishUrls {
+			if !strings.HasPrefix(url, "h264://") {
+				return fmt.Errorf("publish flag %d: simulcast mode requires h264:// URLs with dimensions (format: h264://host:port/widthxheight), got: %s", i+1, url)
+			}
+			// Validate the format has dimensions
+			if _, err := parseSimulcastURL(url); err != nil {
+				return fmt.Errorf("publish flag %d: %w", i+1, err)
+			}
+		}
+	}
+
 	pc, err := loadProjectDetails(cmd)
 	if err != nil {
 		return err
@@ -946,21 +984,43 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	exitAfterPublish := cmd.Bool("exit-after-publish")
-	if publish := cmd.StringSlice("publish"); publish != nil {
-		fps := cmd.Float("fps")
-		for _, pub := range publish {
+
+	// Handle publishing
+	if len(publishUrls) > 0 {
+		if simulcastMode {
+			// Handle simulcast publishing
+			fps := cmd.Float("fps")
 			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
 				if exitAfterPublish {
 					close(done)
 					return
 				}
 				if pub != nil {
-					fmt.Printf("finished writing %s\n", pub.Name())
+					fmt.Printf("finished simulcast stream %s\n", pub.Name())
 					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 				}
 			}
-			if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
+
+			if err = handleSimulcastPublish(room, publishUrls, fps, onPublishComplete); err != nil {
 				return err
+			}
+		} else {
+			// Handle single publish
+			fps := cmd.Float("fps")
+			for _, pub := range publishUrls {
+				onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
+					if exitAfterPublish {
+						close(done)
+						return
+					}
+					if pub != nil {
+						fmt.Printf("finished writing %s\n", pub.Name())
+						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
+					}
+				}
+				if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
+					return err
+				}
 			}
 		}
 	}

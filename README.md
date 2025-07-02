@@ -203,6 +203,47 @@ lk room join --identity bot \
   <room_name>
 ```
 
+### Publish H.264 simulcast track from TCP
+
+You can publish multiple H.264 video tracks from different TCP ports as a single [Simulcast](https://docs.livekit.io/home/client/tracks/advanced/#video-simulcast) track.  This is done by using multiple `--publish` flags.
+
+The track will be published in simulcast mode if multiple `--publish` flags with the syntax `h264://<host>:<port>/<width>x<height>` are passed in as arguments.
+
+Example:
+
+Use Gstreamer to scale a video input to 3 resolutions (1920x1080, 1280x720, 640x360), encode each as a H.264 stream and output each H.264 stream on a different port using `tcpserversink`.
+
+```shell
+# Note: this is just an example of a Gstreamer pipeline structure
+# It uses a `tee` element to split the raw frame input to 3 pipelines for 
+# scaling to a specific resolution then encoding to H.264 byte stream.
+gst-launch-1.0 -e -v \
+  v4l2src device=<device> \
+  tee name=t  \
+  t. ! <scale to 1920x1080, H.264 encode elements> ! \
+      tcpserversink host=0.0.0.0 port=5005 sync=false async=false \
+  t. ! <scale to 1280x720, H.264 encode elements> ! \
+      tcpserversink host=0.0.0.0 port=5006 sync=false async=false \
+  t. ! <scale to 640x480, H.264 encode elements> ! \
+      tcpserversink host=0.0.0.0 port=5007 sync=false async=false
+```
+
+Use `livekit-cli` to publish the 3 resolution streams to a single Simulcast track.
+
+```shell
+lk room join --identity <name> --url "<url>" --api-key "<key>" --api-secret "<secret>" \
+--publish h264://127.0.0.1:5005/1920x1080 \
+--publish h264://127.0.0.1:5006/1280x720 \
+--publish h264://127.0.0.1:5007/640x480 <room>
+```
+
+Notes:
+- LiveKit CLI can only publish simulcast tracks using H.264 codec.
+- You can only use multiple `--publish` flags to create a simulcast track.
+- Using more than 1 `--publish` flag for other types of streams will not work.
+- Tracks will automatically be set to HIGH/MED/LOW resolution based on the order of their width.
+- If only 2 tracks are published, they will be published as HIGH and LOW resolution layers. 
+
 ### Publish streams from your application
 
 Using unix sockets, it's also possible to publish streams from your application. The tracks need to be encoded into
