@@ -214,40 +214,17 @@ Example:
 Use Gstreamer to scale a video input to 3 resolutions (1920x1080, 1280x720, 640x360), encode each as a H.264 stream and output each H.264 stream on a different port using `tcpserversink`.
 
 ```shell
+# Note: this is just an example of a Gstreamer pipeline structure
+# It uses a `tee` element to split the raw frame input to 3 pipelines for 
+# scaling to a specific resolution then encoding to H.264 byte stream.
 gst-launch-1.0 -e -v \
-  v4l2src device=/dev/video4 io-mode=dmabuf ! \
-      video/x-h264,width=1920,height=1080,framerate=60/1 ! \
-  h264parse ! \
-  nvh264dec ! \
+  v4l2src device=<device> \
   tee name=t  \
-  t. ! queue ! videorate drop-only=true ! \
-       video/x-raw,framerate=30/1 ! videoconvert ! \
-       'video/x-raw,format=NV12,width=1920,height=1080' ! \
-       nvh264enc rc-mode=vbr bitrate=4000 \
-       gop-size=30 bframes=0 ! \
-      'video/x-h264,stream-format=byte-stream,profile=baseline,alignment=au' ! \
-      h264parse config-interval=1 ! \
-      queue leaky=downstream max-size-buffers=1 max-size-time=0 ! \
+  t. ! <scale to 1920x1080, H.264 encode elements> ! \
       tcpserversink host=0.0.0.0 port=5005 sync=false async=false \
-  t. ! queue ! videorate drop-only=true ! \
-       video/x-raw,framerate=30/1 ! videoconvert ! \
-       videoscale ! \
-        'video/x-raw,format=NV12,width=1280,height=720' ! \
-      nvh264enc rc-mode=vbr bitrate=2000 \
-                gop-size=30 bframes=0 ! \
-      'video/x-h264,stream-format=byte-stream,profile=baseline,alignment=au' ! \
-      h264parse config-interval=1 ! \
-      queue leaky=downstream max-size-buffers=1 max-size-time=0 ! \
+  t. ! <scale to 1280x720, H.264 encode elements> ! \
       tcpserversink host=0.0.0.0 port=5006 sync=false async=false \
-  t. ! queue ! videorate drop-only=true ! \
-       video/x-raw,framerate=30/1 ! videoconvert ! \      
-       videoscale ! \
-        'video/x-raw,format=NV12,width=640,height=380' ! \
-      nvh264enc rc-mode=vbr bitrate=800 \
-                gop-size=30 bframes=0 ! \
-      'video/x-h264,stream-format=byte-stream,profile=baseline,alignment=au' ! \
-      h264parse config-interval=1 ! \
-      queue leaky=downstream max-size-buffers=1 max-size-time=0 ! \
+  t. ! <scale to 640x480, H.264 encode elements> ! \
       tcpserversink host=0.0.0.0 port=5007 sync=false async=false
 ```
 
