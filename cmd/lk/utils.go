@@ -33,8 +33,8 @@ import (
 
 var (
 	printCurl    bool
-	workingDir   = "."
-	tomlFilename = config.LiveKitTOMLFile
+	workingDir   string = "."
+	tomlFilename string = config.LiveKitTOMLFile
 
 	roomFlag = &TemplateStringFlag{
 		Name:     "room",
@@ -44,6 +44,7 @@ var (
 	}
 	identityFlag = &TemplateStringFlag{
 		Name:     "identity",
+		Aliases:  []string{"i"},
 		Usage:    "`ID` of participant (supports templates)",
 		Required: true,
 	}
@@ -58,8 +59,7 @@ var (
 		Required: false,
 		Value:    false,
 	}
-	openFlag = util.OpenFlag
-
+	openFlag    = util.OpenFlag
 	globalFlags = []cli.Flag{
 		&cli.StringFlag{
 			Name:    "url",

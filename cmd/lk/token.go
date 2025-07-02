@@ -53,6 +53,7 @@ var (
 					Action: createToken,
 					Flags: []cli.Flag{
 						optional(roomFlag),
+						optional(identityFlag),
 						openFlag,
 
 						&cli.BoolFlag{
@@ -86,11 +87,6 @@ var (
 						&cli.StringSliceFlag{
 							Name:  "allow-source",
 							Usage: "Restrict publishing to only `SOURCE` types (e.g. --allow-source camera,microphone), defaults to all",
-						},
-						&TemplateStringFlag{
-							Name:    "identity",
-							Aliases: []string{"i"},
-							Usage:   "Unique `ID` of the participant, used with --join (supports templates)",
 						},
 						&TemplateStringFlag{
 							Name:    "name",

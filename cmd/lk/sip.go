@@ -297,6 +297,8 @@ var (
 							Action:    createSIPParticipant,
 							ArgsUsage: RequestDesc[livekit.CreateSIPParticipantRequest](),
 							Flags: []cli.Flag{
+								optional(roomFlag),
+								optional(identityFlag),
 								&cli.StringFlag{
 									Name:  "trunk",
 									Usage: "`SIP_TRUNK_ID` to use for the call (overrides json config)",
@@ -308,14 +310,6 @@ var (
 								&cli.StringFlag{
 									Name:  "call",
 									Usage: "`SIP_CALL_TO` number to use (overrides json config)",
-								},
-								&cli.StringFlag{
-									Name:  "room",
-									Usage: "`ROOM_NAME` to place the call to (overrides json config)",
-								},
-								&cli.StringFlag{
-									Name:  "identity",
-									Usage: "`PARTICIPANT_IDENTITY` to use (overrides json config)",
 								},
 								&cli.StringFlag{
 									Name:  "name",
