@@ -182,6 +182,10 @@ var (
 							Usage: "Automatically subscribe to published tracks.",
 							Value: false,
 						},
+						&cli.StringFlag{
+							Name:  "metadata",
+							Usage: "`JSON` metadata which will be passed to participant",
+						},
 					},
 				},
 				{
@@ -929,6 +933,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		RoomName:              roomName,
 		ParticipantIdentity:   participantIdentity,
 		ParticipantAttributes: participantAttributes,
+		ParticipantMetadata:   cmd.String("metadata"),
 	}, roomCB, lksdk.WithAutoSubscribe(autoSubscribe))
 	if err != nil {
 		return err
