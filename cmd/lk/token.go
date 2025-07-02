@@ -52,6 +52,10 @@ var (
 					Usage:  "Creates an access token",
 					Action: createToken,
 					Flags: []cli.Flag{
+						optional(roomFlag),
+						optional(identityFlag),
+						openFlag,
+
 						&cli.BoolFlag{
 							Name:  "create",
 							Usage: usageCreate,
@@ -84,20 +88,10 @@ var (
 							Name:  "allow-source",
 							Usage: "Restrict publishing to only `SOURCE` types (e.g. --allow-source camera,microphone), defaults to all",
 						},
-						&cli.StringFlag{
-							Name:    "identity",
-							Aliases: []string{"i"},
-							Usage:   "Unique `ID` of the participant, used with --join",
-						},
-						&cli.StringFlag{
+						&TemplateStringFlag{
 							Name:    "name",
 							Aliases: []string{"n"},
-							Usage:   "`NAME` of the participant, used with --join. defaults to identity",
-						},
-						&cli.StringFlag{
-							Name:    "room",
-							Aliases: []string{"r"},
-							Usage:   "`NAME` of the room to join",
+							Usage:   "`NAME` of the participant, used with --join (defaults to identity) (supports templates)",
 						},
 						&cli.StringFlag{
 							Name:  "metadata",
@@ -124,6 +118,8 @@ var (
 			Usage:  "Creates an access token",
 			Action: createToken,
 			Flags: []cli.Flag{
+				optional(roomFlag),
+
 				&cli.BoolFlag{
 					Name:  "create",
 					Usage: usageCreate,
@@ -171,11 +167,6 @@ var (
 					Usage:   "`NAME` of the participant, used with --join. defaults to identity",
 				},
 				&cli.StringFlag{
-					Name:    "room",
-					Aliases: []string{"r"},
-					Usage:   "`NAME` of the room to join",
-				},
-				&cli.StringFlag{
 					Name:  "room-configuration",
 					Usage: "name of the room configuration to use when creating a room",
 				},
@@ -198,12 +189,23 @@ var (
 )
 
 func createToken(ctx context.Context, c *cli.Command) error {
-	p := c.String("identity") // required only for join
 	name := c.String("name")
-	room := c.String("room")
 	metadata := c.String("metadata")
 	validFor := c.String("valid-for")
 	roomPreset := c.String("room-preset")
+
+	// required only for join, will be generated if not provided
+	participant := c.String("identity")
+	if participant == "" {
+		participant = util.ExpandTemplate("participant-%x")
+		fmt.Printf("Using generated participant identity [%s]\n", util.Accented(participant))
+	}
+
+	room := c.String("room")
+	if room == "" {
+		room = util.ExpandTemplate("room-%t")
+		fmt.Printf("Using generated room name [%s]\n", util.Accented(room))
+	}
 
 	grant := &auth.VideoGrant{
 		Room: room,
@@ -215,12 +217,6 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 	if c.Bool("join") {
 		grant.RoomJoin = true
-		if p == "" {
-			return errors.New("participant identity is required")
-		}
-		if room == "" {
-			return errors.New("room is required")
-		}
 		hasPerms = true
 	}
 	if c.Bool("admin") {
@@ -308,12 +304,6 @@ func createToken(ctx context.Context, c *cli.Command) error {
 			grant.RoomCreate = slices.Contains(permissions, pCreate)
 			if slices.Contains(permissions, pJoin) {
 				grant.RoomJoin = true
-				if p == "" {
-					return errors.New("participant identity is required")
-				}
-				if room == "" {
-					return errors.New("room is required")
-				}
 			}
 			grant.RoomAdmin = slices.Contains(permissions, pAdmin)
 			grant.RoomList = slices.Contains(permissions, pList)
@@ -324,12 +314,12 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		}
 	}
 
-	pc, err := loadProjectDetails(c, ignoreURL)
+	_, err := requireProjectWithOpts(ctx, c, ignoreURL)
 	if err != nil {
 		return err
 	}
 
-	at := accessToken(pc.APIKey, pc.APISecret, grant, p)
+	at := accessToken(project.APIKey, project.APISecret, grant, participant)
 
 	if metadata != "" {
 		at.SetMetadata(metadata)
@@ -338,7 +328,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		at.SetRoomPreset(roomPreset)
 	}
 	if name == "" {
-		name = p
+		name = participant
 	}
 	at.SetName(name)
 	if validFor != "" {
@@ -359,6 +349,14 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	util.PrintJSON(grant)
 	fmt.Println()
 	fmt.Println("Access token:", token)
+
+	if c.IsSet("open") {
+		switch c.String("open") {
+		case string(util.OpenTargetMeet):
+			_ = util.OpenInMeet(project.URL, token)
+		}
+	}
+
 	return nil
 }
 

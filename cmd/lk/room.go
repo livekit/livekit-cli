@@ -28,6 +28,7 @@ import (
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -143,8 +144,9 @@ var (
 					Action:    joinRoom,
 					ArgsUsage: "ROOM_NAME",
 					Flags: []cli.Flag{
-						identityFlag,
-						hidden(optional(roomFlag)),
+						optional(identityFlag),
+						optional(roomFlag),
+						openFlag,
 						&cli.BoolFlag{
 							Name:  "publish-demo",
 							Usage: "Publish demo video as a loop",
@@ -209,6 +211,7 @@ var (
 							Action:    getParticipant,
 							Flags: []cli.Flag{
 								roomFlag,
+								optional(identityFlag),
 							},
 						},
 						{
@@ -219,14 +222,14 @@ var (
 							Action:    removeParticipant,
 							Flags: []cli.Flag{
 								roomFlag,
+								optional(identityFlag),
 							},
 						},
 						{
-							Name:      "forward",
-							Usage:     "Forward a participant to a different room",
-							ArgsUsage: "ROOM_NAME",
-							Before:    createRoomClient,
-							Action:    forwardParticipant,
+							Name:   "forward",
+							Usage:  "Forward a participant to a different room",
+							Before: createRoomClient,
+							Action: forwardParticipant,
 							Flags: []cli.Flag{
 								roomFlag,
 								identityFlag,
@@ -237,11 +240,10 @@ var (
 							},
 						},
 						{
-							Name:      "move",
-							Usage:     "Move a participant to a different room",
-							ArgsUsage: "ROOM_NAME",
-							Before:    createRoomClient,
-							Action:    moveParticipant,
+							Name:   "move",
+							Usage:  "Move a participant to a different room",
+							Before: createRoomClient,
+							Action: moveParticipant,
 							Flags: []cli.Flag{
 								roomFlag,
 								identityFlag,
@@ -259,6 +261,7 @@ var (
 							Action:    updateParticipant,
 							Flags: []cli.Flag{
 								roomFlag,
+								optional(identityFlag),
 								&cli.StringFlag{
 									Name:  "metadata",
 									Usage: "JSON describing participant metadata (existing values for unset fields)",
@@ -583,12 +586,12 @@ var (
 )
 
 func createRoomClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := loadProjectDetails(cmd)
+	_, err := requireProject(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	roomClient = lksdk.NewRoomServiceClient(pc.URL, pc.APIKey, pc.APISecret, withDefaultClientOpts(pc)...)
+	roomClient = lksdk.NewRoomServiceClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...)
 	return nil, nil
 }
 
@@ -832,7 +835,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	pc, err := loadProjectDetails(cmd)
+	_, err := requireProject(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -842,9 +845,13 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	autoSubscribe := cmd.Bool("auto-subscribe")
-
 	participantIdentity := cmd.String("identity")
+	if participantIdentity == "" {
+		participantIdentity = util.ExpandTemplate("participant-%x")
+		fmt.Printf("Using generated participant identity [%s]\n", util.Accented(participantIdentity))
+	}
+
+	autoSubscribe := cmd.Bool("auto-subscribe")
 
 	done := make(chan os.Signal, 1)
 	roomCB := &lksdk.RoomCallback{
@@ -961,9 +968,9 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
-		APIKey:                pc.APIKey,
-		APISecret:             pc.APISecret,
+	room, err := lksdk.ConnectToRoom(project.URL, lksdk.ConnectInfo{
+		APIKey:                project.APIKey,
+		APISecret:             project.APISecret,
 		RoomName:              roomName,
 		ParticipantIdentity:   participantIdentity,
 		ParticipantAttributes: participantAttributes,
@@ -1042,6 +1049,20 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	if dtmf := cmd.String("publish-dtmf"); dtmf != "" {
 		if err = publishPacket(&livekit.SipDTMF{Digit: dtmf}); err != nil {
 			return err
+		}
+	}
+
+	if cmd.IsSet("open") {
+		switch cmd.String("open") {
+		case string(util.OpenTargetMeet):
+			at := auth.NewAccessToken(project.APIKey, project.APISecret).
+				SetIdentity(participantIdentity + "_observer").
+				SetVideoGrant(&auth.VideoGrant{
+					Room:     roomName,
+					RoomJoin: true,
+				})
+			token, _ := at.ToJWT()
+			_ = util.OpenInMeet(project.URL, token)
 		}
 	}
 

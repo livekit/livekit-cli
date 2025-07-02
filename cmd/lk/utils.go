@@ -33,17 +33,19 @@ import (
 
 var (
 	printCurl    bool
-	workingDir   = "."
-	tomlFilename = config.LiveKitTOMLFile
+	workingDir   string = "."
+	tomlFilename string = config.LiveKitTOMLFile
 
-	roomFlag = &cli.StringFlag{
+	roomFlag = &TemplateStringFlag{
 		Name:     "room",
-		Usage:    "`NAME` of the room",
+		Aliases:  []string{"r"},
+		Usage:    "`NAME` of the room (supports templates)",
 		Required: true,
 	}
-	identityFlag = &cli.StringFlag{
+	identityFlag = &TemplateStringFlag{
 		Name:     "identity",
-		Usage:    "`ID` of participant",
+		Aliases:  []string{"i"},
+		Usage:    "`ID` of participant (supports templates)",
 		Required: true,
 	}
 	jsonFlag = &cli.BoolFlag{
@@ -51,7 +53,13 @@ var (
 		Aliases: []string{"j"},
 		Usage:   "Output as JSON",
 	}
-
+	silentFlag = &cli.BoolFlag{
+		Name:     "silent",
+		Usage:    "If set, will not prompt for confirmation",
+		Required: false,
+		Value:    false,
+	}
+	openFlag    = util.OpenFlag
 	globalFlags = []cli.Flag{
 		&cli.StringFlag{
 			Name:    "url",
@@ -283,4 +291,43 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 
 	// cannot happen
 	return pc, nil
+}
+
+type TemplateStringFlag = cli.FlagBase[string, cli.StringConfig, templateStringValue]
+
+type templateStringValue struct {
+	destination *string
+	trimSpace   bool
+}
+
+func (s templateStringValue) Create(val string, p *string, c cli.StringConfig) cli.Value {
+	*p = util.ExpandTemplate(val)
+	return &templateStringValue{
+		destination: p,
+		trimSpace:   c.TrimSpace,
+	}
+}
+
+func (s templateStringValue) ToString(val string) string {
+	if val == "" {
+		return val
+	}
+	return fmt.Sprintf("%q", val)
+}
+
+func (s *templateStringValue) Get() any { return util.ExpandTemplate(*s.destination) }
+
+func (s *templateStringValue) Set(val string) error {
+	if s.trimSpace {
+		val = strings.TrimSpace(val)
+	}
+	*s.destination = util.ExpandTemplate(val)
+	return nil
+}
+
+func (s *templateStringValue) String() string {
+	if s.destination != nil {
+		return *s.destination
+	}
+	return ""
 }
