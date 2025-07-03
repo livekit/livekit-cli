@@ -17,9 +17,18 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func PrintJSON(obj any) {
-	txt, _ := json.MarshalIndent(obj, "", "  ")
+	const indent = "  "
+	var txt []byte
+	if m, ok := obj.(proto.Message); ok {
+		txt, _ = protojson.MarshalOptions{Indent: indent}.Marshal(m)
+	} else {
+		txt, _ = json.MarshalIndent(obj, "", indent)
+	}
 	fmt.Println(string(txt))
 }
