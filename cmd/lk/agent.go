@@ -75,6 +75,13 @@ var (
 		Required: false,
 	}
 
+	regionFlag = &cli.StringSliceFlag{
+		Name:     "regions",
+		Usage:    "Region(s) to deploy the agent to. If unset, will deploy to the nearest region.",
+		Required: false,
+		Hidden:   true,
+	}
+
 	AgentCommands = []*cli.Command{
 		{
 			Name:    "agent",
@@ -90,6 +97,7 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 						silentFlag,
+						regionFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -324,6 +332,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		fmt.Printf("Creating new agent\n")
 	}
 
+	regions := cmd.StringSlice("regions")
+	if len(regions) != 0 {
+		lkConfig.Agent.Regions = regions
+	}
+
 	secrets, err := requireSecrets(ctx, cmd, false, false)
 	if err != nil {
 		return err
@@ -335,6 +348,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	req := &lkproto.CreateAgentRequest{
 		Secrets: secrets,
+		Regions: lkConfig.Agent.Regions,
 	}
 
 	resp, err := agentsClient.CreateAgent(ctx, req)
@@ -440,10 +454,16 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("invalid project URL: %s", project.URL)
 	}
 
+	var regions []string
+	for _, regionalAgent := range response.Agents[0].AgentDeployments {
+		regions = append(regions, regionalAgent.Region)
+	}
+
 	agent := response.Agents[0]
 	lkConfig := config.NewLiveKitTOML(matches[1])
 	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
-		ID: agent.AgentId,
+		ID:      agent.AgentId,
+		Regions: regions,
 	}
 
 	if err := lkConfig.SaveTOMLFile("", tomlFilename); err != nil {
@@ -577,8 +597,14 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("no agent config found in [%s]", tomlFilename)
 	}
 
+	regions := cmd.StringSlice("regions")
+	if len(regions) != 0 {
+		lkConfig.Agent.Regions = regions
+	}
+
 	req := &lkproto.UpdateAgentRequest{
 		AgentId: lkConfig.Agent.ID,
+		Regions: lkConfig.Agent.Regions,
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -601,7 +627,8 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 
 	if resp.Success {
 		fmt.Printf("Updated agent [%s]\n", util.Accented(lkConfig.Agent.ID))
-		return nil
+		err = lkConfig.SaveTOMLFile("", tomlFilename)
+		return err
 	}
 
 	return fmt.Errorf("failed to update agent: %s", resp.Message)
