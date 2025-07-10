@@ -79,6 +79,7 @@ var (
 		Name:     "regions",
 		Usage:    "Region(s) to deploy the agent to. If unset, will deploy to the nearest region.",
 		Required: false,
+		Hidden:   true,
 	}
 
 	AgentCommands = []*cli.Command{
