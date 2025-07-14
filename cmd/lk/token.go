@@ -25,9 +25,10 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/urfave/cli/v3"
 
-	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
+
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 const (
@@ -348,6 +349,9 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	fmt.Println("Token grants:")
 	util.PrintJSON(grant)
 	fmt.Println()
+	if project.URL != "" {
+		fmt.Println("Project URL:", project.URL)
+	}
 	fmt.Println("Access token:", token)
 
 	if c.IsSet("open") {
