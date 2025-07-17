@@ -96,7 +96,7 @@ var (
 func loadProjectConfig(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	conf, err := config.LoadOrCreate()
 	if err != nil {
-		return nil, err
+		return ctx, err
 	}
 	cliConfig = conf
 
@@ -108,7 +108,7 @@ func loadProjectConfig(ctx context.Context, cmd *cli.Command) (context.Context, 
 			}
 		}
 	}
-	return nil, nil
+	return ctx, nil
 }
 
 func addProject(ctx context.Context, cmd *cli.Command) error {
