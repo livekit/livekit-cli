@@ -13,12 +13,12 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/go-task/task/v3 v3.43.3
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.39.3-0.20250620210232-022f52ebc520
+	github.com/livekit/protocol v1.39.4-0.20250718180328-5934235d53ec
 	github.com/livekit/server-sdk-go/v2 v2.9.2-0.20250612220331-fb6301c37033
 	github.com/moby/buildkit v0.22.0
 	github.com/pion/rtcp v1.2.15
-	github.com/pion/rtp v1.8.19
-	github.com/pion/webrtc/v4 v4.1.2
+	github.com/pion/rtp v1.8.20
+	github.com/pion/webrtc/v4 v4.1.3
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/schollz/progressbar/v3 v3.18.0
@@ -33,8 +33,10 @@ require (
 	k8s.io/apimachinery v0.33.1
 )
 
+replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
+
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250613105001-9f2d3c737feb.1 // indirect
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250625184727-c923a0c2a132.1 // indirect
 	buf.build/go/protovalidate v0.13.1 // indirect
 	buf.build/go/protoyaml v0.6.0 // indirect
 	cel.dev/expr v0.24.0 // indirect
@@ -47,7 +49,6 @@ require (
 	github.com/alecthomas/chroma/v2 v2.16.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -116,7 +117,7 @@ require (
 	github.com/jxskiss/base62 v1.1.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/lithammer/shortuuid/v4 v4.2.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20250519131108-fb90f5acfded // indirect
@@ -147,7 +148,7 @@ require (
 	github.com/pion/dtls/v3 v3.0.6 // indirect
 	github.com/pion/ice/v4 v4.0.10 // indirect
 	github.com/pion/interceptor v0.1.40 // indirect
-	github.com/pion/logging v0.2.3 // indirect
+	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/sctp v1.8.39 // indirect
@@ -164,7 +165,7 @@ require (
 	github.com/prometheus/common v0.64.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
-	github.com/redis/go-redis/v9 v9.10.0 // indirect
+	github.com/redis/go-redis/v9 v9.11.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sajari/fuzzy v1.0.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.4.0 // indirect
