@@ -14,7 +14,7 @@ require (
 	github.com/go-task/task/v3 v3.43.3
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.39.4-0.20250718180328-5934235d53ec
-	github.com/livekit/server-sdk-go/v2 v2.9.2-0.20250612220331-fb6301c37033
+	github.com/livekit/server-sdk-go/v2 v2.9.2-0.20250721202815-cc45e29e93d6
 	github.com/moby/buildkit v0.22.0
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.20
@@ -32,8 +32,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.33.1
 )
-
-replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250625184727-c923a0c2a132.1 // indirect
