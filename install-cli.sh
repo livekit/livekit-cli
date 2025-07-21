@@ -37,7 +37,7 @@ abort() {
 # i.e. 1.0.0
 get_latest_version()
 {
-  latest_version=$(curl -s https://api.github.com/repos/livekit/$REPO/releases/latest | grep -oP '"tarball_url": ".*/tarball/v\K([^/]*)(?=")')
+  latest_version=$(curl -s https://api.github.com/repos/livekit/$REPO/releases/latest | grep -o '"tarball_url": ".*/tarball/v[^"]*"' | sed 's/.*\/tarball\/v\([^"]*\)".*/\1/')
   printf "%s" "$latest_version"
 }
 
