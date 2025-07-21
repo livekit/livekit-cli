@@ -144,6 +144,16 @@ var (
 					ArgsUsage: "[working-dir]",
 				},
 				{
+					Name:   "restart",
+					Usage:  "Restart an agent",
+					Before: createAgentClient,
+					Action: restartAgent,
+					Flags: []cli.Flag{
+						idFlag(false),
+					},
+					ArgsUsage: "[working-dir]",
+				},
+				{
 					Name:   "rollback",
 					Usage:  "Rollback an agent to a previous version",
 					Before: createAgentClient,
@@ -582,6 +592,26 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 		Rows(rows...)
 
 	fmt.Println(t)
+	return nil
+}
+
+func restartAgent(ctx context.Context, cmd *cli.Command) error {
+	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	if err != nil {
+		return err
+	}
+
+	resp, err := agentsClient.RestartAgent(ctx, &lkproto.RestartAgentRequest{
+		AgentId: agentID,
+	})
+	if err != nil {
+		return err
+	}
+	if !resp.Success {
+		return fmt.Errorf("failed to restart agent: %s", resp.Message)
+	}
+
+	fmt.Printf("Restarted agent [%s]\n", util.Accented(agentID))
 	return nil
 }
 
