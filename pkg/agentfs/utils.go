@@ -23,18 +23,44 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func isPython(dir string) bool {
-	if _, err := os.Stat(filepath.Join(dir, "requirements.txt")); err == nil {
-		return true
+func isPython(dir string) (bool, string) {
+	pythonFiles := []string{
+		"requirements.txt",
+		"requirements.lock",
+		"pyproject.toml",
 	}
-	return false
+
+	for _, filename := range pythonFiles {
+		if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
+			return true, filename
+		}
+	}
+	return false, ""
 }
 
-func isNode(dir string) bool {
-	if _, err := os.Stat(filepath.Join(dir, "package.json")); err == nil {
-		return true
+func isNode(dir string) (bool, string) {
+	nodeFiles := []string{
+		"package.json",
+		"package-lock.json",
+		"yarn.lock",
+		"pnpm-lock.yaml",
 	}
-	return false
+
+	for _, filename := range nodeFiles {
+		if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
+			return true, filename
+		}
+	}
+	return false, ""
+}
+
+func getDependencyFile(dir string) (string, error) {
+	if isPython, dependencyFile := isPython(dir); isPython {
+		return filepath.Join(dir, dependencyFile), nil
+	} else if isNode, dependencyFile := isNode(dir); isNode {
+		return filepath.Join(dir, dependencyFile), nil
+	}
+	return "", fmt.Errorf("no dependency file found")
 }
 
 func ParseCpu(cpu string) (float64, error) {
