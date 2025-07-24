@@ -37,15 +37,15 @@ func isNode(dir string) bool {
 	return false
 }
 
-func ParseCpu(cpu string) (float64, error) {
+func ParseCpu(cpu string) (string, error) {
 	cpuStr := strings.TrimSpace(cpu)
 	cpuQuantity, err := resource.ParseQuantity(cpuStr)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse CPU quantity: %v", err)
+		return "", fmt.Errorf("failed to parse CPU quantity: %v", err)
 	}
 
-	// Convert to whole CPU cores
-	cpuCores := float64(cpuQuantity.MilliValue()) / 1000
+	// Convert to millicores
+	cpuCores := fmt.Sprintf("%dm", cpuQuantity.MilliValue())
 
 	return cpuCores, nil
 }

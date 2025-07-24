@@ -483,19 +483,15 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
-	configExists, err := requireConfig(workingDir, tomlFilename)
+	var req *lkproto.DeployAgentRequest
+
+	agentId, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
-	if !configExists {
-		return fmt.Errorf("config file [%s] required to update agent", util.Accented(tomlFilename))
-	}
-	if !lkConfig.HasAgent() {
-		return fmt.Errorf("no agent config found in [%s]", tomlFilename)
-	}
 
-	req := &lkproto.DeployAgentRequest{
-		AgentId: lkConfig.Agent.ID,
+	req = &lkproto.DeployAgentRequest{
+		AgentId: agentId,
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -537,7 +533,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -577,9 +573,11 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 			}
 
 			rows = append(rows, []string{
+				agent.AgentId,
+				agent.Version,
 				regionalAgent.Region,
 				regionalAgent.Status,
-				fmt.Sprintf("%.4g / %s", curCPU, regionalAgent.CpuLimit),
+				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
 				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
 				agent.DeployedAt.AsTime().Format(time.RFC3339),
@@ -588,7 +586,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	t := util.CreateTable().
-		Headers("Region", "Status", "CPU", "Mem", "Replicas/Min/Max", "Deployed At").
+		Headers("ID", "Version", "Region", "Status", "CPU", "Mem", "Replicas", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -596,7 +594,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 }
 
 func restartAgent(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -645,7 +643,10 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 		req.Secrets = secrets
 	}
 
-	resp, err := agentsClient.UpdateAgent(ctx, req)
+	var resp *lkproto.UpdateAgentResponse
+	util.Await("Updating agent ["+util.Accented(lkConfig.Agent.ID)+"]", func() {
+		resp, err = agentsClient.UpdateAgent(ctx, req)
+	})
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			if twerr.Code() == twirp.PermissionDenied {
@@ -665,14 +666,17 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
 
-	resp, err := agentsClient.RollbackAgent(ctx, &lkproto.RollbackAgentRequest{
-		AgentId: agentID,
-		Version: cmd.String("version"),
+	var resp *lkproto.RollbackAgentResponse
+	util.Await("Rolling back agent ["+util.Accented(agentID)+"]", func() {
+		resp, err = agentsClient.RollbackAgent(ctx, &lkproto.RollbackAgentRequest{
+			AgentId: agentID,
+			Version: cmd.String("version"),
+		})
 	})
 
 	if err != nil {
@@ -688,13 +692,13 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to rollback agent %s", resp.Message)
 	}
 
-	fmt.Printf("Rolled back agent [%s] to version %s\n", util.Accented(agentID), cmd.String("version"))
+	fmt.Printf("Rolled back agent [%s] to version [%s]\n", util.Accented(agentID), util.Accented(cmd.String("version")))
 
 	return nil
 }
 
 func getLogs(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -703,7 +707,7 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -758,7 +762,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -778,14 +782,14 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	table := util.CreateTable().
-		Headers("Version", "Current", "Created At")
+		Headers("Version", "Current", "Deployed At")
 
-	// Sort versions by created date ascending
+	// Sort versions by created date descending
 	slices.SortFunc(versions.Versions, func(a, b *lkproto.AgentVersion) int {
-		return a.CreatedAt.AsTime().Compare(b.CreatedAt.AsTime())
+		return b.CreatedAt.AsTime().Compare(a.CreatedAt.AsTime())
 	})
 	for _, version := range versions.Versions {
-		table.Row(version.Version, fmt.Sprintf("%t", version.Current), fmt.Sprintf("%v", version.CreatedAt.AsTime().Format(time.RFC3339)))
+		table.Row(version.Version, fmt.Sprintf("%t", version.Current), version.CreatedAt.AsTime().Format(time.RFC3339))
 	}
 
 	fmt.Println(table)
@@ -830,17 +834,26 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
+	slices.SortFunc(items, func(a, b *lkproto.AgentInfo) int {
+		return b.DeployedAt.AsTime().Compare(a.DeployedAt.AsTime())
+	})
+
 	var rows [][]string
 	for _, agent := range items {
 		var regions []string
 		for _, regionalAgent := range agent.AgentDeployments {
 			regions = append(regions, regionalAgent.Region)
 		}
-		rows = append(rows, []string{agent.AgentId, strings.Join(regions, ",")})
+		rows = append(rows, []string{
+			agent.AgentId,
+			strings.Join(regions, ","),
+			agent.Version,
+			agent.DeployedAt.AsTime().Format(time.RFC3339),
+		})
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Regions").
+		Headers("ID", "Regions", "Version", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -848,7 +861,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -883,7 +896,7 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
 	if err != nil {
 		return err
 	}
@@ -917,29 +930,74 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 	return fmt.Errorf("failed to update agent secrets: %s", resp.Message)
 }
 
-func getAgentID(cmd *cli.Command, agentDir string, tomlFileName string) (string, error) {
+func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFileName string) (string, error) {
 	agentID := cmd.String("id")
 	if agentID == "" {
 		configExists, err := requireConfig(agentDir, tomlFileName)
 		if err != nil && configExists {
 			return "", err
 		}
-		if !configExists {
-			return "", fmt.Errorf("config file [%s] required to update agent", tomlFileName)
-		}
-		if !lkConfig.HasAgent() {
-			return "", fmt.Errorf("no agent config found in [%s]", tomlFileName)
-		}
 
-		agentID = lkConfig.Agent.ID
+		if configExists {
+			if !lkConfig.HasAgent() {
+				return "", fmt.Errorf("no agent config found in [%s]", tomlFilename)
+			}
+			agentID = lkConfig.Agent.ID
+		} else {
+			agentID, err = selectAgent(ctx, cmd)
+			if err != nil {
+				return "", err
+			}
+		}
 	}
 
 	if agentID == "" {
 		// shouldn't happen, but check to ensure we have a name
-		return "", fmt.Errorf("agent ID or %s required", tomlFileName)
+		return "", fmt.Errorf("agent ID or [%s] required", util.Accented(tomlFileName))
 	}
 
+	fmt.Printf("Using agent [%s]\n", util.Accented(agentID))
+
 	return agentID, nil
+}
+
+func selectAgent(ctx context.Context, _ *cli.Command) (string, error) {
+	var agents *lkproto.ListAgentsResponse
+	var err error
+
+	util.Await("No agent ID provided, selecting from available agents...", func() {
+		agents, err = agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{})
+	})
+	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return "", fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
+		return "", err
+	}
+
+	if len(agents.Agents) == 0 {
+		return "", fmt.Errorf("no agents found")
+	}
+
+	var agentNames []huh.Option[string]
+	for _, agent := range agents.Agents {
+		name := agent.AgentId + " " + util.Dimmed("deployed "+agent.DeployedAt.AsTime().Format(time.RFC3339))
+		agentNames = append(agentNames, huh.Option[string]{Key: name, Value: agent.AgentId})
+	}
+
+	var selectedAgent string
+	if err := huh.NewSelect[string]().
+		Title("Select an agent").
+		Options(agentNames...).
+		Value(&selectedAgent).
+		WithTheme(util.Theme).
+		Run(); err != nil {
+		return "", err
+	}
+
+	return selectedAgent, nil
 }
 
 func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([]*lkproto.AgentSecret, error) {
