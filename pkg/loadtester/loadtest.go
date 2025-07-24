@@ -51,6 +51,8 @@ type Params struct {
 	NumPerSecond     float64
 	Simulcast        bool
 	SimulateSpeakers bool
+	// true to allow publishing tracks (default true)
+	CanPublish       bool
 
 	TesterParams
 }
@@ -308,6 +310,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		testerParams := params.TesterParams
 		testerParams.Sequence = i
 		testerParams.expectedTracks = expectedTracks
+		testerParams.CanPublish = params.CanPublish // Copy CanPublish from parent params
 		isVideoPublisher := i < params.VideoPublishers
 		isAudioPublisher := i < params.AudioPublishers
 		if isVideoPublisher || isAudioPublisher {
