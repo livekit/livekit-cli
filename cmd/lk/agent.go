@@ -352,7 +352,16 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if err := requireDockerfile(ctx, cmd, workingDir); err != nil {
+	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
+	if err != nil {
+		return err
+	}
+
+	if err := requireDockerfile(ctx, cmd, workingDir, settingsMap); err != nil {
+		return err
+	}
+
+	if err := agentfs.CheckSDKVersion(workingDir, settingsMap); err != nil {
 		return err
 	}
 
@@ -1056,42 +1065,13 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	return secretsSlice, nil
 }
 
-func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string) error {
+func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string, settingsMap map[string]string) error {
 	dockerfileExists, err := agentfs.HasDockerfile(workingDir)
 	if err != nil {
 		return err
 	}
 
 	if !dockerfileExists {
-		var clientSettingsResponse *lkproto.ClientSettingsResponse
-
-		if !cmd.Bool("silent") {
-			if err := util.Await(
-				"Loading client settings...",
-				func() {
-					clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
-				},
-			); err != nil {
-				return err
-			}
-		} else {
-			clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
-		}
-
-		if err != nil {
-			if twerr, ok := err.(twirp.Error); ok {
-				if twerr.Code() == twirp.PermissionDenied {
-					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-				}
-			}
-			return err
-		}
-
-		settingsMap := make(map[string]string)
-		for _, setting := range clientSettingsResponse.Params {
-			settingsMap[setting.Name] = setting.Value
-		}
-
 		if !cmd.Bool("silent") {
 			var innerErr error
 			if err := util.Await(
@@ -1118,6 +1098,38 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 	}
 
 	return nil
+}
+
+func getClientSettings(ctx context.Context, silent bool) (map[string]string, error) {
+	var clientSettingsResponse *lkproto.ClientSettingsResponse
+	var err error
+
+	if !silent {
+		err = util.Await(
+			"Loading client settings...",
+			func() {
+				clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
+			},
+		)
+	} else {
+		clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
+	}
+
+	if err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			if twerr.Code() == twirp.PermissionDenied {
+				return nil, fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+			}
+		}
+		return nil, err
+	}
+
+	settingsMap := make(map[string]string)
+	for _, setting := range clientSettingsResponse.Params {
+		settingsMap[setting.Name] = setting.Value
+	}
+
+	return settingsMap, nil
 }
 
 func requireConfig(workingDir, tomlFilename string) (bool, error) {
