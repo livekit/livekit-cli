@@ -1005,6 +1005,10 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	secrets := make(map[string]*lkproto.AgentSecret)
 	for _, secret := range cmd.StringSlice("secrets") {
 		secret := strings.Split(secret, "=")
+		if len(secret) != 2 || secret[0] == "" || secret[1] == "" {
+			// Don't include empty secrets
+			continue
+		}
 		agentSecret := &lkproto.AgentSecret{
 			Name:  secret[0],
 			Value: []byte(secret[1]),

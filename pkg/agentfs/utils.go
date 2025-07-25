@@ -15,6 +15,7 @@
 package agentfs
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,18 +24,67 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func isPython(dir string) bool {
-	if _, err := os.Stat(filepath.Join(dir, "requirements.txt")); err == nil {
-		return true
+type ProjectType string
+
+const (
+	ProjectTypePythonPip ProjectType = "python.pip"
+	ProjectTypePythonUV  ProjectType = "python.uv"
+	ProjectTypeNode      ProjectType = "node"
+	ProjectTypeUnknown   ProjectType = "unknown"
+)
+
+func (p ProjectType) IsPython() bool {
+	return p == ProjectTypePythonPip || p == ProjectTypePythonUV
+}
+
+func (p ProjectType) Lang() string {
+	switch p {
+	case ProjectTypePythonPip, ProjectTypePythonUV:
+		return "Python"
+	case ProjectTypeNode:
+		return "Node.js"
+	default:
+		return ""
 	}
-	return false
+}
+
+func (p ProjectType) FileExt() string {
+	switch p {
+	case ProjectTypePythonPip, ProjectTypePythonUV:
+		return ".py"
+	case ProjectTypeNode:
+		return ".js"
+	default:
+		return ""
+	}
+}
+
+func isPythonPip(dir string) bool {
+	_, err := os.Stat(filepath.Join(dir, "requirements.txt"))
+	return err == nil
+}
+
+func isPythonUV(dir string) bool {
+	_, err := os.Stat(filepath.Join(dir, "pyproject.toml"))
+	return err == nil
 }
 
 func isNode(dir string) bool {
-	if _, err := os.Stat(filepath.Join(dir, "package.json")); err == nil {
-		return true
+	_, err := os.Stat(filepath.Join(dir, "package.json"))
+	return err == nil
+}
+
+func DetectProjectType(dir string) (ProjectType, error) {
+	if isNode(dir) {
+		return ProjectTypeNode, nil
 	}
-	return false
+	if isPythonPip(dir) {
+		return ProjectTypePythonPip, nil
+	}
+	if isPythonUV(dir) {
+		return ProjectTypePythonUV, nil
+	}
+	return ProjectTypeUnknown, errors.New("project type could not me identified, expect requirements.txt, pyproject.toml, or package.json")
 }
 
 func ParseCpu(cpu string) (string, error) {
