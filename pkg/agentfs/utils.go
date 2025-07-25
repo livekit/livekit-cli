@@ -15,23 +15,130 @@
 package agentfs
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func isPython(dir string) bool {
-	if _, err := os.Stat(filepath.Join(dir, "requirements.txt")); err == nil {
-		return true
-	}
-	return false
+// ProjectType represents the type of project detected
+type ProjectType string
+
+const (
+	ProjectTypePythonPip ProjectType = "python.pip"
+	ProjectTypePythonUV  ProjectType = "python.uv"
+	ProjectTypeNode      ProjectType = "node"
+	ProjectTypeUnknown   ProjectType = "unknown"
+)
+
+// IsPython returns true if the project type is any Python variant
+func (p ProjectType) IsPython() bool {
+	return p == ProjectTypePythonPip || p == ProjectTypePythonUV
 }
 
-func isNode(dir string) bool {
-	if _, err := os.Stat(filepath.Join(dir, "package.json")); err == nil {
+func (p ProjectType) IsNode() bool {
+	return p == ProjectTypeNode
+}
+
+// Lang returns the human-readable language name for the project type
+func (p ProjectType) Lang() string {
+	switch {
+	case p.IsPython():
+		return "Python"
+	case p.IsNode():
+		return "Node.js"
+	default:
+		return ""
+	}
+}
+
+// FileExt returns the primary file extension for the project type
+func (p ProjectType) FileExt() string {
+	switch {
+	case p.IsPython():
+		return ".py"
+	case p.IsNode():
+		return ".js"
+	default:
+		return ""
+	}
+}
+
+// DetectProjectType determines the project type using enhanced detection logic
+func DetectProjectType(dir string) (ProjectType, error) {
+	// Node.js detection
+	if util.FileExists(dir, "package.json") {
+		return ProjectTypeNode, nil
+	}
+
+	// Python detection with priority order for most reliable indicators
+	// 1. Check for uv.lock first (most definitive UV indicator)
+	if util.FileExists(dir, "uv.lock") {
+		return ProjectTypePythonUV, nil
+	}
+
+	// 2. Check for other lock files (Poetry, Pipenv) - treat as pip-compatible
+	if util.FileExists(dir, "poetry.lock") || util.FileExists(dir, "Pipfile.lock") {
+		return ProjectTypePythonPip, nil
+	}
+
+	// 3. Check for requirements.txt (classic pip setup)
+	if util.FileExists(dir, "requirements.txt") {
+		return ProjectTypePythonPip, nil
+	}
+
+	// 4. Check pyproject.toml with sophisticated tool detection
+	if util.FileExists(dir, "pyproject.toml") {
+		tomlPath := filepath.Join(dir, "pyproject.toml")
+		data, err := os.ReadFile(tomlPath)
+		if err == nil {
+			var doc map[string]any
+			if err := toml.Unmarshal(data, &doc); err == nil {
+				if tool, ok := doc["tool"].(map[string]any); ok {
+					// Check for specific tool configurations
+					if _, hasPoetry := tool["poetry"]; hasPoetry {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasPdm := tool["pdm"]; hasPdm {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasHatch := tool["hatch"]; hasHatch {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasUv := tool["uv"]; hasUv {
+						return ProjectTypePythonUV, nil
+					}
+				}
+
+				// Use our sophisticated UV detection for pyproject.toml files without explicit tool sections
+				if isUVByContent(string(data)) {
+					return ProjectTypePythonUV, nil
+				}
+			}
+		}
+		// Default to pip if pyproject.toml is present but not informative
+		return ProjectTypePythonPip, nil
+	}
+
+	return ProjectTypeUnknown, errors.New("project type could not be identified; expected package.json, requirements.txt, pyproject.toml, or lock files")
+}
+
+// isUVByContent uses our sophisticated UV detection logic for pyproject.toml content analysis
+// This function specifically identifies UV-based Python projects without misclassifying
+// setuptools, poetry, and other pyproject.toml-based projects as UV projects.
+func isUVByContent(content string) bool {
+	// Look for UV-specific patterns in pyproject.toml:
+	// - [dependency-groups]: UV's dependency group syntax (not used by setuptools/poetry)
+	// - "uv sync": UV command references in scripts or documentation
+	// - [tool.uv]: UV-specific tool configuration section
+	if strings.Contains(content, "[dependency-groups]") ||
+		strings.Contains(content, "uv sync") ||
+		strings.Contains(content, "[tool.uv]") {
 		return true
 	}
 	return false
