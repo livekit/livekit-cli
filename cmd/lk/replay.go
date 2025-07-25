@@ -26,7 +26,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/replay"
-	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/livekit/server-sdk-go/v2/signalling"
 )
 
 var (
@@ -119,7 +119,7 @@ func createReplayClient(ctx context.Context, cmd *cli.Command) (context.Context,
 		return nil, err
 	}
 
-	url := lksdk.ToHttpURL(pc.URL)
+	url := signalling.ToHttpURL(pc.URL)
 	client := replay.NewReplayProtobufClient(url, &http.Client{}, withDefaultClientOpts(pc)...)
 	replayClient = &replayServiceClient{
 		Replay:    client,
