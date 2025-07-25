@@ -25,6 +25,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/moby/patternmatcher"
+	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/pkg/errors"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -72,7 +74,7 @@ func CreateDockerfile(dir string, settingsMap map[string]string) error {
 
 	// TODO: (@rektdeckard) support Node entrypoint validation
 	if projectType.IsPython() {
-		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, projectType, settingsMap)
+		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap)
 		if err != nil {
 			return err
 		}
@@ -91,22 +93,38 @@ func CreateDockerfile(dir string, settingsMap map[string]string) error {
 	return nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, projectType ProjectType, settingsMap map[string]string) ([]byte, error) {
+func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string) ([]byte, error) {
 	valFile := func(fileName string) (string, error) {
 		// NOTE: we need to recurse to find entrypoints which may exist in src/ or some other directory.
 		// This could be a lot of files, so we omit any files in .dockerignore, since they cannot be
 		// used as entrypoints.
+
+		reader := bytes.NewReader(dockerignoreContent)
+		patterns, err := ignorefile.ReadAll(reader)
+		if err != nil {
+			return "", err
+		}
+		matcher, err := patternmatcher.New(patterns)
+		if err != nil {
+			return "", err
+		}
+
 		var fileList []string
 		if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if !d.IsDir() && strings.HasSuffix(d.Name(), ".py") {
+			if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
+				return nil
+			} else if err != nil {
+				return err
+			}
+			if !d.IsDir() && strings.HasSuffix(d.Name(), projectType.FileExt()) {
 				fileList = append(fileList, path)
 			}
 			return nil
 		}); err != nil {
-			panic(err)
+			return "", fmt.Errorf("error walking directory %s: %w", dir, err)
 		}
 
 		if slices.Contains(fileList, fileName) {
@@ -129,8 +147,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType Projec
 			),
 		)
 
-		err := form.Run()
-		if err != nil {
+		if err := form.Run(); err != nil {
 			return "", err
 		}
 
@@ -153,7 +170,9 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType Projec
 		line := lines[i]
 		trimmedLine := bytes.TrimSpace(line)
 
-		if bytes.HasPrefix(trimmedLine, []byte("ENTRYPOINT")) {
+		if bytes.HasPrefix(trimmedLine, []byte("ARG PROGRAM_MAIN")) {
+			result.WriteString(fmt.Sprintf("ARG PROGRAM_MAIN=\"%s\"", newEntrypoint))
+		} else if bytes.HasPrefix(trimmedLine, []byte("ENTRYPOINT")) {
 			// Extract the current entrypoint file
 			parts := bytes.Fields(trimmedLine)
 			if len(parts) < 2 {
