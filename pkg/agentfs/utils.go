@@ -15,6 +15,7 @@
 package agentfs
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,22 +24,48 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func isPython(dir string) (bool, string) {
+type ProjectType string
+
+const (
+	ProjectTypePythonPip ProjectType = "python.pip"
+	ProjectTypePythonUV  ProjectType = "python.uv"
+	ProjectTypeNode      ProjectType = "node"
+	ProjectTypeUnknown   ProjectType = "unknown"
+)
+
+func (p ProjectType) IsPython() bool {
+	return p == ProjectTypePythonPip || p == ProjectTypePythonUV
+}
+
+func (p ProjectType) Lang() string {
+	switch p {
+	case ProjectTypePythonPip, ProjectTypePythonUV:
+		return "Python"
+	case ProjectTypeNode:
+		return "Node.js"
+	default:
+		return ""
+	}
+}
+
+func (p ProjectType) FileExt() string {
+	switch p {
+	case ProjectTypePythonPip, ProjectTypePythonUV:
+		return ".py"
+	case ProjectTypeNode:
+		return ".js"
+	default:
+		return ""
+	}
+}
+
+func LocateLockfile(dir string, p ProjectType) (bool, string) {
 	pythonFiles := []string{
 		"requirements.txt",
 		"requirements.lock",
 		"pyproject.toml",
 	}
 
-	for _, filename := range pythonFiles {
-		if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
-			return true, filename
-		}
-	}
-	return false, ""
-}
-
-func isNode(dir string) (bool, string) {
 	nodeFiles := []string{
 		"package.json",
 		"package-lock.json",
@@ -46,21 +73,52 @@ func isNode(dir string) (bool, string) {
 		"pnpm-lock.yaml",
 	}
 
-	for _, filename := range nodeFiles {
-		if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
-			return true, filename
+	switch p {
+	case ProjectTypePythonPip:
+	case ProjectTypePythonUV:
+		for _, filename := range pythonFiles {
+			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
+				return true, filename
+			}
 		}
+	case ProjectTypeNode:
+		for _, filename := range nodeFiles {
+			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
+				return true, filename
+			}
+		}
+	default:
+		return false, ""
 	}
 	return false, ""
 }
 
-func getDependencyFile(dir string) (string, error) {
-	if isPython, dependencyFile := isPython(dir); isPython {
-		return filepath.Join(dir, dependencyFile), nil
-	} else if isNode, dependencyFile := isNode(dir); isNode {
-		return filepath.Join(dir, dependencyFile), nil
+func isPythonPip(dir string) bool {
+	_, err := os.Stat(filepath.Join(dir, "requirements.txt"))
+	return err == nil
+}
+
+func isPythonUV(dir string) bool {
+	_, err := os.Stat(filepath.Join(dir, "pyproject.toml"))
+	return err == nil
+}
+
+func isNode(dir string) bool {
+	_, err := os.Stat(filepath.Join(dir, "package.json"))
+	return err == nil
+}
+
+func DetectProjectType(dir string) (ProjectType, error) {
+	if isNode(dir) {
+		return ProjectTypeNode, nil
 	}
-	return "", fmt.Errorf("no dependency file found")
+	if isPythonPip(dir) {
+		return ProjectTypePythonPip, nil
+	}
+	if isPythonUV(dir) {
+		return ProjectTypePythonUV, nil
+	}
+	return ProjectTypeUnknown, errors.New("project type could not me identified, expect requirements.txt, pyproject.toml, or package.json")
 }
 
 func ParseCpu(cpu string) (string, error) {

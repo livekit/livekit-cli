@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/pkg/errors"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/logger"
@@ -51,29 +53,25 @@ func CreateDockerfile(dir string, settingsMap map[string]string) error {
 		return fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
 
-	projectType := ""
-	if isNode, _ := isNode(dir); isNode {
-		projectType = "node"
-	} else if isPython, _ := isPython(dir); isPython {
-		projectType = "python"
-	} else {
-		return fmt.Errorf("unable to determine project type, please create a Dockerfile in the current directory")
+	projectType, err := DetectProjectType(dir)
+	if err != nil {
+		return errors.Wrap(err, "unable to determine project type, please create a Dockerfile in the current directory")
 	}
 
 	var dockerfileContent []byte
 	var dockerIgnoreContent []byte
-	var err error
 
-	dockerfileContent, err = fs.ReadFile("examples/" + projectType + ".Dockerfile")
+	dockerfileContent, err = fs.ReadFile("examples/" + string(projectType) + ".Dockerfile")
 	if err != nil {
 		return err
 	}
-	dockerIgnoreContent, err = fs.ReadFile("examples/" + projectType + ".dockerignore")
+	dockerIgnoreContent, err = fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
 	if err != nil {
 		return err
 	}
 
-	if projectType == "python" {
+	// TODO: (@rektdeckard) support Node entrypoint validation
+	if projectType.IsPython() {
 		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, projectType, settingsMap)
 		if err != nil {
 			return err
@@ -93,43 +91,30 @@ func CreateDockerfile(dir string, settingsMap map[string]string) error {
 	return nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, projectType string, settingsMap map[string]string) ([]byte, error) {
-	fileList := make(map[string]bool)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		fileList[entry.Name()] = true
-	}
-
+func validateEntrypoint(dir string, dockerfileContent []byte, projectType ProjectType, settingsMap map[string]string) ([]byte, error) {
 	valFile := func(fileName string) (string, error) {
-		if _, exists := fileList[fileName]; exists {
+		// NOTE: we need to recurse to find entrypoints which may exist in src/ or some other directory.
+		// This could be a lot of files, so we omit any files in .dockerignore, since they cannot be
+		// used as entrypoints.
+		var fileList []string
+		if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() && strings.HasSuffix(d.Name(), ".py") {
+				fileList = append(fileList, path)
+			}
+			return nil
+		}); err != nil {
+			panic(err)
+		}
+
+		if slices.Contains(fileList, fileName) {
 			return fileName, nil
 		}
 
-		var suffix string
-		switch projectType {
-		case "python":
-			suffix = ".py"
-		case "node":
-			suffix = ".js"
-		}
-
-		// Collect all matching files
-		var options []string
-		for _, entry := range entries {
-			if strings.HasSuffix(entry.Name(), suffix) {
-				options = append(options, entry.Name())
-			}
-		}
-
 		// If no matching files found, return early
-		if len(options) == 0 {
+		if len(fileList) == 0 {
 			return "", nil
 		}
 
@@ -137,8 +122,8 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType string
 		form := huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
-					Title(fmt.Sprintf("Select %s file to use as entrypoint", projectType)).
-					Options(huh.NewOptions(options...)...).
+					Title(fmt.Sprintf("Select %s file to use as entrypoint", projectType.Lang())).
+					Options(huh.NewOptions(fileList...)...).
 					Value(&selected).
 					WithTheme(util.Theme),
 			),
@@ -152,8 +137,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType string
 		return selected, nil
 	}
 
-	err = validateSettingsMap(settingsMap, []string{"python_entrypoint"})
-	if err != nil {
+	if err := validateSettingsMap(settingsMap, []string{"python_entrypoint"}); err != nil {
 		return nil, err
 	}
 
@@ -165,7 +149,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType string
 
 	lines := bytes.Split(dockerfileContent, []byte("\n"))
 	var result bytes.Buffer
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		line := lines[i]
 		trimmedLine := bytes.TrimSpace(line)
 
@@ -226,7 +210,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType string
 					return nil, err
 				}
 				for i, arg := range cmdArray {
-					if strings.HasSuffix(arg, ".py") {
+					if strings.HasSuffix(arg, projectType.FileExt()) {
 						cmdArray[i] = newEntrypoint
 						break
 					}
@@ -237,7 +221,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, projectType string
 				}
 				fmt.Fprintf(&result, "CMD %s\n", newJSON)
 			}
-		} else if bytes.HasPrefix(trimmedLine, []byte(fmt.Sprintf("RUN python %s", pythonEntrypoint))) {
+		} else if bytes.HasPrefix(trimmedLine, fmt.Appendf(nil, "RUN python %s", pythonEntrypoint)) {
 			line = bytes.ReplaceAll(line, []byte(pythonEntrypoint), []byte(newEntrypoint))
 			result.Write(line)
 			if i < len(lines)-1 {
