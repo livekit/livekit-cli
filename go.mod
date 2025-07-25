@@ -16,6 +16,7 @@ require (
 	github.com/livekit/protocol v1.39.4-0.20250718180328-5934235d53ec
 	github.com/livekit/server-sdk-go/v2 v2.9.2-0.20250721202815-cc45e29e93d6
 	github.com/moby/buildkit v0.22.0
+	github.com/moby/patternmatcher v0.6.0
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.20
 	github.com/pion/webrtc/v4 v4.1.3
@@ -130,7 +131,6 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
-	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/signal v0.7.1 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect

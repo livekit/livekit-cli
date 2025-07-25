@@ -10,6 +10,9 @@ FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
+# Define the program entrypoint file where your agent is started
+ARG PROGRAM_MAIN="src/agent.py"
+
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
 ARG UID=10001
@@ -61,7 +64,7 @@ RUN uv sync --locked
 # Pre-download any ML models or files the agent needs
 # This ensures the container is ready to run immediately without downloading
 # dependencies at runtime, which improves startup time and reliability
-RUN uv run src/agent.py download-files
+RUN uv run "$PROGRAM_MAIN" download-files
 
 # Expose the healthcheck port
 # This allows Docker and orchestration systems to check if the container is healthy
@@ -70,4 +73,4 @@ EXPOSE 8081
 # Run the application using UV
 # UV will activate the virtual environment and run the agent
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs
-CMD ["uv", "run", "src/agent.py", "start"]
+CMD ["uv", "run", "$PROGRAM_MAIN", "start"]
