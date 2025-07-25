@@ -24,6 +24,11 @@ import (
 	"github.com/livekit/protocol/utils/guid"
 )
 
+func FileExists(dir, filename string) bool {
+	_, err := os.Stat(filepath.Join(dir, filename))
+	return err == nil
+}
+
 // Safely copy a file across filesystems, preserving permissions
 func CopyFile(src, dest string) error {
 	srcFile, err := os.Open(src)

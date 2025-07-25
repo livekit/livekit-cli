@@ -74,3 +74,4 @@ EXPOSE 8081
 # UV will activate the virtual environment and run the agent
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs
 CMD ["uv", "run", "$PROGRAM_MAIN", "start"]
+
