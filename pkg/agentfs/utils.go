@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -37,11 +39,15 @@ func (p ProjectType) IsPython() bool {
 	return p == ProjectTypePythonPip || p == ProjectTypePythonUV
 }
 
+func (p ProjectType) IsNode() bool {
+	return p == ProjectTypeNode
+}
+
 func (p ProjectType) Lang() string {
-	switch p {
-	case ProjectTypePythonPip, ProjectTypePythonUV:
+	switch {
+	case p.IsPython():
 		return "Python"
-	case ProjectTypeNode:
+	case p.IsNode():
 		return "Node.js"
 	default:
 		return ""
@@ -49,10 +55,10 @@ func (p ProjectType) Lang() string {
 }
 
 func (p ProjectType) FileExt() string {
-	switch p {
-	case ProjectTypePythonPip, ProjectTypePythonUV:
+	switch {
+	case p.IsPython():
 		return ".py"
-	case ProjectTypeNode:
+	case p.IsNode():
 		return ".js"
 	default:
 		return ""
@@ -109,16 +115,48 @@ func isNode(dir string) bool {
 }
 
 func DetectProjectType(dir string) (ProjectType, error) {
-	if isNode(dir) {
+	// Node.js detection
+	if util.FileExists(dir, "package.json") {
 		return ProjectTypeNode, nil
 	}
-	if isPythonPip(dir) {
-		return ProjectTypePythonPip, nil
-	}
-	if isPythonUV(dir) {
+
+	// Python detection
+	if util.FileExists(dir, "uv.lock") {
 		return ProjectTypePythonUV, nil
 	}
-	return ProjectTypeUnknown, errors.New("project type could not me identified, expect requirements.txt, pyproject.toml, or package.json")
+	if util.FileExists(dir, "poetry.lock") || util.FileExists(dir, "Pipfile.lock") {
+		return ProjectTypePythonPip, nil // We can treat as pip-compatible
+	}
+	if util.FileExists(dir, "requirements.txt") {
+		return ProjectTypePythonPip, nil
+	}
+	if util.FileExists(dir, "pyproject.toml") {
+		tomlPath := filepath.Join(dir, "pyproject.toml")
+		data, err := os.ReadFile(tomlPath)
+		if err == nil {
+			var doc map[string]any
+			if err := toml.Unmarshal(data, &doc); err == nil {
+				if tool, ok := doc["tool"].(map[string]any); ok {
+					if _, hasPoetry := tool["poetry"]; hasPoetry {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasPdm := tool["pdm"]; hasPdm {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasHatch := tool["hatch"]; hasHatch {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasUv := tool["uv"]; hasUv {
+						return ProjectTypePythonUV, nil
+					}
+				}
+			}
+		}
+		// Default to pip if pyproject.toml is present but not informative
+		return ProjectTypePythonPip, nil
+	}
+
+	return ProjectTypeUnknown, errors.New("project type could not be identified; expected package.json, requirements.txt, pyproject.toml, or lock files")
 }
 
 func ParseCpu(cpu string) (string, error) {
