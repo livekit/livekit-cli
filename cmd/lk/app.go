@@ -553,12 +553,5 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	var cmdErr error
-	if err := util.Await(
-		"Running task "+taskName+"...",
-		func() { cmdErr = task() },
-	); err != nil {
-		return err
-	}
-	return cmdErr
+	return task()
 }

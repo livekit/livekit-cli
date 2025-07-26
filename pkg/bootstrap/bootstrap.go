@@ -30,8 +30,10 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/go-task/task/v3"
+	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/taskfile/ast"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
@@ -59,6 +61,7 @@ const (
 // Files to remove after cloning a template
 var templateIgnoreFiles = []string{
 	".git",
+	".task",
 	"renovate.json",
 	"taskfile.yaml",
 	"TEMPLATE.md",
@@ -128,6 +131,9 @@ func FetchSandboxDetails(ctx context.Context, sid, token, serverURL string) (*Sa
 }
 
 func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
+	os.Setenv("TASK_X_REMOTE_TASKFILES", "1")
+	experiments.Parse(rootPath)
+
 	taskfilePath := path.Join(rootPath, TaskFile)
 
 	// taskfile.yaml is optional
@@ -156,16 +162,17 @@ func NewTaskExecutor(dir string, verbose bool) *task.Executor {
 		Force:     false,
 		ForceAll:  false,
 		Insecure:  false,
-		Download:  false,
+		Download:  true,
 		Offline:   false,
 		Watch:     false,
 		Verbose:   false,
-		Silent:    !verbose,
-		AssumeYes: false,
+		Silent:    true,
 		Dry:       false,
 		Summary:   false,
 		Parallel:  false,
 		Color:     true,
+		Timeout:   time.Second * 10,
+		AssumeYes: true,
 
 		Stdin:  os.Stdin,
 		Stdout: o,
@@ -262,7 +269,8 @@ func CloneTemplate(url, dir string) (string, string, error) {
 	cmd := exec.Command("git", "clone", "--depth=1", url, dir)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	return stdout.String(), stderr.String(), cmd.Run()
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
 }
 
 func CleanupTemplate(dir string) error {
