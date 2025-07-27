@@ -291,6 +291,7 @@ func TestScanDependencyFile(t *testing.T) {
 		minVersion    string
 		expectError   bool
 		errorContains string
+		setupFiles    map[string]string
 	}{
 		{
 			name: "python requirements.txt with livekit-agents",
@@ -300,6 +301,7 @@ requests>=2.25.0`,
 			targetPackage: "livekit-agents",
 			minVersion:    "1.1.6",
 			expectError:   false,
+			setupFiles:    nil,
 		},
 		{
 			name: "python requirements.txt with livekit-agents version too old",
@@ -310,6 +312,7 @@ requests>=2.25.0`,
 			minVersion:    "1.1.6",
 			expectError:   true,
 			errorContains: "too old",
+			setupFiles:    nil,
 		},
 		{
 			name: "python requirements.txt with livekit-agents compatible release too low",
@@ -320,6 +323,7 @@ requests>=2.25.0`,
 			minVersion:    "1.1.6",
 			expectError:   true,
 			errorContains: "too old",
+			setupFiles:    nil,
 		},
 		{
 			name: "python requirements.txt with livekit-agents compatible release success",
@@ -329,6 +333,7 @@ requests>=2.25.0`,
 			targetPackage: "livekit-agents",
 			minVersion:    "1.1.6",
 			expectError:   false,
+			setupFiles:    nil,
 		},
 		{
 			name: "python requirements.txt without version specified",
@@ -338,6 +343,7 @@ requests>=2.25.0`,
 			targetPackage: "livekit-agents",
 			minVersion:    "1.1.6",
 			expectError:   false,
+			setupFiles:    nil,
 		},
 		{
 			name: "python requirements.txt without livekit-agents",
@@ -348,6 +354,7 @@ numpy>=1.20.0`,
 			minVersion:    "1.1.6",
 			expectError:   true,
 			errorContains: "not found",
+			setupFiles:    nil,
 		},
 		{
 			name: "node package-lock.json with livekit-agents",
@@ -370,6 +377,7 @@ numpy>=1.20.0`,
 			targetPackage: "livekit-agents",
 			minVersion:    "1.1.6",
 			expectError:   false,
+			setupFiles:    nil,
 		},
 		{
 			name: "node package-lock.json with livekit-agents version too old",
@@ -393,6 +401,7 @@ numpy>=1.20.0`,
 			minVersion:    "1.1.6",
 			expectError:   true,
 			errorContains: "too old",
+			setupFiles:    nil,
 		},
 		{
 			name: "node package-lock.json with livekit-agents compatible release too low",
@@ -416,6 +425,7 @@ numpy>=1.20.0`,
 			minVersion:    "1.1.6",
 			expectError:   true,
 			errorContains: "too old",
+			setupFiles:    nil,
 		},
 		{
 			name: "node package-lock.json with livekit-agents compatible release success",
@@ -438,6 +448,7 @@ numpy>=1.20.0`,
 			targetPackage: "livekit-agents",
 			minVersion:    "1.1.6",
 			expectError:   false,
+			setupFiles:    nil,
 		},
 		{
 			name: "node yarn.lock with livekit-agents",
@@ -457,12 +468,93 @@ express@^4.17.1:
 			targetPackage: "livekit-agents",
 			minVersion:    "1.1.6",
 			expectError:   false,
+			setupFiles:    nil,
+		},
+		{
+			name: "python requirements.txt with included file",
+			fileContent: `-r requirements-dev.txt
+requests>=2.25.0`,
+			fileName:      "requirements.txt",
+			targetPackage: "livekit-agents",
+			minVersion:    "1.1.6",
+			expectError:   true,
+			errorContains: "failed to include -r requirements-dev.txt",
+			setupFiles:    nil,
+		},
+		{
+			name: "python requirements.txt with included file containing livekit-agents",
+			fileContent: `-r requirements-dev.txt
+requests>=2.25.0`,
+			fileName:      "requirements.txt",
+			targetPackage: "livekit-agents",
+			minVersion:    "1.1.6",
+			expectError:   false,
+			setupFiles: map[string]string{
+				"requirements-dev.txt": `livekit-agents==1.2.0
+numpy>=1.20.0`,
+			},
+		},
+		{
+			name: "node package-lock.json with workspace dependencies",
+			fileContent: `{
+  "name": "test-project",
+  "version": "1.0.0",
+  "lockfileVersion": 2,
+  "dependencies": {
+    "express": {
+      "version": "4.17.1",
+      "resolved": "https://registry.npmjs.org/express/-/express-4.17.1.tgz"
+    }
+  },
+  "packages": {
+    "": {
+      "name": "test-project",
+      "version": "1.0.0",
+      "workspaces": [
+        "packages/*"
+      ]
+    },
+    "packages/agent": {
+      "name": "agent",
+      "version": "1.0.0",
+      "dependencies": {
+        "livekit-agents": "1.2.0"
+      }
+    },
+    "packages/agent/node_modules/livekit-agents": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmjs.org/livekit-agents/-/livekit-agents-1.2.0.tgz"
+    }
+  }
+}`,
+			fileName:      "package-lock.json",
+			targetPackage: "livekit-agents",
+			minVersion:    "1.1.6",
+			expectError:   false,
+			setupFiles:    nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile := filepath.Join(t.TempDir(), tt.fileName)
+			tmpDir := t.TempDir()
+
+			if tt.setupFiles != nil {
+				for filename, content := range tt.setupFiles {
+					filePath := filepath.Join(tmpDir, filename)
+					// Create parent directories if they don't exist
+					dir := filepath.Dir(filePath)
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatalf("failed to create directory %s: %v", dir, err)
+					}
+					err := os.WriteFile(filePath, []byte(content), 0644)
+					if err != nil {
+						t.Fatalf("failed to create setup file %s: %v", filename, err)
+					}
+				}
+			}
+
+			tmpFile := filepath.Join(tmpDir, tt.fileName)
 			err := os.WriteFile(tmpFile, []byte(tt.fileContent), 0644)
 			if err != nil {
 				t.Fatalf("failed to create test file: %v", err)
