@@ -51,6 +51,11 @@ func scanDependencyFile(filePath, targetPackage, minVersion string) error {
 }
 
 func validateVersion(currentVersion, minVersion, packageName string) error {
+	// if the version is unset in requirements.txt, the osv scanner will return 0.0.0, which will indicate the latest version
+	if currentVersion == "0.0.0" {
+		return nil
+	}
+
 	current, err := semver.NewVersion(currentVersion)
 	if err != nil {
 		return fmt.Errorf("invalid current version format for %s: %s", packageName, currentVersion)

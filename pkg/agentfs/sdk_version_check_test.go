@@ -331,6 +331,15 @@ requests>=2.25.0`,
 			expectError:   false,
 		},
 		{
+			name: "python requirements.txt without version specified",
+			fileContent: `livekit-agents
+requests>=2.25.0`,
+			fileName:      "requirements.txt",
+			targetPackage: "livekit-agents",
+			minVersion:    "1.1.6",
+			expectError:   false,
+		},
+		{
 			name: "python requirements.txt without livekit-agents",
 			fileContent: `requests>=2.25.0
 numpy>=1.20.0`,
