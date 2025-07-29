@@ -150,7 +150,7 @@ func TestUploadTarballDotfiles(t *testing.T) {
 		path    string
 		content string
 	}{
-		{filepath.Join(tmpDir, ".gitignore"), "*.env\nnode_modules/"},
+		{filepath.Join(tmpDir, ".gitignore"), ".env.*\nnode_modules/"},
 		{filepath.Join(tmpDir, ".env"), "SECRET=123"},
 		{filepath.Join(tmpDir, ".config"), "config data"},
 		{filepath.Join(subDir, ".DS_Store"), "mac file"},
