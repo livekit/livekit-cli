@@ -47,6 +47,15 @@ var (
 )
 
 func UploadTarball(directory string, presignedUrl string, excludeFiles []string) error {
+	return uploadTarballInternal(directory, presignedUrl, excludeFiles, false)
+}
+
+// UploadDevelopmentTarball uploads a tarball for development mode, renaming livekit.develop.Dockerfile to Dockerfile
+func UploadDevelopmentTarball(directory string, presignedUrl string, excludeFiles []string) error {
+	return uploadTarballInternal(directory, presignedUrl, excludeFiles, true)
+}
+
+func uploadTarballInternal(directory string, presignedUrl string, excludeFiles []string, isDevelopment bool) error {
 	excludeFiles = append(defaultExcludePatterns, excludeFiles...)
 
 	for _, exclude := range ignoreFilePatterns {
@@ -217,7 +226,14 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 		if err != nil {
 			return fmt.Errorf("failed to create tar header for file %s: %w", path, err)
 		}
-		header.Name = relPath
+		
+		// Handle development mode: rename livekit.develop.Dockerfile to Dockerfile
+		if isDevelopment && relPath == "livekit.develop.Dockerfile" {
+			header.Name = "Dockerfile"
+		} else {
+			header.Name = relPath
+		}
+		
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return fmt.Errorf("failed to write tar header for file %s: %w", path, err)
 		}

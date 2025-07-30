@@ -36,7 +36,17 @@ type APIError struct {
 	Meta    *map[string]string `json:"meta,omitempty"`
 }
 
+// LogHelperWithCapture is like LogHelper but captures specific patterns in logs
+func LogHelperWithCapture(ctx context.Context, id string, logType string, projectConfig *config.ProjectConfig, capturePattern *regexp.Regexp) (captured string, err error) {
+	return logHelperInternal(ctx, id, logType, projectConfig, capturePattern)
+}
+
 func LogHelper(ctx context.Context, id string, logType string, projectConfig *config.ProjectConfig) error {
+	_, err := logHelperInternal(ctx, id, logType, projectConfig, nil)
+	return err
+}
+
+func logHelperInternal(ctx context.Context, id string, logType string, projectConfig *config.ProjectConfig, capturePattern *regexp.Regexp) (captured string, err error) {
 	if logType == "" {
 		logType = "deploy"
 	}
@@ -71,18 +81,18 @@ func LogHelper(ctx context.Context, id string, logType string, projectConfig *co
 	})
 	token, err := at.ToJWT()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req, err := http.NewRequest("GET", fullUrl, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
@@ -91,9 +101,9 @@ func LogHelper(ctx context.Context, id string, logType string, projectConfig *co
 
 		var errorResponse APIError
 		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
-			return fmt.Errorf("failed to parse error response: %w", err)
+			return "", fmt.Errorf("failed to parse error response: %w", err)
 		} else {
-			return fmt.Errorf("failed to get logs: %s", errorResponse.Message)
+			return "", fmt.Errorf("failed to get logs: %s", errorResponse.Message)
 		}
 	}
 
@@ -101,19 +111,27 @@ func LogHelper(ctx context.Context, id string, logType string, projectConfig *co
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return captured, ctx.Err()
 		default:
 			if !scanner.Scan() {
 				if err := scanner.Err(); err != nil {
-					return fmt.Errorf("scanner error: %w", err)
+					return captured, fmt.Errorf("scanner error: %w", err)
 				}
-				return nil
+				return captured, nil
 			}
 
 			line := scanner.Text()
 			if strings.HasPrefix(line, "ERROR:") {
-				return fmt.Errorf("%s", strings.TrimPrefix(line, "ERROR: "))
+				return captured, fmt.Errorf("%s", strings.TrimPrefix(line, "ERROR: "))
 			}
+			
+			// Check for capture pattern
+			if capturePattern != nil && captured == "" {
+				if matches := capturePattern.FindStringSubmatch(line); len(matches) > 1 {
+					captured = matches[1]
+				}
+			}
+			
 			fmt.Println(util.Dimmed(line))
 		}
 	}

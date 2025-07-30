@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -236,6 +237,24 @@ var (
 							Required: false,
 							Value:    false,
 						},
+					},
+					ArgsUsage: "[working-dir]",
+				},
+				{
+					Name:   "develop",
+					Usage:  "Create a development mode agent for rapid iteration",
+					Action: developAgent,
+					Before: createAgentClient,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:     "agent-name",
+							Usage:    "`NAME` of the agent for dispatch (required)",
+							Required: true,
+						},
+						secretsFlag,
+						secretsFileFlag,
+						silentFlag,
+						regionFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -1060,6 +1079,260 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	return secretsSlice, nil
 }
 
+func developAgent(ctx context.Context, cmd *cli.Command) error {
+	agentName := cmd.String("agent-name")
+	if agentName == "" {
+		return fmt.Errorf("agent-name is required for development mode")
+	}
+
+	// Use a different config file for development
+	devTomlFilename := "develop.livekit.toml"
+	
+	subdomainMatches := subdomainPattern.FindStringSubmatch(project.URL)
+	if len(subdomainMatches) < 2 {
+		return fmt.Errorf("invalid project URL [%s]", project.URL)
+	}
+
+	// We have a configured project, but don't need to double-confirm if it was
+	// set via a command line flag, because intent it clear.
+	if !cmd.IsSet("project") {
+		useProject := true
+		if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+			Title(fmt.Sprintf("Use project [%s] with subdomain [%s] to create development agent?", project.Name, subdomainMatches[1])).
+			Value(&useProject).
+			Inline(false).
+			WithTheme(util.Theme))).
+			Run(); err != nil {
+			return err
+		}
+		if !useProject {
+			if _, err := selectProject(ctx, cmd); err != nil {
+				return err
+			}
+			var err error
+			// Recreate the client with the new project
+			agentsClient, err = lksdk.NewAgentClient(project.URL, project.APIKey, project.APISecret)
+			if err != nil {
+				return err
+			}
+
+			// Re-parse the project URL to get the subdomain
+			subdomainMatches = subdomainPattern.FindStringSubmatch(project.URL)
+			if len(subdomainMatches) < 2 {
+				return fmt.Errorf("invalid project URL [%s]", project.URL)
+			}
+		}
+	}
+
+	logger.Debugw("Creating development agent", "working-dir", workingDir)
+	
+	// Check if develop.livekit.toml exists
+	configExists, err := requireConfig(workingDir, devTomlFilename)
+	if err != nil && configExists {
+		return err
+	}
+
+	silent := cmd.Bool("silent")
+
+	var agentID string
+	var needsCreate bool
+
+	if configExists && lkConfig.Agent != nil && lkConfig.Agent.ID != "" {
+		// Agent already exists in develop.livekit.toml
+		agentID = lkConfig.Agent.ID
+		needsCreate = false
+		if !silent {
+			fmt.Printf("Using existing development agent [%s] from [%s]\n", util.Accented(agentID), util.Accented(devTomlFilename))
+		}
+	} else {
+		// Need to create a new agent
+		needsCreate = true
+		if !configExists || lkConfig == nil {
+			lkConfig = config.NewLiveKitTOML(subdomainMatches[1]).WithDefaultAgent()
+		}
+		if !silent {
+			fmt.Printf("Creating new development mode agent\n")
+		}
+	}
+
+	regions := cmd.StringSlice("regions")
+	if len(regions) != 0 {
+		lkConfig.Agent.Regions = regions
+	}
+
+	secrets, err := requireSecrets(ctx, cmd, false, false)
+	if err != nil {
+		return err
+	}
+
+	// Use development dockerfile instead of regular one
+	if err := requireDevDockerfile(ctx, cmd, workingDir); err != nil {
+		return err
+	}
+
+	if needsCreate {
+		req := &lkproto.CreateAgentRequest{
+			Secrets: secrets,
+			Regions: lkConfig.Agent.Regions,
+		}
+
+		resp, err := agentsClient.CreateAgent(ctx, req)
+		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				if twerr.Code() == twirp.PermissionDenied {
+					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+				}
+			}
+			return err
+		}
+
+		agentID = resp.AgentId
+		lkConfig.Agent.ID = agentID
+		if err := lkConfig.SaveTOMLFile(workingDir, devTomlFilename); err != nil {
+			return err
+		}
+		
+		if !silent {
+			fmt.Printf("Created new development agent [%s]\n", util.Accented(agentID))
+			fmt.Printf("Saved configuration to [%s]\n", util.Accented(devTomlFilename))
+		}
+	} else {
+		// Update existing agent's configuration if needed
+		lkConfig.Agent.ID = agentID
+	}
+
+	// Deploy the agent (either new or existing)
+	deployReq := &lkproto.DeployAgentRequest{
+		AgentId: agentID,
+	}
+	
+	deployResp, err := agentsClient.DeployAgent(ctx, deployReq)
+	if err != nil {
+		return fmt.Errorf("failed to deploy agent: %w", err)
+	}
+
+	err = agentfs.UploadDevelopmentTarball(workingDir, deployResp.PresignedUrl, []string{config.LiveKitTOMLFile, devTomlFilename})
+	if err != nil {
+		return err
+	}
+
+	if !silent {
+		fmt.Printf("Deployed development agent [%s]\n", util.Accented(agentID))
+	}
+	
+	// Generate agent dispatch token for development
+	if !silent {
+		fmt.Println("\nGenerating development token...")
+	}
+	
+	// Generate a room name for development
+	roomName := fmt.Sprintf("dev-%s-%d", agentName, time.Now().Unix())
+	
+	// Use the dispatch token generation from our agentfs package
+	// Set participant identity to dev-user and name to dev-{agentName}
+	token, _, err := agentfs.GenerateAgentDispatchToken(
+		agentName,
+		roomName,
+		project.APIKey,
+		project.APISecret,
+		"dev-user",  // identity
+		fmt.Sprintf(`{"dev_mode": true, "agent_id": "%s"}`, agentID),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to generate development token: %w", err)
+	}
+	
+	// Create join URL
+	joinURL, err := agentfs.CreateJoinURL(project.URL, token, true)
+	if err != nil {
+		return fmt.Errorf("failed to create join URL: %w", err)
+	}
+	
+	// Update the agent with DEV_SYNC_TOKEN secret
+	devSecrets := []*lkproto.AgentSecret{
+		{
+			Name:  "DEV_SYNC_TOKEN",
+			Value: []byte(token),
+		},
+	}
+	
+	// If user provided additional secrets, merge them
+	if len(secrets) > 0 {
+		devSecrets = append(devSecrets, secrets...)
+	}
+	
+	updateReq := &lkproto.UpdateAgentSecretsRequest{
+		AgentId:   agentID,
+		Secrets:   devSecrets,
+		Overwrite: true,
+	}
+	
+	_, err = agentsClient.UpdateAgentSecrets(ctx, updateReq)
+	if err != nil {
+		return fmt.Errorf("failed to set DEV_SYNC_TOKEN: %w", err)
+	}
+	
+	err = agentfs.Build(ctx, agentID, project)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("\n✔ Build completed - Development mode agent deployed")
+	fmt.Printf("\n› Development Setup:\n")
+	fmt.Printf("  Room: %s\n", util.Accented(roomName))
+	fmt.Printf("  Agent: %s\n", util.Accented(agentName))
+	fmt.Printf("  Join URL: %s\n", util.Accented(joinURL))
+	fmt.Printf("\n› Waiting for agent to start and capturing cloudflared tunnel URL...\n")
+
+	// Create a pattern to capture cloudflared URLs
+	// Looking for patterns like: https://xxx.trycloudflare.com
+	cloudflarePattern := regexp.MustCompile(`https://([a-zA-Z0-9-]+\.trycloudflare\.com)`)
+	
+	// Create a context with timeout for log capture
+	captureCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	
+	// Capture the cloudflared URL from logs
+	capturedURL, err := agentfs.LogHelperWithCapture(captureCtx, lkConfig.Agent.ID, "deploy", project, cloudflarePattern)
+	if err != nil && err != context.DeadlineExceeded {
+		// Log error but continue
+		fmt.Printf("Warning: Error capturing cloudflared URL: %v\n", err)
+	}
+	
+	if capturedURL != "" {
+		fmt.Printf("\n✔ Cloudflared tunnel detected!\n")
+		fmt.Printf("\n› Sync Server URL: %s/sync\n", util.Accented("https://"+capturedURL))
+		fmt.Printf("› To push code changes:\n")
+		fmt.Printf("  lk agent sync --url %s/sync --token %s [working-dir]\n", "https://"+capturedURL, token)
+	} else {
+		fmt.Printf("\n! Could not capture cloudflared URL automatically.\n")
+		fmt.Printf("  Check agent logs with: lk agent logs\n")
+	}
+	
+	fmt.Printf("\n› Development agent is running!\n")
+	fmt.Printf("  Join the room at: %s\n", util.Accented(joinURL))
+	
+	if !silent && capturedURL == "" {
+		// If we didn't capture the URL, offer to view logs
+		var viewLogs bool = false
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title("Would you like to continue viewing logs?").
+					Value(&viewLogs).
+					WithTheme(util.Theme),
+			),
+		).Run(); err != nil {
+			return err
+		} else if viewLogs {
+			fmt.Println("\nContinuing to tail logs...safe to exit at any time")
+			return agentfs.LogHelper(ctx, lkConfig.Agent.ID, "deploy", project)
+		}
+	}
+	
+	return nil
+}
+
 func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string) error {
 	dockerfileExists, err := agentfs.HasDockerfile(workingDir)
 	if err != nil {
@@ -1121,6 +1394,122 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 		}
 	}
 
+	return nil
+}
+
+func requireDevDockerfile(ctx context.Context, cmd *cli.Command, workingDir string) error {
+	// Check if we already have a development dockerfile
+	devDockerfilePath := filepath.Join(workingDir, "livekit.develop.Dockerfile")
+	if _, err := os.Stat(devDockerfilePath); err == nil {
+		if !cmd.Bool("silent") {
+			fmt.Printf("Using existing development Dockerfile [%s]\n", util.Accented("livekit.develop.Dockerfile"))
+		}
+		return nil
+	}
+
+	// Check if there's an existing regular Dockerfile we can convert
+	dockerfileExists, err := agentfs.HasDockerfile(workingDir)
+	if err != nil {
+		return err
+	}
+
+	if dockerfileExists {
+		// Convert existing Dockerfile to development mode
+		if !cmd.Bool("silent") {
+			fmt.Println("Found existing Dockerfile, converting to development mode...")
+		}
+		
+		dockerfilePath := filepath.Join(workingDir, "Dockerfile")
+		// Use the conversion function from agentfs
+		if err := agentfs.ConvertToDevDockerfile(dockerfilePath); err != nil {
+			return fmt.Errorf("failed to convert Dockerfile to development mode: %w", err)
+		}
+		
+		// Rename the generated Dockerfile.dev to livekit.develop.Dockerfile
+		generatedPath := filepath.Join(workingDir, "Dockerfile.dev")
+		if err := os.Rename(generatedPath, devDockerfilePath); err != nil {
+			return fmt.Errorf("failed to rename development Dockerfile: %w", err)
+		}
+		
+		// Copy dev-tools directory for the converted Dockerfile
+		if err := copyDevTools(workingDir); err != nil {
+			return fmt.Errorf("failed to copy dev-tools: %w", err)
+		}
+		
+		if !cmd.Bool("silent") {
+			fmt.Printf("Converted existing Dockerfile to development mode\n")
+		}
+		return nil
+	}
+
+	// No existing Dockerfile, create a new development one
+	if !dockerfileExists {
+		var clientSettingsResponse *lkproto.ClientSettingsResponse
+
+		if !cmd.Bool("silent") {
+			if err := util.Await(
+				"Loading client settings...",
+				func() {
+					clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
+				},
+			); err != nil {
+				return err
+			}
+		} else {
+			clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
+		}
+
+		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				if twerr.Code() == twirp.PermissionDenied {
+					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
+				}
+			}
+			return err
+		}
+
+		settingsMap := make(map[string]string)
+		for _, setting := range clientSettingsResponse.Params {
+			settingsMap[setting.Name] = setting.Value
+		}
+
+		if !cmd.Bool("silent") {
+			var innerErr error
+			if err := util.Await(
+				"Creating development Dockerfile...",
+				func() {
+					innerErr = agentfs.CreateDevDockerfile(workingDir, settingsMap)
+				},
+			); err != nil {
+				return err
+			}
+			if innerErr != nil {
+				return innerErr
+			}
+			fmt.Println("Created development mode [" + util.Accented("livekit.develop.Dockerfile") + "] and [" + util.Accented("dev-tools/") + "]")
+		} else {
+			if err := agentfs.CreateDevDockerfile(workingDir, settingsMap); err != nil {
+				return err
+			}
+		}
+	} else {
+		if !cmd.Bool("silent") {
+			fmt.Println("Using existing Dockerfile")
+		}
+	}
+
+	return nil
+}
+
+func copyDevTools(workingDir string) error {
+	devToolsDir := filepath.Join(workingDir, "dev-tools")
+	if err := os.MkdirAll(devToolsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create dev-tools directory: %w", err)
+	}
+
+	// The agentfs package will handle copying the appropriate files based on project type
+	// when CreateDevDockerfile is called, so we don't need to duplicate that logic here
+	// Just ensure the directory exists
 	return nil
 }
 

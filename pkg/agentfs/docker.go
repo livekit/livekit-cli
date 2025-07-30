@@ -122,6 +122,126 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	return nil
 }
 
+// CreateDevDockerfile creates development-mode Dockerfile and related files for rapid iteration
+func CreateDevDockerfile(dir string, settingsMap map[string]string) error {
+	if len(settingsMap) == 0 {
+		return fmt.Errorf("unable to fetch client settings from server, please try again later")
+	}
+
+	projectType, err := DetectProjectType(dir)
+	if err != nil {
+		return fmt.Errorf(`× Unable to determine project type
+
+Supported project types:
+  • Python: requires requirements.txt or pyproject.toml
+  • Node.js: requires package.json
+
+Please ensure your project has the appropriate dependency file, or create a Dockerfile manually in the current directory`)
+	}
+
+	// Provide user feedback about detected project type
+	switch projectType {
+	case ProjectTypeNode:
+		fmt.Printf("✔ Detected Node.js project for development mode\n")
+		fmt.Printf("  Using template [%s]\n", util.Accented("node.dev"))
+	case ProjectTypePythonUV:
+		fmt.Printf("✔ Detected Python project with UV for development mode\n")
+		fmt.Printf("  Using template [%s]\n", util.Accented("python.dev.uv"))
+		// Validate UV project setup
+		validateUVProject(dir)
+	case ProjectTypePythonPip:
+		fmt.Printf("✔ Detected Python project with pip for development mode\n")
+		fmt.Printf("  Using template [%s]\n", util.Accented("python.pip.dev"))
+	}
+
+	var dockerfileContent []byte
+	var dockerIgnoreContent []byte
+
+	// Use the dev-tools templates
+	devTemplateName := fmt.Sprintf("dev-tools/%s.dev.Dockerfile", string(projectType))
+	dockerfileContent, err = fs.ReadFile("examples/" + devTemplateName)
+	if err != nil {
+		return fmt.Errorf("failed to load dev Dockerfile template '%s': %w", devTemplateName, err)
+	}
+
+	// Use the same dockerignore as regular mode
+	dockerIgnoreContent, err = fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
+	if err != nil {
+		return fmt.Errorf("failed to load .dockerignore template for '%s': %w", string(projectType), err)
+	}
+
+	// For Python projects, validate and update the entrypoint
+	if projectType.IsPython() {
+		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap)
+		if err != nil {
+			return fmt.Errorf("failed to validate Python entry point: %w", err)
+		}
+	}
+
+	// Write Dockerfile as livekit.develop.Dockerfile
+	err = os.WriteFile(filepath.Join(dir, "livekit.develop.Dockerfile"), dockerfileContent, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write Dockerfile: %w", err)
+	}
+
+	// Write .dockerignore
+	err = os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write .dockerignore: %w", err)
+	}
+
+	// Copy dev-tools directory for inclusion in the build context
+	devToolsDir := filepath.Join(dir, "dev-tools")
+	if err := os.MkdirAll(devToolsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create dev-tools directory: %w", err)
+	}
+
+	// Copy sync server script
+	var syncServerFile string
+	if projectType.IsNode() {
+		syncServerFile = "sync_server.js"
+	} else {
+		syncServerFile = "sync_server.py"
+	}
+	
+	syncServerContent, err := fs.ReadFile("examples/dev-tools/" + syncServerFile)
+	if err != nil {
+		return fmt.Errorf("failed to read sync server script: %w", err)
+	}
+	
+	err = os.WriteFile(filepath.Join(devToolsDir, syncServerFile), syncServerContent, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write sync server script: %w", err)
+	}
+
+	// Copy entrypoint script
+	entrypointContent, err := fs.ReadFile("examples/dev-tools/live-dev-entrypoint.sh")
+	if err != nil {
+		return fmt.Errorf("failed to read entrypoint script: %w", err)
+	}
+	
+	err = os.WriteFile(filepath.Join(devToolsDir, "live-dev-entrypoint.sh"), entrypointContent, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to write entrypoint script: %w", err)
+	}
+
+	fmt.Printf("\n✔ Successfully generated development mode Docker files:\n")
+	fmt.Printf("  %s - Development container build instructions\n", util.Accented("livekit.develop.Dockerfile"))
+	fmt.Printf("  %s - Files excluded from build context\n", util.Accented(".dockerignore"))
+	fmt.Printf("  %s - Development tools for live code sync\n", util.Accented("dev-tools/"))
+	fmt.Printf("\n› Development mode features:\n")
+	fmt.Printf("  • Live code synchronization via secure HTTP endpoint\n")
+	fmt.Printf("  • Automatic agent restart on file changes (nodemon)\n")
+	fmt.Printf("  • Cloudflared tunnel for external access\n")
+	fmt.Printf("\nNext steps:\n")
+	fmt.Printf("  ► Build: docker build -f livekit.develop.Dockerfile -t my-agent-dev .\n")
+	fmt.Printf("  ► Run: docker run -e DEV_SYNC_TOKEN=<secret> my-agent-dev\n")
+	fmt.Printf("  ► The container logs will show the cloudflared tunnel URL\n")
+	fmt.Printf("  ► Use 'lk agent sync' to push code changes to the running container\n")
+
+	return nil
+}
+
 func validateUVProject(dir string) {
 	uvLockPath := filepath.Join(dir, "uv.lock")
 	if _, err := os.Stat(uvLockPath); err != nil {
@@ -331,51 +451,60 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 			// Replace ARG PROGRAM_MAIN with the selected entry point
 			fmt.Fprintf(&result, "ARG PROGRAM_MAIN=\"%s\"\n", newEntrypoint)
 		} else if bytes.HasPrefix(trimmedLine, []byte("ENTRYPOINT")) {
-			// Extract the current entrypoint file
-			parts := bytes.Fields(trimmedLine)
-			if len(parts) < 2 {
-				return nil, fmt.Errorf("invalid ENTRYPOINT format")
-			}
-
-			// Handle both JSON array and shell format
-			var currentEntrypoint string
-			if bytes.HasPrefix(parts[1], []byte("[")) {
-				// JSON array format: ENTRYPOINT ["python", "app.py"]
-				// Get the last element before the closing bracket
-				jsonStr := bytes.Join(parts[1:], []byte(" "))
-				var entrypointArray []string
-				if err := json.Unmarshal(jsonStr, &entrypointArray); err != nil {
-					return nil, fmt.Errorf("invalid ENTRYPOINT JSON format: %v", err)
-				}
-				if len(entrypointArray) > 0 {
-					currentEntrypoint = entrypointArray[len(entrypointArray)-1]
+			// Check if this is a dev-mode entrypoint (contains "dev-entrypoint.sh")
+			if bytes.Contains(line, []byte("dev-entrypoint.sh")) {
+				// Don't modify dev-mode entrypoints
+				result.Write(line)
+				if i < len(lines)-1 {
+					result.WriteByte('\n')
 				}
 			} else {
-				// Shell format: ENTRYPOINT python app.py
-				currentEntrypoint = string(parts[len(parts)-1])
-			}
-
-			logger.Debugw("found entrypoint", "entrypoint", currentEntrypoint)
-
-			// Preserve the original format
-			if bytes.HasPrefix(parts[1], []byte("[")) {
-				// Replace the last element in the JSON array
-				var entrypointArray []string
-				jsonStr := bytes.Join(parts[1:], []byte(" "))
-				if err := json.Unmarshal(jsonStr, &entrypointArray); err != nil {
-					return nil, err
+				// Extract the current entrypoint file
+				parts := bytes.Fields(trimmedLine)
+				if len(parts) < 2 {
+					return nil, fmt.Errorf("invalid ENTRYPOINT format")
 				}
-				entrypointArray[len(entrypointArray)-1] = newEntrypoint
-				newJSON, err := json.Marshal(entrypointArray)
-				if err != nil {
-					return nil, err
+
+				// Handle both JSON array and shell format
+				var currentEntrypoint string
+				if bytes.HasPrefix(parts[1], []byte("[")) {
+					// JSON array format: ENTRYPOINT ["python", "app.py"]
+					// Get the last element before the closing bracket
+					jsonStr := bytes.Join(parts[1:], []byte(" "))
+					var entrypointArray []string
+					if err := json.Unmarshal(jsonStr, &entrypointArray); err != nil {
+						return nil, fmt.Errorf("invalid ENTRYPOINT JSON format: %v", err)
+					}
+					if len(entrypointArray) > 0 {
+						currentEntrypoint = entrypointArray[len(entrypointArray)-1]
+					}
+				} else {
+					// Shell format: ENTRYPOINT python app.py
+					currentEntrypoint = string(parts[len(parts)-1])
 				}
-				fmt.Fprintf(&result, "ENTRYPOINT %s\n", newJSON)
-			} else {
-				// Preserve the original command but replace the last part
-				parts[len(parts)-1] = []byte(newEntrypoint)
-				result.Write(bytes.Join(parts, []byte(" ")))
-				result.WriteByte('\n')
+
+				logger.Debugw("found entrypoint", "entrypoint", currentEntrypoint)
+
+				// Preserve the original format
+				if bytes.HasPrefix(parts[1], []byte("[")) {
+					// Replace the last element in the JSON array
+					var entrypointArray []string
+					jsonStr := bytes.Join(parts[1:], []byte(" "))
+					if err := json.Unmarshal(jsonStr, &entrypointArray); err != nil {
+						return nil, err
+					}
+					entrypointArray[len(entrypointArray)-1] = newEntrypoint
+					newJSON, err := json.Marshal(entrypointArray)
+					if err != nil {
+						return nil, err
+					}
+					fmt.Fprintf(&result, "ENTRYPOINT %s\n", newJSON)
+				} else {
+					// Preserve the original command but replace the last part
+					parts[len(parts)-1] = []byte(newEntrypoint)
+					result.Write(bytes.Join(parts, []byte(" ")))
+					result.WriteByte('\n')
+				}
 			}
 		} else if bytes.HasPrefix(trimmedLine, []byte("CMD")) {
 			// Handle CMD JSON array format: CMD ["python", "main.py", "start"] or CMD ["uv", "run", "main.py", "start"]
