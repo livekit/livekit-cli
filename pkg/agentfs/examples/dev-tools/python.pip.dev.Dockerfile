@@ -6,7 +6,7 @@ FROM python:${PYTHON_VERSION}-slim
 # --- Environment Configuration ---
 ENV PYTHONUNBUFFERED=1
 ENV AGENT_WORKDIR=/home/appuser
-# Token MUST be set at runtime: e.g., -e DEV_SYNC_TOKEN="your-secret"
+# Development sync token (will be replaced with generated UUID)
 ENV DEV_SYNC_TOKEN=""
 
 # --- Install Dev Mode System Dependencies ---
@@ -29,6 +29,14 @@ RUN apt-get update && \
     && dpkg -i cloudflared.deb && rm cloudflared.deb \
     && rm -rf /var/lib/apt/lists/*
 
+# --- Setup Dev Tools ---
+# Create an isolated directory for our dev tools and copy them in.
+# The entrypoint script is placed in /usr/local/bin to be in the system's PATH.
+RUN mkdir -p /opt/livekit-dev-tools
+COPY dev-tools/sync_server.py /opt/livekit-dev-tools/
+COPY dev-tools/live-dev-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/live-dev-entrypoint.sh
+
 # --- Security and Permissions ---
 # Create a non-privileged user to run the application
 ARG UID=10001
@@ -40,21 +48,13 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# --- Setup Dev Tools ---
-# Create an isolated directory for our dev tools and copy them in.
-# The entrypoint script is placed in /usr/local/bin to be in the system's PATH.
-RUN mkdir -p /opt/livekit-dev-tools
-COPY dev-tools/sync_server.py /opt/livekit-dev-tools/
-COPY dev-tools/live-dev-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/live-dev-entrypoint.sh
-
 # --- Setup Agent Application ---
 WORKDIR ${AGENT_WORKDIR}
 
 # Copy the dependency file first to leverage Docker's layer caching
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install Python dependencies as root for better compatibility
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application source code
@@ -65,6 +65,12 @@ RUN chown -R appuser:appuser ${AGENT_WORKDIR} && chown -R appuser:appuser /opt/l
 
 # Switch to the non-privileged user for runtime
 USER appuser
+
+# Download any required files/models at build time
+RUN python script.py download-files || echo "No download-files command available"
+
+# expose healthcheck port
+EXPOSE 8081
 
 # --- Runtime Execution ---
 # The entrypoint script starts all dev services and then runs the CMD.

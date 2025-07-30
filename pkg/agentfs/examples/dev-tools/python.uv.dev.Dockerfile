@@ -2,14 +2,19 @@
 # DEV MODE Dockerfile for a LiveKit agent (UV)
 FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
+# --- Environment Configuration ---
 ENV PYTHONUNBUFFERED=1
 ENV AGENT_WORKDIR=/home/appuser
-# Token MUST be set at runtime: e.g., -e DEV_SYNC_TOKEN="your-secret"
+# Development sync token (will be replaced with generated UUID)
 ENV DEV_SYNC_TOKEN=""
 
-# Install dev mode dependencies
+# --- Install Dev Mode System Dependencies ---
+# Install curl, Node.js (for nodemon), and cloudflared.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates gnupg \
+    apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    gnupg \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
     && NODE_MAJOR=20 \
@@ -23,7 +28,9 @@ RUN apt-get update && \
     && dpkg -i cloudflared.deb && rm cloudflared.deb \
     && rm -rf /var/lib/apt/lists/*
 
-# Setup the isolated directory for our development tools
+# --- Setup Dev Tools ---
+# Create an isolated directory for our dev tools and copy them in.
+# The entrypoint script is placed in /usr/local/bin to be in the system's PATH.
 RUN mkdir -p /opt/livekit-dev-tools
 COPY dev-tools/sync_server.py /opt/livekit-dev-tools/
 COPY dev-tools/live-dev-entrypoint.sh /usr/local/bin/
@@ -55,8 +62,16 @@ RUN chown -R appuser:appuser ${AGENT_WORKDIR} && chown -R appuser:appuser /opt/l
 # Switch to the non-privileged user for runtime
 USER appuser
 
-# This entrypoint script starts all dev services and then runs the CMD
+# Download any required files/models at build time
+RUN uv run src/agent.py download-files || echo "No download-files command available"
+
+# expose healthcheck port
+EXPOSE 8081
+
+# --- Runtime Execution ---
+# The entrypoint script starts all dev services and then runs the CMD.
 ENTRYPOINT ["/usr/local/bin/live-dev-entrypoint.sh"]
 
-# The original CMD is passed as arguments ("$@") to the entrypoint
+# The original CMD is passed as arguments ("$@") to the entrypoint.
+# This allows developers to use their standard start command.
 CMD ["uv", "run", "src/agent.py", "start"]

@@ -61,7 +61,7 @@ type DockerfileInstruction struct {
 }
 
 // ConvertToDevDockerfile converts a standard Dockerfile to a development-mode enabled Dockerfile
-func ConvertToDevDockerfile(dockerfilePath string) error {
+func ConvertToDevDockerfile(dockerfilePath string, devSyncToken string) error {
 	// Check if file exists
 	if _, err := os.Stat(dockerfilePath); err != nil {
 		return fmt.Errorf("dockerfile not found at '%s': %w", dockerfilePath, err)
@@ -82,7 +82,7 @@ func ConvertToDevDockerfile(dockerfilePath string) error {
 	}
 
 	// Apply modifications
-	modifiedLines := applyDevModeModifications(lines, analysis)
+	modifiedLines := applyDevModeModifications(lines, analysis, devSyncToken)
 
 	// Write the output
 	outputPath := filepath.Join(filepath.Dir(dockerfilePath), "Dockerfile.dev")
@@ -217,7 +217,7 @@ func parseInstruction(line string) ([]string, error) {
 	return strings.Fields(instructionBody), nil
 }
 
-func applyDevModeModifications(lines []string, analysis *DockerfileAnalysis) []string {
+func applyDevModeModifications(lines []string, analysis *DockerfileAnalysis, devSyncToken string) []string {
 	// Create a copy of lines to modify
 	modifiedLines := make([]string, len(lines))
 	copy(modifiedLines, lines)
@@ -249,6 +249,13 @@ func applyDevModeModifications(lines []string, analysis *DockerfileAnalysis) []s
 	devModeInjected := false
 	
 	for i, line := range modifiedLines {
+		// Check if this line is an existing DEV_SYNC_TOKEN environment variable
+		if strings.Contains(line, "ENV DEV_SYNC_TOKEN=") {
+			// Replace with our generated token
+			newLines = append(newLines, fmt.Sprintf(`ENV DEV_SYNC_TOKEN="%s"`, devSyncToken))
+			continue
+		}
+		
 		// Check if we should inject dev-mode dependencies here
 		shouldInjectHere := false
 		
@@ -265,6 +272,13 @@ func applyDevModeModifications(lines []string, analysis *DockerfileAnalysis) []s
 		newLines = append(newLines, line)
 
 		if shouldInjectHere {
+			// Add environment variables first
+			envBlock := fmt.Sprintf(`
+# Environment configuration for dev mode
+ENV AGENT_WORKDIR=/app
+ENV DEV_SYNC_TOKEN="%s"
+`, devSyncToken)
+			newLines = append(newLines, envBlock)
 			newLines = append(newLines, installBlock)
 			// Only switch back to user if we have a USER instruction and the user exists
 			if analysis.LastUserValue != "root" && analysis.FirstUserIndex > -1 && 
@@ -314,9 +328,9 @@ func writeDockerfile(path string, lines []string) error {
 }
 
 // ConvertDockerfileInPlace reads a Dockerfile from the given path and overwrites it with the dev-mode version
-func ConvertDockerfileInPlace(dockerfilePath string) error {
+func ConvertDockerfileInPlace(dockerfilePath string, devSyncToken string) error {
 	// First convert to .dev file
-	if err := ConvertToDevDockerfile(dockerfilePath); err != nil {
+	if err := ConvertToDevDockerfile(dockerfilePath, devSyncToken); err != nil {
 		return err
 	}
 

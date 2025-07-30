@@ -123,7 +123,7 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 }
 
 // CreateDevDockerfile creates development-mode Dockerfile and related files for rapid iteration
-func CreateDevDockerfile(dir string, settingsMap map[string]string) error {
+func CreateDevDockerfile(dir string, settingsMap map[string]string, devSyncToken string) error {
 	if len(settingsMap) == 0 {
 		return fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
@@ -177,6 +177,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 			return fmt.Errorf("failed to validate Python entry point: %w", err)
 		}
 	}
+
+	// Replace DEV_SYNC_TOKEN="" with the actual token
+	dockerfileContent = bytes.ReplaceAll(dockerfileContent, []byte(`ENV DEV_SYNC_TOKEN=""`), []byte(fmt.Sprintf(`ENV DEV_SYNC_TOKEN="%s"`, devSyncToken)))
 
 	// Write Dockerfile as livekit.develop.Dockerfile
 	err = os.WriteFile(filepath.Join(dir, "livekit.develop.Dockerfile"), dockerfileContent, 0644)

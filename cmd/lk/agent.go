@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"os"
@@ -1085,6 +1086,9 @@ func developAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("agent-name is required for development mode")
 	}
 
+	// Generate a UUID for DEV_SYNC_TOKEN
+	devSyncToken := generateUUID()
+
 	// Use a different config file for development
 	devTomlFilename := "develop.livekit.toml"
 	
@@ -1166,7 +1170,7 @@ func developAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// Use development dockerfile instead of regular one
-	if err := requireDevDockerfile(ctx, cmd, workingDir); err != nil {
+	if err := requireDevDockerfile(ctx, cmd, workingDir, devSyncToken); err != nil {
 		return err
 	}
 
@@ -1220,11 +1224,6 @@ func developAgent(ctx context.Context, cmd *cli.Command) error {
 		fmt.Printf("Deployed development agent [%s]\n", util.Accented(agentID))
 	}
 	
-	// Generate agent dispatch token for development
-	if !silent {
-		fmt.Println("\nGenerating development token...")
-	}
-	
 	// Generate a room name for development
 	roomName := fmt.Sprintf("dev-%s-%d", agentName, time.Now().Unix())
 	
@@ -1248,30 +1247,6 @@ func developAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to create join URL: %w", err)
 	}
 	
-	// Update the agent with DEV_SYNC_TOKEN secret
-	devSecrets := []*lkproto.AgentSecret{
-		{
-			Name:  "DEV_SYNC_TOKEN",
-			Value: []byte(token),
-		},
-	}
-	
-	// If user provided additional secrets, merge them
-	if len(secrets) > 0 {
-		devSecrets = append(devSecrets, secrets...)
-	}
-	
-	updateReq := &lkproto.UpdateAgentSecretsRequest{
-		AgentId:   agentID,
-		Secrets:   devSecrets,
-		Overwrite: true,
-	}
-	
-	_, err = agentsClient.UpdateAgentSecrets(ctx, updateReq)
-	if err != nil {
-		return fmt.Errorf("failed to set DEV_SYNC_TOKEN: %w", err)
-	}
-	
 	err = agentfs.Build(ctx, agentID, project)
 	if err != nil {
 		return err
@@ -1282,6 +1257,7 @@ func developAgent(ctx context.Context, cmd *cli.Command) error {
 	fmt.Printf("  Room: %s\n", util.Accented(roomName))
 	fmt.Printf("  Agent: %s\n", util.Accented(agentName))
 	fmt.Printf("  Join URL: %s\n", util.Accented(joinURL))
+	fmt.Printf("  Dev Sync Token: %s\n", util.Accented(devSyncToken))
 	fmt.Printf("\n› Waiting for agent to start and capturing cloudflared tunnel URL...\n")
 
 	// Create a pattern to capture cloudflared URLs
@@ -1303,7 +1279,7 @@ func developAgent(ctx context.Context, cmd *cli.Command) error {
 		fmt.Printf("\n✔ Cloudflared tunnel detected!\n")
 		fmt.Printf("\n› Sync Server URL: %s/sync\n", util.Accented("https://"+capturedURL))
 		fmt.Printf("› To push code changes:\n")
-		fmt.Printf("  lk agent sync --url %s/sync --token %s [working-dir]\n", "https://"+capturedURL, token)
+		fmt.Printf("  lk agent sync --url %s/sync --token %s [working-dir]\n", "https://"+capturedURL, devSyncToken)
 	} else {
 		fmt.Printf("\n! Could not capture cloudflared URL automatically.\n")
 		fmt.Printf("  Check agent logs with: lk agent logs\n")
@@ -1397,7 +1373,7 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string)
 	return nil
 }
 
-func requireDevDockerfile(ctx context.Context, cmd *cli.Command, workingDir string) error {
+func requireDevDockerfile(ctx context.Context, cmd *cli.Command, workingDir string, devSyncToken string) error {
 	// Check if we already have a development dockerfile
 	devDockerfilePath := filepath.Join(workingDir, "livekit.develop.Dockerfile")
 	if _, err := os.Stat(devDockerfilePath); err == nil {
@@ -1421,7 +1397,7 @@ func requireDevDockerfile(ctx context.Context, cmd *cli.Command, workingDir stri
 		
 		dockerfilePath := filepath.Join(workingDir, "Dockerfile")
 		// Use the conversion function from agentfs
-		if err := agentfs.ConvertToDevDockerfile(dockerfilePath); err != nil {
+		if err := agentfs.ConvertToDevDockerfile(dockerfilePath, devSyncToken); err != nil {
 			return fmt.Errorf("failed to convert Dockerfile to development mode: %w", err)
 		}
 		
@@ -1478,7 +1454,7 @@ func requireDevDockerfile(ctx context.Context, cmd *cli.Command, workingDir stri
 			if err := util.Await(
 				"Creating development Dockerfile...",
 				func() {
-					innerErr = agentfs.CreateDevDockerfile(workingDir, settingsMap)
+					innerErr = agentfs.CreateDevDockerfile(workingDir, settingsMap, devSyncToken)
 				},
 			); err != nil {
 				return err
@@ -1488,7 +1464,7 @@ func requireDevDockerfile(ctx context.Context, cmd *cli.Command, workingDir stri
 			}
 			fmt.Println("Created development mode [" + util.Accented("livekit.develop.Dockerfile") + "] and [" + util.Accented("dev-tools/") + "]")
 		} else {
-			if err := agentfs.CreateDevDockerfile(workingDir, settingsMap); err != nil {
+			if err := agentfs.CreateDevDockerfile(workingDir, settingsMap, devSyncToken); err != nil {
 				return err
 			}
 		}
@@ -1511,6 +1487,23 @@ func copyDevTools(workingDir string) error {
 	// when CreateDevDockerfile is called, so we don't need to duplicate that logic here
 	// Just ensure the directory exists
 	return nil
+}
+
+// generateUUID generates a simple UUID v4
+func generateUUID() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		// Fallback to timestamp-based token if random fails
+		return fmt.Sprintf("dev-token-%d", time.Now().Unix())
+	}
+	
+	// Set version (4) and variant bits
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	
+	return fmt.Sprintf("%x-%x-%x-%x-%x",
+		b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
 
 func requireConfig(workingDir, tomlFilename string) (bool, error) {

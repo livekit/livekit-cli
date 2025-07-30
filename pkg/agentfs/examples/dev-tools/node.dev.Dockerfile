@@ -2,11 +2,13 @@
 # DEV MODE Dockerfile for a LiveKit agent (Node.js)
 FROM node:20-slim
 
+# --- Environment Configuration ---
 ENV AGENT_WORKDIR=/app
-# Token MUST be set at runtime: e.g., -e DEV_SYNC_TOKEN="your-secret"
+# Development sync token (will be replaced with generated UUID)
 ENV DEV_SYNC_TOKEN=""
 
-# Install global and system dependencies for dev mode
+# --- Install Dev Mode System Dependencies ---
+# Install curl and cloudflared. nodemon is already part of the Node ecosystem.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl \
     && npm install -g pnpm@9.7.0 nodemon \
@@ -16,7 +18,9 @@ RUN apt-get update && \
     && dpkg -i cloudflared.deb && rm cloudflared.deb \
     && rm -rf /var/lib/apt/lists/*
 
-# Setup the isolated directory for our development tools
+# --- Setup Dev Tools ---
+# Create an isolated directory for our dev tools and copy them in.
+# The entrypoint script is placed in /usr/local/bin to be in the system's PATH.
 RUN mkdir -p /opt/livekit-dev-tools
 COPY dev-tools/sync_server.js /opt/livekit-dev-tools/
 COPY dev-tools/live-dev-entrypoint.sh /usr/local/bin/
@@ -50,8 +54,16 @@ RUN chown -R appuser:appuser ${AGENT_WORKDIR} && chown -R appuser:appuser /opt/l
 # Switch to the non-privileged user for runtime
 USER appuser
 
-# This entrypoint script starts all dev services and then runs the CMD
+# Download any required files/models at build time
+# RUN node ./dist/agent.js download-files || echo "No download-files command available"
+
+# expose healthcheck port
+EXPOSE 8081
+
+# --- Runtime Execution ---
+# The entrypoint script starts all dev services and then runs the CMD.
 ENTRYPOINT ["/usr/local/bin/live-dev-entrypoint.sh"]
 
-# The original CMD is passed as arguments ("$@") to the entrypoint
+# The original CMD is passed as arguments ("$@") to the entrypoint.
+# This allows developers to use their standard start command.
 CMD ["node", "./dist/agent.js", "start"]
