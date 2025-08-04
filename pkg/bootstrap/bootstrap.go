@@ -187,16 +187,22 @@ func NewTask(ctx context.Context, tf *ast.Taskfile, dir, taskName string, verbos
 		return nil, err
 	}
 
-	task := &task.Call{
+	return NewTaskWithExecutor(ctx, exe, taskName, verbose)
+}
+
+func NewTaskWithExecutor(ctx context.Context, exe *task.Executor, taskName string, verbose bool) (func() error, error) {
+	_, ok := exe.Taskfile.Tasks.Get(taskName)
+	if !ok {
+		return nil, fmt.Errorf("task %q not found", taskName)
+	}
+
+	call := &task.Call{
 		Task:   taskName,
 		Silent: !verbose,
 	}
-	if _, err := exe.GetTask(task); err != nil {
-		return nil, err
-	}
 
 	return func() error {
-		return exe.Run(ctx, task)
+		return exe.Run(ctx, call)
 	}, nil
 }
 
