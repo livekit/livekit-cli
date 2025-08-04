@@ -1,0 +1,25 @@
+version: '3'
+
+includes:
+  index: https://raw.githubusercontent.com/livekit-examples/index/main/taskfile.yaml
+
+tasks:
+  post_create:
+    desc: Build the project
+    cmds:
+      - task: index:help_setup_python_uv
+      - task: index:help_deploy_agent
+
+  test:
+    cmds:
+      - cmd: 'echo "Inherited: {{ .PYTHON_MAIN }}"'
+      - task: test_local
+
+  test_local:
+    vars:
+      PYTHON_MAIN: 'main.py'
+    cmds:
+      - cmd: 'echo "Override: {{ .PYTHON_MAIN }}"'
+      - task: index:help_setup_python_uv
+        vars:
+          PYTHON_MAIN: 'butts.py'
