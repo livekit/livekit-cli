@@ -56,11 +56,10 @@ func Build(ctx context.Context, id string, projectConfig *config.ProjectConfig, 
 
 	params := url.Values{}
 	params.Add("agent_id", id)
-	fullUrl := fmt.Sprintf("%s/build?%s", agentsUrl, params.Encode())
-
 	if dockerfile != "" {
 		params.Add("dockerfile", dockerfile)
 	}
+	fullUrl := fmt.Sprintf("%s/build?%s", agentsUrl, params.Encode())
 
 	at := auth.NewAccessToken(projectConfig.APIKey, projectConfig.APISecret)
 	at.SetAgentGrant(&auth.AgentGrant{
