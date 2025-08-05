@@ -941,7 +941,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		},
 	}
 
-	participantAttributes, err := parseKeyValuePairs(cmd, "attributes")
+	participantAttributes, err := parseKeyValuePairs(cmd, "attribute")
 	if err != nil {
 		return fmt.Errorf("failed to parse participant attributes: %w", err)
 	}
