@@ -15,11 +15,10 @@
 package agentfs
 
 import (
-	"bufio"
 	"os"
-	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/joho/godotenv"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -33,33 +32,12 @@ var knownEnvFiles = []string{
 }
 
 func ParseEnvFile(file string) (map[string]string, error) {
-	env := make(map[string]string)
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) < 2 {
-			continue
-		}
-
-		parts[0] = strings.TrimSpace(parts[0])
-		parts[1] = strings.TrimSpace(parts[1])
-		parts[1] = strings.Trim(parts[1], "\"'")
-		parts[1] = strings.Split(parts[1], "#")[0]
-		env[parts[0]] = parts[1]
-	}
-
-	return env, nil
+	return godotenv.Parse(f)
 }
 
 func DetectEnvFile(maybeFile string) (string, map[string]string, error) {
