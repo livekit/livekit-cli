@@ -373,9 +373,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if err := agentfs.CheckSDKVersion(workingDir, settingsMap); err != nil {
-		return err
-	}
+	// TODO (steveyoon): disable check SDK version until we add support for uv and lockfile generation
+	// https://github.com/livekit/livekit-cli/pull/618/files
+	// if err := agentfs.CheckSDKVersion(workingDir, settingsMap); err != nil {
+	// 	return err
+	// }
 
 	req := &lkproto.CreateAgentRequest{
 		Secrets: secrets,
