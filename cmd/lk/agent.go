@@ -99,7 +99,10 @@ var (
 						silentFlag,
 						regionFlag,
 					},
-					ArgsUsage: "[working-dir]",
+					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
+					// we disable it entirely here and require multiple --secrets flags to be used.
+					DisableSliceFlagSeparator: true,
+					ArgsUsage:                 "[working-dir]",
 				},
 				{
 					Name:   "config",
@@ -120,7 +123,10 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 					},
-					ArgsUsage: "[working-dir]",
+					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
+					// we disable it entirely here and require multiple --secrets flags to be used.
+					DisableSliceFlagSeparator: true,
+					ArgsUsage:                 "[working-dir]",
 				},
 				{
 					Name:   "status",
@@ -141,7 +147,10 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 					},
-					ArgsUsage: "[working-dir]",
+					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
+					// we disable it entirely here and require multiple --secrets flags to be used.
+					DisableSliceFlagSeparator: true,
+					ArgsUsage:                 "[working-dir]",
 				},
 				{
 					Name:   "restart",
@@ -237,7 +246,10 @@ var (
 							Value:    false,
 						},
 					},
-					ArgsUsage: "[working-dir]",
+					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
+					// we disable it entirely here and require multiple --secrets flags to be used.
+					DisableSliceFlagSeparator: true,
+					ArgsUsage:                 "[working-dir]",
 				},
 			},
 		},
@@ -293,7 +305,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// We have a configured project, but don't need to double-confirm if it was
-	// set via a command line flag, because intent it clear.
+	// set via a command line flag, because intent is clear.
 	if !cmd.IsSet("project") {
 		useProject := true
 		if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
@@ -1012,13 +1024,18 @@ func selectAgent(ctx context.Context, _ *cli.Command) (string, error) {
 func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([]*lkproto.AgentSecret, error) {
 	silent := cmd.Bool("silent")
 	secrets := make(map[string]*lkproto.AgentSecret)
-	for _, secret := range cmd.StringSlice("secrets") {
-		secret := strings.Split(secret, "=")
-		agentSecret := &lkproto.AgentSecret{
-			Name:  secret[0],
-			Value: []byte(secret[1]),
+
+	if values, err := parseKeyValuePairs(cmd, "secrets"); err != nil {
+		return nil, fmt.Errorf("failed to parse secrets: %w", err)
+	} else {
+		for key, val := range values {
+			agentSecret := &lkproto.AgentSecret{
+				Name:  key,
+				Value: []byte(val),
+			}
+			secrets[key] = agentSecret
 		}
-		secrets[secret[0]] = agentSecret
+
 	}
 
 	shouldReadFromDisk := cmd.IsSet("secrets-file") || !lazy || (required && len(secrets) == 0)

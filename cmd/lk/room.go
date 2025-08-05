@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"os/signal"
 	"regexp"
@@ -940,14 +941,9 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		},
 	}
 
-	participantAttributes := make(map[string]string)
-
-	attrs := cmd.StringSlice("attribute")
-	for _, attr := range attrs {
-		kv := strings.Split(attr, "=")
-		if len(kv) == 2 {
-			participantAttributes[kv[0]] = kv[1]
-		}
+	participantAttributes, err := parseKeyValuePairs(cmd, "attribute")
+	if err != nil {
+		return fmt.Errorf("failed to parse participant attributes: %w", err)
 	}
 
 	// Read attributes from JSON file if specified
@@ -963,9 +959,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		// Add attributes from file to the existing ones
-		for key, value := range fileAttrs {
-			participantAttributes[key] = value
-		}
+		maps.Copy(participantAttributes, fileAttrs)
 	}
 
 	room, err := lksdk.ConnectToRoom(project.URL, lksdk.ConnectInfo{
