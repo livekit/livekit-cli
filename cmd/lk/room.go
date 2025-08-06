@@ -176,7 +176,6 @@ var (
 							Name:  "exit-after-publish",
 							Usage: "When publishing, exit after file or stream is complete",
 						},
-
 						&cli.StringSliceFlag{
 							Name:  "attribute",
 							Usage: "set attributes in key=value format, can be used multiple times",
