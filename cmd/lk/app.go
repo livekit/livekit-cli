@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
 	"strings"
@@ -453,9 +454,7 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 	}
 
 	if addlEnv != nil {
-		for k, v := range *addlEnv {
-			env[k] = v
-		}
+		maps.Copy(env, *addlEnv)
 	}
 
 	prompt := func(key, oldValue string) (string, error) {
@@ -526,16 +525,42 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 func runTask(ctx context.Context, cmd *cli.Command) error {
 	verbose := cmd.Bool("verbose")
 	rootDir := "."
-	tf, err := bootstrap.ParseTaskfile(rootDir)
+
+	args := cmd.Args().Tail()
+	if len(args) > 0 {
+		dirPath := args[0]
+		if stat, err := os.Stat(dirPath); os.IsNotExist(err) {
+			return fmt.Errorf("directory does not exist: %s", dirPath)
+		} else if err != nil {
+			return fmt.Errorf("error accessing directory %s: %v", dirPath, err)
+		} else {
+			if !stat.IsDir() {
+				return fmt.Errorf("path is not a directory: %s", dirPath)
+			}
+			rootDir = dirPath
+		}
+	}
+
+	_, err := bootstrap.ParseTaskfile(rootDir)
 	if err != nil {
 		return err
 	}
 
+	exe := bootstrap.NewTaskExecutor(rootDir, verbose)
+	if err := exe.Setup(); err != nil {
+		return fmt.Errorf("could not initialize task executor: %w", err)
+	}
+
 	taskName := cmd.Args().First()
 	if taskName == "" {
+		tasks, err := exe.GetTaskList()
+		if err != nil {
+			return err
+		}
+
 		var options []huh.Option[string]
-		for name := range tf.Tasks.Keys(nil) {
-			options = append(options, huh.NewOption(name, name))
+		for _, t := range tasks {
+			options = append(options, huh.NewOption(t.Name(), t.Name()))
 		}
 
 		if err := huh.NewForm(
@@ -549,16 +574,9 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	task, err := bootstrap.NewTask(ctx, tf, rootDir, taskName, verbose)
+	task, err := bootstrap.NewTaskWithExecutor(ctx, exe, taskName, verbose)
 	if err != nil {
 		return err
 	}
-	var cmdErr error
-	if err := util.Await(
-		"Running task "+taskName+"...",
-		func() { cmdErr = task() },
-	); err != nil {
-		return err
-	}
-	return cmdErr
+	return task()
 }

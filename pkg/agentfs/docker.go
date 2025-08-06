@@ -52,9 +52,9 @@ func CreateDockerfile(dir string, settingsMap map[string]string) error {
 	}
 
 	projectType := ""
-	if isNode(dir) {
+	if isNode, _ := isNode(dir); isNode {
 		projectType = "node"
-	} else if isPython(dir) {
+	} else if isPython, _ := isPython(dir); isPython {
 		projectType = "python"
 	} else {
 		return fmt.Errorf("unable to determine project type, please create a Dockerfile in the current directory")

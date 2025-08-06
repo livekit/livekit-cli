@@ -30,8 +30,10 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/go-task/task/v3"
+	"github.com/go-task/task/v3/experiments"
 	"github.com/go-task/task/v3/taskfile/ast"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
@@ -59,6 +61,7 @@ const (
 // Files to remove after cloning a template
 var templateIgnoreFiles = []string{
 	".git",
+	".task",
 	"renovate.json",
 	"taskfile.yaml",
 	"TEMPLATE.md",
@@ -128,6 +131,9 @@ func FetchSandboxDetails(ctx context.Context, sid, token, serverURL string) (*Sa
 }
 
 func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
+	os.Setenv("TASK_X_REMOTE_TASKFILES", "1")
+	experiments.Parse(rootPath)
+
 	taskfilePath := path.Join(rootPath, TaskFile)
 
 	// taskfile.yaml is optional
@@ -156,16 +162,17 @@ func NewTaskExecutor(dir string, verbose bool) *task.Executor {
 		Force:     false,
 		ForceAll:  false,
 		Insecure:  false,
-		Download:  false,
+		Download:  true,
 		Offline:   false,
 		Watch:     false,
 		Verbose:   false,
-		Silent:    !verbose,
-		AssumeYes: false,
+		Silent:    true,
 		Dry:       false,
 		Summary:   false,
 		Parallel:  false,
 		Color:     true,
+		Timeout:   time.Second * 10,
+		AssumeYes: true,
 
 		Stdin:  os.Stdin,
 		Stdout: o,
@@ -180,16 +187,22 @@ func NewTask(ctx context.Context, tf *ast.Taskfile, dir, taskName string, verbos
 		return nil, err
 	}
 
-	task := &task.Call{
+	return NewTaskWithExecutor(ctx, exe, taskName, verbose)
+}
+
+func NewTaskWithExecutor(ctx context.Context, exe *task.Executor, taskName string, verbose bool) (func() error, error) {
+	_, ok := exe.Taskfile.Tasks.Get(taskName)
+	if !ok {
+		return nil, fmt.Errorf("task %q not found", taskName)
+	}
+
+	call := &task.Call{
 		Task:   taskName,
 		Silent: !verbose,
 	}
-	if _, err := exe.GetTask(task); err != nil {
-		return nil, err
-	}
 
 	return func() error {
-		return exe.Run(ctx, task)
+		return exe.Run(ctx, call)
 	}, nil
 }
 
@@ -262,7 +275,8 @@ func CloneTemplate(url, dir string) (string, string, error) {
 	cmd := exec.Command("git", "clone", "--depth=1", url, dir)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	return stdout.String(), stderr.String(), cmd.Run()
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
 }
 
 func CleanupTemplate(dir string) error {

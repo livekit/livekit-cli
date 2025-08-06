@@ -17,9 +17,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
@@ -158,6 +160,24 @@ func extractFlagOrArg(c *cli.Command, flag string) (string, error) {
 		value = argValue
 	}
 	return value, nil
+}
+
+func parseKeyValuePairs(c *cli.Command, flag string) (map[string]string, error) {
+	pairs := c.StringSlice(flag)
+	if len(pairs) == 0 {
+		return nil, nil
+	}
+
+	result := make(map[string]string, len(pairs))
+
+	for _, pair := range pairs {
+		if m, err := godotenv.Unmarshal(pair); err != nil {
+			return nil, fmt.Errorf("invalid key-value pair: %s: %w", pair, err)
+		} else {
+			maps.Copy(result, m)
+		}
+	}
+	return result, nil
 }
 
 type loadParams struct {

@@ -17,4 +17,7 @@ bin/
 .idea/
 dist/
 
+# Local artifacts
+.task/
+
 .DS_Store
