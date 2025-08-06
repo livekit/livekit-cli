@@ -32,7 +32,6 @@ import (
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
-	"github.com/livekit/server-sdk-go/v2/signalling"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
@@ -188,11 +187,6 @@ var (
 						&cli.BoolFlag{
 							Name:  "auto-subscribe",
 							Usage: "Automatically subscribe to published tracks.",
-							Value: false,
-						},
-						&cli.BoolFlag{
-							Name:  "signallingv2",
-							Usage: "Enables v2 of signalling protocol",
 							Value: false,
 						},
 					},
@@ -808,10 +802,6 @@ func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error 
 }
 
 func joinRoom(ctx context.Context, cmd *cli.Command) error {
-	if cmd.Bool("signallingv2") {
-		lksdk.WithSignallingVersion(signalling.SignallingVersionV2)
-	}
-
 	publishUrls := cmd.StringSlice("publish")
 
 	// Determine simulcast mode by checking if any URL has simulcast format
