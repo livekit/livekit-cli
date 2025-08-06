@@ -15,30 +15,63 @@
 package agentfs
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func isPython(dir string) (bool, string) {
+type ProjectType string
+
+const (
+	ProjectTypePythonPip ProjectType = "python.pip"
+	ProjectTypePythonUV  ProjectType = "python.uv"
+	ProjectTypeNode      ProjectType = "node"
+	ProjectTypeUnknown   ProjectType = "unknown"
+)
+
+func (p ProjectType) IsPython() bool {
+	return p == ProjectTypePythonPip || p == ProjectTypePythonUV
+}
+
+func (p ProjectType) IsNode() bool {
+	return p == ProjectTypeNode
+}
+
+func (p ProjectType) Lang() string {
+	switch {
+	case p.IsPython():
+		return "Python"
+	case p.IsNode():
+		return "Node.js"
+	default:
+		return ""
+	}
+}
+
+func (p ProjectType) FileExt() string {
+	switch {
+	case p.IsPython():
+		return ".py"
+	case p.IsNode():
+		return ".js"
+	default:
+		return ""
+	}
+}
+
+func LocateLockfile(dir string, p ProjectType) (bool, string) {
 	pythonFiles := []string{
 		"requirements.txt",
 		"requirements.lock",
 		"pyproject.toml",
 	}
 
-	for _, filename := range pythonFiles {
-		if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
-			return true, filename
-		}
-	}
-	return false, ""
-}
-
-func isNode(dir string) (bool, string) {
 	nodeFiles := []string{
 		"package.json",
 		"package-lock.json",
@@ -46,21 +79,69 @@ func isNode(dir string) (bool, string) {
 		"pnpm-lock.yaml",
 	}
 
-	for _, filename := range nodeFiles {
-		if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
-			return true, filename
+	switch p {
+	case ProjectTypePythonPip:
+	case ProjectTypePythonUV:
+		for _, filename := range pythonFiles {
+			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
+				return true, filename
+			}
 		}
+	case ProjectTypeNode:
+		for _, filename := range nodeFiles {
+			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
+				return true, filename
+			}
+		}
+	default:
+		return false, ""
 	}
 	return false, ""
 }
 
-func getDependencyFile(dir string) (string, error) {
-	if isPython, dependencyFile := isPython(dir); isPython {
-		return filepath.Join(dir, dependencyFile), nil
-	} else if isNode, dependencyFile := isNode(dir); isNode {
-		return filepath.Join(dir, dependencyFile), nil
+func DetectProjectType(dir string) (ProjectType, error) {
+	// Node.js detection
+	if util.FileExists(dir, "package.json") {
+		return ProjectTypeNode, nil
 	}
-	return "", fmt.Errorf("no dependency file found")
+
+	// Python detection
+	if util.FileExists(dir, "uv.lock") {
+		return ProjectTypePythonUV, nil
+	}
+	if util.FileExists(dir, "poetry.lock") || util.FileExists(dir, "Pipfile.lock") {
+		return ProjectTypePythonPip, nil // We can treat as pip-compatible
+	}
+	if util.FileExists(dir, "requirements.txt") {
+		return ProjectTypePythonPip, nil
+	}
+	if util.FileExists(dir, "pyproject.toml") {
+		tomlPath := filepath.Join(dir, "pyproject.toml")
+		data, err := os.ReadFile(tomlPath)
+		if err == nil {
+			var doc map[string]any
+			if err := toml.Unmarshal(data, &doc); err == nil {
+				if tool, ok := doc["tool"].(map[string]any); ok {
+					if _, hasPoetry := tool["poetry"]; hasPoetry {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasPdm := tool["pdm"]; hasPdm {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasHatch := tool["hatch"]; hasHatch {
+						return ProjectTypePythonPip, nil
+					}
+					if _, hasUv := tool["uv"]; hasUv {
+						return ProjectTypePythonUV, nil
+					}
+				}
+			}
+		}
+		// Default to pip if pyproject.toml is present but not informative
+		return ProjectTypePythonPip, nil
+	}
+
+	return ProjectTypeUnknown, errors.New("project type could not be identified; expected package.json, requirements.txt, pyproject.toml, or lock files")
 }
 
 func ParseCpu(cpu string) (string, error) {

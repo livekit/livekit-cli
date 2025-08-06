@@ -7,6 +7,9 @@ FROM python:${PYTHON_VERSION}-slim
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
+# Define the program entrypoint file where your agent is started
+ARG PROGRAM_MAIN="src/agent.py"
+
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
 ARG UID=10001
@@ -39,10 +42,11 @@ RUN python -m pip install --user --no-cache-dir -r requirements.txt
 COPY . .
 
 # ensure that any dependent models are downloaded at build-time
-RUN python main.py download-files
+RUN python "$PROGRAM_MAIN" download-files
 
 # expose healthcheck port
 EXPOSE 8081
 
 # Run the application.
-CMD ["python", "main.py", "start"]
+CMD ["python", "$PROGRAM_MAIN", "start"]
+
