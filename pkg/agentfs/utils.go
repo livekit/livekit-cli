@@ -99,21 +99,6 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 	return false, ""
 }
 
-func isPythonPip(dir string) bool {
-	_, err := os.Stat(filepath.Join(dir, "requirements.txt"))
-	return err == nil
-}
-
-func isPythonUV(dir string) bool {
-	_, err := os.Stat(filepath.Join(dir, "pyproject.toml"))
-	return err == nil
-}
-
-func isNode(dir string) bool {
-	_, err := os.Stat(filepath.Join(dir, "package.json"))
-	return err == nil
-}
-
 func DetectProjectType(dir string) (ProjectType, error) {
 	// Node.js detection
 	if util.FileExists(dir, "package.json") {

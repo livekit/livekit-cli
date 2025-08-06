@@ -27,7 +27,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
-	"github.com/pkg/errors"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/logger"
@@ -50,18 +49,14 @@ func HasDockerfile(dir string) (bool, error) {
 	return false, nil
 }
 
-func CreateDockerfile(dir string, settingsMap map[string]string) error {
+func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[string]string) error {
 	if len(settingsMap) == 0 {
 		return fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
 
-	projectType, err := DetectProjectType(dir)
-	if err != nil {
-		return errors.Wrap(err, "unable to determine project type, please create a Dockerfile in the current directory")
-	}
-
 	var dockerfileContent []byte
 	var dockerIgnoreContent []byte
+	var err error
 
 	dockerfileContent, err = fs.ReadFile("examples/" + string(projectType) + ".Dockerfile")
 	if err != nil {
