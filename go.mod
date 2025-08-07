@@ -13,8 +13,8 @@ require (
 	github.com/go-task/task/v3 v3.44.1
 	github.com/google/osv-scanner v1.9.2
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.39.4-0.20250806031641-1edabe8e86df
-	github.com/livekit/server-sdk-go/v2 v2.9.3-0.20250806083916-a2f01818f35f
+	github.com/livekit/protocol v1.39.4-0.20250807105828-ccbae8154e54
+	github.com/livekit/server-sdk-go/v2 v2.9.3-0.20250807110626-89f586d0bf03
 	github.com/moby/buildkit v0.22.0
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.21
@@ -28,7 +28,7 @@ require (
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.16.0
 	golang.org/x/time v0.11.0
-	google.golang.org/protobuf v1.36.6
+	google.golang.org/protobuf v1.36.7
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.33.1
 )
