@@ -522,7 +522,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	var req *lkproto.DeployAgentRequest
 
-	agentId, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentId, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
@@ -588,7 +588,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
@@ -649,7 +649,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 }
 
 func restartAgent(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
@@ -721,7 +721,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
@@ -753,7 +753,7 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getLogs(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, true)
 	if err != nil {
 		return err
 	}
@@ -762,7 +762,7 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
@@ -817,7 +817,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
@@ -916,7 +916,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
@@ -951,7 +951,7 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
-	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename)
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
@@ -985,7 +985,7 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 	return fmt.Errorf("failed to update agent secrets: %s", resp.Message)
 }
 
-func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFileName string) (string, error) {
+func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFileName string, excludeEmptyVersion bool) (string, error) {
 	agentID := cmd.String("id")
 	if agentID == "" {
 		configExists, err := requireConfig(agentDir, tomlFileName)
@@ -999,7 +999,7 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 			}
 			agentID = lkConfig.Agent.ID
 		} else {
-			agentID, err = selectAgent(ctx, cmd)
+			agentID, err = selectAgent(ctx, cmd, excludeEmptyVersion)
 			if err != nil {
 				return "", err
 			}
@@ -1016,7 +1016,7 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 	return agentID, nil
 }
 
-func selectAgent(ctx context.Context, _ *cli.Command) (string, error) {
+func selectAgent(ctx context.Context, _ *cli.Command, excludeEmptyVersion bool) (string, error) {
 	var agents *lkproto.ListAgentsResponse
 	var err error
 
@@ -1038,7 +1038,7 @@ func selectAgent(ctx context.Context, _ *cli.Command) (string, error) {
 
 	var agentNames []huh.Option[string]
 	for _, agent := range agents.Agents {
-		if agent.Version == "---" {
+		if excludeEmptyVersion && agent.Version == "---" {
 			continue
 		}
 		name := agent.AgentId + " " + util.Dimmed("deployed "+agent.DeployedAt.AsTime().Format(time.RFC3339))
