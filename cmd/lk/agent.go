@@ -1038,6 +1038,9 @@ func selectAgent(ctx context.Context, _ *cli.Command) (string, error) {
 
 	var agentNames []huh.Option[string]
 	for _, agent := range agents.Agents {
+		if agent.Version == "---" {
+			continue
+		}
 		name := agent.AgentId + " " + util.Dimmed("deployed "+agent.DeployedAt.AsTime().Format(time.RFC3339))
 		agentNames = append(agentNames, huh.Option[string]{Key: name, Value: agent.AgentId})
 	}
