@@ -82,6 +82,12 @@ var (
 		Hidden:   true,
 	}
 
+	skipSDKCheckFlag = &cli.BoolFlag{
+		Name:     "skip-sdk-check",
+		Required: false,
+		Hidden:   true,
+	}
+
 	AgentCommands = []*cli.Command{
 		{
 			Name:    "agent",
@@ -98,6 +104,7 @@ var (
 						secretsFileFlag,
 						silentFlag,
 						regionFlag,
+						skipSDKCheckFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -369,15 +376,22 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if err := requireDockerfile(ctx, cmd, workingDir, settingsMap); err != nil {
+	projectType, err := agentfs.DetectProjectType(workingDir)
+	if err != nil {
+		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
+	}
+
+	if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
 		return err
 	}
 
-	// TODO (steveyoon): disable check SDK version until we add support for uv and lockfile generation
-	// https://github.com/livekit/livekit-cli/pull/618/files
-	// if err := agentfs.CheckSDKVersion(workingDir, settingsMap); err != nil {
-	// 	return err
-	// }
+	if err := agentfs.CheckSDKVersion(workingDir, projectType, settingsMap); err != nil {
+		if cmd.Bool("skip-sdk-check") {
+			fmt.Printf("Error checking SDK version: %v, skipping...\n", err)
+		} else {
+			return err
+		}
+	}
 
 	req := &lkproto.CreateAgentRequest{
 		Secrets: secrets,
@@ -523,6 +537,24 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	if len(secrets) > 0 {
 		req.Secrets = secrets
+	}
+
+	projectType, err := agentfs.DetectProjectType(workingDir)
+	if err != nil {
+		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
+	}
+
+	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
+	if err != nil {
+		return err
+	}
+
+	if err := agentfs.CheckSDKVersion(workingDir, projectType, settingsMap); err != nil {
+		if cmd.Bool("skip-sdk-check") {
+			fmt.Printf("Error checking SDK version: %v, skipping...\n", err)
+		} else {
+			return err
+		}
 	}
 
 	resp, err := agentsClient.DeployAgent(ctx, req)
@@ -753,27 +785,25 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var res *lkproto.DeleteAgentResponse
-	var innerErr error
+	var agentErr error
 	if err := util.Await(
 		"Deleting agent ["+util.Accented(agentID)+"]",
 		func() {
-			if res, innerErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
+			res, agentErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
 				AgentId: agentID,
-			}); err != nil {
-
-			}
+			})
 		},
 	); err != nil {
 		return err
 	}
 
-	if innerErr != nil {
-		if twerr, ok := err.(twirp.Error); ok {
+	if agentErr != nil {
+		if twerr, ok := agentErr.(twirp.Error); ok {
 			if twerr.Code() == twirp.PermissionDenied {
 				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
 			}
 		}
-		return err
+		return agentErr
 	}
 
 	if !res.Success {
@@ -1084,7 +1114,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	return secretsSlice, nil
 }
 
-func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string, settingsMap map[string]string) error {
+func requireDockerfile(_ context.Context, cmd *cli.Command, workingDir string, projectType agentfs.ProjectType, settingsMap map[string]string) error {
 	dockerfileExists, err := agentfs.HasDockerfile(workingDir)
 	if err != nil {
 		return err
@@ -1096,7 +1126,7 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 			if err := util.Await(
 				"Creating Dockerfile...",
 				func() {
-					innerErr = agentfs.CreateDockerfile(workingDir, settingsMap)
+					innerErr = agentfs.CreateDockerfile(workingDir, projectType, settingsMap)
 				},
 			); err != nil {
 				return err
@@ -1106,7 +1136,7 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 			}
 			fmt.Println("Created [" + util.Accented("Dockerfile") + "]")
 		} else {
-			if err := agentfs.CreateDockerfile(workingDir, settingsMap); err != nil {
+			if err := agentfs.CreateDockerfile(workingDir, projectType, settingsMap); err != nil {
 				return err
 			}
 		}
