@@ -82,19 +82,17 @@ var (
 		Hidden:   true,
 	}
 
-<<<<<<< HEAD
 	skipSDKCheckFlag = &cli.BoolFlag{
 		Name:     "skip-sdk-check",
 		Required: false,
 		Hidden:   true,
-||||||| parent of 031d559 (set custom dockerfile path)
-=======
+	}
+
 	dockerFileFlag = &cli.StringFlag{
 		Name:     "dockerfile",
 		Usage:    "Path to the Dockerfile to use for the agent. If unset, will use the Dockerfile in the working directory.",
 		Required: false,
 		Aliases:  []string{"f"},
->>>>>>> 031d559 (set custom dockerfile path)
 	}
 
 	AgentCommands = []*cli.Command{
@@ -113,12 +111,8 @@ var (
 						secretsFileFlag,
 						silentFlag,
 						regionFlag,
-<<<<<<< HEAD
 						skipSDKCheckFlag,
-||||||| parent of 031d559 (set custom dockerfile path)
-=======
 						dockerFileFlag,
->>>>>>> 031d559 (set custom dockerfile path)
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -398,7 +392,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	dockerfile := cmd.String("dockerfile")
 	if dockerfile == "" {
-		if err := requireDockerfile(ctx, cmd, workingDir, settingsMap); err != nil {
+		if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
 			return err
 		}
 	}
