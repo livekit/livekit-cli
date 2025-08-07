@@ -785,27 +785,25 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var res *lkproto.DeleteAgentResponse
-	var innerErr error
+	var agentErr error
 	if err := util.Await(
 		"Deleting agent ["+util.Accented(agentID)+"]",
 		func() {
-			if res, innerErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
+			res, agentErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
 				AgentId: agentID,
-			}); err != nil {
-
-			}
+			})
 		},
 	); err != nil {
 		return err
 	}
 
-	if innerErr != nil {
-		if twerr, ok := err.(twirp.Error); ok {
+	if agentErr != nil {
+		if twerr, ok := agentErr.(twirp.Error); ok {
 			if twerr.Code() == twirp.PermissionDenied {
 				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
 			}
 		}
-		return err
+		return agentErr
 	}
 
 	if !res.Success {
