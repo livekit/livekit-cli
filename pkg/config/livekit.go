@@ -52,8 +52,9 @@ type LiveKitTOMLProjectConfig struct {
 }
 
 type LiveKitTOMLAgentConfig struct {
-	ID      string   `toml:"id"`
-	Regions []string `toml:"regions"`
+	ID         string   `toml:"id"`
+	Regions    []string `toml:"regions"`
+	Dockerfile string   `toml:"dockerfile"`
 }
 
 func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {

@@ -88,6 +88,13 @@ var (
 		Hidden:   true,
 	}
 
+	dockerFileFlag = &cli.StringFlag{
+		Name:     "dockerfile",
+		Usage:    "Path to the Dockerfile to use for the agent. If unset, will use the Dockerfile in the working directory.",
+		Required: false,
+		Aliases:  []string{"f"},
+	}
+
 	AgentCommands = []*cli.Command{
 		{
 			Name:    "agent",
@@ -105,6 +112,7 @@ var (
 						silentFlag,
 						regionFlag,
 						skipSDKCheckFlag,
+						dockerFileFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -129,6 +137,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						dockerFileFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -381,8 +390,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
 	}
 
-	if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
-		return err
+	dockerfile := cmd.String("dockerfile")
+	if dockerfile == "" {
+		if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
+			return err
+		}
 	}
 
 	if err := agentfs.CheckSDKVersion(workingDir, projectType, settingsMap); err != nil {
@@ -409,6 +421,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	lkConfig.Agent.ID = resp.AgentId
+	lkConfig.Agent.Dockerfile = dockerfile
 	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 		return err
 	}
@@ -419,7 +432,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Printf("Created agent with ID [%s]\n", util.Accented(resp.AgentId))
-	err = agentfs.Build(ctx, resp.AgentId, project)
+	err = agentfs.Build(ctx, resp.AgentId, project, dockerfile)
 	if err != nil {
 		return err
 	}
@@ -527,6 +540,8 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	dockerfile := cmd.String("dockerfile")
+
 	req = &lkproto.DeployAgentRequest{
 		AgentId: agentId,
 	}
@@ -578,7 +593,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Printf("Updated agent [%s]\n", util.Accented(resp.AgentId))
-	err = agentfs.Build(ctx, resp.AgentId, project)
+	err = agentfs.Build(ctx, resp.AgentId, project, dockerfile)
 	if err != nil {
 		return err
 	}
