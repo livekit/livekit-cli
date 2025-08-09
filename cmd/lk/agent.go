@@ -317,7 +317,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	if !cmd.IsSet("project") {
 		useProject := true
 		if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
-			Title(fmt.Sprintf("Use project [%s] with subdomain [%s] to create agent?", project.Name, subdomainMatches[1])).
+			Title(fmt.Sprintf("Use [%s] (%s) to create agent deployment?", project.Name, project.URL)).
 			Value(&useProject).
 			Inline(false).
 			WithTheme(util.Theme))).
@@ -440,7 +440,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		).Run(); err != nil {
 			return err
 		} else if viewLogs {
-			fmt.Println("Tailing logs...safe to exit at any time")
+			fmt.Println("Tailing runtime logs...safe to exit at any time")
 			return agentfs.LogHelper(ctx, lkConfig.Agent.ID, "deploy", project)
 		}
 	}
