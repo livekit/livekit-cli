@@ -129,6 +129,9 @@ func logHelperInternal(ctx context.Context, id string, logType string, projectCo
 			if capturePattern != nil && captured == "" {
 				if matches := capturePattern.FindStringSubmatch(line); len(matches) > 1 {
 					captured = matches[1]
+					fmt.Println(util.Dimmed(line))
+					// Return immediately after capturing the pattern
+					return captured, nil
 				}
 			}
 			

@@ -259,6 +259,22 @@ var (
 					},
 					ArgsUsage: "[working-dir]",
 				},
+				{
+					Name:   "sync",
+					Usage:  "Sync local code to a development agent",
+					Action: syncAgent,
+					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:  "url",
+							Usage: "`URL` of the dev sync server (optional, reads from develop.livekit.toml if not provided)",
+						},
+						&cli.StringFlag{
+							Name:  "token",
+							Usage: "`TOKEN` for dev sync authentication (optional, reads from develop.livekit.toml if not provided)",
+						},
+					},
+					ArgsUsage: "[working-dir]",
+				},
 			},
 		},
 	}
@@ -1262,6 +1278,7 @@ func developAgent(ctx context.Context, cmd *cli.Command) error {
 
 	// Create a pattern to capture cloudflared URLs
 	// Looking for patterns like: https://xxx.trycloudflare.com
+	// The URL might be surrounded by whitespace and | characters in the logs
 	cloudflarePattern := regexp.MustCompile(`https://([a-zA-Z0-9-]+\.trycloudflare\.com)`)
 	
 	// Create a context with timeout for log capture
@@ -1277,12 +1294,28 @@ func developAgent(ctx context.Context, cmd *cli.Command) error {
 	
 	if capturedURL != "" {
 		fmt.Printf("\n✔ Cloudflared tunnel detected!\n")
-		fmt.Printf("\n› Sync Server URL: %s/sync\n", util.Accented("https://"+capturedURL))
+		syncURL := "https://" + capturedURL + "/sync"
+		fmt.Printf("\n› Sync Server URL: %s\n", util.Accented(syncURL))
 		fmt.Printf("› To push code changes:\n")
-		fmt.Printf("  lk agent sync --url %s/sync --token %s [working-dir]\n", "https://"+capturedURL, devSyncToken)
+		fmt.Printf("  lk agent sync --url %s --token %s [working-dir]\n", syncURL, devSyncToken)
+		
+		// Save the dev sync URL and token to the config
+		lkConfig.Agent.DevSyncURL = syncURL
+		lkConfig.Agent.DevSyncToken = devSyncToken
+		if err := lkConfig.SaveTOMLFile(workingDir, devTomlFilename); err != nil {
+			fmt.Printf("Warning: Failed to save dev sync URL to config: %v\n", err)
+		} else {
+			fmt.Printf("\n✔ Dev sync configuration saved to [%s]\n", util.Accented(devTomlFilename))
+		}
 	} else {
 		fmt.Printf("\n! Could not capture cloudflared URL automatically.\n")
 		fmt.Printf("  Check agent logs with: lk agent logs\n")
+		
+		// Still save the token even if we didn't capture the URL
+		lkConfig.Agent.DevSyncToken = devSyncToken
+		if err := lkConfig.SaveTOMLFile(workingDir, devTomlFilename); err != nil {
+			fmt.Printf("Warning: Failed to save dev sync token to config: %v\n", err)
+		}
 	}
 	
 	fmt.Printf("\n› Development agent is running!\n")
@@ -1407,9 +1440,9 @@ func requireDevDockerfile(ctx context.Context, cmd *cli.Command, workingDir stri
 			return fmt.Errorf("failed to rename development Dockerfile: %w", err)
 		}
 		
-		// Copy dev-tools directory for the converted Dockerfile
+		// Copy .livekit-dev-tools directory for the converted Dockerfile
 		if err := copyDevTools(workingDir); err != nil {
-			return fmt.Errorf("failed to copy dev-tools: %w", err)
+			return fmt.Errorf("failed to copy .livekit-dev-tools: %w", err)
 		}
 		
 		if !cmd.Bool("silent") {
@@ -1478,9 +1511,9 @@ func requireDevDockerfile(ctx context.Context, cmd *cli.Command, workingDir stri
 }
 
 func copyDevTools(workingDir string) error {
-	devToolsDir := filepath.Join(workingDir, "dev-tools")
+	devToolsDir := filepath.Join(workingDir, ".livekit-dev-tools")
 	if err := os.MkdirAll(devToolsDir, 0755); err != nil {
-		return fmt.Errorf("failed to create dev-tools directory: %w", err)
+		return fmt.Errorf("failed to create .livekit-dev-tools directory: %w", err)
 	}
 
 	// The agentfs package will handle copying the appropriate files based on project type
@@ -1515,4 +1548,57 @@ func requireConfig(workingDir, tomlFilename string) (bool, error) {
 	var err error
 	lkConfig, exists, err = config.LoadTOMLFile(workingDir, tomlFilename)
 	return exists, err
+}
+
+func syncAgent(ctx context.Context, cmd *cli.Command) error {
+	// Get working directory
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+
+	// Load the develop.livekit.toml config
+	devTomlFilename := "develop.livekit.toml"
+	configExists, err := requireConfig(workingDir, devTomlFilename)
+	if err != nil && configExists {
+		return err
+	}
+
+	if !configExists {
+		return fmt.Errorf("no %s found. Please run 'lk agent develop' first", devTomlFilename)
+	}
+
+	if !lkConfig.HasAgent() || lkConfig.Agent == nil {
+		return fmt.Errorf("no agent configuration found in %s", devTomlFilename)
+	}
+
+	// Get URL and token from flags or config
+	url := cmd.String("url")
+	token := cmd.String("token")
+
+	// Use config values if not provided via flags
+	if url == "" {
+		url = lkConfig.Agent.DevSyncURL
+		if url == "" {
+			return fmt.Errorf("no sync URL found. Please provide --url or run 'lk agent develop' to capture the cloudflared URL")
+		}
+	}
+
+	if token == "" {
+		token = lkConfig.Agent.DevSyncToken
+		if token == "" {
+			return fmt.Errorf("no sync token found. Please provide --token or run 'lk agent develop' to generate one")
+		}
+	}
+
+	fmt.Printf("Syncing code to development agent...\n")
+	fmt.Printf("  URL: %s\n", util.Accented(url))
+	fmt.Printf("  Directory: %s\n", util.Accented(workingDir))
+
+	// Use the sync functionality from agentfs
+	if err := agentfs.SyncCode(ctx, workingDir, url, token); err != nil {
+		return fmt.Errorf("sync failed: %w", err)
+	}
+
+	fmt.Printf("\n✔ Code synced successfully!\n")
+	return nil
 }

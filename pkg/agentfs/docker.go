@@ -181,22 +181,10 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	// Replace DEV_SYNC_TOKEN="" with the actual token
 	dockerfileContent = bytes.ReplaceAll(dockerfileContent, []byte(`ENV DEV_SYNC_TOKEN=""`), []byte(fmt.Sprintf(`ENV DEV_SYNC_TOKEN="%s"`, devSyncToken)))
 
-	// Write Dockerfile as livekit.develop.Dockerfile
-	err = os.WriteFile(filepath.Join(dir, "livekit.develop.Dockerfile"), dockerfileContent, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write Dockerfile: %w", err)
-	}
-
-	// Write .dockerignore
-	err = os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write .dockerignore: %w", err)
-	}
-
-	// Copy dev-tools directory for inclusion in the build context
-	devToolsDir := filepath.Join(dir, "dev-tools")
+	// Copy .livekit-dev-tools directory for inclusion in the build context BEFORE writing Dockerfile
+	devToolsDir := filepath.Join(dir, ".livekit-dev-tools")
 	if err := os.MkdirAll(devToolsDir, 0755); err != nil {
-		return fmt.Errorf("failed to create dev-tools directory: %w", err)
+		return fmt.Errorf("failed to create .livekit-dev-tools directory: %w", err)
 	}
 
 	// Copy sync server script
@@ -228,10 +216,22 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 		return fmt.Errorf("failed to write entrypoint script: %w", err)
 	}
 
+	// Write Dockerfile as livekit.develop.Dockerfile
+	err = os.WriteFile(filepath.Join(dir, "livekit.develop.Dockerfile"), dockerfileContent, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write Dockerfile: %w", err)
+	}
+
+	// Write .dockerignore
+	err = os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write .dockerignore: %w", err)
+	}
+
 	fmt.Printf("\n✔ Successfully generated development mode Docker files:\n")
 	fmt.Printf("  %s - Development container build instructions\n", util.Accented("livekit.develop.Dockerfile"))
 	fmt.Printf("  %s - Files excluded from build context\n", util.Accented(".dockerignore"))
-	fmt.Printf("  %s - Development tools for live code sync\n", util.Accented("dev-tools/"))
+	fmt.Printf("  %s - Development tools for live code sync\n", util.Accented(".livekit-dev-tools/"))
 	fmt.Printf("\n› Development mode features:\n")
 	fmt.Printf("  • Live code synchronization via secure HTTP endpoint\n")
 	fmt.Printf("  • Automatic agent restart on file changes (nodemon)\n")

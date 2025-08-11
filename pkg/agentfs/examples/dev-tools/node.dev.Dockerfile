@@ -22,8 +22,8 @@ RUN apt-get update && \
 # Create an isolated directory for our dev tools and copy them in.
 # The entrypoint script is placed in /usr/local/bin to be in the system's PATH.
 RUN mkdir -p /opt/livekit-dev-tools
-COPY dev-tools/sync_server.js /opt/livekit-dev-tools/
-COPY dev-tools/live-dev-entrypoint.sh /usr/local/bin/
+COPY .livekit-dev-tools/sync_server.js /opt/livekit-dev-tools/
+COPY .livekit-dev-tools/live-dev-entrypoint.sh /usr/local/bin/
 # Install dependencies for the Node.js sync server
 RUN cd /opt/livekit-dev-tools && npm install yargs tar && chmod +x /usr/local/bin/live-dev-entrypoint.sh
 

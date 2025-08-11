@@ -39,7 +39,6 @@ func GenerateAgentDispatchToken(agentName, roomName, apiKey, apiSecret, identity
 	at := auth.NewAccessToken(apiKey, apiSecret).
 		SetVideoGrant(grant).
 		SetIdentity(identity).
-		SetName(fmt.Sprintf("dev-%s", agentName)).  // Set participant name to dev-{agentName}
 		SetValidFor(5 * time.Minute) // Default 5 minutes validity
 
 	// Create room configuration with agent dispatch

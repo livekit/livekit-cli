@@ -36,9 +36,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
 
 	copyBlock = `
 # Copy the dev tools into a standard, isolated location
-COPY dev-tools/sync_server.py /opt/livekit-dev-tools/
-COPY dev-tools/sync_server.js /opt/livekit-dev-tools/
-COPY dev-tools/live-dev-entrypoint.sh /usr/local/bin/
+COPY .livekit-dev-tools/sync_server.py /opt/livekit-dev-tools/
+COPY .livekit-dev-tools/sync_server.js /opt/livekit-dev-tools/
+COPY .livekit-dev-tools/live-dev-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/live-dev-entrypoint.sh
 `
 
@@ -93,7 +93,7 @@ func ConvertToDevDockerfile(dockerfilePath string, devSyncToken string) error {
 	fmt.Printf("\n✔ Success! ✨\n")
 	fmt.Printf("A new dev-mode enabled Dockerfile has been created at: %s\n", util.Accented(outputPath))
 	fmt.Printf("\nNext steps:\n")
-	fmt.Printf("1. Ensure the 'dev-tools' directory is in the same folder.\n")
+	fmt.Printf("1. Ensure the '.livekit-dev-tools' directory is in the same folder.\n")
 	fmt.Printf("2. Build the new image: docker build -t my-agent-dev -f %s .\n", outputPath)
 	fmt.Printf("3. Run the container with the required environment variables:\n")
 	fmt.Printf("   docker run --rm -it -e DEV_SYNC_TOKEN=\"your-secret\" -e AGENT_WORKDIR=\"/path/inside/container\" my-agent-dev\n")

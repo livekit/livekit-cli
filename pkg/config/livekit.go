@@ -54,6 +54,9 @@ type LiveKitTOMLProjectConfig struct {
 type LiveKitTOMLAgentConfig struct {
 	ID      string   `toml:"id"`
 	Regions []string `toml:"regions"`
+	// Development mode fields
+	DevSyncURL   string `toml:"dev_sync_url,omitempty"`
+	DevSyncToken string `toml:"dev_sync_token,omitempty"`
 }
 
 func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {
