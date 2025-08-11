@@ -518,7 +518,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		Regions: regions,
 	}
 
-	if err := lkConfig.SaveTOMLFile("", tomlFilename); err != nil {
+	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 		return err
 	}
 	return nil
