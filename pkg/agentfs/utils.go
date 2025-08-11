@@ -99,22 +99,30 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 	return false, ""
 }
 
+// DetectProjectType determines the project type by checking for specific configuration/lock files and their content
 func DetectProjectType(dir string) (ProjectType, error) {
 	// Node.js detection
-	if util.FileExists(dir, "package.json") {
+	if util.FileExists(dir, "package.json") || util.FileExists(dir, "yarn.lock") || util.FileExists(dir, "package-lock.json") {
 		return ProjectTypeNode, nil
 	}
 
-	// Python detection
+	// Python detection with priority order for most reliable indicators
+	// 1. Check for uv.lock first (most definitive UV indicator)
 	if util.FileExists(dir, "uv.lock") {
 		return ProjectTypePythonUV, nil
 	}
-	if util.FileExists(dir, "poetry.lock") || util.FileExists(dir, "Pipfile.lock") {
-		return ProjectTypePythonPip, nil // We can treat as pip-compatible
+
+	// 2. Check for other lock files (Poetry, Pipenv, PDM) - treat as pip-compatible
+	if util.FileExists(dir, "poetry.lock") || util.FileExists(dir, "Pipfile.lock") || util.FileExists(dir, "pdm.lock") {
+		return ProjectTypePythonPip, nil
 	}
+
+	// 3. Check for requirements.txt (classic pip setup)
 	if util.FileExists(dir, "requirements.txt") {
 		return ProjectTypePythonPip, nil
 	}
+
+	// 4. Check pyproject.toml for specific tool configurations
 	if util.FileExists(dir, "pyproject.toml") {
 		tomlPath := filepath.Join(dir, "pyproject.toml")
 		data, err := os.ReadFile(tomlPath)
@@ -122,6 +130,7 @@ func DetectProjectType(dir string) (ProjectType, error) {
 			var doc map[string]any
 			if err := toml.Unmarshal(data, &doc); err == nil {
 				if tool, ok := doc["tool"].(map[string]any); ok {
+					// Check for specific tool configurations
 					if _, hasPoetry := tool["poetry"]; hasPoetry {
 						return ProjectTypePythonPip, nil
 					}
@@ -135,6 +144,11 @@ func DetectProjectType(dir string) (ProjectType, error) {
 						return ProjectTypePythonUV, nil
 					}
 				}
+
+				// Try to detect UV projects by content
+				if isUVByContent(string(data)) {
+					return ProjectTypePythonUV, nil
+				}
 			}
 		}
 		// Default to pip if pyproject.toml is present but not informative
@@ -142,6 +156,22 @@ func DetectProjectType(dir string) (ProjectType, error) {
 	}
 
 	return ProjectTypeUnknown, errors.New("project type could not be identified; expected package.json, requirements.txt, pyproject.toml, or lock files")
+}
+
+// isUVByContent performs UV detection through pyproject.toml content analysis
+// This function specifically identifies UV-based Python projects without misclassifying
+// setuptools, poetry, and other pyproject.toml-based projects as UV projects.
+func isUVByContent(content string) bool {
+	// Look for UV-specific patterns in pyproject.toml:
+	// - [dependency-groups]: UV's dependency group syntax (not used by setuptools/poetry)
+	// - "uv sync": UV command references in scripts or documentation
+	// - [tool.uv]: UV-specific tool configuration section
+	if strings.Contains(content, "[dependency-groups]") ||
+		strings.Contains(content, "uv sync") ||
+		strings.Contains(content, "[tool.uv]") {
+		return true
+	}
+	return false
 }
 
 func ParseCpu(cpu string) (string, error) {
