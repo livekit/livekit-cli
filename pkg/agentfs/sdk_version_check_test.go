@@ -53,6 +53,15 @@ dependencies = ["livekit-agents>=1.0.0"]`,
 			expectError: false,
 		},
 		{
+			name:        "Python pyproject.toml with comma-separated constraints",
+			projectType: ProjectTypePythonPip,
+			setupFiles: map[string]string{
+				"pyproject.toml": `[project]
+dependencies = ["livekit-agents>=1.2.5,<2"]`,
+			},
+			expectError: false,
+		},
+		{
 			name:        "Python Pipfile with valid version",
 			projectType: ProjectTypePythonPip,
 			setupFiles: map[string]string{
@@ -350,4 +359,68 @@ func contains(s, substr string) bool {
 				}
 				return false
 			}())))
+}
+
+func TestParsePythonPackageVersion(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          string
+		expectedOutput string
+		expectedFound  bool
+	}{
+		{
+			name:           "Simple version",
+			input:          "livekit-agents==1.5.0",
+			expectedOutput: "==1.5.0",
+			expectedFound:  true,
+		},
+		{
+			name:           "Version with extras",
+			input:          "livekit-agents[extra]==1.5.0",
+			expectedOutput: "==1.5.0",
+			expectedFound:  true,
+		},
+		{
+			name:           "Version with no specifier",
+			input:          "livekit-agents",
+			expectedOutput: "latest",
+			expectedFound:  true,
+		},
+		{
+			name:           "Version with greater than",
+			input:          "livekit-agents>=1.5.0",
+			expectedOutput: ">=1.5.0",
+			expectedFound:  true,
+		},
+		{
+			name:           "Comma-separated constraints",
+			input:          "livekit-agents>=1.2.5,<2",
+			expectedOutput: ">=1.2.5",
+			expectedFound:  true,
+		},
+		{
+			name:           "Space-separated constraints",
+			input:          "livekit-agents>=1.2.5 <2",
+			expectedOutput: ">=1.2.5",
+			expectedFound:  true,
+		},
+		{
+			name:           "Not livekit-agents",
+			input:          "some-other-package==1.0.0",
+			expectedOutput: "",
+			expectedFound:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output, found := parsePythonPackageVersion(tt.input)
+			if found != tt.expectedFound {
+				t.Errorf("Expected found=%v, got %v", tt.expectedFound, found)
+			}
+			if output != tt.expectedOutput {
+				t.Errorf("Expected output=%q, got %q", tt.expectedOutput, output)
+			}
+		})
+	}
 }

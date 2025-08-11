@@ -132,6 +132,60 @@ func checkPackageInFile(filePath string, projectType ProjectType, pythonMinVersi
 	return VersionCheckResult{Error: fmt.Errorf("unsupported file type: %s", fileName)}
 }
 
+// parsePythonPackageVersion parses a Python package line and extracts the version
+func parsePythonPackageVersion(line string) (string, bool) {
+	// match livekit-agents with optional extras and version specifiers
+	pattern := regexp.MustCompile(`(?i)^livekit-agents(?:\[[^\]]+\])?\s*([=~><!]+)?\s*([^#]+)?`)
+	matches := pattern.FindStringSubmatch(line)
+	if matches == nil {
+		return "", false
+	}
+
+	// Get the operator (==, >=, etc.) and the version
+	operator := matches[1]
+	version := strings.TrimSpace(matches[2])
+
+	if version == "" {
+		// no version specified means latest
+		return "latest", true
+	}
+
+	// clean up the version string if it contains multiple constraints
+	// handle comma-separated version constraints like ">=1.2.5,<2"
+	if strings.Contains(version, ",") {
+		parts := strings.Split(version, ",")
+		for _, part := range parts {
+			trimmed := strings.TrimSpace(part)
+			// Use the first version constraint that has a number
+			if regexp.MustCompile(`\d`).MatchString(trimmed) {
+				// If the part already has an operator, use it as is
+				if strings.ContainsAny(trimmed, "=~><") {
+					version = trimmed
+				} else if operator != "" {
+					// Otherwise, prepend the operator from the original match
+					version = operator + trimmed
+				} else {
+					version = trimmed
+				}
+				break
+			}
+		}
+	} else {
+		// handle space-separated constraints
+		firstPart := strings.Split(version, " ")[0]
+		// output expects operator, so we'll preserve or add it
+		if strings.ContainsAny(firstPart, "=~><") {
+			version = firstPart
+		} else if operator != "" {
+			version = operator + firstPart
+		} else {
+			version = firstPart
+		}
+	}
+
+	return version, true
+}
+
 // checkRequirementsFile checks for livekit-agents in requirements.txt
 func checkRequirementsFile(filePath, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
@@ -146,15 +200,8 @@ func checkRequirementsFile(filePath, minVersion string) VersionCheckResult {
 			continue
 		}
 
-		// Match livekit-agents with optional extras and version specifiers
-		pattern := regexp.MustCompile(`(?i)^livekit-agents(?:\[[^\]]+\])?\s*([=~><!]+)?\s*([^#\s]+)?`)
-		matches := pattern.FindStringSubmatch(line)
-		if matches != nil {
-			version := strings.TrimSpace(matches[2])
-			if version == "" {
-				version = "latest" // No version specified means latest
-			}
-
+		version, found := parsePythonPackageVersion(line)
+		if found {
 			satisfied, err := isVersionSatisfied(version, minVersion)
 			return VersionCheckResult{
 				PackageInfo: PackageInfo{
@@ -191,14 +238,8 @@ func checkPyprojectToml(filePath, minVersion string) VersionCheckResult {
 		if deps, ok := project["dependencies"].([]any); ok {
 			for _, dep := range deps {
 				if line, ok := dep.(string); ok {
-					pattern := regexp.MustCompile(`(?i)^livekit-agents(?:\[[^\]]+\])?\s*([=~><!]+)?\s*([^#\s]+)?`)
-					matches := pattern.FindStringSubmatch(line)
-					if matches != nil {
-						version := strings.TrimSpace(matches[2])
-						if version == "" {
-							version = "latest"
-						}
-
+					version, found := parsePythonPackageVersion(line)
+					if found {
 						satisfied, err := isVersionSatisfied(version, minVersion)
 						return VersionCheckResult{
 							PackageInfo: PackageInfo{
