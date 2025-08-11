@@ -90,53 +90,146 @@ func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[strin
 
 func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string) ([]byte, error) {
 	valFile := func(fileName string) (string, error) {
-		// NOTE: we need to recurse to find entrypoints which may exist in src/ or some other directory.
-		// This could be a lot of files, so we omit any files in .dockerignore, since they cannot be
-		// used as entrypoints.
-
+		// Parse dockerignore patterns to filter out files that won't be in build context
 		reader := bytes.NewReader(dockerignoreContent)
 		patterns, err := ignorefile.ReadAll(reader)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to parse .dockerignore: %w", err)
 		}
 		matcher, err := patternmatcher.New(patterns)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to create pattern matcher: %w", err)
 		}
 
-		var fileList []string
+		// Recursively find all relevant files, respecting dockerignore
+		fileMap := make(map[string]bool)
 		if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
+
+			// Skip files that match .dockerignore patterns
 			if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
 				return nil
 			} else if err != nil {
 				return err
 			}
+
+			// Only include files with the correct extension
 			if !d.IsDir() && strings.HasSuffix(d.Name(), projectType.FileExt()) {
-				fileList = append(fileList, path)
+				// Convert to relative path from directory
+				relPath, err := filepath.Rel(dir, path)
+				if err != nil {
+					return err
+				}
+				fileMap[relPath] = true
 			}
 			return nil
 		}); err != nil {
 			return "", fmt.Errorf("error walking directory %s: %w", dir, err)
 		}
 
-		if slices.Contains(fileList, fileName) {
+		// Check if the specified file exists
+		if _, exists := fileMap[fileName]; exists {
 			return fileName, nil
 		}
 
+		// Smart entry point discovery with prioritization
+		var candidates []string
+		var priorityOrder []string
+
+		if projectType.IsPython() {
+			// Common Python entry point patterns in order of preference
+			priorityOrder = []string{
+				"main.py",         // Most common
+				"src/main.py",     // Modern src layout
+				"agent.py",        // LiveKit agents
+				"src/agent.py",    // LiveKit agents in src
+				"app.py",          // Flask/web apps
+				"src/app.py",      // Flask/web apps in src
+				"__main__.py",     // Python module entry
+				"src/__main__.py", // Python module entry in src
+			}
+		} else if projectType == ProjectTypeNode {
+			// Common Node.js entry point patterns
+			priorityOrder = []string{
+				"index.js",
+				"main.js",
+				"app.js",
+				"src/index.js",
+				"src/main.js",
+				"src/app.js",
+				"agent.js",
+				"src/agent.js",
+			}
+		}
+
+		// First, check priority patterns that exist
+		for _, pattern := range priorityOrder {
+			if _, exists := fileMap[pattern]; exists {
+				candidates = append(candidates, pattern)
+			}
+		}
+
+		// Then add any other matching files not already in candidates
+		for fileName := range fileMap {
+			if !slices.Contains(candidates, fileName) {
+				candidates = append(candidates, fileName)
+			}
+		}
+
+		// If we have a single clear choice, use it
+		if len(candidates) == 1 {
+			return candidates[0], nil
+		}
+
 		// If no matching files found, return early
-		if len(fileList) == 0 {
+		if len(candidates) == 0 {
 			return "", nil
 		}
 
+		// Create enhanced options with descriptions
+		var selectOptions []huh.Option[string]
+		for _, option := range candidates {
+			var description string
+			switch {
+			case strings.Contains(option, "agent."):
+				description = fmt.Sprintf("%s (LiveKit agent)", option)
+			case strings.Contains(option, "src/"):
+				description = fmt.Sprintf("%s (common src/ layout)", option)
+			case strings.Contains(option, "main."):
+				description = fmt.Sprintf("%s (common main entry point)", option)
+			case strings.Contains(option, "app."):
+				description = fmt.Sprintf("%s (app entry point)", option)
+			case strings.Contains(option, "__main__.py"):
+				description = fmt.Sprintf("%s (Python module entry)", option)
+			default:
+				description = option
+			}
+
+			selectOptions = append(selectOptions, huh.Option[string]{
+				Key:   description,
+				Value: option,
+			})
+		}
+
+		// Set the first (highest priority) option as default
 		var selected string
+		if len(candidates) > 0 {
+			selected = candidates[0]
+		}
+
+		title := fmt.Sprintf("Multiple %s files found. Select entrypoint:", projectType.Lang())
+		if len(candidates) > 5 {
+			title = fmt.Sprintf("Found %d %s files. Select entrypoint:", len(candidates), projectType.Lang())
+		}
+
 		form := huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
-					Title(fmt.Sprintf("Select %s file to use as entrypoint", projectType.Lang())).
-					Options(huh.NewOptions(fileList...)...).
+					Title(title).
+					Description("The selected file will be used as the main entry point for your agent").
+					Options(selectOptions...).
 					Value(&selected).
 					WithTheme(util.Theme),
 			),
