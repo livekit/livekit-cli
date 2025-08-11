@@ -464,20 +464,24 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		if !overwrite {
-			return fmt.Errorf("config file [%s] already exists", tomlFilename)
+			return fmt.Errorf("config file [%s] already exists", util.Accented(tomlFilename))
 		}
 	}
 
 	agentID := cmd.String("id")
 	if agentID == "" {
-		if err := huh.NewInput().
-			Title("Agent ID").
-			Value(&agentID).
-			WithTheme(util.Theme).
-			Run(); err != nil {
+		configExists, err := requireConfig(workingDir, tomlFilename)
+		if err != nil && configExists {
 			return err
-		} else if agentID == "" {
-			return fmt.Errorf("agent ID is required")
+		}
+
+		if configExists && lkConfig.HasAgent() {
+			agentID = lkConfig.Agent.ID
+		} else {
+			agentID, err = selectAgent(ctx, cmd, false)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
