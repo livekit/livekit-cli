@@ -27,6 +27,21 @@ func TestCheckSDKVersion(t *testing.T) {
 		errorMsg    string
 	}{
 		{
+			name:        "Python setup.py with valid version",
+			projectType: ProjectTypePythonPip,
+			setupFiles: map[string]string{
+				"setup.py": `setup(
+    name="my-project",
+    version="1.0.0",
+    install_requires=[
+        "livekit-agents>=1.5.0",
+        "requests==2.25.1",
+    ],
+)`,
+			},
+			expectError: false,
+		},
+		{
 			name:        "Python requirements.txt with valid version",
 			projectType: ProjectTypePythonPip,
 			setupFiles: map[string]string{

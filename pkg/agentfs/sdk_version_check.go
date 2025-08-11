@@ -134,14 +134,14 @@ func checkPackageInFile(filePath string, projectType ProjectType, pythonMinVersi
 
 // parsePythonPackageVersion parses a Python package line and extracts the version
 func parsePythonPackageVersion(line string) (string, bool) {
-	// match livekit-agents with optional extras and version specifiers
+	// match with optional extras and version specifiers
 	pattern := regexp.MustCompile(`(?i)^livekit-agents(?:\[[^\]]+\])?\s*([=~><!]+)?\s*([^#]+)?`)
 	matches := pattern.FindStringSubmatch(line)
 	if matches == nil {
 		return "", false
 	}
 
-	// Get the operator (==, >=, etc.) and the version
+	// get the operator (==, >=, etc.) and the version
 	operator := matches[1]
 	version := strings.TrimSpace(matches[2])
 
@@ -156,13 +156,10 @@ func parsePythonPackageVersion(line string) (string, bool) {
 		parts := strings.Split(version, ",")
 		for _, part := range parts {
 			trimmed := strings.TrimSpace(part)
-			// Use the first version constraint that has a number
 			if regexp.MustCompile(`\d`).MatchString(trimmed) {
-				// If the part already has an operator, use it as is
 				if strings.ContainsAny(trimmed, "=~><") {
 					version = trimmed
 				} else if operator != "" {
-					// Otherwise, prepend the operator from the original match
 					version = operator + trimmed
 				} else {
 					version = trimmed
@@ -305,35 +302,37 @@ func checkSetupPy(filePath, minVersion string) VersionCheckResult {
 
 	// Look for install_requires or dependencies
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)install_requires\s*=\s*\[(.*?)\]`),
-		regexp.MustCompile(`(?i)dependencies\s*=\s*\[(.*?)\]`),
+		regexp.MustCompile(`(?i)install_requires\s*=\s*\[([\s\S]*?)\]`),
+		regexp.MustCompile(`(?i)dependencies\s*=\s*\[([\s\S]*?)\]`),
 	}
 
 	for _, pattern := range patterns {
 		matches := pattern.FindStringSubmatch(string(content))
 		if matches != nil {
 			depsSection := matches[1]
-			// Parse the dependencies section
-			depPattern := regexp.MustCompile(`(?i)["']livekit-agents(?:\[[^\]]+\])?\s*([=~><!]+)?\s*([^"'\s]+)?["']`)
+			// extract the livekit-agents dependency line
+			depPattern := regexp.MustCompile(`(?i)["']livekit-agents(?:\[[^\]]+\])?([^"']+)?["']`)
 			depMatches := depPattern.FindStringSubmatch(depsSection)
 			if depMatches != nil {
-				version := strings.TrimSpace(depMatches[2])
-				if version == "" {
-					version = "latest"
+				packageLine := "livekit-agents"
+				if depMatches[1] != "" {
+					packageLine += depMatches[1]
 				}
-
-				satisfied, err := isVersionSatisfied(version, minVersion)
-				return VersionCheckResult{
-					PackageInfo: PackageInfo{
-						Name:        "livekit-agents",
-						Version:     version,
-						FoundInFile: filePath,
-						ProjectType: ProjectTypePythonPip,
-						Ecosystem:   "pypi",
-					},
-					MinVersion: minVersion,
-					Satisfied:  satisfied,
-					Error:      err,
+				version, found := parsePythonPackageVersion(packageLine)
+				if found {
+					satisfied, err := isVersionSatisfied(version, minVersion)
+					return VersionCheckResult{
+						PackageInfo: PackageInfo{
+							Name:        "livekit-agents",
+							Version:     version,
+							FoundInFile: filePath,
+							ProjectType: ProjectTypePythonPip,
+							Ecosystem:   "pypi",
+						},
+						MinVersion: minVersion,
+						Satisfied:  satisfied,
+						Error:      err,
+					}
 				}
 			}
 		}
