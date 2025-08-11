@@ -7,8 +7,8 @@ FROM python:${PYTHON_VERSION}-slim
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
-# Define the program entrypoint file where your agent is started
-ARG PROGRAM_MAIN="src/agent.py"
+# Define the program entrypoint file where your agent is started.
+ARG PROGRAM_MAIN="{{.ProgramMain}}"
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
@@ -48,5 +48,5 @@ RUN python "$PROGRAM_MAIN" download-files
 EXPOSE 8081
 
 # Run the application.
-CMD ["python", "$PROGRAM_MAIN", "start"]
-
+# The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
+CMD ["python", "{{.ProgramMain}}", "start"]

@@ -17,19 +17,18 @@ package agentfs
 import (
 	"bytes"
 	"embed"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"text/template"
 
 	"github.com/charmbracelet/huh"
 	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
-	"github.com/livekit/protocol/logger"
 )
 
 //go:embed examples/*
@@ -62,6 +61,7 @@ func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[strin
 	if err != nil {
 		return err
 	}
+
 	dockerIgnoreContent, err = fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
 	if err != nil {
 		return err
@@ -159,95 +159,11 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		return nil, err
 	}
 
-	lines := bytes.Split(dockerfileContent, []byte("\n"))
-	var result bytes.Buffer
-	for i := range lines {
-		line := lines[i]
-		trimmedLine := bytes.TrimSpace(line)
+	tpl := template.Must(template.New("Dockerfile").Parse(string(dockerfileContent)))
+	buf := &bytes.Buffer{}
+	tpl.Execute(buf, map[string]string{
+		"ProgramMain": newEntrypoint,
+	})
 
-		if bytes.HasPrefix(trimmedLine, []byte("ARG PROGRAM_MAIN")) {
-			result.WriteString(fmt.Sprintf("ARG PROGRAM_MAIN=\"%s\"", newEntrypoint))
-		} else if bytes.HasPrefix(trimmedLine, []byte("ENTRYPOINT")) {
-			// Extract the current entrypoint file
-			parts := bytes.Fields(trimmedLine)
-			if len(parts) < 2 {
-				return nil, fmt.Errorf("invalid ENTRYPOINT format")
-			}
-
-			// Handle both JSON array and shell format
-			var currentEntrypoint string
-			if bytes.HasPrefix(parts[1], []byte("[")) {
-				// JSON array format: ENTRYPOINT ["python", "app.py"]
-				// Get the last element before the closing bracket
-				jsonStr := bytes.Join(parts[1:], []byte(" "))
-				var entrypointArray []string
-				if err := json.Unmarshal(jsonStr, &entrypointArray); err != nil {
-					return nil, fmt.Errorf("invalid ENTRYPOINT JSON format: %v", err)
-				}
-				if len(entrypointArray) > 0 {
-					currentEntrypoint = entrypointArray[len(entrypointArray)-1]
-				}
-			} else {
-				// Shell format: ENTRYPOINT python app.py
-				currentEntrypoint = string(parts[len(parts)-1])
-			}
-
-			logger.Debugw("found entrypoint", "entrypoint", currentEntrypoint)
-
-			// Preserve the original format
-			if bytes.HasPrefix(parts[1], []byte("[")) {
-				// Replace the last element in the JSON array
-				var entrypointArray []string
-				jsonStr := bytes.Join(parts[1:], []byte(" "))
-				if err := json.Unmarshal(jsonStr, &entrypointArray); err != nil {
-					return nil, err
-				}
-				entrypointArray[len(entrypointArray)-1] = newEntrypoint
-				newJSON, err := json.Marshal(entrypointArray)
-				if err != nil {
-					return nil, err
-				}
-				fmt.Fprintf(&result, "ENTRYPOINT %s\n", newJSON)
-			} else {
-				// Preserve the original command but replace the last part
-				parts[len(parts)-1] = []byte(newEntrypoint)
-				result.Write(bytes.Join(parts, []byte(" ")))
-				result.WriteByte('\n')
-			}
-		} else if bytes.HasPrefix(trimmedLine, []byte("CMD")) {
-			// Handle CMD JSON array format: CMD ["python", "main.py", "start"]
-			parts := bytes.Fields(trimmedLine)
-			if len(parts) >= 2 && bytes.HasPrefix(parts[1], []byte("[")) {
-				jsonStr := bytes.Join(parts[1:], []byte(" "))
-				var cmdArray []string
-				if err := json.Unmarshal(jsonStr, &cmdArray); err != nil {
-					return nil, err
-				}
-				for i, arg := range cmdArray {
-					if strings.HasSuffix(arg, projectType.FileExt()) {
-						cmdArray[i] = newEntrypoint
-						break
-					}
-				}
-				newJSON, err := json.Marshal(cmdArray)
-				if err != nil {
-					return nil, err
-				}
-				fmt.Fprintf(&result, "CMD %s\n", newJSON)
-			}
-		} else if bytes.HasPrefix(trimmedLine, fmt.Appendf(nil, "RUN python %s", pythonEntrypoint)) {
-			line = bytes.ReplaceAll(line, []byte(pythonEntrypoint), []byte(newEntrypoint))
-			result.Write(line)
-			if i < len(lines)-1 {
-				result.WriteByte('\n')
-			}
-		} else {
-			result.Write(line)
-			if i < len(lines)-1 {
-				result.WriteByte('\n')
-			}
-		}
-	}
-
-	return result.Bytes(), nil
+	return buf.Bytes(), nil
 }
