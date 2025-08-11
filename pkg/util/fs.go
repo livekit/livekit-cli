@@ -24,9 +24,14 @@ import (
 	"github.com/livekit/protocol/utils/guid"
 )
 
+// FileExists returns true if the file exists in the given directory and is a regular file.
+// It returns false for directories, non-existent paths, or any error condition.
 func FileExists(dir, filename string) bool {
-	_, err := os.Stat(filepath.Join(dir, filename))
-	return err == nil
+	info, err := os.Stat(filepath.Join(dir, filename))
+	if err != nil {
+		return false
+	}
+	return info.Mode().IsRegular()
 }
 
 // Safely copy a file across filesystems, preserving permissions
