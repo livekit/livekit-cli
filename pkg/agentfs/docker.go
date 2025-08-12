@@ -75,6 +75,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 		case ProjectTypeNodePNPM:
 			fmt.Printf("✔ Detected Node.js project with pnpm package manager\n")
 			fmt.Printf("  Using template [%s] for efficient dependency management\n", util.Accented("node.pnpm"))
+		case ProjectTypeNodeYarn:
+			fmt.Printf("✔ Detected Node.js project with Yarn Classic package manager\n")
+			fmt.Printf("  Using template [%s] with Yarn v1 support\n", util.Accented("node.yarn"))
 		case ProjectTypePythonUV:
 			fmt.Printf("✔ Detected Python project with UV package manager\n")
 			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
@@ -117,6 +120,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	} else if projectType == ProjectTypeNodePNPM {
 		// Validate pnpm project setup
 		validatePNPMProject(dir, silent)
+	} else if projectType == ProjectTypeNodeYarn {
+		// Validate yarn project setup
+		validateYarnProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -240,6 +246,17 @@ func validatePNPMProject(dir string, silent bool) {
 		if !silent {
 			fmt.Printf("! Warning: pnpm project detected but %s file not found\n", util.Accented("pnpm-lock.yaml"))
 			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("pnpm install"), util.Accented("pnpm-lock.yaml"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateYarnProject(dir string, silent bool) {
+	yarnLockPath := filepath.Join(dir, "yarn.lock")
+	if _, err := os.Stat(yarnLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Yarn project detected but %s file not found\n", util.Accented("yarn.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("yarn install"), util.Accented("yarn.lock"))
 			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
 		}
 	}

@@ -37,6 +37,7 @@ const (
 	ProjectTypePythonPipenv ProjectType = "python.pipenv"
 	ProjectTypeNodeNPM      ProjectType = "node.npm"
 	ProjectTypeNodePNPM     ProjectType = "node.pnpm"
+	ProjectTypeNodeYarn     ProjectType = "node.yarn"
 	ProjectTypeUnknown      ProjectType = "unknown"
 )
 
@@ -45,7 +46,7 @@ func (p ProjectType) IsPython() bool {
 }
 
 func (p ProjectType) IsNode() bool {
-	return p == ProjectTypeNodeNPM || p == ProjectTypeNodePNPM
+	return p == ProjectTypeNodeNPM || p == ProjectTypeNodePNPM || p == ProjectTypeNodeYarn
 }
 
 func (p ProjectType) Lang() string {
@@ -119,6 +120,11 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 			"pnpm-lock.yaml",       // pnpm lock file (highest priority)
 			"package.json",         // Package manifest (fallback)
 		}
+	case ProjectTypeNodeYarn:
+		filesToCheck = []string{
+			"yarn.lock",            // Yarn lock file (highest priority)
+			"package.json",         // Package manifest (fallback)
+		}
 	default:
 		return false, ""
 	}
@@ -141,8 +147,13 @@ func DetectProjectType(dir string) (ProjectType, error) {
 		return ProjectTypeNodePNPM, nil
 	}
 	
+	// Check for Yarn Classic (yarn.lock without .yarnrc.yml means Yarn v1)
+	if util.FileExists(dir, "yarn.lock") && !util.FileExists(dir, ".yarnrc.yml") {
+		return ProjectTypeNodeYarn, nil
+	}
+	
 	// Fall back to npm for other Node.js projects
-	if util.FileExists(dir, "package.json") || util.FileExists(dir, "yarn.lock") || util.FileExists(dir, "package-lock.json") {
+	if util.FileExists(dir, "package.json") || util.FileExists(dir, "package-lock.json") {
 		return ProjectTypeNodeNPM, nil
 	}
 
