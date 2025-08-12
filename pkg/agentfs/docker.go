@@ -82,6 +82,11 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 			fmt.Printf("  Using template [%s] with dependency groups support\n", util.Accented("python.poetry"))
 			// Validate Poetry project setup
 			validatePoetryProject(dir, silent)
+		case ProjectTypePythonHatch:
+			fmt.Printf("✔ Detected Python project with Hatch package manager\n")
+			fmt.Printf("  Using template [%s] with isolated environments\n", util.Accented("python.hatch"))
+			// Validate Hatch project setup
+			validateHatchProject(dir, silent)
 		case ProjectTypePythonPip:
 			fmt.Printf("✔ Detected Python project with pip package manager\n")
 			fmt.Printf("  Using template [%s]\n", util.Accented("python.pip"))
@@ -92,6 +97,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	} else if projectType == ProjectTypePythonPoetry {
 		// Still validate Poetry project in silent mode, but without output
 		validatePoetryProject(dir, silent)
+	} else if projectType == ProjectTypePythonHatch {
+		// Still validate Hatch project in silent mode, but without output
+		validateHatchProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -155,6 +163,18 @@ func validatePoetryProject(dir string, silent bool) {
 			fmt.Printf("! Warning: Poetry project detected but %s file not found\n", util.Accented("poetry.lock"))
 			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("poetry lock"), util.Accented("poetry.lock"))
 			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateHatchProject(dir string, silent bool) {
+	// Hatch doesn't use lock files by default, but we should check for pyproject.toml
+	pyprojectPath := filepath.Join(dir, "pyproject.toml")
+	if _, err := os.Stat(pyprojectPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Hatch project detected but %s file not found\n", util.Accented("pyproject.toml"))
+			fmt.Printf("  Hatch requires a valid %s with project metadata\n", util.Accented("pyproject.toml"))
+			fmt.Printf("  Consider running %s to create a proper project structure\n\n", util.Accented("hatch new"))
 		}
 	}
 }

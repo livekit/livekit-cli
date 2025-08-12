@@ -32,12 +32,13 @@ const (
 	ProjectTypePythonPip    ProjectType = "python.pip"
 	ProjectTypePythonUV     ProjectType = "python.uv"
 	ProjectTypePythonPoetry ProjectType = "python.poetry"
+	ProjectTypePythonHatch  ProjectType = "python.hatch"
 	ProjectTypeNode         ProjectType = "node"
 	ProjectTypeUnknown      ProjectType = "unknown"
 )
 
 func (p ProjectType) IsPython() bool {
-	return p == ProjectTypePythonPip || p == ProjectTypePythonUV || p == ProjectTypePythonPoetry
+	return p == ProjectTypePythonPip || p == ProjectTypePythonUV || p == ProjectTypePythonPoetry || p == ProjectTypePythonHatch
 }
 
 func (p ProjectType) IsNode() bool {
@@ -88,6 +89,11 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 		filesToCheck = []string{
 			"poetry.lock",          // Poetry lock file (highest priority)
 			"pyproject.toml",       // Poetry configuration
+		}
+	case ProjectTypePythonHatch:
+		filesToCheck = []string{
+			"pyproject.toml",       // Hatch uses pyproject.toml
+			"hatch.toml",           // Optional Hatch configuration
 		}
 	case ProjectTypeNode:
 		filesToCheck = []string{
@@ -150,10 +156,10 @@ func DetectProjectType(dir string) (ProjectType, error) {
 					if _, hasPoetry := tool["poetry"]; hasPoetry {
 						return ProjectTypePythonPoetry, nil
 					}
-					if _, hasPdm := tool["pdm"]; hasPdm {
-						return ProjectTypePythonPip, nil
-					}
 					if _, hasHatch := tool["hatch"]; hasHatch {
+						return ProjectTypePythonHatch, nil
+					}
+					if _, hasPdm := tool["pdm"]; hasPdm {
 						return ProjectTypePythonPip, nil
 					}
 					if _, hasUv := tool["uv"]; hasUv {
