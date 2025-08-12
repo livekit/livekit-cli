@@ -72,6 +72,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 		case ProjectTypeNodeNPM:
 			fmt.Printf("✔ Detected Node.js project with npm package manager\n")
 			fmt.Printf("  Using template [%s] with npm support\n", util.Accented("node.npm"))
+		case ProjectTypeNodePNPM:
+			fmt.Printf("✔ Detected Node.js project with pnpm package manager\n")
+			fmt.Printf("  Using template [%s] for efficient dependency management\n", util.Accented("node.pnpm"))
 		case ProjectTypePythonUV:
 			fmt.Printf("✔ Detected Python project with UV package manager\n")
 			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
@@ -111,6 +114,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	} else if projectType == ProjectTypeNodeNPM {
 		// Validate npm project setup
 		validateNPMProject(dir, silent)
+	} else if projectType == ProjectTypeNodePNPM {
+		// Validate pnpm project setup
+		validatePNPMProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -223,6 +229,17 @@ func validateNPMProject(dir string, silent bool) {
 		if !silent {
 			fmt.Printf("! Warning: npm project detected but %s file not found\n", util.Accented("package-lock.json"))
 			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("npm install"), util.Accented("package-lock.json"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validatePNPMProject(dir string, silent bool) {
+	pnpmLockPath := filepath.Join(dir, "pnpm-lock.yaml")
+	if _, err := os.Stat(pnpmLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: pnpm project detected but %s file not found\n", util.Accented("pnpm-lock.yaml"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("pnpm install"), util.Accented("pnpm-lock.yaml"))
 			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
 		}
 	}
