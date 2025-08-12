@@ -10,8 +10,8 @@ FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
-# Define the program entrypoint file where your agent is started
-ARG PROGRAM_MAIN="src/agent.py"
+# Define the program entrypoint file where your agent is started.
+ARG PROGRAM_MAIN="{{.ProgramMain}}"
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
@@ -71,7 +71,7 @@ RUN uv run "$PROGRAM_MAIN" download-files
 EXPOSE 8081
 
 # Run the application using UV
-# UV will activate the virtual environment and run the agent
-# The "start" command tells the worker to connect to LiveKit and begin waiting for jobs
-CMD ["uv", "run", "$PROGRAM_MAIN", "start"]
+# UV will activate the virtual environment and run the agent.
+# The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
+CMD ["uv", "run", "{{.ProgramMain}}", "start"]
 
