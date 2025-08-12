@@ -29,12 +29,12 @@ import (
 type ProjectType string
 
 const (
-	ProjectTypePythonPip    ProjectType = "python.pip"
-	ProjectTypePythonUV     ProjectType = "python.uv"
-	ProjectTypePythonPoetry ProjectType = "python.poetry"
-	ProjectTypePythonHatch  ProjectType = "python.hatch"
-	ProjectTypePythonPDM    ProjectType = "python.pdm"
-	ProjectTypePythonPipenv ProjectType = "python.pipenv"
+	ProjectTypePythonPip     ProjectType = "python.pip"
+	ProjectTypePythonUV      ProjectType = "python.uv"
+	ProjectTypePythonPoetry  ProjectType = "python.poetry"
+	ProjectTypePythonHatch   ProjectType = "python.hatch"
+	ProjectTypePythonPDM     ProjectType = "python.pdm"
+	ProjectTypePythonPipenv  ProjectType = "python.pipenv"
 	ProjectTypeNodeNPM       ProjectType = "node.npm"
 	ProjectTypeNodePNPM      ProjectType = "node.pnpm"
 	ProjectTypeNodeYarn      ProjectType = "node.yarn"
@@ -77,66 +77,66 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 	// Define files to check based on project type
 	// Prioritize actual lock files over dependency manifests
 	var filesToCheck []string
-	
+
 	switch p {
 	case ProjectTypePythonPip:
 		filesToCheck = []string{
-			"requirements.lock",    // Lock file (if exists)
-			"pyproject.toml",       // Modern Python project file
-			"requirements.txt",     // Legacy pip dependencies
+			"requirements.lock", // Lock file (if exists)
+			"pyproject.toml",    // Modern Python project file
+			"requirements.txt",  // Legacy pip dependencies
 		}
 	case ProjectTypePythonUV:
 		filesToCheck = []string{
-			"uv.lock",              // UV lock file (highest priority)
-			"pyproject.toml",       // UV uses pyproject.toml
-			"requirements.txt",     // Fallback
+			"uv.lock",          // UV lock file (highest priority)
+			"pyproject.toml",   // UV uses pyproject.toml
+			"requirements.txt", // Fallback
 		}
 	case ProjectTypePythonPoetry:
 		filesToCheck = []string{
-			"poetry.lock",          // Poetry lock file (highest priority)
-			"pyproject.toml",       // Poetry configuration
+			"poetry.lock",    // Poetry lock file (highest priority)
+			"pyproject.toml", // Poetry configuration
 		}
 	case ProjectTypePythonHatch:
 		filesToCheck = []string{
-			"pyproject.toml",       // Hatch uses pyproject.toml
-			"hatch.toml",           // Optional Hatch configuration
+			"pyproject.toml", // Hatch uses pyproject.toml
+			"hatch.toml",     // Optional Hatch configuration
 		}
 	case ProjectTypePythonPDM:
 		filesToCheck = []string{
-			"pdm.lock",             // PDM lock file (highest priority)
-			"pyproject.toml",       // PDM configuration
-			".pdm.toml",            // Local PDM configuration
+			"pdm.lock",       // PDM lock file (highest priority)
+			"pyproject.toml", // PDM configuration
+			".pdm.toml",      // Local PDM configuration
 		}
 	case ProjectTypePythonPipenv:
 		filesToCheck = []string{
-			"Pipfile.lock",         // Pipenv lock file (highest priority)
-			"Pipfile",              // Pipenv configuration
+			"Pipfile.lock", // Pipenv lock file (highest priority)
+			"Pipfile",      // Pipenv configuration
 		}
 	case ProjectTypeNodeNPM:
 		filesToCheck = []string{
-			"package-lock.json",    // npm lock file (highest priority)
-			"package.json",         // Package manifest (fallback)
+			"package-lock.json", // npm lock file (highest priority)
+			"package.json",      // Package manifest (fallback)
 		}
 	case ProjectTypeNodePNPM:
 		filesToCheck = []string{
-			"pnpm-lock.yaml",       // pnpm lock file (highest priority)
-			"package.json",         // Package manifest (fallback)
+			"pnpm-lock.yaml", // pnpm lock file (highest priority)
+			"package.json",   // Package manifest (fallback)
 		}
 	case ProjectTypeNodeYarn:
 		filesToCheck = []string{
-			"yarn.lock",            // Yarn lock file (highest priority)
-			"package.json",         // Package manifest (fallback)
+			"yarn.lock",    // Yarn lock file (highest priority)
+			"package.json", // Package manifest (fallback)
 		}
 	case ProjectTypeNodeYarnBerry:
 		filesToCheck = []string{
-			"yarn.lock",            // Yarn lock file (highest priority)
-			".yarnrc.yml",          // Yarn Berry configuration
-			"package.json",         // Package manifest (fallback)
+			"yarn.lock",    // Yarn lock file (highest priority)
+			".yarnrc.yml",  // Yarn Berry configuration
+			"package.json", // Package manifest (fallback)
 		}
 	case ProjectTypeNodeBun:
 		filesToCheck = []string{
-			"bun.lockb",            // Bun lock file (highest priority, binary format)
-			"package.json",         // Package manifest (fallback)
+			"bun.lockb",    // Bun lock file (highest priority, binary format)
+			"package.json", // Package manifest (fallback)
 		}
 	default:
 		return false, ""
@@ -148,7 +148,7 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 			return true, filename
 		}
 	}
-	
+
 	return false, ""
 }
 
@@ -159,22 +159,22 @@ func DetectProjectType(dir string) (ProjectType, error) {
 	if util.FileExists(dir, "bun.lockb") {
 		return ProjectTypeNodeBun, nil
 	}
-	
+
 	// Check for pnpm (most definitive pnpm indicator)
 	if util.FileExists(dir, "pnpm-lock.yaml") {
 		return ProjectTypeNodePNPM, nil
 	}
-	
+
 	// Check for Yarn Berry (yarn.lock WITH .yarnrc.yml means Yarn v2+)
 	if util.FileExists(dir, "yarn.lock") && util.FileExists(dir, ".yarnrc.yml") {
 		return ProjectTypeNodeYarnBerry, nil
 	}
-	
+
 	// Check for Yarn Classic (yarn.lock without .yarnrc.yml means Yarn v1)
 	if util.FileExists(dir, "yarn.lock") {
 		return ProjectTypeNodeYarn, nil
 	}
-	
+
 	// Fall back to npm for other Node.js projects
 	if util.FileExists(dir, "package.json") || util.FileExists(dir, "package-lock.json") {
 		return ProjectTypeNodeNPM, nil
@@ -190,12 +190,12 @@ func DetectProjectType(dir string) (ProjectType, error) {
 	if util.FileExists(dir, "poetry.lock") {
 		return ProjectTypePythonPoetry, nil
 	}
-	
+
 	// 3. Check for PDM lock file (most definitive PDM indicator)
 	if util.FileExists(dir, "pdm.lock") {
 		return ProjectTypePythonPDM, nil
 	}
-	
+
 	// 4. Check for Pipenv lock file (most definitive Pipenv indicator)
 	if util.FileExists(dir, "Pipfile.lock") {
 		return ProjectTypePythonPipenv, nil
@@ -205,7 +205,7 @@ func DetectProjectType(dir string) (ProjectType, error) {
 	if util.FileExists(dir, "Pipfile") {
 		return ProjectTypePythonPipenv, nil
 	}
-	
+
 	// 6. Check for requirements.txt (classic pip setup)
 	if util.FileExists(dir, "requirements.txt") {
 		return ProjectTypePythonPip, nil
@@ -289,13 +289,4 @@ func ParseMem(mem string, suffix bool) (string, error) {
 		return fmt.Sprintf("%.2gGB", memGB), nil
 	}
 	return fmt.Sprintf("%.2g", memGB), nil
-}
-
-func validateSettingsMap(settingsMap map[string]string, keys []string) error {
-	for _, key := range keys {
-		if _, ok := settingsMap[key]; !ok {
-			return fmt.Errorf("client setting %s is required, please try again later", key)
-		}
-	}
-	return nil
 }

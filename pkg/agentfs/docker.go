@@ -277,7 +277,7 @@ func validateYarnProject(dir string, silent bool) {
 func validateYarnBerryProject(dir string, silent bool) {
 	yarnLockPath := filepath.Join(dir, "yarn.lock")
 	yarnrcPath := filepath.Join(dir, ".yarnrc.yml")
-	
+
 	if _, err := os.Stat(yarnLockPath); err != nil {
 		if !silent {
 			fmt.Printf("! Warning: Yarn Berry project detected but %s file not found\n", util.Accented("yarn.lock"))
@@ -285,7 +285,7 @@ func validateYarnBerryProject(dir string, silent bool) {
 			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
 		}
 	}
-	
+
 	if _, err := os.Stat(yarnrcPath); err != nil {
 		if !silent {
 			fmt.Printf("! Warning: Yarn Berry project detected but %s file not found\n", util.Accented(".yarnrc.yml"))
