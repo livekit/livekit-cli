@@ -77,6 +77,11 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
 			// Validate UV project setup
 			validateUVProject(dir, silent)
+		case ProjectTypePythonPoetry:
+			fmt.Printf("✔ Detected Python project with Poetry package manager\n")
+			fmt.Printf("  Using template [%s] with dependency groups support\n", util.Accented("python.poetry"))
+			// Validate Poetry project setup
+			validatePoetryProject(dir, silent)
 		case ProjectTypePythonPip:
 			fmt.Printf("✔ Detected Python project with pip package manager\n")
 			fmt.Printf("  Using template [%s]\n", util.Accented("python.pip"))
@@ -84,6 +89,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	} else if projectType == ProjectTypePythonUV {
 		// Still validate UV project in silent mode, but without output
 		validateUVProject(dir, silent)
+	} else if projectType == ProjectTypePythonPoetry {
+		// Still validate Poetry project in silent mode, but without output
+		validatePoetryProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -135,6 +143,17 @@ func validateUVProject(dir string, silent bool) {
 		if !silent {
 			fmt.Printf("! Warning: UV project detected but %s file not found\n", util.Accented("uv.lock"))
 			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("uv lock"), util.Accented("uv.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validatePoetryProject(dir string, silent bool) {
+	poetryLockPath := filepath.Join(dir, "poetry.lock")
+	if _, err := os.Stat(poetryLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Poetry project detected but %s file not found\n", util.Accented("poetry.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("poetry lock"), util.Accented("poetry.lock"))
 			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
 		}
 	}
