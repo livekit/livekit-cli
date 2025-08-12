@@ -33,12 +33,13 @@ const (
 	ProjectTypePythonUV     ProjectType = "python.uv"
 	ProjectTypePythonPoetry ProjectType = "python.poetry"
 	ProjectTypePythonHatch  ProjectType = "python.hatch"
+	ProjectTypePythonPDM    ProjectType = "python.pdm"
 	ProjectTypeNode         ProjectType = "node"
 	ProjectTypeUnknown      ProjectType = "unknown"
 )
 
 func (p ProjectType) IsPython() bool {
-	return p == ProjectTypePythonPip || p == ProjectTypePythonUV || p == ProjectTypePythonPoetry || p == ProjectTypePythonHatch
+	return p == ProjectTypePythonPip || p == ProjectTypePythonUV || p == ProjectTypePythonPoetry || p == ProjectTypePythonHatch || p == ProjectTypePythonPDM
 }
 
 func (p ProjectType) IsNode() bool {
@@ -95,6 +96,12 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 			"pyproject.toml",       // Hatch uses pyproject.toml
 			"hatch.toml",           // Optional Hatch configuration
 		}
+	case ProjectTypePythonPDM:
+		filesToCheck = []string{
+			"pdm.lock",             // PDM lock file (highest priority)
+			"pyproject.toml",       // PDM configuration
+			".pdm.toml",            // Local PDM configuration
+		}
 	case ProjectTypeNode:
 		filesToCheck = []string{
 			"package-lock.json",    // npm lock file
@@ -134,17 +141,22 @@ func DetectProjectType(dir string) (ProjectType, error) {
 		return ProjectTypePythonPoetry, nil
 	}
 	
-	// 3. Check for other lock files (Pipenv, PDM) - treat as pip-compatible for now
-	if util.FileExists(dir, "Pipfile.lock") || util.FileExists(dir, "pdm.lock") {
+	// 3. Check for PDM lock file (most definitive PDM indicator)
+	if util.FileExists(dir, "pdm.lock") {
+		return ProjectTypePythonPDM, nil
+	}
+	
+	// 4. Check for other lock files (Pipenv) - treat as pip-compatible for now
+	if util.FileExists(dir, "Pipfile.lock") {
 		return ProjectTypePythonPip, nil
 	}
 
-	// 4. Check for requirements.txt (classic pip setup)
+	// 5. Check for requirements.txt (classic pip setup)
 	if util.FileExists(dir, "requirements.txt") {
 		return ProjectTypePythonPip, nil
 	}
 
-	// 5. Check pyproject.toml for specific tool configurations
+	// 6. Check pyproject.toml for specific tool configurations
 	if util.FileExists(dir, "pyproject.toml") {
 		tomlPath := filepath.Join(dir, "pyproject.toml")
 		data, err := os.ReadFile(tomlPath)
@@ -160,7 +172,7 @@ func DetectProjectType(dir string) (ProjectType, error) {
 						return ProjectTypePythonHatch, nil
 					}
 					if _, hasPdm := tool["pdm"]; hasPdm {
-						return ProjectTypePythonPip, nil
+						return ProjectTypePythonPDM, nil
 					}
 					if _, hasUv := tool["uv"]; hasUv {
 						return ProjectTypePythonUV, nil

@@ -75,31 +75,33 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 		case ProjectTypePythonUV:
 			fmt.Printf("✔ Detected Python project with UV package manager\n")
 			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
-			// Validate UV project setup
-			validateUVProject(dir, silent)
 		case ProjectTypePythonPoetry:
 			fmt.Printf("✔ Detected Python project with Poetry package manager\n")
 			fmt.Printf("  Using template [%s] with dependency groups support\n", util.Accented("python.poetry"))
-			// Validate Poetry project setup
-			validatePoetryProject(dir, silent)
 		case ProjectTypePythonHatch:
 			fmt.Printf("✔ Detected Python project with Hatch package manager\n")
 			fmt.Printf("  Using template [%s] with isolated environments\n", util.Accented("python.hatch"))
-			// Validate Hatch project setup
-			validateHatchProject(dir, silent)
+		case ProjectTypePythonPDM:
+			fmt.Printf("✔ Detected Python project with PDM package manager\n")
+			fmt.Printf("  Using template [%s] with lock file support\n", util.Accented("python.pdm"))
 		case ProjectTypePythonPip:
 			fmt.Printf("✔ Detected Python project with pip package manager\n")
 			fmt.Printf("  Using template [%s]\n", util.Accented("python.pip"))
 		}
-	} else if projectType == ProjectTypePythonUV {
-		// Still validate UV project in silent mode, but without output
+	}
+
+	if projectType == ProjectTypePythonUV {
+		// Validate UV project setup
 		validateUVProject(dir, silent)
 	} else if projectType == ProjectTypePythonPoetry {
-		// Still validate Poetry project in silent mode, but without output
+		// Validate Poetry project setup
 		validatePoetryProject(dir, silent)
 	} else if projectType == ProjectTypePythonHatch {
-		// Still validate Hatch project in silent mode, but without output
+		// Validate Hatch project setup
 		validateHatchProject(dir, silent)
+	} else if projectType == ProjectTypePythonPDM {
+		// Validate PDM project setup
+		validatePDMProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -175,6 +177,17 @@ func validateHatchProject(dir string, silent bool) {
 			fmt.Printf("! Warning: Hatch project detected but %s file not found\n", util.Accented("pyproject.toml"))
 			fmt.Printf("  Hatch requires a valid %s with project metadata\n", util.Accented("pyproject.toml"))
 			fmt.Printf("  Consider running %s to create a proper project structure\n\n", util.Accented("hatch new"))
+		}
+	}
+}
+
+func validatePDMProject(dir string, silent bool) {
+	pdmLockPath := filepath.Join(dir, "pdm.lock")
+	if _, err := os.Stat(pdmLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: PDM project detected but %s file not found\n", util.Accented("pdm.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("pdm lock"), util.Accented("pdm.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
 		}
 	}
 }
