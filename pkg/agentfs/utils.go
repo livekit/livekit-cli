@@ -39,6 +39,7 @@ const (
 	ProjectTypeNodePNPM      ProjectType = "node.pnpm"
 	ProjectTypeNodeYarn      ProjectType = "node.yarn"
 	ProjectTypeNodeYarnBerry ProjectType = "node.yarn-berry"
+	ProjectTypeNodeBun       ProjectType = "node.bun"
 	ProjectTypeUnknown       ProjectType = "unknown"
 )
 
@@ -47,7 +48,7 @@ func (p ProjectType) IsPython() bool {
 }
 
 func (p ProjectType) IsNode() bool {
-	return p == ProjectTypeNodeNPM || p == ProjectTypeNodePNPM || p == ProjectTypeNodeYarn || p == ProjectTypeNodeYarnBerry
+	return p == ProjectTypeNodeNPM || p == ProjectTypeNodePNPM || p == ProjectTypeNodeYarn || p == ProjectTypeNodeYarnBerry || p == ProjectTypeNodeBun
 }
 
 func (p ProjectType) Lang() string {
@@ -132,6 +133,11 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 			".yarnrc.yml",          // Yarn Berry configuration
 			"package.json",         // Package manifest (fallback)
 		}
+	case ProjectTypeNodeBun:
+		filesToCheck = []string{
+			"bun.lockb",            // Bun lock file (highest priority, binary format)
+			"package.json",         // Package manifest (fallback)
+		}
 	default:
 		return false, ""
 	}
@@ -149,7 +155,12 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 // DetectProjectType determines the project type by checking for specific configuration/lock files and their content
 func DetectProjectType(dir string) (ProjectType, error) {
 	// Node.js detection with specific package manager detection
-	// Check for pnpm first (most definitive pnpm indicator)
+	// Check for Bun first (most definitive Bun indicator)
+	if util.FileExists(dir, "bun.lockb") {
+		return ProjectTypeNodeBun, nil
+	}
+	
+	// Check for pnpm (most definitive pnpm indicator)
 	if util.FileExists(dir, "pnpm-lock.yaml") {
 		return ProjectTypeNodePNPM, nil
 	}

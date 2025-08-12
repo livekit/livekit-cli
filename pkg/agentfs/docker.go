@@ -81,6 +81,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 		case ProjectTypeNodeYarnBerry:
 			fmt.Printf("✔ Detected Node.js project with Yarn Berry package manager\n")
 			fmt.Printf("  Using template [%s] with Yarn v2+ and PnP support\n", util.Accented("node.yarn-berry"))
+		case ProjectTypeNodeBun:
+			fmt.Printf("✔ Detected Node.js project with Bun runtime and package manager\n")
+			fmt.Printf("  Using template [%s] for ultra-fast performance\n", util.Accented("node.bun"))
 		case ProjectTypePythonUV:
 			fmt.Printf("✔ Detected Python project with UV package manager\n")
 			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
@@ -129,6 +132,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	} else if projectType == ProjectTypeNodeYarnBerry {
 		// Validate yarn berry project setup
 		validateYarnBerryProject(dir, silent)
+	} else if projectType == ProjectTypeNodeBun {
+		// Validate bun project setup
+		validateBunProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -285,6 +291,18 @@ func validateYarnBerryProject(dir string, silent bool) {
 			fmt.Printf("! Warning: Yarn Berry project detected but %s file not found\n", util.Accented(".yarnrc.yml"))
 			fmt.Printf("  This file contains Yarn Berry configuration and is required for proper builds\n")
 			fmt.Printf("  Consider running %s to set up Yarn Berry\n\n", util.Accented("yarn set version berry"))
+		}
+	}
+}
+
+func validateBunProject(dir string, silent bool) {
+	bunLockPath := filepath.Join(dir, "bun.lockb")
+	if _, err := os.Stat(bunLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Bun project detected but %s file not found\n", util.Accented("bun.lockb"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("bun install"), util.Accented("bun.lockb"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n")
+			fmt.Printf("  Note: bun.lockb is a binary file, ensure it's committed to version control\n\n")
 		}
 	}
 }
