@@ -35,10 +35,11 @@ const (
 	ProjectTypePythonHatch  ProjectType = "python.hatch"
 	ProjectTypePythonPDM    ProjectType = "python.pdm"
 	ProjectTypePythonPipenv ProjectType = "python.pipenv"
-	ProjectTypeNodeNPM      ProjectType = "node.npm"
-	ProjectTypeNodePNPM     ProjectType = "node.pnpm"
-	ProjectTypeNodeYarn     ProjectType = "node.yarn"
-	ProjectTypeUnknown      ProjectType = "unknown"
+	ProjectTypeNodeNPM       ProjectType = "node.npm"
+	ProjectTypeNodePNPM      ProjectType = "node.pnpm"
+	ProjectTypeNodeYarn      ProjectType = "node.yarn"
+	ProjectTypeNodeYarnBerry ProjectType = "node.yarn-berry"
+	ProjectTypeUnknown       ProjectType = "unknown"
 )
 
 func (p ProjectType) IsPython() bool {
@@ -46,7 +47,7 @@ func (p ProjectType) IsPython() bool {
 }
 
 func (p ProjectType) IsNode() bool {
-	return p == ProjectTypeNodeNPM || p == ProjectTypeNodePNPM || p == ProjectTypeNodeYarn
+	return p == ProjectTypeNodeNPM || p == ProjectTypeNodePNPM || p == ProjectTypeNodeYarn || p == ProjectTypeNodeYarnBerry
 }
 
 func (p ProjectType) Lang() string {
@@ -125,6 +126,12 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 			"yarn.lock",            // Yarn lock file (highest priority)
 			"package.json",         // Package manifest (fallback)
 		}
+	case ProjectTypeNodeYarnBerry:
+		filesToCheck = []string{
+			"yarn.lock",            // Yarn lock file (highest priority)
+			".yarnrc.yml",          // Yarn Berry configuration
+			"package.json",         // Package manifest (fallback)
+		}
 	default:
 		return false, ""
 	}
@@ -147,8 +154,13 @@ func DetectProjectType(dir string) (ProjectType, error) {
 		return ProjectTypeNodePNPM, nil
 	}
 	
+	// Check for Yarn Berry (yarn.lock WITH .yarnrc.yml means Yarn v2+)
+	if util.FileExists(dir, "yarn.lock") && util.FileExists(dir, ".yarnrc.yml") {
+		return ProjectTypeNodeYarnBerry, nil
+	}
+	
 	// Check for Yarn Classic (yarn.lock without .yarnrc.yml means Yarn v1)
-	if util.FileExists(dir, "yarn.lock") && !util.FileExists(dir, ".yarnrc.yml") {
+	if util.FileExists(dir, "yarn.lock") {
 		return ProjectTypeNodeYarn, nil
 	}
 	

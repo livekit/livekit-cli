@@ -1,0 +1,71 @@
+# Node.js artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Yarn Berry specific (exclude some, but not all)
+# Keep .yarn/releases for the Yarn version
+# Keep .yarn/plugins if using plugins
+# Exclude cache if not using Zero-Install
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# PnP artifacts (keep .pnp.cjs if using PnP)
+# .pnp.*
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Yarn Berry IDE files
+.yarn/sdks/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker artifacts
+Dockerfile*
+.dockerignore
+
+# Git files
+.git/
+.gitignore
+
+# Documentation
+README.md
+docs/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+.tmp/
+.temp/
+tmp/
+temp/

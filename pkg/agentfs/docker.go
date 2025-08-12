@@ -78,6 +78,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 		case ProjectTypeNodeYarn:
 			fmt.Printf("✔ Detected Node.js project with Yarn Classic package manager\n")
 			fmt.Printf("  Using template [%s] with Yarn v1 support\n", util.Accented("node.yarn"))
+		case ProjectTypeNodeYarnBerry:
+			fmt.Printf("✔ Detected Node.js project with Yarn Berry package manager\n")
+			fmt.Printf("  Using template [%s] with Yarn v2+ and PnP support\n", util.Accented("node.yarn-berry"))
 		case ProjectTypePythonUV:
 			fmt.Printf("✔ Detected Python project with UV package manager\n")
 			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
@@ -123,6 +126,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	} else if projectType == ProjectTypeNodeYarn {
 		// Validate yarn project setup
 		validateYarnProject(dir, silent)
+	} else if projectType == ProjectTypeNodeYarnBerry {
+		// Validate yarn berry project setup
+		validateYarnBerryProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -258,6 +264,27 @@ func validateYarnProject(dir string, silent bool) {
 			fmt.Printf("! Warning: Yarn project detected but %s file not found\n", util.Accented("yarn.lock"))
 			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("yarn install"), util.Accented("yarn.lock"))
 			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateYarnBerryProject(dir string, silent bool) {
+	yarnLockPath := filepath.Join(dir, "yarn.lock")
+	yarnrcPath := filepath.Join(dir, ".yarnrc.yml")
+	
+	if _, err := os.Stat(yarnLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Yarn Berry project detected but %s file not found\n", util.Accented("yarn.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("yarn install"), util.Accented("yarn.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+	
+	if _, err := os.Stat(yarnrcPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Yarn Berry project detected but %s file not found\n", util.Accented(".yarnrc.yml"))
+			fmt.Printf("  This file contains Yarn Berry configuration and is required for proper builds\n")
+			fmt.Printf("  Consider running %s to set up Yarn Berry\n\n", util.Accented("yarn set version berry"))
 		}
 	}
 }
