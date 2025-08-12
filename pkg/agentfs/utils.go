@@ -34,12 +34,13 @@ const (
 	ProjectTypePythonPoetry ProjectType = "python.poetry"
 	ProjectTypePythonHatch  ProjectType = "python.hatch"
 	ProjectTypePythonPDM    ProjectType = "python.pdm"
+	ProjectTypePythonPipenv ProjectType = "python.pipenv"
 	ProjectTypeNode         ProjectType = "node"
 	ProjectTypeUnknown      ProjectType = "unknown"
 )
 
 func (p ProjectType) IsPython() bool {
-	return p == ProjectTypePythonPip || p == ProjectTypePythonUV || p == ProjectTypePythonPoetry || p == ProjectTypePythonHatch || p == ProjectTypePythonPDM
+	return p == ProjectTypePythonPip || p == ProjectTypePythonUV || p == ProjectTypePythonPoetry || p == ProjectTypePythonHatch || p == ProjectTypePythonPDM || p == ProjectTypePythonPipenv
 }
 
 func (p ProjectType) IsNode() bool {
@@ -102,6 +103,11 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 			"pyproject.toml",       // PDM configuration
 			".pdm.toml",            // Local PDM configuration
 		}
+	case ProjectTypePythonPipenv:
+		filesToCheck = []string{
+			"Pipfile.lock",         // Pipenv lock file (highest priority)
+			"Pipfile",              // Pipenv configuration
+		}
 	case ProjectTypeNode:
 		filesToCheck = []string{
 			"package-lock.json",    // npm lock file
@@ -146,17 +152,22 @@ func DetectProjectType(dir string) (ProjectType, error) {
 		return ProjectTypePythonPDM, nil
 	}
 	
-	// 4. Check for other lock files (Pipenv) - treat as pip-compatible for now
+	// 4. Check for Pipenv lock file (most definitive Pipenv indicator)
 	if util.FileExists(dir, "Pipfile.lock") {
-		return ProjectTypePythonPip, nil
+		return ProjectTypePythonPipenv, nil
 	}
 
-	// 5. Check for requirements.txt (classic pip setup)
+	// 5. Check for Pipfile without lock (still a Pipenv project)
+	if util.FileExists(dir, "Pipfile") {
+		return ProjectTypePythonPipenv, nil
+	}
+	
+	// 6. Check for requirements.txt (classic pip setup)
 	if util.FileExists(dir, "requirements.txt") {
 		return ProjectTypePythonPip, nil
 	}
 
-	// 6. Check pyproject.toml for specific tool configurations
+	// 7. Check pyproject.toml for specific tool configurations
 	if util.FileExists(dir, "pyproject.toml") {
 		tomlPath := filepath.Join(dir, "pyproject.toml")
 		data, err := os.ReadFile(tomlPath)

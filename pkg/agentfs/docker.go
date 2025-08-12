@@ -84,6 +84,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 		case ProjectTypePythonPDM:
 			fmt.Printf("✔ Detected Python project with PDM package manager\n")
 			fmt.Printf("  Using template [%s] with lock file support\n", util.Accented("python.pdm"))
+		case ProjectTypePythonPipenv:
+			fmt.Printf("✔ Detected Python project with Pipenv package manager\n")
+			fmt.Printf("  Using template [%s] with virtual environment isolation\n", util.Accented("python.pipenv"))
 		case ProjectTypePythonPip:
 			fmt.Printf("✔ Detected Python project with pip package manager\n")
 			fmt.Printf("  Using template [%s]\n", util.Accented("python.pip"))
@@ -102,6 +105,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	} else if projectType == ProjectTypePythonPDM {
 		// Validate PDM project setup
 		validatePDMProject(dir, silent)
+	} else if projectType == ProjectTypePythonPipenv {
+		// Validate Pipenv project setup
+		validatePipenvProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -187,6 +193,17 @@ func validatePDMProject(dir string, silent bool) {
 		if !silent {
 			fmt.Printf("! Warning: PDM project detected but %s file not found\n", util.Accented("pdm.lock"))
 			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("pdm lock"), util.Accented("pdm.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validatePipenvProject(dir string, silent bool) {
+	pipfileLockPath := filepath.Join(dir, "Pipfile.lock")
+	if _, err := os.Stat(pipfileLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Pipenv project detected but %s file not found\n", util.Accented("Pipfile.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("pipenv lock"), util.Accented("Pipfile.lock"))
 			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
 		}
 	}
