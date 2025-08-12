@@ -382,7 +382,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
 	}
 
-	if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
+	if err := requireDockerfile(ctx, cmd, workingDir, settingsMap); err != nil {
 		return err
 	}
 
@@ -1127,31 +1127,15 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	return secretsSlice, nil
 }
 
-func requireDockerfile(_ context.Context, cmd *cli.Command, workingDir string, projectType agentfs.ProjectType, settingsMap map[string]string) error {
+func requireDockerfile(_ context.Context, cmd *cli.Command, workingDir string, settingsMap map[string]string) error {
 	dockerfileExists, err := agentfs.HasDockerfile(workingDir)
 	if err != nil {
 		return err
 	}
 
 	if !dockerfileExists {
-		if !cmd.Bool("silent") {
-			var innerErr error
-			if err := util.Await(
-				"Creating Dockerfile...",
-				func() {
-					innerErr = agentfs.CreateDockerfile(workingDir, projectType, settingsMap)
-				},
-			); err != nil {
-				return err
-			}
-			if innerErr != nil {
-				return innerErr
-			}
-			fmt.Println("Created [" + util.Accented("Dockerfile") + "]")
-		} else {
-			if err := agentfs.CreateDockerfile(workingDir, projectType, settingsMap); err != nil {
-				return err
-			}
+		if err := agentfs.CreateDockerfile(workingDir, settingsMap, cmd.Bool("silent")); err != nil {
+			return err
 		}
 	} else {
 		if !cmd.Bool("silent") {

@@ -48,47 +48,99 @@ func HasDockerfile(dir string) (bool, error) {
 	return false, nil
 }
 
-func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[string]string) error {
+func CreateDockerfile(dir string, settingsMap map[string]string, silent bool) error {
 	if len(settingsMap) == 0 {
 		return fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
 
+	projectType, err := DetectProjectType(dir)
+	if err != nil {
+		return fmt.Errorf(`× Unable to determine project type
+
+Supported project types:
+  • Python: requires requirements.txt or pyproject.toml
+  • Node.js: requires package.json
+
+Please ensure your project has the appropriate dependency file, or create a Dockerfile manually in the current directory`)
+	}
+
+	if !silent {
+		fmt.Printf("Creating Dockerfiles...\n")
+
+		// Provide user feedback about detected project type
+		switch projectType {
+		case ProjectTypeNode:
+			fmt.Printf("✔ Detected Node.js project (found %s)\n", util.Accented("package.json"))
+			fmt.Printf("  Using template [%s] with npm/yarn support\n", util.Accented("node"))
+		case ProjectTypePythonUV:
+			fmt.Printf("✔ Detected Python project with UV package manager\n")
+			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
+			// Validate UV project setup
+			validateUVProject(dir, silent)
+		case ProjectTypePythonPip:
+			fmt.Printf("✔ Detected Python project with pip package manager\n")
+			fmt.Printf("  Using template [%s]\n", util.Accented("python.pip"))
+		}
+	} else if projectType == ProjectTypePythonUV {
+		// Still validate UV project in silent mode, but without output
+		validateUVProject(dir, silent)
+	}
+
 	var dockerfileContent []byte
 	var dockerIgnoreContent []byte
-	var err error
 
 	dockerfileContent, err = fs.ReadFile("examples/" + string(projectType) + ".Dockerfile")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load Dockerfile template '%s': %w", string(projectType), err)
 	}
 
 	dockerIgnoreContent, err = fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load .dockerignore template for '%s': %w", string(projectType), err)
 	}
 
 	// TODO: (@rektdeckard) support Node entrypoint validation
 	if projectType.IsPython() {
-		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap)
+		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap, silent)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to validate Python entry point: %w", err)
 		}
 	}
 
 	err = os.WriteFile(filepath.Join(dir, "Dockerfile"), dockerfileContent, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write Dockerfile: %w", err)
 	}
 
 	err = os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write .dockerignore: %w", err)
+	}
+
+	if !silent {
+		fmt.Printf("\n✔ Successfully generated Docker files:\n")
+		fmt.Printf("  %s - Container build instructions\n", util.Accented("Dockerfile"))
+		fmt.Printf("  %s - Files excluded from build context\n", util.Accented(".dockerignore"))
+		fmt.Printf("\nNext steps:\n")
+		fmt.Printf("  ► Review the %s and uncomment/update any needed packages\n", util.Accented("Dockerfile"))
+		fmt.Printf("  ► Build your agent: docker build -t my-agent .\n")
 	}
 
 	return nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string) ([]byte, error) {
+func validateUVProject(dir string, silent bool) {
+	uvLockPath := filepath.Join(dir, "uv.lock")
+	if _, err := os.Stat(uvLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: UV project detected but %s file not found\n", util.Accented("uv.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("uv lock"), util.Accented("uv.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string, silent bool) ([]byte, error) {
 	valFile := func(fileName string) (string, error) {
 		// Parse dockerignore patterns to filter out files that won't be in build context
 		reader := bytes.NewReader(dockerignoreContent)
@@ -217,6 +269,11 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		var selected string
 		if len(candidates) > 0 {
 			selected = candidates[0]
+		}
+
+		// If silent mode, automatically use the top choice
+		if silent {
+			return selected, nil
 		}
 
 		title := fmt.Sprintf("Multiple %s files found. Select entrypoint:", projectType.Lang())
