@@ -87,7 +87,7 @@ livekit-agents = ">=1.0.0"`,
 		},
 		{
 			name:        "Node package.json with valid version",
-			projectType: ProjectTypeNode,
+			projectType: ProjectTypeNodeNPM,
 			setupFiles: map[string]string{
 				"package.json": `{
   "dependencies": {
@@ -99,7 +99,7 @@ livekit-agents = ">=1.0.0"`,
 		},
 		{
 			name:        "Node package.json with old version",
-			projectType: ProjectTypeNode,
+			projectType: ProjectTypeNodeNPM,
 			setupFiles: map[string]string{
 				"package.json": `{
   "dependencies": {
@@ -112,7 +112,7 @@ livekit-agents = ">=1.0.0"`,
 		},
 		{
 			name:        "Node package-lock.json with valid version",
-			projectType: ProjectTypeNode,
+			projectType: ProjectTypeNodeNPM,
 			setupFiles: map[string]string{
 				"package-lock.json": `{
   "dependencies": {
@@ -289,7 +289,7 @@ func TestDetectProjectFiles(t *testing.T) {
 	}{
 		{ProjectTypePythonPip, 3}, // requirements.txt, pyproject.toml, poetry.lock
 		{ProjectTypePythonUV, 3},  // same as pip
-		{ProjectTypeNode, 2},      // package.json, package-lock.json
+		{ProjectTypeNodeNPM, 2},      // package.json, package-lock.json
 	}
 
 	for _, tt := range tests {
@@ -348,7 +348,7 @@ func TestGetTargetPackageName(t *testing.T) {
 	}{
 		{ProjectTypePythonPip, "livekit-agents"},
 		{ProjectTypePythonUV, "livekit-agents"},
-		{ProjectTypeNode, "@livekit/agents"},
+		{ProjectTypeNodeNPM, "@livekit/agents"},
 		{ProjectTypeUnknown, ""},
 	}
 

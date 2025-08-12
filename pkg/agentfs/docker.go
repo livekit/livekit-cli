@@ -69,9 +69,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 
 		// Provide user feedback about detected project type
 		switch projectType {
-		case ProjectTypeNode:
-			fmt.Printf("✔ Detected Node.js project (found %s)\n", util.Accented("package.json"))
-			fmt.Printf("  Using template [%s] with npm/yarn support\n", util.Accented("node"))
+		case ProjectTypeNodeNPM:
+			fmt.Printf("✔ Detected Node.js project with npm package manager\n")
+			fmt.Printf("  Using template [%s] with npm support\n", util.Accented("node.npm"))
 		case ProjectTypePythonUV:
 			fmt.Printf("✔ Detected Python project with UV package manager\n")
 			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
@@ -108,6 +108,9 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 	} else if projectType == ProjectTypePythonPipenv {
 		// Validate Pipenv project setup
 		validatePipenvProject(dir, silent)
+	} else if projectType == ProjectTypeNodeNPM {
+		// Validate npm project setup
+		validateNPMProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
@@ -123,11 +126,16 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 		return fmt.Errorf("failed to load .dockerignore template for '%s': %w", string(projectType), err)
 	}
 
-	// TODO: (@rektdeckard) support Node entrypoint validation
+	// Validate entrypoint for both Python and Node.js projects
 	if projectType.IsPython() {
 		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap, silent)
 		if err != nil {
 			return fmt.Errorf("failed to validate Python entry point: %w", err)
+		}
+	} else if projectType.IsNode() {
+		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap, silent)
+		if err != nil {
+			return fmt.Errorf("failed to validate Node.js entry point: %w", err)
 		}
 	}
 
@@ -209,6 +217,17 @@ func validatePipenvProject(dir string, silent bool) {
 	}
 }
 
+func validateNPMProject(dir string, silent bool) {
+	packageLockPath := filepath.Join(dir, "package-lock.json")
+	if _, err := os.Stat(packageLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: npm project detected but %s file not found\n", util.Accented("package-lock.json"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("npm install"), util.Accented("package-lock.json"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
 func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string, silent bool) ([]byte, error) {
 	valFile := func(fileName string) (string, error) {
 		// Parse dockerignore patterns to filter out files that won't be in build context
@@ -262,26 +281,30 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		if projectType.IsPython() {
 			// Common Python entry point patterns in order of preference
 			priorityOrder = []string{
-				"main.py",         // Most common
-				"src/main.py",     // Modern src layout
 				"agent.py",        // LiveKit agents
 				"src/agent.py",    // LiveKit agents in src
+				"main.py",         // Most common
+				"src/main.py",     // Modern src layout
 				"app.py",          // Flask/web apps
 				"src/app.py",      // Flask/web apps in src
 				"__main__.py",     // Python module entry
 				"src/__main__.py", // Python module entry in src
 			}
-		} else if projectType == ProjectTypeNode {
+		} else if projectType.IsNode() {
 			// Common Node.js entry point patterns
 			priorityOrder = []string{
+				"dist/agent.js", // Built TypeScript output
+				"dist/index.js", // Built TypeScript output
+				"dist/main.js",  // Built TypeScript output
+				"dist/app.js",   // Built TypeScript output
+				"agent.js",
 				"index.js",
 				"main.js",
 				"app.js",
+				"src/agent.js",
 				"src/index.js",
 				"src/main.js",
 				"src/app.js",
-				"agent.js",
-				"src/agent.js",
 			}
 		}
 
@@ -368,12 +391,25 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		return selected, nil
 	}
 
-	if err := validateSettingsMap(settingsMap, []string{"python_entrypoint"}); err != nil {
-		return nil, err
+	// Determine which entrypoint key to use based on project type
+	var entrypointKey string
+	var defaultEntrypoint string
+
+	if projectType.IsPython() {
+		entrypointKey = "python_entrypoint"
+		defaultEntrypoint = settingsMap[entrypointKey]
+		if defaultEntrypoint == "" {
+			defaultEntrypoint = "main.py"
+		}
+	} else if projectType.IsNode() {
+		entrypointKey = "node_entrypoint"
+		defaultEntrypoint = settingsMap[entrypointKey]
+		if defaultEntrypoint == "" {
+			defaultEntrypoint = "dist/agent.js"
+		}
 	}
 
-	pythonEntrypoint := settingsMap["python_entrypoint"]
-	newEntrypoint, err := valFile(pythonEntrypoint)
+	newEntrypoint, err := valFile(defaultEntrypoint)
 	if err != nil {
 		return nil, err
 	}

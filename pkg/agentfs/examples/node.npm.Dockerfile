@@ -1,9 +1,9 @@
-# This Dockerfile creates a production-ready container for a LiveKit Node.js agent
+# This Dockerfile creates a production-ready container for a LiveKit Node.js agent using npm
 # It uses a multi-stage build to minimize the final image size
 # syntax=docker/dockerfile:1
 
 # === MULTI-STAGE BUILD STRUCTURE ===
-# Stage 1 (base): Sets up Node.js environment with pnpm
+# Stage 1 (base): Sets up Node.js environment
 # Stage 2 (build): Installs dependencies and builds the application
 # Stage 3 (final): Copies only necessary files for runtime
 #
@@ -12,12 +12,11 @@
 
 FROM node:20-slim AS base
 
+# Define the program entrypoint file where your agent is started.
+ARG PROGRAM_MAIN="{{.ProgramMain}}"
+
 # Set the working directory where our application will live
 WORKDIR /app
-
-# Install pnpm globally for faster, more efficient package management
-# pnpm uses a content-addressable storage for packages, saving disk space
-RUN npm install -g pnpm@9.7.0
 
 # === BUILD STAGE ===
 # This stage is discarded after building, keeping the final image small
@@ -27,18 +26,21 @@ FROM base AS build
 # --no-install-recommends keeps the image smaller by avoiding suggested packages
 RUN apt-get update -qq && apt-get install --no-install-recommends -y ca-certificates
 
-# Copy all application files into the build container
-# --link creates a separate layer that can be reused if files haven't changed
-COPY --link . .
+# Copy package.json and package-lock.json first for better layer caching
+# This allows Docker to cache the dependency installation step
+COPY package*.json ./
 
-# Install dependencies using pnpm
-# --frozen-lockfile ensures exact versions from pnpm-lock.yaml are used
-# This provides reproducible builds across different environments
-RUN pnpm install --frozen-lockfile
+# Install dependencies using npm ci
+# npm ci is faster and more reliable for production builds than npm install
+# It requires package-lock.json and installs exact versions
+RUN npm ci
+
+# Copy all application files into the build container
+COPY . .
 
 # Build the TypeScript application
 # This compiles TypeScript to JavaScript and prepares for production
-RUN pnpm run build
+RUN npm run build
 
 # === FINAL PRODUCTION STAGE ===
 # Start from the base image without build tools
@@ -57,19 +59,17 @@ EXPOSE 8081
 
 # Run the application
 # The "start" command tells the agent to connect to LiveKit and begin waiting for jobs
-# Modify the path if your entry point is different (e.g., ./dist/index.js)
-CMD [ "node", "./dist/agent.js", "start" ]
+CMD [ "node", "{{.ProgramMain}}", "start" ]
 
 # === COMMON CUSTOMIZATIONS ===
 #
-# 1. Using npm or yarn instead of pnpm:
-#    Replace pnpm commands with npm or yarn equivalents:
-#    - npm: RUN npm ci (instead of pnpm install --frozen-lockfile)
-#    - yarn: RUN yarn install --frozen-lockfile
+# 1. Production-only dependencies:
+#    To install only production dependencies (exclude devDependencies):
+#    RUN npm ci --omit=dev
 #
 # 2. Installing system dependencies for native modules:
 #    Some Node.js packages require system libraries. Add before COPY in build stage:
-#    
+#
 #    # For packages with native C++ addons:
 #    RUN apt-get update -qq && apt-get install --no-install-recommends -y \
 #        ca-certificates \
@@ -92,33 +92,40 @@ CMD [ "node", "./dist/agent.js", "start" ]
 #    RUN adduser --disabled-password --gecos "" --uid 10001 appuser
 #    USER appuser
 #
-# === TROUBLESHOOTING COMMON ISSUES ===
+# === TROUBLESHOOTING NPM-SPECIFIC ISSUES ===
 #
-# 1. "Module not found" errors:
+# 1. "package-lock.json not found":
+#    - Run `npm install` locally to generate package-lock.json
+#    - Commit package-lock.json to version control
+#    - npm ci requires package-lock.json for reproducible builds
+#
+# 2. "Module not found" errors:
 #    - Ensure all dependencies are in package.json
 #    - Check that build output is in the expected location
 #    - Verify node_modules are copied correctly
 #
-# 2. "EACCES: permission denied" errors:
+# 3. "EACCES: permission denied" errors:
 #    - Add a non-root user (see example above)
 #    - Ensure files have correct permissions
 #
-# 3. Large image sizes:
+# 4. Large image sizes:
 #    - Use node:20-alpine instead of node:20-slim for smaller base
 #    - Ensure .dockerignore excludes unnecessary files
 #    - Consider using npm prune --production after build
+#    - Use npm ci --omit=dev for production installs
 #
-# 4. Slow builds:
+# 5. Slow builds:
 #    - Use Docker BuildKit: DOCKER_BUILDKIT=1 docker build
 #    - Order COPY commands from least to most frequently changed
-#    - Copy package.json and lock file before source code for better caching
+#    - Copy package.json and package-lock.json before source code for better caching
+#    - npm ci is faster than npm install for CI/production builds
 #
-# 5. Native module compilation issues:
+# 6. Native module compilation issues:
 #    - Install build tools in the build stage (see customization #2)
 #    - For node-gyp: apt-get install python3 make g++
 #    - Consider using prebuilt binaries when available
 #
-# 6. Runtime connection issues:
+# 7. Runtime connection issues:
 #    - Verify the agent can reach the LiveKit server
 #    - Check that required environment variables are set
 #    - Ensure the healthcheck endpoint (8081) is accessible

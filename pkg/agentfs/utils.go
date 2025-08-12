@@ -35,7 +35,7 @@ const (
 	ProjectTypePythonHatch  ProjectType = "python.hatch"
 	ProjectTypePythonPDM    ProjectType = "python.pdm"
 	ProjectTypePythonPipenv ProjectType = "python.pipenv"
-	ProjectTypeNode         ProjectType = "node"
+	ProjectTypeNodeNPM      ProjectType = "node.npm"
 	ProjectTypeUnknown      ProjectType = "unknown"
 )
 
@@ -44,7 +44,7 @@ func (p ProjectType) IsPython() bool {
 }
 
 func (p ProjectType) IsNode() bool {
-	return p == ProjectTypeNode
+	return p == ProjectTypeNodeNPM
 }
 
 func (p ProjectType) Lang() string {
@@ -108,7 +108,7 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 			"Pipfile.lock",         // Pipenv lock file (highest priority)
 			"Pipfile",              // Pipenv configuration
 		}
-	case ProjectTypeNode:
+	case ProjectTypeNodeNPM:
 		filesToCheck = []string{
 			"package-lock.json",    // npm lock file
 			"yarn.lock",            // Yarn lock file
@@ -131,9 +131,9 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 
 // DetectProjectType determines the project type by checking for specific configuration/lock files and their content
 func DetectProjectType(dir string) (ProjectType, error) {
-	// Node.js detection
-	if util.FileExists(dir, "package.json") || util.FileExists(dir, "yarn.lock") || util.FileExists(dir, "package-lock.json") {
-		return ProjectTypeNode, nil
+	// Node.js detection - for now all Node.js projects use npm as fallback
+	if util.FileExists(dir, "package.json") || util.FileExists(dir, "yarn.lock") || util.FileExists(dir, "package-lock.json") || util.FileExists(dir, "pnpm-lock.yaml") {
+		return ProjectTypeNodeNPM, nil
 	}
 
 	// Python detection with priority order for most reliable indicators

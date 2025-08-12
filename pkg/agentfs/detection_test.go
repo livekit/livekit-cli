@@ -34,7 +34,7 @@ func TestDetectProjectType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			expected: ProjectTypeNode,
+			expected: ProjectTypeNodeNPM,
 		},
 		{
 			name: "Python UV project with uv.lock",

@@ -90,7 +90,7 @@ func detectProjectFiles(dir string, projectType ProjectType) []string {
 				files = append(files, path)
 			}
 		}
-	case ProjectTypeNode:
+	case ProjectTypeNodeNPM:
 		nodeFiles := []string{
 			"package.json",
 			"package-lock.json",
@@ -413,7 +413,7 @@ func checkPackageJSON(filePath, minVersion string) VersionCheckResult {
 					Name:        "@livekit/agents",
 					Version:     version,
 					FoundInFile: filePath,
-					ProjectType: ProjectTypeNode,
+					ProjectType: ProjectTypeNodeNPM,
 					Ecosystem:   "npm",
 				},
 				MinVersion: minVersion,
@@ -473,7 +473,7 @@ func checkPackageLockJSON(filePath, minVersion string) VersionCheckResult {
 				Name:        "@livekit/agents",
 				Version:     dep.Version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypeNode,
+				ProjectType: ProjectTypeNodeNPM,
 				Ecosystem:   "npm",
 			},
 			MinVersion: minVersion,
@@ -503,7 +503,7 @@ func checkYarnLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "@livekit/agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypeNode,
+				ProjectType: ProjectTypeNodeNPM,
 				Ecosystem:   "npm",
 			},
 			MinVersion: minVersion,
@@ -533,7 +533,7 @@ func checkPnpmLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "@livekit/agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypeNode,
+				ProjectType: ProjectTypeNodeNPM,
 				Ecosystem:   "npm",
 			},
 			MinVersion: minVersion,
@@ -726,7 +726,7 @@ func getTargetPackageName(projectType ProjectType) string {
 	switch projectType {
 	case ProjectTypePythonPip, ProjectTypePythonUV:
 		return "livekit-agents"
-	case ProjectTypeNode:
+	case ProjectTypeNodeNPM:
 		return "@livekit/agents"
 	default:
 		return ""

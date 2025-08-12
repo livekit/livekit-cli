@@ -68,7 +68,7 @@ func TestEntryPointDiscovery(t *testing.T) {
 		},
 		{
 			name:        "Node.js project with priority files",
-			projectType: ProjectTypeNode,
+			projectType: ProjectTypeNodeNPM,
 			setupFiles: []string{
 				"index.js",
 				"main.js",
@@ -147,7 +147,7 @@ func TestEntryPointDiscovery(t *testing.T) {
 					t.Fatal(err)
 				}
 				content := "# Test file\n"
-				if tt.projectType == ProjectTypeNode {
+				if tt.projectType == ProjectTypeNodeNPM {
 					content = "// Test file\n"
 				}
 				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
