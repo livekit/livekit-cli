@@ -135,7 +135,7 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 		}
 	case ProjectTypeNodeBun:
 		filesToCheck = []string{
-			"bun.lockb",    // Bun lock file (highest priority, binary format)
+			"bun.lock",     // Bun lock file
 			"package.json", // Package manifest (fallback)
 		}
 	default:
@@ -156,7 +156,7 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 func DetectProjectType(dir string) (ProjectType, error) {
 	// Node.js detection with specific package manager detection
 	// Check for Bun first (most definitive Bun indicator)
-	if util.FileExists(dir, "bun.lockb") {
+	if util.FileExists(dir, "bun.lock") {
 		return ProjectTypeNodeBun, nil
 	}
 

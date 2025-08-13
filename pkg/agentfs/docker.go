@@ -296,13 +296,12 @@ func validateYarnBerryProject(dir string, silent bool) {
 }
 
 func validateBunProject(dir string, silent bool) {
-	bunLockPath := filepath.Join(dir, "bun.lockb")
+	bunLockPath := filepath.Join(dir, "bun.lock")
 	if _, err := os.Stat(bunLockPath); err != nil {
 		if !silent {
-			fmt.Printf("! Warning: Bun project detected but %s file not found\n", util.Accented("bun.lockb"))
-			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("bun install"), util.Accented("bun.lockb"))
-			fmt.Printf("  This ensures consistent dependency versions across environments\n")
-			fmt.Printf("  Note: bun.lockb is a binary file, ensure it's committed to version control\n\n")
+			fmt.Printf("! Warning: Bun project detected but %s file not found\n", util.Accented("bun.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("bun install"), util.Accented("bun.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
 		}
 	}
 }
@@ -320,18 +319,55 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 			return "", fmt.Errorf("failed to create pattern matcher: %w", err)
 		}
 
-		// Recursively find all relevant files, respecting dockerignore
+		// For Node.js projects, we need to check build output directories even if dockerignore excludes them
+		// because these directories will be created during the Docker build
+		allowedPaths := make(map[string]bool)
+		if projectType.IsNode() {
+			// Try to detect the output directory from tsconfig.json or use defaults per package manager
+			// Default TypeScript output directories by convention
+			switch projectType {
+			case ProjectTypeNodeNPM, ProjectTypeNodePNPM:
+				// npm and pnpm typically use 'dist' for TypeScript builds
+				allowedPaths["dist"] = true
+				allowedPaths["build"] = true
+			case ProjectTypeNodeYarn, ProjectTypeNodeYarnBerry:
+				// Yarn projects often use 'dist' or 'lib'
+				allowedPaths["dist"] = true
+				allowedPaths["lib"] = true
+			case ProjectTypeNodeBun:
+				// Bun can use 'dist' or 'out'
+				allowedPaths["dist"] = true
+				allowedPaths["out"] = true
+			}
+			
+			// TODO: Parse tsconfig.json "outDir" if it exists to get the actual output directory
+			// For now, we're using common conventions
+		}
+
+		// Recursively find all relevant files, respecting dockerignore (with exceptions)
 		fileMap := make(map[string]bool)
 		if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
-			// Skip files that match .dockerignore patterns
-			if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
-				return nil
-			} else if err != nil {
-				return err
+			// Check if this path should be allowed regardless of dockerignore
+			relPath, _ := filepath.Rel(dir, path)
+			shouldAllow := false
+			for allowedDir := range allowedPaths {
+				if strings.HasPrefix(relPath, allowedDir+string(filepath.Separator)) || relPath == allowedDir {
+					shouldAllow = true
+					break
+				}
+			}
+
+			// Skip files that match .dockerignore patterns (unless explicitly allowed)
+			if !shouldAllow {
+				if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
+					return nil
+				} else if err != nil {
+					return err
+				}
 			}
 
 			// Only include files with the correct extension
@@ -359,31 +395,46 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 
 		if projectType.IsPython() {
 			// Common Python entry point patterns in order of preference
-			priorityOrder = []string{
-				"agent.py",        // LiveKit agents
-				"src/agent.py",    // LiveKit agents in src
-				"main.py",         // Most common
-				"src/main.py",     // Modern src layout
-				"app.py",          // Flask/web apps
-				"src/app.py",      // Flask/web apps in src
-				"__main__.py",     // Python module entry
-				"src/__main__.py", // Python module entry in src
+			priorityDirs := []string{
+				"",
+				"src",
+			}
+			priorityFiles := []string{
+				"agent.py",
+				"main.py",
+				"app.py",
+			}
+
+			// search the for the files in priority order in each of the directories in priority order
+			for _, file := range priorityFiles {
+				for _, dir := range priorityDirs {
+					if dir != "" {
+						dir = dir + "/"
+					}
+					priorityOrder = append(priorityOrder, fmt.Sprintf("%s%s", dir, file))
+				}
 			}
 		} else if projectType.IsNode() {
 			// Common Node.js entry point patterns
-			priorityOrder = []string{
-				"dist/agent.js", // Built TypeScript output
-				"dist/index.js", // Built TypeScript output
-				"dist/main.js",  // Built TypeScript output
-				"dist/app.js",   // Built TypeScript output
+			priorityDirs := []string{
+				"dist",
+				"",
+				"src",
+			}
+			priorityFiles := []string{
 				"agent.js",
 				"index.js",
 				"main.js",
 				"app.js",
-				"src/agent.js",
-				"src/index.js",
-				"src/main.js",
-				"src/app.js",
+			}
+			// search through each directory in order for .js files per the priority order
+			for _, dir := range priorityDirs {
+				for _, file := range priorityFiles {
+					if dir != "" {
+						dir = dir + "/"
+					}
+					priorityOrder = append(priorityOrder, fmt.Sprintf("%s%s.js", dir, file))
+				}
 			}
 		}
 
@@ -406,8 +457,40 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 			return candidates[0], nil
 		}
 
-		// If no matching files found, return early
+		// If no matching files found, check for TypeScript files and provide helpful message
 		if len(candidates) == 0 {
+			// For Node.js projects, check if there are TypeScript files
+			if projectType.IsNode() {
+				hasTSFiles := false
+				for fileName := range fileMap {
+					// Check if any .ts files exist (but not .d.ts)
+					if strings.HasSuffix(fileName, ".ts") && !strings.HasSuffix(fileName, ".d.ts") {
+						hasTSFiles = true
+						break
+					}
+				}
+
+				if hasTSFiles {
+					// Check specifically for common TypeScript source files
+					tsFiles := []string{"agent.ts", "index.ts", "main.ts", "app.ts", "src/agent.ts", "src/index.ts", "src/main.ts", "src/app.ts"}
+					foundTS := []string{}
+					for _, tsFile := range tsFiles {
+						if info, err := os.Stat(filepath.Join(dir, tsFile)); err == nil && !info.IsDir() {
+							foundTS = append(foundTS, tsFile)
+						}
+					}
+
+					if len(foundTS) > 0 {
+						displayCount := 3
+						if len(foundTS) < displayCount {
+							displayCount = len(foundTS)
+						}
+						fmt.Printf("\nTypeScript files detected (%s) but no compiled JavaScript files found.\n", strings.Join(foundTS[:displayCount], ", "))
+						fmt.Printf("Please build your project first using: %s\n\n", util.Accented("npm run build"))
+						return "", fmt.Errorf("no compiled JavaScript files found - run build command first")
+					}
+				}
+			}
 			return "", nil
 		}
 
@@ -491,6 +574,14 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 	newEntrypoint, err := valFile(defaultEntrypoint)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if entrypoint is empty and provide helpful error message
+	if newEntrypoint == "" {
+		if projectType.IsNode() {
+			return nil, fmt.Errorf("failed to detect entrypoint script - no JavaScript files found. If using TypeScript, run 'npm run build' (or equivalent) first")
+		}
+		return nil, fmt.Errorf("failed to detect entrypoint script - no %s files found in the project", projectType.FileExt())
 	}
 
 	tpl := template.Must(template.New("Dockerfile").Parse(string(dockerfileContent)))

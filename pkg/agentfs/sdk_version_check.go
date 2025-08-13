@@ -70,35 +70,66 @@ func CheckSDKVersion(dir string, projectType ProjectType, settingsMap map[string
 
 // detectProjectFiles finds all relevant project files for the given project type
 func detectProjectFiles(dir string, projectType ProjectType) []string {
-	var files []string
-
-	switch projectType {
-	case ProjectTypePythonPip, ProjectTypePythonUV:
-		pythonFiles := []string{
-			"requirements.txt",
+	// Map of project types to their relevant files
+	projectFileMap := map[ProjectType][]string{
+		// Python package managers
+		ProjectTypePythonPip: {
 			"requirements.lock",
 			"pyproject.toml",
-			"Pipfile",
-			"Pipfile.lock",
+			"requirements.txt",
 			"setup.py",
 			"setup.cfg",
-			"poetry.lock",
+		},
+		ProjectTypePythonUV: {
 			"uv.lock",
-		}
-		for _, filename := range pythonFiles {
-			if path := filepath.Join(dir, filename); fileExists(path) {
-				files = append(files, path)
-			}
-		}
-	case ProjectTypeNodeNPM:
-		nodeFiles := []string{
+			"pyproject.toml",
+			"requirements.txt",
+		},
+		ProjectTypePythonPoetry: {
+			"poetry.lock",
+			"pyproject.toml",
+		},
+		ProjectTypePythonHatch: {
+			"pyproject.toml",
+			"hatch.toml",
+		},
+		ProjectTypePythonPDM: {
+			"pdm.lock",
+			"pyproject.toml",
+			".pdm.toml",
+		},
+		ProjectTypePythonPipenv: {
+			"Pipfile.lock",
+			"Pipfile",
+		},
+		// Node.js package managers
+		ProjectTypeNodeNPM: {
 			"package.json",
 			"package-lock.json",
-			"yarn.lock",
+		},
+		ProjectTypeNodePNPM: {
 			"pnpm-lock.yaml",
-			"bun.lockb",
-		}
-		for _, filename := range nodeFiles {
+			"package.json",
+		},
+		ProjectTypeNodeYarn: {
+			"yarn.lock",
+			"package.json",
+			".yarnrc.yml",
+		},
+		ProjectTypeNodeYarnBerry: {
+			"yarn.lock",
+			"package.json",
+			".yarnrc.yml",
+		},
+		ProjectTypeNodeBun: {
+			"bun.lock",
+			"package.json",
+		},
+	}
+
+	var files []string
+	if filesToCheck, ok := projectFileMap[projectType]; ok {
+		for _, filename := range filesToCheck {
 			if path := filepath.Join(dir, filename); fileExists(path) {
 				files = append(files, path)
 			}
@@ -114,17 +145,17 @@ func checkPackageInFile(filePath string, projectType ProjectType, pythonMinVersi
 
 	switch {
 	case strings.Contains(fileName, "requirements"):
-		return checkRequirementsFile(filePath, pythonMinVersion)
+		return checkRequirementsFile(filePath, projectType, pythonMinVersion)
 	case fileName == "pyproject.toml":
-		return checkPyprojectToml(filePath, pythonMinVersion)
+		return checkPyprojectToml(filePath, projectType, pythonMinVersion)
 	case strings.Contains(fileName, "Pipfile"):
-		return checkPipfile(filePath, pythonMinVersion)
+		return checkPipfile(filePath, projectType, pythonMinVersion)
 	case fileName == "setup.py":
-		return checkSetupPy(filePath, pythonMinVersion)
+		return checkSetupPy(filePath, projectType, pythonMinVersion)
 	case fileName == "setup.cfg":
-		return checkSetupCfg(filePath, pythonMinVersion)
+		return checkSetupCfg(filePath, projectType, pythonMinVersion)
 	case fileName == "package.json":
-		return checkPackageJSON(filePath, nodeMinVersion)
+		return checkPackageJSON(filePath, projectType, nodeMinVersion)
 	case strings.Contains(fileName, "lock"):
 		return checkLockFile(filePath, projectType, pythonMinVersion, nodeMinVersion)
 	}
@@ -190,7 +221,7 @@ func parsePythonPackageVersion(line string) (string, bool) {
 }
 
 // checkRequirementsFile checks for livekit-agents in requirements.txt
-func checkRequirementsFile(filePath, minVersion string) VersionCheckResult {
+func checkRequirementsFile(filePath string, projectType ProjectType, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -211,7 +242,7 @@ func checkRequirementsFile(filePath, minVersion string) VersionCheckResult {
 					Name:        "livekit-agents",
 					Version:     version,
 					FoundInFile: filePath,
-					ProjectType: ProjectTypePythonPip,
+					ProjectType: projectType,
 					Ecosystem:   "pypi",
 				},
 				MinVersion: minVersion,
@@ -225,7 +256,7 @@ func checkRequirementsFile(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkPyprojectToml checks for livekit-agents in pyproject.toml
-func checkPyprojectToml(filePath, minVersion string) VersionCheckResult {
+func checkPyprojectToml(filePath string, projectType ProjectType, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -249,7 +280,7 @@ func checkPyprojectToml(filePath, minVersion string) VersionCheckResult {
 								Name:        "livekit-agents",
 								Version:     version,
 								FoundInFile: filePath,
-								ProjectType: ProjectTypePythonPip,
+								ProjectType: projectType,
 								Ecosystem:   "pypi",
 							},
 							MinVersion: minVersion,
@@ -266,7 +297,7 @@ func checkPyprojectToml(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkPipfile checks for livekit-agents in Pipfile
-func checkPipfile(filePath, minVersion string) VersionCheckResult {
+func checkPipfile(filePath string, projectType ProjectType, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -287,7 +318,7 @@ func checkPipfile(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypePythonPip,
+				ProjectType: projectType,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -300,7 +331,7 @@ func checkPipfile(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkSetupPy checks for livekit-agents in setup.py
-func checkSetupPy(filePath, minVersion string) VersionCheckResult {
+func checkSetupPy(filePath string, projectType ProjectType, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -332,7 +363,7 @@ func checkSetupPy(filePath, minVersion string) VersionCheckResult {
 							Name:        "livekit-agents",
 							Version:     version,
 							FoundInFile: filePath,
-							ProjectType: ProjectTypePythonPip,
+							ProjectType: projectType,
 							Ecosystem:   "pypi",
 						},
 						MinVersion: minVersion,
@@ -348,7 +379,7 @@ func checkSetupPy(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkSetupCfg checks for livekit-agents in setup.cfg
-func checkSetupCfg(filePath, minVersion string) VersionCheckResult {
+func checkSetupCfg(filePath string, projectType ProjectType, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -366,7 +397,7 @@ func checkSetupCfg(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypePythonPip,
+				ProjectType: projectType,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -379,7 +410,7 @@ func checkSetupCfg(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkPackageJSON checks for @livekit/agents in package.json
-func checkPackageJSON(filePath, minVersion string) VersionCheckResult {
+func checkPackageJSON(filePath string, projectType ProjectType, minVersion string) VersionCheckResult {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -413,7 +444,7 @@ func checkPackageJSON(filePath, minVersion string) VersionCheckResult {
 					Name:        "@livekit/agents",
 					Version:     version,
 					FoundInFile: filePath,
-					ProjectType: ProjectTypeNodeNPM,
+					ProjectType: projectType,
 					Ecosystem:   "npm",
 				},
 				MinVersion: minVersion,
@@ -431,25 +462,31 @@ func checkLockFile(filePath string, projectType ProjectType, pythonMinVersion, n
 	fileName := filepath.Base(filePath)
 
 	switch {
+	// Node.js lock files
 	case strings.Contains(fileName, "package-lock.json"):
 		return checkPackageLockJSON(filePath, nodeMinVersion)
 	case strings.Contains(fileName, "yarn.lock"):
-		return checkYarnLock(filePath, nodeMinVersion)
+		return checkYarnLock(filePath, projectType, nodeMinVersion)
 	case strings.Contains(fileName, "pnpm-lock.yaml"):
 		return checkPnpmLock(filePath, nodeMinVersion)
+	case strings.Contains(fileName, "bun.lock"):
+		return checkBunLock(filePath, nodeMinVersion)
+	// Python lock files
 	case strings.Contains(fileName, "poetry.lock"):
 		return checkPoetryLock(filePath, pythonMinVersion)
 	case strings.Contains(fileName, "uv.lock"):
 		return checkUvLock(filePath, pythonMinVersion)
 	case strings.Contains(fileName, "Pipfile.lock"):
 		return checkPipfileLock(filePath, pythonMinVersion)
+	case strings.Contains(fileName, "pdm.lock"):
+		return checkPdmLock(filePath, pythonMinVersion)
 	}
 
 	return VersionCheckResult{}
 }
 
 // checkPackageLockJSON checks for @livekit/agents in package-lock.json
-func checkPackageLockJSON(filePath, minVersion string) VersionCheckResult {
+func checkPackageLockJSON(filePath string, minVersion string) VersionCheckResult {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -486,7 +523,8 @@ func checkPackageLockJSON(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkYarnLock checks for @livekit/agents in yarn.lock
-func checkYarnLock(filePath, minVersion string) VersionCheckResult {
+// Note: yarn.lock is used by both Yarn Classic and Yarn Berry, so we need projectType
+func checkYarnLock(filePath string, projectType ProjectType, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -503,7 +541,7 @@ func checkYarnLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "@livekit/agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypeNodeNPM,
+				ProjectType: projectType,
 				Ecosystem:   "npm",
 			},
 			MinVersion: minVersion,
@@ -516,7 +554,7 @@ func checkYarnLock(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkPnpmLock checks for @livekit/agents in pnpm-lock.yaml
-func checkPnpmLock(filePath, minVersion string) VersionCheckResult {
+func checkPnpmLock(filePath string, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -533,7 +571,7 @@ func checkPnpmLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "@livekit/agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypeNodeNPM,
+				ProjectType: ProjectTypeNodePNPM,
 				Ecosystem:   "npm",
 			},
 			MinVersion: minVersion,
@@ -546,7 +584,7 @@ func checkPnpmLock(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkPoetryLock checks for livekit-agents in poetry.lock
-func checkPoetryLock(filePath, minVersion string) VersionCheckResult {
+func checkPoetryLock(filePath string, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -563,7 +601,7 @@ func checkPoetryLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypePythonPip,
+				ProjectType: ProjectTypePythonPoetry,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -576,7 +614,7 @@ func checkPoetryLock(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkUvLock checks for livekit-agents in uv.lock
-func checkUvLock(filePath, minVersion string) VersionCheckResult {
+func checkUvLock(filePath string, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -606,7 +644,7 @@ func checkUvLock(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkPipfileLock checks for livekit-agents in Pipfile.lock
-func checkPipfileLock(filePath, minVersion string) VersionCheckResult {
+func checkPipfileLock(filePath string, minVersion string) VersionCheckResult {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return VersionCheckResult{Error: err}
@@ -623,7 +661,7 @@ func checkPipfileLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: ProjectTypePythonPip,
+				ProjectType: ProjectTypePythonPipenv,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -674,6 +712,47 @@ func normalizeVersion(version string) string {
 		version = version[1:]
 	}
 
+	// Handle Python release candidates and other pre-release formats
+	// Convert Python's "rc" to semver's "-rc" format
+	// e.g., "1.0rc" -> "1.0.0-rc", "1.0rc1" -> "1.0.0-rc.1"
+	if regexp.MustCompile(`^\d+\.\d+rc`).MatchString(version) {
+		// Handle 1.0rc or 1.0rc1 format
+		rcPattern := regexp.MustCompile(`^(\d+\.\d+)rc(\d*)$`)
+		if matches := rcPattern.FindStringSubmatch(version); matches != nil {
+			baseVersion := matches[1] + ".0"
+			if matches[2] != "" {
+				version = baseVersion + "-rc." + matches[2]
+			} else {
+				version = baseVersion + "-rc"
+			}
+		}
+	} else if regexp.MustCompile(`^\d+\.\d+\.\d+rc`).MatchString(version) {
+		// Handle 1.0.0rc or 1.0.0rc1 format
+		rcPattern := regexp.MustCompile(`^(\d+\.\d+\.\d+)rc(\d*)$`)
+		if matches := rcPattern.FindStringSubmatch(version); matches != nil {
+			baseVersion := matches[1]
+			if matches[2] != "" {
+				version = baseVersion + "-rc." + matches[2]
+			} else {
+				version = baseVersion + "-rc"
+			}
+		}
+	}
+
+	// Handle Python alpha/beta versions similarly
+	// e.g., "1.0a1" -> "1.0.0-alpha.1", "1.0b2" -> "1.0.0-beta.2"
+	if regexp.MustCompile(`^\d+\.\d+[ab]\d+`).MatchString(version) {
+		abPattern := regexp.MustCompile(`^(\d+\.\d+)([ab])(\d+)$`)
+		if matches := abPattern.FindStringSubmatch(version); matches != nil {
+			baseVersion := matches[1] + ".0"
+			preRelease := "alpha"
+			if matches[2] == "b" {
+				preRelease = "beta"
+			}
+			version = baseVersion + "-" + preRelease + "." + matches[3]
+		}
+	}
+
 	return version
 }
 
@@ -688,9 +767,11 @@ func findBestResult(results []VersionCheckResult) *VersionCheckResult {
 		"package-lock.json": 10,
 		"yarn.lock":         10,
 		"pnpm-lock.yaml":    10,
+		"bun.lock":          10,
 		"poetry.lock":       10,
 		"uv.lock":           10,
 		"Pipfile.lock":      10,
+		"pdm.lock":          10,
 		"requirements.lock": 8,
 		"package.json":      5,
 		"pyproject.toml":    5,
@@ -721,12 +802,80 @@ func findBestResult(results []VersionCheckResult) *VersionCheckResult {
 	return bestResult
 }
 
+// checkBunLock checks for @livekit/agents in bun.lock
+func checkBunLock(filePath string, minVersion string) VersionCheckResult {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return VersionCheckResult{Error: err}
+	}
+
+	// Bun lock files are JSON format
+	// Look for @livekit/agents in the packages section
+	// Format: "@livekit/agents": ["@livekit/agents@0.7.9", ...
+	// The version is in the first array element after the @ symbol
+	pattern := regexp.MustCompile(`"@livekit/agents":\s*\["@livekit/agents@([^"]+)"`)
+	matches := pattern.FindStringSubmatch(string(content))
+	if matches != nil {
+		version := matches[1]
+		satisfied, err := isVersionSatisfied(version, minVersion)
+		return VersionCheckResult{
+			PackageInfo: PackageInfo{
+				Name:        "@livekit/agents",
+				Version:     version,
+				FoundInFile: filePath,
+				ProjectType: ProjectTypeNodeBun,
+				Ecosystem:   "npm",
+			},
+			MinVersion: minVersion,
+			Satisfied:  satisfied,
+			Error:      err,
+		}
+	}
+
+	return VersionCheckResult{}
+}
+
+// checkPdmLock checks for livekit-agents in pdm.lock
+func checkPdmLock(filePath string, minVersion string) VersionCheckResult {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return VersionCheckResult{Error: err}
+	}
+
+	// PDM lock files are TOML format
+	// Look for [[package]] section with livekit-agents
+	// Format:
+	// [[package]]
+	// name = "livekit-agents"
+	// version = "1.2.5"
+	pattern := regexp.MustCompile(`(?s)\[\[package\]\]\s*\nname\s*=\s*"livekit-agents"\s*\nversion\s*=\s*"([^"]+)"`)
+	matches := pattern.FindStringSubmatch(string(content))
+	if matches != nil {
+		version := matches[1]
+		satisfied, err := isVersionSatisfied(version, minVersion)
+		return VersionCheckResult{
+			PackageInfo: PackageInfo{
+				Name:        "livekit-agents",
+				Version:     version,
+				FoundInFile: filePath,
+				ProjectType: ProjectTypePythonPDM,
+				Ecosystem:   "pypi",
+			},
+			MinVersion: minVersion,
+			Satisfied:  satisfied,
+			Error:      err,
+		}
+	}
+
+	return VersionCheckResult{}
+}
+
 // getTargetPackageName returns the target package name for the project type
 func getTargetPackageName(projectType ProjectType) string {
 	switch projectType {
-	case ProjectTypePythonPip, ProjectTypePythonUV:
+	case ProjectTypePythonPip, ProjectTypePythonUV, ProjectTypePythonPoetry, ProjectTypePythonHatch, ProjectTypePythonPDM, ProjectTypePythonPipenv:
 		return "livekit-agents"
-	case ProjectTypeNodeNPM:
+	case ProjectTypeNodeNPM, ProjectTypeNodePNPM, ProjectTypeNodeYarn, ProjectTypeNodeYarnBerry, ProjectTypeNodeBun:
 		return "@livekit/agents"
 	default:
 		return ""
