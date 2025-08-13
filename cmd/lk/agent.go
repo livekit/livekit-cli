@@ -206,6 +206,7 @@ var (
 					Aliases: []string{"destroy"},
 					Flags: []cli.Flag{
 						idFlag(false),
+						silentFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -772,34 +773,44 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	var confirmDelete bool
-	if err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)).
-				Value(&confirmDelete).
-				Inline(false).
-				WithTheme(util.Theme),
-		),
-	).Run(); err != nil {
-		return err
-	}
+	silent := cmd.Bool("silent")
 
-	if !confirmDelete {
-		return nil
+	if !silent {
+		var confirmDelete bool
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)).
+					Value(&confirmDelete).
+					Inline(false).
+					WithTheme(util.Theme),
+			),
+		).Run(); err != nil {
+			return err
+		}
+
+		if !confirmDelete {
+			return nil
+		}
 	}
 
 	var res *lkproto.DeleteAgentResponse
 	var agentErr error
-	if err := util.Await(
-		"Deleting agent ["+util.Accented(agentID)+"]",
-		func() {
-			res, agentErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
-				AgentId: agentID,
-			})
-		},
-	); err != nil {
-		return err
+	if !silent {
+		if err := util.Await(
+			"Deleting agent ["+util.Accented(agentID)+"]",
+			func() {
+				res, agentErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
+					AgentId: agentID,
+				})
+			},
+		); err != nil {
+			return err
+		}
+	} else {
+		res, agentErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
+			AgentId: agentID,
+		})
 	}
 
 	if agentErr != nil {
