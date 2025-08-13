@@ -333,7 +333,8 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 	if cliConfig.ProjectExists(name) {
 		if err := huh.NewInput().
-			Title("Project name already exists, please choose a different name").
+			Title("Choose a different alias").
+			Description(fmt.Sprintf("You've already configured a project with the alias %q.", name)).
 			Value(&name).
 			Validate(func(s string) error {
 				if cliConfig.ProjectExists(s) {
