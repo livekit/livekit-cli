@@ -17,7 +17,7 @@
 # Trade-offs: Longer build time, more complex debugging
 # Use when: Image size is critical (e.g., serverless, edge deployment)
 
-ARG PYTHON_VERSION=3.11.6
+ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION}-slim
 
 # Keeps Python from buffering stdout and stderr to avoid situations where
@@ -26,7 +26,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Hatch-specific environment variables
 # HATCH_ENV_TYPE_VIRTUAL_PATH: Use a specific path for virtual environments
-ENV HATCH_ENV_TYPE_VIRTUAL_PATH=/home/appuser/.venv
+ENV HATCH_ENV_TYPE_VIRTUAL_PATH=/app/.venv
 
 # Define the program entrypoint file where your agent is started.
 ARG PROGRAM_MAIN="{{.ProgramMain}}"
@@ -37,7 +37,7 @@ ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/home/appuser" \
+    --home "/app" \
     --shell "/sbin/nologin" \
     --uid "${UID}" \
     appuser
@@ -90,7 +90,7 @@ RUN apt-get update && \
 
 # Set the working directory to the user's home directory
 # This is where our application code will live
-WORKDIR /home/appuser
+WORKDIR /app
 
 # Copy project files first for better Docker layer caching
 # Hatch needs pyproject.toml to understand the project
@@ -112,7 +112,7 @@ RUN hatch run python -m pip install -e .
 
 # Change ownership of all app files to the non-privileged user
 # This ensures the application can read/write files as needed
-RUN chown -R appuser:appuser /home/appuser
+RUN chown -R appuser:appuser /app
 
 # Switch to the non-privileged user for all subsequent operations
 # This improves security by not running as root
@@ -120,20 +120,16 @@ USER appuser
 
 # Create a cache directory for the user
 # This is used by pip and Python for caching packages and bytecode
-RUN mkdir -p /home/appuser/.cache
+RUN mkdir -p /app/.cache
 
 # Set up the PATH to include Hatch's virtual environment
-ENV PATH="/home/appuser/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Pre-download any ML models or files the agent needs
 # This ensures the container is ready to run immediately without downloading
 # dependencies at runtime, which improves startup time and reliability
 # We use hatch run to ensure the command runs in the correct environment
 RUN hatch run python "$PROGRAM_MAIN" download-files
-
-# Expose the healthcheck port
-# This allows Docker and orchestration systems to check if the container is healthy
-EXPOSE 8081
 
 # Run the application.
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
@@ -160,7 +156,7 @@ CMD ["hatch", "run", "python", "{{.ProgramMain}}", "start"]
 # 4. Slow builds:
 #    - Hatch downloads and builds dependencies fresh
 #    - Consider using pip-compile for locked requirements
-#    - Cache /home/appuser/.cache between builds if possible
+#    - Cache /app/.cache between builds if possible
 #
 # 5. Version conflicts:
 #    - Hatch uses the latest resolver by default
@@ -178,3 +174,4 @@ CMD ["hatch", "run", "python", "{{.ProgramMain}}", "start"]
 #    - HATCH_ENV_TYPE_VIRTUAL_PATH must be writable by appuser
 #
 # For more help: https://hatch.pypa.io/latest/
+# For build options and troubleshooting: https://docs.livekit.io/agents/ops/deployment/cloud/build

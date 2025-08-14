@@ -1,4 +1,4 @@
-# Node.js artifacts
+# Node.js dependencies
 node_modules/
 .pnpm-store/
 npm-debug.log*
@@ -7,50 +7,67 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Build artifacts
+# Build outputs
 dist/
 build/
-*.tsbuildinfo
-
-# Testing
+out/
+.next/
 coverage/
 .nyc_output/
 
-# IDE & Editor files
-.vscode/
+# Environment variables
+.env
+.env.*
+
+# VCS, editor, OS
+.git/
+.gitignore
+.gitattributes
+.github/
+.gitlab-ci.yml
+.travis.yml
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
 .DS_Store
-
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# Docker artifacts
-Dockerfile*
-.dockerignore
-
-# Git files
-.git/
-.gitignore
+Thumbs.db
 
 # Documentation
 README.md
+LICENSE
 docs/
 
-# CI/CD
-.github/
-.gitlab-ci.yml
-.travis.yml
+# Tests
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
 
-# Logs
+# TypeScript
+*.tsbuildinfo
+
+# Docker files
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Package manager specific
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Logs and temporary files
 logs/
 *.log
-
-# Temporary files
 .tmp/
 .temp/
 tmp/

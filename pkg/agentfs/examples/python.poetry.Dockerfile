@@ -17,7 +17,7 @@
 # Trade-offs: Longer build time, more complex debugging
 # Use when: Image size is critical (e.g., serverless, edge deployment)
 
-ARG PYTHON_VERSION=3.11.6
+ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION}-slim
 
 # Keeps Python from buffering stdout and stderr to avoid situations where
@@ -26,10 +26,10 @@ ENV PYTHONUNBUFFERED=1
 
 # Poetry-specific environment variables
 # POETRY_HOME: where Poetry itself is installed
-# POETRY_VIRTUALENVS_IN_PROJECT: create .venv in project directory
+# POETRY_VIRTUALENVS_CREATE: disable virtualenv creation (use system python in container)
 # POETRY_NO_INTERACTION: disable interactive prompts
 ENV POETRY_HOME=/opt/poetry \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1 \
     POETRY_VERSION=1.8.3
 
@@ -45,7 +45,7 @@ ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/home/appuser" \
+    --home "/app" \
     --shell "/sbin/nologin" \
     --uid "${UID}" \
     appuser
@@ -100,7 +100,7 @@ RUN apt-get update && \
 
 # Set the working directory to the user's home directory
 # This is where our application code will live
-WORKDIR /home/appuser
+WORKDIR /app
 
 # Copy poetry files first for better Docker layer caching
 # If dependencies don't change, Docker can reuse the poetry install layer
@@ -108,8 +108,8 @@ COPY pyproject.toml poetry.lock* ./
 
 # Install Python dependencies as root
 # --no-root: don't install the project package itself yet
-# --only main: only install main dependencies, not dev dependencies
-RUN poetry install --no-root --only main
+# --no-dev: only install main dependencies, not dev dependencies
+RUN poetry install --no-root --no-dev
 
 # Copy all application files into the container
 # This includes source code, configuration files, etc.
@@ -122,7 +122,7 @@ RUN poetry install --only-root
 
 # Change ownership of all app files to the non-privileged user
 # This ensures the application can read/write files as needed
-RUN chown -R appuser:appuser /home/appuser
+RUN chown -R appuser:appuser /app
 
 # Switch to the non-privileged user for all subsequent operations
 # This improves security by not running as root
@@ -130,19 +130,12 @@ USER appuser
 
 # Create a cache directory for the user
 # This is used by pip and Python for caching packages and bytecode
-RUN mkdir -p /home/appuser/.cache
-
-# Activate the virtual environment for the runtime
-ENV PATH="/home/appuser/.venv/bin:$PATH"
+RUN mkdir -p /app/.cache
 
 # Pre-download any ML models or files the agent needs
 # This ensures the container is ready to run immediately without downloading
 # dependencies at runtime, which improves startup time and reliability
 RUN python "$PROGRAM_MAIN" download-files
-
-# Expose the healthcheck port
-# This allows Docker and orchestration systems to check if the container is healthy
-EXPOSE 8081
 
 # Run the application.
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
@@ -187,3 +180,4 @@ CMD ["python", "{{.ProgramMain}}", "start"]
 #    - Set POETRY_CACHE_DIR to user-writable location if needed
 #
 # For more help: https://python-poetry.org/docs/
+# For build options and troubleshooting: https://docs.livekit.io/agents/ops/deployment/cloud/build

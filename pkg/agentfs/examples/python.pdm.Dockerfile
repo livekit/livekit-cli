@@ -17,7 +17,7 @@
 # Trade-offs: Longer build time, more complex debugging
 # Use when: Image size is critical (e.g., serverless, edge deployment)
 
-ARG PYTHON_VERSION=3.11.6
+ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION}-slim
 
 # Keeps Python from buffering stdout and stderr to avoid situations where
@@ -25,9 +25,9 @@ FROM python:${PYTHON_VERSION}-slim
 ENV PYTHONUNBUFFERED=1
 
 # PDM-specific environment variables
-# PDM_USE_VENV: Use virtual environment
+# PDM_USE_VENV: Don't use virtual environment (use system python in container)
 # PDM_IGNORE_SAVED_PYTHON: Don't use saved Python interpreter
-ENV PDM_USE_VENV=true \
+ENV PDM_USE_VENV=false \
     PDM_IGNORE_SAVED_PYTHON=true
 
 # Define the program entrypoint file where your agent is started.
@@ -39,7 +39,7 @@ ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/home/appuser" \
+    --home "/app" \
     --shell "/sbin/nologin" \
     --uid "${UID}" \
     appuser
@@ -92,7 +92,7 @@ RUN apt-get update && \
 
 # Set the working directory to the user's home directory
 # This is where our application code will live
-WORKDIR /home/appuser
+WORKDIR /app
 
 # Copy PDM files first for better Docker layer caching
 # If dependencies don't change, Docker can reuse the pdm install layer
@@ -114,7 +114,7 @@ RUN pdm install --prod --no-editable
 
 # Change ownership of all app files to the non-privileged user
 # This ensures the application can read/write files as needed
-RUN chown -R appuser:appuser /home/appuser
+RUN chown -R appuser:appuser /app
 
 # Switch to the non-privileged user for all subsequent operations
 # This improves security by not running as root
@@ -122,25 +122,17 @@ USER appuser
 
 # Create a cache directory for the user
 # This is used by pip and Python for caching packages and bytecode
-RUN mkdir -p /home/appuser/.cache
-
-# Set up the PATH to include PDM's virtual environment
-# PDM creates .venv in the project directory by default
-ENV PATH="/home/appuser/.venv/bin:$PATH"
+RUN mkdir -p /app/.cache
 
 # Pre-download any ML models or files the agent needs
 # This ensures the container is ready to run immediately without downloading
 # dependencies at runtime, which improves startup time and reliability
-RUN python "$PROGRAM_MAIN" download-files
-
-# Expose the healthcheck port
-# This allows Docker and orchestration systems to check if the container is healthy
-EXPOSE 8081
+RUN pdm run python "$PROGRAM_MAIN" download-files
 
 # Run the application.
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
-# We use the python from PDM's virtual environment
-CMD ["python", "{{.ProgramMain}}", "start"]
+# We use pdm run to ensure the correct Python environment is used
+CMD ["pdm", "run", "python", "{{.ProgramMain}}", "start"]
 
 # === TROUBLESHOOTING PDM-SPECIFIC ISSUES ===
 #
@@ -157,7 +149,7 @@ CMD ["python", "{{.ProgramMain}}", "start"]
 # 3. Virtual environment issues:
 #    - PDM creates .venv in project directory by default
 #    - Set PDM_USE_VENV=true to ensure venv is used
-#    - Ensure PATH includes /home/appuser/.venv/bin
+#    - Ensure PATH includes /app/.venv/bin if using venv
 #
 # 4. Dependencies not installed:
 #    - Ensure dependencies are in [project.dependencies] section
@@ -185,3 +177,4 @@ CMD ["python", "{{.ProgramMain}}", "start"]
 #    - Production builds should use --prod to exclude dev dependencies
 #
 # For more help: https://pdm.fming.dev/
+# For build options and troubleshooting: https://docs.livekit.io/agents/ops/deployment/cloud/build

@@ -1,33 +1,60 @@
 # Node.js dependencies
-node_modules
-npm-debug.log
-yarn-error.log
-pnpm-debug.log
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Build outputs
-dist
-build
-coverage
+dist/
+build/
+out/
+.next/
+coverage/
 
-# Local environment & config files
+# Environment variables
 .env
-.env.local
+.env.*
+
+# VCS, editor, OS
+.git/
+.gitignore
+.gitattributes
+.github/
+.idea/
+.vscode/
 .DS_Store
+Thumbs.db
 
-# Logs & temp files
-*.log
-*.gz
-*.tgz
-.tmp
-.cache
+# Documentation
+README.md
+LICENSE
+docs/
 
-# Docker artifacts
+# Tests
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker files
 Dockerfile*
 .dockerignore
+docker-compose*.yml
 
-# Git & Editor files
-.git
-.gitignore
-.idea
-.vscode
+# Package manager specific
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 

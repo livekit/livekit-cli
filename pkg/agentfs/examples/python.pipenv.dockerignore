@@ -1,45 +1,63 @@
-# Python artifacts
-venv/
-.venv/
+# Python bytecode and artifacts
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
-.Python
 *.egg-info/
 dist/
 build/
 
-# Pipenv specific
-# Don't ignore Pipfile.lock - it's needed for reproducible builds
+# Virtual environments
+.venv/
+venv/
+env/
 
-# Local environment & config files
+# Caches and test output
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+coverage/
+htmlcov/
+.coverage
+.tox/
+.nox/
+
+# Environment variables
 .env
-.env.local
-.DS_Store
+.env.*
 
-# Logs & temp files
+# VCS, editor, OS
+.git/
+.gitignore
+.gitattributes
+.github/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+LICENSE
+docs/
+
+# Tests
+test/
+tests/
+eval/
+evals/
+
+# Logs and temp files
 *.log
 *.gz
 *.tgz
 .tmp
-.cache
 
-# Docker artifacts
+# Docker files
 Dockerfile*
 .dockerignore
+docker-compose*.yml
 
-# Git & Editor files
-.git
-.gitignore
-.idea
-.vscode
-
-# Testing & Documentation
-.pytest_cache/
-.coverage
-htmlcov/
-docs/
-tests/
-.tox/
-.nox/
+# Pipenv specific
+# Don't ignore Pipfile.lock - it's needed for reproducible builds

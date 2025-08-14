@@ -10,7 +10,8 @@
 # Benefits: Smaller final image without build tools and source files
 # Final image contains only: compiled JS, node_modules (or PnP), and runtime dependencies
 
-FROM node:20-slim AS base
+ARG NODE_VERSION=22
+FROM node:${NODE_VERSION}-slim AS base
 
 # Define the program entrypoint file where your agent is started.
 ARG PROGRAM_MAIN="{{.ProgramMain}}"
@@ -30,9 +31,18 @@ FROM base AS build
 # --no-install-recommends keeps the image smaller by avoiding suggested packages
 RUN apt-get update -qq && apt-get install --no-install-recommends -y ca-certificates
 
-# Copy Yarn Berry configuration files first
-COPY .yarnrc.yml ./
-COPY .yarn ./.yarn
+# Copy Yarn Berry configuration if it exists
+# We'll override the yarnPath to not rely on local releases
+COPY .yarnrc.yml* ./
+
+# Override yarnPath in .yarnrc.yml to use corepack-managed yarn
+# Keep other settings like nodeLinker
+RUN if [ -f .yarnrc.yml ]; then \
+      grep -v "yarnPath:" .yarnrc.yml > .yarnrc.yml.tmp && mv .yarnrc.yml.tmp .yarnrc.yml; \
+    fi
+
+# Set up Yarn Berry version using corepack
+RUN corepack prepare yarn@stable --activate
 
 # Copy package.json and yarn.lock for better layer caching
 COPY package.json yarn.lock ./
@@ -43,15 +53,37 @@ COPY package.json yarn.lock ./
 RUN yarn install --immutable
 
 # Copy all application files into the build container
+# But preserve our modified .yarnrc.yml
 COPY . .
+RUN if [ -f .yarnrc.yml ]; then \
+      grep -v "yarnPath:" .yarnrc.yml > .yarnrc.yml.tmp && mv .yarnrc.yml.tmp .yarnrc.yml; \
+    fi
 
 # Build the TypeScript application
 # This compiles TypeScript to JavaScript and prepares for production
 RUN yarn run build
 
+# Install production dependencies only for final image
+# This removes dev dependencies after build
+RUN yarn workspaces focus --production
+
 # === FINAL PRODUCTION STAGE ===
 # Start from the base image without build tools
 FROM base
+
+# Set production environment for runtime
+ENV NODE_ENV=production
+
+# Create a non-privileged user that the app will run under.
+# See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/app" \
+    --shell "/sbin/nologin" \
+    --uid "${UID}" \
+    appuser
 
 # Copy the built application from the build stage
 # This includes dependencies and compiled JavaScript files
@@ -60,9 +92,13 @@ COPY --from=build /app /app
 # Copy SSL certificates for HTTPS connections at runtime
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 
-# Expose the healthcheck port
-# This allows Docker and orchestration systems to check if the container is healthy
-EXPOSE 8081
+# Change ownership of all app files to the non-privileged user
+# This ensures the application can read/write files as needed
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-privileged user for all subsequent operations
+# This improves security by not running as root
+USER appuser
 
 # Run the application
 # The "start" command tells the agent to connect to LiveKit and begin waiting for jobs
@@ -78,7 +114,7 @@ CMD [ "node", "{{.ProgramMain}}", "start" ]
 #
 # 2. Installing system dependencies for native modules:
 #    Some Node.js packages require system libraries. Add before COPY in build stage:
-#    
+#
 #    # For packages with native C++ addons:
 #    RUN apt-get update -qq && apt-get install --no-install-recommends -y \
 #        ca-certificates \
@@ -150,3 +186,4 @@ CMD [ "node", "{{.ProgramMain}}", "start" ]
 #    - Consider disabling unnecessary plugins for production
 #
 # For more help: https://yarnpkg.com/migration/guide
+# For LiveKit agent build help: https://docs.livekit.io/agents/ops/deployment/cloud/build

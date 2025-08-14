@@ -11,7 +11,8 @@
 # Final image contains only: compiled JS, node_modules, and runtime dependencies
 
 # Use official Bun image as base
-FROM oven/bun:1 AS base
+ARG BUN_VERSION=1
+FROM oven/bun:${BUN_VERSION} AS base
 
 # Define the program entrypoint file where your agent is started.
 ARG PROGRAM_MAIN="{{.ProgramMain}}"
@@ -29,7 +30,11 @@ COPY package.json bun.lock* ./
 
 # Install dependencies using bun
 # Bun automatically uses the lock file if it exists
+# Install all dependencies including dev for the build stage
 RUN bun install --frozen-lockfile
+
+# Set production environment
+ENV NODE_ENV=production
 
 # Copy all application files into the build container
 COPY . .
@@ -38,17 +43,36 @@ COPY . .
 # Bun can run TypeScript directly, but building may still be needed for bundling
 RUN bun run build
 
+# Prune any dev dependencies that might have been needed for build
+# This keeps only production dependencies
+RUN bun install --production
+
 # === FINAL PRODUCTION STAGE ===
 # Start from the base image without build tools
 FROM base
+
+# Create a non-privileged user that the app will run under.
+# See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/app" \
+    --shell "/sbin/nologin" \
+    --uid "${UID}" \
+    appuser
 
 # Copy the built application from the build stage
 # This includes node_modules and compiled JavaScript files
 COPY --from=build /app /app
 
-# Expose the healthcheck port
-# This allows Docker and orchestration systems to check if the container is healthy
-EXPOSE 8081
+# Change ownership of all app files to the non-privileged user
+# This ensures the application can read/write files as needed
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-privileged user for all subsequent operations
+# This improves security by not running as root
+USER appuser
 
 # Run the application using Bun
 # The "start" command tells the agent to connect to LiveKit and begin waiting for jobs
@@ -127,3 +151,4 @@ CMD [ "bun", "run", "{{.ProgramMain}}", "start" ]
 #    - Ensure the healthcheck endpoint (8081) is accessible
 #
 # For more help: https://bun.sh/docs
+# For LiveKit agent build help: https://docs.livekit.io/agents/ops/deployment/cloud/build

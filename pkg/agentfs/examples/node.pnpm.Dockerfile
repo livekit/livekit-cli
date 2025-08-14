@@ -10,7 +10,8 @@
 # Benefits: Smaller final image without build tools and source files
 # Final image contains only: compiled JS, node_modules, and runtime dependencies
 
-FROM node:20-slim AS base
+ARG NODE_VERSION=22
+FROM node:${NODE_VERSION}-slim AS base
 
 # Define the program entrypoint file where your agent is started.
 ARG PROGRAM_MAIN="{{.ProgramMain}}"
@@ -20,7 +21,11 @@ WORKDIR /app
 
 # Install pnpm globally for faster, more efficient package management
 # pnpm uses a content-addressable storage for packages, saving disk space
-RUN npm install -g pnpm@9.7.0
+RUN npm install -g pnpm@9.15.9
+
+# Set pnpm environment variables for optimal performance
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 # === BUILD STAGE ===
 # This stage is discarded after building, keeping the final image small
@@ -43,9 +48,27 @@ RUN pnpm install --frozen-lockfile
 # This compiles TypeScript to JavaScript and prepares for production
 RUN pnpm run build
 
+# Remove development dependencies for smaller production image
+# This keeps only the packages needed for runtime
+RUN pnpm prune --prod
+
 # === FINAL PRODUCTION STAGE ===
 # Start from the base image without build tools
 FROM base
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Create a non-privileged user that the app will run under.
+# See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/app" \
+    --shell "/sbin/nologin" \
+    --uid "${UID}" \
+    appuser
 
 # Copy the built application from the build stage
 # This includes node_modules and compiled JavaScript files
@@ -54,9 +77,13 @@ COPY --from=build /app /app
 # Copy SSL certificates for HTTPS connections at runtime
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 
-# Expose the healthcheck port
-# This allows Docker and orchestration systems to check if the container is healthy
-EXPOSE 8081
+# Change ownership of all app files to the non-privileged user
+# This ensures the application can read/write files as needed
+RUN chown -R appuser:appuser /app
+
+# Switch to the non-privileged user for all subsequent operations
+# This improves security by not running as root
+USER appuser
 
 # Run the application
 # The "start" command tells the agent to connect to LiveKit and begin waiting for jobs
@@ -139,3 +166,4 @@ CMD [ "node", "{{.ProgramMain}}", "start" ]
 #    - Consider using pnpm deploy for single-package deployment
 #
 # For more help: https://docs.livekit.io/agents/
+# For build options and troubleshooting: https://docs.livekit.io/agents/ops/deployment/cloud/build
