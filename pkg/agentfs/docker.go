@@ -34,6 +34,20 @@ import (
 //go:embed examples/*
 var fs embed.FS
 
+type GenerationStatus int
+
+const (
+	GenerationStatusGenerated GenerationStatus = iota
+	GenerationStatusSkipped                    // File exists and no force flag
+	GenerationStatusFailed                     // Error during generation
+)
+
+type GenerationResult struct {
+	Status  GenerationStatus
+	Message string
+	Error   error
+}
+
 func HasDockerfile(dir string) (bool, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -48,20 +62,22 @@ func HasDockerfile(dir string) (bool, error) {
 	return false, nil
 }
 
-func CreateDockerfile(dir string, settingsMap map[string]string, silent bool) error {
+// Returns dockerfile content, dockerignore content, and error
+func PrepareDockerfileContent(dir string, settingsMap map[string]string, silent bool) ([]byte, []byte, error) {
 	if len(settingsMap) == 0 {
-		return fmt.Errorf("unable to fetch client settings from server, please try again later")
+		return nil, nil, fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
 
 	projectType, err := DetectProjectType(dir)
 	if err != nil {
-		return fmt.Errorf(`× Unable to determine project type
+		return nil, nil, fmt.Errorf(`× Unable to determine project type
 
 Supported project types:
-  • Python: requires requirements.txt or pyproject.toml
-  • Node.js: requires package.json
+  • Python: pip, uv, pdm, hatch, poetry, pipenv
+  • Node.js: npm, pnpm, yarn, yarn-berry, bun
 
-Please ensure your project has the appropriate dependency file, or create a Dockerfile manually in the current directory`)
+Please ensure your project has the appropriate project files (node projects may
+need to be buit first), or create a Dockerfile manually in the current directory`)
 	}
 
 	if !silent {
@@ -142,47 +158,136 @@ Please ensure your project has the appropriate dependency file, or create a Dock
 
 	dockerfileContent, err = fs.ReadFile("examples/" + string(projectType) + ".Dockerfile")
 	if err != nil {
-		return fmt.Errorf("failed to load Dockerfile template '%s': %w", string(projectType), err)
+		return nil, nil, fmt.Errorf("failed to load Dockerfile template '%s': %w", string(projectType), err)
 	}
 
 	dockerIgnoreContent, err = fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
 	if err != nil {
-		return fmt.Errorf("failed to load .dockerignore template for '%s': %w", string(projectType), err)
+		return nil, nil, fmt.Errorf("failed to load .dockerignore template for '%s': %w", string(projectType), err)
 	}
 
 	// Validate entrypoint for both Python and Node.js projects
 	if projectType.IsPython() {
 		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap, silent)
 		if err != nil {
-			return fmt.Errorf("failed to validate Python entry point: %w", err)
+			return nil, nil, fmt.Errorf("failed to validate Python entry point: %w", err)
 		}
 	} else if projectType.IsNode() {
 		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap, silent)
 		if err != nil {
-			return fmt.Errorf("failed to validate Node.js entry point: %w", err)
+			return nil, nil, fmt.Errorf("failed to validate Node.js entry point: %w", err)
 		}
 	}
 
-	err = os.WriteFile(filepath.Join(dir, "Dockerfile"), dockerfileContent, 0644)
+	return dockerfileContent, dockerIgnoreContent, nil
+}
+
+// GenerateDockerfile generates only the Dockerfile with status reporting
+// If preparedDockerfileContent is provided (non-nil), it will be used instead of calling PrepareDockerfileContent
+func GenerateDockerfile(dir string, settingsMap map[string]string, silent bool, force bool, preparedDockerfileContent []byte) GenerationResult {
+	dockerfilePath := filepath.Join(dir, "Dockerfile")
+
+	// Check if file exists
+	if !force {
+		if _, err := os.Stat(dockerfilePath); err == nil {
+			return GenerationResult{
+				Status:  GenerationStatusSkipped,
+				Message: "Dockerfile already exists. Use --force to overwrite",
+			}
+		}
+	}
+
+	// Get content - use prepared content if provided, otherwise generate it
+	var dockerfileContent []byte
+	if preparedDockerfileContent != nil {
+		dockerfileContent = preparedDockerfileContent
+	} else {
+		var err error
+		dockerfileContent, _, err = PrepareDockerfileContent(dir, settingsMap, silent)
+		if err != nil {
+			return GenerationResult{
+				Status:  GenerationStatusFailed,
+				Error:   err,
+				Message: fmt.Sprintf("Failed to prepare Dockerfile: %v", err),
+			}
+		}
+	}
+
+	// Write file
+	err := os.WriteFile(dockerfilePath, dockerfileContent, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to write Dockerfile: %w", err)
+		return GenerationResult{
+			Status:  GenerationStatusFailed,
+			Error:   fmt.Errorf("failed to write Dockerfile: %w", err),
+			Message: fmt.Sprintf("Failed to write Dockerfile: %v", err),
+		}
 	}
 
-	err = os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644)
+	message := "Generated Dockerfile"
+	if force {
+		if _, err := os.Stat(dockerfilePath); err == nil {
+			message = "Overwrote existing Dockerfile"
+		}
+	}
+
+	return GenerationResult{
+		Status:  GenerationStatusGenerated,
+		Message: message,
+	}
+}
+
+// GenerateDockerIgnore generates only the .dockerignore with status reporting
+// If preparedDockerignoreContent is provided (non-nil), it will be used instead of calling PrepareDockerfileContent
+func GenerateDockerIgnore(dir string, settingsMap map[string]string, silent bool, force bool, preparedDockerignoreContent []byte) GenerationResult {
+	dockerignorePath := filepath.Join(dir, ".dockerignore")
+
+	// Check if file exists
+	if !force {
+		if _, err := os.Stat(dockerignorePath); err == nil {
+			return GenerationResult{
+				Status:  GenerationStatusSkipped,
+				Message: ".dockerignore already exists. Use --force to overwrite",
+			}
+		}
+	}
+
+	// Get content - use prepared content if provided, otherwise generate it
+	var dockerignoreContent []byte
+	if preparedDockerignoreContent != nil {
+		dockerignoreContent = preparedDockerignoreContent
+	} else {
+		var err error
+		_, dockerignoreContent, err = PrepareDockerfileContent(dir, settingsMap, silent)
+		if err != nil {
+			return GenerationResult{
+				Status:  GenerationStatusFailed,
+				Error:   err,
+				Message: fmt.Sprintf("Failed to prepare .dockerignore: %v", err),
+			}
+		}
+	}
+
+	// Write file
+	err := os.WriteFile(dockerignorePath, dockerignoreContent, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to write .dockerignore: %w", err)
+		return GenerationResult{
+			Status:  GenerationStatusFailed,
+			Error:   fmt.Errorf("failed to write .dockerignore: %w", err),
+			Message: fmt.Sprintf("Failed to write .dockerignore: %v", err),
+		}
 	}
 
-	if !silent {
-		fmt.Printf("\n✔ Successfully generated Docker files:\n")
-		fmt.Printf("  %s - Container build instructions\n", util.Accented("Dockerfile"))
-		fmt.Printf("  %s - Files excluded from build context\n", util.Accented(".dockerignore"))
-		fmt.Printf("\nNext steps:\n")
-		fmt.Printf("  ► Review the %s and uncomment/update any needed packages\n", util.Accented("Dockerfile"))
-		fmt.Printf("  ► Build your agent: docker build -t my-agent .\n")
+	message := "Generated .dockerignore"
+	if force {
+		if _, err := os.Stat(dockerignorePath); err == nil {
+			message = "Overwrote existing .dockerignore"
+		}
 	}
 
-	return nil
+	return GenerationResult{
+		Status:  GenerationStatusGenerated,
+		Message: message,
+	}
 }
 
 func validateUVProject(dir string, silent bool) {
@@ -339,7 +444,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 				allowedPaths["dist"] = true
 				allowedPaths["out"] = true
 			}
-			
+
 			// TODO: Parse tsconfig.json "outDir" if it exists to get the actual output directory
 			// For now, we're using common conventions
 		}

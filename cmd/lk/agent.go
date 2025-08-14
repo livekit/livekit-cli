@@ -260,6 +260,30 @@ var (
 					DisableSliceFlagSeparator: true,
 					ArgsUsage:                 "[working-dir]",
 				},
+				{
+					Name:      "generate",
+					Usage:     "Generate Dockerfiles for agent deployment",
+					Action:    generateDockerfiles,
+					ArgsUsage: "<type> [working-dir]",
+					Flags: []cli.Flag{
+						&cli.BoolFlag{
+							Name:  "force",
+							Usage: "Overwrite existing files",
+						},
+						silentFlag,
+					},
+					Description: `Generate Docker-related files for agent deployment.
+
+Types:
+  dockerfiles  - Generate both Dockerfile and .dockerignore
+  dockerfile   - Generate only Dockerfile
+  dockerignore - Generate only .dockerignore
+
+Examples:
+  lk agent generate dockerfiles           # Generate both files
+  lk agent generate dockerfile --force    # Overwrite existing Dockerfile
+  lk agent generate dockerignore .        # Generate .dockerignore in current dir`,
+				},
 			},
 		},
 	}
@@ -1145,8 +1169,33 @@ func requireDockerfile(_ context.Context, cmd *cli.Command, workingDir string, s
 	}
 
 	if !dockerfileExists {
-		if err := agentfs.CreateDockerfile(workingDir, settingsMap, cmd.Bool("silent")); err != nil {
+		silent := cmd.Bool("silent")
+
+		// Prepare content once for both files
+		dockerfileContent, dockerignoreContent, err := agentfs.PrepareDockerfileContent(workingDir, settingsMap, silent)
+		if err != nil {
 			return err
+		}
+
+		// Generate both files (force=false to respect any existing files)
+		dockerfileResult := agentfs.GenerateDockerfile(workingDir, settingsMap, silent, false, dockerfileContent)
+		if dockerfileResult.Status == agentfs.GenerationStatusFailed {
+			return dockerfileResult.Error
+		}
+
+		dockerignoreResult := agentfs.GenerateDockerIgnore(workingDir, settingsMap, silent, false, dockerignoreContent)
+		if dockerignoreResult.Status == agentfs.GenerationStatusFailed {
+			return dockerignoreResult.Error
+		}
+
+		// Show success message if not silent
+		if !silent {
+			fmt.Printf("\n✔ Successfully generated Docker files:\n")
+			fmt.Printf("  %s - Container build instructions\n", util.Accented("Dockerfile"))
+			fmt.Printf("  %s - Files excluded from build context\n", util.Accented(".dockerignore"))
+			fmt.Printf("\nNext steps:\n")
+			fmt.Printf("  ► Review the %s and uncomment/update any needed packages\n", util.Accented("Dockerfile"))
+			fmt.Printf("  ► Build your agent: docker build -t my-agent .\n")
 		}
 	} else {
 		if !cmd.Bool("silent") {
@@ -1198,4 +1247,109 @@ func requireConfig(workingDir, tomlFilename string) (bool, error) {
 	var err error
 	lkConfig, exists, err = config.LoadTOMLFile(workingDir, tomlFilename)
 	return exists, err
+}
+
+func generateDockerfiles(ctx context.Context, cmd *cli.Command) error {
+	if cmd.NArg() < 1 {
+		return fmt.Errorf("type argument required: dockerfiles, dockerfile, or dockerignore")
+	}
+
+	generateType := cmd.Args().First()
+	if cmd.NArg() > 1 {
+		workingDir = cmd.Args().Get(1)
+	}
+
+	// Validate type
+	validTypes := []string{"dockerfiles", "dockerfile", "dockerignore"}
+	if !slices.Contains(validTypes, generateType) {
+		return fmt.Errorf("invalid type: %s. Must be one of: %s", generateType, strings.Join(validTypes, ", "))
+	}
+
+	silent := cmd.Bool("silent")
+	force := cmd.Bool("force")
+
+	// Try to get client settings, but don't fail if unavailable
+	settingsMap := make(map[string]string)
+	if project != nil && agentsClient != nil {
+		settingsMap, _ = getClientSettings(ctx, silent)
+	}
+	// Provide defaults if no settings available, generating docker files shouldn't fail due to client settings
+	if len(settingsMap) == 0 {
+		settingsMap["python_entrypoint"] = "main.py"
+		settingsMap["node_entrypoint"] = "dist/agent.js"
+	}
+
+	// Track results
+	var dockerfileResult, dockerignoreResult agentfs.GenerationResult
+	generateDockerfile := generateType == "dockerfiles" || generateType == "dockerfile"
+	generateDockerignore := generateType == "dockerfiles" || generateType == "dockerignore"
+
+	// Prepare the docker files contents once to avoid prompting user twice
+	preparedDockerfileContent, preparedDockerignoreContent, err := agentfs.PrepareDockerfileContent(workingDir, settingsMap, silent)
+	if err != nil {
+		// Both generations will fail with the same error
+		dockerfileResult = agentfs.GenerationResult{
+			Status:  agentfs.GenerationStatusFailed,
+			Error:   err,
+			Message: fmt.Sprintf("Failed to prepare Docker files: %v", err),
+		}
+		dockerignoreResult = dockerfileResult
+	}
+
+	// Generate Dockerfile if requested
+	if generateDockerfile {
+		if dockerfileResult.Status != agentfs.GenerationStatusFailed {
+			dockerfileResult = agentfs.GenerateDockerfile(workingDir, settingsMap, silent, force, preparedDockerfileContent)
+		}
+		if !silent && dockerfileResult.Status != agentfs.GenerationStatusGenerated {
+			fmt.Printf("! %s\n", dockerfileResult.Message)
+		} else if !silent && dockerfileResult.Status == agentfs.GenerationStatusGenerated {
+			fmt.Printf("✔ %s\n", dockerfileResult.Message)
+		}
+	}
+
+	// Generate .dockerignore if requested
+	if generateDockerignore {
+		if dockerignoreResult.Status != agentfs.GenerationStatusFailed {
+			dockerignoreResult = agentfs.GenerateDockerIgnore(workingDir, settingsMap, silent, force, preparedDockerignoreContent)
+		}
+		if !silent && dockerignoreResult.Status != agentfs.GenerationStatusGenerated {
+			fmt.Printf("! %s\n", dockerignoreResult.Message)
+		} else if !silent && dockerignoreResult.Status == agentfs.GenerationStatusGenerated {
+			fmt.Printf("✔ %s\n", dockerignoreResult.Message)
+		}
+	}
+
+	// Summary output for dockerfiles generation
+	if !silent && generateType == "dockerfiles" {
+		fmt.Println()
+
+		bothGenerated := dockerfileResult.Status == agentfs.GenerationStatusGenerated &&
+			dockerignoreResult.Status == agentfs.GenerationStatusGenerated
+		bothSkipped := dockerfileResult.Status == agentfs.GenerationStatusSkipped &&
+			dockerignoreResult.Status == agentfs.GenerationStatusSkipped
+
+		if bothGenerated {
+			fmt.Println("✔ Successfully generated both Docker files")
+			fmt.Printf("\nNext steps:\n")
+			fmt.Printf("  ► Review the %s and uncomment/update any needed packages\n", util.Accented("Dockerfile"))
+			fmt.Printf("  ► Build your agent: docker build -t my-agent .\n")
+		} else if bothSkipped {
+			fmt.Println("! Both files already exist. Use --force to overwrite")
+		} else if dockerfileResult.Status == agentfs.GenerationStatusGenerated {
+			fmt.Println("✔ Generated Dockerfile (.dockerignore already exists)")
+		} else if dockerignoreResult.Status == agentfs.GenerationStatusGenerated {
+			fmt.Println("✔ Generated .dockerignore (Dockerfile already exists)")
+		}
+	}
+
+	// Return first error if any failures occurred
+	if dockerfileResult.Status == agentfs.GenerationStatusFailed {
+		return dockerfileResult.Error
+	}
+	if dockerignoreResult.Status == agentfs.GenerationStatusFailed {
+		return dockerignoreResult.Error
+	}
+
+	return nil
 }
