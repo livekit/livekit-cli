@@ -425,6 +425,24 @@ func TestParsePythonPackageVersion(t *testing.T) {
 			expectedOutput: "",
 			expectedFound:  false,
 		},
+		{
+			name:           "Git URL format",
+			input:          "livekit-agents[openai,turn-detector,silero,cartesia,deepgram] @ git+https://github.com/livekit/agents.git@load-debug#subdirectory=livekit-agents",
+			expectedOutput: "latest",
+			expectedFound:  true,
+		},
+		{
+			name:           "Git URL format with extras",
+			input:          "livekit-agents[voice] @ git+https://github.com/livekit/agents.git@main",
+			expectedOutput: "latest",
+			expectedFound:  true,
+		},
+		{
+			name:           "Git URL format simple",
+			input:          "livekit-agents @ git+https://github.com/livekit/agents.git",
+			expectedOutput: "latest",
+			expectedFound:  true,
+		},
 	}
 
 	for _, tt := range tests {

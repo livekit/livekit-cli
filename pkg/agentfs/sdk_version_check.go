@@ -134,6 +134,12 @@ func checkPackageInFile(filePath string, projectType ProjectType, pythonMinVersi
 
 // parsePythonPackageVersion parses a Python package line and extracts the version
 func parsePythonPackageVersion(line string) (string, bool) {
+	// Git URLs don't have traditional versions, so we treat them as "latest"
+	gitPattern := regexp.MustCompile(`(?i)^livekit-agents(?:\[[^\]]+\])?\s*@\s*git\+`)
+	if gitPattern.MatchString(line) {
+		return "latest", true
+	}
+
 	// match with optional extras and version specifiers
 	pattern := regexp.MustCompile(`(?i)^livekit-agents(?:\[[^\]]+\])?\s*([=~><!]+)?\s*([^#]+)?`)
 	matches := pattern.FindStringSubmatch(line)

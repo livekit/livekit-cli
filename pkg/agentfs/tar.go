@@ -37,6 +37,7 @@ var (
 		".gitignore",
 		".git",
 		"node_modules",
+		".env",
 		".env.*",
 	}
 

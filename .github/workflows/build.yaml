@@ -46,3 +46,6 @@ jobs:
         with:
           version: "latest"
           install-go: false
+
+      - name: Run Go tests
+        run: go test -v ./...
