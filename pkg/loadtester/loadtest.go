@@ -179,7 +179,7 @@ func (t *LoadTest) Run(ctx context.Context) error {
 			formatBitrate(s.bytes, s.elapsed),
 			formatBitrate(s.bytes/int64(len(summaries)), s.elapsed),
 		)
-		summaryTable.Row("Total", fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, string(s.errCount))
+		summaryTable.Row("Total", fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, strconv.FormatInt(s.errCount, 10))
 	}
 	fmt.Println("\nSubscriber summaries:")
 	fmt.Println(summaryTable)

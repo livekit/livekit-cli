@@ -8,8 +8,10 @@ func TestLoadDockerFiles(t *testing.T) {
 	expectedFiles := []string{
 		"examples/node.Dockerfile",
 		"examples/node.dockerignore",
-		"examples/python.Dockerfile",
-		"examples/python.dockerignore",
+		"examples/python.pip.Dockerfile",
+		"examples/python.pip.dockerignore",
+		"examples/python.uv.Dockerfile",
+		"examples/python.uv.dockerignore",
 	}
 
 	for _, file := range expectedFiles {
