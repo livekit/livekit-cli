@@ -52,7 +52,7 @@ func TestDetectProjectType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			expected: ProjectTypePythonPip,
+			expected: ProjectTypePythonPoetry,
 		},
 		{
 			name: "Python Pipenv project with Pipfile.lock",
@@ -61,7 +61,7 @@ func TestDetectProjectType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			expected: ProjectTypePythonPip,
+			expected: ProjectTypePythonPipenv,
 		},
 		{
 			name: "Python PDM project with pdm.lock",
@@ -70,7 +70,7 @@ func TestDetectProjectType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			expected: ProjectTypePythonPip,
+			expected: ProjectTypePythonPDM,
 		},
 		{
 			name: "Python pip project with requirements.txt",
@@ -91,7 +91,7 @@ version = "0.1.0"`
 					t.Fatal(err)
 				}
 			},
-			expected: ProjectTypePythonPip,
+			expected: ProjectTypePythonPoetry,
 		},
 		{
 			name: "Python PDM project with pyproject.toml",
@@ -102,7 +102,7 @@ version = "2.0.0"`
 					t.Fatal(err)
 				}
 			},
-			expected: ProjectTypePythonPip,
+			expected: ProjectTypePythonPDM,
 		},
 		{
 			name: "Python Hatch project with pyproject.toml",
@@ -113,7 +113,7 @@ version = "1.0.0"`
 					t.Fatal(err)
 				}
 			},
-			expected: ProjectTypePythonPip,
+			expected: ProjectTypePythonHatch,
 		},
 		{
 			name: "Python UV project with tool.uv in pyproject.toml",
@@ -183,7 +183,7 @@ version = "0.1.0"`
 					t.Fatal(err)
 				}
 			},
-			expected: ProjectTypePythonPip,
+			expected: ProjectTypePythonPoetry,
 		},
 		{
 			name: "Unknown project type",
