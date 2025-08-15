@@ -1,46 +1,26 @@
-# This Dockerfile creates a production-ready container for a LiveKit agent using Poetry
 # syntax=docker/dockerfile:1
-#
-# === MULTI-STAGE BUILD OPTIMIZATION ===
-# For smaller production images, consider using a multi-stage build:
-# Stage 1: Build dependencies and compile packages
-# Stage 2: Copy only the compiled packages to a clean runtime image
-#
-# Example multi-stage build structure:
-# FROM python:3.11-slim AS builder
-# [install build tools, compile packages]
-# FROM python:3.11-slim AS runtime
-# COPY --from=builder /home/appuser/.local /home/appuser/.local
-# [runtime setup only]
-#
-# Benefits: 30-50% smaller final image size
-# Trade-offs: Longer build time, more complex debugging
-# Use when: Image size is critical (e.g., serverless, edge deployment)
+# For detailed documentation and guides, see:
+# https://github.com/livekit/livekit-cli/blob/main/pkg/agentfs/examples/README.md
+# For more help: https://docs.livekit.io/agents/
+# For help with building and deployment: https://docs.livekit.io/agents/ops/deployment/cloud/build
 
 ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION}-slim
 
-# Keeps Python from buffering stdout and stderr to avoid situations where
-# the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
-# Poetry-specific environment variables
-# POETRY_HOME: where Poetry itself is installed
-# POETRY_VIRTUALENVS_CREATE: disable virtualenv creation (use system python in container)
-# POETRY_NO_INTERACTION: disable interactive prompts
+# Disable virtualenv creation (container is already isolated)
 ENV POETRY_HOME=/opt/poetry \
     POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_INTERACTION=1 \
     POETRY_VERSION=1.8.3
 
-# Add Poetry to PATH
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-# Define the program entrypoint file where your agent is started.
+# Define the program entrypoint file where your agent is started
 ARG PROGRAM_MAIN="{{.ProgramMain}}"
 
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
+# Create non-privileged user
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -50,46 +30,7 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Install Poetry and build dependencies
-# curl is needed to download Poetry installer
-# Common system packages you might need (uncomment and modify as needed):
-#
-# === Core Build Tools ===
-# - gcc/g++: C/C++ compilers for building packages with native extensions
-# - python3-dev: Python development headers needed for compilation
-# - build-essential: Essential build tools (includes gcc, make, etc.)
-# - pkg-config: Tool for managing library compilation/linking flags
-#
-# === Audio Processing ===
-# For audio agents (pyaudio, soundfile, librosa):
-# - libasound2-dev: ALSA development headers
-# - libportaudio2: Cross-platform audio I/O library
-# - libsndfile1-dev: Library for reading/writing audio files
-# - ffmpeg: Audio/video processing (for format conversion)
-#
-# === Computer Vision ===
-# For image/video processing (opencv, pillow):
-# - libopencv-dev: OpenCV development headers
-# - libjpeg-dev: JPEG image format support
-# - libpng-dev: PNG image format support
-# - libwebp-dev: WebP image format support
-# - libtiff5-dev: TIFF image format support
-#
-# === Machine Learning ===
-# For ML/AI packages (scipy, numpy, scikit-learn):
-# - libblas-dev: Basic Linear Algebra Subprograms
-# - liblapack-dev: Linear Algebra Package
-# - libatlas-base-dev: Automatically Tuned Linear Algebra Software
-# - gfortran: Fortran compiler (needed for some numerical libraries)
-#
-# === Database & Networking ===
-# - libpq-dev: PostgreSQL development headers
-# - libmysqlclient-dev: MySQL development headers
-# - libssl-dev: SSL/TLS support for cryptographic packages
-# - libffi-dev: Foreign Function Interface library for cffi
-# - libcurl4-openssl-dev: HTTP client library
-#
-# Minimal setup with Poetry installation:
+# Install Poetry and system dependencies
 RUN apt-get update && \
     apt-get install -y \
     curl \
@@ -98,86 +39,29 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSL https://install.python-poetry.org | python3 - --version $POETRY_VERSION
 
-# Set the working directory to the user's home directory
-# This is where our application code will live
 WORKDIR /app
 
-# Copy poetry files first for better Docker layer caching
-# If dependencies don't change, Docker can reuse the poetry install layer
+# Copy dependency files
 COPY pyproject.toml poetry.lock* ./
 
-# Install Python dependencies as root
-# --no-root: don't install the project package itself yet
-# --no-dev: only install main dependencies, not dev dependencies
+# Install dependencies without installing the project itself
 RUN poetry install --no-root --no-dev
 
-# Copy all application files into the container
-# This includes source code, configuration files, etc.
-# (Excludes files specified in .dockerignore)
+# Copy application code
 COPY . .
 
-# Install the project itself (if it's a package)
-# This step is separate to leverage Docker caching
+# Install the project
 RUN poetry install --only-root
 
-# Change ownership of all app files to the non-privileged user
-# This ensures the application can read/write files as needed
+# Set ownership and switch user
 RUN chown -R appuser:appuser /app
-
-# Switch to the non-privileged user for all subsequent operations
-# This improves security by not running as root
 USER appuser
 
-# Create a cache directory for the user
-# This is used by pip and Python for caching packages and bytecode
+# Create cache directory for the user
 RUN mkdir -p /app/.cache
 
-# Pre-download any ML models or files the agent needs
-# This ensures the container is ready to run immediately without downloading
-# dependencies at runtime, which improves startup time and reliability
+# Pre-download models
 RUN python "$PROGRAM_MAIN" download-files
 
-# Run the application.
-# The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
-# We use the python from the virtual environment directly
+# Start the agent
 CMD ["python", "{{.ProgramMain}}", "start"]
-
-# === TROUBLESHOOTING POETRY-SPECIFIC ISSUES ===
-#
-# 1. "poetry.lock not found" warning:
-#    - Run `poetry lock` locally before building
-#    - Or use `poetry install --no-root` without lock file (less reproducible)
-#    - The wildcard in COPY poetry.lock* handles missing lock files
-#
-# 2. "Package not found" in Poetry:
-#    - Ensure package is in pyproject.toml [tool.poetry.dependencies]
-#    - Run `poetry add <package>` locally, then rebuild
-#    - Check that you're using compatible Python version
-#
-# 3. Virtual environment issues:
-#    - POETRY_VIRTUALENVS_IN_PROJECT=true creates .venv in project
-#    - Ensure PATH includes /home/appuser/.venv/bin
-#    - Use `poetry run python` if direct python doesn't work
-#
-# 4. Slow Poetry operations:
-#    - Consider using pip export: poetry export -f requirements.txt > requirements.txt
-#    - Then use pip install for faster builds
-#    - Or increase Poetry installer parallel workers
-#
-# 5. Development dependencies included:
-#    - Use --only main flag to exclude dev dependencies
-#    - Or use --without dev,test to exclude specific groups
-#    - Check [tool.poetry.group.dev.dependencies] in pyproject.toml
-#
-# 6. Build cache not working:
-#    - Ensure pyproject.toml and poetry.lock are copied before other files
-#    - Don't use COPY . . before installing dependencies
-#    - Order Dockerfile commands from least to most frequently changed
-#
-# 7. Permission issues with Poetry:
-#    - Install Poetry as root before switching to appuser
-#    - Ensure .venv directory is owned by appuser
-#    - Set POETRY_CACHE_DIR to user-writable location if needed
-#
-# For more help: https://python-poetry.org/docs/
-# For build options and troubleshooting: https://docs.livekit.io/agents/ops/deployment/cloud/build
