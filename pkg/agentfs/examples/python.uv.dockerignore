@@ -1,20 +1,58 @@
-*.egg-info
-__pycache__
-.pytest_cache
-.ruff_cache
-.env
-.env.*
-.DS_Store
-.idea
-.venv
-.vscode
-*.pyc
+# Python bytecode and artifacts
+__pycache__/
+*.py[cod]
 *.pyo
 *.pyd
-.git
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Caches and test output
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+coverage/
+htmlcov/
+
+# Environment variables
+.env
+.env.*
+
+# VCS, editor, OS
+.git/
 .gitignore
+.gitattributes
+.github/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Documentation
 README.md
 LICENSE
-.github 
+docs/
+
+# Tests
+test/
 tests/
+eval/
+evals/
+
+# Logs and temp files
+*.log
+*.gz
+*.tgz
+.tmp
+
+# Docker files
+Dockerfile*
+.dockerignore
+docker-compose*.yml
 

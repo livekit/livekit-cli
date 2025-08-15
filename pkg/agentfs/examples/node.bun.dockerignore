@@ -1,0 +1,70 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+bun-debug.log*
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+coverage/
+.nyc_output/
+
+# Environment variables
+.env
+.env.*
+
+# VCS, editor, OS
+.git/
+.gitignore
+.gitattributes
+.github/
+.gitlab-ci.yml
+.travis.yml
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+LICENSE
+docs/
+
+# Tests
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker files
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Package manager specific - Bun
+.bun/
+.bun-cache/
+bun.lockb.log
+
+# Logs and temporary files
+logs/
+*.log
+.tmp/
+.temp/
+tmp/
+temp/

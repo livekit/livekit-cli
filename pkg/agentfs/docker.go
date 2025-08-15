@@ -34,6 +34,20 @@ import (
 //go:embed examples/*
 var fs embed.FS
 
+type GenerationStatus int
+
+const (
+	GenerationStatusGenerated GenerationStatus = iota
+	GenerationStatusSkipped                    // File exists and no force flag
+	GenerationStatusFailed                     // Error during generation
+)
+
+type GenerationResult struct {
+	Status  GenerationStatus
+	Message string
+	Error   error
+}
+
 func HasDockerfile(dir string) (bool, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -48,95 +62,590 @@ func HasDockerfile(dir string) (bool, error) {
 	return false, nil
 }
 
-func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[string]string) error {
+// Returns dockerfile content, dockerignore content, and error
+func PrepareDockerfileContent(dir string, settingsMap map[string]string, silent bool) ([]byte, []byte, error) {
 	if len(settingsMap) == 0 {
-		return fmt.Errorf("unable to fetch client settings from server, please try again later")
+		return nil, nil, fmt.Errorf("unable to fetch client settings from server, please try again later")
+	}
+
+	projectType, err := DetectProjectType(dir)
+	if err != nil {
+		return nil, nil, fmt.Errorf(`× Unable to determine project type
+
+Supported project types:
+  • Python: pip, uv, pdm, hatch, poetry, pipenv
+  • Node.js: npm, pnpm, yarn, yarn-berry, bun
+
+Please ensure your project has the appropriate project files (node projects may
+need to be buit first), or create a Dockerfile manually in the current directory`)
+	}
+
+	if !silent {
+		fmt.Printf("Creating Dockerfiles...\n")
+
+		// Provide user feedback about detected project type
+		switch projectType {
+		case ProjectTypeNodeNPM:
+			fmt.Printf("✔ Detected Node.js project with npm package manager\n")
+			fmt.Printf("  Using template [%s] with npm support\n", util.Accented("node.npm"))
+		case ProjectTypeNodePNPM:
+			fmt.Printf("✔ Detected Node.js project with pnpm package manager\n")
+			fmt.Printf("  Using template [%s] for efficient dependency management\n", util.Accented("node.pnpm"))
+		case ProjectTypeNodeYarn:
+			fmt.Printf("✔ Detected Node.js project with Yarn Classic package manager\n")
+			fmt.Printf("  Using template [%s] with Yarn v1 support\n", util.Accented("node.yarn"))
+		case ProjectTypeNodeYarnBerry:
+			fmt.Printf("✔ Detected Node.js project with Yarn Berry package manager\n")
+			fmt.Printf("  Using template [%s] with Yarn v2+ and PnP support\n", util.Accented("node.yarn-berry"))
+		case ProjectTypeNodeBun:
+			fmt.Printf("✔ Detected Node.js project with Bun runtime and package manager\n")
+			fmt.Printf("  Using template [%s] for ultra-fast performance\n", util.Accented("node.bun"))
+		case ProjectTypePythonUV:
+			fmt.Printf("✔ Detected Python project with UV package manager\n")
+			fmt.Printf("  Using template [%s] for faster builds\n", util.Accented("python.uv"))
+		case ProjectTypePythonPoetry:
+			fmt.Printf("✔ Detected Python project with Poetry package manager\n")
+			fmt.Printf("  Using template [%s] with dependency groups support\n", util.Accented("python.poetry"))
+		case ProjectTypePythonHatch:
+			fmt.Printf("✔ Detected Python project with Hatch package manager\n")
+			fmt.Printf("  Using template [%s] with isolated environments\n", util.Accented("python.hatch"))
+		case ProjectTypePythonPDM:
+			fmt.Printf("✔ Detected Python project with PDM package manager\n")
+			fmt.Printf("  Using template [%s] with lock file support\n", util.Accented("python.pdm"))
+		case ProjectTypePythonPipenv:
+			fmt.Printf("✔ Detected Python project with Pipenv package manager\n")
+			fmt.Printf("  Using template [%s] with virtual environment isolation\n", util.Accented("python.pipenv"))
+		case ProjectTypePythonPip:
+			fmt.Printf("✔ Detected Python project with pip package manager\n")
+			fmt.Printf("  Using template [%s]\n", util.Accented("python.pip"))
+		}
+	}
+
+	if projectType == ProjectTypePythonUV {
+		// Validate UV project setup
+		validateUVProject(dir, silent)
+	} else if projectType == ProjectTypePythonPoetry {
+		// Validate Poetry project setup
+		validatePoetryProject(dir, silent)
+	} else if projectType == ProjectTypePythonHatch {
+		// Validate Hatch project setup
+		validateHatchProject(dir, silent)
+	} else if projectType == ProjectTypePythonPDM {
+		// Validate PDM project setup
+		validatePDMProject(dir, silent)
+	} else if projectType == ProjectTypePythonPipenv {
+		// Validate Pipenv project setup
+		validatePipenvProject(dir, silent)
+	} else if projectType == ProjectTypeNodeNPM {
+		// Validate npm project setup
+		validateNPMProject(dir, silent)
+	} else if projectType == ProjectTypeNodePNPM {
+		// Validate pnpm project setup
+		validatePNPMProject(dir, silent)
+	} else if projectType == ProjectTypeNodeYarn {
+		// Validate yarn project setup
+		validateYarnProject(dir, silent)
+	} else if projectType == ProjectTypeNodeYarnBerry {
+		// Validate yarn berry project setup
+		validateYarnBerryProject(dir, silent)
+	} else if projectType == ProjectTypeNodeBun {
+		// Validate bun project setup
+		validateBunProject(dir, silent)
 	}
 
 	var dockerfileContent []byte
 	var dockerIgnoreContent []byte
-	var err error
 
 	dockerfileContent, err = fs.ReadFile("examples/" + string(projectType) + ".Dockerfile")
 	if err != nil {
-		return err
+		return nil, nil, fmt.Errorf("failed to load Dockerfile template '%s': %w", string(projectType), err)
 	}
 
 	dockerIgnoreContent, err = fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
 	if err != nil {
-		return err
+		return nil, nil, fmt.Errorf("failed to load .dockerignore template for '%s': %w", string(projectType), err)
 	}
 
-	// TODO: (@rektdeckard) support Node entrypoint validation
+	// Validate entrypoint for both Python and Node.js projects
 	if projectType.IsPython() {
-		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap)
+		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap, silent)
 		if err != nil {
-			return err
+			return nil, nil, fmt.Errorf("failed to validate Python entry point: %w", err)
+		}
+	} else if projectType.IsNode() {
+		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap, silent)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to validate Node.js entry point: %w", err)
 		}
 	}
 
-	err = os.WriteFile(filepath.Join(dir, "Dockerfile"), dockerfileContent, 0644)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return dockerfileContent, dockerIgnoreContent, nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string) ([]byte, error) {
-	valFile := func(fileName string) (string, error) {
-		// NOTE: we need to recurse to find entrypoints which may exist in src/ or some other directory.
-		// This could be a lot of files, so we omit any files in .dockerignore, since they cannot be
-		// used as entrypoints.
+// GenerateDockerfile generates only the Dockerfile with status reporting
+// If preparedDockerfileContent is provided (non-nil), it will be used instead of calling PrepareDockerfileContent
+func GenerateDockerfile(dir string, settingsMap map[string]string, silent bool, force bool, preparedDockerfileContent []byte) GenerationResult {
+	dockerfilePath := filepath.Join(dir, "Dockerfile")
 
+	// Check if file exists
+	if !force {
+		if _, err := os.Stat(dockerfilePath); err == nil {
+			return GenerationResult{
+				Status:  GenerationStatusSkipped,
+				Message: "Dockerfile already exists. Use --force to overwrite",
+			}
+		}
+	}
+
+	// Get content - use prepared content if provided, otherwise generate it
+	var dockerfileContent []byte
+	if preparedDockerfileContent != nil {
+		dockerfileContent = preparedDockerfileContent
+	} else {
+		var err error
+		dockerfileContent, _, err = PrepareDockerfileContent(dir, settingsMap, silent)
+		if err != nil {
+			return GenerationResult{
+				Status:  GenerationStatusFailed,
+				Error:   err,
+				Message: fmt.Sprintf("Failed to prepare Dockerfile: %v", err),
+			}
+		}
+	}
+
+	// Write file
+	err := os.WriteFile(dockerfilePath, dockerfileContent, 0644)
+	if err != nil {
+		return GenerationResult{
+			Status:  GenerationStatusFailed,
+			Error:   fmt.Errorf("failed to write Dockerfile: %w", err),
+			Message: fmt.Sprintf("Failed to write Dockerfile: %v", err),
+		}
+	}
+
+	message := "Generated Dockerfile"
+	if force {
+		if _, err := os.Stat(dockerfilePath); err == nil {
+			message = "Overwrote existing Dockerfile"
+		}
+	}
+
+	return GenerationResult{
+		Status:  GenerationStatusGenerated,
+		Message: message,
+	}
+}
+
+// GenerateDockerIgnore generates only the .dockerignore with status reporting
+// If preparedDockerignoreContent is provided (non-nil), it will be used instead of calling PrepareDockerfileContent
+func GenerateDockerIgnore(dir string, settingsMap map[string]string, silent bool, force bool, preparedDockerignoreContent []byte) GenerationResult {
+	dockerignorePath := filepath.Join(dir, ".dockerignore")
+
+	// Check if file exists
+	if !force {
+		if _, err := os.Stat(dockerignorePath); err == nil {
+			return GenerationResult{
+				Status:  GenerationStatusSkipped,
+				Message: ".dockerignore already exists. Use --force to overwrite",
+			}
+		}
+	}
+
+	// Get content - use prepared content if provided, otherwise generate it
+	var dockerignoreContent []byte
+	if preparedDockerignoreContent != nil {
+		dockerignoreContent = preparedDockerignoreContent
+	} else {
+		var err error
+		_, dockerignoreContent, err = PrepareDockerfileContent(dir, settingsMap, silent)
+		if err != nil {
+			return GenerationResult{
+				Status:  GenerationStatusFailed,
+				Error:   err,
+				Message: fmt.Sprintf("Failed to prepare .dockerignore: %v", err),
+			}
+		}
+	}
+
+	// Write file
+	err := os.WriteFile(dockerignorePath, dockerignoreContent, 0644)
+	if err != nil {
+		return GenerationResult{
+			Status:  GenerationStatusFailed,
+			Error:   fmt.Errorf("failed to write .dockerignore: %w", err),
+			Message: fmt.Sprintf("Failed to write .dockerignore: %v", err),
+		}
+	}
+
+	message := "Generated .dockerignore"
+	if force {
+		if _, err := os.Stat(dockerignorePath); err == nil {
+			message = "Overwrote existing .dockerignore"
+		}
+	}
+
+	return GenerationResult{
+		Status:  GenerationStatusGenerated,
+		Message: message,
+	}
+}
+
+func validateUVProject(dir string, silent bool) {
+	uvLockPath := filepath.Join(dir, "uv.lock")
+	if _, err := os.Stat(uvLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: UV project detected but %s file not found\n", util.Accented("uv.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("uv lock"), util.Accented("uv.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validatePoetryProject(dir string, silent bool) {
+	poetryLockPath := filepath.Join(dir, "poetry.lock")
+	if _, err := os.Stat(poetryLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Poetry project detected but %s file not found\n", util.Accented("poetry.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("poetry lock"), util.Accented("poetry.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateHatchProject(dir string, silent bool) {
+	// Hatch doesn't use lock files by default, but we should check for pyproject.toml
+	pyprojectPath := filepath.Join(dir, "pyproject.toml")
+	if _, err := os.Stat(pyprojectPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Hatch project detected but %s file not found\n", util.Accented("pyproject.toml"))
+			fmt.Printf("  Hatch requires a valid %s with project metadata\n", util.Accented("pyproject.toml"))
+			fmt.Printf("  Consider running %s to create a proper project structure\n\n", util.Accented("hatch new"))
+		}
+	}
+}
+
+func validatePDMProject(dir string, silent bool) {
+	pdmLockPath := filepath.Join(dir, "pdm.lock")
+	if _, err := os.Stat(pdmLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: PDM project detected but %s file not found\n", util.Accented("pdm.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("pdm lock"), util.Accented("pdm.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validatePipenvProject(dir string, silent bool) {
+	pipfileLockPath := filepath.Join(dir, "Pipfile.lock")
+	if _, err := os.Stat(pipfileLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Pipenv project detected but %s file not found\n", util.Accented("Pipfile.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("pipenv lock"), util.Accented("Pipfile.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateNPMProject(dir string, silent bool) {
+	packageLockPath := filepath.Join(dir, "package-lock.json")
+	if _, err := os.Stat(packageLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: npm project detected but %s file not found\n", util.Accented("package-lock.json"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("npm install"), util.Accented("package-lock.json"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validatePNPMProject(dir string, silent bool) {
+	pnpmLockPath := filepath.Join(dir, "pnpm-lock.yaml")
+	if _, err := os.Stat(pnpmLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: pnpm project detected but %s file not found\n", util.Accented("pnpm-lock.yaml"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("pnpm install"), util.Accented("pnpm-lock.yaml"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateYarnProject(dir string, silent bool) {
+	yarnLockPath := filepath.Join(dir, "yarn.lock")
+	if _, err := os.Stat(yarnLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Yarn project detected but %s file not found\n", util.Accented("yarn.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("yarn install"), util.Accented("yarn.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateYarnBerryProject(dir string, silent bool) {
+	yarnLockPath := filepath.Join(dir, "yarn.lock")
+	yarnrcPath := filepath.Join(dir, ".yarnrc.yml")
+
+	if _, err := os.Stat(yarnLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Yarn Berry project detected but %s file not found\n", util.Accented("yarn.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("yarn install"), util.Accented("yarn.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+
+	if _, err := os.Stat(yarnrcPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Yarn Berry project detected but %s file not found\n", util.Accented(".yarnrc.yml"))
+			fmt.Printf("  This file contains Yarn Berry configuration and is required for proper builds\n")
+			fmt.Printf("  Consider running %s to set up Yarn Berry\n\n", util.Accented("yarn set version berry"))
+		}
+	}
+}
+
+func validateBunProject(dir string, silent bool) {
+	bunLockPath := filepath.Join(dir, "bun.lock")
+	if _, err := os.Stat(bunLockPath); err != nil {
+		if !silent {
+			fmt.Printf("! Warning: Bun project detected but %s file not found\n", util.Accented("bun.lock"))
+			fmt.Printf("  Consider running %s to generate %s for reproducible builds\n", util.Accented("bun install"), util.Accented("bun.lock"))
+			fmt.Printf("  This ensures consistent dependency versions across environments\n\n")
+		}
+	}
+}
+
+func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string, silent bool) ([]byte, error) {
+	valFile := func(fileName string) (string, error) {
+		// Parse dockerignore patterns to filter out files that won't be in build context
 		reader := bytes.NewReader(dockerignoreContent)
 		patterns, err := ignorefile.ReadAll(reader)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to parse .dockerignore: %w", err)
 		}
 		matcher, err := patternmatcher.New(patterns)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("failed to create pattern matcher: %w", err)
 		}
 
-		var fileList []string
+		// For Node.js projects, we need to check build output directories even if dockerignore excludes them
+		// because these directories will be created during the Docker build
+		allowedPaths := make(map[string]bool)
+		if projectType.IsNode() {
+			// Try to detect the output directory from tsconfig.json or use defaults per package manager
+			// Default TypeScript output directories by convention
+			switch projectType {
+			case ProjectTypeNodeNPM, ProjectTypeNodePNPM:
+				// npm and pnpm typically use 'dist' for TypeScript builds
+				allowedPaths["dist"] = true
+				allowedPaths["build"] = true
+			case ProjectTypeNodeYarn, ProjectTypeNodeYarnBerry:
+				// Yarn projects often use 'dist' or 'lib'
+				allowedPaths["dist"] = true
+				allowedPaths["lib"] = true
+			case ProjectTypeNodeBun:
+				// Bun can use 'dist' or 'out'
+				allowedPaths["dist"] = true
+				allowedPaths["out"] = true
+			}
+
+			// TODO: Parse tsconfig.json "outDir" if it exists to get the actual output directory
+			// For now, we're using common conventions
+		}
+
+		// Recursively find all relevant files, respecting dockerignore (with exceptions)
+		fileMap := make(map[string]bool)
 		if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
-				return nil
-			} else if err != nil {
-				return err
+
+			// Check if this path should be allowed regardless of dockerignore
+			relPath, _ := filepath.Rel(dir, path)
+			shouldAllow := false
+			for allowedDir := range allowedPaths {
+				if strings.HasPrefix(relPath, allowedDir+string(filepath.Separator)) || relPath == allowedDir {
+					shouldAllow = true
+					break
+				}
 			}
+
+			// Skip files that match .dockerignore patterns (unless explicitly allowed)
+			if !shouldAllow {
+				if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
+					return nil
+				} else if err != nil {
+					return err
+				}
+			}
+
+			// Only include files with the correct extension
 			if !d.IsDir() && strings.HasSuffix(d.Name(), projectType.FileExt()) {
-				fileList = append(fileList, path)
+				// Convert to relative path from directory
+				relPath, err := filepath.Rel(dir, path)
+				if err != nil {
+					return err
+				}
+				fileMap[relPath] = true
 			}
 			return nil
 		}); err != nil {
 			return "", fmt.Errorf("error walking directory %s: %w", dir, err)
 		}
 
-		if slices.Contains(fileList, fileName) {
+		// Check if the specified file exists
+		if _, exists := fileMap[fileName]; exists {
 			return fileName, nil
 		}
 
-		// If no matching files found, return early
-		if len(fileList) == 0 {
+		// Smart entry point discovery with prioritization
+		var candidates []string
+		var priorityOrder []string
+
+		if projectType.IsPython() {
+			// Common Python entry point patterns in order of preference
+			priorityDirs := []string{
+				"",
+				"src",
+			}
+			priorityFiles := []string{
+				"agent.py",
+				"main.py",
+				"app.py",
+			}
+
+			// search the for the files in priority order in each of the directories in priority order
+			for _, file := range priorityFiles {
+				for _, dir := range priorityDirs {
+					if dir != "" {
+						dir = dir + "/"
+					}
+					priorityOrder = append(priorityOrder, fmt.Sprintf("%s%s", dir, file))
+				}
+			}
+		} else if projectType.IsNode() {
+			// Common Node.js entry point patterns
+			priorityDirs := []string{
+				"dist",
+				"",
+				"src",
+			}
+			priorityFiles := []string{
+				"agent.js",
+				"index.js",
+				"main.js",
+				"app.js",
+			}
+			// search through each directory in order for .js files per the priority order
+			for _, dir := range priorityDirs {
+				for _, file := range priorityFiles {
+					if dir != "" {
+						dir = dir + "/"
+					}
+					priorityOrder = append(priorityOrder, fmt.Sprintf("%s%s.js", dir, file))
+				}
+			}
+		}
+
+		// First, check priority patterns that exist
+		for _, pattern := range priorityOrder {
+			if _, exists := fileMap[pattern]; exists {
+				candidates = append(candidates, pattern)
+			}
+		}
+
+		// Then add any other matching files not already in candidates
+		for fileName := range fileMap {
+			if !slices.Contains(candidates, fileName) {
+				candidates = append(candidates, fileName)
+			}
+		}
+
+		// If we have a single clear choice, use it
+		if len(candidates) == 1 {
+			return candidates[0], nil
+		}
+
+		// If no matching files found, check for TypeScript files and provide helpful message
+		if len(candidates) == 0 {
+			// For Node.js projects, check if there are TypeScript files
+			if projectType.IsNode() {
+				hasTSFiles := false
+				for fileName := range fileMap {
+					// Check if any .ts files exist (but not .d.ts)
+					if strings.HasSuffix(fileName, ".ts") && !strings.HasSuffix(fileName, ".d.ts") {
+						hasTSFiles = true
+						break
+					}
+				}
+
+				if hasTSFiles {
+					// Check specifically for common TypeScript source files
+					tsFiles := []string{"agent.ts", "index.ts", "main.ts", "app.ts", "src/agent.ts", "src/index.ts", "src/main.ts", "src/app.ts"}
+					foundTS := []string{}
+					for _, tsFile := range tsFiles {
+						if info, err := os.Stat(filepath.Join(dir, tsFile)); err == nil && !info.IsDir() {
+							foundTS = append(foundTS, tsFile)
+						}
+					}
+
+					if len(foundTS) > 0 {
+						displayCount := 3
+						if len(foundTS) < displayCount {
+							displayCount = len(foundTS)
+						}
+						fmt.Printf("\nTypeScript files detected (%s) but no compiled JavaScript files found.\n", strings.Join(foundTS[:displayCount], ", "))
+						fmt.Printf("Please build your project first using: %s\n\n", util.Accented("npm run build"))
+						return "", fmt.Errorf("no compiled JavaScript files found - run build command first")
+					}
+				}
+			}
 			return "", nil
 		}
 
+		// Create enhanced options with descriptions
+		var selectOptions []huh.Option[string]
+		for _, option := range candidates {
+			var description string
+			switch {
+			case strings.Contains(option, "agent."):
+				description = fmt.Sprintf("%s (LiveKit agent)", option)
+			case strings.Contains(option, "src/"):
+				description = fmt.Sprintf("%s (common src/ layout)", option)
+			case strings.Contains(option, "main."):
+				description = fmt.Sprintf("%s (common main entry point)", option)
+			case strings.Contains(option, "app."):
+				description = fmt.Sprintf("%s (app entry point)", option)
+			case strings.Contains(option, "__main__.py"):
+				description = fmt.Sprintf("%s (Python module entry)", option)
+			default:
+				description = option
+			}
+
+			selectOptions = append(selectOptions, huh.Option[string]{
+				Key:   description,
+				Value: option,
+			})
+		}
+
+		// Set the first (highest priority) option as default
 		var selected string
+		if len(candidates) > 0 {
+			selected = candidates[0]
+		}
+
+		// If silent mode, automatically use the top choice
+		if silent {
+			return selected, nil
+		}
+
+		title := fmt.Sprintf("Multiple %s files found. Select entrypoint:", projectType.Lang())
+		if len(candidates) > 5 {
+			title = fmt.Sprintf("Found %d %s files. Select entrypoint:", len(candidates), projectType.Lang())
+		}
+
 		form := huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
-					Title(fmt.Sprintf("Select %s file to use as entrypoint", projectType.Lang())).
-					Options(huh.NewOptions(fileList...)...).
+					Title(title).
+					Description("The selected file will be used as the main entry point for your agent").
+					Options(selectOptions...).
 					Value(&selected).
 					WithTheme(util.Theme),
 			),
@@ -149,14 +658,35 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		return selected, nil
 	}
 
-	if err := validateSettingsMap(settingsMap, []string{"python_entrypoint"}); err != nil {
+	// Determine which entrypoint key to use based on project type
+	var entrypointKey string
+	var defaultEntrypoint string
+
+	if projectType.IsPython() {
+		entrypointKey = "python_entrypoint"
+		defaultEntrypoint = settingsMap[entrypointKey]
+		if defaultEntrypoint == "" {
+			defaultEntrypoint = "main.py"
+		}
+	} else if projectType.IsNode() {
+		entrypointKey = "node_entrypoint"
+		defaultEntrypoint = settingsMap[entrypointKey]
+		if defaultEntrypoint == "" {
+			defaultEntrypoint = "dist/agent.js"
+		}
+	}
+
+	newEntrypoint, err := valFile(defaultEntrypoint)
+	if err != nil {
 		return nil, err
 	}
 
-	pythonEntrypoint := settingsMap["python_entrypoint"]
-	newEntrypoint, err := valFile(pythonEntrypoint)
-	if err != nil {
-		return nil, err
+	// Check if entrypoint is empty and provide helpful error message
+	if newEntrypoint == "" {
+		if projectType.IsNode() {
+			return nil, fmt.Errorf("failed to detect entrypoint script - no JavaScript files found. If using TypeScript, run 'npm run build' (or equivalent) first")
+		}
+		return nil, fmt.Errorf("failed to detect entrypoint script - no %s files found in the project", projectType.FileExt())
 	}
 
 	tpl := template.Must(template.New("Dockerfile").Parse(string(dockerfileContent)))

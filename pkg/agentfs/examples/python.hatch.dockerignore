@@ -19,6 +19,9 @@ env/
 .mypy_cache/
 coverage/
 htmlcov/
+.coverage
+.tox/
+.nox/
 
 # Environment variables
 .env
@@ -56,3 +59,5 @@ Dockerfile*
 .dockerignore
 docker-compose*.yml
 
+# Hatch specific
+.hatch/
