@@ -1186,6 +1186,10 @@ func getClientSettings(ctx context.Context, silent bool) (map[string]string, err
 		return nil, err
 	}
 
+	if clientSettingsResponse == nil {
+		return nil, fmt.Errorf("unable to contact server; please try again later")
+	}
+
 	settingsMap := make(map[string]string)
 	for _, setting := range clientSettingsResponse.Params {
 		settingsMap[setting.Name] = setting.Value
