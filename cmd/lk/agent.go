@@ -478,7 +478,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		if configExists && lkConfig.HasAgent() {
 			agentID = lkConfig.Agent.ID
 		} else {
-			agentID, err = selectAgent(ctx, cmd, false)
+			agentID, err = selectAgent(cmd, false)
 			if err != nil {
 				return err
 			}
@@ -1010,7 +1010,7 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 			}
 			agentID = lkConfig.Agent.ID
 		} else {
-			agentID, err = selectAgent(ctx, cmd, excludeEmptyVersion)
+			agentID, err = selectAgent(cmd, excludeEmptyVersion)
 			if err != nil {
 				return "", err
 			}
@@ -1027,11 +1027,10 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 	return agentID, nil
 }
 
-func selectAgent(ctx context.Context, _ *cli.Command, excludeEmptyVersion bool) (string, error) {
+func selectAgent(_ *cli.Command, excludeEmptyVersion bool) (string, error) {
 	var agents *lkproto.ListAgentsResponse
-	var err error
 
-	err = util.Await("No agent ID provided, selecting from available agents...", func(ctx context.Context) error {
+	err := util.Await("No agent ID provided, selecting from available agents...", func(ctx context.Context) error {
 		var clientErr error
 		agents, clientErr = agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{})
 		return clientErr
@@ -1143,9 +1142,7 @@ func requireDockerfile(_ context.Context, cmd *cli.Command, workingDir string, p
 			err := util.Await(
 				"Creating Dockerfile...",
 				func(ctx context.Context) error {
-					var clientErr error
-					clientErr = agentfs.CreateDockerfile(workingDir, projectType, settingsMap)
-					return clientErr
+					return agentfs.CreateDockerfile(workingDir, projectType, settingsMap)
 				},
 			)
 			if err != nil {
