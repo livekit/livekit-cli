@@ -21,11 +21,12 @@ import (
 )
 
 // Call an action and show a spinner while waiting for it to finish.
-func Await(title string, action func(ctx context.Context) error) error {
+func Await(title string, ctx context.Context, action func(ctx context.Context) error) error {
 	return spinner.New().
 		Title(" " + title).
 		ActionWithErr(action).
 		Type(spinner.Pulse).
 		Style(Theme.Focused.Title).
+		Context(ctx).
 		Run()
 }

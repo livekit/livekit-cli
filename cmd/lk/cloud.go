@@ -302,6 +302,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	var ak *ClaimAccessKeyResponse
 	err = util.Await(
 		"Awaiting confirmation...",
+		ctx,
 		func(ctx context.Context) error {
 			var pollErr error
 			ak, pollErr = pollClaim(ctx, cmd)

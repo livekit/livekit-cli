@@ -478,7 +478,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		if configExists && lkConfig.HasAgent() {
 			agentID = lkConfig.Agent.ID
 		} else {
-			agentID, err = selectAgent(cmd, false)
+			agentID, err = selectAgent(ctx, cmd, false)
 			if err != nil {
 				return err
 			}
@@ -704,7 +704,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var resp *lkproto.UpdateAgentResponse
-	err = util.Await("Updating agent ["+util.Accented(lkConfig.Agent.ID)+"]", func(ctx context.Context) error {
+	err = util.Await("Updating agent ["+util.Accented(lkConfig.Agent.ID)+"]", ctx, func(ctx context.Context) error {
 		var clientErr error
 		resp, clientErr = agentsClient.UpdateAgent(ctx, req)
 		return clientErr
@@ -734,7 +734,7 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var resp *lkproto.RollbackAgentResponse
-	err = util.Await("Rolling back agent ["+util.Accented(agentID)+"]", func(ctx context.Context) error {
+	err = util.Await("Rolling back agent ["+util.Accented(agentID)+"]", ctx, func(ctx context.Context) error {
 		var clientErr error
 		resp, clientErr = agentsClient.RollbackAgent(ctx, &lkproto.RollbackAgentRequest{
 			AgentId: agentID,
@@ -796,6 +796,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 	var res *lkproto.DeleteAgentResponse
 	err = util.Await(
 		"Deleting agent ["+util.Accented(agentID)+"]",
+		ctx,
 		func(ctx context.Context) error {
 			var clientErr error
 			res, clientErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
@@ -1010,7 +1011,7 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 			}
 			agentID = lkConfig.Agent.ID
 		} else {
-			agentID, err = selectAgent(cmd, excludeEmptyVersion)
+			agentID, err = selectAgent(ctx, cmd, excludeEmptyVersion)
 			if err != nil {
 				return "", err
 			}
@@ -1027,10 +1028,10 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 	return agentID, nil
 }
 
-func selectAgent(_ *cli.Command, excludeEmptyVersion bool) (string, error) {
+func selectAgent(ctx context.Context, _ *cli.Command, excludeEmptyVersion bool) (string, error) {
 	var agents *lkproto.ListAgentsResponse
 
-	err := util.Await("No agent ID provided, selecting from available agents...", func(ctx context.Context) error {
+	err := util.Await("No agent ID provided, selecting from available agents...", ctx, func(ctx context.Context) error {
 		var clientErr error
 		agents, clientErr = agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{})
 		return clientErr
@@ -1131,7 +1132,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	return secretsSlice, nil
 }
 
-func requireDockerfile(_ context.Context, cmd *cli.Command, workingDir string, projectType agentfs.ProjectType, settingsMap map[string]string) error {
+func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string, projectType agentfs.ProjectType, settingsMap map[string]string) error {
 	dockerfileExists, err := agentfs.HasDockerfile(workingDir)
 	if err != nil {
 		return err
@@ -1141,6 +1142,7 @@ func requireDockerfile(_ context.Context, cmd *cli.Command, workingDir string, p
 		if !cmd.Bool("silent") {
 			err := util.Await(
 				"Creating Dockerfile...",
+				ctx,
 				func(ctx context.Context) error {
 					return agentfs.CreateDockerfile(workingDir, projectType, settingsMap)
 				},
@@ -1170,6 +1172,7 @@ func getClientSettings(ctx context.Context, silent bool) (map[string]string, err
 	if !silent {
 		err = util.Await(
 			"Loading client settings...",
+			ctx,
 			func(ctx context.Context) error {
 				clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
 				return err

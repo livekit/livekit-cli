@@ -386,7 +386,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	return cleanupTemplate(ctx, cmd, appName)
 }
 
-func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
+func cloneTemplate(ctx context.Context, cmd *cli.Command, url, appName string) error {
 	var stdout string
 	var stderr string
 
@@ -395,6 +395,7 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 
 	err := util.Await(
 		"Cloning template from "+url,
+		ctx,
 		func(ctx context.Context) error {
 			var cmdErr error
 			stdout, stderr, cmdErr = bootstrap.CloneTemplate(url, tempName)
@@ -516,6 +517,7 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 
 	err = util.Await(
 		"Installing...",
+		ctx,
 		func(ctx context.Context) error {
 			return install()
 		},
