@@ -4,11 +4,14 @@
 # For more help: https://docs.livekit.io/agents/
 # For help with building and deployment: https://docs.livekit.io/agents/ops/deployment/cloud/build
 
-# UV uses its own optimized base image
 ARG PYTHON_VERSION=3.11
-FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-bookworm-slim
+FROM python:${PYTHON_VERSION}-slim
 
 ENV PYTHONUNBUFFERED=1
+
+# Don't use venv (use system Python)
+ENV PDM_USE_VENV=false \
+    PDM_IGNORE_SAVED_PYTHON=true
 
 # Define the program entrypoint file where your agent is started
 ARG PROGRAM_MAIN="{{.ProgramMain}}"
@@ -23,32 +26,37 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Install system dependencies for Python packages with native extensions
+# Install PDM and system dependencies
 RUN apt-get update && \
     apt-get install -y \
     gcc \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir pdm
 
 WORKDIR /app
 
-# Copy dependency files with correct ownership
-COPY --chown=appuser:appuser pyproject.toml uv.lock* ./
+# Copy dependency files
+COPY pyproject.toml pdm.lock* ./
 
-# Copy all application files
-COPY --chown=appuser:appuser . .
+# Install production dependencies without the project
+RUN pdm install --prod --no-self
 
-# Ensure ownership
+# Copy application code
+COPY . .
+
+# Install the project
+RUN pdm install --prod --no-editable
+
+# Set ownership and switch user
 RUN chown -R appuser:appuser /app
-
-# Switch to non-privileged user BEFORE installing (UV requires this)
 USER appuser
 
-# Install dependencies with UV (creates venv as appuser)
-RUN uv sync --locked --python $PYTHON_VERSION
+# Create cache directory for the user
+RUN mkdir -p /app/.cache
 
 # Pre-download models
-RUN uv run "$PROGRAM_MAIN" download-files
+RUN pdm run python "$PROGRAM_MAIN" download-files
 
 # Start the agent
-CMD ["uv", "run", "{{.ProgramMain}}", "start"]
+CMD ["pdm", "run", "python", "{{.ProgramMain}}", "start"]

@@ -78,7 +78,7 @@ dependencies = ["livekit-agents>=1.2.5,<2"]`,
 		},
 		{
 			name:        "Python Pipfile with valid version",
-			projectType: ProjectTypePythonPip,
+			projectType: ProjectTypePythonPipenv,
 			setupFiles: map[string]string{
 				"Pipfile": `[packages]
 livekit-agents = ">=1.0.0"`,
@@ -87,7 +87,7 @@ livekit-agents = ">=1.0.0"`,
 		},
 		{
 			name:        "Node package.json with valid version",
-			projectType: ProjectTypeNode,
+			projectType: ProjectTypeNodeNPM,
 			setupFiles: map[string]string{
 				"package.json": `{
   "dependencies": {
@@ -99,7 +99,7 @@ livekit-agents = ">=1.0.0"`,
 		},
 		{
 			name:        "Node package.json with old version",
-			projectType: ProjectTypeNode,
+			projectType: ProjectTypeNodeNPM,
 			setupFiles: map[string]string{
 				"package.json": `{
   "dependencies": {
@@ -112,7 +112,7 @@ livekit-agents = ">=1.0.0"`,
 		},
 		{
 			name:        "Node package-lock.json with valid version",
-			projectType: ProjectTypeNode,
+			projectType: ProjectTypeNodeNPM,
 			setupFiles: map[string]string{
 				"package-lock.json": `{
   "dependencies": {
@@ -126,7 +126,7 @@ livekit-agents = ">=1.0.0"`,
 		},
 		{
 			name:        "Python poetry.lock with valid version",
-			projectType: ProjectTypePythonPip,
+			projectType: ProjectTypePythonPoetry,
 			setupFiles: map[string]string{
 				"poetry.lock": `[[package]]
 name = "livekit-agents"
@@ -287,9 +287,9 @@ func TestDetectProjectFiles(t *testing.T) {
 		projectType ProjectType
 		expected    int // expected number of files
 	}{
-		{ProjectTypePythonPip, 3}, // requirements.txt, pyproject.toml, poetry.lock
-		{ProjectTypePythonUV, 3},  // same as pip
-		{ProjectTypeNode, 2},      // package.json, package-lock.json
+		{ProjectTypePythonPip, 2}, // requirements.txt, pyproject.toml
+		{ProjectTypePythonUV, 2},  // pyproject.toml, requirements.txt (uv.lock not in test files)
+		{ProjectTypeNodeNPM, 2},   // package.json, package-lock.json
 	}
 
 	for _, tt := range tests {
@@ -348,7 +348,7 @@ func TestGetTargetPackageName(t *testing.T) {
 	}{
 		{ProjectTypePythonPip, "livekit-agents"},
 		{ProjectTypePythonUV, "livekit-agents"},
-		{ProjectTypeNode, "@livekit/agents"},
+		{ProjectTypeNodeNPM, "@livekit/agents"},
 		{ProjectTypeUnknown, ""},
 	}
 

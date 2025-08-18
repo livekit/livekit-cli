@@ -19,6 +19,9 @@ env/
 .mypy_cache/
 coverage/
 htmlcov/
+.coverage
+.tox/
+.nox/
 
 # Environment variables
 .env
@@ -56,3 +59,7 @@ Dockerfile*
 .dockerignore
 docker-compose*.yml
 
+# PDM specific
+# Don't ignore pdm.lock - it's needed for reproducible builds
+.pdm.toml
+.pdm-python

@@ -1,0 +1,80 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+
+# Environment variables
+.env
+.env.*
+
+# VCS, editor, OS
+.git/
+.gitignore
+.gitattributes
+.github/
+.gitlab-ci.yml
+.travis.yml
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Documentation
+README.md
+LICENSE
+docs/
+
+# Tests
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+
+# TypeScript
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# Docker files
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Package manager specific - Yarn Berry
+# Keep .yarn/releases for the Yarn version
+# Keep .yarn/plugins if using plugins
+# Keep .yarn/install-state.gz for immutable installs
+# Exclude cache if not using Zero-Install
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+# Note: .yarn/install-state.gz is NOT excluded - it's needed for immutable installs
+
+# PnP artifacts (keep .pnp.cjs if using PnP)
+# .pnp.*
+
+# Yarn Berry IDE files
+.yarn/sdks/
+
+# Logs and temporary files
+logs/
+*.log
+.tmp/
+.temp/
+tmp/
+temp/

@@ -8,7 +8,14 @@ ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION}-slim
 
 ENV PYTHONUNBUFFERED=1
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Disable virtualenv creation (container is already isolated)
+ENV POETRY_HOME=/opt/poetry \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VERSION=1.8.3
+
+ENV PATH="$POETRY_HOME/bin:$PATH"
 
 # Define the program entrypoint file where your agent is started
 ARG PROGRAM_MAIN="{{.ProgramMain}}"
@@ -23,21 +30,28 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Install system dependencies for Python packages with native extensions
+# Install Poetry and system dependencies
 RUN apt-get update && \
     apt-get install -y \
+    curl \
     gcc \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sSL https://install.python-poetry.org | python3 - --version $POETRY_VERSION
 
 WORKDIR /app
 
-# Copy and install dependencies
-COPY requirements.txt .
-RUN python -m pip install --no-cache-dir -r requirements.txt
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
+
+# Install dependencies without installing the project itself
+RUN poetry install --no-root --no-dev
 
 # Copy application code
 COPY . .
+
+# Install the project
+RUN poetry install --only-root
 
 # Set ownership and switch user
 RUN chown -R appuser:appuser /app

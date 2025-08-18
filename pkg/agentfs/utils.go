@@ -29,18 +29,26 @@ import (
 type ProjectType string
 
 const (
-	ProjectTypePythonPip ProjectType = "python.pip"
-	ProjectTypePythonUV  ProjectType = "python.uv"
-	ProjectTypeNode      ProjectType = "node"
-	ProjectTypeUnknown   ProjectType = "unknown"
+	ProjectTypePythonPip     ProjectType = "python.pip"
+	ProjectTypePythonUV      ProjectType = "python.uv"
+	ProjectTypePythonPoetry  ProjectType = "python.poetry"
+	ProjectTypePythonHatch   ProjectType = "python.hatch"
+	ProjectTypePythonPDM     ProjectType = "python.pdm"
+	ProjectTypePythonPipenv  ProjectType = "python.pipenv"
+	ProjectTypeNodeNPM       ProjectType = "node.npm"
+	ProjectTypeNodePNPM      ProjectType = "node.pnpm"
+	ProjectTypeNodeYarn      ProjectType = "node.yarn"
+	ProjectTypeNodeYarnBerry ProjectType = "node.yarn-berry"
+	ProjectTypeNodeBun       ProjectType = "node.bun"
+	ProjectTypeUnknown       ProjectType = "unknown"
 )
 
 func (p ProjectType) IsPython() bool {
-	return p == ProjectTypePythonPip || p == ProjectTypePythonUV
+	return p == ProjectTypePythonPip || p == ProjectTypePythonUV || p == ProjectTypePythonPoetry || p == ProjectTypePythonHatch || p == ProjectTypePythonPDM || p == ProjectTypePythonPipenv
 }
 
 func (p ProjectType) IsNode() bool {
-	return p == ProjectTypeNode
+	return p == ProjectTypeNodeNPM || p == ProjectTypeNodePNPM || p == ProjectTypeNodeYarn || p == ProjectTypeNodeYarnBerry || p == ProjectTypeNodeBun
 }
 
 func (p ProjectType) Lang() string {
@@ -66,55 +74,144 @@ func (p ProjectType) FileExt() string {
 }
 
 func LocateLockfile(dir string, p ProjectType) (bool, string) {
-	pythonFiles := []string{
-		"requirements.txt",
-		"requirements.lock",
-		"pyproject.toml",
-	}
-
-	nodeFiles := []string{
-		"package.json",
-		"package-lock.json",
-		"yarn.lock",
-		"pnpm-lock.yaml",
-	}
+	// Define files to check based on project type
+	// Prioritize actual lock files over dependency manifests
+	var filesToCheck []string
 
 	switch p {
 	case ProjectTypePythonPip:
-	case ProjectTypePythonUV:
-		for _, filename := range pythonFiles {
-			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
-				return true, filename
-			}
+		filesToCheck = []string{
+			"requirements.lock", // Lock file (if exists)
+			"pyproject.toml",    // Modern Python project file
+			"requirements.txt",  // Legacy pip dependencies
 		}
-	case ProjectTypeNode:
-		for _, filename := range nodeFiles {
-			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
-				return true, filename
-			}
+	case ProjectTypePythonUV:
+		filesToCheck = []string{
+			"uv.lock",          // UV lock file (highest priority)
+			"pyproject.toml",   // UV uses pyproject.toml
+			"requirements.txt", // Fallback
+		}
+	case ProjectTypePythonPoetry:
+		filesToCheck = []string{
+			"poetry.lock",    // Poetry lock file (highest priority)
+			"pyproject.toml", // Poetry configuration
+		}
+	case ProjectTypePythonHatch:
+		filesToCheck = []string{
+			"pyproject.toml", // Hatch uses pyproject.toml
+			"hatch.toml",     // Optional Hatch configuration
+		}
+	case ProjectTypePythonPDM:
+		filesToCheck = []string{
+			"pdm.lock",       // PDM lock file (highest priority)
+			"pyproject.toml", // PDM configuration
+			".pdm.toml",      // Local PDM configuration
+		}
+	case ProjectTypePythonPipenv:
+		filesToCheck = []string{
+			"Pipfile.lock", // Pipenv lock file (highest priority)
+			"Pipfile",      // Pipenv configuration
+		}
+	case ProjectTypeNodeNPM:
+		filesToCheck = []string{
+			"package-lock.json", // npm lock file (highest priority)
+			"package.json",      // Package manifest (fallback)
+		}
+	case ProjectTypeNodePNPM:
+		filesToCheck = []string{
+			"pnpm-lock.yaml", // pnpm lock file (highest priority)
+			"package.json",   // Package manifest (fallback)
+		}
+	case ProjectTypeNodeYarn:
+		filesToCheck = []string{
+			"yarn.lock",    // Yarn lock file (highest priority)
+			"package.json", // Package manifest (fallback)
+		}
+	case ProjectTypeNodeYarnBerry:
+		filesToCheck = []string{
+			"yarn.lock",    // Yarn lock file (highest priority)
+			".yarnrc.yml",  // Yarn Berry configuration
+			"package.json", // Package manifest (fallback)
+		}
+	case ProjectTypeNodeBun:
+		filesToCheck = []string{
+			"bun.lock",     // Bun lock file
+			"package.json", // Package manifest (fallback)
 		}
 	default:
 		return false, ""
 	}
+
+	// Check files in priority order
+	for _, filename := range filesToCheck {
+		if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
+			return true, filename
+		}
+	}
+
 	return false, ""
 }
 
+// DetectProjectType determines the project type by checking for specific configuration/lock files and their content
 func DetectProjectType(dir string) (ProjectType, error) {
-	// Node.js detection
-	if util.FileExists(dir, "package.json") {
-		return ProjectTypeNode, nil
+	// Node.js detection with specific package manager detection
+	// Check for Bun first (most definitive Bun indicator)
+	if util.FileExists(dir, "bun.lock") {
+		return ProjectTypeNodeBun, nil
 	}
 
-	// Python detection
+	// Check for pnpm (most definitive pnpm indicator)
+	if util.FileExists(dir, "pnpm-lock.yaml") {
+		return ProjectTypeNodePNPM, nil
+	}
+
+	// Check for Yarn Berry (yarn.lock WITH .yarnrc.yml means Yarn v2+)
+	if util.FileExists(dir, "yarn.lock") && util.FileExists(dir, ".yarnrc.yml") {
+		return ProjectTypeNodeYarnBerry, nil
+	}
+
+	// Check for Yarn Classic (yarn.lock without .yarnrc.yml means Yarn v1)
+	if util.FileExists(dir, "yarn.lock") {
+		return ProjectTypeNodeYarn, nil
+	}
+
+	// Fall back to npm for other Node.js projects
+	if util.FileExists(dir, "package.json") || util.FileExists(dir, "package-lock.json") {
+		return ProjectTypeNodeNPM, nil
+	}
+
+	// Python detection with priority order for most reliable indicators
+	// 1. Check for uv.lock first (most definitive UV indicator)
 	if util.FileExists(dir, "uv.lock") {
 		return ProjectTypePythonUV, nil
 	}
-	if util.FileExists(dir, "poetry.lock") || util.FileExists(dir, "Pipfile.lock") {
-		return ProjectTypePythonPip, nil // We can treat as pip-compatible
+
+	// 2. Check for Poetry lock file first (most definitive Poetry indicator)
+	if util.FileExists(dir, "poetry.lock") {
+		return ProjectTypePythonPoetry, nil
 	}
+
+	// 3. Check for PDM lock file (most definitive PDM indicator)
+	if util.FileExists(dir, "pdm.lock") {
+		return ProjectTypePythonPDM, nil
+	}
+
+	// 4. Check for Pipenv lock file (most definitive Pipenv indicator)
+	if util.FileExists(dir, "Pipfile.lock") {
+		return ProjectTypePythonPipenv, nil
+	}
+
+	// 5. Check for Pipfile without lock (still a Pipenv project)
+	if util.FileExists(dir, "Pipfile") {
+		return ProjectTypePythonPipenv, nil
+	}
+
+	// 6. Check for requirements.txt (classic pip setup)
 	if util.FileExists(dir, "requirements.txt") {
 		return ProjectTypePythonPip, nil
 	}
+
+	// 7. Check pyproject.toml for specific tool configurations
 	if util.FileExists(dir, "pyproject.toml") {
 		tomlPath := filepath.Join(dir, "pyproject.toml")
 		data, err := os.ReadFile(tomlPath)
@@ -122,18 +219,24 @@ func DetectProjectType(dir string) (ProjectType, error) {
 			var doc map[string]any
 			if err := toml.Unmarshal(data, &doc); err == nil {
 				if tool, ok := doc["tool"].(map[string]any); ok {
+					// Check for specific tool configurations
 					if _, hasPoetry := tool["poetry"]; hasPoetry {
-						return ProjectTypePythonPip, nil
-					}
-					if _, hasPdm := tool["pdm"]; hasPdm {
-						return ProjectTypePythonPip, nil
+						return ProjectTypePythonPoetry, nil
 					}
 					if _, hasHatch := tool["hatch"]; hasHatch {
-						return ProjectTypePythonPip, nil
+						return ProjectTypePythonHatch, nil
+					}
+					if _, hasPdm := tool["pdm"]; hasPdm {
+						return ProjectTypePythonPDM, nil
 					}
 					if _, hasUv := tool["uv"]; hasUv {
 						return ProjectTypePythonUV, nil
 					}
+				}
+
+				// Try to detect UV projects by content
+				if isUVByContent(string(data)) {
+					return ProjectTypePythonUV, nil
 				}
 			}
 		}
@@ -142,6 +245,22 @@ func DetectProjectType(dir string) (ProjectType, error) {
 	}
 
 	return ProjectTypeUnknown, errors.New("project type could not be identified; expected package.json, requirements.txt, pyproject.toml, or lock files")
+}
+
+// isUVByContent performs UV detection through pyproject.toml content analysis
+// This function specifically identifies UV-based Python projects without misclassifying
+// setuptools, poetry, and other pyproject.toml-based projects as UV projects.
+func isUVByContent(content string) bool {
+	// Look for UV-specific patterns in pyproject.toml:
+	// - [dependency-groups]: UV's dependency group syntax (not used by setuptools/poetry)
+	// - "uv sync": UV command references in scripts or documentation
+	// - [tool.uv]: UV-specific tool configuration section
+	if strings.Contains(content, "[dependency-groups]") ||
+		strings.Contains(content, "uv sync") ||
+		strings.Contains(content, "[tool.uv]") {
+		return true
+	}
+	return false
 }
 
 func ParseCpu(cpu string) (string, error) {
@@ -170,13 +289,4 @@ func ParseMem(mem string, suffix bool) (string, error) {
 		return fmt.Sprintf("%.2gGB", memGB), nil
 	}
 	return fmt.Sprintf("%.2g", memGB), nil
-}
-
-func validateSettingsMap(settingsMap map[string]string, keys []string) error {
-	for _, key := range keys {
-		if _, ok := settingsMap[key]; !ok {
-			return fmt.Errorf("client setting %s is required, please try again later", key)
-		}
-	}
-	return nil
 }
