@@ -300,18 +300,19 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	_ = browser.OpenURL(authURL.String()) // discard result; this will fail in headless environments
 
 	var ak *ClaimAccessKeyResponse
-	var pollErr error
-	if err := util.Await(
+	err = util.Await(
 		"Awaiting confirmation...",
-		func() {
+		ctx,
+		func(ctx context.Context) error {
+			var pollErr error
 			ak, pollErr = pollClaim(ctx, cmd)
+			return pollErr
 		},
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
-	if pollErr != nil {
-		return pollErr
-	}
+
 	if ak == nil {
 		return errors.New("operation cancelled")
 	}

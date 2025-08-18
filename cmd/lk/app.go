@@ -24,10 +24,11 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/urfave/cli/v3"
+
 	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
-	"github.com/urfave/cli/v3"
 )
 
 var (
@@ -385,23 +386,24 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	return cleanupTemplate(ctx, cmd, appName)
 }
 
-func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) error {
+func cloneTemplate(ctx context.Context, cmd *cli.Command, url, appName string) error {
 	var stdout string
 	var stderr string
-	var cmdErr error
 
 	tempName, relocate, cleanup := util.UseTempPath(appName)
 	defer cleanup()
 
-	if err := util.Await(
+	err := util.Await(
 		"Cloning template from "+url,
-		func() {
+		ctx,
+		func(ctx context.Context) error {
+			var cmdErr error
 			stdout, stderr, cmdErr = bootstrap.CloneTemplate(url, tempName)
+			return cmdErr
 		},
-	); err != nil {
-		return err
-	}
+	)
 
+	// err is handled after checking stdout and stderr
 	if len(stdout) > 0 && cmd.Bool("verbose") {
 		fmt.Println(string(stdout))
 	}
@@ -409,9 +411,10 @@ func cloneTemplate(_ context.Context, cmd *cli.Command, url, appName string) err
 		fmt.Fprintln(os.Stderr, string(stderr))
 	}
 
-	if cmdErr != nil {
-		return cmdErr
+	if err != nil {
+		return err
 	}
+
 	return relocate()
 }
 
@@ -512,14 +515,17 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 		return err
 	}
 
-	var cmdErr error
-	if err := util.Await(
+	err = util.Await(
 		"Installing...",
-		func() { cmdErr = install() },
-	); err != nil {
+		ctx,
+		func(ctx context.Context) error {
+			return install()
+		},
+	)
+	if err != nil {
 		return err
 	}
-	return cmdErr
+	return nil
 }
 
 func runTask(ctx context.Context, cmd *cli.Command) error {
