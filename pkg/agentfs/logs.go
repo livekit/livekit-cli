@@ -111,10 +111,18 @@ func LogHelper(ctx context.Context, id string, logType string, projectConfig *co
 			}
 
 			line := scanner.Text()
-			if strings.HasPrefix(line, "ERROR:") {
-				return fmt.Errorf("%s", strings.TrimPrefix(line, "ERROR: "))
+			// Some runtimes (notably Node) use carriage returns ("\r") to update progress
+			// on the same line. Split on "\r" so each update is printed cleanly and
+			// without accumulating indentation from styled output.
+			for _, part := range strings.Split(line, "\r") {
+				if part == "" {
+					continue
+				}
+				if strings.HasPrefix(part, "ERROR:") {
+					return fmt.Errorf("%s", strings.TrimPrefix(part, "ERROR: "))
+				}
+				fmt.Println(util.Dimmed(part))
 			}
-			fmt.Println(util.Dimmed(line))
 		}
 	}
 }
