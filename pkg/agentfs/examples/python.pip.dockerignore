@@ -1,26 +1,48 @@
-# Python artifacts
-venv/
+# Python bytecode and artifacts
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
 
-# Local environment & config files
-.env
-.env.local
-.DS_Store
+# Virtual environments
+.venv/
+venv/
 
-# Logs & temp files
+# Caches and test output
+.cache/
+.pytest_cache/
+.ruff_cache/
+coverage/
+
+# Logs and temp files
 *.log
 *.gz
 *.tgz
 .tmp
 .cache
 
-# Docker artifacts
-Dockerfile*
-.dockerignore
+# Environment variables
+.env
+.env.*
 
-# Git & Editor files
+# VCS, editor, OS
 .git
 .gitignore
-.idea
-.vscode
+.gitattributes
+.github/
+.idea/
+.vscode/
+.DS_Store
 
+# Project docs and misc
+README.md
+LICENSE
+
+# Project tests
+test/
+tests/
+eval/
+evals/
