@@ -1260,17 +1260,16 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 	writeDockerignore := true
 	if !overwrite {
 		if _, err := os.Stat(dockerfilePath); err == nil {
-			fmt.Println("Dockerfile already exists; skipping. Use --overwrite to replace.")
+			fmt.Println(util.Accented("Dockerfile") + " already exists; skipping. Use --overwrite to replace.")
 			writeDockerfile = false
 		}
 		if _, err := os.Stat(dockerignorePath); err == nil {
-			fmt.Println(".dockerignore already exists; skipping. Use --overwrite to replace.")
+			fmt.Println(util.Accented(".dockerignore") + " already exists; skipping. Use --overwrite to replace.")
 			writeDockerignore = false
 		}
 	}
 
 	if !writeDockerfile && !writeDockerignore {
-		fmt.Println("No files to write.")
 		return nil
 	}
 
@@ -1285,14 +1284,14 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 
-		fmt.Printf("Wrote %s\n", util.Accented("Dockerfile"))
+		fmt.Printf("Wrote new %s\n", util.Accented("Dockerfile"))
 	}
 
 	if writeDockerignore {
 		if err := os.WriteFile(dockerignorePath, dockerignoreContent, 0644); err != nil {
 			return err
 		}
-		fmt.Printf("Wrote %s\n", util.Accented(".dockerignore"))
+		fmt.Printf("Wrote new %s\n", util.Accented(".dockerignore"))
 	}
 
 	return nil
