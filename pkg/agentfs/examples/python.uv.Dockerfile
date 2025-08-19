@@ -1,5 +1,5 @@
 # This is an example Dockerfile that builds a minimal container for running LK Agents
-# For more information on the build process, see https://docs.livekit.io/agents/ops/deployment/cloud/builds/
+# For more information on the build process, see https://docs.livekit.io/agents/ops/deployment/builds/
 # syntax=docker/dockerfile:1
 
 # Use the official UV Python base image with Python 3.11 on Debian Bookworm
