@@ -318,7 +318,7 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 		kind:    pub.Kind(),
 	}
 	t.stats.Store(track.ID(), s)
-	fmt.Println("subscribed to room ", t.room.Name(), " - track", t.room.LocalParticipant.Identity(), pub.SID(), pub.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
+	fmt.Println("subscribed to room", t.room.Name(), "- track", t.room.LocalParticipant.Identity(), pub.SID(), pub.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
 
 	// consume track
 	go t.consumeTrack(track, pub, rp)
