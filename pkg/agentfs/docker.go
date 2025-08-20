@@ -122,8 +122,9 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 				return err
 			}
 			if !d.IsDir() && strings.HasSuffix(d.Name(), projectType.FileExt()) {
-				// Exclude files like __init__.py which cannot be entrypoints
-				if d.Name() == "__init__.py" {
+				// Exclude double-underscore files (e.g., __init__.py) which cannot be entrypoint
+				// except for __main__.py, which is the default entrypoint for Python.
+				if strings.HasPrefix(d.Name(), "__") && d.Name() != "__main__.py" {
 					return nil
 				}
 				fileList = append(fileList, path)
