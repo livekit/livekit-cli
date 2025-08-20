@@ -41,6 +41,7 @@ type LoadTest struct {
 }
 
 type Params struct {
+	Rooms           int
 	VideoPublishers int
 	AudioPublishers int
 	Subscribers     int
@@ -271,6 +272,124 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 	return nil
 }
 
+func (t *LoadTest) RunStress(ctx context.Context) error {
+	parsedUrl, err := url.Parse(t.Params.URL)
+	if err != nil {
+		return err
+	}
+	if strings.HasSuffix(parsedUrl.Hostname(), ".livekit.cloud") {
+		if t.Params.VideoPublishers > 50 || t.Params.Subscribers > 50 || t.Params.AudioPublishers > 50 {
+			return errors.New("Unable to perform load test on LiveKit Cloud. Load testing is prohibited by our acceptable use policy: https://livekit.io/legal/acceptable-use-policy")
+		}
+	}
+
+	if t.Params.RoomPrefix == "" {
+		t.Params.RoomPrefix = randStringRunes(5)
+	}
+
+	roomsStats := make(map[string]map[string]*testerStats)
+	roomsStatsMutex := sync.Mutex{}
+
+	wg := sync.WaitGroup{}
+	wg.Add(t.Params.Rooms)
+	for i := 0; i < t.Params.Rooms; i++ {
+		roomName := fmt.Sprintf("%s_%d", t.Params.RoomPrefix, i)
+		params := t.Params
+		params.Room = roomName
+
+		go func() {
+			defer wg.Done()
+			stats, err := t.run(ctx, params)
+			if err != nil {
+				return
+			}
+			roomsStatsMutex.Lock()
+			defer roomsStatsMutex.Unlock()
+			roomsStats[roomName] = stats
+		}()
+	}
+	wg.Wait()
+
+	var totals summary
+	var summariesLen int64
+
+	summaryTable := util.CreateTable().
+		Headers("Room", "Tracks", "Bitrate", "Total Pkt. Loss", "Error").
+		StyleFunc(func(row, col int) lipgloss.Style {
+			if row == table.HeaderRow {
+				return util.FormHeaderStyle
+			}
+			return util.FormBaseStyle
+		})
+
+	for roomName, stats := range roomsStats {
+		// tester results
+		summaries := make(map[string]*summary)
+		names := make([]string, 0, len(stats))
+		for name := range stats {
+			if strings.HasPrefix(name, "Pub") {
+				continue
+			}
+			names = append(names, name)
+		}
+		sort.Strings(names)
+
+		for _, name := range names {
+			testerStats := stats[name]
+			summaries[name] = getTesterSummary(testerStats)
+			trackStatsSlice := make([]*trackStats, 0, len(testerStats.trackStats))
+			for _, ts := range testerStats.trackStats {
+				trackStatsSlice = append(trackStatsSlice, ts)
+			}
+			sort.Slice(trackStatsSlice, func(i, j int) bool {
+				return strings.Compare(
+					string(trackStatsSlice[i].kind),
+					string(trackStatsSlice[j].kind),
+				) < 0
+			})
+		}
+
+		if len(summaries) == 0 {
+			continue
+		}
+		{
+			// totals row
+			s := getTestSummary(summaries)
+			sDropped := formatLossRate(s.packets, s.dropped)
+			// avg bitrate per sub
+			sBitrate := fmt.Sprintf("%s (%s avg)",
+				formatBitrate(s.bytes, s.elapsed),
+				formatBitrate(s.bytes/int64(len(summaries)), s.elapsed),
+			)
+			summaryTable.Row(roomName, fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, string(s.errCount))
+
+			totals.tracks += s.tracks
+			totals.expected += s.expected
+			totals.packets += s.packets
+			totals.bytes += s.bytes
+			totals.dropped += s.dropped
+			totals.elapsed += s.elapsed
+			totals.errCount += s.errCount
+			summariesLen += int64(len(summaries))
+		}
+	}
+
+	{
+		sDropped := formatLossRate(totals.packets, totals.dropped)
+		sBitrate := fmt.Sprintf("%s (%s avg)",
+			formatBitrate(totals.bytes*int64(len(roomsStats)), totals.elapsed),
+			formatBitrate((totals.bytes/int64(len(roomsStats))), totals.elapsed),
+		)
+
+		summaryTable.Row("Total", fmt.Sprintf("%d/%d", totals.tracks, totals.expected), sBitrate, sDropped, string(totals.errCount))
+	}
+
+	fmt.Println("\nRoom summaries:")
+	fmt.Println(summaryTable)
+
+	return nil
+}
+
 func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerStats, error) {
 	if params.Room == "" {
 		params.Room = fmt.Sprintf("testroom%d", rand.Int31n(1000))
@@ -387,7 +506,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		// a really long time
 		duration = 1000 * time.Hour
 	}
-	fmt.Printf("Finished connecting to room, waiting %s\n", duration.String())
+	fmt.Printf("Finished connecting to room %s, waiting %s\n", params.Room, duration.String())
 
 	select {
 	case <-ctx.Done():

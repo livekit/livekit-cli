@@ -79,6 +79,7 @@ type TesterParams struct {
 	APIKey         string
 	APISecret      string
 	Room           string
+	RoomPrefix     string
 	IdentityPrefix string
 	Layout         Layout
 	// true to subscribe to all published tracks
@@ -152,7 +153,7 @@ func (t *LoadTester) PublishAudioTrack(name string) (string, error) {
 		return "", nil
 	}
 
-	fmt.Println("publishing audio track -", t.room.LocalParticipant.Identity())
+	fmt.Println("publishing room ", t.room.Name(), "audio track -", t.room.LocalParticipant.Identity())
 	audioLooper, err := provider2.CreateAudioLooper()
 	if err != nil {
 		return "", err
@@ -179,7 +180,7 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 		return "", nil
 	}
 
-	fmt.Println("publishing video track -", t.room.LocalParticipant.Identity())
+	fmt.Println("publishing room ", t.room.Name(), " video track -", t.room.LocalParticipant.Identity())
 	loopers, err := provider2.CreateVideoLoopers(resolution, codec, false)
 	if err != nil {
 		return "", err
@@ -204,7 +205,7 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (string, error) {
 	var tracks []*lksdk.LocalTrack
 
-	fmt.Println("publishing simulcast video track -", t.room.LocalParticipant.Identity())
+	fmt.Println("publishing room ", t.room.Name(), " simulcast video track -", t.room.LocalParticipant.Identity())
 	loopers, err := provider2.CreateVideoLoopers(resolution, codec, true)
 	if err != nil {
 		return "", err
@@ -317,7 +318,7 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 		kind:    pub.Kind(),
 	}
 	t.stats.Store(track.ID(), s)
-	fmt.Println("subscribed to track", t.room.LocalParticipant.Identity(), pub.SID(), pub.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
+	fmt.Println("subscribed to room ", t.room.Name(), " - track", t.room.LocalParticipant.Identity(), pub.SID(), pub.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
 
 	// consume track
 	go t.consumeTrack(track, pub, rp)
