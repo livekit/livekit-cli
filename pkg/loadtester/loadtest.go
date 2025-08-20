@@ -378,7 +378,7 @@ func (t *LoadTest) RunStress(ctx context.Context) error {
 		sDropped := formatLossRate(totals.packets, totals.dropped)
 		sBitrate := fmt.Sprintf("%s (%s avg)",
 			formatBitrate(totals.bytes*int64(len(roomsStats)), totals.elapsed),
-			formatBitrate((totals.bytes/int64(len(roomsStats))), totals.elapsed),
+			formatBitrate((totals.bytes*int64(len(roomsStats))/summariesLen), totals.elapsed),
 		)
 
 		summaryTable.Row("Total", fmt.Sprintf("%d/%d", totals.tracks, totals.expected), sBitrate, sDropped, string(totals.errCount))
