@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -86,7 +85,7 @@ func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap ma
 
 	// TODO: (@rektdeckard) support Node entrypoint validation
 	if projectType.IsPython() {
-		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap)
+		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -95,82 +94,73 @@ func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap ma
 	return dockerfileContent, dockerIgnoreContent, nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string) ([]byte, error) {
-	valFile := func(fileName string) (string, error) {
-		// NOTE: we need to recurse to find entrypoints which may exist in src/ or some other directory.
-		// This could be a lot of files, so we omit any files in .dockerignore, since they cannot be
-		// used as entrypoints.
+func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType) ([]byte, error) {
+	// Build matcher from the Dockerignore content so we don't consider ignored files
+	reader := bytes.NewReader(dockerignoreContent)
+	patterns, err := ignorefile.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	matcher, err := patternmatcher.New(patterns)
+	if err != nil {
+		return nil, err
+	}
 
-		reader := bytes.NewReader(dockerignoreContent)
-		patterns, err := ignorefile.ReadAll(reader)
+	var fileList []string
+	if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return "", err
+			return err
 		}
-		matcher, err := patternmatcher.New(patterns)
-		if err != nil {
-			return "", err
-		}
-
-		var fileList []string
-		if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
-				return nil
-			} else if err != nil {
-				return err
-			}
-			if !d.IsDir() && strings.HasSuffix(d.Name(), projectType.FileExt()) {
-				// Exclude double-underscore files (e.g., __init__.py) which cannot be entrypoint
-				// except for __main__.py, which is the default entrypoint for Python.
-				if strings.HasPrefix(d.Name(), "__") && d.Name() != "__main__.py" {
-					return nil
-				}
-				fileList = append(fileList, path)
-			}
+		if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
 			return nil
-		}); err != nil {
-			return "", fmt.Errorf("error walking directory %s: %w", dir, err)
+		} else if err != nil {
+			return err
 		}
-		if slices.Contains(fileList, fileName) {
-			return fileName, nil
-		}
-
-		// If no matching files found, return early
-		if len(fileList) == 0 {
-			return "", nil
-		}
-
-		// Prioritize common entrypoint filenames at the top of the list
-		if len(fileList) > 1 {
-			priority := func(p string) int {
-				name := filepath.Base(p)
-				switch name {
-				case "main.py":
-					return 0
-				case "agent.py":
-					return 1
-				default:
-					return 2
-				}
+		if !d.IsDir() && strings.HasSuffix(d.Name(), projectType.FileExt()) {
+			// Exclude double-underscore files (e.g., __init__.py) which cannot be entrypoint
+			// except for __main__.py, which is the default entrypoint for Python.
+			if strings.HasPrefix(d.Name(), "__") && d.Name() != "__main__.py" {
+				return nil
 			}
-			sort.SliceStable(fileList, func(i, j int) bool {
-				pi := priority(fileList[i])
-				pj := priority(fileList[j])
-				if pi != pj {
-					return pi < pj
-				}
-				return fileList[i] < fileList[j]
-			})
+			fileList = append(fileList, path)
 		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("error walking directory %s: %w", dir, err)
+	}
 
-		// If there's only one candidate, select it automatically
-		if len(fileList) == 1 {
-			return fileList[0], nil
+	// Prioritize common entrypoint filenames at the top of the list
+	if len(fileList) > 1 {
+		priority := func(p string) int {
+			name := filepath.Base(p)
+			switch name {
+			case "__main__.py":
+				return 0
+			case "main.py":
+				return 1
+			case "agent.py":
+				return 2
+			default:
+				return 3
+			}
 		}
+		sort.SliceStable(fileList, func(i, j int) bool {
+			pi := priority(fileList[i])
+			pj := priority(fileList[j])
+			if pi != pj {
+				return pi < pj
+			}
+			return fileList[i] < fileList[j]
+		})
+	}
 
-		var selected string
+	var newEntrypoint string
+	if len(fileList) == 0 {
+		newEntrypoint = "main.py"
+	} else if len(fileList) == 1 {
+		newEntrypoint = fileList[0]
+	} else {
+		selected := fileList[0]
 		form := huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
@@ -180,26 +170,12 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 					WithTheme(util.Theme),
 			),
 		)
-
 		if err := form.Run(); err != nil {
-			return "", err
+			return nil, err
 		}
-		return selected, nil
+		newEntrypoint = selected
 	}
 
-	if err := validateSettingsMap(settingsMap, []string{"python_entrypoint"}); err != nil {
-		return nil, err
-	}
-
-	pythonEntrypoint := settingsMap["python_entrypoint"]
-	newEntrypoint, err := valFile(pythonEntrypoint)
-	if err != nil {
-		return nil, err
-	}
-
-	if newEntrypoint == "" {
-		newEntrypoint = pythonEntrypoint
-	}
 	fmt.Printf("Using entrypoint file [%s]\n", util.Accented(newEntrypoint))
 
 	tpl := template.Must(template.New("Dockerfile").Parse(string(dockerfileContent)))
