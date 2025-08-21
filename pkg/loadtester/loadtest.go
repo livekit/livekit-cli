@@ -361,7 +361,7 @@ func (t *LoadTest) RunStress(ctx context.Context) error {
 				formatBitrate(s.bytes, s.elapsed),
 				formatBitrate(s.bytes/int64(len(summaries)), s.elapsed),
 			)
-			summaryTable.Row(roomName, fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, string(s.errCount))
+			summaryTable.Row(roomName, fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, strconv.FormatInt(s.errCount, 10))
 
 			totals.tracks += s.tracks
 			totals.expected += s.expected
@@ -381,7 +381,7 @@ func (t *LoadTest) RunStress(ctx context.Context) error {
 			formatBitrate((totals.bytes*int64(len(roomsStats))/summariesLen), totals.elapsed),
 		)
 
-		summaryTable.Row("Total", fmt.Sprintf("%d/%d", totals.tracks, totals.expected), sBitrate, sDropped, string(totals.errCount))
+		summaryTable.Row("Total", fmt.Sprintf("%d/%d", totals.tracks, totals.expected), sBitrate, sDropped, strconv.FormatInt(totals.errCount, 10))
 	}
 
 	fmt.Println("\nRoom summaries:")
