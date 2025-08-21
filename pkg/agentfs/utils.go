@@ -101,21 +101,21 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 
 func DetectProjectType(dir string) (ProjectType, error) {
 	// Node.js detection
-	if util.FileExists(dir, "package.json") {
+	if util.FileExistsInDir(dir, "package.json") {
 		return ProjectTypeNode, nil
 	}
 
 	// Python detection
-	if util.FileExists(dir, "uv.lock") {
+	if util.FileExistsInDir(dir, "uv.lock") {
 		return ProjectTypePythonUV, nil
 	}
-	if util.FileExists(dir, "poetry.lock") || util.FileExists(dir, "Pipfile.lock") {
+	if util.FileExistsInDir(dir, "poetry.lock") || util.FileExistsInDir(dir, "Pipfile.lock") {
 		return ProjectTypePythonPip, nil // We can treat as pip-compatible
 	}
-	if util.FileExists(dir, "requirements.txt") {
+	if util.FileExistsInDir(dir, "requirements.txt") {
 		return ProjectTypePythonPip, nil
 	}
-	if util.FileExists(dir, "pyproject.toml") {
+	if util.FileExistsInDir(dir, "pyproject.toml") {
 		tomlPath := filepath.Join(dir, "pyproject.toml")
 		data, err := os.ReadFile(tomlPath)
 		if err == nil {

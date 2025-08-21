@@ -11,6 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/semver/v3"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 // PackageInfo represents information about a package found in a project
@@ -29,6 +30,14 @@ type VersionCheckResult struct {
 	Satisfied  bool
 	Error      error
 }
+
+// SourceType indicates whether we're checking a lock file or package file
+type SourceType int
+
+const (
+	SourceTypePackage SourceType = iota // Package file (e.g., requirements.txt, package.json)
+	SourceTypeLock                      // Lock file (e.g., package-lock.json, poetry.lock)
+)
 
 // CheckSDKVersion performs a comprehensive check for livekit-agents packages
 func CheckSDKVersion(dir string, projectType ProjectType, settingsMap map[string]string) error {
@@ -86,7 +95,7 @@ func detectProjectFiles(dir string, projectType ProjectType) []string {
 			"uv.lock",
 		}
 		for _, filename := range pythonFiles {
-			if path := filepath.Join(dir, filename); fileExists(path) {
+			if path := filepath.Join(dir, filename); util.FileExists(path) {
 				files = append(files, path)
 			}
 		}
@@ -99,7 +108,7 @@ func detectProjectFiles(dir string, projectType ProjectType) []string {
 			"bun.lockb",
 		}
 		for _, filename := range nodeFiles {
-			if path := filepath.Join(dir, filename); fileExists(path) {
+			if path := filepath.Join(dir, filename); util.FileExists(path) {
 				files = append(files, path)
 			}
 		}
@@ -156,6 +165,11 @@ func parsePythonPackageVersion(line string) (string, bool) {
 		return "latest", true
 	}
 
+	// Convert Python operators to semver operators
+	if operator == "==" {
+		operator = "="
+	}
+
 	// clean up the version string if it contains multiple constraints
 	// handle comma-separated version constraints like ">=1.2.5,<2"
 	if strings.Contains(version, ",") {
@@ -205,7 +219,7 @@ func checkRequirementsFile(filePath, minVersion string) VersionCheckResult {
 
 		version, found := parsePythonPackageVersion(line)
 		if found {
-			satisfied, err := isVersionSatisfied(version, minVersion)
+			satisfied, err := isVersionSatisfied(version, minVersion, SourceTypePackage)
 			return VersionCheckResult{
 				PackageInfo: PackageInfo{
 					Name:        "livekit-agents",
@@ -243,7 +257,7 @@ func checkPyprojectToml(filePath, minVersion string) VersionCheckResult {
 				if line, ok := dep.(string); ok {
 					version, found := parsePythonPackageVersion(line)
 					if found {
-						satisfied, err := isVersionSatisfied(version, minVersion)
+						satisfied, err := isVersionSatisfied(version, minVersion, SourceTypePackage)
 						return VersionCheckResult{
 							PackageInfo: PackageInfo{
 								Name:        "livekit-agents",
@@ -281,7 +295,7 @@ func checkPipfile(filePath, minVersion string) VersionCheckResult {
 			version = "latest"
 		}
 
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := isVersionSatisfied(version, minVersion, SourceTypePackage)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -326,7 +340,7 @@ func checkSetupPy(filePath, minVersion string) VersionCheckResult {
 				}
 				version, found := parsePythonPackageVersion(packageLine)
 				if found {
-					satisfied, err := isVersionSatisfied(version, minVersion)
+					satisfied, err := isVersionSatisfied(version, minVersion, SourceTypePackage)
 					return VersionCheckResult{
 						PackageInfo: PackageInfo{
 							Name:        "livekit-agents",
@@ -360,7 +374,7 @@ func checkSetupCfg(filePath, minVersion string) VersionCheckResult {
 	if matches != nil {
 		version := strings.TrimSpace(matches[2])
 
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := isVersionSatisfied(version, minVersion, SourceTypePackage)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -407,7 +421,7 @@ func checkPackageJSON(filePath, minVersion string) VersionCheckResult {
 
 	for _, deps := range dependencyMaps {
 		if version, ok := deps["@livekit/agents"]; ok {
-			satisfied, err := isVersionSatisfied(version, minVersion)
+			satisfied, err := isVersionSatisfied(version, minVersion, SourceTypePackage)
 			return VersionCheckResult{
 				PackageInfo: PackageInfo{
 					Name:        "@livekit/agents",
@@ -467,7 +481,7 @@ func checkPackageLockJSON(filePath, minVersion string) VersionCheckResult {
 	}
 
 	if dep, ok := lockJSON.Dependencies["@livekit/agents"]; ok {
-		satisfied, err := isVersionSatisfied(dep.Version, minVersion)
+		satisfied, err := isVersionSatisfied(dep.Version, minVersion, SourceTypeLock)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "@livekit/agents",
@@ -497,7 +511,7 @@ func checkYarnLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := isVersionSatisfied(version, minVersion, SourceTypeLock)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "@livekit/agents",
@@ -527,7 +541,7 @@ func checkPnpmLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := strings.TrimSpace(matches[1])
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := isVersionSatisfied(version, minVersion, SourceTypeLock)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "@livekit/agents",
@@ -557,7 +571,7 @@ func checkPoetryLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := isVersionSatisfied(version, minVersion, SourceTypeLock)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -587,7 +601,7 @@ func checkUvLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := isVersionSatisfied(version, minVersion, SourceTypeLock)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -617,7 +631,7 @@ func checkPipfileLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := isVersionSatisfied(version, minVersion, SourceTypeLock)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -636,28 +650,89 @@ func checkPipfileLock(filePath, minVersion string) VersionCheckResult {
 }
 
 // isVersionSatisfied checks if a version satisfies the minimum requirement
-func isVersionSatisfied(version, minVersion string) (bool, error) {
+func isVersionSatisfied(version, minVersion string, sourceType SourceType) (bool, error) {
 	// Handle special cases
 	if version == "latest" || version == "*" || version == "" {
 		return true, nil // Latest version always satisfies
 	}
 
-	// Normalize version strings
-	normalizedVersion := normalizeVersion(version)
-	normalizedMin := normalizeVersion(minVersion)
+	switch sourceType {
+	case SourceTypeLock:
+		// For lock files, we have the exact version that was installed
+		// Check if this exact version is >= the minimum version
+		normalizedVersion := normalizeVersion(version)
+		v, err := semver.NewVersion(normalizedVersion)
+		if err != nil {
+			return false, fmt.Errorf("invalid version format: %s", version)
+		}
 
-	// Parse versions
-	v, err := semver.NewVersion(normalizedVersion)
-	if err != nil {
-		return false, fmt.Errorf("invalid version format: %s", version)
+		min, err := semver.NewVersion(minVersion)
+		if err != nil {
+			return false, fmt.Errorf("invalid minimum version format: %s", minVersion)
+		}
+
+		// Check if the exact version is >= minimum version
+		return !v.LessThan(min), nil
+
+	case SourceTypePackage:
+		// For package files, we have a constraint that will be resolved at install time
+		// Check if this constraint would allow installing a version that satisfies the minimum requirement
+		packageConstraint, err := semver.NewConstraint(version)
+		if err != nil {
+			return false, fmt.Errorf("invalid package constraint format: %s", version)
+		}
+
+		min, err := semver.NewVersion(minVersion)
+		if err != nil {
+			return false, fmt.Errorf("invalid minimum version format: %s", minVersion)
+		}
+
+		// Check if the package constraint would allow installing a version >= minimum
+		// We do this by checking if there exists a version >= minimum that satisfies the package constraint
+		if packageConstraint.Check(min) {
+			// The minimum version satisfies the package constraint, so it would be installable
+			return true, nil
+		}
+
+		// Check if the package constraint allows any version >= minimum
+		// This handles cases like ">=1.5.0" where 1.0.0 doesn't satisfy it, but it would install 1.5.0+ which > 1.0.0
+		// We'll test a few strategic versions to see if any satisfy the package constraint and are >= minimum
+		testVersions := []string{
+			minVersion, // The minimum version itself
+			fmt.Sprintf("%d.%d.%d", min.Major()+1, 0, 0),
+			fmt.Sprintf("%d.%d.%d", min.Major(), min.Minor()+1, 0),
+			fmt.Sprintf("%d.%d.%d", min.Major(), min.Minor(), min.Patch()+1),
+		}
+		
+		// Add more versions to cover edge cases
+		if min.Major() > 0 {
+			testVersions = append(testVersions, fmt.Sprintf("%d.0.0", min.Major()))
+		}
+		if min.Minor() > 0 {
+			testVersions = append(testVersions, fmt.Sprintf("%d.%d.0", min.Major(), min.Minor()))
+		}
+		
+		// Add some specific versions that might be common in constraints
+		testVersions = append(testVersions,
+			fmt.Sprintf("%d.%d.0", min.Major(), min.Minor()+2),
+			fmt.Sprintf("%d.%d.0", min.Major(), min.Minor()+5),
+			fmt.Sprintf("%d.%d.0", min.Major(), min.Minor()+10),
+		)
+		
+		for _, testVersion := range testVersions {
+			if v, err := semver.NewVersion(testVersion); err == nil {
+				// Check if this version is >= minimum and satisfies the package constraint
+				if !v.LessThan(min) && packageConstraint.Check(v) {
+					return true, nil
+				}
+			}
+		}
+		
+		return false, nil
+
+	default:
+		return false, fmt.Errorf("unknown source type: %d", sourceType)
 	}
-
-	min, err := semver.NewVersion(normalizedMin)
-	if err != nil {
-		return false, fmt.Errorf("invalid minimum version format: %s", minVersion)
-	}
-
-	return !v.LessThan(min), nil
 }
 
 // normalizeVersion normalizes version strings for semver parsing
@@ -666,10 +741,7 @@ func normalizeVersion(version string) string {
 	version = strings.TrimSpace(version)
 	version = strings.Trim(version, " \"'")
 
-	// Remove version specifiers that aren't part of the version itself
-	version = regexp.MustCompile(`^[=~><!]+`).ReplaceAllString(version, "")
-
-	// Handle npm version ranges
+	// Handle npm version ranges (^ and ~ are npm-specific, not semver constraints)
 	if strings.HasPrefix(version, "^") || strings.HasPrefix(version, "~") {
 		version = version[1:]
 	}
@@ -731,10 +803,4 @@ func getTargetPackageName(projectType ProjectType) string {
 	default:
 		return ""
 	}
-}
-
-// fileExists checks if a file exists
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
 }
