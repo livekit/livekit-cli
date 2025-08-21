@@ -65,6 +65,17 @@ func (p ProjectType) FileExt() string {
 	}
 }
 
+func (p ProjectType) TargetPackageName() string {
+	switch p {
+	case ProjectTypePythonPip, ProjectTypePythonUV:
+		return "livekit-agents"
+	case ProjectTypeNode:
+		return "@livekit/agents"
+	default:
+		return ""
+	}
+}
+
 func LocateLockfile(dir string, p ProjectType) (bool, string) {
 	pythonFiles := []string{
 		"requirements.txt",

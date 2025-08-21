@@ -66,7 +66,7 @@ func CheckSDKVersion(dir string, projectType ProjectType, settingsMap map[string
 	// Find the best result (prefer lock files over source files)
 	bestResult := findBestResult(results)
 	if bestResult == nil {
-		return fmt.Errorf("package %s not found in any project files", getTargetPackageName(projectType))
+		return fmt.Errorf("package %s not found in any project files", projectType.TargetPackageName())
 	}
 
 	if !bestResult.Satisfied {
@@ -173,8 +173,8 @@ func parsePythonPackageVersion(line string) (string, bool) {
 	// clean up the version string if it contains multiple constraints
 	// handle comma-separated version constraints like ">=1.2.5,<2"
 	if strings.Contains(version, ",") {
-		parts := strings.Split(version, ",")
-		for _, part := range parts {
+		parts := strings.SplitSeq(version, ",")
+		for part := range parts {
 			trimmed := strings.TrimSpace(part)
 			if regexp.MustCompile(`\d`).MatchString(trimmed) {
 				if strings.ContainsAny(trimmed, "=~><") {
@@ -596,23 +596,37 @@ func checkUvLock(filePath, minVersion string) VersionCheckResult {
 		return VersionCheckResult{Error: err}
 	}
 
-	// Look for livekit-agents in the lock file
-	pattern := regexp.MustCompile(`(?m)^\s*livekit-agents\s*=\s*"([^"]+)"`)
-	matches := pattern.FindStringSubmatch(string(content))
-	if matches != nil {
-		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion, SourceTypeLock)
-		return VersionCheckResult{
-			PackageInfo: PackageInfo{
-				Name:        "livekit-agents",
-				Version:     version,
-				FoundInFile: filePath,
-				ProjectType: ProjectTypePythonUV,
-				Ecosystem:   "pypi",
-			},
-			MinVersion: minVersion,
-			Satisfied:  satisfied,
-			Error:      err,
+	type uvLockPackage struct {
+		Name    string `toml:"name"`
+		Version string `toml:"version"`
+	}
+
+	type uvLockFile struct {
+		Packages []uvLockPackage `toml:"package"`
+	}
+
+	var uvLock uvLockFile
+	if err := toml.Unmarshal(content, &uvLock); err != nil {
+		return VersionCheckResult{Error: err}
+	}
+
+	// Check for livekit-agents in the packages
+	for _, pkg := range uvLock.Packages {
+		if pkg.Name == "livekit-agents" {
+			version := pkg.Version
+			satisfied, err := isVersionSatisfied(version, minVersion, SourceTypeLock)
+			return VersionCheckResult{
+				PackageInfo: PackageInfo{
+					Name:        "livekit-agents",
+					Version:     version,
+					FoundInFile: filePath,
+					ProjectType: ProjectTypePythonUV,
+					Ecosystem:   "pypi",
+				},
+				MinVersion: minVersion,
+				Satisfied:  satisfied,
+				Error:      err,
+			}
 		}
 	}
 
@@ -660,10 +674,10 @@ func isVersionSatisfied(version, minVersion string, sourceType SourceType) (bool
 	case SourceTypeLock:
 		// For lock files, we have the exact version that was installed
 		// Check if this exact version is >= the minimum version
-		normalizedVersion := normalizeVersion(version)
+		normalizedVersion := normalizeVersion(version, sourceType)
 		v, err := semver.NewVersion(normalizedVersion)
 		if err != nil {
-			return false, fmt.Errorf("invalid version format: %s", version)
+			return false, fmt.Errorf("failed to extract base version for %s: %w", version, err)
 		}
 
 		min, err := semver.NewVersion(minVersion)
@@ -675,11 +689,15 @@ func isVersionSatisfied(version, minVersion string, sourceType SourceType) (bool
 		return !v.LessThan(min), nil
 
 	case SourceTypePackage:
-		// For package files, we have a constraint that will be resolved at install time
-		// Check if this constraint would allow installing a version that satisfies the minimum requirement
-		packageConstraint, err := semver.NewConstraint(version)
+		// For package files, we may have a constraint that will be resolved at install time.
+
+		// First, we check if the normalized version is greater than or equal to the minimum version
+		// This is safe because in < and <= checks, the newest version will always be installed and in
+		// ^, ~ and >= checks, if the lower bound is greater than the minimum SDK version, we're good.
+		normalizedVersion := normalizeVersion(version, sourceType)
+		baseVersion, err := semver.NewVersion(normalizedVersion)
 		if err != nil {
-			return false, fmt.Errorf("invalid package constraint format: %s", version)
+			return false, fmt.Errorf("failed to extract base version for %s: %w", version, err)
 		}
 
 		min, err := semver.NewVersion(minVersion)
@@ -687,47 +705,22 @@ func isVersionSatisfied(version, minVersion string, sourceType SourceType) (bool
 			return false, fmt.Errorf("invalid minimum version format: %s", minVersion)
 		}
 
-		// Check if the package constraint would allow installing a version >= minimum
-		// We do this by checking if there exists a version >= minimum that satisfies the package constraint
-		if packageConstraint.Check(min) {
-			// The minimum version satisfies the package constraint, so it would be installable
+		if baseVersion.GreaterThanEqual(min) {
 			return true, nil
 		}
 
-		// Check if the package constraint allows any version >= minimum
-		// This handles cases like ">=1.5.0" where 1.0.0 doesn't satisfy it, but it would install 1.5.0+ which > 1.0.0
-		// We'll test a few strategic versions to see if any satisfy the package constraint and are >= minimum
-		testVersions := []string{
-			minVersion, // The minimum version itself
-			fmt.Sprintf("%d.%d.%d", min.Major()+1, 0, 0),
-			fmt.Sprintf("%d.%d.%d", min.Major(), min.Minor()+1, 0),
-			fmt.Sprintf("%d.%d.%d", min.Major(), min.Minor(), min.Patch()+1),
+		// Next, we check if min itself satisfies the package constraint. This resolves
+		// cases in which the range includes min, like ~1.0 when min is 1.0.0.
+		packageConstraint, err := semver.NewConstraint(version)
+		if err != nil {
+			return false, fmt.Errorf("invalid package constraint format: %s", version)
 		}
-		
-		// Add more versions to cover edge cases
-		if min.Major() > 0 {
-			testVersions = append(testVersions, fmt.Sprintf("%d.0.0", min.Major()))
+		if packageConstraint.Check(min) {
+			return true, nil
 		}
-		if min.Minor() > 0 {
-			testVersions = append(testVersions, fmt.Sprintf("%d.%d.0", min.Major(), min.Minor()))
-		}
-		
-		// Add some specific versions that might be common in constraints
-		testVersions = append(testVersions,
-			fmt.Sprintf("%d.%d.0", min.Major(), min.Minor()+2),
-			fmt.Sprintf("%d.%d.0", min.Major(), min.Minor()+5),
-			fmt.Sprintf("%d.%d.0", min.Major(), min.Minor()+10),
-		)
-		
-		for _, testVersion := range testVersions {
-			if v, err := semver.NewVersion(testVersion); err == nil {
-				// Check if this version is >= minimum and satisfies the package constraint
-				if !v.LessThan(min) && packageConstraint.Check(v) {
-					return true, nil
-				}
-			}
-		}
-		
+
+		// Finally, we need to check if the package constraint allows any version >= minimum.
+
 		return false, nil
 
 	default:
@@ -735,21 +728,15 @@ func isVersionSatisfied(version, minVersion string, sourceType SourceType) (bool
 	}
 }
 
-// normalizeVersion normalizes version strings for semver parsing
-func normalizeVersion(version string) string {
-	// Remove common prefixes and suffixes
+// Cleans up version strings for parsing
+func normalizeVersion(version string, sourceType SourceType) string {
+	// Remove whitespace, quotes, and version range specifiers
 	version = strings.TrimSpace(version)
-	version = strings.Trim(version, " \"'")
-
-	// Handle npm version ranges (^ and ~ are npm-specific, not semver constraints)
-	if strings.HasPrefix(version, "^") || strings.HasPrefix(version, "~") {
-		version = version[1:]
-	}
-
+	version = strings.Trim(version, `"'^~><=`)
 	return version
 }
 
-// findBestResult finds the best result from multiple package checks
+// Finds the best possible source for version checks
 func findBestResult(results []VersionCheckResult) *VersionCheckResult {
 	if len(results) == 0 {
 		return nil
@@ -791,16 +778,4 @@ func findBestResult(results []VersionCheckResult) *VersionCheckResult {
 	}
 
 	return bestResult
-}
-
-// getTargetPackageName returns the target package name for the project type
-func getTargetPackageName(projectType ProjectType) string {
-	switch projectType {
-	case ProjectTypePythonPip, ProjectTypePythonUV:
-		return "livekit-agents"
-	case ProjectTypeNode:
-		return "@livekit/agents"
-	default:
-		return ""
-	}
 }

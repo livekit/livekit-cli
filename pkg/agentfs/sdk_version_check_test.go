@@ -112,6 +112,19 @@ livekit-agents = ">=1.0.0"`,
 			errorMsg:    "too old",
 		},
 		{
+			name:        "Node package.json with good version",
+			projectType: ProjectTypeNode,
+			setupFiles: map[string]string{
+				"package.json": `{
+  "dependencies": {
+    "@livekit/agents": "^1.1.1"
+  }
+}`,
+			},
+			expectError: false,
+		},
+
+		{
 			name:        "Node package-lock.json with valid version",
 			projectType: ProjectTypeNode,
 			setupFiles: map[string]string{
@@ -139,7 +152,15 @@ version = "1.5.0"`,
 			name:        "Python uv.lock with valid version",
 			projectType: ProjectTypePythonUV,
 			setupFiles: map[string]string{
-				"uv.lock": `livekit-agents = "1.5.0"`,
+				"uv.lock": `[[package]]
+name = "livekit-agents"
+version = "1.2.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "watchfiles" },
+]
+`,
 			},
 			expectError: false,
 		},
@@ -207,19 +228,24 @@ func TestIsVersionSatisfied(t *testing.T) {
 		{"0.9.0", "1.0.0", SourceTypeLock, false, false},
 		{"1.5.0", "2.0.0", SourceTypeLock, false, false},
 		{"2.0.0", "2.0.0", SourceTypeLock, true, false},
-		
+
 		// Package file tests (constraint satisfaction)
 		{">=1.5.0", "1.0.0", SourceTypePackage, true, false},
 		{"<2.0.0", "1.0.0", SourceTypePackage, true, false},
 		{">=2.0.0", "1.0.0", SourceTypePackage, true, false},
 		{"~1.2.0", "1.0.0", SourceTypePackage, true, false},
 		{"^1.0.0", "1.0.0", SourceTypePackage, true, false},
-		
+		// Test the specific case that was failing: ^0.7.9 should satisfy minimum 0.0.7
+		{"^0.7.9", "0.0.7", SourceTypePackage, true, false},
+		// Test other caret scenarios
+		{"^0.5.0", "0.0.7", SourceTypePackage, true, false}, // ^0.5.0 allows 0.5.0+ which >= 0.0.7
+		{"^1.0.0", "0.0.7", SourceTypePackage, true, false}, // 1.0.0+ >= 0.0.7
+
 		// Special cases
 		{"latest", "1.0.0", SourceTypeLock, true, false},
 		{"*", "1.0.0", SourceTypeLock, true, false},
 		{"", "1.0.0", SourceTypeLock, true, false},
-		
+
 		// Error cases
 		{"invalid", "1.0.0", SourceTypeLock, false, true},
 		{"1.5.0", "invalid", SourceTypeLock, false, true},
@@ -251,25 +277,45 @@ func TestIsVersionSatisfied(t *testing.T) {
 
 func TestNormalizeVersion(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		input       string
+		sourceType  SourceType
+		expected    string
+		description string
 	}{
-		{"1.5.0", "1.5.0"},
-		{"^1.5.0", "1.5.0"},
-		{"~1.5.0", "1.5.0"},
-		{">=1.5.0", ">=1.5.0"},
-		{"<2.0.0", "<2.0.0"},
-		{"==1.5.0", "==1.5.0"},
-		{" 1.5.0 ", "1.5.0"},
-		{`"1.5.0"`, "1.5.0"},
-		{`'1.5.0'`, "1.5.0"},
-		{"*", "*"},
-		{"latest", "latest"},
+		// Lock file tests (should remove ^ and ~)
+		{"1.5.0", SourceTypeLock, "1.5.0", "exact version"},
+		{"^1.5.0", SourceTypeLock, "1.5.0", "npm caret removed for lock file"},
+		{"~1.5.0", SourceTypeLock, "1.5.0", "npm tilde removed for lock file"},
+		{">=1.5.0", SourceTypeLock, "1.5.0", "semver operators removed for lock file"},
+		{"<2.0.0", SourceTypeLock, "2.0.0", "semver operators removed for lock file"},
+		{"==1.5.0", SourceTypeLock, "1.5.0", "semver operators removed for lock file"},
+		{" 1.5.0 ", SourceTypeLock, "1.5.0", "whitespace removed"},
+		{`"1.5.0"`, SourceTypeLock, "1.5.0", "quotes removed"},
+		{`'1.5.0'`, SourceTypeLock, "1.5.0", "quotes removed"},
+		{"*", SourceTypeLock, "*", "wildcard preserved"},
+		{"latest", SourceTypeLock, "latest", "latest preserved"},
+
+		// Package file tests (should preserve ^ and ~)
+		{"1.5.0", SourceTypePackage, "1.5.0", "exact version"},
+		{"^1.5.0", SourceTypePackage, "1.5.0", "npm caret removed for package file"},
+		{"~1.5.0", SourceTypePackage, "1.5.0", "npm tilde removed for package file"},
+		{">=1.5.0", SourceTypePackage, "1.5.0", "semver operators removed for package file"},
+		{"<2.0.0", SourceTypePackage, "2.0.0", "semver operators removed for package file"},
+		{"==1.5.0", SourceTypePackage, "1.5.0", "semver operators removed for package file"},
+		{" 1.5.0 ", SourceTypePackage, "1.5.0", "whitespace removed"},
+		{`"1.5.0"`, SourceTypePackage, "1.5.0", "quotes removed"},
+		{`'1.5.0'`, SourceTypePackage, "1.5.0", "quotes removed"},
+		{"*", SourceTypePackage, "*", "wildcard preserved"},
+		{"latest", SourceTypePackage, "latest", "latest preserved"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := normalizeVersion(tt.input)
+		sourceTypeStr := "Package"
+		if tt.sourceType == SourceTypeLock {
+			sourceTypeStr = "Lock"
+		}
+		t.Run(fmt.Sprintf("%s_%s_%s", tt.input, sourceTypeStr, tt.description), func(t *testing.T) {
+			result := normalizeVersion(tt.input, tt.sourceType)
 			if result != tt.expected {
 				t.Errorf("Expected %s but got %s", tt.expected, result)
 			}
@@ -371,7 +417,7 @@ func TestGetTargetPackageName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.projectType), func(t *testing.T) {
-			result := getTargetPackageName(tt.projectType)
+			result := tt.projectType.TargetPackageName()
 			if result != tt.expected {
 				t.Errorf("Expected %s but got %s", tt.expected, result)
 			}
