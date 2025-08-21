@@ -15,7 +15,7 @@ require (
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.40.0
-	github.com/livekit/server-sdk-go/v2 v2.9.3-0.20250816083130-d708c54efc7e
+	github.com/livekit/server-sdk-go/v2 v2.10.0
 	github.com/moby/buildkit v0.22.0
 	github.com/moby/patternmatcher v0.6.0
 	github.com/pion/rtcp v1.2.15
@@ -149,7 +149,7 @@ require (
 	github.com/opencontainers/runtime-spec v1.2.1 // indirect
 	github.com/opencontainers/selinux v1.12.0 // indirect
 	github.com/pion/datachannel v1.5.10 // indirect
-	github.com/pion/dtls/v3 v3.0.6 // indirect
+	github.com/pion/dtls/v3 v3.0.7 // indirect
 	github.com/pion/ice/v4 v4.0.10 // indirect
 	github.com/pion/interceptor v0.1.40 // indirect
 	github.com/pion/logging v0.2.4 // indirect
