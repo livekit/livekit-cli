@@ -271,6 +271,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// get devicename
 	if err := huh.NewInput().
 		Title("What is the name of this device?").
+		Description("A short name you can use to find and manage generated API keys on the LiveKit Cloud dashboard").
 		Value(&cliConfig.DeviceName).
 		WithTheme(util.Theme).
 		Run(); err != nil {
@@ -352,6 +353,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// persist to config file
 	cliConfig.Projects = append(cliConfig.Projects, config.ProjectConfig{
 		Name:      name,
+		ProjectId: ak.ProjectId,
 		APIKey:    ak.Key,
 		APISecret: ak.Secret,
 		URL:       ak.URL,
