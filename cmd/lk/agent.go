@@ -973,6 +973,25 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	var confirmOverwrite bool
+	if cmd.Bool("overwrite") {
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title(fmt.Sprintf("This will remove all existing secrets. Are you sure you want to proceed [%s]?", agentID)).
+					Value(&confirmOverwrite).
+					Inline(false).
+					WithTheme(util.Theme),
+			),
+		).Run(); err != nil {
+			return err
+		}
+	}
+
+	if !confirmOverwrite {
+		return nil
+	}
+
 	req := &lkproto.UpdateAgentSecretsRequest{
 		AgentId:   agentID,
 		Secrets:   secrets,
