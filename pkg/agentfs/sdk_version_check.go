@@ -638,7 +638,7 @@ func checkPipfileLock(filePath, minVersion string) VersionCheckResult {
 // isVersionSatisfied checks if a version satisfies the minimum requirement
 func isVersionSatisfied(version, minVersion string) (bool, error) {
 	// Handle special cases
-	if version == "latest" || version == "*" || version == "" {
+	if version == "latest" || version == "*" || version == "" || version == "next" {
 		return true, nil // Latest version always satisfies
 	}
 
