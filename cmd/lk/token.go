@@ -107,6 +107,14 @@ var (
 							Name:  "grant",
 							Usage: "Additional `VIDEO_GRANT` fields. It'll be merged with other arguments (JSON formatted)",
 						},
+						&cli.StringFlag{
+							Name:  "agent",
+							Usage: "Agent to dispatch to the room (identified by agent_name)",
+						},
+						&cli.StringFlag{
+							Name:  "dispatch-metadata",
+							Usage: "Dispatch metadata for the agent",
+						},
 					},
 				},
 			},
@@ -322,6 +330,19 @@ func createToken(ctx context.Context, c *cli.Command) error {
 
 	at := accessToken(project.APIKey, project.APISecret, grant, participant)
 
+	if grant.RoomJoin {
+		if agent := c.String("agent"); agent != "" {
+			dispatchMetadata := c.String("dispatch-metadata")
+			at.SetRoomConfig(&livekit.RoomConfiguration{
+				Agents: []*livekit.RoomAgentDispatch{
+					{
+						AgentName: agent,
+						Metadata:  dispatchMetadata,
+					},
+				},
+			})
+		}
+	}
 	if metadata != "" {
 		at.SetMetadata(metadata)
 	}
