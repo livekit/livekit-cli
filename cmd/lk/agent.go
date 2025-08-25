@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -110,6 +111,22 @@ var (
 					// we disable it entirely here and require multiple --secrets flags to be used.
 					DisableSliceFlagSeparator: true,
 					ArgsUsage:                 "[working-dir]",
+				},
+				{
+					Name:   "dockerfile",
+					Usage:  "Generate Dockerfile and .dockerignore for your project",
+					Before: createAgentClient,
+					Action: generateAgentDockerfile,
+					Flags: []cli.Flag{
+						silentFlag,
+						&cli.BoolFlag{
+							Name:     "overwrite",
+							Usage:    "Overwrite existing Dockerfile and/or .dockerignore if they exist",
+							Required: false,
+							Value:    false,
+						},
+					},
+					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:   "config",
@@ -378,6 +395,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	projectType, err := agentfs.DetectProjectType(workingDir)
+	fmt.Printf("Detected project type [%s]\n", util.Accented(string(projectType)))
 	if err != nil {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
 	}
@@ -1231,4 +1249,69 @@ func requireConfig(workingDir, tomlFilename string) (bool, error) {
 	var err error
 	lkConfig, exists, err = config.LoadTOMLFile(workingDir, tomlFilename)
 	return exists, err
+}
+
+func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
+	if cmd.NArg() > 0 {
+		workingDir = cmd.Args().First()
+	}
+
+	if stat, err := os.Stat(workingDir); err != nil || !stat.IsDir() {
+		return fmt.Errorf("invalid working directory: %s", workingDir)
+	}
+
+	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
+	if err != nil {
+		return err
+	}
+
+	projectType, err := agentfs.DetectProjectType(workingDir)
+	fmt.Printf("Detected project type [%s]\n", util.Accented(string(projectType)))
+	if err != nil {
+		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
+	}
+
+	dockerfilePath := filepath.Join(workingDir, "Dockerfile")
+	dockerignorePath := filepath.Join(workingDir, ".dockerignore")
+	overwrite := cmd.Bool("overwrite")
+
+	writeDockerfile := true
+	writeDockerignore := true
+	if !overwrite {
+		if _, err := os.Stat(dockerfilePath); err == nil {
+			fmt.Println(util.Accented("Dockerfile") + " already exists; skipping. Use --overwrite to replace.")
+			writeDockerfile = false
+		}
+		if _, err := os.Stat(dockerignorePath); err == nil {
+			fmt.Println(util.Accented(".dockerignore") + " already exists; skipping. Use --overwrite to replace.")
+			writeDockerignore = false
+		}
+	}
+
+	if !writeDockerfile && !writeDockerignore {
+		return nil
+	}
+
+	// Generate contents without writing
+	dockerfileContent, dockerignoreContent, err := agentfs.GenerateDockerArtifacts(workingDir, projectType, settingsMap)
+	if err != nil {
+		return err
+	}
+
+	if writeDockerfile {
+		if err := os.WriteFile(dockerfilePath, dockerfileContent, 0644); err != nil {
+			return err
+		}
+
+		fmt.Printf("Wrote new %s\n", util.Accented("Dockerfile"))
+	}
+
+	if writeDockerignore {
+		if err := os.WriteFile(dockerignorePath, dockerignoreContent, 0644); err != nil {
+			return err
+		}
+		fmt.Printf("Wrote new %s\n", util.Accented(".dockerignore"))
+	}
+
+	return nil
 }
