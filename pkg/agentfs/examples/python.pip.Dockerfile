@@ -1,14 +1,18 @@
 # This is an example Dockerfile that builds a minimal container for running LK Agents
+# For more information on the build process, see https://docs.livekit.io/agents/ops/deployment/builds/
 # syntax=docker/dockerfile:1
-ARG PYTHON_VERSION=3.11.6
-FROM python:${PYTHON_VERSION}-slim
+
+# Use the official Python base image with Python 3.13
+# We use the slim variant to keep the image size smaller while still having essential tools
+ARG PYTHON_VERSION=3.13
+FROM python:${PYTHON_VERSION}-slim AS base
 
 # Keeps Python from buffering stdout and stderr to avoid situations where
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
-# Define the program entrypoint file where your agent is started.
-ARG PROGRAM_MAIN="{{.ProgramMain}}"
+# Disable pip version check to speed up builds
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
@@ -16,37 +20,51 @@ ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/home/appuser" \
+    --home "/app" \
     --shell "/sbin/nologin" \
     --uid "${UID}" \
     appuser
 
-
-# Install gcc and other build dependencies.
-RUN apt-get update && \
-    apt-get install -y \
+# Install build dependencies required for Python packages with native extensions
+# gcc: C compiler needed for building Python packages with C extensions
+# g++: C++ compiler needed for building Python packages with C++ extensions
+# python3-dev: Python development headers needed for compilation
+# We clean up the apt cache after installation to keep the image size down
+RUN apt-get update && apt-get install -y \
     gcc \
+    g++ \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/*
 
-USER appuser
+# Create a new directory for our application code
+# And set it as the working directory
+WORKDIR /app
 
-RUN mkdir -p /home/appuser/.cache
-RUN chown -R appuser /home/appuser/.cache
+# Copy just the dependency files first, for more efficient layer caching
+COPY requirements.txt ./
 
-WORKDIR /home/appuser
+# Install Python dependencies using pip
+# --no-cache-dir ensures we don't use the system cache
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY requirements.txt .
-RUN python -m pip install --user --no-cache-dir -r requirements.txt
-
+# Copy all remaining pplication files into the container
+# This includes source code, configuration files, and dependency specifications
+# (Excludes files specified in .dockerignore)
 COPY . .
 
-# ensure that any dependent models are downloaded at build-time
-RUN python "$PROGRAM_MAIN" download-files
+# Change ownership of all app files to the non-privileged user
+# This ensures the application can read/write files as needed
+RUN chown -R appuser:appuser /app
 
-# expose healthcheck port
-EXPOSE 8081
+# Switch to the non-privileged user for all subsequent operations
+# This improves security by not running as root
+USER appuser
 
-# Run the application.
+# Pre-download any ML models or files the agent needs
+# This ensures the container is ready to run immediately without downloading
+# dependencies at runtime, which improves startup time and reliability
+RUN python "{{.ProgramMain}}" download-files
+
+# Run the application
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
 CMD ["python", "{{.ProgramMain}}", "start"]

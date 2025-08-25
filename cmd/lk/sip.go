@@ -236,26 +236,34 @@ var (
 									Name:  "trunks",
 									Usage: "Sets a list of trunks for the dispatch rule",
 								},
-								&cli.StringFlag{
-									Name:  "direct",
-									Usage: "Sets a direct dispatch to a specified room",
-								},
-								&cli.StringFlag{
-									Name:    "caller",
-									Aliases: []string{"individual"},
-									Usage:   "Sets a individual caller dispatch to a new room with a specific prefix",
-								},
-								&cli.StringFlag{
-									Name:  "callee",
-									Usage: "Sets a callee number dispatch to a new room with a specific prefix",
-								},
-								&cli.BoolFlag{
-									Name:  "pin",
-									Usage: "PIN for a dispatch rule",
-								},
-								&cli.BoolFlag{
-									Name:  "randomize",
-									Usage: "Randomize room name, only applies to callee dispatch",
+							},
+							MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
+								{
+									Flags: [][]cli.Flag{
+										{
+											&cli.StringFlag{
+												Name:  "direct",
+												Usage: "Sets a direct dispatch to a specified room",
+											},
+										},
+										{
+											&cli.StringFlag{
+												Name:    "caller",
+												Aliases: []string{"individual"},
+												Usage:   "Sets a individual caller dispatch to a new room with a specific prefix",
+											},
+										},
+										{
+											&cli.StringFlag{
+												Name:  "callee",
+												Usage: "Sets a callee number dispatch to a new room with a specific prefix",
+											},
+											&cli.BoolFlag{
+												Name:  "randomize",
+												Usage: "Randomize room name",
+											},
+										},
+									},
 								},
 							},
 						},
@@ -276,6 +284,35 @@ var (
 								&cli.StringSliceFlag{
 									Name:  "trunks",
 									Usage: "Sets a new list of trunk IDs",
+								},
+							},
+							MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
+								{
+									Flags: [][]cli.Flag{
+										{
+											&cli.StringFlag{
+												Name:  "direct",
+												Usage: "Sets a direct dispatch to a specified room",
+											},
+										},
+										{
+											&cli.StringFlag{
+												Name:    "caller",
+												Aliases: []string{"individual"},
+												Usage:   "Sets a individual caller dispatch to a new room with a specific prefix",
+											},
+										},
+										{
+											&cli.StringFlag{
+												Name:  "callee",
+												Usage: "Sets a callee number dispatch to a new room with a specific prefix",
+											},
+											&cli.BoolFlag{
+												Name:  "randomize",
+												Usage: "Randomize room name",
+											},
+										},
+									},
 								},
 							},
 						},
@@ -944,6 +981,43 @@ func updateSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		req.Name = &val
 	}
 	req.TrunkIds = listUpdateFlag(cmd, "trunks")
+	if val := cmd.String("direct"); val != "" {
+		if req.Rule != nil {
+			return fmt.Errorf("only one dispatch rule type is allowed")
+		}
+		req.Rule = &livekit.SIPDispatchRule{
+			Rule: &livekit.SIPDispatchRule_DispatchRuleDirect{
+				DispatchRuleDirect: &livekit.SIPDispatchRuleDirect{
+					RoomName: val,
+				},
+			},
+		}
+	}
+	if val := cmd.String("caller"); val != "" {
+		if req.Rule != nil {
+			return fmt.Errorf("only one dispatch rule type is allowed")
+		}
+		req.Rule = &livekit.SIPDispatchRule{
+			Rule: &livekit.SIPDispatchRule_DispatchRuleIndividual{
+				DispatchRuleIndividual: &livekit.SIPDispatchRuleIndividual{
+					RoomPrefix: val,
+				},
+			},
+		}
+	}
+	if val := cmd.String("callee"); val != "" {
+		if req.Rule != nil {
+			return fmt.Errorf("only one dispatch rule type is allowed")
+		}
+		req.Rule = &livekit.SIPDispatchRule{
+			Rule: &livekit.SIPDispatchRule_DispatchRuleCallee{
+				DispatchRuleCallee: &livekit.SIPDispatchRuleCallee{
+					RoomPrefix: val,
+					Randomize:  cmd.Bool("randomize"),
+				},
+			},
+		}
+	}
 	info, err := cli.UpdateSIPDispatchRule(ctx, &livekit.UpdateSIPDispatchRuleRequest{
 		SipDispatchRuleId: id,
 		Action: &livekit.UpdateSIPDispatchRuleRequest_Update{
