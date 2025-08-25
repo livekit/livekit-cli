@@ -24,7 +24,12 @@ import (
 	"github.com/livekit/protocol/utils/guid"
 )
 
-func FileExists(dir, filename string) bool {
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func FileExistsInDir(dir, filename string) bool {
 	_, err := os.Stat(filepath.Join(dir, filename))
 	return err == nil
 }
