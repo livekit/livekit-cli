@@ -171,12 +171,3 @@ func ParseMem(mem string, suffix bool) (string, error) {
 	}
 	return fmt.Sprintf("%.2g", memGB), nil
 }
-
-func validateSettingsMap(settingsMap map[string]string, keys []string) error {
-	for _, key := range keys {
-		if _, ok := settingsMap[key]; !ok {
-			return fmt.Errorf("client setting %s is required, please try again later", key)
-		}
-	}
-	return nil
-}
