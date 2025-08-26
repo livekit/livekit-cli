@@ -65,6 +65,17 @@ func (p ProjectType) FileExt() string {
 	}
 }
 
+func (p ProjectType) DefaultEntrypoint() string {
+	switch {
+	case p.IsPython():
+		return "agent.py"
+	case p.IsNode():
+		return "agent.js"
+	default:
+		return ""
+	}
+}
+
 func LocateLockfile(dir string, p ProjectType) (bool, string) {
 	pythonFiles := []string{
 		"requirements.txt",
