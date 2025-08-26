@@ -173,7 +173,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		if err := form.Run(); err != nil {
 			return nil, err
 		}
-		newEntrypoint = selected
+		newEntrypoint = util.ToUnixPath(selected)
 	}
 
 	fmt.Printf("Using entrypoint file [%s]\n", util.Accented(newEntrypoint))
