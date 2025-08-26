@@ -83,12 +83,9 @@ func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap ma
 		return nil, nil, err
 	}
 
-	// TODO: (@rektdeckard) support Node entrypoint validation
-	if projectType.IsPython() {
-		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType)
-		if err != nil {
-			return nil, nil, err
-		}
+	dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	return dockerfileContent, dockerIgnoreContent, nil
@@ -134,11 +131,11 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		priority := func(p string) int {
 			name := filepath.Base(p)
 			switch name {
-			case "__main__.py":
+			case "__main__.py", "index.js":
 				return 0
-			case "main.py":
+			case "main.py", "main.js":
 				return 1
-			case "agent.py":
+			case "agent.py", "agent.js":
 				return 2
 			default:
 				return 3
@@ -156,7 +153,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 
 	var newEntrypoint string
 	if len(fileList) == 0 {
-		newEntrypoint = "main.py"
+		newEntrypoint = projectType.DefaultEntrypoint()
 	} else if len(fileList) == 1 {
 		newEntrypoint = fileList[0]
 	} else {
@@ -173,7 +170,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		if err := form.Run(); err != nil {
 			return nil, err
 		}
-		newEntrypoint = selected
+		newEntrypoint = util.ToUnixPath(selected)
 	}
 
 	fmt.Printf("Using entrypoint file [%s]\n", util.Accented(newEntrypoint))

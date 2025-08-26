@@ -27,6 +27,7 @@ import (
 
 	"github.com/schollz/progressbar/v3"
 
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/logger"
 )
 
@@ -218,7 +219,7 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 		if err != nil {
 			return fmt.Errorf("failed to create tar header for file %s: %w", path, err)
 		}
-		header.Name = relPath
+		header.Name = util.ToUnixPath(relPath)
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return fmt.Errorf("failed to write tar header for file %s: %w", path, err)
 		}
