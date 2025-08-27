@@ -36,7 +36,8 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build the project
-RUN pnpm exec tsc
+# Your package.json must contain a "build" script, such as `"build": "tsc"`
+RUN pnpm build
 
 # Create a non-privileged user that the app will run under
 # See https://docs.docker.com/develop/develop-images/dockerfile_best_practices/#user
@@ -49,16 +50,17 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Ensure ownership of app files and drop privileges for better security
+# Set proper permissions
 RUN chown -R appuser:appuser /app
 USER appuser
 
 # Pre-download any ML models or files the agent needs
 # This ensures the container is ready to run immediately without downloading
 # dependencies at runtime, which improves startup time and reliability
-RUN pnpm exec node dist/agent.js download-files
+# Your package.json must contain a "download-files" script, such as `"download-files": "pnpm run build && node dist/agent.js download-files"`
+RUN pnpm download-files
 
-# Remove development-only dependencies to reduce the runtime image size
+# Switch back to root to remove dev dependencies and finalize setup
 USER root
 RUN pnpm prune --prod && chown -R appuser:appuser /app
 USER appuser
@@ -68,4 +70,5 @@ ENV NODE_ENV=production
 
 # Run the application
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
-CMD [ "pnpm", "exec", "node", "dist/agent.js", "start" ]
+# Your package.json must contain a "start" script, such as `"start": "node dist/agent.js start"`
+CMD [ "pnpm", "start" ]
