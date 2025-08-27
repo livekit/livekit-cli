@@ -17,15 +17,11 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN apt-get update -qq && apt-get install --no-install-recommends -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Pin pnpm version for reproducible builds
-RUN npm install -g pnpm@9.15.9
+RUN npm install -g pnpm@10
 
 # Create a new directory for our application code
 # And set it as the working directory
 WORKDIR /app
-
-# Build stage
-# We use a multi-stage build to keep the runtime image minimal
-FROM base AS build
 
 # Copy just the dependency files first, for more efficient layer caching
 COPY package.json pnpm-lock.yaml ./
@@ -40,13 +36,8 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build the project
-RUN pnpm run build
-
-# Remove development-only dependencies to reduce the runtime image size
-RUN pnpm prune --prod
-
-# Create the runtime image
-FROM base AS runtime
+# Your package.json must contain a "build" script, such as `"build": "tsc"`
+RUN pnpm build
 
 # Create a non-privileged user that the app will run under
 # See https://docs.docker.com/develop/develop-images/dockerfile_best_practices/#user
@@ -59,14 +50,19 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Copy built application and production dependencies from the build stage
-COPY --from=build /app /app
-
-# Copy system CA certificates to ensure HTTPS works correctly at runtime
-COPY --from=build /etc/ssl/certs /etc/ssl/certs
-
-# Ensure ownership of app files and drop privileges for better security
+# Set proper permissions
 RUN chown -R appuser:appuser /app
+USER appuser
+
+# Pre-download any ML models or files the agent needs
+# This ensures the container is ready to run immediately without downloading
+# dependencies at runtime, which improves startup time and reliability
+# Your package.json must contain a "download-files" script, such as `"download-files": "pnpm run build && node dist/agent.js download-files"`
+RUN pnpm download-files
+
+# Switch back to root to remove dev dependencies and finalize setup
+USER root
+RUN pnpm prune --prod && chown -R appuser:appuser /app
 USER appuser
 
 # Set Node.js to production mode
@@ -74,4 +70,5 @@ ENV NODE_ENV=production
 
 # Run the application
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
-CMD [ "node", "./dist/agent.js", "start" ]
+# Your package.json must contain a "start" script, such as `"start": "node dist/agent.js start"`
+CMD [ "pnpm", "start" ]
