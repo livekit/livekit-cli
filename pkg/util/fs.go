@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/livekit/protocol/utils/guid"
 )
@@ -119,4 +120,10 @@ func UseTempPath(permanentPath string) (string, func() error, func() error) {
 		return nil
 	}
 	return tempPath, relocate, cleanup
+}
+
+// Converts a path (possibly Windows-style) to a Unix-style path.
+func ToUnixPath(p string) string {
+	clean := filepath.Clean(p)
+	return strings.ReplaceAll(clean, `\`, `/`)
 }

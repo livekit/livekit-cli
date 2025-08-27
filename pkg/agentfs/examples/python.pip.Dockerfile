@@ -2,9 +2,9 @@
 # For more information on the build process, see https://docs.livekit.io/agents/ops/deployment/builds/
 # syntax=docker/dockerfile:1
 
-# Use the official Python base image with Python 3.11
+# Use the official Python base image with Python 3.13
 # We use the slim variant to keep the image size smaller while still having essential tools
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.13
 FROM python:${PYTHON_VERSION}-slim AS base
 
 # Keeps Python from buffering stdout and stderr to avoid situations where

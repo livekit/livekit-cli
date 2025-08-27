@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -49,115 +49,131 @@ func HasDockerfile(dir string) (bool, error) {
 }
 
 func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[string]string) error {
-	if len(settingsMap) == 0 {
-		return fmt.Errorf("unable to fetch client settings from server, please try again later")
-	}
-
-	var dockerfileContent []byte
-	var dockerIgnoreContent []byte
-	var err error
-
-	dockerfileContent, err = fs.ReadFile("examples/" + string(projectType) + ".Dockerfile")
+	dockerfileContent, dockerIgnoreContent, err := GenerateDockerArtifacts(dir, projectType, settingsMap)
 	if err != nil {
 		return err
 	}
 
-	dockerIgnoreContent, err = fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
-	if err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "Dockerfile"), dockerfileContent, 0644); err != nil {
 		return err
 	}
 
-	// TODO: (@rektdeckard) support Node entrypoint validation
-	if projectType.IsPython() {
-		dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, settingsMap)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = os.WriteFile(filepath.Join(dir, "Dockerfile"), dockerfileContent, 0644)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644)
-	if err != nil {
+	if err := os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, settingsMap map[string]string) ([]byte, error) {
-	valFile := func(fileName string) (string, error) {
-		// NOTE: we need to recurse to find entrypoints which may exist in src/ or some other directory.
-		// This could be a lot of files, so we omit any files in .dockerignore, since they cannot be
-		// used as entrypoints.
+// GenerateDockerArtifacts returns the Dockerfile and .dockerignore contents for the
+// provided project type without writing them to disk. The Dockerfile content may be
+// templated/validated (e.g., Python entrypoint).
+func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap map[string]string) ([]byte, []byte, error) {
+	if len(settingsMap) == 0 {
+		return nil, nil, fmt.Errorf("unable to fetch client settings from server, please try again later")
+	}
 
-		reader := bytes.NewReader(dockerignoreContent)
-		patterns, err := ignorefile.ReadAll(reader)
-		if err != nil {
-			return "", err
-		}
-		matcher, err := patternmatcher.New(patterns)
-		if err != nil {
-			return "", err
-		}
+	dockerfileContent, err := fs.ReadFile("examples/" + string(projectType) + ".Dockerfile")
+	if err != nil {
+		return nil, nil, err
+	}
 
-		var fileList []string
-		if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
-				return nil
-			} else if err != nil {
-				return err
-			}
-			if !d.IsDir() && strings.HasSuffix(d.Name(), projectType.FileExt()) {
-				fileList = append(fileList, path)
-			}
+	dockerIgnoreContent, err := fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return dockerfileContent, dockerIgnoreContent, nil
+}
+
+func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType) ([]byte, error) {
+	// Build matcher from the Dockerignore content so we don't consider ignored files
+	reader := bytes.NewReader(dockerignoreContent)
+	patterns, err := ignorefile.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	matcher, err := patternmatcher.New(patterns)
+	if err != nil {
+		return nil, err
+	}
+
+	var fileList []string
+	if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
 			return nil
-		}); err != nil {
-			return "", fmt.Errorf("error walking directory %s: %w", dir, err)
+		} else if err != nil {
+			return err
 		}
-
-		if slices.Contains(fileList, fileName) {
-			return fileName, nil
+		if !d.IsDir() && strings.HasSuffix(d.Name(), projectType.FileExt()) {
+			// Exclude double-underscore files (e.g., __init__.py) which cannot be entrypoint
+			// except for __main__.py, which is the default entrypoint for Python.
+			if strings.HasPrefix(d.Name(), "__") && d.Name() != "__main__.py" {
+				return nil
+			}
+			fileList = append(fileList, path)
 		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("error walking directory %s: %w", dir, err)
+	}
 
-		// If no matching files found, return early
-		if len(fileList) == 0 {
-			return "", nil
+	// Prioritize common entrypoint filenames at the top of the list
+	if len(fileList) > 1 {
+		priority := func(p string) int {
+			name := filepath.Base(p)
+			switch name {
+			case "__main__.py", "index.js":
+				return 0
+			case "main.py", "main.js":
+				return 1
+			case "agent.py", "agent.js":
+				return 2
+			default:
+				return 3
+			}
 		}
+		sort.SliceStable(fileList, func(i, j int) bool {
+			pi := priority(fileList[i])
+			pj := priority(fileList[j])
+			if pi != pj {
+				return pi < pj
+			}
+			return fileList[i] < fileList[j]
+		})
+	}
 
-		var selected string
+	var newEntrypoint string
+	if len(fileList) == 0 {
+		newEntrypoint = projectType.DefaultEntrypoint()
+	} else if len(fileList) == 1 {
+		newEntrypoint = fileList[0]
+	} else {
+		selected := fileList[0]
 		form := huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
-					Title(fmt.Sprintf("Select %s file to use as entrypoint", projectType.Lang())).
+					Title(fmt.Sprintf("Select the %s file which contains your agent's entrypoint", projectType.Lang())).
 					Options(huh.NewOptions(fileList...)...).
 					Value(&selected).
 					WithTheme(util.Theme),
 			),
 		)
-
 		if err := form.Run(); err != nil {
-			return "", err
+			return nil, err
 		}
-
-		return selected, nil
+		newEntrypoint = util.ToUnixPath(selected)
 	}
 
-	if err := validateSettingsMap(settingsMap, []string{"python_entrypoint"}); err != nil {
-		return nil, err
-	}
-
-	pythonEntrypoint := settingsMap["python_entrypoint"]
-	newEntrypoint, err := valFile(pythonEntrypoint)
-	if err != nil {
-		return nil, err
-	}
+	fmt.Printf("Using entrypoint file [%s]\n", util.Accented(newEntrypoint))
 
 	tpl := template.Must(template.New("Dockerfile").Parse(string(dockerfileContent)))
 	buf := &bytes.Buffer{}
