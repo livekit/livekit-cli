@@ -22,7 +22,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	pathpkg "path"
 	"path/filepath"
 	"strings"
 
@@ -44,6 +43,7 @@ var (
 	}
 
 	ignoreFilePatterns = []string{
+		".gitignore",
 		".dockerignore",
 	}
 )
@@ -62,17 +62,8 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 		}
 	}
 
-	// Normalize and filter ignore patterns
-	{
-		filtered := make([]string, 0, len(excludeFiles))
-		for _, exclude := range excludeFiles {
-			exclude = strings.TrimSpace(exclude)
-			if exclude == "" || strings.HasPrefix(exclude, "#") {
-				continue
-			}
-			filtered = append(filtered, filepath.ToSlash(exclude))
-		}
-		excludeFiles = filtered
+	for i, exclude := range excludeFiles {
+		excludeFiles[i] = strings.TrimSpace(exclude)
 	}
 
 	var totalSize int64
@@ -85,19 +76,17 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 		if err != nil {
 			return nil
 		}
-		// Use forward slashes inside tar archives regardless of OS
-		relPath = filepath.ToSlash(relPath)
 
 		for _, exclude := range excludeFiles {
 			if exclude == "" || strings.Contains(exclude, "Dockerfile") {
 				continue
 			}
 			if info.IsDir() {
-				if strings.HasPrefix(relPath, exclude+"/") || relPath == exclude {
+				if strings.HasPrefix(relPath, exclude+"/") || strings.HasPrefix(relPath, exclude) {
 					return filepath.SkipDir
 				}
 			}
-			matched, err := pathpkg.Match(exclude, relPath)
+			matched, err := filepath.Match(exclude, relPath)
 			if err != nil {
 				return nil
 			}
@@ -144,8 +133,6 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 		if err != nil {
 			return fmt.Errorf("failed to calculate relative path for %s: %w", path, err)
 		}
-		// Normalize to forward slashes for tar header names and matching
-		relPath = filepath.ToSlash(relPath)
 
 		for _, exclude := range excludeFiles {
 			if exclude == "" || strings.Contains(exclude, "Dockerfile") {
@@ -153,13 +140,13 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 			}
 
 			if info.IsDir() {
-				if strings.HasPrefix(relPath, exclude+"/") || relPath == exclude {
+				if strings.HasPrefix(relPath, exclude+"/") || strings.HasPrefix(relPath, exclude) {
 					logger.Debugw("excluding directory from tarball", "path", path)
 					return filepath.SkipDir
 				}
 			}
 
-			matched, err := pathpkg.Match(exclude, relPath)
+			matched, err := filepath.Match(exclude, relPath)
 			if err != nil {
 				return nil
 			}
