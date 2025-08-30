@@ -97,6 +97,12 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string,
 	}
 
 	checkFilesToInclude := func(path string, info os.FileInfo) bool {
+		fileName := filepath.Base(path)
+		// we have to include the Dockerfile in the upload, as it is required for the build
+		if strings.Contains(fileName, "Dockerfile") {
+			return true
+		}
+
 		if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
 			return false
 		} else if err != nil {

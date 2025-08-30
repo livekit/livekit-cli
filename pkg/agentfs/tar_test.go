@@ -410,6 +410,12 @@ func TestUploadTarballWithPipPythonProject(t *testing.T) {
 
 	err = os.WriteFile(filepath.Join(tmpDir, "setup.py"), []byte("from setuptools import setup\nsetup(name='myapp')"), 0644)
 	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("Dockerfile content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile.prod"), []byte("Dockerfile prod content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "other-Dockerfile"), []byte("other Dockerfile content"), 0644)
+	require.NoError(t, err)
 
 	excludedDirsCheck := []string{
 		"__pycache__",
@@ -469,6 +475,9 @@ func TestUploadTarballWithPipPythonProject(t *testing.T) {
 		"main.py":          false,
 		"requirements.txt": false,
 		"setup.py":         false,
+		"Dockerfile":       false,
+		"Dockerfile.prod":  false,
+		"other-Dockerfile": false,
 	}
 
 	for _, content := range contents {
@@ -537,6 +546,10 @@ func TestUploadTarballWithUvPythonProject(t *testing.T) {
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tmpDir, "main.pyc"), []byte("compiled python"), 0644)
 	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("Dockerfile content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile.dev"), []byte("Dockerfile dev content"), 0644)
+	require.NoError(t, err)
 
 	var tarBuffer bytes.Buffer
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -555,6 +568,8 @@ func TestUploadTarballWithUvPythonProject(t *testing.T) {
 		"main.py":        false,
 		"pyproject.toml": false,
 		"utils.py":       false,
+		"Dockerfile":     false,
+		"Dockerfile.dev": false,
 	}
 
 	for _, content := range contents {
@@ -613,6 +628,10 @@ func TestUploadTarballWithNodeProject(t *testing.T) {
 
 	err = os.WriteFile(filepath.Join(tmpDir, "utils.js"), []byte("function helper() {\n    console.log('helper');\n}"), 0644)
 	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("Dockerfile content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile.dev"), []byte("Dockerfile dev content"), 0644)
+	require.NoError(t, err)
 
 	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir"), 0755)
 	require.NoError(t, err)
@@ -646,9 +665,11 @@ func TestUploadTarballWithNodeProject(t *testing.T) {
 	contents := readTarContents(t, tarBuffer.Bytes())
 
 	expectedFiles := map[string]bool{
-		"index.js":     false,
-		"package.json": false,
-		"utils.js":     false,
+		"index.js":       false,
+		"package.json":   false,
+		"utils.js":       false,
+		"Dockerfile":     false,
+		"Dockerfile.dev": false,
 	}
 
 	for _, content := range contents {
