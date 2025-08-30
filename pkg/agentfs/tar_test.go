@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -47,7 +48,7 @@ func TestUploadTarball(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{})
+	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 }
 
@@ -78,14 +79,14 @@ func TestUploadTarballFilePermissions(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{})
+	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "permission denied")
 
 	err = os.Remove(restrictedFile)
 	require.NoError(t, err)
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{})
+	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 }
 
@@ -180,7 +181,7 @@ func TestUploadTarballDotfiles(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{})
+	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 
 	contents := readTarContents(t, tarBuffer.Bytes())
@@ -264,7 +265,7 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{})
+	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 
 	contents := readTarContents(t, tarBuffer.Bytes())
@@ -307,5 +308,419 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 			}
 		}
 		require.True(t, found, "__init__.py not found in tar: %s", initPath)
+	}
+}
+
+func TestUploadTarballWithDockerignore(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "dockerignore-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	dockerignoreContent := `node_modules/
+__pycache__/
+.venv/
+venv/
+.env
+.git/
+*.log`
+
+	err = os.WriteFile(filepath.Join(tmpDir, ".dockerignore"), []byte(dockerignoreContent), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('Hello World')"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "requirements.txt"), []byte("requests==2.28.0"), 0644)
+	require.NoError(t, err)
+
+	excludedDirs := []string{
+		"__pycache__",
+		".venv",
+		"venv",
+		".git",
+	}
+
+	for _, dir := range excludedDirs {
+		err = os.MkdirAll(filepath.Join(tmpDir, dir), 0755)
+		require.NoError(t, err)
+
+		err = os.WriteFile(filepath.Join(tmpDir, dir, "test.txt"), []byte("should be excluded"), 0644)
+		require.NoError(t, err)
+	}
+
+	err = os.WriteFile(filepath.Join(tmpDir, ".env"), []byte("SECRET_KEY=12345"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "app.log"), []byte("log content"), 0644)
+	require.NoError(t, err)
+
+	var tarBuffer bytes.Buffer
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.Copy(&tarBuffer, r.Body)
+		require.NoError(t, err)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+
+	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
+	require.NoError(t, err)
+
+	contents := readTarContents(t, tarBuffer.Bytes())
+
+	expectedFiles := map[string]bool{
+		"main.py":          false,
+		"requirements.txt": false,
+	}
+
+	for _, content := range contents {
+		if _, exists := expectedFiles[content.Name]; exists {
+			expectedFiles[content.Name] = true
+		}
+	}
+
+	for file, found := range expectedFiles {
+		require.True(t, found, "included file not found in tar: %s", file)
+	}
+
+	for _, content := range contents {
+		for _, excludedDir := range excludedDirs {
+			require.False(t, strings.HasPrefix(content.Name, excludedDir),
+				"excluded directory content found in tar: %s", content.Name)
+		}
+
+		require.NotEqual(t, ".env", content.Name, ".env file should not be in tar")
+		require.NotEqual(t, "app.log", content.Name, "*.log file should not be in tar")
+	}
+
+	for _, content := range contents {
+		require.NotEqual(t, ".dockerignore", content.Name, ".dockerignore file should not be in tar")
+	}
+}
+
+func TestUploadTarballWithPipPythonProject(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "pip-python-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('Hello from pip project')"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "requirements.txt"), []byte("requests==2.28.0\nflask==2.3.0"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "setup.py"), []byte("from setuptools import setup\nsetup(name='myapp')"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("Dockerfile content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile.prod"), []byte("Dockerfile prod content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "other-Dockerfile"), []byte("other Dockerfile content"), 0644)
+	require.NoError(t, err)
+
+	excludedDirsCheck := []string{
+		"__pycache__",
+		".venv",
+		"venv",
+		".git",
+	}
+
+	for _, dir := range excludedDirsCheck {
+		err = os.MkdirAll(filepath.Join(tmpDir, dir), 0755)
+		require.NoError(t, err)
+
+		err = os.WriteFile(filepath.Join(tmpDir, dir, "test.txt"), []byte("should be excluded"), 0644)
+		require.NoError(t, err)
+	}
+
+	// create a subdir with excluded files
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir"), 0755)
+	require.NoError(t, err)
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir", ".venv"), 0755)
+	require.NoError(t, err)
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir", "venv"), 0755)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "some-dir", ".env"), []byte("SECRET_KEY=12345"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "some-dir", "app.log"), []byte("log content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "some-dir", "main.pyc"), []byte("compiled python"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "some-dir", "livekit.toml"), []byte("some toml content"), 0644)
+	require.NoError(t, err)
+
+	// excluded files
+	err = os.WriteFile(filepath.Join(tmpDir, ".env"), []byte("SECRET_KEY=12345"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "app.log"), []byte("log content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "main.pyc"), []byte("compiled python"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "livekit.toml"), []byte("some toml content"), 0644)
+	require.NoError(t, err)
+
+	var tarBuffer bytes.Buffer
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.Copy(&tarBuffer, r.Body)
+		require.NoError(t, err)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+
+	err = UploadTarball(tmpDir, mockServer.URL, []string{"**/livekit.toml"}, ProjectTypePythonPip)
+	require.NoError(t, err)
+
+	contents := readTarContents(t, tarBuffer.Bytes())
+
+	expectedFiles := map[string]bool{
+		"main.py":          false,
+		"requirements.txt": false,
+		"setup.py":         false,
+		"Dockerfile":       false,
+		"Dockerfile.prod":  false,
+		"other-Dockerfile": false,
+	}
+
+	for _, content := range contents {
+		if _, exists := expectedFiles[content.Name]; exists {
+			expectedFiles[content.Name] = true
+		}
+	}
+
+	for file, found := range expectedFiles {
+		require.True(t, found, "included file not found in tar: %s", file)
+	}
+
+	for _, content := range contents {
+		for _, excludedDir := range excludedDirsCheck {
+			require.False(t, strings.HasPrefix(content.Name, excludedDir),
+				"excluded directory content found in tar: %s", content.Name)
+		}
+
+		excludedFiles := []string{
+			".env",
+			"app.log",
+			"main.pyc",
+			".dockerignore",
+			"some-dir/.env",
+			"some-dir/.venv",
+			"some-dir/venv",
+			"some-dir/app.log",
+			"some-dir/main.pyc",
+			"some-dir/livekit.toml",
+		}
+
+		for _, excludedFile := range excludedFiles {
+			require.NotEqual(t, excludedFile, content.Name,
+				"excluded file should not be in tar: %s", content.Name)
+		}
+	}
+
+}
+
+func TestUploadTarballWithUvPythonProject(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "uv-python-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('Hello from uv project')"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte("[project]\nname = 'myapp'\nversion = '0.1.0'"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "utils.py"), []byte("def helper():\n    pass"), 0644)
+	require.NoError(t, err)
+
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir"), 0755)
+	require.NoError(t, err)
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir", ".venv"), 0755)
+	require.NoError(t, err)
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir", "venv"), 0755)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "some-dir", ".env"), []byte("SECRET_KEY=12345"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, ".env"), []byte("SECRET_KEY=12345"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "app.log"), []byte("log content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "main.pyc"), []byte("compiled python"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("Dockerfile content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile.dev"), []byte("Dockerfile dev content"), 0644)
+	require.NoError(t, err)
+
+	var tarBuffer bytes.Buffer
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.Copy(&tarBuffer, r.Body)
+		require.NoError(t, err)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+
+	err = UploadTarball(tmpDir, mockServer.URL, []string{"**/livekit.toml"}, ProjectTypePythonUV)
+	require.NoError(t, err)
+
+	contents := readTarContents(t, tarBuffer.Bytes())
+
+	expectedFiles := map[string]bool{
+		"main.py":        false,
+		"pyproject.toml": false,
+		"utils.py":       false,
+		"Dockerfile":     false,
+		"Dockerfile.dev": false,
+	}
+
+	for _, content := range contents {
+		if _, exists := expectedFiles[content.Name]; exists {
+			expectedFiles[content.Name] = true
+		}
+	}
+
+	for file, found := range expectedFiles {
+		require.True(t, found, "included file not found in tar: %s", file)
+	}
+
+	for _, content := range contents {
+		excludedDirs := []string{
+			"__pycache__",
+			".venv",
+			"venv",
+			".git",
+		}
+
+		for _, excludedDir := range excludedDirs {
+			require.False(t, strings.HasPrefix(content.Name, excludedDir),
+				"excluded directory content found in tar: %s", content.Name)
+		}
+
+		excludedFiles := []string{
+			".env",
+			"app.log",
+			"main.pyc",
+			".dockerignore",
+			"some-dir/.env",
+			"some-dir/.venv",
+			"some-dir/venv",
+			"some-dir/app.log",
+			"some-dir/main.pyc",
+			"some-dir/livekit.toml",
+		}
+
+		for _, excludedFile := range excludedFiles {
+			require.NotEqual(t, excludedFile, content.Name,
+				"excluded file should not be in tar: %s", content.Name)
+		}
+	}
+}
+
+func TestUploadTarballWithNodeProject(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "node-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "index.js"), []byte("console.log('Hello from Node project')"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(`{"name": "myapp", "version": "1.0.0"}`), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, "utils.js"), []byte("function helper() {\n    console.log('helper');\n}"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte("Dockerfile content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "Dockerfile.dev"), []byte("Dockerfile dev content"), 0644)
+	require.NoError(t, err)
+
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir"), 0755)
+	require.NoError(t, err)
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir", "node_modules"), 0755)
+	require.NoError(t, err)
+	err = os.MkdirAll(filepath.Join(tmpDir, "some-dir", "dist"), 0755)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "some-dir", ".env"), []byte("NODE_ENV=development"), 0644)
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(tmpDir, ".env"), []byte("NODE_ENV=development"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "app.log"), []byte("log content"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "npm-debug.log"), []byte("npm debug"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, ".DS_Store"), []byte("mac file"), 0644)
+	require.NoError(t, err)
+
+	var tarBuffer bytes.Buffer
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := io.Copy(&tarBuffer, r.Body)
+		require.NoError(t, err)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+
+	err = UploadTarball(tmpDir, mockServer.URL, []string{"**/livekit.toml"}, ProjectTypeNode)
+	require.NoError(t, err)
+
+	contents := readTarContents(t, tarBuffer.Bytes())
+
+	expectedFiles := map[string]bool{
+		"index.js":       false,
+		"package.json":   false,
+		"utils.js":       false,
+		"Dockerfile":     false,
+		"Dockerfile.dev": false,
+	}
+
+	for _, content := range contents {
+		if _, exists := expectedFiles[content.Name]; exists {
+			expectedFiles[content.Name] = true
+		}
+	}
+
+	for file, found := range expectedFiles {
+		require.True(t, found, "included file not found in tar: %s", file)
+	}
+
+	for _, content := range contents {
+		excludedDirs := []string{
+			"node_modules",
+			"dist",
+			"build",
+			"coverage",
+			".git",
+		}
+
+		for _, excludedDir := range excludedDirs {
+			require.False(t, strings.HasPrefix(content.Name, excludedDir),
+				"excluded directory content found in tar: %s", content.Name)
+		}
+
+		excludedFiles := []string{
+			".env",
+			"app.log",
+			"npm-debug.log",
+			".DS_Store",
+			".dockerignore",
+		}
+
+		for _, excludedFile := range excludedFiles {
+			require.NotEqual(t, excludedFile, content.Name,
+				"excluded file should not be in tar: %s", content.Name)
+		}
+
+		excludedPatterns := []string{
+			"node_modules",
+			"dist",
+			"build",
+			"coverage",
+			".git",
+		}
+
+		for _, pattern := range excludedPatterns {
+			if strings.Contains(content.Name, pattern) {
+				t.Errorf("excluded pattern '%s' found in tar content: %s", pattern, content.Name)
+			}
+		}
 	}
 }

@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -29,6 +30,8 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/logger"
+
+	"github.com/moby/patternmatcher"
 )
 
 var (
@@ -48,26 +51,71 @@ var (
 	}
 )
 
-func UploadTarball(directory string, presignedUrl string, excludeFiles []string) error {
-	excludeFiles = append(defaultExcludePatterns, excludeFiles...)
+func UploadTarball(directory string, presignedUrl string, excludeFiles []string, projectType ProjectType) error {
+	excludeFiles = append(excludeFiles, defaultExcludePatterns...)
 
-	for _, exclude := range ignoreFilePatterns {
-		ignore := filepath.Join(directory, exclude)
-		if _, err := os.Stat(ignore); err == nil {
-			content, err := os.ReadFile(ignore)
+	loadExcludeFiles := func(filename string) (bool, string, error) {
+		if _, err := os.Stat(filename); err == nil {
+			content, err := os.ReadFile(filename)
 			if err != nil {
-				return fmt.Errorf("failed to read %s: %w", ignore, err)
+				return false, "", err
 			}
-			excludeFiles = append(excludeFiles, strings.Split(string(content), "\n")...)
+			return true, string(content), nil
 		}
+		return false, "", nil
+	}
+
+	foundDockerIgnore := false
+	for _, exclude := range ignoreFilePatterns {
+		found, content, err := loadExcludeFiles(path.Join(directory, exclude))
+		if err != nil {
+			logger.Debugw("failed to load exclude file", "filename", exclude, "error", err)
+			continue
+		}
+		if exclude == ".dockerignore" && found {
+			foundDockerIgnore = true
+		}
+		excludeFiles = append(excludeFiles, strings.Split(content, "\n")...)
+	}
+
+	// need to ensure we use a dockerignore file
+	// if we fail to load a dockerignore file, we have to exit
+	if !foundDockerIgnore {
+		dockerIgnoreContent, err := fs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
+		if err != nil {
+			return fmt.Errorf("failed to load exclude file %s: %w", string(projectType), err)
+		}
+		excludeFiles = append(excludeFiles, strings.Split(string(dockerIgnoreContent), "\n")...)
+	}
+
+	matcher, err := patternmatcher.New(excludeFiles)
+	if err != nil {
+		return fmt.Errorf("failed to create pattern matcher: %w", err)
 	}
 
 	for i, exclude := range excludeFiles {
 		excludeFiles[i] = strings.TrimSpace(exclude)
 	}
 
+	checkFilesToInclude := func(path string, info os.FileInfo) bool {
+		fileName := filepath.Base(path)
+		// we have to include the Dockerfile in the upload, as it is required for the build
+		if strings.Contains(fileName, "Dockerfile") {
+			return true
+		}
+
+		if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
+			return false
+		} else if err != nil {
+			return false
+		}
+		return true
+	}
+
+	// we walk the directory first to calculate the total size of the tarball
+	// this lets the progress bar show the correct progress
 	var totalSize int64
-	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -77,22 +125,8 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 			return nil
 		}
 
-		for _, exclude := range excludeFiles {
-			if exclude == "" || strings.Contains(exclude, "Dockerfile") {
-				continue
-			}
-			if info.IsDir() {
-				if strings.HasPrefix(relPath, exclude+"/") || strings.HasPrefix(relPath, exclude) {
-					return filepath.SkipDir
-				}
-			}
-			matched, err := filepath.Match(exclude, relPath)
-			if err != nil {
-				return nil
-			}
-			if matched {
-				return nil
-			}
+		if !checkFilesToInclude(relPath, info) {
+			return nil
 		}
 
 		if !info.IsDir() && info.Mode().IsRegular() {
@@ -134,26 +168,9 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string)
 			return fmt.Errorf("failed to calculate relative path for %s: %w", path, err)
 		}
 
-		for _, exclude := range excludeFiles {
-			if exclude == "" || strings.Contains(exclude, "Dockerfile") {
-				continue
-			}
-
-			if info.IsDir() {
-				if strings.HasPrefix(relPath, exclude+"/") || strings.HasPrefix(relPath, exclude) {
-					logger.Debugw("excluding directory from tarball", "path", path)
-					return filepath.SkipDir
-				}
-			}
-
-			matched, err := filepath.Match(exclude, relPath)
-			if err != nil {
-				return nil
-			}
-			if matched {
-				logger.Debugw("excluding file from tarball", "path", path)
-				return nil
-			}
+		if !checkFilesToInclude(relPath, info) {
+			logger.Debugw("excluding file from tarball", "path", path)
+			return nil
 		}
 
 		// Follow symlinks and include the actual file contents

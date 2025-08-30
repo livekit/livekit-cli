@@ -432,7 +432,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	err = agentfs.UploadTarball(workingDir, resp.PresignedUrl, []string{config.LiveKitTOMLFile})
+	err = agentfs.UploadTarball(workingDir, resp.PresignedUrl, []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}, projectType)
 	if err != nil {
 		return err
 	}
@@ -595,7 +595,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	presignedUrl := resp.PresignedUrl
-	err = agentfs.UploadTarball(workingDir, presignedUrl, []string{config.LiveKitTOMLFile})
+	err = agentfs.UploadTarball(workingDir, presignedUrl, []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}, projectType)
 	if err != nil {
 		return err
 	}

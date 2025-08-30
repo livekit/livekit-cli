@@ -1,17 +1,18 @@
 package agentfs
 
 import (
+	"path"
 	"testing"
 )
 
 func TestLoadDockerFiles(t *testing.T) {
 	expectedFiles := []string{
-		"examples/node.Dockerfile",
-		"examples/node.dockerignore",
-		"examples/python.pip.Dockerfile",
-		"examples/python.pip.dockerignore",
-		"examples/python.uv.Dockerfile",
-		"examples/python.uv.dockerignore",
+		path.Join("examples", "node.Dockerfile"),
+		path.Join("examples", "node.dockerignore"),
+		path.Join("examples", "python.pip.Dockerfile"),
+		path.Join("examples", "python.pip.dockerignore"),
+		path.Join("examples", "python.uv.Dockerfile"),
+		path.Join("examples", "python.uv.dockerignore"),
 	}
 
 	for _, file := range expectedFiles {
