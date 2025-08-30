@@ -14,13 +14,17 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    permissions:
+      contents: read
+      packages: read
+
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version-file: "go.mod"
+          go-version-file: "1.25"
           cache: true
 
       - name: Set up gotestfmt
