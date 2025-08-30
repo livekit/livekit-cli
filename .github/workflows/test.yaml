@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          go test -race -json -v ./... 2>&1 | tee test.log | gotestfmt
+          go test -race -json -v ./... 2>&1 | grep -v "Compressing files" | grep -v "Uploading" | tee test.log | gotestfmt
 
       - name: Upload test log
         uses: actions/upload-artifact@v4
