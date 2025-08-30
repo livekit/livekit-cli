@@ -73,12 +73,12 @@ func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap ma
 		return nil, nil, fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
 
-	dockerfileContent, err := fs.ReadFile("examples/" + string(projectType) + ".Dockerfile")
+	dockerfileContent, err := fs.ReadFile(filepath.Join("examples", string(projectType)+".Dockerfile"))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	dockerIgnoreContent, err := fs.ReadFile("examples/" + string(projectType) + ".dockerignore")
+	dockerIgnoreContent, err := fs.ReadFile(filepath.Join("examples", string(projectType)+".dockerignore"))
 	if err != nil {
 		return nil, nil, err
 	}
