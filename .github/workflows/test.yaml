@@ -40,12 +40,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          go test -race -json -v ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+          go test -race -json -v ./... 2>&1 | tee test.log | gotestfmt
 
       - name: Upload test log
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-log-${{ matrix.os }}
-          path: /tmp/gotest.log
-          if-no-files-found: error
+          path: test.log
+          if-no-files-found: warn
