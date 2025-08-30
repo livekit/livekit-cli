@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -66,7 +67,7 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string,
 
 	foundDockerIgnore := false
 	for _, exclude := range ignoreFilePatterns {
-		found, content, err := loadExcludeFiles(filepath.Join(directory, exclude))
+		found, content, err := loadExcludeFiles(path.Join(directory, exclude))
 		if err != nil {
 			logger.Debugw("failed to load exclude file", "filename", exclude, "error", err)
 			continue
@@ -80,7 +81,7 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string,
 	// need to ensure we use a dockerignore file
 	// if we fail to load a dockerignore file, we have to exit
 	if !foundDockerIgnore {
-		dockerIgnoreContent, err := fs.ReadFile(filepath.Join("examples", string(projectType)+".dockerignore"))
+		dockerIgnoreContent, err := fs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
 		if err != nil {
 			return fmt.Errorf("failed to load exclude file %s: %w", string(projectType), err)
 		}
