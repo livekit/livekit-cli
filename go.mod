@@ -15,7 +15,7 @@ require (
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.41.0
-	github.com/livekit/server-sdk-go/v2 v2.11.2-0.20250828071538-b11bf0b20657
+	github.com/livekit/server-sdk-go/v2 v2.11.2
 	github.com/moby/buildkit v0.23.2
 	github.com/moby/patternmatcher v0.6.0
 	github.com/pion/rtcp v1.2.15
