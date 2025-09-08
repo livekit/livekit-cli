@@ -278,8 +278,8 @@ github.com/livekit/protocol v1.41.0 h1:aCMkM/MEmiZt7LRoZAfo1muZYjlioaw+NbVnkUDpg
 github.com/livekit/protocol v1.41.0/go.mod h1:Scx8arfj5y65w6EYA3ZIKJafoN2xBuV8pauvyrvI4eg=
 github.com/livekit/psrpc v0.6.1-0.20250726180611-3915e005e741 h1:KKL1u94l6dF9u4cBwnnfozk27GH1txWy2SlvkfgmzoY=
 github.com/livekit/psrpc v0.6.1-0.20250726180611-3915e005e741/go.mod h1:AuDC5uOoEjQJEc69v4Li3t77Ocz0e0NdjQEuFfO+vfk=
-github.com/livekit/server-sdk-go/v2 v2.11.2-0.20250828071538-b11bf0b20657 h1:/UfAc/OkFRxNpS1BZPSZzrF1SNhWpBtf+6BPtW7aMEI=
-github.com/livekit/server-sdk-go/v2 v2.11.2-0.20250828071538-b11bf0b20657/go.mod h1:iUqw/601NGjems2tv1K7csr2YqbzDCsM54nCCTYCtcw=
+github.com/livekit/server-sdk-go/v2 v2.11.2 h1:Nnkf6nlVweHqywx8SxolInrEHjdM5HKtiWBDhrbrXi4=
+github.com/livekit/server-sdk-go/v2 v2.11.2/go.mod h1:ZRI95+32aJIC4BI0hV0h/XfHcX9Vrk7zcT2mKG1Q758=
 github.com/lucasb-eyer/go-colorful v1.2.0 h1:1nnpGOrhyZZuNyfu1QjKiUICQ74+3FNCN69Aj6K7nkY=
 github.com/lucasb-eyer/go-colorful v1.2.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/magefile/mage v1.15.0 h1:BvGheCMAsG3bWUDbZ8AyXXpCNwU9u5CB6sM+HNb9HYg=
