@@ -37,6 +37,12 @@ import (
 	"github.com/livekit/protocol/logger"
 )
 
+const (
+	cloudAgentsBetaSignupURL = "https://forms.gle/GkGNNTiMt2qyfnu78"
+
+	maxSecretFileSize = 1024 * 1024 // 1MB
+)
+
 var (
 	idFlag = func(required bool) *cli.StringFlag {
 		return &cli.StringFlag{
@@ -62,6 +68,12 @@ var (
 	secretsFlag = &cli.StringSliceFlag{
 		Name:     "secrets",
 		Usage:    "KEY=VALUE comma separated secrets. These will be injected as environment variables into the agent. These take precedence over secrets-file.",
+		Required: false,
+	}
+
+	secretsMountFlag = &cli.StringSliceFlag{
+		Name:     "secret-mount",
+		Usage:    "Local path to a secret file to be mounted on agent environment",
 		Required: false,
 	}
 
@@ -142,6 +154,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						secretsMountFlag,
 						silentFlag,
 						regionFlag,
 						skipSDKCheckFlag,
@@ -185,6 +198,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						secretsMountFlag,
 						skipSDKCheckFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
@@ -210,6 +224,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						secretsMountFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -302,6 +317,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						secretsMountFlag,
 						idFlag(false),
 						&cli.BoolFlag{
 							Name:     "overwrite",
@@ -1184,6 +1200,28 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	silent := cmd.Bool("silent")
 	secrets := make(map[string]*lkproto.AgentSecret)
 
+	mountableSecretFiles := cmd.StringSlice("secret-mount")
+	for _, filePath := range mountableSecretFiles {
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secret file: %w", err)
+		}
+		if fileInfo.Size() > maxSecretFileSize {
+			return nil, fmt.Errorf("secret file size is too large (must be under %d MB): %s", maxSecretFileSize/(1024*1024), filePath)
+		}
+		fileContent, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read secret file: %w", err)
+		}
+		name := fileInfo.Name()
+		agentSecret := &lkproto.AgentSecret{
+			Name:  name,
+			Value: []byte(fileContent),
+			Kind:  lkproto.AgentSecretKind_AGENT_SECRET_KIND_FILE,
+		}
+		secrets[name] = agentSecret
+	}
+
 	if values, err := parseKeyValuePairs(cmd, "secrets"); err != nil {
 		return nil, fmt.Errorf("failed to parse secrets: %w", err)
 	} else {
@@ -1191,10 +1229,10 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 			agentSecret := &lkproto.AgentSecret{
 				Name:  key,
 				Value: []byte(val),
+				Kind:  lkproto.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT,
 			}
 			secrets[key] = agentSecret
 		}
-
 	}
 
 	shouldReadFromDisk := cmd.IsSet("secrets-file") || !lazy || (required && len(secrets) == 0)
@@ -1215,6 +1253,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 			secret := &lkproto.AgentSecret{
 				Name:  k,
 				Value: []byte(v),
+				Kind:  lkproto.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT,
 			}
 			secrets[k] = secret
 		}
