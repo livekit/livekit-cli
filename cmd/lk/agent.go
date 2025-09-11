@@ -38,8 +38,6 @@ import (
 )
 
 const (
-	cloudAgentsBetaSignupURL = "https://forms.gle/GkGNNTiMt2qyfnu78"
-
 	maxSecretFileSize = 1024 * 1024 // 1MB
 )
 
@@ -1096,10 +1094,9 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		).Run(); err != nil {
 			return err
 		}
-	}
-
-	if !confirmOverwrite {
-		return nil
+		if !confirmOverwrite {
+			return nil
+		}
 	}
 
 	req := &lkproto.UpdateAgentSecretsRequest{
