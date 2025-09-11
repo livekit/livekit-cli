@@ -1015,10 +1015,9 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		).Run(); err != nil {
 			return err
 		}
-	}
-
-	if !confirmOverwrite {
-		return nil
+		if !confirmOverwrite {
+			return nil
+		}
 	}
 
 	req := &lkproto.UpdateAgentSecretsRequest{
