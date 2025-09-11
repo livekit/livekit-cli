@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -79,9 +80,16 @@ func TestUploadTarballFilePermissions(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "permission denied")
+	// Windows permissions model does not support unix-like file mode permissions
+	// and creating a file you can't read requires modifying Access Control Lists:
+	//
+	//   https://learn.microsoft.com/en-us/windows/win32/secauthz/access-control-lists
+	//
+	if runtime.GOOS != "windows" {
+		err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "permission denied")
+	}
 
 	err = os.Remove(restrictedFile)
 	require.NoError(t, err)
@@ -228,9 +236,9 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 
 	dirs := []string{
 		"level1",
-		"level1/level2",
-		"level1/level2/level3",
-		"level1/level2/level3/level4",
+		filepath.Join("level1", "level2"),
+		filepath.Join("level1", "level2", "level3"),
+		filepath.Join("level1", "level2", "level3", "level4"),
 	}
 
 	for _, dir := range dirs {
@@ -286,7 +294,7 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 		relPath, err := filepath.Rel(tmpDir, f.path)
 		require.NoError(t, err)
 		for _, content := range contents {
-			if content.Name == relPath {
+			if filepath.ToSlash(content.Name) == filepath.ToSlash(relPath) {
 				found = true
 				require.Equal(t, int64(len(f.content)), content.Size, "incorrect file size for %s", relPath)
 				require.False(t, content.IsDir, "file marked as directory: %s", relPath)
@@ -300,7 +308,7 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 		initPath := filepath.Join(dir, "__init__.py")
 		found := false
 		for _, content := range contents {
-			if content.Name == initPath {
+			if filepath.ToSlash(content.Name) == filepath.ToSlash(initPath) {
 				found = true
 				require.Equal(t, int64(0), content.Size, "incorrect file size for %s", initPath)
 				require.False(t, content.IsDir, "file marked as directory: %s", initPath)
