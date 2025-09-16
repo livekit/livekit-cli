@@ -19,6 +19,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -73,12 +74,16 @@ func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap ma
 		return nil, nil, fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
 
-	dockerfileContent, err := fs.ReadFile(filepath.Join("examples", string(projectType)+".Dockerfile"))
+	// NOTE: embed.FS uses unix-style path separators on all platforms, so cannot use filepath.Join here.
+	// path.Join always uses '/' as the separator.
+	dockerfileContent, err := fs.ReadFile(path.Join("examples", string(projectType)+".Dockerfile"))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	dockerIgnoreContent, err := fs.ReadFile(filepath.Join("examples", string(projectType)+".dockerignore"))
+	// NOTE: embed.FS uses unix-style path separators on all platforms, so cannot use filepath.Join here
+	// path.Join always uses '/' as the separator.
+	dockerIgnoreContent, err := fs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
 	if err != nil {
 		return nil, nil, err
 	}
