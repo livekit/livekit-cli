@@ -39,6 +39,7 @@ import (
 
 const (
 	cloudAgentsBetaSignupURL = "https://forms.gle/GkGNNTiMt2qyfnu78"
+	maxSecretFileSize        = 1024 * 1024 // 1MB
 )
 
 var (
@@ -66,6 +67,12 @@ var (
 	secretsFlag = &cli.StringSliceFlag{
 		Name:     "secrets",
 		Usage:    "KEY=VALUE comma separated secrets. These will be injected as environment variables into the agent. These take precedence over secrets-file.",
+		Required: false,
+	}
+
+	secretsMountFlag = &cli.StringSliceFlag{
+		Name:     "secret-mount",
+		Usage:    "Local path to a secret file to be mounted on agent environment",
 		Required: false,
 	}
 
@@ -103,6 +110,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						secretsMountFlag,
 						silentFlag,
 						regionFlag,
 						skipSDKCheckFlag,
@@ -146,6 +154,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						secretsMountFlag,
 						skipSDKCheckFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
@@ -171,6 +180,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						secretsMountFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -263,6 +273,7 @@ var (
 					Flags: []cli.Flag{
 						secretsFlag,
 						secretsFileFlag,
+						secretsMountFlag,
 						idFlag(false),
 						&cli.BoolFlag{
 							Name:     "overwrite",
@@ -966,14 +977,14 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	table := util.CreateTable().
-		Headers("Name", "Created At", "Updated At")
+		Headers("Name", "Type", "Created At", "Updated At")
 
 	for _, secret := range secrets.Secrets {
 		// NOTE: Maybe these should be omitted on the server side?
 		if slices.Contains(ignoredSecrets, secret.Name) {
 			continue
 		}
-		table.Row(secret.Name, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
+		table.Row(secret.Name, secret.Kind.String(), secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
 	}
 
 	fmt.Println(table)
@@ -1004,10 +1015,9 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		).Run(); err != nil {
 			return err
 		}
-	}
-
-	if !confirmOverwrite {
-		return nil
+		if !confirmOverwrite {
+			return nil
+		}
 	}
 
 	req := &lkproto.UpdateAgentSecretsRequest{
@@ -1112,6 +1122,28 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	silent := cmd.Bool("silent")
 	secrets := make(map[string]*lkproto.AgentSecret)
 
+	mountableSecretFiles := cmd.StringSlice("secret-mount")
+	for _, filePath := range mountableSecretFiles {
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get secret file: %w", err)
+		}
+		if fileInfo.Size() > maxSecretFileSize {
+			return nil, fmt.Errorf("secret file size is too large (must be under %d MB): %s", maxSecretFileSize/(1024*1024), filePath)
+		}
+		fileContent, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read secret file: %w", err)
+		}
+		name := fileInfo.Name()
+		agentSecret := &lkproto.AgentSecret{
+			Name:  name,
+			Value: []byte(fileContent),
+			Kind:  lkproto.AgentSecretKind_AGENT_SECRET_KIND_FILE,
+		}
+		secrets[name] = agentSecret
+	}
+
 	if values, err := parseKeyValuePairs(cmd, "secrets"); err != nil {
 		return nil, fmt.Errorf("failed to parse secrets: %w", err)
 	} else {
@@ -1119,10 +1151,10 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 			agentSecret := &lkproto.AgentSecret{
 				Name:  key,
 				Value: []byte(val),
+				Kind:  lkproto.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT,
 			}
 			secrets[key] = agentSecret
 		}
-
 	}
 
 	shouldReadFromDisk := cmd.IsSet("secrets-file") || !lazy || (required && len(secrets) == 0)
@@ -1143,6 +1175,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 			secret := &lkproto.AgentSecret{
 				Name:  k,
 				Value: []byte(v),
+				Kind:  lkproto.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT,
 			}
 			secrets[k] = secret
 		}
