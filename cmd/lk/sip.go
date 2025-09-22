@@ -352,6 +352,14 @@ var (
 									Name:  "name",
 									Usage: "`PARTICIPANT_NAME` to use (overrides json config)",
 								},
+								&cli.StringFlag{
+									Name:  "display-name",
+									Usage: "`DISPLAY_NAME` for the 'From' SIP header (overrides json config)",
+								},
+								&cli.BoolFlag{
+									Name:  "no-display-name",
+									Usage: "Avoid defaulting the display name, and do a CNAM lookup instead (overrides display-name setting)",
+								},
 								&cli.BoolFlag{
 									Name:  "wait",
 									Usage: "wait for the call to dial (overrides json config)",
@@ -1134,6 +1142,14 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		}
 		if v := cmd.String("name"); v != "" {
 			req.ParticipantName = v
+		}
+		if cmd.Bool("no-display-name") {
+			emptyStr := ""
+			req.DisplayName = &emptyStr
+		} else if v := cmd.String("display-name"); v != "" {
+			req.DisplayName = &v
+		} else {
+			req.DisplayName = nil
 		}
 		if cmd.Bool("wait") {
 			req.WaitUntilAnswered = true
