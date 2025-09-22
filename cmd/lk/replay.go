@@ -41,7 +41,14 @@ var (
 					Name:   "list",
 					Before: createReplayClient,
 					Action: listReplays,
-					Flags:  []cli.Flag{jsonFlag},
+					Flags: []cli.Flag{
+						jsonFlag,
+						&cli.StringFlag{
+							Name:     "room",
+							Usage:    "Playback room name",
+							Required: false,
+						},
+					},
 				},
 				{
 					Name:   "load",
@@ -135,7 +142,9 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.ListReplaysRequest{}
+	req := &replay.ListReplaysRequest{
+		RoomName: cmd.String("room"),
+	}
 	res, err := replayClient.ListReplays(ctx, req)
 	if err != nil {
 		return err
@@ -160,12 +169,12 @@ func loadReplay(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.LoadReplayRequest{
-		ReplayId:    cmd.String("id"),
-		RoomName:    cmd.String("room"),
-		StartingPts: int64(cmd.Int("pts")),
+	req := &replay.PlaybackRequest{
+		ReplayId:  cmd.String("id"),
+		RoomName:  cmd.String("room"),
+		StartTime: int64(cmd.Int("pts")),
 	}
-	res, err := replayClient.LoadReplay(ctx, req)
+	res, err := replayClient.Playback(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -180,11 +189,11 @@ func seek(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.RoomSeekRequest{
+	req := &replay.SeekRequest{
 		PlaybackId: cmd.String("id"),
-		Pts:        int64(cmd.Int("pts")),
+		StartTime:  int64(cmd.Int("pts")),
 	}
-	_, err = replayClient.SeekForRoom(ctx, req)
+	_, err = replayClient.Seek(ctx, req)
 	return err
 }
 
@@ -194,10 +203,10 @@ func closeReplay(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.CloseReplayRequest{
+	req := &replay.ClosePlaybackRequest{
 		PlaybackId: cmd.String("id"),
 	}
-	_, err = replayClient.CloseReplay(ctx, req)
+	_, err = replayClient.Close(ctx, req)
 	return err
 }
 
