@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -29,6 +30,7 @@ import (
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
+	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -316,7 +318,12 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 		}
 	}
 
-	agentsClient, err = lksdk.NewAgentClient(project.URL, project.APIKey, project.APISecret)
+	agentsClient, err = lksdk.NewAgentClient(project.URL, project.APIKey, project.APISecret, twirp.WithClientHooks(&twirp.ClientHooks{
+		RequestPrepared: func(ctx context.Context, req *http.Request) (context.Context, error) {
+			req.Header.Set("X-LIVEKIT-CLI-VERSION", livekitcli.Version)
+			return ctx, nil
+		},
+	}))
 	if err != nil {
 		return ctx, err
 	}
