@@ -14,7 +14,7 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.41.0
+	github.com/livekit/protocol v1.41.1-0.20250922191558-7ca55b4334c9
 	github.com/livekit/server-sdk-go/v2 v2.11.3
 	github.com/moby/buildkit v0.23.2
 	github.com/moby/patternmatcher v0.6.0
@@ -120,7 +120,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.2.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20250825135402-7bc31f107ade // indirect
-	github.com/livekit/psrpc v0.6.1-0.20250726180611-3915e005e741 // indirect
+	github.com/livekit/psrpc v0.7.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
