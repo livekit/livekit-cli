@@ -160,12 +160,12 @@ func loadReplay(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.LoadReplayRequest{
-		ReplayId:    cmd.String("id"),
-		RoomName:    cmd.String("room"),
-		StartingPts: int64(cmd.Int("pts")),
+	req := &replay.PlaybackRequest{
+		ReplayId:  cmd.String("id"),
+		RoomName:  cmd.String("room"),
+		StartTime: int64(cmd.Int("pts")),
 	}
-	res, err := replayClient.LoadReplay(ctx, req)
+	res, err := replayClient.Playback(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -180,11 +180,11 @@ func seek(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.RoomSeekRequest{
+	req := &replay.SeekRequest{
 		PlaybackId: cmd.String("id"),
-		Pts:        int64(cmd.Int("pts")),
+		StartTime:  int64(cmd.Int("pts")),
 	}
-	_, err = replayClient.SeekForRoom(ctx, req)
+	_, err = replayClient.Seek(ctx, req)
 	return err
 }
 
@@ -194,10 +194,10 @@ func closeReplay(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.CloseReplayRequest{
+	req := &replay.ClosePlaybackRequest{
 		PlaybackId: cmd.String("id"),
 	}
-	_, err = replayClient.CloseReplay(ctx, req)
+	_, err = replayClient.Close(ctx, req)
 	return err
 }
 
