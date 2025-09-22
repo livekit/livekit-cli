@@ -41,7 +41,14 @@ var (
 					Name:   "list",
 					Before: createReplayClient,
 					Action: listReplays,
-					Flags:  []cli.Flag{jsonFlag},
+					Flags: []cli.Flag{
+						jsonFlag,
+						&cli.StringFlag{
+							Name:     "room",
+							Usage:    "Playback room name",
+							Required: false,
+						},
+					},
 				},
 				{
 					Name:   "load",
@@ -135,7 +142,9 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.ListReplaysRequest{}
+	req := &replay.ListReplaysRequest{
+		RoomName: cmd.String("room"),
+	}
 	res, err := replayClient.ListReplays(ctx, req)
 	if err != nil {
 		return err
