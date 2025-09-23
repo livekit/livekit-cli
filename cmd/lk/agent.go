@@ -386,11 +386,6 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		fmt.Printf("Creating new agent\n")
 	}
 
-	regions := cmd.StringSlice("regions")
-	if len(regions) != 0 {
-		lkConfig.Agent.Regions = regions
-	}
-
 	secrets, err := requireSecrets(ctx, cmd, false, false)
 	if err != nil {
 		return err
@@ -419,9 +414,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	regions := cmd.StringSlice("regions")
+
 	req := &lkproto.CreateAgentRequest{
 		Secrets: secrets,
-		Regions: lkConfig.Agent.Regions,
+		Regions: regions,
 	}
 
 	resp, err := agentsClient.CreateAgent(ctx, req)
@@ -531,16 +528,10 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("invalid project URL: %s", project.URL)
 	}
 
-	var regions []string
-	for _, regionalAgent := range response.Agents[0].AgentDeployments {
-		regions = append(regions, regionalAgent.Region)
-	}
-
 	agent := response.Agents[0]
 	lkConfig := config.NewLiveKitTOML(matches[1])
 	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
-		ID:      agent.AgentId,
-		Regions: regions,
+		ID: agent.AgentId,
 	}
 
 	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
@@ -710,14 +701,8 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("no agent config found in [%s]", tomlFilename)
 	}
 
-	regions := cmd.StringSlice("regions")
-	if len(regions) != 0 {
-		lkConfig.Agent.Regions = regions
-	}
-
 	req := &lkproto.UpdateAgentRequest{
 		AgentId: lkConfig.Agent.ID,
-		Regions: lkConfig.Agent.Regions,
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)

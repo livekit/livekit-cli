@@ -38,8 +38,7 @@ var (
 
 // Deprecated: use LiveKitTOML instead
 type AgentTOML struct {
-	ProjectSubdomain string   `toml:"project_subdomain"`
-	Regions          []string `toml:"regions"`
+	ProjectSubdomain string `toml:"project_subdomain"`
 }
 
 type LiveKitTOML struct {
@@ -52,8 +51,7 @@ type LiveKitTOMLProjectConfig struct {
 }
 
 type LiveKitTOMLAgentConfig struct {
-	ID      string   `toml:"id"`
-	Regions []string `toml:"regions"`
+	ID string `toml:"id"`
 }
 
 func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {
