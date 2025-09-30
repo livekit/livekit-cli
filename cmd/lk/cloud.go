@@ -70,6 +70,11 @@ var (
 					Before: initAuth,
 					Action: handleAuth,
 					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:     "id",
+							Usage:    "Project `ID` to authenticate. If not provided, you can choose from your existing projects in the browser",
+							Required: false,
+						},
 						&cli.BoolFlag{
 							Name:        "revoke",
 							Aliases:     []string{"R"},
@@ -271,6 +276,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// get devicename
 	if err := huh.NewInput().
 		Title("What is the name of this device?").
+		Description("A short name you can use to find and manage generated API keys on the LiveKit Cloud dashboard").
 		Value(&cliConfig.DeviceName).
 		WithTheme(util.Theme).
 		Run(); err != nil {
@@ -290,7 +296,11 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	authURL, err := generateConfirmURL(token.Token)
+	projectId := cmd.String("id")
+	if projectId == "" && cmd.Args().Present() {
+		projectId = cmd.Args().First()
+	}
+	authURL, err := generateConfirmURL(token.Token, projectId)
 	if err != nil {
 		return err
 	}
@@ -352,6 +362,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// persist to config file
 	cliConfig.Projects = append(cliConfig.Projects, config.ProjectConfig{
 		Name:      name,
+		ProjectId: ak.ProjectId,
 		APIKey:    ak.Key,
 		APISecret: ak.Secret,
 		URL:       ak.URL,
@@ -367,7 +378,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	return err
 }
 
-func generateConfirmURL(token string) (*url.URL, error) {
+func generateConfirmURL(token, projectId string) (*url.URL, error) {
 	base, err := url.Parse(dashboardURL + confirmAuthEndpoint)
 	if err != nil {
 		return nil, err
@@ -375,6 +386,9 @@ func generateConfirmURL(token string) (*url.URL, error) {
 
 	params := url.Values{}
 	params.Add("t", token)
+	if projectId != "" {
+		params.Add("project_id", projectId)
+	}
 	base.RawQuery = params.Encode()
 	return base, nil
 }
