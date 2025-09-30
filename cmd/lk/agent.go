@@ -463,7 +463,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			fmt.Println("Tailing runtime logs...safe to exit at any time")
-			return agentfs.LogHelper(ctx, lkConfig.Agent.ID, "deploy", project)
+			return agentfs.LogHelper(ctx, lkConfig.Agent.ID, "deploy", project, resp.AgentServerRegions[0])
 		}
 	}
 	return nil
@@ -776,7 +776,15 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	err = agentfs.LogHelper(ctx, agentID, cmd.String("log-type"), project)
+
+	response, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
+		AgentId: agentID,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = agentfs.LogHelper(ctx, agentID, cmd.String("log-type"), project, response.Agents[0].AgentDeployments[0].ServerRegion)
 	return err
 }
 

@@ -36,7 +36,7 @@ type APIError struct {
 	Meta    *map[string]string `json:"meta,omitempty"`
 }
 
-func LogHelper(ctx context.Context, id string, logType string, projectConfig *config.ProjectConfig) error {
+func LogHelper(ctx context.Context, id string, logType string, projectConfig *config.ProjectConfig, regionName string) error {
 	if logType == "" {
 		logType = "deploy"
 	}
@@ -53,7 +53,7 @@ func LogHelper(ctx context.Context, id string, logType string, projectConfig *co
 	} else if !strings.Contains(baseUrl, "localhost") && !strings.Contains(baseUrl, "127.0.0.1") {
 		pattern := `^https://[a-zA-Z0-9\-]+\.`
 		re := regexp.MustCompile(pattern)
-		agentsUrl = re.ReplaceAllString(baseUrl, "https://agents.")
+		agentsUrl = re.ReplaceAllString(baseUrl, fmt.Sprintf("https://%s.agents.", regionName))
 	} else {
 		agentsUrl = baseUrl
 	}
