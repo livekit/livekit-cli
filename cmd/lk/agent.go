@@ -388,7 +388,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 
 		switch lang {
 		case "node":
-			return fmt.Errorf("this language is not yet supported")
+			templateURL = "https://github.com/livekit-examples/agent-starter-node"
 		case "python":
 			templateURL = "https://github.com/livekit-examples/agent-starter-python"
 		default:
