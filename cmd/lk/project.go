@@ -240,7 +240,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 
 func listProjects(ctx context.Context, cmd *cli.Command) error {
 	if len(cliConfig.Projects) == 0 {
-		fmt.Println("No projects configured, use `lk project add` to add a new project.")
+		fmt.Println("No projects configured, use `lk cloud auth` to authenticate a new project.")
 		return nil
 	}
 
