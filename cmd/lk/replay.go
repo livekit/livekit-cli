@@ -25,6 +25,7 @@ import (
 	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
+	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/replay"
 	"github.com/livekit/server-sdk-go/v2/signalling"
 )
@@ -48,6 +49,11 @@ var (
 							Usage:    "Playback room name",
 							Required: false,
 						},
+						&cli.StringFlag{
+							Name:     "token",
+							Usage:    "Pagination token",
+							Required: false,
+						},
 					},
 				},
 				{
@@ -66,7 +72,7 @@ var (
 							Required: true,
 						},
 						&cli.IntFlag{
-							Name:     "pts",
+							Name:     "offset",
 							Usage:    "Playback start time",
 							Required: false,
 						},
@@ -83,7 +89,7 @@ var (
 							Required: true,
 						},
 						&cli.IntFlag{
-							Name:     "pts",
+							Name:     "offset",
 							Usage:    "Playback start time",
 							Required: true,
 						},
@@ -145,6 +151,10 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 	req := &replay.ListReplaysRequest{
 		RoomName: cmd.String("room"),
 	}
+	if token := cmd.String("token"); token != "" {
+		req.PageToken = &livekit.TokenPagination{Token: token}
+	}
+
 	res, err := replayClient.ListReplays(ctx, req)
 	if err != nil {
 		return err
@@ -170,9 +180,9 @@ func loadReplay(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := &replay.PlaybackRequest{
-		ReplayId:  cmd.String("id"),
-		RoomName:  cmd.String("room"),
-		StartTime: int64(cmd.Int("pts")),
+		ReplayId:     cmd.String("id"),
+		PlaybackRoom: cmd.String("room"),
+		SeekOffset:   int64(cmd.Int("pts")),
 	}
 	res, err := replayClient.Playback(ctx, req)
 	if err != nil {
@@ -191,7 +201,7 @@ func seek(ctx context.Context, cmd *cli.Command) error {
 
 	req := &replay.SeekRequest{
 		PlaybackId: cmd.String("id"),
-		StartTime:  int64(cmd.Int("pts")),
+		SeekOffset: int64(cmd.Int("pts")),
 	}
 	_, err = replayClient.Seek(ctx, req)
 	return err
