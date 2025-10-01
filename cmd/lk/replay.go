@@ -170,9 +170,9 @@ func loadReplay(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := &replay.PlaybackRequest{
-		ReplayId:  cmd.String("id"),
-		RoomName:  cmd.String("room"),
-		StartTime: int64(cmd.Int("pts")),
+		ReplayId:     cmd.String("id"),
+		PlaybackRoom: cmd.String("room"),
+		SeekOffset:   int64(cmd.Int("pts")),
 	}
 	res, err := replayClient.Playback(ctx, req)
 	if err != nil {
@@ -191,7 +191,7 @@ func seek(ctx context.Context, cmd *cli.Command) error {
 
 	req := &replay.SeekRequest{
 		PlaybackId: cmd.String("id"),
-		StartTime:  int64(cmd.Int("pts")),
+		SeekOffset: int64(cmd.Int("pts")),
 	}
 	_, err = replayClient.Seek(ctx, req)
 	return err

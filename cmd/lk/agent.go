@@ -463,7 +463,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			fmt.Println("Tailing runtime logs...safe to exit at any time")
-			return agentfs.LogHelper(ctx, lkConfig.Agent.ID, "deploy", project, resp.AgentServerRegions[0])
+			return agentfs.LogHelper(ctx, lkConfig.Agent.ID, "deploy", project, resp.ServerRegions[0])
 		}
 	}
 	return nil
