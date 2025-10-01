@@ -410,8 +410,6 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 			if appName == "" {
 				appName = project.Name
 			}
-			// We set agent name in env for use in template tasks
-			os.Setenv("LIVEKIT_AGENT_NAME", appName)
 
 			// TODO: (@rektdeckard) figure out why AccessKeyProvider does not immediately
 			// have access to newly-created API keys, then remove this sleep
@@ -424,6 +422,11 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 				token,
 				serverURL,
 			)
+
+			// We set agent name and sandbox ID in env for use in template tasks
+			os.Setenv("LIVEKIT_AGENT_NAME", appName)
+			os.Setenv("LIVEKIT_SANDBOX_ID", sandboxID)
+
 			return err
 		}); err != nil {
 			return fmt.Errorf("failed to create sandbox: %w", err)
