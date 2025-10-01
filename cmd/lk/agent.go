@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -30,14 +29,12 @@ import (
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
-	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
-	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 var (
@@ -320,7 +317,7 @@ var (
 		},
 	}
 	subdomainPattern = regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-	agentsClient     *lksdk.AgentClient
+	agentsClient     *agentfs.Client
 	ignoredSecrets   = []string{
 		"LIVEKIT_API_KEY",
 		"LIVEKIT_API_SECRET",
@@ -356,12 +353,7 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 		}
 	}
 
-	agentsClient, err = lksdk.NewAgentClient(project.URL, project.APIKey, project.APISecret, twirp.WithClientHooks(&twirp.ClientHooks{
-		RequestPrepared: func(ctx context.Context, req *http.Request) (context.Context, error) {
-			req.Header.Set("X-LIVEKIT-CLI-VERSION", livekitcli.Version)
-			return ctx, nil
-		},
-	}))
+	agentsClient, err = agentfs.New(agentfs.WithProject(project.URL, project.APIKey, project.APISecret))
 	if err != nil {
 		return ctx, err
 	}
@@ -477,7 +469,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			}
 			var err error
 			// Recreate the client with the new project
-			agentsClient, err = lksdk.NewAgentClient(project.URL, project.APIKey, project.APISecret)
+			agentsClient, err = agentfs.New(agentfs.WithProject(project.URL, project.APIKey, project.APISecret))
 			if err != nil {
 				return err
 			}
@@ -538,13 +530,8 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	regions := cmd.StringSlice("regions")
-
-	req := &lkproto.CreateAgentRequest{
-		Secrets: secrets,
-		Regions: regions,
-	}
-
-	resp, err := agentsClient.CreateAgent(ctx, req)
+	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
+	resp, err := agentsClient.CreateAgent(ctx, workingDir, secrets, regions, excludeFiles)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to create agent: %s", twerr.Msg())
@@ -557,16 +544,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	err = agentfs.UploadTarball(workingDir, resp.PresignedUrl, []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}, projectType)
-	if err != nil {
-		return err
-	}
-
 	fmt.Printf("Created agent with ID [%s]\n", util.Accented(resp.AgentId))
-	err = agentfs.Build(ctx, resp.AgentId, project)
-	if err != nil {
-		return err
-	}
 
 	fmt.Println("Build completed - You can view build logs later with `lk agent logs --log-type=build`")
 
@@ -584,7 +562,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			fmt.Println("Tailing runtime logs...safe to exit at any time")
-			return agentfs.LogHelper(ctx, lkConfig.Agent.ID, "deploy", project)
+			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, os.Stdout)
 		}
 	}
 	return nil
@@ -697,28 +675,12 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	resp, err := agentsClient.DeployAgent(ctx, req)
-	if err != nil {
+	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
+	if err := agentsClient.DeployAgent(ctx, agentId, workingDir, secrets, excludeFiles); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
 		return fmt.Errorf("unable to deploy agent: %w", err)
-	}
-
-	if !resp.Success {
-		return fmt.Errorf("failed to deploy agent: %s", resp.Message)
-	}
-
-	presignedUrl := resp.PresignedUrl
-	err = agentfs.UploadTarball(workingDir, presignedUrl, []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}, projectType)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Updated agent [%s]\n", util.Accented(resp.AgentId))
-	err = agentfs.Build(ctx, resp.AgentId, project)
-	if err != nil {
-		return err
 	}
 
 	fmt.Println("Deployed agent")
@@ -887,8 +849,7 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	err = agentfs.LogHelper(ctx, agentID, cmd.String("log-type"), project)
-	return err
+	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, os.Stdout)
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {

@@ -19,16 +19,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"regexp"
 	"strings"
 
-	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
-	"github.com/livekit/protocol/auth"
-	"github.com/livekit/protocol/logger"
 )
 
 type APIError struct {
@@ -36,51 +32,21 @@ type APIError struct {
 	Meta    *map[string]string `json:"meta,omitempty"`
 }
 
-func LogHelper(ctx context.Context, id string, logType string, projectConfig *config.ProjectConfig) error {
+// StreamLogs streams the logs for the given agent.
+func (c *Client) StreamLogs(ctx context.Context, logType, agentID string, writer io.Writer) error {
+	logger := c.logger.WithName("StreamLogs")
 	if logType == "" {
 		logType = "deploy"
 	}
-
-	baseUrl := projectConfig.URL
-	if strings.HasPrefix(projectConfig.URL, "ws") {
-		baseUrl = strings.Replace(projectConfig.URL, "ws", "http", 1)
-	}
-
-	var agentsUrl string
-
-	if os.Getenv("LK_AGENTS_URL") != "" {
-		agentsUrl = os.Getenv("LK_AGENTS_URL")
-	} else if !strings.Contains(baseUrl, "localhost") && !strings.Contains(baseUrl, "127.0.0.1") {
-		pattern := `^https://[a-zA-Z0-9\-]+\.`
-		re := regexp.MustCompile(pattern)
-		agentsUrl = re.ReplaceAllString(baseUrl, "https://agents.")
-	} else {
-		agentsUrl = baseUrl
-	}
-
-	logger.Debugw("Connecting to LK hosted agents on", "url", agentsUrl)
-
 	params := url.Values{}
-	params.Add("agent_id", id)
+	params.Add("agent_id", agentID)
 	params.Add("log_type", logType)
-	fullUrl := fmt.Sprintf("%s/logs?%s", agentsUrl, params.Encode())
-
-	at := auth.NewAccessToken(projectConfig.APIKey, projectConfig.APISecret)
-	at.SetAgentGrant(&auth.AgentGrant{
-		Admin: true,
-	})
-	token, err := at.ToJWT()
+	fullUrl := fmt.Sprintf("%s/logs?%s", c.agentsURL, params.Encode())
+	req, err := c.newRequest("GET", fullUrl, nil)
 	if err != nil {
 		return err
 	}
-
-	req, err := http.NewRequest("GET", fullUrl, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -88,7 +54,6 @@ func LogHelper(ctx context.Context, id string, logType string, projectConfig *co
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Debugw("failed to get logs", "status", resp.Status)
-
 		var errorResponse APIError
 		if err := json.NewDecoder(resp.Body).Decode(&errorResponse); err != nil {
 			return fmt.Errorf("failed to parse error response: %w", err)
@@ -96,7 +61,6 @@ func LogHelper(ctx context.Context, id string, logType string, projectConfig *co
 			return fmt.Errorf("failed to get logs: %s", errorResponse.Message)
 		}
 	}
-
 	scanner := bufio.NewScanner(resp.Body)
 	for {
 		select {
@@ -109,12 +73,13 @@ func LogHelper(ctx context.Context, id string, logType string, projectConfig *co
 				}
 				return nil
 			}
-
 			line := scanner.Text()
 			if strings.HasPrefix(line, "ERROR:") {
 				return fmt.Errorf("%s", strings.TrimPrefix(line, "ERROR: "))
 			}
-			fmt.Println(util.Dimmed(line))
+			if _, err := fmt.Fprintln(writer, util.Dimmed(line)); err != nil {
+				return fmt.Errorf("failed to write log line: %w", err)
+			}
 		}
 	}
 }

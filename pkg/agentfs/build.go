@@ -23,62 +23,26 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 
 	bkclient "github.com/moby/buildkit/client"
 	"github.com/moby/buildkit/util/progress/progressui"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/livekit/livekit-cli/v2/pkg/config"
-	"github.com/livekit/protocol/auth"
-	"github.com/livekit/protocol/logger"
 )
 
-func Build(ctx context.Context, id string, projectConfig *config.ProjectConfig) error {
-	baseUrl := projectConfig.URL
-	if strings.HasPrefix(projectConfig.URL, "ws") {
-		baseUrl = strings.Replace(projectConfig.URL, "ws", "http", 1)
-	}
-
-	var agentsUrl string
-	if os.Getenv("LK_AGENTS_URL") != "" {
-		agentsUrl = os.Getenv("LK_AGENTS_URL")
-	} else if !strings.Contains(baseUrl, "localhost") && !strings.Contains(baseUrl, "127.0.0.1") {
-		pattern := `^https://[a-zA-Z0-9\-]+\.`
-		re := regexp.MustCompile(pattern)
-		agentsUrl = re.ReplaceAllString(baseUrl, "https://agents.")
-	} else {
-		agentsUrl = baseUrl
-	}
-
-	logger.Debugw("Connecting to LK hosted agents on", "url", agentsUrl)
-
+func (c *Client) Build(ctx context.Context, id string) error {
 	params := url.Values{}
 	params.Add("agent_id", id)
-	fullUrl := fmt.Sprintf("%s/build?%s", agentsUrl, params.Encode())
-
-	at := auth.NewAccessToken(projectConfig.APIKey, projectConfig.APISecret)
-	at.SetAgentGrant(&auth.AgentGrant{
-		Admin: true,
-	})
-	token, err := at.ToJWT()
+	fullUrl := fmt.Sprintf("%s/build?%s", c.agentsURL, params.Encode())
+	req, err := c.newRequest("POST", fullUrl, nil)
 	if err != nil {
 		return err
 	}
-
-	req, err := http.NewRequest("POST", fullUrl, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to build agent: %s", resp.Status)
 	}
