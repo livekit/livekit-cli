@@ -784,6 +784,10 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	if len(response.Agents) == 0 {
+		return fmt.Errorf("no agent deployments found")
+	}
+
 	err = agentfs.LogHelper(ctx, agentID, cmd.String("log-type"), project, response.Agents[0].AgentDeployments[0].ServerRegion)
 	return err
 }
