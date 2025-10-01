@@ -44,8 +44,6 @@ type ClaimAccessKeyResponse struct {
 }
 
 const (
-	cloudAPIServerURL   = "https://cloud-api.livekit.io"
-	cloudDashboardURL   = "https://cloud.livekit.io"
 	createTokenEndpoint = "/cli/auth"
 	claimKeyEndpoint    = "/cli/claim"
 	confirmAuthEndpoint = "/cli/confirm-auth"
@@ -54,10 +52,8 @@ const (
 
 var (
 	revoke        bool
-	timeout       int    = 60 * 15
-	interval      int    = 4
-	serverURL     string = cloudAPIServerURL
-	dashboardURL  string = cloudDashboardURL
+	timeout       int = 60 * 15
+	interval      int = 4
 	authClient    AuthClient
 	CloudCommands = []*cli.Command{
 		{
@@ -88,18 +84,6 @@ var (
 							Usage:       "Number of `SECONDS` between poll requests to verify authentication",
 							Destination: &interval,
 							Value:       4,
-						},
-						&cli.StringFlag{
-							Name:        "server-url",
-							Value:       cloudAPIServerURL,
-							Destination: &serverURL,
-							Hidden:      true,
-						},
-						&cli.StringFlag{
-							Name:        "dashboard-url",
-							Value:       cloudDashboardURL,
-							Destination: &dashboardURL,
-							Hidden:      true,
 						},
 					},
 				},
@@ -269,10 +253,10 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// get devicename
-	if err := huh.NewInput().
+	if err := huh.NewForm(huh.NewGroup(huh.NewInput().
 		Title("What is the name of this device?").
 		Value(&cliConfig.DeviceName).
-		WithTheme(util.Theme).
+		WithTheme(util.Theme))).
 		Run(); err != nil {
 		return err
 	}
@@ -281,7 +265,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	if err := cliConfig.PersistIfNeeded(); err != nil {
 		return err
 	}
-	fmt.Println("Device:", cliConfig.DeviceName)
+	fmt.Printf("Device [%s]\n", util.Accented(cliConfig.DeviceName))
 
 	// request token
 	fmt.Println("Requesting verification token...")
@@ -317,14 +301,19 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("operation cancelled")
 	}
 
-	var isDefault bool
-	if err := huh.NewConfirm().
-		Title("Make this project default?").
-		Value(&isDefault).
-		Inline(true).
-		WithTheme(util.Theme).
-		Run(); err != nil {
-		return err
+	fmt.Printf("Authenticated project [%s]\n", util.Accented(ak.ProjectName))
+
+	// if other authed projects, ask if this should be the default project
+	isDefault := len(cliConfig.Projects) == 0
+	if !isDefault {
+		if err := huh.NewConfirm().
+			Title("Make this project default?").
+			Value(&isDefault).
+			Inline(true).
+			WithTheme(util.Theme).
+			Run(); err != nil {
+			return err
+		}
 	}
 
 	// make sure name is unique
@@ -335,7 +324,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	if cliConfig.ProjectExists(name) {
 		if err := huh.NewInput().
 			Title("Choose a different alias").
-			Description(fmt.Sprintf("You've already configured a project with the alias %q.", name)).
+			Description(fmt.Sprintf("You've already authenticated a project with the alias %q.", name)).
 			Value(&name).
 			Validate(func(s string) error {
 				if cliConfig.ProjectExists(s) {
@@ -352,6 +341,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// persist to config file
 	cliConfig.Projects = append(cliConfig.Projects, config.ProjectConfig{
 		Name:      name,
+		ProjectId: ak.ProjectId,
 		APIKey:    ak.Key,
 		APISecret: ak.Secret,
 		URL:       ak.URL,

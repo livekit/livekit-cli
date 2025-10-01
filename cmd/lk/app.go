@@ -57,33 +57,9 @@ var (
 					Action:    setupTemplate,
 					ArgsUsage: "`APP_NAME`",
 					Flags: []cli.Flag{
-						&cli.StringFlag{
-							Name:        "template",
-							Usage:       "`TEMPLATE` to instantiate, see " + bootstrap.TemplateBaseURL,
-							Destination: &templateName,
-						},
-						&cli.StringFlag{
-							Name:        "template-url",
-							Usage:       "`URL` to instantiate, must contain a taskfile.yaml",
-							Destination: &templateURL,
-						},
-						&cli.StringFlag{
-							Name:        "sandbox",
-							Usage:       "`NAME` of the sandbox, see your cloud dashboard",
-							Destination: &sandboxID,
-						},
-						&cli.StringFlag{
-							Name:        "server-url",
-							Value:       cloudAPIServerURL,
-							Destination: &serverURL,
-							Hidden:      true,
-						},
-						&cli.BoolFlag{
-							Name:    "install",
-							Aliases: []string{"i"},
-							Usage:   "Run installation tasks after creating the app",
-							Hidden:  true,
-						},
+						templateFlag,
+						templateURLFlag,
+						sandboxFlag,
 					},
 				},
 				{
@@ -188,11 +164,11 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 		fmt.Println("Using project [" + util.Accented(project.Name) + "]")
 	} else {
 		shouldAuth := true
-		if err = huh.NewConfirm().
+		if err = huh.NewForm(huh.NewGroup(huh.NewConfirm().
 			Title("No local projects found. Authenticate one?").
 			Inline(true).
 			Value(&shouldAuth).
-			WithTheme(util.Theme).
+			WithTheme(util.Theme))).
 			Run(); err != nil {
 			return nil, err
 		}
@@ -305,26 +281,29 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	appName = cmd.Args().First()
 	if appName == "" {
-		appName = sandboxID
-		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
-			Title("Application Name").
-			Placeholder("my-app").
-			Value(&appName).
-			Validate(func(s string) error {
-				if len(s) < 3 {
-					return errors.New("name is too short")
-				}
-				if !appNameRegex.MatchString(s) {
-					return errors.New("try a simpler name")
-				}
-				if s, _ := os.Stat(s); s != nil {
-					return errors.New("that name is in use")
-				}
-				return nil
-			}).
-			WithTheme(util.Theme))
+		arg := cmd.Args().First()
+		if arg != "" {
+			appName = arg
+		} else {
+			preinstallPrompts = append(preinstallPrompts, huh.NewInput().
+				Title("Application Name").
+				Placeholder("my-app").
+				Value(&appName).
+				Validate(func(s string) error {
+					if len(s) < 2 {
+						return errors.New("name is too short")
+					}
+					if !appNameRegex.MatchString(s) {
+						return errors.New("try a simpler name")
+					}
+					if s, _ := os.Stat(s); s != nil {
+						return errors.New("that name is in use")
+					}
+					return nil
+				}).
+				WithTheme(util.Theme))
+		}
 	}
 
 	if len(preinstallPrompts) > 0 {
@@ -377,10 +356,9 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		if err := doInstall(ctx, bootstrap.TaskInstall, appName, verbose); err != nil {
 			return err
 		}
-	} else {
-		if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
-			return err
-		}
+	}
+	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
+		return err
 	}
 
 	return cleanupTemplate(ctx, cmd, appName)

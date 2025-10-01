@@ -28,14 +28,22 @@ import (
 	"github.com/livekit/protocol/utils/interceptors"
 	"github.com/livekit/server-sdk-go/v2/signalling"
 
+	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
+)
+
+const (
+	cloudAPIServerURL = "https://cloud-api.livekit.io"
+	cloudDashboardURL = "https://cloud.livekit.io"
 )
 
 var (
 	printCurl    bool
 	workingDir   string = "."
 	tomlFilename string = config.LiveKitTOMLFile
+	serverURL    string = cloudAPIServerURL
+	dashboardURL string = cloudDashboardURL
 
 	roomFlag = &TemplateStringFlag{
 		Name:     "room",
@@ -60,6 +68,22 @@ var (
 		Required: false,
 		Value:    false,
 	}
+	templateFlag = &cli.StringFlag{
+		Name:        "template",
+		Usage:       "`TEMPLATE` to instantiate, see " + bootstrap.TemplateBaseURL,
+		Destination: &templateName,
+	}
+	templateURLFlag = &cli.StringFlag{
+		Name:        "template-url",
+		Usage:       "`URL` to instantiate, must contain a taskfile.yaml",
+		Destination: &templateURL,
+	}
+	sandboxFlag = &cli.StringFlag{
+		Name:        "sandbox",
+		Usage:       "`NAME` of the sandbox, see your cloud dashboard",
+		Destination: &sandboxID,
+	}
+
 	openFlag    = util.OpenFlag
 	globalFlags = []cli.Flag{
 		&cli.StringFlag{
@@ -106,6 +130,18 @@ var (
 		&cli.BoolFlag{
 			Name:     "verbose",
 			Required: false,
+		},
+		&cli.StringFlag{
+			Name:        "server-url",
+			Value:       cloudAPIServerURL,
+			Destination: &serverURL,
+			Hidden:      true,
+		},
+		&cli.StringFlag{
+			Name:        "dashboard-url",
+			Value:       cloudDashboardURL,
+			Destination: &dashboardURL,
+			Hidden:      true,
 		},
 	}
 )

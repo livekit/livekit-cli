@@ -35,6 +35,7 @@ type CLIConfig struct {
 
 type ProjectConfig struct {
 	Name      string `yaml:"name"`
+	ProjectId string `yaml:"project_id"`
 	URL       string `yaml:"url"`
 	APIKey    string `yaml:"api_key"`
 	APISecret string `yaml:"api_secret"`
@@ -180,7 +181,8 @@ func (c *CLIConfig) PersistIfNeeded() error {
 	if err = os.WriteFile(configPath, data, 0600); err != nil {
 		return err
 	}
-	fmt.Println("Saved CLI config to", configPath)
+	fmt.Printf("Saved CLI config to [%s]\n", util.Accented(configPath))
+	c.hasPersisted = true
 	return nil
 }
 

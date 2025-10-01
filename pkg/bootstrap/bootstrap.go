@@ -18,6 +18,7 @@
 package bootstrap
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -48,6 +49,7 @@ const (
 	TemplateBaseURL         = "https://github.com/livekit-examples"
 	SandboxDashboardURL     = "https://cloud.livekit.io/projects/p_/sandbox"
 	SandboxTemplateEndpoint = "/api/sandbox/template"
+	SandboxCreateEndpoint   = "/api/sandbox/create"
 )
 
 type KnownTask string
@@ -100,6 +102,48 @@ func FetchTemplates(ctx context.Context) ([]Template, error) {
 		return nil, err
 	}
 	return templates, nil
+}
+
+func CreateSandbox(ctx context.Context, agentName, templateURL, token, serverURL string) (string, error) {
+	type createSandboxRequest struct {
+		TemplateURL string `json:"template_url"`
+		AgentName   string `json:"agent_name,omitempty"`
+	}
+
+	type createSandboxResponse struct {
+		SandboxID string `json:"sandbox_id"`
+	}
+
+	body := createSandboxRequest{
+		TemplateURL: templateURL,
+		AgentName:   agentName,
+	}
+
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(body); err != nil {
+		panic(err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", serverURL+SandboxCreateEndpoint, buf)
+	req.Header = authutil.NewHeaderWithToken(token)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != 200 {
+		return "", errors.New(resp.Status)
+	}
+
+	var response createSandboxResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return "", err
+	}
+	return response.SandboxID, nil
 }
 
 func FetchSandboxDetails(ctx context.Context, sid, token, serverURL string) (*SandboxDetails, error) {
