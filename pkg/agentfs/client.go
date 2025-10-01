@@ -165,7 +165,7 @@ func (c *Client) uploadAndBuild(
 	return nil
 }
 
-func (c *Client) getAgentsURL(prefix string) string {
+func (c *Client) getAgentsURL(serverRegion string) string {
 	agentsURL := c.projectURL
 	if strings.HasPrefix(agentsURL, "ws") {
 		agentsURL = strings.Replace(agentsURL, "ws", "http", 1)
@@ -175,10 +175,10 @@ func (c *Client) getAgentsURL(prefix string) string {
 	} else if !strings.Contains(agentsURL, "localhost") && !strings.Contains(agentsURL, "127.0.0.1") {
 		pattern := `^https://[a-zA-Z0-9\-]+\.`
 		re := regexp.MustCompile(pattern)
-		if prefix != "" {
-			prefix = fmt.Sprintf("%s.", prefix)
+		if serverRegion != "" {
+			serverRegion = fmt.Sprintf("%s.", serverRegion)
 		}
-		agentsURL = re.ReplaceAllString(agentsURL, fmt.Sprintf("https://%sagents.", prefix))
+		agentsURL = re.ReplaceAllString(agentsURL, fmt.Sprintf("https://%sagents.", serverRegion))
 	}
 	return agentsURL
 }
