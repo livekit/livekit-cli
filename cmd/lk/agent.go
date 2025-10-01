@@ -32,15 +32,12 @@ import (
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
+	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
-)
-
-const (
-	cloudAgentsBetaSignupURL = "https://forms.gle/GkGNNTiMt2qyfnu78"
 )
 
 var (
@@ -97,6 +94,47 @@ var (
 			Aliases: []string{"a"},
 			Usage:   "Manage LiveKit Cloud Agents",
 			Commands: []*cli.Command{
+				{
+					Name:   "init",
+					Usage:  "Initialize a new LiveKit Cloud agent project",
+					Before: createAgentClient,
+					Action: initAgent,
+					MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{{
+						Flags: [][]cli.Flag{{
+							&cli.StringFlag{
+								Name:  "lang",
+								Usage: "`LANGUAGE` of the project, one of \"node\", \"python\"",
+								Action: func(ctx context.Context, cmd *cli.Command, l string) error {
+									if l == "" {
+										return nil
+									}
+									if !slices.Contains([]string{"node", "python"}, l) {
+										return fmt.Errorf("unsupported language: %s", l)
+									}
+									return nil
+								},
+								Hidden: true,
+							},
+							&cli.BoolFlag{
+								Name:  "deploy",
+								Usage: "If set, automatically deploys the agent to LiveKit Cloud after initialization.",
+								Value: false,
+							},
+							templateFlag,
+							templateURLFlag,
+						}, {
+							sandboxFlag,
+							&cli.BoolFlag{
+								Name:  "no-sandbox",
+								Usage: "If set, will not create a sandbox for the project. ",
+								Value: false,
+							},
+						}},
+					}},
+					Flags:                     []cli.Flag{},
+					ArgsUsage:                 "[AGENT-NAME]",
+					DisableSliceFlagSeparator: true,
+				},
 				{
 					Name:   "create",
 					Usage:  "Create a new LiveKit Cloud Agent",
@@ -330,6 +368,91 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 	return ctx, nil
 }
 
+func initAgent(ctx context.Context, cmd *cli.Command) error {
+	// TODO: (@rektdeckard) move compatibility flag into template index,
+	// then show template picker containing only compatible templates
+	if !(cmd.IsSet("lang") || cmd.IsSet("template") || cmd.IsSet("template-url")) {
+		var lang string
+		// Prompt for language
+		if err := huh.NewSelect[string]().
+			Title("Select the language for your agent project").
+			Options(
+				huh.NewOption("Python", "python"),
+				huh.NewOption("Node.js", "node"),
+			).
+			Value(&lang).
+			WithTheme(util.Theme).
+			Run(); err != nil {
+			return err
+		}
+
+		switch lang {
+		case "node":
+			templateURL = "https://github.com/livekit-examples/agent-starter-node"
+		case "python":
+			templateURL = "https://github.com/livekit-examples/agent-starter-python"
+		default:
+			return fmt.Errorf("unsupported language: %s", lang)
+		}
+	}
+
+	logger.Debugw("Initializing agent project", "working-dir", workingDir)
+
+	// Create sandbox
+	if !cmd.Bool("no-sandbox") || sandboxID == "" {
+		if err := util.Await("Creating sandbox app...", ctx, func(ctx context.Context) error {
+			token, err := requireToken(ctx, cmd)
+			if err != nil {
+				return err
+			}
+
+			appName = cmd.Args().First()
+			if appName == "" {
+				appName = project.Name
+			}
+			// We set agent name in env for use in template tasks
+			os.Setenv("LIVEKIT_AGENT_NAME", appName)
+
+			// TODO: (@rektdeckard) figure out why AccessKeyProvider does not immediately
+			// have access to newly-created API keys, then remove this sleep
+			time.Sleep(4 * time.Second)
+			sandboxID, err = bootstrap.CreateSandbox(
+				ctx,
+				appName,
+				// NOTE: we may want to support embed sandbox in the future
+				"https://github.com/livekit-examples/agent-starter-react",
+				token,
+				serverURL,
+			)
+			return err
+		}); err != nil {
+			return fmt.Errorf("failed to create sandbox: %w", err)
+		} else {
+			fmt.Println("Creating sandbox app...")
+			fmt.Printf("Created sandbox app [%s]\n", util.Accented(sandboxID))
+		}
+
+	}
+
+	// Run template bootstrap
+	shouldDeploy := cmd.Bool("deploy")
+	if shouldDeploy {
+		cmd.Set("install", "true")
+	}
+	if err := setupTemplate(ctx, cmd); err != nil {
+		return err
+	}
+	// Deploy if requested
+	if shouldDeploy {
+		fmt.Println("Deploying agent...")
+		if err := createAgent(ctx, cmd); err != nil {
+			return fmt.Errorf("failed to deploy agent: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func createAgent(ctx context.Context, cmd *cli.Command) error {
 	subdomainMatches := subdomainPattern.FindStringSubmatch(project.URL)
 	if len(subdomainMatches) < 2 {
@@ -424,11 +547,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	resp, err := agentsClient.CreateAgent(ctx, req)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to create agent: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to create agent: %w", err)
 	}
 
 	lkConfig.Agent.ID = resp.AgentId
@@ -512,11 +633,9 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	})
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to list agents: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to list agents: %w", err)
 	}
 	if len(response.Agents) == 0 {
 		return fmt.Errorf("agent not found")
@@ -581,11 +700,9 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	resp, err := agentsClient.DeployAgent(ctx, req)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to deploy agent: %w", err)
 	}
 
 	if !resp.Success {
@@ -619,11 +736,9 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 	})
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to list agents: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to list agents: %w", err)
 	}
 
 	if len(res.Agents) == 0 {
@@ -721,11 +836,9 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	})
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to update agent: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to update agent: %w", err)
 	}
 
 	if resp.Success {
@@ -755,11 +868,9 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to rollback agent: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to rollback agent: %w", err)
 	}
 
 	if !resp.Success {
@@ -818,11 +929,9 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to delete agent: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to delete agent: %w", err)
 	}
 
 	if !res.Success {
@@ -846,11 +955,9 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	versions, err := agentsClient.ListAgentVersions(ctx, req)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to list agent versions: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to list agent versions: %w", err)
 	}
 
 	table := util.CreateTable().
@@ -885,11 +992,9 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 			})
 			if err != nil {
 				if twerr, ok := err.(twirp.Error); ok {
-					if twerr.Code() == twirp.PermissionDenied {
-						return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-					}
+					return fmt.Errorf("unable to list agents: %s", twerr.Msg())
 				}
-				return err
+				return fmt.Errorf("unable to list agents: %w", err)
 			}
 			items = append(items, res.Agents...)
 		}
@@ -897,11 +1002,9 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 		agents, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{})
 		if err != nil {
 			if twerr, ok := err.(twirp.Error); ok {
-				if twerr.Code() == twirp.PermissionDenied {
-					return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-				}
+				return fmt.Errorf("unable to list agents: %s", twerr.Msg())
 			}
-			return err
+			return fmt.Errorf("unable to list agents: %w", err)
 		}
 		items = agents.Agents
 	}
@@ -950,11 +1053,9 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 	secrets, err := agentsClient.ListAgentSecrets(ctx, req)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to list agent secrets: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to list agent secrets: %w", err)
 	}
 
 	table := util.CreateTable().
@@ -1011,11 +1112,9 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 	resp, err := agentsClient.UpdateAgentSecrets(ctx, req)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return fmt.Errorf("unable to update agent secrets: %s", twerr.Msg())
 		}
-		return err
+		return fmt.Errorf("unable to update agent secrets: %w", err)
 	}
 
 	if resp.Success {
@@ -1067,11 +1166,9 @@ func selectAgent(ctx context.Context, _ *cli.Command, excludeEmptyVersion bool) 
 	})
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return "", fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return "", fmt.Errorf("unable to list agents: %s", twerr.Msg())
 		}
-		return "", err
+		return "", fmt.Errorf("unable to list agents: %w", err)
 	}
 
 	if len(agents.Agents) == 0 {
@@ -1213,11 +1310,9 @@ func getClientSettings(ctx context.Context, silent bool) (map[string]string, err
 
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
-			if twerr.Code() == twirp.PermissionDenied {
-				return nil, fmt.Errorf("agent hosting is disabled for this project -- join the beta program here [%s]", cloudAgentsBetaSignupURL)
-			}
+			return nil, fmt.Errorf("unable to get client settings: %s", twerr.Msg())
 		}
-		return nil, err
+		return nil, fmt.Errorf("unable to get client settings: %w", err)
 	}
 
 	if clientSettingsResponse == nil {
