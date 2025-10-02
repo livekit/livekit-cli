@@ -790,9 +790,33 @@ func listSipTrunk(ctx context.Context, cmd *cli.Command) error {
 func listSipInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	cli, err := createSIPClient(ctx, cmd)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not create SIP client: %w", err)
 	}
-	return listAndPrint(ctx, cmd, cli.ListSIPInboundTrunk, &livekit.ListSIPInboundTrunkRequest{}, []string{
+
+	// NOTE: twirp has a maximum payload size of 4MB, which some customer data may exceed.
+	// We implement pagination here behind the scenes to split requests into manageable chunks
+	// unlikely to exceed the limit. This should be used on all listing commands that may
+	// return a large number of items.
+	page := &livekit.Pagination{Limit: 500}
+	req := &livekit.ListSIPInboundTrunkRequest{Page: page}
+	list := func(ctx context.Context, req *livekit.ListSIPInboundTrunkRequest) (*livekit.ListSIPInboundTrunkResponse, error) {
+		res := &livekit.ListSIPInboundTrunkResponse{}
+		if err := ExhaustivePaginatedList(
+			ctx,
+			req,
+			cli.ListSIPInboundTrunk,
+			func(items []*livekit.SIPInboundTrunkInfo) {
+				res.Items = append(res.Items, items...)
+				page.AfterId = items[len(items)-1].SipTrunkId
+			},
+			page,
+		); err != nil {
+			return nil, fmt.Errorf("could not list SIP inbound trunks: %w", err)
+		}
+		return res, nil
+	}
+
+	return listAndPrint(ctx, cmd, list, req, []string{
 		"SipTrunkID", "Name", "Numbers",
 		"AllowedAddresses", "AllowedNumbers",
 		"Authentication",
@@ -816,7 +840,31 @@ func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return listAndPrint(ctx, cmd, cli.ListSIPOutboundTrunk, &livekit.ListSIPOutboundTrunkRequest{}, []string{
+
+	// NOTE: twirp has a maximum payload size of 4MB, which some customer data may exceed.
+	// We implement pagination here behind the scenes to split requests into manageable chunks
+	// unlikely to exceed the limit. This should be used on all listing commands that may
+	// return a large number of items.
+	page := &livekit.Pagination{Limit: 500}
+	req := &livekit.ListSIPOutboundTrunkRequest{Page: page}
+	list := func(ctx context.Context, req *livekit.ListSIPOutboundTrunkRequest) (*livekit.ListSIPOutboundTrunkResponse, error) {
+		res := &livekit.ListSIPOutboundTrunkResponse{}
+		if err := ExhaustivePaginatedList(
+			ctx,
+			req,
+			cli.ListSIPOutboundTrunk,
+			func(items []*livekit.SIPOutboundTrunkInfo) {
+				res.Items = append(res.Items, items...)
+				page.AfterId = items[len(items)-1].SipTrunkId
+			},
+			page,
+		); err != nil {
+			return nil, fmt.Errorf("could not list SIP outbound trunks: %w", err)
+		}
+		return res, nil
+	}
+
+	return listAndPrint(ctx, cmd, list, req, []string{
 		"SipTrunkID", "Name",
 		"Address", "Transport",
 		"Numbers",
