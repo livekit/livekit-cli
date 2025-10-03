@@ -370,8 +370,8 @@ var (
 									Value: 80 * time.Second,
 								},
 								&cli.StringSliceFlag{
-									Name:  "headers",
-									Usage: "Custom SIP headers in format 'Key:Value' (can be specified multiple times)",
+									Name:  "header",
+									Usage: "Custom SIP header in format 'Key:Value' (can be specified multiple times)",
 								},
 							},
 						},
@@ -1159,8 +1159,8 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 			req.WaitUntilAnswered = true
 		}
 
-		// Parse headers from StringSliceFlag
-		if headers := cmd.StringSlice("headers"); len(headers) > 0 {
+		// Parse headers from repeatable "header" flag
+		if headers := cmd.StringSlice("header"); len(headers) > 0 {
 			if req.Headers == nil {
 				req.Headers = make(map[string]string)
 			}
