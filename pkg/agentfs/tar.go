@@ -20,6 +20,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path"
@@ -27,8 +28,10 @@ import (
 	"strings"
 
 	"github.com/schollz/progressbar/v3"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
+	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
 
 	"github.com/moby/patternmatcher"
@@ -51,7 +54,13 @@ var (
 	}
 )
 
-func UploadTarball(directory string, presignedUrl string, excludeFiles []string, projectType ProjectType) error {
+func UploadTarball(
+	directory string,
+	presignedUrl string,
+	presignedPostRequest *livekit.PresignedPostRequest,
+	excludeFiles []string,
+	projectType ProjectType,
+) error {
 	excludeFiles = append(excludeFiles, defaultExcludePatterns...)
 
 	loadExcludeFiles := func(filename string) (bool, string, error) {
@@ -274,25 +283,79 @@ func UploadTarball(directory string, presignedUrl string, excludeFiles []string,
 		}),
 	)
 
-	req, err := http.NewRequest("PUT", presignedUrl, io.TeeReader(&buffer, uploadProgress))
+	if presignedPostRequest != nil {
+		if err := multipartUpload(presignedPostRequest.Url, presignedPostRequest.Values, &buffer, uploadProgress); err != nil {
+			return fmt.Errorf("multipart upload failed: %w", err)
+		}
+	} else {
+		if err := upload(presignedUrl, &buffer, uploadProgress); err != nil {
+			return fmt.Errorf("upload failed: %w", err)
+		}
+	}
+
+	fmt.Println()
+	return nil
+}
+
+func upload(presignedUrl string, buffer *bytes.Buffer, uploadProgress *progressbar.ProgressBar) error {
+	req, err := http.NewRequest("PUT", presignedUrl, io.TeeReader(buffer, uploadProgress))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/gzip")
 	req.ContentLength = int64(buffer.Len())
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to upload tarball: %w", err)
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("failed to upload tarball: %d: %s", resp.StatusCode, body)
 	}
-
-	fmt.Println()
 	return nil
+}
+
+func multipartUpload(presignedURL string, fields map[string]string, buf *bytes.Buffer, uploadProgress *progressbar.ProgressBar) error {
+	pr, pw := io.Pipe()
+	w := multipart.NewWriter(pw)
+	var eg errgroup.Group
+	eg.Go(func() error {
+		defer pw.Close()
+		defer w.Close()
+		for k, v := range fields {
+			if err := w.WriteField(k, v); err != nil {
+				pw.CloseWithError(err)
+				return err
+			}
+		}
+		part, err := w.CreateFormFile("file", "upload.tar.gz")
+		if err != nil {
+			pw.CloseWithError(err)
+			return err
+		}
+		if _, err := io.Copy(part, io.TeeReader(buf, uploadProgress)); err != nil {
+			pw.CloseWithError(err)
+			return err
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		req, err := http.NewRequest("POST", presignedURL, pr)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", w.FormDataContentType())
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+			respBody, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("failed to upload tarball: %d: %s", resp.StatusCode, respBody)
+		}
+		return nil
+	})
+	return eg.Wait()
 }
