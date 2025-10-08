@@ -25,7 +25,6 @@ import (
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/protocol/auth"
-	"github.com/livekit/protocol/livekit"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -150,7 +149,7 @@ func (c *Client) uploadAndBuild(
 	ctx context.Context,
 	agentID string,
 	presignedUrl string,
-	presignedPostRequest *livekit.PresignedPostRequest,
+	presignedPostRequest *lkproto.PresignedPostRequest,
 	workingDir string,
 	excludeFiles []string,
 ) error {

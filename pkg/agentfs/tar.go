@@ -293,7 +293,6 @@ func UploadTarball(
 		}
 	}
 
-	fmt.Println()
 	return nil
 }
 
