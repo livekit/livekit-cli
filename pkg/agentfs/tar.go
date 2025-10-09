@@ -28,7 +28,6 @@ import (
 	"strings"
 
 	"github.com/schollz/progressbar/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
@@ -284,7 +283,7 @@ func UploadTarball(
 	)
 
 	if presignedPostRequest != nil {
-		if err := multipartUpload(presignedPostRequest.Url, presignedPostRequest.Values, &buffer, uploadProgress); err != nil {
+		if err := multipartUpload(presignedPostRequest.Url, presignedPostRequest.Values, &buffer); err != nil {
 			return fmt.Errorf("multipart upload failed: %w", err)
 		}
 	} else {
@@ -315,46 +314,41 @@ func upload(presignedUrl string, buffer *bytes.Buffer, uploadProgress *progressb
 	return nil
 }
 
-func multipartUpload(presignedURL string, fields map[string]string, buf *bytes.Buffer, uploadProgress *progressbar.ProgressBar) error {
-	pr, pw := io.Pipe()
-	w := multipart.NewWriter(pw)
-	var eg errgroup.Group
-	eg.Go(func() error {
-		defer pw.Close()
-		defer w.Close()
-		for k, v := range fields {
-			if err := w.WriteField(k, v); err != nil {
-				pw.CloseWithError(err)
-				return err
-			}
-		}
-		part, err := w.CreateFormFile("file", "upload.tar.gz")
-		if err != nil {
-			pw.CloseWithError(err)
+func multipartUpload(presignedURL string, fields map[string]string, buf *bytes.Buffer) error {
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+	fileName, ok := fields["key"]
+	if !ok {
+		fileName = "upload.tar.gz"
+	}
+	for k, v := range fields {
+		if err := w.WriteField(k, v); err != nil {
 			return err
 		}
-		if _, err := io.Copy(part, io.TeeReader(buf, uploadProgress)); err != nil {
-			pw.CloseWithError(err)
-			return err
-		}
-		return nil
-	})
-	eg.Go(func() error {
-		req, err := http.NewRequest("POST", presignedURL, pr)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Content-Type", w.FormDataContentType())
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-			respBody, _ := io.ReadAll(resp.Body)
-			return fmt.Errorf("failed to upload tarball: %d: %s", resp.StatusCode, respBody)
-		}
-		return nil
-	})
-	return eg.Wait()
+	}
+	part, err := w.CreateFormFile("file", fileName)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(part, buf); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", presignedURL, &b)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusNoContent {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to upload tarball: %d: %s", resp.StatusCode, respBody)
+	}
+	return nil
 }
