@@ -78,6 +78,10 @@ var (
 							Usage: "Fire random speaker events to simulate speaker changes",
 						},
 						&cli.BoolFlag{
+							Name:  "disable-publish",
+							Usage: "Disable publishing permission for participants (canPublish: false)",
+						},
+						&cli.BoolFlag{
 							Name:   "run-all",
 							Usage:  "Runs set list of load test cases",
 							Hidden: true,
@@ -171,6 +175,10 @@ var (
 					Usage: "Fire random speaker events to simulate speaker changes",
 				},
 				&cli.BoolFlag{
+					Name:  "disable-publish",
+					Usage: "Disable publishing permission for participants (canPublish: false)",
+				},
+				&cli.BoolFlag{
 					Name:   "run-all",
 					Usage:  "Runs set list of load test cases",
 					Hidden: true,
@@ -198,6 +206,7 @@ func loadTest(ctx context.Context, cmd *cli.Command) error {
 		NumPerSecond:     cmd.Float("num-per-second"),
 		Simulcast:        !cmd.Bool("no-simulcast"),
 		SimulateSpeakers: cmd.Bool("simulate-speakers"),
+		CanPublish:       !cmd.Bool("disable-publish"), // if disable-publish is true, CanPublish becomes false
 		TesterParams: loadtester.TesterParams{
 			URL:            pc.URL,
 			APIKey:         pc.APIKey,
@@ -205,6 +214,7 @@ func loadTest(ctx context.Context, cmd *cli.Command) error {
 			Room:           cmd.String("room"),
 			IdentityPrefix: cmd.String("identity-prefix"),
 			Layout:         loadtester.LayoutFromString(cmd.String("layout")),
+			CanPublish:     !cmd.Bool("disable-publish"), // if disable-publish is true, CanPublish becomes false
 		},
 	}
 
