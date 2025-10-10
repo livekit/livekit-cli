@@ -85,6 +85,70 @@ var (
 					},
 				},
 				{
+					Name:   "stress-test",
+					Usage:  "Run stress tests against LiveKit with simulated publishers & subscribers",
+					Action: stressTest,
+					Flags: []cli.Flag{
+						&cli.IntFlag{
+							Name:  "rooms",
+							Usage: "`NUMBER` of rooms to open",
+						},
+						&cli.StringFlag{
+							Name:  "room-prefix",
+							Usage: "Room `PREFIX` of tester participants (defaults to a random prefix)",
+						},
+						&cli.DurationFlag{
+							Name:  "duration",
+							Usage: "`TIME` duration to run, 1m, 1h (by default will run until canceled)",
+							Value: 0,
+						},
+						&cli.IntFlag{
+							Name:    "video-publishers",
+							Aliases: []string{"publishers"},
+							Usage:   "`NUMBER` of participants that would publish video tracks",
+						},
+						&cli.IntFlag{
+							Name:  "audio-publishers",
+							Usage: "`NUMBER` of participants that would publish audio tracks",
+						},
+						&cli.IntFlag{
+							Name:  "subscribers",
+							Usage: "`NUMBER` of participants that would subscribe to tracks",
+						},
+						&cli.StringFlag{
+							Name:  "identity-prefix",
+							Usage: "Identity `PREFIX` of tester participants (defaults to a random prefix)",
+						},
+						&cli.StringFlag{
+							Name:  "video-resolution",
+							Usage: "Resolution `QUALITY` of video to publish (\"high\", \"medium\", or \"low\")",
+							Value: "high",
+						},
+						&cli.StringFlag{
+							Name:  "video-codec",
+							Usage: "`CODEC` \"h264\" or \"vp8\", both will be used when unset",
+						},
+						&cli.FloatFlag{
+							Name:  "num-per-second",
+							Usage: "`NUMBER` of testers to start every second",
+							Value: 5,
+						},
+						&cli.StringFlag{
+							Name:  "layout",
+							Usage: "`LAYOUT` to simulate, choose from \"speaker\", \"3x3\", \"4x4\", \"5x5\"",
+							Value: "speaker",
+						},
+						&cli.BoolFlag{
+							Name:  "no-simulcast",
+							Usage: "Disables simulcast publishing (simulcast is enabled by default)",
+						},
+						&cli.BoolFlag{
+							Name:  "simulate-speakers",
+							Usage: "Fire random speaker events to simulate speaker changes",
+						},
+					},
+				},
+				{
 					Name:   "agent-load-test",
 					Usage:  "Run load tests for a running agent",
 					Action: agentLoadTest,
@@ -177,6 +241,70 @@ var (
 				},
 			},
 		},
+		{
+			Name:   "stress-test",
+			Usage:  "Run stress tests against LiveKit with simulated publishers & subscribers",
+			Action: stressTest,
+			Flags: []cli.Flag{
+				&cli.IntFlag{
+					Name:  "rooms",
+					Usage: "`NUMBER` of rooms to open",
+				},
+				&cli.StringFlag{
+					Name:  "room-prefix",
+					Usage: "Room `PREFIX` of tester participants (defaults to a random prefix)",
+				},
+				&cli.DurationFlag{
+					Name:  "duration",
+					Usage: "`TIME` duration to run, 1m, 1h (by default will run until canceled)",
+					Value: 0,
+				},
+				&cli.IntFlag{
+					Name:    "video-publishers",
+					Aliases: []string{"publishers"},
+					Usage:   "`NUMBER` of participants that would publish video tracks",
+				},
+				&cli.IntFlag{
+					Name:  "audio-publishers",
+					Usage: "`NUMBER` of participants that would publish audio tracks",
+				},
+				&cli.IntFlag{
+					Name:  "subscribers",
+					Usage: "`NUMBER` of participants that would subscribe to tracks",
+				},
+				&cli.StringFlag{
+					Name:  "identity-prefix",
+					Usage: "Identity `PREFIX` of tester participants (defaults to a random prefix)",
+				},
+				&cli.StringFlag{
+					Name:  "video-resolution",
+					Usage: "Resolution `QUALITY` of video to publish (\"high\", \"medium\", or \"low\")",
+					Value: "high",
+				},
+				&cli.StringFlag{
+					Name:  "video-codec",
+					Usage: "`CODEC` \"h264\" or \"vp8\", both will be used when unset",
+				},
+				&cli.FloatFlag{
+					Name:  "num-per-second",
+					Usage: "`NUMBER` of testers to start every second",
+					Value: 5,
+				},
+				&cli.StringFlag{
+					Name:  "layout",
+					Usage: "`LAYOUT` to simulate, choose from \"speaker\", \"3x3\", \"4x4\", \"5x5\"",
+					Value: "speaker",
+				},
+				&cli.BoolFlag{
+					Name:  "no-simulcast",
+					Usage: "Disables simulcast publishing (simulcast is enabled by default)",
+				},
+				&cli.BoolFlag{
+					Name:  "simulate-speakers",
+					Usage: "Fire random speaker events to simulate speaker changes",
+				},
+			},
+		},
 	}
 )
 
@@ -223,6 +351,40 @@ func loadTest(ctx context.Context, cmd *cli.Command) error {
 
 	test := loadtester.NewLoadTest(params)
 	return test.Run(ctx)
+}
+
+func stressTest(ctx context.Context, cmd *cli.Command) error {
+	pc, err := loadProjectDetails(cmd)
+	if err != nil {
+		return err
+	}
+	if !cmd.Bool("verbose") {
+		lksdk.SetLogger(logger.LogRLogger(logr.Discard()))
+	}
+	_ = raiseULimit()
+
+	params := loadtester.Params{
+		VideoResolution:  cmd.String("video-resolution"),
+		VideoCodec:       cmd.String("video-codec"),
+		Duration:         cmd.Duration("duration"),
+		NumPerSecond:     cmd.Float("num-per-second"),
+		Simulcast:        !cmd.Bool("no-simulcast"),
+		SimulateSpeakers: cmd.Bool("simulate-speakers"),
+		TesterParams: loadtester.TesterParams{
+			URL:            pc.URL,
+			APIKey:         pc.APIKey,
+			APISecret:      pc.APISecret,
+			IdentityPrefix: cmd.String("identity-prefix"),
+			Layout:         loadtester.LayoutFromString(cmd.String("layout")),
+		},
+	}
+	params.Rooms = int(cmd.Int("rooms"))
+	params.RoomPrefix = cmd.String("room-prefix")
+	params.VideoPublishers = int(cmd.Int("video-publishers"))
+	params.AudioPublishers = int(cmd.Int("audio-publishers"))
+	params.Subscribers = int(cmd.Int("subscribers"))
+	test := loadtester.NewLoadTest(params)
+	return test.RunStress(ctx)
 }
 
 func agentLoadTest(ctx context.Context, cmd *cli.Command) error {
