@@ -68,6 +68,7 @@ func main() {
 	app.Commands = append(app.Commands, EgressCommands...)
 	app.Commands = append(app.Commands, IngressCommands...)
 	app.Commands = append(app.Commands, SIPCommands...)
+	app.Commands = append(app.Commands, PhoneNumberCommands...)
 	app.Commands = append(app.Commands, ReplayCommands...)
 	app.Commands = append(app.Commands, PerfCommands...)
 
