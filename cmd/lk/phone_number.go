@@ -28,7 +28,7 @@ import (
 var (
 	PhoneNumberCommands = []*cli.Command{
 		{
-			Name:   "phonenumber",
+			Name:   "number",
 			Usage:  "Manage phone numbers",
 			Hidden: true,
 			Commands: []*cli.Command{
@@ -199,11 +199,18 @@ func searchPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	return listAndPrint(ctx, cmd, func(ctx context.Context, req *livekit.SearchPhoneNumbersRequest) (*livekit.SearchPhoneNumbersResponse, error) {
+	// Define the search function
+	searchFunc := func(ctx context.Context, req *livekit.SearchPhoneNumbersRequest) (*livekit.SearchPhoneNumbersResponse, error) {
 		return client.SearchPhoneNumbers(ctx, req)
-	}, req, []string{
+	}
+
+	// Define the column headers
+	headers := []string{
 		"E164", "Country", "Area Code", "Type", "Locality", "Region", "Capabilities",
-	}, func(item *livekit.PhoneNumber) []string {
+	}
+
+	// Define the row formatter
+	rowFormatter := func(item *livekit.PhoneNumber) []string {
 		return []string{
 			item.E164Format,
 			item.CountryCode,
@@ -213,7 +220,9 @@ func searchPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 			item.Region,
 			strings.Join(item.Capabilities, ","),
 		}
-	})
+	}
+
+	return listAndPrint(ctx, cmd, searchFunc, req, headers, rowFormatter)
 }
 
 func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
