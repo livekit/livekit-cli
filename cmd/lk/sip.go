@@ -369,6 +369,10 @@ var (
 									Usage: "timeout for the call to dial",
 									Value: 80 * time.Second,
 								},
+								&cli.StringSliceFlag{
+									Name:  "header",
+									Usage: "Custom SIP header in format 'Key:Value' (can be specified multiple times)",
+								},
 							},
 						},
 						{
@@ -1154,6 +1158,26 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		if cmd.Bool("wait") {
 			req.WaitUntilAnswered = true
 		}
+
+		// Parse headers from repeatable "header" flag
+		if headers := cmd.StringSlice("header"); len(headers) > 0 {
+			if req.Headers == nil {
+				req.Headers = make(map[string]string)
+			}
+			for _, header := range headers {
+				parts := strings.SplitN(header, ":", 2)
+				if len(parts) != 2 {
+					return fmt.Errorf("invalid header format '%s', expected 'Key:Value'", header)
+				}
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+				if key == "" {
+					return fmt.Errorf("header key cannot be empty in '%s'", header)
+				}
+				req.Headers[key] = value
+			}
+		}
+
 		return req.Validate()
 	}, func(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error) {
 		// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.

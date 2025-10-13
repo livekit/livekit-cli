@@ -112,7 +112,13 @@ func (c *Client) CreateAgent(
 	if err != nil {
 		return nil, err
 	}
-	if err := c.uploadAndBuild(ctx, resp.AgentId, resp.PresignedUrl, workingDir, excludeFiles); err != nil {
+	if err := c.uploadAndBuild(ctx,
+		resp.AgentId,
+		resp.PresignedUrl,
+		resp.PresignedPostRequest,
+		workingDir,
+		excludeFiles,
+	); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -136,7 +142,7 @@ func (c *Client) DeployAgent(
 	if !resp.Success {
 		return fmt.Errorf("failed to deploy agent: %s", resp.Message)
 	}
-	return c.uploadAndBuild(ctx, agentID, resp.PresignedUrl, workingDir, excludeFiles)
+	return c.uploadAndBuild(ctx, agentID, resp.PresignedUrl, resp.PresignedPostRequest, workingDir, excludeFiles)
 }
 
 // uploadAndBuild uploads the source and triggers remote build
@@ -144,6 +150,7 @@ func (c *Client) uploadAndBuild(
 	ctx context.Context,
 	agentID string,
 	presignedUrl string,
+	presignedPostRequest *lkproto.PresignedPostRequest,
 	workingDir string,
 	excludeFiles []string,
 ) error {
@@ -154,6 +161,7 @@ func (c *Client) uploadAndBuild(
 	if err := UploadTarball(
 		workingDir,
 		presignedUrl,
+		presignedPostRequest,
 		excludeFiles,
 		projectType,
 	); err != nil {

@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/livekit/protocol/livekit"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,11 +46,60 @@ func TestUploadTarball(t *testing.T) {
 	f.Close()
 
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		require.NotZero(t, len(body))
+		require.Greater(t, fileSize, int64(len(body)))
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
+	err = UploadTarball(tmpDir, mockServer.URL, nil, []string{}, ProjectTypePythonPip)
+	require.NoError(t, err)
+}
+
+func TestUploadTarballPost(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "tarball-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	subDir := filepath.Join(tmpDir, "subdir")
+	err = os.MkdirAll(subDir, 0755)
+	require.NoError(t, err)
+
+	normalFiles := []string{
+		filepath.Join(subDir, "normal1.txt"),
+		filepath.Join(subDir, "normal2.txt"),
+		filepath.Join(tmpDir, "root.txt"),
+	}
+	for _, path := range normalFiles {
+		err = os.WriteFile(path, []byte("normal content"), 0644)
+		require.NoError(t, err)
+	}
+
+	largeFile := filepath.Join(tmpDir, "large.bin")
+	f, err := os.Create(largeFile)
+	require.NoError(t, err)
+
+	fileSize := int64(1024 * 1024 * 1024) // 1GB
+	err = f.Truncate(fileSize)
+	require.NoError(t, err)
+	f.Close()
+
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseMultipartForm(1024 * 1024 * 1024)
+		require.NoError(t, err)
+		require.NotZero(t, len(r.MultipartForm.File["file"]))
+		require.Equal(t, "upload.tar.gz", r.MultipartForm.File["file"][0].Filename)
+		require.Greater(t, fileSize, r.MultipartForm.File["file"][0].Size)
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer mockServer.Close()
+
+	err = UploadTarball(tmpDir, "", &livekit.PresignedPostRequest{
+		Url:    mockServer.URL,
+		Values: map[string]string{},
+	}, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 }
 
@@ -86,7 +136,7 @@ func TestUploadTarballFilePermissions(t *testing.T) {
 	//   https://learn.microsoft.com/en-us/windows/win32/secauthz/access-control-lists
 	//
 	if runtime.GOOS != "windows" {
-		err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
+		err = UploadTarball(tmpDir, mockServer.URL, nil, []string{}, ProjectTypePythonPip)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "permission denied")
 	}
@@ -94,7 +144,7 @@ func TestUploadTarballFilePermissions(t *testing.T) {
 	err = os.Remove(restrictedFile)
 	require.NoError(t, err)
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
+	err = UploadTarball(tmpDir, mockServer.URL, nil, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 }
 
@@ -189,7 +239,7 @@ func TestUploadTarballDotfiles(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
+	err = UploadTarball(tmpDir, mockServer.URL, nil, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 
 	contents := readTarContents(t, tarBuffer.Bytes())
@@ -273,7 +323,7 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
+	err = UploadTarball(tmpDir, mockServer.URL, nil, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 
 	contents := readTarContents(t, tarBuffer.Bytes())
@@ -370,7 +420,7 @@ venv/
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{}, ProjectTypePythonPip)
+	err = UploadTarball(tmpDir, mockServer.URL, nil, []string{}, ProjectTypePythonPip)
 	require.NoError(t, err)
 
 	contents := readTarContents(t, tarBuffer.Bytes())
@@ -474,7 +524,7 @@ func TestUploadTarballWithPipPythonProject(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{"**/livekit.toml"}, ProjectTypePythonPip)
+	err = UploadTarball(tmpDir, mockServer.URL, nil, []string{"**/livekit.toml"}, ProjectTypePythonPip)
 	require.NoError(t, err)
 
 	contents := readTarContents(t, tarBuffer.Bytes())
@@ -567,7 +617,7 @@ func TestUploadTarballWithUvPythonProject(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{"**/livekit.toml"}, ProjectTypePythonUV)
+	err = UploadTarball(tmpDir, mockServer.URL, nil, []string{"**/livekit.toml"}, ProjectTypePythonUV)
 	require.NoError(t, err)
 
 	contents := readTarContents(t, tarBuffer.Bytes())
@@ -667,7 +717,7 @@ func TestUploadTarballWithNodeProject(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	err = UploadTarball(tmpDir, mockServer.URL, []string{"**/livekit.toml"}, ProjectTypeNode)
+	err = UploadTarball(tmpDir, mockServer.URL, nil, []string{"**/livekit.toml"}, ProjectTypeNode)
 	require.NoError(t, err)
 
 	contents := readTarContents(t, tarBuffer.Bytes())
