@@ -92,9 +92,11 @@ var (
 			Usage:   "Manage LiveKit Cloud Agents",
 			Commands: []*cli.Command{
 				{
-					Name:   "init",
-					Usage:  "Initialize a new LiveKit Cloud agent project",
-					Before: createAgentClient,
+					Name:  "init",
+					Usage: "Initialize a new LiveKit Cloud agent project",
+					Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+						return createAgentClientWithOpts(ctx, cmd, confirmProject)
+					},
 					Action: initAgent,
 					MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{{
 						Flags: [][]cli.Flag{{
@@ -326,9 +328,13 @@ var (
 )
 
 func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+	return createAgentClientWithOpts(ctx, cmd)
+}
+
+func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
 	var err error
 
-	if _, err := requireProject(ctx, cmd); err != nil {
+	if _, err := requireProjectWithOpts(ctx, cmd, opts...); err != nil {
 		return ctx, err
 	}
 
@@ -459,8 +465,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	if !cmd.IsSet("project") {
 		useProject := true
 		if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
-			Title(fmt.Sprintf("Use [%s] (%s) to create agent deployment?", project.Name, project.URL)).
+			Title(fmt.Sprintf("Use project [%s] (%s) to create agent deployment?", project.Name, project.URL)).
 			Value(&useProject).
+			Negative("Select another").
 			Inline(false).
 			WithTheme(util.Theme))).
 			Run(); err != nil {

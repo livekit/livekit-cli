@@ -131,7 +131,7 @@ func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadO
 		// something is wrong with CLI config file
 		return ctx, err
 	}
-	if project, err = loadProjectDetails(cmd); err != nil {
+	if project, err = loadProjectDetails(cmd, opts...); err != nil {
 		// something is wrong with project config file
 		if errors.Is(err, config.ErrInvalidConfig) {
 			return ctx, err
@@ -159,7 +159,7 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 				Value(&project).
 				WithTheme(util.Theme))).
 			Run(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("no project selected: %w", err)
 		}
 		fmt.Println("Using project [" + util.Accented(project.Name) + "]")
 	} else {
@@ -170,12 +170,12 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 			Value(&shouldAuth).
 			WithTheme(util.Theme))).
 			Run(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("no project selected: %w", err)
 		}
 		if shouldAuth {
 			initAuth(ctx, cmd)
 			if err = tryAuthIfNeeded(ctx, cmd); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("authentication failed: %w", err)
 			}
 			return requireProject(ctx, cmd)
 		} else {

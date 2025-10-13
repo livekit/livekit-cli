@@ -15,12 +15,14 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/huh"
 	"github.com/joho/godotenv"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
@@ -217,21 +219,27 @@ func parseKeyValuePairs(c *cli.Command, flag string) (map[string]string, error) 
 }
 
 type loadParams struct {
-	requireURL bool
+	requireURL     bool
+	confirmProject bool
 }
 
 type loadOption func(*loadParams)
 
-var ignoreURL = func(p *loadParams) {
-	p.requireURL = false
-}
+var (
+	ignoreURL = func(p *loadParams) {
+		p.requireURL = false
+	}
+	confirmProject = func(p *loadParams) {
+		p.confirmProject = true
+	}
+)
 
 // attempt to load connection config, it'll prioritize
 // 1. command line flags (or env var)
 // 2. config file (by default, livekit.toml)
 // 3. default project config
 func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
-	p := loadParams{requireURL: true}
+	p := loadParams{requireURL: true, confirmProject: false}
 	for _, opt := range opts {
 		opt(&p)
 	}
@@ -327,9 +335,31 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	// load default project
 	dp, err := config.LoadDefaultProject()
 	if err == nil {
-		if !c.Bool("silent") {
-			fmt.Println("Using default project [" + util.Theme.Focused.Title.Render(dp.Name) + "]")
-			logDetails(c, dp)
+		if p.confirmProject {
+			if dp != nil && len(cliConfig.Projects) > 1 && !c.Bool("silent") {
+				useDefault := true
+				if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+					Title(fmt.Sprintf("Use project [%s] (%s) to create agent?", dp.Name, dp.URL)).
+					Value(&useDefault).
+					Negative("Select another").
+					Inline(false).
+					WithTheme(util.Theme))).
+					Run(); err != nil {
+					return nil, fmt.Errorf("failed to confirm project: %w", err)
+				}
+				if !useDefault {
+					if _, err = selectProject(context.Background(), c); err != nil {
+						return nil, err
+					}
+					fmt.Printf("Using project [%s]\n", util.Accented(project.Name))
+					return project, nil
+				}
+			}
+		} else {
+			if !c.Bool("silent") {
+				fmt.Println("Using default project [" + util.Theme.Focused.Title.Render(dp.Name) + "]")
+				logDetails(c, dp)
+			}
 		}
 		return dp, nil
 	}
