@@ -23,12 +23,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/twitchtv/twirp"
+
 	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/protocol/auth"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
-	"github.com/twitchtv/twirp"
 )
 
 // Client is a wrapper around the lksdk.AgentClient that provides a simpler interface for creating and deploying agents.
@@ -63,7 +64,7 @@ func New(opts ...ClientOption) (*Client, error) {
 		return nil, err
 	}
 	client.AgentClient = agentClient
-	client.agentsURL = client.getAgentsURL()
+	client.agentsURL = client.getAgentsURL("")
 	if client.httpClient == nil {
 		client.httpClient = &http.Client{}
 	}
@@ -172,7 +173,7 @@ func (c *Client) uploadAndBuild(
 	return nil
 }
 
-func (c *Client) getAgentsURL() string {
+func (c *Client) getAgentsURL(serverRegion string) string {
 	agentsURL := c.projectURL
 	if strings.HasPrefix(agentsURL, "ws") {
 		agentsURL = strings.Replace(agentsURL, "ws", "http", 1)
@@ -182,7 +183,10 @@ func (c *Client) getAgentsURL() string {
 	} else if !strings.Contains(agentsURL, "localhost") && !strings.Contains(agentsURL, "127.0.0.1") {
 		pattern := `^https://[a-zA-Z0-9\-]+\.`
 		re := regexp.MustCompile(pattern)
-		agentsURL = re.ReplaceAllString(agentsURL, "https://agents.")
+		if serverRegion != "" {
+			serverRegion = fmt.Sprintf("%s.", serverRegion)
+		}
+		agentsURL = re.ReplaceAllString(agentsURL, fmt.Sprintf("https://%sagents.", serverRegion))
 	}
 	return agentsURL
 }

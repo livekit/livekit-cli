@@ -572,7 +572,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			fmt.Println("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, os.Stdout)
+			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, os.Stdout, resp.ServerRegions[0])
 		}
 	}
 	return nil
@@ -859,7 +859,19 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, os.Stdout)
+
+	response, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
+		AgentId: agentID,
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(response.Agents) == 0 {
+		return fmt.Errorf("no agent deployments found")
+	}
+
+	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
