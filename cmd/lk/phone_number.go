@@ -50,10 +50,6 @@ var (
 							Usage: "Maximum number of results (default: 50)",
 							Value: 50,
 						},
-						&cli.StringFlag{
-							Name:  "page-token",
-							Usage: "Token for pagination (empty for first page)",
-						},
 						jsonFlag,
 					},
 				},
@@ -63,7 +59,7 @@ var (
 					Action: purchasePhoneNumbers,
 					Flags: []cli.Flag{
 						&cli.StringSliceFlag{
-							Name:     "phonenumbers",
+							Name:     "numbers",
 							Usage:    "Phone numbers to purchase (e.g., \"+1234567890\", \"+1234567891\")",
 							Required: true,
 						},
@@ -88,10 +84,6 @@ var (
 							Usage: "Filter by status (active, pending, released)",
 						},
 						&cli.StringFlag{
-							Name:  "page-token",
-							Usage: "Token for pagination (empty for first page)",
-						},
-						&cli.StringFlag{
 							Name:  "sip-dispatch-rule-id",
 							Usage: "Filter by SIP dispatch rule ID",
 						},
@@ -108,11 +100,11 @@ var (
 							Usage: "Use phone number ID for direct lookup",
 						},
 						&cli.StringFlag{
-							Name:  "phonenumber",
+							Name:  "number",
 							Usage: "Use phone number string for lookup",
 						},
 					},
-					ArgsUsage: "Either --id or --phonenumber must be provided",
+					ArgsUsage: "Either --id or --number must be provided",
 				},
 				{
 					Name:   "update",
@@ -124,7 +116,7 @@ var (
 							Usage: "Use phone number ID for direct lookup",
 						},
 						&cli.StringFlag{
-							Name:  "phonenumber",
+							Name:  "number",
 							Usage: "Use phone number string for lookup",
 						},
 						&cli.StringFlag{
@@ -132,7 +124,7 @@ var (
 							Usage: "SIP dispatch rule ID to assign to the phone number",
 						},
 					},
-					ArgsUsage: "Either --id or --phonenumber must be provided",
+					ArgsUsage: "Either --id or --number must be provided",
 				},
 				{
 					Name:   "release",
@@ -144,11 +136,11 @@ var (
 							Usage: "Use phone number IDs for direct lookup",
 						},
 						&cli.StringSliceFlag{
-							Name:  "phonenumbers",
+							Name:  "numbers",
 							Usage: "Use phone number strings for lookup",
 						},
 					},
-					ArgsUsage: "Either --ids or --phonenumbers must be provided",
+					ArgsUsage: "Either --ids or --numbers must be provided",
 				},
 			},
 		},
@@ -184,9 +176,6 @@ func searchPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	}
 	if val := cmd.Int("limit"); val != 0 {
 		req.Limit = int32(val)
-	}
-	if val := cmd.String("page-token"); val != "" {
-		req.PageToken = &livekit.TokenPagination{Token: val}
 	}
 
 	resp, err := client.SearchPhoneNumbers(ctx, req)
@@ -231,7 +220,7 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	phoneNumbers := cmd.StringSlice("phonenumbers")
+	phoneNumbers := cmd.StringSlice("numbers")
 	if len(phoneNumbers) == 0 {
 		return fmt.Errorf("at least one phone number must be provided")
 	}
@@ -278,9 +267,6 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		}
 		req.Status = livekit.PhoneNumberStatus(status)
 	}
-	if val := cmd.String("page-token"); val != "" {
-		req.PageToken = &livekit.TokenPagination{Token: val}
-	}
 	if val := cmd.String("sip-dispatch-rule-id"); val != "" {
 		req.SipDispatchRuleId = val
 	}
@@ -323,13 +309,13 @@ func getPhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	id := cmd.String("id")
-	phoneNumber := cmd.String("phonenumber")
+	phoneNumber := cmd.String("number")
 
 	if id == "" && phoneNumber == "" {
-		return fmt.Errorf("either --id or --phonenumber must be provided")
+		return fmt.Errorf("either --id or --number must be provided")
 	}
 	if id != "" && phoneNumber != "" {
-		return fmt.Errorf("only one of --id or --phonenumber can be provided")
+		return fmt.Errorf("only one of --id or --number can be provided")
 	}
 
 	req := &livekit.GetPhoneNumberRequest{}
@@ -375,13 +361,13 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	id := cmd.String("id")
-	phoneNumber := cmd.String("phonenumber")
+	phoneNumber := cmd.String("number")
 
 	if id == "" && phoneNumber == "" {
-		return fmt.Errorf("either --id or --phonenumber must be provided")
+		return fmt.Errorf("either --id or --number must be provided")
 	}
 	if id != "" && phoneNumber != "" {
-		return fmt.Errorf("only one of --id or --phonenumber can be provided")
+		return fmt.Errorf("only one of --id or --number can be provided")
 	}
 
 	req := &livekit.UpdatePhoneNumberRequest{}
@@ -421,13 +407,13 @@ func releasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	ids := cmd.StringSlice("ids")
-	phoneNumbers := cmd.StringSlice("phonenumbers")
+	phoneNumbers := cmd.StringSlice("numbers")
 
 	if len(ids) == 0 && len(phoneNumbers) == 0 {
-		return fmt.Errorf("either --ids or --phonenumbers must be provided")
+		return fmt.Errorf("either --ids or --numbers must be provided")
 	}
 	if len(ids) > 0 && len(phoneNumbers) > 0 {
-		return fmt.Errorf("only one of --ids or --phonenumbers can be provided")
+		return fmt.Errorf("only one of --ids or --numbers can be provided")
 	}
 
 	req := &livekit.ReleasePhoneNumbersRequest{}
