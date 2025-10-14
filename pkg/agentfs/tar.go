@@ -20,6 +20,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -54,7 +55,7 @@ var (
 )
 
 func UploadTarball(
-	directory string,
+	directory fs.FS,
 	presignedUrl string,
 	presignedPostRequest *livekit.PresignedPostRequest,
 	excludeFiles []string,
@@ -62,9 +63,9 @@ func UploadTarball(
 ) error {
 	excludeFiles = append(excludeFiles, defaultExcludePatterns...)
 
-	loadExcludeFiles := func(filename string) (bool, string, error) {
-		if _, err := os.Stat(filename); err == nil {
-			content, err := os.ReadFile(filename)
+	loadExcludeFiles := func(dir fs.FS, filename string) (bool, string, error) {
+		if _, err := fs.Stat(dir, filename); err == nil {
+			content, err := fs.ReadFile(dir, filename)
 			if err != nil {
 				return false, "", err
 			}
@@ -75,7 +76,7 @@ func UploadTarball(
 
 	foundDockerIgnore := false
 	for _, exclude := range ignoreFilePatterns {
-		found, content, err := loadExcludeFiles(path.Join(directory, exclude))
+		found, content, err := loadExcludeFiles(directory, exclude)
 		if err != nil {
 			logger.Debugw("failed to load exclude file", "filename", exclude, "error", err)
 			continue
@@ -89,7 +90,7 @@ func UploadTarball(
 	// need to ensure we use a dockerignore file
 	// if we fail to load a dockerignore file, we have to exit
 	if !foundDockerIgnore {
-		dockerIgnoreContent, err := fs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
+		dockerIgnoreContent, err := fs.ReadFile(directory, path.Join("examples", string(projectType)+".dockerignore"))
 		if err != nil {
 			return fmt.Errorf("failed to load exclude file %s: %w", string(projectType), err)
 		}
@@ -105,7 +106,7 @@ func UploadTarball(
 		excludeFiles[i] = strings.TrimSpace(exclude)
 	}
 
-	checkFilesToInclude := func(path string, info os.FileInfo) bool {
+	checkFilesToInclude := func(path string) bool {
 		fileName := filepath.Base(path)
 		// we have to include the Dockerfile in the upload, as it is required for the build
 		if strings.Contains(fileName, "Dockerfile") {
@@ -123,17 +124,17 @@ func UploadTarball(
 	// we walk the directory first to calculate the total size of the tarball
 	// this lets the progress bar show the correct progress
 	var totalSize int64
-	err = filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+	err = fs.WalkDir(directory, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		relPath, err := filepath.Rel(directory, path)
+		info, err := d.Info()
 		if err != nil {
-			return nil
+			return err
 		}
 
-		if !checkFilesToInclude(relPath, info) {
+		if !checkFilesToInclude(path) {
 			return nil
 		}
 
@@ -166,17 +167,19 @@ func UploadTarball(
 	tarWriter := tar.NewWriter(gzipWriter)
 	defer tarWriter.Close()
 
-	err = filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+	err = fs.WalkDir(directory, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		relPath, err := filepath.Rel(directory, path)
+		info, err := d.Info()
 		if err != nil {
-			return fmt.Errorf("failed to calculate relative path for %s: %w", path, err)
+			return err
 		}
 
-		if !checkFilesToInclude(relPath, info) {
+		relPath := path
+
+		if !checkFilesToInclude(relPath) {
 			logger.Debugw("excluding file from tarball", "path", path)
 			return nil
 		}

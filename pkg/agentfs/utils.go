@@ -17,6 +17,7 @@ package agentfs
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,7 +111,7 @@ func LocateLockfile(dir string, p ProjectType) (bool, string) {
 	return false, ""
 }
 
-func DetectProjectType(dir string) (ProjectType, error) {
+func DetectProjectType(dir fs.FS) (ProjectType, error) {
 	// Node.js detection
 	if util.FileExists(dir, "package.json") {
 		return ProjectTypeNode, nil
@@ -127,8 +128,7 @@ func DetectProjectType(dir string) (ProjectType, error) {
 		return ProjectTypePythonPip, nil
 	}
 	if util.FileExists(dir, "pyproject.toml") {
-		tomlPath := filepath.Join(dir, "pyproject.toml")
-		data, err := os.ReadFile(tomlPath)
+		data, err := fs.ReadFile(dir, "pyproject.toml")
 		if err == nil {
 			var doc map[string]any
 			if err := toml.Unmarshal(data, &doc); err == nil {
