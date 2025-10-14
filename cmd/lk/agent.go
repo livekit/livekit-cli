@@ -1055,15 +1055,16 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to list agent secrets: %w", err)
 	}
 
+	// TODO (steveyoon): show secret.Kind.String() once cloud-agents is released
 	table := util.CreateTable().
-		Headers("Name", "Type", "Created At", "Updated At")
+		Headers("Name", "Created At", "Updated At")
 
 	for _, secret := range secrets.Secrets {
 		// NOTE: Maybe these should be omitted on the server side?
 		if slices.Contains(ignoredSecrets, secret.Name) {
 			continue
 		}
-		table.Row(secret.Name, secret.Kind.String(), secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
+		table.Row(secret.Name, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
 	}
 
 	fmt.Println(table)
