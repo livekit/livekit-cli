@@ -15,7 +15,7 @@ require (
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.42.1-0.20251008181454-49a136864c2d
-	github.com/livekit/server-sdk-go/v2 v2.11.3
+	github.com/livekit/server-sdk-go/v2 v2.11.4-0.20251009161714-f90dc6f3d8bb
 	github.com/moby/buildkit v0.23.2
 	github.com/moby/patternmatcher v0.6.0
 	github.com/pion/rtcp v1.2.15
@@ -145,7 +145,7 @@ require (
 	github.com/pion/datachannel v1.5.10 // indirect
 	github.com/pion/dtls/v3 v3.0.7 // indirect
 	github.com/pion/ice/v4 v4.0.10 // indirect
-	github.com/pion/interceptor v0.1.40 // indirect
+	github.com/pion/interceptor v0.1.41 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/mdns/v2 v2.0.7 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
