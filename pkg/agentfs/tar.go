@@ -90,7 +90,7 @@ func UploadTarball(
 	// need to ensure we use a dockerignore file
 	// if we fail to load a dockerignore file, we have to exit
 	if !foundDockerIgnore {
-		dockerIgnoreContent, err := fs.ReadFile(directory, path.Join("examples", string(projectType)+".dockerignore"))
+		dockerIgnoreContent, err := embedfs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
 		if err != nil {
 			return fmt.Errorf("failed to load exclude file %s: %w", string(projectType), err)
 		}
@@ -186,16 +186,18 @@ func UploadTarball(
 
 		// Follow symlinks and include the actual file contents
 		if info.Mode()&os.ModeSymlink != 0 {
+
 			realPath, err := filepath.EvalSymlinks(path)
 			if err != nil {
 				return fmt.Errorf("failed to evaluate symlink %s: %w", path, err)
 			}
-			info, err = os.Stat(realPath)
+
+			info, err = fs.Stat(directory, realPath)
 			if err != nil {
 				return fmt.Errorf("failed to stat %s: %w", realPath, err)
 			}
 			// Open the real file instead of the symlink
-			file, err := os.Open(realPath)
+			file, err := directory.Open(realPath)
 			if err != nil {
 				return fmt.Errorf("failed to open file %s: %w", realPath, err)
 			}
@@ -237,7 +239,9 @@ func UploadTarball(
 			return nil
 		}
 
-		file, err := os.Open(path)
+		fmt.Printf("path: %s\n", path)
+
+		file, err := directory.Open(path)
 		if err != nil {
 			return fmt.Errorf("failed to open file %s: %w", path, err)
 		}

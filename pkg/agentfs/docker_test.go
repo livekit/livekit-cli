@@ -16,7 +16,7 @@ func TestLoadDockerFiles(t *testing.T) {
 	}
 
 	for _, file := range expectedFiles {
-		bytes, err := fs.ReadFile(file)
+		bytes, err := embedfs.ReadFile(file)
 		if err != nil {
 			t.Fatalf("failed to read Dockerfile: %v", err)
 		}
