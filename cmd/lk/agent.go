@@ -535,7 +535,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	projectType, err := agentfs.DetectProjectType(workingDir)
+	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	fmt.Printf("Detected project type [%s]\n", util.Accented(string(projectType)))
 	if err != nil {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
@@ -555,7 +555,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	regions := cmd.StringSlice("regions")
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	resp, err := agentsClient.CreateAgent(ctx, workingDir, secrets, regions, excludeFiles)
+	resp, err := agentsClient.CreateAgent(ctx, os.DirFS(workingDir), secrets, regions, excludeFiles)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to create agent: %s", twerr.Msg())
@@ -681,7 +681,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		req.Secrets = secrets
 	}
 
-	projectType, err := agentfs.DetectProjectType(workingDir)
+	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
 	}
@@ -700,7 +700,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgent(ctx, agentId, workingDir, secrets, excludeFiles); err != nil {
+	if err := agentsClient.DeployAgent(ctx, agentId, os.DirFS(workingDir), secrets, excludeFiles); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
@@ -1373,7 +1373,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	projectType, err := agentfs.DetectProjectType(workingDir)
+	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	fmt.Printf("Detected project type [%s]\n", util.Accented(string(projectType)))
 	if err != nil {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
