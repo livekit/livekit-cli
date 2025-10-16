@@ -23,7 +23,6 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -167,7 +166,9 @@ func UploadTarball(
 	tarWriter := tar.NewWriter(gzipWriter)
 	defer tarWriter.Close()
 
-	err = fs.WalkDir(directory, ".", func(path string, d fs.DirEntry, err error) error {
+	root := "."
+
+	err = fs.WalkDir(directory, root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -177,46 +178,8 @@ func UploadTarball(
 			return err
 		}
 
-		relPath := path
-
-		if !checkFilesToInclude(relPath) {
+		if !checkFilesToInclude(path) {
 			logger.Debugw("excluding file from tarball", "path", path)
-			return nil
-		}
-
-		// Follow symlinks and include the actual file contents
-		if info.Mode()&os.ModeSymlink != 0 {
-
-			realPath, err := filepath.EvalSymlinks(path)
-			if err != nil {
-				return fmt.Errorf("failed to evaluate symlink %s: %w", path, err)
-			}
-
-			info, err = fs.Stat(directory, realPath)
-			if err != nil {
-				return fmt.Errorf("failed to stat %s: %w", realPath, err)
-			}
-			// Open the real file instead of the symlink
-			file, err := directory.Open(realPath)
-			if err != nil {
-				return fmt.Errorf("failed to open file %s: %w", realPath, err)
-			}
-			defer file.Close()
-
-			header, err := tar.FileInfoHeader(info, "")
-			if err != nil {
-				return fmt.Errorf("failed to create tar header for file %s: %w", path, err)
-			}
-			header.Name = relPath
-			if err := tarWriter.WriteHeader(header); err != nil {
-				return fmt.Errorf("failed to write tar header for file %s: %w", path, err)
-			}
-
-			// Copy file contents directly without progress bar
-			_, err = io.Copy(tarWriter, file)
-			if err != nil {
-				return fmt.Errorf("failed to copy file content for %s: %w", path, err)
-			}
 			return nil
 		}
 
@@ -226,7 +189,7 @@ func UploadTarball(
 			if err != nil {
 				return fmt.Errorf("failed to create tar header for directory %s: %w", path, err)
 			}
-			header.Name = relPath + "/"
+			header.Name = path + "/"
 			if err := tarWriter.WriteHeader(header); err != nil {
 				return fmt.Errorf("failed to write tar header for directory %s: %w", path, err)
 			}
@@ -239,8 +202,6 @@ func UploadTarball(
 			return nil
 		}
 
-		fmt.Printf("path: %s\n", path)
-
 		file, err := directory.Open(path)
 		if err != nil {
 			return fmt.Errorf("failed to open file %s: %w", path, err)
@@ -251,7 +212,7 @@ func UploadTarball(
 		if err != nil {
 			return fmt.Errorf("failed to create tar header for file %s: %w", path, err)
 		}
-		header.Name = util.ToUnixPath(relPath)
+		header.Name = util.ToUnixPath(path)
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return fmt.Errorf("failed to write tar header for file %s: %w", path, err)
 		}

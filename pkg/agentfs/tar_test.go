@@ -245,11 +245,12 @@ func TestUploadTarballDotfiles(t *testing.T) {
 	contents := readTarContents(t, tarBuffer.Bytes())
 
 	expectedFiles := map[string]struct{}{
-		"regular.txt":         {},
-		"src/code.go":         {},
-		".config":             {},
-		"link_to_regular.txt": {},
-		".link_to_config":     {},
+		"regular.txt": {},
+		"src/code.go": {},
+		".config":     {},
+		// symlink files are excluded
+		// "link_to_regular.txt": {},
+		// ".link_to_config":     {},
 	}
 
 	excludedFiles := map[string]struct{}{
