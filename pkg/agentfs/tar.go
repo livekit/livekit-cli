@@ -189,7 +189,7 @@ func UploadTarball(
 			if err != nil {
 				return fmt.Errorf("failed to create tar header for directory %s: %w", path, err)
 			}
-			header.Name = path + "/"
+			header.Name = util.ToUnixPath(path) + "/"
 			if err := tarWriter.WriteHeader(header); err != nil {
 				return fmt.Errorf("failed to write tar header for directory %s: %w", path, err)
 			}
