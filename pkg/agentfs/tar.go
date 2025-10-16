@@ -24,7 +24,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/schollz/progressbar/v3"
@@ -105,14 +104,14 @@ func UploadTarball(
 		excludeFiles[i] = strings.TrimSpace(exclude)
 	}
 
-	checkFilesToInclude := func(path string) bool {
-		fileName := filepath.Base(path)
+	checkFilesToInclude := func(p string) bool {
+		fileName := path.Base(p)
 		// we have to include the Dockerfile in the upload, as it is required for the build
 		if strings.Contains(fileName, "Dockerfile") {
 			return true
 		}
 
-		if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
+		if ignored, err := matcher.MatchesOrParentMatches(p); ignored {
 			return false
 		} else if err != nil {
 			return false

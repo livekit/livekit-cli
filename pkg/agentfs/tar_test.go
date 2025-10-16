@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -287,15 +288,15 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 
 	dirs := []string{
 		"level1",
-		filepath.Join("level1", "level2"),
-		filepath.Join("level1", "level2", "level3"),
-		filepath.Join("level1", "level2", "level3", "level4"),
+		path.Join("level1", "level2"),
+		path.Join("level1", "level2", "level3"),
+		path.Join("level1", "level2", "level3", "level4"),
 	}
 
 	for _, dir := range dirs {
-		err = os.MkdirAll(filepath.Join(tmpDir, dir), 0755)
+		err = os.MkdirAll(path.Join(tmpDir, dir), 0755)
 		require.NoError(t, err)
-		initPath := filepath.Join(tmpDir, dir, "__init__.py")
+		initPath := path.Join(tmpDir, dir, "__init__.py")
 		err = os.WriteFile(initPath, []byte(""), 0644)
 		require.NoError(t, err)
 	}
@@ -304,11 +305,11 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 		path    string
 		content string
 	}{
-		{filepath.Join(tmpDir, "root.txt"), "root file"},
-		{filepath.Join(tmpDir, "level1", "level1.txt"), "level 1 file"},
-		{filepath.Join(tmpDir, "level1", "level2", "level2.txt"), "level 2 file"},
-		{filepath.Join(tmpDir, "level1", "level2", "level3", "level3.txt"), "level 3 file"},
-		{filepath.Join(tmpDir, "level1", "level2", "level3", "level4", "level4.txt"), "level 4 file"},
+		{path.Join(tmpDir, "root.txt"), "root file"},
+		{path.Join(tmpDir, "level1", "level1.txt"), "level 1 file"},
+		{path.Join(tmpDir, "level1", "level2", "level2.txt"), "level 2 file"},
+		{path.Join(tmpDir, "level1", "level2", "level3", "level3.txt"), "level 3 file"},
+		{path.Join(tmpDir, "level1", "level2", "level3", "level4", "level4.txt"), "level 4 file"},
 	}
 
 	for _, f := range files {
@@ -332,7 +333,7 @@ func TestUploadTarballDeepDirectories(t *testing.T) {
 	for _, dir := range dirs {
 		found := false
 		for _, content := range contents {
-			if content.Name == dir+"/" && content.IsDir {
+			if content.Name == filepath.ToSlash(dir)+"/" && content.IsDir {
 				found = true
 				break
 			}
