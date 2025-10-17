@@ -165,9 +165,7 @@ func UploadTarball(
 	tarWriter := tar.NewWriter(gzipWriter)
 	defer tarWriter.Close()
 
-	root := "."
-
-	err = fs.WalkDir(directory, root, func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(directory, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
