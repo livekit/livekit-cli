@@ -12,7 +12,7 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.42.2-0.20251016024155-8cf58ff15ac6
+	github.com/livekit/protocol v1.42.3-0.20251024111301-1e3becbff5d1
 	github.com/livekit/server-sdk-go/v2 v2.12.1
 	github.com/moby/patternmatcher v0.6.0
 	github.com/pelletier/go-toml v1.9.5
