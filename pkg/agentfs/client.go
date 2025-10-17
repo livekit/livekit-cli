@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"regexp"
@@ -100,7 +101,7 @@ func WithHTTPClient(httpClient *http.Client) ClientOption {
 // CreateAgent creates a new agent by building from source.
 func (c *Client) CreateAgent(
 	ctx context.Context,
-	workingDir string,
+	source fs.FS,
 	secrets []*lkproto.AgentSecret,
 	regions []string,
 	excludeFiles []string,
@@ -116,7 +117,7 @@ func (c *Client) CreateAgent(
 		resp.AgentId,
 		resp.PresignedUrl,
 		resp.PresignedPostRequest,
-		workingDir,
+		source,
 		excludeFiles,
 	); err != nil {
 		return nil, err
@@ -128,7 +129,7 @@ func (c *Client) CreateAgent(
 func (c *Client) DeployAgent(
 	ctx context.Context,
 	agentID string,
-	workingDir string,
+	source fs.FS,
 	secrets []*lkproto.AgentSecret,
 	excludeFiles []string,
 ) error {
@@ -142,7 +143,7 @@ func (c *Client) DeployAgent(
 	if !resp.Success {
 		return fmt.Errorf("failed to deploy agent: %s", resp.Message)
 	}
-	return c.uploadAndBuild(ctx, agentID, resp.PresignedUrl, resp.PresignedPostRequest, workingDir, excludeFiles)
+	return c.uploadAndBuild(ctx, agentID, resp.PresignedUrl, resp.PresignedPostRequest, source, excludeFiles)
 }
 
 // uploadAndBuild uploads the source and triggers remote build
@@ -151,15 +152,15 @@ func (c *Client) uploadAndBuild(
 	agentID string,
 	presignedUrl string,
 	presignedPostRequest *lkproto.PresignedPostRequest,
-	workingDir string,
+	source fs.FS,
 	excludeFiles []string,
 ) error {
-	projectType, err := DetectProjectType(workingDir)
+	projectType, err := DetectProjectType(source)
 	if err != nil {
 		return err
 	}
 	if err := UploadTarball(
-		workingDir,
+		source,
 		presignedUrl,
 		presignedPostRequest,
 		excludeFiles,

@@ -17,8 +17,7 @@ package agentfs
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -76,41 +75,7 @@ func (p ProjectType) DefaultEntrypoint() string {
 	}
 }
 
-func LocateLockfile(dir string, p ProjectType) (bool, string) {
-	pythonFiles := []string{
-		"requirements.txt",
-		"requirements.lock",
-		"pyproject.toml",
-	}
-
-	nodeFiles := []string{
-		"package.json",
-		"package-lock.json",
-		"yarn.lock",
-		"pnpm-lock.yaml",
-	}
-
-	switch p {
-	case ProjectTypePythonPip:
-	case ProjectTypePythonUV:
-		for _, filename := range pythonFiles {
-			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
-				return true, filename
-			}
-		}
-	case ProjectTypeNode:
-		for _, filename := range nodeFiles {
-			if _, err := os.Stat(filepath.Join(dir, filename)); err == nil {
-				return true, filename
-			}
-		}
-	default:
-		return false, ""
-	}
-	return false, ""
-}
-
-func DetectProjectType(dir string) (ProjectType, error) {
+func DetectProjectType(dir fs.FS) (ProjectType, error) {
 	// Node.js detection
 	if util.FileExists(dir, "package.json") {
 		return ProjectTypeNode, nil
@@ -127,8 +92,7 @@ func DetectProjectType(dir string) (ProjectType, error) {
 		return ProjectTypePythonPip, nil
 	}
 	if util.FileExists(dir, "pyproject.toml") {
-		tomlPath := filepath.Join(dir, "pyproject.toml")
-		data, err := os.ReadFile(tomlPath)
+		data, err := fs.ReadFile(dir, "pyproject.toml")
 		if err == nil {
 			var doc map[string]any
 			if err := toml.Unmarshal(data, &doc); err == nil {

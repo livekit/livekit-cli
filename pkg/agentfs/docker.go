@@ -33,7 +33,7 @@ import (
 )
 
 //go:embed examples/*
-var fs embed.FS
+var embedfs embed.FS
 
 func HasDockerfile(dir string) (bool, error) {
 	entries, err := os.ReadDir(dir)
@@ -76,14 +76,14 @@ func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap ma
 
 	// NOTE: embed.FS uses unix-style path separators on all platforms, so cannot use filepath.Join here.
 	// path.Join always uses '/' as the separator.
-	dockerfileContent, err := fs.ReadFile(path.Join("examples", string(projectType)+".Dockerfile"))
+	dockerfileContent, err := embedfs.ReadFile(path.Join("examples", string(projectType)+".Dockerfile"))
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// NOTE: embed.FS uses unix-style path separators on all platforms, so cannot use filepath.Join here
 	// path.Join always uses '/' as the separator.
-	dockerIgnoreContent, err := fs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
+	dockerIgnoreContent, err := embedfs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
 	if err != nil {
 		return nil, nil, err
 	}

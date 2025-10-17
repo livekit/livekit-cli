@@ -17,6 +17,7 @@ package util
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -25,8 +26,8 @@ import (
 	"github.com/livekit/protocol/utils/guid"
 )
 
-func FileExists(dir, filename string) bool {
-	_, err := os.Stat(filepath.Join(dir, filename))
+func FileExists(dir fs.FS, filename string) bool {
+	_, err := fs.Stat(dir, filename)
 	return err == nil
 }
 
