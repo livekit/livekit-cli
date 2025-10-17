@@ -81,7 +81,7 @@ var (
 						},
 						&cli.StringSliceFlag{
 							Name:  "status",
-							Usage: "Filter by status(es) (active, pending, released). Can be specified multiple times.",
+							Usage: "Filter by status(es) (active, pending, released). Mutliple values can be specified.",
 						},
 						&cli.StringFlag{
 							Name:  "sip-dispatch-rule-id",
