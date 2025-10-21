@@ -2,8 +2,6 @@ module github.com/livekit/livekit-cli/v2
 
 go 1.25.0
 
-replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
-
 require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Masterminds/semver/v3 v3.4.0
@@ -15,7 +13,7 @@ require (
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.42.2-0.20251016024155-8cf58ff15ac6
-	github.com/livekit/server-sdk-go/v2 v2.11.4-0.20251009161714-f90dc6f3d8bb
+	github.com/livekit/server-sdk-go/v2 v2.12.0
 	github.com/moby/patternmatcher v0.6.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/pion/rtcp v1.2.15
