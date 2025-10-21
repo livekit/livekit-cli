@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
 
 func TestCheckSDKVersion(t *testing.T) {
@@ -284,12 +286,12 @@ func TestDetectProjectFiles(t *testing.T) {
 	}
 
 	tests := []struct {
-		projectType ProjectType
+		projectType cloudagents.ProjectType
 		expected    int // expected number of files
 	}{
-		{ProjectTypePythonPip, 3}, // requirements.txt, pyproject.toml, poetry.lock
-		{ProjectTypePythonUV, 3},  // same as pip
-		{ProjectTypeNode, 2},      // package.json, package-lock.json
+		{cloudagents.ProjectTypePythonPip, 3}, // requirements.txt, pyproject.toml, poetry.lock
+		{cloudagents.ProjectTypePythonUV, 3},  // same as pip
+		{cloudagents.ProjectTypeNode, 2},      // package.json, package-lock.json
 	}
 
 	for _, tt := range tests {
