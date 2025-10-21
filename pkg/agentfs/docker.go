@@ -30,7 +30,6 @@ import (
 	"github.com/moby/patternmatcher/ignorefile"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
-	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
 
 //go:embed examples/*
@@ -50,7 +49,31 @@ func HasDockerfile(dir string) (bool, error) {
 	return false, nil
 }
 
-func CreateDockerfile(dir string, projectType cloudagents.ProjectType, settingsMap map[string]string) error {
+func HasDockerIgnore(dir string) (bool, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false, err
+	}
+	for _, entry := range entries {
+		if entry.Name() == ".dockerignore" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func CreateDockerIgnoreFile(dir string, projectType ProjectType) error {
+	dockerIgnoreContent, err := embedfs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[string]string) error {
 	dockerfileContent, dockerIgnoreContent, err := GenerateDockerArtifacts(dir, projectType, settingsMap)
 	if err != nil {
 		return err
@@ -70,7 +93,7 @@ func CreateDockerfile(dir string, projectType cloudagents.ProjectType, settingsM
 // GenerateDockerArtifacts returns the Dockerfile and .dockerignore contents for the
 // provided project type without writing them to disk. The Dockerfile content may be
 // templated/validated (e.g., Python entrypoint).
-func GenerateDockerArtifacts(dir string, projectType cloudagents.ProjectType, settingsMap map[string]string) ([]byte, []byte, error) {
+func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap map[string]string) ([]byte, []byte, error) {
 	if len(settingsMap) == 0 {
 		return nil, nil, fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
@@ -97,7 +120,7 @@ func GenerateDockerArtifacts(dir string, projectType cloudagents.ProjectType, se
 	return dockerfileContent, dockerIgnoreContent, nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType cloudagents.ProjectType) ([]byte, error) {
+func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType) ([]byte, error) {
 	// Build matcher from the Dockerignore content so we don't consider ignored files
 	reader := bytes.NewReader(dockerignoreContent)
 	patterns, err := ignorefile.ReadAll(reader)

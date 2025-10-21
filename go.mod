@@ -17,12 +17,12 @@ require (
 	github.com/livekit/protocol v1.42.2-0.20251016024155-8cf58ff15ac6
 	github.com/livekit/server-sdk-go/v2 v2.11.4-0.20251009161714-f90dc6f3d8bb
 	github.com/moby/patternmatcher v0.6.0
+	github.com/pelletier/go-toml v1.9.5
 	github.com/pion/rtcp v1.2.15
 	github.com/pion/rtp v1.8.23
 	github.com/pion/webrtc/v4 v4.1.6
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
-	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/stretchr/testify v1.11.1
 	github.com/twitchtv/twirp v8.1.3+incompatible
 	github.com/urfave/cli/v3 v3.4.1
@@ -122,7 +122,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/moby/buildkit v0.25.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
@@ -137,7 +136,6 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pion/datachannel v1.5.10 // indirect
 	github.com/pion/dtls/v3 v3.0.7 // indirect
 	github.com/pion/ice/v4 v4.0.10 // indirect

@@ -536,7 +536,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	projectType, err := cloudagents.DetectProjectType(os.DirFS(workingDir))
+	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	fmt.Printf("Detected project type [%s]\n", util.Accented(string(projectType)))
 	if err != nil {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
@@ -682,7 +682,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		req.Secrets = secrets
 	}
 
-	projectType, err := cloudagents.DetectProjectType(os.DirFS(workingDir))
+	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
 	}
@@ -1280,8 +1280,13 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	return secretsSlice, nil
 }
 
-func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string, projectType cloudagents.ProjectType, settingsMap map[string]string) error {
+func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string, projectType agentfs.ProjectType, settingsMap map[string]string) error {
 	dockerfileExists, err := agentfs.HasDockerfile(workingDir)
+	if err != nil {
+		return err
+	}
+
+	dockerIgnoreExists, err := agentfs.HasDockerIgnore(workingDir)
 	if err != nil {
 		return err
 	}
@@ -1307,6 +1312,20 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 	} else {
 		if !cmd.Bool("silent") {
 			fmt.Println("Using existing Dockerfile")
+		}
+	}
+
+	if !dockerIgnoreExists {
+		if !cmd.Bool("silent") {
+			fmt.Println("Creating .dockerignore...")
+		}
+		if err := agentfs.CreateDockerIgnoreFile(workingDir, projectType); err != nil {
+			return err
+		}
+		fmt.Println("Created [" + util.Accented(".dockerignore") + "]")
+	} else {
+		if !cmd.Bool("silent") {
+			fmt.Println("Using existing .dockerignore")
 		}
 	}
 
@@ -1374,7 +1393,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	projectType, err := cloudagents.DetectProjectType(os.DirFS(workingDir))
+	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	fmt.Printf("Detected project type [%s]\n", util.Accented(string(projectType)))
 	if err != nil {
 		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)

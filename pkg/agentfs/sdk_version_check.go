@@ -11,7 +11,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/semver/v3"
-	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
 
 // PackageInfo represents information about a package found in a project
@@ -19,7 +18,7 @@ type PackageInfo struct {
 	Name        string
 	Version     string
 	FoundInFile string
-	ProjectType cloudagents.ProjectType
+	ProjectType ProjectType
 	Ecosystem   string // "pypi" or "npm"
 }
 
@@ -32,7 +31,7 @@ type VersionCheckResult struct {
 }
 
 // CheckSDKVersion performs a comprehensive check for livekit-agents packages
-func CheckSDKVersion(dir string, projectType cloudagents.ProjectType, settingsMap map[string]string) error {
+func CheckSDKVersion(dir string, projectType ProjectType, settingsMap map[string]string) error {
 	pythonMinSDKVersion := settingsMap["python-min-sdk-version"]
 	nodeMinSDKVersion := settingsMap["node-min-sdk-version"]
 
@@ -70,11 +69,11 @@ func CheckSDKVersion(dir string, projectType cloudagents.ProjectType, settingsMa
 }
 
 // detectProjectFiles finds all relevant project files for the given project type
-func detectProjectFiles(dir string, projectType cloudagents.ProjectType) []string {
+func detectProjectFiles(dir string, projectType ProjectType) []string {
 	var files []string
 
 	switch projectType {
-	case cloudagents.ProjectTypePythonPip, cloudagents.ProjectTypePythonUV:
+	case ProjectTypePythonPip, ProjectTypePythonUV:
 		pythonFiles := []string{
 			"requirements.txt",
 			"requirements.lock",
@@ -91,7 +90,7 @@ func detectProjectFiles(dir string, projectType cloudagents.ProjectType) []strin
 				files = append(files, path)
 			}
 		}
-	case cloudagents.ProjectTypeNode:
+	case ProjectTypeNode:
 		nodeFiles := []string{
 			"package.json",
 			"package-lock.json",
@@ -110,7 +109,7 @@ func detectProjectFiles(dir string, projectType cloudagents.ProjectType) []strin
 }
 
 // checkPackageInFile checks for the target package in a specific file
-func checkPackageInFile(filePath string, projectType cloudagents.ProjectType, pythonMinVersion, nodeMinVersion string) VersionCheckResult {
+func checkPackageInFile(filePath string, projectType ProjectType, pythonMinVersion, nodeMinVersion string) VersionCheckResult {
 	fileName := filepath.Base(filePath)
 
 	switch {
@@ -212,7 +211,7 @@ func checkRequirementsFile(filePath, minVersion string) VersionCheckResult {
 					Name:        "livekit-agents",
 					Version:     version,
 					FoundInFile: filePath,
-					ProjectType: cloudagents.ProjectTypePythonPip,
+					ProjectType: ProjectTypePythonPip,
 					Ecosystem:   "pypi",
 				},
 				MinVersion: minVersion,
@@ -250,7 +249,7 @@ func checkPyprojectToml(filePath, minVersion string) VersionCheckResult {
 								Name:        "livekit-agents",
 								Version:     version,
 								FoundInFile: filePath,
-								ProjectType: cloudagents.ProjectTypePythonPip,
+								ProjectType: ProjectTypePythonPip,
 								Ecosystem:   "pypi",
 							},
 							MinVersion: minVersion,
@@ -288,7 +287,7 @@ func checkPipfile(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: cloudagents.ProjectTypePythonPip,
+				ProjectType: ProjectTypePythonPip,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -333,7 +332,7 @@ func checkSetupPy(filePath, minVersion string) VersionCheckResult {
 							Name:        "livekit-agents",
 							Version:     version,
 							FoundInFile: filePath,
-							ProjectType: cloudagents.ProjectTypePythonPip,
+							ProjectType: ProjectTypePythonPip,
 							Ecosystem:   "pypi",
 						},
 						MinVersion: minVersion,
@@ -367,7 +366,7 @@ func checkSetupCfg(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: cloudagents.ProjectTypePythonPip,
+				ProjectType: ProjectTypePythonPip,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -414,7 +413,7 @@ func checkPackageJSON(filePath, minVersion string) VersionCheckResult {
 					Name:        "@livekit/agents",
 					Version:     version,
 					FoundInFile: filePath,
-					ProjectType: cloudagents.ProjectTypeNode,
+					ProjectType: ProjectTypeNode,
 					Ecosystem:   "npm",
 				},
 				MinVersion: minVersion,
@@ -428,7 +427,7 @@ func checkPackageJSON(filePath, minVersion string) VersionCheckResult {
 }
 
 // checkLockFile checks for packages in lock files
-func checkLockFile(filePath string, projectType cloudagents.ProjectType, pythonMinVersion, nodeMinVersion string) VersionCheckResult {
+func checkLockFile(filePath string, projectType ProjectType, pythonMinVersion, nodeMinVersion string) VersionCheckResult {
 	fileName := filepath.Base(filePath)
 
 	switch {
@@ -474,7 +473,7 @@ func checkPackageLockJSON(filePath, minVersion string) VersionCheckResult {
 				Name:        "@livekit/agents",
 				Version:     dep.Version,
 				FoundInFile: filePath,
-				ProjectType: cloudagents.ProjectTypeNode,
+				ProjectType: ProjectTypeNode,
 				Ecosystem:   "npm",
 			},
 			MinVersion: minVersion,
@@ -504,7 +503,7 @@ func checkYarnLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "@livekit/agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: cloudagents.ProjectTypeNode,
+				ProjectType: ProjectTypeNode,
 				Ecosystem:   "npm",
 			},
 			MinVersion: minVersion,
@@ -534,7 +533,7 @@ func checkPnpmLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "@livekit/agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: cloudagents.ProjectTypeNode,
+				ProjectType: ProjectTypeNode,
 				Ecosystem:   "npm",
 			},
 			MinVersion: minVersion,
@@ -564,7 +563,7 @@ func checkPoetryLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: cloudagents.ProjectTypePythonPip,
+				ProjectType: ProjectTypePythonPip,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -594,7 +593,7 @@ func checkUvLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: cloudagents.ProjectTypePythonUV,
+				ProjectType: ProjectTypePythonUV,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -624,7 +623,7 @@ func checkPipfileLock(filePath, minVersion string) VersionCheckResult {
 				Name:        "livekit-agents",
 				Version:     version,
 				FoundInFile: filePath,
-				ProjectType: cloudagents.ProjectTypePythonPip,
+				ProjectType: ProjectTypePythonPip,
 				Ecosystem:   "pypi",
 			},
 			MinVersion: minVersion,
@@ -723,11 +722,11 @@ func findBestResult(results []VersionCheckResult) *VersionCheckResult {
 }
 
 // getTargetPackageName returns the target package name for the project type
-func getTargetPackageName(projectType cloudagents.ProjectType) string {
+func getTargetPackageName(projectType ProjectType) string {
 	switch projectType {
-	case cloudagents.ProjectTypePythonPip, cloudagents.ProjectTypePythonUV:
+	case ProjectTypePythonPip, ProjectTypePythonUV:
 		return "livekit-agents"
-	case cloudagents.ProjectTypeNode:
+	case ProjectTypeNode:
 		return "@livekit/agents"
 	default:
 		return ""
