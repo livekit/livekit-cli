@@ -49,6 +49,30 @@ func HasDockerfile(dir string) (bool, error) {
 	return false, nil
 }
 
+func HasDockerIgnore(dir string) (bool, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false, err
+	}
+	for _, entry := range entries {
+		if entry.Name() == ".dockerignore" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func CreateDockerIgnoreFile(dir string, projectType ProjectType) error {
+	dockerIgnoreContent, err := embedfs.ReadFile(path.Join("examples", string(projectType)+".dockerignore"))
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".dockerignore"), dockerIgnoreContent, 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
 func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[string]string) error {
 	dockerfileContent, dockerIgnoreContent, err := GenerateDockerArtifacts(dir, projectType, settingsMap)
 	if err != nil {

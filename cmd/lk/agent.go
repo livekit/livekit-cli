@@ -35,6 +35,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
+	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
 
 const (
@@ -333,7 +334,7 @@ var (
 		},
 	}
 	subdomainPattern = regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-	agentsClient     *agentfs.Client
+	agentsClient     *cloudagents.Client
 	ignoredSecrets   = []string{
 		"LIVEKIT_API_KEY",
 		"LIVEKIT_API_SECRET",
@@ -373,7 +374,7 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		}
 	}
 
-	agentsClient, err = agentfs.New(agentfs.WithProject(project.URL, project.APIKey, project.APISecret))
+	agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
 	if err != nil {
 		return ctx, err
 	}
@@ -493,7 +494,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			}
 			var err error
 			// Recreate the client with the new project
-			agentsClient, err = agentfs.New(agentfs.WithProject(project.URL, project.APIKey, project.APISecret))
+			agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
 			if err != nil {
 				return err
 			}
@@ -1285,6 +1286,11 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 		return err
 	}
 
+	dockerIgnoreExists, err := agentfs.HasDockerIgnore(workingDir)
+	if err != nil {
+		return err
+	}
+
 	if !dockerfileExists {
 		if !cmd.Bool("silent") {
 			err := util.Await(
@@ -1306,6 +1312,20 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 	} else {
 		if !cmd.Bool("silent") {
 			fmt.Println("Using existing Dockerfile")
+		}
+	}
+
+	if !dockerIgnoreExists {
+		if !cmd.Bool("silent") {
+			fmt.Println("Creating .dockerignore...")
+		}
+		if err := agentfs.CreateDockerIgnoreFile(workingDir, projectType); err != nil {
+			return err
+		}
+		fmt.Println("Created [" + util.Accented(".dockerignore") + "]")
+	} else {
+		if !cmd.Bool("silent") {
+			fmt.Println("Using existing .dockerignore")
 		}
 	}
 
