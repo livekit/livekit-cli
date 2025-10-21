@@ -472,6 +472,19 @@ lk token create --join \
   --room "room-%x"
 ```
 
+# Release
+
+This project shares the same **Major** and **minor** version as [`server-sdk-go`](https://github.com/livekit/server-sdk-go) for compatibility. The `livekit-cli` version must not exceed `server-sdk-go` **major** and **minor** versions.
+
+valid | server-sdk-go | livekit-cli
+--- | --- | ---
+✅ | 2.2.x | 2.2.x
+✅ | 2.3.x | 2.2.x
+✅ | 3.0.x | 2.2.x
+❌ | 2.3.x | 2.4.x
+
+When introducing breaking changes to `server-sdk-go`, update the `livekit-cli` version accordingly.
+
 <!--BEGIN_REPO_NAV-->
 <br/><table>
 <thead><tr><th colspan="2">LiveKit Ecosystem</th></tr></thead>

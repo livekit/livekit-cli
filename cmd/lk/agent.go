@@ -35,6 +35,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
+	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
 
 const (
@@ -333,7 +334,7 @@ var (
 		},
 	}
 	subdomainPattern = regexp.MustCompile(`^(?:https?|wss?)://([^.]+)\.`)
-	agentsClient     *agentfs.Client
+	agentsClient     *cloudagents.Client
 	ignoredSecrets   = []string{
 		"LIVEKIT_API_KEY",
 		"LIVEKIT_API_SECRET",
@@ -373,7 +374,7 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		}
 	}
 
-	agentsClient, err = agentfs.New(agentfs.WithProject(project.URL, project.APIKey, project.APISecret))
+	agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
 	if err != nil {
 		return ctx, err
 	}
@@ -493,7 +494,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			}
 			var err error
 			// Recreate the client with the new project
-			agentsClient, err = agentfs.New(agentfs.WithProject(project.URL, project.APIKey, project.APISecret))
+			agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
 			if err != nil {
 				return err
 			}
