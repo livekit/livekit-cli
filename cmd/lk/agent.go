@@ -83,11 +83,10 @@ var (
 		Required: false,
 	}
 
-	regionFlag = &cli.StringSliceFlag{
-		Name:     "regions",
-		Usage:    "Region(s) to deploy the agent to. If unset, will deploy to the nearest region.",
+	regionFlag = &cli.StringFlag{
+		Name:     "region",
+		Usage:    "Region to deploy the agent to. If unset, will deploy to the nearest region.",
 		Required: false,
-		Hidden:   true,
 	}
 
 	skipSDKCheckFlag = &cli.BoolFlag{
@@ -554,7 +553,8 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	regions := cmd.StringSlice("regions")
+	region := cmd.String("region")
+	regions := []string{region}
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(ctx, os.DirFS(workingDir), secrets, regions, excludeFiles)
 	if err != nil {
