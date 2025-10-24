@@ -79,9 +79,9 @@ var (
 							Usage: "Maximum number of results (default: 50)",
 							Value: 50,
 						},
-						&cli.StringFlag{
+						&cli.StringSliceFlag{
 							Name:  "status",
-							Usage: "Filter by status (active, pending, released)",
+							Usage: "Filter by status(es) (active, pending, released). Mutliple values can be specified.",
 						},
 						&cli.StringFlag{
 							Name:  "sip-dispatch-rule-id",
@@ -172,10 +172,11 @@ func searchPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		req.CountryCode = val
 	}
 	if val := cmd.String("area-code"); val != "" {
-		req.AreaCode = val
+		req.AreaCode = &val
 	}
 	if val := cmd.Int("limit"); val != 0 {
-		req.Limit = int32(val)
+		limit := int32(val)
+		req.Limit = &limit
 	}
 
 	resp, err := client.SearchPhoneNumbers(ctx, req)
@@ -229,7 +230,7 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		PhoneNumbers: phoneNumbers,
 	}
 	if val := cmd.String("sip-dispatch-rule-id"); val != "" {
-		req.SipDispatchRuleId = val
+		req.SipDispatchRuleId = &val
 	}
 
 	resp, err := client.PurchasePhoneNumber(ctx, req)
@@ -258,17 +259,22 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 
 	req := &livekit.ListPhoneNumbersRequest{}
 	if val := cmd.Int("limit"); val != 0 {
-		req.Limit = int32(val)
+		limit := int32(val)
+		req.Limit = &limit
 	}
-	if val := cmd.String("status"); val != "" {
-		status, ok := livekit.PhoneNumberStatus_value["PHONE_NUMBER_STATUS_"+strings.ToUpper(val)]
-		if !ok {
-			return fmt.Errorf("invalid status: %s", val)
+	if statuses := cmd.StringSlice("status"); len(statuses) > 0 {
+		var phoneNumberStatuses []livekit.PhoneNumberStatus
+		for _, status := range statuses {
+			statusValue, ok := livekit.PhoneNumberStatus_value["PHONE_NUMBER_STATUS_"+strings.ToUpper(status)]
+			if !ok {
+				return fmt.Errorf("invalid status: %s", status)
+			}
+			phoneNumberStatuses = append(phoneNumberStatuses, livekit.PhoneNumberStatus(statusValue))
 		}
-		req.Status = livekit.PhoneNumberStatus(status)
+		req.Statuses = phoneNumberStatuses
 	}
 	if val := cmd.String("sip-dispatch-rule-id"); val != "" {
-		req.SipDispatchRuleId = val
+		req.SipDispatchRuleId = &val
 	}
 
 	resp, err := client.ListPhoneNumbers(ctx, req)
@@ -320,9 +326,9 @@ func getPhoneNumber(ctx context.Context, cmd *cli.Command) error {
 
 	req := &livekit.GetPhoneNumberRequest{}
 	if id != "" {
-		req.Id = id
+		req.Id = &id
 	} else {
-		req.PhoneNumber = phoneNumber
+		req.PhoneNumber = &phoneNumber
 	}
 
 	resp, err := client.GetPhoneNumber(ctx, req)
@@ -372,12 +378,12 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 
 	req := &livekit.UpdatePhoneNumberRequest{}
 	if id != "" {
-		req.Id = id
+		req.Id = &id
 	} else {
-		req.PhoneNumber = phoneNumber
+		req.PhoneNumber = &phoneNumber
 	}
 	if val := cmd.String("sip-dispatch-rule-id"); val != "" {
-		req.SipDispatchRuleId = val
+		req.SipDispatchRuleId = &val
 	}
 
 	resp, err := client.UpdatePhoneNumber(ctx, req)
