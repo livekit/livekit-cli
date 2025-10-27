@@ -554,6 +554,29 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	region := cmd.String("region")
+	if region == "" {
+		availableRegionsStr, ok := settingsMap["available_regions"]
+		if ok && availableRegionsStr != "" {
+			regionOptions := strings.Split(availableRegionsStr, ",")
+			for i, r := range regionOptions {
+				regionOptions[i] = strings.TrimSpace(r)
+			}
+
+			if err := huh.NewSelect[string]().
+				Title("Select region for agent deployment").
+				Options(huh.NewOptions(regionOptions...)...).
+				Value(&region).
+				WithTheme(util.Theme).
+				Run(); err != nil {
+				return err
+			}
+		} else {
+			// we shouldn't ever get here, but if we do, just default to us-east
+			logger.Debugw("no available regions found, defaulting to us-east. please contact LiveKit support if this is unexpected.")
+			region = "us-east"
+		}
+	}
+
 	regions := []string{region}
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(ctx, os.DirFS(workingDir), secrets, regions, excludeFiles)
