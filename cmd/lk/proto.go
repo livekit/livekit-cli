@@ -26,6 +26,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
+	"github.com/livekit/protocol/livekit"
 )
 
 const flagRequest = "request"
@@ -42,6 +43,16 @@ type protoType[T any] interface {
 type protoTypeValidator[T any] interface {
 	protoType[T]
 	Validate() error
+}
+
+type paginatedType[T any] interface {
+	protoType[T]
+	GetPage() *livekit.Pagination
+}
+
+type paginatedResponseType[T any, D any] interface {
+	protoType[T]
+	GetItems() []*D
 }
 
 func ReadRequest[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
@@ -97,6 +108,35 @@ func RequestFlag[T any, P protoType[T]]() *cli.StringFlag {
 func RequestDesc[T any, _ protoType[T]]() string {
 	typ := reflect.TypeFor[T]().Name()
 	return typ + " as JSON file"
+}
+
+// Repeatedly calls a paginated list function until all items are retrieved,
+// requiring the caller to update the request's pagination parameters as needed.
+func ExhaustivePaginatedList[
+	ReqT any, Req paginatedType[ReqT],
+	ResT any, ResD any, Res paginatedResponseType[ResT, ResD],
+](
+	ctx context.Context,
+	req Req,
+	list func(context.Context, Req) (Res, error),
+	iter func(items []*ResD),
+	page *livekit.Pagination,
+) error {
+	for {
+		res, err := list(ctx, req)
+		if err != nil {
+			return err
+		}
+		resultItems := res.GetItems()
+		if len(resultItems) > 0 {
+			iter(resultItems)
+		}
+		// List exhausted
+		if len(resultItems) < int(page.Limit) {
+			break
+		}
+	}
+	return nil
 }
 
 func createAndPrintFile[T any, P protoTypeValidator[T], R any](
@@ -206,7 +246,7 @@ func listAndPrint[
 ](
 	ctx context.Context,
 	cmd *cli.Command,
-	getList func(ctx context.Context, req Req) (Resp, error), req Req,
+	getList func(context.Context, Req) (Resp, error), req Req,
 	header []string, tableRow func(item *T) []string,
 ) error {
 	res, err := getList(ctx, req)
