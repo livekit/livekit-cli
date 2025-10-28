@@ -140,7 +140,9 @@ var (
 							},
 						}},
 					}},
-					Flags:                     []cli.Flag{},
+					Flags: []cli.Flag{
+						regionFlag,
+					},
 					ArgsUsage:                 "[AGENT-NAME]",
 					DisableSliceFlagSeparator: true,
 				},
