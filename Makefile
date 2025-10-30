@@ -13,6 +13,7 @@ endif
 cli: check_lfs
 	GOOS=darwin GOARCH=arm64 go build -ldflags "-w -s" -o bin/lk ./cmd/lk
 	GOOS=linux GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk-linux ./cmd/lk
+	GOOS=linux GOARCH=arm64 go build -ldflags "-w -s" -o bin/lk-linux-arm64 ./cmd/lk
 	GOOS=windows GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk.exe ./cmd/lk
 
 
