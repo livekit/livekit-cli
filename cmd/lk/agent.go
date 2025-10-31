@@ -581,7 +581,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	regions := []string{region}
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	resp, err := agentsClient.CreateAgent(ctx, os.DirFS(workingDir), secrets, regions, excludeFiles)
+	resp, err := agentsClient.CreateAgent(ctx, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to create agent: %s", twerr.Msg())
@@ -726,7 +726,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgent(ctx, agentId, os.DirFS(workingDir), secrets, excludeFiles); err != nil {
+	if err := agentsClient.DeployAgent(ctx, agentId, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
