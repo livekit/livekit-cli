@@ -33,6 +33,23 @@ jobs:
         uses: actions/checkout@v5
         with:
           lfs: 'true'
+      
+      - name: Verify server-sdk-go version
+        run: |
+          livekit_cli_ver=${GITHUB_REF#refs/tags/}
+          server_sdk_go_ver=$(git ls-remote --tags --sort='v:refname' https://github.com/livekit/server-sdk-go.git \
+            | awk -F'refs/tags/' '{print $2}' \
+            | grep -E '^v[0-9]+\.[0-9]+' \
+            | tail -n1)
+          livekit_cli_major_minor=$(echo "$livekit_cli_ver" | sed -E 's/^v([0-9]+\.[0-9]+)\..*/\1/')
+          server_sdk_go_major_minor=$(echo "$server_sdk_go_ver" | sed -E 's/^v([0-9]+\.[0-9]+)\..*/\1/')
+          echo "livekit-cli: $livekit_cli_ver ($livekit_cli_major_minor)"
+          echo "server-sdk-go: $server_sdk_go_ver ($server_sdk_go_major_minor)"
+          if [ "$livekit_cli_major_minor" != "$server_sdk_go_major_minor" ]; then
+            echo "❌ Version mismatch: livekit-cli ($livekit_cli_major_minor) ≠ server-sdk-go ($server_sdk_go_major_minor)"
+            exit 1
+          fi
+          echo "✅ Versions match ($livekit_cli_major_minor)"
 
       - run: git lfs pull
 
