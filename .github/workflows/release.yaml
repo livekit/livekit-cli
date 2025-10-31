@@ -46,10 +46,10 @@ jobs:
           echo "livekit-cli: $livekit_cli_ver ($livekit_cli_major_minor)"
           echo "server-sdk-go: $server_sdk_go_ver ($server_sdk_go_major_minor)"
           if [ "$livekit_cli_major_minor" != "$server_sdk_go_major_minor" ]; then
-            echo "❌ Version mismatch: livekit-cli ($livekit_cli_major_minor) ≠ server-sdk-go ($server_sdk_go_major_minor)"
+            echo "version mismatch: livekit-cli ($livekit_cli_major_minor) ≠ server-sdk-go ($server_sdk_go_major_minor)"
             exit 1
           fi
-          echo "✅ Versions match ($livekit_cli_major_minor)"
+          echo "versions match ($livekit_cli_major_minor)"
 
       - run: git lfs pull
 
