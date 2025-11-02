@@ -201,5 +201,3 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	mvdan.cc/sh/v3 v3.12.0 // indirect
 )
-
-replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
