@@ -270,7 +270,7 @@ func publishFile(room *lksdk.Room,
 		case "length-prefixed":
 			opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatLengthPrefixed))
 		default:
-			return fmt.Errorf("unsupported h26x format: %s", h26xStreamingFormat)
+			return fmt.Errorf("unsupported h26x streaming format: %s", h26xStreamingFormat)
 		}
 	}
 
@@ -379,7 +379,7 @@ func publishReader(room *lksdk.Room,
 		case "length-prefixed":
 			opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatLengthPrefixed))
 		default:
-			return fmt.Errorf("unsupported h264 format: %s", h26xStreamingFormat)
+			return fmt.Errorf("unsupported h26x streaming format: %s", h26xStreamingFormat)
 		}
 	}
 
@@ -462,7 +462,7 @@ func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.Vide
 	case "length-prefixed":
 		opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatLengthPrefixed))
 	default:
-		return nil, fmt.Errorf("unsupported h264 format: %s", h26xStreamingFormat)
+		return nil, fmt.Errorf("unsupported h26x streaming format: %s", h26xStreamingFormat)
 	}
 
 	// Configure simulcast layer
