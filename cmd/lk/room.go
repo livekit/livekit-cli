@@ -172,6 +172,11 @@ var (
 							Name:  "fps",
 							Usage: "If video files are published, indicates `FPS` of video",
 						},
+						&cli.StringFlag{
+							Name:  "h26x-format",
+							Usage: "Format to use when reading H.264 from file or socket, \"annex-b\" OR \"length-prefixed\"",
+							Value: "annex-b",
+						},
 						&cli.BoolFlag{
 							Name:  "exit-after-publish",
 							Usage: "When publishing, exit after file or stream is complete",
@@ -995,6 +1000,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		if simulcastMode {
 			// Handle simulcast publishing
 			fps := cmd.Float("fps")
+			h26xFormat := cmd.String("h26x-format")
 			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
 				if exitAfterPublish {
 					close(done)
@@ -1006,12 +1012,13 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 				}
 			}
 
-			if err = handleSimulcastPublish(room, publishUrls, fps, onPublishComplete); err != nil {
+			if err = handleSimulcastPublish(room, publishUrls, fps, h26xFormat, onPublishComplete); err != nil {
 				return err
 			}
 		} else {
 			// Handle single publish
 			fps := cmd.Float("fps")
+			h26xFormat := cmd.String("h26x-format")
 			for _, pub := range publishUrls {
 				onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
 					if exitAfterPublish {
@@ -1023,7 +1030,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 					}
 				}
-				if err = handlePublish(room, pub, fps, onPublishComplete); err != nil {
+				if err = handlePublish(room, pub, fps, h26xFormat, onPublishComplete); err != nil {
 					return err
 				}
 			}
