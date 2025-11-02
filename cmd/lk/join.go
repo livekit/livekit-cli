@@ -170,7 +170,7 @@ func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 
 	if cmd.StringSlice("publish") != nil {
 		fps := cmd.Float("fps")
-		h26xFormat := cmd.String("h26x-format")
+		h26xStreamingFormat := cmd.String("h26x-streaming-format")
 		for _, pub := range cmd.StringSlice("publish") {
 			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
 				if cmd.Bool("exit-after-publish") {
@@ -182,7 +182,7 @@ func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 				}
 			}
-			if err = handlePublish(room, pub, fps, h26xFormat, onPublishComplete); err != nil {
+			if err = handlePublish(room, pub, fps, h26xStreamingFormat, onPublishComplete); err != nil {
 				return err
 			}
 		}
@@ -195,7 +195,7 @@ func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 func handlePublish(room *lksdk.Room,
 	name string,
 	fps float64,
-	h26xFormat string,
+	h26xStreamingFormat string,
 	onPublishComplete func(pub *lksdk.LocalTrackPublication),
 ) error {
 	if isSocketFormat(name) {
@@ -203,9 +203,9 @@ func handlePublish(room *lksdk.Room,
 		if err != nil {
 			return err
 		}
-		return publishSocket(room, mimeType, socketType, address, fps, h26xFormat, onPublishComplete)
+		return publishSocket(room, mimeType, socketType, address, fps, h26xStreamingFormat, onPublishComplete)
 	}
-	return publishFile(room, name, fps, h26xFormat, onPublishComplete)
+	return publishFile(room, name, fps, h26xStreamingFormat, onPublishComplete)
 }
 
 func publishDemo(room *lksdk.Room) error {
@@ -237,7 +237,7 @@ func publishDemo(room *lksdk.Room) error {
 func publishFile(room *lksdk.Room,
 	filename string,
 	fps float64,
-	h26xFormat string,
+	h26xStreamingFormat string,
 	onPublishComplete func(pub *lksdk.LocalTrackPublication),
 ) error {
 	// Configure provider
@@ -264,13 +264,13 @@ func publishFile(room *lksdk.Room,
 			opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
 		}
 
-		switch h26xFormat {
+		switch h26xStreamingFormat {
 		case "annex-b":
 			opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatAnnexB))
 		case "length-prefixed":
 			opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatLengthPrefixed))
 		default:
-			return fmt.Errorf("unsupported h26x format: %s", h26xFormat)
+			return fmt.Errorf("unsupported h26x format: %s", h26xStreamingFormat)
 		}
 	}
 
@@ -324,7 +324,7 @@ func publishSocket(room *lksdk.Room,
 	socketType string,
 	address string,
 	fps float64,
-	h26xFormat string,
+	h26xStreamingFormat string,
 	onPublishComplete func(pub *lksdk.LocalTrackPublication),
 ) error {
 	var mime string
@@ -346,7 +346,7 @@ func publishSocket(room *lksdk.Room,
 	}
 
 	// Publish to room
-	err = publishReader(room, sock, mime, fps, h26xFormat, onPublishComplete)
+	err = publishReader(room, sock, mime, fps, h26xStreamingFormat, onPublishComplete)
 	return err
 }
 
@@ -354,7 +354,7 @@ func publishReader(room *lksdk.Room,
 	in io.ReadCloser,
 	mime string,
 	fps float64,
-	h26xFormat string,
+	h26xStreamingFormat string,
 	onPublishComplete func(pub *lksdk.LocalTrackPublication),
 ) error {
 	// Configure provider
@@ -373,13 +373,13 @@ func publishReader(room *lksdk.Room,
 			opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
 		}
 
-		switch h26xFormat {
+		switch h26xStreamingFormat {
 		case "annex-b":
 			opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatAnnexB))
 		case "length-prefixed":
 			opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatLengthPrefixed))
 		default:
-			return fmt.Errorf("unsupported h264 format: %s", h26xFormat)
+			return fmt.Errorf("unsupported h264 format: %s", h26xStreamingFormat)
 		}
 	}
 
@@ -437,7 +437,7 @@ func parseSimulcastURL(url string) (*simulcastURLParts, error) {
 }
 
 // createSimulcastVideoTrack creates a simulcast video track from a TCP or Unix socket H.264 streams
-func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.VideoQuality, fps float64, h26xFormat string, onComplete func()) (*lksdk.LocalTrack, error) {
+func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.VideoQuality, fps float64, h26xStreamingFormat string, onComplete func()) (*lksdk.LocalTrack, error) {
 	conn, err := net.Dial(urlParts.network, urlParts.address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s://%s: %w", urlParts.network, urlParts.address, err)
@@ -456,13 +456,13 @@ func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.Vide
 		opts = append(opts, lksdk.ReaderTrackWithFrameDuration(frameDuration))
 	}
 
-	switch h26xFormat {
+	switch h26xStreamingFormat {
 	case "annex-b":
 		opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatAnnexB))
 	case "length-prefixed":
 		opts = append(opts, lksdk.ReaderTrackWithH26xStreamingFormat(lksdk.H26xStreamingFormatLengthPrefixed))
 	default:
-		return nil, fmt.Errorf("unsupported h264 format: %s", h26xFormat)
+		return nil, fmt.Errorf("unsupported h264 format: %s", h26xStreamingFormat)
 	}
 
 	// Configure simulcast layer
@@ -484,7 +484,7 @@ type simulcastLayer struct {
 }
 
 // handleSimulcastPublish handles publishing multiple H.264 streams as a simulcast track
-func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xFormat string, onPublishComplete func(*lksdk.LocalTrackPublication)) error {
+func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xStreamingFormat string, onPublishComplete func(*lksdk.LocalTrackPublication)) error {
 	// Parse all URLs
 	var layers []simulcastLayer
 	for _, url := range urls {
@@ -547,7 +547,7 @@ func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xFo
 	}
 
 	for _, layer := range layers {
-		track, err := createSimulcastVideoTrack(layer.parts, layer.quality, fps, h26xFormat, signalCompletion)
+		track, err := createSimulcastVideoTrack(layer.parts, layer.quality, fps, h26xStreamingFormat, signalCompletion)
 		if err != nil {
 			// Clean up any tracks we've already created
 			for _, t := range tracks {
