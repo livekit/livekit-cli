@@ -1279,6 +1279,10 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 				continue
 			}
 
+			if v == "" {
+				return nil, fmt.Errorf("failed to parse secrets file: secret %s is empty, either remove it or provide a value", k)
+			}
+
 			secret := &lkproto.AgentSecret{
 				Name:  k,
 				Value: []byte(v),
