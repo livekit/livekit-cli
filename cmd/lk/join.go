@@ -481,14 +481,6 @@ func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, onPubl
 		return fmt.Errorf("no valid simulcast URLs provided")
 	}
 
-	// Ensure all layers use the same codec
-	codec := layers[0].parts.codec
-	for _, l := range layers[1:] {
-		if l.parts.codec != codec {
-			return fmt.Errorf("all simulcast layers must use the same codec; expected %s, found %s", codec, l.parts.codec)
-		}
-	}
-
 	// Sort streams by width to determine quality levels
 	sort.Slice(layers, func(i, j int) bool {
 		return layers[i].parts.width < layers[j].parts.width
