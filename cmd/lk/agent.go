@@ -276,6 +276,7 @@ var (
 					Action:  deleteAgent,
 					Aliases: []string{"destroy"},
 					Flags: []cli.Flag{
+						silentFlag,
 						idFlag(false),
 					},
 					ArgsUsage: "[working-dir]",
@@ -915,26 +916,29 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
+	silent := cmd.Bool("silent")
 	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
 
-	var confirmDelete bool
-	if err := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)).
-				Value(&confirmDelete).
-				Inline(false).
-				WithTheme(util.Theme),
-		),
-	).Run(); err != nil {
-		return err
-	}
+	if !silent {
+		var confirmDelete bool
+		if err := huh.NewForm(
+			huh.NewGroup(
+				huh.NewConfirm().
+					Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)).
+					Value(&confirmDelete).
+					Inline(false).
+					WithTheme(util.Theme),
+			),
+		).Run(); err != nil {
+			return err
+		}
 
-	if !confirmDelete {
-		return nil
+		if !confirmDelete {
+			return nil
+		}
 	}
 
 	var res *lkproto.DeleteAgentResponse
