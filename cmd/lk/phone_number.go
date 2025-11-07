@@ -161,6 +161,53 @@ func createPhoneNumberClient(ctx context.Context, cmd *cli.Command) (*lksdk.Phon
 	return lksdk.NewPhoneNumberClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...), nil
 }
 
+// appendPhoneNumberToDispatchRule appends a phone number ID to the trunk_ids of a dispatch rule
+func appendPhoneNumberToDispatchRule(ctx context.Context, cmd *cli.Command, dispatchRuleID, phoneNumberID string) error {
+	_, err := requireProject(ctx, cmd)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	sipClient := lksdk.NewSIPClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...)
+
+	// Get the current dispatch rule to check if phone number ID is already in trunk_ids
+	rules, err := sipClient.GetSIPDispatchRulesByIDs(ctx, []string{dispatchRuleID})
+	if err != nil {
+		return fmt.Errorf("failed to get dispatch rule: %w", err)
+	}
+	if len(rules) == 0 {
+		return fmt.Errorf("dispatch rule %s not found", dispatchRuleID)
+	}
+	currentRule := rules[0]
+
+	// Check if phone number ID is already in trunk_ids
+	for _, trunkID := range currentRule.TrunkIds {
+		if trunkID == phoneNumberID {
+			// Already in the list, no need to update
+			return nil
+		}
+	}
+
+	// Append phone number ID to trunk_ids using Update action
+	updateReq := &livekit.UpdateSIPDispatchRuleRequest{
+		SipDispatchRuleId: dispatchRuleID,
+		Action: &livekit.UpdateSIPDispatchRuleRequest_Update{
+			Update: &livekit.SIPDispatchRuleUpdate{
+				TrunkIds: &livekit.ListUpdate{
+					Add: []string{phoneNumberID},
+				},
+			},
+		},
+	}
+
+	_, err = sipClient.UpdateSIPDispatchRule(ctx, updateReq)
+	if err != nil {
+		return fmt.Errorf("failed to update dispatch rule: %w", err)
+	}
+
+	return nil
+}
+
 func searchPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	client, err := createPhoneNumberClient(ctx, cmd)
 	if err != nil {
@@ -226,16 +273,28 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("at least one phone number must be provided")
 	}
 
+	dispatchRuleID := cmd.String("sip-dispatch-rule-id")
+
 	req := &livekit.PurchasePhoneNumberRequest{
 		PhoneNumbers: phoneNumbers,
-	}
-	if val := cmd.String("sip-dispatch-rule-id"); val != "" {
-		req.SipDispatchRuleId = &val
 	}
 
 	resp, err := client.PurchasePhoneNumber(ctx, req)
 	if err != nil {
 		return err
+	}
+
+	// If dispatch rule ID was provided, append each purchased phone number ID to the dispatch rule's trunk_ids
+	dispatchRuleAdded := make(map[string]bool)
+	if dispatchRuleID != "" {
+		for _, phoneNumber := range resp.PhoneNumbers {
+			if err := appendPhoneNumberToDispatchRule(ctx, cmd, dispatchRuleID, phoneNumber.Id); err != nil {
+				// Log error but don't fail the purchase operation
+				fmt.Fprintf(cmd.ErrWriter, "Warning: failed to add phone number %s to dispatch rule %s: %v\n", phoneNumber.Id, dispatchRuleID, err)
+			} else {
+				dispatchRuleAdded[phoneNumber.Id] = true
+			}
+		}
 	}
 
 	if cmd.Bool("json") {
@@ -245,7 +304,13 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 
 	fmt.Printf("Successfully purchased %d phone numbers:\n", len(resp.PhoneNumbers))
 	for _, phoneNumber := range resp.PhoneNumbers {
-		fmt.Printf("  %s (%s) - %s\n", phoneNumber.E164Format, phoneNumber.Id, strings.TrimPrefix(phoneNumber.Status.String(), "PHONE_NUMBER_STATUS_"))
+		ruleInfo := ""
+		if dispatchRuleAdded[phoneNumber.Id] && dispatchRuleID != "" {
+			ruleInfo = fmt.Sprintf(" (SIP Dispatch Rule: %s)", dispatchRuleID)
+		} else if phoneNumber.SipDispatchRuleId != "" {
+			ruleInfo = fmt.Sprintf(" (SIP Dispatch Rule: %s)", phoneNumber.SipDispatchRuleId)
+		}
+		fmt.Printf("  %s (%s) - %s%s\n", phoneNumber.E164Format, phoneNumber.Id, strings.TrimPrefix(phoneNumber.Status.String(), "PHONE_NUMBER_STATUS_"), ruleInfo)
 	}
 
 	return nil
@@ -376,19 +441,30 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("only one of --id or --number can be provided")
 	}
 
+	dispatchRuleID := cmd.String("sip-dispatch-rule-id")
+
 	req := &livekit.UpdatePhoneNumberRequest{}
 	if id != "" {
 		req.Id = &id
 	} else {
 		req.PhoneNumber = &phoneNumber
 	}
-	if val := cmd.String("sip-dispatch-rule-id"); val != "" {
-		req.SipDispatchRuleId = &val
-	}
 
 	resp, err := client.UpdatePhoneNumber(ctx, req)
 	if err != nil {
 		return err
+	}
+
+	// If dispatch rule ID was provided, append the phone number ID to the dispatch rule's trunk_ids
+	dispatchRuleAdded := false
+	if dispatchRuleID != "" {
+		phoneNumberID := resp.PhoneNumber.Id
+		if err := appendPhoneNumberToDispatchRule(ctx, cmd, dispatchRuleID, phoneNumberID); err != nil {
+			// Log error but don't fail the update operation
+			fmt.Fprintf(cmd.ErrWriter, "Warning: failed to add phone number %s to dispatch rule %s: %v\n", phoneNumberID, dispatchRuleID, err)
+		} else {
+			dispatchRuleAdded = true
+		}
 	}
 
 	if cmd.Bool("json") {
@@ -401,7 +477,13 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	fmt.Printf("  ID: %s\n", item.Id)
 	fmt.Printf("  E164 Format: %s\n", item.E164Format)
 	fmt.Printf("  Status: %s\n", strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"))
-	fmt.Printf("  SIP Dispatch Rule: %s\n", item.SipDispatchRuleId)
+
+	// Show dispatch rule ID if it was provided and successfully added, or if it's in the response
+	displayRuleID := item.SipDispatchRuleId
+	if dispatchRuleAdded && dispatchRuleID != "" {
+		displayRuleID = dispatchRuleID
+	}
+	fmt.Printf("  SIP Dispatch Rule: %s\n", displayRuleID)
 
 	return nil
 }
