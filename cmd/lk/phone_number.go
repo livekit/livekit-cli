@@ -211,13 +211,10 @@ func appendPhoneNumberToDispatchRule(ctx context.Context, cmd *cli.Command, disp
 	currentRule := rules[0]
 
 	// Check if phone number ID is already in trunk_ids
-	// Handle nil or empty trunk_ids explicitly
-	if currentRule.TrunkIds != nil && len(currentRule.TrunkIds) > 0 {
-		for _, trunkID := range currentRule.TrunkIds {
-			if trunkID == phoneNumberID {
-				// Already in the list, no need to update
-				return nil
-			}
+	for _, trunkID := range currentRule.TrunkIds {
+		if trunkID == phoneNumberID {
+			// Already in the list, no need to update
+			return nil
 		}
 	}
 
