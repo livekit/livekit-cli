@@ -161,6 +161,36 @@ func createPhoneNumberClient(ctx context.Context, cmd *cli.Command) (*lksdk.Phon
 	return lksdk.NewPhoneNumberClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...), nil
 }
 
+// getPhoneNumberToDispatchRulesMap fetches all dispatch rules and maps phone number IDs to their associated dispatch rule IDs
+// Returns a map where key is phone number ID and value is a slice of dispatch rule IDs
+func getPhoneNumberToDispatchRulesMap(ctx context.Context, cmd *cli.Command) (map[string][]string, error) {
+	_, err := requireProject(ctx, cmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	sipClient := lksdk.NewSIPClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...)
+
+	// List all dispatch rules
+	resp, err := sipClient.ListSIPDispatchRule(ctx, &livekit.ListSIPDispatchRuleRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list dispatch rules: %w", err)
+	}
+
+	// Build map: phone number ID -> []dispatch rule IDs
+	phoneNumberToRules := make(map[string][]string)
+	for _, rule := range resp.Items {
+		for _, trunkID := range rule.TrunkIds {
+			// Check if trunkID is a phone number ID (starts with PN_PPN_)
+			if strings.HasPrefix(trunkID, "PN_PPN_") {
+				phoneNumberToRules[trunkID] = append(phoneNumberToRules[trunkID], rule.SipDispatchRuleId)
+			}
+		}
+	}
+
+	return phoneNumberToRules, nil
+}
+
 // appendPhoneNumberToDispatchRule appends a phone number ID to the trunk_ids of a dispatch rule
 func appendPhoneNumberToDispatchRule(ctx context.Context, cmd *cli.Command, dispatchRuleID, phoneNumberID string) error {
 	_, err := requireProject(ctx, cmd)
@@ -181,10 +211,13 @@ func appendPhoneNumberToDispatchRule(ctx context.Context, cmd *cli.Command, disp
 	currentRule := rules[0]
 
 	// Check if phone number ID is already in trunk_ids
-	for _, trunkID := range currentRule.TrunkIds {
-		if trunkID == phoneNumberID {
-			// Already in the list, no need to update
-			return nil
+	// Handle nil or empty trunk_ids explicitly
+	if currentRule.TrunkIds != nil && len(currentRule.TrunkIds) > 0 {
+		for _, trunkID := range currentRule.TrunkIds {
+			if trunkID == phoneNumberID {
+				// Already in the list, no need to update
+				return nil
+			}
 		}
 	}
 
@@ -279,10 +312,37 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		PhoneNumbers: phoneNumbers,
 	}
 
-	resp, err := client.PurchasePhoneNumber(ctx, req)
-	if err != nil {
-		return err
+	// Call purchase and get dispatch rules in parallel
+	type purchaseResult struct {
+		resp *livekit.PurchasePhoneNumberResponse
+		err  error
 	}
+	type dispatchRulesResult struct {
+		rules map[string][]string
+		err   error
+	}
+
+	purchaseChan := make(chan purchaseResult, 1)
+	dispatchRulesChan := make(chan dispatchRulesResult, 1)
+
+	// Purchase phone numbers
+	go func() {
+		resp, err := client.PurchasePhoneNumber(ctx, req)
+		purchaseChan <- purchaseResult{resp: resp, err: err}
+	}()
+
+	// Get dispatch rules mapping in parallel
+	go func() {
+		rules, err := getPhoneNumberToDispatchRulesMap(ctx, cmd)
+		dispatchRulesChan <- dispatchRulesResult{rules: rules, err: err}
+	}()
+
+	// Wait for purchase to complete
+	purchaseRes := <-purchaseChan
+	if purchaseRes.err != nil {
+		return purchaseRes.err
+	}
+	resp := purchaseRes.resp
 
 	// If dispatch rule ID was provided, append each purchased phone number ID to the dispatch rule's trunk_ids
 	dispatchRuleAdded := make(map[string]bool)
@@ -297,6 +357,26 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	// Wait for dispatch rules (ignore errors, we'll just not show them)
+	dispatchRulesRes := <-dispatchRulesChan
+	phoneNumberToRules := dispatchRulesRes.rules
+	if dispatchRulesRes.err != nil {
+		// Log but don't fail
+		if cmd.Bool("verbose") {
+			fmt.Fprintf(cmd.ErrWriter, "Warning: failed to get dispatch rules: %v\n", dispatchRulesRes.err)
+		}
+		phoneNumberToRules = make(map[string][]string)
+	}
+
+	// Update the mapping with newly added dispatch rules
+	if dispatchRuleID != "" {
+		for _, phoneNumber := range resp.PhoneNumbers {
+			if dispatchRuleAdded[phoneNumber.Id] {
+				phoneNumberToRules[phoneNumber.Id] = append(phoneNumberToRules[phoneNumber.Id], dispatchRuleID)
+			}
+		}
+	}
+
 	if cmd.Bool("json") {
 		util.PrintJSON(resp)
 		return nil
@@ -305,8 +385,9 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	fmt.Printf("Successfully purchased %d phone numbers:\n", len(resp.PhoneNumbers))
 	for _, phoneNumber := range resp.PhoneNumbers {
 		ruleInfo := ""
-		if dispatchRuleAdded[phoneNumber.Id] && dispatchRuleID != "" {
-			ruleInfo = fmt.Sprintf(" (SIP Dispatch Rule: %s)", dispatchRuleID)
+		rules := phoneNumberToRules[phoneNumber.Id]
+		if len(rules) > 0 {
+			ruleInfo = fmt.Sprintf(" (SIP Dispatch Rules: %s)", strings.Join(rules, ", "))
 		} else if phoneNumber.SipDispatchRuleId != "" {
 			ruleInfo = fmt.Sprintf(" (SIP Dispatch Rule: %s)", phoneNumber.SipDispatchRuleId)
 		}
@@ -342,9 +423,47 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		req.SipDispatchRuleId = &val
 	}
 
-	resp, err := client.ListPhoneNumbers(ctx, req)
-	if err != nil {
-		return err
+	// Call list and get dispatch rules in parallel
+	type listResult struct {
+		resp *livekit.ListPhoneNumbersResponse
+		err  error
+	}
+	type dispatchRulesResult struct {
+		rules map[string][]string
+		err   error
+	}
+
+	listChan := make(chan listResult, 1)
+	dispatchRulesChan := make(chan dispatchRulesResult, 1)
+
+	// List phone numbers
+	go func() {
+		resp, err := client.ListPhoneNumbers(ctx, req)
+		listChan <- listResult{resp: resp, err: err}
+	}()
+
+	// Get dispatch rules mapping in parallel
+	go func() {
+		rules, err := getPhoneNumberToDispatchRulesMap(ctx, cmd)
+		dispatchRulesChan <- dispatchRulesResult{rules: rules, err: err}
+	}()
+
+	// Wait for list to complete
+	listRes := <-listChan
+	if listRes.err != nil {
+		return listRes.err
+	}
+	resp := listRes.resp
+
+	// Wait for dispatch rules (ignore errors, we'll just not show them)
+	dispatchRulesRes := <-dispatchRulesChan
+	phoneNumberToRules := dispatchRulesRes.rules
+	if dispatchRulesRes.err != nil {
+		// Log but don't fail
+		if cmd.Bool("verbose") {
+			fmt.Fprintf(cmd.ErrWriter, "Warning: failed to get dispatch rules: %v\n", dispatchRulesRes.err)
+		}
+		phoneNumberToRules = make(map[string][]string)
 	}
 
 	if cmd.Bool("json") {
@@ -356,8 +475,17 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	return listAndPrint(ctx, cmd, func(ctx context.Context, req *livekit.ListPhoneNumbersRequest) (*livekit.ListPhoneNumbersResponse, error) {
 		return client.ListPhoneNumbers(ctx, req)
 	}, req, []string{
-		"ID", "E164", "Country", "Area Code", "Type", "Locality", "Region", "Capabilities", "Status", "SIP Dispatch Rule",
+		"ID", "E164", "Country", "Area Code", "Type", "Locality", "Region", "Capabilities", "Status", "SIP Dispatch Rules",
 	}, func(item *livekit.PhoneNumber) []string {
+		rules := phoneNumberToRules[item.Id]
+		dispatchRulesStr := ""
+		if len(rules) > 0 {
+			dispatchRulesStr = strings.Join(rules, ", ")
+		} else if item.SipDispatchRuleId != "" {
+			dispatchRulesStr = item.SipDispatchRuleId
+		} else {
+			dispatchRulesStr = "-"
+		}
 		return []string{
 			item.Id,
 			item.E164Format,
@@ -368,7 +496,7 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 			item.Region,
 			strings.Join(item.Capabilities, ","),
 			strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"),
-			item.SipDispatchRuleId,
+			dispatchRulesStr,
 		}
 	})
 }
@@ -396,9 +524,47 @@ func getPhoneNumber(ctx context.Context, cmd *cli.Command) error {
 		req.PhoneNumber = &phoneNumber
 	}
 
-	resp, err := client.GetPhoneNumber(ctx, req)
-	if err != nil {
-		return err
+	// Call get and get dispatch rules in parallel
+	type getResult struct {
+		resp *livekit.GetPhoneNumberResponse
+		err  error
+	}
+	type dispatchRulesResult struct {
+		rules map[string][]string
+		err   error
+	}
+
+	getChan := make(chan getResult, 1)
+	dispatchRulesChan := make(chan dispatchRulesResult, 1)
+
+	// Get phone number
+	go func() {
+		resp, err := client.GetPhoneNumber(ctx, req)
+		getChan <- getResult{resp: resp, err: err}
+	}()
+
+	// Get dispatch rules mapping in parallel
+	go func() {
+		rules, err := getPhoneNumberToDispatchRulesMap(ctx, cmd)
+		dispatchRulesChan <- dispatchRulesResult{rules: rules, err: err}
+	}()
+
+	// Wait for get to complete
+	getRes := <-getChan
+	if getRes.err != nil {
+		return getRes.err
+	}
+	resp := getRes.resp
+
+	// Wait for dispatch rules (ignore errors, we'll just not show them)
+	dispatchRulesRes := <-dispatchRulesChan
+	phoneNumberToRules := dispatchRulesRes.rules
+	if dispatchRulesRes.err != nil {
+		// Log but don't fail
+		if cmd.Bool("verbose") {
+			fmt.Fprintf(cmd.ErrWriter, "Warning: failed to get dispatch rules: %v\n", dispatchRulesRes.err)
+		}
+		phoneNumberToRules = make(map[string][]string)
 	}
 
 	if cmd.Bool("json") {
@@ -407,6 +573,16 @@ func getPhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	item := resp.PhoneNumber
+	rules := phoneNumberToRules[item.Id]
+	dispatchRulesStr := ""
+	if len(rules) > 0 {
+		dispatchRulesStr = strings.Join(rules, ", ")
+	} else if item.SipDispatchRuleId != "" {
+		dispatchRulesStr = item.SipDispatchRuleId
+	} else {
+		dispatchRulesStr = "-"
+	}
+
 	fmt.Printf("Phone Number Details:\n")
 	fmt.Printf("  ID: %s\n", item.Id)
 	fmt.Printf("  E164 Format: %s\n", item.E164Format)
@@ -417,7 +593,7 @@ func getPhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	fmt.Printf("  Region: %s\n", item.Region)
 	fmt.Printf("  Capabilities: %s\n", strings.Join(item.Capabilities, ","))
 	fmt.Printf("  Status: %s\n", strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"))
-	fmt.Printf("  SIP Dispatch Rule: %s\n", item.SipDispatchRuleId)
+	fmt.Printf("  SIP Dispatch Rules: %s\n", dispatchRulesStr)
 	if item.ReleasedAt != nil {
 		fmt.Printf("  Released At: %s\n", item.ReleasedAt.AsTime().Format("2006-01-02 15:04:05"))
 	}
@@ -450,10 +626,37 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 		req.PhoneNumber = &phoneNumber
 	}
 
-	resp, err := client.UpdatePhoneNumber(ctx, req)
-	if err != nil {
-		return err
+	// Call update and get dispatch rules in parallel
+	type updateResult struct {
+		resp *livekit.UpdatePhoneNumberResponse
+		err  error
 	}
+	type dispatchRulesResult struct {
+		rules map[string][]string
+		err   error
+	}
+
+	updateChan := make(chan updateResult, 1)
+	dispatchRulesChan := make(chan dispatchRulesResult, 1)
+
+	// Update phone number
+	go func() {
+		resp, err := client.UpdatePhoneNumber(ctx, req)
+		updateChan <- updateResult{resp: resp, err: err}
+	}()
+
+	// Get dispatch rules mapping in parallel
+	go func() {
+		rules, err := getPhoneNumberToDispatchRulesMap(ctx, cmd)
+		dispatchRulesChan <- dispatchRulesResult{rules: rules, err: err}
+	}()
+
+	// Wait for update to complete
+	updateRes := <-updateChan
+	if updateRes.err != nil {
+		return updateRes.err
+	}
+	resp := updateRes.resp
 
 	// If dispatch rule ID was provided, append the phone number ID to the dispatch rule's trunk_ids
 	dispatchRuleAdded := false
@@ -467,23 +670,58 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	// Wait for dispatch rules (ignore errors, we'll just not show them)
+	dispatchRulesRes := <-dispatchRulesChan
+	phoneNumberToRules := dispatchRulesRes.rules
+	if dispatchRulesRes.err != nil {
+		// Log but don't fail
+		if cmd.Bool("verbose") {
+			fmt.Fprintf(cmd.ErrWriter, "Warning: failed to get dispatch rules: %v\n", dispatchRulesRes.err)
+		}
+		phoneNumberToRules = make(map[string][]string)
+	}
+
+	// Update the mapping with newly added dispatch rule if it was successfully added
+	if dispatchRuleAdded && dispatchRuleID != "" {
+		phoneNumberID := resp.PhoneNumber.Id
+		// Check if it's already in the map (from the parallel fetch)
+		if _, exists := phoneNumberToRules[phoneNumberID]; !exists {
+			phoneNumberToRules[phoneNumberID] = []string{}
+		}
+		// Check if dispatchRuleID is already in the list
+		found := false
+		for _, ruleID := range phoneNumberToRules[phoneNumberID] {
+			if ruleID == dispatchRuleID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			phoneNumberToRules[phoneNumberID] = append(phoneNumberToRules[phoneNumberID], dispatchRuleID)
+		}
+	}
+
 	if cmd.Bool("json") {
 		util.PrintJSON(resp)
 		return nil
 	}
 
 	item := resp.PhoneNumber
+	rules := phoneNumberToRules[item.Id]
+	dispatchRulesStr := ""
+	if len(rules) > 0 {
+		dispatchRulesStr = strings.Join(rules, ", ")
+	} else if item.SipDispatchRuleId != "" {
+		dispatchRulesStr = item.SipDispatchRuleId
+	} else {
+		dispatchRulesStr = "-"
+	}
+
 	fmt.Printf("Successfully updated phone number:\n")
 	fmt.Printf("  ID: %s\n", item.Id)
 	fmt.Printf("  E164 Format: %s\n", item.E164Format)
 	fmt.Printf("  Status: %s\n", strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"))
-
-	// Show dispatch rule ID if it was provided and successfully added, or if it's in the response
-	displayRuleID := item.SipDispatchRuleId
-	if dispatchRuleAdded && dispatchRuleID != "" {
-		displayRuleID = dispatchRuleID
-	}
-	fmt.Printf("  SIP Dispatch Rule: %s\n", displayRuleID)
+	fmt.Printf("  SIP Dispatch Rules: %s\n", dispatchRulesStr)
 
 	return nil
 }
