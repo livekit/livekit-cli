@@ -587,6 +587,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("build timed out possibly due to large image size")
+		}
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to create agent: %s", twerr.Msg())
 		}
