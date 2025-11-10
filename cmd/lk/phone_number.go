@@ -191,53 +191,6 @@ func getPhoneNumberToDispatchRulesMap(ctx context.Context, cmd *cli.Command) (ma
 	return phoneNumberToRules, nil
 }
 
-// appendPhoneNumberToDispatchRule appends a phone number ID to the trunk_ids of a dispatch rule
-func appendPhoneNumberToDispatchRule(ctx context.Context, cmd *cli.Command, dispatchRuleID, phoneNumberID string) error {
-	_, err := requireProject(ctx, cmd)
-	if err != nil {
-		return fmt.Errorf("failed to get project: %w", err)
-	}
-
-	sipClient := lksdk.NewSIPClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...)
-
-	// Get the current dispatch rule to check if phone number ID is already in trunk_ids
-	rules, err := sipClient.GetSIPDispatchRulesByIDs(ctx, []string{dispatchRuleID})
-	if err != nil {
-		return fmt.Errorf("failed to get dispatch rule: %w", err)
-	}
-	if len(rules) == 0 {
-		return fmt.Errorf("dispatch rule %s not found", dispatchRuleID)
-	}
-	currentRule := rules[0]
-
-	// Check if phone number ID is already in trunk_ids
-	for _, trunkID := range currentRule.TrunkIds {
-		if trunkID == phoneNumberID {
-			// Already in the list, no need to update
-			return nil
-		}
-	}
-
-	// Append phone number ID to trunk_ids using Update action
-	updateReq := &livekit.UpdateSIPDispatchRuleRequest{
-		SipDispatchRuleId: dispatchRuleID,
-		Action: &livekit.UpdateSIPDispatchRuleRequest_Update{
-			Update: &livekit.SIPDispatchRuleUpdate{
-				TrunkIds: &livekit.ListUpdate{
-					Add: []string{phoneNumberID},
-				},
-			},
-		},
-	}
-
-	_, err = sipClient.UpdateSIPDispatchRule(ctx, updateReq)
-	if err != nil {
-		return fmt.Errorf("failed to update dispatch rule: %w", err)
-	}
-
-	return nil
-}
-
 func searchPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	client, err := createPhoneNumberClient(ctx, cmd)
 	if err != nil {
@@ -308,6 +261,9 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	req := &livekit.PurchasePhoneNumberRequest{
 		PhoneNumbers: phoneNumbers,
 	}
+	if dispatchRuleID != "" {
+		req.SipDispatchRuleId = &dispatchRuleID
+	}
 
 	// Call purchase and get dispatch rules in parallel
 	type purchaseResult struct {
@@ -341,19 +297,6 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	}
 	resp := purchaseRes.resp
 
-	// If dispatch rule ID was provided, append each purchased phone number ID to the dispatch rule's trunk_ids
-	dispatchRuleAdded := make(map[string]bool)
-	if dispatchRuleID != "" {
-		for _, phoneNumber := range resp.PhoneNumbers {
-			if err := appendPhoneNumberToDispatchRule(ctx, cmd, dispatchRuleID, phoneNumber.Id); err != nil {
-				// Log error but don't fail the purchase operation
-				fmt.Fprintf(cmd.ErrWriter, "Warning: failed to add phone number %s to dispatch rule %s: %v\n", phoneNumber.Id, dispatchRuleID, err)
-			} else {
-				dispatchRuleAdded[phoneNumber.Id] = true
-			}
-		}
-	}
-
 	// Wait for dispatch rules (ignore errors, we'll just not show them)
 	dispatchRulesRes := <-dispatchRulesChan
 	phoneNumberToRules := dispatchRulesRes.rules
@@ -365,10 +308,19 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		phoneNumberToRules = make(map[string][]string)
 	}
 
-	// Update the mapping with newly added dispatch rules
+	// If dispatch rule ID was provided, add it to the mapping for display
+	// (The actual update is now handled by cloud-io)
 	if dispatchRuleID != "" {
 		for _, phoneNumber := range resp.PhoneNumbers {
-			if dispatchRuleAdded[phoneNumber.Id] {
+			// Check if dispatchRuleID is already in the list
+			found := false
+			for _, ruleID := range phoneNumberToRules[phoneNumber.Id] {
+				if ruleID == dispatchRuleID {
+					found = true
+					break
+				}
+			}
+			if !found {
 				phoneNumberToRules[phoneNumber.Id] = append(phoneNumberToRules[phoneNumber.Id], dispatchRuleID)
 			}
 		}
@@ -385,8 +337,6 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		rules := phoneNumberToRules[phoneNumber.Id]
 		if len(rules) > 0 {
 			ruleInfo = fmt.Sprintf(" (SIP Dispatch Rules: %s)", strings.Join(rules, ", "))
-		} else if phoneNumber.SipDispatchRuleId != "" {
-			ruleInfo = fmt.Sprintf(" (SIP Dispatch Rule: %s)", phoneNumber.SipDispatchRuleId)
 		}
 		fmt.Printf("  %s (%s) - %s%s\n", phoneNumber.E164Format, phoneNumber.Id, strings.TrimPrefix(phoneNumber.Status.String(), "PHONE_NUMBER_STATUS_"), ruleInfo)
 	}
@@ -622,6 +572,9 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	} else {
 		req.PhoneNumber = &phoneNumber
 	}
+	if dispatchRuleID != "" {
+		req.SipDispatchRuleId = &dispatchRuleID
+	}
 
 	// Call update and get dispatch rules in parallel
 	type updateResult struct {
@@ -655,18 +608,6 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	}
 	resp := updateRes.resp
 
-	// If dispatch rule ID was provided, append the phone number ID to the dispatch rule's trunk_ids
-	dispatchRuleAdded := false
-	if dispatchRuleID != "" {
-		phoneNumberID := resp.PhoneNumber.Id
-		if err := appendPhoneNumberToDispatchRule(ctx, cmd, dispatchRuleID, phoneNumberID); err != nil {
-			// Log error but don't fail the update operation
-			fmt.Fprintf(cmd.ErrWriter, "Warning: failed to add phone number %s to dispatch rule %s: %v\n", phoneNumberID, dispatchRuleID, err)
-		} else {
-			dispatchRuleAdded = true
-		}
-	}
-
 	// Wait for dispatch rules (ignore errors, we'll just not show them)
 	dispatchRulesRes := <-dispatchRulesChan
 	phoneNumberToRules := dispatchRulesRes.rules
@@ -678,13 +619,10 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 		phoneNumberToRules = make(map[string][]string)
 	}
 
-	// Update the mapping with newly added dispatch rule if it was successfully added
-	if dispatchRuleAdded && dispatchRuleID != "" {
+	// If dispatch rule ID was provided, add it to the mapping for display
+	// (The actual update is now handled by cloud-io)
+	if dispatchRuleID != "" {
 		phoneNumberID := resp.PhoneNumber.Id
-		// Check if it's already in the map (from the parallel fetch)
-		if _, exists := phoneNumberToRules[phoneNumberID]; !exists {
-			phoneNumberToRules[phoneNumberID] = []string{}
-		}
 		// Check if dispatchRuleID is already in the list
 		found := false
 		for _, ruleID := range phoneNumberToRules[phoneNumberID] {
@@ -708,8 +646,6 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	dispatchRulesStr := ""
 	if len(rules) > 0 {
 		dispatchRulesStr = strings.Join(rules, ", ")
-	} else if item.SipDispatchRuleId != "" {
-		dispatchRulesStr = item.SipDispatchRuleId
 	} else {
 		dispatchRulesStr = "-"
 	}
