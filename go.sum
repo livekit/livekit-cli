@@ -271,6 +271,8 @@ github.com/livekit/protocol v1.43.1-0.20251112192040-8bdcb749c402 h1:mMIddIE1wlv
 github.com/livekit/protocol v1.43.1-0.20251112192040-8bdcb749c402/go.mod h1:TpqU2qCI1ES4Lk7PAWSgYO4RaexfVXb54ZO2hXv0Bmc=
 github.com/livekit/psrpc v0.7.1-0.20251105165826-1016ad610a7e h1:K6GKMFGJW8U2RoEyi8Zar7pPwUB7RMsn3AEJXf/Mgfc=
 github.com/livekit/psrpc v0.7.1-0.20251105165826-1016ad610a7e/go.mod h1:bZ4iHFQptTkbPnB0LasvRNu/OBYXEu1NA6O5BMFo9kk=
+github.com/livekit/server-sdk-go/v2 v2.12.9-0.20251112193538-ed23dded48f9 h1:NjL66OFpkQJMhdvi0WCGWaPUr6XE1JGQwyKpNXWj4hg=
+github.com/livekit/server-sdk-go/v2 v2.12.9-0.20251112193538-ed23dded48f9/go.mod h1:YGjcmx4bSoEWGFqd1nqfVw8a+KQuOHXpr/prKtWRZaQ=
 github.com/lucasb-eyer/go-colorful v1.2.0 h1:1nnpGOrhyZZuNyfu1QjKiUICQ74+3FNCN69Aj6K7nkY=
 github.com/lucasb-eyer/go-colorful v1.2.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/magefile/mage v1.15.0 h1:BvGheCMAsG3bWUDbZ8AyXXpCNwU9u5CB6sM+HNb9HYg=
