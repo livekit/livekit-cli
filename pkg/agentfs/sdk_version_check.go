@@ -657,7 +657,31 @@ func isVersionSatisfied(version, minVersion string) (bool, error) {
 		return false, fmt.Errorf("invalid minimum version format: %s", minVersion)
 	}
 
-	return !v.LessThan(min), nil
+	// Check if version satisfies minimum using semver comparison
+	if !v.LessThan(min) {
+		return true, nil
+	}
+
+	// Special handling for prerelease versions: if the base version matches,
+	// consider prerelease versions as satisfying the requirement
+	// (e.g., 1.3.0-rc1 should satisfy >=1.3.0)
+	vBase := v.String()
+	minBase := min.String()
+
+	// Remove prerelease suffix for base version comparison
+	if strings.Contains(vBase, "-") {
+		vBase = strings.Split(vBase, "-")[0]
+	}
+	if strings.Contains(minBase, "-") {
+		minBase = strings.Split(minBase, "-")[0]
+	}
+
+	if vBase == minBase && v.LessThan(min) {
+		// Same base version, prerelease should satisfy
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // normalizeVersion normalizes version strings for semver parsing
@@ -672,6 +696,21 @@ func normalizeVersion(version string) string {
 	// Handle npm version ranges
 	if strings.HasPrefix(version, "^") || strings.HasPrefix(version, "~") {
 		version = version[1:]
+	}
+
+	// Handle prerelease versions: convert various formats to semver
+	// 1.3.0rc1 -> 1.3.0-rc1, 1.3rc -> 1.3.0-rc, etc.
+	prereleasePattern := regexp.MustCompile(`^(\d+(?:\.\d+)*)([a-zA-Z][a-zA-Z0-9]*.*)$`)
+	if matches := prereleasePattern.FindStringSubmatch(version); matches != nil {
+		baseVersion := matches[1]
+		prerelease := matches[2]
+
+		// Ensure we have at least MAJOR.MINOR.PATCH
+		parts := strings.Split(baseVersion, ".")
+		for len(parts) < 3 {
+			parts = append(parts, "0")
+		}
+		version = strings.Join(parts, ".") + "-" + prerelease
 	}
 
 	return version

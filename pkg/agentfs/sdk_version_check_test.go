@@ -143,6 +143,14 @@ version = "1.5.0"`,
 			expectError: false,
 		},
 		{
+			name:        "Python requirements.txt with prerelease version",
+			projectType: ProjectTypePythonPip,
+			setupFiles: map[string]string{
+				"requirements.txt": "livekit-agents~=1.3rc",
+			},
+			expectError: false,
+		},
+		{
 			name:        "No package found",
 			projectType: ProjectTypePythonPip,
 			setupFiles: map[string]string{
@@ -209,6 +217,9 @@ func TestIsVersionSatisfied(t *testing.T) {
 		{"~1.5.0", "1.0.0", true, false},
 		{">=1.5.0", "1.0.0", true, false},
 		{"==1.5.0", "1.0.0", true, false},
+		{"1.3.0rc1", "1.3.0", true, false},  // prerelease should satisfy same base version
+		{"1.3rc", "1.3.0", true, false},     // short prerelease should satisfy same base version
+		{"1.3.0rc1", "1.4.0", false, false}, // prerelease should not satisfy higher version
 		{"invalid", "1.0.0", false, true},
 		{"1.5.0", "invalid", false, true},
 	}
@@ -248,6 +259,12 @@ func TestNormalizeVersion(t *testing.T) {
 		{`'1.5.0'`, "1.5.0"},
 		{"*", "*"},
 		{"latest", "latest"},
+		{"1.3.0rc1", "1.3.0-rc1"},
+		{"1.3.0beta2", "1.3.0-beta2"},
+		{"1.3.0alpha1", "1.3.0-alpha1"},
+		{"1.3rc", "1.3.0-rc"},
+		{"1.3rc1", "1.3.0-rc1"},
+		{"~=1.3rc", "1.3.0-rc"},
 	}
 
 	for _, tt := range tests {
