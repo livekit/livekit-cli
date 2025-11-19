@@ -745,7 +745,7 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		testers = append(testers, lt)
-		if _, err = lt.PublishSimulcastTrack("demo-video", "high", ""); err != nil {
+		if _, err = lt.PublishSimulcastTrack("demo-video", "high", "", 0); err != nil {
 			return err
 		}
 	}

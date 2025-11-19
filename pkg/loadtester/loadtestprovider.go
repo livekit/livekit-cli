@@ -16,6 +16,7 @@ package loadtester
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"time"
@@ -42,7 +43,7 @@ func NewLoadTestProvider(bitrate uint32) (*LoadTestProvider, error) {
 	}, nil
 }
 
-func (p *LoadTestProvider) NextSample() (media.Sample, error) {
+func (p *LoadTestProvider) NextSample(ctx context.Context) (media.Sample, error) {
 	// sample format:
 	// 0xfafafa + 0000... + 8 bytes for ts
 	buf := bytes.NewBuffer(nil)
@@ -65,6 +66,10 @@ func (p *LoadTestProvider) OnBind() error {
 }
 
 func (p *LoadTestProvider) OnUnbind() error {
+	return nil
+}
+
+func (p *LoadTestProvider) Close() error {
 	return nil
 }
 
