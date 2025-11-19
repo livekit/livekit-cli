@@ -38,8 +38,8 @@ import (
 )
 
 var (
-	// simulcastURLRegex matches h264 simulcast URLs in format h264://<host:port>/<width>x<height> or h264://<socket_path>/<width>x<height>
-	simulcastURLRegex = regexp.MustCompile(`^h264://(.+)/(\d+)x(\d+)$`)
+	// simulcastURLRegex matches h264 or h265 simulcast URLs in format <codec>://<host:port>/<width>x<height> or <codec>://<socket_path>/<width>x<height>
+	simulcastURLRegex = regexp.MustCompile(`^(h264|h265)://(.+)/(\d+)x(\d+)$`)
 
 	RoomCommands = []*cli.Command{
 		{
@@ -157,8 +157,8 @@ var (
 							TakesFile: true,
 							Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
 								"Can be used multiple times to publish multiple files. " +
-								"Can publish from Unix or TCP socket using the format '<codec>:///<socket_path>' or '<codec>://<host:port>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\". " +
-								"For simulcast: use 2-3 h264:// URLs with format 'h264://<host:port>/<width>x<height>' or 'h264:///path/to/<socket_path>/<width>x<height>' (quality determined by width order)",
+								"Can publish from Unix or TCP socket using the format '<codec>:///<socket_path>' or '<codec>://<host:port>' respectively. Valid codecs are \"h264\", \"h265\", \"vp8\", \"opus\". " +
+								"For simulcast: use 2-3 h264:// or h265:// URLs with format '<codec>://<host:port>/<width>x<height>' or '<codec>:///path/to/<socket_path>/<width>x<height>' (all layers must use the same codec; quality determined by width order)",
 						},
 						&cli.StringFlag{
 							Name:  "publish-data",
@@ -828,18 +828,21 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("no more than 3 --publish flags can be specified, got %d", len(publishUrls))
 	}
 
-	// If simulcast mode, validate all URLs are h264 format with dimensions
+	// If simulcast mode, validate all URLs are h264 or h265 format with dimensions
 	if simulcastMode {
 		if len(publishUrls) == 1 {
 			return fmt.Errorf("simulcast mode requires 2-3 streams, but only 1 was provided")
 		}
+		var firstCodec string
 		for i, url := range publishUrls {
-			if !strings.HasPrefix(url, "h264://") {
-				return fmt.Errorf("publish flag %d: simulcast mode requires h264:// URLs with dimensions (format: h264://host:port/widthxheight), got: %s", i+1, url)
-			}
-			// Validate the format has dimensions
-			if _, err := parseSimulcastURL(url); err != nil {
+			parts, err := parseSimulcastURL(url)
+			if err != nil {
 				return fmt.Errorf("publish flag %d: %w", i+1, err)
+			}
+			if i == 0 {
+				firstCodec = parts.codec
+			} else if parts.codec != firstCodec {
+				return fmt.Errorf("publish flag %d: simulcast layers must use the same codec; expected %s://, got %s://", i+1, firstCodec, parts.codec)
 			}
 		}
 	}
