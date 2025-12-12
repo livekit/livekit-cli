@@ -40,7 +40,7 @@ import (
 
 const (
 	maxSecretFileSize = 1024 * 1024 // 1MB
-	buildTimeout      = 10 * time.Minute
+	buildTimeout      = 15 * time.Minute
 )
 
 var (
