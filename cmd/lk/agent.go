@@ -40,6 +40,7 @@ import (
 
 const (
 	maxSecretFileSize = 1024 * 1024 // 1MB
+	buildTimeout      = 15 * time.Minute
 )
 
 var (
@@ -580,10 +581,15 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
+	defer cancel()
 	regions := []string{region}
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	resp, err := agentsClient.CreateAgent(ctx, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
+	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("build timed out possibly due to large image size")
+		}
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to create agent: %s", twerr.Msg())
 		}
@@ -726,8 +732,10 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
+	defer cancel()
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgent(ctx, agentId, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
+	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
