@@ -565,6 +565,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			for i, r := range regionOptions {
 				regionOptions[i] = strings.TrimSpace(r)
 			}
+			slices.Sort(regionOptions)
 
 			if err := huh.NewSelect[string]().
 				Title("Select region for agent deployment").
