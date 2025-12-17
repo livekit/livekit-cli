@@ -541,9 +541,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside an app directory and are using a supported language", err)
+		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
 	}
-	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
+	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
 	if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
 		return err
@@ -717,9 +717,9 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside an app directory and are using a supported language", err)
+		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
 	}
-	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
+	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
 	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
 	if err != nil {
@@ -1438,9 +1438,9 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside an app directory and are using a supported language", err)
+		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
 	}
-	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
+	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
 	dockerfilePath := filepath.Join(workingDir, "Dockerfile")
 	dockerignorePath := filepath.Join(workingDir, ".dockerignore")
