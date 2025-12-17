@@ -541,7 +541,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside your app's directory and are using a supported language", err)
+		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside an app directory and are using a supported language", err)
 	}
 	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
 
@@ -717,7 +717,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside your app's directory and are using a supported language", err)
+		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside an app directory and are using a supported language", err)
 	}
 	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
 
@@ -1438,7 +1438,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside your app's directory and are using a supported language", err)
+		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside an app directory and are using a supported language", err)
 	}
 	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
 
