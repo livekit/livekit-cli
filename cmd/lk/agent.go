@@ -540,10 +540,10 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
-	fmt.Printf("Detected project type [%s]\n", util.Accented(string(projectType)))
 	if err != nil {
-		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
+		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside your app's directory and are using a supported language", err)
 	}
+	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
 
 	if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
 		return err
@@ -717,8 +717,9 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
+		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside your app's directory and are using a supported language", err)
 	}
+	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
 
 	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
 	if err != nil {
@@ -1436,10 +1437,10 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
-	fmt.Printf("Detected project type [%s]\n", util.Accented(string(projectType)))
 	if err != nil {
-		return fmt.Errorf("unable to determine project type: %w, please use a supported project type, or create your own Dockerfile in the current directory", err)
+		return fmt.Errorf("unable to determine app language: %w, please make sure you are inside your app's directory and are using a supported language", err)
 	}
+	fmt.Printf("Detected app language [%s]\n", util.Accented(string(projectType)))
 
 	dockerfilePath := filepath.Join(workingDir, "Dockerfile")
 	dockerignorePath := filepath.Join(workingDir, ".dockerignore")
