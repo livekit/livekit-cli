@@ -113,5 +113,5 @@ func DetectProjectType(dir fs.FS) (ProjectType, error) {
 		return ProjectTypePythonPip, nil
 	}
 
-	return ProjectTypeUnknown, errors.New("project type could not be identified; expected package.json, requirements.txt, pyproject.toml, or lock files")
+	return ProjectTypeUnknown, errors.New("expected package.json, requirements.txt, pyproject.toml, or lock files")
 }
