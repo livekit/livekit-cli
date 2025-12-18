@@ -57,7 +57,7 @@ func CheckSDKVersion(dir string, projectType ProjectType, settingsMap map[string
 	// Find the best result (prefer lock files over source files)
 	bestResult := findBestResult(results)
 	if bestResult == nil {
-		return fmt.Errorf("package %s not found in any project files", getTargetPackageName(projectType))
+		return fmt.Errorf("package %s not found in any project files. Are you sure this is an agent?", getTargetPackageName(projectType))
 	}
 
 	if !bestResult.Satisfied {
