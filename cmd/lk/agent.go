@@ -526,7 +526,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		lkConfig = config.NewLiveKitTOML(subdomainMatches[1]).WithDefaultAgent()
 	}
 	if !silent {
-		fmt.Printf("Creating new agent\n")
+		fmt.Printf("Creating new agent deployment\n")
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, false)
