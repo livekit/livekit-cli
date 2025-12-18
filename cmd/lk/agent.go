@@ -541,8 +541,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		//lint:ignore ST1005 // error string intentionally capitalized as we print it to the user.
-		return fmt.Errorf("Unable to determine agent language: %w, please navigate to a directory containing an agent written in a supported language", err)
+		return fmt.Errorf("unable to determine agent language: %w, please navigate to a directory containing an agent written in a supported language", err)
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
@@ -718,8 +717,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		//lint:ignore ST1005 // error string intentionally capitalized as we print it to the user.
-		return fmt.Errorf("Unable to determine agent language: %w, please navigate to a directory containing an agent written in a supported language", err)
+		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
@@ -1440,8 +1438,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		//lint:ignore ST1005 // error string intentionally capitalized as we print it to the user.
-		return fmt.Errorf("Unable to determine agent language: %w, please navigate to a directory containing an agent written in a supported language", err)
+		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
