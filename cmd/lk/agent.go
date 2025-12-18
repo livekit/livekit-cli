@@ -557,6 +557,10 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	if err := agentfs.ValidateLockFiles(os.DirFS(workingDir), projectType); err != nil {
+		return err
+	}
+
 	region := cmd.String("region")
 	if region == "" {
 		availableRegionsStr, ok := settingsMap["available_regions"]
@@ -731,6 +735,10 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		} else {
 			return err
 		}
+	}
+
+	if err := agentfs.ValidateLockFiles(os.DirFS(workingDir), projectType); err != nil {
+		return err
 	}
 
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)

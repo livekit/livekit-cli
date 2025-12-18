@@ -115,3 +115,40 @@ func DetectProjectType(dir fs.FS) (ProjectType, error) {
 
 	return ProjectTypeUnknown, errors.New("project type could not be identified; expected package.json, requirements.txt, pyproject.toml, or lock files")
 }
+
+// ValidateLockFiles checks if the required lock files exist for the given project type.
+// This ensures that dependency sync commands (e.g., uv sync, npm install) have been run
+// before deployment, preventing build failures.
+func ValidateLockFiles(dir fs.FS, projectType ProjectType) error {
+	switch projectType {
+	case ProjectTypePythonUV:
+		if !util.FileExists(dir, "uv.lock") {
+			return errors.New("uv.lock file not found. Please run 'uv sync' to generate the lock file before deployment")
+		}
+	case ProjectTypePythonPip:
+		// Check if project uses poetry or pipenv which require lock files
+		if util.FileExists(dir, "poetry.lock") {
+			// Poetry project - lock file should already exist if detected
+			return nil
+		}
+		if util.FileExists(dir, "Pipfile.lock") {
+			// Pipenv project - lock file should already exist if detected
+			return nil
+		}
+		// For requirements.txt projects, no lock file is required
+		// pyproject.toml without poetry/pipenv also doesn't require a lock file
+		return nil
+	case ProjectTypeNode:
+		// Check for any of the common lock files
+		hasLockFile := util.FileExists(dir, "package-lock.json") ||
+			util.FileExists(dir, "yarn.lock") ||
+			util.FileExists(dir, "pnpm-lock.yaml") ||
+			util.FileExists(dir, "bun.lockb")
+		if !hasLockFile {
+			return errors.New("no lock file found (package-lock.json, yarn.lock, pnpm-lock.yaml, or bun.lockb). Please run 'npm install', 'yarn install', 'pnpm install', or 'bun install' to generate a lock file before deployment")
+		}
+	case ProjectTypeUnknown:
+		return errors.New("unknown project type, cannot validate lock files")
+	}
+	return nil
+}
