@@ -174,12 +174,38 @@ func (t *LoadTester) PublishAudioTrack(name string) (string, error) {
 	return p.SID(), nil
 }
 
-func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, error) {
+func (t *LoadTester) PublishVideoTrack(name, resolution, codec string, bitrate uint32) (string, error) {
 	if !t.IsRunning() {
 		return "", nil
 	}
 
 	fmt.Println("publishing video track -", t.room.LocalParticipant.Identity())
+
+	// Use LoadTestProvider for custom bitrate
+	if bitrate > 0 {
+		provider, err := NewLoadTestProvider(bitrate * 1000) // Convert kbps to bps
+		if err != nil {
+			return "", err
+		}
+		track, err := lksdk.NewLocalTrack(webrtc.RTPCodecCapability{
+			MimeType: webrtc.MimeTypeH264,
+		})
+		if err != nil {
+			return "", err
+		}
+		if err := track.StartWrite(provider, nil); err != nil {
+			return "", err
+		}
+		p, err := t.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+			Name: name,
+		})
+		if err != nil {
+			return "", err
+		}
+		return p.SID(), nil
+	}
+
+	// Use embedded video files for default behavior
 	loopers, err := provider2.CreateVideoLoopers(resolution, codec, false)
 	if err != nil {
 		return "", err
@@ -201,10 +227,59 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 	return p.SID(), nil
 }
 
-func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (string, error) {
+func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string, bitrate uint32) (string, error) {
 	var tracks []*lksdk.LocalTrack
 
 	fmt.Println("publishing simulcast video track -", t.room.LocalParticipant.Identity())
+
+	if bitrate > 0 {
+		layers := []struct {
+			quality livekit.VideoQuality
+			bitrate uint32
+			width   uint32
+			height  uint32
+		}{
+			{livekit.VideoQuality_HIGH, bitrate, 1280, 720},
+			{livekit.VideoQuality_MEDIUM, bitrate / 2, 640, 360},
+			{livekit.VideoQuality_LOW, bitrate / 4, 320, 180},
+		}
+
+		for _, layer := range layers {
+			provider, err := NewLoadTestProvider(layer.bitrate * 1000)
+			if err != nil {
+				return "", err
+			}
+
+			videoLayer := &livekit.VideoLayer{
+				Quality: layer.quality,
+				Width:   layer.width,
+				Height:  layer.height,
+				Bitrate: layer.bitrate * 1000,
+			}
+
+			track, err := lksdk.NewLocalTrack(webrtc.RTPCodecCapability{
+				MimeType: webrtc.MimeTypeH264,
+			}, lksdk.WithSimulcast("loadtest-video", videoLayer))
+			if err != nil {
+				return "", err
+			}
+			if err := track.StartWrite(provider, nil); err != nil {
+				return "", err
+			}
+			tracks = append(tracks, track)
+		}
+
+		p, err := t.room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
+			Name:   name,
+			Source: livekit.TrackSource_CAMERA,
+		})
+		if err != nil {
+			return "", err
+		}
+		return p.SID(), nil
+	}
+
+	// Use embedded video files for default behavior
 	loopers, err := provider2.CreateVideoLoopers(resolution, codec, true)
 	if err != nil {
 		return "", err
