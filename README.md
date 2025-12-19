@@ -191,6 +191,8 @@ lk room join --identity bot \
 
 You should now see both video and audio tracks published to the room.
 
+Note: To publish H.265/HEVC over sockets, use the `h265://` scheme (for example, `h265:///tmp/myvideo.sock` or `h265://127.0.0.1:16400`). Ensure your LiveKit deployment and clients support H.265 playback.
+
 ### Publish from TCP (i.e. gstreamer)
 
 It's possible to publish from video streams coming over a TCP socket. `lk` can act as a TCP client. For example, with a gstreamer pipeline ending in `! tcpserversink port=16400` and streaming H.264.
@@ -204,11 +206,11 @@ lk room join \
   <room_name>
 ```
 
-### Publish H.264 simulcast track from TCP
+### Publish H.264/H.265 simulcast track from TCP
 
-You can publish multiple H.264 video tracks from different TCP ports as a single [Simulcast](https://docs.livekit.io/home/client/tracks/advanced/#video-simulcast) track.  This is done by using multiple `--publish` flags.
+You can publish multiple H.264 or H.265 video tracks from different TCP ports as a single [Simulcast](https://docs.livekit.io/home/client/tracks/advanced/#video-simulcast) track. This is done by using multiple `--publish` flags.
 
-The track will be published in simulcast mode if multiple `--publish` flags with the syntax `h264://<host>:<port>/<width>x<height>` are passed in as arguments.
+The track will be published in simulcast mode if multiple `--publish` flags with the syntax `<codec>://<host>:<port>/<width>x<height>` are passed in as arguments, where `<codec>` is `h264` or `h265`. All layers must use the same codec.
 
 Example:
 
@@ -239,7 +241,7 @@ lk room join --identity <name> --url "<url>" --api-key "<key>" --api-secret "<se
 ```
 
 Notes:
-- LiveKit CLI can only publish simulcast tracks using H.264 codec.
+- LiveKit CLI can publish simulcast tracks using H.264 or H.265. Ensure your LiveKit deployment and clients support the chosen codec (HEVC/H.265 support varies by platform/browser).
 - You can only use multiple `--publish` flags to create a simulcast track.
 - Using more than 1 `--publish` flag for other types of streams will not work.
 - Tracks will automatically be set to HIGH/MED/LOW resolution based on the order of their width.
@@ -248,7 +250,7 @@ Notes:
 ### Publish streams from your application
 
 Using unix sockets, it's also possible to publish streams from your application. The tracks need to be encoded into
-a format that WebRTC clients could playback (VP8, H.264, and Opus).
+a format that WebRTC clients could playback (VP8, H.264, H.265, and Opus).
 
 Once you are writing to the socket, you could use `ffplay` to test the stream.
 

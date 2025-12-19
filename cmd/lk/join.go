@@ -59,7 +59,7 @@ var (
 					TakesFile: true,
 					Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
 						"can be used multiple times to publish multiple files. " +
-						"can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"vp8\", \"opus\"",
+						"can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"h265\", \"vp8\", \"opus\"",
 				},
 				&cli.FloatFlag{
 					Name:  "fps",
@@ -297,7 +297,7 @@ func parseSocketFromName(name string) (string, string, string, error) {
 
 	mimeType := name[:offset]
 
-	if mimeType != "h264" && mimeType != "vp8" && mimeType != "opus" {
+	if mimeType != "h264" && mimeType != "h265" && mimeType != "vp8" && mimeType != "opus" {
 		return "", "", "", fmt.Errorf("unsupported mime type: %s", mimeType)
 	}
 
@@ -331,6 +331,8 @@ func publishSocket(room *lksdk.Room,
 	switch {
 	case strings.Contains(mimeType, "h264"):
 		mime = webrtc.MimeTypeH264
+	case strings.Contains(mimeType, "h265"):
+		mime = webrtc.MimeTypeH265
 	case strings.Contains(mimeType, "vp8"):
 		mime = webrtc.MimeTypeVP8
 	case strings.Contains(mimeType, "opus"):
@@ -397,20 +399,22 @@ func publishReader(room *lksdk.Room,
 
 // simulcastURLParts represents the parsed components of a simulcast URL
 type simulcastURLParts struct {
+	codec   string // "h264" or "h265"
 	network string // "tcp" or "unix"
 	address string
 	width   uint32
 	height  uint32
 }
 
-// parseSimulcastURL validates and parses a simulcast URL in the format h264://<host:port>/<width>x<height> or h264://<socket_path>/<width>x<height>
+// parseSimulcastURL validates and parses a simulcast URL in the format <codec>://<host:port>/<width>x<height> or <codec>://<socket_path>/<width>x<height>
 func parseSimulcastURL(url string) (*simulcastURLParts, error) {
 	matches := simulcastURLRegex.FindStringSubmatch(url)
 	if matches == nil {
-		return nil, fmt.Errorf("simulcast URL must be in format h264://<host:port>/<width>x<height> or h264://<socket_path>/<width>x<height>, got: %s", url)
+		return nil, fmt.Errorf("simulcast URL must be in format <codec>://<host:port>/<width>x<height> or <codec>://<socket_path>/<width>x<height> where codec is h264 or h265, got: %s", url)
 	}
 
-	address, widthStr, heightStr := matches[1], matches[2], matches[3]
+	codec := matches[1]
+	address, widthStr, heightStr := matches[2], matches[3], matches[4]
 
 	// Parse dimensions
 	width, err := strconv.ParseUint(widthStr, 10, 32)
@@ -429,6 +433,7 @@ func parseSimulcastURL(url string) (*simulcastURLParts, error) {
 	}
 
 	return &simulcastURLParts{
+		codec:   codec,
 		network: network,
 		address: address,
 		width:   uint32(width),
@@ -436,7 +441,7 @@ func parseSimulcastURL(url string) (*simulcastURLParts, error) {
 	}, nil
 }
 
-// createSimulcastVideoTrack creates a simulcast video track from a TCP or Unix socket H.264 streams
+// createSimulcastVideoTrack creates a simulcast video track from a TCP or Unix socket H.264/H.265 streams
 func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.VideoQuality, fps float64, h26xStreamingFormat string, onComplete func()) (*lksdk.LocalTrack, error) {
 	conn, err := net.Dial(urlParts.network, urlParts.address)
 	if err != nil {
@@ -472,10 +477,14 @@ func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.Vide
 		Height:  urlParts.height,
 	})))
 
-	return lksdk.NewLocalReaderTrack(conn, webrtc.MimeTypeH264, opts...)
+	mime := webrtc.MimeTypeH264
+	if urlParts.codec == "h265" {
+		mime = webrtc.MimeTypeH265
+	}
+	return lksdk.NewLocalReaderTrack(conn, mime, opts...)
 }
 
-// simulcastLayer represents a parsed H.264 stream with quality info
+// simulcastLayer represents a parsed H.264/H.265 stream with quality info
 type simulcastLayer struct {
 	url     string
 	parts   *simulcastURLParts
@@ -502,6 +511,14 @@ func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xSt
 
 	if len(layers) == 0 {
 		return fmt.Errorf("no valid simulcast URLs provided")
+	}
+
+	// Ensure all layers use the same codec
+	codec := layers[0].parts.codec
+	for _, l := range layers[1:] {
+		if l.parts.codec != codec {
+			return fmt.Errorf("all simulcast layers must use the same codec; expected %s, found %s", codec, l.parts.codec)
+		}
 	}
 
 	// Sort streams by width to determine quality levels
@@ -573,6 +590,6 @@ func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xSt
 		return fmt.Errorf("failed to publish simulcast track: %w", err)
 	}
 
-	fmt.Printf("Successfully published H.264 simulcast track with qualities: %v\n", trackNames)
+	fmt.Printf("Successfully published %s simulcast track with qualities: %v\n", strings.ToUpper(codec), trackNames)
 	return nil
 }
