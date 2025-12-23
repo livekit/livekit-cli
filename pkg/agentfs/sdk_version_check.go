@@ -698,8 +698,17 @@ func normalizeVersion(version string) string {
 		version = version[1:]
 	}
 
-	// Handle prerelease versions: convert various formats to semver
-	// 1.3.0rc1 -> 1.3.0-rc1, 1.3rc -> 1.3.0-rc, etc.
+	// First check if we have a version with dot separator (1.0.0.rc2)
+	// If so, replace the dot with a hyphen to make it semver compliant
+	if dotIndex := strings.LastIndex(version, "."); dotIndex > 0 {
+		// Check if what follows the last dot is a prerelease identifier (starts with a letter)
+		if dotIndex < len(version)-1 && regexp.MustCompile(`^[a-zA-Z]`).MatchString(version[dotIndex+1:]) {
+			// Convert 1.0.0.rc2 -> 1.0.0-rc2
+			version = version[:dotIndex] + "-" + version[dotIndex+1:]
+		}
+	}
+
+	// Handle prerelease versions without separator: 1.3.0rc1 -> 1.3.0-rc1, 1.3rc -> 1.3.0-rc, etc.
 	prereleasePattern := regexp.MustCompile(`^(\d+(?:\.\d+)*)([a-zA-Z][a-zA-Z0-9]*.*)$`)
 	if matches := prereleasePattern.FindStringSubmatch(version); matches != nil {
 		baseVersion := matches[1]
