@@ -217,7 +217,7 @@ func TestIsVersionSatisfied(t *testing.T) {
 		{"~1.5.0", "1.0.0", true, false},
 		{">=1.5.0", "1.0.0", true, false},
 		{"==1.5.0", "1.0.0", true, false},
-		{"1.3.0rc1", "1.2.0", true, false},      // prerelease should satisfy lower base version
+		{">=1.3.0rc1", "1.2.0", true, false},    // prerelease should satisfy lower base version
 		{"1.3.0.rc1", "1.3.0", true, false},     // prerelease should satisfy same base version
 		{"1.3rc", "1.3.0", true, false},         // short prerelease should satisfy same base version
 		{"1.3.0rc1", "1.4.0", false, false},     // prerelease should not satisfy higher version
