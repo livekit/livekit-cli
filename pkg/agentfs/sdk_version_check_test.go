@@ -217,9 +217,13 @@ func TestIsVersionSatisfied(t *testing.T) {
 		{"~1.5.0", "1.0.0", true, false},
 		{">=1.5.0", "1.0.0", true, false},
 		{"==1.5.0", "1.0.0", true, false},
-		{"1.3.0rc1", "1.3.0", true, false},  // prerelease should satisfy same base version
-		{"1.3rc", "1.3.0", true, false},     // short prerelease should satisfy same base version
-		{"1.3.0rc1", "1.4.0", false, false}, // prerelease should not satisfy higher version
+		{"1.3.0rc1", "1.2.0", true, false},      // prerelease should satisfy lower base version
+		{"1.3.0.rc1", "1.3.0", true, false},     // prerelease should satisfy same base version
+		{"1.3rc", "1.3.0", true, false},         // short prerelease should satisfy same base version
+		{"1.3.0rc1", "1.4.0", false, false},     // prerelease should not satisfy higher version
+		{"1.0.0.rc2", "1.0.0", true, false},     // dot prerelease should satisfy same base version
+		{"1.3.0.beta1", "1.3.0", true, false},   // dot prerelease should satisfy same base version
+		{"1.2.0.alpha1", "1.3.0", false, false}, // dot prerelease should not satisfy higher version
 		{"invalid", "1.0.0", false, true},
 		{"1.5.0", "invalid", false, true},
 	}
@@ -265,6 +269,9 @@ func TestNormalizeVersion(t *testing.T) {
 		{"1.3rc", "1.3.0-rc"},
 		{"1.3rc1", "1.3.0-rc1"},
 		{"~=1.3rc", "1.3.0-rc"},
+		{"1.0.0.rc2", "1.0.0-rc2"},
+		{"1.3.0.beta1", "1.3.0-beta1"},
+		{"1.5.2.alpha3", "1.5.2-alpha3"},
 	}
 
 	for _, tt := range tests {
@@ -410,6 +417,12 @@ func TestParsePythonPackageVersion(t *testing.T) {
 			name:           "Version with extras",
 			input:          "livekit-agents[extra]==1.5.0",
 			expectedOutput: "==1.5.0",
+			expectedFound:  true,
+		},
+		{
+			name:           "extra with compatible version",
+			input:          "livekit-agents[extra1,extra2]~=1.5.0.rc2",
+			expectedOutput: "~=1.5.0.rc2",
 			expectedFound:  true,
 		},
 		{
