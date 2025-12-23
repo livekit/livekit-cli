@@ -50,7 +50,7 @@ Or download a precompiled binary for the [latest release](https://github.com/liv
 This repo uses [Git LFS](https://git-lfs.github.com/) for embedded video resources. Please ensure git-lfs is installed on your machine.
 
 ```shell
-git clone https://github.com/livekit/livekit-cli
+git clone https://github.com/livekit/livekit-cli && cd livekit-cli
 make install
 ```
 
