@@ -19,7 +19,7 @@ jobs:
       packages: read
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -44,7 +44,7 @@ jobs:
           go test -race -json -v ./... 2>&1 | tee test.log
 
       - name: Upload test log
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-log-${{ matrix.os }}
