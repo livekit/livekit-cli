@@ -197,7 +197,7 @@ var (
 
 		// Deprecated commands kept for compatibility
 		{
-			Hidden: true, // deprectated: use `egress start --room-composite`
+			Hidden: true, // deprecated: use `egress start --room-composite`
 			Name:   "start-room-composite-egress",
 			Usage:  "Start room composite egress",
 			Before: createEgressClient,
@@ -211,7 +211,7 @@ var (
 			},
 		},
 		{
-			Hidden: true, // deprectated: use `egress start --web`
+			Hidden: true, // deprecated: use `egress start --web`
 			Name:   "start-web-egress",
 			Usage:  "Start web egress",
 			Before: createEgressClient,
@@ -225,7 +225,7 @@ var (
 			},
 		},
 		{
-			Hidden: true, // deprectated: use `egress start --participant`
+			Hidden: true, // deprecated: use `egress start --participant`
 			Name:   "start-participant-egress",
 			Usage:  "Start participant egress",
 			Before: createEgressClient,
@@ -239,7 +239,7 @@ var (
 			},
 		},
 		{
-			Hidden: true, // deprectated: use `egress start --track-composite`
+			Hidden: true, // deprecated: use `egress start --track-composite`
 			Name:   "start-track-composite-egress",
 			Usage:  "Start track composite egress",
 			Before: createEgressClient,
@@ -253,7 +253,7 @@ var (
 			},
 		},
 		{
-			Hidden: true, // deprectated: use `egress start --track`
+			Hidden: true, // deprecated: use `egress start --track`
 			Name:   "start-track-egress",
 			Usage:  "Start track egress",
 			Before: createEgressClient,
@@ -267,7 +267,7 @@ var (
 			},
 		},
 		{
-			Hidden: true, // deprectated: use `egress list`
+			Hidden: true, // deprecated: use `egress list`
 			Name:   "list-egress",
 			Usage:  "List all active egress",
 			Before: createEgressClient,
@@ -288,7 +288,7 @@ var (
 			},
 		},
 		{
-			Hidden: true, // deprectated: use `egress update-layout`
+			Hidden: true, // deprecated: use `egress update-layout`
 			Name:   "update-layout",
 			Usage:  "Updates layout for a live room composite egress",
 			Before: createEgressClient,
@@ -307,7 +307,7 @@ var (
 			},
 		},
 		{
-			Hidden: true, // deprectated: use `egress update-stream`
+			Hidden: true, // deprecated: use `egress update-stream`
 			Name:   "update-stream",
 			Usage:  "Adds or removes rtmp output urls from a live stream",
 			Before: createEgressClient,
@@ -331,7 +331,7 @@ var (
 			},
 		},
 		{
-			Hidden: true, // deprectated: use `egress stop`
+			Hidden: true, // deprecated: use `egress stop`
 			Name:   "stop-egress",
 			Usage:  "Stop egress",
 			Before: createEgressClient,
