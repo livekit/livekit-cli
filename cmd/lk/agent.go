@@ -77,6 +77,13 @@ var (
 		Required: false,
 	}
 
+	ignoreEmptyFlag = &cli.BoolFlag{
+		Name:     "ignore-empty-vars",
+		Usage:    "If set, will skip environment variables with empty values from secrets files instead of failing",
+		Required: false,
+		Value:    false,
+	}
+
 	logTypeFlag = &cli.StringFlag{
 		Name:     "log-type",
 		Usage:    "Type of logs to retrieve. Valid values are 'deploy' and 'build'",
@@ -156,6 +163,7 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
+						ignoreEmptyFlag,
 						silentFlag,
 						regionFlag,
 						skipSDKCheckFlag,
@@ -201,6 +209,7 @@ var (
 						secretsFileFlag,
 						secretsMountFlag,
 						silentFlag,
+						ignoreEmptyFlag,
 						skipSDKCheckFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
@@ -227,6 +236,7 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
+						ignoreEmptyFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -321,6 +331,7 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
+						ignoreEmptyFlag,
 						idFlag(false),
 						&cli.BoolFlag{
 							Name:     "overwrite",
@@ -1317,13 +1328,20 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 			fmt.Printf("Using secrets file [%s]\n", util.Accented(file))
 		}
 
+		ignoreEmpty := cmd.Bool("ignore-empty-vars")
+		var skippedEmpty []string
+
 		for k, v := range env {
 			if _, exists := secrets[k]; exists {
 				continue
 			}
 
 			if v == "" {
-				return nil, fmt.Errorf("failed to parse secrets file: secret %s is empty, either remove it or provide a value", k)
+				if ignoreEmpty {
+					skippedEmpty = append(skippedEmpty, k)
+					continue
+				}
+				return nil, fmt.Errorf("failed to parse secrets file: secret %s is empty, either remove it or provide a value, or use --ignore-empty-vars to skip empty values", k)
 			}
 
 			secret := &lkproto.AgentSecret{
@@ -1332,6 +1350,12 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 				Kind:  lkproto.AgentSecretKind_AGENT_SECRET_KIND_ENVIRONMENT,
 			}
 			secrets[k] = secret
+		}
+
+		// Log skipped secrets if any (unless silent)
+		if len(skippedEmpty) > 0 && !silent {
+			skippedNames := strings.Join(skippedEmpty, ", ")
+			fmt.Printf("Skipped %d empty secret(s): %s\n", len(skippedEmpty), util.Dimmed(skippedNames))
 		}
 	}
 
