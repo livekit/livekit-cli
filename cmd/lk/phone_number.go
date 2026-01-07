@@ -76,12 +76,17 @@ var (
 					Flags: []cli.Flag{
 						&cli.IntFlag{
 							Name:  "limit",
-							Usage: "Maximum number of results (default: 50)",
+							Usage: "Maximum number of results per page (default: 50)",
 							Value: 50,
+						},
+						&cli.IntFlag{
+							Name:  "offset",
+							Usage: "Offset for pagination (default: 0)",
+							Value: 0,
 						},
 						&cli.StringSliceFlag{
 							Name:  "status",
-							Usage: "Filter by status(es) (active, pending, released). Multiple values can be specified.",
+							Usage: "Filter by status(es) (active, pending, released, offline). Multiple values can be specified.",
 						},
 						&cli.StringFlag{
 							Name:  "sip-dispatch-rule-id",
@@ -351,10 +356,17 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	req := &livekit.ListPhoneNumbersRequest{}
-	if val := cmd.Int("limit"); val != 0 {
-		limit := int32(val)
-		req.Limit = &limit
+	limit := int32(cmd.Int("limit"))
+	offset := int32(cmd.Int("offset"))
+
+	// Encode offset and limit into a page token for pagination
+	// Even if offset is 0, we encode it to include the limit in the token
+	pageToken, err := livekit.EncodeTokenPagination(offset, limit)
+	if err != nil {
+		return fmt.Errorf("failed to encode pagination token: %w", err)
 	}
+	req.PageToken = pageToken
+
 	if statuses := cmd.StringSlice("status"); len(statuses) > 0 {
 		var phoneNumberStatuses []livekit.PhoneNumberStatus
 		for _, status := range statuses {
@@ -418,7 +430,23 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	fmt.Printf("Total phone numbers: %d\n", resp.TotalCount)
+	fmt.Printf("Total phone numbers: %d", resp.TotalCount)
+	if resp.OfflineCount > 0 {
+		fmt.Printf(" (%d offline)", resp.OfflineCount)
+	}
+	fmt.Printf("\n")
+
+	// Show pagination info
+	if offset > 0 {
+		fmt.Printf("Showing results from offset %d\n", offset)
+	}
+	if resp.NextPageToken != nil {
+		nextOffset, _, err := livekit.DecodeTokenPagination(resp.NextPageToken)
+		if err == nil {
+			fmt.Printf("More results available. Use --offset %d to see the next page.\n", nextOffset)
+		}
+	}
+
 	return listAndPrint(ctx, cmd, func(ctx context.Context, req *livekit.ListPhoneNumbersRequest) (*livekit.ListPhoneNumbersResponse, error) {
 		return client.ListPhoneNumbers(ctx, req)
 	}, req, []string{
