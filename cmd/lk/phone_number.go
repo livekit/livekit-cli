@@ -30,7 +30,7 @@ var (
 		{
 			Name:   "number",
 			Usage:  "Manage phone numbers",
-			Hidden: true,
+			Hidden: false,
 			Commands: []*cli.Command{
 				{
 					Name:   "search",
