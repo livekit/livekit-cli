@@ -890,11 +890,11 @@ func formatTimeAgo(d time.Duration) string {
 func getEventString(eventType lkproto.AgentEventType) string {
 	switch eventType {
 	case lkproto.AgentEventType_AGENT_EVENT_TYPE_APPLICATION_CRASHED:
-		return "Agent crashed due to an uncaught exception. Please check the agent logs for more details."
+		return "Agent crashed due to an uncaught exception in the agent code. Please check the agent logs for more details."
 	case lkproto.AgentEventType_AGENT_EVENT_TYPE_RESTARTED_HIGH_MEMORY_USAGE:
-		return "Agent restarted due to excessive memory usage. Please check whether your agent is properly configured."
+		return "Agent restarted due to high memory usage. Please check whether the agent is properly configured."
 	case lkproto.AgentEventType_AGENT_EVENT_TYPE_RESTARTED_HIGH_DISK_USAGE:
-		return "Agent was evicted due to disk usage exceeding limits. Please check disk usage and clean up unnecessary files."
+		return "Agent restarted due to high disk usage. Please check whether the agent is downloading large files or storing large files to disk."
 	default:
 		// Fallback to string representation if unknown
 		return strings.TrimPrefix(strings.ReplaceAll(eventType.String(), "_", " "), "AGENT EVENT TYPE ")
