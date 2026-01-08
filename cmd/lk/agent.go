@@ -200,7 +200,6 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
-						silentFlag,
 						skipSDKCheckFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
@@ -746,38 +745,6 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Deployed agent")
-	fmt.Println("Build completed - You can view build logs later with `lk agent logs --log-type=build`")
-
-	silent := cmd.Bool("silent")
-	if !silent {
-		var viewLogs bool = true
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewConfirm().
-					Title("Agent deploying. Would you like to view logs?").
-					Description("You can view logs later with `lk agent logs`").
-					Value(&viewLogs).
-					WithTheme(util.Theme),
-			),
-		).Run(); err != nil {
-			return err
-		} else if viewLogs {
-			// Get agent info to retrieve server region
-			response, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{
-				AgentId: agentId,
-			})
-			if err != nil {
-				return fmt.Errorf("unable to get agent info for log streaming: %w", err)
-			}
-
-			if len(response.Agents) == 0 || len(response.Agents[0].AgentDeployments) == 0 {
-				return fmt.Errorf("no agent deployments found")
-			}
-
-			fmt.Println("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", agentId, os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
-		}
-	}
 	return nil
 }
 
