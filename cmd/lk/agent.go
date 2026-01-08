@@ -837,7 +837,68 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 		Rows(rows...)
 
 	fmt.Println(t)
+
+	// Display events if any exist
+	hasEvents := false
+	for _, agent := range res.Agents {
+		for _, deployment := range agent.AgentDeployments {
+			if len(deployment.Events) > 0 {
+				hasEvents = true
+				break
+			}
+		}
+		if hasEvents {
+			break
+		}
+	}
+
+	if hasEvents {
+		fmt.Println()
+		fmt.Println("Recent Events (last 30 minutes):")
+		fmt.Println()
+
+		for _, agent := range res.Agents {
+			for _, deployment := range agent.AgentDeployments {
+				if len(deployment.Events) == 0 {
+					continue
+				}
+
+				fmt.Printf("Agent: %s (Version: %s, Region: %s)\n", agent.AgentId, agent.Version, deployment.Region)
+				for _, event := range deployment.Events {
+					eventTypeName := getEventString(event.Type)
+					eventTime := event.Timestamp.AsTime()
+					timeAgo := formatTimeAgo(time.Since(eventTime))
+					fmt.Printf("  x%d, last seen %s: %s\n", event.Count, timeAgo, eventTypeName)
+				}
+				fmt.Println()
+			}
+		}
+	}
+
 	return nil
+}
+
+func formatTimeAgo(d time.Duration) string {
+	minutes := int(d.Minutes())
+	if minutes < 1 {
+		return "just now"
+	}
+	return fmt.Sprintf("%dm ago", minutes)
+}
+
+// formatEventType formats the AgentEventType enum to a human-readable string
+func getEventString(eventType lkproto.AgentEventType) string {
+	switch eventType {
+	case lkproto.AgentEventType_AGENT_EVENT_TYPE_APPLICATION_CRASHED:
+		return "Agent crashed due to an uncaught exception. Please check the agent logs for more details."
+	case lkproto.AgentEventType_AGENT_EVENT_TYPE_RESTARTED_HIGH_MEMORY_USAGE:
+		return "Agent restarted due to excessive memory usage. Please check whether your agent is properly configured."
+	case lkproto.AgentEventType_AGENT_EVENT_TYPE_RESTARTED_HIGH_DISK_USAGE:
+		return "Agent was evicted due to disk usage exceeding limits. Please check disk usage and clean up unnecessary files."
+	default:
+		// Fallback to string representation if unknown
+		return strings.TrimPrefix(strings.ReplaceAll(eventType.String(), "_", " "), "AGENT EVENT TYPE ")
+	}
 }
 
 func restartAgent(ctx context.Context, cmd *cli.Command) error {
