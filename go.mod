@@ -113,7 +113,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.2.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20250922175932-f537f0880397 // indirect
-	github.com/livekit/psrpc v0.7.1-0.20251105165826-1016ad610a7e // indirect
+	github.com/livekit/psrpc v0.7.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -201,3 +201,5 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	mvdan.cc/sh/v3 v3.12.0 // indirect
 )
+
+replace github.com/livekit/protocol => ../protocol
