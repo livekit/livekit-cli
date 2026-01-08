@@ -3,14 +3,14 @@ module github.com/livekit/livekit-cli/v2
 go 1.25.0
 
 require (
-	github.com/BurntSushi/toml v1.5.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/Masterminds/semver/v3 v3.4.0
-	github.com/charmbracelet/huh v0.7.1-0.20250818142555-c41a69ba6443
-	github.com/charmbracelet/huh/spinner v0.0.0-20250818142555-c41a69ba6443
+	github.com/charmbracelet/huh v0.8.0
+	github.com/charmbracelet/huh/spinner 6f7d32faaff3
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/frostbyte73/core v0.1.1
 	github.com/go-logr/logr v1.4.3
-	github.com/go-task/task/v3 v3.44.1
+	github.com/go-task/task/v3 v3.46.4
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.43.3-0.20251127030154-5d65f30ee664
 	github.com/livekit/server-sdk-go/v2 v2.12.9-0.20251112193538-ed23dded48f9
@@ -23,13 +23,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/twitchtv/twirp v8.1.3+incompatible
-	github.com/urfave/cli/v3 v3.4.1
+	github.com/urfave/cli/v3 v3.6.1
 	go.uber.org/atomic v1.11.0
-	golang.org/x/sync v0.18.0
-	golang.org/x/time v0.12.0
-	google.golang.org/protobuf v1.36.10
+	golang.org/x/sync v0.19.0
+	golang.org/x/time v0.14.0
+	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.33.4
+	k8s.io/apimachinery v0.35.0
 )
 
 require (
