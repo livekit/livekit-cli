@@ -73,9 +73,9 @@ var (
 							Usage:    "Playback room name",
 							Required: true,
 						},
-						&cli.IntFlag{
+						&cli.StringFlag{
 							Name:     "offset",
-							Usage:    "Playback start time",
+							Usage:    "Playback start time (ex: 30s, 1m)",
 							Required: false,
 						},
 					},
@@ -90,9 +90,9 @@ var (
 							Usage:    "Playback `ID`",
 							Required: true,
 						},
-						&cli.IntFlag{
+						&cli.StringFlag{
 							Name:     "offset",
-							Usage:    "Playback start time",
+							Usage:    "Playback start time (ex: 30s, 1m)",
 							Required: true,
 						},
 					},
@@ -188,10 +188,18 @@ func playback(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	offset := cmd.String("offset")
+	var seekOffset time.Duration
+	if offset != "" {
+		seekOffset, err = time.ParseDuration(offset)
+		if err != nil {
+			return err
+		}
+	}
 	req := &replay.PlaybackRequest{
 		ReplayId:     cmd.String("id"),
 		PlaybackRoom: cmd.String("room"),
-		SeekOffset:   int64(cmd.Int("pts")),
+		SeekOffset:   seekOffset.Nanoseconds(),
 	}
 	res, err := replayClient.Playback(ctx, req)
 	if err != nil {
@@ -208,9 +216,13 @@ func seek(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	seekOffset, err := time.ParseDuration(cmd.String("offset"))
+	if err != nil {
+		return err
+	}
 	req := &replay.SeekRequest{
 		PlaybackId: cmd.String("id"),
-		SeekOffset: int64(cmd.Int("pts")),
+		SeekOffset: seekOffset.Nanoseconds(),
 	}
 	_, err = replayClient.Seek(ctx, req)
 	return err
