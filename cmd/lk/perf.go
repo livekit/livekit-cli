@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
+	"maps"
+	"os"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -106,6 +109,15 @@ var (
 							Name:  "duration",
 							Usage: "`TIME` duration to run, 1m, 1h (by default will run until canceled)",
 							Value: 0,
+						},
+						&cli.StringSliceFlag{
+							Name:  "attribute",
+							Usage: "set attributes in key=value format, can be used multiple times",
+						},
+						&cli.StringFlag{
+							Name:      "attribute-file",
+							Usage:     "read attributes from a `JSON` file",
+							TakesFile: true,
 						},
 					},
 				},
@@ -236,6 +248,33 @@ func agentLoadTest(ctx context.Context, cmd *cli.Command) error {
 	}
 	_ = raiseULimit()
 
+	participantAttributes, err := parseKeyValuePairs(cmd, "attribute")
+	if err != nil {
+		log.Printf("failed to parse participant attributes: %v", err)
+		return err
+	}
+
+	// Read attributes from JSON file if specified
+	if attrFile := cmd.String("attribute-file"); attrFile != "" {
+		fileData, err := os.ReadFile(attrFile)
+		if err != nil {
+			log.Printf("failed to read attribute file: %v", err)
+			return err
+		}
+
+		var fileAttrs map[string]string
+		if err := json.Unmarshal(fileData, &fileAttrs); err != nil {
+			log.Printf("failed to parse attribute file as JSON: %v", err)
+			return err
+		}
+
+		// Add attributes from file to the existing ones
+		if participantAttributes == nil {
+			participantAttributes = make(map[string]string)
+		}
+		maps.Copy(participantAttributes, fileAttrs)
+	}
+
 	params := loadtester.AgentLoadTestParams{
 		URL:             pc.URL,
 		APIKey:          pc.APIKey,
@@ -244,6 +283,7 @@ func agentLoadTest(ctx context.Context, cmd *cli.Command) error {
 		AgentName:       cmd.String("agent-name"),
 		EchoSpeechDelay: cmd.Duration("echo-speech-delay"),
 		Duration:        cmd.Duration("duration"),
+		ParticipantAttributes: participantAttributes,
 	}
 
 	test := loadtester.NewAgentLoadTest(params)
