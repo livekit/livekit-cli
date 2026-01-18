@@ -80,6 +80,11 @@ var (
 							Name:  "simulate-speakers",
 							Usage: "Fire random speaker events to simulate speaker changes",
 						},
+						&cli.IntFlag{
+							Name:  "video-bitrate",
+							Usage: "`BITRATE` in kbps for video publishing (overrides resolution-based bitrate, e.g., 10000 for 10Mbps)",
+							Value: 0,
+						},
 						&cli.BoolFlag{
 							Name:   "run-all",
 							Usage:  "Runs set list of load test cases",
@@ -182,6 +187,11 @@ var (
 					Name:  "simulate-speakers",
 					Usage: "Fire random speaker events to simulate speaker changes",
 				},
+				&cli.IntFlag{
+					Name:  "video-bitrate",
+					Usage: "`BITRATE` in kbps for video publishing (overrides resolution-based bitrate, e.g., 10000 for 10Mbps)",
+					Value: 0,
+				},
 				&cli.BoolFlag{
 					Name:   "run-all",
 					Usage:  "Runs set list of load test cases",
@@ -206,6 +216,7 @@ func loadTest(ctx context.Context, cmd *cli.Command) error {
 	params := loadtester.Params{
 		VideoResolution:  cmd.String("video-resolution"),
 		VideoCodec:       cmd.String("video-codec"),
+		VideoBitrate:     uint32(cmd.Int("video-bitrate")),
 		Duration:         cmd.Duration("duration"),
 		NumPerSecond:     cmd.Float("num-per-second"),
 		Simulcast:        !cmd.Bool("no-simulcast"),

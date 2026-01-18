@@ -44,9 +44,12 @@ type Params struct {
 	VideoPublishers int
 	AudioPublishers int
 	Subscribers     int
+
 	VideoResolution string
 	VideoCodec      string
-	Duration        time.Duration
+	VideoBitrate    uint32 // Custom bitrate in kbps, 0 means use resolution-based default
+
+	Duration time.Duration
 	// number of seconds to spin up per second
 	NumPerSecond     float64
 	Simulcast        bool
@@ -347,9 +350,9 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 				var video string
 				var err error
 				if params.Simulcast {
-					video, err = tester.PublishSimulcastTrack("video-simulcast", params.VideoResolution, params.VideoCodec)
+					video, err = tester.PublishSimulcastTrack("video-simulcast", params.VideoResolution, params.VideoCodec, params.VideoBitrate)
 				} else {
-					video, err = tester.PublishVideoTrack("video", params.VideoResolution, params.VideoCodec)
+					video, err = tester.PublishVideoTrack("video", params.VideoResolution, params.VideoCodec, params.VideoBitrate)
 				}
 				if err != nil {
 					errs.Store(testerParams.name, err)
