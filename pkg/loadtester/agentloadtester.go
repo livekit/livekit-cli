@@ -176,6 +176,7 @@ func (r *LoadTestRoom) start(roomName string) error {
 			APISecret:           r.params.APISecret,
 			RoomName:            roomName,
 			ParticipantIdentity: identity,
+			ParticipantAttributes: r.params.ParticipantAttributes,
 		})
 		if err == nil {
 			break

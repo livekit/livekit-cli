@@ -425,6 +425,7 @@ lk perf agent-load-test \
   --agent-name test-agent \
   --echo-speech-delay 10s \
   --duration 5m
+  --attribute key1=value1
 ```
 
 The above simulates 5 concurrent rooms, where each room has:

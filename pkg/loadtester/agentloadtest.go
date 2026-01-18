@@ -28,6 +28,7 @@ type AgentLoadTestParams struct {
 	URL             string
 	APIKey          string
 	APISecret       string
+	ParticipantAttributes map[string]string
 }
 
 type AgentLoadTest struct {
