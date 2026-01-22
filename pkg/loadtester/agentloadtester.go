@@ -188,7 +188,7 @@ func (r *LoadTestRoom) start(roomName string) error {
 		return err
 	}
 
-	meetParticipantToken, _ := newAccessToken(r.params.APIKey, r.params.APISecret, roomName, "meet-participant")
+	meetParticipantToken, _ := newAgentAccessToken(r.params.APIKey, r.params.APISecret, roomName, "meet-participant")
 	r.stats.meetLink = fmt.Sprintf("https://meet.livekit.io/custom?liveKitUrl=%s&token=%s", r.params.URL, meetParticipantToken)
 	logger.Debugw("Inspect the room in LiveKit Meet using this url", "room", roomName, "url", r.stats.meetLink)
 	r.running.Store(true)
@@ -346,7 +346,7 @@ func (t *AgentLoadTester) printStats() {
 	fmt.Println(table)
 }
 
-func newAccessToken(apiKey, apiSecret, roomName, pID string) (string, error) {
+func newAgentAccessToken(apiKey, apiSecret, roomName, pID string) (string, error) {
 	at := auth.NewAccessToken(apiKey, apiSecret)
 	grant := &auth.VideoGrant{
 		RoomJoin: true,
