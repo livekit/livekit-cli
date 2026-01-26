@@ -51,7 +51,8 @@ type LiveKitTOMLProjectConfig struct {
 }
 
 type LiveKitTOMLAgentConfig struct {
-	ID string `toml:"id"`
+	ID        string `toml:"id"`
+	AgentsURL string `toml:"agents_url,omitempty"`
 }
 
 func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {

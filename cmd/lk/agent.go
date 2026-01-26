@@ -103,6 +103,13 @@ var (
 		Hidden:   true,
 	}
 
+	agentsURLFlag = &cli.StringFlag{
+		Name:    "agents-url",
+		Usage:   "Override cloud-agents URL (bypasses automatic URL resolution)",
+		Hidden:  true,
+		Sources: cli.EnvVars("LK_AGENTS_URL"),
+	}
+
 	AgentCommands = []*cli.Command{
 		{
 			Name:    "agent",
@@ -167,6 +174,7 @@ var (
 						silentFlag,
 						regionFlag,
 						skipSDKCheckFlag,
+						agentsURLFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -186,6 +194,7 @@ var (
 							Required: false,
 							Value:    false,
 						},
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -196,6 +205,7 @@ var (
 					Action: createAgentConfig,
 					Flags: []cli.Flag{
 						idFlag(false),
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -211,6 +221,7 @@ var (
 						silentFlag,
 						ignoreEmptySecretsFlag,
 						skipSDKCheckFlag,
+						agentsURLFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -224,6 +235,7 @@ var (
 					Action: getAgentStatus,
 					Flags: []cli.Flag{
 						idFlag(false),
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -237,6 +249,7 @@ var (
 						secretsFileFlag,
 						secretsMountFlag,
 						ignoreEmptySecretsFlag,
+						agentsURLFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -250,6 +263,7 @@ var (
 					Action: restartAgent,
 					Flags: []cli.Flag{
 						idFlag(false),
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -266,6 +280,7 @@ var (
 							Required: true,
 						},
 						idFlag(false),
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -278,6 +293,7 @@ var (
 					Flags: []cli.Flag{
 						idFlag(false),
 						logTypeFlag,
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -290,6 +306,7 @@ var (
 					Flags: []cli.Flag{
 						silentFlag,
 						idFlag(false),
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -300,6 +317,7 @@ var (
 					Action: listAgentVersions,
 					Flags: []cli.Flag{
 						idFlag(false),
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -310,6 +328,7 @@ var (
 					Before: createAgentClient,
 					Flags: []cli.Flag{
 						idSliceFlag,
+						agentsURLFlag,
 					},
 				},
 				{
@@ -319,6 +338,7 @@ var (
 					Action: listAgentSecrets,
 					Flags: []cli.Flag{
 						idFlag(false),
+						agentsURLFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -339,6 +359,7 @@ var (
 							Required: false,
 							Value:    false,
 						},
+						agentsURLFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -372,9 +393,6 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		workingDir = cmd.Args().First()
 	}
 
-	// If a project has been manually selected that conflicts with the agent's config,
-	// or if the config file is malformed, this is an error. If the config does not exist,
-	// we assume it gets created later.
 	configExists, err := requireConfig(workingDir, tomlFilename)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return ctx, err
@@ -387,6 +405,16 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		if projectSubdomainMatch[1] != lkConfig.Project.Subdomain {
 			return ctx, fmt.Errorf("project does not match agent subdomain [%s]", lkConfig.Project.Subdomain)
 		}
+	}
+
+	// Priority for agents URL:
+	// 1. --agents-url flag (explicit override)
+	// 2. agents_url from livekit.toml (configured for managed deployments)
+	// 3. Default URL derived from project (handled by SDK)
+	if agentsURL := cmd.String("agents-url"); agentsURL != "" {
+		os.Setenv("LK_AGENTS_URL", agentsURL)
+	} else if configExists && lkConfig.Agent != nil && lkConfig.Agent.AgentsURL != "" {
+		os.Setenv("LK_AGENTS_URL", lkConfig.Agent.AgentsURL)
 	}
 
 	agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
@@ -508,7 +536,6 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				return err
 			}
 			var err error
-			// Recreate the client with the new project
 			agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
 			if err != nil {
 				return err
