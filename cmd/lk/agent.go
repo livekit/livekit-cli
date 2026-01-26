@@ -536,6 +536,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				return err
 			}
 			var err error
+			// Recreate the client with the new project
 			agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
 			if err != nil {
 				return err
