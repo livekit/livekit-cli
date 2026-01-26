@@ -393,6 +393,9 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		workingDir = cmd.Args().First()
 	}
 
+	// If a project has been manually selected that conflicts with the agent's config,
+	// or if the config file is malformed, this is an error. If the config does not exist,
+	// we assume it gets created later.
 	configExists, err := requireConfig(workingDir, tomlFilename)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return ctx, err
