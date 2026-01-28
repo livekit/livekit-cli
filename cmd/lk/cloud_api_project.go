@@ -40,6 +40,8 @@ func fetchProjectRouting(ctx context.Context) (*projectRoutingResponse, error) {
 		return nil, err
 	}
 
+	logger.Infow("requesting project routing", "server_url", serverURL, "project_id", project.ProjectId)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+"/cli/project-routing", nil)
 	if err != nil {
 		return nil, err
@@ -63,5 +65,6 @@ func fetchProjectRouting(ctx context.Context) (*projectRoutingResponse, error) {
 
 	payload.AgentsURL = strings.TrimSpace(payload.AgentsURL)
 	payload.Type = strings.ToLower(strings.TrimSpace(payload.Type))
+	logger.Infow("project routing response", "project_id", payload.ProjectId, "type", payload.Type, "agents_url", payload.AgentsURL)
 	return &payload, nil
 }
