@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/livekit/protocol/auth"
+	"github.com/livekit/protocol/logger"
 )
 
 type projectRoutingResponse struct {
