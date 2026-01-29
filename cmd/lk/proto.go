@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
 
@@ -69,7 +70,9 @@ func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (P, e
 	var err error
 
 	// This allows us to read JSON from either CLI arg or FS
-	if _, err = os.Stat(pathOrLiteral); err == nil {
+	if pathOrLiteral == "-" {
+		reqBytes, err = io.ReadAll(os.Stdin)
+	} else if _, err = os.Stat(pathOrLiteral); err == nil {
 		reqBytes, err = os.ReadFile(pathOrLiteral)
 	} else {
 		reqBytes = []byte(pathOrLiteral)
@@ -96,7 +99,7 @@ func RequestFlag[T any, P protoType[T]]() *cli.StringFlag {
 
 func RequestDesc[T any, _ protoType[T]]() string {
 	typ := reflect.TypeFor[T]().Name()
-	return typ + " as JSON file"
+	return typ + " as JSON file (or - for stdin)"
 }
 
 func createAndPrintFile[T any, P protoTypeValidator[T], R any](
@@ -174,6 +177,17 @@ func createAndPrintReqs[T any, P protoTypeValidator[T], R any](
 		}
 		var req P = new(T)
 		return createAndPrintReq(ctx, cmd, req, fill, create, print)
+	}
+	if args.Len() > 1 {
+		stdinCount := 0
+		for _, file := range args.Slice() {
+			if file == "-" {
+				stdinCount++
+				if stdinCount > 1 {
+					return errors.New("stdin can only be used once")
+				}
+			}
+		}
 	}
 	for _, file := range args.Slice() {
 		if err := createAndPrintFile(ctx, cmd, file, fill, create, print); err != nil {
