@@ -145,7 +145,6 @@ require (
 	github.com/pion/sdp/v3 v3.0.17 // indirect
 	github.com/pion/srtp/v3 v3.0.10 // indirect
 	github.com/pion/stun/v3 v3.1.1 // indirect
-	github.com/pion/transport/v3 v3.1.1 // indirect
 	github.com/pion/transport/v4 v4.0.1 // indirect
 	github.com/pion/turn/v4 v4.1.4 // indirect
 	github.com/pjbgf/sha1cd v0.4.0 // indirect
