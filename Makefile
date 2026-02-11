@@ -11,7 +11,8 @@ else
 endif
 
 cli: check_lfs
-	GOOS=darwin GOARCH=arm64 go build -ldflags "-w -s" -o bin/lk ./cmd/lk
+	GOOS=darwin GOARCH=arm64 go build -ldflags "-w -s" -o bin/lk-darwin-arm64 ./cmd/lk
+	GOOS=darwin GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk-darwin-amd64 ./cmd/lk
 	GOOS=linux GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk-linux ./cmd/lk
 	GOOS=windows GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk.exe ./cmd/lk
 
@@ -21,7 +22,11 @@ ifeq ($(DETECTED_OS),Windows)
 	cp bin/lk.exe $(GOBIN)/lk.exe
 	ln -sf $(GOBIN)/lk.exe $(GOBIN)/livekit-cli.exe
 else ifeq ($(DETECTED_OS),Darwin)
-	cp bin/lk $(GOBIN)/lk
+ifeq ($(shell uname -m),arm64)
+	cp bin/lk-darwin-arm64 $(GOBIN)/lk
+else
+	cp bin/lk-darwin-amd64 $(GOBIN)/lk
+endif
 	ln -sf $(GOBIN)/lk $(GOBIN)/livekit-cli
 else
 	cp bin/lk-linux $(GOBIN)/lk
