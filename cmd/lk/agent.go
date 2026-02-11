@@ -389,6 +389,13 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		}
 	}
 
+	routing, err := fetchProjectRouting(ctx)
+	if err != nil {
+		logger.Warnw("project routing lookup failed", err)
+	} else if routing != nil && routing.Type == "managed" && routing.AgentsURL != "" {
+		os.Setenv("LK_AGENTS_URL", routing.AgentsURL)
+	}
+
 	agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
 	if err != nil {
 		return ctx, err
