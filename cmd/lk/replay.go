@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
+	"time"
 
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
@@ -57,9 +59,9 @@ var (
 					},
 				},
 				{
-					Name:   "load",
+					Name:   "playback",
 					Before: createReplayClient,
-					Action: loadReplay,
+					Action: playback,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "id",
@@ -71,9 +73,9 @@ var (
 							Usage:    "Playback room name",
 							Required: true,
 						},
-						&cli.IntFlag{
+						&cli.StringFlag{
 							Name:     "offset",
-							Usage:    "Playback start time",
+							Usage:    "Playback start time (ex: 30s, 1m)",
 							Required: false,
 						},
 					},
@@ -88,9 +90,9 @@ var (
 							Usage:    "Playback `ID`",
 							Required: true,
 						},
-						&cli.IntFlag{
+						&cli.StringFlag{
 							Name:     "offset",
-							Usage:    "Playback start time",
+							Usage:    "Playback start time (ex: 30s, 1m)",
 							Required: true,
 						},
 					},
@@ -160,12 +162,19 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	slices.SortFunc(res.Replays, func(a, b *replay.ReplayInfo) int {
+		if a.StartTime < b.StartTime {
+			return 1
+		}
+		return -1
+	})
+
 	if cmd.Bool("json") {
 		util.PrintJSON(res.Replays)
 	} else {
-		table := util.CreateTable().Headers("ReplayID")
+		table := util.CreateTable().Headers("ReplayID", "RoomName", "StartTime")
 		for _, info := range res.Replays {
-			table.Row(info.ReplayId)
+			table.Row(info.ReplayId, info.RoomName, fmt.Sprint(time.Unix(0, info.StartTime)))
 		}
 		fmt.Println(table)
 	}
@@ -173,16 +182,24 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func loadReplay(ctx context.Context, cmd *cli.Command) error {
+func playback(ctx context.Context, cmd *cli.Command) error {
 	ctx, err := replayClient.withAuth(ctx)
 	if err != nil {
 		return err
 	}
 
+	offset := cmd.String("offset")
+	var seekOffset time.Duration
+	if offset != "" {
+		seekOffset, err = time.ParseDuration(offset)
+		if err != nil {
+			return err
+		}
+	}
 	req := &replay.PlaybackRequest{
 		ReplayId:     cmd.String("id"),
 		PlaybackRoom: cmd.String("room"),
-		SeekOffset:   int64(cmd.Int("pts")),
+		SeekOffset:   seekOffset.Nanoseconds(),
 	}
 	res, err := replayClient.Playback(ctx, req)
 	if err != nil {
@@ -199,9 +216,13 @@ func seek(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	seekOffset, err := time.ParseDuration(cmd.String("offset"))
+	if err != nil {
+		return err
+	}
 	req := &replay.SeekRequest{
 		PlaybackId: cmd.String("id"),
-		SeekOffset: int64(cmd.Int("pts")),
+		SeekOffset: seekOffset.Nanoseconds(),
 	}
 	_, err = replayClient.Seek(ctx, req)
 	return err

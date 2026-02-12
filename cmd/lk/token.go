@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"time"
 
@@ -97,6 +98,15 @@ var (
 						&cli.StringFlag{
 							Name:  "metadata",
 							Usage: "`JSON` metadata to encode in the token, will be passed to participant",
+						},
+						&cli.StringSliceFlag{
+							Name:  "attribute",
+							Usage: "set attributes in key=value format, can be used multiple times",
+						},
+						&cli.StringFlag{
+							Name:      "attribute-file",
+							Usage:     "read attributes from a `JSON` file",
+							TakesFile: true,
 						},
 						&cli.StringFlag{
 							Name:  "valid-for",
@@ -183,6 +193,15 @@ var (
 					Name:  "metadata",
 					Usage: "`JSON` metadata to encode in the token, will be passed to participant",
 				},
+				&cli.StringSliceFlag{
+					Name:  "attribute",
+					Usage: "set attributes in key=value format, can be used multiple times",
+				},
+				&cli.StringFlag{
+					Name:      "attribute-file",
+					Usage:     "read attributes from a `JSON` file",
+					TakesFile: true,
+				},
 				&cli.StringFlag{
 					Name:  "valid-for",
 					Usage: "Amount of `TIME` that the token is valid for. i.e. \"5m\", \"1h10m\" (s: seconds, m: minutes, h: hours)",
@@ -202,6 +221,29 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	metadata := c.String("metadata")
 	validFor := c.String("valid-for")
 	roomPreset := c.String("room-preset")
+	participantAttributes, err := parseKeyValuePairs(c, "attribute")
+	if err != nil {
+		return fmt.Errorf("failed to parse participant attributes: %w", err)
+	}
+
+	if attrFile := c.String("attribute-file"); attrFile != "" {
+		fileData, err := os.ReadFile(attrFile)
+		if err != nil {
+			return fmt.Errorf("failed to read attribute file: %w", err)
+		}
+
+		var fileAttrs map[string]string
+		if err := json.Unmarshal(fileData, &fileAttrs); err != nil {
+			return fmt.Errorf("failed to parse attribute file as JSON: %w", err)
+		}
+
+		if participantAttributes == nil {
+			participantAttributes = make(map[string]string)
+		}
+		for key, value := range fileAttrs {
+			participantAttributes[key] = value
+		}
+	}
 
 	// required only for join, will be generated if not provided
 	participant := c.String("identity")
@@ -323,7 +365,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		}
 	}
 
-	_, err := requireProjectWithOpts(ctx, c, ignoreURL)
+	_, err = requireProjectWithOpts(ctx, c, ignoreURL)
 	if err != nil {
 		return err
 	}
@@ -345,6 +387,9 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 	if metadata != "" {
 		at.SetMetadata(metadata)
+	}
+	if len(participantAttributes) != 0 {
+		at.SetAttributes(participantAttributes)
 	}
 	if roomPreset != "" {
 		at.SetRoomPreset(roomPreset)
