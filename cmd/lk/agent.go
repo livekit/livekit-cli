@@ -364,7 +364,6 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 
 func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
 	var err error
-	fmt.Printf("creating agent client")
 
 	if _, err := requireProjectWithOpts(ctx, cmd, opts...); err != nil {
 		return ctx, err
