@@ -18,6 +18,9 @@ var privateLinkCommands = &cli.Command{
 		{
 			Name:   "create",
 			Usage:  "Create a private link",
+			Description: "Creates a private link to a customer endpoint.\n\n" +
+				"Currently expects an AWS VPC Endpoint Service Name for --endpoint.\n" +
+				"Example: com.amazonaws.vpce.us-east-1.vpce-svc-123123a1c43abc123",
 			Before: createAgentClient,
 			Action: createPrivateLink,
 			Flags: []cli.Flag{
@@ -37,8 +40,8 @@ var privateLinkCommands = &cli.Command{
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "aws-endpoint",
-					Usage:    "AWS VPC endpoint service name",
+					Name:     "endpoint",
+					Usage:    "Customer-provided endpoint identifier",
 					Required: true,
 				},
 				jsonFlag,
@@ -141,7 +144,7 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("aws-endpoint"))
+	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"))
 	resp, err := agentsClient.CreatePrivateLink(ctx, req)
 	if err != nil {
 		return formatPrivateLinkClientError("create", err)
@@ -265,4 +268,3 @@ func getPrivateLinkHealthStatus(ctx context.Context, cmd *cli.Command) error {
 	fmt.Println(table)
 	return nil
 }
-
