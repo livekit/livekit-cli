@@ -345,6 +345,7 @@ var (
 					DisableSliceFlagSeparator: true,
 					ArgsUsage:                 "[working-dir]",
 				},
+				privateLinkCommands,
 			},
 		},
 	}
