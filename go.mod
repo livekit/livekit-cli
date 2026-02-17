@@ -7,7 +7,8 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/charmbracelet/huh v0.7.1-0.20250818142555-c41a69ba6443
 	github.com/charmbracelet/huh/spinner v0.0.0-20250818142555-c41a69ba6443
-	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
+	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta.3
 	github.com/frostbyte73/core v0.1.1
 	github.com/go-logr/logr v1.4.3
 	github.com/go-task/task/v3 v3.44.1
@@ -16,6 +17,7 @@ require (
 	github.com/livekit/server-sdk-go/v2 v2.13.4-0.20260212013907-8b9f855080d8
 	github.com/moby/patternmatcher v0.6.0
 	github.com/pelletier/go-toml v1.9.5
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/pion/rtcp v1.2.16
 	github.com/pion/rtp v1.10.0
 	github.com/pion/webrtc/v4 v4.2.3
@@ -53,7 +55,7 @@ require (
 	github.com/chainguard-dev/git-urls v1.0.2 // indirect
 	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7 // indirect
 	github.com/charmbracelet/bubbletea v1.3.6 // indirect
-	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
+	github.com/charmbracelet/colorprofile v0.3.1 // indirect
 	github.com/charmbracelet/x/ansi v0.9.3 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/exp/strings v0.0.0-20240809174237-9ab0ca04ce0c // indirect
