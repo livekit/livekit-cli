@@ -30,6 +30,12 @@ builds:
     goos:
       - linux
       - windows
+      - darwin
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: windows
+        goarch: arm
     ldflags:
       - -s -w
 archives:
