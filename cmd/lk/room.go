@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/pion/webrtc/v4"
 	"github.com/urfave/cli/v3"
@@ -198,6 +199,15 @@ var (
 						&cli.StringFlag{
 							Name:  "metadata",
 							Usage: "`JSON` metadata which will be passed to participant",
+						},
+						&cli.BoolFlag{
+							Name:  "stats",
+							Usage: "Periodically log publisher WebRTC GetStats as one JSON object per line to stderr",
+						},
+						&cli.FloatFlag{
+							Name:  "stats-interval",
+							Usage: "Seconds between stats logs when --stats is set",
+							Value: 5.0,
 						},
 					},
 				},
@@ -1058,6 +1068,30 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		if err = publishPacket(&livekit.SipDTMF{Digit: dtmf}); err != nil {
 			return err
 		}
+	}
+
+	if cmd.Bool("stats") {
+		interval := cmd.Float("stats-interval")
+		if interval <= 0 {
+			interval = 5.0
+		}
+		ticker := time.NewTicker(time.Duration(interval * float64(time.Second)))
+		go func() {
+			defer ticker.Stop()
+			for {
+				select {
+				case <-done:
+					return
+				case <-ticker.C:
+					pc := room.LocalParticipant.GetPublisherPeerConnection()
+					if pc == nil {
+						continue
+					}
+					report := pc.GetStats()
+					logger.Infow("stats", "stats", report)
+				}
+			}
+		}()
 	}
 
 	if cmd.IsSet("open") {
