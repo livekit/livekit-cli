@@ -1085,7 +1085,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Name","Regions", "Version", "Deployed At").
+		Headers("ID", "Name", "Regions", "Version", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
