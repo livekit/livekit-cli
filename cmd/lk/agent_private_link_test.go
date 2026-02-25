@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -62,7 +62,7 @@ func TestPrivateLinkServiceDNS(t *testing.T) {
 }
 
 func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
-	rows := buildPrivateLinkListRows([]*lkproto.PrivateLink{}, map[string]*lkproto.PrivateLinkHealthStatus{}, map[string]error{})
+	rows := buildPrivateLinkListRows([]*lkproto.PrivateLink{}, map[string]*lkproto.PrivateLinkStatus{}, map[string]error{})
 	assert.Empty(t, rows)
 }
 
@@ -77,9 +77,9 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 	}
 
 	now := time.Now().UTC()
-	healthByID := map[string]*lkproto.PrivateLinkHealthStatus{
+	healthByID := map[string]*lkproto.PrivateLinkStatus{
 		"pl-1": {
-			Status:    lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY,
+			Status:    lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
 			UpdatedAt: timestamppb.New(now),
 		},
 	}
@@ -90,7 +90,7 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 	assert.Equal(t, "orders-db", rows[0][1])
 	assert.Equal(t, "us-east-1", rows[0][2])
 	assert.Equal(t, "6379", rows[0][3])
-	assert.Equal(t, lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY.String(), rows[0][4])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][4])
 }
 
 func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) {
@@ -109,12 +109,12 @@ func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) 
 		},
 	}
 
-	healthByID := map[string]*lkproto.PrivateLinkHealthStatus{
+	healthByID := map[string]*lkproto.PrivateLinkStatus{
 		"pl-1": {
-			Status: lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY,
+			Status: lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
 		},
 		"pl-2": {
-			Status: lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_UNHEALTHY,
+			Status: lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
 		},
 	}
 
@@ -123,8 +123,6 @@ func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) 
 
 	assert.Equal(t, "us-east-1", rows[0][2])
 	assert.Equal(t, "eu-west-1", rows[1][2])
-	assert.Equal(t, lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY.String(), rows[0][4])
-	assert.Equal(t, lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_UNHEALTHY.String(), rows[1][4])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][4])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[1][4])
 }
-
-
