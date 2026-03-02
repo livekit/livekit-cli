@@ -429,7 +429,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 
 	fmt.Println("Token grants:")
-	util.PrintJSON(grant)
+	util.PrintJSON(at.GetGrants())
 	fmt.Println()
 	if project.URL != "" {
 		fmt.Println("Project URL:", project.URL)
