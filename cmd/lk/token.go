@@ -39,7 +39,8 @@ const (
 	usageAdmin    = "Ability to moderate a room (requires --room)"
 	usageEgress   = "Ability to interact with Egress services"
 	usageIngress  = "Ability to interact with Ingress services"
-	usageMetadata = "Ability to update their own name and metadata"
+	usageMetadata  = "Ability to update their own name and metadata"
+	usageInference = "Ability to perform inference (AI endpoints)"
 )
 
 var (
@@ -81,6 +82,10 @@ var (
 						&cli.BoolFlag{
 							Name:  "ingress",
 							Usage: usageIngress,
+						},
+						&cli.BoolFlag{
+							Name:  "inference",
+							Usage: usageInference,
 						},
 						&cli.BoolFlag{
 							Name:  "allow-update-metadata",
@@ -287,6 +292,10 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		grant.IngressAdmin = true
 		hasPerms = true
 	}
+	inferenceGrant := c.Bool("inference")
+	if inferenceGrant {
+		hasPerms = true
+	}
 	if c.IsSet("allow-source") {
 		sourcesStr := c.StringSlice("allow-source")
 		sources := make([]livekit.TrackSource, 0, len(sourcesStr))
@@ -329,6 +338,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 			pAdmin
 			pEgress
 			pIngress
+			pInference
 			pMetadata
 		)
 
@@ -343,6 +353,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 					huh.NewOption("Admin", pAdmin),
 					huh.NewOption("Egress", pEgress),
 					huh.NewOption("Ingress", pIngress),
+					huh.NewOption("Inference", pInference),
 					huh.NewOption("Update metadata", pMetadata),
 				).
 				Title("Token Permissions").
@@ -362,6 +373,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 				grant.RoomRecord = true
 			}
 			grant.SetCanUpdateOwnMetadata(slices.Contains(permissions, pMetadata))
+			inferenceGrant = slices.Contains(permissions, pInference)
 		}
 	}
 
@@ -371,6 +383,10 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 
 	at := accessToken(project.APIKey, project.APISecret, grant, participant)
+
+	if inferenceGrant {
+		at.SetInferenceGrant(&auth.InferenceGrant{Perform: true})
+	}
 
 	if grant.RoomJoin {
 		if agent := c.String("agent"); agent != "" {
@@ -413,7 +429,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 
 	fmt.Println("Token grants:")
-	util.PrintJSON(grant)
+	util.PrintJSON(at.GetGrants())
 	fmt.Println()
 	if project.URL != "" {
 		fmt.Println("Project URL:", project.URL)
