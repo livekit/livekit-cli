@@ -14,7 +14,6 @@
 
 name: Release
 
-# on events
 on:
   push:
     tags:
@@ -23,17 +22,14 @@ on:
 permissions:
   contents: write
 
-# workflow tasks
 jobs:
-  release:
-    name: Release
+  create-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Git LFS
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           lfs: 'true'
-      
+
       - name: Verify version.go matches tag
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
@@ -47,7 +43,7 @@ jobs:
             exit 1
           fi
           echo "✓ Versions match: $CODE_VERSION"
-      
+
       - name: Verify server-sdk-go version
         run: |
           livekit_cli_ver=${GITHUB_REF#refs/tags/}
@@ -65,29 +61,202 @@ jobs:
           fi
           echo "versions match ($livekit_cli_major_minor)"
 
-      - run: git lfs pull
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release create "$TAG" --draft --generate-notes --title "$TAG"
 
-      - name: Fetch all tags
-        run: git fetch --force --tags
-
-      - uses: actions/cache@v5
+  build:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            suffix: darwin_arm64
+          - os: ubuntu-latest
+            suffix: linux_amd64
+            zig_target: x86_64-linux-gnu.2.28
+            alsa_arch: amd64
+            alsa_triple: x86_64-linux-gnu
+          - os: ubuntu-latest
+            suffix: linux_arm64
+            zig_target: aarch64-linux-gnu.2.28
+            alsa_arch: arm64
+            alsa_triple: aarch64-linux-gnu
+            goarch: arm64
+          - os: ubuntu-latest
+            suffix: linux_arm
+            zig_target: arm-linux-gnueabihf.2.28
+            alsa_arch: armhf
+            alsa_triple: arm-linux-gnueabihf
+            goarch: arm
+            goarm: "7"
+          - os: ubuntu-latest
+            suffix: windows_amd64
+            zig_target: x86_64-windows-gnu
+            goos: windows
+            goarch: amd64
+          - os: ubuntu-latest
+            suffix: windows_arm64
+            zig_target: aarch64-windows-gnu
+            goos: windows
+            goarch: arm64
+          - os: ubuntu-latest
+            suffix: windows_arm
+            goos: windows
+            goarch: arm
+            goarm: "7"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
         with:
-          path: |
-            ~/go/pkg/mod
-            ~/go/bin
-            ~/.cache
-          key: livekit-cli
+          lfs: 'true'
+          submodules: true
+
+      - run: git lfs pull
 
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: "1.25"
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+      - name: Install Zig
+        if: matrix.zig_target
+        uses: mlugg/setup-zig@v2
         with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
+          version: 0.14.1
+
+      - name: Install ALSA headers
+        if: matrix.alsa_arch
+        run: |
+          sudo dpkg --add-architecture ${{ matrix.alsa_arch }}
+          if [ "${{ matrix.alsa_arch }}" != "amd64" ]; then
+            CODENAME=$(lsb_release -cs)
+            # Restrict existing sources to amd64 to avoid 404s for foreign arch
+            for f in /etc/apt/sources.list.d/*.sources; do
+              grep -q '^Architectures:' "$f" || sudo sed -i '/^Types:/a Architectures: amd64 i386' "$f"
+            done
+            # Add ports.ubuntu.com for the foreign architecture
+            printf 'Types: deb\nURIs: http://ports.ubuntu.com/ubuntu-ports\nSuites: %s %s-updates\nComponents: main universe\nArchitectures: %s\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n' \
+              "$CODENAME" "$CODENAME" "${{ matrix.alsa_arch }}" | sudo tee /etc/apt/sources.list.d/ports.sources
+          fi
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev:${{ matrix.alsa_arch }}
+
+      - name: Generate Windows import libraries
+        if: matrix.goos == 'windows' && matrix.zig_target
+        run: |
+          ZIG_LIB=$(zig env | jq -r '.lib_dir')
+          echo "ZIG_LIB=${ZIG_LIB}" >> "$GITHUB_ENV"
+          LIB_DIR="${ZIG_LIB}/libc/mingw/lib-common"
+          # Zig bundles MinGW .def files but lld needs .a import libraries.
+          # Go's compiled objects embed COFF /DEFAULTLIB directives (e.g. dbghelp,
+          # bcrypt) that lld resolves directly, bypassing Zig's lazy .def→.a
+          # generation. Pre-generate all import libraries so lld can find them.
+          MACHINE=${{ matrix.goarch == 'amd64' && 'i386:x86-64' || 'arm64' }}
+          for def in "${LIB_DIR}"/*.def; do
+            lib=$(basename "$def" .def)
+            [ -f "${LIB_DIR}/lib${lib}.a" ] && continue
+            zig dlltool -d "$def" -l "${LIB_DIR}/lib${lib}.a" -m "$MACHINE" 2>/dev/null || true
+          done
+
+      - name: Build
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CGO_ENABLED: ${{ (matrix.goos && !matrix.zig_target) && '0' || '1' }}
+          CC: ${{ matrix.zig_target && format('zig cc -target {0}', matrix.zig_target) || '' }}
+          CXX: ${{ matrix.zig_target && format('zig c++ -target {0}', matrix.zig_target) || '' }}
+          # Zig uses its own sysroot; point it at the system ALSA headers and libraries
+          CGO_CFLAGS: ${{ matrix.alsa_triple && format('-isystem /usr/include -isystem /usr/include/{0}', matrix.alsa_triple) || '' }}
+          CGO_LDFLAGS: ${{ matrix.alsa_triple && format('-L/usr/lib/{0}', matrix.alsa_triple) || '' }}
+          # -fms-extensions: enable __try/__except (SEH) used by WebRTC
+          # -DNTDDI_VERSION: target Windows 10 base to skip WinRT includes absent from MinGW
+          CGO_CXXFLAGS: ${{ matrix.goos == 'windows' && '-fms-extensions -DNTDDI_VERSION=0x0A000000' || '' }}
+          GOOS: ${{ matrix.goos || '' }}
+          GOARCH: ${{ matrix.goarch || '' }}
+          GOARM: ${{ matrix.goarm || '' }}
+        shell: bash
+        run: |
+          EXT=""; if [ "${GOOS:-}" = "windows" ]; then EXT=".exe"; fi
+          TAGS=""
+          if [ "$CGO_ENABLED" = "1" ]; then TAGS="-tags console"; fi
+          # Force external linking for Windows so Go uses zig cc (CC) as the linker,
+          # and add Zig's MinGW lib path so lld can find the generated import libraries.
+          EXTLD=""
+          if [ "${GOOS:-}" = "windows" ] && [ "$CGO_ENABLED" = "1" ]; then
+            EXTLD="-linkmode=external -extldflags '-L${ZIG_LIB}/libc/mingw/lib-common'"
+          fi
+          go build $TAGS -ldflags "-w -s $EXTLD" -o "dist/lk${EXT}" ./cmd/lk
+
+      - name: Package and upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          NAME="lk_${VERSION}_${{ matrix.suffix }}"
+          cp LICENSE dist/
+          cp -r autocomplete dist/
+          if [[ "${{ matrix.suffix }}" == windows_* ]]; then
+            cd dist && zip -r "../${NAME}.zip" lk.exe LICENSE autocomplete && cd ..
+            gh release upload "$TAG" "${NAME}.zip" --clobber
+          else
+            tar -czf "${NAME}.tar.gz" -C dist lk LICENSE autocomplete
+            gh release upload "$TAG" "${NAME}.tar.gz" --clobber
+          fi
+
+  checksums:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          gh release download "$TAG" -R livekit/livekit-cli -D artifacts
+          cd artifacts
+          sha256sum * > ../checksums.txt
+          cd ..
+          gh release upload "$TAG" checksums.txt --clobber -R livekit/livekit-cli
+
+  update-homebrew:
+    needs: checksums
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Update Homebrew formula
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+
+          # Download checksums
+          gh release download "$TAG" -R livekit/livekit-cli -p checksums.txt -D .
+          get_sha() { grep "$1" checksums.txt | awk '{print $1}'; }
+
+          # Fill in the formula template
+          sed \
+            -e "s/VERSION/${VERSION}/g" \
+            -e "s/SHA256_DARWIN_ARM64/$(get_sha darwin_arm64)/g" \
+            -e "s/SHA256_LINUX_AMD64/$(get_sha linux_amd64)/g" \
+            -e "s/SHA256_LINUX_ARM64/$(get_sha linux_arm64)/g" \
+            -e "s/SHA256_LINUX_ARM/$(get_sha linux_arm.tar)/g" \
+            Formula/lk.rb > lk.rb
+
+          # Push to homebrew tap
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/livekit/homebrew-livekit.git" tap
+          mkdir -p tap/Formula
+          cp lk.rb tap/Formula/lk.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/lk.rb
+          git commit -m "lk ${VERSION}"
+          git push
