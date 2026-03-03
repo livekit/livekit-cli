@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -61,6 +62,16 @@ Typical workflow:
        lk docs code-search "class AgentSession" --repo livekit/agents
 
 All output is rendered as markdown.`,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:   "server-url",
+					Hidden: true,
+				},
+				&cli.StringFlag{
+					Name:   "vercel-header",
+					Hidden: true,
+				},
+			},
 			Commands: []*cli.Command{
 				{
 					Name:  "overview",
@@ -240,7 +251,7 @@ Examples:
 // ---------------------------------------------------------------------------
 
 func docsOverview(ctx context.Context, cmd *cli.Command) error {
-	return callDocsToolAndPrint(ctx, "get_docs_overview", map[string]any{})
+	return callDocsToolAndPrint(ctx, cmd, "get_docs_overview", map[string]any{})
 }
 
 func docsSearch(ctx context.Context, cmd *cli.Command) error {
@@ -262,7 +273,7 @@ func docsSearch(ctx context.Context, cmd *cli.Command) error {
 		args["hitsPerPage"] = hpp
 	}
 
-	return callDocsToolAndPrint(ctx, "docs_search", args)
+	return callDocsToolAndPrint(ctx, cmd, "docs_search", args)
 }
 
 func docsGetPage(ctx context.Context, cmd *cli.Command) error {
@@ -270,7 +281,7 @@ func docsGetPage(ctx context.Context, cmd *cli.Command) error {
 		return cli.ShowSubcommandHelp(cmd)
 	}
 
-	return callDocsToolAndPrint(ctx, "get_pages", map[string]any{
+	return callDocsToolAndPrint(ctx, cmd, "get_pages", map[string]any{
 		"paths": cmd.Args().Slice(),
 	})
 }
@@ -301,7 +312,7 @@ func docsCodeSearch(ctx context.Context, cmd *cli.Command) error {
 		args["returnFullFile"] = true
 	}
 
-	return callDocsToolAndPrint(ctx, "code_search", args)
+	return callDocsToolAndPrint(ctx, cmd, "code_search", args)
 }
 
 func docsChangelog(ctx context.Context, cmd *cli.Command) error {
@@ -320,11 +331,11 @@ func docsChangelog(ctx context.Context, cmd *cli.Command) error {
 		args["skip"] = s
 	}
 
-	return callDocsToolAndPrint(ctx, "get_changelog", args)
+	return callDocsToolAndPrint(ctx, cmd, "get_changelog", args)
 }
 
 func docsListSDKs(ctx context.Context, cmd *cli.Command) error {
-	return callDocsResourceAndPrint(ctx, "livekit://sdks")
+	return callDocsResourceAndPrint(ctx, cmd, "livekit://sdks")
 }
 
 func docsSubmitFeedback(ctx context.Context, cmd *cli.Command) error {
@@ -349,15 +360,15 @@ func docsSubmitFeedback(ctx context.Context, cmd *cli.Command) error {
 		args["model"] = model
 	}
 
-	return callDocsToolAndPrint(ctx, "submit_docs_feedback", args)
+	return callDocsToolAndPrint(ctx, cmd, "submit_docs_feedback", args)
 }
 
 // ---------------------------------------------------------------------------
 // Helpers for calling the MCP server and printing results
 // ---------------------------------------------------------------------------
 
-func callDocsToolAndPrint(ctx context.Context, tool string, args map[string]any) error {
-	session, err := initDocsSession(ctx)
+func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, args map[string]any) error {
+	session, err := initDocsSession(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -390,8 +401,8 @@ func callDocsToolAndPrint(ctx context.Context, tool string, args map[string]any)
 	return nil
 }
 
-func callDocsResourceAndPrint(ctx context.Context, uri string) error {
-	session, err := initDocsSession(ctx)
+func callDocsResourceAndPrint(ctx context.Context, cmd *cli.Command, uri string) error {
+	session, err := initDocsSession(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -425,20 +436,48 @@ func callDocsResourceAndPrint(ctx context.Context, uri string) error {
 	return nil
 }
 
-func initDocsSession(ctx context.Context) (*mcp.ClientSession, error) {
+func initDocsSession(ctx context.Context, cmd *cli.Command) (*mcp.ClientSession, error) {
+	endpoint := defaultDocsServerURL
+	if u := cmd.String("server-url"); u != "" {
+		endpoint = u
+	}
+
+	transport := &mcp.StreamableClientTransport{
+		Endpoint: endpoint,
+	}
+	if v := cmd.String("vercel-header"); v != "" {
+		transport.HTTPClient = &http.Client{
+			Transport: &headerTransport{
+				base:    http.DefaultTransport,
+				headers: map[string]string{"x-vercel-protection-bypass": v},
+			},
+		}
+	}
+
 	client := mcp.NewClient(
 		&mcp.Implementation{Name: "lk", Version: livekitcli.Version},
 		nil,
 	)
-	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{
-		Endpoint: defaultDocsServerURL,
-	}, nil)
+	session, err := client.Connect(ctx, transport, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to the LiveKit docs server: %w", err)
 	}
 
 	checkServerVersion(session)
 	return session, nil
+}
+
+// headerTransport wraps an http.RoundTripper and injects extra headers.
+type headerTransport struct {
+	base    http.RoundTripper
+	headers map[string]string
+}
+
+func (t *headerTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	for k, v := range t.headers {
+		req.Header.Set(k, v)
+	}
+	return t.base.RoundTrip(req)
 }
 
 // checkServerVersion prints a warning to stderr if the docs MCP server
