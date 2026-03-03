@@ -23,6 +23,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -33,6 +34,11 @@ import (
 )
 
 const defaultDocsServerURL = "https://docs.livekit.io/mcp/"
+
+// docsRequestTimeout is the maximum time allowed for a complete docs MCP
+// request (connect + call + response). This prevents the CLI from hanging
+// indefinitely if the server is unresponsive.
+const docsRequestTimeout = 30 * time.Second
 
 // expectedServerVersion is the major.minor version of the LiveKit docs MCP
 // server that this CLI was built against. If the server reports a newer
@@ -107,8 +113,7 @@ directly (via "lk docs overview"), not a replacement.`,
 						},
 						&cli.IntFlag{
 							Name:  "hits-per-page",
-							Usage: "Results per page (1-50)",
-							Value: 10,
+							Usage: "Results per page (1-50, default 20)",
 						},
 					},
 				},
@@ -369,6 +374,9 @@ func docsSubmitFeedback(ctx context.Context, cmd *cli.Command) error {
 // ---------------------------------------------------------------------------
 
 func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, args map[string]any) error {
+	ctx, cancel := context.WithTimeout(ctx, docsRequestTimeout)
+	defer cancel()
+
 	session, err := initDocsSession(ctx, cmd)
 	if err != nil {
 		return err
@@ -409,6 +417,9 @@ func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, ar
 }
 
 func callDocsResourceAndPrint(ctx context.Context, cmd *cli.Command, uri string) error {
+	ctx, cancel := context.WithTimeout(ctx, docsRequestTimeout)
+	defer cancel()
+
 	session, err := initDocsSession(ctx, cmd)
 	if err != nil {
 		return err
