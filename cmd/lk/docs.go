@@ -1,4 +1,4 @@
-// Copyright 2024 LiveKit, Inc.
+// Copyright 2026 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,17 +15,14 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
-	"sync/atomic"
 
+	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/urfave/cli/v3"
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
@@ -215,6 +212,14 @@ Examples:
 							Aliases: []string{"f"},
 							Usage:   "Feedback text (max 1024 characters)",
 						},
+						&cli.StringFlag{
+							Name:  "agent",
+							Usage: "Identity of the agent submitting feedback (e.g. \"Cursor\", \"Claude Code\")",
+						},
+						&cli.StringFlag{
+							Name:  "model",
+							Usage: "Model `ID` used by the agent (e.g. \"gpt-5\", \"claude-4.5-sonnet\")",
+						},
 					},
 				},
 			},
@@ -329,6 +334,12 @@ func docsSubmitFeedback(ctx context.Context, cmd *cli.Command) error {
 	if page := cmd.String("page"); page != "" {
 		args["page"] = page
 	}
+	if agent := cmd.String("agent"); agent != "" {
+		args["agent"] = agent
+	}
+	if model := cmd.String("model"); model != "" {
+		args["model"] = model
+	}
 
 	return callDocsToolAndPrint(ctx, "submit_docs_feedback", args)
 }
@@ -338,34 +349,49 @@ func docsSubmitFeedback(ctx context.Context, cmd *cli.Command) error {
 // ---------------------------------------------------------------------------
 
 func callDocsToolAndPrint(ctx context.Context, tool string, args map[string]any) error {
-	client, err := initDocsClient(ctx)
+	session, err := initDocsSession(ctx)
 	if err != nil {
 		return err
 	}
+	defer session.Close()
 
-	result, err := client.callTool(ctx, tool, args)
+	result, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name:      tool,
+		Arguments: args,
+	})
 	if err != nil {
 		if isNotFoundErr(err) {
 			return fmt.Errorf("%w\n\nhint: the docs server does not recognize the %q tool — try updating your lk CLI to the latest version", err, tool)
 		}
 		return err
 	}
+	if result.IsError {
+		for _, c := range result.Content {
+			if tc, ok := c.(*mcp.TextContent); ok {
+				return fmt.Errorf("tool error: %s", tc.Text)
+			}
+		}
+		return fmt.Errorf("tool returned an error")
+	}
 
 	for _, c := range result.Content {
-		if c.Type == "text" {
-			fmt.Println(c.Text)
+		if tc, ok := c.(*mcp.TextContent); ok {
+			fmt.Println(tc.Text)
 		}
 	}
 	return nil
 }
 
 func callDocsResourceAndPrint(ctx context.Context, uri string) error {
-	client, err := initDocsClient(ctx)
+	session, err := initDocsSession(ctx)
 	if err != nil {
 		return err
 	}
+	defer session.Close()
 
-	result, err := client.readResource(ctx, uri)
+	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{
+		URI: uri,
+	})
 	if err != nil {
 		if isNotFoundErr(err) {
 			return fmt.Errorf("%w\n\nhint: the docs server does not recognize the %q resource — try updating your lk CLI to the latest version", err, uri)
@@ -391,279 +417,40 @@ func callDocsResourceAndPrint(ctx context.Context, uri string) error {
 	return nil
 }
 
-func initDocsClient(ctx context.Context) (*mcpClient, error) {
-	client := newMCPClient(defaultDocsServerURL)
-	if err := client.initialize(ctx); err != nil {
+func initDocsSession(ctx context.Context) (*mcp.ClientSession, error) {
+	client := mcp.NewClient(
+		&mcp.Implementation{Name: "lk", Version: livekitcli.Version},
+		nil,
+	)
+	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{
+		Endpoint: defaultDocsServerURL,
+	}, nil)
+	if err != nil {
 		return nil, fmt.Errorf("could not connect to the LiveKit docs server: %w", err)
 	}
-	return client, nil
+	return session, nil
 }
 
 // ---------------------------------------------------------------------------
 // Error handling
 // ---------------------------------------------------------------------------
 
-// mcpResponseError represents a JSON-RPC error response from the MCP server.
-type mcpResponseError struct {
-	Code    int
-	Message string
-}
-
-func (e *mcpResponseError) Error() string {
-	return fmt.Sprintf("MCP error %d: %s", e.Code, e.Message)
-}
-
 // isNotFoundErr returns true if the error indicates the server does not
 // recognize the requested tool, resource, or method.
 func isNotFoundErr(err error) bool {
-	var rpcErr *mcpResponseError
+	var rpcErr *jsonrpc.Error
 	if !errors.As(err, &rpcErr) {
 		return false
 	}
 	switch rpcErr.Code {
-	case -32601: // Method not found
+	case jsonrpc.CodeMethodNotFound: // -32601
 		return true
-	case -32602: // Invalid params — may indicate unknown tool
+	case mcp.CodeResourceNotFound: // -32002
+		return true
+	case jsonrpc.CodeInvalidParams: // -32602 — may indicate unknown tool
 		lower := strings.ToLower(rpcErr.Message)
 		return strings.Contains(lower, "not found") || strings.Contains(lower, "unknown")
 	default:
 		return false
 	}
-}
-
-// ---------------------------------------------------------------------------
-// Minimal MCP streamable HTTP client
-// ---------------------------------------------------------------------------
-
-type mcpClient struct {
-	endpoint   string
-	sessionID  string
-	httpClient *http.Client
-	nextID     atomic.Int64
-}
-
-func newMCPClient(endpoint string) *mcpClient {
-	return &mcpClient{
-		endpoint:   endpoint,
-		httpClient: &http.Client{},
-	}
-}
-
-func (c *mcpClient) initialize(ctx context.Context) error {
-	_, err := c.sendRequest(ctx, "initialize", map[string]any{
-		"protocolVersion": "2024-11-05",
-		"clientInfo": map[string]string{
-			"name":    "lk",
-			"version": livekitcli.Version,
-		},
-		"capabilities": map[string]any{},
-	})
-	if err != nil {
-		return err
-	}
-
-	return c.sendNotification(ctx, "notifications/initialized")
-}
-
-// -- Tool calling ----------------------------------------------------------
-
-type mcpToolResult struct {
-	Content []mcpContent `json:"content"`
-	IsError bool         `json:"isError,omitempty"`
-}
-
-type mcpContent struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-}
-
-func (c *mcpClient) callTool(ctx context.Context, name string, args map[string]any) (*mcpToolResult, error) {
-	raw, err := c.sendRequest(ctx, "tools/call", map[string]any{
-		"name":      name,
-		"arguments": args,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var result mcpToolResult
-	if err := json.Unmarshal(raw, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse tool result: %w", err)
-	}
-	if result.IsError {
-		var msg string
-		for _, c := range result.Content {
-			if c.Type == "text" {
-				msg = c.Text
-				break
-			}
-		}
-		return nil, fmt.Errorf("tool error: %s", msg)
-	}
-	return &result, nil
-}
-
-// -- Resource reading ------------------------------------------------------
-
-type mcpResourceResult struct {
-	Contents []mcpResourceContent `json:"contents"`
-}
-
-type mcpResourceContent struct {
-	URI      string `json:"uri"`
-	Text     string `json:"text,omitempty"`
-	MimeType string `json:"mimeType,omitempty"`
-}
-
-func (c *mcpClient) readResource(ctx context.Context, uri string) (*mcpResourceResult, error) {
-	raw, err := c.sendRequest(ctx, "resources/read", map[string]any{
-		"uri": uri,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var result mcpResourceResult
-	if err := json.Unmarshal(raw, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse resource result: %w", err)
-	}
-	return &result, nil
-}
-
-// -- Transport -------------------------------------------------------------
-
-// sendNotification sends a JSON-RPC notification (no ID, no response expected).
-func (c *mcpClient) sendNotification(ctx context.Context, method string) error {
-	body, err := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
-		"method":  method,
-	})
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", c.endpoint, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	c.setHeaders(req)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("MCP notification failed with status %d", resp.StatusCode)
-	}
-	return nil
-}
-
-// sendRequest sends a JSON-RPC request and returns the result field.
-func (c *mcpClient) sendRequest(ctx context.Context, method string, params any) (json.RawMessage, error) {
-	id := c.nextID.Add(1)
-
-	body, err := json.Marshal(map[string]any{
-		"jsonrpc": "2.0",
-		"id":      id,
-		"method":  method,
-		"params":  params,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", c.endpoint, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	c.setHeaders(req)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if sid := resp.Header.Get("Mcp-Session-Id"); sid != "" {
-		c.sessionID = sid
-	}
-
-	ct := resp.Header.Get("Content-Type")
-	if strings.HasPrefix(ct, "text/event-stream") {
-		return c.readSSE(resp.Body)
-	}
-
-	return c.readJSON(resp.Body)
-}
-
-func (c *mcpClient) setHeaders(req *http.Request) {
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "text/event-stream, application/json")
-	if c.sessionID != "" {
-		req.Header.Set("Mcp-Session-Id", c.sessionID)
-	}
-}
-
-type jsonRPCResponse struct {
-	JSONRPC string          `json:"jsonrpc"`
-	ID      any             `json:"id,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
-	Error   *jsonRPCError   `json:"error,omitempty"`
-}
-
-type jsonRPCError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
-func (c *mcpClient) readJSON(r io.Reader) (json.RawMessage, error) {
-	var resp jsonRPCResponse
-	if err := json.NewDecoder(r).Decode(&resp); err != nil {
-		return nil, fmt.Errorf("failed to decode MCP response: %w", err)
-	}
-	if resp.Error != nil {
-		return nil, &mcpResponseError{Code: resp.Error.Code, Message: resp.Error.Message}
-	}
-	return resp.Result, nil
-}
-
-func (c *mcpClient) readSSE(r io.Reader) (json.RawMessage, error) {
-	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024) // up to 10 MB
-
-	var dataLines []string
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		switch {
-		case strings.HasPrefix(line, "data: "):
-			dataLines = append(dataLines, line[6:])
-		case strings.HasPrefix(line, "data:"):
-			dataLines = append(dataLines, line[5:])
-		case line == "" && len(dataLines) > 0:
-			data := strings.Join(dataLines, "\n")
-			dataLines = dataLines[:0]
-
-			var resp jsonRPCResponse
-			if err := json.Unmarshal([]byte(data), &resp); err != nil {
-				continue
-			}
-			// Skip notifications (no ID)
-			if resp.ID == nil {
-				continue
-			}
-			if resp.Error != nil {
-				return nil, &mcpResponseError{Code: resp.Error.Code, Message: resp.Error.Message}
-			}
-			return resp.Result, nil
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading MCP stream: %w", err)
-	}
-
-	return nil, fmt.Errorf("no response received from MCP server")
 }
