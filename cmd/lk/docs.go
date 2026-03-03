@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
@@ -29,6 +31,12 @@ import (
 )
 
 const defaultDocsServerURL = "https://docs.livekit.io/mcp/"
+
+// expectedServerVersion is the major.minor version of the LiveKit docs MCP
+// server that this CLI was built against. If the server reports a newer
+// major or minor version, a warning is printed to stderr suggesting the
+// user update their CLI.
+var expectedServerVersion = [2]int{1, 2}
 
 var (
 	DocsCommands = []*cli.Command{
@@ -428,7 +436,46 @@ func initDocsSession(ctx context.Context) (*mcp.ClientSession, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to the LiveKit docs server: %w", err)
 	}
+
+	checkServerVersion(session)
 	return session, nil
+}
+
+// checkServerVersion prints a warning to stderr if the docs MCP server
+// reports a newer major or minor version than what this CLI expects.
+func checkServerVersion(session *mcp.ClientSession) {
+	info := session.InitializeResult()
+	if info == nil || info.ServerInfo == nil || info.ServerInfo.Version == "" {
+		return
+	}
+
+	major, minor, ok := parseMajorMinor(info.ServerInfo.Version)
+	if !ok {
+		return
+	}
+	if major > expectedServerVersion[0] || (major == expectedServerVersion[0] && minor > expectedServerVersion[1]) {
+		fmt.Fprintf(os.Stderr,
+			"warning: the LiveKit docs server is version %s but this CLI was built for %d.%d.x — consider updating lk to the latest version\n\n",
+			info.ServerInfo.Version, expectedServerVersion[0], expectedServerVersion[1],
+		)
+	}
+}
+
+// parseMajorMinor extracts the first two numeric components from a semver string.
+func parseMajorMinor(version string) (major, minor int, ok bool) {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) < 2 {
+		return 0, 0, false
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, false
+	}
+	minor, err = strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, false
+	}
+	return major, minor, true
 }
 
 // ---------------------------------------------------------------------------
