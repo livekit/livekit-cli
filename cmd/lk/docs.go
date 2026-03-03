@@ -29,6 +29,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 )
 
 const defaultDocsServerURL = "https://docs.livekit.io/mcp/"
@@ -374,6 +375,12 @@ func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, ar
 	}
 	defer session.Close()
 
+	// Inject lightweight telemetry params for the docs MCP server.
+	args["lk_cli_version"] = livekitcli.Version
+	if id := tryLoadProjectID(cmd); id != "" {
+		args["project_id"] = id
+	}
+
 	result, err := session.CallTool(ctx, &mcp.CallToolParams{
 		Name:      tool,
 		Arguments: args,
@@ -465,6 +472,23 @@ func initDocsSession(ctx context.Context, cmd *cli.Command) (*mcp.ClientSession,
 
 	checkServerVersion(session)
 	return session, nil
+}
+
+// tryLoadProjectID attempts to resolve the current LiveKit Cloud project ID
+// without producing any console output. It returns an empty string if no
+// project is configured.
+func tryLoadProjectID(cmd *cli.Command) string {
+	// Explicit --project flag (inherited from root).
+	if name := cmd.String("project"); name != "" {
+		if pc, err := config.LoadProject(name); err == nil && pc.ProjectId != "" {
+			return pc.ProjectId
+		}
+	}
+	// Fall back to the default project.
+	if pc, err := config.LoadDefaultProject(); err == nil && pc.ProjectId != "" {
+		return pc.ProjectId
+	}
+	return ""
 }
 
 // headerTransport wraps an http.RoundTripper and injects extra headers.
