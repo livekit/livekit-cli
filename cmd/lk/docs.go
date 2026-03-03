@@ -70,6 +70,11 @@ Typical workflow:
 
 All output is rendered as markdown.`,
 			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:    "json",
+					Aliases: []string{"j"},
+					Usage:   "Output as JSON instead of markdown",
+				},
 				&cli.StringFlag{
 					Name:   "server-url",
 					Hidden: true,
@@ -387,6 +392,9 @@ func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, ar
 	args["lk_cli_version"] = livekitcli.Version
 	if id := tryLoadProjectID(cmd); id != "" {
 		args["project_id"] = id
+	}
+	if cmd.Bool("json") {
+		args["format"] = "json"
 	}
 
 	result, err := session.CallTool(ctx, &mcp.CallToolParams{
