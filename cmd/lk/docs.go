@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -44,7 +43,7 @@ const docsRequestTimeout = 30 * time.Second
 // server that this CLI was built against. If the server reports a newer
 // major or minor version, a warning is printed to stderr suggesting the
 // user update their CLI.
-var expectedServerVersion = [2]int{1, 2}
+var expectedServerVersion = [2]int{1, 3}
 
 var (
 	DocsCommands = []*cli.Command{
@@ -346,7 +345,7 @@ func docsChangelog(ctx context.Context, cmd *cli.Command) error {
 }
 
 func docsListSDKs(ctx context.Context, cmd *cli.Command) error {
-	return callDocsResourceAndPrint(ctx, cmd, "livekit://sdks")
+	return callDocsToolAndPrint(ctx, cmd, "get_sdks", map[string]any{})
 }
 
 func docsSubmitFeedback(ctx context.Context, cmd *cli.Command) error {
@@ -420,44 +419,6 @@ func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, ar
 		if tc, ok := c.(*mcp.TextContent); ok {
 			fmt.Println(tc.Text)
 		}
-	}
-	return nil
-}
-
-func callDocsResourceAndPrint(ctx context.Context, cmd *cli.Command, uri string) error {
-	ctx, cancel := context.WithTimeout(ctx, docsRequestTimeout)
-	defer cancel()
-
-	session, err := initDocsSession(ctx, cmd)
-	if err != nil {
-		return err
-	}
-	defer session.Close()
-
-	result, err := session.ReadResource(ctx, &mcp.ReadResourceParams{
-		URI: uri,
-	})
-	if err != nil {
-		if isNotFoundErr(err) {
-			return fmt.Errorf("%w\n\nhint: the docs server does not recognize the %q resource — try updating your lk CLI to the latest version", err, uri)
-		}
-		return err
-	}
-
-	for _, c := range result.Contents {
-		if c.Text == "" {
-			continue
-		}
-		text := c.Text
-		// The server may return the text as a JSON-encoded string;
-		// attempt to decode it so that newlines render properly.
-		if strings.HasPrefix(text, "\"") {
-			var decoded string
-			if err := json.Unmarshal([]byte(text), &decoded); err == nil {
-				text = decoded
-			}
-		}
-		fmt.Println(text)
 	}
 	return nil
 }
