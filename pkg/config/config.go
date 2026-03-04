@@ -77,7 +77,7 @@ func LoadProjectBySubdomain(subdomain string) (*ProjectConfig, error) {
 		}
 	}
 
-	return nil, errors.New("project not found")
+	return nil, ProjectNotFoundError(conf.Projects)
 }
 
 func LoadProject(name string) (*ProjectConfig, error) {
@@ -92,7 +92,18 @@ func LoadProject(name string) (*ProjectConfig, error) {
 		}
 	}
 
-	return nil, errors.New("project not found")
+	return nil, ProjectNotFoundError(conf.Projects)
+}
+
+func ProjectNotFoundError(projects []ProjectConfig) error {
+	if len(projects) == 0 {
+		return errors.New("project not found. No projects configured, use `lk cloud auth` or `lk project add` to add a new project")
+	}
+	names := make([]string, len(projects))
+	for i, p := range projects {
+		names[i] = p.Name
+	}
+	return fmt.Errorf("project not found. Available projects: %s", strings.Join(names, ", "))
 }
 
 // LoadOrCreate loads config file from ~/.livekit/cli-config.yaml

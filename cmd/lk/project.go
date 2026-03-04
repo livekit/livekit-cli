@@ -307,5 +307,5 @@ func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	return errors.New("project not found")
+	return config.ProjectNotFoundError(cliConfig.Projects)
 }
