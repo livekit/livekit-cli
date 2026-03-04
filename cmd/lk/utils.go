@@ -24,6 +24,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/joho/godotenv"
+	"github.com/mattn/go-isatty"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
@@ -133,6 +134,11 @@ var (
 			Name:     "verbose",
 			Required: false,
 		},
+		&cli.BoolFlag{
+			Name:    "yes",
+			Aliases: []string{"y"},
+			Usage:   "Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)",
+		},
 		&cli.StringFlag{
 			Name:        "server-url",
 			Value:       cloudAPIServerURL,
@@ -147,6 +153,12 @@ var (
 		},
 	}
 )
+
+// SkipPrompts returns true when the CLI should not prompt (e.g. --yes or non-interactive terminal).
+// When true, confirmations are treated as accepted; selects/inputs should use a default or return an error.
+func SkipPrompts(cmd *cli.Command) bool {
+	return cmd.Bool("yes") || !isatty.IsTerminal(os.Stdin.Fd())
+}
 
 func optional[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
 	newFlag := *flag
@@ -336,7 +348,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	dp, err := config.LoadDefaultProject()
 	if err == nil {
 		if p.confirmProject {
-			if dp != nil && len(cliConfig.Projects) > 1 && !c.Bool("silent") {
+			if dp != nil && len(cliConfig.Projects) > 1 && !c.Bool("silent") && !SkipPrompts(c) {
 				useDefault := true
 				if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
 					Title(fmt.Sprintf("Use project [%s] (%s) to create agent?", dp.Name, dp.URL)).
@@ -356,7 +368,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 				}
 			}
 		} else {
-			if !c.Bool("silent") {
+			if !c.Bool("silent") && !SkipPrompts(c) {
 				fmt.Println("Using default project [" + util.Theme.Focused.Title.Render(dp.Name) + "]")
 				logDetails(c, dp)
 			}

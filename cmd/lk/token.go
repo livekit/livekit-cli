@@ -329,6 +329,9 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 
 	if !hasPerms {
+		if SkipPrompts(c) {
+			return errors.New("non-interactive mode: specify permissions via flags (e.g. --create, --join, --admin)")
+		}
 		type permission uint
 
 		const (
