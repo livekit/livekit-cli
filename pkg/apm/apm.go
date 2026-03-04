@@ -132,6 +132,41 @@ func (a *APM) StreamDelayMs() int {
 	return int(C.apm_stream_delay_ms(a.handle))
 }
 
+// Stats holds AEC statistics from the WebRTC APM.
+type Stats struct {
+	EchoReturnLoss            float64 // ERL in dB (higher = more echo removed)
+	EchoReturnLossEnhancement float64 // ERLE in dB (higher = better cancellation)
+	DivergentFilterFraction   float64 // 0-1, fraction of time filter is divergent
+	DelayMs                   int     // Estimated echo path delay
+	ResidualEchoLikelihood    float64 // 0-1, likelihood of residual echo
+	HasERL                    bool
+	HasERLE                   bool
+	HasDelay                  bool
+	HasResidualEcho           bool
+	HasDivergent              bool
+}
+
+// GetStats returns the current AEC statistics.
+func (a *APM) GetStats() Stats {
+	if a.handle == nil {
+		return Stats{}
+	}
+	var cs C.ApmStats
+	C.apm_get_stats(a.handle, &cs)
+	return Stats{
+		EchoReturnLoss:            float64(cs.echo_return_loss),
+		EchoReturnLossEnhancement: float64(cs.echo_return_loss_enhancement),
+		DivergentFilterFraction:   float64(cs.divergent_filter_fraction),
+		DelayMs:                   int(cs.delay_ms),
+		ResidualEchoLikelihood:    float64(cs.residual_echo_likelihood),
+		HasERL:                    cs.has_erl != 0,
+		HasERLE:                   cs.has_erle != 0,
+		HasDelay:                  cs.has_delay != 0,
+		HasResidualEcho:           cs.has_residual_echo != 0,
+		HasDivergent:              cs.has_divergent != 0,
+	}
+}
+
 func (a *APM) Close() {
 	if a.handle != nil {
 		C.apm_destroy(a.handle)
