@@ -301,27 +301,30 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		if arg != "" {
 			appName = arg
 		} else {
-			if SkipPrompts(cmd) {
-				return errors.New("non-interactive mode: provide app name as argument")
-			}
-			preinstallPrompts = append(preinstallPrompts, huh.NewInput().
-				Title("Application Name").
-				Placeholder("my-app").
-				Value(&appName).
-				Validate(func(s string) error {
-					if len(s) < 2 {
-						return errors.New("name is too short")
-					}
-					if !appNameRegex.MatchString(s) {
-						return errors.New("try a simpler name")
-					}
-					if s, _ := os.Stat(s); s != nil {
-						return errors.New("that name is in use")
-					}
-					return nil
-				}).
-				WithTheme(util.Theme))
+			appName = project.Name
 		}
+	}
+	if appName == "" {
+		if SkipPrompts(cmd) {
+			return errors.New("non-interactive mode: provide app name as argument")
+		}
+		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
+			Title("Application Name").
+			Placeholder("my-app").
+			Value(&appName).
+			Validate(func(s string) error {
+				if len(s) < 2 {
+					return errors.New("name is too short")
+				}
+				if !appNameRegex.MatchString(s) {
+					return errors.New("try a simpler name")
+				}
+				if s, _ := os.Stat(s); s != nil {
+					return errors.New("that name is in use")
+				}
+				return nil
+			}).
+			WithTheme(util.Theme))
 	}
 
 	if len(preinstallPrompts) > 0 {

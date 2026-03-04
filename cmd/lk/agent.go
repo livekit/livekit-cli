@@ -432,8 +432,8 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 
 	logger.Debugw("Initializing agent project", "working-dir", workingDir)
 
-	// Create sandbox
-	if !cmd.Bool("no-sandbox") || sandboxID == "" {
+	// Create sandbox only when not disabled by flag and we don't already have one
+	if !cmd.Bool("no-sandbox") && sandboxID == "" {
 		if err := util.Await("Creating sandbox app...", ctx, func(ctx context.Context) error {
 			token, err := requireToken(ctx, cmd)
 			if err != nil {
@@ -735,23 +735,14 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	var req *lkproto.DeployAgentRequest
-
 	agentId, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
 
-	req = &lkproto.DeployAgentRequest{
-		AgentId: agentId,
-	}
-
 	secrets, err := requireSecrets(ctx, cmd, false, true)
 	if err != nil {
 		return err
-	}
-	if len(secrets) > 0 {
-		req.Secrets = secrets
 	}
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
