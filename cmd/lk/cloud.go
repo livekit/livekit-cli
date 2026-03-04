@@ -252,6 +252,10 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	if SkipPrompts(cmd) {
+		return errors.New("run `lk cloud auth` in an interactive terminal, add project credentials manually, or set required credentials via command line arguments or environment variables")
+	}
+
 	// get devicename
 	if err := huh.NewForm(huh.NewGroup(huh.NewInput().
 		Title("What is the name of this device?").

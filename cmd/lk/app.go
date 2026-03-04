@@ -147,6 +147,14 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 	var err error
 
 	if cliConfig != nil && len(cliConfig.Projects) > 0 {
+		if SkipPrompts(cmd) {
+			if len(cliConfig.Projects) == 1 {
+				project = &cliConfig.Projects[0]
+				fmt.Println("Using project [" + util.Accented(project.Name) + "]")
+				return ctx, nil
+			}
+			return nil, fmt.Errorf("multiple projects configured; set --project in non-interactive mode")
+		}
 		var options []huh.Option[*config.ProjectConfig]
 		for _, p := range cliConfig.Projects {
 			options = append(options, huh.NewOption(p.Name+" "+util.Dimmed(util.ExtractSubdomain(p.URL)), &p))
@@ -163,6 +171,9 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 		}
 		fmt.Println("Using project [" + util.Accented(project.Name) + "]")
 	} else {
+		if SkipPrompts(cmd) {
+			return nil, fmt.Errorf("no projects configured; run `lk cloud auth` in an interactive terminal or set --project")
+		}
 		shouldAuth := true
 		if err = huh.NewForm(huh.NewGroup(huh.NewConfirm().
 			Title("No local projects found. Authenticate one?").
@@ -221,6 +232,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 
 	if templateName != "" && templateURL != "" {
 		return errors.New("only one of template or template-url can be specified")
+	}
+
+	if SkipPrompts(cmd) && templateName == "" && templateURL == "" {
+		return errors.New("non-interactive mode: set --template or --template-url")
 	}
 
 	if isSandbox {
@@ -286,6 +301,9 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		if arg != "" {
 			appName = arg
 		} else {
+			if SkipPrompts(cmd) {
+				return errors.New("non-interactive mode: provide app name as argument")
+			}
 			preinstallPrompts = append(preinstallPrompts, huh.NewInput().
 				Title("Application Name").
 				Placeholder("my-app").
@@ -438,18 +456,25 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 		maps.Copy(env, *addlEnv)
 	}
 
-	prompt := func(key, oldValue string) (string, error) {
-		var newValue string
-		if err := huh.NewInput().
-			EchoMode(huh.EchoModePassword).
-			Title("Enter " + key + "?").
-			Placeholder(oldValue).
-			Value(&newValue).
-			WithTheme(util.Theme).
-			Run(); err != nil || newValue == "" {
-			return oldValue, err
+	var prompt func(string, string) (string, error)
+	if SkipPrompts(cmd) {
+		prompt = func(key, oldValue string) (string, error) {
+			return oldValue, nil
 		}
-		return newValue, nil
+	} else {
+		prompt = func(key, oldValue string) (string, error) {
+			var newValue string
+			if err := huh.NewInput().
+				EchoMode(huh.EchoModePassword).
+				Title("Enter " + key + "?").
+				Placeholder(oldValue).
+				Value(&newValue).
+				WithTheme(util.Theme).
+				Run(); err != nil || newValue == "" {
+				return oldValue, err
+			}
+			return newValue, nil
+		}
 	}
 
 	return bootstrap.InstantiateDotEnv(ctx, rootPath, exampleFile, env, cmd.Bool("verbose"), prompt)
@@ -537,6 +562,9 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 
 	taskName := cmd.Args().First()
 	if taskName == "" {
+		if SkipPrompts(cmd) {
+			return fmt.Errorf("non-interactive mode: provide task name as argument")
+		}
 		tasks, err := exe.GetTaskList()
 		if err != nil {
 			return err

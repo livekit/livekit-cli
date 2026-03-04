@@ -130,6 +130,34 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
+	if SkipPrompts(cmd) {
+		p.Name = cmd.Args().Get(0)
+		p.URL = cmd.String("url")
+		p.APIKey = cmd.String("api-key")
+		p.APISecret = cmd.String("api-secret")
+		if p.Name == "" || p.URL == "" || p.APIKey == "" || p.APISecret == "" {
+			return errors.New("non-interactive mode: provide project name as argument and --url, --api-key, --api-secret")
+		}
+		if err = validateName(p.Name); err != nil {
+			return err
+		}
+		if _, err := url.Parse(p.URL); err != nil {
+			return err
+		}
+		if len(p.APIKey) < 3 || len(p.APISecret) < 3 {
+			return errors.New("api-key and api-secret must be at least 3 characters")
+		}
+		if cmd.Bool("default") || defaultProject == nil {
+			cliConfig.DefaultProject = p.Name
+		}
+		cliConfig.Projects = append(cliConfig.Projects, p)
+		if err = cliConfig.PersistIfNeeded(); err != nil {
+			return err
+		}
+		listProjects(ctx, cmd)
+		return nil
+	}
+
 	if p.Name = cmd.Args().Get(0); p.Name != "" {
 		if err = validateName(p.Name); err != nil {
 			return err

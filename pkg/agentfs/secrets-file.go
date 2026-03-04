@@ -15,6 +15,7 @@
 package agentfs
 
 import (
+	"errors"
 	"os"
 
 	"github.com/charmbracelet/huh"
@@ -40,7 +41,7 @@ func ParseEnvFile(file string) (map[string]string, error) {
 	return godotenv.Parse(f)
 }
 
-func DetectEnvFile(maybeFile string) (string, map[string]string, error) {
+func DetectEnvFile(maybeFile string, skipPrompts bool) (string, map[string]string, error) {
 	if maybeFile != "" {
 		env, err := ParseEnvFile(maybeFile)
 		return maybeFile, env, err
@@ -55,6 +56,15 @@ func DetectEnvFile(maybeFile string) (string, map[string]string, error) {
 
 	if len(extantEnvFiles) == 0 {
 		return "", nil, nil
+	}
+
+	if skipPrompts {
+		if len(extantEnvFiles) > 1 {
+			return "", nil, errors.New("multiple env files found; set --secrets-file in non-interactive mode")
+		}
+		selectedFile := extantEnvFiles[0]
+		env, err := ParseEnvFile(selectedFile)
+		return selectedFile, env, err
 	}
 
 	var selectedFile string = extantEnvFiles[0]
