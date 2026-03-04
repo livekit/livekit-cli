@@ -9,15 +9,10 @@ import (
 	"io"
 	"net"
 	"sync"
-	"time"
-)
 
-// Message types for the TCP protocol.
-const (
-	MsgCapture byte = 0x01 // capture audio (CLI → Agent)
-	MsgRender  byte = 0x02 // render audio  (Agent → CLI)
-	MsgConfig  byte = 0x03 // config (bidirectional)
-	MsgEOF     byte = 0x04 // graceful shutdown
+	"google.golang.org/protobuf/proto"
+
+	agent "github.com/livekit/protocol/livekit/agent"
 )
 
 type TCPServer struct {
@@ -64,6 +59,13 @@ func (s *TCPServer) Accept() (net.Conn, error) {
 	return conn, nil
 }
 
+// Conn returns the accepted connection, or nil if none.
+func (s *TCPServer) Conn() net.Conn {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.conn
+}
+
 func (s *TCPServer) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -78,69 +80,47 @@ func (s *TCPServer) Close() error {
 	return errors.Join(errs...)
 }
 
-// WriteMessage sends a framed message: [1 byte type][4 bytes BE length][payload].
-func WriteMessage(w io.Writer, msgType byte, payload []byte) error {
-	header := [5]byte{msgType}
-	binary.BigEndian.PutUint32(header[1:], uint32(len(payload)))
-	if _, err := w.Write(header[:]); err != nil {
-		return err
+// WriteSessionMessage sends a protobuf-framed message: [4 bytes BE length][proto bytes].
+// Uses a single write call to avoid split TCP segments.
+func WriteSessionMessage(w io.Writer, msg *agent.SessionMessage) error {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("console tcp: marshal: %w", err)
 	}
-	if len(payload) > 0 {
-		_, err := w.Write(payload)
-		return err
-	}
-	return nil
+
+	// Combine header + payload into a single write
+	buf := make([]byte, 4+len(data))
+	binary.BigEndian.PutUint32(buf[:4], uint32(len(data)))
+	copy(buf[4:], data)
+	_, err = w.Write(buf)
+	return err
 }
 
-// ReadMessage reads a framed message. Returns (type, payload, error).
-// Sets a read deadline to detect stale connections.
-func ReadMessage(r io.Reader) (byte, []byte, error) {
-	if conn, ok := r.(net.Conn); ok {
-		conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-	}
-
-	var header [5]byte
+// ReadSessionMessage reads a protobuf-framed message: [4 bytes BE length][proto bytes].
+// Blocks until a complete message is available.
+func ReadSessionMessage(r io.Reader) (*agent.SessionMessage, error) {
+	var header [4]byte
 	if _, err := io.ReadFull(r, header[:]); err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
-	msgType := header[0]
-	length := binary.BigEndian.Uint32(header[1:])
+	length := binary.BigEndian.Uint32(header[:])
 
 	if length > 1<<20 { // 1MB sanity limit
-		return 0, nil, fmt.Errorf("console tcp: message too large: %d bytes", length)
+		return nil, fmt.Errorf("console tcp: message too large: %d bytes", length)
 	}
 
-	if length == 0 {
-		return msgType, nil, nil
+	data := make([]byte, length)
+	if length > 0 {
+		if _, err := io.ReadFull(r, data); err != nil {
+			return nil, fmt.Errorf("console tcp: partial message: %w", err)
+		}
 	}
 
-	// Reset deadline for payload read
-	if conn, ok := r.(net.Conn); ok {
-		conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	msg := &agent.SessionMessage{}
+	if err := proto.Unmarshal(data, msg); err != nil {
+		return nil, fmt.Errorf("console tcp: unmarshal: %w", err)
 	}
-
-	payload := make([]byte, length)
-	if _, err := io.ReadFull(r, payload); err != nil {
-		return 0, nil, fmt.Errorf("console tcp: partial message: %w", err)
-	}
-
-	return msgType, payload, nil
+	return msg, nil
 }
 
-func SamplesToBytes(samples []int16) []byte {
-	buf := make([]byte, len(samples)*2)
-	for i, s := range samples {
-		binary.LittleEndian.PutUint16(buf[i*2:], uint16(s))
-	}
-	return buf
-}
-
-func BytesToSamples(data []byte) []int16 {
-	n := len(data) / 2
-	samples := make([]int16, n)
-	for i := range samples {
-		samples[i] = int16(binary.LittleEndian.Uint16(data[i*2:]))
-	}
-	return samples
-}

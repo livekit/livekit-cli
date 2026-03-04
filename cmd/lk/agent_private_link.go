@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
@@ -87,11 +86,9 @@ var privateLinkCommands = &cli.Command{
 	},
 }
 
-func buildCreatePrivateLinkRequest(name, region string, port uint32, awsEndpoint string) *lkproto.CreatePrivateLinkRequest {
+func buildCreatePrivateLinkRequest(name, awsEndpoint string) *lkproto.CreatePrivateLinkRequest {
 	return &lkproto.CreatePrivateLinkRequest{
-		Name:   name,
-		Region: region,
-		Port:   port,
+		Name: name,
 		Config: &lkproto.CreatePrivateLinkRequest_Aws{
 			Aws: &lkproto.CreatePrivateLinkRequest_AWSCreateConfig{
 				Endpoint: awsEndpoint,
@@ -104,14 +101,14 @@ func privateLinkServiceDNS(name, projectID string) string {
 	return fmt.Sprintf("%s-%s.plg.svc", name, projectID)
 }
 
-func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {
+func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkHealthStatus, healthErrByID map[string]error) [][]string {
 	var rows [][]string
 	for _, link := range links {
 		if link == nil {
 			continue
 		}
 
-		status := lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN.String()
+		status := lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_UNKNOWN.String()
 		updatedAt := "-"
 
 		if err, ok := healthErrByID[link.PrivateLinkId]; ok && err != nil {
@@ -127,8 +124,6 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 		rows = append(rows, []string{
 			link.PrivateLinkId,
 			link.Name,
-			link.Region,
-			strconv.FormatUint(uint64(link.Port), 10),
 			status,
 			updatedAt,
 		})
@@ -144,7 +139,7 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"))
+	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("endpoint"))
 	resp, err := agentsClient.CreatePrivateLink(ctx, req)
 	if err != nil {
 		return formatPrivateLinkClientError("create", err)
@@ -173,13 +168,13 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 		return formatPrivateLinkClientError("list", err)
 	}
 
-	healthByID := make(map[string]*lkproto.PrivateLinkStatus, len(resp.Items))
+	healthByID := make(map[string]*lkproto.PrivateLinkHealthStatus, len(resp.Items))
 	healthErrByID := make(map[string]error)
 	for _, link := range resp.Items {
 		if link == nil || link.PrivateLinkId == "" {
 			continue
 		}
-		health, healthErr := agentsClient.GetPrivateLinkStatus(ctx, &lkproto.GetPrivateLinkStatusRequest{
+		health, healthErr := agentsClient.GetPrivateLinkHealthStatus(ctx, &lkproto.GetPrivateLinkHealthStatusRequest{
 			PrivateLinkId: link.PrivateLinkId,
 		})
 		if healthErr != nil {
@@ -193,9 +188,9 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 
 	if cmd.Bool("json") {
 		type privateLinkWithHealth struct {
-			PrivateLink *lkproto.PrivateLink       `json:"private_link"`
-			Status      *lkproto.PrivateLinkStatus `json:"health"`
-			HealthError string                     `json:"health_error,omitempty"`
+			PrivateLink *lkproto.PrivateLink             `json:"private_link"`
+			Status      *lkproto.PrivateLinkHealthStatus `json:"health"`
+			HealthError string                           `json:"health_error,omitempty"`
 		}
 		items := make([]privateLinkWithHealth, 0, len(resp.Items))
 		for _, link := range resp.Items {
@@ -221,7 +216,7 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	rows := buildPrivateLinkListRows(resp.Items, healthByID, healthErrByID)
-	table := util.CreateTable().Headers("ID", "Name", "Region", "Port", "Health", "Updated At").Rows(rows...)
+	table := util.CreateTable().Headers("ID", "Name", "Health", "Updated At").Rows(rows...)
 	fmt.Println(table)
 	return nil
 }
@@ -245,7 +240,7 @@ func deletePrivateLink(ctx context.Context, cmd *cli.Command) error {
 
 func getPrivateLinkHealthStatus(ctx context.Context, cmd *cli.Command) error {
 	privateLinkID := cmd.String("id")
-	resp, err := agentsClient.GetPrivateLinkStatus(ctx, &lkproto.GetPrivateLinkStatusRequest{
+	resp, err := agentsClient.GetPrivateLinkHealthStatus(ctx, &lkproto.GetPrivateLinkHealthStatusRequest{
 		PrivateLinkId: privateLinkID,
 	})
 	if err != nil {
