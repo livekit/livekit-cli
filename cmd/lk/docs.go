@@ -388,9 +388,9 @@ func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, ar
 	defer session.Close()
 
 	// Inject lightweight telemetry params for the docs MCP server.
-	args["lk_cli_version"] = livekitcli.Version
+	args["lkCliVersion"] = livekitcli.Version
 	if id := tryLoadProjectID(cmd); id != "" {
-		args["project_id"] = id
+		args["projectId"] = id
 	}
 	if cmd.Bool("json") {
 		args["format"] = "json"
