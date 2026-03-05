@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/charmbracelet/huh v0.7.1-0.20250818142555-c41a69ba6443
 	github.com/charmbracelet/huh/spinner v0.0.0-20250818142555-c41a69ba6443
-	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
+	github.com/charmbracelet/lipgloss/v2 v2.0.0
 	github.com/frostbyte73/core v0.1.1
 	github.com/go-logr/logr v1.4.3
 	github.com/go-task/task/v3 v3.44.1
@@ -17,7 +17,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/moby/patternmatcher v0.6.0
 	github.com/modelcontextprotocol/go-sdk v1.4.0
-	github.com/pelletier/go-toml v1.9.5
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/pion/rtcp v1.2.16
 	github.com/pion/rtp v1.10.1
 	github.com/pion/webrtc/v4 v4.2.9
