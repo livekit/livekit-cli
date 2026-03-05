@@ -437,6 +437,50 @@ The above simulates 5 concurrent rooms, where each room has:
 Once the specified duration is over (or if the load test is manually stopped), the load test statistics will be displayed in the form of a table.
 
 
+## Browsing documentation
+
+The CLI includes a built-in `lk docs` command that lets you search and browse the LiveKit documentation directly from the terminal. It's powered by the [LiveKit docs MCP server](https://docs.livekit.io/mcp) using the official [MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk).
+
+```shell
+# Get a complete overview of the docs site
+lk docs overview
+
+# Search the docs
+lk docs search "voice agents"
+
+# Fetch a specific page as markdown
+lk docs get-page /agents/start/voice-ai-quickstart
+
+# Search code across LiveKit GitHub repos
+lk docs code-search "class AgentSession" --repo livekit/agents
+
+# Get recent releases for an SDK
+lk docs changelog pypi:livekit-agents
+
+# List all LiveKit SDKs
+lk docs list-sdks
+
+# Submit feedback on the docs
+lk docs submit-feedback --page /agents/build/tools "Missing info about error handling"
+```
+
+Run `lk docs --help` for full details on each subcommand.
+
+### Development options
+
+For development against staging or preview deployments of the docs MCP server, two hidden flags are available on the `lk docs` command:
+
+-   `--server-url URL`: Override the MCP server endpoint (default: `https://docs.livekit.io/mcp/`)
+-   `--vercel-header VALUE`: Set the `x-vercel-protection-bypass` header, required for accessing private Vercel preview deployments
+
+```shell
+# Use a staging server
+lk docs --server-url https://docs-staging.example.com/mcp/ search "agents"
+
+# Access a private Vercel preview deploy
+lk docs --server-url https://docs-abc123.vercel.app/mcp/ --vercel-header <token> overview
+```
+
 ## Additional notes
 
 ### Parameter precedence
