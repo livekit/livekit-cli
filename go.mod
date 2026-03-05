@@ -13,7 +13,7 @@ require (
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.45.0
-	github.com/livekit/server-sdk-go/v2 v2.14.0
+	github.com/livekit/server-sdk-go/v2 v2.15.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/moby/patternmatcher v0.6.0
 	github.com/modelcontextprotocol/go-sdk v1.4.0
