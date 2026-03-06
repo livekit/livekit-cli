@@ -36,13 +36,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version: "1.26"
 
       - name: Download Go modules
         run: go mod download
 
       - name: Static Check
-        uses: dominikh/staticcheck-action@v1.4.0
+        uses: dominikh/staticcheck-action@v1.4.1
         with:
           version: "latest"
           install-go: false
