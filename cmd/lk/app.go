@@ -150,7 +150,7 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 		if SkipPrompts(cmd) {
 			if len(cliConfig.Projects) == 1 {
 				project = &cliConfig.Projects[0]
-				fmt.Println("Using project [" + util.Accented(project.Name) + "]")
+				fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
 				return ctx, nil
 			}
 			return nil, fmt.Errorf("multiple projects configured; set --project in non-interactive mode")
@@ -169,7 +169,7 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 			Run(); err != nil {
 			return nil, fmt.Errorf("no project selected: %w", err)
 		}
-		fmt.Println("Using project [" + util.Accented(project.Name) + "]")
+		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
 	} else {
 		if SkipPrompts(cmd) {
 			return nil, fmt.Errorf("no projects configured; run `lk cloud auth` in an interactive terminal or set --project")
