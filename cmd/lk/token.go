@@ -33,17 +33,22 @@ import (
 )
 
 const (
-	usageCreate   = "Ability to create or delete rooms"
-	usageList     = "Ability to list rooms"
-	usageJoin     = "Ability to join a room (requires --room and --identity)"
-	usageAdmin    = "Ability to moderate a room (requires --room)"
-	usageEgress   = "Ability to interact with Egress services"
-	usageIngress  = "Ability to interact with Ingress services"
+	usageCreate    = "Ability to create or delete rooms"
+	usageList      = "Ability to list rooms"
+	usageJoin      = "Ability to join a room (requires --room and --identity)"
+	usageAdmin     = "Ability to moderate a room (requires --room)"
+	usageEgress    = "Ability to interact with Egress services"
+	usageIngress   = "Ability to interact with Ingress services"
 	usageMetadata  = "Ability to update their own name and metadata"
 	usageInference = "Ability to perform inference (AI endpoints)"
 )
 
 var (
+	tokenOnlyFlag = &cli.BoolFlag{
+		Name:  "token-only",
+		Usage: "Output only the access token",
+	}
+
 	TokenCommands = []*cli.Command{
 		{
 			Name:   "token",
@@ -58,6 +63,8 @@ var (
 						optional(roomFlag),
 						optional(identityFlag),
 						openFlag,
+						jsonFlag,
+						tokenOnlyFlag,
 
 						&cli.BoolFlag{
 							Name:  "create",
@@ -143,6 +150,8 @@ var (
 			Action: createToken,
 			Flags: []cli.Flag{
 				optional(roomFlag),
+				jsonFlag,
+				tokenOnlyFlag,
 
 				&cli.BoolFlag{
 					Name:  "create",
@@ -222,6 +231,11 @@ var (
 )
 
 func createToken(ctx context.Context, c *cli.Command) error {
+	outputMode, err := resolveTokenCreateOutputMode(c)
+	if err != nil {
+		return err
+	}
+
 	name := c.String("name")
 	metadata := c.String("metadata")
 	validFor := c.String("valid-for")
@@ -254,13 +268,17 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	participant := c.String("identity")
 	if participant == "" {
 		participant = util.ExpandTemplate("participant-%x")
-		fmt.Printf("Using generated participant identity [%s]\n", util.Accented(participant))
+		if outputMode == tokenOutputModeHuman {
+			fmt.Printf("Using generated participant identity [%s]\n", util.Accented(participant))
+		}
 	}
 
 	room := c.String("room")
 	if room == "" {
 		room = util.ExpandTemplate("room-%t")
-		fmt.Printf("Using generated room name [%s]\n", util.Accented(room))
+		if outputMode == tokenOutputModeHuman {
+			fmt.Printf("Using generated room name [%s]\n", util.Accented(room))
+		}
 	}
 
 	grant := &auth.VideoGrant{
@@ -419,7 +437,9 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	at.SetName(name)
 	if validFor != "" {
 		if dur, err := time.ParseDuration(validFor); err == nil {
-			fmt.Println("valid for (mins): ", int(dur/time.Minute))
+			if outputMode == tokenOutputModeHuman {
+				fmt.Println("valid for (mins): ", int(dur/time.Minute))
+			}
 			at.SetValidFor(dur)
 		} else {
 			return err
@@ -431,13 +451,16 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("Token grants:")
-	util.PrintJSON(at.GetGrants())
-	fmt.Println()
-	if project.URL != "" {
-		fmt.Println("Project URL:", project.URL)
+	if err = printTokenCreateOutput(outputMode, tokenCreateOutput{
+		AccessToken: token,
+		ProjectURL:  project.URL,
+		Identity:    participant,
+		Name:        name,
+		Room:        room,
+		Grants:      at.GetGrants(),
+	}); err != nil {
+		return err
 	}
-	fmt.Println("Access token:", token)
 
 	if c.IsSet("open") {
 		switch c.String("open") {
@@ -458,4 +481,59 @@ func accessToken(apiKey, apiSecret string, grant *auth.VideoGrant, identity stri
 		SetVideoGrant(grant).
 		SetIdentity(identity)
 	return at
+}
+
+type tokenOutputMode string
+
+const (
+	tokenOutputModeHuman     tokenOutputMode = "human"
+	tokenOutputModeJSON      tokenOutputMode = "json"
+	tokenOutputModeTokenOnly tokenOutputMode = "token-only"
+)
+
+type tokenCreateOutput struct {
+	AccessToken string            `json:"access_token"`
+	ProjectURL  string            `json:"project_url,omitempty"`
+	Identity    string            `json:"identity"`
+	Name        string            `json:"name"`
+	Room        string            `json:"room"`
+	Grants      *auth.ClaimGrants `json:"grants"`
+}
+
+func resolveTokenCreateOutputMode(c *cli.Command) (tokenOutputMode, error) {
+	jsonOutput := c.Bool("json")
+	tokenOnly := c.Bool("token-only")
+
+	if jsonOutput && tokenOnly {
+		return "", errors.New("cannot combine --json and --token-only")
+	}
+
+	if tokenOnly {
+		return tokenOutputModeTokenOnly, nil
+	}
+	if jsonOutput {
+		return tokenOutputModeJSON, nil
+	}
+	return tokenOutputModeHuman, nil
+}
+
+func printTokenCreateOutput(mode tokenOutputMode, out tokenCreateOutput) error {
+	switch mode {
+	case tokenOutputModeTokenOnly:
+		fmt.Println(out.AccessToken)
+	case tokenOutputModeJSON:
+		util.PrintJSON(out)
+	case tokenOutputModeHuman:
+		fmt.Println("Token grants:")
+		util.PrintJSON(out.Grants)
+		fmt.Println()
+		if out.ProjectURL != "" {
+			fmt.Println("Project URL:", out.ProjectURL)
+		}
+		fmt.Println("Access token:", out.AccessToken)
+	default:
+		return fmt.Errorf("unknown token output mode: %s", mode)
+	}
+
+	return nil
 }
