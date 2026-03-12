@@ -275,7 +275,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + util.Accented(c.String("project")) + "]")
+		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(c.String("project")))
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -289,7 +289,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + util.Accented(pc.Name) + "]")
+		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(pc.Name))
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -323,7 +323,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 			envVars = append(envVars, "api-secret")
 		}
 		if len(envVars) > 0 {
-			fmt.Printf("Using %s from environment\n", strings.Join(envVars, ", "))
+			fmt.Fprintf(os.Stderr, "Using %s from environment\n", strings.Join(envVars, ", "))
 			logDetails(c, pc)
 		}
 		return pc, nil
@@ -331,7 +331,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	if c.Bool("dev") {
 		pc.APIKey = "devkey"
 		pc.APISecret = "secret"
-		fmt.Println("Using dev credentials")
+		fmt.Fprintln(os.Stderr, "Using dev credentials")
 		return pc, nil
 	}
 
@@ -363,13 +363,13 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 					if _, err = selectProject(context.Background(), c); err != nil {
 						return nil, err
 					}
-					fmt.Printf("Using project [%s]\n", util.Accented(project.Name))
+					fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
 					return project, nil
 				}
 			}
 		} else {
 			if !c.Bool("silent") && !SkipPrompts(c) {
-				fmt.Println("Using default project [" + util.Theme.Focused.Title.Render(dp.Name) + "]")
+				fmt.Fprintf(os.Stderr, "Using default project [%s]\n", util.Theme.Focused.Title.Render(dp.Name))
 				logDetails(c, dp)
 			}
 		}

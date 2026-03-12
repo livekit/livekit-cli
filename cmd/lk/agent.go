@@ -586,6 +586,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				regionOptions[i] = strings.TrimSpace(r)
 			}
 			slices.Sort(regionOptions)
+			slices.Reverse(regionOptions)
 
 			if SkipPrompts(cmd) {
 				return fmt.Errorf("non-interactive mode: --region flag must be specified, available regions: %v", regionOptions)
