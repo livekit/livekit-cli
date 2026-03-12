@@ -73,4 +73,25 @@ int apm_stream_delay_ms(ApmHandle h) {
     return inst->apm->stream_delay_ms();
 }
 
+void apm_get_stats(ApmHandle h, ApmStats* out) {
+    if (!h || !out) return;
+    auto* inst = static_cast<ApmInstance*>(h);
+    auto stats = inst->apm->GetStatistics();
+
+    out->has_erl = stats.echo_return_loss.has_value() ? 1 : 0;
+    out->echo_return_loss = stats.echo_return_loss.value_or(0.0);
+
+    out->has_erle = stats.echo_return_loss_enhancement.has_value() ? 1 : 0;
+    out->echo_return_loss_enhancement = stats.echo_return_loss_enhancement.value_or(0.0);
+
+    out->has_divergent = stats.divergent_filter_fraction.has_value() ? 1 : 0;
+    out->divergent_filter_fraction = stats.divergent_filter_fraction.value_or(0.0);
+
+    out->has_delay = stats.delay_ms.has_value() ? 1 : 0;
+    out->delay_ms = stats.delay_ms.value_or(0);
+
+    out->has_residual_echo = stats.residual_echo_likelihood.has_value() ? 1 : 0;
+    out->residual_echo_likelihood = stats.residual_echo_likelihood.value_or(0.0);
+}
+
 } // extern "C"

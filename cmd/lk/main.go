@@ -70,7 +70,6 @@ func main() {
 	app.Commands = append(app.Commands, SIPCommands...)
 	app.Commands = append(app.Commands, PhoneNumberCommands...)
 	app.Commands = append(app.Commands, ReplayCommands...)
-	app.Commands = append(app.Commands, ConsoleCommands...)
 	app.Commands = append(app.Commands, PerfCommands...)
 
 	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT

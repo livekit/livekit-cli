@@ -19,83 +19,105 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
+	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/console"
 	"github.com/livekit/livekit-cli/v2/pkg/portaudio"
 )
 
-var ConsoleCommands = []*cli.Command{
-	{
-		Name:     "console",
-		Usage:    "Voice chat with an agent via mic/speakers",
-		Category: "Core",
-		Flags: []cli.Flag{
-			&cli.IntFlag{
-				Name:    "port",
-				Aliases: []string{"p"},
-				Usage:   "TCP port for agent communication",
-				Value:   0,
-			},
-			&cli.StringFlag{
-				Name:  "input-device",
-				Usage: "Input device index or name substring",
-			},
-			&cli.StringFlag{
-				Name:  "output-device",
-				Usage: "Output device index or name substring",
-			},
-			&cli.BoolFlag{
-				Name:  "list-devices",
-				Usage: "List available audio devices and exit",
-			},
-			&cli.BoolFlag{
-				Name:  "no-aec",
-				Usage: "Disable acoustic echo cancellation",
-			},
+func init() {
+	AgentCommands[0].Commands = append(AgentCommands[0].Commands, consoleCommand)
+}
+
+var consoleCommand = &cli.Command{
+	Name:     "console",
+	Usage:    "Voice chat with an agent via mic/speakers",
+	Category: "Core",
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:    "port",
+			Aliases: []string{"p"},
+			Usage:   "TCP port for agent communication",
+			Value:   0,
 		},
-		Action: runConsole,
+		&cli.StringFlag{
+			Name:  "input-device",
+			Usage: "Input device index or name substring",
+		},
+		&cli.StringFlag{
+			Name:  "output-device",
+			Usage: "Output device index or name substring",
+		},
+		&cli.BoolFlag{
+			Name:  "list-devices",
+			Usage: "List available audio devices and exit",
+		},
+		&cli.BoolFlag{
+			Name:  "no-aec",
+			Usage: "Disable acoustic echo cancellation",
+		},
+		&cli.BoolFlag{
+			Name:    "text",
+			Aliases: []string{"t"},
+			Usage:   "Start in text mode instead of audio mode",
+		},
+		&cli.StringFlag{
+			Name:  "entrypoint",
+			Usage: "Agent entrypoint `FILE` (default: auto-detect)",
+		},
 	},
+	Action: runConsole,
 }
 
 func runConsole(ctx context.Context, cmd *cli.Command) error {
-	if err := portaudio.Initialize(); err != nil {
-		return fmt.Errorf("failed to initialize PortAudio: %w", err)
-	}
-	defer portaudio.Terminate()
+	textMode := cmd.Bool("text")
 
-	if cmd.Bool("list-devices") {
-		return listDevices()
-	}
+	var inputDev, outputDev *portaudio.DeviceInfo
+	if !textMode {
+		if err := portaudio.Initialize(); err != nil {
+			return fmt.Errorf("failed to initialize PortAudio: %w", err)
+		}
+		defer portaudio.Terminate()
 
-	var inputDev *portaudio.DeviceInfo
-	var err error
-	if q := cmd.String("input-device"); q != "" {
-		inputDev, err = portaudio.FindDevice(q, true)
-	} else {
-		inputDev, err = portaudio.DefaultInputDevice()
-	}
-	if err != nil {
-		return fmt.Errorf("input device: %w", err)
-	}
+		if cmd.Bool("list-devices") {
+			return listDevices()
+		}
 
-	var outputDev *portaudio.DeviceInfo
-	if q := cmd.String("output-device"); q != "" {
-		outputDev, err = portaudio.FindDevice(q, false)
-	} else {
-		outputDev, err = portaudio.DefaultOutputDevice()
-	}
-	if err != nil {
-		return fmt.Errorf("output device: %w", err)
+		var err error
+		if q := cmd.String("input-device"); q != "" {
+			inputDev, err = portaudio.FindDevice(q, true)
+		} else {
+			inputDev, err = portaudio.DefaultInputDevice()
+		}
+		if err != nil {
+			return fmt.Errorf("input device: %w", err)
+		}
+
+		if q := cmd.String("output-device"); q != "" {
+			outputDev, err = portaudio.FindDevice(q, false)
+		} else {
+			outputDev, err = portaudio.DefaultOutputDevice()
+		}
+		if err != nil {
+			return fmt.Errorf("output device: %w", err)
+		}
 	}
 
 	port := cmd.Int("port")
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	var err error
 	server, err := console.NewTCPServer(addr)
 	if err != nil {
 		return err
@@ -103,19 +125,77 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	defer server.Close()
 
 	actualAddr := server.Addr().String()
-	fmt.Fprintf(os.Stderr, "Listening on %s\n", actualAddr)
-	fmt.Fprintf(os.Stderr, "Input:  %s\n", inputDev.Name)
-	fmt.Fprintf(os.Stderr, "Output: %s\n", outputDev.Name)
-	fmt.Fprintf(os.Stderr, "Waiting for agent connection...\n")
-
-	conn, err := server.Accept()
-	if err != nil {
-		return fmt.Errorf("agent connection: %w", err)
+	if inputDev != nil {
+		fmt.Fprintf(os.Stderr, "Input:  %s\n", inputDev.Name)
+		fmt.Fprintf(os.Stderr, "Output: %s\n", outputDev.Name)
 	}
-	defer conn.Close()
 
-	fmt.Fprintf(os.Stderr, "Agent connected from %s\n", conn.RemoteAddr())
+	// Detect project type, walking up parent directories if needed.
+	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
+	if err != nil {
+		return err
+	}
+	if !projectType.IsPython() {
+		return fmt.Errorf("console currently only supports Python agents (detected: %s)", projectType)
+	}
 
+	// Resolve entrypoint relative to project root
+	entrypoint, err := findEntrypoint(projectDir, cmd.String("entrypoint"), projectType)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(os.Stderr, "Starting agent (%s in %s)...\n", entrypoint, projectDir)
+	agentProc, err := startAgent(AgentStartConfig{
+		Dir:         projectDir,
+		Entrypoint:  entrypoint,
+		ProjectType: projectType,
+		CLIArgs:     []string{"console", "--connect-addr", actualAddr},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to start agent: %w", err)
+	}
+	defer agentProc.Kill()
+
+	// Stream agent logs to the TUI
+	agentProc.LogStream = make(chan string, 128)
+
+	// Wait for TCP connection, agent crash, timeout, or cancellation
+	type acceptResult struct {
+		conn net.Conn
+		err  error
+	}
+	acceptCh := make(chan acceptResult, 1)
+	go func() {
+		conn, err := server.Accept()
+		acceptCh <- acceptResult{conn, err}
+	}()
+
+	var conn net.Conn
+	select {
+	case res := <-acceptCh:
+		if res.err != nil {
+			return fmt.Errorf("agent connection: %w", res.err)
+		}
+		conn = res.conn
+	case err := <-agentProc.Done():
+		logs := agentProc.RecentLogs(20)
+		for _, l := range logs {
+			fmt.Fprintln(os.Stderr, l)
+		}
+		if err != nil {
+			return fmt.Errorf("agent exited before connecting: %w", err)
+		}
+		return fmt.Errorf("agent exited before connecting")
+	case <-time.After(60 * time.Second):
+		logs := agentProc.RecentLogs(20)
+		for _, l := range logs {
+			fmt.Fprintln(os.Stderr, l)
+		}
+		return fmt.Errorf("timed out waiting for agent to connect")
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 	pipeline, err := console.NewPipeline(console.PipelineConfig{
 		InputDevice:  inputDev,
 		OutputDevice: outputDev,
@@ -133,15 +213,27 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		pipeline.Start(pipelineCtx)
 	}()
 
-	model := newConsoleModel(pipeline, actualAddr, inputDev, outputDev)
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	// Redirect Go's default logger to discard so it doesn't corrupt the TUI
+	log.SetOutput(io.Discard)
+
+	// Remove the global SIGINT handler (from signal.NotifyContext in main.go)
+	// so that ctrl+C in raw mode reaches Bubble Tea as a key event, and after
+	// the TUI exits, a ctrl+C during cleanup uses the default handler (terminate).
+	signal.Reset(syscall.SIGINT)
+
+	var inputDevName, outputDevName string
+	if inputDev != nil {
+		inputDevName = inputDev.Name
+	}
+	if outputDev != nil {
+		outputDevName = outputDev.Name
+	}
+	model := newConsoleModel(pipeline, pipelineCancel, agentProc, inputDevName, outputDevName, textMode)
+	p := tea.NewProgram(model, tea.WithoutSignalHandler())
 
 	if _, err := p.Run(); err != nil {
 		return err
 	}
-
-	pipelineCancel()
-	pipeline.Stop()
 
 	return nil
 }
@@ -184,3 +276,4 @@ func listDevices() error {
 
 	return nil
 }
+
