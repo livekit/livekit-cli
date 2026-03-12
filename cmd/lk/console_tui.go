@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -48,15 +49,23 @@ var (
 // Unicode block characters for frequency visualizer (matching Python console)
 var blocks = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
 
+// Braille spinner frames (matching Rich's "dots" spinner)
+var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+
 type consoleTickMsg struct{}
 type sessionEventMsg struct{ event *agent.SessionEvent }
+type sessionResponseMsg struct{ resp *agent.SessionResponse }
+type audioInitResultMsg struct{ err error }
 type agentLogMsg struct{ line string }
+type agentExitedMsg struct{}
+type shutdownTimeoutMsg struct{}
 
 type consoleModel struct {
-	pipeline  *console.AudioPipeline
-	agentProc *AgentProcess
-	inputDev  string
-	outputDev string
+	pipeline       *console.AudioPipeline
+	pipelineCancel context.CancelFunc
+	agentProc      *AgentProcess
+	inputDev       string
+	outputDev      string
 
 	width int
 
@@ -70,14 +79,23 @@ type consoleModel struct {
 	// Shortcut help toggle (? key)
 	showShortcuts bool
 
+	// Audio init error (shown when switching from text to audio fails)
+	audioError string
+
 	// Last turn metrics text (cleared on next thinking state)
 	metricsText string
 
 	// Request counter for unique IDs
 	reqCounter int
+
+	// Waiting for agent response (text mode loading indicator)
+	waitingForAgent bool
+
+	// Shutdown state
+	shuttingDown bool
 }
 
-func newConsoleModel(pipeline *console.AudioPipeline, agentProc *AgentProcess, inputDev, outputDev string) consoleModel {
+func newConsoleModel(pipeline *console.AudioPipeline, pipelineCancel context.CancelFunc, agentProc *AgentProcess, inputDev, outputDev string, textMode bool) consoleModel {
 	ti := textinput.New()
 	ti.Placeholder = "Type to talk to your agent"
 	ti.CharLimit = 1000
@@ -85,12 +103,18 @@ func newConsoleModel(pipeline *console.AudioPipeline, agentProc *AgentProcess, i
 	ti.Prompt = "❯ "
 	ti.PromptStyle = boldStyle
 
+	if textMode {
+		ti.Focus()
+	}
+
 	return consoleModel{
-		pipeline:  pipeline,
-		agentProc: agentProc,
-		inputDev:  inputDev,
-		outputDev: outputDev,
-		textInput: ti,
+		pipeline:       pipeline,
+		pipelineCancel: pipelineCancel,
+		agentProc:      agentProc,
+		inputDev:       inputDev,
+		outputDev:      outputDev,
+		textInput:      ti,
+		textMode:       textMode,
 	}
 }
 
@@ -98,9 +122,13 @@ func (m consoleModel) Init() tea.Cmd {
 	cmds := []tea.Cmd{
 		consoleTickCmd(),
 		pollEventsCmd(m.pipeline),
+		pollResponsesCmd(m.pipeline),
 	}
 	if m.agentProc != nil && m.agentProc.LogStream != nil {
 		cmds = append(cmds, pollLogsCmd(m.agentProc.LogStream))
+	}
+	if m.textMode {
+		cmds = append(cmds, textinput.Blink)
 	}
 	return tea.Batch(cmds...)
 }
@@ -121,6 +149,16 @@ func pollEventsCmd(pipeline *console.AudioPipeline) tea.Cmd {
 	}
 }
 
+func pollResponsesCmd(pipeline *console.AudioPipeline) tea.Cmd {
+	return func() tea.Msg {
+		resp, ok := <-pipeline.Responses
+		if !ok {
+			return nil
+		}
+		return sessionResponseMsg{resp: resp}
+	}
+}
+
 func pollLogsCmd(ch chan string) tea.Cmd {
 	return func() tea.Msg {
 		line, ok := <-ch
@@ -134,12 +172,21 @@ func pollLogsCmd(ch chan string) tea.Cmd {
 func (m consoleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		if m.shuttingDown {
+			if msg.String() == "ctrl+c" {
+				m.agentProc.ForceKill()
+				m.pipelineCancel()
+				go m.pipeline.Stop()
+				return m, tea.Quit
+			}
+			return m, nil
+		}
 		if m.textMode {
 			return m.updateTextMode(msg)
 		}
 		switch msg.String() {
 		case "q", "ctrl+c":
-			return m, tea.Quit
+			return m, m.beginShutdown()
 		case "m":
 			m.pipeline.SetMuted(!m.pipeline.Muted())
 		case "ctrl+t":
@@ -157,12 +204,40 @@ func (m consoleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 
 	case consoleTickMsg:
+		if m.shuttingDown {
+			return m, nil
+		}
 		return m, consoleTickCmd()
 
 	case sessionEventMsg:
+		if m.shuttingDown {
+			return m, nil
+		}
 		cmds := m.handleSessionEvent(msg.event)
 		cmds = append(cmds, pollEventsCmd(m.pipeline))
 		return m, tea.Batch(cmds...)
+
+	case sessionResponseMsg:
+		if m.waitingForAgent {
+			m.waitingForAgent = false
+			if m.textMode {
+				m.textInput.Focus()
+			}
+		}
+		return m, pollResponsesCmd(m.pipeline)
+
+	case audioInitResultMsg:
+		if msg.err != nil {
+			m.audioError = msg.err.Error()
+		} else {
+			m.textMode = false
+			m.showShortcuts = false
+			m.textInput.Blur()
+			m.audioError = ""
+			m.inputDev = "Default Input"
+			m.outputDev = "Default Output"
+		}
+		return m, nil
 
 	case agentLogMsg:
 		cmd := tea.Println(dimStyle.Render(msg.line))
@@ -171,39 +246,86 @@ func (m consoleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			nextCmd = pollLogsCmd(m.agentProc.LogStream)
 		}
 		return m, tea.Batch(cmd, nextCmd)
+
+	case agentExitedMsg:
+		return m, tea.Quit
+
+	case shutdownTimeoutMsg:
+		m.agentProc.ForceKill()
+		m.pipelineCancel()
+		go m.pipeline.Stop()
+		return m, tea.Quit
 	}
 
 	return m, nil
 }
 
-func (m *consoleModel) updateTextMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "ctrl+c":
-		return m, tea.Quit
-	case "ctrl+t":
+func (m *consoleModel) switchToAudio() tea.Cmd {
+	if m.pipeline.HasAudio() {
 		m.textMode = false
 		m.showShortcuts = false
 		m.textInput.Blur()
-		return m, nil
+		m.audioError = ""
+		return nil
+	}
+	// Lazy init audio in a goroutine
+	return func() tea.Msg {
+		return audioInitResultMsg{err: m.pipeline.EnableAudio()}
+	}
+}
+
+func (m *consoleModel) beginShutdown() tea.Cmd {
+	m.shuttingDown = true
+	m.textMode = false
+	m.showShortcuts = false
+
+	// Close the audio pipeline/TCP connection first so the agent's audio
+	// input ends and STT stops receiving data. Then send SIGINT so the
+	// agent's session.aclose() runs with nothing left to drain.
+	m.pipelineCancel()
+	go m.pipeline.Stop()
+
+	m.agentProc.Shutdown()
+
+	// Wait for agent exit or timeout.
+	return tea.Batch(
+		func() tea.Msg {
+			<-m.agentProc.Done()
+			return agentExitedMsg{}
+		},
+		tea.Tick(5*time.Second, func(time.Time) tea.Msg {
+			return shutdownTimeoutMsg{}
+		}),
+	)
+}
+
+func (m *consoleModel) updateTextMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, m.beginShutdown()
+	case "ctrl+t":
+		return m, m.switchToAudio()
 	case "esc":
 		if m.showShortcuts {
 			m.showShortcuts = false
 			return m, nil
 		}
-		m.textMode = false
-		m.textInput.Blur()
-		return m, nil
+		return m, m.switchToAudio()
 	case "?":
 		if m.textInput.Value() == "" {
 			m.showShortcuts = !m.showShortcuts
 			return m, nil
 		}
 	case "enter":
+		if m.waitingForAgent {
+			return m, nil
+		}
 		text := strings.TrimSpace(m.textInput.Value())
 		if text != "" {
 			m.reqCounter++
 			reqID := fmt.Sprintf("console-%d", m.reqCounter)
 			m.textInput.SetValue("")
+			m.waitingForAgent = true
 
 			// Print user message matching the old console format:
 			//   ● You
@@ -216,16 +338,17 @@ func (m *consoleModel) updateTextMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 			req := &agent.SessionRequest{
 				RequestId: reqID,
-				Request: &agent.SessionRequest_SendMessage{
-					SendMessage: &agent.SendMessageRequest{Text: text},
+				Request: &agent.SessionRequest_SendMessage_{
+					SendMessage: &agent.SessionRequest_SendMessage{Text: text},
 				},
 			}
 			go m.pipeline.SendRequest(req)
-			return m, printCmd
+			return m, tea.Batch(printCmd, consoleTickCmd())
 		}
 		return m, nil
 	}
 
+	m.audioError = "" // clear on any key press
 	var cmd tea.Cmd
 	m.textInput, cmd = m.textInput.Update(msg)
 	return m, cmd
@@ -238,12 +361,12 @@ func (m *consoleModel) handleSessionEvent(ev *agent.SessionEvent) []tea.Cmd {
 	var cmds []tea.Cmd
 
 	switch e := ev.Event.(type) {
-	case *agent.SessionEvent_AgentStateChanged:
-		if e.AgentStateChanged.NewState == agent.AgentState_AGENT_STATE_THINKING {
+	case *agent.SessionEvent_AgentStateChanged_:
+		if e.AgentStateChanged.NewState == agent.SessionAgentState_SESSION_AGENT_STATE_THINKING {
 			m.metricsText = ""
 		}
 
-	case *agent.SessionEvent_UserInputTranscribed:
+	case *agent.SessionEvent_UserInputTranscribed_:
 		if e.UserInputTranscribed.IsFinal {
 			m.partialTranscript = ""
 			if text := e.UserInputTranscribed.Transcript; text != "" {
@@ -257,40 +380,21 @@ func (m *consoleModel) handleSessionEvent(ev *agent.SessionEvent) []tea.Cmd {
 			m.partialTranscript = e.UserInputTranscribed.Transcript
 		}
 
-	case *agent.SessionEvent_ConversationItemAdded:
+	case *agent.SessionEvent_ConversationItemAdded_:
 		if item := e.ConversationItemAdded.Item; item != nil {
 			// Extract metrics from ChatMessage (matching Python console pattern)
 			if msg := item.GetMessage(); msg != nil {
 				if text := formatMetrics(msg.Metrics); text != "" {
 					m.metricsText = text
 				}
-			}
+				}
 			lines := formatChatItem(item)
 			for _, line := range lines {
 				cmds = append(cmds, tea.Println(line))
 			}
 		}
 
-	case *agent.SessionEvent_FunctionToolsExecuted:
-		for _, fc := range e.FunctionToolsExecuted.FunctionCalls {
-			cmds = append(cmds, tea.Println(
-				"  "+lipgloss.NewStyle().Foreground(lkCyan).Render("➜ ")+
-					cyanBoldStyle.Render(fc.Name),
-			))
-		}
-		for _, fco := range e.FunctionToolsExecuted.FunctionCallOutputs {
-			if fco.IsError {
-				cmds = append(cmds, tea.Println(
-					"    "+redBoldStyle.Render("✗ ")+redStyle.Render(truncateOutput(fco.Output)),
-				))
-			} else {
-				cmds = append(cmds, tea.Println(
-					"    "+greenStyle.Render("✓ ")+dimStyle.Render(summarizeOutput(fco.Output)),
-				))
-			}
-		}
-
-	case *agent.SessionEvent_Error:
+	case *agent.SessionEvent_Error_:
 		cmds = append(cmds, tea.Println(
 			"  "+redBoldStyle.Render("✗ ")+redStyle.Render(e.Error.Message),
 		))
@@ -359,18 +463,38 @@ func formatChatItem(item *agent.ChatContext_ChatItem) []string {
 func (m consoleModel) View() string {
 	var b strings.Builder
 
+	if m.shuttingDown {
+		b.WriteString("\n  ")
+		b.WriteString(labelStyle.Render("Shutting down agent..."))
+		b.WriteString("  ")
+		b.WriteString(dimStyle.Render("ctrl+C to force"))
+		b.WriteString("\n")
+		return b.String()
+	}
+
 	if m.textMode {
-		// ── Text input (matching old Python prompt layout) ──
-		w := m.width
-		if w <= 0 {
-			w = 80
+		if m.waitingForAgent {
+			// Braille spinner (matching Rich's "dots" spinner)
+			frame := spinnerFrames[int(time.Now().UnixMilli()/80)%len(spinnerFrames)]
+			b.WriteString("  " + dimStyle.Render(frame+" thinking"))
+		} else {
+			// ── Text input ──
+			w := m.width
+			if w <= 0 {
+				w = 80
+			}
+			sep := dimStyle.Render(strings.Repeat("─", min(w, 80)))
+			b.WriteString(sep)
+			b.WriteString("\n")
+			b.WriteString(m.textInput.View())
+			b.WriteString("\n")
+			b.WriteString(sep)
 		}
-		sep := dimStyle.Render(strings.Repeat("─", min(w, 80)))
-		b.WriteString(sep)
-		b.WriteString("\n")
-		b.WriteString(m.textInput.View())
-		b.WriteString("\n")
-		b.WriteString(sep)
+
+		if m.audioError != "" {
+			b.WriteString("\n")
+			b.WriteString("  " + redStyle.Render("audio: "+m.audioError))
+		}
 
 		if m.showShortcuts {
 			b.WriteString("\n")

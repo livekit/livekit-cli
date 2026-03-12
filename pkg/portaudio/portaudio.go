@@ -278,6 +278,11 @@ func (s *Stream) Stop() error {
 	return paError(C.Pa_StopStream(unsafe.Pointer(s.stream)))
 }
 
+// Abort stops the stream immediately without waiting for buffers to drain.
+func (s *Stream) Abort() error {
+	return paError(C.Pa_AbortStream(unsafe.Pointer(s.stream)))
+}
+
 func (s *Stream) Close() error {
 	if s.stream == nil {
 		return nil

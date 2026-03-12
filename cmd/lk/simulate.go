@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,6 +30,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
 
 var (
@@ -64,17 +66,11 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "config",
-			Usage: "Path to simulation config `FILE` (default: simulation.json)",
+			Usage: "Path to simulation config `FILE`",
 		},
 		&cli.StringFlag{
 			Name:  "entrypoint",
 			Usage: "Agent entrypoint `FILE` (default: agent.py)",
-		},
-		&cli.StringFlag{
-			Name:        "cloud-url",
-			Value:       cloudAPIServerURL,
-			Hidden:      true,
-			DefaultText: cloudAPIServerURL,
 		},
 	},
 }
@@ -94,13 +90,10 @@ type scenarioConfig struct {
 
 func loadSimulationConfig(path string) (*simulationConfig, error) {
 	if path == "" {
-		path = "simulation.json"
+		return nil, nil
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) && path == "simulation.json" {
-			return &simulationConfig{}, nil
-		}
 		return nil, fmt.Errorf("failed to read config: %w", err)
 	}
 	var cfg simulationConfig
@@ -119,25 +112,50 @@ func generateAgentName() string {
 	return "simulation-" + string(b)
 }
 
+// simulateMode represents how scenarios are sourced.
+type simulateMode int
+
+const (
+	modeInlineScenarios simulateMode = iota
+	modeScenarioGroup
+	modeGenerateFromDescription
+	modeGenerateFromSource
+)
+
 func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 
-	// Load simulation config
 	configPath := cmd.String("config")
 	cfg, err := loadSimulationConfig(configPath)
 	if err != nil {
 		return err
 	}
 
-	// Resolve description
 	description := cmd.String("description")
-	if description == "" {
+	if description == "" && cfg != nil {
 		description = cfg.AgentDescription
 	}
 
 	numSimulations := int32(cmd.Int("num-simulations"))
 	scenarioGroupID := cmd.String("scenario-group-id")
 	agentName := generateAgentName()
+
+	// Mode detection (checked in priority order)
+	var mode simulateMode
+	switch {
+	case cfg != nil && len(cfg.Scenarios) > 0:
+		mode = modeInlineScenarios
+		fmt.Printf("Mode: running %d inline scenarios from %s\n", len(cfg.Scenarios), configPath)
+	case scenarioGroupID != "":
+		mode = modeScenarioGroup
+		fmt.Printf("Mode: running scenario group %s\n", scenarioGroupID)
+	case description != "":
+		mode = modeGenerateFromDescription
+		fmt.Printf("Mode: generating %d scenarios from description\n", numSimulations)
+	default:
+		mode = modeGenerateFromSource
+		fmt.Printf("Mode: generating %d scenarios from agent source code (no description provided)\n", numSimulations)
+	}
 
 	// Detect project type, walking up parent directories if needed
 	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
@@ -159,12 +177,14 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		Dir:         projectDir,
 		Entrypoint:  entrypoint,
 		ProjectType: projectType,
-		CLIArgs:     []string{"dev", "--no-reload"},
+		CLIArgs: []string{
+			"start",
+			"--url", pc.URL,
+			"--api-key", pc.APIKey,
+			"--api-secret", pc.APISecret,
+		},
 		Env: []string{
 			"LIVEKIT_AGENT_NAME=" + agentName,
-			"LIVEKIT_URL=" + pc.URL,
-			"LIVEKIT_API_KEY=" + pc.APIKey,
-			"LIVEKIT_API_SECRET=" + pc.APISecret,
 		},
 		ReadySignal: "registered worker",
 	})
@@ -174,36 +194,32 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	defer agent.Kill()
 
 	// Create API client
-	cloudURL := cmd.String("cloud-url")
-	simClient := lksdk.NewAgentSimulationClient(cloudURL, pc.APIKey, pc.APISecret)
+	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
 	// Build the create request
 	req := &livekit.CreateSimulationRunRequest{
 		AgentName:        agentName,
 		AgentDescription: description,
+		NumSimulations:   numSimulations,
 	}
-	if len(cfg.Scenarios) > 0 {
+	switch mode {
+	case modeInlineScenarios:
 		scenarios := make([]*livekit.CreateSimulationRunRequest_Scenario, 0, len(cfg.Scenarios))
 		for _, sc := range cfg.Scenarios {
 			scenarios = append(scenarios, &livekit.CreateSimulationRunRequest_Scenario{
-				Label:             sc.Label,
 				Instructions:      sc.Instructions,
 				AgentExpectations: sc.AgentExpectations,
 				Metadata:          sc.Metadata,
 			})
 		}
-		req.Source = &livekit.CreateSimulationRunRequest_Scenarios{
-			Scenarios: &livekit.CreateSimulationRunRequest_ScenarioList{
+		req.Source = &livekit.CreateSimulationRunRequest_Scenarios_{
+			Scenarios: &livekit.CreateSimulationRunRequest_Scenarios{
 				Scenarios: scenarios,
 			},
 		}
-	} else if scenarioGroupID != "" {
+	case modeScenarioGroup:
 		req.Source = &livekit.CreateSimulationRunRequest_GroupId{
 			GroupId: scenarioGroupID,
-		}
-	} else {
-		req.Source = &livekit.CreateSimulationRunRequest_NumSimulations{
-			NumSimulations: numSimulations,
 		}
 	}
 
@@ -235,6 +251,31 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	}
 	runID := resp.SimulationRunId
 
+	// Source upload flow: zip project, upload, confirm
+	if mode == modeGenerateFromSource {
+		presigned := resp.PresignedPostRequest
+		if presigned == nil {
+			return fmt.Errorf("server did not return a presigned upload URL for source upload mode")
+		}
+
+		fmt.Println("Uploading agent source code...")
+		sourceDir, _ := os.Getwd()
+		var buf bytes.Buffer
+		if err := cloudagents.CreateSourceZip(os.DirFS(sourceDir), nil, &buf); err != nil {
+			return fmt.Errorf("failed to create source zip: %w", err)
+		}
+		if err := cloudagents.MultipartUpload(presigned.Url, presigned.Values, &buf); err != nil {
+			return fmt.Errorf("failed to upload source: %w", err)
+		}
+
+		fmt.Println("Analyzing source code and generating scenarios...")
+		if _, err := simClient.ConfirmSimulationSourceUpload(ctx, &livekit.ConfirmSimulationSourceUploadRequest{
+			SimulationRunId: runID,
+		}); err != nil {
+			return fmt.Errorf("failed to confirm source upload: %w", err)
+		}
+	}
+
 	// Run the TUI
 	model := newSimulateModel(simClient, runID, numSimulations, agent)
 	p := tea.NewProgram(model, tea.WithAltScreen())
@@ -244,3 +285,5 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 
 	return nil
 }
+
+

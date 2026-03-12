@@ -31,9 +31,11 @@ import (
 
 // AgentProcess manages a Python agent subprocess.
 type AgentProcess struct {
-	cmd     *exec.Cmd
-	readyCh chan struct{}
-	doneCh  chan error
+	cmd            *exec.Cmd
+	readyCh        chan struct{}
+	doneCh         chan error
+	exitCh         chan struct{} // closed when process exits, safe to read multiple times
+	shutdownCalled bool         // true after Shutdown() sends SIGINT
 
 	// LogStream receives log lines in real-time. Nil if not needed.
 	LogStream chan string
@@ -107,12 +109,13 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 
 // AgentStartConfig configures how to launch an agent subprocess.
 type AgentStartConfig struct {
-	Dir         string
-	Entrypoint  string
-	ProjectType agentfs.ProjectType
-	CLIArgs     []string // e.g. ["dev", "--no-reload"] or ["console", "--connect-addr", addr]
-	Env         []string // e.g. ["LIVEKIT_AGENT_NAME=x"] or nil
-	ReadySignal string   // substring to scan for in output (e.g. "registered worker"), empty to skip
+	Dir           string
+	Entrypoint    string
+	ProjectType   agentfs.ProjectType
+	CLIArgs       []string  // e.g. ["start", "--url", "..."] or ["console", "--connect-addr", addr]
+	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME=x"] or nil
+	ReadySignal   string    // substring to scan for in output (e.g. "registered worker"), empty to skip
+	ForwardOutput io.Writer // if set, forward each output line to this writer
 }
 
 // startAgent launches a Python agent subprocess and monitors its output.
@@ -125,6 +128,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	args := append(prefixArgs, cfg.Entrypoint)
 	args = append(args, cfg.CLIArgs...)
 	cmd := exec.Command(pythonBin, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Dir = cfg.Dir
 	if len(cfg.Env) > 0 {
 		cmd.Env = append(os.Environ(), cfg.Env...)
@@ -143,6 +147,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		cmd:     cmd,
 		readyCh: make(chan struct{}),
 		doneCh:  make(chan error, 1),
+		exitCh:  make(chan struct{}),
 		maxLogs: 200,
 	}
 
@@ -158,6 +163,9 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		for scanner.Scan() {
 			line := scanner.Text()
 			ap.appendLog(line)
+			if cfg.ForwardOutput != nil {
+				fmt.Fprintln(cfg.ForwardOutput, line)
+			}
 			if cfg.ReadySignal != "" && strings.Contains(line, cfg.ReadySignal) {
 				readyOnce.Do(func() { close(ap.readyCh) })
 			}
@@ -169,10 +177,17 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		close(ap.readyCh)
 	}
 
-	go scanOutput(stdout)
-	go scanOutput(stderr)
+	var scanWg sync.WaitGroup
+	scanWg.Add(2)
+	go func() { defer scanWg.Done(); scanOutput(stdout) }()
+	go func() { defer scanWg.Done(); scanOutput(stderr) }()
 	go func() {
 		ap.doneCh <- cmd.Wait()
+		close(ap.exitCh)
+		scanWg.Wait()
+		if ap.LogStream != nil {
+			close(ap.LogStream)
+		}
 	}()
 
 	return ap, nil
@@ -225,15 +240,52 @@ func (ap *AgentProcess) LogCount() int {
 	return len(ap.logLines)
 }
 
-// Kill sends SIGINT to the subprocess and SIGKILL after a timeout.
+// Kill sends SIGINT to the process group and SIGKILL after a timeout.
+// If Shutdown() was already called, it just waits for exit (no duplicate SIGINT).
 func (ap *AgentProcess) Kill() {
 	if ap.cmd.Process == nil {
 		return
 	}
-	_ = ap.cmd.Process.Signal(syscall.SIGINT)
+	// Already exited — nothing to do.
 	select {
-	case <-ap.doneCh:
-	case <-time.After(5 * time.Second):
-		_ = ap.cmd.Process.Kill()
+	case <-ap.exitCh:
+		return
+	default:
 	}
+	if !ap.shutdownCalled {
+		ap.signalGroup(syscall.SIGINT)
+	}
+	select {
+	case <-ap.exitCh:
+	case <-time.After(5 * time.Second):
+		ap.signalGroup(syscall.SIGKILL)
+	}
+}
+
+// Shutdown sends SIGINT to the main process to initiate graceful shutdown.
+// Only signals the main process (not the group) so that Python manages
+// its own child process cleanup without stray signal bouncing.
+func (ap *AgentProcess) Shutdown() {
+	if ap.cmd.Process == nil {
+		return
+	}
+	ap.shutdownCalled = true
+	ap.cmd.Process.Signal(syscall.SIGINT)
+}
+
+// ForceKill sends SIGKILL to the process group immediately.
+func (ap *AgentProcess) ForceKill() {
+	if ap.cmd.Process == nil {
+		return
+	}
+	ap.signalGroup(syscall.SIGKILL)
+}
+
+// signalGroup sends a signal to the entire process group (Setpgid must be true).
+func (ap *AgentProcess) signalGroup(sig syscall.Signal) {
+	if ap.cmd.Process == nil {
+		return
+	}
+	// Negative PID signals the entire process group.
+	_ = syscall.Kill(-ap.cmd.Process.Pid, sig)
 }

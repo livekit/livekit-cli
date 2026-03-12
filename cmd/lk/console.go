@@ -23,7 +23,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -66,6 +68,11 @@ var consoleCommand = &cli.Command{
 			Name:  "no-aec",
 			Usage: "Disable acoustic echo cancellation",
 		},
+		&cli.BoolFlag{
+			Name:    "text",
+			Aliases: []string{"t"},
+			Usage:   "Start in text mode instead of audio mode",
+		},
 		&cli.StringFlag{
 			Name:  "entrypoint",
 			Usage: "Agent entrypoint `FILE` (default: auto-detect)",
@@ -75,38 +82,42 @@ var consoleCommand = &cli.Command{
 }
 
 func runConsole(ctx context.Context, cmd *cli.Command) error {
-	if err := portaudio.Initialize(); err != nil {
-		return fmt.Errorf("failed to initialize PortAudio: %w", err)
-	}
-	defer portaudio.Terminate()
+	textMode := cmd.Bool("text")
 
-	if cmd.Bool("list-devices") {
-		return listDevices()
-	}
+	var inputDev, outputDev *portaudio.DeviceInfo
+	if !textMode {
+		if err := portaudio.Initialize(); err != nil {
+			return fmt.Errorf("failed to initialize PortAudio: %w", err)
+		}
+		defer portaudio.Terminate()
 
-	var inputDev *portaudio.DeviceInfo
-	var err error
-	if q := cmd.String("input-device"); q != "" {
-		inputDev, err = portaudio.FindDevice(q, true)
-	} else {
-		inputDev, err = portaudio.DefaultInputDevice()
-	}
-	if err != nil {
-		return fmt.Errorf("input device: %w", err)
-	}
+		if cmd.Bool("list-devices") {
+			return listDevices()
+		}
 
-	var outputDev *portaudio.DeviceInfo
-	if q := cmd.String("output-device"); q != "" {
-		outputDev, err = portaudio.FindDevice(q, false)
-	} else {
-		outputDev, err = portaudio.DefaultOutputDevice()
-	}
-	if err != nil {
-		return fmt.Errorf("output device: %w", err)
+		var err error
+		if q := cmd.String("input-device"); q != "" {
+			inputDev, err = portaudio.FindDevice(q, true)
+		} else {
+			inputDev, err = portaudio.DefaultInputDevice()
+		}
+		if err != nil {
+			return fmt.Errorf("input device: %w", err)
+		}
+
+		if q := cmd.String("output-device"); q != "" {
+			outputDev, err = portaudio.FindDevice(q, false)
+		} else {
+			outputDev, err = portaudio.DefaultOutputDevice()
+		}
+		if err != nil {
+			return fmt.Errorf("output device: %w", err)
+		}
 	}
 
 	port := cmd.Int("port")
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	var err error
 	server, err := console.NewTCPServer(addr)
 	if err != nil {
 		return err
@@ -114,8 +125,10 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	defer server.Close()
 
 	actualAddr := server.Addr().String()
-	fmt.Fprintf(os.Stderr, "Input:  %s\n", inputDev.Name)
-	fmt.Fprintf(os.Stderr, "Output: %s\n", outputDev.Name)
+	if inputDev != nil {
+		fmt.Fprintf(os.Stderr, "Input:  %s\n", inputDev.Name)
+		fmt.Fprintf(os.Stderr, "Output: %s\n", outputDev.Name)
+	}
 
 	// Detect project type, walking up parent directories if needed.
 	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
@@ -203,15 +216,24 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	// Redirect Go's default logger to discard so it doesn't corrupt the TUI
 	log.SetOutput(io.Discard)
 
-	model := newConsoleModel(pipeline, agentProc, inputDev.Name, outputDev.Name)
-	p := tea.NewProgram(model)
+	// Remove the global SIGINT handler (from signal.NotifyContext in main.go)
+	// so that ctrl+C in raw mode reaches Bubble Tea as a key event, and after
+	// the TUI exits, a ctrl+C during cleanup uses the default handler (terminate).
+	signal.Reset(syscall.SIGINT)
+
+	var inputDevName, outputDevName string
+	if inputDev != nil {
+		inputDevName = inputDev.Name
+	}
+	if outputDev != nil {
+		outputDevName = outputDev.Name
+	}
+	model := newConsoleModel(pipeline, pipelineCancel, agentProc, inputDevName, outputDevName, textMode)
+	p := tea.NewProgram(model, tea.WithoutSignalHandler())
 
 	if _, err := p.Run(); err != nil {
 		return err
 	}
-
-	pipelineCancel()
-	pipeline.Stop()
 
 	return nil
 }

@@ -20,6 +20,7 @@ package console
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"net"
 	"sync"
@@ -47,6 +48,7 @@ type AudioPipeline struct {
 	inputStream  *portaudio.Stream
 	outputStream *portaudio.Stream
 	apmInst      *apm.APM
+	noAEC        bool
 	conn         net.Conn
 	connMu       sync.Mutex // protects writes to conn
 
@@ -56,6 +58,9 @@ type AudioPipeline struct {
 	// Events channel receives SessionEvents from the agent for the TUI.
 	Events chan *agent.SessionEvent
 
+	// Responses channel receives SessionResponses (request completions) for the TUI.
+	Responses chan *agent.SessionResponse
+
 	// ready is closed when the agent session is established (first TCP message).
 	ready     chan struct{}
 	readyOnce sync.Once
@@ -64,37 +69,56 @@ type AudioPipeline struct {
 	// Only accessed from the tcpReader goroutine.
 	flushCancel context.CancelFunc
 
-	mu       sync.Mutex
+	mu sync.Mutex
 	fftBands [NumFFTBands]float64
 	muted    bool
 	level    float64 // capture level in dB
 	playing  bool    // true when outputting real audio (not silence)
 
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
+	cancel   context.CancelFunc
+	audioCtx context.Context // stored so EnableAudio can start goroutines
+	wg       sync.WaitGroup
 }
 
 type PipelineConfig struct {
-	InputDevice  *portaudio.DeviceInfo
-	OutputDevice *portaudio.DeviceInfo
+	InputDevice  *portaudio.DeviceInfo // nil to skip audio (text-only)
+	OutputDevice *portaudio.DeviceInfo // nil to skip audio (text-only)
 	NoAEC        bool
 	Conn         net.Conn
 }
 
 func NewPipeline(cfg PipelineConfig) (*AudioPipeline, error) {
-	inputStream, err := portaudio.OpenInputStream(cfg.InputDevice, SampleRate, Channels, SamplesPerFrame)
-	if err != nil {
-		return nil, err
+	ap := &AudioPipeline{
+		conn:      cfg.Conn,
+		noAEC:     cfg.NoAEC,
+		Events:    make(chan *agent.SessionEvent, 64),
+		Responses: make(chan *agent.SessionResponse, 16),
+		ready:     make(chan struct{}),
 	}
 
-	outputStream, err := portaudio.OpenOutputStream(cfg.OutputDevice, SampleRate, Channels, SamplesPerFrame)
+	if cfg.InputDevice != nil && cfg.OutputDevice != nil {
+		if err := ap.initAudio(cfg.InputDevice, cfg.OutputDevice, cfg.NoAEC); err != nil {
+			return nil, err
+		}
+	}
+
+	return ap, nil
+}
+
+func (p *AudioPipeline) initAudio(inputDev, outputDev *portaudio.DeviceInfo, noAEC bool) error {
+	inputStream, err := portaudio.OpenInputStream(inputDev, SampleRate, Channels, SamplesPerFrame)
+	if err != nil {
+		return err
+	}
+
+	outputStream, err := portaudio.OpenOutputStream(outputDev, SampleRate, Channels, SamplesPerFrame)
 	if err != nil {
 		inputStream.Close()
-		return nil, err
+		return err
 	}
 
 	var apmInst *apm.APM
-	if !cfg.NoAEC {
+	if !noAEC {
 		apmCfg := apm.DefaultConfig()
 		apmCfg.CaptureChannels = Channels
 		apmCfg.RenderChannels = Channels
@@ -111,23 +135,42 @@ func NewPipeline(cfg PipelineConfig) (*AudioPipeline, error) {
 		apmInst.SetStreamDelayMs(delayMs)
 	}
 
-	return &AudioPipeline{
-		inputStream:  inputStream,
-		outputStream: outputStream,
-		apmInst:      apmInst,
-		conn:         cfg.Conn,
-		captureRing:  NewRingBuffer(SamplesPerFrame * CaptureRingFrames),
-		playbackRing: NewRingBuffer(SamplesPerFrame * PlaybackRingFrames),
-		Events:       make(chan *agent.SessionEvent, 64),
-		ready:        make(chan struct{}),
-	}, nil
+	p.inputStream = inputStream
+	p.outputStream = outputStream
+	p.apmInst = apmInst
+	p.captureRing = NewRingBuffer(SamplesPerFrame * CaptureRingFrames)
+	p.playbackRing = NewRingBuffer(SamplesPerFrame * PlaybackRingFrames)
+	return nil
 }
 
-func (p *AudioPipeline) Start(ctx context.Context) error {
-	ctx, p.cancel = context.WithCancel(ctx)
+// EnableAudio lazily initializes audio devices. Returns an error if
+// PortAudio is not available or devices cannot be opened.
+func (p *AudioPipeline) EnableAudio() error {
+	if p.HasAudio() {
+		return nil
+	}
 
-	// Start output before input so the render path is running when the
-	// first capture frame arrives.
+	if err := portaudio.Initialize(); err != nil {
+		return fmt.Errorf("failed to initialize PortAudio: %w", err)
+	}
+
+	inputDev, err := portaudio.DefaultInputDevice()
+	if err != nil {
+		portaudio.Terminate()
+		return fmt.Errorf("input device: %w", err)
+	}
+	outputDev, err := portaudio.DefaultOutputDevice()
+	if err != nil {
+		portaudio.Terminate()
+		return fmt.Errorf("output device: %w", err)
+	}
+
+	if err := p.initAudio(inputDev, outputDev, p.noAEC); err != nil {
+		portaudio.Terminate()
+		return err
+	}
+
+	// Start the audio loops
 	if err := p.outputStream.Start(); err != nil {
 		return err
 	}
@@ -136,10 +179,40 @@ func (p *AudioPipeline) Start(ctx context.Context) error {
 		return err
 	}
 
-	p.wg.Add(3)
+	p.wg.Add(2)
+	ctx := p.audioCtx
 	go p.micLoop(ctx)
 	go p.speakerLoop(ctx)
+
+	return nil
+}
+
+// HasAudio reports whether the audio pipeline is active.
+func (p *AudioPipeline) HasAudio() bool {
+	return p.inputStream != nil
+}
+
+func (p *AudioPipeline) Start(ctx context.Context) error {
+	ctx, p.cancel = context.WithCancel(ctx)
+	p.audioCtx = ctx
+
+	// Always run the TCP reader for events/responses.
+	p.wg.Add(1)
 	go p.tcpReader(ctx)
+
+	// Start audio loops if devices are available.
+	if p.HasAudio() {
+		if err := p.outputStream.Start(); err != nil {
+			return err
+		}
+		if err := p.inputStream.Start(); err != nil {
+			p.outputStream.Stop()
+			return err
+		}
+		p.wg.Add(2)
+		go p.micLoop(ctx)
+		go p.speakerLoop(ctx)
+	}
 
 	<-ctx.Done()
 	return nil
@@ -150,30 +223,35 @@ func (p *AudioPipeline) Stop() {
 		p.cancel()
 	}
 
-	p.inputStream.Stop()
-	p.outputStream.Stop()
+	if p.HasAudio() {
+		p.inputStream.Abort()
+		p.outputStream.Abort()
+	}
 	p.conn.Close()
-	p.captureRing.cond.Broadcast()
+	if p.captureRing != nil {
+		p.captureRing.cond.Broadcast()
+	}
 
 	p.wg.Wait()
 
-	p.inputStream.Close()
-	p.outputStream.Close()
-
+	if p.HasAudio() {
+		p.inputStream.Close()
+		p.outputStream.Close()
+	}
 	if p.apmInst != nil {
 		p.apmInst.Close()
 	}
 }
 
-func (p *AudioPipeline) writeMessage(msg *agent.SessionMessage) error {
+func (p *AudioPipeline) writeMessage(msg *agent.AgentSessionMessage) error {
 	p.connMu.Lock()
 	defer p.connMu.Unlock()
 	return WriteSessionMessage(p.conn, msg)
 }
 
 func (p *AudioPipeline) SendRequest(req *agent.SessionRequest) error {
-	return p.writeMessage(&agent.SessionMessage{
-		Message: &agent.SessionMessage_Request{Request: req},
+	return p.writeMessage(&agent.AgentSessionMessage{
+		Message: &agent.AgentSessionMessage_Request{Request: req},
 	})
 }
 
@@ -313,9 +391,9 @@ func (p *AudioPipeline) speakerLoop(ctx context.Context) {
 
 		p.computeMetrics(captureBuf)
 
-		_ = p.writeMessage(&agent.SessionMessage{
-			Message: &agent.SessionMessage_AudioInput{
-				AudioInput: &agent.AudioFrame{
+		_ = p.writeMessage(&agent.AgentSessionMessage{
+			Message: &agent.AgentSessionMessage_AudioInput{
+				AudioInput: &agent.SessionAudioFrame{
 					Data:              SamplesToBytes(captureBuf),
 					SampleRate:        SampleRate,
 					NumChannels:       Channels,
@@ -339,23 +417,23 @@ func (p *AudioPipeline) tcpReader(ctx context.Context) {
 		p.readyOnce.Do(func() { close(p.ready) })
 
 		switch m := msg.Message.(type) {
-		case *agent.SessionMessage_AudioOutput:
+		case *agent.AgentSessionMessage_AudioOutput:
 			p.playbackRing.Write(BytesToSamples(m.AudioOutput.Data))
 
-		case *agent.SessionMessage_Event:
+		case *agent.AgentSessionMessage_Event:
 			select {
 			case p.Events <- m.Event:
 			default:
 			}
 
-		case *agent.SessionMessage_AudioPlaybackClear:
+		case *agent.AgentSessionMessage_AudioPlaybackClear:
 			if p.flushCancel != nil {
 				p.flushCancel()
 				p.flushCancel = nil
 			}
 			p.playbackRing.Reset()
 
-		case *agent.SessionMessage_AudioPlaybackFlush:
+		case *agent.AgentSessionMessage_AudioPlaybackFlush:
 			if p.flushCancel != nil {
 				p.flushCancel()
 			}
@@ -363,10 +441,13 @@ func (p *AudioPipeline) tcpReader(ctx context.Context) {
 			p.flushCancel = cancel
 			go p.waitForDrainAndAck(flushCtx)
 
-		case *agent.SessionMessage_Response:
-			if ev := responseToEvent(m.Response); ev != nil {
+		case *agent.AgentSessionMessage_Response:
+			// Forward response so the TUI knows the request completed.
+			// Don't synthesize ConversationItemAdded — those arrive via the
+			// event stream already.
+			if m.Response != nil {
 				select {
-				case p.Events <- ev:
+				case p.Responses <- m.Response:
 				default:
 				}
 			}
@@ -374,28 +455,10 @@ func (p *AudioPipeline) tcpReader(ctx context.Context) {
 	}
 }
 
-func responseToEvent(resp *agent.SessionResponse) *agent.SessionEvent {
-	if resp == nil {
-		return nil
-	}
-	if r, ok := resp.Response.(*agent.SessionResponse_SendMessage); ok {
-		if r.SendMessage != nil && len(r.SendMessage.Items) > 0 {
-			return &agent.SessionEvent{
-				Event: &agent.SessionEvent_ConversationItemAdded{
-					ConversationItemAdded: &agent.ConversationItemAddedEvent{
-						Item: r.SendMessage.Items[len(r.SendMessage.Items)-1],
-					},
-				},
-			}
-		}
-	}
-	return nil
-}
-
 func (p *AudioPipeline) sendPlaybackFinished() {
-	_ = p.writeMessage(&agent.SessionMessage{
-		Message: &agent.SessionMessage_AudioPlaybackFinished{
-			AudioPlaybackFinished: &agent.AudioPlaybackFinished{},
+	_ = p.writeMessage(&agent.AgentSessionMessage{
+		Message: &agent.AgentSessionMessage_AudioPlaybackFinished{
+			AudioPlaybackFinished: &agent.SessionAudioPlaybackFinished{},
 		},
 	})
 }
