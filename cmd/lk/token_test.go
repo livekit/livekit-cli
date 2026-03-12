@@ -1,10 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -30,26 +29,21 @@ func TestTokenCommandTree(t *testing.T) {
 	assert.True(t, commandHasFlag(deprecatedCreateCmd, "token-only"), "'create-token' must have --token-only")
 }
 
-func TestResolveTokenCreateOutputMode(t *testing.T) {
-	cmd := parseTokenOutputFlags(t)
-	mode, err := resolveTokenCreateOutputMode(cmd)
-	require.NoError(t, err)
-	assert.Equal(t, tokenOutputModeHuman, mode)
+func TestTokenOutputFlagsAreMutuallyExclusive(t *testing.T) {
+	var actionCalled bool
+	app := &cli.Command{
+		Name:                   "lk",
+		MutuallyExclusiveFlags: tokenOutputMutuallyExclusiveFlags,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			actionCalled = true
+			return nil
+		},
+	}
 
-	cmd = parseTokenOutputFlags(t, "--json")
-	mode, err = resolveTokenCreateOutputMode(cmd)
-	require.NoError(t, err)
-	assert.Equal(t, tokenOutputModeJSON, mode)
-
-	cmd = parseTokenOutputFlags(t, "--token-only")
-	mode, err = resolveTokenCreateOutputMode(cmd)
-	require.NoError(t, err)
-	assert.Equal(t, tokenOutputModeTokenOnly, mode)
-
-	cmd = parseTokenOutputFlags(t, "--json", "--token-only")
-	_, err = resolveTokenCreateOutputMode(cmd)
+	err := app.Run(context.Background(), []string{"lk", "--json", "--token-only"})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot combine --json and --token-only")
+	assert.False(t, actionCalled)
+	assert.Contains(t, err.Error(), "option json cannot be set along with option token-only")
 }
 
 func TestPrintTokenCreateOutput(t *testing.T) {
@@ -62,33 +56,30 @@ func TestPrintTokenCreateOutput(t *testing.T) {
 		Grants:      &auth.ClaimGrants{Identity: "test-id"},
 	}
 
-	stdout := captureStdout(t, func() {
-		err := printTokenCreateOutput(tokenOutputModeTokenOnly, out)
-		require.NoError(t, err)
-	})
-	assert.Equal(t, "token-value\n", stdout)
+	var stdout bytes.Buffer
+	err := printTokenCreateOutput(&stdout, true, false, out)
+	require.NoError(t, err)
+	assert.Equal(t, "token-value\n", stdout.String())
 
-	stdout = captureStdout(t, func() {
-		err := printTokenCreateOutput(tokenOutputModeJSON, out)
-		require.NoError(t, err)
-	})
+	stdout.Reset()
+	err = printTokenCreateOutput(&stdout, false, true, out)
+	require.NoError(t, err)
 	var decoded map[string]any
-	require.NoError(t, json.Unmarshal([]byte(stdout), &decoded))
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &decoded))
 	assert.Equal(t, "token-value", decoded["access_token"])
 	assert.Equal(t, "https://example.livekit.cloud", decoded["project_url"])
 	assert.Equal(t, "test-id", decoded["identity"])
 
-	stdout = captureStdout(t, func() {
-		err := printTokenCreateOutput(tokenOutputModeHuman, out)
-		require.NoError(t, err)
-	})
-	assert.Contains(t, stdout, "Token grants:")
-	assert.Contains(t, stdout, "Project URL: https://example.livekit.cloud")
-	assert.Contains(t, stdout, "Access token: token-value")
+	stdout.Reset()
+	err = printTokenCreateOutput(&stdout, false, false, out)
+	require.NoError(t, err)
+	assert.Contains(t, stdout.String(), "Token grants:")
+	assert.Contains(t, stdout.String(), "Project URL: https://example.livekit.cloud")
+	assert.Contains(t, stdout.String(), "Access token: token-value")
 }
 
 func commandHasFlag(cmd *cli.Command, flagName string) bool {
-	for _, flag := range cmd.Flags {
+	for _, flag := range commandFlags(cmd) {
 		if slicesContains(flag.Names(), flagName) {
 			return true
 		}
@@ -96,44 +87,14 @@ func commandHasFlag(cmd *cli.Command, flagName string) bool {
 	return false
 }
 
-func parseTokenOutputFlags(t *testing.T, args ...string) *cli.Command {
-	t.Helper()
-
-	var parsedCmd *cli.Command
-	app := &cli.Command{
-		Name:  "lk",
-		Flags: []cli.Flag{jsonFlag, tokenOnlyFlag},
-		Action: func(ctx context.Context, cmd *cli.Command) error {
-			parsedCmd = cmd
-			return nil
-		},
+func commandFlags(cmd *cli.Command) []cli.Flag {
+	flags := append([]cli.Flag{}, cmd.Flags...)
+	for _, group := range cmd.MutuallyExclusiveFlags {
+		for _, path := range group.Flags {
+			flags = append(flags, path...)
+		}
 	}
-
-	runArgs := append([]string{"lk"}, args...)
-	require.NoError(t, app.Run(context.Background(), runArgs))
-	require.NotNil(t, parsedCmd)
-	return parsedCmd
-}
-
-func captureStdout(t *testing.T, fn func()) string {
-	t.Helper()
-
-	originalStdout := os.Stdout
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	os.Stdout = w
-
-	defer func() {
-		os.Stdout = originalStdout
-	}()
-
-	fn()
-
-	require.NoError(t, w.Close())
-	out, err := io.ReadAll(r)
-	require.NoError(t, err)
-	require.NoError(t, r.Close())
-	return string(out)
+	return flags
 }
 
 func slicesContains(items []string, item string) bool {
