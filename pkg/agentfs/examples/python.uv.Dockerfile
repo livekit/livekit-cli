@@ -57,6 +57,9 @@ COPY . .
 # This ensures the application can read/write files as needed
 RUN chown -R appuser:appuser /app
 
+# Set working directory
+WORKDIR /app
+
 # Switch to the non-privileged user for all subsequent operations
 # This improves security by not running as root
 USER appuser
