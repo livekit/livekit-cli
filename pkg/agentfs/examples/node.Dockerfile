@@ -2,7 +2,7 @@
 # For more information on the build process, see https://docs.livekit.io/agents/ops/deployment/builds/
 # syntax=docker/dockerfile:1
 
-# Use the official Node.js v22 base image with Node.js 22.10.0
+# Use the official Node.js v22 base image
 # We use the slim variant to keep the image size smaller while still having essential tools
 ARG NODE_VERSION=22
 FROM node:${NODE_VERSION}-slim AS base
@@ -19,6 +19,10 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y ca-certific
 # Pin pnpm version for reproducible builds
 RUN npm install -g pnpm@10
 
+# --- Build stage ---
+# Install dependencies, build the project, and prepare production assets
+FROM base AS build
+
 # Create a new directory for our application code
 # And set it as the working directory
 WORKDIR /app
@@ -30,7 +34,7 @@ COPY package.json pnpm-lock.yaml ./
 # --frozen-lockfile ensures we use exact versions from pnpm-lock.yaml for reproducible builds
 RUN pnpm install --frozen-lockfile
 
-# Copy all remaining pplication files into the container
+# Copy all remaining application files into the container
 # This includes source code, configuration files, and dependency specifications
 # (Excludes files specified in .dockerignore)
 COPY . .
@@ -39,8 +43,20 @@ COPY . .
 # Your package.json must contain a "build" script, such as `"build": "tsc"`
 RUN pnpm build
 
+# Pre-download any ML models or files the agent needs
+# This ensures the container is ready to run immediately without downloading
+# dependencies at runtime, which improves startup time and reliability
+# Your package.json must contain a "download-files" script, such as `"download-files": "pnpm run build && node dist/agent.js download-files"`
+RUN pnpm download-files
+
+# Remove dev dependencies for a leaner production image
+RUN pnpm prune --prod
+
+# --- Production stage ---
+FROM base
+
 # Create a non-privileged user that the app will run under
-# See https://docs.docker.com/develop/develop-images/dockerfile_best_practices/#user
+# See https://docs.docker.com/build/building/best-practices/#user
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -50,19 +66,12 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Set proper permissions
-RUN chown -R appuser:appuser /app
-USER appuser
+WORKDIR /app
 
-# Pre-download any ML models or files the agent needs
-# This ensures the container is ready to run immediately without downloading
-# dependencies at runtime, which improves startup time and reliability
-# Your package.json must contain a "download-files" script, such as `"download-files": "pnpm run build && node dist/agent.js download-files"`
-RUN pnpm download-files
+# Copy the built application with correct ownership in a single layer
+# This avoids expensive recursive chown operations on node_modules
+COPY --from=build --chown=appuser:appuser /app /app
 
-# Switch back to root to remove dev dependencies and finalize setup
-USER root
-RUN pnpm prune --prod && chown -R appuser:appuser /app
 USER appuser
 
 # Set Node.js to production mode
