@@ -55,6 +55,7 @@ var (
 					Name:      "create",
 					Usage:     "Bootstrap a new application from a template or through guided creation",
 					Action:    setupTemplate,
+					Before:    requireProject,
 					ArgsUsage: "`APP_NAME`",
 					Flags: []cli.Flag{
 						templateFlag,
@@ -300,7 +301,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		arg := cmd.Args().First()
 		if arg != "" {
 			appName = arg
-		} else {
+		} else if project != nil {
 			appName = project.Name
 		}
 	}
