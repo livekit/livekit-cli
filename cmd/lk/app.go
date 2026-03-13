@@ -301,13 +301,14 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		arg := cmd.Args().First()
 		if arg != "" {
 			appName = arg
-		} else if project != nil {
-			appName = project.Name
 		}
 	}
 	if appName == "" {
 		if SkipPrompts(cmd) {
 			return errors.New("non-interactive mode: provide app name as argument")
+		}
+		if project != nil {
+			appName = project.Name
 		}
 		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
 			Title("Application Name").
