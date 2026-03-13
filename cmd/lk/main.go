@@ -59,6 +59,7 @@ func main() {
 
 	app.Commands = append(app.Commands, AppCommands...)
 	app.Commands = append(app.Commands, AgentCommands...)
+	app.Commands = append(app.Commands, AnalyticsCommands...)
 	app.Commands = append(app.Commands, CloudCommands...)
 	app.Commands = append(app.Commands, DocsCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
