@@ -55,6 +55,7 @@ var (
 					Name:      "create",
 					Usage:     "Bootstrap a new application from a template or through guided creation",
 					Action:    setupTemplate,
+					Before:    requireProject,
 					ArgsUsage: "`APP_NAME`",
 					Flags: []cli.Flag{
 						templateFlag,
@@ -300,13 +301,14 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		arg := cmd.Args().First()
 		if arg != "" {
 			appName = arg
-		} else {
-			appName = project.Name
 		}
 	}
 	if appName == "" {
 		if SkipPrompts(cmd) {
 			return errors.New("non-interactive mode: provide app name as argument")
+		}
+		if project != nil {
+			appName = project.Name
 		}
 		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
 			Title("Application Name").
