@@ -870,14 +870,14 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		OnParticipantConnected: func(p *lksdk.RemoteParticipant) {
 			logger.Infow("participant connected",
 				"kind", p.Kind(),
-				"pID", p.SID(),
+				"participantID", p.SID(),
 				"participant", p.Identity(),
 			)
 		},
 		OnParticipantDisconnected: func(p *lksdk.RemoteParticipant) {
 			logger.Infow("participant disconnected",
 				"kind", p.Kind(),
-				"pID", p.SID(),
+				"participantID", p.SID(),
 				"participant", p.Identity(),
 			)
 		},
