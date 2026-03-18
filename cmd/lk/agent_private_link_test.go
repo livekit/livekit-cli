@@ -52,9 +52,7 @@ func TestBuildCreatePrivateLinkRequest_HappyPath(t *testing.T) {
 	assert.Equal(t, "us-east-1", req.Region)
 	assert.Equal(t, uint32(6379), req.Port)
 
-	aws := req.GetAws()
-	require.NotNil(t, aws)
-	assert.Equal(t, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123", aws.Endpoint)
+	assert.Equal(t, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123", req.Endpoint)
 }
 
 func TestPrivateLinkServiceDNS(t *testing.T) {
