@@ -87,16 +87,12 @@ var privateLinkCommands = &cli.Command{
 	},
 }
 
-func buildCreatePrivateLinkRequest(name, region string, port uint32, awsEndpoint string) *lkproto.CreatePrivateLinkRequest {
+func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint string) *lkproto.CreatePrivateLinkRequest {
 	return &lkproto.CreatePrivateLinkRequest{
-		Name:   name,
-		Region: region,
-		Port:   port,
-		Config: &lkproto.CreatePrivateLinkRequest_Aws{
-			Aws: &lkproto.CreatePrivateLinkRequest_AWSCreateConfig{
-				Endpoint: awsEndpoint,
-			},
-		},
+		Name:     name,
+		Region:   region,
+		Port:     port,
+		Endpoint: endpoint,
 	}
 }
 
