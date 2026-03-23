@@ -111,6 +111,9 @@ func checkForLegacyName() {
 func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	logConfig := &logger.Config{
 		Level: "info",
+		ComponentLevels: map[string]string{
+			"pion": "error",
+		},
 	}
 	if cmd.Bool("verbose") {
 		logConfig.Level = "debug"
