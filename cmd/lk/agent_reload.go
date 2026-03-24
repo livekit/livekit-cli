@@ -18,7 +18,7 @@ import (
 type reloadServer struct {
 	listener  *ipc.Listener
 	mu        sync.Mutex
-	savedJobs *agent.GetRunningJobsResponse
+	savedJobs *agent.GetRunningAgentJobsResponse
 }
 
 func newReloadServer() (*reloadServer, error) {
@@ -38,9 +38,9 @@ func (rs *reloadServer) captureJobs(conn net.Conn) {
 	conn.SetDeadline(time.Now().Add(1500 * time.Millisecond))
 	defer conn.SetDeadline(time.Time{})
 
-	req := &agent.DevMessage{
-		Message: &agent.DevMessage_GetRunningJobsRequest{
-			GetRunningJobsRequest: &agent.GetRunningJobsRequest{},
+	req := &agent.AgentDevMessage{
+		Message: &agent.AgentDevMessage_GetRunningJobsRequest{
+			GetRunningJobsRequest: &agent.GetRunningAgentJobsRequest{},
 		},
 	}
 	if err := ipc.WriteProto(conn, req); err != nil {
@@ -48,7 +48,7 @@ func (rs *reloadServer) captureJobs(conn net.Conn) {
 		return
 	}
 
-	resp := &agent.DevMessage{}
+	resp := &agent.AgentDevMessage{}
 	if err := ipc.ReadProto(conn, resp); err != nil {
 		fmt.Printf("reload: failed to read capture response: %v\n", err)
 		return
@@ -65,7 +65,7 @@ func (rs *reloadServer) captureJobs(conn net.Conn) {
 // serveNewProcess handles a GetRunningJobsRequest from the new Python process,
 // replying with the previously captured jobs.
 func (rs *reloadServer) serveNewProcess(conn net.Conn) {
-	req := &agent.DevMessage{}
+	req := &agent.AgentDevMessage{}
 	if err := ipc.ReadProto(conn, req); err != nil {
 		return
 	}
@@ -79,11 +79,11 @@ func (rs *reloadServer) serveNewProcess(conn net.Conn) {
 	rs.mu.Unlock()
 
 	if saved == nil {
-		saved = &agent.GetRunningJobsResponse{}
+		saved = &agent.GetRunningAgentJobsResponse{}
 	}
 
-	resp := &agent.DevMessage{
-		Message: &agent.DevMessage_GetRunningJobsResponse{
+	resp := &agent.AgentDevMessage{
+		Message: &agent.AgentDevMessage_GetRunningJobsResponse{
 			GetRunningJobsResponse: saved,
 		},
 	}

@@ -112,6 +112,16 @@ func generateAgentName() string {
 	return "simulation-" + string(b)
 }
 
+func dumpAgentLogs(agent *AgentProcess) {
+	logs := agent.RecentLogs(agent.LogCount())
+	if len(logs) > 0 {
+		fmt.Fprintln(os.Stderr, "\nAgent logs:")
+		for _, l := range logs {
+			fmt.Fprintln(os.Stderr, "  "+l)
+		}
+	}
+}
+
 // simulateMode represents how scenarios are sourced.
 type simulateMode int
 
@@ -197,50 +207,60 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
 	// Build the create request
-	req := &livekit.CreateSimulationRunRequest{
+	req := &livekit.SimulationRun_Create_Request{
 		AgentName:        agentName,
 		AgentDescription: description,
 		NumSimulations:   numSimulations,
 	}
 	switch mode {
 	case modeInlineScenarios:
-		scenarios := make([]*livekit.CreateSimulationRunRequest_Scenario, 0, len(cfg.Scenarios))
+		scenarios := make([]*livekit.SimulationRun_Create_Scenario, 0, len(cfg.Scenarios))
 		for _, sc := range cfg.Scenarios {
-			scenarios = append(scenarios, &livekit.CreateSimulationRunRequest_Scenario{
+			scenarios = append(scenarios, &livekit.SimulationRun_Create_Scenario{
+				Label:             sc.Label,
 				Instructions:      sc.Instructions,
 				AgentExpectations: sc.AgentExpectations,
 				Metadata:          sc.Metadata,
 			})
 		}
-		req.Source = &livekit.CreateSimulationRunRequest_Scenarios_{
-			Scenarios: &livekit.CreateSimulationRunRequest_Scenarios{
+		req.Source = &livekit.SimulationRun_Create_Request_Scenarios{
+			Scenarios: &livekit.SimulationRun_Create_Scenarios{
 				Scenarios: scenarios,
 			},
 		}
 	case modeScenarioGroup:
-		req.Source = &livekit.CreateSimulationRunRequest_GroupId{
+		req.Source = &livekit.SimulationRun_Create_Request_GroupId{
 			GroupId: scenarioGroupID,
 		}
 	}
 
 	// Wait for worker registration or subprocess exit
 	fmt.Println("Starting agent...")
-	select {
-	case <-agent.Ready():
-		// Worker registered
-	case err := <-agent.Done():
-		logs := agent.RecentLogs(20)
-		for _, l := range logs {
-			fmt.Fprintln(os.Stderr, l)
+	waitTick := time.NewTicker(10 * time.Second)
+	defer waitTick.Stop()
+	waitTimeout := time.NewTimer(60 * time.Second)
+	defer waitTimeout.Stop()
+	waitStart := time.Now()
+	waitDone := false
+	for !waitDone {
+		select {
+		case <-agent.Ready():
+			waitDone = true
+		case err := <-agent.Done():
+			dumpAgentLogs(agent)
+			if err != nil {
+				return fmt.Errorf("agent exited before registering: %w", err)
+			}
+			return fmt.Errorf("agent exited before registering")
+		case <-waitTick.C:
+			elapsed := int(time.Since(waitStart).Seconds())
+			fmt.Fprintf(os.Stderr, "Still waiting for agent to register... (%ds)\n", elapsed)
+		case <-waitTimeout.C:
+			dumpAgentLogs(agent)
+			return fmt.Errorf("timed out waiting for agent to register (60s). Check agent logs above for errors")
+		case <-ctx.Done():
+			return ctx.Err()
 		}
-		if err != nil {
-			return fmt.Errorf("agent exited before registering: %w", err)
-		}
-		return fmt.Errorf("agent exited before registering")
-	case <-time.After(60 * time.Second):
-		return fmt.Errorf("timed out waiting for agent to register")
-	case <-ctx.Done():
-		return ctx.Err()
 	}
 
 	// Create the simulation run
@@ -269,7 +289,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		fmt.Println("Analyzing source code and generating scenarios...")
-		if _, err := simClient.ConfirmSimulationSourceUpload(ctx, &livekit.ConfirmSimulationSourceUploadRequest{
+		if _, err := simClient.ConfirmSimulationSourceUpload(ctx, &livekit.SimulationRun_ConfirmSourceUpload_Request{
 			SimulationRunId: runID,
 		}); err != nil {
 			return fmt.Errorf("failed to confirm source upload: %w", err)
@@ -282,6 +302,13 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("TUI error: %w", err)
 	}
+
+	// Fire-and-forget cancel — server will no-op if already terminal
+	cancelCtx, cancelFn := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelFn()
+	simClient.CancelSimulationRun(cancelCtx, &livekit.SimulationRun_Cancel_Request{
+		SimulationRunId: runID,
+	})
 
 	return nil
 }

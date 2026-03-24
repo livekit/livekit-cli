@@ -45,10 +45,12 @@ func TestAgentPrivateLinkCommandTree(t *testing.T) {
 }
 
 func TestBuildCreatePrivateLinkRequest_HappyPath(t *testing.T) {
-	req := buildCreatePrivateLinkRequest("orders-db", "com.amazonaws.vpce.us-east-1.vpce-svc-abc123")
+	req := buildCreatePrivateLinkRequest("orders-db", "us-east-1", 6379, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123")
 	require.NotNil(t, req)
 
 	assert.Equal(t, "orders-db", req.Name)
+	assert.Equal(t, "us-east-1", req.Region)
+	assert.Equal(t, uint32(6379), req.Port)
 
 	aws := req.GetAws()
 	require.NotNil(t, aws)
@@ -60,7 +62,7 @@ func TestPrivateLinkServiceDNS(t *testing.T) {
 }
 
 func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
-	rows := buildPrivateLinkListRows([]*lkproto.PrivateLink{}, map[string]*lkproto.PrivateLinkHealthStatus{}, map[string]error{})
+	rows := buildPrivateLinkListRows([]*lkproto.PrivateLink{}, map[string]*lkproto.PrivateLinkStatus{}, map[string]error{})
 	assert.Empty(t, rows)
 }
 
@@ -69,13 +71,15 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 		{
 			PrivateLinkId: "pl-1",
 			Name:          "orders-db",
+			Region:        "us-east-1",
+			Port:          6379,
 		},
 	}
 
 	now := time.Now().UTC()
-	healthByID := map[string]*lkproto.PrivateLinkHealthStatus{
+	healthByID := map[string]*lkproto.PrivateLinkStatus{
 		"pl-1": {
-			Status:    lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY,
+			Status:    lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
 			UpdatedAt: timestamppb.New(now),
 		},
 	}
@@ -84,33 +88,41 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 	require.Len(t, rows, 1)
 	assert.Equal(t, "pl-1", rows[0][0])
 	assert.Equal(t, "orders-db", rows[0][1])
-	assert.Equal(t, lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY.String(), rows[0][2])
+	assert.Equal(t, "us-east-1", rows[0][2])
+	assert.Equal(t, "6379", rows[0][3])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][4])
 }
 
-func TestBuildPrivateLinkListRows_TwoPrivateLinks(t *testing.T) {
+func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) {
 	links := []*lkproto.PrivateLink{
 		{
 			PrivateLinkId: "pl-1",
 			Name:          "orders-db",
+			Region:        "us-east-1",
+			Port:          6379,
 		},
 		{
 			PrivateLinkId: "pl-2",
 			Name:          "cache",
+			Region:        "eu-west-1",
+			Port:          6380,
 		},
 	}
 
-	healthByID := map[string]*lkproto.PrivateLinkHealthStatus{
+	healthByID := map[string]*lkproto.PrivateLinkStatus{
 		"pl-1": {
-			Status: lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY,
+			Status: lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
 		},
 		"pl-2": {
-			Status: lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY,
+			Status: lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
 		},
 	}
 
 	rows := buildPrivateLinkListRows(links, healthByID, map[string]error{})
 	require.Len(t, rows, 2)
 
-	assert.Equal(t, lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY.String(), rows[0][2])
-	assert.Equal(t, lkproto.PrivateLinkHealthStatus_PRIVATE_LINK_ATTACHMENT_HEALTH_STATUS_HEALTHY.String(), rows[1][2])
+	assert.Equal(t, "us-east-1", rows[0][2])
+	assert.Equal(t, "eu-west-1", rows[1][2])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][4])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[1][4])
 }

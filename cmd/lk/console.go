@@ -73,6 +73,10 @@ var consoleCommand = &cli.Command{
 			Aliases: []string{"t"},
 			Usage:   "Start in text mode instead of audio mode",
 		},
+		&cli.BoolFlag{
+			Name:  "record",
+			Usage: "Record audio and session report to console-recordings/",
+		},
 		&cli.StringFlag{
 			Name:  "entrypoint",
 			Usage: "Agent entrypoint `FILE` (default: auto-detect)",
@@ -150,7 +154,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		Dir:         projectDir,
 		Entrypoint:  entrypoint,
 		ProjectType: projectType,
-		CLIArgs:     []string{"console", "--connect-addr", actualAddr},
+		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to start agent: %w", err)
@@ -236,6 +240,14 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return nil
+}
+
+func buildConsoleArgs(addr string, record bool) []string {
+	args := []string{"console", "--connect-addr", addr}
+	if record {
+		args = append(args, "--record")
+	}
+	return args
 }
 
 func listDevices() error {

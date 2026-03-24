@@ -55,8 +55,8 @@ type AudioPipeline struct {
 	captureRing  *RingBuffer
 	playbackRing *RingBuffer
 
-	// Events channel receives SessionEvents from the agent for the TUI.
-	Events chan *agent.SessionEvent
+	// Events channel receives AgentSessionEvents from the agent for the TUI.
+	Events chan *agent.AgentSessionEvent
 
 	// Responses channel receives SessionResponses (request completions) for the TUI.
 	Responses chan *agent.SessionResponse
@@ -91,7 +91,7 @@ func NewPipeline(cfg PipelineConfig) (*AudioPipeline, error) {
 	ap := &AudioPipeline{
 		conn:      cfg.Conn,
 		noAEC:     cfg.NoAEC,
-		Events:    make(chan *agent.SessionEvent, 64),
+		Events:    make(chan *agent.AgentSessionEvent, 64),
 		Responses: make(chan *agent.SessionResponse, 16),
 		ready:     make(chan struct{}),
 	}
@@ -393,7 +393,7 @@ func (p *AudioPipeline) speakerLoop(ctx context.Context) {
 
 		_ = p.writeMessage(&agent.AgentSessionMessage{
 			Message: &agent.AgentSessionMessage_AudioInput{
-				AudioInput: &agent.SessionAudioFrame{
+				AudioInput: &agent.AgentSessionMessage_ConsoleIO_AudioFrame{
 					Data:              SamplesToBytes(captureBuf),
 					SampleRate:        SampleRate,
 					NumChannels:       Channels,
@@ -458,7 +458,7 @@ func (p *AudioPipeline) tcpReader(ctx context.Context) {
 func (p *AudioPipeline) sendPlaybackFinished() {
 	_ = p.writeMessage(&agent.AgentSessionMessage{
 		Message: &agent.AgentSessionMessage_AudioPlaybackFinished{
-			AudioPlaybackFinished: &agent.SessionAudioPlaybackFinished{},
+			AudioPlaybackFinished: &agent.AgentSessionMessage_ConsoleIO_AudioPlaybackFinished{},
 		},
 	})
 }

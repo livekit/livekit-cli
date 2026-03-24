@@ -53,7 +53,7 @@ var blocks = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
 type consoleTickMsg struct{}
-type sessionEventMsg struct{ event *agent.SessionEvent }
+type sessionEventMsg struct{ event *agent.AgentSessionEvent }
 type sessionResponseMsg struct{ resp *agent.SessionResponse }
 type audioInitResultMsg struct{ err error }
 type agentLogMsg struct{ line string }
@@ -338,8 +338,8 @@ func (m *consoleModel) updateTextMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 			req := &agent.SessionRequest{
 				RequestId: reqID,
-				Request: &agent.SessionRequest_SendMessage_{
-					SendMessage: &agent.SessionRequest_SendMessage{Text: text},
+				Request: &agent.SessionRequest_RunInput_{
+					RunInput: &agent.SessionRequest_RunInput{Text: text},
 				},
 			}
 			go m.pipeline.SendRequest(req)
@@ -354,19 +354,19 @@ func (m *consoleModel) updateTextMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *consoleModel) handleSessionEvent(ev *agent.SessionEvent) []tea.Cmd {
+func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd {
 	if ev == nil {
 		return nil
 	}
 	var cmds []tea.Cmd
 
 	switch e := ev.Event.(type) {
-	case *agent.SessionEvent_AgentStateChanged_:
-		if e.AgentStateChanged.NewState == agent.SessionAgentState_SESSION_AGENT_STATE_THINKING {
+	case *agent.AgentSessionEvent_AgentStateChanged_:
+		if e.AgentStateChanged.NewState == agent.AgentState_AS_THINKING {
 			m.metricsText = ""
 		}
 
-	case *agent.SessionEvent_UserInputTranscribed_:
+	case *agent.AgentSessionEvent_UserInputTranscribed_:
 		if e.UserInputTranscribed.IsFinal {
 			m.partialTranscript = ""
 			if text := e.UserInputTranscribed.Transcript; text != "" {
@@ -380,7 +380,7 @@ func (m *consoleModel) handleSessionEvent(ev *agent.SessionEvent) []tea.Cmd {
 			m.partialTranscript = e.UserInputTranscribed.Transcript
 		}
 
-	case *agent.SessionEvent_ConversationItemAdded_:
+	case *agent.AgentSessionEvent_ConversationItemAdded_:
 		if item := e.ConversationItemAdded.Item; item != nil {
 			// Extract metrics from ChatMessage (matching Python console pattern)
 			if msg := item.GetMessage(); msg != nil {
@@ -394,7 +394,7 @@ func (m *consoleModel) handleSessionEvent(ev *agent.SessionEvent) []tea.Cmd {
 			}
 		}
 
-	case *agent.SessionEvent_Error_:
+	case *agent.AgentSessionEvent_Error_:
 		cmds = append(cmds, tea.Println(
 			"  "+redBoldStyle.Render("✗ ")+redStyle.Render(e.Error.Message),
 		))

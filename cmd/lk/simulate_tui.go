@@ -23,6 +23,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	agent "github.com/livekit/protocol/livekit/agent"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
@@ -116,7 +117,7 @@ func (m *simulateModel) pollSimulation() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		resp, err := m.client.GetSimulationRun(ctx, &livekit.GetSimulationRunRequest{
+		resp, err := m.client.GetSimulationRun(ctx, &livekit.SimulationRun_Get_Request{
 			SimulationRunId: m.runID,
 		})
 		if err != nil {
@@ -146,7 +147,8 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.startTime = time.Now()
 			}
 			if msg.run.Status == livekit.SimulationRun_STATUS_COMPLETED ||
-				msg.run.Status == livekit.SimulationRun_STATUS_FAILED {
+				msg.run.Status == livekit.SimulationRun_STATUS_FAILED ||
+				msg.run.Status == livekit.SimulationRun_STATUS_CANCELLED {
 				m.runFinished = true
 			}
 		}
@@ -259,7 +261,7 @@ func (m *simulateModel) viewWaiting() string {
 	b.WriteString(" ")
 	b.WriteString(cyanStyle.Render(m.runID))
 	b.WriteString("\n\n")
-	b.WriteString("  [1/3] Starting...\n")
+	b.WriteString("  [1/4] Starting...\n")
 	if m.showLogs {
 		b.WriteString(m.renderLogs())
 	}
@@ -275,7 +277,7 @@ func (m *simulateModel) viewGenerating() string {
 	b.WriteString(" ")
 	b.WriteString(cyanStyle.Render(m.runID))
 	b.WriteString("\n\n")
-	b.WriteString(fmt.Sprintf("  [1/3] Generating %d scenarios...\n", m.numSimulations))
+	b.WriteString(fmt.Sprintf("  [1/4] Generating %d scenarios...\n", m.numSimulations))
 	if m.showLogs {
 		b.WriteString(m.renderLogs())
 	}
@@ -309,6 +311,11 @@ func (m *simulateModel) viewRunning() string {
 		b.WriteString(m.renderDetail())
 	} else {
 		b.WriteString(m.renderJobList())
+
+		// Show summary when run is completed and summary is available
+		if m.run.Summary != nil {
+			b.WriteString(m.renderSummary())
+		}
 	}
 
 	b.WriteString("\n")
@@ -323,10 +330,13 @@ func (m *simulateModel) viewRunning() string {
 func (m *simulateModel) renderHeader() string {
 	var step, label, style string
 	switch {
-	case m.run.Status == livekit.SimulationRun_STATUS_COMPLETED || m.run.Status == livekit.SimulationRun_STATUS_FAILED:
-		step = "[3/3]"
+	case m.run.Status == livekit.SimulationRun_STATUS_COMPLETED || m.run.Status == livekit.SimulationRun_STATUS_FAILED || m.run.Status == livekit.SimulationRun_STATUS_CANCELLED:
+		step = "[4/4]"
 		_, _, failed, _ := m.jobCounts()
-		if m.run.Status == livekit.SimulationRun_STATUS_FAILED {
+		if m.run.Status == livekit.SimulationRun_STATUS_CANCELLED {
+			label = "Cancelled"
+			style = "yellow"
+		} else if m.run.Status == livekit.SimulationRun_STATUS_FAILED {
 			label = "Failed"
 			style = "red"
 		} else if failed > 0 {
@@ -336,8 +346,12 @@ func (m *simulateModel) renderHeader() string {
 			label = "Completed"
 			style = "green"
 		}
+	case m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING:
+		step = "[3/4]"
+		label = "Summarizing"
+		style = "yellow"
 	default:
-		step = "[2/3]"
+		step = "[2/4]"
 		label = "Running"
 		style = "yellow"
 	}
@@ -582,7 +596,142 @@ func (m *simulateModel) renderDetail() string {
 			}
 		}
 	}
+
+	// Show chat transcript if available
+	b.WriteString(m.renderChatTranscript(job.Id))
+
 	return b.String()
+}
+
+func (m *simulateModel) renderSummary() string {
+	summary := m.run.Summary
+	if summary == nil {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render("  " + strings.Repeat("─", 40)))
+	b.WriteString("\n\n")
+	b.WriteString("  " + boldStyle.Render("Summary"))
+	b.WriteString(fmt.Sprintf("  %s  %s\n\n",
+		greenStyle.Render(fmt.Sprintf("%d passed", summary.Passed)),
+		redStyle.Render(fmt.Sprintf("%d failed", summary.Failed)),
+	))
+
+	if summary.GoingWell != "" {
+		b.WriteString(greenStyle.Bold(true).Render("  Going well:"))
+		b.WriteString("\n")
+		for _, line := range strings.Split(summary.GoingWell, "\n") {
+			b.WriteString("    " + line + "\n")
+		}
+		b.WriteString("\n")
+	}
+
+	if summary.ToImprove != "" {
+		b.WriteString(yellowStyle.Bold(true).Render("  To improve:"))
+		b.WriteString("\n")
+		for _, line := range strings.Split(summary.ToImprove, "\n") {
+			b.WriteString("    " + line + "\n")
+		}
+		b.WriteString("\n")
+	}
+
+	if len(summary.Issues) > 0 {
+		b.WriteString(redStyle.Bold(true).Render("  Issues:"))
+		b.WriteString("\n")
+		for i, issue := range summary.Issues {
+			b.WriteString(fmt.Sprintf("    %d. %s\n", i+1, issue.Description))
+			if issue.Suggestion != "" {
+				b.WriteString(dimStyle.Render(fmt.Sprintf("       Suggestion: %s", issue.Suggestion)))
+				b.WriteString("\n")
+			}
+		}
+		b.WriteString("\n")
+	}
+
+	return b.String()
+}
+
+func (m *simulateModel) renderChatTranscript(jobID string) string {
+	if m.run.Summary == nil || m.run.Summary.ChatHistory == nil {
+		return ""
+	}
+	chatCtx, ok := m.run.Summary.ChatHistory[jobID]
+	if !ok || chatCtx == nil || len(chatCtx.Items) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(boldStyle.Render("  Transcript:"))
+	b.WriteString("\n\n")
+
+	for _, item := range chatCtx.Items {
+		switch v := item.Item.(type) {
+		case *agent.ChatContext_ChatItem_Message:
+			msg := v.Message
+			role := chatRoleLabel(msg.Role)
+			text := chatMessageText(msg)
+			b.WriteString(fmt.Sprintf("    %s: %s\n", role, text))
+		case *agent.ChatContext_ChatItem_FunctionCall:
+			fc := v.FunctionCall
+			args := fc.Arguments
+			if len(args) > 80 {
+				args = args[:80] + "..."
+			}
+			b.WriteString(dimStyle.Render(fmt.Sprintf("    [call] %s(%s)", fc.Name, args)))
+			b.WriteString("\n")
+		case *agent.ChatContext_ChatItem_FunctionCallOutput:
+			fco := v.FunctionCallOutput
+			output := fco.Output
+			if len(output) > 80 {
+				output = output[:80] + "..."
+			}
+			label := "output"
+			if fco.IsError {
+				label = "error"
+			}
+			b.WriteString(dimStyle.Render(fmt.Sprintf("    [%s] %s -> %s", label, fco.Name, output)))
+			b.WriteString("\n")
+		case *agent.ChatContext_ChatItem_AgentHandoff:
+			h := v.AgentHandoff
+			b.WriteString(dimStyle.Render(fmt.Sprintf("    [handoff] -> %s", h.NewAgentId)))
+			b.WriteString("\n")
+		case *agent.ChatContext_ChatItem_AgentConfigUpdate:
+			b.WriteString(dimStyle.Render("    [config update]"))
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
+}
+
+func chatRoleLabel(role agent.ChatRole) string {
+	switch role {
+	case agent.ChatRole_USER:
+		return cyanStyle.Render("User")
+	case agent.ChatRole_ASSISTANT:
+		return greenStyle.Render("Agent")
+	case agent.ChatRole_SYSTEM:
+		return dimStyle.Render("System")
+	case agent.ChatRole_DEVELOPER:
+		return dimStyle.Render("Developer")
+	default:
+		return dimStyle.Render("Unknown")
+	}
+}
+
+func chatMessageText(msg *agent.ChatMessage) string {
+	if msg == nil || len(msg.Content) == 0 {
+		return ""
+	}
+	var parts []string
+	for _, c := range msg.Content {
+		if t := c.GetText(); t != "" {
+			parts = append(parts, t)
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 func (m *simulateModel) renderLogs() string {
