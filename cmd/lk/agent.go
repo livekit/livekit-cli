@@ -1029,7 +1029,7 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	table := util.CreateTable().
-		Headers("Version", "Current", "Status", "Created At", "Deployed At")
+		Headers("Version", "Current", "Draining", "Status", "Created At", "Deployed At")
 
 	// Sort versions by created date descending
 	slices.SortFunc(versions.Versions, func(a, b *lkproto.AgentVersion) int {
@@ -1039,6 +1039,7 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		table.Row(
 			version.Version,
 			fmt.Sprintf("%t", version.Current),
+			fmt.Sprintf("%t", version.Draining),
 			version.Status,
 			version.CreatedAt.AsTime().Format(time.RFC3339),
 			version.DeployedAt.AsTime().Format(time.RFC3339),
