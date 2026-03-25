@@ -28,7 +28,6 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
-	"github.com/livekit/protocol/replay"
 	"github.com/livekit/server-sdk-go/v2/signalling"
 )
 
@@ -110,6 +109,12 @@ var (
 					},
 				},
 				{
+					Name:      "export",
+					Before:    createReplayClient,
+					Action:    exportReplay,
+					ArgsUsage: "REQUEST_JSON",
+				},
+				{
 					Name:   "delete",
 					Before: createReplayClient,
 					Action: deleteReplay,
@@ -135,7 +140,7 @@ func createReplayClient(ctx context.Context, cmd *cli.Command) (context.Context,
 	}
 
 	url := signalling.ToHttpURL(pc.URL)
-	client := replay.NewReplayProtobufClient(url, &http.Client{}, withDefaultClientOpts(pc)...)
+	client := livekit.NewReplayProtobufClient(url, &http.Client{}, withDefaultClientOpts(pc)...)
 	replayClient = &replayServiceClient{
 		Replay:    client,
 		apiKey:    pc.APIKey,
@@ -150,7 +155,7 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.ListReplaysRequest{
+	req := &livekit.ListReplaysRequest{
 		RoomName: cmd.String("room"),
 	}
 	if token := cmd.String("token"); token != "" {
@@ -162,7 +167,7 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	slices.SortFunc(res.Replays, func(a, b *replay.ReplayInfo) int {
+	slices.SortFunc(res.Replays, func(a, b *livekit.ReplayInfo) int {
 		if a.StartTime < b.StartTime {
 			return 1
 		}
@@ -196,10 +201,10 @@ func playback(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
-	req := &replay.PlaybackRequest{
+	req := &livekit.PlaybackRequest{
 		ReplayId:     cmd.String("id"),
 		PlaybackRoom: cmd.String("room"),
-		SeekOffset:   seekOffset.Nanoseconds(),
+		SeekOffsetMs: seekOffset.Nanoseconds(),
 	}
 	res, err := replayClient.Playback(ctx, req)
 	if err != nil {
@@ -220,9 +225,9 @@ func seek(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	req := &replay.SeekRequest{
-		PlaybackId: cmd.String("id"),
-		SeekOffset: seekOffset.Nanoseconds(),
+	req := &livekit.SeekRequest{
+		PlaybackId:   cmd.String("id"),
+		SeekOffsetMs: seekOffset.Nanoseconds(),
 	}
 	_, err = replayClient.Seek(ctx, req)
 	return err
@@ -234,11 +239,31 @@ func closeReplay(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.ClosePlaybackRequest{
+	req := &livekit.ClosePlaybackRequest{
 		PlaybackId: cmd.String("id"),
 	}
 	_, err = replayClient.Close(ctx, req)
 	return err
+}
+
+func exportReplay(ctx context.Context, cmd *cli.Command) error {
+	ctx, err := replayClient.withAuth(ctx)
+	if err != nil {
+		return err
+	}
+
+	req, err := ReadRequestArg[livekit.ExportReplayRequest](cmd)
+	if err != nil {
+		return err
+	}
+
+	info, err := replayClient.Export(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
 }
 
 func deleteReplay(ctx context.Context, cmd *cli.Command) error {
@@ -247,7 +272,7 @@ func deleteReplay(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	req := &replay.DeleteReplayRequest{
+	req := &livekit.DeleteReplayRequest{
 		ReplayId: cmd.String("id"),
 	}
 	_, err = replayClient.DeleteReplay(ctx, req)
@@ -256,7 +281,7 @@ func deleteReplay(ctx context.Context, cmd *cli.Command) error {
 
 // temporary replay service client - will eventually move to go SDK
 type replayServiceClient struct {
-	replay.Replay
+	livekit.Replay
 	apiKey    string
 	apiSecret string
 }
