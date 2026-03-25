@@ -204,7 +204,7 @@ func playback(ctx context.Context, cmd *cli.Command) error {
 	req := &livekit.PlaybackRequest{
 		ReplayId:     cmd.String("id"),
 		PlaybackRoom: cmd.String("room"),
-		SeekOffsetMs: seekOffset.Nanoseconds(),
+		SeekOffsetMs: seekOffset.Milliseconds(),
 	}
 	res, err := replayClient.Playback(ctx, req)
 	if err != nil {
@@ -227,7 +227,7 @@ func seek(ctx context.Context, cmd *cli.Command) error {
 	}
 	req := &livekit.SeekRequest{
 		PlaybackId:   cmd.String("id"),
-		SeekOffsetMs: seekOffset.Nanoseconds(),
+		SeekOffsetMs: seekOffset.Milliseconds(),
 	}
 	_, err = replayClient.Seek(ctx, req)
 	return err
