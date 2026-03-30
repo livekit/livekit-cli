@@ -96,10 +96,6 @@ func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint st
 	}
 }
 
-func privateLinkServiceDNS(name, projectID string) string {
-	return fmt.Sprintf("%s-%s.plg.svc", name, projectID)
-}
-
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {
 	var rows [][]string
 	for _, link := range links {
@@ -119,12 +115,17 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 				updatedAt = health.UpdatedAt.AsTime().UTC().Format("2006-01-02T15:04:05Z07:00")
 			}
 		}
+		dns := link.Endpoint
+		if dns == "" {
+			dns = "-"
+		}
 
 		rows = append(rows, []string{
 			link.PrivateLinkId,
 			link.Name,
 			link.Region,
 			strconv.FormatUint(uint64(link.Port), 10),
+			dns,
 			status,
 			updatedAt,
 		})
@@ -157,8 +158,8 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Printf("Created private link [%s]\n", util.Accented(resp.PrivateLink.PrivateLinkId))
-	if project != nil && project.ProjectId != "" {
-		fmt.Printf("Gateway DNS [%s]\n", util.Accented(privateLinkServiceDNS(req.Name, project.ProjectId)))
+	if resp.PrivateLink.Endpoint != "" {
+		fmt.Printf("Gateway DNS [%s]\n", util.Accented(resp.PrivateLink.Endpoint))
 	}
 	return nil
 }
@@ -217,7 +218,7 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	rows := buildPrivateLinkListRows(resp.Items, healthByID, healthErrByID)
-	table := util.CreateTable().Headers("ID", "Name", "Region", "Port", "Health", "Updated At").Rows(rows...)
+	table := util.CreateTable().Headers("ID", "Name", "Region", "Port", "DNS", "Health", "Updated At").Rows(rows...)
 	fmt.Println(table)
 	return nil
 }
