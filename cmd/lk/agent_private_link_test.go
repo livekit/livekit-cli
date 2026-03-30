@@ -55,10 +55,6 @@ func TestBuildCreatePrivateLinkRequest_HappyPath(t *testing.T) {
 	assert.Equal(t, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123", req.Endpoint)
 }
 
-func TestPrivateLinkServiceDNS(t *testing.T) {
-	assert.Equal(t, "orders-db-prj_123.plg.svc", privateLinkServiceDNS("orders-db", "prj_123"))
-}
-
 func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
 	rows := buildPrivateLinkListRows([]*lkproto.PrivateLink{}, map[string]*lkproto.PrivateLinkStatus{}, map[string]error{})
 	assert.Empty(t, rows)
@@ -71,6 +67,7 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 			Name:          "orders-db",
 			Region:        "us-east-1",
 			Port:          6379,
+			Endpoint:      "orders-db-p123.link",
 		},
 	}
 
@@ -88,7 +85,8 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 	assert.Equal(t, "orders-db", rows[0][1])
 	assert.Equal(t, "us-east-1", rows[0][2])
 	assert.Equal(t, "6379", rows[0][3])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][4])
+	assert.Equal(t, "orders-db-p123.link", rows[0][4])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][5])
 }
 
 func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) {
@@ -98,12 +96,14 @@ func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) 
 			Name:          "orders-db",
 			Region:        "us-east-1",
 			Port:          6379,
+			Endpoint:      "orders-db-p123.link",
 		},
 		{
 			PrivateLinkId: "pl-2",
 			Name:          "cache",
 			Region:        "eu-west-1",
 			Port:          6380,
+			Endpoint:      "cache-p123.link",
 		},
 	}
 
@@ -121,6 +121,8 @@ func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) 
 
 	assert.Equal(t, "us-east-1", rows[0][2])
 	assert.Equal(t, "eu-west-1", rows[1][2])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][4])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[1][4])
+	assert.Equal(t, "orders-db-p123.link", rows[0][4])
+	assert.Equal(t, "cache-p123.link", rows[1][4])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][5])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[1][5])
 }
