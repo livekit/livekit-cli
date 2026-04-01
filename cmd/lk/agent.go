@@ -642,7 +642,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		).Run(); err != nil {
 			return err
 		} else if viewLogs {
-			fmt.Println("Tailing runtime logs...safe to exit at any time")
+			fmt.Println("Tailing runtime logs...safe to exit at any time. You can view deployment logs later with `lk agent logs --log-type=deploy`")
 			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, os.Stdout, resp.ServerRegions[0])
 		}
 	}
