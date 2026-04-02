@@ -54,6 +54,30 @@ git clone https://github.com/livekit/livekit-cli && cd livekit-cli
 make install
 ```
 
+### Building with console support
+
+The `lk agent console` command (voice chat with an agent via mic/speakers) requires native dependencies (PortAudio, WebRTC audio processing) and is built separately with a build tag.
+
+This repo uses git submodules for vendored native sources. Make sure to clone with submodules:
+
+```shell
+git clone --recurse-submodules https://github.com/livekit/livekit-cli && cd livekit-cli
+```
+
+Or if you've already cloned:
+
+```shell
+git submodule update --init --recursive
+```
+
+Then build with the `console` tag:
+
+```shell
+make console
+```
+
+This produces a `bin/lk` binary with console support enabled.
+
 # Usage
 
 See `lk --help` for a complete list of subcommands. The `--help` flag can also be used on any subcommand for more information.
