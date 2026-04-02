@@ -43,6 +43,8 @@ type AgentProcess struct {
 	mu       sync.Mutex
 	logLines []string
 	maxLogs  int
+	logFile  *os.File
+	LogPath  string
 }
 
 // findPythonBinary locates a Python binary for the given project type.
@@ -143,15 +145,24 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
 
+	logFile, err := os.CreateTemp("", "lk-simulate-*.log")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create log file: %w", err)
+	}
+
 	ap := &AgentProcess{
 		cmd:     cmd,
 		readyCh: make(chan struct{}),
 		doneCh:  make(chan error, 1),
 		exitCh:  make(chan struct{}),
 		maxLogs: 200,
+		logFile: logFile,
+		LogPath: logFile.Name(),
 	}
 
 	if err := cmd.Start(); err != nil {
+		logFile.Close()
+		os.Remove(logFile.Name())
 		return nil, fmt.Errorf("failed to start agent: %w", err)
 	}
 
@@ -200,7 +211,9 @@ func (ap *AgentProcess) appendLog(line string) {
 	if len(ap.logLines) > ap.maxLogs {
 		ap.logLines = ap.logLines[len(ap.logLines)-ap.maxLogs:]
 	}
-	// Stream to TUI if channel exists
+	if ap.logFile != nil {
+		fmt.Fprintln(ap.logFile, line)
+	}
 	if ap.LogStream != nil {
 		select {
 		case ap.LogStream <- line:
@@ -249,6 +262,7 @@ func (ap *AgentProcess) Kill() {
 	// Already exited — nothing to do.
 	select {
 	case <-ap.exitCh:
+		ap.closeLogFile()
 		return
 	default:
 	}
@@ -259,6 +273,16 @@ func (ap *AgentProcess) Kill() {
 	case <-ap.exitCh:
 	case <-time.After(5 * time.Second):
 		ap.signalGroup(syscall.SIGKILL)
+	}
+	ap.closeLogFile()
+}
+
+func (ap *AgentProcess) closeLogFile() {
+	ap.mu.Lock()
+	defer ap.mu.Unlock()
+	if ap.logFile != nil {
+		ap.logFile.Close()
+		ap.logFile = nil
 	}
 }
 

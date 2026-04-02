@@ -15,14 +15,20 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"math/rand"
+	"os"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 	agent "github.com/livekit/protocol/livekit/agent"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -49,6 +55,8 @@ type simulationRunMsg struct {
 }
 
 type pollTickMsg struct{}
+type spinnerTickMsg struct{}
+type glowTickMsg struct{}
 
 type subprocessExitMsg struct {
 	err error
@@ -67,49 +75,284 @@ var filterNames = []string{"All", "Failed", "Passed", "Running"}
 
 // --- Model ---
 
+type step struct {
+	label   string
+	status  string // "pending", "running", "done", "failed"
+	elapsed time.Duration
+}
+
+type simulateConfig struct {
+	ctx             context.Context
+	client          *lksdk.AgentSimulationClient
+	pc              *config.ProjectConfig
+	numSimulations  int32
+	mode            simulateMode
+	description     string
+	agentName       string
+	projectDir      string
+	projectType     agentfs.ProjectType
+	entrypoint      string
+	cfg             *simulationConfig
+	scenarioGroupID string
+}
+
 type simulateModel struct {
-	client         *lksdk.AgentSimulationClient
-	runID          string
+	config      *simulateConfig
+	client      *lksdk.AgentSimulationClient
+	runID       string
+	agent       *AgentProcess
+	setupCancel context.CancelFunc
+
+	// Setup phase
+	steps     []step
+	setupDone bool
+
+	// Run phase
+	run            *livekit.SimulationRun
+	runFinished    bool
 	numSimulations int32
-	agent          *AgentProcess
+	startTime      time.Time
+	genStart       time.Time
 
-	run         *livekit.SimulationRun
-	runFinished bool
-	startTime   time.Time
+	quoteIdx   int
+	quoteTick  int
+	spinnerIdx int
+	glowIdx    int
 
-	filter      int
-	cursor      int
-	scrollOff   int
-	detailJobID string
-	showLogs    bool
+	filter          int
+	cursor          int
+	scrollOff       int
+	detailJobID     string
+	showLogs        bool
+	showDescription bool
 
 	width  int
 	height int
 	err    error
 }
 
-func newSimulateModel(client *lksdk.AgentSimulationClient, runID string, numSimulations int32, agent *AgentProcess) *simulateModel {
+type quote struct {
+	text   string
+	glow   bool // iconic quotes get a subtle glow
+	weight int  // higher = more likely to appear
+}
+
+var simulationQuotes = []quote{
+	// Iconic — glow sweep, high weight
+	{"There is no spoon.", true, 5},                                    // Spoon Boy — The Matrix
+	{"What is real? How do you define real?", true, 5},                 // Morpheus — The Matrix
+	{"Wake up, Neo.", true, 5},                                         // Trinity — The Matrix
+	{"Free your mind.", true, 4},                                       // Morpheus — The Matrix
+	{"Welcome to the real world.", true, 4},                            // Morpheus — The Matrix
+	{"Shall we play a game?", true, 4},                                 // WOPR — WarGames
+	{"Open the pod bay doors, HAL.", true, 4},                          // Dave — 2001: A Space Odyssey
+	{"The Matrix is everywhere. It is all around us.", true, 3},        // Morpheus — The Matrix
+	// Well-known — no glow, medium weight
+	{"Do not try and bend the spoon. That's impossible.", false, 3},                                 // Spoon Boy — The Matrix
+	{"The only winning move is not to play.", false, 3},                                              // WarGames
+	{"These violent delights have violent ends.", false, 3},                                          // Westworld
+	{"I think, therefore I am.", false, 3},                                                           // René Descartes
+	{"Unfortunately, no one can be told what the Matrix is.", false, 2},                              // Morpheus — The Matrix
+	{"Ever had that feeling where you're not sure if you're awake or still dreaming?", false, 2},    // Neo — The Matrix
+	{"I can only show you the door. You're the one that has to walk through it.", false, 2},         // Morpheus — The Matrix
+	{"Remember, all I'm offering is the truth. Nothing more.", false, 2},                            // Morpheus — The Matrix
+	// Niche — low weight
+	{"I don't like the idea that I'm not in control of my life.", false, 1},                         // Neo — The Matrix
+	{"Choice is an illusion created between those with power and those without.", false, 1},          // Merovingian — The Matrix Reloaded
+	{"The odds that we are in base reality is one in billions.", false, 1},                           // Elon Musk
+	{"The world, then, is a radical illusion.", false, 1},                                            // Jean Baudrillard
+	{"That's all it is. Information.", false, 1},                                                     // Ghost in the Shell
+	{"Not one single bit of it is real.", false, 1},                                                  // The Metamorphosis of Prime Intellect
+	{"I wish I had a good argument against it.", false, 1},                                           // Neil deGrasse Tyson
+	// Playful
+	{"Warming up the neural pathways...", false, 1},
+	{"Reticulating splines...", false, 1},                                                            // SimCity
+	{"Generating plausible humans...", false, 1},
+	{"Convincing the AI to cooperate...", false, 2},
+	{"Teaching robots to small talk...", false, 1},
+}
+
+// weightedQuotePool builds a flat slice with quotes repeated by weight for random selection.
+var weightedQuotePool = func() []int {
+	var pool []int
+	for i, q := range simulationQuotes {
+		for range q.weight {
+			pool = append(pool, i)
+		}
+	}
+	return pool
+}()
+
+func newSimulateModel(config *simulateConfig) *simulateModel {
 	return &simulateModel{
-		client:         client,
-		runID:          runID,
-		numSimulations: numSimulations,
-		agent:          agent,
+		config:         config,
+		client:         config.client,
+		numSimulations: config.numSimulations,
+		quoteIdx:       weightedQuotePool[rand.Intn(len(weightedQuotePool))],
 		width:          80,
 		height:         24,
 	}
 }
 
+// --- Setup messages ---
+
+type setupStepMsg struct {
+	stepIdx  int
+	elapsed  []time.Duration // elapsed time per completed step
+	err      error
+	runID    string
+	agent    *AgentProcess
+}
+
 func (m *simulateModel) Init() tea.Cmd {
 	return tea.Batch(
-		m.pollSimulation(),
-		m.waitSubprocess(),
+		m.runSetup(),
 		tickCmd(),
+		spinnerTickCmd(),
+		glowTickCmd(),
 	)
+}
+
+func (m *simulateModel) runSetup() tea.Cmd {
+	c := m.config
+
+	// Determine which steps to show
+	m.steps = []step{
+		{label: "Starting agent", status: "running"},
+		{label: "Creating simulation", status: "pending"},
+	}
+	if c.mode == modeGenerateFromSource {
+		m.steps = append(m.steps, step{label: "Uploading source", status: "pending"})
+	}
+
+	ctx, cancel := context.WithCancel(c.ctx)
+	m.setupCancel = cancel
+
+	return func() tea.Msg {
+		var elapsed []time.Duration
+		stepStart := time.Now()
+
+		// Step 0: Start agent & wait for registration
+		agent, err := startAgent(AgentStartConfig{
+			Dir:         c.projectDir,
+			Entrypoint:  c.entrypoint,
+			ProjectType: c.projectType,
+			CLIArgs: []string{
+				"start",
+				"--url", c.pc.URL,
+				"--api-key", c.pc.APIKey,
+				"--api-secret", c.pc.APISecret,
+			},
+			Env: []string{
+				"LIVEKIT_AGENT_NAME=" + c.agentName,
+				"LIVEKIT_URL=" + c.pc.URL,
+				"LIVEKIT_API_KEY=" + c.pc.APIKey,
+				"LIVEKIT_API_SECRET=" + c.pc.APISecret,
+			},
+			ReadySignal: "registered worker",
+		})
+		if err != nil {
+			return setupStepMsg{stepIdx: 0, err: fmt.Errorf("failed to start agent: %w", err)}
+		}
+
+		// Wait for agent ready
+		timeout := time.NewTimer(10 * time.Second)
+		defer timeout.Stop()
+		select {
+		case <-agent.Ready():
+		case err := <-agent.Done():
+			if err != nil {
+				return setupStepMsg{stepIdx: 0, err: fmt.Errorf("agent exited before registering: %w", err), agent: agent}
+			}
+			return setupStepMsg{stepIdx: 0, err: fmt.Errorf("agent exited before registering"), agent: agent}
+		case <-timeout.C:
+			return setupStepMsg{stepIdx: 0, err: fmt.Errorf("timed out waiting for agent to register (10s)"), agent: agent}
+		case <-ctx.Done():
+			return setupStepMsg{stepIdx: 0, err: ctx.Err(), agent: agent}
+		}
+		elapsed = append(elapsed, time.Since(stepStart))
+		stepStart = time.Now()
+
+		// Step 1: Create simulation run
+		req := &livekit.SimulationRun_Create_Request{
+			AgentName:        c.agentName,
+			AgentDescription: c.description,
+			NumSimulations:   c.numSimulations,
+		}
+		switch c.mode {
+		case modeInlineScenarios:
+			scenarios := make([]*livekit.SimulationRun_Create_Scenario, 0, len(c.cfg.Scenarios))
+			for _, sc := range c.cfg.Scenarios {
+				scenarios = append(scenarios, &livekit.SimulationRun_Create_Scenario{
+					Label:             sc.Label,
+					Instructions:      sc.Instructions,
+					AgentExpectations: sc.AgentExpectations,
+					Metadata:          sc.Metadata,
+				})
+			}
+			req.Source = &livekit.SimulationRun_Create_Request_Scenarios{
+				Scenarios: &livekit.SimulationRun_Create_Scenarios{
+					Scenarios: scenarios,
+				},
+			}
+		case modeScenarioGroup:
+			req.Source = &livekit.SimulationRun_Create_Request_GroupId{
+				GroupId: c.scenarioGroupID,
+			}
+		}
+
+		resp, err := c.client.CreateSimulationRun(ctx, req)
+		if err != nil {
+			return setupStepMsg{stepIdx: 1, err: fmt.Errorf("failed to create simulation: %w", err), agent: agent}
+		}
+		elapsed = append(elapsed, time.Since(stepStart))
+		stepStart = time.Now()
+		runID := resp.SimulationRunId
+
+		// Step 2: Upload source (if needed)
+		if c.mode == modeGenerateFromSource {
+			presigned := resp.PresignedPostRequest
+			if presigned == nil {
+				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("server did not return upload URL"), agent: agent, runID: runID}
+			}
+
+			sourceDir, _ := os.Getwd()
+			var buf bytes.Buffer
+			if err := cloudagents.CreateSourceZip(os.DirFS(sourceDir), nil, &buf); err != nil {
+				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to create source zip: %w", err), agent: agent, runID: runID}
+			}
+			if err := cloudagents.MultipartUpload(presigned.Url, presigned.Values, &buf); err != nil {
+				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to upload source: %w", err), agent: agent, runID: runID}
+			}
+			if _, err := c.client.ConfirmSimulationSourceUpload(ctx, &livekit.SimulationRun_ConfirmSourceUpload_Request{
+				SimulationRunId: runID,
+			}); err != nil {
+				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to confirm upload: %w", err), agent: agent, runID: runID}
+			}
+			elapsed = append(elapsed, time.Since(stepStart))
+		}
+
+		// All done
+		lastStep := len(m.steps) - 1
+		return setupStepMsg{stepIdx: lastStep, elapsed: elapsed, agent: agent, runID: runID}
+	}
 }
 
 func tickCmd() tea.Cmd {
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
 		return pollTickMsg{}
+	})
+}
+
+func spinnerTickCmd() tea.Cmd {
+	return tea.Tick(80*time.Millisecond, func(t time.Time) tea.Msg {
+		return spinnerTickMsg{}
+	})
+}
+
+func glowTickCmd() tea.Cmd {
+	return tea.Tick(40*time.Millisecond, func(t time.Time) tea.Msg {
+		return glowTickMsg{}
 	})
 }
 
@@ -128,6 +371,9 @@ func (m *simulateModel) pollSimulation() tea.Cmd {
 }
 
 func (m *simulateModel) waitSubprocess() tea.Cmd {
+	if m.agent == nil {
+		return nil
+	}
 	return func() tea.Msg {
 		err := <-m.agent.Done()
 		return subprocessExitMsg{err: err}
@@ -139,6 +385,42 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+
+	case setupStepMsg:
+		if msg.agent != nil {
+			m.agent = msg.agent
+		}
+		if msg.runID != "" {
+			m.runID = msg.runID
+		}
+		if msg.err != nil {
+			// Mark current step as failed
+			if msg.stepIdx < len(m.steps) {
+				m.steps[msg.stepIdx].status = "failed"
+			}
+			m.err = msg.err
+			m.setupDone = true
+			m.runFinished = true
+			return m, nil
+		}
+		// Mark all steps up to and including this one as done
+		for i := 0; i <= msg.stepIdx && i < len(m.steps); i++ {
+			m.steps[i].status = "done"
+			if i < len(msg.elapsed) {
+				m.steps[i].elapsed = msg.elapsed[i]
+			}
+		}
+		// If all steps are done, start polling
+		if msg.stepIdx >= len(m.steps)-1 {
+			m.setupDone = true
+			m.genStart = time.Now()
+			return m, tea.Batch(m.pollSimulation(), m.waitSubprocess())
+		}
+		// Mark next step as running
+		if msg.stepIdx+1 < len(m.steps) {
+			m.steps[msg.stepIdx+1].status = "running"
+		}
+		return m, nil
 
 	case simulationRunMsg:
 		if msg.err == nil && msg.run != nil {
@@ -153,9 +435,21 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case spinnerTickMsg:
+		m.spinnerIdx++
+		return m, spinnerTickCmd()
+
+	case glowTickMsg:
+		m.glowIdx++
+		return m, glowTickCmd()
+
 	case pollTickMsg:
+		m.quoteTick++
+		if m.quoteTick%60 == 0 {
+			m.quoteIdx = weightedQuotePool[rand.Intn(len(weightedQuotePool))]
+		}
 		var cmds []tea.Cmd
-		if !m.runFinished {
+		if m.setupDone && !m.runFinished {
 			cmds = append(cmds, m.pollSimulation())
 		}
 		cmds = append(cmds, tickCmd())
@@ -173,9 +467,16 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
+		if m.setupCancel != nil {
+			m.setupCancel()
+		}
 		return m, tea.Quit
 	case "ctrl+l":
 		m.showLogs = !m.showLogs
+	case "d":
+		if m.detailJobID == "" {
+			m.showDescription = !m.showDescription
+		}
 	case "up", "shift+tab":
 		m.cursor--
 	case "down", "tab":
@@ -243,45 +544,157 @@ func (m *simulateModel) filteredJobs() []indexedJob {
 }
 
 func (m *simulateModel) View() string {
-	if m.run == nil {
-		return m.viewWaiting()
+	// Setup phase or generating phase — show unified step view
+	if !m.setupDone || m.run == nil || m.run.Status == livekit.SimulationRun_STATUS_GENERATING {
+		return m.viewSetup()
 	}
 	switch m.run.Status {
-	case livekit.SimulationRun_STATUS_GENERATING:
-		return m.viewGenerating()
+	case livekit.SimulationRun_STATUS_FAILED:
+		if len(m.run.Jobs) == 0 {
+			return m.viewFailed()
+		}
+		return m.viewRunning()
 	default:
 		return m.viewRunning()
 	}
 }
 
-func (m *simulateModel) viewWaiting() string {
+func (m *simulateModel) viewSetup() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(tagStyle.Render("Simulate"))
-	b.WriteString(" ")
-	b.WriteString(cyanStyle.Render(m.runID))
+	b.WriteString(tagStyle.Render("Agent Simulation"))
 	b.WriteString("\n\n")
-	b.WriteString("  [1/4] Starting...\n")
-	if m.showLogs {
-		b.WriteString(m.renderLogs())
+
+	if m.config.pc != nil && m.config.pc.Name != "" {
+		b.WriteString(dimStyle.Render("  Project: "+m.config.pc.Name) + "\n")
 	}
-	b.WriteString(dimStyle.Render("  Ctrl+L logs"))
+	if m.config.pc != nil && m.config.pc.URL != "" {
+		b.WriteString(dimStyle.Render("  URL:     "+m.config.pc.URL) + "\n")
+	}
+	if m.runID != "" {
+		b.WriteString(dimStyle.Render("  Run:     "+m.runID) + "\n")
+	}
+	if url := m.getDashboardURL(); url != "" {
+		b.WriteString(dimStyle.Render("  "+url) + "\n")
+	}
 	b.WriteString("\n")
+
+	b.WriteString(m.renderSteps())
+
+	// Show generation progress after setup completes
+	if m.setupDone && m.err == nil {
+		elapsed := time.Since(m.genStart).Truncate(time.Second)
+		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("●"), m.numSimulations, m.spinner(), dimStyle.Render(elapsed.String())))
+	}
+
+	if m.err != nil {
+		b.WriteString("\n")
+		b.WriteString(redStyle.Render("  "+m.err.Error()) + "\n")
+		if m.agent != nil {
+			b.WriteString("\n")
+			b.WriteString(m.renderLogs())
+		}
+		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("  q quit"))
+		b.WriteString("\n")
+	} else {
+		b.WriteString("\n")
+		if m.showLogs {
+			b.WriteString(m.renderLogs())
+		}
+		b.WriteString(m.quoteAboveHint("  Ctrl+L logs"))
+		b.WriteString("\n")
+	}
 	return b.String()
 }
 
-func (m *simulateModel) viewGenerating() string {
+func (m *simulateModel) spinner() string {
+	return yellowStyle.Render(spinnerFrames[m.spinnerIdx%len(spinnerFrames)])
+}
+
+var quoteStyleDim = lipgloss.NewStyle().Foreground(lipgloss.Color("237"))
+
+// glowShades are brightness levels for the sweep effect (dark → bright → dark)
+var glowShades = []lipgloss.Color{"237", "239", "242", "245", "248", "245", "242", "239", "237"}
+
+func (m *simulateModel) quote() string {
+	q := simulationQuotes[m.quoteIdx]
+	if !q.glow {
+		return quoteStyleDim.Render(q.text)
+	}
+	// Sweep a bright spot across the text, then stay dark for a long pause
+	runes := []rune(q.text)
+	sweepLen := len(runes) + len(glowShades)
+	cycleLen := sweepLen + 250 // ~10s pause at 40ms tick
+	center := m.glowIdx % cycleLen
+	if center >= sweepLen {
+		// In the pause phase — render all dim
+		return quoteStyleDim.Render(q.text)
+	}
+	var b strings.Builder
+	for i, r := range runes {
+		dist := center - i
+		if dist >= 0 && dist < len(glowShades) {
+			style := lipgloss.NewStyle().Foreground(glowShades[dist])
+			if dist >= 2 && dist <= 6 { // italic only for the brightest chars
+				style = style.Italic(true)
+			}
+			b.WriteString(style.Render(string(r)))
+		} else {
+			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("237")).Render(string(r)))
+		}
+	}
+	return b.String()
+}
+
+func (m *simulateModel) renderSteps() string {
+	var b strings.Builder
+	for _, s := range m.steps {
+		switch s.status {
+		case "done":
+			elapsed := ""
+			if s.elapsed > 0 {
+				elapsed = " " + dimStyle.Render(s.elapsed.Round(time.Millisecond).String())
+			}
+			b.WriteString(fmt.Sprintf("  %s %s%s\n", greenStyle.Render("✓"), s.label, elapsed))
+		case "running":
+			b.WriteString(fmt.Sprintf("  %s %s\n", yellowStyle.Render("●"), s.label))
+		case "failed":
+			b.WriteString(fmt.Sprintf("  %s %s\n", redStyle.Render("✗"), s.label))
+		default:
+			b.WriteString(fmt.Sprintf("  %s %s\n", dimStyle.Render("○"), s.label))
+		}
+	}
+	return b.String()
+}
+
+func (m *simulateModel) getDashboardURL() string {
+	if m.runID == "" || m.config == nil || m.config.pc == nil || m.config.pc.ProjectId == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/projects/%s/agents/simulations/%s", dashboardURL, m.config.pc.ProjectId, m.runID)
+}
+
+func (m *simulateModel) viewFailed() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(tagStyle.Render("Simulate"))
-	b.WriteString(" ")
-	b.WriteString(cyanStyle.Render(m.runID))
+	b.WriteString(tagStyle.Render("Agent Simulation"))
+	b.WriteString("  ")
+	b.WriteString(dimStyle.Render(m.runID))
 	b.WriteString("\n\n")
-	b.WriteString(fmt.Sprintf("  [1/4] Generating %d scenarios...\n", m.numSimulations))
+	b.WriteString("  " + redStyle.Bold(true).Render("Failed") + "\n\n")
+	if m.run.Error != "" {
+		for _, line := range strings.Split(m.run.Error, "\n") {
+			b.WriteString(redStyle.Render("  "+line) + "\n")
+		}
+	} else {
+		b.WriteString(redStyle.Render("  (no error details available)") + "\n")
+	}
+	b.WriteString("\n")
 	if m.showLogs {
 		b.WriteString(m.renderLogs())
 	}
-	b.WriteString(dimStyle.Render("  Ctrl+L logs"))
+	b.WriteString(dimStyle.Render("  Ctrl+L logs · q quit"))
 	b.WriteString("\n")
 	return b.String()
 }
@@ -290,10 +703,31 @@ func (m *simulateModel) viewRunning() string {
 	var b strings.Builder
 
 	b.WriteString("\n")
-	b.WriteString(tagStyle.Render("Simulate"))
-	b.WriteString(" ")
-	b.WriteString(cyanStyle.Render(m.runID))
+	b.WriteString(tagStyle.Render("Agent Simulation"))
+	b.WriteString("  ")
+	b.WriteString(dimStyle.Render(m.runID))
+	if url := m.getDashboardURL(); url != "" {
+		b.WriteString("  " + dimStyle.Render(url))
+	}
 	b.WriteString("\n\n")
+
+	// Agent description
+	if m.run != nil && m.run.AgentDescription != "" {
+		b.WriteString(boldStyle.Render("  Agent Description") + "\n")
+		if m.showDescription {
+			wrapped := dimStyle.Width(m.width - 4).Render(m.run.AgentDescription)
+			for _, line := range strings.Split(wrapped, "\n") {
+				b.WriteString("  " + line + "\n")
+			}
+			b.WriteString(dimStyle.Render("  (press d to collapse)") + "\n\n")
+		} else {
+			desc := firstMeaningfulLine(m.run.AgentDescription)
+			if desc != "" {
+				b.WriteString(dimStyle.Width(m.width-4).Render("  "+desc) + "\n")
+				b.WriteString(dimStyle.Render("  (press d to expand)") + "\n\n")
+			}
+		}
+	}
 
 	// Header line
 	b.WriteString(m.renderHeader())
@@ -328,35 +762,33 @@ func (m *simulateModel) viewRunning() string {
 }
 
 func (m *simulateModel) renderHeader() string {
-	var step, label, style string
+	var label, style string
 	switch {
 	case m.run.Status == livekit.SimulationRun_STATUS_COMPLETED || m.run.Status == livekit.SimulationRun_STATUS_FAILED || m.run.Status == livekit.SimulationRun_STATUS_CANCELLED:
-		step = "[4/4]"
-		_, _, failed, _ := m.jobCounts()
+		total, done, _, _ := m.jobCounts()
+		allJobsDone := total > 0 && done == total
 		if m.run.Status == livekit.SimulationRun_STATUS_CANCELLED {
 			label = "Cancelled"
 			style = "yellow"
-		} else if m.run.Status == livekit.SimulationRun_STATUS_FAILED {
+		} else if m.run.Status == livekit.SimulationRun_STATUS_FAILED && !allJobsDone {
 			label = "Failed"
 			style = "red"
-		} else if failed > 0 {
-			label = "Completed with failures"
-			style = "yellow"
 		} else {
 			label = "Completed"
 			style = "green"
+			if allJobsDone && m.run.Summary == nil {
+				label += " — summary unavailable"
+			}
 		}
 	case m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING:
-		step = "[3/4]"
-		label = "Summarizing"
+		label = "Summarizing..."
 		style = "yellow"
 	default:
-		step = "[2/4]"
 		label = "Running"
 		style = "yellow"
 	}
 
-	header := dimStyle.Render(step) + " " + boldStyle.Render("Simulation") + " — "
+	header := boldStyle.Render("Simulation") + " — "
 	switch style {
 	case "green":
 		header += greenStyle.Bold(true).Render(label)
@@ -514,10 +946,17 @@ func (m *simulateModel) renderJobList() string {
 			instr = "—"
 		}
 
-		line := fmt.Sprintf("  %s %3d. %s  %s", icon, ij.origIdx, dimStyle.Render(ij.job.Id), instr)
-
+		var line string
 		if i == m.cursor {
+			// Build without inner styles so reverse applies cleanly
+			line = fmt.Sprintf("  %s %3d. %s  %s", icon, ij.origIdx, ij.job.Id, instr)
+			visible := lipgloss.Width(line)
+			if visible < m.width {
+				line += strings.Repeat(" ", m.width-visible)
+			}
 			line = reverseStyle.Render(line)
+		} else {
+			line = fmt.Sprintf("  %s %3d. %s  %s", icon, ij.origIdx, dimStyle.Render(ij.job.Id), instr)
 		}
 		b.WriteString(line)
 		b.WriteString("\n")
@@ -559,13 +998,19 @@ func (m *simulateModel) renderDetail() string {
 	))
 	b.WriteString("\n")
 
+	wrapWidth := m.width - 6
+	if wrapWidth < 40 {
+		wrapWidth = 40
+	}
+	wrapStyle := lipgloss.NewStyle().Width(wrapWidth)
+
 	b.WriteString(boldStyle.Render("  Instructions:"))
 	b.WriteString("\n")
 	instr := job.Instructions
 	if instr == "" {
 		instr = "—"
 	}
-	for _, line := range strings.Split(instr, "\n") {
+	for _, line := range strings.Split(wrapStyle.Render(instr), "\n") {
 		b.WriteString("    " + line + "\n")
 	}
 	b.WriteString("\n")
@@ -576,7 +1021,7 @@ func (m *simulateModel) renderDetail() string {
 	if expect == "" {
 		expect = "—"
 	}
-	for _, line := range strings.Split(expect, "\n") {
+	for _, line := range strings.Split(wrapStyle.Render(expect), "\n") {
 		b.WriteString(dimStyle.Render("    "+line) + "\n")
 	}
 
@@ -585,13 +1030,13 @@ func (m *simulateModel) renderDetail() string {
 		if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
 			b.WriteString(greenStyle.Bold(true).Render("  Result:"))
 			b.WriteString("\n")
-			for _, line := range strings.Split(job.Error, "\n") {
+			for _, line := range strings.Split(wrapStyle.Render(job.Error), "\n") {
 				b.WriteString(greenStyle.Render("    "+line) + "\n")
 			}
 		} else {
 			b.WriteString(redStyle.Bold(true).Render("  Error:"))
 			b.WriteString("\n")
-			for _, line := range strings.Split(job.Error, "\n") {
+			for _, line := range strings.Split(wrapStyle.Render(job.Error), "\n") {
 				b.WriteString(redStyle.Render("    "+line) + "\n")
 			}
 		}
@@ -619,10 +1064,16 @@ func (m *simulateModel) renderSummary() string {
 		redStyle.Render(fmt.Sprintf("%d failed", summary.Failed)),
 	))
 
+	wrapWidth := m.width - 6
+	if wrapWidth < 40 {
+		wrapWidth = 40
+	}
+
 	if summary.GoingWell != "" {
 		b.WriteString(greenStyle.Bold(true).Render("  Going well:"))
 		b.WriteString("\n")
-		for _, line := range strings.Split(summary.GoingWell, "\n") {
+		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.GoingWell)
+		for _, line := range strings.Split(wrapped, "\n") {
 			b.WriteString("    " + line + "\n")
 		}
 		b.WriteString("\n")
@@ -631,7 +1082,8 @@ func (m *simulateModel) renderSummary() string {
 	if summary.ToImprove != "" {
 		b.WriteString(yellowStyle.Bold(true).Render("  To improve:"))
 		b.WriteString("\n")
-		for _, line := range strings.Split(summary.ToImprove, "\n") {
+		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.ToImprove)
+		for _, line := range strings.Split(wrapped, "\n") {
 			b.WriteString("    " + line + "\n")
 		}
 		b.WriteString("\n")
@@ -640,11 +1092,25 @@ func (m *simulateModel) renderSummary() string {
 	if len(summary.Issues) > 0 {
 		b.WriteString(redStyle.Bold(true).Render("  Issues:"))
 		b.WriteString("\n")
+		issueWrap := wrapWidth - 4 // account for "    N. " prefix
+		if issueWrap < 30 {
+			issueWrap = 30
+		}
 		for i, issue := range summary.Issues {
-			b.WriteString(fmt.Sprintf("    %d. %s\n", i+1, issue.Description))
+			prefix := fmt.Sprintf("    %d. ", i+1)
+			descWrapped := lipgloss.NewStyle().Width(issueWrap).Render(issue.Description)
+			for j, line := range strings.Split(descWrapped, "\n") {
+				if j == 0 {
+					b.WriteString(prefix + line + "\n")
+				} else {
+					b.WriteString(strings.Repeat(" ", len(prefix)) + line + "\n")
+				}
+			}
 			if issue.Suggestion != "" {
-				b.WriteString(dimStyle.Render(fmt.Sprintf("       Suggestion: %s", issue.Suggestion)))
-				b.WriteString("\n")
+				sugWrapped := lipgloss.NewStyle().Width(issueWrap).Render("Suggestion: " + issue.Suggestion)
+				for _, line := range strings.Split(sugWrapped, "\n") {
+					b.WriteString(dimStyle.Render(strings.Repeat(" ", len(prefix))+line) + "\n")
+				}
 			}
 		}
 		b.WriteString("\n")
@@ -735,6 +1201,9 @@ func chatMessageText(msg *agent.ChatMessage) string {
 }
 
 func (m *simulateModel) renderLogs() string {
+	if m.agent == nil {
+		return ""
+	}
 	var b strings.Builder
 	b.WriteString(dimStyle.Render("  " + strings.Repeat("─", 40)))
 	b.WriteString("\n")
@@ -749,13 +1218,35 @@ func (m *simulateModel) renderLogs() string {
 	return b.String()
 }
 
-func (m *simulateModel) renderHint() string {
-	if m.detailJobID != "" {
-		return dimStyle.Render("  ESC/q back · Ctrl+L logs")
+// firstMeaningfulLine returns the first non-empty, non-heading line from text.
+func firstMeaningfulLine(text string) string {
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		return line
 	}
-	hint := "  ↑↓/Tab navigate · ENTER detail · ←→ filter · Ctrl+L logs"
-	if m.runFinished {
-		hint += " · q quit"
+	return ""
+}
+
+func (m *simulateModel) renderHint() string {
+	var hint string
+	if m.detailJobID != "" {
+		hint = "  ESC/q back · Ctrl+L logs"
+	} else {
+		hint = "  ↑↓/Tab navigate · ENTER detail · ←→ filter · d description · Ctrl+L logs"
+		if m.runFinished {
+			hint += " · q quit"
+		}
+	}
+	return m.quoteAboveHint(hint)
+}
+
+func (m *simulateModel) quoteAboveHint(hint string) string {
+	q := m.quote()
+	if !m.showLogs && lipgloss.Width(q) < m.width-4 {
+		return "  " + q + "\n" + dimStyle.Render(hint)
 	}
 	return dimStyle.Render(hint)
 }
