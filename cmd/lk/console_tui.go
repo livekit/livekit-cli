@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -51,6 +52,27 @@ var blocks = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
 
 // Braille spinner frames (matching Rich's "dots" spinner)
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+
+// startSpinner shows a braille spinner on stderr with the given message.
+// Returns a stop function that clears the spinner line.
+func startSpinner(msg string) func() {
+	done := make(chan struct{})
+	go func() {
+		i := 0
+		for {
+			select {
+			case <-done:
+				fmt.Fprintf(os.Stderr, "\r\033[K")
+				return
+			default:
+				fmt.Fprintf(os.Stderr, "\r  %s %s", spinnerFrames[i%len(spinnerFrames)], msg)
+				i++
+				time.Sleep(80 * time.Millisecond)
+			}
+		}
+	}()
+	return func() { close(done) }
+}
 
 type consoleTickMsg struct{}
 type sessionEventMsg struct{ event *agent.AgentSessionEvent }
@@ -388,11 +410,38 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 					m.metricsText = text
 				}
 				}
-			lines := formatChatItem(item)
-			for _, line := range lines {
-				cmds = append(cmds, tea.Println(line))
+			cmds = append(cmds, tea.Println(formatChatItem(item)))
+		}
+
+	case *agent.AgentSessionEvent_FunctionToolsExecuted_:
+		ft := e.FunctionToolsExecuted
+		outputsByCallID := make(map[string]*agent.FunctionCallOutput)
+		for _, fco := range ft.FunctionCallOutputs {
+			outputsByCallID[fco.CallId] = fco
+		}
+		var b strings.Builder
+		for i, fc := range ft.FunctionCalls {
+			if i > 0 {
+				b.WriteString("\n")
+			}
+			b.WriteString("\n  ")
+			b.WriteString("● ")
+			b.WriteString("function_tool: ")
+			b.WriteString(fc.Name)
+			if fco, ok := outputsByCallID[fc.CallId]; ok {
+				if fco.IsError {
+					b.WriteString("\n    ")
+					b.WriteString(redBoldStyle.Render("✗ "))
+					b.WriteString(redStyle.Render(truncateOutput(fco.Output)))
+				} else {
+					b.WriteString("\n    ")
+					b.WriteString(greenStyle.Render("✓ "))
+					b.WriteString(dimStyle.Render(summarizeOutput(fco.Output)))
+				}
 			}
 		}
+		b.WriteString("\n")
+		cmds = append(cmds, tea.Println(b.String()))
 
 	case *agent.AgentSessionEvent_Error_:
 		cmds = append(cmds, tea.Println(
@@ -403,16 +452,12 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 	return cmds
 }
 
-// formatChatItem returns lines to print for a conversation item,
-// matching the old Python console format.
-func formatChatItem(item *agent.ChatContext_ChatItem) []string {
+func formatChatItem(item *agent.ChatContext_ChatItem) string {
 	switch i := item.Item.(type) {
 	case *agent.ChatContext_ChatItem_Message:
 		msg := i.Message
-		// User messages are printed from UserInputTranscribed (final) to avoid
-		// ordering issues with partial transcripts.
 		if msg.Role == agent.ChatRole_USER {
-			return nil
+			return ""
 		}
 		var textParts []string
 		for _, c := range msg.Content {
@@ -422,41 +467,30 @@ func formatChatItem(item *agent.ChatContext_ChatItem) []string {
 		}
 		text := strings.Join(textParts, "")
 		if text == "" {
-			return nil
+			return ""
 		}
 
-		var lines []string
-		lines = append(lines,
-			"\n  "+lipgloss.NewStyle().Foreground(lkGreen).Render("● ")+
-				greenBoldStyle.Render("Agent"),
-		)
-		parts := strings.Split(text, "\n")
-		for i, tl := range parts {
-			if i == len(parts)-1 {
-				lines = append(lines, "    "+tl+"\n")
-			} else {
-				lines = append(lines, "    "+tl)
-			}
+		var b strings.Builder
+		b.WriteString("\n  ")
+		b.WriteString(lipgloss.NewStyle().Foreground(lkGreen).Render("● "))
+		b.WriteString(greenBoldStyle.Render("Agent"))
+		for _, tl := range strings.Split(text, "\n") {
+			b.WriteString("\n    ")
+			b.WriteString(tl)
 		}
-		return lines
+		b.WriteString("\n")
+		return b.String()
 
-	case *agent.ChatContext_ChatItem_FunctionCall:
-		return []string{
-			"  " + lipgloss.NewStyle().Foreground(lkCyan).Render("➜ ") +
-				cyanBoldStyle.Render(i.FunctionCall.Name),
+	case *agent.ChatContext_ChatItem_AgentHandoff:
+		h := i.AgentHandoff
+		old := ""
+		if h.OldAgentId != nil && *h.OldAgentId != "" {
+			old = dimStyle.Render(*h.OldAgentId) + " → "
 		}
-
-	case *agent.ChatContext_ChatItem_FunctionCallOutput:
-		if i.FunctionCallOutput.IsError {
-			return []string{
-				"    " + redBoldStyle.Render("✗ ") + redStyle.Render(truncateOutput(i.FunctionCallOutput.Output)),
-			}
-		}
-		return []string{
-			"    " + greenStyle.Render("✓ ") + dimStyle.Render(summarizeOutput(i.FunctionCallOutput.Output)),
-		}
+		return "  " + lipgloss.NewStyle().Foreground(lkPurple).Render("● ") +
+			dimStyle.Render("handoff: ") + old + labelStyle.Render(h.NewAgentId)
 	}
-	return nil
+	return ""
 }
 
 // ──────────────────────────────────────────────────────────────────

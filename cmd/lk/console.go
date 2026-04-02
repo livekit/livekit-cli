@@ -139,6 +139,9 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
+
+	// Show spinner while starting agent
+	stopSpinner := startSpinner("Starting agent")
 	agentProc, err := startAgent(AgentStartConfig{
 		Dir:         projectDir,
 		Entrypoint:  entrypoint,
@@ -146,6 +149,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
 	})
 	if err != nil {
+		stopSpinner()
 		return fmt.Errorf("failed to start agent: %w", err)
 	}
 	defer agentProc.Kill()
@@ -167,11 +171,13 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	var conn net.Conn
 	select {
 	case res := <-acceptCh:
+		stopSpinner()
 		if res.err != nil {
 			return fmt.Errorf("agent connection: %w", res.err)
 		}
 		conn = res.conn
 	case err := <-agentProc.Done():
+		stopSpinner()
 		logs := agentProc.RecentLogs(20)
 		for _, l := range logs {
 			fmt.Fprintln(os.Stderr, l)
@@ -181,12 +187,14 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		}
 		return fmt.Errorf("agent exited before connecting")
 	case <-time.After(60 * time.Second):
+		stopSpinner()
 		logs := agentProc.RecentLogs(20)
 		for _, l := range logs {
 			fmt.Fprintln(os.Stderr, l)
 		}
 		return fmt.Errorf("timed out waiting for agent to connect")
 	case <-ctx.Done():
+		stopSpinner()
 		return ctx.Err()
 	}
 	pipeline, err := console.NewPipeline(console.PipelineConfig{
