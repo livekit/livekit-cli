@@ -22,6 +22,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/logger"
@@ -89,7 +90,8 @@ func main() {
 	checkForLegacyName()
 
 	if err := app.Run(ctx, os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+		fmt.Fprintln(os.Stderr, errStyle.Render(err.Error()))
 		os.Exit(1)
 	}
 }

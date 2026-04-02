@@ -18,6 +18,9 @@ func WriteProto(w io.Writer, msg proto.Message) error {
 	if err != nil {
 		return fmt.Errorf("ipc: marshal: %w", err)
 	}
+	if len(data) > maxMessageSize {
+		return fmt.Errorf("ipc: message too large: %d bytes", len(data))
+	}
 
 	buf := make([]byte, 4+len(data))
 	binary.BigEndian.PutUint32(buf[:4], uint32(len(data)))

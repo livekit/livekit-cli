@@ -133,7 +133,6 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		fmt.Fprintf(os.Stderr, "Output: %s\n", outputDev.Name)
 	}
 
-	// Detect project type and entrypoint, walking up parent directories if needed.
 	projectDir, projectType, entrypoint, err := detectProject(cmd)
 	if err != nil {
 		return err
