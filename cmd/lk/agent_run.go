@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 
@@ -114,21 +115,45 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 }
 
 func noAgentError() error {
-	return fmt.Errorf("no agent project detected in the current directory.\n\n" +
-		"  Make sure you are running this command from an agent project directory\n" +
-		"  containing one of: pyproject.toml, requirements.txt, uv.lock, package.json, or lock files.\n\n" +
-		"  To get started, see: https://docs.livekit.io/agents/quickstart")
+	return fmt.Errorf("no agent project detected in the current directory\n\n" +
+		"Make sure you are running this command from an agent project directory\n" +
+		"containing one of: pyproject.toml, requirements.txt, uv.lock, package.json, or lock files.\n\n" +
+		"To get started, see: https://docs.livekit.io/agents/quickstart")
 }
 
 func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error) {
-	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
+	explicit := cmd.String("entrypoint")
+
+	detectFrom := "."
+	if explicit != "" {
+		absPath, err := filepath.Abs(explicit)
+		if err != nil {
+			return "", "", "", err
+		}
+		if _, err := os.Stat(absPath); err != nil {
+			return "", "", "", fmt.Errorf("entrypoint file not found: %s", explicit)
+		}
+		detectFrom = filepath.Dir(absPath)
+	}
+
+	projectDir, projectType, err := agentfs.DetectProjectRoot(detectFrom)
 	if err != nil {
 		return "", "", "", noAgentError()
 	}
 	if !projectType.IsPython() {
 		return "", "", "", fmt.Errorf("currently only supports Python agents (detected: %s)", projectType)
 	}
-	entrypoint, err := findEntrypoint(projectDir, cmd.String("entrypoint"), projectType)
+
+	if explicit != "" {
+		absPath, _ := filepath.Abs(explicit)
+		rel, err := filepath.Rel(projectDir, absPath)
+		if err != nil {
+			return "", "", "", fmt.Errorf("entrypoint %s is outside project root %s", explicit, projectDir)
+		}
+		return projectDir, projectType, rel, nil
+	}
+
+	entrypoint, err := findEntrypoint(projectDir, "", projectType)
 	if err != nil {
 		return "", "", "", err
 	}

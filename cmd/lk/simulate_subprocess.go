@@ -83,7 +83,7 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 			path = filepath.Join(dir, path)
 		}
 		if _, err := os.Stat(path); err != nil {
-			return "", fmt.Errorf("entrypoint not found: %s", explicit)
+			return "", fmt.Errorf("entrypoint file not found: %s", explicit)
 		}
 		return explicit, nil
 	}
@@ -93,7 +93,8 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 	}
 
 	// Check project root first
-	if _, err := os.Stat(filepath.Join(dir, def)); err == nil {
+	checked := []string{filepath.Join(dir, def)}
+	if _, err := os.Stat(checked[0]); err == nil {
 		return def, nil
 	}
 
@@ -101,12 +102,20 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 	cwd, _ := os.Getwd()
 	if rel, err := filepath.Rel(dir, cwd); err == nil && rel != "." {
 		candidate := filepath.Join(rel, def)
-		if _, err := os.Stat(filepath.Join(dir, candidate)); err == nil {
+		absCandidate := filepath.Join(dir, candidate)
+		checked = append(checked, absCandidate)
+		if _, err := os.Stat(absCandidate); err == nil {
 			return candidate, nil
 		}
 	}
 
-	return "", fmt.Errorf("entrypoint not found: %s (use --entrypoint to specify)", def)
+	msg := "no agent entrypoint found, checked:\n"
+	for _, p := range checked {
+		msg += fmt.Sprintf("  - %s\n", p)
+	}
+	msg += "\nMake sure you are running this command from a directory containing a LiveKit agent.\n"
+	msg += "Use --entrypoint to specify the agent entrypoint file."
+	return "", fmt.Errorf("%s", msg)
 }
 
 // AgentStartConfig configures how to launch an agent subprocess.
