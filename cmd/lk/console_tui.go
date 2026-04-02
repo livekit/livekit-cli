@@ -333,7 +333,7 @@ func (m *consoleModel) updateTextMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			printCmd := tea.Println(
 				"\n  " + lipgloss.NewStyle().Foreground(lkCyan).Render("● ") +
 					cyanBoldStyle.Render("You") +
-					"\n    " + text,
+					"\n    " + text + "\n",
 			)
 
 			req := &agent.SessionRequest{
@@ -373,7 +373,7 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 				cmds = append(cmds, tea.Println(
 					"\n  "+lipgloss.NewStyle().Foreground(lkCyan).Render("● ")+
 						cyanBoldStyle.Render("You")+
-						"\n    "+text,
+						"\n    "+text+"\n",
 				))
 			}
 		} else {
@@ -430,8 +430,13 @@ func formatChatItem(item *agent.ChatContext_ChatItem) []string {
 			"\n  "+lipgloss.NewStyle().Foreground(lkGreen).Render("● ")+
 				greenBoldStyle.Render("Agent"),
 		)
-		for _, tl := range strings.Split(text, "\n") {
-			lines = append(lines, "    "+tl)
+		parts := strings.Split(text, "\n")
+		for i, tl := range parts {
+			if i == len(parts)-1 {
+				lines = append(lines, "    "+tl+"\n")
+			} else {
+				lines = append(lines, "    "+tl)
+			}
 		}
 		return lines
 
