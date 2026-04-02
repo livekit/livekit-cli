@@ -7,9 +7,7 @@ package apm
 // #cgo linux CXXFLAGS: -DWEBRTC_LINUX -DWEBRTC_POSIX
 // #cgo windows CXXFLAGS: -DWEBRTC_WIN
 // #cgo arm64 CXXFLAGS: -DWEBRTC_HAS_NEON -DWEBRTC_ARCH_ARM64
-// #cgo darwin LDFLAGS: -lc++
-// #cgo linux LDFLAGS: -lc++ -lm -lpthread
-// #cgo windows LDFLAGS: -lc++
+// #cgo linux LDFLAGS: -lm -lpthread
 // #include "bridge.h"
 import "C"
 
