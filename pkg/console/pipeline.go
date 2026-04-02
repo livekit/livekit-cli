@@ -600,7 +600,10 @@ func SamplesToBytes(samples []int16) []byte {
 }
 
 func BytesToSamples(data []byte) []int16 {
-	n := len(data) / 2
+	n := len(data) / 2 // truncate odd trailing byte
+	if n == 0 {
+		return nil
+	}
 	samples := make([]int16, n)
 	for i := range samples {
 		samples[i] = int16(binary.LittleEndian.Uint16(data[i*2:]))

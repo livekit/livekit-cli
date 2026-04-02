@@ -113,10 +113,17 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 	return args, nil
 }
 
+func noAgentError() error {
+	return fmt.Errorf("no agent project detected in the current directory.\n\n" +
+		"  Make sure you are running this command from an agent project directory\n" +
+		"  containing one of: pyproject.toml, requirements.txt, uv.lock, package.json, or lock files.\n\n" +
+		"  To get started, see: https://docs.livekit.io/agents/quickstart")
+}
+
 func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error) {
 	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", noAgentError()
 	}
 	if !projectType.IsPython() {
 		return "", "", "", fmt.Errorf("currently only supports Python agents (detected: %s)", projectType)
@@ -146,6 +153,7 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
 
 	cliArgs, err := buildCLIArgs("start", cmd, quietOutput)
 	if err != nil {
@@ -204,7 +212,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		ForwardOutput: os.Stdout,
 	}
 
-	fmt.Fprintf(os.Stderr, "Starting agent in dev mode (%s in %s)...\n", entrypoint, projectDir)
+	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
 
 	// Take over signal handling from the global NotifyContext.
 	signal.Reset(syscall.SIGINT, syscall.SIGTERM)

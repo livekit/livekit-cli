@@ -32,7 +32,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/urfave/cli/v3"
 
-	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/console"
 	"github.com/livekit/livekit-cli/v2/pkg/portaudio"
 )
@@ -134,22 +133,13 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		fmt.Fprintf(os.Stderr, "Output: %s\n", outputDev.Name)
 	}
 
-	// Detect project type, walking up parent directories if needed.
-	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
-	if err != nil {
-		return err
-	}
-	if !projectType.IsPython() {
-		return fmt.Errorf("console currently only supports Python agents (detected: %s)", projectType)
-	}
-
-	// Resolve entrypoint relative to project root
-	entrypoint, err := findEntrypoint(projectDir, cmd.String("entrypoint"), projectType)
+	// Detect project type and entrypoint, walking up parent directories if needed.
+	projectDir, projectType, entrypoint, err := detectProject(cmd)
 	if err != nil {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "Starting agent (%s in %s)...\n", entrypoint, projectDir)
+	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
 	agentProc, err := startAgent(AgentStartConfig{
 		Dir:         projectDir,
 		Entrypoint:  entrypoint,
