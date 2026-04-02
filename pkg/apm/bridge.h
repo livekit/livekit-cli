@@ -28,6 +28,23 @@ void apm_set_stream_delay_ms(ApmHandle h, int delay_ms);
 // Get the current stream delay in milliseconds.
 int apm_stream_delay_ms(ApmHandle h);
 
+// AEC statistics returned by apm_get_stats.
+typedef struct {
+    int    has_erl;
+    double echo_return_loss;          // ERL in dB
+    int    has_erle;
+    double echo_return_loss_enhancement; // ERLE in dB
+    int    has_divergent;
+    double divergent_filter_fraction;
+    int    has_delay;
+    int    delay_ms;
+    int    has_residual_echo;
+    double residual_echo_likelihood;
+} ApmStats;
+
+// Get current AEC statistics.
+void apm_get_stats(ApmHandle h, ApmStats* out);
+
 #ifdef __cplusplus
 }
 #endif
