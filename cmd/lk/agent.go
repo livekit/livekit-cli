@@ -347,6 +347,7 @@ var (
 					ArgsUsage:                 "[working-dir]",
 				},
 				privateLinkCommands,
+				simulateCommand,
 			},
 		},
 	}

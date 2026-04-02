@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"strings"
@@ -233,6 +234,7 @@ func parseKeyValuePairs(c *cli.Command, flag string) (map[string]string, error) 
 type loadParams struct {
 	requireURL     bool
 	confirmProject bool
+	output         io.Writer
 }
 
 type loadOption func(*loadParams)
@@ -244,6 +246,12 @@ var (
 	confirmProject = func(p *loadParams) {
 		p.confirmProject = true
 	}
+	outputToStderr = func(p *loadParams) {
+		p.output = os.Stderr
+	}
+	quietOutput = func(p *loadParams) {
+		p.output = io.Discard
+	}
 )
 
 // attempt to load connection config, it'll prioritize
@@ -251,13 +259,14 @@ var (
 // 2. config file (by default, livekit.toml)
 // 3. default project config
 func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
-	p := loadParams{requireURL: true, confirmProject: false}
+	p := loadParams{requireURL: true, confirmProject: false, output: os.Stdout}
 	for _, opt := range opts {
 		opt(&p)
 	}
+	w := p.output
 	logDetails := func(c *cli.Command, pc *config.ProjectConfig) {
 		if c.Bool("verbose") {
-			fmt.Printf("URL: %s, api-key: %s, api-secret: %s\n",
+			fmt.Fprintf(w, "URL: %s, api-key: %s, api-secret: %s\n",
 				pc.URL,
 				pc.APIKey,
 				"************",
@@ -275,7 +284,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(c.String("project")))
+		fmt.Fprintln(w, "Using project ["+util.Accented(c.String("project"))+"]")
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -289,7 +298,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(pc.Name))
+		fmt.Fprintln(w, "Using project ["+util.Accented(pc.Name)+"]")
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -323,7 +332,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 			envVars = append(envVars, "api-secret")
 		}
 		if len(envVars) > 0 {
-			fmt.Fprintf(os.Stderr, "Using %s from environment\n", strings.Join(envVars, ", "))
+			fmt.Fprintf(w, "Using %s from environment\n", strings.Join(envVars, ", "))
 			logDetails(c, pc)
 		}
 		return pc, nil
@@ -331,7 +340,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	if c.Bool("dev") {
 		pc.APIKey = "devkey"
 		pc.APISecret = "secret"
-		fmt.Fprintln(os.Stderr, "Using dev credentials")
+		fmt.Fprintln(w, "Using dev credentials")
 		return pc, nil
 	}
 
@@ -363,13 +372,13 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 					if _, err = selectProject(context.Background(), c); err != nil {
 						return nil, err
 					}
-					fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
+					fmt.Fprintf(w, "Using project [%s]\n", util.Accented(project.Name))
 					return project, nil
 				}
 			}
 		} else {
 			if !c.Bool("silent") && !SkipPrompts(c) {
-				fmt.Fprintf(os.Stderr, "Using default project [%s]\n", util.Theme.Focused.Title.Render(dp.Name))
+				fmt.Fprintln(w, "Using default project ["+util.Theme.Focused.Title.Render(dp.Name)+"]")
 				logDetails(c, dp)
 			}
 		}

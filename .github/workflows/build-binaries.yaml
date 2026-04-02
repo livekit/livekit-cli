@@ -12,39 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Build
+name: Build binaries
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-permissions:
-  contents: read
+  workflow_call:
+    inputs:
+      output_dir:
+        type: string
+        default: bin
+      upload_release:
+        type: boolean
+        default: false
 
 jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: true
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: "1.25"
-
-      - name: Static Check
-        uses: dominikh/staticcheck-action@v1.4.0
-        with:
-          version: "latest"
-          install-go: false
-
-      - name: Test
-        run: go test -v ./...
-
   build:
     strategy:
       fail-fast: false
@@ -89,7 +69,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          lfs: 'true'
           submodules: true
+
+      - run: git lfs pull
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -161,8 +144,27 @@ jobs:
           if [ "${GOOS:-}" = "windows" ] && [ "$CGO_ENABLED" = "1" ]; then
             EXTLD="-linkmode=external -extldflags '-L${ZIG_LIB}/libc/mingw/lib-common'"
           fi
-          go build $TAGS -ldflags "-w -s $EXTLD" -o "bin/lk${EXT}" ./cmd/lk
+          go build $TAGS -ldflags "-w -s $EXTLD" -o "${{ inputs.output_dir }}/lk${EXT}" ./cmd/lk
 
       - name: Verify binary
         if: "!matrix.goos && !matrix.goarch"
-        run: bin/lk --help > /dev/null
+        run: ${{ inputs.output_dir }}/lk --help > /dev/null
+
+      - name: Package and upload
+        if: inputs.upload_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          NAME="lk_${VERSION}_${{ matrix.suffix }}"
+          cp LICENSE ${{ inputs.output_dir }}/
+          cp -r autocomplete ${{ inputs.output_dir }}/
+          if [[ "${{ matrix.suffix }}" == windows_* ]]; then
+            cd ${{ inputs.output_dir }} && zip -r "../${NAME}.zip" lk.exe LICENSE autocomplete && cd ..
+            gh release upload "$TAG" "${NAME}.zip" --clobber
+          else
+            tar -czf "${NAME}.tar.gz" -C ${{ inputs.output_dir }} lk LICENSE autocomplete
+            gh release upload "$TAG" "${NAME}.tar.gz" --clobber
+          fi
