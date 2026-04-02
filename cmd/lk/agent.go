@@ -562,7 +562,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine agent language: %w, please navigate to a directory containing an agent written in a supported language", err)
+		return noAgentError()
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
@@ -749,7 +749,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
+		return noAgentError()
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
@@ -1493,7 +1493,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
+		return noAgentError()
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
