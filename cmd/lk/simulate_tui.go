@@ -45,6 +45,8 @@ var (
 	boldStyle    = lipgloss.NewStyle().Bold(true)
 	reverseStyle = lipgloss.NewStyle().Reverse(true)
 	cyanStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true)
+
+	simSpinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 )
 
 // --- Message types ---
@@ -318,8 +320,8 @@ func (m *simulateModel) runSetup() tea.Cmd {
 
 			sourceDir, _ := os.Getwd()
 			var buf bytes.Buffer
-			if err := cloudagents.CreateSourceZip(os.DirFS(sourceDir), nil, &buf); err != nil {
-				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to create source zip: %w", err), agent: agent, runID: runID}
+			if err := cloudagents.CreateSourceTarball(os.DirFS(sourceDir), nil, &buf); err != nil {
+				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to create source archive: %w", err), agent: agent, runID: runID}
 			}
 			if err := cloudagents.MultipartUpload(presigned.Url, presigned.Values, &buf); err != nil {
 				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to upload source: %w", err), agent: agent, runID: runID}
@@ -609,7 +611,7 @@ func (m *simulateModel) viewSetup() string {
 }
 
 func (m *simulateModel) spinner() string {
-	return yellowStyle.Render(spinnerFrames[m.spinnerIdx%len(spinnerFrames)])
+	return yellowStyle.Render(simSpinnerFrames[m.spinnerIdx%len(simSpinnerFrames)])
 }
 
 var quoteStyleDim = lipgloss.NewStyle().Foreground(lipgloss.Color("237"))

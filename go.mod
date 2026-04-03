@@ -16,7 +16,7 @@ require (
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.45.2-0.20260325065350-7558ba4c26d3
-	github.com/livekit/server-sdk-go/v2 v2.16.1
+	github.com/livekit/server-sdk-go/v2 v2.16.2-0.20260403035727-4e7182404d8d
 	github.com/mattn/go-isatty v0.0.20
 	github.com/moby/patternmatcher v0.6.0
 	github.com/modelcontextprotocol/go-sdk v1.4.0
@@ -208,7 +208,3 @@ require (
 	mvdan.cc/sh/v3 v3.12.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 )
-
-replace github.com/livekit/protocol => ../protocol
-
-replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
