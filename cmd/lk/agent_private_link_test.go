@@ -134,6 +134,7 @@ func TestFormatPrivateLinkHealthStatus(t *testing.T) {
 	assert.Equal(t, "Unknown", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN))
 	assert.Equal(t, "Provisioning", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PROVISIONING))
 	assert.Equal(t, "Pending Approval", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PENDING_APPROVAL))
+	assert.Equal(t, "Approved", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_APPROVED))
 	assert.Equal(t, "Healthy", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY))
 	assert.Equal(t, "Unhealthy", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNHEALTHY))
 }

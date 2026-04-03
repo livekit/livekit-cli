@@ -144,6 +144,8 @@ func formatPrivateLinkHealthStatus(status lkproto.PrivateLinkStatus_Status) stri
 		return "Provisioning"
 	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PENDING_APPROVAL:
 		return "Pending Approval"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_APPROVED:
+		return "Approved"
 	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY:
 		return "Healthy"
 	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNHEALTHY:
