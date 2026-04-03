@@ -86,7 +86,7 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 	assert.Equal(t, "us-east-1", rows[0][2])
 	assert.Equal(t, "6379", rows[0][3])
 	assert.Equal(t, "orders-db-p123.link", rows[0][4])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY.String(), rows[0][5])
+	assert.Equal(t, "Healthy", rows[0][5])
 	assert.Equal(t, "-", rows[0][7])
 }
 
@@ -124,8 +124,16 @@ func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) 
 	assert.Equal(t, "eu-west-1", rows[1][2])
 	assert.Equal(t, "orders-db-p123.link", rows[0][4])
 	assert.Equal(t, "cache-p123.link", rows[1][4])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY.String(), rows[0][5])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY.String(), rows[1][5])
+	assert.Equal(t, "Healthy", rows[0][5])
+	assert.Equal(t, "Healthy", rows[1][5])
 	assert.Equal(t, "-", rows[0][7])
 	assert.Equal(t, "-", rows[1][7])
+}
+
+func TestFormatPrivateLinkHealthStatus(t *testing.T) {
+	assert.Equal(t, "Unknown", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN))
+	assert.Equal(t, "Provisioning", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PROVISIONING))
+	assert.Equal(t, "Pending Approval", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PENDING_APPROVAL))
+	assert.Equal(t, "Healthy", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY))
+	assert.Equal(t, "Unhealthy", formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNHEALTHY))
 }
