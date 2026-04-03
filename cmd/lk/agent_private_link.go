@@ -19,8 +19,7 @@ var privateLinkCommands = &cli.Command{
 			Name:  "create",
 			Usage: "Create a private link",
 			Description: "Creates a private link to a customer endpoint.\n\n" +
-				"Supports AWS VPC Endpoint Service Names and Azure Private Link Service aliases for --endpoint.\n" +
-				"AWS example: com.amazonaws.vpce.us-east-1.vpce-svc-123123a1c43abc123\n" +
+				"Supports Azure Private Link Service aliases for --endpoint.\n" +
 				"Azure example: my-pls.12345678-abcd-1234-abcd-1234567890ab.eastus.azure.privatelinkservice",
 			Before: createAgentClient,
 			Action: createPrivateLink,
@@ -42,7 +41,7 @@ var privateLinkCommands = &cli.Command{
 				},
 				&cli.StringFlag{
 					Name:     "endpoint",
-					Usage:    "Customer-provided endpoint identifier (AWS service name or Azure PLS alias)",
+					Usage:    "Customer-provided endpoint identifier",
 					Required: true,
 				},
 				jsonFlag,
