@@ -103,15 +103,15 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 			continue
 		}
 
-		status := lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN.String()
+		status := formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN)
 		updatedAt := "-"
 		reason := "-"
 
 		if err, ok := healthErrByID[link.PrivateLinkId]; ok && err != nil {
-			status = "ERROR"
+			status = "Error"
 			reason = err.Error()
 		} else if health, ok := healthByID[link.PrivateLinkId]; ok && health != nil {
-			status = health.Status.String()
+			status = formatPrivateLinkHealthStatus(health.Status)
 			if health.UpdatedAt != nil {
 				updatedAt = health.UpdatedAt.AsTime().UTC().Format("2006-01-02T15:04:05Z07:00")
 			}
@@ -136,6 +136,23 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 		})
 	}
 	return rows
+}
+
+func formatPrivateLinkHealthStatus(status lkproto.PrivateLinkStatus_Status) string {
+	switch status {
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PROVISIONING:
+		return "Provisioning"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PENDING_APPROVAL:
+		return "Pending Approval"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY:
+		return "Healthy"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNHEALTHY:
+		return "Unhealthy"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN:
+		return "Unknown"
+	default:
+		return status.String()
+	}
 }
 
 func formatPrivateLinkClientError(action string, err error) error {
@@ -270,7 +287,7 @@ func getPrivateLinkHealthStatus(ctx context.Context, cmd *cli.Command) error {
 	}
 	table := util.CreateTable().
 		Headers("ID", "Health", "Updated At", "Reason").
-		Row(privateLinkID, resp.Value.Status.String(), updatedAt, reason)
+		Row(privateLinkID, formatPrivateLinkHealthStatus(resp.Value.Status), updatedAt, reason)
 	fmt.Println(table)
 	return nil
 }
