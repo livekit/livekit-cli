@@ -74,7 +74,7 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 	now := time.Now().UTC()
 	healthByID := map[string]*lkproto.PrivateLinkStatus{
 		"pl-1": {
-			Status:    lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
+			Status:    lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY,
 			UpdatedAt: timestamppb.New(now),
 		},
 	}
@@ -86,7 +86,8 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 	assert.Equal(t, "us-east-1", rows[0][2])
 	assert.Equal(t, "6379", rows[0][3])
 	assert.Equal(t, "orders-db-p123.link", rows[0][4])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][5])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY.String(), rows[0][5])
+	assert.Equal(t, "-", rows[0][7])
 }
 
 func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) {
@@ -109,10 +110,10 @@ func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) 
 
 	healthByID := map[string]*lkproto.PrivateLinkStatus{
 		"pl-1": {
-			Status: lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
+			Status: lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY,
 		},
 		"pl-2": {
-			Status: lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE,
+			Status: lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY,
 		},
 	}
 
@@ -123,6 +124,8 @@ func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) 
 	assert.Equal(t, "eu-west-1", rows[1][2])
 	assert.Equal(t, "orders-db-p123.link", rows[0][4])
 	assert.Equal(t, "cache-p123.link", rows[1][4])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[0][5])
-	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_AVAILABLE.String(), rows[1][5])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY.String(), rows[0][5])
+	assert.Equal(t, lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY.String(), rows[1][5])
+	assert.Equal(t, "-", rows[0][7])
+	assert.Equal(t, "-", rows[1][7])
 }
