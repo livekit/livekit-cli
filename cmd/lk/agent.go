@@ -382,12 +382,20 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		return ctx, err
 	}
 	if configExists {
-		projectSubdomainMatch := subdomainPattern.FindStringSubmatch(project.URL)
-		if len(projectSubdomainMatch) < 2 {
-			return ctx, fmt.Errorf("invalid project URL [%s]", project.URL)
-		}
-		if projectSubdomainMatch[1] != lkConfig.Project.Subdomain {
-			return ctx, fmt.Errorf("project does not match agent subdomain [%s]", lkConfig.Project.Subdomain)
+		// When agents_url is explicitly configured, skip subdomain validation.
+		// This supports self-hosted deployments where the project URL does not
+		// follow the <subdomain>.livekit.cloud pattern.
+		agentsURLOverride := lkConfig.Agent != nil && lkConfig.Agent.AgentsURL != ""
+		if !agentsURLOverride {
+			projectSubdomainMatch := subdomainPattern.FindStringSubmatch(project.URL)
+			if len(projectSubdomainMatch) < 2 {
+				return ctx, fmt.Errorf("invalid project URL [%s]", project.URL)
+			}
+			if projectSubdomainMatch[1] != lkConfig.Project.Subdomain {
+				return ctx, fmt.Errorf("project does not match agent subdomain [%s]", lkConfig.Project.Subdomain)
+			}
+		} else {
+			os.Setenv("LK_AGENTS_URL", lkConfig.Agent.AgentsURL)
 		}
 	}
 
