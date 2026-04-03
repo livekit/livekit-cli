@@ -15,8 +15,8 @@ require (
 	github.com/go-logr/logr v1.4.3
 	github.com/go-task/task/v3 v3.44.1
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.45.2-0.20260325065350-7558ba4c26d3
-	github.com/livekit/server-sdk-go/v2 v2.16.2-0.20260403040052-6244a381c6d9
+	github.com/livekit/protocol v1.45.2-0.20260403151849-8a360e8d0221
+	github.com/livekit/server-sdk-go/v2 v2.16.2-0.20260403163006-dbb96cc2c416
 	github.com/mattn/go-isatty v0.0.20
 	github.com/moby/patternmatcher v0.6.0
 	github.com/modelcontextprotocol/go-sdk v1.4.0
@@ -90,7 +90,7 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-git/go-git/v5 v5.16.2 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.5 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/go-task/template v0.2.0 // indirect
