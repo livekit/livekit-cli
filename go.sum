@@ -194,8 +194,8 @@ github.com/go-git/go-git-fixtures/v4 v4.3.2-0.20231010084843-55a94097c399 h1:eMj
 github.com/go-git/go-git-fixtures/v4 v4.3.2-0.20231010084843-55a94097c399/go.mod h1:1OCfN199q1Jm3HZlxleg+Dw/mwps2Wbk9frAWm+4FII=
 github.com/go-git/go-git/v5 v5.16.2 h1:fT6ZIOjE5iEnkzKyxTHK1W4HGAsPhqEqiSAssSO77hM=
 github.com/go-git/go-git/v5 v5.16.2/go.mod h1:4Ge4alE/5gPs30F2H1esi2gPd69R0C39lolkucHBOp8=
-github.com/go-jose/go-jose/v3 v3.0.4 h1:Wp5HA7bLQcKnf6YYao/4kpRpVMp/yf6+pJKV8WFSaNY=
-github.com/go-jose/go-jose/v3 v3.0.4/go.mod h1:5b+7YgP7ZICgJDBdfjZaIt+H/9L9T/YQrVfLAMboGkQ=
+github.com/go-jose/go-jose/v3 v3.0.5 h1:BLLJWbC4nMZOfuPVxoZIxeYsn6Nl2r1fITaJ78UQlVQ=
+github.com/go-jose/go-jose/v3 v3.0.5/go.mod h1:5b+7YgP7ZICgJDBdfjZaIt+H/9L9T/YQrVfLAMboGkQ=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.4.3 h1:CjnDlHq8ikf6E492q6eKboGOC0T8CDaOvkHCIg8idEI=
 github.com/go-logr/logr v1.4.3/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
@@ -273,8 +273,8 @@ github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 h1:9x+U2HGLrSw5AT
 github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731/go.mod h1:Rs3MhFwutWhGwmY1VQsygw28z5bWcnEYmS1OG9OxjOQ=
 github.com/livekit/mediatransportutil v0.0.0-20260309115634-0e2e24b36ee8 h1:coWig9fKxdb/nwOaIoGUUAogso12GblAJh/9SA9hcxk=
 github.com/livekit/mediatransportutil v0.0.0-20260309115634-0e2e24b36ee8/go.mod h1:RCd46PT+6sEztld6XpkCrG1xskb0u3SqxIjy4G897Ss=
-github.com/livekit/protocol v1.45.2-0.20260325065350-7558ba4c26d3 h1:wmg/PTPHbIXpKoQvoLcqdJS0K8KpKGf34Xe+YPOPTm8=
-github.com/livekit/protocol v1.45.2-0.20260325065350-7558ba4c26d3/go.mod h1:63AUi0vQak6Y6gPqSBHLc+ExYTUwEqF/m4b2IRW1iO0=
+github.com/livekit/protocol v1.45.2-0.20260403195737-756a0a7cb7b9 h1:dAOkOEzuSbsc0hb/m1z/2MfDo+OJA6hMqqjF8ehCD6I=
+github.com/livekit/protocol v1.45.2-0.20260403195737-756a0a7cb7b9/go.mod h1:e6QdWDkfot+M2nRh0eitJUS0ZLuwvKCsfiz2pWWSG3s=
 github.com/livekit/psrpc v0.7.1 h1:ms37az0QTD3UXIWuUC5D/SkmKOlRMVRsI261eBWu/Vw=
 github.com/livekit/psrpc v0.7.1/go.mod h1:bZ4iHFQptTkbPnB0LasvRNu/OBYXEu1NA6O5BMFo9kk=
 github.com/livekit/server-sdk-go/v2 v2.16.1 h1:ZkIA9OdVvQ6Up1uW/RtQ0YJUgYMJ6+ywOmDg0jX7bTg=

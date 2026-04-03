@@ -19,8 +19,8 @@ var privateLinkCommands = &cli.Command{
 			Name:  "create",
 			Usage: "Create a private link",
 			Description: "Creates a private link to a customer endpoint.\n\n" +
-				"Currently expects an AWS VPC Endpoint Service Name for --endpoint.\n" +
-				"Example: com.amazonaws.vpce.us-east-1.vpce-svc-123123a1c43abc123",
+				"Supports Azure Private Link Service aliases for --endpoint.\n" +
+				"Azure example: my-pls.12345678-abcd-1234-abcd-1234567890ab.eastus.azure.privatelinkservice",
 			Before: createAgentClient,
 			Action: createPrivateLink,
 			Flags: []cli.Flag{
@@ -105,14 +105,18 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 
 		status := lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN.String()
 		updatedAt := "-"
+		reason := "-"
 
 		if err, ok := healthErrByID[link.PrivateLinkId]; ok && err != nil {
 			status = "ERROR"
-			updatedAt = err.Error()
+			reason = err.Error()
 		} else if health, ok := healthByID[link.PrivateLinkId]; ok && health != nil {
 			status = health.Status.String()
 			if health.UpdatedAt != nil {
 				updatedAt = health.UpdatedAt.AsTime().UTC().Format("2006-01-02T15:04:05Z07:00")
+			}
+			if health.Reason != "" {
+				reason = health.Reason
 			}
 		}
 		dns := link.Endpoint
@@ -128,6 +132,7 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 			dns,
 			status,
 			updatedAt,
+			reason,
 		})
 	}
 	return rows
@@ -218,7 +223,7 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	rows := buildPrivateLinkListRows(resp.Items, healthByID, healthErrByID)
-	table := util.CreateTable().Headers("ID", "Name", "Region", "Port", "DNS", "Health", "Updated At").Rows(rows...)
+	table := util.CreateTable().Headers("ID", "Name", "Region", "Port", "DNS", "Health", "Updated At", "Reason").Rows(rows...)
 	fmt.Println(table)
 	return nil
 }
@@ -259,9 +264,13 @@ func getPrivateLinkHealthStatus(ctx context.Context, cmd *cli.Command) error {
 	if resp.Value.UpdatedAt != nil {
 		updatedAt = resp.Value.UpdatedAt.AsTime().UTC().Format("2006-01-02T15:04:05Z07:00")
 	}
+	reason := "-"
+	if resp.Value.Reason != "" {
+		reason = resp.Value.Reason
+	}
 	table := util.CreateTable().
-		Headers("ID", "Health", "Updated At").
-		Row(privateLinkID, resp.Value.Status.String(), updatedAt)
+		Headers("ID", "Health", "Updated At", "Reason").
+		Row(privateLinkID, resp.Value.Status.String(), updatedAt, reason)
 	fmt.Println(table)
 	return nil
 }
