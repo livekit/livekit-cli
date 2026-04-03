@@ -44,7 +44,7 @@ jobs:
           go test -race -json -v ./... 2>&1 | tee test.log
 
       - name: Upload test log
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-log-${{ matrix.os }}
