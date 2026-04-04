@@ -178,6 +178,10 @@ var (
 							Value: "annex-b",
 						},
 						&cli.BoolFlag{
+							Name:  "publish-user-timestamp",
+							Usage: "When publishing H.264/H.265, attach the LKTS user timestamp trailer to each encoded frame (timestamp is sourced from preceding H.264 SEI user_data_unregistered when present)",
+						},
+						&cli.BoolFlag{
 							Name:  "exit-after-publish",
 							Usage: "When publishing, exit after file or stream is complete",
 						},
@@ -997,6 +1001,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	exitAfterPublish := cmd.Bool("exit-after-publish")
+	publishUserTimestamp := cmd.Bool("publish-user-timestamp")
 
 	// Handle publishing
 	if len(publishUrls) > 0 {
@@ -1015,7 +1020,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 				}
 			}
 
-			if err = handleSimulcastPublish(room, publishUrls, fps, h26xStreamingFormat, onPublishComplete); err != nil {
+			if err = handleSimulcastPublish(room, publishUrls, fps, h26xStreamingFormat, publishUserTimestamp, onPublishComplete); err != nil {
 				return err
 			}
 		} else {
@@ -1033,7 +1038,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 					}
 				}
-				if err = handlePublish(room, pub, fps, h26xStreamingFormat, onPublishComplete); err != nil {
+				if err = handlePublish(room, pub, fps, h26xStreamingFormat, publishUserTimestamp, onPublishComplete); err != nil {
 					return err
 				}
 			}
