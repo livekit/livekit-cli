@@ -468,7 +468,6 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 			fmt.Println("Creating sandbox app...")
 			fmt.Printf("Created sandbox app [%s]\n", util.Accented(sandboxID))
 		}
-
 	}
 
 	// Run template bootstrap
@@ -1095,6 +1094,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 		}
 		rows = append(rows, []string{
 			agent.AgentId,
+			agent.AgentName,
 			strings.Join(regions, ","),
 			agent.Version,
 			agent.DeployedAt.AsTime().Format(time.RFC3339),
@@ -1102,7 +1102,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Regions", "Version", "Deployed At").
+		Headers("ID", "Dispatch Name", "Regions", "Version", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
