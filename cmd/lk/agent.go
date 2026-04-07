@@ -109,6 +109,11 @@ var (
 	agentPrebuiltImageTarFlag = &cli.StringFlag{
 		Name:  "image-tar",
 		Usage: "Pre-built image from an OCI tar file (e.g. ./image.tar). No Docker daemon required.",
+
+	envFlag = &cli.StringSliceFlag{
+		Name:     "env",
+		Usage:    "Deployment environment(s). For create/deploy, specifies the target environment (defaults to 'production'). For update-secrets, assigns environment(s) to the secret. Can be specified multiple times (e.g. --env staging --env production).",
+		Required: false,
 	}
 
 	skipSDKCheckFlag = &cli.BoolFlag{
@@ -182,6 +187,7 @@ var (
 						ignoreEmptySecretsFlag,
 						silentFlag,
 						regionFlag,
+						envFlag,
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
 						agentPrebuiltImageTarFlag,
@@ -228,6 +234,7 @@ var (
 						secretsMountFlag,
 						silentFlag,
 						regionFlag,
+						envFlag,
 						ignoreEmptySecretsFlag,
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
@@ -353,6 +360,7 @@ var (
 						secretsFileFlag,
 						secretsMountFlag,
 						ignoreEmptySecretsFlag,
+						envFlag,
 						idFlag(false),
 						&cli.BoolFlag{
 							Name:     "overwrite",
@@ -633,12 +641,17 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	environment := "production"
+	if cmd.IsSet("env") {
+		environment = cmd.StringSlice("env")[0]
+	}
+
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	regions := []string{region}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
+	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, environment, excludeFiles, os.Stderr)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return fmt.Errorf("build timed out possibly due to large image size")
@@ -797,8 +810,15 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	environment := "production"
+	if cmd.IsSet("env") {
+		environment = cmd.StringSlice("env")[0]
+	}
+
+	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
+	defer cancel()
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
+	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, environment, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
@@ -890,6 +910,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				agent.AgentId,
 				agent.Version,
 				regionalAgent.Region,
+				regionalAgent.Environment,
 				regionalAgent.Status,
 				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
@@ -900,7 +921,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Version", "Region", "Status", "CPU", "Mem", "Replicas", "Deployed At").
+		Headers("ID", "Version", "Region", "Environment", "Status", "CPU", "Mem", "Replicas", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -1175,20 +1196,25 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	var rows [][]string
 	for _, agent := range items {
 		var regions []string
+		var environments []string
 		for _, regionalAgent := range agent.AgentDeployments {
 			regions = append(regions, regionalAgent.Region)
+			if !slices.Contains(environments, regionalAgent.Environment) {
+				environments = append(environments, regionalAgent.Environment)
+			}
 		}
 		rows = append(rows, []string{
 			agent.AgentId,
 			agent.AgentName,
 			strings.Join(regions, ","),
+			strings.Join(environments, ","),
 			agent.Version,
 			agent.DeployedAt.AsTime().Format(time.RFC3339),
 		})
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Dispatch Name", "Regions", "Version", "Deployed At").
+		Headers("ID", "Dispatch Name", "Regions", "Environment", "Version", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -1215,14 +1241,18 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 
 	// TODO (steveyoon): show secret.Kind.String() once cloud-agents is released
 	table := util.CreateTable().
-		Headers("Name", "Created At", "Updated At")
+		Headers("Name", "Environments", "Created At", "Updated At")
 
 	for _, secret := range secrets.Secrets {
 		// NOTE: Maybe these should be omitted on the server side?
 		if slices.Contains(ignoredSecrets, secret.Name) {
 			continue
 		}
-		table.Row(secret.Name, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
+		envs := strings.Join(secret.Environments, ", ")
+		if envs == "" {
+			envs = "(all)"
+		}
+		table.Row(secret.Name, envs, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
 	}
 
 	fmt.Println(table)
@@ -1238,6 +1268,13 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 	secrets, err := requireSecrets(ctx, cmd, true, true)
 	if err != nil {
 		return err
+	}
+
+	if cmd.IsSet("env") {
+		envs := cmd.StringSlice("env")
+		for _, s := range secrets {
+			s.Environments = envs
+		}
 	}
 
 	var confirmOverwrite bool
