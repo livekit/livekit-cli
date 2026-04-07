@@ -63,12 +63,12 @@ func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
 func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 	links := []*lkproto.PrivateLink{
 		{
-			PrivateLinkId: "pl-1",
-			Name:          "orders-db",
-			Region:        "us-east-1",
-			Port:          6379,
-			Endpoint:      "com.amazonaws.vpce.us-east-1.vpce-svc-abc123",
-			LkEndpoint:    "orders-db-p123.link",
+			PrivateLinkId:      "pl-1",
+			Name:               "orders-db",
+			Region:             "us-east-1",
+			Port:               6379,
+			Endpoint:           "com.amazonaws.vpce.us-east-1.vpce-svc-abc123",
+			ConnectionEndpoint: "orders-db-p123.link",
 		},
 	}
 
@@ -95,20 +95,20 @@ func TestBuildPrivateLinkListRows_OnePrivateLink(t *testing.T) {
 func TestBuildPrivateLinkListRows_TwoPrivateLinksDifferentRegions(t *testing.T) {
 	links := []*lkproto.PrivateLink{
 		{
-			PrivateLinkId: "pl-1",
-			Name:          "orders-db",
-			Region:        "us-east-1",
-			Port:          6379,
-			Endpoint:      "com.amazonaws.vpce.us-east-1.vpce-svc-abc123",
-			LkEndpoint:    "orders-db-p123.link",
+			PrivateLinkId:      "pl-1",
+			Name:               "orders-db",
+			Region:             "us-east-1",
+			Port:               6379,
+			Endpoint:           "com.amazonaws.vpce.us-east-1.vpce-svc-abc123",
+			ConnectionEndpoint: "orders-db-p123.link",
 		},
 		{
-			PrivateLinkId: "pl-2",
-			Name:          "cache",
-			Region:        "eu-west-1",
-			Port:          6380,
-			Endpoint:      "com.amazonaws.vpce.eu-west-1.vpce-svc-def456",
-			LkEndpoint:    "cache-p123.link",
+			PrivateLinkId:      "pl-2",
+			Name:               "cache",
+			Region:             "eu-west-1",
+			Port:               6380,
+			Endpoint:           "com.amazonaws.vpce.eu-west-1.vpce-svc-def456",
+			ConnectionEndpoint: "cache-p123.link",
 		},
 	}
 

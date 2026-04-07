@@ -123,7 +123,7 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 		if endpoint == "" {
 			endpoint = "-"
 		}
-		dns := link.LkEndpoint
+		dns := link.ConnectionEndpoint
 		if dns == "" {
 			dns = "-"
 		}
@@ -190,8 +190,8 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 	if resp.PrivateLink.Endpoint != "" {
 		fmt.Printf("Endpoint [%s]\n", util.Accented(resp.PrivateLink.Endpoint))
 	}
-	if resp.PrivateLink.LkEndpoint != "" {
-		fmt.Printf("Gateway DNS [%s]\n", util.Accented(resp.PrivateLink.LkEndpoint))
+	if resp.PrivateLink.ConnectionEndpoint != "" {
+		fmt.Printf("Gateway DNS [%s]\n", util.Accented(resp.PrivateLink.ConnectionEndpoint))
 	}
 	return nil
 }
