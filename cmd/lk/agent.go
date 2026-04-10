@@ -142,14 +142,16 @@ var (
 						}, {
 							sandboxFlag,
 							&cli.BoolFlag{
-								Name:  "no-sandbox",
-								Usage: "If set, will not create a sandbox for the project. ",
-								Value: false,
+								Name:   "no-sandbox",
+								Usage:  "If set, will not create a sandbox for the project. ",
+								Value:  true,
+								Hidden: true,
 							},
 						}},
 					}},
 					Flags: []cli.Flag{
 						regionFlag,
+						installFlag,
 					},
 					ArgsUsage:                 "[AGENT-NAME]",
 					DisableSliceFlagSeparator: true,
