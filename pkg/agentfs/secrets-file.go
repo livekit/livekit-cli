@@ -67,7 +67,7 @@ func DetectEnvFile(maybeFile string, skipPrompts bool) (string, map[string]strin
 		return selectedFile, env, err
 	}
 
-	var selectedFile string = extantEnvFiles[0]
+	selectedFile := extantEnvFiles[0]
 	if err := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().

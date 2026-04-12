@@ -401,7 +401,7 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 func initAgent(ctx context.Context, cmd *cli.Command) error {
 	// TODO: (@rektdeckard) move compatibility flag into template index,
 	// then show template picker containing only compatible templates
-	if !(cmd.IsSet("lang") || cmd.IsSet("template") || cmd.IsSet("template-url")) {
+	if !cmd.IsSet("lang") && !cmd.IsSet("template") && !cmd.IsSet("template-url") {
 		if SkipPrompts(cmd) {
 			templateURL = "https://github.com/livekit-examples/agent-starter-python"
 		} else {
@@ -629,7 +629,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	fmt.Println("Build completed - You can view build logs later with `lk agent logs --log-type=build`")
 
 	if !silent && !SkipPrompts(cmd) {
-		var viewLogs bool = true
+		viewLogs := true
 		if err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewConfirm().
