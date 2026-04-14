@@ -63,6 +63,17 @@ func TestBuildCreatePrivateLinkRequest_OmitsOptionalCloudRegionWhenEmpty(t *test
 	assert.Nil(t, req.CloudRegion)
 }
 
+func TestValidateCloudRegionForEndpoint_FailsOnMismatchedAzureAlias(t *testing.T) {
+	err := validateCloudRegionForEndpoint("my-pls.12345678-abcd-1234-abcd-1234567890ab.eastus.azure.privatelinkservice", "westus")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cloud-region value must match parsed region from endpoint: eastus")
+}
+
+func TestValidateCloudRegionForEndpoint_AllowsAzureResourceID(t *testing.T) {
+	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "westus")
+	require.NoError(t, err)
+}
+
 func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
 	rows := buildPrivateLinkListRows([]*lkproto.PrivateLink{}, map[string]*lkproto.PrivateLinkStatus{}, map[string]error{})
 	assert.Empty(t, rows)

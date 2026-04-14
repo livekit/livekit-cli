@@ -3,13 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/proto"
+)
+
+var (
+	privateLinkAWSEndpointRegex   = regexp.MustCompile(`^com\.amazonaws\.vpce\.[a-z0-9-]+\.vpce-svc-[a-z0-9]+$`)
+	privateLinkAzureAliasRegex    = regexp.MustCompile(`\.azure\.privatelinkservice$`)
+	privateLinkAzureResourceIDReg = regexp.MustCompile(`^/subscriptions/[^/]+/resourcegroups/[^/]+/providers/microsoft\.network/privatelinkservices/[^/]+$`)
 )
 
 var privateLinkCommands = &cli.Command{
@@ -109,6 +117,37 @@ func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint, c
 	return req
 }
 
+func validateCloudRegionForEndpoint(endpoint, cloudRegion string) error {
+	normalizedEndpoint := strings.ToLower(strings.TrimSpace(endpoint))
+	normalizedCloudRegion := strings.ToLower(strings.TrimSpace(cloudRegion))
+	if normalizedCloudRegion == "" {
+		return nil
+	}
+
+	// For Azure Resource IDs, cloud-region is explicit and not parsed from endpoint.
+	if privateLinkAzureResourceIDReg.MatchString(normalizedEndpoint) {
+		return nil
+	}
+
+	if privateLinkAWSEndpointRegex.MatchString(normalizedEndpoint) {
+		parts := strings.Split(normalizedEndpoint, ".")
+		if len(parts) >= 5 && parts[3] != "" && parts[3] != normalizedCloudRegion {
+			return fmt.Errorf("cloud-region value must match parsed region from endpoint: %s", parts[3])
+		}
+		return nil
+	}
+
+	if privateLinkAzureAliasRegex.MatchString(normalizedEndpoint) {
+		parts := strings.Split(normalizedEndpoint, ".")
+		regionIdx := len(parts) - 3
+		if regionIdx >= 0 && parts[regionIdx] != "" && parts[regionIdx] != normalizedCloudRegion {
+			return fmt.Errorf("cloud-region value must match parsed region from endpoint: %s", parts[regionIdx])
+		}
+	}
+
+	return nil
+}
+
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {
 	var rows [][]string
 	for _, link := range links {
@@ -183,6 +222,10 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
+	if err := validateCloudRegionForEndpoint(cmd.String("endpoint"), cmd.String("cloud-region")); err != nil {
+		return err
+	}
+
 	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
 	resp, err := agentsClient.CreatePrivateLink(ctx, req)
 	if err != nil {
