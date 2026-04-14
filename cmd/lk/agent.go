@@ -306,6 +306,7 @@ var (
 					Flags: []cli.Flag{
 						idFlag(false),
 						logTypeFlag,
+						envFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -641,17 +642,12 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	environment := "production"
-	if cmd.IsSet("env") {
-		environment = cmd.StringSlice("env")[0]
-	}
-
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	regions := []string{region}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, environment, excludeFiles, os.Stderr)
+	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return fmt.Errorf("build timed out possibly due to large image size")
@@ -685,7 +681,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			fmt.Println("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, os.Stdout, resp.ServerRegions[0])
+			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
 		}
 	}
 	return nil
@@ -1043,7 +1039,11 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("no agent deployments found")
 	}
 
-	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
+	var agentEnvironment string
+	if envs := cmd.StringSlice("env"); len(envs) > 0 {
+		agentEnvironment = envs[0]
+	}
+	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, agentEnvironment, os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
@@ -1195,12 +1195,15 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 
 	var rows [][]string
 	for _, agent := range items {
-		var regions []string
+		// Determine region: use production deployment's region as the canonical region.
+		var region string
 		var environments []string
 		for _, regionalAgent := range agent.AgentDeployments {
-			regions = append(regions, regionalAgent.Region)
 			if !slices.Contains(environments, regionalAgent.Environment) {
 				environments = append(environments, regionalAgent.Environment)
+			}
+			if region == "" || regionalAgent.Environment == "production" {
+				region = regionalAgent.Region
 			}
 		}
 		rows = append(rows, []string{
