@@ -434,17 +434,17 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 
 	logger.Debugw("Initializing agent project", "working-dir", workingDir)
 
+	appName = cmd.Args().First()
+	if appName == "" {
+		appName = project.Name
+	}
+
 	// Create sandbox only when not disabled by flag and we don't already have one
 	if !cmd.Bool("no-sandbox") && sandboxID == "" {
 		if err := util.Await("Creating sandbox app...", ctx, func(ctx context.Context) error {
 			token, err := requireToken(ctx, cmd)
 			if err != nil {
 				return err
-			}
-
-			appName = cmd.Args().First()
-			if appName == "" {
-				appName = project.Name
 			}
 
 			// TODO: (@rektdeckard) figure out why AccessKeyProvider does not immediately
@@ -459,8 +459,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 				serverURL,
 			)
 
-			// We set agent name and sandbox ID in env for use in template tasks
-			os.Setenv("LIVEKIT_AGENT_NAME", appName)
+			// We set sandbox ID in env for use in template tasks
 			os.Setenv("LIVEKIT_SANDBOX_ID", sandboxID)
 
 			return err

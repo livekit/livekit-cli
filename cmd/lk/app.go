@@ -329,7 +329,6 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			}).
 			WithTheme(util.Theme))
 	}
-
 	if len(preinstallPrompts) > 0 {
 		group := huh.NewGroup(preinstallPrompts...)
 		if err := huh.NewForm(group).
@@ -338,6 +337,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
+
+	// Set environment variables for template instantiation
+	os.Setenv("LIVEKIT_AGENT_NAME", appName)
+	os.Setenv("LIVEKIT_PROJECT_ID", project.ProjectId)
 
 	fmt.Println("Cloning template...")
 	if err := cloneTemplate(ctx, cmd, templateURL, appName); err != nil {
