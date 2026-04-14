@@ -18,6 +18,8 @@ var (
 	privateLinkAWSEndpointRegex   = regexp.MustCompile(`^com\.amazonaws\.vpce\.[a-z0-9-]+\.vpce-svc-[a-z0-9]+$`)
 	privateLinkAzureAliasRegex    = regexp.MustCompile(`\.azure\.privatelinkservice$`)
 	privateLinkAzureResourceIDReg = regexp.MustCompile(`^/subscriptions/[^/]+/resourcegroups/[^/]+/providers/microsoft\.network/privatelinkservices/[^/]+$`)
+	privateLinkAWSRegionRegex     = regexp.MustCompile(`^[a-z]{2}(?:-gov)?-[a-z]+-\d+$`)
+	privateLinkAzureRegionRegex   = regexp.MustCompile(`^[a-z]+[a-z0-9]*$`)
 )
 
 var privateLinkCommands = &cli.Command{
@@ -120,13 +122,18 @@ func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint, c
 func validateCloudRegionForEndpoint(endpoint, cloudRegion string) error {
 	normalizedEndpoint := strings.ToLower(strings.TrimSpace(endpoint))
 	normalizedCloudRegion := strings.ToLower(strings.TrimSpace(cloudRegion))
+
+	// For Azure Resource IDs, cloud-region is explicit and cannot be parsed from endpoint.
+	if privateLinkAzureResourceIDReg.MatchString(normalizedEndpoint) && normalizedCloudRegion == "" {
+		return fmt.Errorf("cloud-region is required when endpoint is an Azure Resource ID")
+	}
+
 	if normalizedCloudRegion == "" {
 		return nil
 	}
 
-	// For Azure Resource IDs, cloud-region is explicit and not parsed from endpoint.
-	if privateLinkAzureResourceIDReg.MatchString(normalizedEndpoint) {
-		return nil
+	if !isValidCloudRegion(normalizedCloudRegion) {
+		return fmt.Errorf("cloud-region must be a valid AWS or Azure region (for example: us-east-2 or eastus)")
 	}
 
 	if privateLinkAWSEndpointRegex.MatchString(normalizedEndpoint) {
@@ -146,6 +153,10 @@ func validateCloudRegionForEndpoint(endpoint, cloudRegion string) error {
 	}
 
 	return nil
+}
+
+func isValidCloudRegion(cloudRegion string) bool {
+	return privateLinkAWSRegionRegex.MatchString(cloudRegion) || privateLinkAzureRegionRegex.MatchString(cloudRegion)
 }
 
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {
