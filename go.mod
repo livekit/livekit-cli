@@ -14,7 +14,7 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.45.4-0.20260414175434-28604d1045cd
-	github.com/livekit/server-sdk-go/v2 v2.16.1
+	github.com/livekit/server-sdk-go/v2 v2.16.2
 	github.com/mattn/go-isatty v0.0.21
 	github.com/moby/patternmatcher v0.6.0
 	github.com/modelcontextprotocol/go-sdk v1.4.0
