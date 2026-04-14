@@ -142,14 +142,16 @@ var (
 						}, {
 							sandboxFlag,
 							&cli.BoolFlag{
-								Name:  "no-sandbox",
-								Usage: "If set, will not create a sandbox for the project. ",
-								Value: false,
+								Name:   "no-sandbox",
+								Usage:  "If set, will not create a sandbox for the project. ",
+								Value:  true,
+								Hidden: true,
 							},
 						}},
 					}},
 					Flags: []cli.Flag{
 						regionFlag,
+						installFlag,
 					},
 					ArgsUsage:                 "[AGENT-NAME]",
 					DisableSliceFlagSeparator: true,
@@ -401,7 +403,7 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 func initAgent(ctx context.Context, cmd *cli.Command) error {
 	// TODO: (@rektdeckard) move compatibility flag into template index,
 	// then show template picker containing only compatible templates
-	if !(cmd.IsSet("lang") || cmd.IsSet("template") || cmd.IsSet("template-url")) {
+	if !cmd.IsSet("lang") && !cmd.IsSet("template") && !cmd.IsSet("template-url") {
 		if SkipPrompts(cmd) {
 			templateURL = "https://github.com/livekit-examples/agent-starter-python"
 		} else {
@@ -432,17 +434,17 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 
 	logger.Debugw("Initializing agent project", "working-dir", workingDir)
 
+	appName = cmd.Args().First()
+	if appName == "" {
+		appName = project.Name
+	}
+
 	// Create sandbox only when not disabled by flag and we don't already have one
 	if !cmd.Bool("no-sandbox") && sandboxID == "" {
 		if err := util.Await("Creating sandbox app...", ctx, func(ctx context.Context) error {
 			token, err := requireToken(ctx, cmd)
 			if err != nil {
 				return err
-			}
-
-			appName = cmd.Args().First()
-			if appName == "" {
-				appName = project.Name
 			}
 
 			// TODO: (@rektdeckard) figure out why AccessKeyProvider does not immediately
@@ -457,8 +459,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 				serverURL,
 			)
 
-			// We set agent name and sandbox ID in env for use in template tasks
-			os.Setenv("LIVEKIT_AGENT_NAME", appName)
+			// We set sandbox ID in env for use in template tasks
 			os.Setenv("LIVEKIT_SANDBOX_ID", sandboxID)
 
 			return err
@@ -468,7 +469,6 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 			fmt.Println("Creating sandbox app...")
 			fmt.Printf("Created sandbox app [%s]\n", util.Accented(sandboxID))
 		}
-
 	}
 
 	// Run template bootstrap
@@ -633,7 +633,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	fmt.Println("Build completed - You can view build logs later with `lk agent logs --log-type=build`")
 
 	if !silent && !SkipPrompts(cmd) {
-		var viewLogs bool = true
+		viewLogs := true
 		if err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewConfirm().
@@ -1098,6 +1098,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 		}
 		rows = append(rows, []string{
 			agent.AgentId,
+			agent.AgentName,
 			strings.Join(regions, ","),
 			agent.Version,
 			agent.DeployedAt.AsTime().Format(time.RFC3339),
@@ -1105,7 +1106,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Regions", "Version", "Deployed At").
+		Headers("ID", "Dispatch Name", "Regions", "Version", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
