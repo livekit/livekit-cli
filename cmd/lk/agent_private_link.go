@@ -9,6 +9,7 @@ import (
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/proto"
 )
 
 var privateLinkCommands = &cli.Command{
@@ -94,13 +95,18 @@ var privateLinkCommands = &cli.Command{
 }
 
 func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint, cloudRegion string) *lkproto.CreatePrivateLinkRequest {
-	return &lkproto.CreatePrivateLinkRequest{
-		Name:        name,
-		Region:      region,
-		Port:        port,
-		Endpoint:    endpoint,
-		CloudRegion: cloudRegion,
+	req := &lkproto.CreatePrivateLinkRequest{
+		Name:     name,
+		Region:   region,
+		Port:     port,
+		Endpoint: endpoint,
 	}
+
+	if cloudRegion != "" {
+		req.CloudRegion = proto.String(cloudRegion)
+	}
+
+	return req
 }
 
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {

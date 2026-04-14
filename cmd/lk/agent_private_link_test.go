@@ -53,7 +53,14 @@ func TestBuildCreatePrivateLinkRequest_HappyPath(t *testing.T) {
 	assert.Equal(t, uint32(6379), req.Port)
 
 	assert.Equal(t, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123", req.Endpoint)
-	assert.Equal(t, "us-east-1", req.CloudRegion)
+	require.NotNil(t, req.CloudRegion)
+	assert.Equal(t, "us-east-1", *req.CloudRegion)
+}
+
+func TestBuildCreatePrivateLinkRequest_OmitsOptionalCloudRegionWhenEmpty(t *testing.T) {
+	req := buildCreatePrivateLinkRequest("orders-db", "us-east-1", 6379, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123", "")
+	require.NotNil(t, req)
+	assert.Nil(t, req.CloudRegion)
 }
 
 func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
