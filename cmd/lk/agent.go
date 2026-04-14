@@ -590,17 +590,15 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 			if SkipPrompts(cmd) {
 				return fmt.Errorf("non-interactive mode: --region flag must be specified, available regions: %v", regionOptions)
-			} else if err := huh.NewForm(
-				huh.NewGroup(
-					huh.NewSelect[string]().
-						Title("Select region for agent deployment").
-						Options(huh.NewOptions(regionOptions...)...).
-						Value(&region).
-						WithTheme(util.Theme),
-				),
-			).Run(); err != nil {
+			} else if err := huh.NewSelect[string]().
+				Title("Select region for agent deployment").
+				Options(huh.NewOptions(regionOptions...)...).
+				Value(&region).
+				WithTheme(util.Theme).
+				Run(); err != nil {
 				return err
 			}
+			fmt.Printf("Using region [%s]\n", util.Accented(region))
 		} else {
 			// we shouldn't ever get here, but if we do, just default to us-east
 			logger.Debugw("no available regions found, defaulting to us-east. please contact LiveKit support if this is unexpected.")
