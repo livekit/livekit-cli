@@ -39,8 +39,6 @@ var (
 		"switzerlandnorth", "switzerlandwest", "uaecentral", "uaenorth", "uksouth", "ukwest", "westcentralus",
 		"westeurope", "westindia", "westus", "westus2", "westus3",
 	}
-	awsCloudRegionSet   = toRegionSet(awsCloudRegions)
-	azureCloudRegionSet = toRegionSet(azureCloudRegions)
 )
 
 var privateLinkCommands = &cli.Command{
@@ -176,21 +174,18 @@ func validateCloudRegionForEndpoint(endpoint, cloudRegion string) error {
 	return nil
 }
 
-func toRegionSet(regions []string) map[string]struct{} {
-	regionSet := make(map[string]struct{}, len(regions))
-	for _, region := range regions {
-		regionSet[region] = struct{}{}
-	}
-	return regionSet
-}
-
 func isValidCloudRegion(cloudRegion string) bool {
-	_, validAWS := awsCloudRegionSet[cloudRegion]
-	if validAWS {
-		return true
+	for _, region := range awsCloudRegions {
+		if region == cloudRegion {
+			return true
+		}
 	}
-	_, validAzure := azureCloudRegionSet[cloudRegion]
-	return validAzure
+	for _, region := range azureCloudRegions {
+		if region == cloudRegion {
+			return true
+		}
+	}
+	return false
 }
 
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {
