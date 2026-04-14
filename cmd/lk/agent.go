@@ -598,7 +598,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				Run(); err != nil {
 				return err
 			}
-			fmt.Printf("Using region [%s]\n", util.Accented(region))
+			fmt.Fprintf(os.Stderr, "Using region [%s]\n", util.Accented(region))
 		} else {
 			// we shouldn't ever get here, but if we do, just default to us-east
 			logger.Debugw("no available regions found, defaulting to us-east. please contact LiveKit support if this is unexpected.")
