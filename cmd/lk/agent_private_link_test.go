@@ -45,7 +45,7 @@ func TestAgentPrivateLinkCommandTree(t *testing.T) {
 }
 
 func TestBuildCreatePrivateLinkRequest_HappyPath(t *testing.T) {
-	req := buildCreatePrivateLinkRequest("orders-db", "us-east-1", 6379, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123")
+	req := buildCreatePrivateLinkRequest("orders-db", "us-east-1", 6379, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123", "us-east-1")
 	require.NotNil(t, req)
 
 	assert.Equal(t, "orders-db", req.Name)
@@ -53,6 +53,7 @@ func TestBuildCreatePrivateLinkRequest_HappyPath(t *testing.T) {
 	assert.Equal(t, uint32(6379), req.Port)
 
 	assert.Equal(t, "com.amazonaws.vpce.us-east-1.vpce-svc-abc123", req.Endpoint)
+	assert.Equal(t, "us-east-1", req.CloudRegion)
 }
 
 func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
