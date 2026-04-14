@@ -1071,6 +1071,13 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 				})
 			token, _ := at.ToJWT()
 			_ = util.OpenInMeet(project.URL, token)
+		case string(util.OpenTargetConsole):
+			_ = util.OpenInConsole(dashboardURL, project.ProjectId, &util.ConsoleURLParams{
+				Identity:  participantIdentity,
+				RoomName:  roomName,
+				Hidden:    true,
+				AutoStart: true,
+			})
 		}
 	}
 
