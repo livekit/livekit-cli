@@ -9,6 +9,7 @@ import (
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/proto"
 )
 
 var privateLinkCommands = &cli.Command{
@@ -19,8 +20,10 @@ var privateLinkCommands = &cli.Command{
 			Name:  "create",
 			Usage: "Create a private link",
 			Description: "Creates a private link to a customer endpoint.\n\n" +
-				"Supports Azure Private Link Service aliases for --endpoint.\n" +
-				"Azure example: my-pls.12345678-abcd-1234-abcd-1234567890ab.eastus.azure.privatelinkservice",
+				"Supports Azure Private Link Service aliases and Azure Resource IDs for --endpoint.\n" +
+				"Azure alias example: my-pls.12345678-abcd-1234-abcd-1234567890ab.eastus.azure.privatelinkservice\n" +
+				"Azure Resource ID example: /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Network/privateLinkServices/{name}\n" +
+				"When using an Azure Resource ID, --cloud-region is required.",
 			Before: createAgentClient,
 			Action: createPrivateLink,
 			Flags: []cli.Flag{
@@ -43,6 +46,10 @@ var privateLinkCommands = &cli.Command{
 					Name:     "endpoint",
 					Usage:    "Customer-provided endpoint identifier",
 					Required: true,
+				},
+				&cli.StringFlag{
+					Name:  "cloud-region",
+					Usage: "Cloud provider region (e.g. eastus, us-east-2). Required when --endpoint is an Azure Resource ID",
 				},
 				jsonFlag,
 			},
@@ -87,13 +94,19 @@ var privateLinkCommands = &cli.Command{
 	},
 }
 
-func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint string) *lkproto.CreatePrivateLinkRequest {
-	return &lkproto.CreatePrivateLinkRequest{
+func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint, cloudRegion string) *lkproto.CreatePrivateLinkRequest {
+	req := &lkproto.CreatePrivateLinkRequest{
 		Name:     name,
 		Region:   region,
 		Port:     port,
 		Endpoint: endpoint,
 	}
+
+	if cloudRegion != "" {
+		req.CloudRegion = proto.String(cloudRegion)
+	}
+
+	return req
 }
 
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {
@@ -170,7 +183,7 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"))
+	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
 	resp, err := agentsClient.CreatePrivateLink(ctx, req)
 	if err != nil {
 		return formatPrivateLinkClientError("create", err)
