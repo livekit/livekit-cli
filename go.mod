@@ -16,7 +16,7 @@ require (
 	github.com/livekit/protocol v1.45.2-0.20260407211826-e6cb78a2ccd7
 	github.com/livekit/server-sdk-go/v2 v2.16.2
 	github.com/mattn/go-isatty v0.0.21
-	github.com/moby/patternmatcher v0.6.0
+	github.com/moby/patternmatcher v0.6.1
 	github.com/modelcontextprotocol/go-sdk v1.4.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/pion/rtcp v1.2.16
@@ -168,7 +168,7 @@ require (
 	github.com/livekit/mediatransportutil v0.0.0-20260309115634-0e2e24b36ee8 // indirect
 	github.com/livekit/psrpc v0.7.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
-	github.com/magefile/mage v1.16.1 // indirect
+	github.com/magefile/mage v1.17.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.23 // indirect
