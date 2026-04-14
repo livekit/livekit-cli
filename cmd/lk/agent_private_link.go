@@ -18,8 +18,29 @@ var (
 	privateLinkAWSEndpointRegex   = regexp.MustCompile(`^com\.amazonaws\.vpce\.[a-z0-9-]+\.vpce-svc-[a-z0-9]+$`)
 	privateLinkAzureAliasRegex    = regexp.MustCompile(`\.azure\.privatelinkservice$`)
 	privateLinkAzureResourceIDReg = regexp.MustCompile(`^/subscriptions/[^/]+/resourcegroups/[^/]+/providers/microsoft\.network/privatelinkservices/[^/]+$`)
-	privateLinkAWSRegionRegex     = regexp.MustCompile(`^[a-z]{2}(?:-gov)?-[a-z]+-\d+$`)
-	privateLinkAzureRegionRegex   = regexp.MustCompile(`^[a-z]+[a-z0-9]*$`)
+	// Source: https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html
+	awsCloudRegions = []string{
+		"af-south-1", "ap-east-1", "ap-east-2", "ap-northeast-1", "ap-northeast-2", "ap-northeast-3",
+		"ap-south-1", "ap-south-2", "ap-southeast-1", "ap-southeast-2", "ap-southeast-3", "ap-southeast-4",
+		"ap-southeast-5", "ap-southeast-6", "ap-southeast-7", "ca-central-1", "ca-west-1", "eu-central-1",
+		"eu-central-2", "eu-north-1", "eu-south-1", "eu-south-2", "eu-west-1", "eu-west-2", "eu-west-3",
+		"il-central-1", "me-central-1", "me-south-1", "mx-central-1", "sa-east-1", "us-east-1", "us-east-2",
+		"us-west-1", "us-west-2", "us-gov-east-1", "us-gov-west-1", "cn-north-1", "cn-northwest-1",
+	}
+	// Source: https://learn.microsoft.com/en-us/azure/reliability/regions-list
+	azureCloudRegions = []string{
+		"australiacentral", "australiacentral2", "australiaeast", "australiasoutheast", "austriaeast", "belgiumcentral",
+		"brazilsouth", "brazilsoutheast", "canadacentral", "canadaeast", "centralindia", "centralus", "chilecentral",
+		"denmarkeast", "eastasia", "eastus", "eastus2", "francecentral", "francesouth", "germanynorth",
+		"germanywestcentral", "indonesiacentral", "israelcentral", "italynorth", "japaneast", "japanwest",
+		"koreacentral", "koreasouth", "malaysiawest", "mexicocentral", "newzealandnorth", "northcentralus",
+		"northeurope", "norwayeast", "norwaywest", "polandcentral", "qatarcentral", "southafricanorth",
+		"southafricawest", "southcentralus", "southindia", "southeastasia", "spaincentral", "swedencentral",
+		"switzerlandnorth", "switzerlandwest", "uaecentral", "uaenorth", "uksouth", "ukwest", "westcentralus",
+		"westeurope", "westindia", "westus", "westus2", "westus3",
+	}
+	awsCloudRegionSet   = toRegionSet(awsCloudRegions)
+	azureCloudRegionSet = toRegionSet(azureCloudRegions)
 )
 
 var privateLinkCommands = &cli.Command{
@@ -155,8 +176,21 @@ func validateCloudRegionForEndpoint(endpoint, cloudRegion string) error {
 	return nil
 }
 
+func toRegionSet(regions []string) map[string]struct{} {
+	regionSet := make(map[string]struct{}, len(regions))
+	for _, region := range regions {
+		regionSet[region] = struct{}{}
+	}
+	return regionSet
+}
+
 func isValidCloudRegion(cloudRegion string) bool {
-	return privateLinkAWSRegionRegex.MatchString(cloudRegion) || privateLinkAzureRegionRegex.MatchString(cloudRegion)
+	_, validAWS := awsCloudRegionSet[cloudRegion]
+	if validAWS {
+		return true
+	}
+	_, validAzure := azureCloudRegionSet[cloudRegion]
+	return validAzure
 }
 
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {

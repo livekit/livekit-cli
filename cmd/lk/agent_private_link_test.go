@@ -74,6 +74,11 @@ func TestValidateCloudRegionForEndpoint_AllowsAzureResourceID(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestValidateCloudRegionForEndpoint_AllowsKnownAWSRegion(t *testing.T) {
+	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "us-east-2")
+	require.NoError(t, err)
+}
+
 func TestValidateCloudRegionForEndpoint_RequiresCloudRegionForAzureResourceID(t *testing.T) {
 	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "")
 	require.Error(t, err)
@@ -86,9 +91,10 @@ func TestValidateCloudRegionForEndpoint_RejectsInvalidCloudRegion(t *testing.T) 
 	require.Contains(t, err.Error(), "cloud-region must be a valid AWS or Azure region")
 }
 
-func TestValidateCloudRegionForEndpoint_AllowsValidAWSRegionWithAzureResourceID(t *testing.T) {
-	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "us-east-2")
-	require.NoError(t, err)
+func TestValidateCloudRegionForEndpoint_RejectsUnknownRegionCode(t *testing.T) {
+	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "us-mars-1")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cloud-region must be a valid AWS or Azure region")
 }
 
 func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
