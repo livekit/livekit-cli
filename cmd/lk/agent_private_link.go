@@ -3,42 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/proto"
-)
-
-var (
-	privateLinkAWSEndpointRegex   = regexp.MustCompile(`^com\.amazonaws\.vpce\.[a-z0-9-]+\.vpce-svc-[a-z0-9]+$`)
-	privateLinkAzureAliasRegex    = regexp.MustCompile(`\.azure\.privatelinkservice$`)
-	privateLinkAzureResourceIDReg = regexp.MustCompile(`^/subscriptions/[^/]+/resourcegroups/[^/]+/providers/microsoft\.network/privatelinkservices/[^/]+$`)
-	// Source: https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html
-	awsCloudRegions = []string{
-		"af-south-1", "ap-east-1", "ap-east-2", "ap-northeast-1", "ap-northeast-2", "ap-northeast-3",
-		"ap-south-1", "ap-south-2", "ap-southeast-1", "ap-southeast-2", "ap-southeast-3", "ap-southeast-4",
-		"ap-southeast-5", "ap-southeast-6", "ap-southeast-7", "ca-central-1", "ca-west-1", "eu-central-1",
-		"eu-central-2", "eu-north-1", "eu-south-1", "eu-south-2", "eu-west-1", "eu-west-2", "eu-west-3",
-		"il-central-1", "me-central-1", "me-south-1", "mx-central-1", "sa-east-1", "us-east-1", "us-east-2",
-		"us-west-1", "us-west-2", "us-gov-east-1", "us-gov-west-1", "cn-north-1", "cn-northwest-1",
-	}
-	// Source: https://learn.microsoft.com/en-us/azure/reliability/regions-list
-	azureCloudRegions = []string{
-		"australiacentral", "australiacentral2", "australiaeast", "australiasoutheast", "austriaeast", "belgiumcentral",
-		"brazilsouth", "brazilsoutheast", "canadacentral", "canadaeast", "centralindia", "centralus", "chilecentral",
-		"denmarkeast", "eastasia", "eastus", "eastus2", "francecentral", "francesouth", "germanynorth",
-		"germanywestcentral", "indonesiacentral", "israelcentral", "italynorth", "japaneast", "japanwest",
-		"koreacentral", "koreasouth", "malaysiawest", "mexicocentral", "newzealandnorth", "northcentralus",
-		"northeurope", "norwayeast", "norwaywest", "polandcentral", "qatarcentral", "southafricanorth",
-		"southafricawest", "southcentralus", "southindia", "southeastasia", "spaincentral", "swedencentral",
-		"switzerlandnorth", "switzerlandwest", "uaecentral", "uaenorth", "uksouth", "ukwest", "westcentralus",
-		"westeurope", "westindia", "westus", "westus2", "westus3",
-	}
 )
 
 var privateLinkCommands = &cli.Command{
@@ -138,56 +109,6 @@ func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint, c
 	return req
 }
 
-func validateCloudRegionForEndpoint(endpoint, cloudRegion string) error {
-	normalizedEndpoint := strings.ToLower(strings.TrimSpace(endpoint))
-	normalizedCloudRegion := strings.ToLower(strings.TrimSpace(cloudRegion))
-
-	// For Azure Resource IDs, cloud-region is explicit and cannot be parsed from endpoint.
-	if privateLinkAzureResourceIDReg.MatchString(normalizedEndpoint) && normalizedCloudRegion == "" {
-		return fmt.Errorf("cloud-region is required when endpoint is an Azure Resource ID")
-	}
-
-	if normalizedCloudRegion == "" {
-		return nil
-	}
-
-	if !isValidCloudRegion(normalizedCloudRegion) {
-		return fmt.Errorf("cloud-region must be a valid AWS or Azure region (for example: us-east-2 or eastus)")
-	}
-
-	if privateLinkAWSEndpointRegex.MatchString(normalizedEndpoint) {
-		parts := strings.Split(normalizedEndpoint, ".")
-		if len(parts) >= 5 && parts[3] != "" && parts[3] != normalizedCloudRegion {
-			return fmt.Errorf("cloud-region value must match parsed region from endpoint: %s", parts[3])
-		}
-		return nil
-	}
-
-	if privateLinkAzureAliasRegex.MatchString(normalizedEndpoint) {
-		parts := strings.Split(normalizedEndpoint, ".")
-		regionIdx := len(parts) - 3
-		if regionIdx >= 0 && parts[regionIdx] != "" && parts[regionIdx] != normalizedCloudRegion {
-			return fmt.Errorf("cloud-region value must match parsed region from endpoint: %s", parts[regionIdx])
-		}
-	}
-
-	return nil
-}
-
-func isValidCloudRegion(cloudRegion string) bool {
-	for _, region := range awsCloudRegions {
-		if region == cloudRegion {
-			return true
-		}
-	}
-	for _, region := range azureCloudRegions {
-		if region == cloudRegion {
-			return true
-		}
-	}
-	return false
-}
-
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {
 	var rows [][]string
 	for _, link := range links {
@@ -262,10 +183,6 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	if err := validateCloudRegionForEndpoint(cmd.String("endpoint"), cmd.String("cloud-region")); err != nil {
-		return err
-	}
-
 	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
 	resp, err := agentsClient.CreatePrivateLink(ctx, req)
 	if err != nil {

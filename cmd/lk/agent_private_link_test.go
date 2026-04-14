@@ -63,40 +63,6 @@ func TestBuildCreatePrivateLinkRequest_OmitsOptionalCloudRegionWhenEmpty(t *test
 	assert.Nil(t, req.CloudRegion)
 }
 
-func TestValidateCloudRegionForEndpoint_FailsOnMismatchedAzureAlias(t *testing.T) {
-	err := validateCloudRegionForEndpoint("my-pls.12345678-abcd-1234-abcd-1234567890ab.eastus.azure.privatelinkservice", "westus")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cloud-region value must match parsed region from endpoint: eastus")
-}
-
-func TestValidateCloudRegionForEndpoint_AllowsAzureResourceID(t *testing.T) {
-	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "westus")
-	require.NoError(t, err)
-}
-
-func TestValidateCloudRegionForEndpoint_AllowsKnownAWSRegion(t *testing.T) {
-	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "us-east-2")
-	require.NoError(t, err)
-}
-
-func TestValidateCloudRegionForEndpoint_RequiresCloudRegionForAzureResourceID(t *testing.T) {
-	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cloud-region is required when endpoint is an Azure Resource ID")
-}
-
-func TestValidateCloudRegionForEndpoint_RejectsInvalidCloudRegion(t *testing.T) {
-	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "east us")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cloud-region must be a valid AWS or Azure region")
-}
-
-func TestValidateCloudRegionForEndpoint_RejectsUnknownRegionCode(t *testing.T) {
-	err := validateCloudRegionForEndpoint("/subscriptions/abc/resourceGroups/rg/providers/Microsoft.Network/privateLinkServices/my-pls", "us-mars-1")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cloud-region must be a valid AWS or Azure region")
-}
-
 func TestBuildPrivateLinkListRows_EmptyList(t *testing.T) {
 	rows := buildPrivateLinkListRows([]*lkproto.PrivateLink{}, map[string]*lkproto.PrivateLinkStatus{}, map[string]error{})
 	assert.Empty(t, rows)
