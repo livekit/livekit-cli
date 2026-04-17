@@ -139,11 +139,16 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 		if dns == "" {
 			dns = "-"
 		}
+		cloudRegion := link.CloudRegion
+		if cloudRegion == "" {
+			cloudRegion = "-"
+		}
 
 		rows = append(rows, []string{
 			link.PrivateLinkId,
 			link.Name,
 			link.Region,
+			cloudRegion,
 			strconv.FormatUint(uint64(link.Port), 10),
 			endpoint,
 			dns,
@@ -215,6 +220,9 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 	if resp.PrivateLink.ConnectionEndpoint != "" {
 		fmt.Printf("Gateway DNS [%s]\n", util.Accented(resp.PrivateLink.ConnectionEndpoint))
 	}
+	if resp.PrivateLink.CloudRegion != "" {
+		fmt.Printf("Cloud Region [%s]\n", util.Accented(resp.PrivateLink.CloudRegion))
+	}
 	return nil
 }
 
@@ -272,7 +280,7 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	rows := buildPrivateLinkListRows(resp.Items, healthByID, healthErrByID)
-	table := util.CreateTable().Headers("ID", "Name", "Region", "Port", "Endpoint", "DNS", "Health", "Updated At", "Reason").Rows(rows...)
+	table := util.CreateTable().Headers("ID", "Name", "Region", "Cloud Region", "Port", "Endpoint", "DNS", "Health", "Updated At", "Reason").Rows(rows...)
 	fmt.Println(table)
 	return nil
 }
