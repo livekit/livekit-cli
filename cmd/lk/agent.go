@@ -312,13 +312,14 @@ var (
 				},
 				{
 					Name:    "delete",
-					Usage:   "Delete an agent",
+					Usage:   "Delete an agent or a specific environment",
 					Before:  createAgentClient,
 					Action:  deleteAgent,
 					Aliases: []string{"destroy"},
 					Flags: []cli.Flag{
 						silentFlag,
 						idFlag(false),
+						envFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -810,6 +811,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	if cmd.IsSet("env") {
 		environment = cmd.StringSlice("env")[0]
 	}
+	fmt.Printf("Using environment [%s]\n", util.Accented(environment))
 
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
@@ -902,9 +904,13 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				logger.Errorw("error parsing mem req", err)
 			}
 
+			version := regionalAgent.Version
+			if version == "" {
+				version = agent.Version
+			}
 			rows = append(rows, []string{
 				agent.AgentId,
-				agent.Version,
+				version,
 				regionalAgent.Region,
 				regionalAgent.Environment,
 				regionalAgent.Status,
@@ -1053,12 +1059,26 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	var environment string
+	if envs := cmd.StringSlice("env"); len(envs) > 0 {
+		environment = envs[0]
+	}
+
+	confirmMsg := fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)
+	deletingMsg := "Deleting agent [" + util.Accented(agentID) + "]"
+	deletedMsg := fmt.Sprintf("Deleted agent [%s]", util.Accented(agentID))
+	if environment != "" {
+		confirmMsg = fmt.Sprintf("Are you sure you want to delete environment [%s] from agent [%s]?", environment, agentID)
+		deletingMsg = "Deleting environment [" + util.Accented(environment) + "] from agent [" + util.Accented(agentID) + "]"
+		deletedMsg = fmt.Sprintf("Deleted environment [%s] from agent [%s]", util.Accented(environment), util.Accented(agentID))
+	}
+
 	if !silent && !SkipPrompts(cmd) {
 		var confirmDelete bool
 		if err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewConfirm().
-					Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)).
+					Title(confirmMsg).
 					Value(&confirmDelete).
 					Inline(false).
 					WithTheme(util.Theme),
@@ -1074,12 +1094,13 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 
 	var res *lkproto.DeleteAgentResponse
 	err = util.Await(
-		"Deleting agent ["+util.Accented(agentID)+"]",
+		deletingMsg,
 		ctx,
 		func(ctx context.Context) error {
 			var clientErr error
 			res, clientErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
-				AgentId: agentID,
+				AgentId:     agentID,
+				Environment: environment,
 			})
 			return clientErr
 		},
@@ -1096,7 +1117,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to delete agent %s", res.Message)
 	}
 
-	fmt.Printf("Deleted agent [%s]\n", util.Accented(agentID))
+	fmt.Printf("%s\n", deletedMsg)
 	return nil
 }
 
@@ -1117,6 +1138,9 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		}
 		return fmt.Errorf("unable to list agent versions: %w", err)
 	}
+
+	table := util.CreateTable().
+		Headers("Version", "Current", "Draining", "Status", "Created At", "Deployed At")
 
 	// Sort versions by created date descending
 	slices.SortFunc(versions.Versions, func(a, b *lkproto.AgentVersion) int {
@@ -1141,6 +1165,7 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		row := []string{
 			version.Version,
 			fmt.Sprintf("%t", version.Current),
+			fmt.Sprintf("%t", version.Draining),
 			version.Status,
 			version.CreatedAt.AsTime().Format(time.RFC3339),
 			version.DeployedAt.AsTime().Format(time.RFC3339),
