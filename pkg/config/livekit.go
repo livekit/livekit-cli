@@ -89,7 +89,7 @@ func LoadTOMLFile(dir string, tomlFileName string) (*LiveKitTOML, bool, error) {
 	logger.Debugw(fmt.Sprintf("loading %s file", tomlFileName))
 	var config *LiveKitTOML = nil
 	var err error
-	var configExists bool = false
+	configExists := false
 
 	tomlFile := filepath.Join(dir, tomlFileName)
 

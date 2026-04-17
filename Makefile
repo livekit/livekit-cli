@@ -36,5 +36,8 @@ check_lfs:
 	fi \
 	}
 
+lint:
+	golangci-lint run ./...
+
 fish_autocomplete: cli
 	./bin/lk generate-fish-completion -o autocomplete/fish_autocomplete

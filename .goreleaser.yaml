@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+version: 2
+
 before:
   hooks:
     - go mod tidy
@@ -30,13 +32,17 @@ builds:
     goos:
       - linux
       - windows
+      - darwin
+    ignore:
+      - goos: windows
+        goarch: arm
     ldflags:
       - -s -w
 archives:
   - name_template: "lk_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
     files:
       - LICENSE
       - 'autocomplete/*'
@@ -57,4 +63,4 @@ gomod:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"

@@ -60,6 +60,7 @@ func main() {
 	app.Commands = append(app.Commands, AppCommands...)
 	app.Commands = append(app.Commands, AgentCommands...)
 	app.Commands = append(app.Commands, CloudCommands...)
+	app.Commands = append(app.Commands, DocsCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, TokenCommands...)
@@ -95,7 +96,7 @@ func main() {
 }
 
 func checkForLegacyName() {
-	if !(strings.HasSuffix(os.Args[0], "lk") || strings.HasSuffix(os.Args[0], "lk.exe")) {
+	if !strings.HasSuffix(os.Args[0], "lk") && !strings.HasSuffix(os.Args[0], "lk.exe") {
 		fmt.Fprintf(
 			os.Stderr,
 			"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEPRECATION NOTICE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
@@ -110,6 +111,9 @@ func checkForLegacyName() {
 func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	logConfig := &logger.Config{
 		Level: "info",
+		ComponentLevels: map[string]string{
+			"pion": "error",
+		},
 	}
 	if cmd.Bool("verbose") {
 		logConfig.Level = "debug"

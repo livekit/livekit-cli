@@ -73,8 +73,8 @@ func CreateDockerIgnoreFile(dir string, projectType ProjectType) error {
 	return nil
 }
 
-func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[string]string) error {
-	dockerfileContent, dockerIgnoreContent, err := GenerateDockerArtifacts(dir, projectType, settingsMap)
+func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[string]string, skipPrompts bool) error {
+	dockerfileContent, dockerIgnoreContent, err := GenerateDockerArtifacts(dir, projectType, settingsMap, skipPrompts)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func CreateDockerfile(dir string, projectType ProjectType, settingsMap map[strin
 // GenerateDockerArtifacts returns the Dockerfile and .dockerignore contents for the
 // provided project type without writing them to disk. The Dockerfile content may be
 // templated/validated (e.g., Python entrypoint).
-func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap map[string]string) ([]byte, []byte, error) {
+func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap map[string]string, skipPrompts bool) ([]byte, []byte, error) {
 	if len(settingsMap) == 0 {
 		return nil, nil, fmt.Errorf("unable to fetch client settings from server, please try again later")
 	}
@@ -112,7 +112,7 @@ func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap ma
 		return nil, nil, err
 	}
 
-	dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType)
+	dockerfileContent, err = validateEntrypoint(dir, dockerfileContent, dockerIgnoreContent, projectType, skipPrompts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,7 +120,7 @@ func GenerateDockerArtifacts(dir string, projectType ProjectType, settingsMap ma
 	return dockerfileContent, dockerIgnoreContent, nil
 }
 
-func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType) ([]byte, error) {
+func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreContent []byte, projectType ProjectType, skipPrompts bool) ([]byte, error) {
 	// Build matcher from the Dockerignore content so we don't consider ignored files
 	reader := bytes.NewReader(dockerignoreContent)
 	patterns, err := ignorefile.ReadAll(reader)
@@ -183,7 +183,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 	var newEntrypoint string
 	if len(fileList) == 0 {
 		newEntrypoint = projectType.DefaultEntrypoint()
-	} else if len(fileList) == 1 {
+	} else if len(fileList) == 1 || skipPrompts {
 		newEntrypoint = fileList[0]
 	} else {
 		selected := fileList[0]

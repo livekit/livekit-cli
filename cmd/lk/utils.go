@@ -24,6 +24,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/joho/godotenv"
+	"github.com/mattn/go-isatty"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
@@ -84,6 +85,11 @@ var (
 		Name:        "sandbox",
 		Usage:       "`NAME` of the sandbox, see your cloud dashboard",
 		Destination: &sandboxID,
+		Hidden:      true,
+	}
+	installFlag = &cli.BoolFlag{
+		Name:  "install",
+		Usage: "Run installation after creating the application",
 	}
 
 	openFlag    = util.OpenFlag
@@ -133,6 +139,11 @@ var (
 			Name:     "verbose",
 			Required: false,
 		},
+		&cli.BoolFlag{
+			Name:    "yes",
+			Aliases: []string{"y"},
+			Usage:   "Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)",
+		},
 		&cli.StringFlag{
 			Name:        "server-url",
 			Value:       cloudAPIServerURL,
@@ -147,6 +158,12 @@ var (
 		},
 	}
 )
+
+// SkipPrompts returns true when the CLI should not prompt (e.g. --yes or non-interactive terminal).
+// When true, confirmations are treated as accepted; selects/inputs should use a default or return an error.
+func SkipPrompts(cmd *cli.Command) bool {
+	return cmd.Bool("yes") || !isatty.IsTerminal(os.Stdin.Fd())
+}
 
 func optional[T any, C any, VC cli.ValueCreator[T, C]](flag *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
 	newFlag := *flag
@@ -263,7 +280,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + util.Accented(c.String("project")) + "]")
+		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(c.String("project")))
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -277,7 +294,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("Using project [" + util.Accented(pc.Name) + "]")
+		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(pc.Name))
 		logDetails(c, pc)
 		return pc, nil
 	}
@@ -311,7 +328,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 			envVars = append(envVars, "api-secret")
 		}
 		if len(envVars) > 0 {
-			fmt.Printf("Using %s from environment\n", strings.Join(envVars, ", "))
+			fmt.Fprintf(os.Stderr, "Using %s from environment\n", strings.Join(envVars, ", "))
 			logDetails(c, pc)
 		}
 		return pc, nil
@@ -319,7 +336,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	if c.Bool("dev") {
 		pc.APIKey = "devkey"
 		pc.APISecret = "secret"
-		fmt.Println("Using dev credentials")
+		fmt.Fprintln(os.Stderr, "Using dev credentials")
 		return pc, nil
 	}
 
@@ -336,7 +353,7 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	dp, err := config.LoadDefaultProject()
 	if err == nil {
 		if p.confirmProject {
-			if dp != nil && len(cliConfig.Projects) > 1 && !c.Bool("silent") {
+			if dp != nil && len(cliConfig.Projects) > 1 && !c.Bool("silent") && !SkipPrompts(c) {
 				useDefault := true
 				if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
 					Title(fmt.Sprintf("Use project [%s] (%s) to create agent?", dp.Name, dp.URL)).
@@ -351,13 +368,13 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 					if _, err = selectProject(context.Background(), c); err != nil {
 						return nil, err
 					}
-					fmt.Printf("Using project [%s]\n", util.Accented(project.Name))
+					fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
 					return project, nil
 				}
 			}
 		} else {
-			if !c.Bool("silent") {
-				fmt.Println("Using default project [" + util.Theme.Focused.Title.Render(dp.Name) + "]")
+			if !c.Bool("silent") && !SkipPrompts(c) {
+				fmt.Fprintf(os.Stderr, "Using default project [%s]\n", util.Theme.Focused.Title.Render(dp.Name))
 				logDetails(c, dp)
 			}
 		}

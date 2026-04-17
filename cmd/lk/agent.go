@@ -142,14 +142,16 @@ var (
 						}, {
 							sandboxFlag,
 							&cli.BoolFlag{
-								Name:  "no-sandbox",
-								Usage: "If set, will not create a sandbox for the project. ",
-								Value: false,
+								Name:   "no-sandbox",
+								Usage:  "If set, will not create a sandbox for the project. ",
+								Value:  true,
+								Hidden: true,
 							},
 						}},
 					}},
 					Flags: []cli.Flag{
 						regionFlag,
+						installFlag,
 					},
 					ArgsUsage:                 "[AGENT-NAME]",
 					DisableSliceFlagSeparator: true,
@@ -209,6 +211,7 @@ var (
 						secretsFileFlag,
 						secretsMountFlag,
 						silentFlag,
+						regionFlag,
 						ignoreEmptySecretsFlag,
 						skipSDKCheckFlag,
 					},
@@ -345,6 +348,7 @@ var (
 					DisableSliceFlagSeparator: true,
 					ArgsUsage:                 "[working-dir]",
 				},
+				privateLinkCommands,
 			},
 		},
 	}
@@ -399,44 +403,48 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 func initAgent(ctx context.Context, cmd *cli.Command) error {
 	// TODO: (@rektdeckard) move compatibility flag into template index,
 	// then show template picker containing only compatible templates
-	if !(cmd.IsSet("lang") || cmd.IsSet("template") || cmd.IsSet("template-url")) {
-		var lang string
-		// Prompt for language
-		if err := huh.NewSelect[string]().
-			Title("Select the language for your agent project").
-			Options(
-				huh.NewOption("Python", "python"),
-				huh.NewOption("Node.js", "node"),
-			).
-			Value(&lang).
-			WithTheme(util.Theme).
-			Run(); err != nil {
-			return err
-		}
-
-		switch lang {
-		case "node":
-			templateURL = "https://github.com/livekit-examples/agent-starter-node"
-		case "python":
+	if !cmd.IsSet("lang") && !cmd.IsSet("template") && !cmd.IsSet("template-url") {
+		if SkipPrompts(cmd) {
 			templateURL = "https://github.com/livekit-examples/agent-starter-python"
-		default:
-			return fmt.Errorf("unsupported language: %s", lang)
+		} else {
+			var lang string
+			// Prompt for language
+			if err := huh.NewSelect[string]().
+				Title("Select the language for your agent project").
+				Options(
+					huh.NewOption("Python", "python"),
+					huh.NewOption("Node.js", "node"),
+				).
+				Value(&lang).
+				WithTheme(util.Theme).
+				Run(); err != nil {
+				return err
+			}
+
+			switch lang {
+			case "node":
+				templateURL = "https://github.com/livekit-examples/agent-starter-node"
+			case "python":
+				templateURL = "https://github.com/livekit-examples/agent-starter-python"
+			default:
+				return fmt.Errorf("unsupported language: %s", lang)
+			}
 		}
 	}
 
 	logger.Debugw("Initializing agent project", "working-dir", workingDir)
 
-	// Create sandbox
-	if !cmd.Bool("no-sandbox") || sandboxID == "" {
+	appName = cmd.Args().First()
+	if appName == "" {
+		appName = project.Name
+	}
+
+	// Create sandbox only when not disabled by flag and we don't already have one
+	if !cmd.Bool("no-sandbox") && sandboxID == "" {
 		if err := util.Await("Creating sandbox app...", ctx, func(ctx context.Context) error {
 			token, err := requireToken(ctx, cmd)
 			if err != nil {
 				return err
-			}
-
-			appName = cmd.Args().First()
-			if appName == "" {
-				appName = project.Name
 			}
 
 			// TODO: (@rektdeckard) figure out why AccessKeyProvider does not immediately
@@ -451,8 +459,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 				serverURL,
 			)
 
-			// We set agent name and sandbox ID in env for use in template tasks
-			os.Setenv("LIVEKIT_AGENT_NAME", appName)
+			// We set sandbox ID in env for use in template tasks
 			os.Setenv("LIVEKIT_SANDBOX_ID", sandboxID)
 
 			return err
@@ -462,7 +469,6 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 			fmt.Println("Creating sandbox app...")
 			fmt.Printf("Created sandbox app [%s]\n", util.Accented(sandboxID))
 		}
-
 	}
 
 	// Run template bootstrap
@@ -494,14 +500,16 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	// set via a command line flag, because intent is clear.
 	if !cmd.IsSet("project") {
 		useProject := true
-		if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
-			Title(fmt.Sprintf("Use project [%s] (%s) to create agent deployment?", project.Name, project.URL)).
-			Value(&useProject).
-			Negative("Select another").
-			Inline(false).
-			WithTheme(util.Theme))).
-			Run(); err != nil {
-			return err
+		if !SkipPrompts(cmd) {
+			if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+				Title(fmt.Sprintf("Use project [%s] (%s) to create agent deployment?", project.Name, project.URL)).
+				Value(&useProject).
+				Negative("Select another").
+				Inline(false).
+				WithTheme(util.Theme))).
+				Run(); err != nil {
+				return err
+			}
 		}
 		if !useProject {
 			if _, err := selectProject(ctx, cmd); err != nil {
@@ -578,8 +586,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				regionOptions[i] = strings.TrimSpace(r)
 			}
 			slices.Sort(regionOptions)
+			slices.Reverse(regionOptions)
 
-			if err := huh.NewSelect[string]().
+			if SkipPrompts(cmd) {
+				return fmt.Errorf("non-interactive mode: --region flag must be specified, available regions: %v", regionOptions)
+			} else if err := huh.NewSelect[string]().
 				Title("Select region for agent deployment").
 				Options(huh.NewOptions(regionOptions...)...).
 				Value(&region).
@@ -587,6 +598,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				Run(); err != nil {
 				return err
 			}
+			fmt.Fprintf(os.Stderr, "Using region [%s]\n", util.Accented(region))
 		} else {
 			// we shouldn't ever get here, but if we do, just default to us-east
 			logger.Debugw("no available regions found, defaulting to us-east. please contact LiveKit support if this is unexpected.")
@@ -618,8 +630,8 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	fmt.Println("Build completed - You can view build logs later with `lk agent logs --log-type=build`")
 
-	if !silent {
-		var viewLogs bool = true
+	if !silent && !SkipPrompts(cmd) {
+		viewLogs := true
 		if err := huh.NewForm(
 			huh.NewGroup(
 				huh.NewConfirm().
@@ -640,19 +652,25 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	if _, err := os.Stat(tomlFilename); err == nil {
-		var overwrite bool
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewConfirm().
-					Title(
-						fmt.Sprintf("Config file [%s] file already exists. Overwrite?", tomlFilename),
-					).
-					Value(&overwrite).
-					WithTheme(util.Theme),
-			),
-		).
-			Run(); err != nil {
-			return err
+		overwrite := false
+		if SkipPrompts(cmd) {
+			overwrite = true
+		} else {
+			var overwriteVal bool
+			if err := huh.NewForm(
+				huh.NewGroup(
+					huh.NewConfirm().
+						Title(
+							fmt.Sprintf("Config file [%s] file already exists. Overwrite?", tomlFilename),
+						).
+						Value(&overwriteVal).
+						WithTheme(util.Theme),
+				),
+			).
+				Run(); err != nil {
+				return err
+			}
+			overwrite = overwriteVal
 		}
 		if !overwrite {
 			return fmt.Errorf("config file [%s] already exists", util.Accented(tomlFilename))
@@ -708,23 +726,25 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
-	var req *lkproto.DeployAgentRequest
+	// If no agent exists yet (no --id and no config with agent), do first-time create (which deploys).
+	if cmd.String("id") == "" {
+		configExists, err := requireConfig(workingDir, tomlFilename)
+		if err != nil && configExists {
+			return err
+		}
+		if !configExists || lkConfig == nil || !lkConfig.HasAgent() {
+			return createAgent(ctx, cmd)
+		}
+	}
 
 	agentId, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
 
-	req = &lkproto.DeployAgentRequest{
-		AgentId: agentId,
-	}
-
 	secrets, err := requireSecrets(ctx, cmd, false, true)
 	if err != nil {
 		return err
-	}
-	if len(secrets) > 0 {
-		req.Secrets = secrets
 	}
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
@@ -944,7 +964,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if !silent {
+	if !silent && !SkipPrompts(cmd) {
 		var confirmDelete bool
 		if err := huh.NewForm(
 			huh.NewGroup(
@@ -1076,6 +1096,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 		}
 		rows = append(rows, []string{
 			agent.AgentId,
+			agent.AgentName,
 			strings.Join(regions, ","),
 			agent.Version,
 			agent.DeployedAt.AsTime().Format(time.RFC3339),
@@ -1083,7 +1104,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Regions", "Version", "Deployed At").
+		Headers("ID", "Dispatch Name", "Regions", "Version", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -1137,16 +1158,19 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 
 	var confirmOverwrite bool
 	if cmd.Bool("overwrite") {
-		if err := huh.NewForm(
-			huh.NewGroup(
-				huh.NewConfirm().
-					Title(fmt.Sprintf("This will remove all existing secrets. Are you sure you want to proceed [%s]?", agentID)).
-					Value(&confirmOverwrite).
-					Inline(false).
-					WithTheme(util.Theme),
-			),
-		).Run(); err != nil {
-			return err
+		confirmOverwrite = SkipPrompts(cmd)
+		if !SkipPrompts(cmd) {
+			if err := huh.NewForm(
+				huh.NewGroup(
+					huh.NewConfirm().
+						Title(fmt.Sprintf("This will remove all existing secrets. Are you sure you want to proceed [%s]?", agentID)).
+						Value(&confirmOverwrite).
+						Inline(false).
+						WithTheme(util.Theme),
+				),
+			).Run(); err != nil {
+				return err
+			}
 		}
 		if !confirmOverwrite {
 			return nil
@@ -1206,7 +1230,7 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 	return agentID, nil
 }
 
-func selectAgent(ctx context.Context, _ *cli.Command, excludeEmptyVersion bool) (string, error) {
+func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool) (string, error) {
 	var agents *lkproto.ListAgentsResponse
 
 	err := util.Await("No agent ID provided, selecting from available agents...", ctx, func(ctx context.Context) error {
@@ -1232,6 +1256,13 @@ func selectAgent(ctx context.Context, _ *cli.Command, excludeEmptyVersion bool) 
 		}
 		name := agent.AgentId + " " + util.Dimmed("deployed "+agent.DeployedAt.AsTime().Format(time.RFC3339))
 		agentNames = append(agentNames, huh.Option[string]{Key: name, Value: agent.AgentId})
+	}
+
+	if SkipPrompts(cmd) {
+		if len(agentNames) != 1 {
+			return "", fmt.Errorf("non-interactive mode: set --id when multiple agents exist")
+		}
+		return agentNames[0].Value, nil
 	}
 
 	var selectedAgent string
@@ -1288,7 +1319,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 
 	shouldReadFromDisk := cmd.IsSet("secrets-file") || !lazy || (required && len(secrets) == 0)
 	if shouldReadFromDisk {
-		file, env, err := agentfs.DetectEnvFile(cmd.String("secrets-file"))
+		file, env, err := agentfs.DetectEnvFile(cmd.String("secrets-file"), SkipPrompts(cmd))
 		if err != nil {
 			return nil, err
 		}
@@ -1365,7 +1396,7 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 				"Creating Dockerfile...",
 				ctx,
 				func(ctx context.Context) error {
-					return agentfs.CreateDockerfile(workingDir, projectType, settingsMap)
+					return agentfs.CreateDockerfile(workingDir, projectType, settingsMap, SkipPrompts(cmd))
 				},
 			)
 			if err != nil {
@@ -1373,7 +1404,7 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 			}
 			fmt.Println("Created [" + util.Accented("Dockerfile") + "]")
 		} else {
-			if err := agentfs.CreateDockerfile(workingDir, projectType, settingsMap); err != nil {
+			if err := agentfs.CreateDockerfile(workingDir, projectType, settingsMap, SkipPrompts(cmd)); err != nil {
 				return err
 			}
 		}
@@ -1489,7 +1520,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// Generate contents without writing
-	dockerfileContent, dockerignoreContent, err := agentfs.GenerateDockerArtifacts(workingDir, projectType, settingsMap)
+	dockerfileContent, dockerignoreContent, err := agentfs.GenerateDockerArtifacts(workingDir, projectType, settingsMap, SkipPrompts(cmd))
 	if err != nil {
 		return err
 	}

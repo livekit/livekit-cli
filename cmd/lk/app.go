@@ -55,11 +55,13 @@ var (
 					Name:      "create",
 					Usage:     "Bootstrap a new application from a template or through guided creation",
 					Action:    setupTemplate,
+					Before:    requireProject,
 					ArgsUsage: "`APP_NAME`",
 					Flags: []cli.Flag{
 						templateFlag,
 						templateURLFlag,
 						sandboxFlag,
+						installFlag,
 					},
 				},
 				{
@@ -147,6 +149,14 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 	var err error
 
 	if cliConfig != nil && len(cliConfig.Projects) > 0 {
+		if SkipPrompts(cmd) {
+			if len(cliConfig.Projects) == 1 {
+				project = &cliConfig.Projects[0]
+				fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
+				return ctx, nil
+			}
+			return nil, fmt.Errorf("multiple projects configured; set --project in non-interactive mode")
+		}
 		var options []huh.Option[*config.ProjectConfig]
 		for _, p := range cliConfig.Projects {
 			options = append(options, huh.NewOption(p.Name+" "+util.Dimmed(util.ExtractSubdomain(p.URL)), &p))
@@ -161,8 +171,11 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 			Run(); err != nil {
 			return nil, fmt.Errorf("no project selected: %w", err)
 		}
-		fmt.Println("Using project [" + util.Accented(project.Name) + "]")
+		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
 	} else {
+		if SkipPrompts(cmd) {
+			return nil, fmt.Errorf("no projects configured; run `lk cloud auth` in an interactive terminal or set --project")
+		}
 		shouldAuth := true
 		if err = huh.NewForm(huh.NewGroup(huh.NewConfirm().
 			Title("No local projects found. Authenticate one?").
@@ -221,6 +234,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 
 	if templateName != "" && templateURL != "" {
 		return errors.New("only one of template or template-url can be specified")
+	}
+
+	if SkipPrompts(cmd) && templateName == "" && templateURL == "" {
+		return errors.New("non-interactive mode: set --template or --template-url")
 	}
 
 	if isSandbox {
@@ -285,27 +302,33 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		arg := cmd.Args().First()
 		if arg != "" {
 			appName = arg
-		} else {
-			preinstallPrompts = append(preinstallPrompts, huh.NewInput().
-				Title("Application Name").
-				Placeholder("my-app").
-				Value(&appName).
-				Validate(func(s string) error {
-					if len(s) < 2 {
-						return errors.New("name is too short")
-					}
-					if !appNameRegex.MatchString(s) {
-						return errors.New("try a simpler name")
-					}
-					if s, _ := os.Stat(s); s != nil {
-						return errors.New("that name is in use")
-					}
-					return nil
-				}).
-				WithTheme(util.Theme))
 		}
 	}
-
+	if appName == "" {
+		if SkipPrompts(cmd) {
+			return errors.New("non-interactive mode: provide app name as argument")
+		}
+		if project != nil {
+			appName = project.Name
+		}
+		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
+			Title("Application Name").
+			Placeholder("my-app").
+			Value(&appName).
+			Validate(func(s string) error {
+				if len(s) < 2 {
+					return errors.New("name is too short")
+				}
+				if !appNameRegex.MatchString(s) {
+					return errors.New("try a simpler name")
+				}
+				if s, _ := os.Stat(s); s != nil {
+					return errors.New("that name is in use")
+				}
+				return nil
+			}).
+			WithTheme(util.Theme))
+	}
 	if len(preinstallPrompts) > 0 {
 		group := huh.NewGroup(preinstallPrompts...)
 		if err := huh.NewForm(group).
@@ -314,6 +337,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
+
+	// Set environment variables for template instantiation
+	os.Setenv("LIVEKIT_AGENT_NAME", appName)
+	os.Setenv("LIVEKIT_PROJECT_ID", project.ProjectId)
 
 	fmt.Println("Cloning template...")
 	if err := cloneTemplate(ctx, cmd, templateURL, appName); err != nil {
@@ -351,10 +378,20 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 
 	bootstrap.WriteDotEnv(appName, envOutputFile, env)
 
+	if !cmd.IsSet("install") && !SkipPrompts(cmd) {
+		if err := huh.NewConfirm().
+			Title("Install dependencies?").
+			Value(&install).
+			Inline(true).
+			WithTheme(util.Theme).
+			Run(); err != nil {
+			return err
+		}
+	}
 	if install {
 		fmt.Println("Installing template...")
 		if err := doInstall(ctx, bootstrap.TaskInstall, appName, verbose); err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "Warning: installation failed: %v\n", err)
 		}
 	}
 	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
@@ -438,18 +475,25 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 		maps.Copy(env, *addlEnv)
 	}
 
-	prompt := func(key, oldValue string) (string, error) {
-		var newValue string
-		if err := huh.NewInput().
-			EchoMode(huh.EchoModePassword).
-			Title("Enter " + key + "?").
-			Placeholder(oldValue).
-			Value(&newValue).
-			WithTheme(util.Theme).
-			Run(); err != nil || newValue == "" {
-			return oldValue, err
+	var prompt func(string, string) (string, error)
+	if SkipPrompts(cmd) {
+		prompt = func(key, oldValue string) (string, error) {
+			return oldValue, nil
 		}
-		return newValue, nil
+	} else {
+		prompt = func(key, oldValue string) (string, error) {
+			var newValue string
+			if err := huh.NewInput().
+				EchoMode(huh.EchoModePassword).
+				Title("Enter " + key + "?").
+				Placeholder(oldValue).
+				Value(&newValue).
+				WithTheme(util.Theme).
+				Run(); err != nil || newValue == "" {
+				return oldValue, err
+			}
+			return newValue, nil
+		}
 	}
 
 	return bootstrap.InstantiateDotEnv(ctx, rootPath, exampleFile, env, cmd.Bool("verbose"), prompt)
@@ -537,6 +581,9 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 
 	taskName := cmd.Args().First()
 	if taskName == "" {
+		if SkipPrompts(cmd) {
+			return fmt.Errorf("non-interactive mode: provide task name as argument")
+		}
 		tasks, err := exe.GetTaskList()
 		if err != nil {
 			return err

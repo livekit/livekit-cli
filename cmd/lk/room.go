@@ -874,14 +874,14 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		OnParticipantConnected: func(p *lksdk.RemoteParticipant) {
 			logger.Infow("participant connected",
 				"kind", p.Kind(),
-				"pID", p.SID(),
+				"participantID", p.SID(),
 				"participant", p.Identity(),
 			)
 		},
 		OnParticipantDisconnected: func(p *lksdk.RemoteParticipant) {
 			logger.Infow("participant disconnected",
 				"kind", p.Kind(),
-				"pID", p.SID(),
+				"participantID", p.SID(),
 				"participant", p.Identity(),
 			)
 		},
@@ -1076,6 +1076,13 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 				})
 			token, _ := at.ToJWT()
 			_ = util.OpenInMeet(project.URL, token)
+		case string(util.OpenTargetConsole):
+			_ = util.OpenInConsole(dashboardURL, project.ProjectId, &util.ConsoleURLParams{
+				Identity:  participantIdentity,
+				RoomName:  roomName,
+				Hidden:    true,
+				AutoStart: true,
+			})
 		}
 	}
 
