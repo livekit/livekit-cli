@@ -577,33 +577,9 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	region := cmd.String("region")
-	if region == "" {
-		availableRegionsStr, ok := settingsMap["available_regions"]
-		if ok && availableRegionsStr != "" {
-			regionOptions := strings.Split(availableRegionsStr, ",")
-			for i, r := range regionOptions {
-				regionOptions[i] = strings.TrimSpace(r)
-			}
-			slices.Sort(regionOptions)
-			slices.Reverse(regionOptions)
-
-			if SkipPrompts(cmd) {
-				return fmt.Errorf("non-interactive mode: --region flag must be specified, available regions: %v", regionOptions)
-			} else if err := huh.NewSelect[string]().
-				Title("Select region for agent deployment").
-				Options(huh.NewOptions(regionOptions...)...).
-				Value(&region).
-				WithTheme(util.Theme).
-				Run(); err != nil {
-				return err
-			}
-			fmt.Fprintf(os.Stderr, "Using region [%s]\n", util.Accented(region))
-		} else {
-			// we shouldn't ever get here, but if we do, just default to us-east
-			logger.Debugw("no available regions found, defaulting to us-east. please contact LiveKit support if this is unexpected.")
-			region = "us-east"
-		}
+	region, err := resolveRegion(cmd, settingsMap, "Select region for agent deployment")
+	if err != nil {
+		return err
 	}
 
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
@@ -1465,6 +1441,46 @@ func getClientSettings(ctx context.Context, silent bool) (map[string]string, err
 	}
 
 	return settingsMap, nil
+}
+
+// resolveRegion returns the LiveKit region to use, prompting the user with a
+// picker populated from server-reported available_regions when --region is
+// unset and the CLI is interactive. In non-interactive mode an unset --region
+// is an error so invocations fail loudly instead of silently defaulting.
+func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string) (string, error) {
+	if region := cmd.String("region"); region != "" {
+		return region, nil
+	}
+
+	availableRegionsStr, ok := settingsMap["available_regions"]
+	if !ok || availableRegionsStr == "" {
+		// we shouldn't ever get here, but if we do, just default to us-east
+		logger.Debugw("no available regions found, defaulting to us-east. please contact LiveKit support if this is unexpected.")
+		return "us-east", nil
+	}
+
+	regionOptions := strings.Split(availableRegionsStr, ",")
+	for i, r := range regionOptions {
+		regionOptions[i] = strings.TrimSpace(r)
+	}
+	slices.Sort(regionOptions)
+	slices.Reverse(regionOptions)
+
+	if SkipPrompts(cmd) {
+		return "", fmt.Errorf("non-interactive mode: --region flag must be specified, available regions: %v", regionOptions)
+	}
+
+	var region string
+	if err := huh.NewSelect[string]().
+		Title(title).
+		Options(huh.NewOptions(regionOptions...)...).
+		Value(&region).
+		WithTheme(util.Theme).
+		Run(); err != nil {
+		return "", err
+	}
+	fmt.Fprintf(os.Stderr, "Using region [%s]\n", util.Accented(region))
+	return region, nil
 }
 
 func requireConfig(workingDir, tomlFilename string) (bool, error) {

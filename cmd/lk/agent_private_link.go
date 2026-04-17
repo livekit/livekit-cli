@@ -33,9 +33,8 @@ var privateLinkCommands = &cli.Command{
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "region",
-					Usage:    "LiveKit region",
-					Required: true,
+					Name:  "region",
+					Usage: "LiveKit region. If unset in interactive mode, a picker of available regions is shown.",
 				},
 				&cli.UintFlag{
 					Name:     "port",
@@ -183,7 +182,17 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
+	settingsMap, err := getClientSettings(ctx, false)
+	if err != nil {
+		return err
+	}
+
+	region, err := resolveRegion(cmd, settingsMap, "Select region for private link")
+	if err != nil {
+		return err
+	}
+
+	req := buildCreatePrivateLinkRequest(cmd.String("name"), region, uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
 	resp, err := agentsClient.CreatePrivateLink(ctx, req)
 	if err != nil {
 		return formatPrivateLinkClientError("create", err)
