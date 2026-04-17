@@ -363,6 +363,8 @@ github.com/livekit/protocol v1.45.4-0.20260414175434-28604d1045cd h1:T6z+yCaQGs8
 github.com/livekit/protocol v1.45.4-0.20260414175434-28604d1045cd/go.mod h1:e6QdWDkfot+M2nRh0eitJUS0ZLuwvKCsfiz2pWWSG3s=
 github.com/livekit/protocol v1.45.4-0.20260417165950-df0615eb700a h1:w4uHb432qHLCbyLoCHzaVwiVXvh6sCeHTkF7hIM8S9I=
 github.com/livekit/protocol v1.45.4-0.20260417165950-df0615eb700a/go.mod h1:e6QdWDkfot+M2nRh0eitJUS0ZLuwvKCsfiz2pWWSG3s=
+github.com/livekit/protocol v1.45.4-0.20260417173102-5d4f88f73b7c h1:TusqCkqnqw/9B6BVJhFjFI8D/1Zy6z4oBsk1ehbpZIc=
+github.com/livekit/protocol v1.45.4-0.20260417173102-5d4f88f73b7c/go.mod h1:e6QdWDkfot+M2nRh0eitJUS0ZLuwvKCsfiz2pWWSG3s=
 github.com/livekit/psrpc v0.7.1 h1:ms37az0QTD3UXIWuUC5D/SkmKOlRMVRsI261eBWu/Vw=
 github.com/livekit/psrpc v0.7.1/go.mod h1:bZ4iHFQptTkbPnB0LasvRNu/OBYXEu1NA6O5BMFo9kk=
 github.com/livekit/server-sdk-go/v2 v2.16.2 h1:eQe24cka3X+5zUivezyL72nwtAJTWFXgibeiyJ/Jm+Y=

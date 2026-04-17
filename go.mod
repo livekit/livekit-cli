@@ -13,7 +13,7 @@ require (
 	github.com/go-task/task/v3 v3.49.1
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.45.4-0.20260417165950-df0615eb700a
+	github.com/livekit/protocol v1.45.4-0.20260417173102-5d4f88f73b7c
 	github.com/livekit/server-sdk-go/v2 v2.16.2
 	github.com/mattn/go-isatty v0.0.21
 	github.com/moby/patternmatcher v0.6.1
