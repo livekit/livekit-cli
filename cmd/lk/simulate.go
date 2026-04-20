@@ -52,7 +52,6 @@ var simulateCommand = &cli.Command{
 			Name:    "num-simulations",
 			Aliases: []string{"n"},
 			Usage:   "Number of scenarios to generate",
-			Value:   5,
 		},
 		&cli.StringFlag{
 			Name:  "description",
