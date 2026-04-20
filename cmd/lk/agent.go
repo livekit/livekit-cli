@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -26,6 +27,9 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/crane"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
@@ -95,6 +99,16 @@ var (
 		Name:     "region",
 		Usage:    "Region to deploy the agent to. If unset, will deploy to the nearest region.",
 		Required: false,
+	}
+
+	agentPrebuiltImageFlag = &cli.StringFlag{
+		Name:  "image",
+		Usage: "Pre-built image from the local Docker daemon (e.g. myimage:latest). Requires Docker.",
+	}
+
+	agentPrebuiltImageTarFlag = &cli.StringFlag{
+		Name:  "image-tar",
+		Usage: "Pre-built image from an OCI tar file (e.g. ./image.tar). No Docker daemon required.",
 	}
 
 	skipSDKCheckFlag = &cli.BoolFlag{
@@ -169,6 +183,8 @@ var (
 						silentFlag,
 						regionFlag,
 						skipSDKCheckFlag,
+						agentPrebuiltImageFlag,
+						agentPrebuiltImageTarFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -214,6 +230,8 @@ var (
 						regionFlag,
 						ignoreEmptySecretsFlag,
 						skipSDKCheckFlag,
+						agentPrebuiltImageFlag,
+						agentPrebuiltImageTarFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -585,6 +603,26 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	regions := []string{region}
+
+	// --image or --image-tar: register the agent record then push the prebuilt image
+	imageRef := cmd.String("image")
+	imageTar := cmd.String("image-tar")
+	if imageRef != "" || imageTar != "" {
+		agentID, err := agentsClient.RegisterAgent(buildContext, secrets, regions)
+		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				return fmt.Errorf("unable to create agent: %s", twerr.Msg())
+			}
+			return fmt.Errorf("unable to create agent: %w", err)
+		}
+		lkConfig.Agent.ID = agentID
+		if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
+			return err
+		}
+		fmt.Printf("Created agent with ID [%s]\n", util.Accented(agentID))
+		return deployPrebuiltImage(buildContext, agentID, imageRef, imageTar)
+	}
+
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
 	if err != nil {
@@ -702,20 +740,23 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
-	// If no agent exists yet (no --id and no config with agent), do first-time create (which deploys).
-	if cmd.String("id") == "" {
-		configExists, err := requireConfig(workingDir, tomlFilename)
-		if err != nil && configExists {
-			return err
-		}
-		if !configExists || lkConfig == nil || !lkConfig.HasAgent() {
-			return createAgent(ctx, cmd)
-		}
-	}
-
 	agentId, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
+	}
+
+	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
+	defer cancel()
+
+	// --image or --image-tar: skip source build and push a prebuilt image via the OCI proxy.
+	imageRef := cmd.String("image")
+	imageTar := cmd.String("image-tar")
+	if imageRef != "" || imageTar != "" {
+		if err := deployPrebuiltImage(buildContext, agentId, imageRef, imageTar); err != nil {
+			return fmt.Errorf("unable to deploy prebuilt image: %w", err)
+		}
+		fmt.Println("Deployed agent")
+		return nil
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -742,8 +783,6 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
-	defer cancel()
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
@@ -753,6 +792,45 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	fmt.Println("Deployed agent")
+	return nil
+}
+
+// deployPrebuiltImage pushes a locally-built image through the cloud-agents OCI proxy.
+// Exactly one of imageRef (Docker daemon via the Docker API) or imageTar must be non-empty.
+func deployPrebuiltImage(ctx context.Context, agentID, imageRef, imageTar string) error {
+	target, err := agentsClient.GetPushTarget(ctx, agentID)
+	if err != nil {
+		return fmt.Errorf("failed to get push target: %w", err)
+	}
+
+	var img v1.Image
+	if imageRef != "" {
+		imageRef = strings.TrimSpace(imageRef)
+		fmt.Printf("Loading image from Docker daemon [%s]\n", util.Accented(imageRef))
+		var dockerCloser io.Closer
+		img, dockerCloser, err = agentfs.LoadDockerDaemonImage(ctx, imageRef)
+		if err != nil {
+			return err
+		}
+		defer dockerCloser.Close()
+	} else {
+		fmt.Printf("Loading image from [%s]\n", util.Accented(imageTar))
+		img, err = crane.Load(imageTar)
+		if err != nil {
+			return fmt.Errorf("failed to load image: %w", err)
+		}
+	}
+
+	proxyRef := fmt.Sprintf("%s/%s:%s", target.ProxyHost, target.Name, target.Tag)
+	fmt.Printf("Pushing image [%s]\n", util.Accented(proxyRef))
+
+	rt := agentsClient.NewRegistryTransport()
+	if err := crane.Push(img, proxyRef,
+		crane.WithTransport(rt),
+		crane.WithAuth(authn.Anonymous),
+	); err != nil {
+		return fmt.Errorf("failed to push image: %w", err)
+	}
 	return nil
 }
 
@@ -1005,21 +1083,37 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to list agent versions: %w", err)
 	}
 
-	table := util.CreateTable().
-		Headers("Version", "Current", "Status", "Created At", "Deployed At")
-
 	// Sort versions by created date descending
 	slices.SortFunc(versions.Versions, func(a, b *lkproto.AgentVersion) int {
 		return b.CreatedAt.AsTime().Compare(a.CreatedAt.AsTime())
 	})
+
+	showDigest := false
+	for _, v := range versions.Versions {
+		if v.Attributes["image_digest"] != "" {
+			showDigest = true
+			break
+		}
+	}
+
+	headers := []string{"Version", "Current", "Status", "Created At", "Deployed At"}
+	if showDigest {
+		headers = append(headers, "Digest")
+	}
+	table := util.CreateTable().Headers(headers...)
+
 	for _, version := range versions.Versions {
-		table.Row(
+		row := []string{
 			version.Version,
 			fmt.Sprintf("%t", version.Current),
 			version.Status,
 			version.CreatedAt.AsTime().Format(time.RFC3339),
 			version.DeployedAt.AsTime().Format(time.RFC3339),
-		)
+		}
+		if showDigest {
+			row = append(row, version.Attributes["image_digest"])
+		}
+		table.Row(row...)
 	}
 
 	fmt.Println(table)
