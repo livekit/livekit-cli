@@ -182,6 +182,8 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 
 	var debounceTimer *time.Timer
 	var debounceCh <-chan time.Time
+	exitCh := aw.agent.exitCh
+	var changedFile string
 
 	for {
 		select {
@@ -206,6 +208,12 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 					_ = aw.watcher.Add(event.Name)
 				}
 			}
+			// Track the file that triggered the change
+			if rel, err := filepath.Rel(aw.config.Dir, event.Name); err == nil {
+				changedFile = rel
+			} else {
+				changedFile = event.Name
+			}
 			// Start or reset debounce timer
 			if debounceTimer == nil {
 				debounceTimer = time.NewTimer(aw.debounce)
@@ -217,9 +225,12 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 		case <-debounceCh:
 			debounceTimer = nil
 			debounceCh = nil
+			fmt.Fprintf(os.Stderr, "File changed: %s\n", changedFile)
 			if err := aw.restart(); err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to restart agent: %v\n", err)
 				fmt.Fprintln(os.Stderr, "Waiting for file changes...")
+			} else {
+				exitCh = aw.agent.exitCh
 			}
 
 		case err, ok := <-aw.watcher.Errors:
@@ -228,15 +239,16 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 			}
 			fmt.Fprintf(os.Stderr, "Watcher error: %v\n", err)
 
-		case <-aw.agent.exitCh:
-			// Agent crashed — wait for file changes to restart
-			fmt.Fprintln(os.Stderr, "Agent exited. Waiting for file changes to restart...")
-			// Drain any pending debounce
+		case <-exitCh:
+			// Nil the channel so this case won't fire again (nil channels block forever)
+			exitCh = nil
+			// Drain any pending debounce — don't restart immediately
 			if debounceTimer != nil {
 				debounceTimer.Stop()
 				debounceTimer = nil
 				debounceCh = nil
 			}
+			fmt.Fprintln(os.Stderr, "Agent exited. Waiting for file changes to restart...")
 		}
 	}
 }
