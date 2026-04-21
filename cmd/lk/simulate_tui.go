@@ -586,7 +586,11 @@ func (m *simulateModel) viewSetup() string {
 	// Show generation progress after setup completes
 	if m.setupDone && m.err == nil {
 		elapsed := time.Since(m.genStart).Truncate(time.Second)
-		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("●"), m.numSimulations, m.spinner(), dimStyle.Render(elapsed.String())))
+		if m.numSimulations > 0 {
+			b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("●"), m.numSimulations, m.spinner(), dimStyle.Render(elapsed.String())))
+		} else {
+			b.WriteString(fmt.Sprintf("  %s Generating scenarios  %s %s\n", yellowStyle.Render("●"), m.spinner(), dimStyle.Render(elapsed.String())))
+		}
 	}
 
 	if m.err != nil {
