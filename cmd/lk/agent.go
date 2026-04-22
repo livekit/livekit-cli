@@ -577,6 +577,32 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	imageRef := cmd.String("image")
+	imageTar := cmd.String("image-tar")
+	// Prebuilt image: no local project layout is required; skip language/dockerfile/sdk checks.
+	if imageRef != "" || imageTar != "" {
+		region, err := resolveRegion(cmd, settingsMap, "Select region for agent deployment")
+		if err != nil {
+			return err
+		}
+		buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
+		defer cancel()
+		regions := []string{region}
+		agentID, err := agentsClient.RegisterAgent(buildContext, secrets, regions)
+		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				return fmt.Errorf("unable to create agent: %s", twerr.Msg())
+			}
+			return fmt.Errorf("unable to create agent: %w", err)
+		}
+		lkConfig.Agent.ID = agentID
+		if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
+			return err
+		}
+		fmt.Printf("Created agent with ID [%s]\n", util.Accented(agentID))
+		return deployPrebuiltImage(buildContext, agentID, imageRef, imageTar)
+	}
+
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
 		return fmt.Errorf("unable to determine agent language: %w, please navigate to a directory containing an agent written in a supported language", err)
@@ -603,25 +629,6 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	regions := []string{region}
-
-	// --image or --image-tar: register the agent record then push the prebuilt image
-	imageRef := cmd.String("image")
-	imageTar := cmd.String("image-tar")
-	if imageRef != "" || imageTar != "" {
-		agentID, err := agentsClient.RegisterAgent(buildContext, secrets, regions)
-		if err != nil {
-			if twerr, ok := err.(twirp.Error); ok {
-				return fmt.Errorf("unable to create agent: %s", twerr.Msg())
-			}
-			return fmt.Errorf("unable to create agent: %w", err)
-		}
-		lkConfig.Agent.ID = agentID
-		if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
-			return err
-		}
-		fmt.Printf("Created agent with ID [%s]\n", util.Accented(agentID))
-		return deployPrebuiltImage(buildContext, agentID, imageRef, imageTar)
-	}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
