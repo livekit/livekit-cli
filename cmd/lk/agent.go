@@ -400,6 +400,13 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 	return createAgentClientWithOpts(ctx, cmd)
 }
 
+func formatTime(t time.Time) string {
+	if t.IsZero() {
+		return "---"
+	}
+	return t.Format(time.RFC3339)
+}
+
 func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
 	var err error
 
@@ -916,7 +923,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
 				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
-				agent.DeployedAt.AsTime().Format(time.RFC3339),
+				formatTime(agent.DeployedAt.AsTime()),
 			})
 		}
 	}
@@ -1171,8 +1178,8 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 			flag(version.Draining),
 			flag(version.Active),
 			version.Status,
-			version.CreatedAt.AsTime().Format(time.RFC3339),
-			version.DeployedAt.AsTime().Format(time.RFC3339),
+			formatTime(version.CreatedAt.AsTime()),
+			formatTime(version.DeployedAt.AsTime()),
 		}
 		if showDigest {
 			row = append(row, version.Attributes["image_digest"])
@@ -1244,7 +1251,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 			strings.Join(regions, ","),
 			strings.Join(environments, ","),
 			agent.Version,
-			agent.DeployedAt.AsTime().Format(time.RFC3339),
+			formatTime(agent.DeployedAt.AsTime()),
 		})
 	}
 
