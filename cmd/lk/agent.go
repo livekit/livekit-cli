@@ -109,7 +109,7 @@ var (
 	agentPrebuiltImageTarFlag = &cli.StringFlag{
 		Name:  "image-tar",
 		Usage: "Pre-built image from an OCI tar file (e.g. ./image.tar). No Docker daemon required.",
-
+	}
 	envFlag = &cli.StringSliceFlag{
 		Name:     "env",
 		Usage:    "Deployment environment(s). For create/deploy, specifies the target environment (defaults to 'production'). For update-secrets, assigns environment(s) to the secret. Can be specified multiple times (e.g. --env staging --env production).",
@@ -813,8 +813,6 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	fmt.Printf("Using environment [%s]\n", util.Accented(environment))
 
-	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
-	defer cancel()
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	if err := agentsClient.DeployAgentV2(buildContext, agentId, os.DirFS(workingDir), secrets, environment, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
@@ -1140,16 +1138,6 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to list agent versions: %w", err)
 	}
 
-	table := util.CreateTable().
-		Headers("Version", "Prod", "Draining", "Active", "Status", "Created At", "Deployed At")
-
-	flag := func(b bool) string {
-		if b {
-			return "✓"
-		}
-		return "---"
-	}
-
 	// Sort versions by created date descending
 	slices.SortFunc(versions.Versions, func(a, b *lkproto.AgentVersion) int {
 		return b.CreatedAt.AsTime().Compare(a.CreatedAt.AsTime())
@@ -1163,7 +1151,14 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	headers := []string{"Version", "Current", "Status", "Created At", "Deployed At"}
+	flag := func(b bool) string {
+		if b {
+			return "✓"
+		}
+		return "---"
+	}
+
+	headers := []string{"Version", "Prod", "Draining", "Active", "Status", "Created At", "Deployed At"}
 	if showDigest {
 		headers = append(headers, "Digest")
 	}
@@ -1229,16 +1224,19 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 
 	var rows [][]string
 	for _, agent := range items {
-		// Determine region: use production deployment's region as the canonical region.
-		var region string
-		var environments []string
+		regionSet := map[string]struct{}{}
+		envSet := map[string]struct{}{}
 		for _, regionalAgent := range agent.AgentDeployments {
-			if !slices.Contains(environments, regionalAgent.Environment) {
-				environments = append(environments, regionalAgent.Environment)
-			}
-			if region == "" || regionalAgent.Environment == "production" {
-				region = regionalAgent.Region
-			}
+			regionSet[regionalAgent.Region] = struct{}{}
+			envSet[regionalAgent.Environment] = struct{}{}
+		}
+		regions := make([]string, 0, len(regionSet))
+		for region := range regionSet {
+			regions = append(regions, region)
+		}
+		environments := make([]string, 0, len(envSet))
+		for environment := range envSet {
+			environments = append(environments, environment)
 		}
 		rows = append(rows, []string{
 			agent.AgentId,

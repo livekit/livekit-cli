@@ -40,8 +40,6 @@ require (
 	k8s.io/apimachinery v0.34.1
 )
 
-replace github.com/livekit/protocol => /Users/syoon/src/protocol
-
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260209202127-80ab13bee0bf.1 // indirect
 	buf.build/go/protovalidate v1.1.3 // indirect
@@ -269,5 +267,3 @@ require (
 	mvdan.cc/sh/v3 v3.13.1 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 )
-
-replace github.com/livekit/server-sdk-go/v2 => /Users/syoon/src/server-sdk-go
