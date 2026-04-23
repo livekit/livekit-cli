@@ -816,7 +816,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, environment, excludeFiles, os.Stderr); err != nil {
+	if err := agentsClient.DeployAgentV2(buildContext, agentId, os.DirFS(workingDir), secrets, environment, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
@@ -910,6 +910,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 			}
 			rows = append(rows, []string{
 				agent.AgentId,
+				regionalAgent.AgentName,
 				version,
 				regionalAgent.Region,
 				regionalAgent.Environment,
@@ -923,7 +924,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Version", "Region", "Environment", "Status", "CPU", "Mem", "Replicas", "Deployed At").
+		Headers("ID", "Name", "Version", "Region", "Environment", "Status", "CPU", "Mem", "Replicas", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -1140,7 +1141,14 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	table := util.CreateTable().
-		Headers("Version", "Current", "Draining", "Status", "Created At", "Deployed At")
+		Headers("Version", "Prod", "Draining", "Active", "Status", "Created At", "Deployed At")
+
+	flag := func(b bool) string {
+		if b {
+			return "✓"
+		}
+		return "---"
+	}
 
 	// Sort versions by created date descending
 	slices.SortFunc(versions.Versions, func(a, b *lkproto.AgentVersion) int {
@@ -1164,8 +1172,9 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	for _, version := range versions.Versions {
 		row := []string{
 			version.Version,
-			fmt.Sprintf("%t", version.Current),
-			fmt.Sprintf("%t", version.Draining),
+			flag(version.Current),
+			flag(version.Draining),
+			flag(version.Active),
 			version.Status,
 			version.CreatedAt.AsTime().Format(time.RFC3339),
 			version.DeployedAt.AsTime().Format(time.RFC3339),
