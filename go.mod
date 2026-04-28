@@ -39,6 +39,8 @@ require (
 
 replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
 
+replace github.com/livekit/protocol => ../protocol
+
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260209202127-80ab13bee0bf.1 // indirect
 	buf.build/go/protovalidate v1.1.3 // indirect

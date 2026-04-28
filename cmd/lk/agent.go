@@ -233,7 +233,6 @@ var (
 					Before: createAgentClient,
 					Action: deployAgent,
 					Flags: []cli.Flag{
-						agentNameFlag(true),
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
@@ -823,13 +822,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	agentName := cmd.String("name")
-	if agentName == "" {
-		if _, err := requireConfig(workingDir, tomlFilename); err == nil && lkConfig != nil && lkConfig.HasAgent() {
-			agentName = lkConfig.Agent.Name
-		}
-	}
-	if err := agentsClient.DeployAgent(buildContext, agentId, agentName, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
+	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
