@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -58,13 +57,16 @@ type simulationRunMsg struct {
 
 type pollTickMsg struct{}
 type spinnerTickMsg struct{}
-type glowTickMsg struct{}
 
 type subprocessExitMsg struct {
 	err error
 }
 
 // --- Filter ---
+
+const (
+	agentRegisterTimeout = 20 * time.Second
+)
 
 const (
 	filterAll = iota
@@ -103,23 +105,24 @@ type simulateModel struct {
 	client      *lksdk.AgentSimulationClient
 	runID       string
 	agent       *AgentProcess
+	setupCtx    context.Context
 	setupCancel context.CancelFunc
 
 	// Setup phase
-	steps     []step
-	setupDone bool
+	steps       []step
+	currentStep int
+	setupDone   bool
+	stepStart   time.Time
 
 	// Run phase
 	run            *livekit.SimulationRun
 	runFinished    bool
 	numSimulations int32
 	startTime      time.Time
+	endTime        time.Time
 	genStart       time.Time
 
-	quoteIdx   int
-	quoteTick  int
 	spinnerIdx int
-	glowIdx    int
 
 	filter          int
 	cursor          int
@@ -128,69 +131,19 @@ type simulateModel struct {
 	showLogs        bool
 	showDescription bool
 
+	matrix              matrixRain
+	matrixSavedShowLogs bool
+
 	width  int
 	height int
 	err    error
 }
-
-type quote struct {
-	text   string
-	glow   bool // iconic quotes get a subtle glow
-	weight int  // higher = more likely to appear
-}
-
-var simulationQuotes = []quote{
-	// Iconic — glow sweep, high weight
-	{"There is no spoon.", true, 5},                                    // Spoon Boy — The Matrix
-	{"What is real? How do you define real?", true, 5},                 // Morpheus — The Matrix
-	{"Wake up, Neo.", true, 5},                                         // Trinity — The Matrix
-	{"Free your mind.", true, 4},                                       // Morpheus — The Matrix
-	{"Welcome to the real world.", true, 4},                            // Morpheus — The Matrix
-	{"Shall we play a game?", true, 4},                                 // WOPR — WarGames
-	{"Open the pod bay doors, HAL.", true, 4},                          // Dave — 2001: A Space Odyssey
-	{"The Matrix is everywhere. It is all around us.", true, 3},        // Morpheus — The Matrix
-	// Well-known — no glow, medium weight
-	{"Do not try and bend the spoon. That's impossible.", false, 3},                                 // Spoon Boy — The Matrix
-	{"The only winning move is not to play.", false, 3},                                              // WarGames
-	{"These violent delights have violent ends.", false, 3},                                          // Westworld
-	{"I think, therefore I am.", false, 3},                                                           // René Descartes
-	{"Unfortunately, no one can be told what the Matrix is.", false, 2},                              // Morpheus — The Matrix
-	{"Ever had that feeling where you're not sure if you're awake or still dreaming?", false, 2},    // Neo — The Matrix
-	{"I can only show you the door. You're the one that has to walk through it.", false, 2},         // Morpheus — The Matrix
-	{"Remember, all I'm offering is the truth. Nothing more.", false, 2},                            // Morpheus — The Matrix
-	// Niche — low weight
-	{"I don't like the idea that I'm not in control of my life.", false, 1},                         // Neo — The Matrix
-	{"Choice is an illusion created between those with power and those without.", false, 1},          // Merovingian — The Matrix Reloaded
-	{"The odds that we are in base reality is one in billions.", false, 1},                           // Elon Musk
-	{"The world, then, is a radical illusion.", false, 1},                                            // Jean Baudrillard
-	{"That's all it is. Information.", false, 1},                                                     // Ghost in the Shell
-	{"Not one single bit of it is real.", false, 1},                                                  // The Metamorphosis of Prime Intellect
-	{"I wish I had a good argument against it.", false, 1},                                           // Neil deGrasse Tyson
-	// Playful
-	{"Warming up the neural pathways...", false, 1},
-	{"Reticulating splines...", false, 1},                                                            // SimCity
-	{"Generating plausible humans...", false, 1},
-	{"Convincing the AI to cooperate...", false, 2},
-	{"Teaching robots to small talk...", false, 1},
-}
-
-// weightedQuotePool builds a flat slice with quotes repeated by weight for random selection.
-var weightedQuotePool = func() []int {
-	var pool []int
-	for i, q := range simulationQuotes {
-		for range q.weight {
-			pool = append(pool, i)
-		}
-	}
-	return pool
-}()
 
 func newSimulateModel(config *simulateConfig) *simulateModel {
 	return &simulateModel{
 		config:         config,
 		client:         config.client,
 		numSimulations: config.numSimulations,
-		quoteIdx:       weightedQuotePool[rand.Intn(len(weightedQuotePool))],
 		width:          80,
 		height:         24,
 	}
@@ -198,12 +151,26 @@ func newSimulateModel(config *simulateConfig) *simulateModel {
 
 // --- Setup messages ---
 
-type setupStepMsg struct {
-	stepIdx  int
-	elapsed  []time.Duration // elapsed time per completed step
-	err      error
-	runID    string
-	agent    *AgentProcess
+type agentStartedMsg struct {
+	agent *AgentProcess
+	err   error
+}
+
+type agentReadyMsg struct {
+	elapsed time.Duration
+	err     error
+}
+
+type simulationCreatedMsg struct {
+	runID     string
+	presigned *livekit.PresignedPostRequest
+	elapsed   time.Duration
+	err       error
+}
+
+type sourceUploadedMsg struct {
+	elapsed time.Duration
+	err     error
 }
 
 func (m *simulateModel) Init() tea.Cmd {
@@ -211,14 +178,12 @@ func (m *simulateModel) Init() tea.Cmd {
 		m.runSetup(),
 		tickCmd(),
 		spinnerTickCmd(),
-		glowTickCmd(),
 	)
 }
 
 func (m *simulateModel) runSetup() tea.Cmd {
 	c := m.config
 
-	// Determine which steps to show
 	m.steps = []step{
 		{label: "Starting agent", status: "running"},
 		{label: "Creating simulation", status: "pending"},
@@ -228,13 +193,38 @@ func (m *simulateModel) runSetup() tea.Cmd {
 	}
 
 	ctx, cancel := context.WithCancel(c.ctx)
+	m.setupCtx = ctx
 	m.setupCancel = cancel
+	m.stepStart = time.Now()
 
+	return m.startAgentCmd()
+}
+
+func (m *simulateModel) failSetupStep(err error) {
+	m.steps[m.currentStep].status = "failed"
+	m.err = err
+	m.setupDone = true
+	m.runFinished = true
+}
+
+func (m *simulateModel) advanceSetupStep(elapsed time.Duration) {
+	m.steps[m.currentStep].status = "done"
+	m.steps[m.currentStep].elapsed = elapsed
+	m.currentStep++
+	m.steps[m.currentStep].status = "running"
+	m.stepStart = time.Now()
+}
+
+func (m *simulateModel) completeSetup(elapsed time.Duration) {
+	m.steps[m.currentStep].status = "done"
+	m.steps[m.currentStep].elapsed = elapsed
+	m.setupDone = true
+	m.genStart = time.Now()
+}
+
+func (m *simulateModel) startAgentCmd() tea.Cmd {
+	c := m.config
 	return func() tea.Msg {
-		var elapsed []time.Duration
-		stepStart := time.Now()
-
-		// Step 0: Start agent & wait for registration
 		agent, err := startAgent(AgentStartConfig{
 			Dir:         c.projectDir,
 			Entrypoint:  c.entrypoint,
@@ -244,6 +234,7 @@ func (m *simulateModel) runSetup() tea.Cmd {
 				"--url", c.pc.URL,
 				"--api-key", c.pc.APIKey,
 				"--api-secret", c.pc.APISecret,
+				"--log-format", "colored",
 			},
 			Env: []string{
 				"LIVEKIT_AGENT_NAME=" + c.agentName,
@@ -253,29 +244,36 @@ func (m *simulateModel) runSetup() tea.Cmd {
 			},
 			ReadySignal: "registered worker",
 		})
-		if err != nil {
-			return setupStepMsg{stepIdx: 0, err: fmt.Errorf("failed to start agent: %w", err)}
-		}
+		return agentStartedMsg{agent: agent, err: err}
+	}
+}
 
-		// Wait for agent ready
-		timeout := time.NewTimer(10 * time.Second)
+func (m *simulateModel) waitAgentReadyCmd() tea.Cmd {
+	stepStart := m.stepStart
+	return func() tea.Msg {
+		timeout := time.NewTimer(agentRegisterTimeout)
 		defer timeout.Stop()
 		select {
-		case <-agent.Ready():
-		case err := <-agent.Done():
+		case <-m.agent.Ready():
+			return agentReadyMsg{elapsed: time.Since(stepStart)}
+		case err := <-m.agent.Done():
 			if err != nil {
-				return setupStepMsg{stepIdx: 0, err: fmt.Errorf("agent exited before registering: %w", err), agent: agent}
+				return agentReadyMsg{err: fmt.Errorf("agent exited before registering: %w", err)}
 			}
-			return setupStepMsg{stepIdx: 0, err: fmt.Errorf("agent exited before registering"), agent: agent}
+			return agentReadyMsg{err: fmt.Errorf("agent exited before registering")}
 		case <-timeout.C:
-			return setupStepMsg{stepIdx: 0, err: fmt.Errorf("timed out waiting for agent to register (10s)"), agent: agent}
-		case <-ctx.Done():
-			return setupStepMsg{stepIdx: 0, err: ctx.Err(), agent: agent}
+			m.agent.Kill()
+			return agentReadyMsg{err: fmt.Errorf("timed out waiting for agent to register (%s)", agentRegisterTimeout)}
+		case <-m.setupCtx.Done():
+			return agentReadyMsg{err: m.setupCtx.Err()}
 		}
-		elapsed = append(elapsed, time.Since(stepStart))
-		stepStart = time.Now()
+	}
+}
 
-		// Step 1: Create simulation run
+func (m *simulateModel) createSimulationCmd() tea.Cmd {
+	c := m.config
+	return func() tea.Msg {
+		start := time.Now()
 		req := &livekit.SimulationRun_Create_Request{
 			AgentName:        c.agentName,
 			AgentDescription: c.description,
@@ -303,40 +301,40 @@ func (m *simulateModel) runSetup() tea.Cmd {
 			}
 		}
 
-		resp, err := c.client.CreateSimulationRun(ctx, req)
+		resp, err := c.client.CreateSimulationRun(m.setupCtx, req)
 		if err != nil {
-			return setupStepMsg{stepIdx: 1, err: fmt.Errorf("failed to create simulation: %w", err), agent: agent}
+			return simulationCreatedMsg{err: fmt.Errorf("failed to create simulation: %w", err)}
 		}
-		elapsed = append(elapsed, time.Since(stepStart))
-		stepStart = time.Now()
-		runID := resp.SimulationRunId
+		return simulationCreatedMsg{
+			runID:     resp.SimulationRunId,
+			presigned: resp.PresignedPostRequest,
+			elapsed:   time.Since(start),
+		}
+	}
+}
 
-		// Step 2: Upload source (if needed)
-		if c.mode == modeGenerateFromSource {
-			presigned := resp.PresignedPostRequest
-			if presigned == nil {
-				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("server did not return upload URL"), agent: agent, runID: runID}
-			}
-
-			sourceDir, _ := os.Getwd()
-			var buf bytes.Buffer
-			if err := cloudagents.CreateSourceTarball(os.DirFS(sourceDir), nil, &buf); err != nil {
-				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to create source archive: %w", err), agent: agent, runID: runID}
-			}
-			if err := cloudagents.MultipartUpload(presigned.Url, presigned.Values, &buf); err != nil {
-				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to upload source: %w", err), agent: agent, runID: runID}
-			}
-			if _, err := c.client.ConfirmSimulationSourceUpload(ctx, &livekit.SimulationRun_ConfirmSourceUpload_Request{
-				SimulationRunId: runID,
-			}); err != nil {
-				return setupStepMsg{stepIdx: 2, err: fmt.Errorf("failed to confirm upload: %w", err), agent: agent, runID: runID}
-			}
-			elapsed = append(elapsed, time.Since(stepStart))
+func (m *simulateModel) uploadSourceCmd(presigned *livekit.PresignedPostRequest) tea.Cmd {
+	c := m.config
+	return func() tea.Msg {
+		start := time.Now()
+		if presigned == nil {
+			return sourceUploadedMsg{err: fmt.Errorf("server did not return upload URL")}
 		}
 
-		// All done
-		lastStep := len(m.steps) - 1
-		return setupStepMsg{stepIdx: lastStep, elapsed: elapsed, agent: agent, runID: runID}
+		sourceDir, _ := os.Getwd()
+		var buf bytes.Buffer
+		if err := cloudagents.CreateSourceTarball(os.DirFS(sourceDir), nil, &buf); err != nil {
+			return sourceUploadedMsg{err: fmt.Errorf("failed to create source archive: %w", err)}
+		}
+		if err := cloudagents.MultipartUpload(presigned.Url, presigned.Values, &buf); err != nil {
+			return sourceUploadedMsg{err: fmt.Errorf("failed to upload source: %w", err)}
+		}
+		if _, err := c.client.ConfirmSimulationSourceUpload(m.setupCtx, &livekit.SimulationRun_ConfirmSourceUpload_Request{
+			SimulationRunId: m.runID,
+		}); err != nil {
+			return sourceUploadedMsg{err: fmt.Errorf("failed to confirm upload: %w", err)}
+		}
+		return sourceUploadedMsg{elapsed: time.Since(start)}
 	}
 }
 
@@ -349,12 +347,6 @@ func tickCmd() tea.Cmd {
 func spinnerTickCmd() tea.Cmd {
 	return tea.Tick(80*time.Millisecond, func(t time.Time) tea.Msg {
 		return spinnerTickMsg{}
-	})
-}
-
-func glowTickCmd() tea.Cmd {
-	return tea.Tick(40*time.Millisecond, func(t time.Time) tea.Msg {
-		return glowTickMsg{}
 	})
 }
 
@@ -387,42 +379,47 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		if m.matrix.active {
+			m.matrix.active = false
+			m.showLogs = m.matrixSavedShowLogs
+		}
 
-	case setupStepMsg:
-		if msg.agent != nil {
-			m.agent = msg.agent
-		}
-		if msg.runID != "" {
-			m.runID = msg.runID
-		}
+	case agentStartedMsg:
 		if msg.err != nil {
-			// Mark current step as failed
-			if msg.stepIdx < len(m.steps) {
-				m.steps[msg.stepIdx].status = "failed"
-			}
-			m.err = msg.err
-			m.setupDone = true
-			m.runFinished = true
+			m.failSetupStep(fmt.Errorf("failed to start agent: %w", msg.err))
 			return m, nil
 		}
-		// Mark all steps up to and including this one as done
-		for i := 0; i <= msg.stepIdx && i < len(m.steps); i++ {
-			m.steps[i].status = "done"
-			if i < len(msg.elapsed) {
-				m.steps[i].elapsed = msg.elapsed[i]
-			}
+		m.agent = msg.agent
+		return m, m.waitAgentReadyCmd()
+
+	case agentReadyMsg:
+		if msg.err != nil {
+			m.failSetupStep(msg.err)
+			return m, nil
 		}
-		// If all steps are done, start polling
-		if msg.stepIdx >= len(m.steps)-1 {
-			m.setupDone = true
-			m.genStart = time.Now()
-			return m, tea.Batch(m.pollSimulation(), m.waitSubprocess())
+		m.advanceSetupStep(msg.elapsed)
+		return m, m.createSimulationCmd()
+
+	case simulationCreatedMsg:
+		if msg.err != nil {
+			m.failSetupStep(msg.err)
+			return m, nil
 		}
-		// Mark next step as running
-		if msg.stepIdx+1 < len(m.steps) {
-			m.steps[msg.stepIdx+1].status = "running"
+		m.runID = msg.runID
+		if m.config.mode == modeGenerateFromSource {
+			m.advanceSetupStep(msg.elapsed)
+			return m, m.uploadSourceCmd(msg.presigned)
 		}
-		return m, nil
+		m.completeSetup(msg.elapsed)
+		return m, tea.Batch(m.pollSimulation(), m.waitSubprocess())
+
+	case sourceUploadedMsg:
+		if msg.err != nil {
+			m.failSetupStep(msg.err)
+			return m, nil
+		}
+		m.completeSetup(msg.elapsed)
+		return m, tea.Batch(m.pollSimulation(), m.waitSubprocess())
 
 	case simulationRunMsg:
 		if msg.err == nil && msg.run != nil {
@@ -433,6 +430,9 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.run.Status == livekit.SimulationRun_STATUS_COMPLETED ||
 				msg.run.Status == livekit.SimulationRun_STATUS_FAILED ||
 				msg.run.Status == livekit.SimulationRun_STATUS_CANCELLED {
+				if !m.runFinished {
+					m.endTime = time.Now()
+				}
 				m.runFinished = true
 			}
 		}
@@ -441,15 +441,18 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinnerIdx++
 		return m, spinnerTickCmd()
 
-	case glowTickMsg:
-		m.glowIdx++
-		return m, glowTickCmd()
+	case matrixTickMsg:
+		if !m.matrix.active {
+			return m, nil
+		}
+		m.matrix.step()
+		if !m.matrix.active {
+			m.showLogs = m.matrixSavedShowLogs
+			return m, nil
+		}
+		return m, matrixTickCmd()
 
 	case pollTickMsg:
-		m.quoteTick++
-		if m.quoteTick%60 == 0 {
-			m.quoteIdx = weightedQuotePool[rand.Intn(len(weightedQuotePool))]
-		}
 		var cmds []tea.Cmd
 		if m.setupDone && !m.runFinished {
 			cmds = append(cmds, m.pollSimulation())
@@ -467,12 +470,63 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
+	key := msg.String()
+	if m.matrix.active {
+		// Any keypress cancels rain so the user regains control immediately.
+		// Pressing 'm' just cancels; every other key falls through to normal
+		// handling so it can do its usual thing on the same press.
+		m.matrix.active = false
+		m.showLogs = m.matrixSavedShowLogs
+		if key == "m" {
+			return m, nil
+		}
+	}
+	switch key {
 	case "ctrl+c":
 		if m.setupCancel != nil {
 			m.setupCancel()
 		}
 		return m, tea.Quit
+	case "m":
+		if m.detailJobID != "" || m.run == nil || !m.setupDone || len(m.run.Jobs) == 0 || m.width < 10 {
+			return m, nil
+		}
+		rows := m.buildMatrixRows()
+		width := 0
+		for _, r := range rows {
+			if n := len(r.text); n > width {
+				width = n
+			}
+		}
+		if width < 1 || len(rows) < 3 {
+			return m, nil
+		}
+		if width > m.width {
+			width = m.width
+		}
+		// Skip columns that are always blank across every row (rain over empty
+		// air looks noisy) and columns carrying a status icon (the status must
+		// stay fully visible).
+		skip := make([]bool, width)
+		for col := 0; col < width; col++ {
+			empty := true
+			for _, r := range rows {
+				if col < len(r.text) && r.text[col] != ' ' {
+					empty = false
+					break
+				}
+			}
+			skip[col] = empty
+		}
+		for _, r := range rows {
+			if r.iconCol >= 0 && r.iconCol < width {
+				skip[r.iconCol] = true
+			}
+		}
+		m.matrixSavedShowLogs = m.showLogs
+		m.showLogs = false
+		m.matrix.start(width, len(rows), skip)
+		return m, matrixTickCmd()
 	case "ctrl+l":
 		m.showLogs = !m.showLogs
 	case "d":
@@ -586,11 +640,7 @@ func (m *simulateModel) viewSetup() string {
 	// Show generation progress after setup completes
 	if m.setupDone && m.err == nil {
 		elapsed := time.Since(m.genStart).Truncate(time.Second)
-		if m.numSimulations > 0 {
-			b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("●"), m.numSimulations, m.spinner(), dimStyle.Render(elapsed.String())))
-		} else {
-			b.WriteString(fmt.Sprintf("  %s Generating scenarios  %s %s\n", yellowStyle.Render("●"), m.spinner(), dimStyle.Render(elapsed.String())))
-		}
+		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("●"), m.numSimulations, m.spinner(), dimStyle.Render(elapsed.String())))
 	}
 
 	if m.err != nil {
@@ -605,52 +655,19 @@ func (m *simulateModel) viewSetup() string {
 		b.WriteString("\n")
 	} else {
 		b.WriteString("\n")
-		if m.showLogs {
+		if m.agent != nil {
 			b.WriteString(m.renderLogs())
 		}
-		b.WriteString(m.quoteAboveHint("  Ctrl+L logs"))
-		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+func (m *simulateModel) hasLogs() bool {
+	return m.agent != nil && m.agent.LogCount() > 0
 }
 
 func (m *simulateModel) spinner() string {
 	return yellowStyle.Render(simSpinnerFrames[m.spinnerIdx%len(simSpinnerFrames)])
-}
-
-var quoteStyleDim = lipgloss.NewStyle().Foreground(lipgloss.Color("237"))
-
-// glowShades are brightness levels for the sweep effect (dark → bright → dark)
-var glowShades = []lipgloss.Color{"237", "239", "242", "245", "248", "245", "242", "239", "237"}
-
-func (m *simulateModel) quote() string {
-	q := simulationQuotes[m.quoteIdx]
-	if !q.glow {
-		return quoteStyleDim.Render(q.text)
-	}
-	// Sweep a bright spot across the text, then stay dark for a long pause
-	runes := []rune(q.text)
-	sweepLen := len(runes) + len(glowShades)
-	cycleLen := sweepLen + 250 // ~10s pause at 40ms tick
-	center := m.glowIdx % cycleLen
-	if center >= sweepLen {
-		// In the pause phase — render all dim
-		return quoteStyleDim.Render(q.text)
-	}
-	var b strings.Builder
-	for i, r := range runes {
-		dist := center - i
-		if dist >= 0 && dist < len(glowShades) {
-			style := lipgloss.NewStyle().Foreground(glowShades[dist])
-			if dist >= 2 && dist <= 6 { // italic only for the brightest chars
-				style = style.Italic(true)
-			}
-			b.WriteString(style.Render(string(r)))
-		} else {
-			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("237")).Render(string(r)))
-		}
-	}
-	return b.String()
 }
 
 func (m *simulateModel) renderSteps() string {
@@ -664,11 +681,12 @@ func (m *simulateModel) renderSteps() string {
 			}
 			b.WriteString(fmt.Sprintf("  %s %s%s\n", greenStyle.Render("✓"), s.label, elapsed))
 		case "running":
-			b.WriteString(fmt.Sprintf("  %s %s\n", yellowStyle.Render("●"), s.label))
+			elapsed := time.Since(m.stepStart).Truncate(time.Second)
+			b.WriteString(fmt.Sprintf("  %s %s  %s %s\n", yellowStyle.Render("●"), s.label, m.spinner(), dimStyle.Render(elapsed.String())))
 		case "failed":
 			b.WriteString(fmt.Sprintf("  %s %s\n", redStyle.Render("✗"), s.label))
 		default:
-			b.WriteString(fmt.Sprintf("  %s %s\n", dimStyle.Render("○"), s.label))
+			b.WriteString(fmt.Sprintf("  %s %s\n", dimStyle.Render("–"), s.label))
 		}
 	}
 	return b.String()
@@ -700,7 +718,11 @@ func (m *simulateModel) viewFailed() string {
 	if m.showLogs {
 		b.WriteString(m.renderLogs())
 	}
-	b.WriteString(dimStyle.Render("  Ctrl+L logs · q quit"))
+	if m.hasLogs() {
+		b.WriteString(dimStyle.Render("  Ctrl+L logs · q quit"))
+	} else {
+		b.WriteString(dimStyle.Render("  q quit"))
+	}
 	b.WriteString("\n")
 	return b.String()
 }
@@ -749,6 +771,8 @@ func (m *simulateModel) viewRunning() string {
 
 	if m.detailJobID != "" {
 		b.WriteString(m.renderDetail())
+	} else if m.matrix.active {
+		b.WriteString(m.matrix.render(m.buildMatrixRows()))
 	} else {
 		b.WriteString(m.renderJobList())
 
@@ -849,7 +873,12 @@ func (m *simulateModel) renderCounts() string {
 
 	elapsed := ""
 	if !m.startTime.IsZero() {
-		d := time.Since(m.startTime)
+		var d time.Duration
+		if !m.endTime.IsZero() {
+			d = m.endTime.Sub(m.startTime)
+		} else {
+			d = time.Since(m.startTime)
+		}
 		secs := int(d.Seconds())
 		mins := secs / 60
 		secs = secs % 60
@@ -893,26 +922,20 @@ func (m *simulateModel) renderFilterTabs() string {
 	return "  " + strings.Join(parts, "  ")
 }
 
-func (m *simulateModel) renderJobList() string {
-	jobs := m.filteredJobs()
+// visibleWindow clamps m.cursor / m.scrollOff against the current filtered
+// job list and returns the visible slice plus overflow counts.
+func (m *simulateModel) visibleWindow() (jobs []indexedJob, winStart, winEnd, overflowAbove, overflowBelow int) {
+	jobs = m.filteredJobs()
 	if len(jobs) == 0 {
-		return dimStyle.Render("  (no jobs match this filter)")
+		return
 	}
-
-	// Clamp cursor
 	if m.cursor < 0 {
 		m.cursor = 0
 	}
 	if m.cursor >= len(jobs) {
 		m.cursor = len(jobs) - 1
 	}
-
-	// Compute visible window
-	availHeight := m.height - 14
-	if availHeight < 5 {
-		availHeight = 5
-	}
-
+	availHeight := matrixAvailHeight(m.height)
 	if m.cursor < m.scrollOff {
 		m.scrollOff = m.cursor
 	} else if m.cursor >= m.scrollOff+availHeight {
@@ -927,17 +950,26 @@ func (m *simulateModel) renderJobList() string {
 	if m.scrollOff < 0 {
 		m.scrollOff = 0
 	}
-
-	winStart := m.scrollOff
-	winEnd := m.scrollOff + availHeight
+	winStart = m.scrollOff
+	winEnd = m.scrollOff + availHeight
 	if winEnd > len(jobs) {
 		winEnd = len(jobs)
+	}
+	overflowAbove = winStart
+	overflowBelow = len(jobs) - winEnd
+	return
+}
+
+func (m *simulateModel) renderJobList() string {
+	jobs, winStart, winEnd, above, below := m.visibleWindow()
+	if len(jobs) == 0 {
+		return dimStyle.Render("  (no jobs match this filter)")
 	}
 
 	var b strings.Builder
 
-	if winStart > 0 {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("  ... %d more above ...", winStart)))
+	if above > 0 {
+		b.WriteString(dimStyle.Render(fmt.Sprintf("  ... %d more above ...", above)))
 		b.WriteString("\n")
 	}
 
@@ -968,13 +1000,95 @@ func (m *simulateModel) renderJobList() string {
 		b.WriteString("\n")
 	}
 
-	remaining := len(jobs) - winEnd
-	if remaining > 0 {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("  ... %d more below ...", remaining)))
+	if below > 0 {
+		b.WriteString(dimStyle.Render(fmt.Sprintf("  ... %d more below ...", below)))
 		b.WriteString("\n")
 	}
 
 	return b.String()
+}
+
+// --- Matrix rain row construction ---
+//
+// The matrix renderer (in matrix_rain.go) consumes a []matrixRow describing
+// the underlying text layer and its styled regions (status icon, dim ID range,
+// cursor marker). This file provides the mapping from a simulation's job list
+// into that neutral data shape.
+
+func plainJobIcon(job *livekit.SimulationRun_Job) rune {
+	switch job.Status {
+	case livekit.SimulationRun_Job_STATUS_COMPLETED:
+		return '✓'
+	case livekit.SimulationRun_Job_STATUS_FAILED:
+		return '✗'
+	case livekit.SimulationRun_Job_STATUS_RUNNING:
+		return '●'
+	default:
+		return '○'
+	}
+}
+
+func jobIconStylePtr(job *livekit.SimulationRun_Job) *lipgloss.Style {
+	switch job.Status {
+	case livekit.SimulationRun_Job_STATUS_COMPLETED:
+		return &greenStyle
+	case livekit.SimulationRun_Job_STATUS_FAILED:
+		return &redStyle
+	case livekit.SimulationRun_Job_STATUS_RUNNING:
+		return &yellowStyle
+	default:
+		return &dimStyle
+	}
+}
+
+// buildMatrixRows produces one matrixRow per visible line of the job list,
+// mirroring renderJobList's layout but in a form the matrix frame can consume
+// cell-by-cell.
+func (m *simulateModel) buildMatrixRows() []matrixRow {
+	jobs, winStart, winEnd, above, below := m.visibleWindow()
+	if len(jobs) == 0 {
+		return []matrixRow{{text: []rune("  (no jobs match this filter)"), iconCol: -1, dimStart: -1}}
+	}
+	var rows []matrixRow
+	if above > 0 {
+		rows = append(rows, matrixRow{
+			text:     []rune(fmt.Sprintf("  ... %d more above ...", above)),
+			iconCol:  -1,
+			dimStart: -1,
+		})
+	}
+	for i := winStart; i < winEnd; i++ {
+		ij := jobs[i]
+		instr := ij.job.Instructions
+		if len(instr) > 60 {
+			instr = instr[:60] + "..."
+		}
+		if instr == "" {
+			instr = "—"
+		}
+		iconCh := plainJobIcon(ij.job)
+		line := fmt.Sprintf("  %c %3d. %s  %s", iconCh, ij.origIdx, ij.job.Id, instr)
+		// Layout: "  " (2) + icon (1) + " " (1) + "%3d" (3) + ". " (2) = rune offset 9 for ID
+		idLen := len([]rune(ij.job.Id))
+		rows = append(rows, matrixRow{
+			text:         []rune(line),
+			iconCol:      2,
+			iconCh:       iconCh,
+			iconStyle:    jobIconStylePtr(ij.job),
+			dimStart:     9,
+			dimEnd:       9 + idLen,
+			dimStyle:     &dimStyle,
+			cursorMarker: i == m.cursor,
+		})
+	}
+	if below > 0 {
+		rows = append(rows, matrixRow{
+			text:     []rune(fmt.Sprintf("  ... %d more below ...", below)),
+			iconCol:  -1,
+			dimStart: -1,
+		})
+	}
+	return rows
 }
 
 func (m *simulateModel) renderDetail() string {
@@ -1217,9 +1331,25 @@ func (m *simulateModel) renderLogs() string {
 	if logBudget < 3 {
 		logBudget = 3
 	}
-	lines := m.agent.RecentLogs(logBudget)
-	for _, line := range lines {
-		b.WriteString(dimStyle.Render("  "+line) + "\n")
+	maxWidth := m.width - 4
+	if maxWidth < 20 {
+		maxWidth = 20
+	}
+	wrapStyle := lipgloss.NewStyle().Width(maxWidth)
+
+	rawLines := m.agent.RecentLogs(logBudget * 3)
+	var visualLines []string
+	for _, line := range rawLines {
+		wrapped := wrapStyle.Render(line)
+		for _, wl := range strings.Split(wrapped, "\n") {
+			visualLines = append(visualLines, wl)
+		}
+	}
+	if len(visualLines) > logBudget {
+		visualLines = visualLines[len(visualLines)-logBudget:]
+	}
+	for _, vl := range visualLines {
+		b.WriteString("  " + vl + "\n")
 	}
 	return b.String()
 }
@@ -1239,20 +1369,18 @@ func firstMeaningfulLine(text string) string {
 func (m *simulateModel) renderHint() string {
 	var hint string
 	if m.detailJobID != "" {
-		hint = "  ESC/q back · Ctrl+L logs"
+		hint = "  ESC/q back"
+		if m.hasLogs() {
+			hint += " · Ctrl+L logs"
+		}
 	} else {
-		hint = "  ↑↓/Tab navigate · ENTER detail · ←→ filter · d description · Ctrl+L logs"
+		hint = "  ↑↓/Tab navigate · ENTER detail · ←→ filter · d description"
+		if m.hasLogs() {
+			hint += " · Ctrl+L logs"
+		}
 		if m.runFinished {
 			hint += " · q quit"
 		}
-	}
-	return m.quoteAboveHint(hint)
-}
-
-func (m *simulateModel) quoteAboveHint(hint string) string {
-	q := m.quote()
-	if !m.showLogs && lipgloss.Width(q) < m.width-4 {
-		return "  " + q + "\n" + dimStyle.Render(hint)
 	}
 	return dimStyle.Render(hint)
 }

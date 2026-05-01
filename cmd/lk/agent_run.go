@@ -225,6 +225,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	cliArgs = append(cliArgs, "--dev")
 	if cmd.String("log-level") == "" {
 		cliArgs = append(cliArgs, "--log-level", "DEBUG")
 	}

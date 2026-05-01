@@ -86,8 +86,8 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		return nil, err
 	}
 
-	// Append --reload-addr to CLI args so the Python process connects back
-	config.CLIArgs = append(config.CLIArgs, "--reload-addr", rs.addr())
+	// Append --dev and --reload-addr to CLI args so the Python process connects back
+	config.CLIArgs = append(config.CLIArgs, "--dev", "--reload-addr", rs.addr())
 
 	return &agentWatcher{
 		config:    config,
