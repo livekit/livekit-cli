@@ -12,6 +12,11 @@ FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-bookworm-slim AS base
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
 
+# Compile Python source to bytecode (.pyc) during install so the first import
+# doesn't pay the compilation cost. This reduces agent cold-start time at the
+# expense of a slightly longer build.
+ENV UV_COMPILE_BYTECODE=1
+
 # --- Build stage ---
 # Install dependencies, build native extensions, and prepare the application
 FROM base AS build
