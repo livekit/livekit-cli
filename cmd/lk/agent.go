@@ -117,6 +117,14 @@ var (
 		Hidden:   true,
 	}
 
+	agentNameFlag = func(required bool) *cli.StringFlag {
+		return &cli.StringFlag{
+			Name:     "name",
+			Usage:    "Name of the agent. Needs to be unique within the project. Will be used when dispatching agent to rooms",
+			Required: required,
+		}
+	}
+
 	AgentCommands = []*cli.Command{
 		{
 			Name:    "agent",
@@ -166,6 +174,7 @@ var (
 					Flags: []cli.Flag{
 						regionFlag,
 						installFlag,
+						agentNameFlag(false),
 					},
 					ArgsUsage:                 "[AGENT-NAME]",
 					DisableSliceFlagSeparator: true,
@@ -176,6 +185,7 @@ var (
 					Action: createAgent,
 					Before: createAgentClient,
 					Flags: []cli.Flag{
+						agentNameFlag(true),
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
@@ -254,6 +264,7 @@ var (
 					Before: createAgentClient,
 					Action: updateAgent,
 					Flags: []cli.Flag{
+						agentNameFlag(false),
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
@@ -452,7 +463,10 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 
 	logger.Debugw("Initializing agent project", "working-dir", workingDir)
 
-	appName = cmd.Args().First()
+	appName = cmd.String("name")
+	if appName == "" {
+		appName = cmd.Args().First()
+	}
 	if appName == "" {
 		appName = project.Name
 	}
@@ -572,6 +586,16 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	// --name: required on `lk agent create`, optional on `init` (falls back to [AGENT-NAME] or project name).
+	agentName := cmd.String("name")
+	if agentName == "" && cmd.Name == "init" {
+		if n := cmd.Args().First(); n != "" {
+			agentName = n
+		} else {
+			agentName = project.Name
+		}
+	}
+
 	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
 	if err != nil {
 		return err
@@ -588,7 +612,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 		defer cancel()
 		regions := []string{region}
-		agentID, err := agentsClient.RegisterAgent(buildContext, secrets, regions)
+		agentID, err := agentsClient.RegisterAgent(buildContext, agentName, secrets, regions)
 		if err != nil {
 			if twerr, ok := err.(twirp.Error); ok {
 				return fmt.Errorf("unable to create agent: %s", twerr.Msg())
@@ -596,6 +620,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("unable to create agent: %w", err)
 		}
 		lkConfig.Agent.ID = agentID
+		lkConfig.Agent.Name = agentName
 		if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 			return err
 		}
@@ -631,7 +656,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	regions := []string{region}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
+	resp, err := agentsClient.CreateAgent(buildContext, agentName, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return fmt.Errorf("build timed out possibly due to large image size")
@@ -643,6 +668,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	lkConfig.Agent.ID = resp.AgentId
+	if n := resp.GetAgentName(); n != "" {
+		lkConfig.Agent.Name = n
+	} else if agentName != "" {
+		lkConfig.Agent.Name = agentName
+	}
 	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 		return err
 	}
@@ -665,7 +695,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			fmt.Println("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, os.Stdout, resp.ServerRegions[0])
+			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
 		}
 	}
 	return nil
@@ -737,7 +767,8 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	agent := response.Agents[0]
 	lkConfig := config.NewLiveKitTOML(matches[1])
 	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
-		ID: agent.AgentId,
+		ID:   agent.AgentId,
+		Name: agent.GetAgentName(),
 	}
 
 	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
@@ -935,6 +966,9 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	req := &lkproto.UpdateAgentRequest{
 		AgentId: lkConfig.Agent.ID,
 	}
+	if n := cmd.String("name"); n != "" {
+		req.AgentName = n
+	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
 	if err != nil {
@@ -958,8 +992,11 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.Success {
+		if req.AgentName != "" {
+			lkConfig.Agent.Name = req.AgentName
+		}
 		fmt.Printf("Updated agent [%s]\n", util.Accented(lkConfig.Agent.ID))
-		err = lkConfig.SaveTOMLFile("", tomlFilename)
+		err = lkConfig.SaveTOMLFile(workingDir, tomlFilename)
 		return err
 	}
 
@@ -1014,8 +1051,8 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 	if len(response.Agents) == 0 {
 		return fmt.Errorf("no agent deployments found")
 	}
-
-	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
+	d := response.Agents[0].AgentDeployments[0]
+	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, d.GetEnvironment(), os.Stdout, d.GetServerRegion())
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
