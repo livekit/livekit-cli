@@ -15,15 +15,17 @@ cli: check_lfs
 	GOOS=linux GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk-linux ./cmd/lk
 	GOOS=windows GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk.exe ./cmd/lk
 
-
 install: cli
 ifeq ($(DETECTED_OS),Windows)
+	mkdir -p $(GOBIN)
 	cp bin/lk.exe $(GOBIN)/lk.exe
 	ln -sf $(GOBIN)/lk.exe $(GOBIN)/livekit-cli.exe
 else ifeq ($(DETECTED_OS),Darwin)
+	mkdir -p $(GOBIN)
 	cp bin/lk $(GOBIN)/lk
 	ln -sf $(GOBIN)/lk $(GOBIN)/livekit-cli
 else
+	mkdir -p $(GOBIN)
 	cp bin/lk-linux $(GOBIN)/lk
 	ln -sf $(GOBIN)/lk $(GOBIN)/livekit-cli
 endif
