@@ -587,8 +587,6 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q":
 		if m.detailJobID != "" {
 			m.detailJobID = ""
-		} else {
-			return m, tea.Quit
 		}
 	}
 	return m, nil
@@ -691,7 +689,7 @@ func (m *simulateModel) viewSetup() string {
 			b.WriteString(m.renderLogs())
 		}
 		b.WriteString("\n")
-		b.WriteString(dimStyle.Render("  q quit"))
+		b.WriteString(dimStyle.Render(""))
 		b.WriteString("\n")
 	} else {
 		b.WriteString("\n")
@@ -759,9 +757,9 @@ func (m *simulateModel) viewFailed() string {
 		b.WriteString(m.renderLogs())
 	}
 	if m.hasLogs() {
-		b.WriteString(dimStyle.Render("  Ctrl+L logs · q quit"))
+		b.WriteString(dimStyle.Render("  Ctrl+L logs "))
 	} else {
-		b.WriteString(dimStyle.Render("  q quit"))
+		b.WriteString(dimStyle.Render(""))
 	}
 	b.WriteString("\n")
 	return b.String()
@@ -1429,7 +1427,7 @@ func firstMeaningfulLine(text string) string {
 func (m *simulateModel) renderHint() string {
 	var hint string
 	if m.detailJobID != "" {
-		hint = "  ESC/q back · s save scenario"
+		hint = "  ESC back · s save scenario"
 		if m.hasLogs() {
 			hint += " · Ctrl+L logs"
 		}
@@ -1439,7 +1437,7 @@ func (m *simulateModel) renderHint() string {
 			hint += " · Ctrl+L logs"
 		}
 		if m.runFinished {
-			hint += " · q quit"
+			hint += " "
 		}
 	}
 	return dimStyle.Render(hint)
