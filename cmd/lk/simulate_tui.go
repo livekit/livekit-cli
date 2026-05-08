@@ -644,7 +644,7 @@ func (m *simulateModel) viewSetup() string {
 		if m.run != nil && m.run.GetNumSimulations() > 0 {
 			n = m.run.GetNumSimulations()
 		}
-		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("●"), n, m.spinner(), dimStyle.Render(elapsed.String())))
+		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("⏺"), n, m.spinner(), dimStyle.Render(elapsed.String())))
 	}
 
 	if m.err != nil {
@@ -686,7 +686,7 @@ func (m *simulateModel) renderSteps() string {
 			b.WriteString(fmt.Sprintf("  %s %s%s\n", greenStyle.Render("✓"), s.label, elapsed))
 		case "running":
 			elapsed := time.Since(m.stepStart).Truncate(time.Second)
-			b.WriteString(fmt.Sprintf("  %s %s  %s %s\n", yellowStyle.Render("●"), s.label, m.spinner(), dimStyle.Render(elapsed.String())))
+			b.WriteString(fmt.Sprintf("  %s %s  %s %s\n", yellowStyle.Render("⏺"), s.label, m.spinner(), dimStyle.Render(elapsed.String())))
 		case "failed":
 			b.WriteString(fmt.Sprintf("  %s %s\n", redStyle.Render("✗"), s.label))
 		default:
@@ -1026,7 +1026,7 @@ func plainJobIcon(job *livekit.SimulationRun_Job) rune {
 	case livekit.SimulationRun_Job_STATUS_FAILED:
 		return '✗'
 	case livekit.SimulationRun_Job_STATUS_RUNNING:
-		return '●'
+		return '⏺'
 	default:
 		return '○'
 	}
@@ -1396,7 +1396,7 @@ func jobIcon(job *livekit.SimulationRun_Job) string {
 	case livekit.SimulationRun_Job_STATUS_FAILED:
 		return redStyle.Render("✗")
 	case livekit.SimulationRun_Job_STATUS_RUNNING:
-		return yellowStyle.Render("●")
+		return yellowStyle.Render("⏺")
 	default:
 		return dimStyle.Render("○")
 	}
