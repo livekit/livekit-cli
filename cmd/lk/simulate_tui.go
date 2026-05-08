@@ -131,6 +131,8 @@ type simulateModel struct {
 	showLogs        bool
 	showDescription bool
 
+	save saveOverlay
+
 	matrix              matrixRain
 	matrixSavedShowLogs bool
 
@@ -463,6 +465,12 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case subprocessExitMsg:
 		// Subprocess exited — don't quit TUI, just note it
 
+	case saveGroupsLoadedMsg, scenarioSavedMsg, saveDismissMsg, saveSpinnerTickMsg:
+		if m.save.active {
+			cmd := m.save.handleMsg(msg)
+			return m, cmd
+		}
+
 	case tea.KeyMsg:
 		return m.handleKey(msg)
 	}
@@ -471,6 +479,14 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
+	if m.save.active {
+		if key == "ctrl+c" {
+			m.save.active = false
+		} else {
+			cmd := m.save.handleKey(key)
+			return m, cmd
+		}
+	}
 	if m.matrix.active {
 		// Any keypress cancels rain so the user regains control immediately.
 		// Pressing 'm' just cancels; every other key falls through to normal
@@ -556,6 +572,14 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.detailJobID = jobs[m.cursor].job.Id
 			}
 		}
+	case "s":
+		if m.detailJobID != "" {
+			job := m.findJob(m.detailJobID)
+			if job != nil {
+				m.save.start(m.client, job, m.width)
+				return m, tea.Batch(m.save.fetchGroupsCmd(), saveSpinnerTickCmd())
+			}
+		}
 	case "esc", "backspace":
 		if m.detailJobID != "" {
 			m.detailJobID = ""
@@ -597,6 +621,18 @@ func (m *simulateModel) filteredJobs() []indexedJob {
 		}
 	}
 	return result
+}
+
+func (m *simulateModel) findJob(id string) *livekit.SimulationRun_Job {
+	if m.run == nil {
+		return nil
+	}
+	for _, j := range m.run.Jobs {
+		if j.Id == id {
+			return j
+		}
+	}
+	return nil
 }
 
 func (m *simulateModel) View() string {
@@ -773,7 +809,9 @@ func (m *simulateModel) viewRunning() string {
 	b.WriteString(m.renderFilterTabs())
 	b.WriteString("\n\n")
 
-	if m.detailJobID != "" {
+	if m.save.active {
+		b.WriteString(m.save.render())
+	} else if m.detailJobID != "" {
 		b.WriteString(m.renderDetail())
 	} else if m.matrix.active {
 		b.WriteString(m.matrix.render(m.buildMatrixRows()))
@@ -979,26 +1017,28 @@ func (m *simulateModel) renderJobList() string {
 
 	for i := winStart; i < winEnd; i++ {
 		ij := jobs[i]
-		icon := jobIcon(ij.job)
-		instr := ij.job.Instructions
-		if len(instr) > 60 {
-			instr = instr[:60] + "..."
+		label := ij.job.Label
+		if label == "" {
+			label = ij.job.Instructions
+			if len(label) > 60 {
+				label = label[:60] + "..."
+			}
 		}
-		if instr == "" {
-			instr = "—"
+		if label == "" {
+			label = "—"
 		}
 
+		plainIcon := string(plainJobIcon(ij.job))
 		var line string
 		if i == m.cursor {
-			// Build without inner styles so reverse applies cleanly
-			line = fmt.Sprintf("  %s %3d. %s  %s", icon, ij.origIdx, ij.job.Id, instr)
-			visible := lipgloss.Width(line)
-			if visible < m.width {
-				line += strings.Repeat(" ", m.width-visible)
+			line = fmt.Sprintf("  %s %3d. %s", plainIcon, ij.origIdx+1, label)
+			if pad := m.width - lipgloss.Width(line); pad > 0 {
+				line += strings.Repeat(" ", pad)
 			}
 			line = reverseStyle.Render(line)
 		} else {
-			line = fmt.Sprintf("  %s %3d. %s  %s", icon, ij.origIdx, dimStyle.Render(ij.job.Id), instr)
+			icon := jobIcon(ij.job)
+			line = fmt.Sprintf("  %s %3d. %s", icon, ij.origIdx+1, label)
 		}
 		b.WriteString(line)
 		b.WriteString("\n")
@@ -1373,7 +1413,7 @@ func firstMeaningfulLine(text string) string {
 func (m *simulateModel) renderHint() string {
 	var hint string
 	if m.detailJobID != "" {
-		hint = "  ESC/q back"
+		hint = "  ESC/q back · s save scenario"
 		if m.hasLogs() {
 			hint += " · Ctrl+L logs"
 		}
