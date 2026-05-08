@@ -39,7 +39,7 @@ var (
 	tagStyle     = lipgloss.NewStyle().Background(lipgloss.Color("#1fd5f9")).Foreground(lipgloss.Color("#000000")).Bold(true).Padding(0, 1)
 	greenStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	redStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	yellowStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+	yellowStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#e5a00d"))
 	dimStyle     = lipgloss.NewStyle().Faint(true)
 	boldStyle    = lipgloss.NewStyle().Bold(true)
 	reverseStyle = lipgloss.NewStyle().Reverse(true)
@@ -1068,7 +1068,7 @@ func plainJobIcon(job *livekit.SimulationRun_Job) rune {
 	case livekit.SimulationRun_Job_STATUS_RUNNING:
 		return '⏺'
 	default:
-		return '○'
+		return '⏺'
 	}
 }
 
@@ -1438,6 +1438,6 @@ func jobIcon(job *livekit.SimulationRun_Job) string {
 	case livekit.SimulationRun_Job_STATUS_RUNNING:
 		return yellowStyle.Render("⏺")
 	default:
-		return dimStyle.Render("○")
+		return dimStyle.Render("⏺")
 	}
 }
