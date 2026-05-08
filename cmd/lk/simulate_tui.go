@@ -1015,6 +1015,13 @@ func (m *simulateModel) renderJobList() string {
 		b.WriteString("\n")
 	}
 
+	// Compute labels and max width for consistent hover highlight
+	type rowData struct {
+		ij    indexedJob
+		label string
+	}
+	rows := make([]rowData, 0, winEnd-winStart)
+	maxWidth := 0
 	for i := winStart; i < winEnd; i++ {
 		ij := jobs[i]
 		label := ij.job.Label
@@ -1027,18 +1034,27 @@ func (m *simulateModel) renderJobList() string {
 		if label == "" {
 			label = "—"
 		}
+		row := rowData{ij: ij, label: label}
+		rows = append(rows, row)
+		w := lipgloss.Width(fmt.Sprintf("  ⏺ %3d. %s", ij.origIdx+1, label))
+		if w > maxWidth {
+			maxWidth = w
+		}
+	}
 
-		plainIcon := string(plainJobIcon(ij.job))
+	for i, row := range rows {
+		idx := winStart + i
+		plainIcon := string(plainJobIcon(row.ij.job))
 		var line string
-		if i == m.cursor {
-			line = fmt.Sprintf("  %s %3d. %s", plainIcon, ij.origIdx+1, label)
-			if pad := m.width - lipgloss.Width(line); pad > 0 {
+		if idx == m.cursor {
+			line = fmt.Sprintf("  %s %3d. %s", plainIcon, row.ij.origIdx+1, row.label)
+			if pad := maxWidth - lipgloss.Width(line); pad > 0 {
 				line += strings.Repeat(" ", pad)
 			}
 			line = reverseStyle.Render(line)
 		} else {
-			icon := jobIcon(ij.job)
-			line = fmt.Sprintf("  %s %3d. %s", icon, ij.origIdx+1, label)
+			icon := jobIcon(row.ij.job)
+			line = fmt.Sprintf("  %s %3d. %s", icon, row.ij.origIdx+1, row.label)
 		}
 		b.WriteString(line)
 		b.WriteString("\n")
