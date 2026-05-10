@@ -17,6 +17,7 @@ cli: check_lfs
 
 
 install: cli
+	mkdir -p $(GOBIN)
 ifeq ($(DETECTED_OS),Windows)
 	cp bin/lk.exe $(GOBIN)/lk.exe
 	ln -sf $(GOBIN)/lk.exe $(GOBIN)/livekit-cli.exe
