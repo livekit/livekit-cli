@@ -41,9 +41,10 @@ func init() {
 }
 
 var consoleCommand = &cli.Command{
-	Name:     "console",
-	Usage:    "Voice chat with an agent via mic/speakers",
-	Category: "Core",
+	Name:      "console",
+	Usage:     "Voice chat with an agent via mic/speakers",
+	ArgsUsage: "[entrypoint]",
+	Category:  "Core",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:    "port",
@@ -75,10 +76,6 @@ var consoleCommand = &cli.Command{
 		&cli.BoolFlag{
 			Name:  "record",
 			Usage: "Record audio and session report to console-recordings/",
-		},
-		&cli.StringFlag{
-			Name:  "entrypoint",
-			Usage: "Agent entrypoint `FILE` (default: auto-detect)",
 		},
 	},
 	Action: runConsole,

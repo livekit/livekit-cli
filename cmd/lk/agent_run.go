@@ -34,10 +34,6 @@ func init() {
 
 var agentRunFlags = []cli.Flag{
 	&cli.StringFlag{
-		Name:  "entrypoint",
-		Usage: "Agent entrypoint `FILE` (default: auto-detect)",
-	},
-	&cli.StringFlag{
 		Name:    "url",
 		Usage:   "LiveKit server `URL`",
 		Sources: cli.EnvVars("LIVEKIT_URL"),
@@ -59,15 +55,17 @@ var agentRunFlags = []cli.Flag{
 }
 
 var startCommand = &cli.Command{
-	Name:   "start",
-	Usage:  "Run an agent in production mode",
-	Flags:  agentRunFlags,
-	Action: runAgentStart,
+	Name:      "start",
+	Usage:     "Run an agent in production mode",
+	ArgsUsage: "[entrypoint]",
+	Flags:     agentRunFlags,
+	Action:    runAgentStart,
 }
 
 var devCommand = &cli.Command{
-	Name:  "dev",
-	Usage: "Run an agent in development mode with auto-reload",
+	Name:      "dev",
+	Usage:     "Run an agent in development mode with auto-reload",
+	ArgsUsage: "[entrypoint]",
 	Flags: append(agentRunFlags, &cli.BoolFlag{
 		Name:  "no-reload",
 		Usage: "Disable auto-reload on file changes",
@@ -122,7 +120,7 @@ func noAgentError() error {
 }
 
 func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error) {
-	explicit := cmd.String("entrypoint")
+	explicit := cmd.Args().First()
 
 	detectFrom := "."
 	if explicit != "" {

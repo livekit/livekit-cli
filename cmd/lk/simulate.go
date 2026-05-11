@@ -45,8 +45,9 @@ const (
 )
 
 var simulateCommand = &cli.Command{
-	Name:  "simulate",
-	Usage: "Run agent simulations against LiveKit Cloud",
+	Name:      "simulate",
+	Usage:     "Run agent simulations against LiveKit Cloud",
+	ArgsUsage: "[entrypoint]",
 	Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 		pc, err := loadProjectDetails(cmd)
 		if err != nil {
@@ -73,10 +74,6 @@ var simulateCommand = &cli.Command{
 		&cli.StringFlag{
 			Name:  "config",
 			Usage: "Path to simulation config `FILE`",
-		},
-		&cli.StringFlag{
-			Name:  "entrypoint",
-			Usage: "Agent entrypoint `FILE` (default: agent.py)",
 		},
 	},
 }
@@ -182,7 +179,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("simulate currently only supports Python agents (detected: %s)", projectType)
 	}
 
-	entrypoint, err := findEntrypoint(projectDir, cmd.String("entrypoint"), projectType)
+	entrypoint, err := findEntrypoint(projectDir, cmd.Args().First(), projectType)
 	if err != nil {
 		return err
 	}
