@@ -118,7 +118,7 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 		msg += fmt.Sprintf("  - %s\n", p)
 	}
 	msg += "\nMake sure you are running this command from a directory containing a LiveKit agent.\n"
-	msg += "Use --entrypoint to specify the agent entrypoint file."
+	msg += "Specify the entrypoint file as a positional argument, e.g.: lk agent simulate agent.py"
 	return "", fmt.Errorf("%s", msg)
 }
 
@@ -281,13 +281,6 @@ func (ap *AgentProcess) RecentRoomLogs(n int, roomName string) []string {
 	result := make([]string, n)
 	copy(result, lines[len(lines)-n:])
 	return result
-}
-
-// RoomLogCount returns the number of log lines for a specific room.
-func (ap *AgentProcess) RoomLogCount(roomName string) int {
-	ap.mu.Lock()
-	defer ap.mu.Unlock()
-	return len(ap.roomLogs[roomName])
 }
 
 // roomNamePrefix returns the stable part of a simulation room name (before the random suffix).
