@@ -27,7 +27,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
@@ -144,7 +143,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	args := append(prefixArgs, cfg.Entrypoint)
 	args = append(args, cfg.CLIArgs...)
 	cmd := exec.Command(pythonBin, args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	setProcAttr(cmd)
 	cmd.Dir = cfg.Dir
 	if len(cfg.Env) > 0 {
 		cmd.Env = append(os.Environ(), cfg.Env...)
@@ -344,13 +343,11 @@ func extractLogRoom(line string) string {
 	return ""
 }
 
-// Kill sends SIGINT to the process group and SIGKILL after a timeout.
-// If Shutdown() was already called, it just waits for exit (no duplicate SIGINT).
+// Kill sends interrupt to the process and force-kills after a timeout.
 func (ap *AgentProcess) Kill() {
 	if ap.cmd.Process == nil {
 		return
 	}
-	// Already exited — nothing to do.
 	select {
 	case <-ap.exitCh:
 		ap.closeLogFile()
@@ -358,12 +355,12 @@ func (ap *AgentProcess) Kill() {
 	default:
 	}
 	if !ap.shutdownCalled {
-		ap.signalGroup(syscall.SIGINT)
+		ap.sendInterrupt()
 	}
 	select {
 	case <-ap.exitCh:
 	case <-time.After(5 * time.Second):
-		ap.signalGroup(syscall.SIGKILL)
+		ap.sendKill()
 	}
 	ap.closeLogFile()
 }
@@ -377,30 +374,19 @@ func (ap *AgentProcess) closeLogFile() {
 	}
 }
 
-// Shutdown sends SIGINT to the main process to initiate graceful shutdown.
-// Only signals the main process (not the group) so that Python manages
-// its own child process cleanup without stray signal bouncing.
+// Shutdown initiates graceful shutdown of the agent process.
 func (ap *AgentProcess) Shutdown() {
 	if ap.cmd.Process == nil {
 		return
 	}
 	ap.shutdownCalled = true
-	ap.cmd.Process.Signal(syscall.SIGINT)
+	ap.sendShutdown()
 }
 
-// ForceKill sends SIGKILL to the process group immediately.
+// ForceKill kills the process immediately.
 func (ap *AgentProcess) ForceKill() {
 	if ap.cmd.Process == nil {
 		return
 	}
-	ap.signalGroup(syscall.SIGKILL)
-}
-
-// signalGroup sends a signal to the entire process group (Setpgid must be true).
-func (ap *AgentProcess) signalGroup(sig syscall.Signal) {
-	if ap.cmd.Process == nil {
-		return
-	}
-	// Negative PID signals the entire process group.
-	_ = syscall.Kill(-ap.cmd.Process.Pid, sig)
+	ap.sendKill()
 }
