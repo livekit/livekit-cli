@@ -61,6 +61,7 @@ var (
 						templateFlag,
 						templateURLFlag,
 						sandboxFlag,
+						installFlag,
 					},
 				},
 				{
@@ -328,7 +329,6 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			}).
 			WithTheme(util.Theme))
 	}
-
 	if len(preinstallPrompts) > 0 {
 		group := huh.NewGroup(preinstallPrompts...)
 		if err := huh.NewForm(group).
@@ -337,6 +337,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	}
+
+	// Set environment variables for template instantiation
+	os.Setenv("LIVEKIT_AGENT_NAME", appName)
+	os.Setenv("LIVEKIT_PROJECT_ID", project.ProjectId)
 
 	fmt.Println("Cloning template...")
 	if err := cloneTemplate(ctx, cmd, templateURL, appName); err != nil {
@@ -374,10 +378,20 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 
 	bootstrap.WriteDotEnv(appName, envOutputFile, env)
 
+	if !cmd.IsSet("install") && !SkipPrompts(cmd) {
+		if err := huh.NewConfirm().
+			Title("Install dependencies?").
+			Value(&install).
+			Inline(true).
+			WithTheme(util.Theme).
+			Run(); err != nil {
+			return err
+		}
+	}
 	if install {
 		fmt.Println("Installing template...")
 		if err := doInstall(ctx, bootstrap.TaskInstall, appName, verbose); err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "Warning: installation failed: %v\n", err)
 		}
 	}
 	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {

@@ -72,7 +72,6 @@ var (
 						optional(roomFlag),
 						optional(identityFlag),
 						openFlag,
-
 						&cli.BoolFlag{
 							Name:  "create",
 							Usage: usageCreate,
@@ -158,7 +157,6 @@ var (
 			Action: createToken,
 			Flags: []cli.Flag{
 				optional(roomFlag),
-
 				&cli.BoolFlag{
 					Name:  "create",
 					Usage: usageCreate,
@@ -416,9 +414,10 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		at.SetInferenceGrant(&auth.InferenceGrant{Perform: true})
 	}
 
+	agent := c.String("agent")
+	jobMetadata := c.String("job-metadata")
 	if grant.RoomJoin {
-		if agent := c.String("agent"); agent != "" {
-			jobMetadata := c.String("job-metadata")
+		if agent != "" {
 			at.SetRoomConfig(&livekit.RoomConfiguration{
 				Agents: []*livekit.RoomAgentDispatch{
 					{
@@ -472,7 +471,22 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	if c.IsSet("open") {
 		switch c.String("open") {
 		case string(util.OpenTargetMeet):
-			_ = util.OpenInMeet(project.URL, token)
+			if err := util.OpenInMeet(project.URL, token); err != nil {
+				return err
+			}
+		case string(util.OpenTargetConsole):
+			if err := util.OpenInConsole(dashboardURL, project.ProjectId, &util.ConsoleURLParams{
+				AgentName:   agent,
+				JobMetadata: jobMetadata,
+				Identity:    participant,
+				RoomName:    room,
+				Metadata:    metadata,
+				Attributes:  participantAttributes,
+				Hidden:      false,
+				AutoStart:   true,
+			}); err != nil {
+				return err
+			}
 		}
 	}
 

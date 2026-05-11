@@ -22,20 +22,24 @@ import (
 
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v3"
+
+	"github.com/google/go-querystring/query"
 )
 
 const (
-	MeetURL = "https://meet.livekit.io/custom"
+	MeetURL        = "https://meet.livekit.io/custom"
+	ConsoleURLPath = "/projects/%s/agents/console/?"
 )
 
 type OpenTarget string
 
 const (
-	OpenTargetMeet OpenTarget = "meet"
+	OpenTargetMeet    OpenTarget = "meet"
+	OpenTargetConsole OpenTarget = "console"
 )
 
 var (
-	options  = []string{string(OpenTargetMeet)}
+	options  = []string{string(OpenTargetMeet), string(OpenTargetConsole)}
 	OpenFlag = &cli.StringFlag{
 		Name:  "open",
 		Usage: fmt.Sprintf("Open relevant `APP` in browser, supported options: %v", options),
@@ -65,6 +69,36 @@ func OpenInMeet(livekitURL, token string) error {
 
 	if err := browser.OpenURL(meetURL.String()); err != nil {
 		return fmt.Errorf("failed to open Meet URL: %w", err)
+	}
+
+	return nil
+}
+
+type ConsoleURLParams struct {
+	AgentName    string            `url:"agentName,omitempty"`
+	JobMetadata  string            `url:"jobMetadata,omitempty"`
+	RoomName     string            `url:"roomName,omitempty"`
+	RoomMetadata string            `url:"roomMetadata,omitempty"`
+	Identity     string            `url:"identity,omitempty"`
+	Metadata     string            `url:"metadata,omitempty"`
+	Attributes   map[string]string `url:"attributes,omitempty"`
+	Hidden       bool              `url:"hidden,omitempty"`
+	AutoStart    bool              `url:"autoStart,omitempty"`
+}
+
+func OpenInConsole(dashboardURL, projectId string, params *ConsoleURLParams) error {
+	ps, err := query.Values(params)
+	if err != nil {
+		return fmt.Errorf("failed to encode console URL parameters: %w", err)
+	}
+
+	if projectId == "" {
+		projectId = "p_"
+	}
+
+	consoleURL := fmt.Sprintf(dashboardURL+ConsoleURLPath, projectId) + ps.Encode()
+	if err := browser.OpenURL(consoleURL); err != nil {
+		return fmt.Errorf("failed to open Console URL: %w", err)
 	}
 
 	return nil

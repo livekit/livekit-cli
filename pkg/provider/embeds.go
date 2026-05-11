@@ -161,13 +161,14 @@ func CreateVideoLoopers(resolution string, codecFilter string, simulcast bool) (
 			return nil, err
 		}
 		defer f.Close()
-		if spec.codec == h264Codec {
+		switch spec.codec {
+		case h264Codec:
 			looper, err := NewH264VideoLooper(f, spec)
 			if err != nil {
 				return nil, err
 			}
 			loopers = append(loopers, looper)
-		} else if spec.codec == vp8Codec {
+		case vp8Codec:
 			looper, err := NewVP8VideoLooper(f, spec)
 			if err != nil {
 				return nil, err
