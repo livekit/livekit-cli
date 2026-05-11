@@ -1,3 +1,11 @@
 pkg/provider/resources/*.h264 filter=lfs diff=lfs merge=lfs -text
 pkg/provider/resources/*.ivf filter=lfs diff=lfs merge=lfs -text
 pkg/provider/resources/*.ogg filter=lfs diff=lfs merge=lfs -text
+
+# Vendored C/C++ source (WebRTC APM, PortAudio, abseil, pffft, rnnoise)
+pkg/apm/webrtc/**/*.cc linguist-vendored
+pkg/apm/webrtc/**/*.c linguist-vendored
+pkg/apm/webrtc/**/*.h linguist-vendored
+pkg/apm/webrtc/**/*.m linguist-vendored
+pkg/apm/webrtc/**/*.inc linguist-vendored
+pkg/portaudio/pa_src/** linguist-vendored
