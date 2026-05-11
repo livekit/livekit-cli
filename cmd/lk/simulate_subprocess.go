@@ -16,11 +16,13 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -40,11 +42,12 @@ type AgentProcess struct {
 	// LogStream receives log lines in real-time. Nil if not needed.
 	LogStream chan string
 
-	mu       sync.Mutex
-	logLines []string
-	maxLogs  int
-	logFile  *os.File
-	LogPath  string
+	mu             sync.Mutex
+	logLines       []string
+	roomLogs       map[string][]string
+	latestRoomByPx map[string]string // prefix → latest room name seen
+	logFile        *os.File
+	LogPath        string
 }
 
 // findPythonBinary locates a Python binary for the given project type.
@@ -160,13 +163,14 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	}
 
 	ap := &AgentProcess{
-		cmd:     cmd,
-		readyCh: make(chan struct{}),
-		doneCh:  make(chan error, 1),
-		exitCh:  make(chan struct{}),
-		maxLogs: 200,
-		logFile: logFile,
-		LogPath: logFile.Name(),
+		cmd:            cmd,
+		readyCh:        make(chan struct{}),
+		doneCh:         make(chan error, 1),
+		exitCh:         make(chan struct{}),
+		roomLogs:       make(map[string][]string),
+		latestRoomByPx: make(map[string]string),
+		logFile:        logFile,
+		LogPath:        logFile.Name(),
 	}
 
 	if err := cmd.Start(); err != nil {
@@ -217,8 +221,9 @@ func (ap *AgentProcess) appendLog(line string) {
 	ap.mu.Lock()
 	defer ap.mu.Unlock()
 	ap.logLines = append(ap.logLines, line)
-	if len(ap.logLines) > ap.maxLogs {
-		ap.logLines = ap.logLines[len(ap.logLines)-ap.maxLogs:]
+	if room := extractLogRoom(line); room != "" {
+		ap.roomLogs[room] = append(ap.roomLogs[room], line)
+		ap.latestRoomByPx[roomNamePrefix(room)] = room
 	}
 	if ap.logFile != nil {
 		fmt.Fprintln(ap.logFile, line)
@@ -241,11 +246,11 @@ func (ap *AgentProcess) Done() <-chan error {
 	return ap.doneCh
 }
 
-// RecentLogs returns the last n log lines from the subprocess.
+// RecentLogs returns the last n log lines from the subprocess. If n <= 0, returns all lines.
 func (ap *AgentProcess) RecentLogs(n int) []string {
 	ap.mu.Lock()
 	defer ap.mu.Unlock()
-	if n >= len(ap.logLines) {
+	if n <= 0 || n >= len(ap.logLines) {
 		result := make([]string, len(ap.logLines))
 		copy(result, ap.logLines)
 		return result
@@ -260,6 +265,81 @@ func (ap *AgentProcess) LogCount() int {
 	ap.mu.Lock()
 	defer ap.mu.Unlock()
 	return len(ap.logLines)
+}
+
+// RecentRoomLogs returns the last n log lines for a specific room. If n <= 0, returns all lines.
+func (ap *AgentProcess) RecentRoomLogs(n int, roomName string) []string {
+	ap.mu.Lock()
+	defer ap.mu.Unlock()
+	lines := ap.roomLogs[roomName]
+	if n <= 0 || n >= len(lines) {
+		result := make([]string, len(lines))
+		copy(result, lines)
+		return result
+	}
+	result := make([]string, n)
+	copy(result, lines[len(lines)-n:])
+	return result
+}
+
+// RoomLogCount returns the number of log lines for a specific room.
+func (ap *AgentProcess) RoomLogCount(roomName string) int {
+	ap.mu.Lock()
+	defer ap.mu.Unlock()
+	return len(ap.roomLogs[roomName])
+}
+
+// roomNamePrefix returns the stable part of a simulation room name (before the random suffix).
+// e.g. "sim-SRJ_xxx-RANDOM" → "sim-SRJ_xxx-"
+func roomNamePrefix(roomName string) string {
+	idx := strings.LastIndex(roomName, "-")
+	if idx < 0 {
+		return roomName
+	}
+	return roomName[:idx+1]
+}
+
+// RecentRoomLogsByPrefix returns log lines for the most recent room matching
+// the prefix of the given room name. When a job is retried, each attempt gets
+// a new room with the same prefix — we show only the latest attempt's logs.
+func (ap *AgentProcess) RecentRoomLogsByPrefix(n int, roomName string) []string {
+	ap.mu.Lock()
+	defer ap.mu.Unlock()
+	latest := ap.latestRoomByPx[roomNamePrefix(roomName)]
+	if latest == "" {
+		return nil
+	}
+	lines := ap.roomLogs[latest]
+	if n <= 0 || n >= len(lines) {
+		result := make([]string, len(lines))
+		copy(result, lines)
+		return result
+	}
+	result := make([]string, n)
+	copy(result, lines[len(lines)-n:])
+	return result
+}
+
+var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func extractLogRoom(line string) string {
+	clean := ansiEscapeRe.ReplaceAllString(line, "")
+	idx := strings.LastIndex(clean, "{")
+	if idx < 0 {
+		return ""
+	}
+	end := strings.LastIndex(clean, "}")
+	if end <= idx {
+		return ""
+	}
+	var extra map[string]any
+	if err := json.Unmarshal([]byte(clean[idx:end+1]), &extra); err != nil {
+		return ""
+	}
+	if room, ok := extra["room"].(string); ok {
+		return room
+	}
+	return ""
 }
 
 // Kill sends SIGINT to the process group and SIGKILL after a timeout.

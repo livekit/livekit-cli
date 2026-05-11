@@ -48,9 +48,6 @@ type matrixRow struct {
 	iconCol      int // -1 if no icon cell on this row
 	iconCh       rune
 	iconStyle    *lipgloss.Style // applied when rain is not on iconCol
-	dimStart     int             // rune offset; -1 if no dim run
-	dimEnd       int             // half-open
-	dimStyle     *lipgloss.Style // applied to cells in [dimStart, dimEnd)
 	cursorMarker bool            // render a ▸ in col 0 when true
 }
 
@@ -63,7 +60,6 @@ const (
 	mcRainT2
 	mcRainT3
 	mcIcon
-	mcDim
 	mcCursor
 )
 
@@ -243,7 +239,6 @@ func (r *matrixRain) render(rows []matrixRow) string {
 	for row := 0; row < r.height; row++ {
 		var rd matrixRow
 		rd.iconCol = -1
-		rd.dimStart = -1
 		if row < len(rows) {
 			rd = rows[row]
 		}
@@ -275,9 +270,6 @@ func (r *matrixRain) render(rows []matrixRow) string {
 			case col == rd.iconCol && rd.iconStyle != nil:
 				cats[col] = mcIcon
 				runes[col] = rd.iconCh
-			case rd.dimStart >= 0 && col >= rd.dimStart && col < rd.dimEnd && col < len(rd.text):
-				cats[col] = mcDim
-				runes[col] = rd.text[col]
 			case col < len(rd.text):
 				cats[col] = mcPlain
 				runes[col] = rd.text[col]
@@ -290,7 +282,7 @@ func (r *matrixRain) render(rows []matrixRow) string {
 		runStart := 0
 		for col := 1; col <= r.width; col++ {
 			if col == r.width || cats[col] != cats[runStart] {
-				writeMatrixRun(&b, cats[runStart], runes[runStart:col], rd.iconStyle, rd.dimStyle)
+				writeMatrixRun(&b, cats[runStart], runes[runStart:col], rd.iconStyle)
 				runStart = col
 			}
 		}
@@ -302,7 +294,7 @@ func (r *matrixRain) render(rows []matrixRow) string {
 	return b.String()
 }
 
-func writeMatrixRun(b *strings.Builder, cat int, rs []rune, iconStyle, dimStyle *lipgloss.Style) {
+func writeMatrixRun(b *strings.Builder, cat int, rs []rune, iconStyle *lipgloss.Style) {
 	if len(rs) == 0 {
 		return
 	}
@@ -319,12 +311,6 @@ func writeMatrixRun(b *strings.Builder, cat int, rs []rune, iconStyle, dimStyle 
 	case mcIcon:
 		if iconStyle != nil {
 			b.WriteString(iconStyle.Render(s))
-		} else {
-			b.WriteString(s)
-		}
-	case mcDim:
-		if dimStyle != nil {
-			b.WriteString(dimStyle.Render(s))
 		} else {
 			b.WriteString(s)
 		}

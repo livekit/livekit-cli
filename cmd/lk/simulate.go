@@ -15,24 +15,33 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
 
 var (
 	simulateProjectConfig *config.ProjectConfig
+)
+
+const (
+	agentRegisterTimeout   = 20 * time.Second
+	simulationPollInterval = 1 * time.Second
+	simulationAPITimeout   = 10 * time.Second
 )
 
 var simulateCommand = &cli.Command{
@@ -85,6 +94,32 @@ type scenarioConfig struct {
 	Metadata          map[string]string `json:"metadata"`
 }
 
+// simulateConfig holds all parameters needed to run a simulation in either TUI or CI mode.
+type simulateConfig struct {
+	ctx             context.Context
+	client          *lksdk.AgentSimulationClient
+	pc              *config.ProjectConfig
+	numSimulations  int32
+	mode            simulateMode
+	description     string
+	agentName       string
+	projectDir      string
+	projectType     agentfs.ProjectType
+	entrypoint      string
+	cfg             *simulationConfig
+	scenarioGroupID string
+}
+
+// simulateMode represents how scenarios are sourced.
+type simulateMode int
+
+const (
+	modeInlineScenarios simulateMode = iota
+	modeScenarioGroup
+	modeGenerateFromDescription
+	modeGenerateFromSource
+)
+
 func loadSimulationConfig(path string) (*simulationConfig, error) {
 	if path == "" {
 		return nil, nil
@@ -109,16 +144,6 @@ func generateAgentName() string {
 	return "simulation-" + string(b)
 }
 
-// simulateMode represents how scenarios are sourced.
-type simulateMode int
-
-const (
-	modeInlineScenarios simulateMode = iota
-	modeScenarioGroup
-	modeGenerateFromDescription
-	modeGenerateFromSource
-)
-
 func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 
@@ -137,7 +162,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	scenarioGroupID := cmd.String("scenario-group-id")
 	agentName := generateAgentName()
 
-	// Mode detection (checked in priority order)
 	var mode simulateMode
 	switch {
 	case cfg != nil && len(cfg.Scenarios) > 0:
@@ -150,7 +174,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		mode = modeGenerateFromSource
 	}
 
-	// Detect project type, walking up parent directories if needed
 	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
 	if err != nil {
 		return err
@@ -159,7 +182,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("simulate currently only supports Python agents (detected: %s)", projectType)
 	}
 
-	// Resolve entrypoint
 	entrypoint, err := findEntrypoint(projectDir, cmd.String("entrypoint"), projectType)
 	if err != nil {
 		return err
@@ -167,54 +189,164 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
-	m := newSimulateModel(&simulateConfig{
-		ctx:            ctx,
-		client:         simClient,
-		pc:             pc,
-		numSimulations: numSimulations,
-		mode:           mode,
-		description:    description,
-		agentName:      agentName,
-		projectDir:     projectDir,
-		projectType:    projectType,
-		entrypoint:     entrypoint,
-		cfg:            cfg,
+	simCfg := &simulateConfig{
+		ctx:             ctx,
+		client:          simClient,
+		pc:              pc,
+		numSimulations:  numSimulations,
+		mode:            mode,
+		description:     description,
+		agentName:       agentName,
+		projectDir:      projectDir,
+		projectType:     projectType,
+		entrypoint:      entrypoint,
+		cfg:             cfg,
 		scenarioGroupID: scenarioGroupID,
+	}
+
+	if !isInteractive() {
+		return runSimulateCI(ctx, simCfg)
+	}
+	return runSimulateTUI(simCfg)
+}
+
+func isInteractive() bool {
+	if os.Getenv("CI") != "" {
+		return false
+	}
+	return isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
+}
+
+// --- Shared lifecycle functions used by both TUI and CI modes ---
+
+func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentProcess, error) {
+	return startAgent(AgentStartConfig{
+		Dir:         c.projectDir,
+		Entrypoint:  c.entrypoint,
+		ProjectType: c.projectType,
+		CLIArgs: []string{
+			"start",
+			"--url", c.pc.URL,
+			"--api-key", c.pc.APIKey,
+			"--api-secret", c.pc.APISecret,
+			"--log-level", "DEBUG",
+			"--log-format", "colored",
+		},
+		Env: []string{
+			"LIVEKIT_AGENT_NAME=" + c.agentName,
+			"LIVEKIT_URL=" + c.pc.URL,
+			"LIVEKIT_API_KEY=" + c.pc.APIKey,
+			"LIVEKIT_API_SECRET=" + c.pc.APISecret,
+		},
+		ReadySignal:   "registered worker",
+		ForwardOutput: forwardOutput,
 	})
+}
 
-	p := tea.NewProgram(m, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		return fmt.Errorf("TUI error: %w", err)
+func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livekit.PresignedPostRequest, error) {
+	req := &livekit.SimulationRun_Create_Request{
+		AgentName:        c.agentName,
+		AgentDescription: c.description,
+		NumSimulations:   c.numSimulations,
 	}
-
-	if m.agent != nil {
-		m.agent.Kill()
-		if m.agent.LogPath != "" {
-			fmt.Fprintf(os.Stderr, "Agent logs: %s\n", m.agent.LogPath)
+	switch c.mode {
+	case modeInlineScenarios:
+		scenarios := make([]*livekit.SimulationRun_Create_Scenario, 0, len(c.cfg.Scenarios))
+		for _, sc := range c.cfg.Scenarios {
+			scenarios = append(scenarios, &livekit.SimulationRun_Create_Scenario{
+				Label:             sc.Label,
+				Instructions:      sc.Instructions,
+				AgentExpectations: sc.AgentExpectations,
+				Metadata:          sc.Metadata,
+			})
+		}
+		req.Source = &livekit.SimulationRun_Create_Request_Scenarios{
+			Scenarios: &livekit.SimulationRun_Create_Scenarios{
+				Scenarios: scenarios,
+			},
+		}
+	case modeScenarioGroup:
+		req.Source = &livekit.SimulationRun_Create_Request_GroupId{
+			GroupId: c.scenarioGroupID,
 		}
 	}
 
-	if url := m.getDashboardURL(); url != "" {
-		fmt.Fprintf(os.Stderr, "Dashboard:  %s\n", url)
+	resp, err := c.client.CreateSimulationRun(ctx, req)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create simulation: %w", err)
 	}
+	return resp.SimulationRunId, resp.PresignedPostRequest, nil
+}
 
-	// Cancel the run — server will no-op if already terminal
-	if m.runID != "" && !m.runFinished {
-		cancelCtx, cancelFn := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancelFn()
-		if _, err := simClient.CancelSimulationRun(cancelCtx, &livekit.SimulationRun_Cancel_Request{
-			SimulationRunId: m.runID,
-		}); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to cancel run: %v\n", err)
-		} else {
-			fmt.Fprintf(os.Stderr, "Run cancelled\n")
-		}
+func uploadSource(ctx context.Context, client *lksdk.AgentSimulationClient, runID string, presigned *livekit.PresignedPostRequest, projectDir, entrypoint string) error {
+	if presigned == nil {
+		return fmt.Errorf("server did not return upload URL")
 	}
-
-	if m.err != nil && m.err != context.Canceled {
-		return m.err
+	var buf bytes.Buffer
+	if err := cloudagents.CreateSourceTarball(os.DirFS(projectDir), nil, &buf); err != nil {
+		return fmt.Errorf("failed to create source archive: %w", err)
+	}
+	if err := cloudagents.MultipartUpload(presigned.Url, presigned.Values, &buf); err != nil {
+		return fmt.Errorf("failed to upload source: %w", err)
+	}
+	if _, err := client.ConfirmSimulationSourceUpload(ctx, &livekit.SimulationRun_ConfirmSourceUpload_Request{
+		SimulationRunId:  runID,
+		CodeEntrypoint: entrypoint,
+	}); err != nil {
+		return fmt.Errorf("failed to confirm upload: %w", err)
 	}
 	return nil
 }
 
+func getSimulationRun(ctx context.Context, client *lksdk.AgentSimulationClient, runID string) (*livekit.SimulationRun, error) {
+	resp, err := client.GetSimulationRun(ctx, &livekit.SimulationRun_Get_Request{
+		SimulationRunId: runID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Run, nil
+}
 
+func isTerminalRunStatus(status livekit.SimulationRun_Status) bool {
+	return status == livekit.SimulationRun_STATUS_COMPLETED ||
+		status == livekit.SimulationRun_STATUS_FAILED ||
+		status == livekit.SimulationRun_STATUS_CANCELLED
+}
+
+func simulationDashboardURL(projectID, runID string) string {
+	if projectID == "" || runID == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/projects/%s/agents/simulations/%s", dashboardURL, projectID, runID)
+}
+
+func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := client.CancelSimulationRun(ctx, &livekit.SimulationRun_Cancel_Request{
+		SimulationRunId: runID,
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to cancel run: %v\n", err)
+	} else {
+		fmt.Fprintf(os.Stderr, "Run cancelled\n")
+	}
+}
+
+func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, failed int) {
+	if run == nil {
+		return
+	}
+	total = len(run.Jobs)
+	for _, j := range run.Jobs {
+		switch j.Status {
+		case livekit.SimulationRun_Job_STATUS_COMPLETED:
+			done++
+			passed++
+		case livekit.SimulationRun_Job_STATUS_FAILED:
+			done++
+			failed++
+		}
+	}
+	return
+}

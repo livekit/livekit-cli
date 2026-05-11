@@ -298,8 +298,7 @@ func (s *saveOverlay) render() string {
 	case savePhaseList:
 		b.WriteString("\n")
 		for i, g := range s.groups {
-			count := len(g.Scenarios)
-			label := fmt.Sprintf("%s (%d scenarios)", g.Label, count)
+			label := g.Label
 			if i == s.cursor {
 				b.WriteString(fmt.Sprintf("  %s %s\n", saveSelectedStyle.Render(">"), saveSelectedStyle.Render(label)))
 			} else {
