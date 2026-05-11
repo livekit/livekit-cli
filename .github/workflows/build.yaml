@@ -28,10 +28,10 @@ jobs:
     name: Build (no console, no CGO)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: go.mod
 
@@ -46,17 +46,17 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           submodules: true
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: go.mod
 
       - name: Static Check
-        uses: dominikh/staticcheck-action@v1.4.0
+        uses: dominikh/staticcheck-action@288b4e28bae83c59f35f73651aeb5cab746a06fc # v1.4.0
         with:
           version: "latest"
           install-go: false
@@ -101,18 +101,18 @@ jobs:
             goarch: arm64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           submodules: true
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: go.mod
 
       - name: Install Zig
         if: matrix.zig_target
-        uses: mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         with:
           version: 0.14.1
 
