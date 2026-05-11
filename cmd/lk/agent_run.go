@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -33,6 +34,15 @@ import (
 func init() {
 	AgentCommands[0].Commands = append(AgentCommands[0].Commands, startCommand, devCommand)
 }
+
+var (
+	outputToStderr = func(p *loadParams) {
+		p.output = os.Stderr
+	}
+	quietOutput = func(p *loadParams) {
+		p.output = io.Discard
+	}
+)
 
 var agentRunFlags = []cli.Flag{
 	&cli.StringFlag{

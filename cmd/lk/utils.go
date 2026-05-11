@@ -251,12 +251,6 @@ var (
 	confirmProject = func(p *loadParams) {
 		p.confirmProject = true
 	}
-	outputToStderr = func(p *loadParams) {
-		p.output = os.Stderr
-	}
-	quietOutput = func(p *loadParams) {
-		p.output = io.Discard
-	}
 )
 
 // attempt to load connection config, it'll prioritize
