@@ -347,7 +347,6 @@ var (
 					ArgsUsage:                 "[working-dir]",
 				},
 				privateLinkCommands,
-				simulateCommand,
 			},
 		},
 	}
@@ -359,6 +358,13 @@ var (
 		"LIVEKIT_URL",
 	}
 )
+
+func noAgentError() error {
+	return fmt.Errorf("no agent project detected in the current directory\n\n" +
+		"Make sure you are running this command from an agent project directory\n" +
+		"containing one of: pyproject.toml, requirements.txt, uv.lock, package.json, or lock files.\n\n" +
+		"To get started, see: https://docs.livekit.io/agents/quickstart")
+}
 
 func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	return createAgentClientWithOpts(ctx, cmd)

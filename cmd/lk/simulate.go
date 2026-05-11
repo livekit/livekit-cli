@@ -1,3 +1,5 @@
+//go:build console
+
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +35,10 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
+
+func init() {
+	AgentCommands[0].Commands = append(AgentCommands[0].Commands, simulateCommand)
+}
 
 var (
 	simulateProjectConfig *config.ProjectConfig

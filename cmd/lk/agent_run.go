@@ -1,3 +1,5 @@
+//go:build console
+
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -95,13 +97,6 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 		args = append(args, "--api-secret", apiSecret)
 	}
 	return args, nil
-}
-
-func noAgentError() error {
-	return fmt.Errorf("no agent project detected in the current directory\n\n" +
-		"Make sure you are running this command from an agent project directory\n" +
-		"containing one of: pyproject.toml, requirements.txt, uv.lock, package.json, or lock files.\n\n" +
-		"To get started, see: https://docs.livekit.io/agents/quickstart")
 }
 
 func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error) {
