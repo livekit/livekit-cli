@@ -16,7 +16,10 @@ package agentfs
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
+	"os"
+	"path/filepath"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/pelletier/go-toml"
@@ -114,4 +117,27 @@ func DetectProjectType(dir fs.FS) (ProjectType, error) {
 	}
 
 	return ProjectTypeUnknown, errors.New("expected package.json, requirements.txt, pyproject.toml, or lock files")
+}
+
+// DetectProjectRoot walks up from dir to find a directory containing project
+// files (pyproject.toml, requirements.txt, package.json, etc). Returns the
+// absolute path to the project root and the detected project type.
+func DetectProjectRoot(dir string) (string, ProjectType, error) {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", ProjectTypeUnknown, err
+	}
+
+	for {
+		pt, err := DetectProjectType(os.DirFS(absDir))
+		if err == nil {
+			return absDir, pt, nil
+		}
+
+		parent := filepath.Dir(absDir)
+		if parent == absDir {
+			return "", ProjectTypeUnknown, fmt.Errorf("could not detect project type in %s or any parent directory", dir)
+		}
+		absDir = parent
+	}
 }

@@ -359,6 +359,13 @@ var (
 	}
 )
 
+func noAgentError() error {
+	return fmt.Errorf("no agent project detected in the current directory\n\n" +
+		"Make sure you are running this command from an agent project directory\n" +
+		"containing one of: pyproject.toml, requirements.txt, uv.lock, package.json, or lock files.\n\n" +
+		"To get started, see: https://docs.livekit.io/agents/quickstart")
+}
+
 func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	return createAgentClientWithOpts(ctx, cmd)
 }
@@ -561,7 +568,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine agent language: %w, please navigate to a directory containing an agent written in a supported language", err)
+		return noAgentError()
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
@@ -748,7 +755,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
+		return noAgentError()
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 
@@ -1492,7 +1499,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
-		return fmt.Errorf("unable to determine agent language: %w, please make sure you are inside a directory containing an agent written in a supported language", err)
+		return noAgentError()
 	}
 	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
 

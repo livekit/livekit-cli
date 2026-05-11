@@ -6,6 +6,10 @@ package portaudio
 /*
 #cgo CFLAGS: -I${SRCDIR}/pa_src/include -I${SRCDIR}/pa_src/src/common -DPA_LITTLE_ENDIAN -Wno-unused-parameter -Wno-deprecated-declarations
 
+#if !__has_include("pa_src/include/portaudio.h")
+#error "PortAudio submodule not found. Run: git submodule update --init --recursive"
+#else
+
 #include "pa_src/src/common/pa_allocation.c"
 #include "pa_src/src/common/pa_converters.c"
 #include "pa_src/src/common/pa_cpuload.c"
@@ -18,6 +22,7 @@ package portaudio
 #include "pa_src/src/common/pa_trace.c"
 
 #include "portaudio.h"
+#endif
 */
 import "C"
 

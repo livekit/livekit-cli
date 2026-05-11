@@ -16,6 +16,9 @@ cli: check_lfs
 	GOOS=windows GOARCH=amd64 go build -ldflags "-w -s" -o bin/lk.exe ./cmd/lk
 
 
+console:
+	CGO_ENABLED=1 go build -tags console -ldflags "-w -s" -o bin/lk ./cmd/lk
+
 install: cli
 ifeq ($(DETECTED_OS),Windows)
 	cp bin/lk.exe $(GOBIN)/lk.exe
