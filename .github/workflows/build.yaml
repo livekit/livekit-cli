@@ -99,11 +99,6 @@ jobs:
             zig_target: aarch64-windows-gnu
             goos: windows
             goarch: arm64
-          - os: ubuntu-latest
-            suffix: windows_arm
-            goos: windows
-            goarch: arm
-            goarm: "7"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
