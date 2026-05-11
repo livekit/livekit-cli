@@ -34,21 +34,6 @@ func init() {
 
 var agentRunFlags = []cli.Flag{
 	&cli.StringFlag{
-		Name:    "url",
-		Usage:   "LiveKit server `URL`",
-		Sources: cli.EnvVars("LIVEKIT_URL"),
-	},
-	&cli.StringFlag{
-		Name:    "api-key",
-		Usage:   "LiveKit API `KEY`",
-		Sources: cli.EnvVars("LIVEKIT_API_KEY"),
-	},
-	&cli.StringFlag{
-		Name:    "api-secret",
-		Usage:   "LiveKit API `SECRET`",
-		Sources: cli.EnvVars("LIVEKIT_API_SECRET"),
-	},
-	&cli.StringFlag{
 		Name:  "log-level",
 		Usage: "Log level (TRACE, DEBUG, INFO, WARN, ERROR)",
 	},

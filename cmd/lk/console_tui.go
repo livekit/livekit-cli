@@ -214,6 +214,7 @@ func (m consoleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+t":
 			m.textMode = true
 			m.showShortcuts = false
+			m.partialTranscript = ""
 			m.textInput.Focus()
 			return m, textinput.Blink
 		case "?":
@@ -389,6 +390,9 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 		}
 
 	case *agent.AgentSessionEvent_UserInputTranscribed_:
+		if m.textMode {
+			break
+		}
 		if e.UserInputTranscribed.IsFinal {
 			m.partialTranscript = ""
 			if text := e.UserInputTranscribed.Transcript; text != "" {
