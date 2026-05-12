@@ -321,7 +321,7 @@ func simulationDashboardURL(projectID, runID string) string {
 	if projectID == "" || runID == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s/projects/%s/agents/simulations/%s", dashboardURL, projectID, runID)
+	return fmt.Sprintf("%s/projects/%s/evaluations/simulations/%s", dashboardURL, projectID, runID)
 }
 
 func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
