@@ -110,10 +110,11 @@ var (
 		Name:  "image-tar",
 		Usage: "Pre-built image from an OCI tar file (e.g. ./image.tar). No Docker daemon required.",
 	}
-	envFlag = &cli.StringSliceFlag{
-		Name:     "env",
-		Usage:    "Deployment environment(s). For create/deploy, specifies the target environment (defaults to 'production'). For update-secrets, assigns environment(s) to the secret. Can be specified multiple times (e.g. --env staging --env production).",
+	deploymentFlag = &cli.StringSliceFlag{
+		Name:     "deployment",
+		Usage:    "Agent deployments. For create/deploy, specifies the target deployment (defaults to 'production'). For update-secrets, assigns deployment(s) to the secret. Can be specified multiple times (e.g. --deployment staging --deployment production).",
 		Required: false,
+		Aliases:  []string{"d"},
 	}
 
 	skipSDKCheckFlag = &cli.BoolFlag{
@@ -187,7 +188,7 @@ var (
 						ignoreEmptySecretsFlag,
 						silentFlag,
 						regionFlag,
-						envFlag,
+						deploymentFlag,
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
 						agentPrebuiltImageTarFlag,
@@ -234,7 +235,7 @@ var (
 						secretsMountFlag,
 						silentFlag,
 						regionFlag,
-						envFlag,
+						deploymentFlag,
 						ignoreEmptySecretsFlag,
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
@@ -306,20 +307,20 @@ var (
 					Flags: []cli.Flag{
 						idFlag(false),
 						logTypeFlag,
-						envFlag,
+						deploymentFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
 				{
 					Name:    "delete",
-					Usage:   "Delete an agent or a specific environment",
+					Usage:   "Delete an agent or a specific deployment",
 					Before:  createAgentClient,
 					Action:  deleteAgent,
 					Aliases: []string{"destroy"},
 					Flags: []cli.Flag{
 						silentFlag,
 						idFlag(false),
-						envFlag,
+						deploymentFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -362,7 +363,7 @@ var (
 						secretsFileFlag,
 						secretsMountFlag,
 						ignoreEmptySecretsFlag,
-						envFlag,
+						deploymentFlag,
 						idFlag(false),
 						&cli.BoolFlag{
 							Name:     "overwrite",
@@ -814,14 +815,14 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	environment := "production"
-	if cmd.IsSet("env") {
-		environment = cmd.StringSlice("env")[0]
+	agentDeployment := "production"
+	if cmd.IsSet("deployment") {
+		agentDeployment = cmd.StringSlice("deployment")[0]
 	}
-	fmt.Printf("Using environment [%s]\n", util.Accented(environment))
+	fmt.Printf("Using deployment [%s]\n", util.Accented(agentDeployment))
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgentV2(buildContext, agentId, os.DirFS(workingDir), secrets, environment, excludeFiles, os.Stderr); err != nil {
+	if err := agentsClient.DeployAgentV2(buildContext, agentId, os.DirFS(workingDir), secrets, agentDeployment, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
@@ -918,7 +919,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				regionalAgent.AgentName,
 				version,
 				regionalAgent.Region,
-				regionalAgent.Environment,
+				regionalAgent.Deployment,
 				regionalAgent.Status,
 				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
@@ -929,7 +930,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Name", "Version", "Region", "Environment", "Status", "CPU", "Mem", "Replicas", "Deployed At").
+		Headers("ID", "Name", "Version", "Region", "Deployment", "Status", "CPU", "Mem", "Replicas", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -1052,8 +1053,8 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var agentEnvironment string
-	if envs := cmd.StringSlice("env"); len(envs) > 0 {
-		agentEnvironment = envs[0]
+	if deployments := cmd.StringSlice("deployment"); len(deployments) > 0 {
+		agentEnvironment = deployments[0]
 	}
 	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, agentEnvironment, os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
 }
@@ -1065,18 +1066,18 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	var environment string
-	if envs := cmd.StringSlice("env"); len(envs) > 0 {
-		environment = envs[0]
+	var deployment string
+	if deployments := cmd.StringSlice("deployment"); len(deployments) > 0 {
+		deployment = deployments[0]
 	}
 
 	confirmMsg := fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)
 	deletingMsg := "Deleting agent [" + util.Accented(agentID) + "]"
 	deletedMsg := fmt.Sprintf("Deleted agent [%s]", util.Accented(agentID))
-	if environment != "" {
-		confirmMsg = fmt.Sprintf("Are you sure you want to delete environment [%s] from agent [%s]?", environment, agentID)
-		deletingMsg = "Deleting environment [" + util.Accented(environment) + "] from agent [" + util.Accented(agentID) + "]"
-		deletedMsg = fmt.Sprintf("Deleted environment [%s] from agent [%s]", util.Accented(environment), util.Accented(agentID))
+	if deployment != "" {
+		confirmMsg = fmt.Sprintf("Are you sure you want to delete deployment [%s] from agent [%s]?", deployment, agentID)
+		deletingMsg = "Deleting deployment [" + util.Accented(deployment) + "] from agent [" + util.Accented(agentID) + "]"
+		deletedMsg = fmt.Sprintf("Deleted deployment [%s] from agent [%s]", util.Accented(deployment), util.Accented(agentID))
 	}
 
 	if !silent && !SkipPrompts(cmd) {
@@ -1105,8 +1106,8 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		func(ctx context.Context) error {
 			var clientErr error
 			res, clientErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
-				AgentId:     agentID,
-				Environment: environment,
+				AgentId:    agentID,
+				Deployment: deployment,
 			})
 			return clientErr
 		},
@@ -1232,31 +1233,31 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	var rows [][]string
 	for _, agent := range items {
 		regionSet := map[string]struct{}{}
-		envSet := map[string]struct{}{}
+		deploymentSet := map[string]struct{}{}
 		for _, regionalAgent := range agent.AgentDeployments {
 			regionSet[regionalAgent.Region] = struct{}{}
-			envSet[regionalAgent.Environment] = struct{}{}
+			deploymentSet[regionalAgent.Deployment] = struct{}{}
 		}
 		regions := make([]string, 0, len(regionSet))
 		for region := range regionSet {
 			regions = append(regions, region)
 		}
-		environments := make([]string, 0, len(envSet))
-		for environment := range envSet {
-			environments = append(environments, environment)
+		deployments := make([]string, 0, len(deploymentSet))
+		for deployment := range deploymentSet {
+			deployments = append(deployments, deployment)
 		}
 		rows = append(rows, []string{
 			agent.AgentId,
 			agent.AgentName,
 			strings.Join(regions, ","),
-			strings.Join(environments, ","),
+			strings.Join(deployments, ","),
 			agent.Version,
 			formatTime(agent.DeployedAt.AsTime()),
 		})
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Dispatch Name", "Regions", "Environment", "Version", "Deployed At").
+		Headers("ID", "Dispatch Name", "Regions", "Deployment", "Version", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
@@ -1283,18 +1284,18 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 
 	// TODO (steveyoon): show secret.Kind.String() once cloud-agents is released
 	table := util.CreateTable().
-		Headers("Name", "Environments", "Created At", "Updated At")
+		Headers("Name", "Deployments", "Created At", "Updated At")
 
 	for _, secret := range secrets.Secrets {
 		// NOTE: Maybe these should be omitted on the server side?
 		if slices.Contains(ignoredSecrets, secret.Name) {
 			continue
 		}
-		envs := strings.Join(secret.Environments, ", ")
-		if envs == "" {
-			envs = "(all)"
+		deployments := strings.Join(secret.Deployments, ", ")
+		if deployments == "" {
+			deployments = "(all)"
 		}
-		table.Row(secret.Name, envs, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
+		table.Row(secret.Name, deployments, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
 	}
 
 	fmt.Println(table)
@@ -1312,10 +1313,10 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if cmd.IsSet("env") {
-		envs := cmd.StringSlice("env")
+	if cmd.IsSet("deployment") {
+		deployments := cmd.StringSlice("deployment")
 		for _, s := range secrets {
-			s.Environments = envs
+			s.Deployments = deployments
 		}
 	}
 
