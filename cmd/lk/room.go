@@ -155,7 +155,7 @@ var (
 						&cli.StringSliceFlag{
 							Name:      "publish",
 							TakesFile: true,
-							Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
+							Usage: "`FILES` to publish as tracks to room (supports .h264, .h265, .ivf, .ogg). " +
 								"Can be used multiple times to publish multiple files. " +
 								"Can publish from Unix or TCP socket using the format '<codec>:///<socket_path>' or '<codec>://<host:port>' respectively. Valid codecs are \"h264\", \"h265\", \"vp8\", \"opus\". " +
 								"For simulcast: use 2-3 h264:// or h265:// URLs with format '<codec>://<host:port>/<width>x<height>' or '<codec>:///path/to/<socket_path>/<width>x<height>' (all layers must use the same codec; quality determined by width order)",
@@ -176,6 +176,10 @@ var (
 							Name:  "h26x-streaming-format",
 							Usage: "Format to use when reading H.264 from file or socket, \"annex-b\" OR \"length-prefixed\"",
 							Value: "annex-b",
+						},
+						&cli.BoolFlag{
+							Name:  "publish-user-timestamp",
+							Usage: "When publishing H.264/H.265, attach LKTS user timestamp and frame ID packet trailers from embedded SEI metadata",
 						},
 						&cli.BoolFlag{
 							Name:  "exit-after-publish",
@@ -1004,6 +1008,10 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 			// Handle simulcast publishing
 			fps := cmd.Float("fps")
 			h26xStreamingFormat := cmd.String("h26x-streaming-format")
+			packetTrailerOpts := packetTrailerPublishOptions{
+				AttachUserTimestamp: cmd.Bool("publish-user-timestamp"),
+				AttachFrameID:       cmd.Bool("publish-user-timestamp"),
+			}
 			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
 				if exitAfterPublish {
 					close(done)
@@ -1015,13 +1023,17 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 				}
 			}
 
-			if err = handleSimulcastPublish(room, publishUrls, fps, h26xStreamingFormat, onPublishComplete); err != nil {
+			if err = handleSimulcastPublish(room, publishUrls, fps, h26xStreamingFormat, packetTrailerOpts, onPublishComplete); err != nil {
 				return err
 			}
 		} else {
 			// Handle single publish
 			fps := cmd.Float("fps")
 			h26xStreamingFormat := cmd.String("h26x-streaming-format")
+			packetTrailerOpts := packetTrailerPublishOptions{
+				AttachUserTimestamp: cmd.Bool("publish-user-timestamp"),
+				AttachFrameID:       cmd.Bool("publish-user-timestamp"),
+			}
 			for _, pub := range publishUrls {
 				onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
 					if exitAfterPublish {
@@ -1033,7 +1045,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 					}
 				}
-				if err = handlePublish(room, pub, fps, h26xStreamingFormat, onPublishComplete); err != nil {
+				if err = handlePublish(room, pub, fps, h26xStreamingFormat, packetTrailerOpts, onPublishComplete); err != nil {
 					return err
 				}
 			}
