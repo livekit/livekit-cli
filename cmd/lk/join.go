@@ -66,6 +66,11 @@ var (
 					Usage:  "Parse H264 SEI for user timestamp and attach user timestamp trailer to each encoded frame",
 					Hidden: true,
 				},
+				&cli.BoolFlag{
+					Name:   "publish-frame-id",
+					Usage:  "Parse H264/H265 SEI for frame ID and attach frame ID trailer to each encoded frame",
+					Hidden: true,
+				},
 				&cli.FloatFlag{
 					Name:  "fps",
 					Usage: "if video files are published, indicates FPS of video",
@@ -177,6 +182,7 @@ func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 		fps := cmd.Float("fps")
 		h26xStreamingFormat := cmd.String("h26x-streaming-format")
 		publishUserTimestamp := cmd.Bool("publish-user-timestamp")
+		publishFrameId := cmd.Bool("publish-frame-id")
 		for _, pub := range cmd.StringSlice("publish") {
 			onPublishComplete := func(pub *lksdk.LocalTrackPublication) {
 				if cmd.Bool("exit-after-publish") {
@@ -188,7 +194,7 @@ func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 				}
 			}
-			if err = handlePublish(room, pub, fps, h26xStreamingFormat, publishUserTimestamp, onPublishComplete); err != nil {
+			if err = handlePublish(room, pub, fps, h26xStreamingFormat, publishUserTimestamp, publishFrameId, onPublishComplete); err != nil {
 				return err
 			}
 		}
@@ -203,6 +209,7 @@ func handlePublish(room *lksdk.Room,
 	fps float64,
 	h26xStreamingFormat string,
 	publishUserTimestamp bool,
+	publishFrameId bool,
 	onPublishComplete func(pub *lksdk.LocalTrackPublication),
 ) error {
 	if isSocketFormat(name) {
@@ -210,9 +217,9 @@ func handlePublish(room *lksdk.Room,
 		if err != nil {
 			return err
 		}
-		return publishSocket(room, mimeType, socketType, address, fps, h26xStreamingFormat, publishUserTimestamp, onPublishComplete)
+		return publishSocket(room, mimeType, socketType, address, fps, h26xStreamingFormat, publishUserTimestamp, publishFrameId, onPublishComplete)
 	}
-	return publishFile(room, name, fps, h26xStreamingFormat, publishUserTimestamp, onPublishComplete)
+	return publishFile(room, name, fps, h26xStreamingFormat, publishUserTimestamp, publishFrameId, onPublishComplete)
 }
 
 func publishDemo(room *lksdk.Room) error {
@@ -246,6 +253,7 @@ func publishFile(room *lksdk.Room,
 	fps float64,
 	h26xStreamingFormat string,
 	publishUserTimestamp bool,
+	publishFrameId bool,
 	onPublishComplete func(pub *lksdk.LocalTrackPublication),
 ) error {
 	// Configure provider
@@ -284,6 +292,9 @@ func publishFile(room *lksdk.Room,
 	if publishUserTimestamp {
 		opts = append(opts, lksdk.ReaderTrackWithUserTimestamp(true))
 	}
+	if publishFrameId {
+		opts = append(opts, lksdk.ReaderTrackWithFrameId(true))
+	}
 
 	// Create track and publish
 	track, err := lksdk.NewLocalFileTrack(filename, opts...)
@@ -291,7 +302,9 @@ func publishFile(room *lksdk.Room,
 		return err
 	}
 	pub, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
-		Name: filename,
+		Name:                filename,
+		AttachUserTimestamp: publishUserTimestamp,
+		AttachFrameId:       publishFrameId,
 	})
 	return err
 }
@@ -337,6 +350,7 @@ func publishSocket(room *lksdk.Room,
 	fps float64,
 	h26xStreamingFormat string,
 	publishUserTimestamp bool,
+	publishFrameId bool,
 	onPublishComplete func(pub *lksdk.LocalTrackPublication),
 ) error {
 	var mime string
@@ -360,7 +374,7 @@ func publishSocket(room *lksdk.Room,
 	}
 
 	// Publish to room
-	err = publishReader(room, sock, mime, fps, h26xStreamingFormat, publishUserTimestamp, onPublishComplete)
+	err = publishReader(room, sock, mime, fps, h26xStreamingFormat, publishUserTimestamp, publishFrameId, onPublishComplete)
 	return err
 }
 
@@ -370,6 +384,7 @@ func publishReader(room *lksdk.Room,
 	fps float64,
 	h26xStreamingFormat string,
 	publishUserTimestamp bool,
+	publishFrameId bool,
 	onPublishComplete func(pub *lksdk.LocalTrackPublication),
 ) error {
 	// Configure provider
@@ -401,13 +416,19 @@ func publishReader(room *lksdk.Room,
 	if publishUserTimestamp {
 		opts = append(opts, lksdk.ReaderTrackWithUserTimestamp(true))
 	}
+	if publishFrameId {
+		opts = append(opts, lksdk.ReaderTrackWithFrameId(true))
+	}
 
 	// Create track and publish
 	track, err := lksdk.NewLocalReaderTrack(in, mime, opts...)
 	if err != nil {
 		return err
 	}
-	pub, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{})
+	pub, err = room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+		AttachUserTimestamp: publishUserTimestamp,
+		AttachFrameId:       publishFrameId,
+	})
 	if err != nil {
 		return err
 	}
@@ -459,7 +480,7 @@ func parseSimulcastURL(url string) (*simulcastURLParts, error) {
 }
 
 // createSimulcastVideoTrack creates a simulcast video track from a TCP or Unix socket H.264/H.265 streams
-func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.VideoQuality, fps float64, h26xStreamingFormat string, publishUserTimestamp bool, onComplete func()) (*lksdk.LocalTrack, error) {
+func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.VideoQuality, fps float64, h26xStreamingFormat string, publishUserTimestamp bool, publishFrameId bool, onComplete func()) (*lksdk.LocalTrack, error) {
 	conn, err := net.Dial(urlParts.network, urlParts.address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to %s://%s: %w", urlParts.network, urlParts.address, err)
@@ -490,6 +511,9 @@ func createSimulcastVideoTrack(urlParts *simulcastURLParts, quality livekit.Vide
 	if publishUserTimestamp {
 		opts = append(opts, lksdk.ReaderTrackWithUserTimestamp(true))
 	}
+	if publishFrameId {
+		opts = append(opts, lksdk.ReaderTrackWithFrameId(true))
+	}
 
 	// Configure simulcast layer
 	opts = append(opts, lksdk.ReaderTrackWithSampleOptions(lksdk.WithSimulcast("simulcast", &livekit.VideoLayer{
@@ -514,7 +538,7 @@ type simulcastLayer struct {
 }
 
 // handleSimulcastPublish handles publishing multiple H.264 streams as a simulcast track
-func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xStreamingFormat string, publishUserTimestamp bool, onPublishComplete func(*lksdk.LocalTrackPublication)) error {
+func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xStreamingFormat string, publishUserTimestamp bool, publishFrameId bool, onPublishComplete func(*lksdk.LocalTrackPublication)) error {
 	// Parse all URLs
 	var layers []simulcastLayer
 	for _, url := range urls {
@@ -585,7 +609,7 @@ func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xSt
 	}
 
 	for _, layer := range layers {
-		track, err := createSimulcastVideoTrack(layer.parts, layer.quality, fps, h26xStreamingFormat, publishUserTimestamp, signalCompletion)
+		track, err := createSimulcastVideoTrack(layer.parts, layer.quality, fps, h26xStreamingFormat, publishUserTimestamp, publishFrameId, signalCompletion)
 		if err != nil {
 			// Clean up any tracks we've already created
 			for _, t := range tracks {
@@ -601,7 +625,9 @@ func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xSt
 	// Publish simulcast track
 	var err error
 	pub, err = room.LocalParticipant.PublishSimulcastTrack(tracks, &lksdk.TrackPublicationOptions{
-		Name: "simulcast",
+		Name:                "simulcast",
+		AttachUserTimestamp: publishUserTimestamp,
+		AttachFrameId:       publishFrameId,
 	})
 	if err != nil {
 		// Clean up tracks on publish failure
