@@ -33,9 +33,8 @@ var privateLinkCommands = &cli.Command{
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "region",
-					Usage:    "LiveKit region",
-					Required: true,
+					Name:  "region",
+					Usage: "LiveKit region. If unset in interactive mode, a picker of available regions is shown.",
 				},
 				&cli.UintFlag{
 					Name:     "port",
@@ -140,11 +139,16 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 		if dns == "" {
 			dns = "-"
 		}
+		cloudRegion := link.CloudRegion
+		if cloudRegion == "" {
+			cloudRegion = "-"
+		}
 
 		rows = append(rows, []string{
 			link.PrivateLinkId,
 			link.Name,
 			link.Region,
+			cloudRegion,
 			strconv.FormatUint(uint64(link.Port), 10),
 			endpoint,
 			dns,
@@ -183,7 +187,17 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
+	settingsMap, err := getClientSettings(ctx, false)
+	if err != nil {
+		return err
+	}
+
+	region, err := resolveRegion(cmd, settingsMap, "Select region for private link")
+	if err != nil {
+		return err
+	}
+
+	req := buildCreatePrivateLinkRequest(cmd.String("name"), region, uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
 	resp, err := agentsClient.CreatePrivateLink(ctx, req)
 	if err != nil {
 		return formatPrivateLinkClientError("create", err)
@@ -205,6 +219,9 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 	}
 	if resp.PrivateLink.ConnectionEndpoint != "" {
 		fmt.Printf("Gateway DNS [%s]\n", util.Accented(resp.PrivateLink.ConnectionEndpoint))
+	}
+	if resp.PrivateLink.CloudRegion != "" {
+		fmt.Printf("Cloud Region [%s]\n", util.Accented(resp.PrivateLink.CloudRegion))
 	}
 	return nil
 }
@@ -263,7 +280,7 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	rows := buildPrivateLinkListRows(resp.Items, healthByID, healthErrByID)
-	table := util.CreateTable().Headers("ID", "Name", "Region", "Port", "Endpoint", "DNS", "Health", "Updated At", "Reason").Rows(rows...)
+	table := util.CreateTable().Headers("ID", "Name", "Region", "Cloud Region", "Port", "Endpoint", "DNS", "Health", "Updated At", "Reason").Rows(rows...)
 	fmt.Println(table)
 	return nil
 }
