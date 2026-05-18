@@ -2,8 +2,6 @@ module github.com/livekit/livekit-cli/v2
 
 go 1.25.8
 
-replace github.com/livekit/server-sdk-go/v2 => /Users/dc/workspace/livekit/server-sdk-go
-
 require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Masterminds/semver/v3 v3.4.0
@@ -15,15 +13,15 @@ require (
 	github.com/go-task/task/v3 v3.49.1
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.45.4-0.20260414175434-28604d1045cd
-	github.com/livekit/server-sdk-go/v2 v2.16.2
+	github.com/livekit/protocol v1.45.5-0.20260423163244-347de5a2ef78
+	github.com/livekit/server-sdk-go/v2 v2.16.3
 	github.com/mattn/go-isatty v0.0.21
 	github.com/moby/patternmatcher v0.6.1
 	github.com/modelcontextprotocol/go-sdk v1.4.0
 	github.com/pelletier/go-toml v1.9.5
 	github.com/pion/rtcp v1.2.16
 	github.com/pion/rtp v1.10.1
-	github.com/pion/webrtc/v4 v4.2.9
+	github.com/pion/webrtc/v4 v4.2.11
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
@@ -182,12 +180,12 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pion/datachannel v1.6.0 // indirect
 	github.com/pion/dtls/v3 v3.1.2 // indirect
-	github.com/pion/ice/v4 v4.2.1 // indirect
+	github.com/pion/ice/v4 v4.2.2 // indirect
 	github.com/pion/interceptor v0.1.44 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/mdns/v2 v2.1.0 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/sctp v1.9.3 // indirect
+	github.com/pion/sctp v1.9.4 // indirect
 	github.com/pion/sdp/v3 v3.0.18 // indirect
 	github.com/pion/srtp/v3 v3.0.10 // indirect
 	github.com/pion/stun/v3 v3.1.1 // indirect
