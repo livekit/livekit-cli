@@ -179,7 +179,7 @@ var (
 						},
 						&cli.BoolFlag{
 							Name:  "attach-frame-metadata",
-							Usage: "When publishing H.264/H.265, parse SEI user_data_unregistered for LKTS frame metadata (user timestamp and frame ID) and re-attach the packet trailer to each encoded frame",
+							Usage: "Parse H264/H265 SEI for LKTS frame metadata (user timestamp and frame ID) and append packet trailer to each encoded frame",
 						},
 						&cli.BoolFlag{
 							Name:  "exit-after-publish",
