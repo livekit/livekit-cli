@@ -57,7 +57,7 @@ var (
 				&cli.StringSliceFlag{
 					Name:      "publish",
 					TakesFile: true,
-					Usage: "`FILES` to publish as tracks to room (supports .h264, .ivf, .ogg). " +
+					Usage: "`FILES` to publish as tracks to room (supports .h264, .h265, .ivf, .ogg). " +
 						"can be used multiple times to publish multiple files. " +
 						"can publish from Unix or TCP socket using the format '<codec>://<socket_name>' or '<codec>://<host:address>' respectively. Valid codecs are \"h264\", \"h265\", \"vp8\", \"opus\"",
 				},
