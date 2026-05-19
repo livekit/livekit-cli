@@ -151,6 +151,7 @@ func (m consoleModel) Init() tea.Cmd {
 	}
 	if m.textMode {
 		cmds = append(cmds, textinput.Blink)
+		m.applyTextMode(true)
 	}
 	return tea.Batch(cmds...)
 }
@@ -216,6 +217,7 @@ func (m consoleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.showShortcuts = false
 			m.partialTranscript = ""
 			m.textInput.Focus()
+			m.applyTextMode(true)
 			return m, textinput.Blink
 		case "?":
 			m.showShortcuts = !m.showShortcuts
@@ -259,6 +261,7 @@ func (m consoleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.audioError = ""
 			m.inputDev = "Default Input"
 			m.outputDev = "Default Output"
+			m.applyTextMode(false)
 		}
 		return m, nil
 
@@ -289,12 +292,41 @@ func (m *consoleModel) switchToAudio() tea.Cmd {
 		m.showShortcuts = false
 		m.textInput.Blur()
 		m.audioError = ""
+		m.applyTextMode(false)
 		return nil
 	}
 	// Lazy init audio in a goroutine
 	return func() tea.Msg {
 		return audioInitResultMsg{err: m.pipeline.EnableAudio()}
 	}
+}
+
+// applyTextMode pauses the local audio pipeline and asks the agent to
+// disable/enable audio I/O so STT/TTS aren't running in text mode.
+func (m *consoleModel) applyTextMode(text bool) {
+	if m.pipeline.HasAudio() {
+		m.pipeline.SetPaused(text)
+	}
+
+	m.reqCounter++
+	reqID := fmt.Sprintf("console-io-%d", m.reqCounter)
+	audioOn := !text
+	transcriptionOn := !text
+	req := &agent.SessionRequest{
+		RequestId: reqID,
+		Request: &agent.SessionRequest_UpdateIo{
+			UpdateIo: &agent.SessionRequest_UpdateIO{
+				Input: &agent.SessionRequest_UpdateIO_Input{
+					AudioEnabled: &audioOn,
+				},
+				Output: &agent.SessionRequest_UpdateIO_Output{
+					AudioEnabled:         &audioOn,
+					TranscriptionEnabled: &transcriptionOn,
+				},
+			},
+		},
+	}
+	go m.pipeline.SendRequest(req)
 }
 
 func (m *consoleModel) beginShutdown() tea.Cmd {
