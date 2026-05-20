@@ -23,9 +23,12 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/pion/interceptor"
+	pionStats "github.com/pion/interceptor/pkg/stats"
 	"github.com/pion/webrtc/v4"
 	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -983,6 +986,26 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		maps.Copy(participantAttributes, fileAttrs)
 	}
 
+	var connectOpts []lksdk.ConnectOption
+	connectOpts = append(connectOpts, lksdk.WithAutoSubscribe(autoSubscribe))
+
+	var (
+		statsGetterMu sync.Mutex
+		statsGetters  []pionStats.Getter
+	)
+	if cmd.Bool("stats") {
+		statsFactory, err := pionStats.NewInterceptor()
+		if err != nil {
+			return err
+		}
+		statsFactory.OnNewPeerConnection(func(_ string, g pionStats.Getter) {
+			statsGetterMu.Lock()
+			statsGetters = append(statsGetters, g)
+			statsGetterMu.Unlock()
+		})
+		connectOpts = append(connectOpts, lksdk.WithInterceptors([]interceptor.Factory{statsFactory}))
+	}
+
 	room, err := lksdk.ConnectToRoom(project.URL, lksdk.ConnectInfo{
 		APIKey:                project.APIKey,
 		APISecret:             project.APISecret,
@@ -990,7 +1013,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		ParticipantIdentity:   participantIdentity,
 		ParticipantAttributes: participantAttributes,
 		ParticipantMetadata:   cmd.String("metadata"),
-	}, roomCB, lksdk.WithAutoSubscribe(autoSubscribe))
+	}, roomCB, connectOpts...)
 	if err != nil {
 		return err
 	}
@@ -1087,8 +1110,39 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 					if pc == nil {
 						continue
 					}
-					report := pc.GetStats()
-					logger.Infow("stats", "stats", report)
+					combined := make(map[string]interface{})
+					for k, v := range pc.GetStats() {
+						combined[k] = v
+					}
+					statsGetterMu.Lock()
+					getters := make([]pionStats.Getter, len(statsGetters))
+					copy(getters, statsGetters)
+					statsGetterMu.Unlock()
+					for _, sender := range pc.GetSenders() {
+						for _, enc := range sender.GetParameters().Encodings {
+							ssrc := uint32(enc.SSRC)
+							if ssrc == 0 {
+								continue
+							}
+							for _, g := range getters {
+								s := g.Get(ssrc)
+								if s == nil {
+									continue
+								}
+								id := fmt.Sprintf("RTCRemoteInboundRtp_%d", ssrc)
+								combined[id] = map[string]interface{}{
+									"type":          "remote-inbound-rtp",
+									"ssrc":          ssrc,
+									"packetsLost":   s.RemoteInboundRTPStreamStats.PacketsLost,
+									"jitter":        s.RemoteInboundRTPStreamStats.Jitter,
+									"roundTripTime": s.RemoteInboundRTPStreamStats.RoundTripTime.Seconds(),
+									"fractionLost":  s.RemoteInboundRTPStreamStats.FractionLost,
+								}
+								break
+							}
+						}
+					}
+					logger.Infow("stats", "stats", combined)
 				}
 			}
 		}()
