@@ -991,7 +991,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 
 	var (
 		statsGetterMu sync.Mutex
-		statsGetter   pionStats.Getter
+		statsGetters  []pionStats.Getter
 	)
 	if cmd.Bool("stats") {
 		statsFactory, err := pionStats.NewInterceptor()
@@ -1000,7 +1000,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 		statsFactory.OnNewPeerConnection(func(_ string, g pionStats.Getter) {
 			statsGetterMu.Lock()
-			statsGetter = g
+			statsGetters = append(statsGetters, g)
 			statsGetterMu.Unlock()
 		})
 		connectOpts = append(connectOpts, lksdk.WithInterceptors([]interceptor.Factory{statsFactory}))
@@ -1115,15 +1115,16 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 						combined[k] = v
 					}
 					statsGetterMu.Lock()
-					g := statsGetter
+					getters := make([]pionStats.Getter, len(statsGetters))
+					copy(getters, statsGetters)
 					statsGetterMu.Unlock()
-					if g != nil {
-						for _, sender := range pc.GetSenders() {
-							for _, enc := range sender.GetParameters().Encodings {
-								ssrc := uint32(enc.SSRC)
-								if ssrc == 0 {
-									continue
-								}
+					for _, sender := range pc.GetSenders() {
+						for _, enc := range sender.GetParameters().Encodings {
+							ssrc := uint32(enc.SSRC)
+							if ssrc == 0 {
+								continue
+							}
+							for _, g := range getters {
 								s := g.Get(ssrc)
 								if s == nil {
 									continue
@@ -1137,6 +1138,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 									"roundTripTime": s.RemoteInboundRTPStreamStats.RoundTripTime.Seconds(),
 									"fractionLost":  s.RemoteInboundRTPStreamStats.FractionLost,
 								}
+								break
 							}
 						}
 					}
