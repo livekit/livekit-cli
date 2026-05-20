@@ -72,6 +72,7 @@ type AudioPipeline struct {
 	mu sync.Mutex
 	fftBands [NumFFTBands]float64
 	muted    bool
+	paused   bool    // true when audio I/O is paused (e.g. text mode); mic frames are not sent to the agent
 	level    float64 // capture level in dB
 	playing  bool    // true when outputting real audio (not silence)
 
@@ -267,6 +268,19 @@ func (p *AudioPipeline) Muted() bool {
 	return p.muted
 }
 
+// SetPaused stops mic frames from being sent to the agent and drops any
+// queued playback. The hardware streams keep running so the pipeline can
+// resume instantly. Used to keep audio off the wire in text mode.
+func (p *AudioPipeline) SetPaused(paused bool) {
+	p.mu.Lock()
+	p.paused = paused
+	p.mu.Unlock()
+
+	if paused && p.playbackRing != nil {
+		p.playbackRing.Reset()
+	}
+}
+
 func (p *AudioPipeline) Level() float64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -387,6 +401,13 @@ func (p *AudioPipeline) speakerLoop(ctx context.Context) {
 			default:
 				continue
 			}
+		}
+
+		p.mu.Lock()
+		paused := p.paused
+		p.mu.Unlock()
+		if paused {
+			continue
 		}
 
 		p.computeMetrics(captureBuf)
