@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -303,13 +304,91 @@ func PrintDotEnv(envMap map[string]string) error {
 	return err
 }
 
-func WriteDotEnv(rootDir string, filePath string, envMap map[string]string) error {
+// ReadDotEnv reads filePath under rootDir as a dotenv file. Returns (nil, nil)
+// if the file does not exist.
+func ReadDotEnv(rootDir string, filePath string) (map[string]string, error) {
+	envPath := path.Join(rootDir, filePath)
+	if _, err := os.Stat(envPath); errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return godotenv.Read(envPath)
+}
+
+// WriteDotEnv writes envMap to filePath under rootDir. When overwrite is false
+// and the file already exists, envMap is merged into the file in place: keys
+// in envMap are updated, keys not in envMap are preserved along with comments
+// and blank lines, and any envMap keys not yet in the file are appended. When
+// overwrite is true (or the file does not exist), the file is written fresh.
+func WriteDotEnv(rootDir string, filePath string, envMap map[string]string, overwrite bool) error {
+	envLocalPath := path.Join(rootDir, filePath)
+
+	if !overwrite {
+		existing, err := os.ReadFile(envLocalPath)
+		if err == nil {
+			merged, err := mergeDotEnv(string(existing), envMap)
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(envLocalPath, []byte(merged), 0700)
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+	}
+
 	envContents, err := godotenv.Marshal(envMap)
 	if err != nil {
 		return err
 	}
-	envLocalPath := path.Join(rootDir, filePath)
 	return os.WriteFile(envLocalPath, []byte(envContents+"\n"), 0700)
+}
+
+var envAssignmentRe = regexp.MustCompile(`^(\s*(?:export\s+)?)([A-Za-z_][A-Za-z0-9_]*)\s*=`)
+
+func mergeDotEnv(existing string, envMap map[string]string) (string, error) {
+	lines := strings.Split(existing, "\n")
+	seen := make(map[string]bool, len(envMap))
+
+	for i, line := range lines {
+		matches := envAssignmentRe.FindStringSubmatch(line)
+		if matches == nil {
+			continue
+		}
+		prefix, key := matches[1], matches[2]
+		newVal, ok := envMap[key]
+		if !ok {
+			continue
+		}
+		rendered, err := godotenv.Marshal(map[string]string{key: newVal})
+		if err != nil {
+			return "", err
+		}
+		lines[i] = prefix + rendered
+		seen[key] = true
+	}
+
+	result := strings.Join(lines, "\n")
+
+	unseen := map[string]string{}
+	for k, v := range envMap {
+		if !seen[k] {
+			unseen[k] = v
+		}
+	}
+	if len(unseen) > 0 {
+		rendered, err := godotenv.Marshal(unseen)
+		if err != nil {
+			return "", err
+		}
+		if !strings.HasSuffix(result, "\n") {
+			result += "\n"
+		}
+		result += rendered + "\n"
+	} else if !strings.HasSuffix(result, "\n") {
+		result += "\n"
+	}
+	return result, nil
 }
 
 func CloneTemplate(url, dir string) (string, string, error) {
