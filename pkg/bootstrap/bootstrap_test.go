@@ -50,6 +50,12 @@ func TestMergeDotEnv(t *testing.T) {
 			wantSubs: []string{"# leading comment", "# trailing comment", `FOO="new"`},
 		},
 		{
+			name:     "preserves inline comments",
+			existing: "FOO=old # inline comment\nBAR=2 # another comment\n",
+			envMap:   map[string]string{"FOO": "new", "BAR": "2"},
+			wantSubs: []string{`FOO="new" # inline comment`, `BAR=2 # another comment`},
+		},
+		{
 			name:     "preserves blank lines",
 			existing: "A=1\n\n\nB=2\n",
 			envMap:   map[string]string{"A": "10"},
@@ -165,6 +171,78 @@ func TestMergeDotEnv(t *testing.T) {
 			existing: "# FAKE=injection\nREAL=old\n",
 			envMap:   map[string]string{"REAL": "new", "FAKE": "ignored"},
 			wantSubs: []string{"# FAKE=injection", `REAL="new"`, `FAKE="ignored"`},
+		},
+		{
+			name:        "preserves inline comment on unquoted value",
+			existing:    "FOO=old # explains the value\n",
+			envMap:      map[string]string{"FOO": "new"},
+			wantSubs:    []string{`FOO="new" # explains the value`},
+			notWantSubs: []string{"old"},
+		},
+		{
+			name:     "preserves inline comment on quoted value",
+			existing: "FOO=\"old value\" # explains\n",
+			envMap:   map[string]string{"FOO": "new"},
+			wantSubs: []string{`FOO="new" # explains`},
+		},
+		{
+			name:     "preserves multiple spaces before inline comment",
+			existing: "FOO=old  # two spaces\n",
+			envMap:   map[string]string{"FOO": "new"},
+			wantSubs: []string{`FOO="new"  # two spaces`},
+		},
+		{
+			name:     "preserves tab before inline comment",
+			existing: "FOO=old\t# tabbed comment\n",
+			envMap:   map[string]string{"FOO": "new"},
+			wantSubs: []string{"FOO=\"new\"\t# tabbed comment"},
+		},
+		{
+			name:     "treats hash inside unquoted value as part of value (no space before)",
+			existing: "URL=https://x.com/#fragment\n",
+			envMap:   map[string]string{"URL": "https://y.com"},
+			// the new value replaces the entire old value; no trailing comment
+			wantSubs:    []string{`URL="https://y.com"`},
+			notWantSubs: []string{"#fragment"},
+		},
+		{
+			name:     "preserves inline comment with export prefix",
+			existing: "export FOO=old # note\n",
+			envMap:   map[string]string{"FOO": "new"},
+			wantSubs: []string{`export FOO="new" # note`},
+		},
+		{
+			name:     "preserves inline comment with leading whitespace",
+			existing: "  FOO=old # note\n",
+			envMap:   map[string]string{"FOO": "new"},
+			wantSubs: []string{`  FOO="new" # note`},
+		},
+		{
+			name:     "preserves inline comment when value is empty",
+			existing: "FOO= # note about empty\n",
+			envMap:   map[string]string{"FOO": "new"},
+			wantSubs: []string{`FOO="new" # note about empty`},
+		},
+		{
+			name:     "hash inside double-quoted value is not a comment",
+			existing: "FOO=\"contains # in value\"\n",
+			envMap:   map[string]string{"FOO": "new"},
+			wantSubs: []string{`FOO="new"`},
+			// the old value is fully replaced; '#' should not leak into output
+			notWantSubs: []string{"contains # in value"},
+		},
+		{
+			name:        "no inline comment yields no trailing content",
+			existing:    "FOO=old\n",
+			envMap:      map[string]string{"FOO": "new"},
+			wantSubs:    []string{`FOO="new"`},
+			notWantSubs: []string{"#"},
+		},
+		{
+			name:     "preserves inline comments on lines we don't touch",
+			existing: "KEEP=stable # has a note\nUPDATE=old\n",
+			envMap:   map[string]string{"UPDATE": "new"},
+			wantSubs: []string{"KEEP=stable # has a note", `UPDATE="new"`},
 		},
 	}
 
@@ -335,9 +413,9 @@ func TestWriteDotEnv_MergesByDefault(t *testing.T) {
 	}
 
 	err := WriteDotEnv(dir, ".env", map[string]string{
-		"UPDATE":  "newval",
-		"APPEND":  "added",
-		"DEBUG":   "false",
+		"UPDATE": "newval",
+		"APPEND": "added",
+		"DEBUG":  "false",
 	}, false)
 	if err != nil {
 		t.Fatal(err)

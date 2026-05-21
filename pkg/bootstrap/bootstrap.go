@@ -318,9 +318,11 @@ func ReadDotEnv(rootDir string, filePath string) (map[string]string, error) {
 
 // WriteDotEnv writes envMap to filePath under rootDir. When overwrite is false
 // and the file already exists, envMap is merged into the file in place: keys
-// in envMap are updated, keys not in envMap are preserved along with comments
-// and blank lines, and any envMap keys not yet in the file are appended. When
-// overwrite is true (or the file does not exist), the file is written fresh.
+// in envMap are updated (preserving any inline comments and the surrounding
+// whitespace on those lines), keys not in envMap are preserved verbatim along
+// with comments and blank lines, and any envMap keys not yet in the file are
+// appended. When overwrite is true (or the file does not exist), the file is
+// written fresh.
 func WriteDotEnv(rootDir string, filePath string, envMap map[string]string, overwrite bool) error {
 	envLocalPath := path.Join(rootDir, filePath)
 
@@ -346,25 +348,77 @@ func WriteDotEnv(rootDir string, filePath string, envMap map[string]string, over
 
 var envAssignmentRe = regexp.MustCompile(`^(\s*(?:export\s+)?)([A-Za-z_][A-Za-z0-9_]*)\s*=`)
 
+// parseEnvAssignment recognizes lines of the form
+//
+//	[ws][export ]KEY[ws]=VALUE[trailing]
+//
+// and splits them into the leading prefix (whitespace + optional "export "),
+// the key, and the trailing portion (any inline comment plus surrounding
+// whitespace). For quoted values, trailing begins after the closing quote.
+// For unquoted values, trailing begins at the whitespace preceding a `#`
+// inline-comment marker (mirroring godotenv's rule that `#` must be preceded
+// by whitespace to start a comment). ok is false for non-assignment lines.
+func parseEnvAssignment(line string) (prefix, key, trailing string, ok bool) {
+	matches := envAssignmentRe.FindStringSubmatch(line)
+	if matches == nil {
+		return "", "", "", false
+	}
+	prefix = matches[1]
+	key = matches[2]
+	rest := line[len(matches[0]):]
+
+	peek := 0
+	for peek < len(rest) && (rest[peek] == ' ' || rest[peek] == '\t') {
+		peek++
+	}
+	if peek < len(rest) && (rest[peek] == '"' || rest[peek] == '\'') {
+		quote := rest[peek]
+		j := peek + 1
+		for j < len(rest) {
+			if quote == '"' && rest[j] == '\\' && j+1 < len(rest) {
+				j += 2
+				continue
+			}
+			if rest[j] == quote {
+				j++
+				break
+			}
+			j++
+		}
+		return prefix, key, rest[j:], true
+	}
+
+	valueEnd := len(rest)
+	for j := 0; j < len(rest); j++ {
+		if rest[j] == '#' && j > 0 && (rest[j-1] == ' ' || rest[j-1] == '\t') {
+			valueEnd = j - 1
+			for valueEnd > 0 && (rest[valueEnd-1] == ' ' || rest[valueEnd-1] == '\t') {
+				valueEnd--
+			}
+			break
+		}
+	}
+	return prefix, key, rest[valueEnd:], true
+}
+
 func mergeDotEnv(existing string, envMap map[string]string) (string, error) {
 	lines := strings.Split(existing, "\n")
 	seen := make(map[string]bool, len(envMap))
 
 	for i, line := range lines {
-		matches := envAssignmentRe.FindStringSubmatch(line)
-		if matches == nil {
+		prefix, key, trailing, ok := parseEnvAssignment(line)
+		if !ok {
 			continue
 		}
-		prefix, key := matches[1], matches[2]
-		newVal, ok := envMap[key]
-		if !ok {
+		newVal, exists := envMap[key]
+		if !exists {
 			continue
 		}
 		rendered, err := godotenv.Marshal(map[string]string{key: newVal})
 		if err != nil {
 			return "", err
 		}
-		lines[i] = prefix + rendered
+		lines[i] = prefix + rendered + trailing
 		seen[key] = true
 	}
 
