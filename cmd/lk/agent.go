@@ -924,13 +924,14 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
 				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
+				fmt.Sprintf("%t", regionalAgent.DeploymentEnabled),
 				formatTime(agent.DeployedAt.AsTime()),
 			})
 		}
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Name", "Version", "Region", "Deployment", "Status", "CPU", "Mem", "Replicas", "Deployed At").
+		Headers("ID", "Name", "Version", "Region", "Deployment", "Status", "CPU", "Mem", "Replicas", "Deployment Feature", "Deployed At").
 		Rows(rows...)
 
 	fmt.Println(t)
