@@ -94,6 +94,11 @@ var (
 							Aliases: []string{"w"},
 							Usage:   "Write environment variables to file",
 						},
+						&cli.BoolFlag{
+							Name:    "overwrite",
+							Aliases: []string{"o"},
+							Usage:   "Replace destination file instead of merging into existing contents",
+						},
 						&cli.StringFlag{
 							Name:        "destination",
 							Aliases:     []string{"d"},
@@ -371,12 +376,12 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			}
 		}
 	}
-	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile)
+	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile, nil)
 	if err != nil {
 		return err
 	}
 
-	bootstrap.WriteDotEnv(appName, envOutputFile, env)
+	bootstrap.WriteDotEnv(appName, envOutputFile, env, true)
 
 	if !cmd.IsSet("install") && !SkipPrompts(cmd) {
 		if err := huh.NewConfirm().
@@ -443,32 +448,47 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 		rootDir = "."
 	}
 
-	env, err := instantiateEnv(ctx, cmd, rootDir, nil, exampleFile)
+	overwrite := cmd.Bool("overwrite")
+
+	// When merging into an existing file, seed substitutions with its current
+	// values so prompts can be skipped and values already set are not clobbered
+	// by .env.example placeholders.
+	var priors map[string]string
+	if cmd.Bool("write") && !overwrite {
+		existing, err := bootstrap.ReadDotEnv(rootDir, destinationFile)
+		if err != nil {
+			return err
+		}
+		priors = existing
+	}
+
+	env, err := instantiateEnv(ctx, cmd, rootDir, nil, exampleFile, priors)
 	if err != nil {
 		return err
 	}
 
 	if cmd.Bool("write") {
-		return bootstrap.WriteDotEnv(rootDir, destinationFile, env)
+		return bootstrap.WriteDotEnv(rootDir, destinationFile, env, overwrite)
 	} else {
 		return bootstrap.PrintDotEnv(env)
 	}
 }
 
-func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string) (map[string]string, error) {
+func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string, priors map[string]string) (map[string]string, error) {
 	env := map[string]string{}
+	if priors != nil {
+		maps.Copy(env, priors)
+	}
 	if _, err := requireProject(ctx, cmd); err != nil {
 		if !errors.Is(err, ErrNoProjectSelected) {
 			return nil, err
 		}
 		// if no project is selected, we prompt for all environment variables including LIVEKIT_ ones
 	} else {
-		env = map[string]string{
-			"LIVEKIT_API_KEY":         project.APIKey,
-			"LIVEKIT_API_SECRET":      project.APISecret,
-			"LIVEKIT_URL":             project.URL,
-			"NEXT_PUBLIC_LIVEKIT_URL": project.URL,
-		}
+		env["LIVEKIT_API_KEY"] = project.APIKey
+		env["LIVEKIT_API_SECRET"] = project.APISecret
+		env["LIVEKIT_URL"] = project.URL
+		env["NEXT_PUBLIC_LIVEKIT_URL"] = project.URL
 	}
 
 	if addlEnv != nil {
