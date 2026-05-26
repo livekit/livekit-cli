@@ -163,7 +163,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/lithammer/shortuuid/v4 v4.2.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
-	github.com/livekit/mediatransportutil v0.0.0-20260309115634-0e2e24b36ee8 // indirect
+	github.com/livekit/mediatransportutil v0.0.0-20260521165806-8004f10ad0c5 // indirect
 	github.com/livekit/psrpc v0.7.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/magefile/mage v1.17.0 // indirect
