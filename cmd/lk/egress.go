@@ -107,6 +107,10 @@ var (
 							Aliases: []string{"a"},
 							Usage:   "Lists only active egresses",
 						},
+						&cli.IntFlag{
+							Name:  "limit",
+							Usage: "maximum amount of items to return",
+						},
 						jsonFlag,
 					},
 				},
@@ -587,14 +591,31 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 			items = append(items, res.Items...)
 		}
 	} else {
-		res, err := egressClient.ListEgress(ctx, &livekit.ListEgressRequest{
-			RoomName: cmd.String("room"),
-			Active:   cmd.Bool("active"),
-		})
-		if err != nil {
-			return err
+		limit := cmd.Int("limit")
+		var err error
+		var res *livekit.ListEgressResponse
+		for res == nil || (len(items) < limit && res.NextPageToken.GetToken() != "") {
+			req := &livekit.ListEgressRequest{
+				RoomName: cmd.String("room"),
+				Active:   cmd.Bool("active"),
+			}
+
+			if res != nil {
+				req.PageToken = &livekit.TokenPagination{Token: res.NextPageToken.GetToken()}
+			}
+
+			res, err = egressClient.ListEgress(ctx, req)
+			if err != nil {
+				return err
+			}
+
+			resItems := res.Items
+			if limit > 0 && len(items)+len(res.Items) > limit {
+				resItems = resItems[:(limit - len(items))]
+			}
+
+			items = append(items, resItems...)
 		}
-		items = res.Items
 	}
 
 	if cmd.Bool("json") {

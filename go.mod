@@ -1,5 +1,7 @@
 module github.com/livekit/livekit-cli/v2
 
+replace github.com/livekit/protocol => ../protocol
+
 go 1.26
 
 require (
