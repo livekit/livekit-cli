@@ -526,11 +526,13 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	if !cmd.IsSet("project") {
 		useProject := true
 		if !SkipPrompts(cmd) {
-			if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+			if err := huh.NewForm(huh.NewGroup(util.Confirm().
 				Title(fmt.Sprintf("Use project [%s] (%s) to create agent deployment?", project.Name, project.URL)).
 				Value(&useProject).
-				Negative("Select another").
-				Inline(false).
+				Options(
+					huh.NewOption("Yes", true),
+					huh.NewOption("No, select another...", false),
+				).
 				WithTheme(util.Theme))).
 				Run(); err != nil {
 				return err
@@ -662,7 +664,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		viewLogs := true
 		if err := huh.NewForm(
 			huh.NewGroup(
-				huh.NewConfirm().
+				util.Confirm().
 					Title("Agent deploying. Would you like to view logs?").
 					Description("You can view logs later with `lk agent logs`").
 					Value(&viewLogs).
@@ -687,7 +689,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 			var overwriteVal bool
 			if err := huh.NewForm(
 				huh.NewGroup(
-					huh.NewConfirm().
+					util.Confirm().
 						Title(
 							fmt.Sprintf("Config file [%s] file already exists. Overwrite?", tomlFilename),
 						).
@@ -1036,10 +1038,9 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		var confirmDelete bool
 		if err := huh.NewForm(
 			huh.NewGroup(
-				huh.NewConfirm().
+				util.Confirm().
 					Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)).
 					Value(&confirmDelete).
-					Inline(false).
 					WithTheme(util.Theme),
 			),
 		).Run(); err != nil {
@@ -1246,10 +1247,9 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		if !SkipPrompts(cmd) {
 			if err := huh.NewForm(
 				huh.NewGroup(
-					huh.NewConfirm().
+					util.Confirm().
 						Title(fmt.Sprintf("This will remove all existing secrets. Are you sure you want to proceed [%s]?", agentID)).
 						Value(&confirmOverwrite).
-						Inline(false).
 						WithTheme(util.Theme),
 				),
 			).Run(); err != nil {

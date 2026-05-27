@@ -310,10 +310,9 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// if other authed projects, ask if this should be the default project
 	isDefault := len(cliConfig.Projects) == 0
 	if !isDefault {
-		if err := huh.NewConfirm().
+		if err := util.Confirm().
 			Title("Make this project default?").
 			Value(&isDefault).
-			Inline(true).
 			WithTheme(util.Theme).
 			Run(); err != nil {
 			return err
