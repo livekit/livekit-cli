@@ -358,11 +358,13 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if p.confirmProject {
 			if dp != nil && len(cliConfig.Projects) > 1 && !c.Bool("silent") && !SkipPrompts(c) {
 				useDefault := true
-				if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
-					Title(fmt.Sprintf("Use project [%s] (%s) to create agent?", dp.Name, dp.URL)).
+				if err := huh.NewForm(huh.NewGroup(util.Confirm().
+					Title(fmt.Sprintf("Use project [%s] (%s)?", dp.Name, dp.URL)).
 					Value(&useDefault).
-					Negative("Select another").
-					Inline(false).
+					Options(
+						huh.NewOption("Yes", true),
+						huh.NewOption("No, select another...", false),
+					).
 					WithTheme(util.Theme))).
 					Run(); err != nil {
 					return nil, fmt.Errorf("failed to confirm project: %w", err)
@@ -371,13 +373,12 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 					if _, err = selectProject(context.Background(), c); err != nil {
 						return nil, err
 					}
-					fmt.Fprintf(w, "Using project [%s]\n", util.Accented(project.Name))
 					return project, nil
 				}
 			}
 		} else {
 			if !c.Bool("silent") && !SkipPrompts(c) {
-				fmt.Fprintln(w, "Using default project ["+util.Theme.Focused.Title.Render(dp.Name)+"]")
+				fmt.Fprintln(w, "Using default project ["+util.Accented(dp.Name)+"]")
 				logDetails(c, dp)
 			}
 		}

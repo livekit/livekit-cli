@@ -182,9 +182,8 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 			return nil, fmt.Errorf("no projects configured; run `lk cloud auth` in an interactive terminal or set --project")
 		}
 		shouldAuth := true
-		if err = huh.NewForm(huh.NewGroup(huh.NewConfirm().
+		if err = huh.NewForm(huh.NewGroup(util.Confirm().
 			Title("No local projects found. Authenticate one?").
-			Inline(true).
 			Value(&shouldAuth).
 			WithTheme(util.Theme))).
 			Run(); err != nil {
@@ -384,10 +383,9 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	bootstrap.WriteDotEnv(appName, envOutputFile, env, true)
 
 	if !cmd.IsSet("install") && !SkipPrompts(cmd) {
-		if err := huh.NewConfirm().
+		if err := util.Confirm().
 			Title("Install dependencies?").
 			Value(&install).
-			Inline(true).
 			WithTheme(util.Theme).
 			Run(); err != nil {
 			return err
