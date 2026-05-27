@@ -109,7 +109,7 @@ var (
 						},
 						&cli.IntFlag{
 							Name:  "limit",
-							Usage: "maximum amount of items to return",
+							Usage: "maximum number of items to return",
 						},
 						jsonFlag,
 					},
@@ -610,8 +610,8 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 			}
 
 			resItems := res.Items
-			if limit > 0 && len(items)+len(res.Items) > limit {
-				resItems = resItems[:(limit - len(items))]
+			if remaining := limit - len(items); limit > 0 && len(resItems) > remaining {
+				resItems = resItems[:remaining]
 			}
 
 			items = append(items, resItems...)
