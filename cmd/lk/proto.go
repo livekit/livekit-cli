@@ -243,7 +243,7 @@ func listAndPrint[
 			}
 			table.Row(row...)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 
 	return nil

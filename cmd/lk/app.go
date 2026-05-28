@@ -130,26 +130,66 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 }
 
 func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
-	var err error
 	if project != nil {
+		// already resolved (and announced) earlier in this command
 		return ctx, nil
 	}
+	var err error
 	if ctx, err = loadProjectConfig(ctx, cmd); err != nil {
 		// something is wrong with CLI config file
 		return ctx, err
 	}
-	if project, err = loadProjectDetails(cmd, opts...); err != nil {
-		// something is wrong with project config file
-		if errors.Is(err, config.ErrInvalidConfig) {
-			return ctx, err
-		}
-		// choose from existing credentials or authenticate
-		return selectProject(ctx, cmd)
+
+	p := loadParams{requireURL: true}
+	for _, opt := range opts {
+		opt(&p)
 	}
 
-	return ctx, err
+	rp, err := resolveProject(cmd, p)
+	switch {
+	case errors.Is(err, config.ErrInvalidConfig):
+		// something is wrong with the project config file
+		return ctx, err
+	case err != nil:
+		// no project could be resolved automatically; choose from existing
+		// credentials or authenticate, then announce once below.
+		if ctx, err = selectProject(ctx, cmd); err != nil {
+			return ctx, err
+		}
+		rp = &resolvedProject{project: project, source: sourceSelected}
+	default:
+		// when asked to confirm, let the user accept the resolved default or pick another
+		if p.confirmProject && rp.source == sourceDefault && !SkipPrompts(cmd) &&
+			!cmd.Bool("silent") && cliConfig != nil && len(cliConfig.Projects) > 1 {
+			useDefault := true
+			if err = huh.NewForm(huh.NewGroup(util.Confirm().
+				Title(fmt.Sprintf("Use project [%s] (%s)?", rp.project.Name, rp.project.URL)).
+				Value(&useDefault).
+				Options(
+					huh.NewOption("Yes", true),
+					huh.NewOption("No, select another...", false),
+				).
+				WithTheme(util.Theme))).
+				Run(); err != nil {
+				return ctx, fmt.Errorf("failed to confirm project: %w", err)
+			}
+			if !useDefault {
+				if ctx, err = selectProject(ctx, cmd); err != nil {
+					return ctx, err
+				}
+				rp = &resolvedProject{project: project, source: sourceSelected}
+			}
+		}
+		project = rp.project
+	}
+
+	rp.announce()
+	return ctx, nil
 }
 
+// selectProject resolves the package-level `project` interactively: it picks from the
+// configured projects, or (when none exist) offers to authenticate one via `lk cloud auth`.
+// It does not print a confirmation; the caller announces the result exactly once.
 func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	var err error
 
@@ -157,7 +197,6 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 		if SkipPrompts(cmd) {
 			if len(cliConfig.Projects) == 1 {
 				project = &cliConfig.Projects[0]
-				fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
 				return ctx, nil
 			}
 			return nil, fmt.Errorf("multiple projects configured; set --project in non-interactive mode")
@@ -176,31 +215,33 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 			Run(); err != nil {
 			return nil, fmt.Errorf("no project selected: %w", err)
 		}
-		fmt.Fprintf(os.Stderr, "Using project [%s]\n", util.Accented(project.Name))
-	} else {
-		if SkipPrompts(cmd) {
-			return nil, fmt.Errorf("no projects configured; run `lk cloud auth` in an interactive terminal or set --project")
-		}
-		shouldAuth := true
-		if err = huh.NewForm(huh.NewGroup(huh.NewConfirm().
-			Title("No local projects found. Authenticate one?").
-			Inline(true).
-			Value(&shouldAuth).
-			WithTheme(util.Theme))).
-			Run(); err != nil {
-			return nil, fmt.Errorf("no project selected: %w", err)
-		}
-		if shouldAuth {
-			initAuth(ctx, cmd)
-			if err = tryAuthIfNeeded(ctx, cmd); err != nil {
-				return nil, fmt.Errorf("authentication failed: %w", err)
-			}
-			return requireProject(ctx, cmd)
-		} else {
-			return nil, ErrNoProjectSelected
-		}
+		return ctx, nil
 	}
 
+	if SkipPrompts(cmd) {
+		return nil, fmt.Errorf("no projects configured; run `lk cloud auth` in an interactive terminal or set --project")
+	}
+	shouldAuth := true
+	if err = huh.NewForm(huh.NewGroup(util.Confirm().
+		Title("No local projects found. Authenticate one?").
+		Value(&shouldAuth).
+		WithTheme(util.Theme))).
+		Run(); err != nil {
+		return nil, fmt.Errorf("no project selected: %w", err)
+	}
+	if !shouldAuth {
+		return nil, ErrNoProjectSelected
+	}
+	initAuth(ctx, cmd)
+	if err = tryAuthIfNeeded(ctx, cmd); err != nil {
+		return nil, fmt.Errorf("authentication failed: %w", err)
+	}
+	// pick up the project just added by `lk cloud auth`
+	dp, err := config.LoadDefaultProject()
+	if err != nil {
+		return nil, ErrNoProjectSelected
+	}
+	project = dp
 	return ctx, nil
 }
 
@@ -224,7 +265,7 @@ func listTemplates(ctx context.Context, cmd *cli.Command) error {
 				desc+"\n\n"+url+"\n"+tags,
 			)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 	return nil
 }
@@ -347,7 +388,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	os.Setenv("LIVEKIT_AGENT_NAME", appName)
 	os.Setenv("LIVEKIT_PROJECT_ID", project.ProjectId)
 
-	fmt.Println("Cloning template...")
+	out.Status("Cloning template...")
 	if err := cloneTemplate(ctx, cmd, templateURL, appName); err != nil {
 		return err
 	}
@@ -357,7 +398,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("Instantiating environment...")
+	out.Status("Instantiating environment...")
 	addlEnv := &map[string]string{
 		"LIVEKIT_SANDBOX_ID":             sandboxID,
 		"NEXT_PUBLIC_LIVEKIT_SANDBOX_ID": sandboxID,
@@ -384,19 +425,18 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	bootstrap.WriteDotEnv(appName, envOutputFile, env, true)
 
 	if !cmd.IsSet("install") && !SkipPrompts(cmd) {
-		if err := huh.NewConfirm().
+		if err := huh.NewForm(huh.NewGroup(util.Confirm().
 			Title("Install dependencies?").
 			Value(&install).
-			Inline(true).
-			WithTheme(util.Theme).
+			WithTheme(util.Theme))).
 			Run(); err != nil {
 			return err
 		}
 	}
 	if install {
-		fmt.Println("Installing template...")
+		out.Status("Installing template...")
 		if err := doInstall(ctx, bootstrap.TaskInstall, appName, verbose); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: installation failed: %v\n", err)
+			out.Warnf("Warning: installation failed: %v", err)
 		}
 	}
 	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
@@ -424,11 +464,15 @@ func cloneTemplate(ctx context.Context, cmd *cli.Command, url, appName string) e
 	)
 
 	// err is handled after checking stdout and stderr
-	if len(stdout) > 0 && cmd.Bool("verbose") {
-		fmt.Println(string(stdout))
-	}
-	if len(stderr) > 0 && cmd.Bool("verbose") {
-		fmt.Fprintln(os.Stderr, string(stderr))
+	if cmd.Bool("verbose") {
+		// Subprocess output forwarded verbatim under --verbose; raw writes preserve
+		// any embedded formatting and skip the Printer's quiet/newline handling.
+		if len(stdout) > 0 {
+			fmt.Fprint(out.Out, stdout)
+		}
+		if len(stderr) > 0 {
+			fmt.Fprint(out.Err, stderr)
+		}
 	}
 
 	if err != nil {
@@ -542,7 +586,7 @@ func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose 
 		return nil
 	}
 
-	fmt.Println("Cleaning up...")
+	out.Status("Cleaning up...")
 	return task()
 }
 

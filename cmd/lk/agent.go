@@ -491,8 +491,8 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 		}); err != nil {
 			return fmt.Errorf("failed to create sandbox: %w", err)
 		} else {
-			fmt.Println("Creating sandbox app...")
-			fmt.Printf("Created sandbox app [%s]\n", util.Accented(sandboxID))
+			out.Status("Creating sandbox app...")
+			out.Statusf("Created sandbox app [%s]", util.Accented(sandboxID))
 		}
 	}
 
@@ -506,7 +506,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	// Deploy if requested
 	if shouldDeploy {
-		fmt.Println("Deploying agent...")
+		out.Status("Deploying agent...")
 		if err := createAgent(ctx, cmd); err != nil {
 			return fmt.Errorf("failed to deploy agent: %w", err)
 		}
@@ -526,11 +526,13 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	if !cmd.IsSet("project") {
 		useProject := true
 		if !SkipPrompts(cmd) {
-			if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+			if err := huh.NewForm(huh.NewGroup(util.Confirm().
 				Title(fmt.Sprintf("Use project [%s] (%s) to create agent deployment?", project.Name, project.URL)).
 				Value(&useProject).
-				Negative("Select another").
-				Inline(false).
+				Options(
+					huh.NewOption("Yes", true),
+					huh.NewOption("No, select another...", false),
+				).
 				WithTheme(util.Theme))).
 				Run(); err != nil {
 				return err
@@ -540,6 +542,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			if _, err := selectProject(ctx, cmd); err != nil {
 				return err
 			}
+			(&resolvedProject{project: project, source: sourceSelected}).announce()
 			var err error
 			// Recreate the client with the new project
 			agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
@@ -565,13 +568,13 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	if configExists && lkConfig.Agent != nil {
 		if !silent {
-			fmt.Printf("Using agent configuration [%s]\n", util.Accented(tomlFilename))
+			out.Statusf("Using agent configuration [%s]", util.Accented(tomlFilename))
 		}
 	} else {
 		lkConfig = config.NewLiveKitTOML(subdomainMatches[1]).WithDefaultAgent()
 	}
 	if !silent {
-		fmt.Printf("Creating new agent deployment\n")
+		out.Status("Creating new agent deployment")
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, false)
@@ -606,7 +609,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 			return err
 		}
-		fmt.Printf("Created agent with ID [%s]\n", util.Accented(agentID))
+		out.Statusf("Created agent with ID [%s]", util.Accented(agentID))
 		return deployPrebuiltImage(buildContext, agentID, imageRef, imageTar)
 	}
 
@@ -614,7 +617,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return noAgentError()
 	}
-	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
+	out.Statusf("Detected agent language [%s]", util.Accented(string(projectType)))
 
 	if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
 		return err
@@ -622,7 +625,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	if err := agentfs.CheckSDKVersion(workingDir, projectType, settingsMap); err != nil {
 		if cmd.Bool("skip-sdk-check") {
-			fmt.Printf("Error checking SDK version: %v, skipping...\n", err)
+			out.Warnf("Error checking SDK version: %v, skipping...", err)
 		} else {
 			return err
 		}
@@ -654,15 +657,15 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Printf("Created agent with ID [%s]\n", util.Accented(resp.AgentId))
+	out.Statusf("Created agent with ID [%s]", util.Accented(resp.AgentId))
 
-	fmt.Println("Build completed - You can view build logs later with `lk agent logs --log-type=build`")
+	out.Status("Build completed - You can view build logs later with `lk agent logs --log-type=build`")
 
 	if !silent && !SkipPrompts(cmd) {
 		viewLogs := true
 		if err := huh.NewForm(
 			huh.NewGroup(
-				huh.NewConfirm().
+				util.Confirm().
 					Title("Agent deploying. Would you like to view logs?").
 					Description("You can view logs later with `lk agent logs`").
 					Value(&viewLogs).
@@ -671,7 +674,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		).Run(); err != nil {
 			return err
 		} else if viewLogs {
-			fmt.Println("Tailing runtime logs...safe to exit at any time")
+			out.Status("Tailing runtime logs...safe to exit at any time")
 			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
 		}
 	}
@@ -687,7 +690,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 			var overwriteVal bool
 			if err := huh.NewForm(
 				huh.NewGroup(
-					huh.NewConfirm().
+					util.Confirm().
 						Title(
 							fmt.Sprintf("Config file [%s] file already exists. Overwrite?", tomlFilename),
 						).
@@ -769,7 +772,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		if err := deployPrebuiltImage(buildContext, agentId, imageRef, imageTar); err != nil {
 			return fmt.Errorf("unable to deploy prebuilt image: %w", err)
 		}
-		fmt.Println("Deployed agent")
+		out.Status("Deployed agent")
 		return nil
 	}
 
@@ -782,7 +785,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return noAgentError()
 	}
-	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
+	out.Statusf("Detected agent language [%s]", util.Accented(string(projectType)))
 
 	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
 	if err != nil {
@@ -791,7 +794,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	if err := agentfs.CheckSDKVersion(workingDir, projectType, settingsMap); err != nil {
 		if cmd.Bool("skip-sdk-check") {
-			fmt.Printf("Error checking SDK version: %v, skipping...\n", err)
+			out.Warnf("Error checking SDK version: %v, skipping...", err)
 		} else {
 			return err
 		}
@@ -805,7 +808,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to deploy agent: %w", err)
 	}
 
-	fmt.Println("Deployed agent")
+	out.Status("Deployed agent")
 	return nil
 }
 
@@ -820,7 +823,7 @@ func deployPrebuiltImage(ctx context.Context, agentID, imageRef, imageTar string
 	var img v1.Image
 	if imageRef != "" {
 		imageRef = strings.TrimSpace(imageRef)
-		fmt.Printf("Loading image from Docker daemon [%s]\n", util.Accented(imageRef))
+		out.Statusf("Loading image from Docker daemon [%s]", util.Accented(imageRef))
 		var dockerCloser io.Closer
 		img, dockerCloser, err = agentfs.LoadDockerDaemonImage(ctx, imageRef)
 		if err != nil {
@@ -828,7 +831,7 @@ func deployPrebuiltImage(ctx context.Context, agentID, imageRef, imageTar string
 		}
 		defer dockerCloser.Close()
 	} else {
-		fmt.Printf("Loading image from [%s]\n", util.Accented(imageTar))
+		out.Statusf("Loading image from [%s]", util.Accented(imageTar))
 		img, err = crane.Load(imageTar)
 		if err != nil {
 			return fmt.Errorf("failed to load image: %w", err)
@@ -836,7 +839,7 @@ func deployPrebuiltImage(ctx context.Context, agentID, imageRef, imageTar string
 	}
 
 	proxyRef := fmt.Sprintf("%s/%s:%s", target.ProxyHost, target.Name, target.Tag)
-	fmt.Printf("Pushing image [%s]\n", util.Accented(proxyRef))
+	out.Statusf("Pushing image [%s]", util.Accented(proxyRef))
 
 	rt := agentsClient.NewRegistryTransport()
 	if err := crane.Push(img, proxyRef,
@@ -903,7 +906,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 		Headers("ID", "Version", "Region", "Status", "CPU", "Mem", "Replicas", "Deployed At").
 		Rows(rows...)
 
-	fmt.Println(t)
+	out.Result(t)
 	return nil
 }
 
@@ -923,7 +926,7 @@ func restartAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to restart agent: %s", resp.Message)
 	}
 
-	fmt.Printf("Restarted agent [%s]\n", util.Accented(agentID))
+	out.Statusf("Restarted agent [%s]", util.Accented(agentID))
 	return nil
 }
 
@@ -965,7 +968,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.Success {
-		fmt.Printf("Updated agent [%s]\n", util.Accented(lkConfig.Agent.ID))
+		out.Statusf("Updated agent [%s]", util.Accented(lkConfig.Agent.ID))
 		err = lkConfig.SaveTOMLFile("", tomlFilename)
 		return err
 	}
@@ -1000,7 +1003,7 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to rollback agent %s", resp.Message)
 	}
 
-	fmt.Printf("Rolled back agent [%s] to version [%s]\n", util.Accented(agentID), util.Accented(cmd.String("version")))
+	out.Statusf("Rolled back agent [%s] to version [%s]", util.Accented(agentID), util.Accented(cmd.String("version")))
 
 	return nil
 }
@@ -1036,10 +1039,9 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		var confirmDelete bool
 		if err := huh.NewForm(
 			huh.NewGroup(
-				huh.NewConfirm().
+				util.Confirm().
 					Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)).
 					Value(&confirmDelete).
-					Inline(false).
 					WithTheme(util.Theme),
 			),
 		).Run(); err != nil {
@@ -1075,7 +1077,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to delete agent %s", res.Message)
 	}
 
-	fmt.Printf("Deleted agent [%s]\n", util.Accented(agentID))
+	out.Statusf("Deleted agent [%s]", util.Accented(agentID))
 	return nil
 }
 
@@ -1130,7 +1132,7 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		table.Row(row...)
 	}
 
-	fmt.Println(table)
+	out.Result(table)
 	return nil
 }
 
@@ -1164,7 +1166,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if len(items) == 0 {
-		fmt.Println("No agents found")
+		out.Status("No agents found")
 		return nil
 	}
 
@@ -1191,7 +1193,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 		Headers("ID", "Dispatch Name", "Regions", "Version", "Deployed At").
 		Rows(rows...)
 
-	fmt.Println(t)
+	out.Result(t)
 	return nil
 }
 
@@ -1225,7 +1227,7 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		table.Row(secret.Name, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
 	}
 
-	fmt.Println(table)
+	out.Result(table)
 	return nil
 }
 
@@ -1246,10 +1248,9 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		if !SkipPrompts(cmd) {
 			if err := huh.NewForm(
 				huh.NewGroup(
-					huh.NewConfirm().
+					util.Confirm().
 						Title(fmt.Sprintf("This will remove all existing secrets. Are you sure you want to proceed [%s]?", agentID)).
 						Value(&confirmOverwrite).
-						Inline(false).
 						WithTheme(util.Theme),
 				),
 			).Run(); err != nil {
@@ -1276,7 +1277,7 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.Success {
-		fmt.Println("Updated agent secrets")
+		out.Status("Updated agent secrets")
 		return nil
 	}
 
@@ -1309,7 +1310,7 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 		return "", fmt.Errorf("agent ID or [%s] required", util.Accented(tomlFileName))
 	}
 
-	fmt.Printf("Using agent [%s]\n", util.Accented(agentID))
+	out.Statusf("Using agent [%s]", util.Accented(agentID))
 
 	return agentID, nil
 }
@@ -1408,7 +1409,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 			return nil, err
 		}
 		if file != "" && !silent {
-			fmt.Printf("Using secrets file [%s]\n", util.Accented(file))
+			out.Statusf("Using secrets file [%s]", util.Accented(file))
 		}
 
 		ignoreEmpty := cmd.Bool("ignore-empty-secrets")
@@ -1438,7 +1439,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 		// Log skipped secrets if any (unless silent)
 		if len(skippedEmpty) > 0 && !silent {
 			skippedNames := strings.Join(skippedEmpty, ", ")
-			fmt.Printf("Skipped %d empty secret(s): %s\n", len(skippedEmpty), util.Dimmed(skippedNames))
+			out.Statusf("Skipped %d empty secret(s): %s", len(skippedEmpty), util.Dimmed(skippedNames))
 		}
 	}
 
@@ -1486,7 +1487,7 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 			if err != nil {
 				return err
 			}
-			fmt.Println("Created [" + util.Accented("Dockerfile") + "]")
+			out.Statusf("Created [%s]", util.Accented("Dockerfile"))
 		} else {
 			if err := agentfs.CreateDockerfile(workingDir, projectType, settingsMap, SkipPrompts(cmd)); err != nil {
 				return err
@@ -1494,21 +1495,21 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 		}
 	} else {
 		if !cmd.Bool("silent") {
-			fmt.Println("Using existing Dockerfile")
+			out.Status("Using existing Dockerfile")
 		}
 	}
 
 	if !dockerIgnoreExists {
 		if !cmd.Bool("silent") {
-			fmt.Println("Creating .dockerignore...")
+			out.Status("Creating .dockerignore...")
 		}
 		if err := agentfs.CreateDockerIgnoreFile(workingDir, projectType); err != nil {
 			return err
 		}
-		fmt.Println("Created [" + util.Accented(".dockerignore") + "]")
+		out.Statusf("Created [%s]", util.Accented(".dockerignore"))
 	} else {
 		if !cmd.Bool("silent") {
-			fmt.Println("Using existing .dockerignore")
+			out.Status("Using existing .dockerignore")
 		}
 	}
 
@@ -1587,7 +1588,7 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 		Run(); err != nil {
 		return "", err
 	}
-	fmt.Fprintf(os.Stderr, "Using region [%s]\n", util.Accented(region))
+	out.Statusf("Using region [%s]", util.Accented(region))
 	return region, nil
 }
 
@@ -1620,7 +1621,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return noAgentError()
 	}
-	fmt.Printf("Detected agent language [%s]\n", util.Accented(string(projectType)))
+	out.Statusf("Detected agent language [%s]", util.Accented(string(projectType)))
 
 	dockerfilePath := filepath.Join(workingDir, "Dockerfile")
 	dockerignorePath := filepath.Join(workingDir, ".dockerignore")
@@ -1630,11 +1631,11 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 	writeDockerignore := true
 	if !overwrite {
 		if _, err := os.Stat(dockerfilePath); err == nil {
-			fmt.Println(util.Accented("Dockerfile") + " already exists; skipping. Use --overwrite to replace.")
+			out.Statusf("%s already exists; skipping. Use --overwrite to replace.", util.Accented("Dockerfile"))
 			writeDockerfile = false
 		}
 		if _, err := os.Stat(dockerignorePath); err == nil {
-			fmt.Println(util.Accented(".dockerignore") + " already exists; skipping. Use --overwrite to replace.")
+			out.Statusf("%s already exists; skipping. Use --overwrite to replace.", util.Accented(".dockerignore"))
 			writeDockerignore = false
 		}
 	}
@@ -1654,14 +1655,14 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 
-		fmt.Printf("Wrote new %s\n", util.Accented("Dockerfile"))
+		out.Statusf("Wrote new %s", util.Accented("Dockerfile"))
 	}
 
 	if writeDockerignore {
 		if err := os.WriteFile(dockerignorePath, dockerignoreContent, 0644); err != nil {
 			return err
 		}
-		fmt.Printf("Wrote new %s\n", util.Accented(".dockerignore"))
+		out.Statusf("Wrote new %s", util.Accented(".dockerignore"))
 	}
 
 	return nil

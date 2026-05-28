@@ -15,20 +15,18 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"io"
 	"maps"
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/huh"
 	"github.com/joho/godotenv"
 	"github.com/mattn/go-isatty"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/protocol/logger"
 	"github.com/livekit/protocol/utils/interceptors"
 	"github.com/livekit/server-sdk-go/v2/signalling"
 
@@ -93,6 +91,12 @@ var (
 		Usage: "Run installation after creating the application",
 	}
 
+	// out is the process-wide sink for human-facing CLI output. It is initialized
+	// in main.go's root Before hook from the parsed root command, so all status,
+	// warning, and result lines share consistent streams (stderr/stdout) and
+	// --quiet gating. Before init it is nil and all methods no-op safely.
+	out *util.Printer
+
 	openFlag    = util.OpenFlag
 	globalFlags = []cli.Flag{
 		&cli.StringFlag{
@@ -144,6 +148,11 @@ var (
 			Name:    "yes",
 			Aliases: []string{"y"},
 			Usage:   "Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)",
+		},
+		&cli.BoolFlag{
+			Name:    "quiet",
+			Aliases: []string{"q"},
+			Usage:   "Suppress informational output to stderr (warnings and errors still print)",
 		},
 		&cli.StringFlag{
 			Name:        "server-url",
@@ -239,7 +248,6 @@ func parseKeyValuePairs(c *cli.Command, flag string) (map[string]string, error) 
 type loadParams struct {
 	requireURL     bool
 	confirmProject bool
-	output         io.Writer
 }
 
 type loadOption func(*loadParams)
@@ -253,28 +261,70 @@ var (
 	}
 )
 
-// attempt to load connection config, it'll prioritize
-// 1. command line flags (or env var)
-// 2. config file (by default, livekit.toml)
-// 3. default project config
-func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
-	p := loadParams{requireURL: true, confirmProject: false, output: os.Stdout}
-	for _, opt := range opts {
-		opt(&p)
-	}
-	w := p.output
-	logDetails := func(c *cli.Command, pc *config.ProjectConfig) {
-		if c.Bool("verbose") {
-			fmt.Fprintf(w, "URL: %s, api-key: %s, api-secret: %s\n",
-				pc.URL,
-				pc.APIKey,
-				"************",
-			)
-		}
+// projectSource records how a project's credentials were resolved. It feeds two things:
+// the confirm-default prompt (only triggers for sourceDefault) and the notice string
+// composed in resolveProject and emitted by callers via out.Status.
+type projectSource int
 
-	}
+const (
+	sourceFlag        projectSource = iota // --project NAME
+	sourceSubdomain                        // --subdomain SUBDOMAIN
+	sourceEnv                              // credentials from LIVEKIT_* environment variables
+	sourceInlineFlags                      // credentials from --url/--api-key/--api-secret (name-less; silent)
+	sourceDev                              // --dev
+	sourceTOML                             // livekit.toml in the working directory
+	sourceDefault                          // configured default project
+	sourceSelected                         // interactively picked, or added via `lk cloud auth`
+)
 
-	// if explicit project is defined, then use it
+// resolvedProject is the outcome of project resolution: the chosen credentials, how they
+// were resolved, and (for sourceEnv) which env vars came through. Call rp.announce() to
+// surface the outcome to the user — that is the single hand-off from resolution to output.
+type resolvedProject struct {
+	project *config.ProjectConfig
+	source  projectSource
+	envVars []string // which LIVEKIT_* vars were used, for sourceEnv
+}
+
+// announce surfaces how the project was resolved: a one-line breadcrumb through the
+// package-level Printer (stderr, suppressed by --quiet), plus a structured debug log via
+// protocol/logger (gated to --verbose). Centralizing the source→message mapping here keeps
+// the resolver pure and gives us one place to evolve wording or wire color/decoration.
+func (rp *resolvedProject) announce() {
+	if rp == nil {
+		return
+	}
+	switch rp.source {
+	case sourceEnv:
+		out.Statusf("Using %s from environment", strings.Join(rp.envVars, ", "))
+	case sourceDev:
+		out.Status("Using dev credentials")
+	case sourceInlineFlags:
+		// name-less credentials supplied directly via flags; nothing to surface
+	default: // sourceFlag, sourceSubdomain, sourceTOML, sourceDefault, sourceSelected
+		out.Statusf("Using project [%s]", util.Accented(rp.project.Name))
+	}
+	if rp.project != nil && rp.source != sourceDev {
+		logger.Debugw("project resolved",
+			"source", rp.source,
+			"url", rp.project.URL,
+			"api-key", rp.project.APIKey,
+		)
+	}
+}
+
+// resolveProject determines which project's credentials to use, in priority order:
+//  1. --project flag
+//  2. --subdomain flag
+//  3. --url/--api-key/--api-secret flags or LIVEKIT_* env vars
+//  4. --dev credentials
+//  5. livekit.toml in the working directory
+//  6. the configured default project
+//
+// It performs no prompting and no printing: callers print rp.notice via out.Status, and
+// handle the no-project case (a returned error) by offering interactive selection.
+func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
+	// 1. explicit project
 	if c.String("project") != "" {
 		if c.Bool("dev") {
 			return nil, errors.New("both project and dev flags are set")
@@ -283,12 +333,10 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintln(w, "Using project ["+util.Accented(c.String("project"))+"]")
-		logDetails(c, pc)
-		return pc, nil
+		return &resolvedProject{project: pc, source: sourceFlag}, nil
 	}
 
-	// if explicit subdomain is provided, use it
+	// 2. explicit subdomain
 	if c.String("subdomain") != "" {
 		if c.Bool("dev") {
 			return nil, errors.New("both subdomain and dev flags are set")
@@ -297,11 +345,10 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintln(w, "Using project ["+util.Accented(pc.Name)+"]")
-		logDetails(c, pc)
-		return pc, nil
+		return &resolvedProject{project: pc, source: sourceSubdomain}, nil
 	}
 
+	// 3. inline credentials (flags or environment)
 	pc := &config.ProjectConfig{}
 	if val := c.String("url"); val != "" {
 		pc.URL = val
@@ -331,57 +378,33 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 			envVars = append(envVars, "api-secret")
 		}
 		if len(envVars) > 0 {
-			fmt.Fprintf(w, "Using %s from environment\n", strings.Join(envVars, ", "))
-			logDetails(c, pc)
+			return &resolvedProject{project: pc, source: sourceEnv, envVars: envVars}, nil
 		}
-		return pc, nil
+		return &resolvedProject{project: pc, source: sourceInlineFlags}, nil
 	}
+
+	// 4. dev credentials
 	if c.Bool("dev") {
 		pc.APIKey = "devkey"
 		pc.APISecret = "secret"
-		fmt.Fprintln(w, "Using dev credentials")
-		return pc, nil
+		return &resolvedProject{project: pc, source: sourceDev}, nil
 	}
 
-	// load from config file
-	_, err := requireConfig(workingDir, tomlFilename)
-	if errors.Is(err, config.ErrInvalidConfig) {
+	// 5. livekit.toml in the working directory
+	if _, err := requireConfig(workingDir, tomlFilename); errors.Is(err, config.ErrInvalidConfig) {
 		return nil, err
 	}
 	if lkConfig != nil {
-		return config.LoadProjectBySubdomain(lkConfig.Project.Subdomain)
+		pc, err := config.LoadProjectBySubdomain(lkConfig.Project.Subdomain)
+		if err != nil {
+			return nil, err
+		}
+		return &resolvedProject{project: pc, source: sourceTOML}, nil
 	}
 
-	// load default project
-	dp, err := config.LoadDefaultProject()
-	if err == nil {
-		if p.confirmProject {
-			if dp != nil && len(cliConfig.Projects) > 1 && !c.Bool("silent") && !SkipPrompts(c) {
-				useDefault := true
-				if err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
-					Title(fmt.Sprintf("Use project [%s] (%s) to create agent?", dp.Name, dp.URL)).
-					Value(&useDefault).
-					Negative("Select another").
-					Inline(false).
-					WithTheme(util.Theme))).
-					Run(); err != nil {
-					return nil, fmt.Errorf("failed to confirm project: %w", err)
-				}
-				if !useDefault {
-					if _, err = selectProject(context.Background(), c); err != nil {
-						return nil, err
-					}
-					fmt.Fprintf(w, "Using project [%s]\n", util.Accented(project.Name))
-					return project, nil
-				}
-			}
-		} else {
-			if !c.Bool("silent") && !SkipPrompts(c) {
-				fmt.Fprintln(w, "Using default project ["+util.Theme.Focused.Title.Render(dp.Name)+"]")
-				logDetails(c, dp)
-			}
-		}
-		return dp, nil
+	// 6. configured default project
+	if dp, err := config.LoadDefaultProject(); err == nil {
+		return &resolvedProject{project: dp, source: sourceDefault}, nil
 	}
 
 	if p.requireURL && pc.URL == "" {
@@ -395,7 +418,24 @@ func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConf
 	}
 
 	// cannot happen
-	return pc, nil
+	return &resolvedProject{project: pc, source: sourceInlineFlags}, nil
+}
+
+// loadProjectDetails resolves project credentials for commands that consume the result
+// directly (egress, ingress, token, …) and announces the resolution. Commands that rely on
+// the package-level `project` (app/agent) go through requireProject instead, which layers
+// interactive selection on top of the same resolver before announcing.
+func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
+	p := loadParams{requireURL: true}
+	for _, opt := range opts {
+		opt(&p)
+	}
+	rp, err := resolveProject(c, p)
+	if err != nil {
+		return nil, err
+	}
+	rp.announce()
+	return rp.project, nil
 }
 
 type TemplateStringFlag = cli.FlagBase[string, cli.StringConfig, templateStringValue]
