@@ -20,6 +20,7 @@ console:
 	CGO_ENABLED=1 go build -tags console -ldflags "-w -s" -o bin/lk ./cmd/lk
 
 install: cli
+	mkdir -p $(GOBIN)
 ifeq ($(DETECTED_OS),Windows)
 	cp bin/lk.exe $(GOBIN)/lk.exe
 	ln -sf $(GOBIN)/lk.exe $(GOBIN)/livekit-cli.exe
