@@ -25,6 +25,7 @@ import (
 	"go.uber.org/atomic"
 
 	provider2 "github.com/livekit/livekit-cli/v2/pkg/provider"
+	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/livekit/server-sdk-go/v2/pkg/samplebuilder"
@@ -83,6 +84,8 @@ type TesterParams struct {
 	Layout         Layout
 	// true to subscribe to all published tracks
 	Subscribe bool
+	// true to allow publishing tracks (default true)
+	CanPublish bool
 
 	name           string
 	Sequence       int
@@ -116,12 +119,22 @@ func (t *LoadTester) Start() error {
 	var err error
 	// make up to 10 reconnect attempts
 	for i := 0; i < 10; i++ {
-		err = t.room.Join(t.params.URL, lksdk.ConnectInfo{
-			APIKey:              t.params.APIKey,
-			APISecret:           t.params.APISecret,
-			RoomName:            t.params.Room,
-			ParticipantIdentity: identity,
-		}, lksdk.WithAutoSubscribe(false))
+		// If CanPublish is explicitly set to false, use custom token
+		if !t.params.CanPublish {
+			token, tokenErr := newAccessToken(t.params.APIKey, t.params.APISecret, t.params.Room, identity, t.params.CanPublish)
+			if tokenErr != nil {
+				return tokenErr
+			}
+			err = t.room.JoinWithToken(t.params.URL, token, lksdk.WithAutoSubscribe(false))
+		} else {
+			// Use the original method for backward compatibility
+			err = t.room.Join(t.params.URL, lksdk.ConnectInfo{
+				APIKey:              t.params.APIKey,
+				APISecret:           t.params.APISecret,
+				RoomName:            t.params.Room,
+				ParticipantIdentity: identity,
+			}, lksdk.WithAutoSubscribe(false))
+		}
 		if err == nil {
 			break
 		}
@@ -419,4 +432,18 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTr
 			ts.packets.Inc()
 		}
 	}
+}
+
+func newAccessToken(apiKey, apiSecret, roomName, pID string, canPublish bool) (string, error) {
+	at := auth.NewAccessToken(apiKey, apiSecret)
+	grant := &auth.VideoGrant{
+		RoomJoin:   true,
+		Room:       roomName,
+		CanPublish: &canPublish,
+	}
+	at.SetVideoGrant(grant).
+		SetIdentity(pID).
+		SetName(pID)
+
+	return at.ToJWT()
 }
