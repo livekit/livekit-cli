@@ -293,8 +293,8 @@ func uploadSource(ctx context.Context, client *lksdk.AgentSimulationClient, runI
 		return fmt.Errorf("failed to upload source: %w", err)
 	}
 	if _, err := client.ConfirmSimulationSourceUpload(ctx, &livekit.SimulationRun_ConfirmSourceUpload_Request{
-		SimulationRunId:  runID,
-		CodeEntrypoint: entrypoint,
+		SimulationRunId: runID,
+		CodeEntrypoint:  entrypoint,
 	}); err != nil {
 		return fmt.Errorf("failed to confirm upload: %w", err)
 	}
@@ -330,9 +330,9 @@ func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
 	if _, err := client.CancelSimulationRun(ctx, &livekit.SimulationRun_Cancel_Request{
 		SimulationRunId: runID,
 	}); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to cancel run: %v\n", err)
+		out.Warnf("Warning: failed to cancel run: %v", err)
 	} else {
-		fmt.Fprintf(os.Stderr, "Run cancelled\n")
+		out.Status("Run cancelled")
 	}
 }
 

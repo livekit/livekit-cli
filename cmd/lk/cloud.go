@@ -269,10 +269,10 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	if err := cliConfig.PersistIfNeeded(); err != nil {
 		return err
 	}
-	fmt.Printf("Device [%s]\n", util.Accented(cliConfig.DeviceName))
+	out.Statusf("Device [%s]", util.Accented(cliConfig.DeviceName))
 
 	// request token
-	fmt.Println("Requesting verification token...")
+	out.Status("Requesting verification token...")
 	token, err := authClient.GetVerificationToken(cliConfig.DeviceName)
 	if err != nil {
 		return err
@@ -284,7 +284,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// poll for keys
-	fmt.Printf("Please confirm access by visiting:\n\n   %s\n\n", authURL.String())
+	out.Statusf("Please confirm access by visiting:\n\n   %s\n", authURL.String())
 	_ = browser.OpenURL(authURL.String()) // discard result; this will fail in headless environments
 
 	var ak *ClaimAccessKeyResponse
@@ -305,15 +305,15 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("operation cancelled")
 	}
 
-	fmt.Printf("Authenticated project [%s]\n", util.Accented(ak.ProjectName))
+	out.Statusf("Authenticated project [%s]", util.Accented(ak.ProjectName))
 
 	// if other authed projects, ask if this should be the default project
 	isDefault := len(cliConfig.Projects) == 0
 	if !isDefault {
-		if err := util.Confirm().
+		if err := huh.NewForm(huh.NewGroup(util.Confirm().
 			Title("Make this project default?").
 			Value(&isDefault).
-			WithTheme(util.Theme).
+			WithTheme(util.Theme))).
 			Run(); err != nil {
 			return err
 		}
