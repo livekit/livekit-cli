@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/urfave/cli/v3"
 
@@ -247,7 +246,7 @@ func listIngress(ctx context.Context, cmd *cli.Command) error {
 				errorStr,
 			)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 
 	return nil
@@ -278,9 +277,9 @@ func printIngressInfo(info *livekit.IngressInfo) {
 	}
 
 	if errorStr == "" {
-		fmt.Printf("IngressID: %v Status: %v\n", info.IngressId, status)
-		fmt.Printf("URL: %v Stream Key: %s\n", info.Url, info.StreamKey)
+		out.Resultf("IngressID: %v Status: %v\n", info.IngressId, status)
+		out.Resultf("URL: %v Stream Key: %s\n", info.Url, info.StreamKey)
 	} else {
-		fmt.Printf("IngressID: %v Error: %v\n", info.IngressId, errorStr)
+		out.Resultf("IngressID: %v Error: %v\n", info.IngressId, errorStr)
 	}
 }

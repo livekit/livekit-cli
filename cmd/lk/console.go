@@ -126,8 +126,8 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 
 	actualAddr := server.Addr().String()
 	if inputDev != nil {
-		fmt.Fprintf(os.Stderr, "Input:  %s\n", inputDev.Name)
-		fmt.Fprintf(os.Stderr, "Output: %s\n", outputDev.Name)
+		out.Statusf("Input:  %s", inputDev.Name)
+		out.Statusf("Output: %s", outputDev.Name)
 	}
 
 	projectDir, projectType, entrypoint, err := detectProject(cmd)
@@ -135,7 +135,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
 
 	// Show spinner while starting agent
 	stopSpinner := startSpinner("Starting agent")
@@ -253,8 +253,8 @@ func listDevices() error {
 	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("6"))
 	defaultStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 
-	fmt.Println(headerStyle.Render(fmt.Sprintf("  %-4s %-8s %-45s %s", "#", "Type", "Name", "Default")))
-	fmt.Println(strings.Repeat("─", 70))
+	out.Result(headerStyle.Render(fmt.Sprintf("  %-4s %-8s %-45s %s", "#", "Type", "Name", "Default")))
+	out.Result(strings.Repeat("─", 70))
 
 	for _, d := range devices {
 		devType := ""
@@ -277,9 +277,8 @@ func listDevices() error {
 			defStr += defaultStyle.Render("✓ output")
 		}
 
-		fmt.Printf("  %-4d %-8s %-45s %s\n", d.Index, devType, d.Name, defStr)
+		out.Resultf("  %-4d %-8s %-45s %s\n", d.Index, devType, d.Name, defStr)
 	}
 
 	return nil
 }
-

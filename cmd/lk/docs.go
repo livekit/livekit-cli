@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -429,7 +428,7 @@ func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, ar
 
 	for _, c := range result.Content {
 		if tc, ok := c.(*mcp.TextContent); ok {
-			fmt.Println(tc.Text)
+			out.Result(tc.Text)
 		}
 	}
 	return nil
@@ -509,8 +508,8 @@ func checkServerVersion(session *mcp.ClientSession) {
 		return
 	}
 	if major > expectedServerVersion[0] || (major == expectedServerVersion[0] && minor > expectedServerVersion[1]) {
-		fmt.Fprintf(os.Stderr,
-			"warning: the LiveKit docs server is version %s but this CLI was built for %d.%d.x — consider updating lk to the latest version\n\n",
+		out.Warnf(
+			"warning: the LiveKit docs server is version %s but this CLI was built for %d.%d.x — consider updating lk to the latest version\n",
 			info.ServerInfo.Version, expectedServerVersion[0], expectedServerVersion[1],
 		)
 	}
