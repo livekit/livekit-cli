@@ -109,7 +109,7 @@ var (
 						},
 						&cli.IntFlag{
 							Name:  "limit",
-							Usage: "maximum number of items to return",
+							Usage: "maximum number of items to return. If unset, defaults to API page size",
 						},
 						jsonFlag,
 					},
@@ -614,7 +614,8 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 				resItems = resItems[:remaining]
 			}
 
-			items = append(items, resItems...)
+			// each page has older items than the previous one, but ordering within each page is newest last
+			items = append(resItems, items...)
 		}
 	}
 
