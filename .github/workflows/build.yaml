@@ -56,7 +56,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Static Check
-        uses: dominikh/staticcheck-action@288b4e28bae83c59f35f73651aeb5cab746a06fc # v1.4.0
+        uses: dominikh/staticcheck-action@9716614d4101e79b4340dd97b10e54d68234e431 # v1.4.1
         with:
           version: "latest"
           install-go: false
