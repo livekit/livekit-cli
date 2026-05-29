@@ -1338,7 +1338,13 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 		if excludeEmptyVersion && agent.Version == "---" {
 			continue
 		}
-		name := agent.AgentId + " " + util.Dimmed("deployed "+agent.DeployedAt.AsTime().Format(time.RFC3339))
+		var deployedStr string
+		if deployedAt := agent.DeployedAt.AsTime(); deployedAt.IsZero() {
+			deployedStr = "never deployed"
+		} else {
+			deployedStr = "deployed " + deployedAt.Format(time.RFC3339)
+		}
+		name := agent.AgentId + " " + util.Dimmed(deployedStr)
 		agentNames = append(agentNames, huh.Option[string]{Key: name, Value: agent.AgentId})
 	}
 
