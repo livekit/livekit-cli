@@ -107,6 +107,10 @@ var (
 							Aliases: []string{"a"},
 							Usage:   "Lists only active egresses",
 						},
+						&cli.IntFlag{
+							Name:  "limit",
+							Usage: "maximum number of items to return. If unset, defaults to API page size",
+						},
 						jsonFlag,
 					},
 				},
@@ -587,18 +591,36 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 			items = append(items, res.Items...)
 		}
 	} else {
-		res, err := egressClient.ListEgress(ctx, &livekit.ListEgressRequest{
-			RoomName: cmd.String("room"),
-			Active:   cmd.Bool("active"),
-		})
-		if err != nil {
-			return err
+		limit := cmd.Int("limit")
+		var err error
+		var res *livekit.ListEgressResponse
+		for res == nil || (len(items) < limit && res.NextPageToken.GetToken() != "") {
+			req := &livekit.ListEgressRequest{
+				RoomName: cmd.String("room"),
+				Active:   cmd.Bool("active"),
+			}
+
+			if res != nil {
+				req.PageToken = &livekit.TokenPagination{Token: res.NextPageToken.GetToken()}
+			}
+
+			res, err = egressClient.ListEgress(ctx, req)
+			if err != nil {
+				return err
+			}
+
+			resItems := res.Items
+			if remaining := limit - len(items); limit > 0 && len(resItems) > remaining {
+				resItems = resItems[len(resItems)-remaining:]
+			}
+
+			// each page has older items than the previous one, but ordering within each page is newest last
+			items = append(resItems, items...)
 		}
-		items = res.Items
 	}
 
 	if cmd.Bool("json") {
-		util.PrintJSON(items)
+		return util.PrintJSONTo(cmd.Root().Writer, items)
 	} else {
 		table := util.CreateTable().
 			Headers("EgressID", "Status", "Type", "Source", "Started At", "Error")
