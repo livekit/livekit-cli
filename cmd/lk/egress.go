@@ -611,7 +611,7 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 
 			resItems := res.Items
 			if remaining := limit - len(items); limit > 0 && len(resItems) > remaining {
-				resItems = resItems[:remaining]
+				resItems = resItems[len(resItems)-remaining:]
 			}
 
 			// each page has older items than the previous one, but ordering within each page is newest last
@@ -620,7 +620,7 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		util.PrintJSON(items)
+		return util.PrintJSONTo(cmd.Root().Writer, items)
 	} else {
 		table := util.CreateTable().
 			Headers("EgressID", "Status", "Type", "Source", "Started At", "Error")
