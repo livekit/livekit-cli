@@ -1,5 +1,3 @@
-//go:build console
-
 package main
 
 import (

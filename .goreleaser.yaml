@@ -12,32 +12,104 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# All builds set CGO_ENABLED=1 — audio (portaudio/webrtc APM) is in every
+# binary. Linux/Windows cross-compiles use zig cc as the C/C++ toolchain;
+# scripts/setup-cross.sh builds static libasound.a (linux) and pre-generates
+# MinGW import libs (windows) under .cross/<target>/ before each build.
+
 version: 2
 
 before:
   hooks:
     - go mod tidy
+
 builds:
-  - id: lk
-    env:
-      - CGO_ENABLED=0
+  - id: lk-darwin-arm64
     main: ./cmd/lk
     binary: lk
-    goarm:
-      - "7"
-    goarch:
-      - amd64
-      - arm64
-      - arm
-    goos:
-      - linux
-      - windows
-      - darwin
-    ignore:
-      - goos: windows
-        goarch: arm
+    env:
+      - CGO_ENABLED=1
+    goos: [darwin]
+    goarch: [arm64]
     ldflags:
       - -s -w
+
+  - id: lk-linux-amd64
+    main: ./cmd/lk
+    binary: lk
+    hooks:
+      pre:
+        - cmd: scripts/setup-cross.sh linux/amd64
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target x86_64-linux-gnu.2.28
+      - CXX=zig c++ -target x86_64-linux-gnu.2.28
+      - CGO_CFLAGS=-I{{ .Env.PWD }}/.cross/linux_amd64/include
+      # -L points at scripts/setup-cross.sh's static libasound.a. zig's sysroot
+      # excludes /usr/lib so the `-lasound` from #cgo LDFLAGS resolves here.
+      - CGO_LDFLAGS=-L{{ .Env.PWD }}/.cross/linux_amd64/lib
+    goos: [linux]
+    goarch: [amd64]
+    ldflags:
+      - -s -w
+      - -linkmode=external
+
+  - id: lk-linux-arm64
+    main: ./cmd/lk
+    binary: lk
+    hooks:
+      pre:
+        - cmd: scripts/setup-cross.sh linux/arm64
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target aarch64-linux-gnu.2.28
+      - CXX=zig c++ -target aarch64-linux-gnu.2.28
+      - CGO_CFLAGS=-I{{ .Env.PWD }}/.cross/linux_arm64/include
+      - CGO_LDFLAGS=-L{{ .Env.PWD }}/.cross/linux_arm64/lib
+    goos: [linux]
+    goarch: [arm64]
+    ldflags:
+      - -s -w
+      - -linkmode=external
+
+  - id: lk-windows-amd64
+    main: ./cmd/lk
+    binary: lk
+    hooks:
+      pre:
+        - cmd: scripts/setup-cross.sh windows/amd64
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target x86_64-windows-gnu
+      - CXX=zig c++ -target x86_64-windows-gnu
+      # -fms-extensions: enable __try/__except (SEH) used by WebRTC
+      # -DNTDDI_VERSION: target Windows 10 base to skip WinRT includes absent from MinGW
+      - CGO_CXXFLAGS=-fms-extensions -DNTDDI_VERSION=0x0A000000 -fno-sanitize=all
+    goos: [windows]
+    goarch: [amd64]
+    ldflags:
+      - -s -w
+      - -linkmode=external
+      - -extldflags=-L{{ .Env.PWD }}/.cross/windows_amd64/mingw_lib
+
+  - id: lk-windows-arm64
+    main: ./cmd/lk
+    binary: lk
+    hooks:
+      pre:
+        - cmd: scripts/setup-cross.sh windows/arm64
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target aarch64-windows-gnu
+      - CXX=zig c++ -target aarch64-windows-gnu
+      - CGO_CXXFLAGS=-fms-extensions -DNTDDI_VERSION=0x0A000000 -fno-sanitize=all
+    goos: [windows]
+    goarch: [arm64]
+    ldflags:
+      - -s -w
+      - -linkmode=external
+      - -extldflags=-L{{ .Env.PWD }}/.cross/windows_arm64/mingw_lib
+
 archives:
   - name_template: "lk_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
@@ -46,21 +118,67 @@ archives:
     files:
       - LICENSE
       - 'autocomplete/*'
+
+dockers:
+  - image_templates:
+      - "livekit/livekit-cli:{{ .Tag }}-amd64"
+      - "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}-amd64"
+    ids: [lk-linux-amd64]
+    goos: linux
+    goarch: amd64
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+
+  - image_templates:
+      - "livekit/livekit-cli:{{ .Tag }}-arm64"
+      - "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}-arm64"
+    ids: [lk-linux-arm64]
+    goos: linux
+    goarch: arm64
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+
+docker_manifests:
+  - name_template: "livekit/livekit-cli:{{ .Tag }}"
+    image_templates:
+      - "livekit/livekit-cli:{{ .Tag }}-amd64"
+      - "livekit/livekit-cli:{{ .Tag }}-arm64"
+  - name_template: "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}-arm64"
+
 release:
   github:
     owner: livekit
     name: livekit-cli
   draft: true
   prerelease: auto
+
 changelog:
   sort: asc
   filters:
     exclude:
       - '^docs:'
       - '^test:'
+
 gomod:
   proxy: false
+
 checksum:
   name_template: 'checksums.txt'
+
 snapshot:
   version_template: "{{ incpatch .Version }}-next"

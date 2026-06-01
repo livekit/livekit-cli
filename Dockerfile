@@ -12,31 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.26-alpine AS builder
+# Consumed by goreleaser, which drops the pre-built `lk` binary into the build
+# context. Distroless gives us glibc (the binary targets glibc 2.28+) plus CA
+# certs for TLS, without a shell or package manager.
+FROM gcr.io/distroless/base-debian12
 
-ARG TARGETPLATFORM
-ARG TARGETARCH
-RUN echo building for "$TARGETPLATFORM"
+COPY lk /lk
 
-WORKDIR /workspace
-
-# Copy the Go Modules manifests
-COPY go.mod go.mod
-COPY go.sum go.sum
-# cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
-RUN go mod download
-
-# Copy the go source
-COPY cmd/ cmd/
-COPY pkg/ pkg/
-COPY version.go version.go
-
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -a -o lk ./cmd/lk
-
-FROM alpine:3.21
-
-COPY --from=builder /workspace/lk /lk
-
-# Run the binary.
 ENTRYPOINT ["/lk"]

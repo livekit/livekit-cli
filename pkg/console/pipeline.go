@@ -1,5 +1,3 @@
-//go:build console
-
 // Package console implements the audio pipeline for the lk console command.
 // It connects microphone input and speaker output via PortAudio, applies
 // WebRTC audio processing (echo cancellation, noise suppression), and

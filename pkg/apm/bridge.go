@@ -1,5 +1,3 @@
-//go:build console
-
 package apm
 
 // #cgo CXXFLAGS: -I${SRCDIR}/webrtc -I${SRCDIR}/webrtc/third_party/abseil-cpp -std=c++17 -fno-rtti -DWEBRTC_APM_DEBUG_DUMP=0 -DWEBRTC_AUDIO_PROCESSING_ONLY_BUILD -DNDEBUG -Wno-unused-parameter -Wno-missing-field-initializers -Wno-sign-compare -Wno-deprecated-declarations -Wno-nullability-completeness -Wno-shorten-64-to-32

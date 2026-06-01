@@ -1,5 +1,3 @@
-//go:build console
-
 // Package portaudio provides Go bindings for PortAudio, compiled from vendored source.
 package portaudio
 

@@ -135,7 +135,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 }
 
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
-	fishScript, err := cmd.ToFishCompletion()
+	fishScript, err := cmd.Root().ToFishCompletion()
 	if err != nil {
 		return err
 	}
