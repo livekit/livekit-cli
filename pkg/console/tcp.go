@@ -1,5 +1,3 @@
-//go:build console
-
 package console
 
 import (
@@ -52,6 +50,13 @@ func (s *TCPServer) Accept() (net.Conn, error) {
 	s.listener.Close()
 
 	return conn, nil
+}
+
+// AcceptConn returns the next connection without closing the listener, so the
+// server can keep accepting more. Used by the session daemon, which accepts
+// both the agent connection and many CLI control connections on one port.
+func (s *TCPServer) AcceptConn() (net.Conn, error) {
+	return s.listener.Accept()
 }
 
 // Conn returns the accepted connection, or nil if none.
