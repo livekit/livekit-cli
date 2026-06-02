@@ -69,7 +69,7 @@ type AudioPipeline struct {
 	// Only accessed from the tcpReader goroutine.
 	flushCancel context.CancelFunc
 
-	mu sync.Mutex
+	mu       sync.Mutex
 	fftBands [NumFFTBands]float64
 	muted    bool
 	paused   bool    // true when audio I/O is paused (e.g. text mode); mic frames are not sent to the agent
@@ -439,7 +439,10 @@ func (p *AudioPipeline) tcpReader(ctx context.Context) {
 
 		switch m := msg.Message.(type) {
 		case *agent.AgentSessionMessage_AudioOutput:
-			p.playbackRing.Write(BytesToSamples(m.AudioOutput.Data))
+			// No audio sink in text mode (rings allocated lazily on Ctrl+T).
+			if p.playbackRing != nil {
+				p.playbackRing.Write(BytesToSamples(m.AudioOutput.Data))
+			}
 
 		case *agent.AgentSessionMessage_Event:
 			select {
@@ -452,9 +455,18 @@ func (p *AudioPipeline) tcpReader(ctx context.Context) {
 				p.flushCancel()
 				p.flushCancel = nil
 			}
-			p.playbackRing.Reset()
+			if p.playbackRing != nil {
+				p.playbackRing.Reset()
+			}
 
 		case *agent.AgentSessionMessage_AudioPlaybackFlush:
+			// Without an audio sink there's nothing to drain, so ack the
+			// agent's playback turn immediately instead of dereferencing a
+			// nil playback ring in waitForDrainAndAck.
+			if p.playbackRing == nil {
+				p.sendPlaybackFinished()
+				break
+			}
 			if p.flushCancel != nil {
 				p.flushCancel()
 			}
@@ -568,7 +580,7 @@ func (p *AudioPipeline) computeMetrics(samples []int16) {
 			c = 1
 		}
 		pmean := sump[b] / c
-		db := 10.0 * math.Log10(pmean + 1e-12)
+		db := 10.0 * math.Log10(pmean+1e-12)
 		lev := (db - floorDB) / (hotDB - floorDB)
 		lev = math.Max(0, math.Min(1, lev))
 		// Power-law compression
