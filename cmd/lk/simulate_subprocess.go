@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +13,8 @@
 // limitations under the License.
 
 package main
+
+//lint:file-ignore U1000 consumed by console-tagged commands (hidden from the default tag-free lint build) and the lk session daemon (follow-up PR); remove once the daemon merges
 
 import (
 	"bufio"
@@ -38,7 +38,7 @@ type AgentProcess struct {
 	readyCh        chan struct{}
 	doneCh         chan error
 	exitCh         chan struct{} // closed when process exits, safe to read multiple times
-	shutdownCalled bool         // true after Shutdown() sends SIGINT
+	shutdownCalled bool          // true after Shutdown() sends SIGINT
 
 	// LogStream receives log lines in real-time. Nil if not needed.
 	LogStream chan string

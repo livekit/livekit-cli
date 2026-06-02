@@ -1,6 +1,8 @@
-//go:build console && !windows
+//go:build !windows
 
 package main
+
+//lint:file-ignore U1000 consumed by console-tagged commands (hidden from the default tag-free lint build) and the lk session daemon (follow-up PR); remove once the daemon merges
 
 import (
 	"os/exec"
@@ -9,6 +11,12 @@ import (
 
 func setProcAttr(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+}
+
+// setDetachedProcAttr puts the child in its own session so it survives the
+// parent CLI invocation exiting (used for the detached session daemon).
+func setDetachedProcAttr(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 }
 
 // sendInterrupt sends SIGINT to the entire process group.
