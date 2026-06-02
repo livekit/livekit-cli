@@ -236,14 +236,6 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-func buildConsoleArgs(addr string, record bool) []string {
-	args := []string{"console", "--connect-addr", addr}
-	if record {
-		args = append(args, "--record")
-	}
-	return args
-}
-
 func listDevices() error {
 	devices, err := portaudio.ListDevices()
 	if err != nil {
@@ -282,4 +274,3 @@ func listDevices() error {
 
 	return nil
 }
-

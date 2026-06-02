@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +36,7 @@ type AgentProcess struct {
 	readyCh        chan struct{}
 	doneCh         chan error
 	exitCh         chan struct{} // closed when process exits, safe to read multiple times
-	shutdownCalled bool         // true after Shutdown() sends SIGINT
+	shutdownCalled bool          // true after Shutdown() sends SIGINT
 
 	// LogStream receives log lines in real-time. Nil if not needed.
 	LogStream chan string

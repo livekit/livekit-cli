@@ -1,4 +1,4 @@
-//go:build console && !windows
+//go:build !windows
 
 package main
 
@@ -9,6 +9,12 @@ import (
 
 func setProcAttr(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+}
+
+// setDetachedProcAttr puts the child in its own session so it survives the
+// parent CLI invocation exiting (used for the detached session daemon).
+func setDetachedProcAttr(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 }
 
 // sendInterrupt sends SIGINT to the entire process group.
