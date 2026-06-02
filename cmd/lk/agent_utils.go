@@ -24,8 +24,6 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 )
 
-// detectProject resolves which agent to run from the CLI args: the project
-// directory, its type, and the entrypoint (explicit file or auto-discovered).
 func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error) {
 	explicit := cmd.Args().First()
 
@@ -69,9 +67,8 @@ func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error
 	return projectDir, projectType, entrypoint, nil
 }
 
-// buildConsoleArgs builds the agent subprocess argv that connects back over TCP
-// in console mode. Shared by `lk agent console` (mic/speaker) and the headless
-// `lk session` daemon.
+// buildConsoleArgs builds the agent subprocess argv for console mode, shared by
+// `lk agent console` and the `lk session` daemon.
 func buildConsoleArgs(addr string, record bool) []string {
 	args := []string{"console", "--connect-addr", addr}
 	if record {
