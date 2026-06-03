@@ -92,9 +92,6 @@ var agentSessionCommand = &cli.Command{
 			Name:   sessionDaemonSubcommand,
 			Hidden: true,
 			Action: func(ctx context.Context, cmd *cli.Command) error {
-				// Only meaningful when re-exec'd by `start`, which hands down an
-				// inherited readiness pipe. Reject direct invocation so a stray
-				// `lk agent session daemon` can't spawn a half-configured daemon.
 				if os.Getenv(envSessionReadyFD) == "" {
 					return fmt.Errorf("`session daemon` is an internal entrypoint; run `lk agent session start <entrypoint>` instead")
 				}
