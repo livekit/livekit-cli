@@ -99,11 +99,14 @@ func renderChatItem(item *agent.ChatContext_ChatItem) string {
 
 	case *agent.ChatContext_ChatItem_FunctionCallOutput:
 		fco := i.FunctionCallOutput
-		prefix, style := "✓ ", sessionDimStyle
+		summary := sessionSummarizeOutput(fco.Output)
 		if fco.IsError {
-			prefix, style = "✗ ", sessionRedStyle
+			return "    " + sessionRedStyle.Render("✗ "+summary)
 		}
-		return "    " + style.Render(prefix+sessionSummarizeOutput(fco.Output))
+		if summary == "" {
+			return ""
+		}
+		return "    " + sessionDimStyle.Render("✓ "+summary)
 
 	case *agent.ChatContext_ChatItem_AgentHandoff:
 		h := i.AgentHandoff
@@ -151,11 +154,13 @@ func renderFunctionTools(ft *agent.AgentSessionEvent_FunctionToolsExecuted) stri
 		b.WriteString("\n  ● function_tool: ")
 		b.WriteString(fc.Name)
 		if fco, ok := outputs[fc.CallId]; ok {
-			b.WriteString("\n    ")
+			summary := sessionSummarizeOutput(fco.Output)
 			if fco.IsError {
-				b.WriteString(sessionRedStyle.Render("✗ " + sessionSummarizeOutput(fco.Output)))
-			} else {
-				b.WriteString(sessionDimStyle.Render("✓ " + sessionSummarizeOutput(fco.Output)))
+				b.WriteString("\n    ")
+				b.WriteString(sessionRedStyle.Render("✗ " + summary))
+			} else if summary != "" {
+				b.WriteString("\n    ")
+				b.WriteString(sessionDimStyle.Render("✓ " + summary))
 			}
 		}
 	}
