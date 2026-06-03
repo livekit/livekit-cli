@@ -89,13 +89,15 @@ var agentSessionCommand = &cli.Command{
 			Action: runSessionEnd,
 		},
 		{
-			// Hidden re-exec entrypoint. `lk agent session start` relaunches
-			// this binary as `lk agent session daemon` to run the detached
-			// daemon; it is not meant to be invoked directly. Configuration is
-			// inherited through the LK_SESSION_* env vars set by start.
 			Name:   sessionDaemonSubcommand,
 			Hidden: true,
 			Action: func(ctx context.Context, cmd *cli.Command) error {
+				// Only meaningful when re-exec'd by `start`, which hands down an
+				// inherited readiness pipe. Reject direct invocation so a stray
+				// `lk agent session daemon` can't spawn a half-configured daemon.
+				if os.Getenv(envSessionReadyFD) == "" {
+					return fmt.Errorf("`session daemon` is an internal entrypoint; run `lk agent session start <entrypoint>` instead")
+				}
 				runSessionDaemon()
 				return nil
 			},
