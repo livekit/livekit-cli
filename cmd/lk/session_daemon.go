@@ -31,8 +31,9 @@ import (
 	agent "github.com/livekit/protocol/livekit/agent"
 )
 
-// runSessionDaemon is the entry point when the binary is re-exec'd with
-// LK_SESSION_DAEMON=1. It never returns to the CLI framework.
+// runSessionDaemon is the entry point for the hidden `lk agent session daemon`
+// subcommand that `lk agent session start` re-execs. It runs the detached
+// daemon to completion (until the agent exits or `end` is received).
 func runSessionDaemon() {
 	ready := readyWriter()
 	port, _ := strconv.Atoi(os.Getenv(envSessionPort))

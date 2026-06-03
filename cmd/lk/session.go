@@ -38,12 +38,14 @@ const (
 	sessionHost        = "127.0.0.1"
 	defaultSessionPort = 8775
 
-	envSessionDaemon  = "LK_SESSION_DAEMON" // "1" in the re-exec'd daemon child
-	envSessionPort    = "LK_SESSION_PORT"   // fixed port
-	envSessionDir     = "LK_SESSION_DIR"    // resolved project dir
-	envSessionEntry   = "LK_SESSION_ENTRY"  // resolved entrypoint (project-relative)
-	envSessionPType   = "LK_SESSION_PTYPE"  // agentfs.ProjectType string
+	envSessionPort    = "LK_SESSION_PORT"  // fixed port
+	envSessionDir     = "LK_SESSION_DIR"   // resolved project dir
+	envSessionEntry   = "LK_SESSION_ENTRY" // resolved entrypoint (project-relative)
+	envSessionPType   = "LK_SESSION_PTYPE" // agentfs.ProjectType string
 	envSessionReadyFD = "LK_SESSION_READY_FD"
+
+	// sessionDaemonSubcommand is the hidden entrypoint `start` re-execs into.
+	sessionDaemonSubcommand = "daemon"
 )
 
 var sessionPortFlag = &cli.IntFlag{
@@ -86,6 +88,18 @@ var agentSessionCommand = &cli.Command{
 			Flags:  []cli.Flag{sessionPortFlag},
 			Action: runSessionEnd,
 		},
+		{
+			// Hidden re-exec entrypoint. `lk agent session start` relaunches
+			// this binary as `lk agent session daemon` to run the detached
+			// daemon; it is not meant to be invoked directly. Configuration is
+			// inherited through the LK_SESSION_* env vars set by start.
+			Name:   sessionDaemonSubcommand,
+			Hidden: true,
+			Action: func(ctx context.Context, cmd *cli.Command) error {
+				runSessionDaemon()
+				return nil
+			},
+		},
 	},
 }
 
@@ -121,9 +135,8 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	daemon := exec.Command(exe)
+	daemon := exec.Command(exe, "agent", "session", sessionDaemonSubcommand)
 	daemon.Env = append(os.Environ(),
-		envSessionDaemon+"=1",
 		envSessionPort+"="+strconv.Itoa(port),
 		envSessionDir+"="+projectDir,
 		envSessionEntry+"="+entrypoint,
