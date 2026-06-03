@@ -32,6 +32,13 @@ import (
 )
 
 func main() {
+	// When re-exec'd as the detached session daemon, run that and never reach
+	// the CLI framework (the daemon is not an exposed subcommand).
+	if os.Getenv(envSessionDaemon) == "1" {
+		runSessionDaemon()
+		return
+	}
+
 	app := &cli.Command{
 		Name:                   "lk",
 		Usage:                  "CLI client to LiveKit",

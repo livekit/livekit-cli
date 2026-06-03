@@ -14,8 +14,6 @@
 
 package main
 
-//lint:file-ignore U1000 consumed by console-tagged commands (hidden from the default tag-free lint build) and the lk session daemon (follow-up PR); remove once the daemon merges
-
 import (
 	"fmt"
 	"os"
@@ -70,7 +68,7 @@ func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error
 }
 
 // buildConsoleArgs builds the agent subprocess argv for console mode, shared by
-// `lk agent console` and the `lk session` daemon.
+// `lk agent console` and the `lk agent session` daemon.
 func buildConsoleArgs(addr string, record bool) []string {
 	args := []string{"console", "--connect-addr", addr}
 	if record {
