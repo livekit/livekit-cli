@@ -44,11 +44,8 @@ func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error
 		return "", "", "", noAgentError()
 	}
 
-	// TODO(node): support JS/Node agents here. DetectProjectRoot already
-	// recognizes Node projects; once the session daemon can spawn a Node
-	// agent in console mode, drop this gate and branch on projectType.
-	if !projectType.IsPython() {
-		return "", "", "", fmt.Errorf("currently only supports Python agents (detected: %s)", projectType)
+	if !projectType.IsPython() && !projectType.IsNode() {
+		return "", "", "", fmt.Errorf("only Python and Node agents are supported (detected: %s)", projectType)
 	}
 
 	if explicit != "" {

@@ -47,8 +47,6 @@ func runSessionDaemon() {
 	}
 	defer server.Close()
 
-	// TODO(node): detect a node/JS agent project and build the equivalent
-	// `node <entry> console --connect-addr <addr>` argv.
 	agentProc, err := startAgent(AgentStartConfig{
 		Dir:         os.Getenv(envSessionDir),
 		Entrypoint:  os.Getenv(envSessionEntry),
