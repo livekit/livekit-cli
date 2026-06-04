@@ -77,6 +77,26 @@ func findPythonBinary(dir string, projectType agentfs.ProjectType) (string, []st
 	return pythonPath, nil, nil
 }
 
+// findNodeBinary locates the Node binary used to run a JS/TS agent.
+func findNodeBinary() (string, error) {
+	nodePath, err := exec.LookPath("node")
+	if err != nil {
+		return "", fmt.Errorf("could not find Node binary; ensure node is on PATH")
+	}
+	return nodePath, nil
+}
+
+// isTypeScriptEntry reports whether the entrypoint is TypeScript source that
+// needs Node's type-stripping loader to run directly (no build step).
+func isTypeScriptEntry(entry string) bool {
+	switch strings.ToLower(filepath.Ext(entry)) {
+	case ".ts", ".mts", ".cts":
+		return true
+	default:
+		return false
+	}
+}
+
 // findEntrypoint resolves the agent entrypoint file.
 func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (string, error) {
 	if explicit != "" {
@@ -131,16 +151,43 @@ type AgentStartConfig struct {
 	ForwardOutput io.Writer // if set, forward each output line to this writer
 }
 
-// startAgent launches a Python agent subprocess and monitors its output.
-func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
+// buildAgentCommand resolves the interpreter and argv for an agent subprocess,
+// branching on project type. Python: `<python> <entry> <args>` (uv prefixes
+// `run python`). Node: `node [--experimental-strip-types] <entry> <args>`,
+// where the type-stripping flag lets a `.ts` entrypoint run without a build.
+func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
+	if cfg.ProjectType.IsNode() {
+		nodeBin, err := findNodeBinary()
+		if err != nil {
+			return "", nil, err
+		}
+		args := make([]string, 0, len(cfg.CLIArgs)+2)
+		if isTypeScriptEntry(cfg.Entrypoint) {
+			args = append(args, "--experimental-strip-types")
+		}
+		args = append(args, cfg.Entrypoint)
+		args = append(args, cfg.CLIArgs...)
+		return nodeBin, args, nil
+	}
+
 	pythonBin, prefixArgs, err := findPythonBinary(cfg.Dir, cfg.ProjectType)
+	if err != nil {
+		return "", nil, err
+	}
+	args := make([]string, 0, len(prefixArgs)+len(cfg.CLIArgs)+1)
+	args = append(args, prefixArgs...)
+	args = append(args, cfg.Entrypoint)
+	args = append(args, cfg.CLIArgs...)
+	return pythonBin, args, nil
+}
+
+// startAgent launches a Python or Node agent subprocess and monitors its output.
+func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
+	bin, args, err := buildAgentCommand(cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	args := append(prefixArgs, cfg.Entrypoint)
-	args = append(args, cfg.CLIArgs...)
-	cmd := exec.Command(pythonBin, args...)
+	cmd := exec.Command(bin, args...)
 	setProcAttr(cmd)
 	cmd.Dir = cfg.Dir
 	if len(cfg.Env) > 0 {
