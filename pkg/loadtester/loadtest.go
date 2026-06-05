@@ -16,6 +16,7 @@ package loadtester
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/url"
@@ -28,7 +29,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/syncmap"
 	"golang.org/x/time/rate"
@@ -328,7 +328,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
-				fmt.Println(errors.Wrapf(err, "could not connect %s", testerParams.name))
+				fmt.Println(fmt.Errorf("could not connect %s: %w", testerParams.name, err))
 				errs.Store(testerParams.name, err)
 				return nil
 			}
