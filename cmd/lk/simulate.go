@@ -24,10 +24,13 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v3"
+	"gopkg.in/yaml.v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
@@ -74,68 +77,101 @@ var simulateCommand = &cli.Command{
 			Usage: "Agent description for scenario generation",
 		},
 		&cli.StringFlag{
-			Name:  "scenario-group-id",
-			Usage: "Use a pre-configured scenario group",
-		},
-		&cli.StringFlag{
-			Name:  "config",
-			Usage: "Path to simulation config `FILE`",
+			Name:  "scenarios",
+			Usage: "Path to a scenarios `FILE` (yaml). Defaults to scenarios.yaml next to the entrypoint",
 		},
 	},
 }
 
-// simulationConfig represents the simulation.json config file.
-type simulationConfig struct {
-	AgentDescription string           `json:"agent_description"`
-	Scenarios        []scenarioConfig `json:"scenarios"`
+// scenariosFile mirrors a scenarios.yaml (the source of truth for scenarios).
+// It maps field-for-field onto livekit.ScenarioGroup; `userdata` is written as a
+// nested mapping here and JSON-encoded into the proto's string field.
+type scenariosFile struct {
+	Name      string         `yaml:"name"`
+	Scenarios []yamlScenario `yaml:"scenarios"`
 }
 
-type scenarioConfig struct {
-	Label             string            `json:"label"`
-	Instructions      string            `json:"instructions"`
-	AgentExpectations string            `json:"agent_expectations"`
-	Metadata          map[string]string `json:"metadata"`
+type yamlScenario struct {
+	Label             string            `yaml:"label"`
+	Instructions      string            `yaml:"instructions"`
+	AgentExpectations string            `yaml:"agent_expectations"`
+	Tags              map[string]string `yaml:"tags"`
+	Userdata          map[string]any    `yaml:"userdata"`
 }
 
 // simulateConfig holds all parameters needed to run a simulation in either TUI or CI mode.
 type simulateConfig struct {
-	ctx             context.Context
-	client          *lksdk.AgentSimulationClient
-	pc              *config.ProjectConfig
-	numSimulations  int32
-	mode            simulateMode
-	description     string
-	agentName       string
-	projectDir      string
-	projectType     agentfs.ProjectType
-	entrypoint      string
-	cfg             *simulationConfig
-	scenarioGroupID string
+	ctx            context.Context
+	client         *lksdk.AgentSimulationClient
+	pc             *config.ProjectConfig
+	numSimulations int32
+	mode           simulateMode
+	description    string
+	agentName      string
+	projectDir     string
+	projectType    agentfs.ProjectType
+	entrypoint     string
+	scenarioGroup  *livekit.ScenarioGroup
 }
 
 // simulateMode represents how scenarios are sourced.
 type simulateMode int
 
 const (
-	modeInlineScenarios simulateMode = iota
-	modeScenarioGroup
+	modeScenarios simulateMode = iota
 	modeGenerateFromDescription
 	modeGenerateFromSource
 )
 
-func loadSimulationConfig(path string) (*simulationConfig, error) {
-	if path == "" {
-		return nil, nil
-	}
+// loadScenarioGroup reads a scenarios.yaml into a livekit.ScenarioGroup, JSON-encoding
+// each scenario's nested `userdata` mapping into the proto's string field.
+func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		return nil, fmt.Errorf("failed to read scenarios file: %w", err)
 	}
-	var cfg simulationConfig
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
+	var f scenariosFile
+	if err := yaml.Unmarshal(data, &f); err != nil {
+		return nil, fmt.Errorf("failed to parse scenarios file: %w", err)
 	}
-	return &cfg, nil
+
+	group := &livekit.ScenarioGroup{Name: f.Name}
+	for _, s := range f.Scenarios {
+		var userdata string
+		if len(s.Userdata) > 0 {
+			b, err := json.Marshal(s.Userdata)
+			if err != nil {
+				return nil, fmt.Errorf("failed to encode userdata for scenario %q: %w", s.Label, err)
+			}
+			userdata = string(b)
+		}
+		group.Scenarios = append(group.Scenarios, &livekit.Scenario{
+			Label:             s.Label,
+			Instructions:      s.Instructions,
+			AgentExpectations: s.AgentExpectations,
+			Tags:              s.Tags,
+			Userdata:          userdata,
+		})
+	}
+	return group, nil
+}
+
+// defaultScenariosPath returns the path to a scenarios.yaml sitting next to the
+// entrypoint (or in the project root), or "" if none exists.
+func defaultScenariosPath(projectDir, entrypoint string) string {
+	candidates := []string{
+		filepath.Join(filepath.Dir(entrypoint), "scenarios.yaml"),
+		filepath.Join(projectDir, "scenarios.yaml"),
+	}
+	for _, c := range candidates {
+		if c == "" {
+			continue
+		}
+		if _, err := os.Stat(c); err == nil {
+			return c
+		}
+	}
+	return ""
 }
 
 func generateAgentName() string {
@@ -150,32 +186,9 @@ func generateAgentName() string {
 func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 
-	configPath := cmd.String("config")
-	cfg, err := loadSimulationConfig(configPath)
-	if err != nil {
-		return err
-	}
-
 	description := cmd.String("description")
-	if description == "" && cfg != nil {
-		description = cfg.AgentDescription
-	}
-
 	numSimulations := int32(cmd.Int("num-simulations"))
-	scenarioGroupID := cmd.String("scenario-group-id")
 	agentName := generateAgentName()
-
-	var mode simulateMode
-	switch {
-	case cfg != nil && len(cfg.Scenarios) > 0:
-		mode = modeInlineScenarios
-	case scenarioGroupID != "":
-		mode = modeScenarioGroup
-	case description != "":
-		mode = modeGenerateFromDescription
-	default:
-		mode = modeGenerateFromSource
-	}
 
 	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
 	if err != nil {
@@ -190,21 +203,47 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	// Resolve the scenarios file: explicit --scenarios, else scenarios.yaml next to
+	// the entrypoint. When present, those scenarios are the source of truth.
+	scenariosPath := cmd.String("scenarios")
+	if scenariosPath == "" {
+		if def := defaultScenariosPath(projectDir, entrypoint); def != "" {
+			scenariosPath = def
+		}
+	}
+
+	var scenarioGroup *livekit.ScenarioGroup
+	if scenariosPath != "" {
+		scenarioGroup, err = loadScenarioGroup(scenariosPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	var mode simulateMode
+	switch {
+	case scenarioGroup != nil && len(scenarioGroup.Scenarios) > 0:
+		mode = modeScenarios
+	case description != "":
+		mode = modeGenerateFromDescription
+	default:
+		mode = modeGenerateFromSource
+	}
+
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
 	simCfg := &simulateConfig{
-		ctx:             ctx,
-		client:          simClient,
-		pc:              pc,
-		numSimulations:  numSimulations,
-		mode:            mode,
-		description:     description,
-		agentName:       agentName,
-		projectDir:      projectDir,
-		projectType:     projectType,
-		entrypoint:      entrypoint,
-		cfg:             cfg,
-		scenarioGroupID: scenarioGroupID,
+		ctx:            ctx,
+		client:         simClient,
+		pc:             pc,
+		numSimulations: numSimulations,
+		mode:           mode,
+		description:    description,
+		agentName:      agentName,
+		projectDir:     projectDir,
+		projectType:    projectType,
+		entrypoint:     entrypoint,
+		scenarioGroup:  scenarioGroup,
 	}
 
 	if !isInteractive() {
@@ -252,26 +291,10 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 		AgentDescription: c.description,
 		NumSimulations:   c.numSimulations,
 	}
-	switch c.mode {
-	case modeInlineScenarios:
-		scenarios := make([]*livekit.SimulationRun_Create_Scenario, 0, len(c.cfg.Scenarios))
-		for _, sc := range c.cfg.Scenarios {
-			scenarios = append(scenarios, &livekit.SimulationRun_Create_Scenario{
-				Label:             sc.Label,
-				Instructions:      sc.Instructions,
-				AgentExpectations: sc.AgentExpectations,
-				Metadata:          sc.Metadata,
-			})
-		}
-		req.Source = &livekit.SimulationRun_Create_Request_Scenarios{
-			Scenarios: &livekit.SimulationRun_Create_Scenarios{
-				Scenarios: scenarios,
-			},
-		}
-	case modeScenarioGroup:
-		req.Source = &livekit.SimulationRun_Create_Request_GroupId{
-			GroupId: c.scenarioGroupID,
-		}
+	if c.mode == modeScenarios {
+		// Run the scenarios from the yaml. When unset, the server generates
+		// num_simulations scenarios from the uploaded source.
+		req.ScenarioGroup = c.scenarioGroup
 	}
 
 	resp, err := c.client.CreateSimulationRun(ctx, req)
@@ -317,11 +340,32 @@ func isTerminalRunStatus(status livekit.SimulationRun_Status) bool {
 		status == livekit.SimulationRun_STATUS_CANCELLED
 }
 
+// dashboardBaseURL returns the cloud dashboard URL, derived from the API
+// server URL so that --server-url (e.g. staging) is respected without a
+// separate flag. The cloud API and dashboard hosts differ only by "-api":
+//
+//	https://cloud-api.livekit.io          -> https://cloud.livekit.io
+//	https://cloud-api.staging.livekit.io  -> https://cloud.staging.livekit.io
+func dashboardBaseURL() string {
+	if base := strings.Replace(serverURL, "cloud-api", "cloud", 1); base != serverURL {
+		return base
+	}
+	return dashboardURL
+}
+
 func simulationDashboardURL(projectID, runID string) string {
 	if projectID == "" || runID == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s/projects/%s/evaluations/simulations/%s", dashboardURL, projectID, runID)
+	return fmt.Sprintf("%s/projects/%s/simulations/runs/%s", dashboardBaseURL(), projectID, runID)
+}
+
+func simulationJobDashboardURL(projectID, runID, jobID string) string {
+	base := simulationDashboardURL(projectID, runID)
+	if base == "" || jobID == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s?job=%s", base, jobID)
 }
 
 func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {

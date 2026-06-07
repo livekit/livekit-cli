@@ -130,8 +130,6 @@ type simulateModel struct {
 	logPinnedTotal  int
 	showDescription bool
 
-	save saveOverlay
-
 	matrix              matrixRain
 	matrixSavedShowLogs bool
 
@@ -387,12 +385,6 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case subprocessExitMsg:
 		// Subprocess exited — don't quit TUI, just note it
 
-	case saveGroupsLoadedMsg, scenarioSavedMsg, saveDismissMsg, saveSpinnerTickMsg:
-		if m.save.active {
-			cmd := m.save.handleMsg(msg)
-			return m, cmd
-		}
-
 	case tea.KeyMsg:
 		return m.handleKey(msg)
 	}
@@ -401,14 +393,6 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
-	if m.save.active {
-		if key == "ctrl+c" {
-			m.save.active = false
-		} else {
-			cmd := m.save.handleKey(key)
-			return m, cmd
-		}
-	}
 	if m.matrix.active {
 		// Any keypress cancels rain so the user regains control immediately.
 		// Pressing 'm' just cancels; every other key falls through to normal
@@ -527,14 +511,6 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if m.cursor >= 0 && m.cursor < len(jobs) {
 				m.detailJobID = jobs[m.cursor].job.Id
 				m.detailScrollOff = 0
-			}
-		}
-	case "s":
-		if m.detailJobID != "" {
-			job := m.findJob(m.detailJobID)
-			if job != nil {
-				m.save.start(m.config.client, job, m.width)
-				return m, tea.Batch(m.save.fetchGroupsCmd(), saveSpinnerTickCmd())
 			}
 		}
 	case "esc", "backspace":
@@ -676,11 +652,18 @@ func (m *simulateModel) renderSteps() string {
 	return b.String()
 }
 
-func (m *simulateModel) getDashboardURL() string {
-	if m.config == nil || m.config.pc == nil {
-		return ""
+func (m *simulateModel) projectID() string {
+	if m.run != nil && m.run.GetProjectId() != "" {
+		return m.run.GetProjectId()
 	}
-	return simulationDashboardURL(m.config.pc.ProjectId, m.runID)
+	if m.config != nil && m.config.pc != nil {
+		return m.config.pc.ProjectId
+	}
+	return ""
+}
+
+func (m *simulateModel) getDashboardURL() string {
+	return simulationDashboardURL(m.projectID(), m.runID)
 }
 
 func (m *simulateModel) viewFailed() string {
@@ -689,6 +672,9 @@ func (m *simulateModel) viewFailed() string {
 	b.WriteString(tagStyle.Render("Agent Simulation"))
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(m.runID))
+	if url := m.getDashboardURL(); url != "" {
+		b.WriteString("  " + dimStyle.Render(url))
+	}
 	b.WriteString("\n\n")
 	b.WriteString("  " + redStyle.Bold(true).Render("Failed") + "\n\n")
 	if m.run.Error != "" {
@@ -752,13 +738,7 @@ func (m *simulateModel) viewRunning() string {
 	b.WriteString("\n")
 
 	if m.detailJobID != "" {
-		if m.save.active {
-			b.WriteString(m.save.render())
-		} else {
-			b.WriteString(m.scrolledDetail())
-		}
-	} else if m.save.active {
-		b.WriteString(m.save.render())
+		b.WriteString(m.scrolledDetail())
 	} else if m.matrix.active {
 		b.WriteString(m.matrix.render(m.buildMatrixRows()))
 	} else {
@@ -1076,6 +1056,9 @@ func (m *simulateModel) renderDetail() string {
 		boldStyle.Render(fmt.Sprintf("Job %d", origIdx)),
 		dimStyle.Render(job.Id),
 	))
+	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
+		b.WriteString("  " + dimStyle.Render(url) + "\n")
+	}
 	b.WriteString("\n")
 
 	wrapWidth := m.width - 6
@@ -1457,7 +1440,7 @@ func firstMeaningfulLine(text string) string {
 func (m *simulateModel) renderHint() string {
 	var parts []string
 	if m.detailJobID != "" {
-		parts = append(parts, "↑↓ scroll · ESC back · s save scenario")
+		parts = append(parts, "↑↓ scroll · ESC back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
