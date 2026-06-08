@@ -20,14 +20,15 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	agent "github.com/livekit/protocol/livekit/agent"
 	"github.com/livekit/protocol/livekit"
+	agent "github.com/livekit/protocol/livekit/agent"
 )
 
 func runSimulateTUI(config *simulateConfig) error {
@@ -98,8 +99,8 @@ type step struct {
 }
 
 type simulateModel struct {
-	config *simulateConfig
-	runID  string
+	config      *simulateConfig
+	runID       string
 	agent       *AgentProcess
 	setupCtx    context.Context
 	setupCancel context.CancelFunc
@@ -129,6 +130,7 @@ type simulateModel struct {
 	logPinned       bool
 	logPinnedTotal  int
 	showDescription bool
+	exportStatus    string
 
 	matrix              matrixRain
 	matrixSavedShowLogs bool
@@ -136,6 +138,29 @@ type simulateModel struct {
 	width  int
 	height int
 	err    error
+}
+
+// canExportScenarios reports whether the run produced generated scenarios that
+// are worth saving to a scenarios.yaml (only meaningful when generating from
+// source — a run that already used a scenarios.yaml has nothing new to export).
+func (m *simulateModel) canExportScenarios() bool {
+	return m.config != nil && m.config.mode == modeGenerateFromSource &&
+		m.run.GetScenarioGroup() != nil && len(m.run.GetScenarioGroup().GetScenarios()) > 0
+}
+
+// exportScenarios writes the run's generated scenarios to a scenarios.yaml next
+// to the project, returning a short status message for the footer.
+func (m *simulateModel) exportScenarios() string {
+	group := m.run.GetScenarioGroup()
+	out, err := scenarioGroupToYAML(group)
+	if err != nil {
+		return "export failed: " + err.Error()
+	}
+	path := filepath.Join(m.config.projectDir, "scenarios.yaml")
+	if err := os.WriteFile(path, out, 0o644); err != nil {
+		return "export failed: " + err.Error()
+	}
+	return fmt.Sprintf("exported %d scenarios to %s", len(group.GetScenarios()), path)
 }
 
 func newSimulateModel(config *simulateConfig) *simulateModel {
@@ -456,6 +481,10 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "d":
 		if m.detailJobID == "" {
 			m.showDescription = !m.showDescription
+		}
+	case "e":
+		if m.canExportScenarios() {
+			m.exportStatus = m.exportScenarios()
 		}
 	case "up", "shift+tab":
 		if m.detailJobID != "" {
@@ -798,7 +827,6 @@ func (m *simulateModel) renderHeader() string {
 	return "  " + header
 }
 
-
 func (m *simulateModel) renderCounts() string {
 	total, done, passed, failed := simulationJobCounts(m.run)
 	running := 0
@@ -1005,8 +1033,8 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 	var rows []matrixRow
 	if above > 0 {
 		rows = append(rows, matrixRow{
-			text:     []rune(fmt.Sprintf("  ... %d more above ...", above)),
-			iconCol:  -1,
+			text:    []rune(fmt.Sprintf("  ... %d more above ...", above)),
+			iconCol: -1,
 		})
 	}
 	for i := winStart; i < winEnd; i++ {
@@ -1024,8 +1052,8 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 	}
 	if below > 0 {
 		rows = append(rows, matrixRow{
-			text:     []rune(fmt.Sprintf("  ... %d more below ...", below)),
-			iconCol:  -1,
+			text:    []rune(fmt.Sprintf("  ... %d more below ...", below)),
+			iconCol: -1,
 		})
 	}
 	return rows
@@ -1449,7 +1477,11 @@ func (m *simulateModel) renderHint() string {
 			}
 		}
 	} else {
-		parts = append(parts, "↑↓ navigate · ENTER detail · d description")
+		nav := "↑↓ navigate · ENTER detail · d description"
+		if m.canExportScenarios() {
+			nav += " · e export scenarios"
+		}
+		parts = append(parts, nav)
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "PgUp/PgDn scroll logs · Ctrl+L hide logs")
@@ -1458,7 +1490,11 @@ func (m *simulateModel) renderHint() string {
 			}
 		}
 	}
-	return dimStyle.Render("  " + strings.Join(parts, " · "))
+	footer := dimStyle.Render("  " + strings.Join(parts, " · "))
+	if m.exportStatus != "" {
+		footer += "\n" + greenStyle.Render("  "+m.exportStatus)
+	}
+	return footer
 }
 
 func jobIcon(job *livekit.SimulationRun_Job) string {

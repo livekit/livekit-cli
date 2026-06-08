@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/huh"
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
@@ -40,7 +41,7 @@ import (
 )
 
 func init() {
-	AgentCommands[0].Commands = append(AgentCommands[0].Commands, simulateCommand)
+	AgentCommands[0].Commands = append(AgentCommands[0].Commands, simulateCommand, exportScenariosCommand)
 }
 
 var (
@@ -73,14 +74,95 @@ var simulateCommand = &cli.Command{
 			Usage:   "Number of scenarios to generate",
 		},
 		&cli.StringFlag{
-			Name:  "description",
-			Usage: "Agent description for scenario generation",
-		},
-		&cli.StringFlag{
 			Name:  "scenarios",
 			Usage: "Path to a scenarios `FILE` (yaml). Defaults to scenarios.yaml next to the entrypoint",
 		},
+		&cli.BoolFlag{
+			Name:    "yes",
+			Aliases: []string{"y"},
+			Usage:   "Skip the source-upload confirmation prompt (required for non-interactive runs that generate from source)",
+		},
 	},
+}
+
+var exportScenariosCommand = &cli.Command{
+	Name:      "export-scenarios",
+	Usage:     "Export a simulation run's scenarios to a scenarios.yaml",
+	ArgsUsage: "<simulation-run-id>",
+	Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+		pc, err := loadProjectDetails(cmd)
+		if err != nil {
+			return nil, err
+		}
+		simulateProjectConfig = pc
+		return nil, nil
+	},
+	Action: runExportScenarios,
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:    "output",
+			Aliases: []string{"o"},
+			Usage:   "Write to `FILE` instead of stdout",
+		},
+	},
+}
+
+func runExportScenarios(ctx context.Context, cmd *cli.Command) error {
+	runID := cmd.Args().First()
+	if runID == "" {
+		return fmt.Errorf("a simulation run ID is required")
+	}
+
+	pc := simulateProjectConfig
+	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+	resp, err := client.GetSimulationRun(ctx, &livekit.SimulationRun_Get_Request{SimulationRunId: runID})
+	if err != nil {
+		return fmt.Errorf("failed to get simulation run: %w", err)
+	}
+
+	group := resp.GetRun().GetScenarioGroup()
+	if group == nil || len(group.GetScenarios()) == 0 {
+		return fmt.Errorf("simulation run %q has no scenarios to export", runID)
+	}
+
+	out, err := scenarioGroupToYAML(group)
+	if err != nil {
+		return err
+	}
+
+	if path := cmd.String("output"); path != "" {
+		if err := os.WriteFile(path, out, 0o644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", path, err)
+		}
+		fmt.Printf("Wrote %d scenarios to %s\n", len(group.GetScenarios()), path)
+		return nil
+	}
+	_, err = os.Stdout.Write(out)
+	return err
+}
+
+// scenarioGroupToYAML renders a ScenarioGroup as a scenarios.yaml document — the
+// inverse of loadScenarioGroup, decoding each scenario's JSON userdata string
+// back into a nested mapping.
+func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
+	f := scenariosFile{Name: group.GetName()}
+	for _, s := range group.GetScenarios() {
+		ys := yamlScenario{
+			Label:             s.GetLabel(),
+			Instructions:      s.GetInstructions(),
+			AgentExpectations: s.GetAgentExpectations(),
+			Tags:              s.GetTags(),
+		}
+		if s.GetUserdata() != "" {
+			var ud map[string]any
+			if err := json.Unmarshal([]byte(s.GetUserdata()), &ud); err != nil {
+				return nil, fmt.Errorf("failed to decode userdata for scenario %q: %w", s.GetLabel(), err)
+			}
+			ys.Userdata = ud
+		}
+		f.Scenarios = append(f.Scenarios, ys)
+	}
+	return yaml.Marshal(f)
 }
 
 // scenariosFile mirrors a scenarios.yaml (the source of truth for scenarios).
@@ -106,7 +188,6 @@ type simulateConfig struct {
 	pc             *config.ProjectConfig
 	numSimulations int32
 	mode           simulateMode
-	description    string
 	agentName      string
 	projectDir     string
 	projectType    agentfs.ProjectType
@@ -119,7 +200,6 @@ type simulateMode int
 
 const (
 	modeScenarios simulateMode = iota
-	modeGenerateFromDescription
 	modeGenerateFromSource
 )
 
@@ -186,7 +266,6 @@ func generateAgentName() string {
 func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 
-	description := cmd.String("description")
 	numSimulations := int32(cmd.Int("num-simulations"))
 	agentName := generateAgentName()
 
@@ -221,13 +300,18 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var mode simulateMode
-	switch {
-	case scenarioGroup != nil && len(scenarioGroup.Scenarios) > 0:
+	if scenarioGroup != nil && len(scenarioGroup.Scenarios) > 0 {
 		mode = modeScenarios
-	case description != "":
-		mode = modeGenerateFromDescription
-	default:
+	} else {
 		mode = modeGenerateFromSource
+	}
+
+	// Generating from source uploads the agent's code to LiveKit Cloud, so make
+	// the user agree to it explicitly before anything is sent.
+	if mode == modeGenerateFromSource {
+		if err := confirmSourceUpload(cmd, projectDir); err != nil {
+			return err
+		}
 	}
 
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
@@ -238,7 +322,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		pc:             pc,
 		numSimulations: numSimulations,
 		mode:           mode,
-		description:    description,
 		agentName:      agentName,
 		projectDir:     projectDir,
 		projectType:    projectType,
@@ -257,6 +340,39 @@ func isInteractive() bool {
 		return false
 	}
 	return isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
+}
+
+// confirmSourceUpload makes the user explicitly agree that their agent's source
+// code will be uploaded to LiveKit Cloud before generating scenarios from it.
+func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
+	if cmd.Bool("yes") {
+		return nil
+	}
+	if !isInteractive() {
+		return fmt.Errorf(
+			"generating scenarios from source uploads your agent's code (%s) to LiveKit Cloud; re-run with --yes to confirm",
+			projectDir,
+		)
+	}
+	confirmed := false
+	err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
+		Title("Upload source to LiveKit Cloud?").
+		Description(fmt.Sprintf(
+			"No scenarios.yaml was provided, so test scenarios will be generated from "+
+				"your agent's source.\n%s will be uploaded to LiveKit Cloud.",
+			projectDir,
+		)).
+		Affirmative("Upload").
+		Negative("Cancel").
+		Value(&confirmed))).
+		Run()
+	if err != nil {
+		return err
+	}
+	if !confirmed {
+		return fmt.Errorf("aborted: source upload was not confirmed")
+	}
+	return nil
 }
 
 // --- Shared lifecycle functions used by both TUI and CI modes ---
@@ -287,9 +403,8 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 
 func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livekit.PresignedPostRequest, error) {
 	req := &livekit.SimulationRun_Create_Request{
-		AgentName:        c.agentName,
-		AgentDescription: c.description,
-		NumSimulations:   c.numSimulations,
+		AgentName:      c.agentName,
+		NumSimulations: c.numSimulations,
 	}
 	if c.mode == modeScenarios {
 		// Run the scenarios from the yaml. When unset, the server generates
@@ -316,8 +431,8 @@ func uploadSource(ctx context.Context, client *lksdk.AgentSimulationClient, runI
 		return fmt.Errorf("failed to upload source: %w", err)
 	}
 	if _, err := client.ConfirmSimulationSourceUpload(ctx, &livekit.SimulationRun_ConfirmSourceUpload_Request{
-		SimulationRunId:  runID,
-		CodeEntrypoint: entrypoint,
+		SimulationRunId: runID,
+		CodeEntrypoint:  entrypoint,
 	}); err != nil {
 		return fmt.Errorf("failed to confirm upload: %w", err)
 	}
