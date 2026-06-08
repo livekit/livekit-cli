@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/urfave/cli/v3"
@@ -853,7 +854,7 @@ func deleteSIPTrunk(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		printSIPTrunkID(info)
+		out.Resultf("SIP Trunk [%s] deleted\n", util.Accented(info.GetSipTrunkId()))
 		return nil
 	})
 }
@@ -869,20 +870,16 @@ func deleteSIPTrunkLegacy(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	printSIPTrunkID(info)
+	out.Resultf("SIP Trunk [%s] deleted\n", util.Accented(info.GetSipTrunkId()))
 	return nil
 }
 
-func printSIPTrunkID(info *livekit.SIPTrunkInfo) {
-	fmt.Printf("SIPTrunkID: %v\n", info.GetSipTrunkId())
-}
-
 func printSIPInboundTrunkID(info *livekit.SIPInboundTrunkInfo) {
-	fmt.Printf("SIPTrunkID: %v\n", info.GetSipTrunkId())
+	out.Resultf("SIPTrunkID: %v\n", info.GetSipTrunkId())
 }
 
 func printSIPOutboundTrunkID(info *livekit.SIPOutboundTrunkInfo) {
-	fmt.Printf("SIPTrunkID: %v\n", info.GetSipTrunkId())
+	out.Resultf("SIPTrunkID: %v\n", info.GetSipTrunkId())
 }
 
 func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
@@ -1120,7 +1117,7 @@ func deleteSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
 }
 
 func printSIPDispatchRuleID(info *livekit.SIPDispatchRuleInfo) {
-	fmt.Printf("SIPDispatchRuleID: %v\n", info.SipDispatchRuleId)
+	out.Resultf("SIPDispatchRuleID: %v\n", info.SipDispatchRuleId)
 }
 
 func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
@@ -1204,8 +1201,8 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 			if msg == "" {
 				msg = e.Code.ShortName()
 			}
-			fmt.Printf("SIPStatusCode: %d\n", e.Code)
-			fmt.Printf("SIPStatus: %s\n", msg)
+			out.Resultf("SIPStatusCode: %d\n", e.Code)
+			out.Resultf("SIPStatus: %s\n", msg)
 		}
 		return resp, err
 	}, printSIPParticipantInfo)
@@ -1252,8 +1249,8 @@ func transferSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 }
 
 func printSIPParticipantInfo(info *livekit.SIPParticipantInfo) {
-	fmt.Printf("SIPCallID: %v\n", info.SipCallId)
-	fmt.Printf("ParticipantID: %v\n", info.ParticipantId)
-	fmt.Printf("ParticipantIdentity: %v\n", info.ParticipantIdentity)
-	fmt.Printf("RoomName: %v\n", info.RoomName)
+	out.Resultf("SIPCallID: %v\n", info.SipCallId)
+	out.Resultf("ParticipantID: %v\n", info.ParticipantId)
+	out.Resultf("ParticipantIdentity: %v\n", info.ParticipantIdentity)
+	out.Resultf("RoomName: %v\n", info.RoomName)
 }

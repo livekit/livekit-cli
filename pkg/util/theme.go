@@ -37,4 +37,14 @@ var (
 	Fg              = lipgloss.AdaptiveColor{Light: "235", Dark: "252"}
 	FormBaseStyle   = Theme.Form.Base.Foreground(Fg).Padding(0, 1)
 	FormHeaderStyle = FormBaseStyle.Bold(true)
+
+	// Form helpers
+	Confirm = func() *huh.Select[bool] {
+		return huh.NewSelect[bool]().
+			Options(
+				huh.NewOption("Yes", true),
+				huh.NewOption("No", false),
+			).
+			Inline(false)
+	}
 )
