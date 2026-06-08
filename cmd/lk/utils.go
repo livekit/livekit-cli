@@ -64,11 +64,13 @@ var (
 		Aliases: []string{"j"},
 		Usage:   "Output as JSON",
 	}
-	silentFlag = &cli.BoolFlag{
-		Name:     "silent",
-		Usage:    "If set, will not prompt for confirmation",
-		Required: false,
-		Value:    false,
+	// quietFlag is global. "silent" is kept as an alias for backwards compatibility with
+	// the former per-command --silent flag; both resolve to the same value and feed the
+	// Printer's Quiet gating.
+	quietFlag = &cli.BoolFlag{
+		Name:    "quiet",
+		Aliases: []string{"q", "silent"},
+		Usage:   "Suppress informational output to stderr (warnings and errors still print)",
 	}
 	templateFlag = &cli.StringFlag{
 		Name:        "template",
@@ -149,11 +151,7 @@ var (
 			Aliases: []string{"y"},
 			Usage:   "Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)",
 		},
-		&cli.BoolFlag{
-			Name:    "quiet",
-			Aliases: []string{"q"},
-			Usage:   "Suppress informational output to stderr (warnings and errors still print)",
-		},
+		quietFlag,
 		&cli.StringFlag{
 			Name:        "server-url",
 			Value:       cloudAPIServerURL,

@@ -180,7 +180,6 @@ var (
 						secretsFileFlag,
 						secretsMountFlag,
 						ignoreEmptySecretsFlag,
-						silentFlag,
 						regionFlag,
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
@@ -197,7 +196,6 @@ var (
 					Before: createAgentClient,
 					Action: generateAgentDockerfile,
 					Flags: []cli.Flag{
-						silentFlag,
 						&cli.BoolFlag{
 							Name:     "overwrite",
 							Usage:    "Overwrite existing Dockerfile and/or .dockerignore if they exist",
@@ -226,7 +224,6 @@ var (
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
-						silentFlag,
 						regionFlag,
 						ignoreEmptySecretsFlag,
 						skipSDKCheckFlag,
@@ -309,7 +306,6 @@ var (
 					Action:  deleteAgent,
 					Aliases: []string{"destroy"},
 					Flags: []cli.Flag{
-						silentFlag,
 						idFlag(false),
 					},
 					ArgsUsage: "[working-dir]",
@@ -466,7 +462,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 
 	// Create sandbox only when not disabled by flag and we don't already have one
 	if !cmd.Bool("no-sandbox") && sandboxID == "" {
-		if err := util.Await("Creating sandbox app...", ctx, func(ctx context.Context) error {
+		if err := out.Await("Creating sandbox app...", ctx, func(ctx context.Context) error {
 			token, err := requireToken(ctx, cmd)
 			if err != nil {
 				return err
@@ -564,25 +560,19 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	silent := cmd.Bool("silent")
-
 	if configExists && lkConfig.Agent != nil {
-		if !silent {
-			out.Statusf("Using agent configuration [%s]", util.Accented(tomlFilename))
-		}
+		out.Statusf("Using agent configuration [%s]", util.Accented(tomlFilename))
 	} else {
 		lkConfig = config.NewLiveKitTOML(subdomainMatches[1]).WithDefaultAgent()
 	}
-	if !silent {
-		out.Status("Creating new agent deployment")
-	}
+	out.Status("Creating new agent deployment")
 
 	secrets, err := requireSecrets(ctx, cmd, false, false)
 	if err != nil {
 		return err
 	}
 
-	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
+	settingsMap, err := getClientSettings(ctx)
 	if err != nil {
 		return err
 	}
@@ -661,7 +651,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 
 	out.Status("Build completed - You can view build logs later with `lk agent logs --log-type=build`")
 
-	if !silent && !SkipPrompts(cmd) {
+	if !SkipPrompts(cmd) {
 		viewLogs := true
 		if err := huh.NewForm(
 			huh.NewGroup(
@@ -787,7 +777,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	out.Statusf("Detected agent language [%s]", util.Accented(string(projectType)))
 
-	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
+	settingsMap, err := getClientSettings(ctx)
 	if err != nil {
 		return err
 	}
@@ -955,7 +945,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var resp *lkproto.UpdateAgentResponse
-	err = util.Await("Updating agent ["+util.Accented(lkConfig.Agent.ID)+"]", ctx, func(ctx context.Context) error {
+	err = out.Await("Updating agent ["+util.Accented(lkConfig.Agent.ID)+"]", ctx, func(ctx context.Context) error {
 		var clientErr error
 		resp, clientErr = agentsClient.UpdateAgent(ctx, req)
 		return clientErr
@@ -983,7 +973,7 @@ func rollbackAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var resp *lkproto.RollbackAgentResponse
-	err = util.Await("Rolling back agent ["+util.Accented(agentID)+"]", ctx, func(ctx context.Context) error {
+	err = out.Await("Rolling back agent ["+util.Accented(agentID)+"]", ctx, func(ctx context.Context) error {
 		var clientErr error
 		resp, clientErr = agentsClient.RollbackAgent(ctx, &lkproto.RollbackAgentRequest{
 			AgentId: agentID,
@@ -1029,13 +1019,12 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
-	silent := cmd.Bool("silent")
 	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
 
-	if !silent && !SkipPrompts(cmd) {
+	if !SkipPrompts(cmd) {
 		var confirmDelete bool
 		if err := huh.NewForm(
 			huh.NewGroup(
@@ -1054,7 +1043,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var res *lkproto.DeleteAgentResponse
-	err = util.Await(
+	err = out.Await(
 		"Deleting agent ["+util.Accented(agentID)+"]",
 		ctx,
 		func(ctx context.Context) error {
@@ -1318,7 +1307,7 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool) (string, error) {
 	var agents *lkproto.ListAgentsResponse
 
-	err := util.Await("No agent ID provided, selecting from available agents...", ctx, func(ctx context.Context) error {
+	err := out.Await("No agent ID provided, selecting from available agents...", ctx, func(ctx context.Context) error {
 		var clientErr error
 		agents, clientErr = agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{})
 		return clientErr
@@ -1370,7 +1359,6 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 }
 
 func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([]*lkproto.AgentSecret, error) {
-	silent := cmd.Bool("silent")
 	secrets := make(map[string]*lkproto.AgentSecret)
 
 	mountableSecretFiles := cmd.StringSlice("secret-mount")
@@ -1414,7 +1402,7 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 		if err != nil {
 			return nil, err
 		}
-		if file != "" && !silent {
+		if file != "" {
 			out.Statusf("Using secrets file [%s]", util.Accented(file))
 		}
 
@@ -1442,8 +1430,8 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 			secrets[k] = secret
 		}
 
-		// Log skipped secrets if any (unless silent)
-		if len(skippedEmpty) > 0 && !silent {
+		// Note any empty secrets that were skipped (suppressed by --quiet via the Printer)
+		if len(skippedEmpty) > 0 {
 			skippedNames := strings.Join(skippedEmpty, ", ")
 			out.Statusf("Skipped %d empty secret(s): %s", len(skippedEmpty), util.Dimmed(skippedNames))
 		}
@@ -1482,62 +1470,46 @@ func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string,
 	}
 
 	if !dockerfileExists {
-		if !cmd.Bool("silent") {
-			err := util.Await(
-				"Creating Dockerfile...",
-				ctx,
-				func(ctx context.Context) error {
-					return agentfs.CreateDockerfile(workingDir, projectType, settingsMap, SkipPrompts(cmd))
-				},
-			)
-			if err != nil {
-				return err
-			}
-			out.Statusf("Created [%s]", util.Accented("Dockerfile"))
-		} else {
-			if err := agentfs.CreateDockerfile(workingDir, projectType, settingsMap, SkipPrompts(cmd)); err != nil {
-				return err
-			}
+		// out.Await handles spinner suppression (--quiet / non-interactive) internally.
+		if err := out.Await(
+			"Creating Dockerfile...",
+			ctx,
+			func(ctx context.Context) error {
+				return agentfs.CreateDockerfile(workingDir, projectType, settingsMap, SkipPrompts(cmd))
+			},
+		); err != nil {
+			return err
 		}
+		out.Statusf("Created [%s]", util.Accented("Dockerfile"))
 	} else {
-		if !cmd.Bool("silent") {
-			out.Status("Using existing Dockerfile")
-		}
+		out.Status("Using existing Dockerfile")
 	}
 
 	if !dockerIgnoreExists {
-		if !cmd.Bool("silent") {
-			out.Status("Creating .dockerignore...")
-		}
+		out.Status("Creating .dockerignore...")
 		if err := agentfs.CreateDockerIgnoreFile(workingDir, projectType); err != nil {
 			return err
 		}
 		out.Statusf("Created [%s]", util.Accented(".dockerignore"))
 	} else {
-		if !cmd.Bool("silent") {
-			out.Status("Using existing .dockerignore")
-		}
+		out.Status("Using existing .dockerignore")
 	}
 
 	return nil
 }
 
-func getClientSettings(ctx context.Context, silent bool) (map[string]string, error) {
+func getClientSettings(ctx context.Context) (map[string]string, error) {
 	var clientSettingsResponse *lkproto.ClientSettingsResponse
-	var err error
-
-	if !silent {
-		err = util.Await(
-			"Loading client settings...",
-			ctx,
-			func(ctx context.Context) error {
-				clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
-				return err
-			},
-		)
-	} else {
-		clientSettingsResponse, err = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
-	}
+	// out.Await handles spinner suppression (--quiet / non-interactive) internally.
+	err := out.Await(
+		"Loading client settings...",
+		ctx,
+		func(ctx context.Context) error {
+			var e error
+			clientSettingsResponse, e = agentsClient.GetClientSettings(ctx, &lkproto.ClientSettingsRequest{})
+			return e
+		},
+	)
 
 	if err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
@@ -1618,7 +1590,7 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("invalid working directory: %s", workingDir)
 	}
 
-	settingsMap, err := getClientSettings(ctx, cmd.Bool("silent"))
+	settingsMap, err := getClientSettings(ctx)
 	if err != nil {
 		return err
 	}

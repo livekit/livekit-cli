@@ -21,9 +21,13 @@
 package util
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/charmbracelet/huh/spinner"
+	"github.com/mattn/go-isatty"
 )
 
 // Printer is a single sink for human-facing CLI output. One instance per process
@@ -33,6 +37,10 @@ type Printer struct {
 	Out   io.Writer // primary output: data the user might pipe or redirect
 	Err   io.Writer // status, warnings, diagnostics
 	Quiet bool      // suppresses Status (warnings and errors still print)
+
+	// interactive reports whether Err is a real terminal. It gates decoration
+	// (spinners) — never content — so redirected or piped runs stay clean.
+	interactive bool
 }
 
 // NewPrinter builds a Printer targeting the given writers. Pass nil to default
@@ -44,7 +52,17 @@ func NewPrinter(out, err io.Writer, quiet bool) *Printer {
 	if err == nil {
 		err = os.Stderr
 	}
-	return &Printer{Out: out, Err: err, Quiet: quiet}
+	return &Printer{Out: out, Err: err, Quiet: quiet, interactive: isTerminal(err)}
+}
+
+// isTerminal reports whether w is a terminal-backed *os.File. Non-file writers
+// (bytes.Buffer in tests, pipes) are never terminals.
+func isTerminal(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
 }
 
 // Status writes an informational breadcrumb to stderr ("Using project [X]",
@@ -94,4 +112,28 @@ func ensureNewline(s string) string {
 		return s + "\n"
 	}
 	return s
+}
+
+// Await runs action while showing a spinner, then returns the action's error.
+//
+// The spinner is decoration: it only animates when the Printer targets an interactive
+// terminal and is not in quiet mode. Otherwise Await emits the title once as a plain
+// status line (itself suppressed by --quiet) and runs the action without animation, so
+// redirected/piped/CI output stays free of escape sequences and --quiet stays silent.
+func (p *Printer) Await(title string, ctx context.Context, action func(ctx context.Context) error) error {
+	if p == nil {
+		return action(ctx)
+	}
+	if p.Quiet || !p.interactive {
+		p.Status(title)
+		return action(ctx)
+	}
+	return spinner.New().
+		Title(" " + title).
+		ActionWithErr(action).
+		Type(spinner.Pulse).
+		Style(Theme.Focused.Title).
+		Output(p.Err).
+		Context(ctx).
+		Run()
 }

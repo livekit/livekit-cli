@@ -16,9 +16,13 @@ package util
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPrinter_StreamsAndQuiet(t *testing.T) {
@@ -48,7 +52,6 @@ func TestPrinter_QuietSuppressesOnlyStatus(t *testing.T) {
 	p.Warnf("warn %d", 1)
 	p.Resultf("result\n")
 
-	assert.Empty(t, "", err.String()[:0], "sanity")
 	assert.NotContains(t, err.String(), "breadcrumb", "--quiet suppresses Status")
 	assert.Contains(t, err.String(), "warn 1", "--quiet does NOT suppress warnings")
 	assert.Equal(t, "result\n", out.String(), "results unaffected by --quiet")
@@ -61,4 +64,49 @@ func TestPrinter_NilSafe(t *testing.T) {
 	p.Warnf("z")
 	p.Result("a")
 	p.Resultf("b\n")
+
+	// Await on a nil Printer still runs the action.
+	ran := false
+	require.NoError(t, p.Await("doing", context.Background(), func(context.Context) error {
+		ran = true
+		return nil
+	}))
+	assert.True(t, ran)
+}
+
+func TestPrinter_AwaitNonInteractive(t *testing.T) {
+	// A buffer-backed Printer is never a terminal, so Await must not animate: it runs the
+	// action and emits the title once as a plain status line (suppressed by --quiet).
+	t.Run("not quiet: title shown, action runs", func(t *testing.T) {
+		var out, err bytes.Buffer
+		p := NewPrinter(&out, &err, false)
+		ran := false
+		require.NoError(t, p.Await("Loading...", context.Background(), func(context.Context) error {
+			ran = true
+			return nil
+		}))
+		assert.True(t, ran)
+		assert.Equal(t, "Loading...\n", err.String())
+		assert.Empty(t, out.String())
+	})
+
+	t.Run("quiet: silent, action still runs", func(t *testing.T) {
+		var out, err bytes.Buffer
+		p := NewPrinter(&out, &err, true)
+		ran := false
+		require.NoError(t, p.Await("Loading...", context.Background(), func(context.Context) error {
+			ran = true
+			return nil
+		}))
+		assert.True(t, ran)
+		assert.Empty(t, err.String())
+	})
+
+	t.Run("propagates the action error", func(t *testing.T) {
+		p := NewPrinter(io.Discard, io.Discard, false)
+		sentinel := errors.New("boom")
+		assert.ErrorIs(t, p.Await("x", context.Background(), func(context.Context) error {
+			return sentinel
+		}), sentinel)
+	})
 }

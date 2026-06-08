@@ -288,7 +288,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	_ = browser.OpenURL(authURL.String()) // discard result; this will fail in headless environments
 
 	var ak *ClaimAccessKeyResponse
-	err = util.Await(
+	err = out.Await(
 		"Awaiting confirmation...",
 		ctx,
 		func(ctx context.Context) error {

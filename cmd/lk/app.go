@@ -160,7 +160,7 @@ func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadO
 	default:
 		// when asked to confirm, let the user accept the resolved default or pick another
 		if p.confirmProject && rp.source == sourceDefault && !SkipPrompts(cmd) &&
-			!cmd.Bool("silent") && cliConfig != nil && len(cliConfig.Projects) > 1 {
+			cliConfig != nil && len(cliConfig.Projects) > 1 {
 			useDefault := true
 			if err = huh.NewForm(huh.NewGroup(util.Confirm().
 				Title(fmt.Sprintf("Use project [%s] (%s)?", rp.project.Name, rp.project.URL)).
@@ -453,7 +453,7 @@ func cloneTemplate(ctx context.Context, cmd *cli.Command, url, appName string) e
 	tempName, relocate, cleanup := util.UseTempPath(appName)
 	defer cleanup()
 
-	err := util.Await(
+	err := out.Await(
 		"Cloning template from "+url,
 		ctx,
 		func(ctx context.Context) error {
@@ -601,7 +601,7 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 		return err
 	}
 
-	err = util.Await(
+	err = out.Await(
 		"Installing...",
 		ctx,
 		func(ctx context.Context) error {

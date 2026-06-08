@@ -187,7 +187,7 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	settingsMap, err := getClientSettings(ctx, false)
+	settingsMap, err := getClientSettings(ctx)
 	if err != nil {
 		return err
 	}
