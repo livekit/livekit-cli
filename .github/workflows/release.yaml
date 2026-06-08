@@ -115,3 +115,7 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # goreleaser-action runs goreleaser via a Node wrapper that doesn't
+          # forward PWD; the .goreleaser.yaml CGO flags template {{ .Env.PWD }}
+          # to locate .cross/<target>. Provide it explicitly.
+          PWD: ${{ github.workspace }}

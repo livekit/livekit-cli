@@ -54,6 +54,11 @@ jobs:
           distribution: goreleaser
           version: latest
           args: build --snapshot --clean
+        env:
+          # goreleaser-action runs goreleaser via a Node wrapper that doesn't
+          # forward PWD; the .goreleaser.yaml CGO flags template {{ .Env.PWD }}
+          # to locate .cross/<target>. Provide it explicitly.
+          PWD: ${{ github.workspace }}
 
       - name: Verify native binary runs
         run: |
