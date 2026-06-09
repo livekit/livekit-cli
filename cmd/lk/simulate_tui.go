@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -42,6 +44,14 @@ func runSimulateTUI(config *simulateConfig) error {
 		m.agent.Kill()
 		if m.agent.LogPath != "" {
 			fmt.Fprintf(os.Stderr, "Agent logs: %s\n", m.agent.LogPath)
+		}
+	}
+
+	// When scenarios were generated, drop them in a temp scenarios.yaml and print
+	// the path (same as the agent log path) so they're never lost on exit.
+	if config.mode == modeGenerateFromSource && m.run != nil {
+		if path, err := writeGeneratedScenariosTemp(m.run); err == nil && path != "" {
+			fmt.Fprintf(os.Stderr, "Generated scenarios: %s\n", path)
 		}
 	}
 
@@ -133,6 +143,11 @@ type simulateModel struct {
 	descScrollOff   int
 	exportStatus    string
 
+	// In-TUI "save scenarios as" prompt (the e key).
+	saving    bool
+	saveInput textinput.Model
+	saveErr   string
+
 	matrix              matrixRain
 	matrixSavedShowLogs bool
 
@@ -156,56 +171,102 @@ func (m *simulateModel) canExportScenarios() bool {
 		m.run.GetScenarioGroup() != nil && len(m.run.GetScenarioGroup().GetScenarios()) > 0
 }
 
-// exportScenarios writes the run's generated scenarios to a scenarios.yaml next
-// to the project, returning a short status message for the footer. It never
-// overwrites an existing file — it falls back to scenarios-1.yaml, -2, ....
-func (m *simulateModel) exportScenarios() string {
+// handleSaveKey drives the "save scenarios as" prompt: Enter saves (refusing to
+// overwrite an existing file, and keeping the prompt open so the user can pick a
+// different name), Esc/Ctrl+C cancels, anything else edits the filename.
+func (m *simulateModel) handleSaveKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "enter":
+		name := strings.TrimSpace(m.saveInput.Value())
+		if name == "" {
+			m.saveErr = "enter a file name"
+			return m, nil
+		}
+		status, ok := m.saveScenarios(name)
+		if !ok {
+			m.saveErr = status
+			return m, nil
+		}
+		m.saving = false
+		m.saveInput.Blur()
+		m.exportStatus = status
+		return m, nil
+	case "esc", "ctrl+c":
+		m.saving = false
+		m.saveErr = ""
+		m.saveInput.Blur()
+		return m, nil
+	}
+	var cmd tea.Cmd
+	m.saveInput, cmd = m.saveInput.Update(msg)
+	return m, cmd
+}
+
+// saveScenarios writes the run's generated scenarios to projectDir/name. It never
+// overwrites: if the file already exists it returns ok=false so the caller can
+// keep the prompt open for a different name.
+func (m *simulateModel) saveScenarios(name string) (string, bool) {
 	group := m.run.GetScenarioGroup()
 	out, err := scenarioGroupToYAML(group)
 	if err != nil {
-		return "export failed: " + err.Error()
+		return "save failed: " + err.Error(), false
 	}
-	path, err := writeNoClobber(m.config.projectDir, "scenarios", ".yaml", out)
+	if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
+		name += ".yaml"
+	}
+	path := filepath.Join(m.config.projectDir, name)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if os.IsExist(err) {
+		return name + " already exists — pick another name", false
+	}
 	if err != nil {
-		return "export failed: " + err.Error()
+		return "save failed: " + err.Error(), false
 	}
-	return fmt.Sprintf("exported %d scenarios to %s", len(group.GetScenarios()), filepath.Base(path))
+	_, werr := f.Write(out)
+	if cerr := f.Close(); werr == nil {
+		werr = cerr
+	}
+	if werr != nil {
+		return "save failed: " + werr.Error(), false
+	}
+	return fmt.Sprintf("saved %d scenarios to %s", len(group.GetScenarios()), name), true
 }
 
-// writeNoClobber writes data to dir/base+ext, or dir/base-1+ext, dir/base-2+ext,
-// ... — the first name that doesn't already exist. It uses O_EXCL so it never
-// overwrites an existing file, even under a race.
-func writeNoClobber(dir, base, ext string, data []byte) (string, error) {
-	for i := 0; ; i++ {
-		name := base + ext
-		if i > 0 {
-			name = fmt.Sprintf("%s-%d%s", base, i, ext)
-		}
-		path := filepath.Join(dir, name)
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-		if os.IsExist(err) {
-			continue
-		}
-		if err != nil {
-			return "", err
-		}
-		_, werr := f.Write(data)
-		if cerr := f.Close(); werr == nil {
-			werr = cerr
-		}
-		if werr != nil {
-			return "", werr
-		}
-		return path, nil
+// copyScenario copies the given job's scenario (label / instructions /
+// expectations) to the system clipboard as a one-entry scenarios.yaml.
+func (m *simulateModel) copyScenario(jobID string) string {
+	job := m.findJob(jobID)
+	if job == nil {
+		return "copy failed: scenario not found"
 	}
+	group := &livekit.ScenarioGroup{
+		Scenarios: []*livekit.Scenario{{
+			Label:             job.GetLabel(),
+			Instructions:      job.GetInstructions(),
+			AgentExpectations: job.GetAgentExpectations(),
+		}},
+	}
+	out, err := scenarioGroupToYAML(group)
+	if err != nil {
+		return "copy failed: " + err.Error()
+	}
+	if err := clipboard.WriteAll(string(out)); err != nil {
+		return "copy failed: " + err.Error()
+	}
+	return "scenario copied to clipboard"
 }
 
 func newSimulateModel(config *simulateConfig) *simulateModel {
+	ti := textinput.New()
+	ti.Placeholder = "scenarios.yaml"
+	ti.CharLimit = 128
+	ti.Prompt = ""
 	return &simulateModel{
 		config:         config,
 		numSimulations: config.numSimulations,
 		width:          80,
 		height:         24,
+		saveInput:      ti,
 	}
 }
 
@@ -514,6 +575,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	}
+	if m.saving {
+		return m.handleSaveKey(msg)
+	}
 	switch key {
 	case "ctrl+c":
 		if m.setupCancel != nil {
@@ -570,8 +634,17 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.descScrollOff = 0
 		}
 	case "e":
-		if m.canExportScenarios() {
-			m.exportStatus = m.exportScenarios()
+		if m.canExportScenarios() && m.detailJobID == "" {
+			m.saving = true
+			m.saveErr = ""
+			m.exportStatus = ""
+			m.saveInput.SetValue("scenarios.yaml")
+			m.saveInput.CursorEnd()
+			return m, m.saveInput.Focus()
+		}
+	case "c":
+		if m.detailJobID != "" {
+			m.exportStatus = m.copyScenario(m.detailJobID)
 		}
 	case "up", "shift+tab":
 		switch {
@@ -1620,10 +1693,18 @@ func firstMeaningfulLine(text string) string {
 }
 
 func (m *simulateModel) renderHint() string {
+	if m.saving {
+		out := "  Save scenarios as: " + m.saveInput.View() + "\n"
+		out += dimStyle.Render("  enter save · esc cancel")
+		if m.saveErr != "" {
+			out += "\n" + redStyle.Render("  "+m.saveErr)
+		}
+		return out
+	}
 	var parts []string
 	switch {
 	case m.detailJobID != "":
-		parts = append(parts, "↑↓ scroll · ESC back")
+		parts = append(parts, "↑↓ scroll · c copy scenario · ESC back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
@@ -1636,7 +1717,7 @@ func (m *simulateModel) renderHint() string {
 	default:
 		nav := "↑↓ navigate · ENTER detail · d show description"
 		if m.canExportScenarios() {
-			nav += " · e export scenarios"
+			nav += " · e save scenarios"
 		}
 		parts = append(parts, nav)
 		if m.hasLogs() {

@@ -49,12 +49,18 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	var agent *AgentProcess
 	var runID string
 	var runFinished bool
+	var run *livekit.SimulationRun
 
 	cleanup := func() {
 		if agent != nil {
 			agent.Kill()
 			if agent.LogPath != "" {
 				fmt.Fprintf(os.Stderr, "Agent logs: %s\n", agent.LogPath)
+			}
+		}
+		if config.mode == modeGenerateFromSource && run != nil {
+			if path, err := writeGeneratedScenariosTemp(run); err == nil && path != "" {
+				fmt.Fprintf(os.Stderr, "Generated scenarios: %s\n", path)
 			}
 		}
 		if runID != "" && !runFinished {
@@ -137,7 +143,6 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Poll until terminal ---
 
-	var run *livekit.SimulationRun
 	prevDone := 0
 	prevStatus := livekit.SimulationRun_STATUS_GENERATING
 	ticker := time.NewTicker(simulationPollInterval)
