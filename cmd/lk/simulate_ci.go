@@ -118,6 +118,12 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			return err
 		}
 		fmt.Fprintf(os.Stdout, "✓ Source uploaded (%s)\n", time.Since(start).Round(time.Millisecond))
+	} else if g := config.scenarioGroup; g != nil {
+		name := g.GetName()
+		if name == "" {
+			name = "scenarios"
+		}
+		fmt.Fprintf(os.Stdout, "✓ Loaded %d scenarios from %s (%q)\n", len(g.GetScenarios()), config.scenariosPath, name)
 	}
 
 	fmt.Fprintln(os.Stdout, "::endgroup::")
