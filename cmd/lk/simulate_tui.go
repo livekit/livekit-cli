@@ -157,18 +157,47 @@ func (m *simulateModel) canExportScenarios() bool {
 }
 
 // exportScenarios writes the run's generated scenarios to a scenarios.yaml next
-// to the project, returning a short status message for the footer.
+// to the project, returning a short status message for the footer. It never
+// overwrites an existing file — it falls back to scenarios-1.yaml, -2, ....
 func (m *simulateModel) exportScenarios() string {
 	group := m.run.GetScenarioGroup()
 	out, err := scenarioGroupToYAML(group)
 	if err != nil {
 		return "export failed: " + err.Error()
 	}
-	path := filepath.Join(m.config.projectDir, "scenarios.yaml")
-	if err := os.WriteFile(path, out, 0o644); err != nil {
+	path, err := writeNoClobber(m.config.projectDir, "scenarios", ".yaml", out)
+	if err != nil {
 		return "export failed: " + err.Error()
 	}
-	return fmt.Sprintf("exported %d scenarios to %s", len(group.GetScenarios()), path)
+	return fmt.Sprintf("exported %d scenarios to %s", len(group.GetScenarios()), filepath.Base(path))
+}
+
+// writeNoClobber writes data to dir/base+ext, or dir/base-1+ext, dir/base-2+ext,
+// ... — the first name that doesn't already exist. It uses O_EXCL so it never
+// overwrites an existing file, even under a race.
+func writeNoClobber(dir, base, ext string, data []byte) (string, error) {
+	for i := 0; ; i++ {
+		name := base + ext
+		if i > 0 {
+			name = fmt.Sprintf("%s-%d%s", base, i, ext)
+		}
+		path := filepath.Join(dir, name)
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if os.IsExist(err) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		_, werr := f.Write(data)
+		if cerr := f.Close(); werr == nil {
+			werr = cerr
+		}
+		if werr != nil {
+			return "", werr
+		}
+		return path, nil
+	}
 }
 
 func newSimulateModel(config *simulateConfig) *simulateModel {

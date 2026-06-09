@@ -131,8 +131,21 @@ func runExportScenarios(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if path := cmd.String("output"); path != "" {
-		if err := os.WriteFile(path, out, 0o644); err != nil {
+		// Never overwrite: refuse if the file already exists so the caller picks
+		// another name (O_EXCL makes the check atomic).
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if os.IsExist(err) {
+			return fmt.Errorf("%s already exists; refusing to overwrite (choose a different --output path)", path)
+		}
+		if err != nil {
 			return fmt.Errorf("failed to write %s: %w", path, err)
+		}
+		_, werr := f.Write(out)
+		if cerr := f.Close(); werr == nil {
+			werr = cerr
+		}
+		if werr != nil {
+			return fmt.Errorf("failed to write %s: %w", path, werr)
 		}
 		fmt.Printf("Wrote %d scenarios to %s\n", len(group.GetScenarios()), path)
 		return nil
