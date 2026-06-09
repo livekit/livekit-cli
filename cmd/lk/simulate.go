@@ -75,7 +75,7 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "scenarios",
-			Usage: "Path to a scenarios `FILE` (yaml). Defaults to scenarios.yaml next to the entrypoint",
+			Usage: "Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent's source",
 		},
 		&cli.BoolFlag{
 			Name:    "yes",
@@ -236,24 +236,6 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	return group, nil
 }
 
-// defaultScenariosPath returns the path to a scenarios.yaml sitting next to the
-// entrypoint (or in the project root), or "" if none exists.
-func defaultScenariosPath(projectDir, entrypoint string) string {
-	candidates := []string{
-		filepath.Join(filepath.Dir(entrypoint), "scenarios.yaml"),
-		filepath.Join(projectDir, "scenarios.yaml"),
-	}
-	for _, c := range candidates {
-		if c == "" {
-			continue
-		}
-		if _, err := os.Stat(c); err == nil {
-			return c
-		}
-	}
-	return ""
-}
-
 func generateAgentName() string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	b := make([]byte, 8)
@@ -282,14 +264,10 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	// Resolve the scenarios file: explicit --scenarios, else scenarios.yaml next to
-	// the entrypoint. When present, those scenarios are the source of truth.
+	// The scenarios file must be specified explicitly via --scenarios; we never
+	// auto-discover one. When provided, those scenarios are the source of truth;
+	// otherwise scenarios are generated from the agent's source.
 	scenariosPath := cmd.String("scenarios")
-	if scenariosPath == "" {
-		if def := defaultScenariosPath(projectDir, entrypoint); def != "" {
-			scenariosPath = def
-		}
-	}
 
 	var scenarioGroup *livekit.ScenarioGroup
 	if scenariosPath != "" {
