@@ -355,7 +355,7 @@ func printCIChatHistory(chatCtx *agent.ChatContext) {
 		switch v := item.Item.(type) {
 		case *agent.ChatContext_ChatItem_Message:
 			msg := v.Message
-			text := ciChatText(msg)
+			text := chatMessageText(msg)
 			if text == "" {
 				continue
 			}
@@ -393,19 +393,6 @@ func printCIChatHistory(chatCtx *agent.ChatContext) {
 			fmt.Fprintf(os.Stdout, "  [handoff] -> %s\n", h.NewAgentId)
 		}
 	}
-}
-
-func ciChatText(msg *agent.ChatMessage) string {
-	if msg == nil || len(msg.Content) == 0 {
-		return ""
-	}
-	var parts []string
-	for _, c := range msg.Content {
-		if t := c.GetText(); t != "" {
-			parts = append(parts, t)
-		}
-	}
-	return strings.Join(parts, "")
 }
 
 func isGitHubActions() bool {
