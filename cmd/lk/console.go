@@ -144,6 +144,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		Entrypoint:  entrypoint,
 		ProjectType: projectType,
 		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
+		FailSignals: consoleCrashSignals,
 	})
 	if err != nil {
 		stopSpinner()
@@ -183,6 +184,15 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("agent exited before connecting: %w", err)
 		}
 		return fmt.Errorf("agent exited before connecting")
+	case <-agentProc.Failed():
+		stopSpinner()
+		// The crash marker arrives mid-traceback; give trailing output a moment.
+		time.Sleep(500 * time.Millisecond)
+		logs := agentProc.RecentLogs(40)
+		for _, l := range logs {
+			fmt.Fprintln(os.Stderr, l)
+		}
+		return fmt.Errorf("agent job crashed before connecting")
 	case <-time.After(60 * time.Second):
 		stopSpinner()
 		logs := agentProc.RecentLogs(20)

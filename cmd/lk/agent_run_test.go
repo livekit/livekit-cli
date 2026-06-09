@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -109,6 +110,33 @@ func TestBuildAgentCommandNode(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"--experimental-strip-types", "--env-file=.env", "agent.ts", "dev"}, args)
+}
+
+func TestAgentProcessFailSignal(t *testing.T) {
+	if _, err := exec.LookPath("node"); err != nil {
+		t.Skip("node not on PATH")
+	}
+
+	// An agent whose job crashes logs a marker but keeps the process alive;
+	// Failed() must fire without waiting for exit.
+	dir := t.TempDir()
+	script := `console.log('shutting down job task {"reason": "job crashed"}'); setTimeout(() => {}, 30000);`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "agent.js"), []byte(script), 0o644))
+
+	ap, err := startAgent(AgentStartConfig{
+		Dir:         dir,
+		Entrypoint:  "agent.js",
+		ProjectType: agentfs.ProjectTypeNode,
+		FailSignals: consoleCrashSignals,
+	})
+	require.NoError(t, err)
+	defer ap.Kill()
+
+	select {
+	case <-ap.Failed():
+	case <-time.After(10 * time.Second):
+		t.Fatal("Failed() did not fire on crash marker")
+	}
 }
 
 func TestFindEnvFile(t *testing.T) {

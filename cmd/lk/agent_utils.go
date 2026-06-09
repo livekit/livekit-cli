@@ -65,6 +65,16 @@ func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error
 	return projectDir, projectType, entrypoint, nil
 }
 
+// consoleCrashSignals are output markers meaning the console job died even
+// though the worker process may stay alive: the Python SDK keeps the worker
+// running after the job task crashes (logging `"reason": "job crashed"`), and
+// agents-js logs FATAL `console mode failed:` before exiting. Without these,
+// a pre-connect crash leaves the user waiting out the full connect timeout.
+var consoleCrashSignals = []string{
+	`"job crashed"`,
+	"console mode failed:",
+}
+
 // buildConsoleArgs builds the agent subprocess argv for console mode, shared by
 // `lk agent console` and the `lk agent session` daemon.
 func buildConsoleArgs(addr string, record bool) []string {

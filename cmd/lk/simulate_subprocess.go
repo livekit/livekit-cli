@@ -36,6 +36,7 @@ import (
 type AgentProcess struct {
 	cmd            *exec.Cmd
 	readyCh        chan struct{}
+	failCh         chan struct{} // closed when output matches a FailSignal
 	doneCh         chan error
 	exitCh         chan struct{} // closed when process exits, safe to read multiple times
 	shutdownCalled bool          // true after Shutdown() sends SIGINT
@@ -219,6 +220,7 @@ type AgentStartConfig struct {
 	CLIArgs       []string  // e.g. ["start", "--url", "..."] or ["console", "--connect-addr", addr]
 	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME=x"] or nil
 	ReadySignal   string    // substring to scan for in output (e.g. "registered worker"), empty to skip
+	FailSignals   []string  // output substrings meaning the agent has fatally failed even if the process is still alive
 	ForwardOutput io.Writer // if set, forward each output line to this writer
 }
 
@@ -292,6 +294,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	ap := &AgentProcess{
 		cmd:            cmd,
 		readyCh:        make(chan struct{}),
+		failCh:         make(chan struct{}),
 		doneCh:         make(chan error, 1),
 		exitCh:         make(chan struct{}),
 		roomLogs:       make(map[string][]string),
@@ -308,6 +311,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 
 	// Capture output from both stdout and stderr
 	readyOnce := sync.Once{}
+	failOnce := sync.Once{}
 	scanOutput := func(r io.Reader) {
 		scanner := bufio.NewScanner(r)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
@@ -319,6 +323,12 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 			}
 			if cfg.ReadySignal != "" && strings.Contains(line, cfg.ReadySignal) {
 				readyOnce.Do(func() { close(ap.readyCh) })
+			}
+			for _, sig := range cfg.FailSignals {
+				if strings.Contains(line, sig) {
+					failOnce.Do(func() { close(ap.failCh) })
+					break
+				}
 			}
 		}
 	}
@@ -371,6 +381,12 @@ func (ap *AgentProcess) Ready() <-chan struct{} {
 // Done returns a channel that receives the process exit error.
 func (ap *AgentProcess) Done() <-chan error {
 	return ap.doneCh
+}
+
+// Failed returns a channel that is closed when the agent's output matched one
+// of the configured FailSignals — a fatal failure even if the process is alive.
+func (ap *AgentProcess) Failed() <-chan struct{} {
+	return ap.failCh
 }
 
 // RecentLogs returns the last n log lines from the subprocess. If n <= 0, returns all lines.
