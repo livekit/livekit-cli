@@ -30,7 +30,7 @@ import (
 type savePhase int
 
 const (
-	savePhaseLoading  savePhase = iota
+	savePhaseLoading savePhase = iota
 	savePhaseList
 	savePhaseNewGroup
 	savePhaseSaving
@@ -283,16 +283,17 @@ func (s *saveOverlay) render() string {
 
 	var b strings.Builder
 	title := saveTitleStyle.Render("Save to Scenario Group")
-	b.WriteString(title + "\n")
+	b.WriteString(title)
+	b.WriteString("\n")
 
 	switch s.phase {
 	case savePhaseLoading:
 		spinner := simSpinnerFrames[s.spinnerIdx%len(simSpinnerFrames)]
-		b.WriteString(fmt.Sprintf("\n  %s Loading scenario groups...\n", cyanStyle.Render(spinner)))
+		fmt.Fprintf(&b, "\n  %s Loading scenario groups...\n", cyanStyle.Render(spinner))
 		b.WriteString(dimStyle.Render("\n  ESC cancel"))
 
 	case savePhaseError:
-		b.WriteString(fmt.Sprintf("\n  %s %s\n", redStyle.Render("✗"), redStyle.Render(s.err.Error())))
+		fmt.Fprintf(&b, "\n  %s %s\n", redStyle.Render("✗"), redStyle.Render(s.err.Error()))
 		b.WriteString(dimStyle.Render("\n  r retry · ESC back"))
 
 	case savePhaseList:
@@ -300,30 +301,30 @@ func (s *saveOverlay) render() string {
 		for i, g := range s.groups {
 			label := g.Label
 			if i == s.cursor {
-				b.WriteString(fmt.Sprintf("  %s %s\n", saveSelectedStyle.Render(">"), saveSelectedStyle.Render(label)))
+				fmt.Fprintf(&b, "  %s %s\n", saveSelectedStyle.Render(">"), saveSelectedStyle.Render(label))
 			} else {
-				b.WriteString(fmt.Sprintf("    %s\n", label))
+				fmt.Fprintf(&b, "    %s\n", label)
 			}
 		}
 		// "+ New Group..." option
 		newLabel := "+ New Group..."
 		if s.cursor == len(s.groups) {
-			b.WriteString(fmt.Sprintf("  %s %s\n", saveNewGroupStyle.Render(">"), saveNewGroupStyle.Render(newLabel)))
+			fmt.Fprintf(&b, "  %s %s\n", saveNewGroupStyle.Render(">"), saveNewGroupStyle.Render(newLabel))
 		} else {
-			b.WriteString(fmt.Sprintf("    %s\n", saveNewGroupStyle.Render(newLabel)))
+			fmt.Fprintf(&b, "    %s\n", saveNewGroupStyle.Render(newLabel))
 		}
 		b.WriteString(dimStyle.Render("\n  ↑↓ navigate · ENTER select · ESC back"))
 
 	case savePhaseNewGroup:
-		b.WriteString(fmt.Sprintf("\n  Group name: %s%s\n", s.groupInput, cyanStyle.Render("│")))
+		fmt.Fprintf(&b, "\n  Group name: %s%s\n", s.groupInput, cyanStyle.Render("│"))
 		b.WriteString(dimStyle.Render("\n  ENTER create · ESC cancel"))
 
 	case savePhaseSaving:
 		spinner := simSpinnerFrames[s.spinnerIdx%len(simSpinnerFrames)]
-		b.WriteString(fmt.Sprintf("\n  %s Saving scenario...\n", cyanStyle.Render(spinner)))
+		fmt.Fprintf(&b, "\n  %s Saving scenario...\n", cyanStyle.Render(spinner))
 
 	case savePhaseSuccess:
-		b.WriteString(fmt.Sprintf("\n  %s Saved to %s\n", greenStyle.Render("✓"), boldStyle.Render("\""+s.successMsg+"\"")))
+		fmt.Fprintf(&b, "\n  %s Saved to %s\n", greenStyle.Render("✓"), boldStyle.Render("\""+s.successMsg+"\""))
 	}
 
 	return "\n" + saveBoxStyle.Width(boxWidth).Render(b.String()) + "\n"

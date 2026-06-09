@@ -751,7 +751,7 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 	apiSecret := pc.APISecret
 
 	var testers []*loadtester.LoadTester
-	for i := 0; i < numPublishers; i++ {
+	for i := range numPublishers {
 		lt := loadtester.NewLoadTester(loadtester.TesterParams{
 			URL:            serverURL,
 			APIKey:         apiKey,

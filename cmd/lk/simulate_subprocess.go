@@ -113,13 +113,14 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 		}
 	}
 
-	msg := "no agent entrypoint found, checked:\n"
+	var msg strings.Builder
+	msg.WriteString("no agent entrypoint found, checked:\n")
 	for _, p := range checked {
-		msg += fmt.Sprintf("  - %s\n", p)
+		fmt.Fprintf(&msg, "  - %s\n", p)
 	}
-	msg += "\nMake sure you are running this command from a directory containing a LiveKit agent.\n"
-	msg += "Specify the entrypoint file as a positional argument, e.g.: lk agent simulate agent.py"
-	return "", fmt.Errorf("%s", msg)
+	msg.WriteString("\nMake sure you are running this command from a directory containing a LiveKit agent.\n")
+	msg.WriteString("Specify the entrypoint file as a positional argument, e.g.: lk agent simulate agent.py")
+	return "", fmt.Errorf("%s", msg.String())
 }
 
 // AgentStartConfig configures how to launch an agent subprocess.

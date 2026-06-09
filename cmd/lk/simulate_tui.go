@@ -721,16 +721,20 @@ func (m *simulateModel) viewSetup() string {
 	b.WriteString("\n\n")
 
 	if m.config.pc != nil && m.config.pc.Name != "" {
-		b.WriteString(dimStyle.Render("  Project: "+m.config.pc.Name) + "\n")
+		b.WriteString(dimStyle.Render("  Project: " + m.config.pc.Name))
+		b.WriteString("\n")
 	}
 	if m.config.pc != nil && m.config.pc.URL != "" {
-		b.WriteString(dimStyle.Render("  URL:     "+m.config.pc.URL) + "\n")
+		b.WriteString(dimStyle.Render("  URL:     " + m.config.pc.URL))
+		b.WriteString("\n")
 	}
 	if m.runID != "" {
-		b.WriteString(dimStyle.Render("  Run:     "+m.runID) + "\n")
+		b.WriteString(dimStyle.Render("  Run:     " + m.runID))
+		b.WriteString("\n")
 	}
 	if url := m.getDashboardURL(); url != "" {
-		b.WriteString(dimStyle.Render("  "+url) + "\n")
+		b.WriteString(dimStyle.Render("  " + url))
+		b.WriteString("\n")
 	}
 
 	// When scenarios come from a file, show that clearly: the group title, how many
@@ -761,12 +765,13 @@ func (m *simulateModel) viewSetup() string {
 		if m.run != nil && m.run.GetNumSimulations() > 0 {
 			n = m.run.GetNumSimulations()
 		}
-		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("⏺"), n, m.spinner(), dimStyle.Render(elapsed.String())))
+		fmt.Fprintf(&b, "  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("⏺"), n, m.spinner(), dimStyle.Render(elapsed.String()))
 	}
 
 	if m.err != nil {
 		b.WriteString("\n")
-		b.WriteString(redStyle.Render("  "+m.err.Error()) + "\n")
+		b.WriteString(redStyle.Render("  " + m.err.Error()))
+		b.WriteString("\n")
 		if m.agent != nil {
 			b.WriteString("\n")
 			b.WriteString(m.renderLogs(""))
@@ -800,14 +805,14 @@ func (m *simulateModel) renderSteps() string {
 			if s.elapsed > 0 {
 				elapsed = " " + dimStyle.Render(s.elapsed.Round(time.Millisecond).String())
 			}
-			b.WriteString(fmt.Sprintf("  %s %s%s\n", greenStyle.Render("✓"), s.label, elapsed))
+			fmt.Fprintf(&b, "  %s %s%s\n", greenStyle.Render("✓"), s.label, elapsed)
 		case "running":
 			elapsed := time.Since(m.stepStart).Truncate(time.Second)
-			b.WriteString(fmt.Sprintf("  %s %s  %s %s\n", yellowStyle.Render("⏺"), s.label, m.spinner(), dimStyle.Render(elapsed.String())))
+			fmt.Fprintf(&b, "  %s %s  %s %s\n", yellowStyle.Render("⏺"), s.label, m.spinner(), dimStyle.Render(elapsed.String()))
 		case "failed":
-			b.WriteString(fmt.Sprintf("  %s %s\n", redStyle.Render("✗"), s.label))
+			fmt.Fprintf(&b, "  %s %s\n", redStyle.Render("✗"), s.label)
 		default:
-			b.WriteString(fmt.Sprintf("  %s %s\n", dimStyle.Render("–"), s.label))
+			fmt.Fprintf(&b, "  %s %s\n", dimStyle.Render("–"), s.label)
 		}
 	}
 	return b.String()
@@ -837,13 +842,17 @@ func (m *simulateModel) viewFailed() string {
 		b.WriteString("  " + dimStyle.Render(url))
 	}
 	b.WriteString("\n\n")
-	b.WriteString("  " + redStyle.Bold(true).Render("Failed") + "\n\n")
+	b.WriteString("  ")
+	b.WriteString(redStyle.Bold(true).Render("Failed"))
+	b.WriteString("\n\n")
 	if m.run.Error != "" {
-		for _, line := range strings.Split(m.run.Error, "\n") {
-			b.WriteString(redStyle.Render("  "+line) + "\n")
+		for line := range strings.SplitSeq(m.run.Error, "\n") {
+			b.WriteString(redStyle.Render("  " + line))
+			b.WriteString("\n")
 		}
 	} else {
-		b.WriteString(redStyle.Render("  (no error details available)") + "\n")
+		b.WriteString(redStyle.Render("  (no error details available)"))
+		b.WriteString("\n")
 	}
 	b.WriteString("\n")
 	if m.showLogs {
@@ -866,13 +875,15 @@ func (m *simulateModel) viewRunning() string {
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(m.runID))
 	if url := m.getDashboardURL(); url != "" {
-		b.WriteString("  " + dimStyle.Render(url))
+		b.WriteString("  ")
+		b.WriteString(dimStyle.Render(url))
 	}
 	b.WriteString("\n\n")
 
 	// Agent description (hidden in detail view)
 	if m.detailJobID == "" && m.run != nil && m.run.AgentDescription != "" {
-		b.WriteString(boldStyle.Render("  Agent Description") + "\n")
+		b.WriteString(boldStyle.Render("  Agent Description"))
+		b.WriteString("\n")
 		if m.showDescription {
 			// Bound the body to a fixed window so opening it never shoves the header
 			// (and the job list below) off-screen; scroll within via ↑↓ / wheel.
@@ -890,20 +901,26 @@ func (m *simulateModel) viewRunning() string {
 				end = len(lines)
 			}
 			if start > 0 {
-				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more", start)) + "\n")
+				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more\n", start)))
 			}
 			for _, line := range lines[start:end] {
-				b.WriteString("  " + line + "\n")
+				b.WriteString("  ")
+				b.WriteString(line)
+				b.WriteString("\n")
 			}
 			if end < len(lines) {
-				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more", len(lines)-end)) + "\n")
+				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more", len(lines)-end)))
+				b.WriteString("\n")
 			}
-			b.WriteString(dimStyle.Render("  ↑↓ scroll · d collapse") + "\n\n")
+			b.WriteString(dimStyle.Render("  ↑↓ scroll · d collapse"))
+			b.WriteString("\n\n")
 		} else {
 			desc := firstMeaningfulLine(m.run.AgentDescription)
 			if desc != "" {
-				b.WriteString(dimStyle.Width(m.width-4).Render("  "+desc) + "\n")
-				b.WriteString(dimStyle.Render("  (press d to expand)") + "\n\n")
+				b.WriteString(dimStyle.Width(m.width - 4).Render("  " + desc))
+				b.WriteString("\n")
+				b.WriteString(dimStyle.Render("  (press d to expand)"))
+				b.WriteString("\n\n")
 			}
 		}
 	}
@@ -926,11 +943,11 @@ func (m *simulateModel) viewRunning() string {
 		b.WriteString(m.renderJobList())
 
 		if m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING {
-			b.WriteString(fmt.Sprintf("\n  %s %s  %s\n", yellowStyle.Render("⏺"), yellowStyle.Render("Generating summary..."), m.spinner()))
+			fmt.Fprintf(&b, "\n  %s %s  %s\n", yellowStyle.Render("⏺"), yellowStyle.Render("Generating summary..."), m.spinner())
 		} else if m.run.Summary != nil {
 			b.WriteString(m.renderSummary())
 		} else if isTerminalRunStatus(m.run.Status) {
-			b.WriteString(fmt.Sprintf("\n  %s %s\n", yellowStyle.Render("⚠"), yellowStyle.Render("The summary for this run is not available")))
+			fmt.Fprintf(&b, "\n  %s %s\n", yellowStyle.Render("⚠"), yellowStyle.Render("The summary for this run is not available"))
 		}
 	}
 
@@ -1041,10 +1058,7 @@ func (m *simulateModel) visibleWindow() (jobs []indexedJob, winStart, winEnd, ov
 		m.cursor = len(jobs) - 1
 	}
 	availHeight := matrixAvailHeight(m.height)
-	maxJobListHeight := m.height * 2 / 3
-	if maxJobListHeight < 5 {
-		maxJobListHeight = 5
-	}
+	maxJobListHeight := max(m.height*2/3, 5)
 	if availHeight > maxJobListHeight {
 		availHeight = maxJobListHeight
 	}
@@ -1063,10 +1077,7 @@ func (m *simulateModel) visibleWindow() (jobs []indexedJob, winStart, winEnd, ov
 		m.scrollOff = 0
 	}
 	winStart = m.scrollOff
-	winEnd = m.scrollOff + availHeight
-	if winEnd > len(jobs) {
-		winEnd = len(jobs)
-	}
+	winEnd = min(m.scrollOff+availHeight, len(jobs))
 	overflowAbove = winStart
 	overflowBelow = len(jobs) - winEnd
 	return
@@ -1231,20 +1242,19 @@ func (m *simulateModel) renderDetail() string {
 
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("  %s %s %s\n",
+	fmt.Fprintf(&b, "  %s %s %s\n",
 		jobIcon(job),
 		boldStyle.Render(fmt.Sprintf("Job %d", origIdx)),
 		dimStyle.Render(job.Id),
-	))
+	)
 	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
-		b.WriteString("  " + dimStyle.Render(url) + "\n")
+		b.WriteString("  ")
+		b.WriteString(dimStyle.Render(url))
+		b.WriteString("\n")
 	}
 	b.WriteString("\n")
 
-	wrapWidth := m.width - 6
-	if wrapWidth < 40 {
-		wrapWidth = 40
-	}
+	wrapWidth := max(m.width-6, 40)
 	wrapStyle := lipgloss.NewStyle().Width(wrapWidth)
 
 	b.WriteString(boldStyle.Render("  Instructions:"))
@@ -1253,8 +1263,10 @@ func (m *simulateModel) renderDetail() string {
 	if instr == "" {
 		instr = "—"
 	}
-	for _, line := range strings.Split(wrapStyle.Render(instr), "\n") {
-		b.WriteString("    " + line + "\n")
+	for line := range strings.SplitSeq(wrapStyle.Render(instr), "\n") {
+		b.WriteString("    ")
+		b.WriteString(line)
+		b.WriteString("\n")
 	}
 	b.WriteString("\n")
 
@@ -1264,8 +1276,9 @@ func (m *simulateModel) renderDetail() string {
 	if expect == "" {
 		expect = "—"
 	}
-	for _, line := range strings.Split(wrapStyle.Render(expect), "\n") {
-		b.WriteString(dimStyle.Render("    "+line) + "\n")
+	for line := range strings.SplitSeq(wrapStyle.Render(expect), "\n") {
+		b.WriteString(dimStyle.Render("    " + line))
+		b.WriteString("\n")
 	}
 
 	if job.Error != "" {
@@ -1273,14 +1286,16 @@ func (m *simulateModel) renderDetail() string {
 		if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
 			b.WriteString(greenStyle.Bold(true).Render("  Result:"))
 			b.WriteString("\n")
-			for _, line := range strings.Split(wrapStyle.Render(job.Error), "\n") {
-				b.WriteString(greenStyle.Render("    "+line) + "\n")
+			for line := range strings.SplitSeq(wrapStyle.Render(job.Error), "\n") {
+				b.WriteString(greenStyle.Render("    " + line))
+				b.WriteString("\n")
 			}
 		} else {
 			b.WriteString(redStyle.Bold(true).Render("  Error:"))
 			b.WriteString("\n")
-			for _, line := range strings.Split(wrapStyle.Render(job.Error), "\n") {
-				b.WriteString(redStyle.Render("    "+line) + "\n")
+			for line := range strings.SplitSeq(wrapStyle.Render(job.Error), "\n") {
+				b.WriteString(redStyle.Render("    " + line))
+				b.WriteString("\n")
 			}
 		}
 	}
@@ -1305,15 +1320,14 @@ func (m *simulateModel) renderDetail() string {
 			b.WriteString("\n")
 			b.WriteString(boldStyle.Render("  Logs:"))
 			b.WriteString("\n")
-			maxWidth := m.width - 4
-			if maxWidth < 20 {
-				maxWidth = 20
-			}
+			maxWidth := max(m.width-4, 20)
 			wrapLogStyle := lipgloss.NewStyle().Width(maxWidth)
 			for _, line := range rawLines {
 				wrapped := wrapLogStyle.Render(line)
-				for _, wl := range strings.Split(wrapped, "\n") {
-					b.WriteString("  " + wl + "\n")
+				for wl := range strings.SplitSeq(wrapped, "\n") {
+					b.WriteString("  ")
+					b.WriteString(wl)
+					b.WriteString("\n")
 				}
 			}
 		}
@@ -1325,10 +1339,7 @@ func (m *simulateModel) renderDetail() string {
 func (m *simulateModel) scrolledDetail() string {
 	content := m.renderDetail()
 	lines := strings.Split(content, "\n")
-	budget := m.height - 12
-	if budget < 5 {
-		budget = 5
-	}
+	budget := max(m.height-12, 5)
 	if len(lines) <= budget {
 		m.detailScrollOff = 0
 		return content
@@ -1343,10 +1354,7 @@ func (m *simulateModel) scrolledDetail() string {
 	}
 
 	start := m.detailScrollOff
-	end := start + budget
-	if end > len(lines) {
-		end = len(lines)
-	}
+	end := min(start+budget, len(lines))
 
 	var b strings.Builder
 	if start > 0 {
@@ -1370,23 +1378,22 @@ func (m *simulateModel) renderSummary() string {
 
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString("  " + boldStyle.Render("Summary"))
-	b.WriteString(fmt.Sprintf("  %s  %s\n\n",
+	b.WriteString("  ")
+	b.WriteString(boldStyle.Render("Summary"))
+	fmt.Fprintf(&b, "  %s  %s\n\n",
 		greenStyle.Render(fmt.Sprintf("%d passed", summary.Passed)),
-		redStyle.Render(fmt.Sprintf("%d failed", summary.Failed)),
-	))
+		redStyle.Render(fmt.Sprintf("%d failed", summary.Failed)))
 
-	wrapWidth := m.width - 6
-	if wrapWidth < 40 {
-		wrapWidth = 40
-	}
+	wrapWidth := max(m.width-6, 40)
 
 	if summary.GoingWell != "" {
 		b.WriteString(greenStyle.Bold(true).Render("  Going well:"))
 		b.WriteString("\n")
 		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.GoingWell)
-		for _, line := range strings.Split(wrapped, "\n") {
-			b.WriteString("    " + line + "\n")
+		for line := range strings.SplitSeq(wrapped, "\n") {
+			b.WriteString("    ")
+			b.WriteString(line)
+			b.WriteString("\n")
 		}
 		b.WriteString("\n")
 	}
@@ -1395,8 +1402,10 @@ func (m *simulateModel) renderSummary() string {
 		b.WriteString(yellowStyle.Bold(true).Render("  To improve:"))
 		b.WriteString("\n")
 		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.ToImprove)
-		for _, line := range strings.Split(wrapped, "\n") {
-			b.WriteString("    " + line + "\n")
+		for line := range strings.SplitSeq(wrapped, "\n") {
+			b.WriteString("    ")
+			b.WriteString(line)
+			b.WriteString("\n")
 		}
 		b.WriteString("\n")
 	}
@@ -1404,24 +1413,28 @@ func (m *simulateModel) renderSummary() string {
 	if len(summary.Issues) > 0 {
 		b.WriteString(redStyle.Bold(true).Render("  Issues:"))
 		b.WriteString("\n")
-		issueWrap := wrapWidth - 4 // account for "    N. " prefix
-		if issueWrap < 30 {
-			issueWrap = 30
-		}
+		issueWrap := max(
+			// account for "    N. " prefix
+			wrapWidth-4, 30)
 		for i, issue := range summary.Issues {
 			prefix := fmt.Sprintf("    %d. ", i+1)
 			descWrapped := lipgloss.NewStyle().Width(issueWrap).Render(issue.Description)
 			for j, line := range strings.Split(descWrapped, "\n") {
 				if j == 0 {
-					b.WriteString(prefix + line + "\n")
+					b.WriteString(prefix)
+					b.WriteString(line)
+					b.WriteString("\n")
 				} else {
-					b.WriteString(strings.Repeat(" ", len(prefix)) + line + "\n")
+					b.WriteString(strings.Repeat(" ", len(prefix)))
+					b.WriteString(line)
+					b.WriteString("\n")
 				}
 			}
 			if issue.Suggestion != "" {
 				sugWrapped := lipgloss.NewStyle().Width(issueWrap).Render("Suggestion: " + issue.Suggestion)
-				for _, line := range strings.Split(sugWrapped, "\n") {
-					b.WriteString(dimStyle.Render(strings.Repeat(" ", len(prefix))+line) + "\n")
+				for line := range strings.SplitSeq(sugWrapped, "\n") {
+					b.WriteString(dimStyle.Render(strings.Repeat(" ", len(prefix)) + line))
+					b.WriteString("\n")
 				}
 			}
 		}
@@ -1453,10 +1466,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 	b.WriteString(boldStyle.Render("  Transcript:"))
 	b.WriteString("\n")
 
-	wrapWidth := m.width - 8
-	if wrapWidth < 40 {
-		wrapWidth = 40
-	}
+	wrapWidth := max(m.width-8, 40)
 	wrapStyle := lipgloss.NewStyle().Width(wrapWidth)
 
 	for _, item := range chatCtx.Items {
@@ -1470,14 +1480,16 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			b.WriteString("\n")
 			switch msg.Role {
 			case agent.ChatRole_USER:
-				b.WriteString(fmt.Sprintf("    %s\n", userStyle.Render("You")))
+				fmt.Fprintf(&b, "    %s\n", userStyle.Render("You"))
 			case agent.ChatRole_ASSISTANT:
-				b.WriteString(fmt.Sprintf("    %s\n", agentStyle.Render("Agent")))
+				fmt.Fprintf(&b, "    %s\n", agentStyle.Render("Agent"))
 			default:
-				b.WriteString(fmt.Sprintf("    %s\n", dimStyle.Render(string(msg.Role))))
+				fmt.Fprintf(&b, "    %s\n", dimStyle.Render(string(msg.Role)))
 			}
-			for _, line := range strings.Split(wrapStyle.Render(text), "\n") {
-				b.WriteString("      " + line + "\n")
+			for line := range strings.SplitSeq(wrapStyle.Render(text), "\n") {
+				b.WriteString("      ")
+				b.WriteString(line)
+				b.WriteString("\n")
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
@@ -1529,14 +1541,8 @@ func (m *simulateModel) renderLogs(roomName string) string {
 		return ""
 	}
 	var b strings.Builder
-	logBudget := m.height / 3
-	if logBudget < 3 {
-		logBudget = 3
-	}
-	maxWidth := m.width - 4
-	if maxWidth < 20 {
-		maxWidth = 20
-	}
+	logBudget := max(m.height/3, 3)
+	maxWidth := max(m.width-4, 20)
 	wrapStyle := lipgloss.NewStyle().Width(maxWidth)
 
 	var rawLines []string
@@ -1548,7 +1554,7 @@ func (m *simulateModel) renderLogs(roomName string) string {
 	var visualLines []string
 	for _, line := range rawLines {
 		wrapped := wrapStyle.Render(line)
-		for _, wl := range strings.Split(wrapped, "\n") {
+		for wl := range strings.SplitSeq(wrapped, "\n") {
 			visualLines = append(visualLines, wl)
 		}
 	}
@@ -1558,19 +1564,13 @@ func (m *simulateModel) renderLogs(roomName string) string {
 		return b.String()
 	}
 
-	maxScroll := total - logBudget
-	if maxScroll < 0 {
-		maxScroll = 0
-	}
+	maxScroll := max(total-logBudget, 0)
 
 	if m.logPinned {
 		// Convert from-bottom offset to stable from-top position
 		// When pinned, new lines arriving shouldn't move the viewport
 		pinnedStart := m.logPinnedTotal - logBudget - m.logScrollOff
-		newOffset := total - logBudget - pinnedStart
-		if newOffset < 0 {
-			newOffset = 0
-		}
+		newOffset := max(total-logBudget-pinnedStart, 0)
 		m.logScrollOff = newOffset
 	}
 	m.logPinnedTotal = total
@@ -1582,21 +1582,17 @@ func (m *simulateModel) renderLogs(roomName string) string {
 		m.logScrollOff = 0
 	}
 
-	start := total - logBudget - m.logScrollOff
-	if start < 0 {
-		start = 0
-	}
-	end := start + logBudget
-	if end > total {
-		end = total
-	}
+	start := max(total-logBudget-m.logScrollOff, 0)
+	end := min(start+logBudget, total)
 
 	if m.logScrollOff > 0 {
 		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more lines above", start)))
 		b.WriteString("\n")
 	}
 	for _, vl := range visualLines[start:end] {
-		b.WriteString("  " + vl + "\n")
+		b.WriteString("  ")
+		b.WriteString(vl)
+		b.WriteString("\n")
 	}
 	if end < total {
 		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more lines below", total-end)))
@@ -1607,7 +1603,7 @@ func (m *simulateModel) renderLogs(roomName string) string {
 
 // firstMeaningfulLine returns the first non-empty, non-heading line from text.
 func firstMeaningfulLine(text string) string {
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue

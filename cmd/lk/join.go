@@ -303,18 +303,18 @@ func parseSocketFromName(name string) (string, string, string, error) {
 	// e.g. h264://192.168.0.1:1234 (tcp)
 	// e.g. opus:///tmp/my.socket (unix domain socket)
 
-	offset := strings.Index(name, mimeDelimiter)
-	if offset == -1 {
+	before, after, ok := strings.Cut(name, mimeDelimiter)
+	if !ok {
 		return "", "", "", fmt.Errorf("did not find delimiter %s in %s", mimeDelimiter, name)
 	}
 
-	mimeType := name[:offset]
+	mimeType := before
 
 	if mimeType != "h264" && mimeType != "h265" && mimeType != "vp8" && mimeType != "opus" {
 		return "", "", "", fmt.Errorf("unsupported mime type: %s", mimeType)
 	}
 
-	address := name[offset+len(mimeDelimiter):]
+	address := after
 
 	if len(address) == 0 {
 		return "", "", "", fmt.Errorf("address cannot be empty. input was: %s", name)

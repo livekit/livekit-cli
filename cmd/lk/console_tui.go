@@ -37,7 +37,7 @@ var (
 	lkCyan   = lipgloss.Color("#1fd5f9")
 	lkPurple = lipgloss.Color("#8f83ff")
 	lkGreen  = lipgloss.Color("#6BCB77")
-	lkRed = lipgloss.Color("#EF4444")
+	lkRed    = lipgloss.Color("#EF4444")
 
 	labelStyle     = lipgloss.NewStyle().Foreground(lkPurple)
 	cyanBoldStyle  = lipgloss.NewStyle().Foreground(lkCyan).Bold(true)
@@ -443,7 +443,7 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 				if text := formatMetrics(msg.Metrics); text != "" {
 					m.metricsText = text
 				}
-				}
+			}
 			cmds = append(cmds, tea.Println(formatChatItem(item)))
 		}
 
@@ -508,7 +508,7 @@ func formatChatItem(item *agent.ChatContext_ChatItem) string {
 		b.WriteString("\n  ")
 		b.WriteString(lipgloss.NewStyle().Foreground(lkGreen).Render("● "))
 		b.WriteString(greenBoldStyle.Render("Agent"))
-		for _, tl := range strings.Split(text, "\n") {
+		for tl := range strings.SplitSeq(text, "\n") {
 			b.WriteString("\n    ")
 			b.WriteString(tl)
 		}
@@ -549,7 +549,8 @@ func (m consoleModel) View() string {
 		if m.waitingForAgent {
 			// Braille spinner (matching Rich's "dots" spinner)
 			frame := spinnerFrames[int(time.Now().UnixMilli()/80)%len(spinnerFrames)]
-			b.WriteString("  " + dimStyle.Render(frame+" thinking"))
+			b.WriteString("  ")
+			b.WriteString(dimStyle.Render(frame + " thinking"))
 		} else {
 			// ── Text input ──
 			w := m.width
@@ -566,7 +567,8 @@ func (m consoleModel) View() string {
 
 		if m.audioError != "" {
 			b.WriteString("\n")
-			b.WriteString("  " + redStyle.Render("audio: "+m.audioError))
+			b.WriteString("  ")
+			b.WriteString(redStyle.Render("audio: " + m.audioError))
 		}
 
 		if m.showShortcuts {

@@ -115,7 +115,7 @@ func (t *LoadTester) Start() error {
 	})
 	var err error
 	// make up to 10 reconnect attempts
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		err = t.room.Join(t.params.URL, lksdk.ConnectInfo{
 			APIKey:              t.params.APIKey,
 			APISecret:           t.params.APISecret,
@@ -240,7 +240,7 @@ func (t *LoadTester) getStats() *testerStats {
 		expectedTracks: t.params.expectedTracks,
 		trackStats:     make(map[string]*trackStats),
 	}
-	t.stats.Range(func(key, value interface{}) bool {
+	t.stats.Range(func(key, value any) bool {
 		stats.trackStats[key.(string)] = value.(*trackStats)
 		return true
 	})
@@ -249,7 +249,7 @@ func (t *LoadTester) getStats() *testerStats {
 
 func (t *LoadTester) Reset() {
 	stats := sync.Map{}
-	t.stats.Range(func(key, value interface{}) bool {
+	t.stats.Range(func(key, value any) bool {
 		old := value.(*trackStats)
 		stats.Store(key, &trackStats{
 			trackID: old.trackID,

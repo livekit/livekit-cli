@@ -572,7 +572,7 @@ func (p *AudioPipeline) computeMetrics(samples []int16) {
 	// Mean power → dB → normalize to [0,1]
 	const floorDB, hotDB = -70.0, -20.0
 	var bands [NumFFTBands]float64
-	for b := 0; b < nb; b++ {
+	for b := range nb {
 		c := cnts[b]
 		if c == 0 {
 			c = 1
@@ -611,7 +611,7 @@ func (p *AudioPipeline) computeMetrics(samples []int16) {
 	db := 20 * math.Log10(rms+1e-10)
 
 	p.mu.Lock()
-	for b := 0; b < nb; b++ {
+	for b := range nb {
 		if bands[b] > p.fftBands[b]*decay {
 			p.fftBands[b] = bands[b]
 		} else {
