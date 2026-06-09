@@ -157,10 +157,15 @@ type simulateModel struct {
 	err    error
 }
 
+// hasDescription reports whether the run carries an agent description to show.
+// Only the generate-from-source flow derives one; scenario-file runs have none.
+func (m *simulateModel) hasDescription() bool {
+	return m.run != nil && m.run.AgentDescription != ""
+}
+
 // descriptionExpanded reports whether the scrollable description panel is open.
 func (m *simulateModel) descriptionExpanded() bool {
-	return m.detailJobID == "" && m.showDescription &&
-		m.run != nil && m.run.AgentDescription != ""
+	return m.detailJobID == "" && m.showDescription && m.hasDescription()
 }
 
 // canExportScenarios reports whether the run produced generated scenarios that
@@ -643,7 +648,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.logScrollOff = 0
 		m.logPinned = false
 	case "d":
-		if m.detailJobID == "" {
+		if m.detailJobID == "" && m.hasDescription() {
 			m.showDescription = !m.showDescription
 			m.descScrollOff = 0
 		}
@@ -914,7 +919,7 @@ func (m *simulateModel) viewRunning() string {
 	b.WriteString("\n\n")
 
 	// Agent description (hidden in detail view)
-	if m.detailJobID == "" && m.run != nil && m.run.AgentDescription != "" {
+	if m.detailJobID == "" && m.hasDescription() {
 		b.WriteString(boldStyle.Render("  Agent Description") + "\n")
 		if m.showDescription {
 			// bounded window so expanding never pushes the list off-screen
@@ -1672,7 +1677,10 @@ func (m *simulateModel) renderHint() string {
 	case m.descriptionExpanded():
 		parts = append(parts, "↑↓ scroll · d collapse description")
 	default:
-		nav := "↑↓ navigate · ENTER detail · d show description"
+		nav := "↑↓ navigate · ENTER detail"
+		if m.hasDescription() {
+			nav += " · d show description"
+		}
 		if m.canExportScenarios() {
 			nav += " · e save scenarios"
 		}
