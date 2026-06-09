@@ -170,12 +170,12 @@ func (r *LoadTestRoom) start(roomName string) error {
 
 	var err error
 	// make up to 10 reconnect attempts
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		err = r.room.Join(r.params.URL, lksdk.ConnectInfo{
-			APIKey:              r.params.APIKey,
-			APISecret:           r.params.APISecret,
-			RoomName:            roomName,
-			ParticipantIdentity: identity,
+			APIKey:                r.params.APIKey,
+			APISecret:             r.params.APISecret,
+			RoomName:              roomName,
+			ParticipantIdentity:   identity,
 			ParticipantAttributes: r.params.ParticipantAttributes,
 		})
 		if err == nil {

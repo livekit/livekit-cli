@@ -1,5 +1,3 @@
-//go:build console
-
 // Package webrtc provides WebRTC audio processing module (APM) source compiled via CGo.
 // This package and its sub-packages contain the extracted WebRTC APM C++ source.
 // Import this package (typically via blank import) to link all WebRTC APM object files.

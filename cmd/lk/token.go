@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"slices"
 	"time"
@@ -264,9 +265,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		if participantAttributes == nil {
 			participantAttributes = make(map[string]string)
 		}
-		for key, value := range fileAttrs {
-			participantAttributes[key] = value
-		}
+		maps.Copy(participantAttributes, fileAttrs)
 	}
 
 	// required only for join, will be generated if not provided

@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -253,14 +251,14 @@ func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
 
 		if job.Instructions != "" {
 			fmt.Fprintln(os.Stdout, "Instructions:")
-			for _, line := range strings.Split(job.Instructions, "\n") {
+			for line := range strings.SplitSeq(job.Instructions, "\n") {
 				fmt.Fprintf(os.Stdout, "  %s\n", line)
 			}
 		}
 
 		if job.AgentExpectations != "" {
 			fmt.Fprintln(os.Stdout, "Expected:")
-			for _, line := range strings.Split(job.AgentExpectations, "\n") {
+			for line := range strings.SplitSeq(job.AgentExpectations, "\n") {
 				fmt.Fprintf(os.Stdout, "  %s\n", line)
 			}
 		}
@@ -290,7 +288,7 @@ func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
 		fmt.Fprintln(os.Stdout, "::endgroup::")
 
 		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && isGitHubActions() {
-			firstLine := strings.SplitN(job.Error, "\n", 2)[0]
+			firstLine, _, _ := strings.Cut(job.Error, "\n")
 			fmt.Fprintf(os.Stdout, "::error::Job %d failed: %s\n", i+1, firstLine)
 		}
 	}
@@ -314,7 +312,7 @@ func printCISummary(run *livekit.SimulationRun) {
 	if summary.GoingWell != "" {
 		fmt.Fprintln(os.Stdout)
 		fmt.Fprintln(os.Stdout, "Going well:")
-		for _, line := range strings.Split(summary.GoingWell, "\n") {
+		for line := range strings.SplitSeq(summary.GoingWell, "\n") {
 			fmt.Fprintf(os.Stdout, "  %s\n", line)
 		}
 	}
@@ -322,7 +320,7 @@ func printCISummary(run *livekit.SimulationRun) {
 	if summary.ToImprove != "" {
 		fmt.Fprintln(os.Stdout)
 		fmt.Fprintln(os.Stdout, "To improve:")
-		for _, line := range strings.Split(summary.ToImprove, "\n") {
+		for line := range strings.SplitSeq(summary.ToImprove, "\n") {
 			fmt.Fprintf(os.Stdout, "  %s\n", line)
 		}
 	}
@@ -362,7 +360,7 @@ func printCIChatHistory(chatCtx *agent.ChatContext) {
 			default:
 				fmt.Fprintf(os.Stdout, "  ● %s\n", msg.Role)
 			}
-			for _, tl := range strings.Split(text, "\n") {
+			for tl := range strings.SplitSeq(text, "\n") {
 				fmt.Fprintf(os.Stdout, "    %s\n", tl)
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:

@@ -1,5 +1,3 @@
-//go:build console
-
 // Package apm provides Go bindings for the WebRTC Audio Processing Module (APM).
 // It supports echo cancellation (AEC3), noise suppression, automatic gain control,
 // and high-pass filtering. Audio must be 48kHz int16 PCM in 10ms frames (480 samples/channel).

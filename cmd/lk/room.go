@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"slices"
 	"syscall"
 
 	"github.com/pion/webrtc/v4"
@@ -815,13 +816,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	publishUrls := cmd.StringSlice("publish")
 
 	// Determine simulcast mode by checking if any URL has simulcast format
-	simulcastMode := false
-	for _, url := range publishUrls {
-		if simulcastURLRegex.MatchString(url) {
-			simulcastMode = true
-			break
-		}
-	}
+	simulcastMode := slices.ContainsFunc(publishUrls, simulcastURLRegex.MatchString)
 
 	// Validate publish flags
 	if len(publishUrls) > 3 {

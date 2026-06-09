@@ -159,8 +159,8 @@ func parsePythonPackageVersion(line string) (string, bool) {
 	// clean up the version string if it contains multiple constraints
 	// handle comma-separated version constraints like ">=1.2.5,<2"
 	if strings.Contains(version, ",") {
-		parts := strings.Split(version, ",")
-		for _, part := range parts {
+		parts := strings.SplitSeq(version, ",")
+		for part := range parts {
 			trimmed := strings.TrimSpace(part)
 			if regexp.MustCompile(`\d`).MatchString(trimmed) {
 				if strings.ContainsAny(trimmed, "=~><") {

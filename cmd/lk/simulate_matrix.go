@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -76,10 +74,7 @@ func matrixTickCmd() tea.Cmd {
 // matrixAvailHeight is the shared height calculation used by both the job list
 // and the matrix overlay so the rain area lines up with the list rows.
 func matrixAvailHeight(h int) int {
-	availHeight := h - 14
-	if availHeight < 5 {
-		availHeight = 5
-	}
+	availHeight := max(h-14, 5)
 	return availHeight
 }
 
@@ -119,7 +114,7 @@ func (r *matrixRain) start(width, height int, skipCol []bool) {
 	if skipCol != nil {
 		copy(r.skipCol, skipCol)
 	}
-	for i := 0; i < width; i++ {
+	for i := range width {
 		if r.skipCol[i] {
 			// Parked: counts as already swept so it never gates auto-stop.
 			r.sweeps[i] = matrixMaxSweeps

@@ -297,10 +297,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 	var publishers, testers []*LoadTester
 	group, _ := errgroup.WithContext(ctx)
 	errs := syncmap.Map{}
-	maxPublishers := params.VideoPublishers
-	if params.AudioPublishers > maxPublishers {
-		maxPublishers = params.AudioPublishers
-	}
+	maxPublishers := max(params.AudioPublishers, params.VideoPublishers)
 
 	// throttle pace of join events
 	limiter := rate.NewLimiter(rate.Limit(params.NumPerSecond), 1)
