@@ -22,7 +22,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -173,23 +172,12 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("agent connection: %w", res.err)
 		}
 		conn = res.conn
-	case err := <-agentProc.Done():
+	case <-agentProc.Done():
 		stopSpinner()
-		logs := agentProc.RecentLogs(20)
-		for _, l := range logs {
-			fmt.Fprintln(os.Stderr, l)
-		}
-		if err != nil {
-			return fmt.Errorf("agent exited before connecting: %w", err)
-		}
-		return fmt.Errorf("agent exited before connecting")
+		return fmt.Errorf("the agent exited before connecting.\n\n%s", agentExitDetail(agentProc))
 	case <-time.After(60 * time.Second):
 		stopSpinner()
-		logs := agentProc.RecentLogs(20)
-		for _, l := range logs {
-			fmt.Fprintln(os.Stderr, l)
-		}
-		return fmt.Errorf("timed out waiting for agent to connect")
+		return fmt.Errorf("timed out waiting for the agent to connect.\n\n%s", agentExitDetail(agentProc))
 	case <-ctx.Done():
 		stopSpinner()
 		return ctx.Err()

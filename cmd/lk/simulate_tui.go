@@ -356,14 +356,11 @@ func (m *simulateModel) waitAgentReadyCmd() tea.Cmd {
 		select {
 		case <-m.agent.Ready():
 			return agentReadyMsg{elapsed: time.Since(stepStart)}
-		case err := <-m.agent.Done():
-			if err != nil {
-				return agentReadyMsg{err: fmt.Errorf("agent exited before registering: %w", err)}
-			}
-			return agentReadyMsg{err: fmt.Errorf("agent exited before registering")}
+		case <-m.agent.Done():
+			return agentReadyMsg{err: fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(m.agent))}
 		case <-timeout.C:
 			m.agent.Kill()
-			return agentReadyMsg{err: fmt.Errorf("timed out waiting for agent to register (%s)", agentRegisterTimeout)}
+			return agentReadyMsg{err: fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(m.agent))}
 		case <-m.setupCtx.Done():
 			return agentReadyMsg{err: m.setupCtx.Err()}
 		}

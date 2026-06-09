@@ -133,10 +133,51 @@ type AgentStartConfig struct {
 	ForwardOutput io.Writer // if set, forward each output line to this writer
 }
 
+// thinCLIMinVersion is the first livekit-agents release that exposes the
+// start/dev/console/simulate subcommands under `python -m livekit.agents`.
+const thinCLIMinVersion = "1.6.0"
+
+// agentExitDetail surfaces the agent's own output (the real error) and a pointer
+// to the full log, for when the worker exits early or never registers/connects.
+// It does not try to guess the cause — the agent's output already says it.
+func agentExitDetail(ap *AgentProcess) string {
+	var b strings.Builder
+	if tail := lastNonEmptyLines(ap.RecentLogs(0), 12); len(tail) > 0 {
+		b.WriteString("Agent output:\n  " + strings.Join(tail, "\n  "))
+	}
+	if ap.LogPath != "" {
+		if b.Len() > 0 {
+			b.WriteString("\n\n")
+		}
+		b.WriteString("Full log: " + ap.LogPath)
+	}
+	return b.String()
+}
+
+// lastNonEmptyLines returns up to n trailing non-blank lines, in order.
+func lastNonEmptyLines(lines []string, n int) []string {
+	var out []string
+	for i := len(lines) - 1; i >= 0 && len(out) < n; i-- {
+		if strings.TrimSpace(lines[i]) != "" {
+			out = append([]string{lines[i]}, out...)
+		}
+	}
+	return out
+}
+
 // startAgent launches a Python agent subprocess and monitors its output.
 func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	pythonBin, prefixArgs, err := findPythonBinary(cfg.Dir, cfg.ProjectType)
 	if err != nil {
+		return nil, err
+	}
+
+	// Reuse the SDK-version reader (parses the project's deps) to fail fast with a
+	// friendly message when livekit-agents is older than the thin-CLI baseline.
+	if err := agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
+		"python-min-sdk-version": thinCLIMinVersion,
+		"node-min-sdk-version":   thinCLIMinVersion,
+	}); err != nil {
 		return nil, err
 	}
 
