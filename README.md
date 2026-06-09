@@ -53,7 +53,7 @@ Every build of `lk` includes the audio/console subsystem (CGO + PortAudio + WebR
 
 -   **macOS**: nothing to install — CoreAudio frameworks ship with Xcode CLT.
 -   **Linux**: `sudo apt-get install libasound2-dev` (or your distro's ALSA dev package).
--   **Windows**: MinGW from the standard Go distribution.
+-   **Windows**: MinGW from the standard Go distribution, and set `CGO_CXXFLAGS_ALLOW=-fms-extensions` (the WebRTC APM uses SEH, which cgo gates behind this allow-list flag).
 
 Then:
 

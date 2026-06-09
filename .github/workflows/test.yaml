@@ -18,8 +18,17 @@ jobs:
       contents: read
       packages: read
 
+    env:
+      # The WebRTC APM's #cgo windows CXXFLAGS use -fms-extensions (SEH), which
+      # isn't on cgo's directive allowlist; unlock it for the Windows build.
+      CGO_CXXFLAGS_ALLOW: -fms-extensions
+
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # pkg/portaudio/pa_src is a submodule with the vendored PortAudio C
+          # source; needed now that console (cgo) builds unconditionally.
+          submodules: true
 
       - name: Install ALSA headers (Linux)
         if: matrix.os == 'ubuntu-latest'

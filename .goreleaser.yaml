@@ -82,9 +82,12 @@ builds:
       - CGO_ENABLED=1
       - CC=zig cc -target x86_64-windows-gnu
       - CXX=zig c++ -target x86_64-windows-gnu
-      # -fms-extensions: enable __try/__except (SEH) used by WebRTC
-      # -DNTDDI_VERSION: target Windows 10 base to skip WinRT includes absent from MinGW
-      - CGO_CXXFLAGS=-fms-extensions -DNTDDI_VERSION=0x0A000000 -fno-sanitize=all
+      # SEH (-fms-extensions) and -DNTDDI_VERSION live in the source #cgo windows
+      # directives so native and cross builds agree; -fms-extensions isn't on
+      # cgo's directive allowlist, so unlock it here. -fno-sanitize=all is a
+      # zig-0.16-specific workaround for unresolved UBSan symbols under lld.
+      - CGO_CXXFLAGS_ALLOW=-fms-extensions
+      - CGO_CXXFLAGS=-fno-sanitize=all
     goos: [windows]
     goarch: [amd64]
     ldflags:
@@ -102,7 +105,8 @@ builds:
       - CGO_ENABLED=1
       - CC=zig cc -target aarch64-windows-gnu
       - CXX=zig c++ -target aarch64-windows-gnu
-      - CGO_CXXFLAGS=-fms-extensions -DNTDDI_VERSION=0x0A000000 -fno-sanitize=all
+      - CGO_CXXFLAGS_ALLOW=-fms-extensions
+      - CGO_CXXFLAGS=-fno-sanitize=all
     goos: [windows]
     goarch: [arm64]
     ldflags:
