@@ -20,10 +20,16 @@ import (
 )
 
 var (
+	// brandCyan is the LiveKit accent (matches the logo / tag chips).
+	brandCyan = lipgloss.Color("#1fd5f9")
+
 	Theme = func() *huh.Theme {
 		t := huh.ThemeBase16()
-		t.Focused.FocusedButton = t.Focused.FocusedButton.Foreground(lipgloss.Color("7")).Background(lipgloss.Color("4"))
-		t.Focused.TextInput.Cursor.Foreground(lipgloss.Color("4"))
+		// Selected action uses the brand cyan with black text, mirroring the LiveKit tag.
+		t.Focused.FocusedButton = t.Focused.FocusedButton.Foreground(lipgloss.Color("0")).Background(brandCyan).Bold(true)
+		t.Focused.Title = t.Focused.Title.Foreground(brandCyan).Bold(true)
+		t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(brandCyan)
+		t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(brandCyan)
 		return t
 	}()
 
@@ -37,4 +43,14 @@ var (
 	Fg              = lipgloss.AdaptiveColor{Light: "235", Dark: "252"}
 	FormBaseStyle   = Theme.Form.Base.Foreground(Fg).Padding(0, 1)
 	FormHeaderStyle = FormBaseStyle.Bold(true)
+
+	// Form helpers
+	Confirm = func() *huh.Select[bool] {
+		return huh.NewSelect[bool]().
+			Options(
+				huh.NewOption("Yes", true),
+				huh.NewOption("No", false),
+			).
+			Inline(false)
+	}
 )

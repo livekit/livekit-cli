@@ -127,8 +127,8 @@ type AgentStartConfig struct {
 	Dir           string
 	Entrypoint    string
 	ProjectType   agentfs.ProjectType
-	CLIArgs       []string  // e.g. ["start", "--url", "..."] or ["console", "--connect-addr", addr]
-	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME=x"] or nil
+	CLIArgs       []string  // subcommand first, then flags: ["start", "--url", "..."] or ["console", "--connect-addr", addr]
+	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME_OVERRIDE=x"] or nil
 	ReadySignal   string    // substring to scan for in output (e.g. "registered worker"), empty to skip
 	ForwardOutput io.Writer // if set, forward each output line to this writer
 }
@@ -140,8 +140,19 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		return nil, err
 	}
 
-	args := append(prefixArgs, cfg.Entrypoint)
-	args = append(args, cfg.CLIArgs...)
+	// Launch via the framework CLI module rather than running the user's file
+	// directly: python -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS. The framework
+	// discovers the AgentServer from the entrypoint and drives the thin CLI. Requires a
+	// livekit-agents that supports start/console under -m livekit.agents; older versions
+	// only expose download-files there.
+	args := append(prefixArgs, "-m", "livekit.agents")
+	if len(cfg.CLIArgs) > 0 {
+		args = append(args, cfg.CLIArgs[0]) // subcommand: start | console
+		args = append(args, cfg.Entrypoint) // entrypoint positional (server discovery)
+		args = append(args, cfg.CLIArgs[1:]...)
+	} else {
+		args = append(args, cfg.Entrypoint)
+	}
 	cmd := exec.Command(pythonBin, args...)
 	setProcAttr(cmd)
 	cmd.Dir = cfg.Dir

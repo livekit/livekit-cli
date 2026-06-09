@@ -29,6 +29,7 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 func main() {
@@ -99,6 +100,9 @@ func main() {
 
 func checkForLegacyName() {
 	if !strings.HasSuffix(os.Args[0], "lk") && !strings.HasSuffix(os.Args[0], "lk.exe") {
+		// Stays on raw os.Stderr: this runs before the cli command parses (so the
+		// Printer isn't initialized yet) and is a deprecation warning that should
+		// not be suppressed by --quiet.
 		fmt.Fprintf(
 			os.Stderr,
 			"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEPRECATION NOTICE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
@@ -123,6 +127,10 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	logger.InitFromConfig(logConfig, "lk")
 	lksdk.SetLogger(logger.GetLogger())
 
+	// Bind the human-facing output sink to the root command's writers (cli/v3
+	// defaults them to os.Stdout / os.Stderr, but they're overridable in tests).
+	out = util.NewPrinter(cmd.Root().Writer, cmd.Root().ErrWriter, cmd.Bool("quiet"))
+
 	return nil, nil
 }
 
@@ -138,7 +146,7 @@ func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	} else {
-		fmt.Println(fishScript)
+		out.Result(fishScript)
 	}
 
 	return nil

@@ -184,7 +184,7 @@ func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 					return
 				}
 				if pub != nil {
-					fmt.Printf("finished writing %s\n", pub.Name())
+					out.Statusf("finished writing %s", pub.Name())
 					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 				}
 			}
@@ -618,6 +618,6 @@ func handleSimulcastPublish(room *lksdk.Room, urls []string, fps float64, h26xSt
 		return fmt.Errorf("failed to publish simulcast track: %w", err)
 	}
 
-	fmt.Printf("Successfully published %s simulcast track with qualities: %v\n", strings.ToUpper(codec), trackNames)
+	out.Statusf("Successfully published %s simulcast track with qualities: %v", strings.ToUpper(codec), trackNames)
 	return nil
 }
