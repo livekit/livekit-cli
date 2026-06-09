@@ -156,8 +156,7 @@ type simulateModel struct {
 	err    error
 }
 
-// descriptionExpanded reports whether the agent-description panel is open and
-// scrollable (only in the list view, when there's a description to show).
+// descriptionExpanded reports whether the scrollable description panel is open.
 func (m *simulateModel) descriptionExpanded() bool {
 	return m.detailJobID == "" && m.showDescription &&
 		m.run != nil && m.run.AgentDescription != ""
@@ -171,9 +170,8 @@ func (m *simulateModel) canExportScenarios() bool {
 		m.run.GetScenarioGroup() != nil && len(m.run.GetScenarioGroup().GetScenarios()) > 0
 }
 
-// handleSaveKey drives the "save scenarios as" prompt: Enter saves (refusing to
-// overwrite an existing file, and keeping the prompt open so the user can pick a
-// different name), Esc/Ctrl+C cancels, anything else edits the filename.
+// handleSaveKey drives the save-scenarios prompt: enter saves (never overwriting,
+// staying open on conflict), esc cancels, anything else edits the name.
 func (m *simulateModel) handleSaveKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
@@ -202,9 +200,8 @@ func (m *simulateModel) handleSaveKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// saveScenarios writes the run's generated scenarios to projectDir/name. It never
-// overwrites: if the file already exists it returns ok=false so the caller can
-// keep the prompt open for a different name.
+// saveScenarios writes the run's scenarios to projectDir/name, refusing to
+// overwrite an existing file (ok=false on conflict).
 func (m *simulateModel) saveScenarios(name string) (string, bool) {
 	group := m.run.GetScenarioGroup()
 	out, err := scenarioGroupToYAML(group)
@@ -523,18 +520,11 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// scrollBy applies a wheel/scroll step to whatever is focused, in the natural
-// terminal direction: delta > 0 scrolls toward the bottom (later content),
-// delta < 0 toward the top. It routes to the detail view, the expanded agent
-// description, the log pane, or the job list, in that priority.
 const pageScroll = 20
 
-// scrollActive scrolls whatever offset-based pane is focused — the detail view,
-// the expanded description, or (when includeLogs) the log pane — by delta lines,
-// where positive is toward the bottom (later content). It returns false when
-// none is focused, so callers fall back to job-list navigation. This is the one
-// place the detail/description/logs scroll priority lives; keys and the mouse
-// wheel both route through it.
+// scrollActive scrolls the focused pane (detail, description, or logs) by delta
+// lines, positive toward the bottom. Returns false if nothing is focused, so the
+// caller can fall back to list navigation. Shared by keys and the wheel.
 func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	switch {
 	case m.detailJobID != "":
@@ -673,8 +663,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.exportStatus = m.copyScenario(m.detailJobID)
 		}
 	case "up", "shift+tab":
-		// Arrows scroll the focused pane but never the logs (those use PgUp/PgDn);
-		// in the list they move the selection.
+		// arrows never scroll logs (PgUp/PgDn do); in the list they move the cursor
 		if !m.scrollActive(-1, false) {
 			m.moveCursor(-1)
 		}
@@ -924,8 +913,7 @@ func (m *simulateModel) viewRunning() string {
 	if m.detailJobID == "" && m.run != nil && m.run.AgentDescription != "" {
 		b.WriteString(boldStyle.Render("  Agent Description") + "\n")
 		if m.showDescription {
-			// Bound the body to a fixed window so opening it never shoves the header
-			// (and the job list below) off-screen; scroll within via ↑↓ / wheel.
+			// bounded window so expanding never pushes the list off-screen
 			wrapped := dimStyle.Width(m.width - 4).Render(m.run.AgentDescription)
 			lines := strings.Split(wrapped, "\n")
 			const descBudget = 8
