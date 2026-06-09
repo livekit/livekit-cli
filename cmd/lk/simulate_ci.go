@@ -84,15 +84,12 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	case <-agent.Ready():
 		logFwd.enabled.Store(false)
 		fmt.Fprintf(os.Stdout, "✓ Agent registered (%s)\n", time.Since(start).Round(time.Millisecond))
-	case err := <-agent.Done():
+	case <-agent.Done():
 		fmt.Fprintln(os.Stdout, "::endgroup::")
-		if err != nil {
-			return fmt.Errorf("agent exited before registering: %w", err)
-		}
-		return fmt.Errorf("agent exited before registering")
+		return fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(agent))
 	case <-timeout.C:
 		fmt.Fprintln(os.Stdout, "::endgroup::")
-		return fmt.Errorf("timed out waiting for agent to register (%s)", agentRegisterTimeout)
+		return fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(agent))
 	case <-ctx.Done():
 		fmt.Fprintln(os.Stdout, "::endgroup::")
 		return ctx.Err()
