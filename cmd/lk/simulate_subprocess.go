@@ -405,8 +405,11 @@ func (ap *AgentProcess) Kill() {
 	select {
 	case <-ap.exitCh:
 	case <-time.After(5 * time.Second):
-		ap.sendKill()
 	}
+	// Always SIGKILL the whole process group: the worker can exit (or be
+	// interrupted) while its child job/inference processes linger and keep a port
+	// bound, which breaks the next run with "address already in use".
+	ap.sendKill()
 	ap.closeLogFile()
 }
 
