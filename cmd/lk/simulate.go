@@ -41,7 +41,7 @@ import (
 )
 
 func init() {
-	AgentCommands[0].Commands = append(AgentCommands[0].Commands, simulateCommand, exportScenariosCommand)
+	AgentCommands[0].Commands = append(AgentCommands[0].Commands, simulateCommand)
 }
 
 var (
@@ -85,73 +85,31 @@ var simulateCommand = &cli.Command{
 	},
 }
 
-var exportScenariosCommand = &cli.Command{
-	Name:      "export-scenarios",
-	Usage:     "Export a simulation run's scenarios to a scenarios.yaml",
-	ArgsUsage: "<simulation-run-id>",
-	Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-		pc, err := loadProjectDetails(cmd)
-		if err != nil {
-			return nil, err
-		}
-		simulateProjectConfig = pc
-		return nil, nil
-	},
-	Action: runExportScenarios,
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:    "output",
-			Aliases: []string{"o"},
-			Usage:   "Write to `FILE` instead of stdout",
-		},
-	},
-}
-
-func runExportScenarios(ctx context.Context, cmd *cli.Command) error {
-	runID := cmd.Args().First()
-	if runID == "" {
-		return fmt.Errorf("a simulation run ID is required")
-	}
-
-	pc := simulateProjectConfig
-	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
-	resp, err := client.GetSimulationRun(ctx, &livekit.SimulationRun_Get_Request{SimulationRunId: runID})
-	if err != nil {
-		return fmt.Errorf("failed to get simulation run: %w", err)
-	}
-
-	group := resp.GetRun().GetScenarioGroup()
+// writeGeneratedScenariosTemp writes a generated run's scenarios to a temp
+// scenarios.yaml and returns its path, so the simulate command can print where
+// they landed (mirroring how it prints the agent log path). Returns "" when the
+// run carries no generated scenarios.
+func writeGeneratedScenariosTemp(run *livekit.SimulationRun) (string, error) {
+	group := run.GetScenarioGroup()
 	if group == nil || len(group.GetScenarios()) == 0 {
-		return fmt.Errorf("simulation run %q has no scenarios to export", runID)
+		return "", nil
 	}
-
 	out, err := scenarioGroupToYAML(group)
 	if err != nil {
-		return err
+		return "", err
 	}
-
-	if path := cmd.String("output"); path != "" {
-		// Never overwrite: refuse if the file already exists so the caller picks
-		// another name (O_EXCL makes the check atomic).
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-		if os.IsExist(err) {
-			return fmt.Errorf("%s already exists; refusing to overwrite (choose a different --output path)", path)
-		}
-		if err != nil {
-			return fmt.Errorf("failed to write %s: %w", path, err)
-		}
-		_, werr := f.Write(out)
-		if cerr := f.Close(); werr == nil {
-			werr = cerr
-		}
-		if werr != nil {
-			return fmt.Errorf("failed to write %s: %w", path, werr)
-		}
-		fmt.Printf("Wrote %d scenarios to %s\n", len(group.GetScenarios()), path)
-		return nil
+	f, err := os.CreateTemp("", "scenarios-*.yaml")
+	if err != nil {
+		return "", err
 	}
-	_, err = os.Stdout.Write(out)
-	return err
+	_, werr := f.Write(out)
+	if cerr := f.Close(); werr == nil {
+		werr = cerr
+	}
+	if werr != nil {
+		return "", werr
+	}
+	return f.Name(), nil
 }
 
 // scenarioGroupToYAML renders a ScenarioGroup as a scenarios.yaml document — the
