@@ -53,7 +53,6 @@ Every build of `lk` includes the audio/console subsystem (CGO + PortAudio + WebR
 
 -   **macOS**: nothing to install — CoreAudio frameworks ship with Xcode CLT.
 -   **Linux**: `sudo apt-get install libasound2-dev` (or your distro's ALSA dev package).
--   **Windows**: MinGW from the standard Go distribution, and set `CGO_CXXFLAGS_ALLOW=-fms-extensions` (the WebRTC APM uses SEH, which cgo gates behind this allow-list flag).
 
 Then:
 
@@ -62,7 +61,12 @@ git clone https://github.com/livekit/livekit-cli && cd livekit-cli
 go build ./cmd/lk
 ```
 
-To cross-compile for another platform, install [Zig](https://ziglang.org/download/) 0.14.1 and run a [GoReleaser](https://goreleaser.com/) snapshot build:
+The WebRTC APM C++ requires a Clang-based toolchain (it uses MSVC-style SEH on
+Windows). macOS and most Linux distros already use Clang for cgo. To build for
+**Windows** — or to cross-compile for any platform — install
+[Zig](https://ziglang.org/download/) 0.14.1 (used as the Clang C/C++ toolchain)
+and run a [GoReleaser](https://goreleaser.com/) snapshot build, which sets the
+compiler and flags for you:
 
 ```shell
 goreleaser build --single-target --snapshot --clean

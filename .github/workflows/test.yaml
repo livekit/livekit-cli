@@ -10,18 +10,16 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # No windows-latest: its native MinGW GCC can't compile the WebRTC APM
+        # C++ (clang-only SEH __try/__except). Windows is built+validated by the
+        # zig cross-build in build.yaml; the audio packages have no unit tests.
+        os: [ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
     permissions:
       contents: read
       packages: read
-
-    env:
-      # The WebRTC APM's #cgo windows CXXFLAGS use -fms-extensions (SEH), which
-      # isn't on cgo's directive allowlist; unlock it for the Windows build.
-      CGO_CXXFLAGS_ALLOW: -fms-extensions
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
