@@ -16,6 +16,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,6 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +32,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 )
 
-// AgentProcess manages a Python agent subprocess.
+// AgentProcess manages an agent subprocess.
 type AgentProcess struct {
 	cmd            *exec.Cmd
 	readyCh        chan struct{}
@@ -97,6 +99,55 @@ func isTypeScriptEntry(entry string) bool {
 	}
 }
 
+var nodeVersionRe = regexp.MustCompile(`v(\d+)\.(\d+)`)
+
+// checkTypeStrippingSupport verifies the Node binary can run TypeScript
+// directly (--experimental-strip-types requires Node >= 22.6). The probe
+// runs in the project dir so version-manager shims resolve the same Node
+// the spawn will use. Probing failures are ignored — the spawn itself will
+// surface any real error.
+func checkTypeStrippingSupport(dir, nodeBin string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, nodeBin, "--version")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	version := strings.TrimSpace(string(out))
+	m := nodeVersionRe.FindStringSubmatch(version)
+	if m == nil {
+		return nil
+	}
+	major, _ := strconv.Atoi(m[1])
+	minor, _ := strconv.Atoi(m[2])
+	if major < 22 || (major == 22 && minor < 6) {
+		return fmt.Errorf("running a TypeScript entrypoint directly requires Node >= 22.6 (found %s); upgrade Node or point at built JS output", version)
+	}
+	return nil
+}
+
+// defaultEntrypoints returns candidate entrypoint paths (relative to the
+// project root or working directory) probed for a project type, in priority
+// order. Forward slashes are valid on all platforms.
+func defaultEntrypoints(projectType agentfs.ProjectType) []string {
+	if projectType.IsNode() {
+		return []string{"agent.ts", "agent.js"}
+	}
+	return []string{"agent.py"}
+}
+
+// fallbackEntrypoints are probed at the project root only after cwd-relative
+// candidates, so a root src/ layout doesn't shadow an agent next to the
+// user's working directory.
+func fallbackEntrypoints(projectType agentfs.ProjectType) []string {
+	if projectType.IsNode() {
+		return []string{"src/agent.ts", "src/agent.js"}
+	}
+	return []string{"src/agent.py"}
+}
+
 // findEntrypoint resolves the agent entrypoint file.
 func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (string, error) {
 	if explicit != "" {
@@ -109,34 +160,48 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 		}
 		return explicit, nil
 	}
-	def := projectType.DefaultEntrypoint()
-	if def == "" {
-		def = "agent.py"
-	}
+	rootCandidates := defaultEntrypoints(projectType)
+	srcCandidates := fallbackEntrypoints(projectType)
 
 	// Check project root first
-	checked := []string{filepath.Join(dir, def)}
-	if _, err := os.Stat(checked[0]); err == nil {
-		return def, nil
+	var checked []string
+	probe := func(rel string) bool {
+		abs := filepath.Join(dir, rel)
+		checked = append(checked, abs)
+		_, err := os.Stat(abs)
+		return err == nil
 	}
-
-	// Fall back to cwd-relative path (e.g. running from examples/drive-thru/)
-	cwd, _ := os.Getwd()
-	if rel, err := filepath.Rel(dir, cwd); err == nil && rel != "." {
-		candidate := filepath.Join(rel, def)
-		absCandidate := filepath.Join(dir, candidate)
-		checked = append(checked, absCandidate)
-		if _, err := os.Stat(absCandidate); err == nil {
-			return candidate, nil
+	for _, def := range rootCandidates {
+		if probe(def) {
+			return def, nil
 		}
 	}
 
+	// Then cwd-relative paths (e.g. running from examples/drive-thru/)
+	cwd, _ := os.Getwd()
+	if rel, err := filepath.Rel(dir, cwd); err == nil && rel != "." {
+		for _, def := range append(append([]string{}, rootCandidates...), srcCandidates...) {
+			candidate := filepath.Join(rel, def)
+			if probe(candidate) {
+				return candidate, nil
+			}
+		}
+	}
+
+	// Finally the project root's src/ layout
+	for _, def := range srcCandidates {
+		if probe(def) {
+			return def, nil
+		}
+	}
+
+	example := rootCandidates[0]
 	msg := "no agent entrypoint found, checked:\n"
 	for _, p := range checked {
 		msg += fmt.Sprintf("  - %s\n", p)
 	}
 	msg += "\nMake sure you are running this command from a directory containing a LiveKit agent.\n"
-	msg += "Specify the entrypoint file as a positional argument, e.g.: lk agent simulate agent.py"
+	msg += fmt.Sprintf("Specify the entrypoint file as a positional argument, e.g.: lk agent dev %s", example)
 	return "", fmt.Errorf("%s", msg)
 }
 
@@ -163,6 +228,9 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 		}
 		args := make([]string, 0, len(cfg.CLIArgs)+2)
 		if isTypeScriptEntry(cfg.Entrypoint) {
+			if err := checkTypeStrippingSupport(cfg.Dir, nodeBin); err != nil {
+				return "", nil, err
+			}
 			args = append(args, "--experimental-strip-types")
 		}
 		args = append(args, cfg.Entrypoint)

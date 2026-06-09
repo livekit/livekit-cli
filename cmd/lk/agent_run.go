@@ -26,6 +26,8 @@ import (
 	"syscall"
 
 	"github.com/urfave/cli/v3"
+
+	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 )
 
 func init() {
@@ -70,6 +72,11 @@ var devCommand = &cli.Command{
 // resolveCredentials returns CLI args (--url, --api-key, --api-secret) for the agent subprocess.
 func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, error) {
 	url := cmd.String("url")
+	if !cmd.IsSet("url") {
+		// Ignore the global flag's default (http://localhost:7880) so the
+		// project config can supply the URL.
+		url = ""
+	}
 	apiKey := cmd.String("api-key")
 	apiSecret := cmd.String("api-secret")
 
@@ -106,10 +113,10 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 	return args, nil
 }
 
-func buildCLIArgs(subcmd string, cmd *cli.Command, loadOpts ...loadOption) ([]string, error) {
+func buildCLIArgs(projectType agentfs.ProjectType, subcmd string, cmd *cli.Command, loadOpts ...loadOption) ([]string, error) {
 	args := []string{subcmd}
 	if logLevel := cmd.String("log-level"); logLevel != "" {
-		args = append(args, "--log-level", logLevel)
+		args = append(args, "--log-level", normalizeLogLevel(projectType, logLevel))
 	}
 	creds, err := resolveCredentials(cmd, loadOpts...)
 	if err != nil {
@@ -126,7 +133,7 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 	}
 	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
 
-	cliArgs, err := buildCLIArgs("start", cmd, quietOutput)
+	cliArgs, err := buildCLIArgs(projectType, "start", cmd, quietOutput)
 	if err != nil {
 		return err
 	}
@@ -147,7 +154,7 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
-	// Forward every signal to the agent — Python decides
+	// Forward every signal to the agent — the agent decides:
 	// first = graceful shutdown, second = force exit.
 	go func() {
 		for range sigCh {
@@ -167,13 +174,21 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	cliArgs, err := buildCLIArgs("start", cmd, outputToStderr)
+	// Python has no dedicated dev subcommand: dev mode is `start --dev`.
+	// agents-js has a `dev` subcommand that already defaults to debug logs.
+	subcmd := "dev"
+	if projectType.IsPython() {
+		subcmd = "start"
+	}
+	cliArgs, err := buildCLIArgs(projectType, subcmd, cmd, outputToStderr)
 	if err != nil {
 		return err
 	}
-	cliArgs = append(cliArgs, "--dev")
-	if cmd.String("log-level") == "" {
-		cliArgs = append(cliArgs, "--log-level", "DEBUG")
+	if projectType.IsPython() {
+		cliArgs = append(cliArgs, "--dev")
+		if cmd.String("log-level") == "" {
+			cliArgs = append(cliArgs, "--log-level", "DEBUG")
+		}
 	}
 
 	cfg := AgentStartConfig{

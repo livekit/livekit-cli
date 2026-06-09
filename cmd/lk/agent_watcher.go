@@ -82,14 +82,18 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		return nil, fmt.Errorf("failed to setup file watcher: %w", err)
 	}
 
-	rs, err := newReloadServer()
-	if err != nil {
-		w.Close()
-		return nil, err
+	// The reload protocol (capture running jobs from the old process, restore
+	// them in the new one) is Python-only; Node reloads are a plain kill+respawn.
+	var rs *reloadServer
+	if config.ProjectType.IsPython() {
+		rs, err = newReloadServer()
+		if err != nil {
+			w.Close()
+			return nil, err
+		}
+		// Append --reload-addr to CLI args so the Python process connects back
+		config.CLIArgs = append(config.CLIArgs, "--reload-addr", rs.addr())
 	}
-
-	// Append --dev and --reload-addr to CLI args so the Python process connects back
-	config.CLIArgs = append(config.CLIArgs, "--dev", "--reload-addr", rs.addr())
 
 	return &agentWatcher{
 		config:    config,
@@ -109,15 +113,17 @@ func (aw *agentWatcher) start() error {
 	aw.agent = agent
 
 	// Accept connection from new Python process in background
-	go func() {
-		conn, err := aw.reloadSrv.listener.Accept()
-		if err != nil {
-			return
-		}
-		aw.conn = conn
-		// Serve the initial restore request (will be empty on first start)
-		go aw.reloadSrv.serveNewProcess(conn)
-	}()
+	if aw.reloadSrv != nil {
+		go func() {
+			conn, err := aw.reloadSrv.listener.Accept()
+			if err != nil {
+				return
+			}
+			aw.conn = conn
+			// Serve the initial restore request (will be empty on first start)
+			go aw.reloadSrv.serveNewProcess(conn)
+		}()
+	}
 
 	return nil
 }
@@ -145,14 +151,16 @@ func (aw *agentWatcher) restart() error {
 	aw.agent = agent
 
 	// 4. Accept new connection and serve restored jobs
-	go func() {
-		conn, err := aw.reloadSrv.listener.Accept()
-		if err != nil {
-			return
-		}
-		aw.conn = conn
-		go aw.reloadSrv.serveNewProcess(conn)
-	}()
+	if aw.reloadSrv != nil {
+		go func() {
+			conn, err := aw.reloadSrv.listener.Accept()
+			if err != nil {
+				return
+			}
+			aw.conn = conn
+			go aw.reloadSrv.serveNewProcess(conn)
+		}()
+	}
 
 	return nil
 }
@@ -178,7 +186,9 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 		if aw.conn != nil {
 			aw.conn.Close()
 		}
-		aw.reloadSrv.close()
+		if aw.reloadSrv != nil {
+			aw.reloadSrv.close()
+		}
 		aw.watcher.Close()
 	}()
 

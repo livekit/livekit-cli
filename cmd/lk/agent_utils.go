@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 
@@ -72,4 +73,13 @@ func buildConsoleArgs(addr string, record bool) []string {
 		args = append(args, "--record")
 	}
 	return args
+}
+
+// normalizeLogLevel adapts the log level to the agent runtime's convention:
+// agents-js accepts only lowercase levels, Python expects uppercase.
+func normalizeLogLevel(projectType agentfs.ProjectType, level string) string {
+	if projectType.IsNode() {
+		return strings.ToLower(level)
+	}
+	return strings.ToUpper(level)
 }
