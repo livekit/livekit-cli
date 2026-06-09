@@ -618,12 +618,30 @@ func (m *simulateModel) viewSetup() string {
 	if url := m.getDashboardURL(); url != "" {
 		b.WriteString(dimStyle.Render("  "+url) + "\n")
 	}
+
+	// When scenarios come from a file, show that clearly: the group title, how many
+	// scenarios, the source file, and each scenario's label.
+	if m.config.mode == modeScenarios && m.config.scenarioGroup != nil {
+		g := m.config.scenarioGroup
+		b.WriteString("\n")
+		title := g.GetName()
+		if title == "" {
+			title = "Scenarios"
+		}
+		b.WriteString("  " + cyanStyle.Render(title) + dimStyle.Render(
+			fmt.Sprintf("  %d from %s", len(g.GetScenarios()), m.config.scenariosPath)) + "\n")
+		for _, s := range g.GetScenarios() {
+			b.WriteString(dimStyle.Render("    • "+s.GetLabel()) + "\n")
+		}
+	}
+
 	b.WriteString("\n")
 
 	b.WriteString(m.renderSteps())
 
-	// Show generation progress after setup completes
-	if m.setupDone && m.err == nil {
+	// Show generation progress after setup completes (only when generating from
+	// source — in file mode the scenarios are already known, nothing is generated).
+	if m.setupDone && m.err == nil && m.config.mode == modeGenerateFromSource {
 		elapsed := time.Since(m.genStart).Truncate(time.Second)
 		n := m.numSimulations
 		if m.run != nil && m.run.GetNumSimulations() > 0 {

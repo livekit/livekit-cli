@@ -34,6 +34,7 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
@@ -192,6 +193,7 @@ type simulateConfig struct {
 	projectType    agentfs.ProjectType
 	entrypoint     string
 	scenarioGroup  *livekit.ScenarioGroup
+	scenariosPath  string // path to the --scenarios file (empty when generating from source)
 }
 
 // simulateMode represents how scenarios are sourced.
@@ -304,6 +306,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		projectType:    projectType,
 		entrypoint:     entrypoint,
 		scenarioGroup:  scenarioGroup,
+		scenariosPath:  scenariosPath,
 	}
 
 	if !isInteractive() {
@@ -335,13 +338,14 @@ func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 	err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
 		Title("Upload source to LiveKit Cloud?").
 		Description(fmt.Sprintf(
-			"No scenarios.yaml was provided, so test scenarios will be generated from "+
-				"your agent's source.\n%s will be uploaded to LiveKit Cloud.",
-			projectDir,
+			"No --scenarios file was provided, so test scenarios will be generated\n"+
+				"from your agent's code. This uploads %s to LiveKit Cloud.",
+			util.Accented(projectDir),
 		)).
 		Affirmative("Upload").
 		Negative("Cancel").
 		Value(&confirmed))).
+		WithTheme(util.Theme).
 		Run()
 	if err != nil {
 		return err
