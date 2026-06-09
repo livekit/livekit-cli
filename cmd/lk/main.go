@@ -134,6 +134,10 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	return nil, nil
 }
 
+// Keep autocomplete/fish_autocomplete in sync with the command tree. CI (test.yaml)
+// fails if the committed file drifts; run `go generate ./...` to refresh it.
+//
+//go:generate go run . generate-fish-completion -o ../../autocomplete/fish_autocomplete
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 	fishScript, err := cmd.Root().ToFishCompletion()
 	if err != nil {
