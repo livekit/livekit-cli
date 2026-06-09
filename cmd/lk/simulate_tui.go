@@ -1154,7 +1154,8 @@ func (m *simulateModel) renderJobList() string {
 
 	for i, row := range rows {
 		idx := winStart + i
-		plainIcon := string(plainJobIcon(row.ij.job))
+		pr, _ := jobStatusIcon(row.ij.job)
+		plainIcon := string(pr)
 		var line string
 		if idx == m.cursor {
 			line = fmt.Sprintf("  %s %3d. %s %s", plainIcon, row.ij.origIdx, row.ij.job.Id, row.label)
@@ -1199,29 +1200,18 @@ func jobLabel(job *livekit.SimulationRun_Job) string {
 	return label
 }
 
-func plainJobIcon(job *livekit.SimulationRun_Job) rune {
+// jobStatusIcon returns the status symbol for a job and the color style it
+// should render in.
+func jobStatusIcon(job *livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
 	switch job.Status {
 	case livekit.SimulationRun_Job_STATUS_COMPLETED:
-		return '✓'
+		return '✓', &greenStyle
 	case livekit.SimulationRun_Job_STATUS_FAILED:
-		return '✗'
+		return '✗', &redStyle
 	case livekit.SimulationRun_Job_STATUS_RUNNING:
-		return '⏺'
+		return '⏺', &yellowStyle
 	default:
-		return '⏺'
-	}
-}
-
-func jobIconStylePtr(job *livekit.SimulationRun_Job) *lipgloss.Style {
-	switch job.Status {
-	case livekit.SimulationRun_Job_STATUS_COMPLETED:
-		return &greenStyle
-	case livekit.SimulationRun_Job_STATUS_FAILED:
-		return &redStyle
-	case livekit.SimulationRun_Job_STATUS_RUNNING:
-		return &yellowStyle
-	default:
-		return &dimStyle
+		return '⏺', &dimStyle
 	}
 }
 
@@ -1242,13 +1232,13 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 	for i := winStart; i < winEnd; i++ {
 		ij := jobs[i]
 		label := jobLabel(ij.job)
-		iconCh := plainJobIcon(ij.job)
+		iconCh, iconStyle := jobStatusIcon(ij.job)
 		line := fmt.Sprintf("  %c %3d. %s %s", iconCh, ij.origIdx, ij.job.Id, label)
 		rows = append(rows, matrixRow{
 			text:         []rune(line),
 			iconCol:      2,
 			iconCh:       iconCh,
-			iconStyle:    jobIconStylePtr(ij.job),
+			iconStyle:    iconStyle,
 			cursorMarker: i == m.cursor,
 		})
 	}
@@ -1712,14 +1702,6 @@ func (m *simulateModel) renderHint() string {
 }
 
 func jobIcon(job *livekit.SimulationRun_Job) string {
-	switch job.Status {
-	case livekit.SimulationRun_Job_STATUS_COMPLETED:
-		return greenStyle.Render("✓")
-	case livekit.SimulationRun_Job_STATUS_FAILED:
-		return redStyle.Render("✗")
-	case livekit.SimulationRun_Job_STATUS_RUNNING:
-		return yellowStyle.Render("⏺")
-	default:
-		return dimStyle.Render("⏺")
-	}
+	r, st := jobStatusIcon(job)
+	return st.Render(string(r))
 }
