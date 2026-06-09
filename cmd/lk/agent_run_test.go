@@ -97,6 +97,30 @@ func TestBuildAgentCommandNode(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"agent.js", "console", "--connect-addr", "127.0.0.1:9999"}, args)
+
+	// A discovered env file in the project dir is loaded via --env-file.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".env"), []byte("FOO=bar\n"), 0o644))
+	_, args, err = buildAgentCommand(AgentStartConfig{
+		Dir:         dir,
+		Entrypoint:  "agent.ts",
+		ProjectType: agentfs.ProjectTypeNode,
+		CLIArgs:     []string{"dev"},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"--experimental-strip-types", "--env-file=.env", "agent.ts", "dev"}, args)
+}
+
+func TestFindEnvFile(t *testing.T) {
+	dir := t.TempDir()
+	assert.Equal(t, "", agentfs.FindEnvFile(dir))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".env.local"), []byte("A=1\n"), 0o644))
+	assert.Equal(t, ".env.local", agentfs.FindEnvFile(dir))
+
+	// .env outranks .env.local in the known-file order.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".env"), []byte("A=1\n"), 0o644))
+	assert.Equal(t, ".env", agentfs.FindEnvFile(dir))
 }
 
 func TestBuildAgentCommandPython(t *testing.T) {
