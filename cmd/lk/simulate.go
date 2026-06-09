@@ -24,7 +24,6 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
