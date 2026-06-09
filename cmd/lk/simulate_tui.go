@@ -33,7 +33,7 @@ import (
 
 func runSimulateTUI(config *simulateConfig) error {
 	m := newSimulateModel(config)
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("TUI error: %w", err)
 	}
@@ -130,6 +130,7 @@ type simulateModel struct {
 	logPinned       bool
 	logPinnedTotal  int
 	showDescription bool
+	descScrollOff   int
 	exportStatus    string
 
 	matrix              matrixRain
@@ -138,6 +139,13 @@ type simulateModel struct {
 	width  int
 	height int
 	err    error
+}
+
+// descriptionExpanded reports whether the agent-description panel is open and
+// scrollable (only in the list view, when there's a description to show).
+func (m *simulateModel) descriptionExpanded() bool {
+	return m.detailJobID == "" && m.showDescription &&
+		m.run != nil && m.run.AgentDescription != ""
 }
 
 // canExportScenarios reports whether the run produced generated scenarios that
@@ -412,8 +420,57 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		return m.handleKey(msg)
+
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			m.scrollBy(-1)
+		case tea.MouseButtonWheelDown:
+			m.scrollBy(1)
+		}
+		return m, nil
 	}
 	return m, nil
+}
+
+// scrollBy applies a wheel/scroll step to whatever is focused, in the natural
+// terminal direction: delta > 0 scrolls toward the bottom (later content),
+// delta < 0 toward the top. It routes to the detail view, the expanded agent
+// description, the log pane, or the job list, in that priority.
+func (m *simulateModel) scrollBy(delta int) {
+	switch {
+	case m.detailJobID != "":
+		m.detailScrollOff += delta
+		if m.detailScrollOff < 0 {
+			m.detailScrollOff = 0
+		}
+	case m.descriptionExpanded():
+		m.descScrollOff += delta
+		if m.descScrollOff < 0 {
+			m.descScrollOff = 0
+		}
+	case m.showLogs:
+		// logScrollOff counts lines up from the bottom, so scrolling down
+		// (delta > 0) decreases it toward the live tail.
+		m.logScrollOff -= delta
+		if m.logScrollOff <= 0 {
+			m.logScrollOff = 0
+			m.logPinned = false
+		} else {
+			m.logPinned = true
+		}
+	default:
+		jobs := m.filteredJobs()
+		if len(jobs) > 0 {
+			m.cursor += delta
+			if m.cursor < 0 {
+				m.cursor = 0
+			}
+			if m.cursor >= len(jobs) {
+				m.cursor = len(jobs) - 1
+			}
+		}
+	}
 }
 
 func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -481,15 +538,23 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "d":
 		if m.detailJobID == "" {
 			m.showDescription = !m.showDescription
+			m.descScrollOff = 0
 		}
 	case "e":
 		if m.canExportScenarios() {
 			m.exportStatus = m.exportScenarios()
 		}
 	case "up", "shift+tab":
-		if m.detailJobID != "" {
-			m.detailScrollOff++
-		} else {
+		switch {
+		case m.detailJobID != "":
+			if m.detailScrollOff > 0 {
+				m.detailScrollOff--
+			}
+		case m.descriptionExpanded():
+			if m.descScrollOff > 0 {
+				m.descScrollOff--
+			}
+		default:
 			jobs := m.filteredJobs()
 			if len(jobs) > 0 {
 				m.cursor--
@@ -499,11 +564,12 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case "down", "tab":
-		if m.detailJobID != "" {
-			if m.detailScrollOff > 0 {
-				m.detailScrollOff--
-			}
-		} else {
+		switch {
+		case m.detailJobID != "":
+			m.detailScrollOff++
+		case m.descriptionExpanded():
+			m.descScrollOff++
+		default:
 			jobs := m.filteredJobs()
 			if len(jobs) > 0 {
 				m.cursor++
@@ -513,19 +579,28 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case "pgup":
-		if m.detailJobID != "" {
+		switch {
+		case m.detailJobID != "":
 			m.detailScrollOff -= 20
 			if m.detailScrollOff < 0 {
 				m.detailScrollOff = 0
 			}
-		} else if m.showLogs {
+		case m.descriptionExpanded():
+			m.descScrollOff -= 20
+			if m.descScrollOff < 0 {
+				m.descScrollOff = 0
+			}
+		case m.showLogs:
 			m.logScrollOff += 20
 			m.logPinned = true
 		}
 	case "pgdown":
-		if m.detailJobID != "" {
+		switch {
+		case m.detailJobID != "":
 			m.detailScrollOff += 20
-		} else if m.showLogs {
+		case m.descriptionExpanded():
+			m.descScrollOff += 20
+		case m.showLogs:
 			m.logScrollOff -= 20
 			if m.logScrollOff < 0 {
 				m.logScrollOff = 0
@@ -546,11 +621,23 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.detailJobID != "" {
 			m.detailJobID = ""
 			m.detailScrollOff = 0
+		} else if m.showDescription {
+			m.showDescription = false
+			m.descScrollOff = 0
 		}
 	case "q":
-		if m.detailJobID != "" {
+		switch {
+		case m.detailJobID != "":
 			m.detailJobID = ""
 			m.detailScrollOff = 0
+		case m.showDescription:
+			m.showDescription = false
+			m.descScrollOff = 0
+		default:
+			if m.setupCancel != nil {
+				m.setupCancel()
+			}
+			return m, tea.Quit
 		}
 	}
 	return m, nil
@@ -760,11 +847,31 @@ func (m *simulateModel) viewRunning() string {
 	if m.detailJobID == "" && m.run != nil && m.run.AgentDescription != "" {
 		b.WriteString(boldStyle.Render("  Agent Description") + "\n")
 		if m.showDescription {
+			// Bound the body to a fixed window so opening it never shoves the header
+			// (and the job list below) off-screen; scroll within via ↑↓ / wheel.
 			wrapped := dimStyle.Width(m.width - 4).Render(m.run.AgentDescription)
-			for _, line := range strings.Split(wrapped, "\n") {
+			lines := strings.Split(wrapped, "\n")
+			const descBudget = 8
+			if len(lines) <= descBudget {
+				m.descScrollOff = 0
+			} else if maxScroll := len(lines) - descBudget; m.descScrollOff > maxScroll {
+				m.descScrollOff = maxScroll
+			}
+			start := m.descScrollOff
+			end := start + descBudget
+			if end > len(lines) {
+				end = len(lines)
+			}
+			if start > 0 {
+				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more", start)) + "\n")
+			}
+			for _, line := range lines[start:end] {
 				b.WriteString("  " + line + "\n")
 			}
-			b.WriteString(dimStyle.Render("  (press d to collapse)") + "\n\n")
+			if end < len(lines) {
+				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more", len(lines)-end)) + "\n")
+			}
+			b.WriteString(dimStyle.Render("  ↑↓ scroll · d collapse") + "\n\n")
 		} else {
 			desc := firstMeaningfulLine(m.run.AgentDescription)
 			if desc != "" {
@@ -962,7 +1069,7 @@ func (m *simulateModel) renderJobList() string {
 		ij := jobs[i]
 		row := rowData{ij: ij, label: jobLabel(ij.job)}
 		rows = append(rows, row)
-		w := lipgloss.Width(fmt.Sprintf("  ⏺ %3d. %s %s", ij.origIdx+1, ij.job.Id, row.label))
+		w := lipgloss.Width(fmt.Sprintf("  ⏺ %3d. %s %s", ij.origIdx, ij.job.Id, row.label))
 		if w > maxWidth {
 			maxWidth = w
 		}
@@ -973,14 +1080,14 @@ func (m *simulateModel) renderJobList() string {
 		plainIcon := string(plainJobIcon(row.ij.job))
 		var line string
 		if idx == m.cursor {
-			line = fmt.Sprintf("  %s %3d. %s %s", plainIcon, row.ij.origIdx+1, row.ij.job.Id, row.label)
+			line = fmt.Sprintf("  %s %3d. %s %s", plainIcon, row.ij.origIdx, row.ij.job.Id, row.label)
 			if pad := maxWidth - lipgloss.Width(line); pad > 0 {
 				line += strings.Repeat(" ", pad)
 			}
 			line = reverseStyle.Render(line)
 		} else {
 			icon := jobIcon(row.ij.job)
-			line = fmt.Sprintf("  %s %3d. %s %s", icon, row.ij.origIdx+1, dimStyle.Render(row.ij.job.Id), row.label)
+			line = fmt.Sprintf("  %s %3d. %s %s", icon, row.ij.origIdx, dimStyle.Render(row.ij.job.Id), row.label)
 		}
 		b.WriteString(line)
 		b.WriteString("\n")
@@ -1059,7 +1166,7 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 		ij := jobs[i]
 		label := jobLabel(ij.job)
 		iconCh := plainJobIcon(ij.job)
-		line := fmt.Sprintf("  %c %3d. %s %s", iconCh, ij.origIdx+1, ij.job.Id, label)
+		line := fmt.Sprintf("  %c %3d. %s %s", iconCh, ij.origIdx, ij.job.Id, label)
 		rows = append(rows, matrixRow{
 			text:         []rune(line),
 			iconCol:      2,
@@ -1485,7 +1592,8 @@ func firstMeaningfulLine(text string) string {
 
 func (m *simulateModel) renderHint() string {
 	var parts []string
-	if m.detailJobID != "" {
+	switch {
+	case m.detailJobID != "":
 		parts = append(parts, "↑↓ scroll · ESC back")
 		if m.hasLogs() {
 			if m.showLogs {
@@ -1494,8 +1602,10 @@ func (m *simulateModel) renderHint() string {
 				parts = append(parts, "Ctrl+L logs")
 			}
 		}
-	} else {
-		nav := "↑↓ navigate · ENTER detail · d description"
+	case m.descriptionExpanded():
+		parts = append(parts, "↑↓ scroll · d collapse description")
+	default:
+		nav := "↑↓ navigate · ENTER detail · d show description"
 		if m.canExportScenarios() {
 			nav += " · e export scenarios"
 		}
@@ -1508,6 +1618,7 @@ func (m *simulateModel) renderHint() string {
 			}
 		}
 	}
+	parts = append(parts, "q quit")
 	footer := dimStyle.Render("  " + strings.Join(parts, " · "))
 	if m.exportStatus != "" {
 		footer += "\n" + greenStyle.Render("  "+m.exportStatus)
