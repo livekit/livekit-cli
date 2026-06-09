@@ -85,12 +85,13 @@ generate_mingw_libs() {
     local machine="$1"
     local zig_lib def_dir
     # zig 0.14 outputs JSON ("lib_dir": "..."); zig 0.16 outputs ZON
-    # (.lib_dir = "..."). This pattern matches both.
-    zig_lib="$(zig env | sed -n 's/.*lib_dir[^"]*"\([^"]*\)".*/\1/p')"
+    # (.lib_dir = "..."). The [":= ]* class spans both separators so the capture
+    # starts at the value, not the JSON key's closing quote.
+    zig_lib="$(zig env | sed -n 's/.*lib_dir[":= ]*\([^"]*\)".*/\1/p')"
     def_dir="$zig_lib/libc/mingw/lib-common"
 
-    if [ ! -d "$def_dir" ]; then
-        echo "[$target] zig lib dir not found at $def_dir" >&2
+    if [ -z "$zig_lib" ] || [ ! -d "$def_dir" ]; then
+        echo "[$target] could not locate zig mingw lib dir (zig_lib='$zig_lib', def_dir='$def_dir')" >&2
         return 1
     fi
 
