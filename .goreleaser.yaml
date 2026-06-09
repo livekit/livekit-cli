@@ -24,6 +24,20 @@ before:
     - go mod tidy
 
 builds:
+  # darwin can't be cross-compiled from Linux (no macOS SDK / CoreAudio); it
+  # builds where goreleaser runs (the macOS release runner). On the arm64 macOS
+  # runner, amd64 cross-compiles via Apple clang's -arch against the universal
+  # SDK. The build.yaml smoke test builds both arches the same way.
+  - id: lk-darwin-amd64
+    main: ./cmd/lk
+    binary: lk
+    env:
+      - CGO_ENABLED=1
+    goos: [darwin]
+    goarch: [amd64]
+    ldflags:
+      - -s -w
+
   - id: lk-darwin-arm64
     main: ./cmd/lk
     binary: lk
@@ -123,46 +137,9 @@ archives:
       - LICENSE
       - 'autocomplete/*'
 
-dockers:
-  - image_templates:
-      - "livekit/livekit-cli:{{ .Tag }}-amd64"
-      - "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}-amd64"
-    ids: [lk-linux-amd64]
-    goos: linux
-    goarch: amd64
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/amd64"
-      - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.source={{ .GitURL }}"
-
-  - image_templates:
-      - "livekit/livekit-cli:{{ .Tag }}-arm64"
-      - "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}-arm64"
-    ids: [lk-linux-arm64]
-    goos: linux
-    goarch: arm64
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--platform=linux/arm64"
-      - "--label=org.opencontainers.image.created={{ .Date }}"
-      - "--label=org.opencontainers.image.version={{ .Version }}"
-      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
-      - "--label=org.opencontainers.image.source={{ .GitURL }}"
-
-docker_manifests:
-  - name_template: "livekit/livekit-cli:{{ .Tag }}"
-    image_templates:
-      - "livekit/livekit-cli:{{ .Tag }}-amd64"
-      - "livekit/livekit-cli:{{ .Tag }}-arm64"
-  - name_template: "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}"
-    image_templates:
-      - "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}-amd64"
-      - "livekit/livekit-cli:v{{ .Major }}.{{ .Minor }}-arm64"
+# Docker images are built+pushed by a separate job in release.yaml (on a Linux
+# runner with a Docker daemon), since goreleaser runs on macOS here to build the
+# darwin binary natively and macOS runners have no Docker.
 
 release:
   github:

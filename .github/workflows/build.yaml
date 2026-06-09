@@ -24,8 +24,9 @@ permissions:
   contents: read
 
 jobs:
+  # Linux + Windows are cross-compiled with zig on a (cheap) Linux runner.
   cross-build:
-    name: Cross-build (goreleaser snapshot)
+    name: Cross-build linux+windows (zig)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -53,17 +54,45 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: build --snapshot --clean
+          # darwin is excluded here — it can't be cross-compiled from Linux
+          # (no macOS SDK/CoreAudio); it builds natively in the macos job below.
+          args: >-
+            build --snapshot --clean
+            --id lk-linux-amd64 --id lk-linux-arm64
+            --id lk-windows-amd64 --id lk-windows-arm64
         env:
           # goreleaser-action runs goreleaser via a Node wrapper that doesn't
           # forward PWD; the .goreleaser.yaml CGO flags template {{ .Env.PWD }}
           # to locate .cross/<target>. Provide it explicitly.
           PWD: ${{ github.workspace }}
 
-      - name: Verify native binary runs
+      - name: Verify linux binary runs
         run: |
-          # Pick the linux-amd64 binary out of dist/ and run --help.
           binary=$(find dist -type f -name lk -path '*linux*amd64*' | head -n1)
           test -n "$binary" || { echo "no linux/amd64 binary in dist/"; exit 1; }
           # Static-libgcc/libstdc++ binary should run on glibc 2.28+ Ubuntu runners.
           "$binary" --help > /dev/null
+
+  # darwin builds natively on macOS — its cgo links the CoreAudio frameworks,
+  # which only exist on a Mac. No zig needed.
+  build-darwin:
+    name: Build darwin (native)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          submodules: true
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build and verify
+        run: |
+          # arm64 native — build and run.
+          CGO_ENABLED=1 go build -o /tmp/lk ./cmd/lk
+          /tmp/lk --help > /dev/null
+          # amd64 (Intel) cross — Apple clang targets x86_64 from arm64; compile
+          # only (can't run an x86_64 binary on the arm64 runner).
+          CGO_ENABLED=1 GOARCH=amd64 go build -o /tmp/lk-amd64 ./cmd/lk

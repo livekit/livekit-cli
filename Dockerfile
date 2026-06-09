@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Consumed by goreleaser, which drops the pre-built `lk` binary into the build
-# context. Distroless gives us glibc (the binary targets glibc 2.28+) plus CA
-# certs for TLS, without a shell or package manager.
+# Consumed by the docker job in release.yaml via `docker buildx`. The release
+# job (goreleaser, on macOS) cross-builds the cgo Linux binaries with zig and
+# stages them as lk_linux_<arch> in the build context; buildx sets TARGETARCH
+# per platform. Distroless gives glibc (the binaries target glibc 2.28+) plus CA
+# certs, without a shell or package manager.
 FROM gcr.io/distroless/base-debian12
 
-COPY lk /lk
+ARG TARGETARCH
+COPY lk_linux_${TARGETARCH} /lk
 
 ENTRYPOINT ["/lk"]
