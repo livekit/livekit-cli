@@ -527,7 +527,15 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // terminal direction: delta > 0 scrolls toward the bottom (later content),
 // delta < 0 toward the top. It routes to the detail view, the expanded agent
 // description, the log pane, or the job list, in that priority.
-func (m *simulateModel) scrollBy(delta int) {
+const pageScroll = 20
+
+// scrollActive scrolls whatever offset-based pane is focused — the detail view,
+// the expanded description, or (when includeLogs) the log pane — by delta lines,
+// where positive is toward the bottom (later content). It returns false when
+// none is focused, so callers fall back to job-list navigation. This is the one
+// place the detail/description/logs scroll priority lives; keys and the mouse
+// wheel both route through it.
+func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	switch {
 	case m.detailJobID != "":
 		m.detailScrollOff += delta
@@ -539,7 +547,7 @@ func (m *simulateModel) scrollBy(delta int) {
 		if m.descScrollOff < 0 {
 			m.descScrollOff = 0
 		}
-	case m.showLogs:
+	case includeLogs && m.showLogs:
 		// logScrollOff counts lines up from the bottom, so scrolling down
 		// (delta > 0) decreases it toward the live tail.
 		m.logScrollOff -= delta
@@ -550,16 +558,34 @@ func (m *simulateModel) scrollBy(delta int) {
 			m.logPinned = true
 		}
 	default:
-		jobs := m.filteredJobs()
-		if len(jobs) > 0 {
-			m.cursor += delta
-			if m.cursor < 0 {
-				m.cursor = 0
-			}
-			if m.cursor >= len(jobs) {
-				m.cursor = len(jobs) - 1
-			}
-		}
+		return false
+	}
+	return true
+}
+
+// scrollBy routes a mouse-wheel step (delta > 0 is toward the bottom) to the
+// focused pane, falling back to moving the job-list cursor (clamped).
+func (m *simulateModel) scrollBy(delta int) {
+	if m.scrollActive(delta, true) {
+		return
+	}
+	jobs := m.filteredJobs()
+	if len(jobs) == 0 {
+		return
+	}
+	m.cursor += delta
+	if m.cursor < 0 {
+		m.cursor = 0
+	}
+	if m.cursor >= len(jobs) {
+		m.cursor = len(jobs) - 1
+	}
+}
+
+// moveCursor moves the job-list selection by delta, wrapping at the ends.
+func (m *simulateModel) moveCursor(delta int) {
+	if n := len(m.filteredJobs()); n > 0 {
+		m.cursor = ((m.cursor+delta)%n + n) % n
 	}
 }
 
@@ -647,70 +673,19 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.exportStatus = m.copyScenario(m.detailJobID)
 		}
 	case "up", "shift+tab":
-		switch {
-		case m.detailJobID != "":
-			if m.detailScrollOff > 0 {
-				m.detailScrollOff--
-			}
-		case m.descriptionExpanded():
-			if m.descScrollOff > 0 {
-				m.descScrollOff--
-			}
-		default:
-			jobs := m.filteredJobs()
-			if len(jobs) > 0 {
-				m.cursor--
-				if m.cursor < 0 {
-					m.cursor = len(jobs) - 1
-				}
-			}
+		// Arrows scroll the focused pane but never the logs (those use PgUp/PgDn);
+		// in the list they move the selection.
+		if !m.scrollActive(-1, false) {
+			m.moveCursor(-1)
 		}
 	case "down", "tab":
-		switch {
-		case m.detailJobID != "":
-			m.detailScrollOff++
-		case m.descriptionExpanded():
-			m.descScrollOff++
-		default:
-			jobs := m.filteredJobs()
-			if len(jobs) > 0 {
-				m.cursor++
-				if m.cursor >= len(jobs) {
-					m.cursor = 0
-				}
-			}
+		if !m.scrollActive(1, false) {
+			m.moveCursor(1)
 		}
 	case "pgup":
-		switch {
-		case m.detailJobID != "":
-			m.detailScrollOff -= 20
-			if m.detailScrollOff < 0 {
-				m.detailScrollOff = 0
-			}
-		case m.descriptionExpanded():
-			m.descScrollOff -= 20
-			if m.descScrollOff < 0 {
-				m.descScrollOff = 0
-			}
-		case m.showLogs:
-			m.logScrollOff += 20
-			m.logPinned = true
-		}
+		m.scrollActive(-pageScroll, true)
 	case "pgdown":
-		switch {
-		case m.detailJobID != "":
-			m.detailScrollOff += 20
-		case m.descriptionExpanded():
-			m.descScrollOff += 20
-		case m.showLogs:
-			m.logScrollOff -= 20
-			if m.logScrollOff < 0 {
-				m.logScrollOff = 0
-			}
-			if m.logScrollOff == 0 {
-				m.logPinned = false
-			}
-		}
+		m.scrollActive(pageScroll, true)
 	case "enter":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
