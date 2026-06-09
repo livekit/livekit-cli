@@ -391,7 +391,10 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 			"--log-format", "colored",
 		},
 		Env: []string{
-			"LIVEKIT_AGENT_NAME=" + c.agentName,
+			// force the agent to register under the dispatch name regardless of any
+			// agent_name hardcoded in the user's code (see LIVEKIT_AGENT_NAME_OVERRIDE
+			// precedence in livekit-agents worker.py).
+			"LIVEKIT_AGENT_NAME_OVERRIDE=" + c.agentName,
 			"LIVEKIT_URL=" + c.pc.URL,
 			"LIVEKIT_API_KEY=" + c.pc.APIKey,
 			"LIVEKIT_API_SECRET=" + c.pc.APISecret,

@@ -128,7 +128,7 @@ type AgentStartConfig struct {
 	Entrypoint    string
 	ProjectType   agentfs.ProjectType
 	CLIArgs       []string  // e.g. ["start", "--url", "..."] or ["console", "--connect-addr", addr]
-	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME=x"] or nil
+	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME_OVERRIDE=x"] or nil
 	ReadySignal   string    // substring to scan for in output (e.g. "registered worker"), empty to skip
 	ForwardOutput io.Writer // if set, forward each output line to this writer
 }
