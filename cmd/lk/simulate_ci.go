@@ -320,8 +320,12 @@ func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
 	if run.Summary != nil {
 		printCISummary(run)
 	} else {
+		msg := "The summary for this run is not available"
+		if run.Error != "" {
+			msg = run.Error
+		}
 		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "⚠ The summary for this run is not available")
+		fmt.Fprintln(os.Stdout, "⚠ "+msg)
 	}
 }
 

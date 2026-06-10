@@ -73,6 +73,10 @@ var simulateCommand = &cli.Command{
 			Aliases: []string{"n"},
 			Usage:   "Number of scenarios to generate",
 		},
+		&cli.IntFlag{
+			Name:  "concurrency",
+			Usage: "Max simulations running in parallel (default: server-side limit)",
+		},
 		&cli.StringFlag{
 			Name:  "scenarios",
 			Usage: "Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent's source",
@@ -158,6 +162,7 @@ type simulateConfig struct {
 	client         *lksdk.AgentSimulationClient
 	pc             *config.ProjectConfig
 	numSimulations int32
+	concurrency    int32
 	mode           simulateMode
 	agentName      string
 	projectDir     string
@@ -221,6 +226,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 
 	numSimulations := int32(cmd.Int("num-simulations"))
+	concurrency := int32(cmd.Int("concurrency"))
 	agentName := generateAgentName()
 
 	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
@@ -271,6 +277,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		client:         simClient,
 		pc:             pc,
 		numSimulations: numSimulations,
+		concurrency:    concurrency,
 		mode:           mode,
 		agentName:      agentName,
 		projectDir:     projectDir,
@@ -341,6 +348,8 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 			"--api-secret", c.pc.APISecret,
 			"--log-level", "DEBUG",
 			"--log-format", "colored",
+			// disable the worker load limit so the run can saturate the agent
+			"--simulation",
 		},
 		Env: []string{
 			// force the agent to register under the dispatch name regardless of any
@@ -360,6 +369,9 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 	req := &livekit.SimulationRun_Create_Request{
 		AgentName:      c.agentName,
 		NumSimulations: c.numSimulations,
+	}
+	if c.concurrency > 0 {
+		req.Concurrency = &c.concurrency
 	}
 	if c.mode == modeScenarios {
 		// Run the scenarios from the yaml. When unset, the server generates
