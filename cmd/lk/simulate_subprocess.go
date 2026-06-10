@@ -238,7 +238,9 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		scanner := bufio.NewScanner(r)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 		for scanner.Scan() {
-			line := scanner.Text()
+			// The agent colorizes logs with ANSI codes even when not on a TTY; strip
+			// them so the log file, surfaced errors, and TUI pane stay plain text.
+			line := ansiEscapeRe.ReplaceAllString(scanner.Text(), "")
 			ap.appendLog(line)
 			if cfg.ForwardOutput != nil {
 				fmt.Fprintln(cfg.ForwardOutput, line)
@@ -369,17 +371,16 @@ func (ap *AgentProcess) RecentRoomLogsByPrefix(n int, roomName string) []string 
 var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 func extractLogRoom(line string) string {
-	clean := ansiEscapeRe.ReplaceAllString(line, "")
-	idx := strings.LastIndex(clean, "{")
+	idx := strings.LastIndex(line, "{")
 	if idx < 0 {
 		return ""
 	}
-	end := strings.LastIndex(clean, "}")
+	end := strings.LastIndex(line, "}")
 	if end <= idx {
 		return ""
 	}
 	var extra map[string]any
-	if err := json.Unmarshal([]byte(clean[idx:end+1]), &extra); err != nil {
+	if err := json.Unmarshal([]byte(line[idx:end+1]), &extra); err != nil {
 		return ""
 	}
 	if room, ok := extra["room"].(string); ok {
