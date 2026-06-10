@@ -29,21 +29,18 @@ import (
 	agent "github.com/livekit/protocol/livekit/agent"
 
 	"github.com/livekit/livekit-cli/v2/pkg/console"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 // Console-specific styles (tagStyle, greenStyle, redStyle, dimStyle, boldStyle, cyanStyle
-// are inherited from simulate_tui.go which is always compiled)
-var (
-	lkCyan   = lipgloss.Color("#1fd5f9")
-	lkPurple = lipgloss.Color("#8f83ff")
-	lkGreen  = lipgloss.Color("#6BCB77")
-	lkRed    = lipgloss.Color("#EF4444")
-
-	labelStyle     = lipgloss.NewStyle().Foreground(lkPurple)
-	cyanBoldStyle  = lipgloss.NewStyle().Foreground(lkCyan).Bold(true)
-	greenBoldStyle = lipgloss.NewStyle().Foreground(lkGreen).Bold(true)
-	redBoldStyle   = lipgloss.NewStyle().Foreground(lkRed).Bold(true)
-)
+// are inherited from simulate_tui.go which is always compiled). Colors are pulled from the
+// active theme palette at render time, so they follow `lk set-theme`.
+func labelStyle() lipgloss.Style    { return lipgloss.NewStyle().Foreground(util.Accent()) }
+func cyanBoldStyle() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Brand()).Bold(true) }
+func greenBoldStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+}
+func redBoldStyle() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Error()).Bold(true) }
 
 // Unicode block characters for frequency visualizer (matching Python console)
 var blocks = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
@@ -384,8 +381,8 @@ func (m *consoleModel) updateTextMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			//   ● You
 			//     text here
 			printCmd := tea.Println(
-				"\n  " + lipgloss.NewStyle().Foreground(lkCyan).Render("● ") +
-					cyanBoldStyle.Render("You") +
+				"\n  " + lipgloss.NewStyle().Foreground(util.Brand()).Render("● ") +
+					cyanBoldStyle().Render("You") +
 					"\n    " + text + "\n",
 			)
 
@@ -427,8 +424,8 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 			m.partialTranscript = ""
 			if text := e.UserInputTranscribed.Transcript; text != "" {
 				cmds = append(cmds, tea.Println(
-					"\n  "+lipgloss.NewStyle().Foreground(lkCyan).Render("● ")+
-						cyanBoldStyle.Render("You")+
+					"\n  "+lipgloss.NewStyle().Foreground(util.Brand()).Render("● ")+
+						cyanBoldStyle().Render("You")+
 						"\n    "+text+"\n",
 				))
 			}
@@ -465,11 +462,11 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 			if fco, ok := outputsByCallID[fc.CallId]; ok {
 				if fco.IsError {
 					b.WriteString("\n    ")
-					b.WriteString(redBoldStyle.Render("✗ "))
-					b.WriteString(redStyle.Render(truncateOutput(fco.Output)))
+					b.WriteString(redBoldStyle().Render("✗ "))
+					b.WriteString(redStyle().Render(truncateOutput(fco.Output)))
 				} else {
 					b.WriteString("\n    ")
-					b.WriteString(greenStyle.Render("✓ "))
+					b.WriteString(greenStyle().Render("✓ "))
 					b.WriteString(dimStyle.Render(summarizeOutput(fco.Output)))
 				}
 			}
@@ -479,7 +476,7 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 
 	case *agent.AgentSessionEvent_Error_:
 		cmds = append(cmds, tea.Println(
-			"  "+redBoldStyle.Render("✗ ")+redStyle.Render(e.Error.Message),
+			"  "+redBoldStyle().Render("✗ ")+redStyle().Render(e.Error.Message),
 		))
 	}
 
@@ -506,8 +503,8 @@ func formatChatItem(item *agent.ChatContext_ChatItem) string {
 
 		var b strings.Builder
 		b.WriteString("\n  ")
-		b.WriteString(lipgloss.NewStyle().Foreground(lkGreen).Render("● "))
-		b.WriteString(greenBoldStyle.Render("Agent"))
+		b.WriteString(lipgloss.NewStyle().Foreground(util.Success()).Render("● "))
+		b.WriteString(greenBoldStyle().Render("Agent"))
 		for tl := range strings.SplitSeq(text, "\n") {
 			b.WriteString("\n    ")
 			b.WriteString(tl)
@@ -521,8 +518,8 @@ func formatChatItem(item *agent.ChatContext_ChatItem) string {
 		if h.OldAgentId != nil && *h.OldAgentId != "" {
 			old = dimStyle.Render(*h.OldAgentId) + " → "
 		}
-		return "  " + lipgloss.NewStyle().Foreground(lkPurple).Render("● ") +
-			dimStyle.Render("handoff: ") + old + labelStyle.Render(h.NewAgentId)
+		return "  " + lipgloss.NewStyle().Foreground(util.Accent()).Render("● ") +
+			dimStyle.Render("handoff: ") + old + labelStyle().Render(h.NewAgentId)
 	}
 	return ""
 }
@@ -538,7 +535,7 @@ func (m consoleModel) View() string {
 
 	if m.shuttingDown {
 		b.WriteString("\n  ")
-		b.WriteString(labelStyle.Render("Shutting down agent..."))
+		b.WriteString(labelStyle().Render("Shutting down agent..."))
 		b.WriteString("  ")
 		b.WriteString(dimStyle.Render("ctrl+C to force"))
 		b.WriteString("\n")
@@ -568,7 +565,7 @@ func (m consoleModel) View() string {
 		if m.audioError != "" {
 			b.WriteString("\n")
 			b.WriteString("  ")
-			b.WriteString(redStyle.Render("audio: " + m.audioError))
+			b.WriteString(redStyle().Render("audio: " + m.audioError))
 		}
 
 		if m.showShortcuts {
@@ -584,7 +581,7 @@ func (m consoleModel) View() string {
 	} else {
 		// ── Audio visualizer (matching old Python FrequencyVisualizer) ──
 		b.WriteString("   ")
-		b.WriteString(labelStyle.Render(m.inputDev))
+		b.WriteString(labelStyle().Render(m.inputDev))
 		b.WriteString("  ")
 		bands := m.pipeline.FFTBands()
 		for _, band := range bands {
@@ -601,7 +598,7 @@ func (m consoleModel) View() string {
 
 		if m.pipeline.Muted() {
 			b.WriteString("  ")
-			b.WriteString(redBoldStyle.Render("MUTED"))
+			b.WriteString(redBoldStyle().Render("MUTED"))
 		}
 
 		// Partial transcription on same line (dim)
@@ -677,7 +674,7 @@ func formatMetrics(m *agent.MetricsReport) string {
 	if m.E2ELatency != nil {
 		label := "e2e " + formatMs(*m.E2ELatency)
 		if *m.E2ELatency >= 1.0 {
-			parts = append(parts, redStyle.Render(label))
+			parts = append(parts, redStyle().Render(label))
 		} else {
 			parts = append(parts, dimStyle.Render(label))
 		}

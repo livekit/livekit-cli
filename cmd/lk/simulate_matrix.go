@@ -21,6 +21,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 const (
@@ -32,13 +34,21 @@ const (
 
 var matrixCharset = []rune("ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎ0123456789")
 
+// The "digital rain" head + green gradient is a deliberate standalone effect (a bright
+// leading glyph fading through three greens), not part of the semantic theme palette, so
+// it keeps its fixed shades regardless of theme.
 var (
-	matrixHeadStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("231")).Bold(true)
-	matrixTier1Style        = lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Bold(true)
-	matrixTier2Style        = lipgloss.NewStyle().Foreground(lipgloss.Color("34"))
-	matrixTier3Style        = lipgloss.NewStyle().Foreground(lipgloss.Color("22"))
-	matrixCursorMarkerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true)
+	matrixHeadStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("231")).Bold(true)
+	matrixTier1Style = lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Bold(true)
+	matrixTier2Style = lipgloss.NewStyle().Foreground(lipgloss.Color("34"))
+	matrixTier3Style = lipgloss.NewStyle().Foreground(lipgloss.Color("22"))
 )
+
+// matrixCursorMarkerStyle uses the active theme's brand color so the cursor ties into the
+// selected theme.
+func matrixCursorMarkerStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
+}
 
 // matrixRow describes the underlying text layer for one row of the rain area.
 // The renderer composites rain on top of this neutral description without
@@ -312,7 +322,7 @@ func writeMatrixRun(b *strings.Builder, cat int, rs []rune, iconStyle *lipgloss.
 			b.WriteString(s)
 		}
 	case mcCursor:
-		b.WriteString(matrixCursorMarkerStyle.Render(s))
+		b.WriteString(matrixCursorMarkerStyle().Render(s))
 	default:
 		b.WriteString(s)
 	}

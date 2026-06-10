@@ -22,8 +22,8 @@ endif
 # dependency installation on Linux.
 lk$(EXE):
 	git submodule update --init --recursive
-	CGO_ENABLED=1 go build -o lk$(EXE) ./cmd/lk
+	CGO_ENABLED=1 go build -o ./bin/lk$(EXE) ./cmd/lk
 
 install: lk$(EXE)
-	cp lk$(EXE) "$(GOBIN)/lk$(EXE)"
+	cp ./bin/lk$(EXE) "$(GOBIN)/lk$(EXE)"
 	ln -sf "$(GOBIN)/lk$(EXE)" "$(GOBIN)/livekit-cli$(EXE)"

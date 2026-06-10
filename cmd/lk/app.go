@@ -163,7 +163,8 @@ func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadO
 			cliConfig != nil && len(cliConfig.Projects) > 1 {
 			useDefault := true
 			if err = huh.NewForm(huh.NewGroup(util.Confirm().
-				Title(fmt.Sprintf("Use project [%s] (%s)?", rp.project.Name, rp.project.URL)).
+				Title(fmt.Sprintf("Use project [%s]?", rp.project.Name)).
+				Description(rp.project.URL).
 				Value(&useDefault).
 				Options(
 					huh.NewOption("Yes", true),
@@ -360,6 +361,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		preinstallPrompts = append(preinstallPrompts, huh.NewInput().
 			Title("Application Name").
 			Placeholder("my-app").
+			Prompt("").
 			Value(&appName).
 			Validate(func(s string) error {
 				if len(s) < 2 {
@@ -551,6 +553,7 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 				EchoMode(huh.EchoModePassword).
 				Title("Enter " + key + "?").
 				Placeholder(oldValue).
+				Prompt("").
 				Value(&newValue).
 				WithTheme(util.Theme).
 				Run(); err != nil || newValue == "" {
