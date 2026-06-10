@@ -217,7 +217,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		fmt.Fprintln(os.Stderr)
 		fmt.Fprintln(os.Stderr, "The agent failed to run the simulations. It most likely errored on job")
 		fmt.Fprintln(os.Stderr, "startup (missing model file, bad dependency, etc.). Recent agent output:")
-		for _, line := range lastNonEmptyLines(agent.RecentLogs(0), 25) {
+		for _, line := range agentErrorContext(agent) {
 			fmt.Fprintf(os.Stderr, "  %s\n", line)
 		}
 	}
@@ -446,16 +446,37 @@ func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
 	if completed > 0 {
 		return false
 	}
-	if ap != nil {
-		for _, line := range ap.RecentLogs(0) {
-			for _, marker := range agentFatalMarkers {
-				if strings.Contains(line, marker) {
-					return true
-				}
+	if ap != nil && lastFatalMarker(ap.RecentLogs(0)) >= 0 {
+		return true
+	}
+	return notJoined > maxAgentNotJoined
+}
+
+// lastFatalMarker returns the index of the last log line containing a fatal
+// marker, or -1 if none.
+func lastFatalMarker(logs []string) int {
+	last := -1
+	for i, line := range logs {
+		for _, marker := range agentFatalMarkers {
+			if strings.Contains(line, marker) {
+				last = i
+				break
 			}
 		}
 	}
-	return notJoined > maxAgentNotJoined
+	return last
+}
+
+// agentErrorContext returns the agent output to surface for a broken agent: the
+// complete error block (from the last fatal marker through the end of the log, so
+// the full traceback is never truncated) when one is present, otherwise the
+// recent tail.
+func agentErrorContext(ap *AgentProcess) []string {
+	logs := ap.RecentLogs(0)
+	if i := lastFatalMarker(logs); i >= 0 {
+		return logs[i:]
+	}
+	return lastNonEmptyLines(logs, 25)
 }
 
 func isGitHubActions() bool {

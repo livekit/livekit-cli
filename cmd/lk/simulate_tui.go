@@ -47,7 +47,7 @@ func runSimulateTUI(config *simulateConfig) error {
 			fmt.Fprintln(os.Stderr)
 			fmt.Fprintln(os.Stderr, "The agent failed to run the simulations. It most likely errored on job")
 			fmt.Fprintln(os.Stderr, "startup (missing model file, bad dependency, etc.). Recent agent output:")
-			for _, line := range lastNonEmptyLines(m.agent.RecentLogs(0), 25) {
+			for _, line := range agentErrorContext(m.agent) {
 				fmt.Fprintf(os.Stderr, "  %s\n", line)
 			}
 			fmt.Fprintln(os.Stderr)
