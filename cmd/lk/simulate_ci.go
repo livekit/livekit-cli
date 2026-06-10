@@ -160,11 +160,11 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			_, done, _, _ := simulationJobCounts(run)
 			total := len(run.Jobs)
 
-			// The worker registered but isn't joining rooms: it's erroring on job
-			// startup, not failing a scenario. Stop early and surface its log.
-			if !brokenAgent && agentNotJoining(run) {
+			// The worker is failing systemically (crashing on job startup, never
+			// joining), not failing a scenario. Stop early and surface its log.
+			if !brokenAgent && agentBroken(run, agent) {
 				brokenAgent = true
-				fmt.Fprintf(os.Stderr, "The agent registered but isn't joining rooms; cancelling the run.\n")
+				fmt.Fprintf(os.Stderr, "The agent is failing to run jobs; cancelling the run.\n")
 				cancelSimulationRun(config.client, runID)
 				runFinished = true
 				break
@@ -215,8 +215,8 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	if brokenAgent && agent != nil {
 		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, "The agent registered but never joined a room. It most likely errored on")
-		fmt.Fprintln(os.Stderr, "job startup (missing model file, bad dependency, etc.). Recent agent output:")
+		fmt.Fprintln(os.Stderr, "The agent failed to run the simulations. It most likely errored on job")
+		fmt.Fprintln(os.Stderr, "startup (missing model file, bad dependency, etc.). Recent agent output:")
 		for _, line := range lastNonEmptyLines(agent.RecentLogs(0), 25) {
 			fmt.Fprintf(os.Stderr, "  %s\n", line)
 		}
@@ -412,17 +412,50 @@ func printCIChatHistory(chatCtx *agent.ChatContext) {
 	}
 }
 
-// agentNotJoining reports whether a job failed because the agent never joined its
-// room. That points to the worker erroring on job startup rather than a scenario
-// failure, so the run is cancelled and the worker log surfaced instead.
-func agentNotJoining(run *livekit.SimulationRun) bool {
+// maxAgentNotJoined is how many "agent never joined" timeouts to tolerate before
+// treating the worker as broken. The cloud paces connections to the worker under
+// load, so a single timeout can be transient rather than a real failure.
+const maxAgentNotJoined = 1
+
+// agentFatalMarkers are framework log lines that mean the worker hit a fatal,
+// non-transient error (a job crashed, a process failed to initialize, or a
+// session gave up) rather than a scenario failing.
+var agentFatalMarkers = []string{
+	"unhandled exception while running the job task",
+	"error initializing process",
+	"closing due to unrecoverable error",
+}
+
+// agentBroken reports whether the worker is failing systemically, so the run
+// should be cancelled and its log surfaced instead of waited out. If any scenario
+// completed, the agent demonstrably works and we never treat it as broken (the
+// no-joins are pacing). Otherwise it triggers on a fatal error in the worker log,
+// or on more than one "agent never joined" timeout.
+func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
+	completed, notJoined := 0, 0
 	for _, job := range run.GetJobs() {
-		if job.GetStatus() == livekit.SimulationRun_Job_STATUS_FAILED &&
-			strings.Contains(job.GetError(), "No agent joined room") {
-			return true
+		switch job.GetStatus() {
+		case livekit.SimulationRun_Job_STATUS_COMPLETED:
+			completed++
+		case livekit.SimulationRun_Job_STATUS_FAILED:
+			if strings.Contains(job.GetError(), "No agent joined room") {
+				notJoined++
+			}
 		}
 	}
-	return false
+	if completed > 0 {
+		return false
+	}
+	if ap != nil {
+		for _, line := range ap.RecentLogs(0) {
+			for _, marker := range agentFatalMarkers {
+				if strings.Contains(line, marker) {
+					return true
+				}
+			}
+		}
+	}
+	return notJoined > maxAgentNotJoined
 }
 
 func isGitHubActions() bool {

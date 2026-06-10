@@ -45,8 +45,8 @@ func runSimulateTUI(config *simulateConfig) error {
 		m.agent.Kill()
 		if m.brokenAgent {
 			fmt.Fprintln(os.Stderr)
-			fmt.Fprintln(os.Stderr, "The agent registered but never joined a room. It most likely errored on")
-			fmt.Fprintln(os.Stderr, "job startup (missing model file, bad dependency, etc.). Recent agent output:")
+			fmt.Fprintln(os.Stderr, "The agent failed to run the simulations. It most likely errored on job")
+			fmt.Fprintln(os.Stderr, "startup (missing model file, bad dependency, etc.). Recent agent output:")
 			for _, line := range lastNonEmptyLines(m.agent.RecentLogs(0), 25) {
 				fmt.Fprintf(os.Stderr, "  %s\n", line)
 			}
@@ -492,10 +492,10 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
 			}
-			// The worker registered but isn't joining rooms: it's erroring on job
-			// startup. Cancel the run; polling continues until it reports cancelled,
+			// The worker is failing systemically (crashing on job startup, never
+			// joining). Cancel the run; polling continues until it reports cancelled,
 			// and the worker log is surfaced on exit.
-			if !m.brokenAgent && agentNotJoining(msg.run) {
+			if !m.brokenAgent && agentBroken(msg.run, m.agent) {
 				m.brokenAgent = true
 				return m, m.cancelRunCmd()
 			}
