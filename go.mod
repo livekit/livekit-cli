@@ -19,7 +19,7 @@ require (
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.46.7-0.20260610052126-53915ab24d75
+	github.com/livekit/protocol v1.46.7-0.20260610173606-5e03f5ef0e6b
 	github.com/livekit/server-sdk-go/v2 v2.16.7-0.20260608025623-a5da15b13baa
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/patternmatcher v0.6.1
@@ -248,7 +248,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/exp v0.0.0-20260603202125-055de637280b // indirect
-	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
