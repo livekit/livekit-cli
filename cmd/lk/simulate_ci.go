@@ -142,6 +142,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	prevDone := 0
 	prevStatus := livekit.SimulationRun_STATUS_GENERATING
+	brokenAgent := false
 	ticker := time.NewTicker(simulationPollInterval)
 	defer ticker.Stop()
 
@@ -158,6 +159,16 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		} else {
 			_, done, _, _ := simulationJobCounts(run)
 			total := len(run.Jobs)
+
+			// The worker registered but isn't joining rooms: it's erroring on job
+			// startup, not failing a scenario. Stop early and surface its log.
+			if !brokenAgent && agentNotJoining(run) {
+				brokenAgent = true
+				fmt.Fprintf(os.Stderr, "The agent registered but isn't joining rooms; cancelling the run.\n")
+				cancelSimulationRun(config.client, runID)
+				runFinished = true
+				break
+			}
 
 			switch run.Status {
 			case livekit.SimulationRun_STATUS_GENERATING:
@@ -201,6 +212,15 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	// --- Results ---
 
 	printCIResults(run, agent)
+
+	if brokenAgent && agent != nil {
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintln(os.Stderr, "The agent registered but never joined a room. It most likely errored on")
+		fmt.Fprintln(os.Stderr, "job startup (missing model file, bad dependency, etc.). Recent agent output:")
+		for _, line := range lastNonEmptyLines(agent.RecentLogs(0), 25) {
+			fmt.Fprintf(os.Stderr, "  %s\n", line)
+		}
+	}
 
 	if agent != nil && agent.LogPath != "" {
 		fmt.Fprintf(os.Stderr, "Agent logs: %s\n", agent.LogPath)
@@ -390,6 +410,19 @@ func printCIChatHistory(chatCtx *agent.ChatContext) {
 			fmt.Fprintf(os.Stdout, "  [handoff] -> %s\n", h.NewAgentId)
 		}
 	}
+}
+
+// agentNotJoining reports whether a job failed because the agent never joined its
+// room. That points to the worker erroring on job startup rather than a scenario
+// failure, so the run is cancelled and the worker log surfaced instead.
+func agentNotJoining(run *livekit.SimulationRun) bool {
+	for _, job := range run.GetJobs() {
+		if job.GetStatus() == livekit.SimulationRun_Job_STATUS_FAILED &&
+			strings.Contains(job.GetError(), "No agent joined room") {
+			return true
+		}
+	}
+	return false
 }
 
 func isGitHubActions() bool {

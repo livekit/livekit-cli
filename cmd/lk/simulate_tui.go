@@ -43,6 +43,15 @@ func runSimulateTUI(config *simulateConfig) error {
 
 	if m.agent != nil {
 		m.agent.Kill()
+		if m.brokenAgent {
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprintln(os.Stderr, "The agent registered but never joined a room. It most likely errored on")
+			fmt.Fprintln(os.Stderr, "job startup (missing model file, bad dependency, etc.). Recent agent output:")
+			for _, line := range lastNonEmptyLines(m.agent.RecentLogs(0), 25) {
+				fmt.Fprintf(os.Stderr, "  %s\n", line)
+			}
+			fmt.Fprintln(os.Stderr)
+		}
 		if m.agent.LogPath != "" {
 			fmt.Fprintf(os.Stderr, "Agent logs: %s\n", m.agent.LogPath)
 		}
@@ -125,6 +134,7 @@ type simulateModel struct {
 	// Run phase
 	run            *livekit.SimulationRun
 	runFinished    bool
+	brokenAgent    bool
 	numSimulations int32
 	startTime      time.Time
 	endTime        time.Time
@@ -411,6 +421,14 @@ func (m *simulateModel) pollSimulation() tea.Cmd {
 	}
 }
 
+func (m *simulateModel) cancelRunCmd() tea.Cmd {
+	client, runID := m.config.client, m.runID
+	return func() tea.Msg {
+		cancelSimulationRun(client, runID)
+		return nil
+	}
+}
+
 func (m *simulateModel) waitSubprocess() tea.Cmd {
 	if m.agent == nil {
 		return nil
@@ -473,6 +491,13 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.run = msg.run
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
+			}
+			// The worker registered but isn't joining rooms: it's erroring on job
+			// startup. Cancel the run; polling continues until it reports cancelled,
+			// and the worker log is surfaced on exit.
+			if !m.brokenAgent && agentNotJoining(msg.run) {
+				m.brokenAgent = true
+				return m, m.cancelRunCmd()
 			}
 			if isTerminalRunStatus(msg.run.Status) {
 				if !m.runFinished {
