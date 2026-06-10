@@ -73,6 +73,37 @@ func TestFindEntrypointPrecedence(t *testing.T) {
 	assert.Equal(t, "agent.js", entry)
 }
 
+func TestSplitForwardedArgs(t *testing.T) {
+	// No separator: everything is an entrypoint arg.
+	entry, fwd := splitForwardedArgs(
+		[]string{"lk", "agent", "dev", "agent.ts"},
+		[]string{"agent.ts"})
+	assert.Equal(t, []string{"agent.ts"}, entry)
+	assert.Empty(t, fwd)
+
+	// Entrypoint plus forwarded runtime args.
+	entry, fwd = splitForwardedArgs(
+		[]string{"lk", "agent", "console", "agent.ts", "--", "--env-file=.env", "--inspect"},
+		[]string{"agent.ts", "--env-file=.env", "--inspect"})
+	assert.Equal(t, []string{"agent.ts"}, entry)
+	assert.Equal(t, []string{"--env-file=.env", "--inspect"}, fwd)
+
+	// Forwarded args only — nothing is mistaken for an entrypoint.
+	entry, fwd = splitForwardedArgs(
+		[]string{"lk", "agent", "dev", "--", "--env-file=.env"},
+		[]string{"--env-file=.env"})
+	assert.Empty(t, entry)
+	assert.Equal(t, []string{"--env-file=.env"}, fwd)
+
+	// A "--" consumed as a flag's value is not a separator: the args after
+	// it were parsed as flags, so nothing is forwarded.
+	entry, fwd = splitForwardedArgs(
+		[]string{"lk", "agent", "dev", "--log-level", "--", "--url", "x"},
+		[]string{})
+	assert.Empty(t, entry)
+	assert.Empty(t, fwd)
+}
+
 func TestBuildAgentCommandNode(t *testing.T) {
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node not on PATH")
@@ -98,6 +129,17 @@ func TestBuildAgentCommandNode(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{"agent.js", "console", "--connect-addr", "127.0.0.1:9999"}, args)
+
+	// Forwarded runtime args land between node's own flags and the entrypoint.
+	_, args, err = buildAgentCommand(AgentStartConfig{
+		Dir:         t.TempDir(),
+		Entrypoint:  "agent.ts",
+		ProjectType: agentfs.ProjectTypeNode,
+		RuntimeArgs: []string{"--env-file=.env"},
+		CLIArgs:     []string{"dev"},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"--experimental-strip-types", "--env-file=.env", "agent.ts", "dev"}, args)
 }
 
 func TestAgentProcessFailSignal(t *testing.T) {
@@ -133,14 +175,15 @@ func TestBuildAgentCommandPython(t *testing.T) {
 	}
 
 	// Pip project with no venv falls back to system python; argv ordering is
-	// `<python> <entry> <cli args>`.
+	// `<python> <runtime args> <entry> <cli args>`.
 	bin, args, err := buildAgentCommand(AgentStartConfig{
 		Dir:         t.TempDir(),
 		Entrypoint:  "agent.py",
 		ProjectType: agentfs.ProjectTypePythonPip,
+		RuntimeArgs: []string{"-u"},
 		CLIArgs:     []string{"start", "--log-level", "DEBUG", "--dev"},
 	})
 	require.NoError(t, err)
 	assert.NotEmpty(t, bin)
-	assert.Equal(t, []string{"agent.py", "start", "--log-level", "DEBUG", "--dev"}, args)
+	assert.Equal(t, []string{"-u", "agent.py", "start", "--log-level", "DEBUG", "--dev"}, args)
 }

@@ -25,8 +25,39 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 )
 
+// splitForwardedArgs recovers the argument split around a "--" separator.
+// urfave/cli strips the separator and appends everything after it to the
+// parsed positional args, so the forwarded tail is recovered from the raw
+// process argv and trimmed off the positionals.
+func splitForwardedArgs(rawArgs, positional []string) (entryArgs, forwarded []string) {
+	for i, a := range rawArgs {
+		if a != "--" {
+			continue
+		}
+		forwarded = rawArgs[i+1:]
+		if len(forwarded) > len(positional) {
+			// The "--" was consumed as a flag's value, not a separator.
+			return positional, nil
+		}
+		return positional[:len(positional)-len(forwarded)], forwarded
+	}
+	return positional, nil
+}
+
+// forwardedArgs returns the args the user passed after a "--" separator,
+// forwarded to the runtime interpreter (node/python) ahead of the
+// entrypoint, e.g. `lk agent console agent.ts -- --env-file=.env`.
+func forwardedArgs(cmd *cli.Command) []string {
+	_, fwd := splitForwardedArgs(os.Args, cmd.Args().Slice())
+	return fwd
+}
+
 func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error) {
-	explicit := cmd.Args().First()
+	entryArgs, _ := splitForwardedArgs(os.Args, cmd.Args().Slice())
+	var explicit string
+	if len(entryArgs) > 0 {
+		explicit = entryArgs[0]
+	}
 
 	detectFrom := "."
 	if explicit != "" {

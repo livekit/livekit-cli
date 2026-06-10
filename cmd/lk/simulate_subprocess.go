@@ -211,6 +211,7 @@ type AgentStartConfig struct {
 	Dir           string
 	Entrypoint    string
 	ProjectType   agentfs.ProjectType
+	RuntimeArgs   []string  // interpreter (node/python) args placed before the entrypoint, e.g. ["--env-file=.env"]
 	CLIArgs       []string  // e.g. ["start", "--url", "..."] or ["console", "--connect-addr", addr]
 	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME=x"] or nil
 	ReadySignal   string    // substring to scan for in output (e.g. "registered worker"), empty to skip
@@ -219,22 +220,24 @@ type AgentStartConfig struct {
 }
 
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
-// branching on project type. Python: `<python> <entry> <args>` (uv prefixes
-// `run python`). Node: `node [--experimental-strip-types] <entry> <args>`,
-// where the type-stripping flag lets a `.ts` entrypoint run without a build.
+// branching on project type. Python: `<python> <runtime-args> <entry> <args>`
+// (uv prefixes `run python`). Node: `node [--experimental-strip-types]
+// <runtime-args> <entry> <args>`, where the type-stripping flag lets a `.ts`
+// entrypoint run without a build.
 func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	if cfg.ProjectType.IsNode() {
 		nodeBin, err := findNodeBinary()
 		if err != nil {
 			return "", nil, err
 		}
-		args := make([]string, 0, len(cfg.CLIArgs)+2)
+		args := make([]string, 0, len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+2)
 		if isTypeScriptEntry(cfg.Entrypoint) {
 			if err := checkTypeStrippingSupport(cfg.Dir, nodeBin); err != nil {
 				return "", nil, err
 			}
 			args = append(args, "--experimental-strip-types")
 		}
+		args = append(args, cfg.RuntimeArgs...)
 		args = append(args, cfg.Entrypoint)
 		args = append(args, cfg.CLIArgs...)
 		return nodeBin, args, nil
@@ -244,8 +247,9 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	args := make([]string, 0, len(prefixArgs)+len(cfg.CLIArgs)+1)
+	args := make([]string, 0, len(prefixArgs)+len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+1)
 	args = append(args, prefixArgs...)
+	args = append(args, cfg.RuntimeArgs...)
 	args = append(args, cfg.Entrypoint)
 	args = append(args, cfg.CLIArgs...)
 	return pythonBin, args, nil

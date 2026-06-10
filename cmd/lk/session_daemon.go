@@ -47,10 +47,17 @@ func runSessionDaemon() {
 	}
 	defer server.Close()
 
+	runtimeArgs, err := sessionFwdArgs(os.Getenv(envSessionFwd))
+	if err != nil {
+		signalReady(ready, "error: "+err.Error())
+		os.Exit(1)
+	}
+
 	agentProc, err := startAgent(AgentStartConfig{
 		Dir:         os.Getenv(envSessionDir),
 		Entrypoint:  os.Getenv(envSessionEntry),
 		ProjectType: agentfs.ProjectType(os.Getenv(envSessionPType)),
+		RuntimeArgs: runtimeArgs,
 		CLIArgs:     buildConsoleArgs(server.Addr().String(), false),
 		FailSignals: consoleCrashSignals,
 	})

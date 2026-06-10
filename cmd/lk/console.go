@@ -43,7 +43,7 @@ func init() {
 var consoleCommand = &cli.Command{
 	Name:      "console",
 	Usage:     "Voice chat with an agent via mic/speakers",
-	ArgsUsage: "[entrypoint]",
+	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Category:  "Core",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
@@ -143,6 +143,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		Dir:         projectDir,
 		Entrypoint:  entrypoint,
 		ProjectType: projectType,
+		RuntimeArgs: forwardedArgs(cmd),
 		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
 		FailSignals: consoleCrashSignals,
 	})

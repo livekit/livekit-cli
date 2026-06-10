@@ -53,7 +53,7 @@ var agentRunFlags = []cli.Flag{
 var startCommand = &cli.Command{
 	Name:      "start",
 	Usage:     "Run an agent in production mode",
-	ArgsUsage: "[entrypoint]",
+	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Flags:     agentRunFlags,
 	Action:    runAgentStart,
 }
@@ -61,7 +61,7 @@ var startCommand = &cli.Command{
 var devCommand = &cli.Command{
 	Name:      "dev",
 	Usage:     "Run an agent in development mode with auto-reload",
-	ArgsUsage: "[entrypoint]",
+	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Flags: append(agentRunFlags, &cli.BoolFlag{
 		Name:  "no-reload",
 		Usage: "Disable auto-reload on file changes",
@@ -142,6 +142,7 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 		Dir:           projectDir,
 		Entrypoint:    entrypoint,
 		ProjectType:   projectType,
+		RuntimeArgs:   forwardedArgs(cmd),
 		CLIArgs:       cliArgs,
 		ForwardOutput: os.Stdout,
 	})
@@ -195,6 +196,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		Dir:           projectDir,
 		Entrypoint:    entrypoint,
 		ProjectType:   projectType,
+		RuntimeArgs:   forwardedArgs(cmd),
 		CLIArgs:       cliArgs,
 		ForwardOutput: os.Stdout,
 	}

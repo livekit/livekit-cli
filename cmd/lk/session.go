@@ -42,6 +42,7 @@ const (
 	envSessionDir     = "LK_SESSION_DIR"   // resolved project dir
 	envSessionEntry   = "LK_SESSION_ENTRY" // resolved entrypoint (project-relative)
 	envSessionPType   = "LK_SESSION_PTYPE" // agentfs.ProjectType string
+	envSessionFwd     = "LK_SESSION_FWD"   // JSON array of runtime (node/python) args forwarded after "--"
 	envSessionReadyFD = "LK_SESSION_READY_FD"
 
 	// sessionDaemonSubcommand is the hidden entrypoint `start` re-execs into.
@@ -71,7 +72,7 @@ var agentSessionCommand = &cli.Command{
 		{
 			Name:      "start",
 			Usage:     "Start a detached agent session daemon",
-			ArgsUsage: "[entrypoint]",
+			ArgsUsage: "[entrypoint] [-- node/python-args...]",
 			Flags:     []cli.Flag{sessionPortFlag},
 			Action:    runSessionStart,
 		},
@@ -104,6 +105,30 @@ var agentSessionCommand = &cli.Command{
 
 func sessionAddr(port int) string {
 	return fmt.Sprintf("%s:%d", sessionHost, port)
+}
+
+// sessionFwdEnv encodes the forwarded runtime args as the LK_SESSION_FWD env
+// entry handed to the daemon, or "" when there is nothing to forward. JSON
+// keeps args with spaces or quotes unambiguous in a single env var;
+// sessionFwdArgs is the daemon-side inverse.
+func sessionFwdEnv(fwd []string) string {
+	if len(fwd) == 0 {
+		return ""
+	}
+	encoded, _ := json.Marshal(fwd) // marshaling []string cannot fail
+	return envSessionFwd + "=" + string(encoded)
+}
+
+// sessionFwdArgs decodes the LK_SESSION_FWD value set by `session start`.
+func sessionFwdArgs(raw string) ([]string, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	var fwd []string
+	if err := json.Unmarshal([]byte(raw), &fwd); err != nil {
+		return nil, fmt.Errorf("invalid %s: %w", envSessionFwd, err)
+	}
+	return fwd, nil
 }
 
 func runSessionStart(ctx context.Context, cmd *cli.Command) error {
@@ -142,6 +167,9 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		envSessionPType+"="+string(projectType),
 		envSessionReadyFD+"=3", // ExtraFiles[0] is fd 3 in the child
 	)
+	if env := sessionFwdEnv(forwardedArgs(cmd)); env != "" {
+		daemon.Env = append(daemon.Env, env)
+	}
 	daemon.ExtraFiles = []*os.File{readyW}
 	daemon.Stdout = logFile
 	daemon.Stderr = logFile
