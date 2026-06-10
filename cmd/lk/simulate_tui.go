@@ -1002,7 +1002,11 @@ func (m *simulateModel) viewRunning() string {
 		} else if m.run.Summary != nil {
 			b.WriteString(m.renderSummary())
 		} else if isTerminalRunStatus(m.run.Status) {
-			b.WriteString(fmt.Sprintf("\n  %s %s\n", yellowStyle.Render("⚠"), yellowStyle.Render("The summary for this run is not available")))
+			msg := "The summary for this run is not available"
+			if m.run.Error != "" {
+				msg = m.run.Error
+			}
+			b.WriteString(fmt.Sprintf("\n  %s %s\n", yellowStyle.Render("⚠"), yellowStyle.Render(msg)))
 		}
 	}
 
