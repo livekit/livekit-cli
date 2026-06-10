@@ -102,37 +102,31 @@ func isTypeScriptEntry(entry string) bool {
 
 var nodeVersionRe = regexp.MustCompile(`v(\d+)\.(\d+)`)
 
-// nodeVersion probes `node --version` and reports the major/minor version.
-// The probe runs in the project dir so version-manager shims resolve the
-// same Node the spawn will use. ok is false when the probe or parse fails;
-// callers should treat that as inconclusive rather than an error — the
-// spawn itself will surface any real problem.
-func nodeVersion(dir, nodeBin string) (major, minor int, version string, ok bool) {
+// checkTypeStrippingSupport verifies the Node binary can run TypeScript
+// directly (--experimental-strip-types requires Node >= 22.6). The probe
+// runs in the project dir so version-manager shims resolve the same Node
+// the spawn will use. Probing failures are ignored — the spawn itself will
+// surface any real error.
+func checkTypeStrippingSupport(dir, nodeBin string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, nodeBin, "--version")
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
-		return 0, 0, "", false
+		return nil
 	}
-	version = strings.TrimSpace(string(out))
+	version := strings.TrimSpace(string(out))
 	m := nodeVersionRe.FindStringSubmatch(version)
 	if m == nil {
-		return 0, 0, version, false
+		return nil
 	}
-	major, _ = strconv.Atoi(m[1])
-	minor, _ = strconv.Atoi(m[2])
-	return major, minor, version, true
-}
-
-// nodeVersionAtLeast reports whether the probed version is at least
-// major.minor, treating an inconclusive probe optimistically.
-func nodeVersionAtLeast(probedMajor, probedMinor int, ok bool, major, minor int) bool {
-	if !ok {
-		return true
+	major, _ := strconv.Atoi(m[1])
+	minor, _ := strconv.Atoi(m[2])
+	if major < 22 || (major == 22 && minor < 6) {
+		return fmt.Errorf("running a TypeScript entrypoint directly requires Node >= 22.6 (found %s); upgrade Node or point at built JS output", version)
 	}
-	return probedMajor > major || (probedMajor == major && probedMinor >= minor)
+	return nil
 }
 
 // defaultEntrypoints returns candidate entrypoint paths (relative to the
@@ -226,27 +220,20 @@ type AgentStartConfig struct {
 
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
 // branching on project type. Python: `<python> <entry> <args>` (uv prefixes
-// `run python`). Node: `node [--experimental-strip-types] [--env-file=...]
-// <entry> <args>`, where the type-stripping flag lets a `.ts` entrypoint run
-// without a build, and --env-file loads a discovered env file from the project
-// dir (Python agents conventionally load_dotenv() themselves; Node ones don't).
+// `run python`). Node: `node [--experimental-strip-types] <entry> <args>`,
+// where the type-stripping flag lets a `.ts` entrypoint run without a build.
 func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	if cfg.ProjectType.IsNode() {
 		nodeBin, err := findNodeBinary()
 		if err != nil {
 			return "", nil, err
 		}
-		major, minor, version, ok := nodeVersion(cfg.Dir, nodeBin)
-		args := make([]string, 0, len(cfg.CLIArgs)+3)
+		args := make([]string, 0, len(cfg.CLIArgs)+2)
 		if isTypeScriptEntry(cfg.Entrypoint) {
-			if !nodeVersionAtLeast(major, minor, ok, 22, 6) {
-				return "", nil, fmt.Errorf("running a TypeScript entrypoint directly requires Node >= 22.6 (found %s); upgrade Node or point at built JS output", version)
+			if err := checkTypeStrippingSupport(cfg.Dir, nodeBin); err != nil {
+				return "", nil, err
 			}
 			args = append(args, "--experimental-strip-types")
-		}
-		// --env-file requires Node >= 20.6; skip the flag (old behavior) on older Nodes.
-		if envFile := agentfs.FindEnvFile(cfg.Dir); envFile != "" && nodeVersionAtLeast(major, minor, ok, 20, 6) {
-			args = append(args, "--env-file="+envFile)
 		}
 		args = append(args, cfg.Entrypoint)
 		args = append(args, cfg.CLIArgs...)

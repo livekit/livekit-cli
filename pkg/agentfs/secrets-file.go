@@ -17,7 +17,6 @@ package agentfs
 import (
 	"errors"
 	"os"
-	"path/filepath"
 
 	"github.com/charmbracelet/huh"
 	"github.com/joho/godotenv"
@@ -40,19 +39,6 @@ func ParseEnvFile(file string) (map[string]string, error) {
 	}
 	defer f.Close()
 	return godotenv.Parse(f)
-}
-
-// FindEnvFile returns the first known env file present in dir (in
-// knownEnvFiles order), or "" if none exist. The returned path is relative
-// to dir. Unlike DetectEnvFile it never prompts, making it safe for
-// non-interactive agent launches.
-func FindEnvFile(dir string) string {
-	for _, file := range knownEnvFiles {
-		if _, err := os.Stat(filepath.Join(dir, file)); err == nil {
-			return file
-		}
-	}
-	return ""
 }
 
 func DetectEnvFile(maybeFile string, skipPrompts bool) (string, map[string]string, error) {
