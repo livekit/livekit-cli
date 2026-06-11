@@ -2,7 +2,7 @@
 
 function __fish_lk_no_subcommand --description 'Test if there has been any subcommand yet'
     for i in (commandline -opc)
-        if contains -- $i generate-fish-completion app agent a cloud docs project room create-room list-rooms list-room update-room-metadata list-participants get-participant remove-participant update-participant mute-track update-subscriptions send-data token create-token join-room dispatch egress start-room-composite-egress start-web-egress start-participant-egress start-track-composite-egress start-track-egress list-egress update-layout update-stream stop-egress test-egress-template ingress create-ingress update-ingress list-ingress delete-ingress sip list-sip-trunk delete-sip-trunk create-sip-dispatch-rule list-sip-dispatch-rule delete-sip-dispatch-rule create-sip-participant number replay perf load-test completion
+        if contains -- $i generate-fish-completion app agent a cloud docs project set-theme room create-room list-rooms list-room update-room-metadata list-participants get-participant remove-participant update-participant mute-track update-subscriptions send-data token create-token join-room dispatch egress start-room-composite-egress start-web-egress start-participant-egress start-track-composite-egress start-track-egress list-egress update-layout update-stream stop-egress test-egress-template ingress create-ingress update-ingress list-ingress delete-ingress sip list-sip-trunk delete-sip-trunk create-sip-dispatch-rule list-sip-dispatch-rule delete-sip-dispatch-rule create-sip-participant number replay perf load-test completion
             return 1
         end
     end
@@ -267,6 +267,8 @@ complete -x -c lk -n '__fish_seen_subcommand_from project; and not __fish_seen_s
 complete -c lk -n '__fish_seen_subcommand_from project; and __fish_seen_subcommand_from set-default' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from project; and __fish_seen_subcommand_from set-default; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
 complete -x -c lk -n '__fish_seen_subcommand_from project; and not __fish_seen_subcommand_from add list remove set-default help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -c lk -n '__fish_seen_subcommand_from set-theme' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from set-theme; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
 complete -x -c lk -n '__fish_lk_no_subcommand' -a 'room' -d 'Create or delete rooms and manage existing room properties'
 complete -c lk -n '__fish_seen_subcommand_from room' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from room; and not __fish_seen_subcommand_from create list update delete join participants mute-track update-subscriptions send-data help h' -a 'create' -d 'Create a room'

@@ -303,8 +303,8 @@ func (t *AgentLoadTester) printStats() {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	checkStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2")) // Green
-	crossStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1")) // Red
+	checkStyle := lipgloss.NewStyle().Foreground(util.Success())
+	crossStyle := lipgloss.NewStyle().Foreground(util.Error())
 
 	table := util.CreateTable().
 		Headers("#", "Room", "Agent Dispatched At", "Agent Joined", "Agent Join Delay", "Agent Track Subscribed", "Echo Track Published")

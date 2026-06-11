@@ -259,6 +259,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// get devicename
 	if err := huh.NewForm(huh.NewGroup(huh.NewInput().
 		Title("What is the name of this device?").
+		Prompt("").
 		Value(&cliConfig.DeviceName).
 		WithTheme(util.Theme))).
 		Run(); err != nil {
@@ -328,6 +329,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		if err := huh.NewInput().
 			Title("Choose a different alias").
 			Description(fmt.Sprintf("You've already authenticated a project with the alias %q.", name)).
+			Prompt("").
 			Value(&name).
 			Validate(func(s string) error {
 				if cliConfig.ProjectExists(s) {
