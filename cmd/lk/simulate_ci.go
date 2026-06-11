@@ -271,7 +271,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 	if run.Summary != nil {
 		writeRunSummary(w, run)
 	} else {
-		msg := "The summary for this run is not available"
+		msg := "The summary and chat transcripts for this run are not available yet"
 		if run.Error != "" {
 			msg = run.Error
 		}

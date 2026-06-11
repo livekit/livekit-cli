@@ -17,6 +17,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -28,13 +30,24 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/go-logr/logr"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	agent "github.com/livekit/protocol/livekit/agent"
+	"github.com/livekit/protocol/logger"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 func runSimulateTUI(config *simulateConfig) error {
+	// SDK/protocol log lines go to stderr behind the alt screen and would all
+	// spill into the terminal when the TUI exits; the agent log file and the
+	// run report carry the diagnostics instead.
+	discard := logger.LogRLogger(logr.Discard())
+	logger.SetLogger(discard, "lk")
+	lksdk.SetLogger(discard)
+	log.SetOutput(io.Discard)
+
 	launcher := launchSimulationAgent(config)
 	m := newSimulateModel(config, launcher)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
@@ -67,6 +80,16 @@ func runSimulateTUI(config *simulateConfig) error {
 		if path, err := writeGeneratedScenariosTemp(m.run); err == nil && path != "" {
 			out.Statusf("Generated scenarios: %s", path)
 		}
+	}
+
+	// The summary (which carries the chat transcripts) may have landed after
+	// the TUI's last poll; refresh once so the report includes it.
+	if m.run != nil && m.run.Summary == nil && m.runID != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if run, err := getSimulationRun(ctx, config.client, m.runID); err == nil && run != nil {
+			m.run = run
+		}
+		cancel()
 	}
 
 	// Always leave a plain-text record of the run, like the agent log.
