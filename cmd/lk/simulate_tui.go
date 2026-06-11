@@ -318,10 +318,24 @@ func (m *simulateModel) Init() tea.Cmd {
 func (m *simulateModel) runSetup() tea.Cmd {
 	c := m.config
 
-	m.steps = []step{
-		{label: "Starting agent", status: "running"},
-		{label: "Creating simulation", status: "pending"},
+	m.steps = nil
+	if c.mode == modeScenarios && c.scenarioGroup != nil {
+		// loaded before the TUI started, so it renders as already done
+		noun := "scenarios"
+		if len(c.scenarioGroup.GetScenarios()) == 1 {
+			noun = "scenario"
+		}
+		label := fmt.Sprintf("Loaded %d %s from %s", len(c.scenarioGroup.GetScenarios()), noun, c.scenariosPath)
+		if name := c.scenarioGroup.GetName(); name != "" {
+			label += " — " + name
+		}
+		m.steps = append(m.steps, step{label: label, status: "done"})
 	}
+	m.currentStep = len(m.steps)
+	m.steps = append(m.steps,
+		step{label: "Starting agent", status: "running"},
+		step{label: "Creating simulation", status: "pending"},
+	)
 	if c.mode == modeGenerateFromSource {
 		m.steps = append(m.steps, step{label: "Uploading source", status: "pending"})
 	}
@@ -806,22 +820,7 @@ func (m *simulateModel) viewSetup() string {
 		b.WriteString(dimStyle.Render("  "+url) + "\n")
 	}
 
-	// When scenarios come from a file, show a single load summary — the job
-	// list renders each scenario, so they aren't listed twice.
-	if m.config.mode == modeScenarios && m.config.scenarioGroup != nil {
-		g := m.config.scenarioGroup
-		b.WriteString("\n")
-		noun := "scenarios"
-		if len(g.GetScenarios()) == 1 {
-			noun = "scenario"
-		}
-		line := fmt.Sprintf("Loaded %d %s from %s", len(g.GetScenarios()), noun, m.config.scenariosPath)
-		b.WriteString("  " + greenStyle.Render("✓") + " " + line)
-		if name := g.GetName(); name != "" {
-			b.WriteString("  " + cyanStyle.Render(name))
-		}
-		b.WriteString("\n")
-	}
+
 
 	b.WriteString("\n")
 
