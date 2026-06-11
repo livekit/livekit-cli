@@ -17,8 +17,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -30,20 +28,13 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/go-logr/logr"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	agent "github.com/livekit/protocol/livekit/agent"
-	"github.com/livekit/protocol/logger"
-	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 func runSimulateTUI(config *simulateConfig) error {
-	// SDK/protocol log lines go to stderr behind the alt screen and would all
-	// spill into the terminal when the TUI exits; discard them.
-	discardLogs()
-
 	launcher := launchSimulationAgent(config)
 	m := newSimulateModel(config, launcher)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
@@ -108,15 +99,6 @@ func runSimulateTUI(config *simulateConfig) error {
 		return m.err
 	}
 	return nil
-}
-
-// discardLogs silences the protocol/SDK/stdlib loggers; their lines would
-// otherwise corrupt the TUI and spill into the terminal on exit.
-func discardLogs() {
-	discard := logger.LogRLogger(logr.Discard())
-	logger.SetLogger(discard, "lk")
-	lksdk.SetLogger(discard)
-	log.SetOutput(io.Discard)
 }
 
 // --- Styles ---
