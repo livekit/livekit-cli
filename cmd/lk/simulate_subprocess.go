@@ -393,7 +393,10 @@ func extractLogRoom(line string) string {
 	return ""
 }
 
-// Kill sends interrupt to the process and force-kills after a timeout.
+// Kill terminates the worker quickly: a short SIGINT grace (an idle worker
+// exits cleanly; one draining jobs would take minutes and gets no say), then
+// SIGKILL to the whole process group so child job/inference processes can't
+// linger, waiting for the exit so the bound port is free before we return.
 func (ap *AgentProcess) Kill() {
 	if ap.cmd.Process == nil {
 		return
@@ -409,12 +412,13 @@ func (ap *AgentProcess) Kill() {
 	}
 	select {
 	case <-ap.exitCh:
-	case <-time.After(5 * time.Second):
+	case <-time.After(1 * time.Second):
 	}
-	// Always SIGKILL the whole process group: the worker can exit (or be
-	// interrupted) while its child job/inference processes linger and keep a port
-	// bound, which breaks the next run with "address already in use".
 	ap.sendKill()
+	select {
+	case <-ap.exitCh:
+	case <-time.After(2 * time.Second):
+	}
 	ap.closeLogFile()
 }
 

@@ -71,35 +71,36 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Setup ---
 
-	fmt.Fprintln(os.Stdout, "::group::Setup")
+	slog := newSimLog(os.Stdout, os.Stderr)
+	slog.BeginSetup()
 
-	fmt.Fprintf(os.Stderr, "Starting agent...\n")
+	slog.StartingAgent()
 	start := time.Now()
 	logFwd := &toggleWriter{w: os.Stderr}
 	logFwd.enabled.Store(true)
 	var err error
 	agent, err = startSimulationAgent(config, logFwd)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "✗ Failed to start agent: %v\n", err)
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		slog.AgentStartFailed(err)
+		slog.EndSetup()
 		return fmt.Errorf("failed to start agent: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Waiting for agent to register...\n")
+	slog.WaitingForRegister()
 	timeout := time.NewTimer(agentRegisterTimeout)
 	defer timeout.Stop()
 	select {
 	case <-agent.Ready():
 		logFwd.enabled.Store(false)
-		fmt.Fprintf(os.Stdout, "✓ Agent registered (%s)\n", time.Since(start).Round(time.Millisecond))
+		slog.AgentRegistered(time.Since(start))
 	case <-agent.Done():
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		slog.EndSetup()
 		return fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(agent))
 	case <-timeout.C:
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		slog.EndSetup()
 		return fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(agent))
 	case <-ctx.Done():
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		slog.EndSetup()
 		return ctx.Err()
 	}
 
@@ -107,41 +108,29 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	var presigned *livekit.PresignedPostRequest
 	runID, presigned, err = createSimulationRun(ctx, config)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "✗ %v\n", err)
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		slog.SetupFailed(err)
+		slog.EndSetup()
 		return err
 	}
-	fmt.Fprintf(os.Stdout, "✓ Simulation created (%s)\n", time.Since(start).Round(time.Millisecond))
+	slog.SimulationCreated(time.Since(start))
 
 	if config.mode == modeGenerateFromSource {
 		start = time.Now()
 		if err := uploadSource(ctx, config.client, runID, presigned, config.projectDir, config.entrypoint); err != nil {
-			fmt.Fprintf(os.Stdout, "✗ %v\n", err)
-			fmt.Fprintln(os.Stdout, "::endgroup::")
+			slog.SetupFailed(err)
+			slog.EndSetup()
 			return err
 		}
-		fmt.Fprintf(os.Stdout, "✓ Source uploaded (%s)\n", time.Since(start).Round(time.Millisecond))
+		slog.SourceUploaded(time.Since(start))
 	} else if g := config.scenarioGroup; g != nil {
-		name := g.GetName()
-		if name == "" {
-			name = "scenarios"
-		}
-		fmt.Fprintf(os.Stdout, "✓ Loaded %d scenarios from %s (%q)\n", len(g.GetScenarios()), config.scenariosPath, name)
+		slog.ScenariosLoaded(g, config.scenariosPath)
 	}
 
-	fmt.Fprintln(os.Stdout, "::endgroup::")
-	fmt.Fprintln(os.Stdout)
-
-	fmt.Fprintf(os.Stdout, "Run:       %s\n", runID)
-	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
-		fmt.Fprintf(os.Stdout, "Dashboard: %s\n", url)
-	}
-	fmt.Fprintln(os.Stdout)
+	slog.EndSetup()
+	slog.RunCreated(runID, simulationDashboardURL(config.pc.ProjectId, runID))
 
 	// --- Poll until terminal ---
 
-	prevDone := 0
-	prevStatus := livekit.SimulationRun_STATUS_GENERATING
 	brokenAgent := false
 	ticker := time.NewTicker(simulationPollInterval)
 	defer ticker.Stop()
@@ -157,44 +146,17 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			}
 			fmt.Fprintf(os.Stderr, "Warning: poll failed: %v\n", err)
 		} else {
-			_, done, _, _ := simulationJobCounts(run)
-			total := len(run.Jobs)
-
 			// The worker is failing systemically (crashing on job startup, never
 			// joining), not failing a scenario. Stop early and surface its log.
 			if !brokenAgent && agentBroken(run, agent) {
 				brokenAgent = true
-				fmt.Fprintf(os.Stderr, "The agent is failing to run jobs; cancelling the run.\n")
+				slog.BrokenAgent()
 				cancelSimulationRun(config.client, runID)
 				runFinished = true
 				break
 			}
 
-			switch run.Status {
-			case livekit.SimulationRun_STATUS_GENERATING:
-				if prevStatus != run.Status {
-					n := config.numSimulations
-					if run.GetNumSimulations() > 0 {
-						n = run.GetNumSimulations()
-					}
-					fmt.Fprintf(os.Stderr, "Generating %d scenarios...\n", n)
-				}
-			case livekit.SimulationRun_STATUS_RUNNING:
-				if prevStatus == livekit.SimulationRun_STATUS_GENERATING {
-					if desc := run.GetAgentDescription(); desc != "" {
-						fmt.Fprintf(os.Stdout, "Agent: %s\n\n", desc)
-					}
-				}
-				if done != prevDone {
-					fmt.Fprintf(os.Stderr, "Running simulations... %d/%d completed\n", done, total)
-					prevDone = done
-				}
-			case livekit.SimulationRun_STATUS_SUMMARIZING:
-				if prevStatus != run.Status {
-					fmt.Fprintf(os.Stderr, "Summarizing...\n")
-				}
-			}
-			prevStatus = run.Status
+			slog.RunUpdate(run, config.numSimulations)
 
 			if isTerminalRunStatus(run.Status) {
 				runFinished = true
@@ -211,15 +173,10 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Results ---
 
-	printCIResults(run, agent)
+	slog.Results(run, agent)
 
 	if brokenAgent && agent != nil {
-		fmt.Fprintln(os.Stderr)
-		fmt.Fprintln(os.Stderr, "The agent failed to run the simulations. It most likely errored on job")
-		fmt.Fprintln(os.Stderr, "startup (missing model file, bad dependency, etc.). Recent agent output:")
-		for _, line := range agentErrorContext(agent) {
-			fmt.Fprintf(os.Stderr, "  %s\n", line)
-		}
+		writeBrokenAgentNote(os.Stderr, agent)
 	}
 
 	if agent != nil && agent.LogPath != "" {
@@ -245,10 +202,6 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	}
 
 	return nil
-}
-
-func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
-	writeRunResults(os.Stdout, run, agent, true)
 }
 
 // writeRunResults writes the per-job results and the run summary. With gh set,

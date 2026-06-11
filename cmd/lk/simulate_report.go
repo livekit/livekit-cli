@@ -18,77 +18,152 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"time"
 
 	"github.com/livekit/protocol/livekit"
 )
 
-// runReporter records to a temp file the same plain-text log a non-TUI run
-// prints as it progresses (setup steps, status transitions, job progress,
-// then the results), so TUI runs always leave the same record.
-type runReporter struct {
-	f          *os.File
+// simLog formats the plain-text simulation output. It is the single source of
+// every non-TUI line: CI mode writes it to the terminal (results on out/stdout,
+// transient progress on info/stderr) and the TUI's runReporter writes the same
+// calls to the report file, so both records stay identical by construction.
+type simLog struct {
+	out        io.Writer
+	info       io.Writer
 	prevStatus livekit.SimulationRun_Status
 	prevDone   int
+}
+
+func newSimLog(out, info io.Writer) *simLog {
+	return &simLog{out: out, info: info, prevStatus: livekit.SimulationRun_Status(-1)}
+}
+
+func (l *simLog) BeginSetup()    { fmt.Fprintln(l.out, "::group::Setup") }
+func (l *simLog) EndSetup()      { fmt.Fprintln(l.out, "::endgroup::") }
+func (l *simLog) StartingAgent() { fmt.Fprintln(l.info, "Starting agent...") }
+func (l *simLog) WaitingForRegister() {
+	fmt.Fprintln(l.info, "Waiting for agent to register...")
+}
+
+func (l *simLog) AgentRegistered(d time.Duration) {
+	fmt.Fprintf(l.out, "✓ Agent registered (%s)\n", d.Round(time.Millisecond))
+}
+
+func (l *simLog) AgentStartFailed(err error) {
+	fmt.Fprintf(l.out, "✗ Failed to start agent: %v\n", err)
+}
+
+func (l *simLog) SetupFailed(err error) {
+	fmt.Fprintf(l.out, "✗ %v\n", err)
+}
+
+func (l *simLog) SimulationCreated(d time.Duration) {
+	fmt.Fprintf(l.out, "✓ Simulation created (%s)\n", d.Round(time.Millisecond))
+}
+
+func (l *simLog) SourceUploaded(d time.Duration) {
+	fmt.Fprintf(l.out, "✓ Source uploaded (%s)\n", d.Round(time.Millisecond))
+}
+
+func (l *simLog) ScenariosLoaded(g *livekit.ScenarioGroup, path string) {
+	name := g.GetName()
+	if name == "" {
+		name = "scenarios"
+	}
+	fmt.Fprintf(l.out, "✓ Loaded %d scenarios from %s (%q)\n", len(g.GetScenarios()), path, name)
+}
+
+func (l *simLog) RunCreated(runID, dashboardURL string) {
+	fmt.Fprintln(l.out)
+	fmt.Fprintf(l.out, "Run:       %s\n", runID)
+	if dashboardURL != "" {
+		fmt.Fprintf(l.out, "Dashboard: %s\n", dashboardURL)
+	}
+	fmt.Fprintln(l.out)
+}
+
+// RunUpdate logs run-status transitions and job progress from a poll result.
+func (l *simLog) RunUpdate(run *livekit.SimulationRun, configuredN int32) {
+	_, done, _, _ := simulationJobCounts(run)
+	switch run.Status {
+	case livekit.SimulationRun_STATUS_GENERATING:
+		if l.prevStatus != run.Status {
+			n := configuredN
+			if run.GetNumSimulations() > 0 {
+				n = run.GetNumSimulations()
+			}
+			fmt.Fprintf(l.info, "Generating %d scenarios...\n", n)
+		}
+	case livekit.SimulationRun_STATUS_RUNNING:
+		if l.prevStatus != run.Status {
+			if desc := run.GetAgentDescription(); desc != "" {
+				fmt.Fprintf(l.out, "Agent: %s\n\n", desc)
+			}
+		}
+		if done != l.prevDone {
+			fmt.Fprintf(l.info, "Running simulations... %d/%d completed\n", done, len(run.Jobs))
+			l.prevDone = done
+		}
+	case livekit.SimulationRun_STATUS_SUMMARIZING:
+		if l.prevStatus != run.Status {
+			fmt.Fprintln(l.info, "Summarizing...")
+		}
+	}
+	l.prevStatus = run.Status
+}
+
+func (l *simLog) BrokenAgent() {
+	fmt.Fprintln(l.info, "The agent is failing to run jobs; cancelling the run.")
+}
+
+func (l *simLog) Results(run *livekit.SimulationRun, ap *AgentProcess) {
+	writeRunResults(l.out, run, ap, true)
+}
+
+// writeBrokenAgentNote explains a systemically failing worker, with its recent
+// output.
+func writeBrokenAgentNote(w io.Writer, ap *AgentProcess) {
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "The agent failed to run the simulations. It most likely errored on job")
+	fmt.Fprintln(w, "startup (missing model file, bad dependency, etc.). Recent agent output:")
+	for _, line := range agentErrorContext(ap) {
+		fmt.Fprintf(w, "  %s\n", line)
+	}
+}
+
+// runReporter writes the simLog to a temp file so TUI runs leave the exact
+// record the non-TUI mode prints.
+type runReporter struct {
+	*simLog
+	f *os.File
 }
 
 func newRunReporter() *runReporter {
 	f, err := os.CreateTemp("", "lk-simulate-report-*.txt")
 	if err != nil {
-		return &runReporter{}
+		return &runReporter{simLog: newSimLog(io.Discard, io.Discard)}
 	}
-	return &runReporter{f: f, prevStatus: livekit.SimulationRun_Status(-1)}
+	return &runReporter{simLog: newSimLog(f, f), f: f}
 }
 
-func (r *runReporter) Printf(format string, args ...any) {
-	if r.f == nil {
-		return
-	}
-	fmt.Fprintf(r.f, format+"\n", args...)
-}
-
-// Update logs run-status transitions and job progress, mirroring the non-TUI
-// poll loop.
-func (r *runReporter) Update(run *livekit.SimulationRun) {
-	if r.f == nil || run == nil {
-		return
-	}
-	_, done, _, _ := simulationJobCounts(run)
-	switch run.Status {
-	case livekit.SimulationRun_STATUS_GENERATING:
-		if r.prevStatus != run.Status {
-			r.Printf("Generating %d scenarios...", run.GetNumSimulations())
-		}
-	case livekit.SimulationRun_STATUS_RUNNING:
-		if r.prevStatus != run.Status {
-			if desc := run.GetAgentDescription(); desc != "" {
-				r.Printf("Agent: %s", desc)
-			}
-		}
-		if done != r.prevDone {
-			r.Printf("Running simulations... %d/%d completed", done, len(run.Jobs))
-			r.prevDone = done
-		}
-	case livekit.SimulationRun_STATUS_SUMMARIZING:
-		if r.prevStatus != run.Status {
-			r.Printf("Summarizing...")
-		}
-	}
-	r.prevStatus = run.Status
-}
-
-// Finish appends the results section, closes the file, and returns its path.
-func (r *runReporter) Finish(run *livekit.SimulationRun, ap *AgentProcess) string {
+// Finish appends the results and trailer, closes the file, and returns its path.
+func (r *runReporter) Finish(run *livekit.SimulationRun, ap *AgentProcess, brokenAgent bool, dashboardURL string) string {
 	if r.f == nil {
 		return ""
 	}
 	if run != nil {
-		fmt.Fprintln(r.f)
-		writeRunResults(r.f, run, ap, false)
+		r.Results(run, ap)
+	}
+	if brokenAgent && ap != nil {
+		writeBrokenAgentNote(r.f, ap)
 	}
 	if ap != nil && ap.LogPath != "" {
-		fmt.Fprintln(r.f)
 		fmt.Fprintf(r.f, "Agent logs: %s\n", ap.LogPath)
+	}
+	if dashboardURL != "" {
+		fmt.Fprintf(r.f, "Dashboard:  %s\n", dashboardURL)
 	}
 	r.f.Close()
 	return r.f.Name()

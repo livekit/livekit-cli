@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -40,14 +41,14 @@ func runSimulateTUI(config *simulateConfig) error {
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, runErr := p.Run()
 
+	// A second ctrl+c during cleanup would kill the CLI before the worker is
+	// SIGKILLed (it lives in its own process group, untouched by the terminal
+	// signal), leaking it with its port bound. We're exiting anyway; ignore it.
+	signal.Ignore(os.Interrupt)
+
 	if agentProc := launcher.Stop(); agentProc != nil {
 		if m.brokenAgent {
-			fmt.Fprintln(os.Stderr)
-			fmt.Fprintln(os.Stderr, "The agent failed to run the simulations. It most likely errored on job")
-			fmt.Fprintln(os.Stderr, "startup (missing model file, bad dependency, etc.). Recent agent output:")
-			for _, line := range agentErrorContext(agentProc) {
-				fmt.Fprintf(os.Stderr, "  %s\n", line)
-			}
+			writeBrokenAgentNote(os.Stderr, agentProc)
 			fmt.Fprintln(os.Stderr)
 		}
 		if agentProc.LogPath != "" {
@@ -65,7 +66,7 @@ func runSimulateTUI(config *simulateConfig) error {
 	}
 
 	// Always leave a plain-text record of the run, like the agent log.
-	if path := m.reporter.Finish(m.run, m.agent); path != "" {
+	if path := m.reporter.Finish(m.run, m.agent, m.brokenAgent, m.getDashboardURL()); path != "" {
 		fmt.Fprintf(os.Stderr, "Run report: %s\n", path)
 	}
 
@@ -361,7 +362,6 @@ func (m *simulateModel) runSetup() tea.Cmd {
 			label += fmt.Sprintf(" (%s)", name)
 		}
 		m.steps = append(m.steps, step{label: label, status: "done"})
-		m.reporter.Printf("✓ %s", label)
 	}
 	m.currentStep = len(m.steps)
 	m.steps = append(m.steps,
@@ -371,6 +371,12 @@ func (m *simulateModel) runSetup() tea.Cmd {
 	if c.mode == modeGenerateFromSource {
 		m.steps = append(m.steps, step{label: "Uploading source", status: "pending"})
 	}
+
+	m.reporter.BeginSetup()
+	if c.mode == modeScenarios && c.scenarioGroup != nil {
+		m.reporter.ScenariosLoaded(c.scenarioGroup, c.scenariosPath)
+	}
+	m.reporter.StartingAgent()
 
 	ctx, cancel := context.WithCancel(c.ctx)
 	m.setupCtx = ctx
@@ -382,29 +388,28 @@ func (m *simulateModel) runSetup() tea.Cmd {
 
 func (m *simulateModel) failSetupStep(err error) {
 	m.steps[m.currentStep].status = "failed"
-	m.reporter.Printf("✗ %s: %v", m.steps[m.currentStep].label, err)
+	m.reporter.SetupFailed(err)
+	m.reporter.EndSetup()
 	m.err = err
 	m.setupDone = true
 	m.runFinished = true
 }
 
-func (m *simulateModel) finishSetupStep(elapsed time.Duration) {
+func (m *simulateModel) advanceSetupStep(elapsed time.Duration) {
 	m.steps[m.currentStep].status = "done"
 	m.steps[m.currentStep].elapsed = elapsed
-	m.reporter.Printf("✓ %s (%s)", m.steps[m.currentStep].label, elapsed.Round(time.Millisecond))
-}
-
-func (m *simulateModel) advanceSetupStep(elapsed time.Duration) {
-	m.finishSetupStep(elapsed)
 	m.currentStep++
 	m.steps[m.currentStep].status = "running"
 	m.stepStart = time.Now()
 }
 
 func (m *simulateModel) completeSetup(elapsed time.Duration) {
-	m.finishSetupStep(elapsed)
+	m.steps[m.currentStep].status = "done"
+	m.steps[m.currentStep].elapsed = elapsed
 	m.setupDone = true
 	m.genStart = time.Now()
+	m.reporter.EndSetup()
+	m.reporter.RunCreated(m.runID, m.getDashboardURL())
 }
 
 func (m *simulateModel) startAgentCmd() tea.Cmd {
@@ -506,6 +511,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.agent = msg.agent
+		m.reporter.WaitingForRegister()
 		return m, m.waitAgentReadyCmd()
 
 	case agentReadyMsg:
@@ -513,6 +519,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.failSetupStep(msg.err)
 			return m, nil
 		}
+		m.reporter.AgentRegistered(msg.elapsed)
 		m.advanceSetupStep(msg.elapsed)
 		return m, m.createSimulationCmd()
 
@@ -522,10 +529,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.runID = msg.runID
-		m.reporter.Printf("Run:       %s", m.runID)
-		if url := m.getDashboardURL(); url != "" {
-			m.reporter.Printf("Dashboard: %s", url)
-		}
+		m.reporter.SimulationCreated(msg.elapsed)
 		if m.config.mode == modeGenerateFromSource {
 			m.advanceSetupStep(msg.elapsed)
 			return m, m.uploadSourceCmd(msg.presigned)
@@ -538,13 +542,14 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.failSetupStep(msg.err)
 			return m, nil
 		}
+		m.reporter.SourceUploaded(msg.elapsed)
 		m.completeSetup(msg.elapsed)
 		return m, tea.Batch(m.pollSimulation(), m.waitSubprocess())
 
 	case simulationRunMsg:
 		if msg.err == nil && msg.run != nil {
 			m.run = msg.run
-			m.reporter.Update(msg.run)
+			m.reporter.RunUpdate(msg.run, m.config.numSimulations)
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
 			}
@@ -553,7 +558,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// and the worker log is surfaced on exit.
 			if !m.brokenAgent && agentBroken(msg.run, m.agent) {
 				m.brokenAgent = true
-				m.reporter.Printf("The agent is failing to run jobs; cancelling the run.")
+				m.reporter.BrokenAgent()
 				return m, m.cancelRunCmd()
 			}
 			if isTerminalRunStatus(msg.run.Status) {
