@@ -160,15 +160,6 @@ func newRunReporter() *runReporter {
 	return &runReporter{simLog: newSimLog(w, w), f: f}
 }
 
-// LogWriter is the destination for SDK/CLI log lines, interleaved into the
-// same file as the run record.
-func (r *runReporter) LogWriter() io.Writer {
-	if r.f == nil {
-		return io.Discard
-	}
-	return r.f
-}
-
 func (r *runReporter) Finish(run *livekit.SimulationRun, ap *AgentProcess, brokenAgent bool, dashboardURL string) string {
 	if r.f == nil {
 		return ""
