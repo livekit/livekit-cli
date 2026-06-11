@@ -138,9 +138,8 @@ type AgentStartConfig struct {
 // start/dev/console/simulate subcommands under `python -m livekit.agents`.
 const thinCLIMinVersion = "1.6.0"
 
-// agentExitDetail surfaces the agent's own output (the real error) and a pointer
-// to the full log, for when the worker exits early or never registers/connects.
-// It does not try to guess the cause — the agent's output already says it.
+// agentExitDetail surfaces the agent's own output (the real error) and a
+// pointer to the full log, for when the worker exits early or never registers.
 func agentExitDetail(ap *AgentProcess) string {
 	var b strings.Builder
 	if tail := lastNonEmptyLines(ap.RecentLogs(0), 12); len(tail) > 0 {
