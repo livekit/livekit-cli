@@ -31,8 +31,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/go-logr/logr"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
@@ -43,9 +41,8 @@ import (
 
 func runSimulateTUI(config *simulateConfig) error {
 	// SDK/protocol log lines go to stderr behind the alt screen and would all
-	// spill into the terminal when the TUI exits; write them to their own log
-	// file instead, like the agent log.
-	cliLogPath := redirectLogs()
+	// spill into the terminal when the TUI exits; discard them.
+	discardLogs()
 
 	launcher := launchSimulationAgent(config)
 	m := newSimulateModel(config, launcher)
@@ -95,9 +92,6 @@ func runSimulateTUI(config *simulateConfig) error {
 	if path := m.reporter.Finish(m.run, m.agent, m.brokenAgent, m.getDashboardURL()); path != "" {
 		out.Statusf("Run report: %s", path)
 	}
-	if cliLogPath != "" {
-		out.Statusf("CLI logs:   %s", cliLogPath)
-	}
 
 	if url := m.getDashboardURL(); url != "" {
 		out.Statusf("Dashboard:  %s", url)
@@ -116,37 +110,13 @@ func runSimulateTUI(config *simulateConfig) error {
 	return nil
 }
 
-// redirectLogs points the protocol/SDK/stdlib loggers at a temp log file and
-// returns its path; on failure the logs are discarded (they would otherwise
-// corrupt the TUI and spill on exit).
-func redirectLogs() string {
-	discardAll := func() {
-		discard := logger.LogRLogger(logr.Discard())
-		logger.SetLogger(discard, "lk")
-		lksdk.SetLogger(discard)
-		log.SetOutput(io.Discard)
-	}
-
-	f, err := os.CreateTemp("", "lk-simulate-cli-*.log")
-	if err != nil {
-		discardAll()
-		return ""
-	}
-
-	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
-		zapcore.AddSync(f),
-		zapcore.InfoLevel,
-	)
-	zl, err := logger.FromZapLogger(zap.New(core), &logger.Config{Level: "info"})
-	if err != nil {
-		discardAll()
-		return ""
-	}
-	logger.SetLogger(zl, "lk")
-	lksdk.SetLogger(zl)
-	log.SetOutput(f)
-	return f.Name()
+// discardLogs silences the protocol/SDK/stdlib loggers; their lines would
+// otherwise corrupt the TUI and spill into the terminal on exit.
+func discardLogs() {
+	discard := logger.LogRLogger(logr.Discard())
+	logger.SetLogger(discard, "lk")
+	lksdk.SetLogger(discard)
+	log.SetOutput(io.Discard)
 }
 
 // --- Styles ---
