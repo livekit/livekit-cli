@@ -248,12 +248,47 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 }
 
 func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
+	writeRunResults(os.Stdout, run, agent, true)
+}
+
+// writeRunReportTemp saves the plain-text run report (what the non-TUI mode
+// prints) to a temp file, so a TUI run always leaves a full record next to
+// the agent log.
+func writeRunReportTemp(run *livekit.SimulationRun, ap *AgentProcess, projectID, runID string) (string, error) {
+	if run == nil {
+		return "", nil
+	}
+	f, err := os.CreateTemp("", "lk-simulate-report-*.txt")
+	if err != nil {
+		return "", err
+	}
+	fmt.Fprintf(f, "Run:       %s\n", runID)
+	fmt.Fprintf(f, "Status:    %s\n", strings.TrimPrefix(run.Status.String(), "STATUS_"))
+	if url := simulationDashboardURL(projectID, runID); url != "" {
+		fmt.Fprintf(f, "Dashboard: %s\n", url)
+	}
+	if desc := run.GetAgentDescription(); desc != "" {
+		fmt.Fprintln(f, "\nAgent description:")
+		for _, line := range strings.Split(desc, "\n") {
+			fmt.Fprintf(f, "  %s\n", line)
+		}
+	}
+	fmt.Fprintln(f)
+	writeRunResults(f, run, ap, false)
+	cerr := f.Close()
+	return f.Name(), cerr
+}
+
+// writeRunResults writes the per-job results and the run summary. With gh set,
+// sections are wrapped in GitHub Actions group markers and failed jobs emit
+// ::error:: annotations on GitHub.
+func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess, gh bool) {
 	if run == nil {
 		return
 	}
 
 	if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
-		fmt.Fprintf(os.Stdout, "✗ Simulation failed: %s\n", run.Error)
+		fmt.Fprintf(w, "✗ Simulation failed: %s\n", run.Error)
 		return
 	}
 
@@ -271,103 +306,117 @@ func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
 			label = fmt.Sprintf("Job %d", i+1)
 		}
 
-		fmt.Fprintf(os.Stdout, "::group::%s %s\n", icon, label)
+		if gh {
+			fmt.Fprintf(w, "::group::%s %s\n", icon, label)
+		} else {
+			fmt.Fprintf(w, "%s %s (%s)\n", icon, label, job.Id)
+		}
 
 		if job.Instructions != "" {
-			fmt.Fprintln(os.Stdout, "Instructions:")
+			fmt.Fprintln(w, "Instructions:")
 			for _, line := range strings.Split(job.Instructions, "\n") {
-				fmt.Fprintf(os.Stdout, "  %s\n", line)
+				fmt.Fprintf(w, "  %s\n", line)
 			}
 		}
 
 		if job.AgentExpectations != "" {
-			fmt.Fprintln(os.Stdout, "Expected:")
+			fmt.Fprintln(w, "Expected:")
 			for _, line := range strings.Split(job.AgentExpectations, "\n") {
-				fmt.Fprintf(os.Stdout, "  %s\n", line)
+				fmt.Fprintf(w, "  %s\n", line)
 			}
 		}
 
 		if job.Error != "" {
 			if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
-				fmt.Fprintf(os.Stdout, "Result: %s\n", job.Error)
+				fmt.Fprintf(w, "Result: %s\n", job.Error)
 			} else {
-				fmt.Fprintf(os.Stdout, "Error: %s\n", job.Error)
+				fmt.Fprintf(w, "Error: %s\n", job.Error)
 			}
 		}
 
 		if run.Summary != nil && run.Summary.ChatHistory != nil {
-			printCIChatHistory(run.Summary.ChatHistory[job.Id])
+			writeChatHistory(w, run.Summary.ChatHistory[job.Id])
 		}
 
-		if agent != nil && job.RoomName != "" {
-			logs := agent.RecentRoomLogs(0, job.RoomName)
+		if ap != nil && job.RoomName != "" {
+			logs := ap.RecentRoomLogs(0, job.RoomName)
 			if len(logs) > 0 {
-				fmt.Fprintln(os.Stdout, "Logs:")
+				fmt.Fprintln(w, "Logs:")
 				for _, line := range logs {
-					fmt.Fprintf(os.Stdout, "  %s\n", ansiEscapeRe.ReplaceAllString(line, ""))
+					fmt.Fprintf(w, "  %s\n", ansiEscapeRe.ReplaceAllString(line, ""))
 				}
 			}
 		}
 
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		if gh {
+			fmt.Fprintln(w, "::endgroup::")
+		} else {
+			fmt.Fprintln(w)
+		}
 
-		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && isGitHubActions() {
+		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && gh && isGitHubActions() {
 			firstLine := strings.SplitN(job.Error, "\n", 2)[0]
-			fmt.Fprintf(os.Stdout, "::error::Job %d failed: %s\n", i+1, firstLine)
+			fmt.Fprintf(w, "::error::Job %d failed: %s\n", i+1, firstLine)
 		}
 	}
 
 	if run.Summary != nil {
-		printCISummary(run)
+		writeRunSummary(w, run, gh)
 	} else {
 		msg := "The summary for this run is not available"
 		if run.Error != "" {
 			msg = run.Error
 		}
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "⚠ "+msg)
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "⚠ "+msg)
 	}
 }
 
-func printCISummary(run *livekit.SimulationRun) {
+func writeRunSummary(w io.Writer, run *livekit.SimulationRun, gh bool) {
 	summary := run.Summary
 	total, _, passed, failed := simulationJobCounts(run)
 
-	fmt.Fprintln(os.Stdout)
-	fmt.Fprintln(os.Stdout, "::group::Summary")
-	fmt.Fprintf(os.Stdout, "%d total, %d passed, %d failed\n", total, passed, failed)
+	fmt.Fprintln(w)
+	if gh {
+		fmt.Fprintln(w, "::group::Summary")
+	} else {
+		fmt.Fprintln(w, "Summary")
+	}
+	fmt.Fprintf(w, "%d total, %d passed, %d failed\n", total, passed, failed)
 
 	if summary.GoingWell != "" {
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "Going well:")
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Going well:")
 		for _, line := range strings.Split(summary.GoingWell, "\n") {
-			fmt.Fprintf(os.Stdout, "  %s\n", line)
+			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
 
 	if summary.ToImprove != "" {
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "To improve:")
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "To improve:")
 		for _, line := range strings.Split(summary.ToImprove, "\n") {
-			fmt.Fprintf(os.Stdout, "  %s\n", line)
+			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
 
 	if len(summary.Issues) > 0 {
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "Issues:")
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Issues:")
 		for i, issue := range summary.Issues {
-			fmt.Fprintf(os.Stdout, "  %d. %s\n", i+1, issue.Description)
+			fmt.Fprintf(w, "  %d. %s\n", i+1, issue.Description)
 			if issue.Suggestion != "" {
-				fmt.Fprintf(os.Stdout, "     Suggestion: %s\n", issue.Suggestion)
+				fmt.Fprintf(w, "     Suggestion: %s\n", issue.Suggestion)
 			}
 		}
 	}
 
-	fmt.Fprintln(os.Stdout, "::endgroup::")
+	if gh {
+		fmt.Fprintln(w, "::endgroup::")
+	}
 }
 
-func printCIChatHistory(chatCtx *agent.ChatContext) {
+func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {
 	if chatCtx == nil || len(chatCtx.Items) == 0 {
 		return
 	}

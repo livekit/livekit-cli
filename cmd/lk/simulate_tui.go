@@ -35,26 +35,25 @@ import (
 )
 
 func runSimulateTUI(config *simulateConfig) error {
-	m := newSimulateModel(config)
+	launcher := launchSimulationAgent(config)
+	m := newSimulateModel(config, launcher)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
-	if _, err := p.Run(); err != nil {
-		return fmt.Errorf("TUI error: %w", err)
-	}
+	_, runErr := p.Run()
 
-	if m.agent != nil {
-		m.agent.Kill()
+	if agentProc := launcher.Stop(); agentProc != nil {
 		if m.brokenAgent {
 			fmt.Fprintln(os.Stderr)
 			fmt.Fprintln(os.Stderr, "The agent failed to run the simulations. It most likely errored on job")
 			fmt.Fprintln(os.Stderr, "startup (missing model file, bad dependency, etc.). Recent agent output:")
-			for _, line := range agentErrorContext(m.agent) {
+			for _, line := range agentErrorContext(agentProc) {
 				fmt.Fprintf(os.Stderr, "  %s\n", line)
 			}
 			fmt.Fprintln(os.Stderr)
 		}
-		if m.agent.LogPath != "" {
-			fmt.Fprintf(os.Stderr, "Agent logs: %s\n", m.agent.LogPath)
+		if agentProc.LogPath != "" {
+			fmt.Fprintf(os.Stderr, "Agent logs: %s\n", agentProc.LogPath)
 		}
+		m.agent = agentProc
 	}
 
 	// When scenarios were generated, drop them in a temp scenarios.yaml and print
@@ -62,6 +61,13 @@ func runSimulateTUI(config *simulateConfig) error {
 	if config.mode == modeGenerateFromSource && m.run != nil {
 		if path, err := writeGeneratedScenariosTemp(m.run); err == nil && path != "" {
 			fmt.Fprintf(os.Stderr, "Generated scenarios: %s\n", path)
+		}
+	}
+
+	// Always leave a plain-text record of the run, like the agent log.
+	if m.run != nil {
+		if path, err := writeRunReportTemp(m.run, m.agent, m.projectID(), m.runID); err == nil && path != "" {
+			fmt.Fprintf(os.Stderr, "Run report: %s\n", path)
 		}
 	}
 
@@ -73,6 +79,9 @@ func runSimulateTUI(config *simulateConfig) error {
 		cancelSimulationRun(config.client, m.runID)
 	}
 
+	if runErr != nil {
+		return fmt.Errorf("TUI error: %w", runErr)
+	}
 	if m.err != nil && m.err != context.Canceled {
 		return m.err
 	}
@@ -104,6 +113,8 @@ type simulationRunMsg struct {
 type pollTickMsg struct{}
 type spinnerTickMsg struct{}
 
+type toastExpireMsg struct{ id int }
+
 type subprocessExitMsg struct {
 	err error
 }
@@ -120,6 +131,7 @@ type step struct {
 
 type simulateModel struct {
 	config      *simulateConfig
+	launcher    *agentLauncher
 	runID       string
 	agent       *AgentProcess
 	setupCtx    context.Context
@@ -152,9 +164,12 @@ type simulateModel struct {
 	logPinnedTotal  int
 	showDescription bool
 	descScrollOff   int
-	exportStatus    string
 
-	// In-TUI "save scenarios as" prompt (the e key).
+	toast   string
+	toastOK bool
+	toastID int
+
+	// In-TUI "save scenarios as" prompt (the s key).
 	saving    bool
 	saveInput textinput.Model
 	saveErr   string
@@ -203,8 +218,7 @@ func (m *simulateModel) handleSaveKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.saving = false
 		m.saveInput.Blur()
-		m.exportStatus = status
-		return m, nil
+		return m, m.showToast(status, true)
 	case "esc", "ctrl+c":
 		m.saving = false
 		m.saveErr = ""
@@ -242,15 +256,15 @@ func (m *simulateModel) saveScenarios(name string) (string, bool) {
 	if werr != nil {
 		return "save failed: " + werr.Error(), false
 	}
-	return fmt.Sprintf("saved %d scenarios to %s", len(group.GetScenarios()), name), true
+	return fmt.Sprintf("Saved %d scenarios to %s", len(group.GetScenarios()), name), true
 }
 
 // copyScenario copies the given job's scenario (label / instructions /
 // expectations) to the system clipboard as a one-entry scenarios.yaml.
-func (m *simulateModel) copyScenario(jobID string) string {
+func (m *simulateModel) copyScenario(jobID string) (string, bool) {
 	job := m.findJob(jobID)
 	if job == nil {
-		return "copy failed: scenario not found"
+		return "Copy failed: scenario not found", false
 	}
 	group := &livekit.ScenarioGroup{
 		Scenarios: []*livekit.Scenario{{
@@ -261,21 +275,32 @@ func (m *simulateModel) copyScenario(jobID string) string {
 	}
 	out, err := scenarioGroupToYAML(group)
 	if err != nil {
-		return "copy failed: " + err.Error()
+		return "Copy failed: " + err.Error(), false
 	}
 	if err := clipboard.WriteAll(string(out)); err != nil {
-		return "copy failed: " + err.Error()
+		return "Copy failed: " + err.Error(), false
 	}
-	return "scenario copied to clipboard"
+	return "Scenario copied to clipboard as scenarios.yaml", true
 }
 
-func newSimulateModel(config *simulateConfig) *simulateModel {
+// showToast displays a transient confirmation box; the id keeps an old
+// expiry tick from clearing a newer toast.
+func (m *simulateModel) showToast(text string, ok bool) tea.Cmd {
+	m.toast = text
+	m.toastOK = ok
+	m.toastID++
+	id := m.toastID
+	return tea.Tick(4*time.Second, func(time.Time) tea.Msg { return toastExpireMsg{id: id} })
+}
+
+func newSimulateModel(config *simulateConfig, launcher *agentLauncher) *simulateModel {
 	ti := textinput.New()
 	ti.Placeholder = "scenarios.yaml"
 	ti.CharLimit = 128
 	ti.Prompt = ""
 	return &simulateModel{
 		config:         config,
+		launcher:       launcher,
 		numSimulations: config.numSimulations,
 		width:          80,
 		height:         24,
@@ -371,9 +396,9 @@ func (m *simulateModel) completeSetup(elapsed time.Duration) {
 }
 
 func (m *simulateModel) startAgentCmd() tea.Cmd {
-	c := m.config
+	l := m.launcher
 	return func() tea.Msg {
-		agent, err := startSimulationAgent(c, nil)
+		agent, err := l.Wait()
 		return agentStartedMsg{agent: agent, err: err}
 	}
 }
@@ -524,6 +549,11 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinnerTickMsg:
 		m.spinnerIdx++
 		return m, spinnerTickCmd()
+
+	case toastExpireMsg:
+		if msg.id == m.toastID {
+			m.toast = ""
+		}
 
 	case matrixTickMsg:
 		if !m.matrix.active {
@@ -691,18 +721,19 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.showDescription = !m.showDescription
 			m.descScrollOff = 0
 		}
-	case "e":
+	case "s":
 		if m.canExportScenarios() && m.detailJobID == "" {
 			m.saving = true
 			m.saveErr = ""
-			m.exportStatus = ""
+			m.toast = ""
 			m.saveInput.SetValue("scenarios.yaml")
 			m.saveInput.CursorEnd()
 			return m, m.saveInput.Focus()
 		}
 	case "c":
 		if m.detailJobID != "" {
-			m.exportStatus = m.copyScenario(m.detailJobID)
+			text, ok := m.copyScenario(m.detailJobID)
+			return m, m.showToast(text, ok)
 		}
 	case "up", "shift+tab":
 		// arrows never scroll logs (PgUp/PgDn do); in the list they move the cursor
@@ -968,7 +999,7 @@ func (m *simulateModel) viewRunning() string {
 			if end < len(lines) {
 				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more", len(lines)-end)) + "\n")
 			}
-			b.WriteString(dimStyle.Render("  ↑↓ scroll · d collapse") + "\n\n")
+			b.WriteString("\n")
 		} else {
 			desc := firstMeaningfulLine(m.run.AgentDescription)
 			if desc != "" {
@@ -1012,6 +1043,7 @@ func (m *simulateModel) viewRunning() string {
 	if m.showLogs && m.detailJobID == "" {
 		b.WriteString(m.renderLogs(""))
 	}
+	b.WriteString(m.renderToast())
 	b.WriteString(m.renderHint())
 	b.WriteString("\n")
 	return b.String()
@@ -1683,12 +1715,7 @@ func firstMeaningfulLine(text string) string {
 
 func (m *simulateModel) renderHint() string {
 	if m.saving {
-		out := "  Save scenarios as: " + m.saveInput.View() + "\n"
-		out += dimStyle.Render("  enter save · esc cancel")
-		if m.saveErr != "" {
-			out += "\n" + redStyle.Render("  "+m.saveErr)
-		}
-		return out
+		return m.renderSaveDialog()
 	}
 	var parts []string
 	switch {
@@ -1704,12 +1731,10 @@ func (m *simulateModel) renderHint() string {
 	case m.descriptionExpanded():
 		parts = append(parts, "↑↓ scroll · d collapse description")
 	default:
+		// the collapsed description block already carries "(press d to expand)"
 		nav := "↑↓ navigate · ENTER detail"
-		if m.hasDescription() {
-			nav += " · d show description"
-		}
 		if m.canExportScenarios() {
-			nav += " · e save scenarios"
+			nav += " · s save scenarios"
 		}
 		parts = append(parts, nav)
 		if m.hasLogs() {
@@ -1721,11 +1746,64 @@ func (m *simulateModel) renderHint() string {
 		}
 	}
 	parts = append(parts, "q quit")
-	footer := dimStyle.Render("  " + strings.Join(parts, " · "))
-	if m.exportStatus != "" {
-		footer += "\n" + greenStyle.Render("  "+m.exportStatus)
+	return dimStyle.Render("  " + strings.Join(parts, " · "))
+}
+
+// renderSaveDialog is the bordered prompt opened by the s key.
+func (m *simulateModel) renderSaveDialog() string {
+	n := len(m.run.GetScenarioGroup().GetScenarios())
+	noun := "scenarios"
+	if n == 1 {
+		noun = "scenario"
 	}
-	return footer
+	width := 50
+	if max := m.width - 8; width > max {
+		width = max
+	}
+	if width < 24 {
+		width = 24
+	}
+	var b strings.Builder
+	b.WriteString(boldStyle.Render("Save scenarios") + "\n")
+	b.WriteString(dimStyle.Render(fmt.Sprintf("%d generated %s → %s", n, noun, m.config.projectDir)) + "\n\n")
+	b.WriteString("File: " + m.saveInput.View())
+	if m.saveErr != "" {
+		b.WriteString("\n" + redStyle.Render(m.saveErr))
+	}
+	b.WriteString("\n\n" + dimStyle.Render("enter save · esc cancel"))
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lkCyanColor).
+		Padding(0, 1).
+		Width(width).
+		Render(b.String())
+	return indentLines(box, "  ")
+}
+
+func (m *simulateModel) renderToast() string {
+	if m.toast == "" {
+		return ""
+	}
+	borderColor := lipgloss.Color("2")
+	line := greenStyle.Render("✓") + " " + m.toast
+	if !m.toastOK {
+		borderColor = lipgloss.Color("1")
+		line = redStyle.Render("✗") + " " + m.toast
+	}
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Padding(0, 1).
+		Render(line)
+	return indentLines(box, "  ") + "\n"
+}
+
+func indentLines(s, prefix string) string {
+	lines := strings.Split(s, "\n")
+	for i := range lines {
+		lines[i] = prefix + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }
 
 func jobIcon(job *livekit.SimulationRun_Job) string {

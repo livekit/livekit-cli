@@ -336,6 +336,45 @@ func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 
 // --- Shared lifecycle functions used by both TUI and CI modes ---
 
+// agentLauncher owns the agent subprocess lifecycle around the TUI: the TUI
+// only observes the start via Wait, and Stop kills the worker even when the
+// TUI quits mid-start — a leaked worker keeps its port bound and breaks the
+// next run with "address already in use".
+type agentLauncher struct {
+	done chan struct{}
+	proc *AgentProcess
+	err  error
+}
+
+func launchSimulationAgent(c *simulateConfig) *agentLauncher {
+	l := &agentLauncher{done: make(chan struct{})}
+	go func() {
+		l.proc, l.err = startSimulationAgent(c, nil)
+		close(l.done)
+	}()
+	return l
+}
+
+// Wait blocks until the start attempt finishes and returns its result.
+func (l *agentLauncher) Wait() (*AgentProcess, error) {
+	<-l.done
+	return l.proc, l.err
+}
+
+// Stop kills the agent once the start attempt finishes (bounded so a stuck
+// start can't hang the exit path) and returns it for post-exit reporting.
+func (l *agentLauncher) Stop() *AgentProcess {
+	select {
+	case <-l.done:
+	case <-time.After(10 * time.Second):
+		return nil
+	}
+	if l.proc != nil {
+		l.proc.Kill()
+	}
+	return l.proc
+}
+
 func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentProcess, error) {
 	return startAgent(AgentStartConfig{
 		Dir:         c.projectDir,
