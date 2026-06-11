@@ -144,8 +144,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			}
 			fmt.Fprintf(os.Stderr, "Warning: poll failed: %v\n", err)
 		} else {
-			// The worker is failing systemically (crashing on job startup, never
-			// joining), not failing a scenario. Stop early and surface its log.
+			// the worker is failing systemically: stop early and surface its log
 			if !brokenAgent && agentBroken(run, agent) {
 				brokenAgent = true
 				report.BrokenAgent()
@@ -197,8 +196,8 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	return nil
 }
 
-// writeRunResults writes the per-job results and the run summary, using GitHub
-// Actions group markers (harmless and a useful delimiter outside GitHub too).
+// writeRunResults writes the per-job results and the run summary, with GitHub
+// group markers (a useful delimiter outside GitHub too).
 func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) {
 	if run == nil {
 		return

@@ -24,9 +24,8 @@ import (
 	"github.com/livekit/protocol/livekit"
 )
 
-// simLog is the single source of the plain-text simulation output: CI writes
-// it to the terminal (results on out, transient progress on info) and the
-// TUI's runReporter writes the same calls to the report file.
+// simLog is the single source of the plain-text simulation output, shared by
+// the CI mode (terminal) and the TUI's runReporter (report file).
 type simLog struct {
 	out        io.Writer
 	info       io.Writer
@@ -82,7 +81,6 @@ func (l *simLog) RunCreated(runID, dashboardURL string) {
 	fmt.Fprintln(l.out)
 }
 
-// RunUpdate logs run-status transitions and job progress from a poll result.
 func (l *simLog) RunUpdate(run *livekit.SimulationRun, configuredN int32) {
 	_, done, _, _ := simulationJobCounts(run)
 	switch run.Status {
@@ -129,8 +127,8 @@ func writeBrokenAgentNote(w io.Writer, ap *AgentProcess) {
 	}
 }
 
-// asciiWriter transliterates the output glyphs to plain ASCII, keeping the
-// report file free of special characters without forking the simLog strings.
+// asciiWriter keeps the report file free of special characters without
+// forking the simLog strings.
 type asciiWriter struct{ w io.Writer }
 
 var asciiGlyphs = strings.NewReplacer(
@@ -162,7 +160,6 @@ func newRunReporter() *runReporter {
 	return &runReporter{simLog: newSimLog(w, w), f: f}
 }
 
-// Finish appends the results and trailer, closes the file, returns its path.
 func (r *runReporter) Finish(run *livekit.SimulationRun, ap *AgentProcess, brokenAgent bool, dashboardURL string) string {
 	if r.f == nil {
 		return ""

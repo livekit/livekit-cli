@@ -40,9 +40,8 @@ func runSimulateTUI(config *simulateConfig) error {
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, runErr := p.Run()
 
-	// A second ctrl+c during cleanup would kill the CLI before the worker
-	// (in its own process group, so the terminal signal misses it) and leak
-	// it with its port bound. Escalate to an immediate SIGKILL instead.
+	// A second ctrl+c during cleanup would kill the CLI and leak the worker
+	// (own process group, port stays bound); escalate to SIGKILL instead.
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
 	defer signal.Stop(sigCh)
@@ -63,8 +62,7 @@ func runSimulateTUI(config *simulateConfig) error {
 		m.agent = agentProc
 	}
 
-	// Generated scenarios are dropped in a temp scenarios.yaml so they're
-	// never lost on exit.
+	// generated scenarios are saved to a temp file so they're never lost
 	if config.mode == modeGenerateFromSource && m.run != nil {
 		if path, err := writeGeneratedScenariosTemp(m.run); err == nil && path != "" {
 			fmt.Fprintf(os.Stderr, "Generated scenarios: %s\n", path)
@@ -549,9 +547,8 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
 			}
-			// The worker is failing systemically (crashing on job startup, never
-			// joining). Cancel the run; polling continues until it reports cancelled,
-			// and the worker log is surfaced on exit.
+			// the worker is failing systemically: cancel the run and surface
+			// its log on exit
 			if !m.brokenAgent && agentBroken(msg.run, m.agent) {
 				m.brokenAgent = true
 				m.showLogs = true
@@ -614,9 +611,8 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 const pageScroll = 20
 
-// scrollActive scrolls the focused pane (detail, description, or logs) by delta
-// lines, positive toward the bottom. Returns false if nothing is focused, so the
-// caller can fall back to list navigation. Shared by keys and the wheel.
+// scrollActive scrolls the focused pane by delta lines (positive toward the
+// bottom); false if nothing is focused so the caller falls back to the list.
 func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	switch {
 	case m.detailJobID != "":
@@ -630,8 +626,7 @@ func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 			m.descScrollOff = 0
 		}
 	case includeLogs && m.showLogs:
-		// logScrollOff counts lines up from the bottom, so scrolling down
-		// (delta > 0) decreases it toward the live tail.
+		// logScrollOff counts up from the bottom; scrolling down decreases it
 		m.logScrollOff -= delta
 		if m.logScrollOff <= 0 {
 			m.logScrollOff = 0
@@ -673,9 +668,7 @@ func (m *simulateModel) moveCursor(delta int) {
 func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	if m.matrix.active {
-		// Any keypress cancels rain so the user regains control immediately.
-		// Pressing 'm' just cancels; every other key falls through to normal
-		// handling so it can do its usual thing on the same press.
+		// any key cancels rain; all but 'm' fall through to normal handling
 		m.matrix.active = false
 		m.showLogs = m.matrixSavedShowLogs
 		if key == "m" {
@@ -732,9 +725,8 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if width > m.width {
 			width = m.width
 		}
-		// Skip columns that are always blank across every row (rain over empty
-		// air looks noisy) and columns carrying a status icon (the status must
-		// stay fully visible).
+		// skip always-blank columns (rain over empty air looks noisy) and
+		// status-icon columns (the status must stay visible)
 		skip := make([]bool, width)
 		for col := 0; col < width; col++ {
 			empty := true
@@ -837,8 +829,7 @@ func (m *simulateModel) filteredJobs() []indexedJob {
 	if m.run == nil {
 		return nil
 	}
-	// Sort by job ID so the list (and its numbering) stays stable; otherwise the
-	// backend's ordering shuffles rows as statuses change.
+	// sort by job ID: the backend's ordering shuffles rows as statuses change
 	jobs := make([]*livekit.SimulationRun_Job, len(m.run.Jobs))
 	copy(jobs, m.run.Jobs)
 	sort.Slice(jobs, func(i, j int) bool { return jobs[i].GetId() < jobs[j].GetId() })
@@ -1281,12 +1272,7 @@ func (m *simulateModel) renderJobList() string {
 	return b.String()
 }
 
-// --- Matrix rain row construction ---
-//
-// The matrix renderer (in matrix_rain.go) consumes a []matrixRow describing
-// the underlying text layer and its styled regions (status icon, dim ID range,
-// cursor marker). This file provides the mapping from a simulation's job list
-// into that neutral data shape.
+// --- Matrix rain row construction (the renderer lives in matrix_rain.go) ---
 
 func jobLabel(job *livekit.SimulationRun_Job) string {
 	label := job.Label
@@ -1319,8 +1305,6 @@ func jobStatusIcon(job *livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
 	}
 }
 
-// buildMatrixRows produces one matrixRow per visible line of the job list,
-// using the same label logic as renderJobList.
 func (m *simulateModel) buildMatrixRows() []matrixRow {
 	jobs, winStart, winEnd, above, below := m.visibleWindow()
 	if len(jobs) == 0 {
@@ -1701,8 +1685,7 @@ func (m *simulateModel) renderLogs(roomName string) string {
 	}
 
 	if m.logPinned {
-		// Convert from-bottom offset to stable from-top position
-		// When pinned, new lines arriving shouldn't move the viewport
+		// pinned: new lines arriving shouldn't move the viewport
 		pinnedStart := m.logPinnedTotal - logBudget - m.logScrollOff
 		newOffset := total - logBudget - pinnedStart
 		if newOffset < 0 {
@@ -1742,7 +1725,6 @@ func (m *simulateModel) renderLogs(roomName string) string {
 	return b.String()
 }
 
-// firstMeaningfulLine returns the first non-empty, non-heading line from text.
 func firstMeaningfulLine(text string) string {
 	for line := range strings.SplitSeq(text, "\n") {
 		line = strings.TrimSpace(line)

@@ -20,12 +20,9 @@ import (
 	"github.com/livekit/protocol/livekit"
 )
 
-// A simulation can stall because the agent worker is broken (crashed on startup,
-// never joins a room) rather than because a scenario failed. When that happens
-// the CLI cancels the run instead of waiting out a 30s timeout per scenario, and
-// surfaces the worker's own error. The detection has to separate a broken agent
-// from transient connection pacing, which can cause an isolated "no agent joined"
-// timeout even when the agent is healthy.
+// Detects a broken agent worker (crashed on startup, never joins) so the CLI
+// can cancel the run and surface the worker's error, while tolerating
+// transient "no agent joined" timeouts from connection pacing.
 
 // pythonFatalMarkers are livekit-agents (Python) log lines that only appear on
 // a fatal, non-transient worker error. The JS framework will need its own set.
@@ -35,17 +32,14 @@ var pythonFatalMarkers = []string{
 	"closing due to unrecoverable error",
 }
 
-// minFatalMarkers is how many fatal log lines it takes to call the worker
-// broken; a single one can be an isolated job crash.
+// a single fatal log line can be an isolated job crash
 const minFatalMarkers = 2
 
-// maxAgentNotJoined is how many "no agent joined" timeouts to tolerate before
-// treating the worker as broken.
+// "no agent joined" timeouts tolerated before the worker counts as broken
 const maxAgentNotJoined = 3
 
 // agentBroken reports whether the worker is failing systemically. A completed
-// scenario proves the agent works, so it is never broken in that case; otherwise
-// repeated fatal log markers or "no agent joined" timeouts mark it broken.
+// scenario proves the agent works.
 func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
 	completed, notJoined := 0, 0
 	for _, job := range run.GetJobs() {
@@ -68,9 +62,8 @@ func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
 	}
 }
 
-// agentErrorContext is the worker output to surface for a broken agent: the whole
-// block from the last fatal marker to the end of the log, so the full traceback
-// survives, or the recent tail when no marker is present.
+// agentErrorContext is the worker output to surface for a broken agent: from
+// the last fatal marker to the end (full traceback), or the recent tail.
 func agentErrorContext(ap *AgentProcess) []string {
 	logs := ap.RecentLogs(0)
 	if i := lastFatalMarker(logs); i >= 0 {
@@ -85,8 +78,6 @@ func agentErrorContext(ap *AgentProcess) []string {
 	return out
 }
 
-// lastFatalMarker returns the index of the last log line matching a fatal
-// marker, or -1 if none.
 func lastFatalMarker(logs []string) int {
 	last := -1
 	for i, line := range logs {

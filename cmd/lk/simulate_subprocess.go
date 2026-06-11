@@ -138,8 +138,8 @@ type AgentStartConfig struct {
 // start/dev/console/simulate subcommands under `python -m livekit.agents`.
 const thinCLIMinVersion = "1.6.0"
 
-// agentExitDetail surfaces the agent's own output (the real error) and a
-// pointer to the full log, for when the worker exits early or never registers.
+// agentExitDetail surfaces the agent's own output and the log path when the
+// worker exits early or never registers.
 func agentExitDetail(ap *AgentProcess) string {
 	var b strings.Builder
 	if tail := lastNonEmptyLines(ap.RecentLogs(0), 12); len(tail) > 0 {
@@ -175,8 +175,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		return nil, err
 	}
 
-	// Reuse the SDK-version reader (parses the project's deps) to fail fast with a
-	// friendly message when livekit-agents is older than the thin-CLI baseline.
+	// fail fast when livekit-agents is older than the thin-CLI baseline
 	if err := agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
 		"python-min-sdk-version": thinCLIMinVersion,
 		"node-min-sdk-version":   thinCLIMinVersion,
@@ -184,11 +183,8 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		return nil, err
 	}
 
-	// Launch via the framework CLI module rather than running the user's file
-	// directly: python -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS. The framework
-	// discovers the AgentServer from the entrypoint and drives the thin CLI. Requires a
-	// livekit-agents that supports start/console under -m livekit.agents; older versions
-	// only expose download-files there.
+	// python -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS: the framework
+	// discovers the AgentServer from the entrypoint and drives the thin CLI.
 	args := append(prefixArgs, "-m", "livekit.agents")
 	if len(cfg.CLIArgs) > 0 {
 		args = append(args, cfg.CLIArgs[0]) // subcommand: start | console
@@ -393,9 +389,9 @@ func extractLogRoom(line string) string {
 	return ""
 }
 
-// Kill terminates the worker quickly: a short SIGINT grace (an idle worker
-// exits cleanly; one draining jobs would take minutes), then SIGKILL to the
-// whole process group, waiting for the exit so the port is free on return.
+// Kill gives the worker a short SIGINT grace (an idle one exits cleanly; one
+// draining jobs would take minutes), then SIGKILLs the whole process group and
+// waits so the port is free on return.
 func (ap *AgentProcess) Kill() {
 	if ap.cmd.Process == nil {
 		return

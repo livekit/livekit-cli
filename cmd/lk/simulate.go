@@ -88,9 +88,7 @@ var simulateCommand = &cli.Command{
 }
 
 // writeGeneratedScenariosTemp writes a generated run's scenarios to a temp
-// scenarios.yaml and returns its path, so the simulate command can print where
-// they landed (mirroring how it prints the agent log path). Returns "" when the
-// run carries no generated scenarios.
+// scenarios.yaml; "" when the run carries none.
 func writeGeneratedScenariosTemp(run *livekit.SimulationRun) (string, error) {
 	group := run.GetScenarioGroup()
 	if group == nil || len(group.GetScenarios()) == 0 {
@@ -137,9 +135,8 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 	return yaml.Marshal(f)
 }
 
-// scenariosFile mirrors a scenarios.yaml (the source of truth for scenarios).
-// It maps field-for-field onto livekit.ScenarioGroup; `userdata` is written as a
-// nested mapping here and JSON-encoded into the proto's string field.
+// scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
+// and JSON-encoded into the proto's string field.
 type scenariosFile struct {
 	Name      string         `yaml:"name"`
 	Scenarios []yamlScenario `yaml:"scenarios"`
@@ -153,7 +150,6 @@ type yamlScenario struct {
 	Userdata          map[string]any    `yaml:"userdata"`
 }
 
-// simulateConfig holds all parameters needed to run a simulation in either TUI or CI mode.
 type simulateConfig struct {
 	ctx            context.Context
 	client         *lksdk.AgentSimulationClient
@@ -169,7 +165,6 @@ type simulateConfig struct {
 	scenariosPath  string // path to the --scenarios file (empty when generating from source)
 }
 
-// simulateMode represents how scenarios are sourced.
 type simulateMode int
 
 const (
@@ -177,8 +172,6 @@ const (
 	modeGenerateFromSource
 )
 
-// loadScenarioGroup reads a scenarios.yaml into a livekit.ScenarioGroup, JSON-encoding
-// each scenario's nested `userdata` mapping into the proto's string field.
 func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -239,9 +232,8 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	// The scenarios file must be specified explicitly via --scenarios; we never
-	// auto-discover one. When provided, those scenarios are the source of truth;
-	// otherwise scenarios are generated from the agent's source.
+	// never auto-discovered: an explicit --scenarios file is the source of
+	// truth, otherwise scenarios are generated from the agent's source
 	scenariosPath := cmd.String("scenarios")
 
 	var scenarioGroup *livekit.ScenarioGroup
@@ -259,8 +251,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		mode = modeGenerateFromSource
 	}
 
-	// Generating from source uploads the agent's code to LiveKit Cloud, so make
-	// the user agree to it explicitly before anything is sent.
 	if mode == modeGenerateFromSource {
 		if err := confirmSourceUpload(cmd, projectDir); err != nil {
 			return err
@@ -297,8 +287,8 @@ func isInteractive() bool {
 	return isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 }
 
-// confirmSourceUpload makes the user explicitly agree that their agent's source
-// code will be uploaded to LiveKit Cloud before generating scenarios from it.
+// confirmSourceUpload makes the user agree before their agent's source is
+// uploaded to LiveKit Cloud.
 func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 	if cmd.Bool("yes") {
 		return nil
@@ -333,9 +323,9 @@ func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 
 // --- Shared lifecycle functions used by both TUI and CI modes ---
 
-// agentLauncher owns the agent subprocess lifecycle around the TUI, which only
-// observes the start via Wait. Stop kills the worker even when the TUI quits
-// mid-start; a leaked worker keeps its port bound and breaks the next run.
+// agentLauncher owns the agent subprocess lifecycle around the TUI. Stop kills
+// the worker even when the TUI quits mid-start; a leaked worker keeps its port
+// bound and breaks the next run.
 type agentLauncher struct {
 	done chan struct{}
 	proc *AgentProcess
@@ -351,14 +341,13 @@ func launchSimulationAgent(c *simulateConfig) *agentLauncher {
 	return l
 }
 
-// Wait blocks until the start attempt finishes and returns its result.
 func (l *agentLauncher) Wait() (*AgentProcess, error) {
 	<-l.done
 	return l.proc, l.err
 }
 
-// Stop kills the agent once the start attempt finishes (bounded so a stuck
-// start can't hang the exit path) and returns it for post-exit reporting.
+// Stop kills the agent once the start attempt finishes (bounded wait) and
+// returns it for post-exit reporting.
 func (l *agentLauncher) Stop() *AgentProcess {
 	select {
 	case <-l.done:
@@ -395,9 +384,8 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 			"--simulation",
 		},
 		Env: []string{
-			// force the agent to register under the dispatch name regardless of any
-			// agent_name hardcoded in the user's code (see LIVEKIT_AGENT_NAME_OVERRIDE
-			// precedence in livekit-agents worker.py).
+			// register under the dispatch name regardless of any agent_name
+			// hardcoded in the user's code
 			"LIVEKIT_AGENT_NAME_OVERRIDE=" + c.agentName,
 			"LIVEKIT_URL=" + c.pc.URL,
 			"LIVEKIT_API_KEY=" + c.pc.APIKey,
@@ -417,8 +405,6 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 		req.Concurrency = &c.concurrency
 	}
 	if c.mode == modeScenarios {
-		// Run the scenarios from the yaml. When unset, the server generates
-		// num_simulations scenarios from the uploaded source.
 		req.ScenarioGroup = c.scenarioGroup
 	}
 
