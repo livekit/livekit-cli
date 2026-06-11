@@ -25,6 +25,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 
 	agent "github.com/livekit/protocol/livekit/agent"
 
@@ -41,6 +42,59 @@ func greenBoldStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
 }
 func redBoldStyle() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Error()).Bold(true) }
+
+// textModeBoxStyle is the prompt-bar color, matched to the agent status text
+// (labelStyle / "Shutting down agent...").
+func textModeBoxStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Background(util.Accent()).Foreground(lipgloss.Color("#E6F7FF"))
+}
+
+// renderTextModeBox draws the framed prompt bar: a top rule, the input line,
+// and a bottom status line with "in text mode (-t)" in the corner.
+func renderTextModeBox(width int, input string) string {
+	if width <= 0 {
+		width = 80
+	}
+
+	var b strings.Builder
+	b.WriteString(renderTextModeBoxLine(width, strings.Repeat("─", width)))
+	b.WriteString("\n")
+	b.WriteString(renderTextModeInputLine(width, input))
+	b.WriteString("\n")
+	b.WriteString(renderTextModeBoxLine(width, textModeStatusLine(width)))
+	return b.String()
+}
+
+func renderTextModeBoxLine(width int, line string) string {
+	line = ansi.Truncate(line, width, "")
+	return textModeBoxStyle().Width(width).MaxWidth(width).Render(line)
+}
+
+// renderTextModeInputLine keeps the input on the normal terminal background
+// but paints the first and last column with the bar color so it reads as a
+// framed prompt bar.
+func renderTextModeInputLine(width int, input string) string {
+	if width <= 2 {
+		return renderTextModeBoxLine(width, input)
+	}
+	inner := width - 2
+	input = ansi.Truncate(input, inner, "")
+	pad := inner - lipgloss.Width(input)
+	if pad < 0 {
+		pad = 0
+	}
+	edge := textModeBoxStyle().Render(" ")
+	return edge + input + strings.Repeat(" ", pad) + edge
+}
+
+func textModeStatusLine(width int) string {
+	label := "in text mode (-t)"
+	labelWidth := lipgloss.Width(label)
+	if width <= labelWidth {
+		return label[:min(width, len(label))]
+	}
+	return strings.Repeat("─", width-labelWidth-1) + " " + label
+}
 
 // Unicode block characters for frequency visualizer (matching Python console)
 var blocks = []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
@@ -549,17 +603,7 @@ func (m consoleModel) View() string {
 			b.WriteString("  ")
 			b.WriteString(dimStyle.Render(frame + " thinking"))
 		} else {
-			// ── Text input ──
-			w := m.width
-			if w <= 0 {
-				w = 80
-			}
-			sep := dimStyle.Render(strings.Repeat("─", min(w, 80)))
-			b.WriteString(sep)
-			b.WriteString("\n")
-			b.WriteString(m.textInput.View())
-			b.WriteString("\n")
-			b.WriteString(sep)
+			b.WriteString(renderTextModeBox(m.width, m.textInput.View()))
 		}
 
 		if m.audioError != "" {
