@@ -281,7 +281,8 @@ func (ap *AgentProcess) appendLog(line string) {
 		ap.latestRoomByPx[roomNamePrefix(room)] = room
 	}
 	if ap.logFile != nil {
-		fmt.Fprintln(ap.logFile, line)
+		// the agent logs in colored format; keep the file free of ANSI escapes
+		fmt.Fprintln(ap.logFile, ansiEscapeRe.ReplaceAllString(line, ""))
 	}
 	if ap.LogStream != nil {
 		select {
