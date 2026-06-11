@@ -169,6 +169,10 @@ type simulateModel struct {
 	toastOK bool
 	toastID int
 
+	// q pressed while the run is in progress; quitting cancels the run, so
+	// ask before doing it.
+	confirmQuit bool
+
 	// In-TUI "save scenarios as" prompt (the s key).
 	saving    bool
 	saveInput textinput.Model
@@ -666,6 +670,20 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.saving {
 		return m.handleSaveKey(msg)
 	}
+	if m.confirmQuit {
+		switch key {
+		case "y", "enter":
+			if m.setupCancel != nil {
+				m.setupCancel()
+			}
+			return m, tea.Quit
+		case "ctrl+c":
+			return m, tea.Quit
+		default:
+			m.confirmQuit = false
+		}
+		return m, nil
+	}
 	switch key {
 	case "ctrl+c":
 		if m.setupCancel != nil {
@@ -772,6 +790,8 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case m.showDescription:
 			m.showDescription = false
 			m.descScrollOff = 0
+		case m.runID != "" && !m.runFinished:
+			m.confirmQuit = true
 		default:
 			if m.setupCancel != nil {
 				m.setupCancel()
@@ -881,6 +901,11 @@ func (m *simulateModel) viewSetup() string {
 		if m.agent != nil {
 			b.WriteString(m.renderLogs(""))
 		}
+	}
+	if m.confirmQuit {
+		b.WriteString("\n")
+		b.WriteString(m.renderQuitConfirm())
+		b.WriteString("\n")
 	}
 	return b.String()
 }
@@ -1714,6 +1739,9 @@ func firstMeaningfulLine(text string) string {
 }
 
 func (m *simulateModel) renderHint() string {
+	if m.confirmQuit {
+		return m.renderQuitConfirm()
+	}
 	if m.saving {
 		return m.renderSaveDialog()
 	}
@@ -1747,6 +1775,21 @@ func (m *simulateModel) renderHint() string {
 	}
 	parts = append(parts, "q quit")
 	return dimStyle.Render("  " + strings.Join(parts, " · "))
+}
+
+// renderQuitConfirm is the bordered prompt shown when quitting would cancel a
+// run still in progress.
+func (m *simulateModel) renderQuitConfirm() string {
+	var b strings.Builder
+	b.WriteString(boldStyle.Render("Stop simulation?") + "\n")
+	b.WriteString(dimStyle.Render("The run is still in progress — quitting cancels it.") + "\n\n")
+	b.WriteString(dimStyle.Render("y cancel & quit · any other key keep running"))
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#e5a00d")).
+		Padding(0, 1).
+		Render(b.String())
+	return indentLines(box, "  ")
 }
 
 // renderSaveDialog is the bordered prompt opened by the s key.
