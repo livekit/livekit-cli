@@ -65,10 +65,8 @@ func runSimulateTUI(config *simulateConfig) error {
 	}
 
 	// Always leave a plain-text record of the run, like the agent log.
-	if m.run != nil {
-		if path, err := writeRunReportTemp(m.run, m.agent, m.projectID(), m.runID); err == nil && path != "" {
-			fmt.Fprintf(os.Stderr, "Run report: %s\n", path)
-		}
+	if path := m.reporter.Finish(m.run, m.agent); path != "" {
+		fmt.Fprintf(os.Stderr, "Run report: %s\n", path)
 	}
 
 	if url := m.getDashboardURL(); url != "" {
@@ -132,6 +130,7 @@ type step struct {
 type simulateModel struct {
 	config      *simulateConfig
 	launcher    *agentLauncher
+	reporter    *runReporter
 	runID       string
 	agent       *AgentProcess
 	setupCtx    context.Context
@@ -307,6 +306,7 @@ func newSimulateModel(config *simulateConfig, launcher *agentLauncher) *simulate
 	return &simulateModel{
 		config:         config,
 		launcher:       launcher,
+		reporter:       newRunReporter(),
 		numSimulations: config.numSimulations,
 		width:          80,
 		height:         24,
@@ -361,6 +361,7 @@ func (m *simulateModel) runSetup() tea.Cmd {
 			label += fmt.Sprintf(" (%s)", name)
 		}
 		m.steps = append(m.steps, step{label: label, status: "done"})
+		m.reporter.Printf("✓ %s", label)
 	}
 	m.currentStep = len(m.steps)
 	m.steps = append(m.steps,
@@ -381,22 +382,27 @@ func (m *simulateModel) runSetup() tea.Cmd {
 
 func (m *simulateModel) failSetupStep(err error) {
 	m.steps[m.currentStep].status = "failed"
+	m.reporter.Printf("✗ %s: %v", m.steps[m.currentStep].label, err)
 	m.err = err
 	m.setupDone = true
 	m.runFinished = true
 }
 
-func (m *simulateModel) advanceSetupStep(elapsed time.Duration) {
+func (m *simulateModel) finishSetupStep(elapsed time.Duration) {
 	m.steps[m.currentStep].status = "done"
 	m.steps[m.currentStep].elapsed = elapsed
+	m.reporter.Printf("✓ %s (%s)", m.steps[m.currentStep].label, elapsed.Round(time.Millisecond))
+}
+
+func (m *simulateModel) advanceSetupStep(elapsed time.Duration) {
+	m.finishSetupStep(elapsed)
 	m.currentStep++
 	m.steps[m.currentStep].status = "running"
 	m.stepStart = time.Now()
 }
 
 func (m *simulateModel) completeSetup(elapsed time.Duration) {
-	m.steps[m.currentStep].status = "done"
-	m.steps[m.currentStep].elapsed = elapsed
+	m.finishSetupStep(elapsed)
 	m.setupDone = true
 	m.genStart = time.Now()
 }
@@ -516,6 +522,10 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.runID = msg.runID
+		m.reporter.Printf("Run:       %s", m.runID)
+		if url := m.getDashboardURL(); url != "" {
+			m.reporter.Printf("Dashboard: %s", url)
+		}
 		if m.config.mode == modeGenerateFromSource {
 			m.advanceSetupStep(msg.elapsed)
 			return m, m.uploadSourceCmd(msg.presigned)
@@ -534,6 +544,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case simulationRunMsg:
 		if msg.err == nil && msg.run != nil {
 			m.run = msg.run
+			m.reporter.Update(msg.run)
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
 			}
@@ -542,6 +553,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// and the worker log is surfaced on exit.
 			if !m.brokenAgent && agentBroken(msg.run, m.agent) {
 				m.brokenAgent = true
+				m.reporter.Printf("The agent is failing to run jobs; cancelling the run.")
 				return m, m.cancelRunCmd()
 			}
 			if isTerminalRunStatus(msg.run.Status) {

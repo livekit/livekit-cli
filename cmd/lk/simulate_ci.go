@@ -251,34 +251,6 @@ func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
 	writeRunResults(os.Stdout, run, agent, true)
 }
 
-// writeRunReportTemp saves the plain-text run report (what the non-TUI mode
-// prints) to a temp file, so a TUI run always leaves a full record next to
-// the agent log.
-func writeRunReportTemp(run *livekit.SimulationRun, ap *AgentProcess, projectID, runID string) (string, error) {
-	if run == nil {
-		return "", nil
-	}
-	f, err := os.CreateTemp("", "lk-simulate-report-*.txt")
-	if err != nil {
-		return "", err
-	}
-	fmt.Fprintf(f, "Run:       %s\n", runID)
-	fmt.Fprintf(f, "Status:    %s\n", strings.TrimPrefix(run.Status.String(), "STATUS_"))
-	if url := simulationDashboardURL(projectID, runID); url != "" {
-		fmt.Fprintf(f, "Dashboard: %s\n", url)
-	}
-	if desc := run.GetAgentDescription(); desc != "" {
-		fmt.Fprintln(f, "\nAgent description:")
-		for _, line := range strings.Split(desc, "\n") {
-			fmt.Fprintf(f, "  %s\n", line)
-		}
-	}
-	fmt.Fprintln(f)
-	writeRunResults(f, run, ap, false)
-	cerr := f.Close()
-	return f.Name(), cerr
-}
-
 // writeRunResults writes the per-job results and the run summary. With gh set,
 // sections are wrapped in GitHub Actions group markers and failed jobs emit
 // ::error:: annotations on GitHub.
