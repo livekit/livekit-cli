@@ -91,13 +91,31 @@ func (p *Printer) Warnf(format string, a ...any) {
 	fmt.Fprintf(p.Err, ensureNewline(format), a...)
 }
 
-// StatusWriter returns the status stream for code that streams informational
-// output through an io.Writer; io.Discard under --quiet, matching Status.
+// The writer accessors below are for code that streams output through an
+// io.Writer; each carries the same gating as its print-method counterpart.
+
+// StatusWriter is the streaming counterpart of Status: io.Discard under --quiet.
 func (p *Printer) StatusWriter() io.Writer {
 	if p == nil || p.Quiet {
 		return io.Discard
 	}
 	return p.Err
+}
+
+// WarnWriter is the streaming counterpart of Warnf: never silenced.
+func (p *Printer) WarnWriter() io.Writer {
+	if p == nil {
+		return io.Discard
+	}
+	return p.Err
+}
+
+// ResultWriter is the streaming counterpart of Result: always printed.
+func (p *Printer) ResultWriter() io.Writer {
+	if p == nil {
+		return io.Discard
+	}
+	return p.Out
 }
 
 // Result writes the command's primary output to stdout. Always printed.

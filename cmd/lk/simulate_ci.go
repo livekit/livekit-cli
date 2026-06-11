@@ -69,7 +69,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Setup ---
 
-	report := newSimLog(out.Out, out.StatusWriter())
+	report := newSimLog(out.ResultWriter(), out.StatusWriter())
 	report.BeginSetup()
 
 	report.StartingAgent()
@@ -173,7 +173,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	report.Results(run, agent)
 
 	if brokenAgent && agent != nil {
-		writeBrokenAgentNote(out.Err, agent)
+		writeBrokenAgentNote(out.WarnWriter(), agent)
 	}
 
 	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {

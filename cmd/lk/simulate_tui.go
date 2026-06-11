@@ -53,8 +53,8 @@ func runSimulateTUI(config *simulateConfig) error {
 
 	if agentProc := launcher.Stop(); agentProc != nil {
 		if m.brokenAgent {
-			writeBrokenAgentNote(out.Err, agentProc)
-			fmt.Fprintln(out.Err)
+			writeBrokenAgentNote(out.WarnWriter(), agentProc)
+			fmt.Fprintln(out.WarnWriter())
 		}
 		if agentProc.LogPath != "" {
 			out.Statusf("Agent logs: %s", agentProc.LogPath)
