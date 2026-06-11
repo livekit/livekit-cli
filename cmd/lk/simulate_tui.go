@@ -43,12 +43,14 @@ import (
 
 func runSimulateTUI(config *simulateConfig) error {
 	// SDK/protocol log lines go to stderr behind the alt screen and would all
-	// spill into the terminal when the TUI exits; capture them in a file
-	// instead, surfaced as a path on exit like the agent log.
-	cliLogPath := redirectLogsToFile()
+	// spill into the terminal when the TUI exits; route them into the run
+	// report instead, interleaved with the same record CI mode prints.
+	reporter := newRunReporter()
+	redirectLogs(reporter.LogWriter())
 
 	launcher := launchSimulationAgent(config)
 	m := newSimulateModel(config, launcher)
+	m.reporter = reporter
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, runErr := p.Run()
 
@@ -79,10 +81,6 @@ func runSimulateTUI(config *simulateConfig) error {
 		if path, err := writeGeneratedScenariosTemp(m.run); err == nil && path != "" {
 			out.Statusf("Generated scenarios: %s", path)
 		}
-	}
-
-	if cliLogPath != "" {
-		out.Statusf("CLI logs:   %s", cliLogPath)
 	}
 
 	// The summary (which carries the chat transcripts) may have landed after
@@ -117,21 +115,13 @@ func runSimulateTUI(config *simulateConfig) error {
 	return nil
 }
 
-// redirectLogsToFile points the protocol/SDK/stdlib loggers at a temp file
-// and returns its path; on failure the logs are discarded (they would
-// otherwise corrupt the TUI and spill on exit).
-func redirectLogsToFile() string {
-	f, err := os.CreateTemp("", "lk-simulate-cli-*.log")
-	if err != nil {
-		discard := logger.LogRLogger(logr.Discard())
-		logger.SetLogger(discard, "lk")
-		lksdk.SetLogger(discard)
-		log.SetOutput(io.Discard)
-		return ""
-	}
+// redirectLogs points the protocol/SDK/stdlib loggers at w (the run report);
+// on failure the logs are discarded (they would otherwise corrupt the TUI and
+// spill on exit).
+func redirectLogs(w io.Writer) {
 	core := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
-		zapcore.AddSync(f),
+		zapcore.AddSync(w),
 		zapcore.InfoLevel,
 	)
 	zl, err := logger.FromZapLogger(zap.New(core), &logger.Config{Level: "info"})
@@ -143,8 +133,7 @@ func redirectLogsToFile() string {
 		logger.SetLogger(zl, "lk")
 		lksdk.SetLogger(zl)
 	}
-	log.SetOutput(f)
-	return f.Name()
+	log.SetOutput(w)
 }
 
 // --- Styles ---
@@ -357,7 +346,6 @@ func newSimulateModel(config *simulateConfig, launcher *agentLauncher) *simulate
 	return &simulateModel{
 		config:         config,
 		launcher:       launcher,
-		reporter:       newRunReporter(),
 		numSimulations: config.numSimulations,
 		width:          80,
 		height:         24,
