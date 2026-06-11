@@ -72,9 +72,15 @@ func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
 func agentErrorContext(ap *AgentProcess) []string {
 	logs := ap.RecentLogs(0)
 	if i := lastFatalMarker(logs); i >= 0 {
-		return logs[i:]
+		logs = logs[i:]
+	} else {
+		logs = lastNonEmptyLines(logs, 25)
 	}
-	return lastNonEmptyLines(logs, 25)
+	out := make([]string, len(logs))
+	for i, l := range logs {
+		out[i] = ansiEscapeRe.ReplaceAllString(l, "")
+	}
+	return out
 }
 
 // lastFatalMarker returns the index of the last log line matching an
@@ -83,7 +89,7 @@ func lastFatalMarker(logs []string) int {
 	last := -1
 	for i, line := range logs {
 		for _, marker := range agentFatalMarkers {
-			if strings.Contains(line, marker) {
+			if strings.Contains(ansiEscapeRe.ReplaceAllString(line, ""), marker) {
 				last = i
 				break
 			}

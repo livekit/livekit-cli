@@ -143,6 +143,9 @@ const thinCLIMinVersion = "1.6.0"
 func agentExitDetail(ap *AgentProcess) string {
 	var b strings.Builder
 	if tail := lastNonEmptyLines(ap.RecentLogs(0), 12); len(tail) > 0 {
+		for i, l := range tail {
+			tail[i] = ansiEscapeRe.ReplaceAllString(l, "")
+		}
 		b.WriteString("Agent output:\n  " + strings.Join(tail, "\n  "))
 	}
 	if ap.LogPath != "" {
@@ -238,9 +241,9 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		scanner := bufio.NewScanner(r)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 		for scanner.Scan() {
-			// The agent colorizes logs with ANSI codes even when not on a TTY; strip
-			// them so the log file, surfaced errors, and TUI pane stay plain text.
-			line := ansiEscapeRe.ReplaceAllString(scanner.Text(), "")
+			// Keep ANSI colors: the TUI renders them. Plain-text consumers
+			// (log file, surfaced errors, fatal-marker matching) strip their own copy.
+			line := scanner.Text()
 			ap.appendLog(line)
 			if cfg.ForwardOutput != nil {
 				fmt.Fprintln(cfg.ForwardOutput, line)

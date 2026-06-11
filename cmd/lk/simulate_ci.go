@@ -304,7 +304,7 @@ func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
 			if len(logs) > 0 {
 				fmt.Fprintln(os.Stdout, "Logs:")
 				for _, line := range logs {
-					fmt.Fprintf(os.Stdout, "  %s\n", line)
+					fmt.Fprintf(os.Stdout, "  %s\n", ansiEscapeRe.ReplaceAllString(line, ""))
 				}
 			}
 		}

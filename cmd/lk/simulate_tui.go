@@ -820,8 +820,6 @@ func (m *simulateModel) viewSetup() string {
 		b.WriteString(dimStyle.Render("  "+url) + "\n")
 	}
 
-
-
 	b.WriteString("\n")
 
 	b.WriteString(m.renderSteps())
