@@ -338,7 +338,7 @@ func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 
 // agentLauncher owns the agent subprocess lifecycle around the TUI: the TUI
 // only observes the start via Wait, and Stop kills the worker even when the
-// TUI quits mid-start — a leaked worker keeps its port bound and breaks the
+// TUI quits mid-start. A leaked worker keeps its port bound and breaks the
 // next run with "address already in use".
 type agentLauncher struct {
 	done chan struct{}

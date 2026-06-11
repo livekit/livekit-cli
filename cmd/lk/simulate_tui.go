@@ -170,8 +170,10 @@ type simulateModel struct {
 	toastID int
 
 	// q pressed while the run is in progress; quitting cancels the run, so
-	// ask before doing it.
-	confirmQuit bool
+	// ask before doing it. confirmQuitSel selects the dialog button
+	// (0 = keep running, 1 = stop).
+	confirmQuit    bool
+	confirmQuitSel int
 
 	// In-TUI "save scenarios as" prompt (the s key).
 	saving    bool
@@ -248,7 +250,7 @@ func (m *simulateModel) saveScenarios(name string) (string, bool) {
 	path := filepath.Join(m.config.projectDir, name)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if os.IsExist(err) {
-		return name + " already exists — pick another name", false
+		return name + " already exists, pick another name", false
 	}
 	if err != nil {
 		return "save failed: " + err.Error(), false
@@ -356,7 +358,7 @@ func (m *simulateModel) runSetup() tea.Cmd {
 		}
 		label := fmt.Sprintf("Loaded %d %s from %s", len(c.scenarioGroup.GetScenarios()), noun, c.scenariosPath)
 		if name := c.scenarioGroup.GetName(); name != "" {
-			label += " — " + name
+			label += fmt.Sprintf(" (%s)", name)
 		}
 		m.steps = append(m.steps, step{label: label, status: "done"})
 	}
@@ -672,15 +674,25 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.confirmQuit {
 		switch key {
-		case "y", "enter":
+		case "left", "right", "tab", "shift+tab", "up", "down":
+			m.confirmQuitSel = 1 - m.confirmQuitSel
+		case "enter":
+			if m.confirmQuitSel == 1 {
+				if m.setupCancel != nil {
+					m.setupCancel()
+				}
+				return m, tea.Quit
+			}
+			m.confirmQuit = false
+		case "y":
 			if m.setupCancel != nil {
 				m.setupCancel()
 			}
 			return m, tea.Quit
+		case "esc", "q", "n":
+			m.confirmQuit = false
 		case "ctrl+c":
 			return m, tea.Quit
-		default:
-			m.confirmQuit = false
 		}
 		return m, nil
 	}
@@ -792,6 +804,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.descScrollOff = 0
 		case m.runID != "" && !m.runFinished:
 			m.confirmQuit = true
+			m.confirmQuitSel = 0
 		default:
 			if m.setupCancel != nil {
 				m.setupCancel()
@@ -1098,7 +1111,7 @@ func (m *simulateModel) renderHeader() string {
 		style = "yellow"
 	}
 
-	header := boldStyle.Render("Simulation") + " — "
+	header := boldStyle.Render("Simulation") + " · "
 	switch style {
 	case "green":
 		header += greenStyle.Bold(true).Render(label)
@@ -1780,10 +1793,20 @@ func (m *simulateModel) renderHint() string {
 // renderQuitConfirm is the bordered prompt shown when quitting would cancel a
 // run still in progress.
 func (m *simulateModel) renderQuitConfirm() string {
+	keep := "Keep running"
+	stop := "Stop simulation"
+	if m.confirmQuitSel == 0 {
+		keep = reverseStyle.Bold(true).Render(" " + keep + " ")
+		stop = dimStyle.Render(" " + stop + " ")
+	} else {
+		keep = dimStyle.Render(" " + keep + " ")
+		stop = lipgloss.NewStyle().Background(lipgloss.Color("1")).Foreground(lipgloss.Color("15")).Bold(true).Render(" " + stop + " ")
+	}
 	var b strings.Builder
 	b.WriteString(boldStyle.Render("Stop simulation?") + "\n")
-	b.WriteString(dimStyle.Render("The run is still in progress — quitting cancels it.") + "\n\n")
-	b.WriteString(dimStyle.Render("y cancel & quit · any other key keep running"))
+	b.WriteString(dimStyle.Render("The run is still in progress. Quitting will cancel it.") + "\n\n")
+	b.WriteString(keep + "  " + stop + "\n\n")
+	b.WriteString(dimStyle.Render("←→ select · enter confirm · esc dismiss"))
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#e5a00d")).
