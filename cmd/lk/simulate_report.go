@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/livekit/protocol/livekit"
@@ -130,6 +131,23 @@ func writeBrokenAgentNote(w io.Writer, ap *AgentProcess) {
 	}
 }
 
+// asciiWriter transliterates the output glyphs to plain ASCII, keeping the
+// report file free of special characters without forking the simLog strings.
+type asciiWriter struct{ w io.Writer }
+
+var asciiGlyphs = strings.NewReplacer(
+	"✓", "[ok]",
+	"✗", "[x]",
+	"⏺", "[~]",
+	"●", "*",
+	"⚠", "[!]",
+)
+
+func (a asciiWriter) Write(p []byte) (int, error) {
+	_, err := io.WriteString(a.w, asciiGlyphs.Replace(string(p)))
+	return len(p), err
+}
+
 // runReporter writes the simLog to a temp file so TUI runs leave the same
 // record the non-TUI mode prints.
 type runReporter struct {
@@ -142,7 +160,8 @@ func newRunReporter() *runReporter {
 	if err != nil {
 		return &runReporter{simLog: newSimLog(io.Discard, io.Discard)}
 	}
-	return &runReporter{simLog: newSimLog(f, f), f: f}
+	w := asciiWriter{f}
+	return &runReporter{simLog: newSimLog(w, w), f: f}
 }
 
 // Finish appends the results and trailer, closes the file, returns its path.
@@ -154,13 +173,13 @@ func (r *runReporter) Finish(run *livekit.SimulationRun, ap *AgentProcess, broke
 		r.Results(run, ap)
 	}
 	if brokenAgent && ap != nil {
-		writeBrokenAgentNote(r.f, ap)
+		writeBrokenAgentNote(r.info, ap)
 	}
 	if ap != nil && ap.LogPath != "" {
-		fmt.Fprintf(r.f, "Agent logs: %s\n", ap.LogPath)
+		fmt.Fprintf(r.info, "Agent logs: %s\n", ap.LogPath)
 	}
 	if dashboardURL != "" {
-		fmt.Fprintf(r.f, "Dashboard:  %s\n", dashboardURL)
+		fmt.Fprintf(r.info, "Dashboard:  %s\n", dashboardURL)
 	}
 	r.f.Close()
 	return r.f.Name()
