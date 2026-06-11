@@ -53,11 +53,11 @@ func runSimulateTUI(config *simulateConfig) error {
 
 	if agentProc := launcher.Stop(); agentProc != nil {
 		if m.brokenAgent {
-			writeBrokenAgentNote(os.Stderr, agentProc)
-			fmt.Fprintln(os.Stderr)
+			writeBrokenAgentNote(out.Err, agentProc)
+			fmt.Fprintln(out.Err)
 		}
 		if agentProc.LogPath != "" {
-			fmt.Fprintf(os.Stderr, "Agent logs: %s\n", agentProc.LogPath)
+			out.Statusf("Agent logs: %s", agentProc.LogPath)
 		}
 		m.agent = agentProc
 	}
@@ -65,17 +65,17 @@ func runSimulateTUI(config *simulateConfig) error {
 	// generated scenarios are saved to a temp file so they're never lost
 	if config.mode == modeGenerateFromSource && m.run != nil {
 		if path, err := writeGeneratedScenariosTemp(m.run); err == nil && path != "" {
-			fmt.Fprintf(os.Stderr, "Generated scenarios: %s\n", path)
+			out.Statusf("Generated scenarios: %s", path)
 		}
 	}
 
 	// Always leave a plain-text record of the run, like the agent log.
 	if path := m.reporter.Finish(m.run, m.agent, m.brokenAgent, m.getDashboardURL()); path != "" {
-		fmt.Fprintf(os.Stderr, "Run report: %s\n", path)
+		out.Statusf("Run report: %s", path)
 	}
 
 	if url := m.getDashboardURL(); url != "" {
-		fmt.Fprintf(os.Stderr, "Dashboard:  %s\n", url)
+		out.Statusf("Dashboard:  %s", url)
 	}
 
 	if m.runID != "" && !m.runFinished {

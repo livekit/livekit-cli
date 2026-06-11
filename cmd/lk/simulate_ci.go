@@ -53,12 +53,12 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		if agent != nil {
 			agent.Kill()
 			if agent.LogPath != "" {
-				fmt.Fprintf(os.Stderr, "Agent logs: %s\n", agent.LogPath)
+				out.Statusf("Agent logs: %s", agent.LogPath)
 			}
 		}
 		if config.mode == modeGenerateFromSource && run != nil {
 			if path, err := writeGeneratedScenariosTemp(run); err == nil && path != "" {
-				fmt.Fprintf(os.Stderr, "Generated scenarios: %s\n", path)
+				out.Statusf("Generated scenarios: %s", path)
 			}
 		}
 		if runID != "" && !runFinished {
@@ -69,12 +69,12 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Setup ---
 
-	report := newSimLog(os.Stdout, os.Stderr)
+	report := newSimLog(out.Out, out.StatusWriter())
 	report.BeginSetup()
 
 	report.StartingAgent()
 	start := time.Now()
-	logFwd := &toggleWriter{w: os.Stderr}
+	logFwd := &toggleWriter{w: out.StatusWriter()}
 	logFwd.enabled.Store(true)
 	var err error
 	agent, err = startSimulationAgent(config, logFwd)
@@ -142,7 +142,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			fmt.Fprintf(os.Stderr, "Warning: poll failed: %v\n", err)
+			out.Warnf("Warning: poll failed: %v", err)
 		} else {
 			// the worker is failing systemically: stop early and surface its log
 			if !brokenAgent && agentBroken(run, agent) {
@@ -173,19 +173,19 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	report.Results(run, agent)
 
 	if brokenAgent && agent != nil {
-		writeBrokenAgentNote(os.Stderr, agent)
+		writeBrokenAgentNote(out.Err, agent)
 	}
 
 	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
-		fmt.Fprintf(os.Stderr, "Dashboard:  %s\n", url)
+		out.Statusf("Dashboard:  %s", url)
 	}
 
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
 		if failed > 0 {
-			fmt.Fprintf(os.Stdout, "::error::%d simulation(s) failed\n", failed)
+			out.Resultf("::error::%d simulation(s) failed\n", failed)
 		} else {
-			fmt.Fprintf(os.Stdout, "::error::Simulation run failed: %s\n", run.Error)
+			out.Resultf("::error::Simulation run failed: %s\n", run.Error)
 		}
 		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
 			return fmt.Errorf("simulation failed: %s", run.Error)

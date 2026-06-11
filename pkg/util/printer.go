@@ -91,6 +91,15 @@ func (p *Printer) Warnf(format string, a ...any) {
 	fmt.Fprintf(p.Err, ensureNewline(format), a...)
 }
 
+// StatusWriter returns the status stream for code that streams informational
+// output through an io.Writer; io.Discard under --quiet, matching Status.
+func (p *Printer) StatusWriter() io.Writer {
+	if p == nil || p.Quiet {
+		return io.Discard
+	}
+	return p.Err
+}
+
 // Result writes the command's primary output to stdout. Always printed.
 func (p *Printer) Result(a ...any) {
 	if p == nil {
