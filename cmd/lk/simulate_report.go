@@ -117,7 +117,7 @@ func (l *simLog) BrokenAgent() {
 }
 
 func (l *simLog) Results(run *livekit.SimulationRun, ap *AgentProcess) {
-	writeRunResults(l.out, run, ap, true)
+	writeRunResults(l.out, run, ap)
 }
 
 func writeBrokenAgentNote(w io.Writer, ap *AgentProcess) {

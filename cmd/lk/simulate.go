@@ -114,9 +114,8 @@ func writeGeneratedScenariosTemp(run *livekit.SimulationRun) (string, error) {
 	return f.Name(), nil
 }
 
-// scenarioGroupToYAML renders a ScenarioGroup as a scenarios.yaml document — the
-// inverse of loadScenarioGroup, decoding each scenario's JSON userdata string
-// back into a nested mapping.
+// scenarioGroupToYAML renders a ScenarioGroup as a scenarios.yaml document, the
+// inverse of loadScenarioGroup.
 func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 	f := scenariosFile{Name: group.GetName()}
 	for _, s := range group.GetScenarios() {

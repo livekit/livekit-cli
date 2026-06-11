@@ -183,12 +183,10 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
-		if isGitHubActions() {
-			if failed > 0 {
-				fmt.Fprintf(os.Stdout, "::error::%d simulation(s) failed\n", failed)
-			} else {
-				fmt.Fprintf(os.Stdout, "::error::Simulation run failed: %s\n", run.Error)
-			}
+		if failed > 0 {
+			fmt.Fprintf(os.Stdout, "::error::%d simulation(s) failed\n", failed)
+		} else {
+			fmt.Fprintf(os.Stdout, "::error::Simulation run failed: %s\n", run.Error)
 		}
 		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
 			return fmt.Errorf("simulation failed: %s", run.Error)
@@ -199,10 +197,9 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	return nil
 }
 
-// writeRunResults writes the per-job results and the run summary. With gh set,
-// sections are wrapped in GitHub Actions group markers and failed jobs emit
-// ::error:: annotations on GitHub.
-func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess, gh bool) {
+// writeRunResults writes the per-job results and the run summary, using GitHub
+// Actions group markers (harmless and a useful delimiter outside GitHub too).
+func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) {
 	if run == nil {
 		return
 	}
@@ -226,11 +223,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess, 
 			label = fmt.Sprintf("Job %d", i+1)
 		}
 
-		if gh {
-			fmt.Fprintf(w, "::group::%s %s\n", icon, label)
-		} else {
-			fmt.Fprintf(w, "%s %s (%s)\n", icon, label, job.Id)
-		}
+		fmt.Fprintf(w, "::group::%s %s (%s)\n", icon, label, job.Id)
 
 		if job.Instructions != "" {
 			fmt.Fprintln(w, "Instructions:")
@@ -268,20 +261,16 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess, 
 			}
 		}
 
-		if gh {
-			fmt.Fprintln(w, "::endgroup::")
-		} else {
-			fmt.Fprintln(w)
-		}
+		fmt.Fprintln(w, "::endgroup::")
 
-		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && gh && isGitHubActions() {
+		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED {
 			firstLine, _, _ := strings.Cut(job.Error, "\n")
 			fmt.Fprintf(w, "::error::Job %d failed: %s\n", i+1, firstLine)
 		}
 	}
 
 	if run.Summary != nil {
-		writeRunSummary(w, run, gh)
+		writeRunSummary(w, run)
 	} else {
 		msg := "The summary for this run is not available"
 		if run.Error != "" {
@@ -292,16 +281,12 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess, 
 	}
 }
 
-func writeRunSummary(w io.Writer, run *livekit.SimulationRun, gh bool) {
+func writeRunSummary(w io.Writer, run *livekit.SimulationRun) {
 	summary := run.Summary
 	total, _, passed, failed := simulationJobCounts(run)
 
 	fmt.Fprintln(w)
-	if gh {
-		fmt.Fprintln(w, "::group::Summary")
-	} else {
-		fmt.Fprintln(w, "Summary")
-	}
+	fmt.Fprintln(w, "::group::Summary")
 	fmt.Fprintf(w, "%d total, %d passed, %d failed\n", total, passed, failed)
 
 	if summary.GoingWell != "" {
@@ -331,9 +316,7 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, gh bool) {
 		}
 	}
 
-	if gh {
-		fmt.Fprintln(w, "::endgroup::")
-	}
+	fmt.Fprintln(w, "::endgroup::")
 }
 
 func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {
@@ -375,8 +358,4 @@ func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {
 			fmt.Fprintf(w, "  [handoff] -> %s\n", h.NewAgentId)
 		}
 	}
-}
-
-func isGitHubActions() bool {
-	return os.Getenv("GITHUB_ACTIONS") != ""
 }

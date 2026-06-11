@@ -27,21 +27,25 @@ import (
 // from transient connection pacing, which can cause an isolated "no agent joined"
 // timeout even when the agent is healthy.
 
-// agentFatalMarkers are framework log lines that only appear on a fatal,
-// non-transient worker error.
-var agentFatalMarkers = []string{
+// pythonFatalMarkers are livekit-agents (Python) log lines that only appear on
+// a fatal, non-transient worker error. The JS framework will need its own set.
+var pythonFatalMarkers = []string{
 	"unhandled exception while running the job task",
 	"error initializing process",
 	"closing due to unrecoverable error",
 }
 
+// minFatalMarkers is how many fatal log lines it takes to call the worker
+// broken; a single one can be an isolated job crash.
+const minFatalMarkers = 2
+
 // maxAgentNotJoined is how many "no agent joined" timeouts to tolerate before
 // treating the worker as broken.
-const maxAgentNotJoined = 1
+const maxAgentNotJoined = 3
 
 // agentBroken reports whether the worker is failing systemically. A completed
 // scenario proves the agent works, so it is never broken in that case; otherwise
-// a fatal log marker, or more than one "no agent joined" timeout, marks it broken.
+// repeated fatal log markers or "no agent joined" timeouts mark it broken.
 func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
 	completed, notJoined := 0, 0
 	for _, job := range run.GetJobs() {
@@ -57,7 +61,7 @@ func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
 	switch {
 	case completed > 0:
 		return false
-	case ap != nil && lastFatalMarker(ap.RecentLogs(0)) >= 0:
+	case ap != nil && countFatalMarkers(ap.RecentLogs(0)) >= minFatalMarkers:
 		return true
 	default:
 		return notJoined > maxAgentNotJoined
@@ -81,17 +85,34 @@ func agentErrorContext(ap *AgentProcess) []string {
 	return out
 }
 
-// lastFatalMarker returns the index of the last log line matching an
-// agentFatalMarker, or -1 if none.
+// lastFatalMarker returns the index of the last log line matching a fatal
+// marker, or -1 if none.
 func lastFatalMarker(logs []string) int {
 	last := -1
 	for i, line := range logs {
-		for _, marker := range agentFatalMarkers {
-			if strings.Contains(ansiEscapeRe.ReplaceAllString(line, ""), marker) {
-				last = i
-				break
-			}
+		if isFatalMarker(line) {
+			last = i
 		}
 	}
 	return last
+}
+
+func countFatalMarkers(logs []string) int {
+	n := 0
+	for _, line := range logs {
+		if isFatalMarker(line) {
+			n++
+		}
+	}
+	return n
+}
+
+func isFatalMarker(line string) bool {
+	plain := ansiEscapeRe.ReplaceAllString(line, "")
+	for _, marker := range pythonFatalMarkers {
+		if strings.Contains(plain, marker) {
+			return true
+		}
+	}
+	return false
 }

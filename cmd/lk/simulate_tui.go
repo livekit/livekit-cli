@@ -129,8 +129,6 @@ type subprocessExitMsg struct {
 	err error
 }
 
-// --- Filter ---
-
 // --- Model ---
 
 type step struct {
@@ -184,7 +182,6 @@ type simulateModel struct {
 	confirmQuit    bool
 	confirmQuitSel int
 
-	// In-TUI "save scenarios as" prompt (the s key).
 	saving    bool
 	saveInput textinput.Model
 	saveErr   string
@@ -197,26 +194,20 @@ type simulateModel struct {
 	err    error
 }
 
-// hasDescription reports whether the run carries an agent description to show.
-// Only the generate-from-source flow derives one; scenario-file runs have none.
 func (m *simulateModel) hasDescription() bool {
 	return m.run != nil && m.run.AgentDescription != ""
 }
 
-// descriptionExpanded reports whether the scrollable description panel is open.
 func (m *simulateModel) descriptionExpanded() bool {
 	return m.detailJobID == "" && m.showDescription && m.hasDescription()
 }
 
-// canExportScenarios reports whether the run generated scenarios worth saving;
-// a run that started from a scenarios.yaml has nothing new to export.
+// A run that started from a scenarios.yaml has nothing new to export.
 func (m *simulateModel) canExportScenarios() bool {
 	return m.config != nil && m.config.mode == modeGenerateFromSource &&
 		m.run.GetScenarioGroup() != nil && len(m.run.GetScenarioGroup().GetScenarios()) > 0
 }
 
-// handleSaveKey drives the save-scenarios prompt: enter saves (never overwriting,
-// staying open on conflict), esc cancels, anything else edits the name.
 func (m *simulateModel) handleSaveKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
@@ -244,8 +235,7 @@ func (m *simulateModel) handleSaveKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// saveScenarios writes the run's scenarios to projectDir/name, refusing to
-// overwrite an existing file (ok=false on conflict).
+// saveScenarios writes to projectDir/name, never overwriting (ok=false on conflict).
 func (m *simulateModel) saveScenarios(name string) (string, bool) {
 	group := m.run.GetScenarioGroup()
 	out, err := scenarioGroupToYAML(group)
@@ -273,8 +263,7 @@ func (m *simulateModel) saveScenarios(name string) (string, bool) {
 	return fmt.Sprintf("Saved %d scenarios to %s", len(group.GetScenarios()), name), true
 }
 
-// copyScenario copies the given job's scenario (label / instructions /
-// expectations) to the system clipboard as a one-entry scenarios.yaml.
+// copyScenario puts the job's scenario on the clipboard as a one-entry scenarios.yaml.
 func (m *simulateModel) copyScenario(jobID string) (string, bool) {
 	job := m.findJob(jobID)
 	if job == nil {
@@ -297,8 +286,7 @@ func (m *simulateModel) copyScenario(jobID string) (string, bool) {
 	return "Scenario copied to clipboard as scenarios.yaml", true
 }
 
-// showToast shows a transient confirmation box; the id keeps an old expiry
-// tick from clearing a newer toast.
+// The toast id keeps an old expiry tick from clearing a newer toast.
 func (m *simulateModel) showToast(text string, ok bool) tea.Cmd {
 	m.toast = text
 	m.toastOK = ok
@@ -566,6 +554,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// and the worker log is surfaced on exit.
 			if !m.brokenAgent && agentBroken(msg.run, m.agent) {
 				m.brokenAgent = true
+				m.showLogs = true
 				m.reporter.BrokenAgent()
 				return m, m.cancelRunCmd()
 			}
@@ -606,7 +595,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case subprocessExitMsg:
-		// Subprocess exited — don't quit TUI, just note it
+		// the TUI stays up; the exit is surfaced via agentBroken / on quit
 
 	case tea.KeyMsg:
 		return m.handleKey(msg)
@@ -656,8 +645,8 @@ func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	return true
 }
 
-// scrollBy routes a mouse-wheel step (delta > 0 is toward the bottom) to the
-// focused pane, falling back to moving the job-list cursor (clamped).
+// scrollBy routes a mouse-wheel step to the focused pane, falling back to the
+// job-list cursor.
 func (m *simulateModel) scrollBy(delta int) {
 	if m.scrollActive(delta, true) {
 		return
@@ -675,7 +664,6 @@ func (m *simulateModel) scrollBy(delta int) {
 	}
 }
 
-// moveCursor moves the job-list selection by delta, wrapping at the ends.
 func (m *simulateModel) moveCursor(delta int) {
 	if n := len(m.filteredJobs()); n > 0 {
 		m.cursor = ((m.cursor+delta)%n + n) % n
@@ -875,7 +863,6 @@ func (m *simulateModel) findJob(id string) *livekit.SimulationRun_Job {
 }
 
 func (m *simulateModel) View() string {
-	// Setup phase or generating phase — show unified step view
 	if !m.setupDone || m.run == nil || m.run.Status == livekit.SimulationRun_STATUS_GENERATING {
 		return m.viewSetup()
 	}
@@ -913,15 +900,14 @@ func (m *simulateModel) viewSetup() string {
 
 	b.WriteString(m.renderSteps())
 
-	// Show generation progress after setup completes (only when generating from
-	// source — in file mode the scenarios are already known, nothing is generated).
+	// in file mode the scenarios are already known, nothing is generated
 	if m.setupDone && m.err == nil && m.config.mode == modeGenerateFromSource {
 		elapsed := time.Since(m.genStart).Truncate(time.Second)
 		n := m.numSimulations
 		if m.run != nil && m.run.GetNumSimulations() > 0 {
 			n = m.run.GetNumSimulations()
 		}
-		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle().Render("⏺"), n, m.spinner(), dimStyle.Render(elapsed.String())))
+		fmt.Fprintf(&b, "  %s Generating %d scenarios  %s %s\n", yellowStyle().Render("⏺"), n, m.spinner(), dimStyle.Render(elapsed.String()))
 	}
 
 	if m.err != nil {
@@ -965,14 +951,14 @@ func (m *simulateModel) renderSteps() string {
 			if s.elapsed > 0 {
 				elapsed = " " + dimStyle.Render(s.elapsed.Round(time.Millisecond).String())
 			}
-			b.WriteString(fmt.Sprintf("  %s %s%s\n", greenStyle().Render("✓"), s.label, elapsed))
+			fmt.Fprintf(&b, "  %s %s%s\n", greenStyle().Render("✓"), s.label, elapsed)
 		case "running":
 			elapsed := time.Since(m.stepStart).Truncate(time.Second)
-			b.WriteString(fmt.Sprintf("  %s %s  %s %s\n", yellowStyle().Render("⏺"), s.label, m.spinner(), dimStyle.Render(elapsed.String())))
+			fmt.Fprintf(&b, "  %s %s  %s %s\n", yellowStyle().Render("⏺"), s.label, m.spinner(), dimStyle.Render(elapsed.String()))
 		case "failed":
-			b.WriteString(fmt.Sprintf("  %s %s\n", redStyle().Render("✗"), s.label))
+			fmt.Fprintf(&b, "  %s %s\n", redStyle().Render("✗"), s.label)
 		default:
-			b.WriteString(fmt.Sprintf("  %s %s\n", dimStyle.Render("–"), s.label))
+			fmt.Fprintf(&b, "  %s %s\n", dimStyle.Render("–"), s.label)
 		}
 	}
 	return b.String()
@@ -1035,7 +1021,6 @@ func (m *simulateModel) viewRunning() string {
 	}
 	b.WriteString("\n\n")
 
-	// Agent description (hidden in detail view)
 	if m.detailJobID == "" && m.hasDescription() {
 		b.WriteString(boldStyle.Render("  Agent Description") + "\n")
 		if m.showDescription {
@@ -1072,11 +1057,9 @@ func (m *simulateModel) viewRunning() string {
 		}
 	}
 
-	// Header line
 	b.WriteString(m.renderHeader())
 	b.WriteString("\n")
 
-	// Progress counts
 	b.WriteString(m.renderCounts())
 	b.WriteString("\n")
 
@@ -1090,7 +1073,7 @@ func (m *simulateModel) viewRunning() string {
 		b.WriteString(m.renderJobList())
 
 		if m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING {
-			b.WriteString(fmt.Sprintf("\n  %s %s  %s\n", yellowStyle().Render("⏺"), yellowStyle().Render("Generating summary..."), m.spinner()))
+			fmt.Fprintf(&b, "\n  %s %s  %s\n", yellowStyle().Render("⏺"), yellowStyle().Render("Generating summary..."), m.spinner())
 		} else if m.run.Summary != nil {
 			b.WriteString(m.renderSummary())
 		} else if isTerminalRunStatus(m.run.Status) {
@@ -1098,7 +1081,7 @@ func (m *simulateModel) viewRunning() string {
 			if m.run.Error != "" {
 				msg = m.run.Error
 			}
-			b.WriteString(fmt.Sprintf("\n  %s %s\n", yellowStyle().Render("⚠"), yellowStyle().Render(msg)))
+			fmt.Fprintf(&b, "\n  %s %s\n", yellowStyle().Render("⚠"), yellowStyle().Render(msg))
 		}
 	}
 
@@ -1319,8 +1302,6 @@ func jobLabel(job *livekit.SimulationRun_Job) string {
 	return label
 }
 
-// jobStatusIcon returns the status symbol for a job and the color style it
-// should render in.
 func jobStatusIcon(job *livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
 	var s lipgloss.Style
 	switch job.Status {
@@ -1394,11 +1375,11 @@ func (m *simulateModel) renderDetail() string {
 
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("  %s %s %s\n",
+	fmt.Fprintf(&b, "  %s %s %s\n",
 		jobIcon(job),
 		boldStyle.Render(fmt.Sprintf("Job %d", origIdx)),
 		dimStyle.Render(job.Id),
-	))
+	)
 	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
 		b.WriteString("  " + dimStyle.Render(url) + "\n")
 	}
@@ -1448,10 +1429,8 @@ func (m *simulateModel) renderDetail() string {
 		}
 	}
 
-	// Show chat transcript if available
 	b.WriteString(m.renderChatTranscript(job.Id))
 
-	// Logs for this job's room (toggle with Ctrl+L)
 	if m.showLogs && m.agent != nil {
 		roomFilter := ""
 		if job.RoomName != "" {
@@ -1534,10 +1513,10 @@ func (m *simulateModel) renderSummary() string {
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString("  " + boldStyle.Render("Summary"))
-	b.WriteString(fmt.Sprintf("  %s  %s\n\n",
+	fmt.Fprintf(&b, "  %s  %s\n\n",
 		greenStyle().Render(fmt.Sprintf("%d passed", summary.Passed)),
 		redStyle().Render(fmt.Sprintf("%d failed", summary.Failed)),
-	))
+	)
 
 	wrapWidth := m.width - 6
 	if wrapWidth < 40 {
@@ -1628,11 +1607,11 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			b.WriteString("\n")
 			switch msg.Role {
 			case agent.ChatRole_USER:
-				b.WriteString(fmt.Sprintf("    %s\n", userStyle.Render("You")))
+				fmt.Fprintf(&b, "    %s\n", userStyle.Render("You"))
 			case agent.ChatRole_ASSISTANT:
-				b.WriteString(fmt.Sprintf("    %s\n", agentStyle.Render("Agent")))
+				fmt.Fprintf(&b, "    %s\n", agentStyle.Render("Agent"))
 			default:
-				b.WriteString(fmt.Sprintf("    %s\n", dimStyle.Render(string(msg.Role))))
+				fmt.Fprintf(&b, "    %s\n", dimStyle.Render(string(msg.Role)))
 			}
 			for line := range strings.SplitSeq(wrapStyle.Render(text), "\n") {
 				b.WriteString("      " + line + "\n")
@@ -1814,8 +1793,6 @@ func (m *simulateModel) renderHint() string {
 	return dimStyle.Render("  " + strings.Join(parts, " · "))
 }
 
-// renderQuitConfirm is the bordered prompt shown when quitting would cancel a
-// run still in progress.
 func (m *simulateModel) renderQuitConfirm() string {
 	keep := "Keep running"
 	stop := "Stop simulation"
@@ -1839,7 +1816,6 @@ func (m *simulateModel) renderQuitConfirm() string {
 	return indentLines(box, "  ")
 }
 
-// renderSaveDialog is the bordered prompt opened by the s key.
 func (m *simulateModel) renderSaveDialog() string {
 	n := len(m.run.GetScenarioGroup().GetScenarios())
 	noun := "scenarios"

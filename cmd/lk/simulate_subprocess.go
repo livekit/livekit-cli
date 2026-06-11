@@ -353,7 +353,7 @@ func roomNamePrefix(roomName string) string {
 
 // RecentRoomLogsByPrefix returns log lines for the most recent room matching
 // the prefix of the given room name. When a job is retried, each attempt gets
-// a new room with the same prefix — we show only the latest attempt's logs.
+// a new room with the same prefix; only the latest attempt's logs are shown.
 func (ap *AgentProcess) RecentRoomLogsByPrefix(n int, roomName string) []string {
 	ap.mu.Lock()
 	defer ap.mu.Unlock()
