@@ -336,10 +336,9 @@ func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 
 // --- Shared lifecycle functions used by both TUI and CI modes ---
 
-// agentLauncher owns the agent subprocess lifecycle around the TUI: the TUI
-// only observes the start via Wait, and Stop kills the worker even when the
-// TUI quits mid-start. A leaked worker keeps its port bound and breaks the
-// next run with "address already in use".
+// agentLauncher owns the agent subprocess lifecycle around the TUI, which only
+// observes the start via Wait. Stop kills the worker even when the TUI quits
+// mid-start; a leaked worker keeps its port bound and breaks the next run.
 type agentLauncher struct {
 	done chan struct{}
 	proc *AgentProcess
@@ -373,6 +372,14 @@ func (l *agentLauncher) Stop() *AgentProcess {
 		l.proc.Kill()
 	}
 	return l.proc
+}
+
+// ForceStop kills the agent immediately, without the SIGINT grace.
+func (l *agentLauncher) ForceStop() {
+	<-l.done
+	if l.proc != nil {
+		l.proc.ForceKill()
+	}
 }
 
 func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentProcess, error) {

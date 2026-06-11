@@ -394,9 +394,8 @@ func extractLogRoom(line string) string {
 }
 
 // Kill terminates the worker quickly: a short SIGINT grace (an idle worker
-// exits cleanly; one draining jobs would take minutes and gets no say), then
-// SIGKILL to the whole process group so child job/inference processes can't
-// linger, waiting for the exit so the bound port is free before we return.
+// exits cleanly; one draining jobs would take minutes), then SIGKILL to the
+// whole process group, waiting for the exit so the port is free on return.
 func (ap *AgentProcess) Kill() {
 	if ap.cmd.Process == nil {
 		return

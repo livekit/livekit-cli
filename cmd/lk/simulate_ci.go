@@ -71,36 +71,36 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Setup ---
 
-	slog := newSimLog(os.Stdout, os.Stderr)
-	slog.BeginSetup()
+	report := newSimLog(os.Stdout, os.Stderr)
+	report.BeginSetup()
 
-	slog.StartingAgent()
+	report.StartingAgent()
 	start := time.Now()
 	logFwd := &toggleWriter{w: os.Stderr}
 	logFwd.enabled.Store(true)
 	var err error
 	agent, err = startSimulationAgent(config, logFwd)
 	if err != nil {
-		slog.AgentStartFailed(err)
-		slog.EndSetup()
+		report.AgentStartFailed(err)
+		report.EndSetup()
 		return fmt.Errorf("failed to start agent: %w", err)
 	}
 
-	slog.WaitingForRegister()
+	report.WaitingForRegister()
 	timeout := time.NewTimer(agentRegisterTimeout)
 	defer timeout.Stop()
 	select {
 	case <-agent.Ready():
 		logFwd.enabled.Store(false)
-		slog.AgentRegistered(time.Since(start))
+		report.AgentRegistered(time.Since(start))
 	case <-agent.Done():
-		slog.EndSetup()
+		report.EndSetup()
 		return fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(agent))
 	case <-timeout.C:
-		slog.EndSetup()
+		report.EndSetup()
 		return fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(agent))
 	case <-ctx.Done():
-		slog.EndSetup()
+		report.EndSetup()
 		return ctx.Err()
 	}
 
@@ -108,26 +108,26 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	var presigned *livekit.PresignedPostRequest
 	runID, presigned, err = createSimulationRun(ctx, config)
 	if err != nil {
-		slog.SetupFailed(err)
-		slog.EndSetup()
+		report.SetupFailed(err)
+		report.EndSetup()
 		return err
 	}
-	slog.SimulationCreated(time.Since(start))
+	report.SimulationCreated(time.Since(start))
 
 	if config.mode == modeGenerateFromSource {
 		start = time.Now()
 		if err := uploadSource(ctx, config.client, runID, presigned, config.projectDir, config.entrypoint); err != nil {
-			slog.SetupFailed(err)
-			slog.EndSetup()
+			report.SetupFailed(err)
+			report.EndSetup()
 			return err
 		}
-		slog.SourceUploaded(time.Since(start))
+		report.SourceUploaded(time.Since(start))
 	} else if g := config.scenarioGroup; g != nil {
-		slog.ScenariosLoaded(g, config.scenariosPath)
+		report.ScenariosLoaded(g, config.scenariosPath)
 	}
 
-	slog.EndSetup()
-	slog.RunCreated(runID, simulationDashboardURL(config.pc.ProjectId, runID))
+	report.EndSetup()
+	report.RunCreated(runID, simulationDashboardURL(config.pc.ProjectId, runID))
 
 	// --- Poll until terminal ---
 
@@ -150,13 +150,13 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			// joining), not failing a scenario. Stop early and surface its log.
 			if !brokenAgent && agentBroken(run, agent) {
 				brokenAgent = true
-				slog.BrokenAgent()
+				report.BrokenAgent()
 				cancelSimulationRun(config.client, runID)
 				runFinished = true
 				break
 			}
 
-			slog.RunUpdate(run, config.numSimulations)
+			report.RunUpdate(run, config.numSimulations)
 
 			if isTerminalRunStatus(run.Status) {
 				runFinished = true
@@ -173,15 +173,12 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Results ---
 
-	slog.Results(run, agent)
+	report.Results(run, agent)
 
 	if brokenAgent && agent != nil {
 		writeBrokenAgentNote(os.Stderr, agent)
 	}
 
-	if agent != nil && agent.LogPath != "" {
-		fmt.Fprintf(os.Stderr, "Agent logs: %s\n", agent.LogPath)
-	}
 	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
 		fmt.Fprintf(os.Stderr, "Dashboard:  %s\n", url)
 	}
@@ -345,7 +342,7 @@ func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {
 	if chatCtx == nil || len(chatCtx.Items) == 0 {
 		return
 	}
-	fmt.Fprintln(os.Stdout, "Transcript:")
+	fmt.Fprintln(w, "Transcript:")
 	for _, item := range chatCtx.Items {
 		switch v := item.Item.(type) {
 		case *agent.ChatContext_ChatItem_Message:
@@ -356,36 +353,28 @@ func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {
 			}
 			switch msg.Role {
 			case agent.ChatRole_USER:
-				fmt.Fprintf(os.Stdout, "  ● You\n")
+				fmt.Fprintf(w, "  ● You\n")
 			case agent.ChatRole_ASSISTANT:
-				fmt.Fprintf(os.Stdout, "  ● Agent\n")
+				fmt.Fprintf(w, "  ● Agent\n")
 			default:
-				fmt.Fprintf(os.Stdout, "  ● %s\n", msg.Role)
+				fmt.Fprintf(w, "  ● %s\n", msg.Role)
 			}
 			for _, tl := range strings.Split(text, "\n") {
-				fmt.Fprintf(os.Stdout, "    %s\n", tl)
+				fmt.Fprintf(w, "    %s\n", tl)
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
-			args := fc.Arguments
-			if len(args) > 80 {
-				args = args[:80] + "..."
-			}
-			fmt.Fprintf(os.Stdout, "  [call] %s(%s)\n", fc.Name, args)
+			fmt.Fprintf(w, "  [call] %s(%s)\n", fc.Name, fc.Arguments)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			fco := v.FunctionCallOutput
-			output := fco.Output
-			if len(output) > 80 {
-				output = output[:80] + "..."
-			}
 			label := "output"
 			if fco.IsError {
 				label = "error"
 			}
-			fmt.Fprintf(os.Stdout, "  [%s] %s -> %s\n", label, fco.Name, output)
+			fmt.Fprintf(w, "  [%s] %s -> %s\n", label, fco.Name, fco.Output)
 		case *agent.ChatContext_ChatItem_AgentHandoff:
 			h := v.AgentHandoff
-			fmt.Fprintf(os.Stdout, "  [handoff] -> %s\n", h.NewAgentId)
+			fmt.Fprintf(w, "  [handoff] -> %s\n", h.NewAgentId)
 		}
 	}
 }

@@ -25,10 +25,9 @@ import (
 	"github.com/livekit/protocol/livekit"
 )
 
-// simLog formats the plain-text simulation output. It is the single source of
-// every non-TUI line: CI mode writes it to the terminal (results on out/stdout,
-// transient progress on info/stderr) and the TUI's runReporter writes the same
-// calls to the report file, so both records stay identical by construction.
+// simLog is the single source of the plain-text simulation output: CI writes
+// it to the terminal (results on out, transient progress on info) and the
+// TUI's runReporter writes the same calls to the report file.
 type simLog struct {
 	out        io.Writer
 	info       io.Writer
@@ -122,8 +121,6 @@ func (l *simLog) Results(run *livekit.SimulationRun, ap *AgentProcess) {
 	writeRunResults(l.out, run, ap, true)
 }
 
-// writeBrokenAgentNote explains a systemically failing worker, with its recent
-// output.
 func writeBrokenAgentNote(w io.Writer, ap *AgentProcess) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "The agent failed to run the simulations. It most likely errored on job")
@@ -133,7 +130,7 @@ func writeBrokenAgentNote(w io.Writer, ap *AgentProcess) {
 	}
 }
 
-// runReporter writes the simLog to a temp file so TUI runs leave the exact
+// runReporter writes the simLog to a temp file so TUI runs leave the same
 // record the non-TUI mode prints.
 type runReporter struct {
 	*simLog
@@ -148,7 +145,7 @@ func newRunReporter() *runReporter {
 	return &runReporter{simLog: newSimLog(f, f), f: f}
 }
 
-// Finish appends the results and trailer, closes the file, and returns its path.
+// Finish appends the results and trailer, closes the file, returns its path.
 func (r *runReporter) Finish(run *livekit.SimulationRun, ap *AgentProcess, brokenAgent bool, dashboardURL string) string {
 	if r.f == nil {
 		return ""

@@ -41,10 +41,17 @@ func runSimulateTUI(config *simulateConfig) error {
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, runErr := p.Run()
 
-	// A second ctrl+c during cleanup would kill the CLI before the worker is
-	// SIGKILLed (it lives in its own process group, untouched by the terminal
-	// signal), leaking it with its port bound. We're exiting anyway; ignore it.
-	signal.Ignore(os.Interrupt)
+	// A second ctrl+c during cleanup would kill the CLI before the worker
+	// (in its own process group, so the terminal signal misses it) and leak
+	// it with its port bound. Escalate to an immediate SIGKILL instead.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+	defer signal.Stop(sigCh)
+	go func() {
+		<-sigCh
+		launcher.ForceStop()
+		os.Exit(130)
+	}()
 
 	if agentProc := launcher.Stop(); agentProc != nil {
 		if m.brokenAgent {
@@ -57,8 +64,8 @@ func runSimulateTUI(config *simulateConfig) error {
 		m.agent = agentProc
 	}
 
-	// When scenarios were generated, drop them in a temp scenarios.yaml and print
-	// the path (same as the agent log path) so they're never lost on exit.
+	// Generated scenarios are dropped in a temp scenarios.yaml so they're
+	// never lost on exit.
 	if config.mode == modeGenerateFromSource && m.run != nil {
 		if path, err := writeGeneratedScenariosTemp(m.run); err == nil && path != "" {
 			fmt.Fprintf(os.Stderr, "Generated scenarios: %s\n", path)
@@ -169,9 +176,7 @@ type simulateModel struct {
 	toastOK bool
 	toastID int
 
-	// q pressed while the run is in progress; quitting cancels the run, so
-	// ask before doing it. confirmQuitSel selects the dialog button
-	// (0 = keep running, 1 = stop).
+	// quit confirmation while the run is in progress; sel 0 = keep, 1 = stop
 	confirmQuit    bool
 	confirmQuitSel int
 
@@ -199,9 +204,8 @@ func (m *simulateModel) descriptionExpanded() bool {
 	return m.detailJobID == "" && m.showDescription && m.hasDescription()
 }
 
-// canExportScenarios reports whether the run produced generated scenarios that
-// are worth saving to a scenarios.yaml (only meaningful when generating from
-// source — a run that already used a scenarios.yaml has nothing new to export).
+// canExportScenarios reports whether the run generated scenarios worth saving;
+// a run that started from a scenarios.yaml has nothing new to export.
 func (m *simulateModel) canExportScenarios() bool {
 	return m.config != nil && m.config.mode == modeGenerateFromSource &&
 		m.run.GetScenarioGroup() != nil && len(m.run.GetScenarioGroup().GetScenarios()) > 0
@@ -289,8 +293,8 @@ func (m *simulateModel) copyScenario(jobID string) (string, bool) {
 	return "Scenario copied to clipboard as scenarios.yaml", true
 }
 
-// showToast displays a transient confirmation box; the id keeps an old
-// expiry tick from clearing a newer toast.
+// showToast shows a transient confirmation box; the id keeps an old expiry
+// tick from clearing a newer toast.
 func (m *simulateModel) showToast(text string, ok bool) tea.Cmd {
 	m.toast = text
 	m.toastOK = ok
