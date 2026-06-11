@@ -16,6 +16,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,6 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,10 +32,11 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 )
 
-// AgentProcess manages a Python agent subprocess.
+// AgentProcess manages an agent subprocess.
 type AgentProcess struct {
 	cmd            *exec.Cmd
 	readyCh        chan struct{}
+	failCh         chan struct{} // closed when output matches a FailSignal
 	doneCh         chan error
 	exitCh         chan struct{} // closed when process exits, safe to read multiple times
 	shutdownCalled bool          // true after Shutdown() sends SIGINT
@@ -97,6 +100,55 @@ func isTypeScriptEntry(entry string) bool {
 	}
 }
 
+var nodeVersionRe = regexp.MustCompile(`v(\d+)\.(\d+)`)
+
+// checkTypeStrippingSupport verifies the Node binary can run TypeScript
+// directly (--experimental-strip-types requires Node >= 22.6). The probe
+// runs in the project dir so version-manager shims resolve the same Node
+// the spawn will use. Probing failures are ignored — the spawn itself will
+// surface any real error.
+func checkTypeStrippingSupport(dir, nodeBin string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, nodeBin, "--version")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	version := strings.TrimSpace(string(out))
+	m := nodeVersionRe.FindStringSubmatch(version)
+	if m == nil {
+		return nil
+	}
+	major, _ := strconv.Atoi(m[1])
+	minor, _ := strconv.Atoi(m[2])
+	if major < 22 || (major == 22 && minor < 6) {
+		return fmt.Errorf("running a TypeScript entrypoint directly requires Node >= 22.6 (found %s); upgrade Node or point at built JS output", version)
+	}
+	return nil
+}
+
+// defaultEntrypoints returns candidate entrypoint paths (relative to the
+// project root or working directory) probed for a project type, in priority
+// order. Forward slashes are valid on all platforms.
+func defaultEntrypoints(projectType agentfs.ProjectType) []string {
+	if projectType.IsNode() {
+		return []string{"agent.ts", "agent.js"}
+	}
+	return []string{"agent.py"}
+}
+
+// fallbackEntrypoints are probed at the project root only after cwd-relative
+// candidates, so a root src/ layout doesn't shadow an agent next to the
+// user's working directory.
+func fallbackEntrypoints(projectType agentfs.ProjectType) []string {
+	if projectType.IsNode() {
+		return []string{"src/agent.ts", "src/agent.js"}
+	}
+	return []string{"src/agent.py"}
+}
+
 // findEntrypoint resolves the agent entrypoint file.
 func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (string, error) {
 	if explicit != "" {
@@ -109,36 +161,49 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 		}
 		return explicit, nil
 	}
-	def := projectType.DefaultEntrypoint()
-	if def == "" {
-		def = "agent.py"
-	}
+	rootCandidates := defaultEntrypoints(projectType)
+	srcCandidates := fallbackEntrypoints(projectType)
 
 	// Check project root first
-	checked := []string{filepath.Join(dir, def)}
-	if _, err := os.Stat(checked[0]); err == nil {
-		return def, nil
+	var checked []string
+	probe := func(rel string) bool {
+		abs := filepath.Join(dir, rel)
+		checked = append(checked, abs)
+		_, err := os.Stat(abs)
+		return err == nil
 	}
-
-	// Fall back to cwd-relative path (e.g. running from examples/drive-thru/)
-	cwd, _ := os.Getwd()
-	if rel, err := filepath.Rel(dir, cwd); err == nil && rel != "." {
-		candidate := filepath.Join(rel, def)
-		absCandidate := filepath.Join(dir, candidate)
-		checked = append(checked, absCandidate)
-		if _, err := os.Stat(absCandidate); err == nil {
-			return candidate, nil
+	for _, def := range rootCandidates {
+		if probe(def) {
+			return def, nil
 		}
 	}
 
-	var msg strings.Builder
-	msg.WriteString("no agent entrypoint found, checked:\n")
-	for _, p := range checked {
-		fmt.Fprintf(&msg, "  - %s\n", p)
+	// Then cwd-relative paths (e.g. running from examples/drive-thru/)
+	cwd, _ := os.Getwd()
+	if rel, err := filepath.Rel(dir, cwd); err == nil && rel != "." {
+		for _, def := range append(append([]string{}, rootCandidates...), srcCandidates...) {
+			candidate := filepath.Join(rel, def)
+			if probe(candidate) {
+				return candidate, nil
+			}
+		}
 	}
-	msg.WriteString("\nMake sure you are running this command from a directory containing a LiveKit agent.\n")
-	msg.WriteString("Specify the entrypoint file as a positional argument, e.g.: lk agent simulate agent.py")
-	return "", fmt.Errorf("%s", msg.String())
+
+	// Finally the project root's src/ layout
+	for _, def := range srcCandidates {
+		if probe(def) {
+			return def, nil
+		}
+	}
+
+	example := rootCandidates[0]
+	msg := "no agent entrypoint found, checked:\n"
+	for _, p := range checked {
+		msg += fmt.Sprintf("  - %s\n", p)
+	}
+	msg += "\nMake sure you are running this command from a directory containing a LiveKit agent.\n"
+	msg += fmt.Sprintf("Specify the entrypoint file as a positional argument, e.g.: lk agent dev %s", example)
+	return "", fmt.Errorf("%s", msg)
 }
 
 // AgentStartConfig configures how to launch an agent subprocess.
@@ -146,9 +211,11 @@ type AgentStartConfig struct {
 	Dir           string
 	Entrypoint    string
 	ProjectType   agentfs.ProjectType
+	RuntimeArgs   []string  // interpreter (node/python) args placed before the entrypoint, e.g. ["--env-file=.env"]
 	CLIArgs       []string  // subcommand first, then flags: ["start", "--url", "..."] or ["console", "--connect-addr", addr]
 	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME_OVERRIDE=x"] or nil
 	ReadySignal   string    // substring to scan for in output (e.g. "registered worker"), empty to skip
+	FailSignals   []string  // output substrings meaning the agent has fatally failed even if the process is still alive
 	ForwardOutput io.Writer // if set, forward each output line to this writer
 }
 
@@ -188,20 +255,24 @@ func lastNonEmptyLines(lines []string, n int) []string {
 
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
 // branching on project type. Python uses the thin CLI:
-// `<python> -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS` (uv prefixes
-// `run python`). Node runs the entrypoint directly:
-// `node [--experimental-strip-types] ENTRYPOINT SUBCOMMAND FLAGS`, where the
-// type-stripping flag lets a `.ts` entrypoint run without a build.
+// `<python> <runtime-args> -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS`
+// (uv prefixes `run python`). Node runs the entrypoint directly:
+// `node [--experimental-strip-types] <runtime-args> ENTRYPOINT SUBCOMMAND FLAGS`,
+// where the type-stripping flag lets a `.ts` entrypoint run without a build.
 func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	if cfg.ProjectType.IsNode() {
 		nodeBin, err := findNodeBinary()
 		if err != nil {
 			return "", nil, err
 		}
-		args := make([]string, 0, len(cfg.CLIArgs)+2)
+		args := make([]string, 0, len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+2)
 		if isTypeScriptEntry(cfg.Entrypoint) {
+			if err := checkTypeStrippingSupport(cfg.Dir, nodeBin); err != nil {
+				return "", nil, err
+			}
 			args = append(args, "--experimental-strip-types")
 		}
+		args = append(args, cfg.RuntimeArgs...)
 		args = append(args, cfg.Entrypoint)
 		args = append(args, cfg.CLIArgs...)
 		return nodeBin, args, nil
@@ -213,7 +284,10 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	}
 	// python -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS: the framework
 	// discovers the AgentServer from the entrypoint and drives the thin CLI.
-	args := append(prefixArgs, "-m", "livekit.agents")
+	args := make([]string, 0, len(prefixArgs)+len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+4)
+	args = append(args, prefixArgs...)
+	args = append(args, cfg.RuntimeArgs...)
+	args = append(args, "-m", "livekit.agents")
 	if len(cfg.CLIArgs) > 0 {
 		args = append(args, cfg.CLIArgs[0]) // subcommand: start | console
 		args = append(args, cfg.Entrypoint) // entrypoint positional (server discovery)
@@ -262,6 +336,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	ap := &AgentProcess{
 		cmd:            cmd,
 		readyCh:        make(chan struct{}),
+		failCh:         make(chan struct{}),
 		doneCh:         make(chan error, 1),
 		exitCh:         make(chan struct{}),
 		roomLogs:       make(map[string][]string),
@@ -278,6 +353,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 
 	// Capture output from both stdout and stderr
 	readyOnce := sync.Once{}
+	failOnce := sync.Once{}
 	scanOutput := func(r io.Reader) {
 		scanner := bufio.NewScanner(r)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
@@ -291,6 +367,12 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 			}
 			if cfg.ReadySignal != "" && strings.Contains(line, cfg.ReadySignal) {
 				readyOnce.Do(func() { close(ap.readyCh) })
+			}
+			for _, sig := range cfg.FailSignals {
+				if strings.Contains(line, sig) {
+					failOnce.Do(func() { close(ap.failCh) })
+					break
+				}
 			}
 		}
 	}
@@ -344,6 +426,12 @@ func (ap *AgentProcess) Ready() <-chan struct{} {
 // Done returns a channel that receives the process exit error.
 func (ap *AgentProcess) Done() <-chan error {
 	return ap.doneCh
+}
+
+// Failed returns a channel that is closed when the agent's output matched one
+// of the configured FailSignals — a fatal failure even if the process is alive.
+func (ap *AgentProcess) Failed() <-chan struct{} {
+	return ap.failCh
 }
 
 // RecentLogs returns the last n log lines from the subprocess. If n <= 0, returns all lines.
