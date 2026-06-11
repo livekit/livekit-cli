@@ -31,6 +31,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/go-logr/logr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
@@ -41,12 +43,9 @@ import (
 
 func runSimulateTUI(config *simulateConfig) error {
 	// SDK/protocol log lines go to stderr behind the alt screen and would all
-	// spill into the terminal when the TUI exits; the agent log file and the
-	// run report carry the diagnostics instead.
-	discard := logger.LogRLogger(logr.Discard())
-	logger.SetLogger(discard, "lk")
-	lksdk.SetLogger(discard)
-	log.SetOutput(io.Discard)
+	// spill into the terminal when the TUI exits; capture them in a file
+	// instead, surfaced as a path on exit like the agent log.
+	cliLogPath := redirectLogsToFile()
 
 	launcher := launchSimulationAgent(config)
 	m := newSimulateModel(config, launcher)
@@ -82,6 +81,10 @@ func runSimulateTUI(config *simulateConfig) error {
 		}
 	}
 
+	if cliLogPath != "" {
+		out.Statusf("CLI logs:   %s", cliLogPath)
+	}
+
 	// The summary (which carries the chat transcripts) may have landed after
 	// the TUI's last poll; refresh once so the report includes it.
 	if m.run != nil && m.run.Summary == nil && m.runID != "" {
@@ -112,6 +115,36 @@ func runSimulateTUI(config *simulateConfig) error {
 		return m.err
 	}
 	return nil
+}
+
+// redirectLogsToFile points the protocol/SDK/stdlib loggers at a temp file
+// and returns its path; on failure the logs are discarded (they would
+// otherwise corrupt the TUI and spill on exit).
+func redirectLogsToFile() string {
+	f, err := os.CreateTemp("", "lk-simulate-cli-*.log")
+	if err != nil {
+		discard := logger.LogRLogger(logr.Discard())
+		logger.SetLogger(discard, "lk")
+		lksdk.SetLogger(discard)
+		log.SetOutput(io.Discard)
+		return ""
+	}
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
+		zapcore.AddSync(f),
+		zapcore.InfoLevel,
+	)
+	zl, err := logger.FromZapLogger(zap.New(core), &logger.Config{Level: "info"})
+	if err != nil {
+		discard := logger.LogRLogger(logr.Discard())
+		logger.SetLogger(discard, "lk")
+		lksdk.SetLogger(discard)
+	} else {
+		logger.SetLogger(zl, "lk")
+		lksdk.SetLogger(zl)
+	}
+	log.SetOutput(f)
+	return f.Name()
 }
 
 // --- Styles ---
