@@ -1756,7 +1756,12 @@ func (m *simulateModel) renderSaveDialog() string {
 	if n == 1 {
 		noun = "scenario"
 	}
+	subtitle := fmt.Sprintf("%d generated %s → %s", n, noun, m.config.projectDir)
+	// wide enough for the destination path, within the terminal
 	width := 50
+	if w := lipgloss.Width(subtitle); w > width {
+		width = w
+	}
 	if max := m.width - 8; width > max {
 		width = max
 	}
@@ -1765,7 +1770,7 @@ func (m *simulateModel) renderSaveDialog() string {
 	}
 	var b strings.Builder
 	b.WriteString(boldStyle.Render("Save scenarios") + "\n")
-	b.WriteString(dimStyle.Render(fmt.Sprintf("%d generated %s → %s", n, noun, m.config.projectDir)) + "\n\n")
+	b.WriteString(dimStyle.Render(subtitle) + "\n\n")
 	b.WriteString("File: " + m.saveInput.View())
 	if m.saveErr != "" {
 		b.WriteString("\n" + redStyle.Render(m.saveErr))
