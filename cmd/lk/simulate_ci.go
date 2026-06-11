@@ -47,12 +47,18 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	var agent *AgentProcess
 	var runID string
 	var runFinished bool
+	var run *livekit.SimulationRun
 
 	cleanup := func() {
 		if agent != nil {
 			agent.Kill()
 			if agent.LogPath != "" {
-				fmt.Fprintf(os.Stderr, "Agent logs: %s\n", agent.LogPath)
+				out.Statusf("Agent logs: %s", agent.LogPath)
+			}
+		}
+		if config.mode == modeGenerateFromSource && run != nil {
+			if path, err := writeGeneratedScenariosTemp(run); err == nil && path != "" {
+				out.Statusf("Generated scenarios: %s", path)
 			}
 		}
 		if runID != "" && !runFinished {
@@ -63,38 +69,36 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Setup ---
 
-	fmt.Fprintln(os.Stdout, "::group::Setup")
+	report := newSimLog(out.ResultWriter(), out.StatusWriter())
+	report.BeginSetup()
 
-	fmt.Fprintf(os.Stderr, "Starting agent...\n")
+	report.StartingAgent()
 	start := time.Now()
-	logFwd := &toggleWriter{w: os.Stderr}
+	logFwd := &toggleWriter{w: out.StatusWriter()}
 	logFwd.enabled.Store(true)
 	var err error
 	agent, err = startSimulationAgent(config, logFwd)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "✗ Failed to start agent: %v\n", err)
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		report.AgentStartFailed(err)
+		report.EndSetup()
 		return fmt.Errorf("failed to start agent: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Waiting for agent to register...\n")
+	report.WaitingForRegister()
 	timeout := time.NewTimer(agentRegisterTimeout)
 	defer timeout.Stop()
 	select {
 	case <-agent.Ready():
 		logFwd.enabled.Store(false)
-		fmt.Fprintf(os.Stdout, "✓ Agent registered (%s)\n", time.Since(start).Round(time.Millisecond))
-	case err := <-agent.Done():
-		fmt.Fprintln(os.Stdout, "::endgroup::")
-		if err != nil {
-			return fmt.Errorf("agent exited before registering: %w", err)
-		}
-		return fmt.Errorf("agent exited before registering")
+		report.AgentRegistered(time.Since(start))
+	case <-agent.Done():
+		report.EndSetup()
+		return fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(agent))
 	case <-timeout.C:
-		fmt.Fprintln(os.Stdout, "::endgroup::")
-		return fmt.Errorf("timed out waiting for agent to register (%s)", agentRegisterTimeout)
+		report.EndSetup()
+		return fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(agent))
 	case <-ctx.Done():
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		report.EndSetup()
 		return ctx.Err()
 	}
 
@@ -102,42 +106,30 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	var presigned *livekit.PresignedPostRequest
 	runID, presigned, err = createSimulationRun(ctx, config)
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "✗ %v\n", err)
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		report.SetupFailed(err)
+		report.EndSetup()
 		return err
 	}
-	fmt.Fprintf(os.Stdout, "✓ Simulation created (%s)\n", time.Since(start).Round(time.Millisecond))
+	report.SimulationCreated(time.Since(start))
 
 	if config.mode == modeGenerateFromSource {
 		start = time.Now()
 		if err := uploadSource(ctx, config.client, runID, presigned, config.projectDir, config.entrypoint); err != nil {
-			fmt.Fprintf(os.Stdout, "✗ %v\n", err)
-			fmt.Fprintln(os.Stdout, "::endgroup::")
+			report.SetupFailed(err)
+			report.EndSetup()
 			return err
 		}
-		fmt.Fprintf(os.Stdout, "✓ Source uploaded (%s)\n", time.Since(start).Round(time.Millisecond))
+		report.SourceUploaded(time.Since(start))
 	} else if g := config.scenarioGroup; g != nil {
-		name := g.GetName()
-		if name == "" {
-			name = "scenarios"
-		}
-		fmt.Fprintf(os.Stdout, "✓ Loaded %d scenarios from %s (%q)\n", len(g.GetScenarios()), config.scenariosPath, name)
+		report.ScenariosLoaded(g, config.scenariosPath)
 	}
 
-	fmt.Fprintln(os.Stdout, "::endgroup::")
-	fmt.Fprintln(os.Stdout)
-
-	fmt.Fprintf(os.Stdout, "Run:       %s\n", runID)
-	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
-		fmt.Fprintf(os.Stdout, "Dashboard: %s\n", url)
-	}
-	fmt.Fprintln(os.Stdout)
+	report.EndSetup()
+	report.RunCreated(runID, simulationDashboardURL(config.pc.ProjectId, runID))
 
 	// --- Poll until terminal ---
 
-	var run *livekit.SimulationRun
-	prevDone := 0
-	prevStatus := livekit.SimulationRun_STATUS_GENERATING
+	brokenAgent := false
 	ticker := time.NewTicker(simulationPollInterval)
 	defer ticker.Stop()
 
@@ -150,36 +142,18 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			fmt.Fprintf(os.Stderr, "Warning: poll failed: %v\n", err)
+			out.Warnf("Warning: poll failed: %v", err)
 		} else {
-			_, done, _, _ := simulationJobCounts(run)
-			total := len(run.Jobs)
-
-			switch run.Status {
-			case livekit.SimulationRun_STATUS_GENERATING:
-				if prevStatus != run.Status {
-					n := config.numSimulations
-					if run.GetNumSimulations() > 0 {
-						n = run.GetNumSimulations()
-					}
-					fmt.Fprintf(os.Stderr, "Generating %d scenarios...\n", n)
-				}
-			case livekit.SimulationRun_STATUS_RUNNING:
-				if prevStatus == livekit.SimulationRun_STATUS_GENERATING {
-					if desc := run.GetAgentDescription(); desc != "" {
-						fmt.Fprintf(os.Stdout, "Agent: %s\n\n", desc)
-					}
-				}
-				if done != prevDone {
-					fmt.Fprintf(os.Stderr, "Running simulations... %d/%d completed\n", done, total)
-					prevDone = done
-				}
-			case livekit.SimulationRun_STATUS_SUMMARIZING:
-				if prevStatus != run.Status {
-					fmt.Fprintf(os.Stderr, "Summarizing...\n")
-				}
+			// the worker is failing systemically: stop early and surface its log
+			if !brokenAgent && agentBroken(run, agent) {
+				brokenAgent = true
+				report.BrokenAgent()
+				cancelSimulationRun(config.client, runID)
+				runFinished = true
+				break
 			}
-			prevStatus = run.Status
+
+			report.RunUpdate(run, config.numSimulations)
 
 			if isTerminalRunStatus(run.Status) {
 				runFinished = true
@@ -196,23 +170,22 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Results ---
 
-	printCIResults(run, agent)
+	report.Results(run, agent)
 
-	if agent != nil && agent.LogPath != "" {
-		fmt.Fprintf(os.Stderr, "Agent logs: %s\n", agent.LogPath)
+	if brokenAgent && agent != nil {
+		writeBrokenAgentNote(out.WarnWriter(), agent)
 	}
+
 	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
-		fmt.Fprintf(os.Stderr, "Dashboard:  %s\n", url)
+		out.Statusf("Dashboard:  %s", url)
 	}
 
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
-		if isGitHubActions() {
-			if failed > 0 {
-				fmt.Fprintf(os.Stdout, "::error::%d simulation(s) failed\n", failed)
-			} else {
-				fmt.Fprintf(os.Stdout, "::error::Simulation run failed: %s\n", run.Error)
-			}
+		if failed > 0 {
+			out.Resultf("::error::%d simulation(s) failed\n", failed)
+		} else {
+			out.Resultf("::error::Simulation run failed: %s\n", run.Error)
 		}
 		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
 			return fmt.Errorf("simulation failed: %s", run.Error)
@@ -223,13 +196,15 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	return nil
 }
 
-func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
+// writeRunResults writes the per-job results and the run summary, with GitHub
+// group markers (a useful delimiter outside GitHub too).
+func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) {
 	if run == nil {
 		return
 	}
 
 	if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
-		fmt.Fprintf(os.Stdout, "✗ Simulation failed: %s\n", run.Error)
+		fmt.Fprintf(w, "✗ Simulation failed: %s\n", run.Error)
 		return
 	}
 
@@ -247,160 +222,139 @@ func printCIResults(run *livekit.SimulationRun, agent *AgentProcess) {
 			label = fmt.Sprintf("Job %d", i+1)
 		}
 
-		fmt.Fprintf(os.Stdout, "::group::%s %s\n", icon, label)
+		fmt.Fprintf(w, "::group::%s %s (%s)\n", icon, label, job.Id)
 
 		if job.Instructions != "" {
-			fmt.Fprintln(os.Stdout, "Instructions:")
+			fmt.Fprintln(w, "Instructions:")
 			for line := range strings.SplitSeq(job.Instructions, "\n") {
-				fmt.Fprintf(os.Stdout, "  %s\n", line)
+				fmt.Fprintf(w, "  %s\n", line)
 			}
 		}
 
 		if job.AgentExpectations != "" {
-			fmt.Fprintln(os.Stdout, "Expected:")
+			fmt.Fprintln(w, "Expected:")
 			for line := range strings.SplitSeq(job.AgentExpectations, "\n") {
-				fmt.Fprintf(os.Stdout, "  %s\n", line)
+				fmt.Fprintf(w, "  %s\n", line)
 			}
 		}
 
 		if job.Error != "" {
 			if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
-				fmt.Fprintf(os.Stdout, "Result: %s\n", job.Error)
+				fmt.Fprintf(w, "Result: %s\n", job.Error)
 			} else {
-				fmt.Fprintf(os.Stdout, "Error: %s\n", job.Error)
+				fmt.Fprintf(w, "Error: %s\n", job.Error)
 			}
 		}
 
 		if run.Summary != nil && run.Summary.ChatHistory != nil {
-			printCIChatHistory(run.Summary.ChatHistory[job.Id])
+			writeChatHistory(w, run.Summary.ChatHistory[job.Id])
 		}
 
-		if agent != nil && job.RoomName != "" {
-			logs := agent.RecentRoomLogs(0, job.RoomName)
+		if ap != nil && job.RoomName != "" {
+			logs := ap.RecentRoomLogs(0, job.RoomName)
 			if len(logs) > 0 {
-				fmt.Fprintln(os.Stdout, "Logs:")
+				fmt.Fprintln(w, "Logs:")
 				for _, line := range logs {
-					fmt.Fprintf(os.Stdout, "  %s\n", line)
+					fmt.Fprintf(w, "  %s\n", ansiEscapeRe.ReplaceAllString(line, ""))
 				}
 			}
 		}
 
-		fmt.Fprintln(os.Stdout, "::endgroup::")
+		fmt.Fprintln(w, "::endgroup::")
 
-		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && isGitHubActions() {
+		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED {
 			firstLine, _, _ := strings.Cut(job.Error, "\n")
-			fmt.Fprintf(os.Stdout, "::error::Job %d failed: %s\n", i+1, firstLine)
+			fmt.Fprintf(w, "::error::Job %d failed: %s\n", i+1, firstLine)
 		}
 	}
 
 	if run.Summary != nil {
-		printCISummary(run)
+		writeRunSummary(w, run)
 	} else {
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "⚠ The summary for this run is not available")
+		msg := "The summary for this run is not available"
+		if run.Error != "" {
+			msg = run.Error
+		}
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "⚠ "+msg)
 	}
 }
 
-func printCISummary(run *livekit.SimulationRun) {
+func writeRunSummary(w io.Writer, run *livekit.SimulationRun) {
 	summary := run.Summary
 	total, _, passed, failed := simulationJobCounts(run)
 
-	fmt.Fprintln(os.Stdout)
-	fmt.Fprintln(os.Stdout, "::group::Summary")
-	fmt.Fprintf(os.Stdout, "%d total, %d passed, %d failed\n", total, passed, failed)
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "::group::Summary")
+	fmt.Fprintf(w, "%d total, %d passed, %d failed\n", total, passed, failed)
 
 	if summary.GoingWell != "" {
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "Going well:")
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Going well:")
 		for line := range strings.SplitSeq(summary.GoingWell, "\n") {
-			fmt.Fprintf(os.Stdout, "  %s\n", line)
+			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
 
 	if summary.ToImprove != "" {
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "To improve:")
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "To improve:")
 		for line := range strings.SplitSeq(summary.ToImprove, "\n") {
-			fmt.Fprintf(os.Stdout, "  %s\n", line)
+			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
 
 	if len(summary.Issues) > 0 {
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "Issues:")
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Issues:")
 		for i, issue := range summary.Issues {
-			fmt.Fprintf(os.Stdout, "  %d. %s\n", i+1, issue.Description)
+			fmt.Fprintf(w, "  %d. %s\n", i+1, issue.Description)
 			if issue.Suggestion != "" {
-				fmt.Fprintf(os.Stdout, "     Suggestion: %s\n", issue.Suggestion)
+				fmt.Fprintf(w, "     Suggestion: %s\n", issue.Suggestion)
 			}
 		}
 	}
 
-	fmt.Fprintln(os.Stdout, "::endgroup::")
+	fmt.Fprintln(w, "::endgroup::")
 }
 
-func printCIChatHistory(chatCtx *agent.ChatContext) {
+func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {
 	if chatCtx == nil || len(chatCtx.Items) == 0 {
 		return
 	}
-	fmt.Fprintln(os.Stdout, "Transcript:")
+	fmt.Fprintln(w, "Transcript:")
 	for _, item := range chatCtx.Items {
 		switch v := item.Item.(type) {
 		case *agent.ChatContext_ChatItem_Message:
 			msg := v.Message
-			text := ciChatText(msg)
+			text := chatMessageText(msg)
 			if text == "" {
 				continue
 			}
 			switch msg.Role {
 			case agent.ChatRole_USER:
-				fmt.Fprintf(os.Stdout, "  ● You\n")
+				fmt.Fprintf(w, "  ● You\n")
 			case agent.ChatRole_ASSISTANT:
-				fmt.Fprintf(os.Stdout, "  ● Agent\n")
+				fmt.Fprintf(w, "  ● Agent\n")
 			default:
-				fmt.Fprintf(os.Stdout, "  ● %s\n", msg.Role)
+				fmt.Fprintf(w, "  ● %s\n", msg.Role)
 			}
 			for tl := range strings.SplitSeq(text, "\n") {
-				fmt.Fprintf(os.Stdout, "    %s\n", tl)
+				fmt.Fprintf(w, "    %s\n", tl)
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
-			args := fc.Arguments
-			if len(args) > 80 {
-				args = args[:80] + "..."
-			}
-			fmt.Fprintf(os.Stdout, "  [call] %s(%s)\n", fc.Name, args)
+			fmt.Fprintf(w, "  [call] %s(%s)\n", fc.Name, fc.Arguments)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			fco := v.FunctionCallOutput
-			output := fco.Output
-			if len(output) > 80 {
-				output = output[:80] + "..."
-			}
 			label := "output"
 			if fco.IsError {
 				label = "error"
 			}
-			fmt.Fprintf(os.Stdout, "  [%s] %s -> %s\n", label, fco.Name, output)
+			fmt.Fprintf(w, "  [%s] %s -> %s\n", label, fco.Name, fco.Output)
 		case *agent.ChatContext_ChatItem_AgentHandoff:
 			h := v.AgentHandoff
-			fmt.Fprintf(os.Stdout, "  [handoff] -> %s\n", h.NewAgentId)
+			fmt.Fprintf(w, "  [handoff] -> %s\n", h.NewAgentId)
 		}
 	}
-}
-
-func ciChatText(msg *agent.ChatMessage) string {
-	if msg == nil || len(msg.Content) == 0 {
-		return ""
-	}
-	var parts []string
-	for _, c := range msg.Content {
-		if t := c.GetText(); t != "" {
-			parts = append(parts, t)
-		}
-	}
-	return strings.Join(parts, "")
-}
-
-func isGitHubActions() bool {
-	return os.Getenv("GITHUB_ACTIONS") != ""
 }

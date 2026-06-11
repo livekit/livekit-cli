@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/Masterminds/semver/v3 v3.5.0
+	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/huh v1.0.0
@@ -18,7 +19,7 @@ require (
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.46.7-0.20260608020211-e9abadf97706
+	github.com/livekit/protocol v1.46.7-0.20260610175657-3ccff51ebf5b
 	github.com/livekit/server-sdk-go/v2 v2.16.7-0.20260608025623-a5da15b13baa
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/patternmatcher v0.6.1
@@ -61,7 +62,6 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/alecthomas/chroma/v2 v2.23.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
-	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.7 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.8 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.17 // indirect

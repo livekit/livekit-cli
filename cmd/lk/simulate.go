@@ -39,7 +39,7 @@ import (
 )
 
 func init() {
-	AgentCommands[0].Commands = append(AgentCommands[0].Commands, simulateCommand, exportScenariosCommand)
+	AgentCommands[0].Commands = append(AgentCommands[0].Commands, simulateCommand)
 }
 
 var (
@@ -71,6 +71,10 @@ var simulateCommand = &cli.Command{
 			Aliases: []string{"n"},
 			Usage:   "Number of scenarios to generate",
 		},
+		&cli.IntFlag{
+			Name:  "concurrency",
+			Usage: "Max simulations running in parallel (default: server-side limit)",
+		},
 		&cli.StringFlag{
 			Name:  "scenarios",
 			Usage: "Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent's source",
@@ -83,78 +87,33 @@ var simulateCommand = &cli.Command{
 	},
 }
 
-var exportScenariosCommand = &cli.Command{
-	Name:      "export-scenarios",
-	Usage:     "Export a simulation run's scenarios to a scenarios.yaml",
-	ArgsUsage: "<simulation-run-id>",
-	Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-		pc, err := loadProjectDetails(cmd)
-		if err != nil {
-			return nil, err
-		}
-		simulateProjectConfig = pc
-		return nil, nil
-	},
-	Action: runExportScenarios,
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:    "output",
-			Aliases: []string{"o"},
-			Usage:   "Write to `FILE` instead of stdout",
-		},
-	},
-}
-
-func runExportScenarios(ctx context.Context, cmd *cli.Command) error {
-	runID := cmd.Args().First()
-	if runID == "" {
-		return fmt.Errorf("a simulation run ID is required")
-	}
-
-	pc := simulateProjectConfig
-	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
-	resp, err := client.GetSimulationRun(ctx, &livekit.SimulationRun_Get_Request{SimulationRunId: runID})
-	if err != nil {
-		return fmt.Errorf("failed to get simulation run: %w", err)
-	}
-
-	group := resp.GetRun().GetScenarioGroup()
+// writeGeneratedScenariosTemp writes a generated run's scenarios to a temp
+// scenarios.yaml; "" when the run carries none.
+func writeGeneratedScenariosTemp(run *livekit.SimulationRun) (string, error) {
+	group := run.GetScenarioGroup()
 	if group == nil || len(group.GetScenarios()) == 0 {
-		return fmt.Errorf("simulation run %q has no scenarios to export", runID)
+		return "", nil
 	}
-
 	out, err := scenarioGroupToYAML(group)
 	if err != nil {
-		return err
+		return "", err
 	}
-
-	if path := cmd.String("output"); path != "" {
-		// Never overwrite: refuse if the file already exists so the caller picks
-		// another name (O_EXCL makes the check atomic).
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-		if os.IsExist(err) {
-			return fmt.Errorf("%s already exists; refusing to overwrite (choose a different --output path)", path)
-		}
-		if err != nil {
-			return fmt.Errorf("failed to write %s: %w", path, err)
-		}
-		_, werr := f.Write(out)
-		if cerr := f.Close(); werr == nil {
-			werr = cerr
-		}
-		if werr != nil {
-			return fmt.Errorf("failed to write %s: %w", path, werr)
-		}
-		fmt.Printf("Wrote %d scenarios to %s\n", len(group.GetScenarios()), path)
-		return nil
+	f, err := os.CreateTemp("", "scenarios-*.yaml")
+	if err != nil {
+		return "", err
 	}
-	_, err = os.Stdout.Write(out)
-	return err
+	_, werr := f.Write(out)
+	if cerr := f.Close(); werr == nil {
+		werr = cerr
+	}
+	if werr != nil {
+		return "", werr
+	}
+	return f.Name(), nil
 }
 
-// scenarioGroupToYAML renders a ScenarioGroup as a scenarios.yaml document — the
-// inverse of loadScenarioGroup, decoding each scenario's JSON userdata string
-// back into a nested mapping.
+// scenarioGroupToYAML renders a ScenarioGroup as a scenarios.yaml document, the
+// inverse of loadScenarioGroup.
 func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 	f := scenariosFile{Name: group.GetName()}
 	for _, s := range group.GetScenarios() {
@@ -176,9 +135,8 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 	return yaml.Marshal(f)
 }
 
-// scenariosFile mirrors a scenarios.yaml (the source of truth for scenarios).
-// It maps field-for-field onto livekit.ScenarioGroup; `userdata` is written as a
-// nested mapping here and JSON-encoded into the proto's string field.
+// scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
+// and JSON-encoded into the proto's string field.
 type scenariosFile struct {
 	Name      string         `yaml:"name"`
 	Scenarios []yamlScenario `yaml:"scenarios"`
@@ -192,12 +150,12 @@ type yamlScenario struct {
 	Userdata          map[string]any    `yaml:"userdata"`
 }
 
-// simulateConfig holds all parameters needed to run a simulation in either TUI or CI mode.
 type simulateConfig struct {
 	ctx            context.Context
 	client         *lksdk.AgentSimulationClient
 	pc             *config.ProjectConfig
 	numSimulations int32
+	concurrency    int32
 	mode           simulateMode
 	agentName      string
 	projectDir     string
@@ -207,7 +165,6 @@ type simulateConfig struct {
 	scenariosPath  string // path to the --scenarios file (empty when generating from source)
 }
 
-// simulateMode represents how scenarios are sourced.
 type simulateMode int
 
 const (
@@ -215,8 +172,6 @@ const (
 	modeGenerateFromSource
 )
 
-// loadScenarioGroup reads a scenarios.yaml into a livekit.ScenarioGroup, JSON-encoding
-// each scenario's nested `userdata` mapping into the proto's string field.
 func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -261,6 +216,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 
 	numSimulations := int32(cmd.Int("num-simulations"))
+	concurrency := int32(cmd.Int("concurrency"))
 	agentName := generateAgentName()
 
 	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
@@ -276,9 +232,8 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	// The scenarios file must be specified explicitly via --scenarios; we never
-	// auto-discover one. When provided, those scenarios are the source of truth;
-	// otherwise scenarios are generated from the agent's source.
+	// never auto-discovered: an explicit --scenarios file is the source of
+	// truth, otherwise scenarios are generated from the agent's source
 	scenariosPath := cmd.String("scenarios")
 
 	var scenarioGroup *livekit.ScenarioGroup
@@ -296,8 +251,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		mode = modeGenerateFromSource
 	}
 
-	// Generating from source uploads the agent's code to LiveKit Cloud, so make
-	// the user agree to it explicitly before anything is sent.
 	if mode == modeGenerateFromSource {
 		if err := confirmSourceUpload(cmd, projectDir); err != nil {
 			return err
@@ -311,6 +264,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		client:         simClient,
 		pc:             pc,
 		numSimulations: numSimulations,
+		concurrency:    concurrency,
 		mode:           mode,
 		agentName:      agentName,
 		projectDir:     projectDir,
@@ -333,8 +287,8 @@ func isInteractive() bool {
 	return isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
 }
 
-// confirmSourceUpload makes the user explicitly agree that their agent's source
-// code will be uploaded to LiveKit Cloud before generating scenarios from it.
+// confirmSourceUpload makes the user agree before their agent's source is
+// uploaded to LiveKit Cloud.
 func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 	if cmd.Bool("yes") {
 		return nil
@@ -369,6 +323,51 @@ func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 
 // --- Shared lifecycle functions used by both TUI and CI modes ---
 
+// agentLauncher owns the agent subprocess lifecycle around the TUI. Stop kills
+// the worker even when the TUI quits mid-start; a leaked worker keeps its port
+// bound and breaks the next run.
+type agentLauncher struct {
+	done chan struct{}
+	proc *AgentProcess
+	err  error
+}
+
+func launchSimulationAgent(c *simulateConfig) *agentLauncher {
+	l := &agentLauncher{done: make(chan struct{})}
+	go func() {
+		l.proc, l.err = startSimulationAgent(c, nil)
+		close(l.done)
+	}()
+	return l
+}
+
+func (l *agentLauncher) Wait() (*AgentProcess, error) {
+	<-l.done
+	return l.proc, l.err
+}
+
+// Stop kills the agent once the start attempt finishes (bounded wait) and
+// returns it for post-exit reporting.
+func (l *agentLauncher) Stop() *AgentProcess {
+	select {
+	case <-l.done:
+	case <-time.After(10 * time.Second):
+		return nil
+	}
+	if l.proc != nil {
+		l.proc.Kill()
+	}
+	return l.proc
+}
+
+// ForceStop kills the agent immediately, without the SIGINT grace.
+func (l *agentLauncher) ForceStop() {
+	<-l.done
+	if l.proc != nil {
+		l.proc.ForceKill()
+	}
+}
+
 func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentProcess, error) {
 	return startAgent(AgentStartConfig{
 		Dir:         c.projectDir,
@@ -381,11 +380,12 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 			"--api-secret", c.pc.APISecret,
 			"--log-level", "DEBUG",
 			"--log-format", "colored",
+			// disable the worker load limit so the run can saturate the agent
+			"--simulation",
 		},
 		Env: []string{
-			// force the agent to register under the dispatch name regardless of any
-			// agent_name hardcoded in the user's code (see LIVEKIT_AGENT_NAME_OVERRIDE
-			// precedence in livekit-agents worker.py).
+			// register under the dispatch name regardless of any agent_name
+			// hardcoded in the user's code
 			"LIVEKIT_AGENT_NAME_OVERRIDE=" + c.agentName,
 			"LIVEKIT_URL=" + c.pc.URL,
 			"LIVEKIT_API_KEY=" + c.pc.APIKey,
@@ -401,9 +401,10 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 		AgentName:      c.agentName,
 		NumSimulations: c.numSimulations,
 	}
+	if c.concurrency > 0 {
+		req.Concurrency = &c.concurrency
+	}
 	if c.mode == modeScenarios {
-		// Run the scenarios from the yaml. When unset, the server generates
-		// num_simulations scenarios from the uploaded source.
 		req.ScenarioGroup = c.scenarioGroup
 	}
 

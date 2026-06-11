@@ -18,41 +18,73 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	agent "github.com/livekit/protocol/livekit/agent"
-
-	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 func runSimulateTUI(config *simulateConfig) error {
-	m := newSimulateModel(config)
+	launcher := launchSimulationAgent(config)
+	m := newSimulateModel(config, launcher)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
-	if _, err := p.Run(); err != nil {
-		return fmt.Errorf("TUI error: %w", err)
+	_, runErr := p.Run()
+
+	// A second ctrl+c during cleanup would kill the CLI and leak the worker
+	// (own process group, port stays bound); escalate to SIGKILL instead.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+	defer signal.Stop(sigCh)
+	go func() {
+		<-sigCh
+		launcher.ForceStop()
+		os.Exit(130)
+	}()
+
+	if agentProc := launcher.Stop(); agentProc != nil {
+		if m.brokenAgent {
+			writeBrokenAgentNote(out.WarnWriter(), agentProc)
+			fmt.Fprintln(out.WarnWriter())
+		}
+		if agentProc.LogPath != "" {
+			out.Statusf("Agent logs: %s", agentProc.LogPath)
+		}
+		m.agent = agentProc
 	}
 
-	if m.agent != nil {
-		m.agent.Kill()
-		if m.agent.LogPath != "" {
-			fmt.Fprintf(os.Stderr, "Agent logs: %s\n", m.agent.LogPath)
+	// generated scenarios are saved to a temp file so they're never lost
+	if config.mode == modeGenerateFromSource && m.run != nil {
+		if path, err := writeGeneratedScenariosTemp(m.run); err == nil && path != "" {
+			out.Statusf("Generated scenarios: %s", path)
 		}
 	}
 
+	// Always leave a plain-text record of the run, like the agent log.
+	if path := m.reporter.Finish(m.run, m.agent, m.brokenAgent, m.getDashboardURL()); path != "" {
+		out.Statusf("Run report: %s", path)
+	}
+
 	if url := m.getDashboardURL(); url != "" {
-		fmt.Fprintf(os.Stderr, "Dashboard:  %s\n", url)
+		out.Statusf("Dashboard:  %s", url)
 	}
 
 	if m.runID != "" && !m.runFinished {
 		cancelSimulationRun(config.client, m.runID)
 	}
 
+	if runErr != nil {
+		return fmt.Errorf("TUI error: %w", runErr)
+	}
 	if m.err != nil && m.err != context.Canceled {
 		return m.err
 	}
@@ -89,11 +121,11 @@ type simulationRunMsg struct {
 type pollTickMsg struct{}
 type spinnerTickMsg struct{}
 
+type toastExpireMsg struct{ id int }
+
 type subprocessExitMsg struct {
 	err error
 }
-
-// --- Filter ---
 
 // --- Model ---
 
@@ -105,6 +137,8 @@ type step struct {
 
 type simulateModel struct {
 	config      *simulateConfig
+	launcher    *agentLauncher
+	reporter    *runReporter
 	runID       string
 	agent       *AgentProcess
 	setupCtx    context.Context
@@ -119,6 +153,7 @@ type simulateModel struct {
 	// Run phase
 	run            *livekit.SimulationRun
 	runFinished    bool
+	brokenAgent    bool
 	numSimulations int32
 	startTime      time.Time
 	endTime        time.Time
@@ -136,7 +171,18 @@ type simulateModel struct {
 	logPinnedTotal  int
 	showDescription bool
 	descScrollOff   int
-	exportStatus    string
+
+	toast   string
+	toastOK bool
+	toastID int
+
+	// quit confirmation while the run is in progress; sel 0 = keep, 1 = stop
+	confirmQuit    bool
+	confirmQuitSel int
+
+	saving    bool
+	saveInput textinput.Model
+	saveErr   string
 
 	matrix              matrixRain
 	matrixSavedShowLogs bool
@@ -146,71 +192,120 @@ type simulateModel struct {
 	err    error
 }
 
-// descriptionExpanded reports whether the agent-description panel is open and
-// scrollable (only in the list view, when there's a description to show).
-func (m *simulateModel) descriptionExpanded() bool {
-	return m.detailJobID == "" && m.showDescription &&
-		m.run != nil && m.run.AgentDescription != ""
+func (m *simulateModel) hasDescription() bool {
+	return m.run != nil && m.run.AgentDescription != ""
 }
 
-// canExportScenarios reports whether the run produced generated scenarios that
-// are worth saving to a scenarios.yaml (only meaningful when generating from
-// source — a run that already used a scenarios.yaml has nothing new to export).
+func (m *simulateModel) descriptionExpanded() bool {
+	return m.detailJobID == "" && m.showDescription && m.hasDescription()
+}
+
+// A run that started from a scenarios.yaml has nothing new to export.
 func (m *simulateModel) canExportScenarios() bool {
 	return m.config != nil && m.config.mode == modeGenerateFromSource &&
 		m.run.GetScenarioGroup() != nil && len(m.run.GetScenarioGroup().GetScenarios()) > 0
 }
 
-// exportScenarios writes the run's generated scenarios to a scenarios.yaml next
-// to the project, returning a short status message for the footer. It never
-// overwrites an existing file — it falls back to scenarios-1.yaml, -2, ....
-func (m *simulateModel) exportScenarios() string {
+func (m *simulateModel) handleSaveKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "enter":
+		name := strings.TrimSpace(m.saveInput.Value())
+		if name == "" {
+			m.saveErr = "enter a file name"
+			return m, nil
+		}
+		status, ok := m.saveScenarios(name)
+		if !ok {
+			m.saveErr = status
+			return m, nil
+		}
+		m.saving = false
+		m.saveInput.Blur()
+		return m, m.showToast(status, true)
+	case "esc", "ctrl+c":
+		m.saving = false
+		m.saveErr = ""
+		m.saveInput.Blur()
+		return m, nil
+	}
+	var cmd tea.Cmd
+	m.saveInput, cmd = m.saveInput.Update(msg)
+	return m, cmd
+}
+
+// saveScenarios writes to projectDir/name, never overwriting (ok=false on conflict).
+func (m *simulateModel) saveScenarios(name string) (string, bool) {
 	group := m.run.GetScenarioGroup()
 	out, err := scenarioGroupToYAML(group)
 	if err != nil {
-		return "export failed: " + err.Error()
+		return "save failed: " + err.Error(), false
 	}
-	path, err := writeNoClobber(m.config.projectDir, "scenarios", ".yaml", out)
+	if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
+		name += ".yaml"
+	}
+	path := filepath.Join(m.config.projectDir, name)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if os.IsExist(err) {
+		return name + " already exists, pick another name", false
+	}
 	if err != nil {
-		return "export failed: " + err.Error()
+		return "save failed: " + err.Error(), false
 	}
-	return fmt.Sprintf("exported %d scenarios to %s", len(group.GetScenarios()), filepath.Base(path))
+	_, werr := f.Write(out)
+	if cerr := f.Close(); werr == nil {
+		werr = cerr
+	}
+	if werr != nil {
+		return "save failed: " + werr.Error(), false
+	}
+	return fmt.Sprintf("Saved %d scenarios to %s", len(group.GetScenarios()), name), true
 }
 
-// writeNoClobber writes data to dir/base+ext, or dir/base-1+ext, dir/base-2+ext,
-// ... — the first name that doesn't already exist. It uses O_EXCL so it never
-// overwrites an existing file, even under a race.
-func writeNoClobber(dir, base, ext string, data []byte) (string, error) {
-	for i := 0; ; i++ {
-		name := base + ext
-		if i > 0 {
-			name = fmt.Sprintf("%s-%d%s", base, i, ext)
-		}
-		path := filepath.Join(dir, name)
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-		if os.IsExist(err) {
-			continue
-		}
-		if err != nil {
-			return "", err
-		}
-		_, werr := f.Write(data)
-		if cerr := f.Close(); werr == nil {
-			werr = cerr
-		}
-		if werr != nil {
-			return "", werr
-		}
-		return path, nil
+// copyScenario puts the job's scenario on the clipboard as a one-entry scenarios.yaml.
+func (m *simulateModel) copyScenario(jobID string) (string, bool) {
+	job := m.findJob(jobID)
+	if job == nil {
+		return "Copy failed: scenario not found", false
 	}
+	group := &livekit.ScenarioGroup{
+		Scenarios: []*livekit.Scenario{{
+			Label:             job.GetLabel(),
+			Instructions:      job.GetInstructions(),
+			AgentExpectations: job.GetAgentExpectations(),
+		}},
+	}
+	out, err := scenarioGroupToYAML(group)
+	if err != nil {
+		return "Copy failed: " + err.Error(), false
+	}
+	if err := clipboard.WriteAll(string(out)); err != nil {
+		return "Copy failed: " + err.Error(), false
+	}
+	return "Scenario copied to clipboard as scenarios.yaml", true
 }
 
-func newSimulateModel(config *simulateConfig) *simulateModel {
+// The toast id keeps an old expiry tick from clearing a newer toast.
+func (m *simulateModel) showToast(text string, ok bool) tea.Cmd {
+	m.toast = text
+	m.toastOK = ok
+	m.toastID++
+	id := m.toastID
+	return tea.Tick(4*time.Second, func(time.Time) tea.Msg { return toastExpireMsg{id: id} })
+}
+
+func newSimulateModel(config *simulateConfig, launcher *agentLauncher) *simulateModel {
+	ti := textinput.New()
+	ti.Placeholder = "scenarios.yaml"
+	ti.CharLimit = 128
+	ti.Prompt = ""
 	return &simulateModel{
 		config:         config,
+		launcher:       launcher,
+		reporter:       newRunReporter(),
 		numSimulations: config.numSimulations,
 		width:          80,
 		height:         24,
+		saveInput:      ti,
 	}
 }
 
@@ -249,13 +344,33 @@ func (m *simulateModel) Init() tea.Cmd {
 func (m *simulateModel) runSetup() tea.Cmd {
 	c := m.config
 
-	m.steps = []step{
-		{label: "Starting agent", status: "running"},
-		{label: "Creating simulation", status: "pending"},
+	m.steps = nil
+	if c.mode == modeScenarios && c.scenarioGroup != nil {
+		// loaded before the TUI started, so it renders as already done
+		noun := "scenarios"
+		if len(c.scenarioGroup.GetScenarios()) == 1 {
+			noun = "scenario"
+		}
+		label := fmt.Sprintf("Loaded %d %s from %s", len(c.scenarioGroup.GetScenarios()), noun, c.scenariosPath)
+		if name := c.scenarioGroup.GetName(); name != "" {
+			label += fmt.Sprintf(" (%s)", name)
+		}
+		m.steps = append(m.steps, step{label: label, status: "done"})
 	}
+	m.currentStep = len(m.steps)
+	m.steps = append(m.steps,
+		step{label: "Starting agent", status: "running"},
+		step{label: "Creating simulation", status: "pending"},
+	)
 	if c.mode == modeGenerateFromSource {
 		m.steps = append(m.steps, step{label: "Uploading source", status: "pending"})
 	}
+
+	m.reporter.BeginSetup()
+	if c.mode == modeScenarios && c.scenarioGroup != nil {
+		m.reporter.ScenariosLoaded(c.scenarioGroup, c.scenariosPath)
+	}
+	m.reporter.StartingAgent()
 
 	ctx, cancel := context.WithCancel(c.ctx)
 	m.setupCtx = ctx
@@ -267,6 +382,8 @@ func (m *simulateModel) runSetup() tea.Cmd {
 
 func (m *simulateModel) failSetupStep(err error) {
 	m.steps[m.currentStep].status = "failed"
+	m.reporter.SetupFailed(err)
+	m.reporter.EndSetup()
 	m.err = err
 	m.setupDone = true
 	m.runFinished = true
@@ -285,12 +402,14 @@ func (m *simulateModel) completeSetup(elapsed time.Duration) {
 	m.steps[m.currentStep].elapsed = elapsed
 	m.setupDone = true
 	m.genStart = time.Now()
+	m.reporter.EndSetup()
+	m.reporter.RunCreated(m.runID, m.getDashboardURL())
 }
 
 func (m *simulateModel) startAgentCmd() tea.Cmd {
-	c := m.config
+	l := m.launcher
 	return func() tea.Msg {
-		agent, err := startSimulationAgent(c, nil)
+		agent, err := l.Wait()
 		return agentStartedMsg{agent: agent, err: err}
 	}
 }
@@ -303,14 +422,11 @@ func (m *simulateModel) waitAgentReadyCmd() tea.Cmd {
 		select {
 		case <-m.agent.Ready():
 			return agentReadyMsg{elapsed: time.Since(stepStart)}
-		case err := <-m.agent.Done():
-			if err != nil {
-				return agentReadyMsg{err: fmt.Errorf("agent exited before registering: %w", err)}
-			}
-			return agentReadyMsg{err: fmt.Errorf("agent exited before registering")}
+		case <-m.agent.Done():
+			return agentReadyMsg{err: fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(m.agent))}
 		case <-timeout.C:
 			m.agent.Kill()
-			return agentReadyMsg{err: fmt.Errorf("timed out waiting for agent to register (%s)", agentRegisterTimeout)}
+			return agentReadyMsg{err: fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(m.agent))}
 		case <-m.setupCtx.Done():
 			return agentReadyMsg{err: m.setupCtx.Err()}
 		}
@@ -355,6 +471,14 @@ func (m *simulateModel) pollSimulation() tea.Cmd {
 	}
 }
 
+func (m *simulateModel) cancelRunCmd() tea.Cmd {
+	client, runID := m.config.client, m.runID
+	return func() tea.Msg {
+		cancelSimulationRun(client, runID)
+		return nil
+	}
+}
+
 func (m *simulateModel) waitSubprocess() tea.Cmd {
 	if m.agent == nil {
 		return nil
@@ -381,6 +505,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.agent = msg.agent
+		m.reporter.WaitingForRegister()
 		return m, m.waitAgentReadyCmd()
 
 	case agentReadyMsg:
@@ -388,6 +513,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.failSetupStep(msg.err)
 			return m, nil
 		}
+		m.reporter.AgentRegistered(msg.elapsed)
 		m.advanceSetupStep(msg.elapsed)
 		return m, m.createSimulationCmd()
 
@@ -397,6 +523,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.runID = msg.runID
+		m.reporter.SimulationCreated(msg.elapsed)
 		if m.config.mode == modeGenerateFromSource {
 			m.advanceSetupStep(msg.elapsed)
 			return m, m.uploadSourceCmd(msg.presigned)
@@ -409,14 +536,24 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.failSetupStep(msg.err)
 			return m, nil
 		}
+		m.reporter.SourceUploaded(msg.elapsed)
 		m.completeSetup(msg.elapsed)
 		return m, tea.Batch(m.pollSimulation(), m.waitSubprocess())
 
 	case simulationRunMsg:
 		if msg.err == nil && msg.run != nil {
 			m.run = msg.run
+			m.reporter.RunUpdate(msg.run, m.config.numSimulations)
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
+			}
+			// the worker is failing systemically: cancel the run and surface
+			// its log on exit
+			if !m.brokenAgent && agentBroken(msg.run, m.agent) {
+				m.brokenAgent = true
+				m.showLogs = true
+				m.reporter.BrokenAgent()
+				return m, m.cancelRunCmd()
 			}
 			if isTerminalRunStatus(msg.run.Status) {
 				if !m.runFinished {
@@ -429,6 +566,11 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinnerTickMsg:
 		m.spinnerIdx++
 		return m, spinnerTickCmd()
+
+	case toastExpireMsg:
+		if msg.id == m.toastID {
+			m.toast = ""
+		}
 
 	case matrixTickMsg:
 		if !m.matrix.active {
@@ -450,7 +592,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case subprocessExitMsg:
-		// Subprocess exited — don't quit TUI, just note it
+		// the TUI stays up; the exit is surfaced via agentBroken / on quit
 
 	case tea.KeyMsg:
 		return m.handleKey(msg)
@@ -467,11 +609,11 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// scrollBy applies a wheel/scroll step to whatever is focused, in the natural
-// terminal direction: delta > 0 scrolls toward the bottom (later content),
-// delta < 0 toward the top. It routes to the detail view, the expanded agent
-// description, the log pane, or the job list, in that priority.
-func (m *simulateModel) scrollBy(delta int) {
+const pageScroll = 20
+
+// scrollActive scrolls the focused pane by delta lines (positive toward the
+// bottom); false if nothing is focused so the caller falls back to the list.
+func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	switch {
 	case m.detailJobID != "":
 		m.detailScrollOff += delta
@@ -483,9 +625,8 @@ func (m *simulateModel) scrollBy(delta int) {
 		if m.descScrollOff < 0 {
 			m.descScrollOff = 0
 		}
-	case m.showLogs:
-		// logScrollOff counts lines up from the bottom, so scrolling down
-		// (delta > 0) decreases it toward the live tail.
+	case includeLogs && m.showLogs:
+		// logScrollOff counts up from the bottom; scrolling down decreases it
 		m.logScrollOff -= delta
 		if m.logScrollOff <= 0 {
 			m.logScrollOff = 0
@@ -494,30 +635,72 @@ func (m *simulateModel) scrollBy(delta int) {
 			m.logPinned = true
 		}
 	default:
-		jobs := m.filteredJobs()
-		if len(jobs) > 0 {
-			m.cursor += delta
-			if m.cursor < 0 {
-				m.cursor = 0
-			}
-			if m.cursor >= len(jobs) {
-				m.cursor = len(jobs) - 1
-			}
-		}
+		return false
+	}
+	return true
+}
+
+// scrollBy routes a mouse-wheel step to the focused pane, falling back to the
+// job-list cursor.
+func (m *simulateModel) scrollBy(delta int) {
+	if m.scrollActive(delta, true) {
+		return
+	}
+	jobs := m.filteredJobs()
+	if len(jobs) == 0 {
+		return
+	}
+	m.cursor += delta
+	if m.cursor < 0 {
+		m.cursor = 0
+	}
+	if m.cursor >= len(jobs) {
+		m.cursor = len(jobs) - 1
+	}
+}
+
+func (m *simulateModel) moveCursor(delta int) {
+	if n := len(m.filteredJobs()); n > 0 {
+		m.cursor = ((m.cursor+delta)%n + n) % n
 	}
 }
 
 func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	key := msg.String()
 	if m.matrix.active {
-		// Any keypress cancels rain so the user regains control immediately.
-		// Pressing 'm' just cancels; every other key falls through to normal
-		// handling so it can do its usual thing on the same press.
+		// any key cancels rain; all but 'm' fall through to normal handling
 		m.matrix.active = false
 		m.showLogs = m.matrixSavedShowLogs
 		if key == "m" {
 			return m, nil
 		}
+	}
+	if m.saving {
+		return m.handleSaveKey(msg)
+	}
+	if m.confirmQuit {
+		switch key {
+		case "left", "right", "tab", "shift+tab", "up", "down":
+			m.confirmQuitSel = 1 - m.confirmQuitSel
+		case "enter":
+			if m.confirmQuitSel == 1 {
+				if m.setupCancel != nil {
+					m.setupCancel()
+				}
+				return m, tea.Quit
+			}
+			m.confirmQuit = false
+		case "y":
+			if m.setupCancel != nil {
+				m.setupCancel()
+			}
+			return m, tea.Quit
+		case "esc", "q", "n":
+			m.confirmQuit = false
+		case "ctrl+c":
+			return m, tea.Quit
+		}
+		return m, nil
 	}
 	switch key {
 	case "ctrl+c":
@@ -542,9 +725,8 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if width > m.width {
 			width = m.width
 		}
-		// Skip columns that are always blank across every row (rain over empty
-		// air looks noisy) and columns carrying a status icon (the status must
-		// stay fully visible).
+		// skip always-blank columns (rain over empty air looks noisy) and
+		// status-icon columns (the status must stay visible)
 		skip := make([]bool, width)
 		for col := 0; col < width; col++ {
 			empty := true
@@ -570,79 +752,37 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.logScrollOff = 0
 		m.logPinned = false
 	case "d":
-		if m.detailJobID == "" {
+		if m.detailJobID == "" && m.hasDescription() {
 			m.showDescription = !m.showDescription
 			m.descScrollOff = 0
 		}
-	case "e":
-		if m.canExportScenarios() {
-			m.exportStatus = m.exportScenarios()
+	case "s":
+		if m.canExportScenarios() && m.detailJobID == "" {
+			m.saving = true
+			m.saveErr = ""
+			m.toast = ""
+			m.saveInput.SetValue("scenarios.yaml")
+			m.saveInput.CursorEnd()
+			return m, m.saveInput.Focus()
+		}
+	case "c":
+		if m.detailJobID != "" {
+			text, ok := m.copyScenario(m.detailJobID)
+			return m, m.showToast(text, ok)
 		}
 	case "up", "shift+tab":
-		switch {
-		case m.detailJobID != "":
-			if m.detailScrollOff > 0 {
-				m.detailScrollOff--
-			}
-		case m.descriptionExpanded():
-			if m.descScrollOff > 0 {
-				m.descScrollOff--
-			}
-		default:
-			jobs := m.filteredJobs()
-			if len(jobs) > 0 {
-				m.cursor--
-				if m.cursor < 0 {
-					m.cursor = len(jobs) - 1
-				}
-			}
+		// arrows never scroll logs (PgUp/PgDn do); in the list they move the cursor
+		if !m.scrollActive(-1, false) {
+			m.moveCursor(-1)
 		}
 	case "down", "tab":
-		switch {
-		case m.detailJobID != "":
-			m.detailScrollOff++
-		case m.descriptionExpanded():
-			m.descScrollOff++
-		default:
-			jobs := m.filteredJobs()
-			if len(jobs) > 0 {
-				m.cursor++
-				if m.cursor >= len(jobs) {
-					m.cursor = 0
-				}
-			}
+		if !m.scrollActive(1, false) {
+			m.moveCursor(1)
 		}
 	case "pgup":
-		switch {
-		case m.detailJobID != "":
-			m.detailScrollOff -= 20
-			if m.detailScrollOff < 0 {
-				m.detailScrollOff = 0
-			}
-		case m.descriptionExpanded():
-			m.descScrollOff -= 20
-			if m.descScrollOff < 0 {
-				m.descScrollOff = 0
-			}
-		case m.showLogs:
-			m.logScrollOff += 20
-			m.logPinned = true
-		}
+		m.scrollActive(-pageScroll, true)
 	case "pgdown":
-		switch {
-		case m.detailJobID != "":
-			m.detailScrollOff += 20
-		case m.descriptionExpanded():
-			m.descScrollOff += 20
-		case m.showLogs:
-			m.logScrollOff -= 20
-			if m.logScrollOff < 0 {
-				m.logScrollOff = 0
-			}
-			if m.logScrollOff == 0 {
-				m.logPinned = false
-			}
-		}
+		m.scrollActive(pageScroll, true)
 	case "enter":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
@@ -667,6 +807,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case m.showDescription:
 			m.showDescription = false
 			m.descScrollOff = 0
+		case m.runID != "" && !m.runFinished:
+			m.confirmQuit = true
+			m.confirmQuitSel = 0
 		default:
 			if m.setupCancel != nil {
 				m.setupCancel()
@@ -686,8 +829,13 @@ func (m *simulateModel) filteredJobs() []indexedJob {
 	if m.run == nil {
 		return nil
 	}
-	result := make([]indexedJob, 0, len(m.run.Jobs))
-	for i, j := range m.run.Jobs {
+	// sort by job ID: the backend's ordering shuffles rows as statuses change
+	jobs := make([]*livekit.SimulationRun_Job, len(m.run.Jobs))
+	copy(jobs, m.run.Jobs)
+	sort.Slice(jobs, func(i, j int) bool { return jobs[i].GetId() < jobs[j].GetId() })
+
+	result := make([]indexedJob, 0, len(jobs))
+	for i, j := range jobs {
 		result = append(result, indexedJob{origIdx: i + 1, job: j})
 	}
 	return result
@@ -706,7 +854,6 @@ func (m *simulateModel) findJob(id string) *livekit.SimulationRun_Job {
 }
 
 func (m *simulateModel) View() string {
-	// Setup phase or generating phase — show unified step view
 	if !m.setupDone || m.run == nil || m.run.Status == livekit.SimulationRun_STATUS_GENERATING {
 		return m.viewSetup()
 	}
@@ -728,48 +875,23 @@ func (m *simulateModel) viewSetup() string {
 	b.WriteString("\n\n")
 
 	if m.config.pc != nil && m.config.pc.Name != "" {
-		b.WriteString(dimStyle.Render("  Project: " + m.config.pc.Name))
-		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("  Project: "+m.config.pc.Name) + "\n")
 	}
 	if m.config.pc != nil && m.config.pc.URL != "" {
-		b.WriteString(dimStyle.Render("  URL:     " + m.config.pc.URL))
-		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("  URL:     "+m.config.pc.URL) + "\n")
 	}
 	if m.runID != "" {
-		b.WriteString(dimStyle.Render("  Run:     " + m.runID))
-		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("  Run:     "+m.runID) + "\n")
 	}
 	if url := m.getDashboardURL(); url != "" {
-		b.WriteString(dimStyle.Render("  " + url))
-		b.WriteString("\n")
-	}
-
-	// When scenarios come from a file, show that clearly: the group title, how many
-	// scenarios, the source file, and each scenario's label.
-	if m.config.mode == modeScenarios && m.config.scenarioGroup != nil {
-		g := m.config.scenarioGroup
-		b.WriteString("\n")
-		title := g.GetName()
-		if title == "" {
-			title = "Scenarios"
-		}
-		b.WriteString("  ")
-		b.WriteString(cyanStyle().Render(title))
-		b.WriteString(dimStyle.Render(
-			fmt.Sprintf("  %d from %s", len(g.GetScenarios()), m.config.scenariosPath)))
-		b.WriteString("\n")
-		for _, s := range g.GetScenarios() {
-			b.WriteString(dimStyle.Render("    • " + s.GetLabel()))
-			b.WriteString("\n")
-		}
+		b.WriteString(dimStyle.Render("  "+url) + "\n")
 	}
 
 	b.WriteString("\n")
 
 	b.WriteString(m.renderSteps())
 
-	// Show generation progress after setup completes (only when generating from
-	// source — in file mode the scenarios are already known, nothing is generated).
+	// in file mode the scenarios are already known, nothing is generated
 	if m.setupDone && m.err == nil && m.config.mode == modeGenerateFromSource {
 		elapsed := time.Since(m.genStart).Truncate(time.Second)
 		n := m.numSimulations
@@ -781,8 +903,7 @@ func (m *simulateModel) viewSetup() string {
 
 	if m.err != nil {
 		b.WriteString("\n")
-		b.WriteString(redStyle().Render("  " + m.err.Error()))
-		b.WriteString("\n")
+		b.WriteString(redStyle().Render("  "+m.err.Error()) + "\n")
 		if m.agent != nil {
 			b.WriteString("\n")
 			b.WriteString(m.renderLogs(""))
@@ -795,6 +916,11 @@ func (m *simulateModel) viewSetup() string {
 		if m.agent != nil {
 			b.WriteString(m.renderLogs(""))
 		}
+	}
+	if m.confirmQuit {
+		b.WriteString("\n")
+		b.WriteString(m.renderQuitConfirm())
+		b.WriteString("\n")
 	}
 	return b.String()
 }
@@ -850,21 +976,16 @@ func (m *simulateModel) viewFailed() string {
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(m.runID))
 	if url := m.getDashboardURL(); url != "" {
-		b.WriteString("  ")
-		b.WriteString(dimStyle.Render(url))
+		b.WriteString("  " + dimStyle.Render(url))
 	}
 	b.WriteString("\n\n")
-	b.WriteString("  ")
-	b.WriteString(redStyle().Bold(true).Render("Failed"))
-	b.WriteString("\n\n")
+	b.WriteString("  " + redStyle().Bold(true).Render("Failed") + "\n\n")
 	if m.run.Error != "" {
 		for line := range strings.SplitSeq(m.run.Error, "\n") {
-			b.WriteString(redStyle().Render("  " + line))
-			b.WriteString("\n")
+			b.WriteString(redStyle().Render("  "+line) + "\n")
 		}
 	} else {
-		b.WriteString(redStyle().Render("  (no error details available)"))
-		b.WriteString("\n")
+		b.WriteString(redStyle().Render("  (no error details available)") + "\n")
 	}
 	b.WriteString("\n")
 	if m.showLogs {
@@ -887,18 +1008,14 @@ func (m *simulateModel) viewRunning() string {
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(m.runID))
 	if url := m.getDashboardURL(); url != "" {
-		b.WriteString("  ")
-		b.WriteString(dimStyle.Render(url))
+		b.WriteString("  " + dimStyle.Render(url))
 	}
 	b.WriteString("\n\n")
 
-	// Agent description (hidden in detail view)
-	if m.detailJobID == "" && m.run != nil && m.run.AgentDescription != "" {
-		b.WriteString(boldStyle.Render("  Agent Description"))
-		b.WriteString("\n")
+	if m.detailJobID == "" && m.hasDescription() {
+		b.WriteString(boldStyle.Render("  Agent Description") + "\n")
 		if m.showDescription {
-			// Bound the body to a fixed window so opening it never shoves the header
-			// (and the job list below) off-screen; scroll within via ↑↓ / wheel.
+			// bounded window so expanding never pushes the list off-screen
 			wrapped := dimStyle.Width(m.width - 4).Render(m.run.AgentDescription)
 			lines := strings.Split(wrapped, "\n")
 			const descBudget = 8
@@ -908,37 +1025,32 @@ func (m *simulateModel) viewRunning() string {
 				m.descScrollOff = maxScroll
 			}
 			start := m.descScrollOff
-			end := min(start+descBudget, len(lines))
+			end := start + descBudget
+			if end > len(lines) {
+				end = len(lines)
+			}
 			if start > 0 {
-				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more\n", start)))
+				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more", start)) + "\n")
 			}
 			for _, line := range lines[start:end] {
-				b.WriteString("  ")
-				b.WriteString(line)
-				b.WriteString("\n")
+				b.WriteString("  " + line + "\n")
 			}
 			if end < len(lines) {
-				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more", len(lines)-end)))
-				b.WriteString("\n")
+				b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more", len(lines)-end)) + "\n")
 			}
-			b.WriteString(dimStyle.Render("  ↑↓ scroll · d collapse"))
-			b.WriteString("\n\n")
+			b.WriteString("\n")
 		} else {
 			desc := firstMeaningfulLine(m.run.AgentDescription)
 			if desc != "" {
-				b.WriteString(dimStyle.Width(m.width - 4).Render("  " + desc))
-				b.WriteString("\n")
-				b.WriteString(dimStyle.Render("  (press d to expand)"))
-				b.WriteString("\n\n")
+				b.WriteString(dimStyle.Width(m.width-4).Render("  "+desc) + "\n")
+				b.WriteString(dimStyle.Render("  (press d to expand)") + "\n\n")
 			}
 		}
 	}
 
-	// Header line
 	b.WriteString(m.renderHeader())
 	b.WriteString("\n")
 
-	// Progress counts
 	b.WriteString(m.renderCounts())
 	b.WriteString("\n")
 
@@ -956,7 +1068,11 @@ func (m *simulateModel) viewRunning() string {
 		} else if m.run.Summary != nil {
 			b.WriteString(m.renderSummary())
 		} else if isTerminalRunStatus(m.run.Status) {
-			fmt.Fprintf(&b, "\n  %s %s\n", yellowStyle().Render("⚠"), yellowStyle().Render("The summary for this run is not available"))
+			msg := "The summary for this run is not available"
+			if m.run.Error != "" {
+				msg = m.run.Error
+			}
+			fmt.Fprintf(&b, "\n  %s %s\n", yellowStyle().Render("⚠"), yellowStyle().Render(msg))
 		}
 	}
 
@@ -964,6 +1080,7 @@ func (m *simulateModel) viewRunning() string {
 	if m.showLogs && m.detailJobID == "" {
 		b.WriteString(m.renderLogs(""))
 	}
+	b.WriteString(m.renderToast())
 	b.WriteString(m.renderHint())
 	b.WriteString("\n")
 	return b.String()
@@ -993,7 +1110,7 @@ func (m *simulateModel) renderHeader() string {
 		style = "yellow"
 	}
 
-	header := boldStyle.Render("Simulation") + " — "
+	header := boldStyle.Render("Simulation") + " · "
 	switch style {
 	case "green":
 		header += greenStyle().Bold(true).Render(label)
@@ -1067,7 +1184,10 @@ func (m *simulateModel) visibleWindow() (jobs []indexedJob, winStart, winEnd, ov
 		m.cursor = len(jobs) - 1
 	}
 	availHeight := matrixAvailHeight(m.height)
-	maxJobListHeight := max(m.height*2/3, 5)
+	maxJobListHeight := m.height * 2 / 3
+	if maxJobListHeight < 5 {
+		maxJobListHeight = 5
+	}
 	if availHeight > maxJobListHeight {
 		availHeight = maxJobListHeight
 	}
@@ -1086,7 +1206,10 @@ func (m *simulateModel) visibleWindow() (jobs []indexedJob, winStart, winEnd, ov
 		m.scrollOff = 0
 	}
 	winStart = m.scrollOff
-	winEnd = min(m.scrollOff+availHeight, len(jobs))
+	winEnd = m.scrollOff + availHeight
+	if winEnd > len(jobs) {
+		winEnd = len(jobs)
+	}
 	overflowAbove = winStart
 	overflowBelow = len(jobs) - winEnd
 	return
@@ -1124,7 +1247,8 @@ func (m *simulateModel) renderJobList() string {
 
 	for i, row := range rows {
 		idx := winStart + i
-		plainIcon := string(plainJobIcon(row.ij.job))
+		pr, _ := jobStatusIcon(row.ij.job)
+		plainIcon := string(pr)
 		var line string
 		if idx == m.cursor {
 			line = fmt.Sprintf("  %s %3d. %s %s", plainIcon, row.ij.origIdx, row.ij.job.Id, row.label)
@@ -1148,12 +1272,7 @@ func (m *simulateModel) renderJobList() string {
 	return b.String()
 }
 
-// --- Matrix rain row construction ---
-//
-// The matrix renderer (in matrix_rain.go) consumes a []matrixRow describing
-// the underlying text layer and its styled regions (status icon, dim ID range,
-// cursor marker). This file provides the mapping from a simulation's job list
-// into that neutral data shape.
+// --- Matrix rain row construction (the renderer lives in matrix_rain.go) ---
 
 func jobLabel(job *livekit.SimulationRun_Job) string {
 	label := job.Label
@@ -1169,36 +1288,23 @@ func jobLabel(job *livekit.SimulationRun_Job) string {
 	return label
 }
 
-func plainJobIcon(job *livekit.SimulationRun_Job) rune {
-	switch job.Status {
-	case livekit.SimulationRun_Job_STATUS_COMPLETED:
-		return '✓'
-	case livekit.SimulationRun_Job_STATUS_FAILED:
-		return '✗'
-	case livekit.SimulationRun_Job_STATUS_RUNNING:
-		return '⏺'
-	default:
-		return '⏺'
-	}
-}
-
-func jobIconStylePtr(job *livekit.SimulationRun_Job) *lipgloss.Style {
+func jobStatusIcon(job *livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
 	var s lipgloss.Style
 	switch job.Status {
 	case livekit.SimulationRun_Job_STATUS_COMPLETED:
 		s = greenStyle()
+		return '✓', &s
 	case livekit.SimulationRun_Job_STATUS_FAILED:
 		s = redStyle()
+		return '✗', &s
 	case livekit.SimulationRun_Job_STATUS_RUNNING:
 		s = yellowStyle()
+		return '⏺', &s
 	default:
-		return &dimStyle
+		return '⏺', &dimStyle
 	}
-	return &s
 }
 
-// buildMatrixRows produces one matrixRow per visible line of the job list,
-// using the same label logic as renderJobList.
 func (m *simulateModel) buildMatrixRows() []matrixRow {
 	jobs, winStart, winEnd, above, below := m.visibleWindow()
 	if len(jobs) == 0 {
@@ -1214,13 +1320,13 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 	for i := winStart; i < winEnd; i++ {
 		ij := jobs[i]
 		label := jobLabel(ij.job)
-		iconCh := plainJobIcon(ij.job)
+		iconCh, iconStyle := jobStatusIcon(ij.job)
 		line := fmt.Sprintf("  %c %3d. %s %s", iconCh, ij.origIdx, ij.job.Id, label)
 		rows = append(rows, matrixRow{
 			text:         []rune(line),
 			iconCol:      2,
 			iconCh:       iconCh,
-			iconStyle:    jobIconStylePtr(ij.job),
+			iconStyle:    iconStyle,
 			cursorMarker: i == m.cursor,
 		})
 	}
@@ -1259,13 +1365,14 @@ func (m *simulateModel) renderDetail() string {
 		dimStyle.Render(job.Id),
 	)
 	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
-		b.WriteString("  ")
-		b.WriteString(dimStyle.Render(url))
-		b.WriteString("\n")
+		b.WriteString("  " + dimStyle.Render(url) + "\n")
 	}
 	b.WriteString("\n")
 
-	wrapWidth := max(m.width-6, 40)
+	wrapWidth := m.width - 6
+	if wrapWidth < 40 {
+		wrapWidth = 40
+	}
 	wrapStyle := lipgloss.NewStyle().Width(wrapWidth)
 
 	b.WriteString(boldStyle.Render("  Instructions:"))
@@ -1275,9 +1382,7 @@ func (m *simulateModel) renderDetail() string {
 		instr = "—"
 	}
 	for line := range strings.SplitSeq(wrapStyle.Render(instr), "\n") {
-		b.WriteString("    ")
-		b.WriteString(line)
-		b.WriteString("\n")
+		b.WriteString("    " + line + "\n")
 	}
 	b.WriteString("\n")
 
@@ -1288,8 +1393,7 @@ func (m *simulateModel) renderDetail() string {
 		expect = "—"
 	}
 	for line := range strings.SplitSeq(wrapStyle.Render(expect), "\n") {
-		b.WriteString(dimStyle.Render("    " + line))
-		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("    "+line) + "\n")
 	}
 
 	if job.Error != "" {
@@ -1298,23 +1402,19 @@ func (m *simulateModel) renderDetail() string {
 			b.WriteString(greenStyle().Bold(true).Render("  Result:"))
 			b.WriteString("\n")
 			for line := range strings.SplitSeq(wrapStyle.Render(job.Error), "\n") {
-				b.WriteString(greenStyle().Render("    " + line))
-				b.WriteString("\n")
+				b.WriteString(greenStyle().Render("    "+line) + "\n")
 			}
 		} else {
 			b.WriteString(redStyle().Bold(true).Render("  Error:"))
 			b.WriteString("\n")
 			for line := range strings.SplitSeq(wrapStyle.Render(job.Error), "\n") {
-				b.WriteString(redStyle().Render("    " + line))
-				b.WriteString("\n")
+				b.WriteString(redStyle().Render("    "+line) + "\n")
 			}
 		}
 	}
 
-	// Show chat transcript if available
 	b.WriteString(m.renderChatTranscript(job.Id))
 
-	// Logs for this job's room (toggle with Ctrl+L)
 	if m.showLogs && m.agent != nil {
 		roomFilter := ""
 		if job.RoomName != "" {
@@ -1331,14 +1431,15 @@ func (m *simulateModel) renderDetail() string {
 			b.WriteString("\n")
 			b.WriteString(boldStyle.Render("  Logs:"))
 			b.WriteString("\n")
-			maxWidth := max(m.width-4, 20)
+			maxWidth := m.width - 4
+			if maxWidth < 20 {
+				maxWidth = 20
+			}
 			wrapLogStyle := lipgloss.NewStyle().Width(maxWidth)
 			for _, line := range rawLines {
 				wrapped := wrapLogStyle.Render(line)
 				for wl := range strings.SplitSeq(wrapped, "\n") {
-					b.WriteString("  ")
-					b.WriteString(wl)
-					b.WriteString("\n")
+					b.WriteString("  " + wl + "\n")
 				}
 			}
 		}
@@ -1350,7 +1451,10 @@ func (m *simulateModel) renderDetail() string {
 func (m *simulateModel) scrolledDetail() string {
 	content := m.renderDetail()
 	lines := strings.Split(content, "\n")
-	budget := max(m.height-12, 5)
+	budget := m.height - 12
+	if budget < 5 {
+		budget = 5
+	}
 	if len(lines) <= budget {
 		m.detailScrollOff = 0
 		return content
@@ -1365,7 +1469,10 @@ func (m *simulateModel) scrolledDetail() string {
 	}
 
 	start := m.detailScrollOff
-	end := min(start+budget, len(lines))
+	end := start + budget
+	if end > len(lines) {
+		end = len(lines)
+	}
 
 	var b strings.Builder
 	if start > 0 {
@@ -1389,22 +1496,23 @@ func (m *simulateModel) renderSummary() string {
 
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString("  ")
-	b.WriteString(boldStyle.Render("Summary"))
+	b.WriteString("  " + boldStyle.Render("Summary"))
 	fmt.Fprintf(&b, "  %s  %s\n\n",
 		greenStyle().Render(fmt.Sprintf("%d passed", summary.Passed)),
-		redStyle().Render(fmt.Sprintf("%d failed", summary.Failed)))
+		redStyle().Render(fmt.Sprintf("%d failed", summary.Failed)),
+	)
 
-	wrapWidth := max(m.width-6, 40)
+	wrapWidth := m.width - 6
+	if wrapWidth < 40 {
+		wrapWidth = 40
+	}
 
 	if summary.GoingWell != "" {
 		b.WriteString(greenStyle().Bold(true).Render("  Going well:"))
 		b.WriteString("\n")
 		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.GoingWell)
 		for line := range strings.SplitSeq(wrapped, "\n") {
-			b.WriteString("    ")
-			b.WriteString(line)
-			b.WriteString("\n")
+			b.WriteString("    " + line + "\n")
 		}
 		b.WriteString("\n")
 	}
@@ -1414,9 +1522,7 @@ func (m *simulateModel) renderSummary() string {
 		b.WriteString("\n")
 		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.ToImprove)
 		for line := range strings.SplitSeq(wrapped, "\n") {
-			b.WriteString("    ")
-			b.WriteString(line)
-			b.WriteString("\n")
+			b.WriteString("    " + line + "\n")
 		}
 		b.WriteString("\n")
 	}
@@ -1424,28 +1530,24 @@ func (m *simulateModel) renderSummary() string {
 	if len(summary.Issues) > 0 {
 		b.WriteString(redStyle().Bold(true).Render("  Issues:"))
 		b.WriteString("\n")
-		issueWrap := max(
-			// account for "    N. " prefix
-			wrapWidth-4, 30)
+		issueWrap := wrapWidth - 4 // account for "    N. " prefix
+		if issueWrap < 30 {
+			issueWrap = 30
+		}
 		for i, issue := range summary.Issues {
 			prefix := fmt.Sprintf("    %d. ", i+1)
 			descWrapped := lipgloss.NewStyle().Width(issueWrap).Render(issue.Description)
 			for j, line := range strings.Split(descWrapped, "\n") {
 				if j == 0 {
-					b.WriteString(prefix)
-					b.WriteString(line)
-					b.WriteString("\n")
+					b.WriteString(prefix + line + "\n")
 				} else {
-					b.WriteString(strings.Repeat(" ", len(prefix)))
-					b.WriteString(line)
-					b.WriteString("\n")
+					b.WriteString(strings.Repeat(" ", len(prefix)) + line + "\n")
 				}
 			}
 			if issue.Suggestion != "" {
 				sugWrapped := lipgloss.NewStyle().Width(issueWrap).Render("Suggestion: " + issue.Suggestion)
 				for line := range strings.SplitSeq(sugWrapped, "\n") {
-					b.WriteString(dimStyle.Render(strings.Repeat(" ", len(prefix)) + line))
-					b.WriteString("\n")
+					b.WriteString(dimStyle.Render(strings.Repeat(" ", len(prefix))+line) + "\n")
 				}
 			}
 		}
@@ -1472,7 +1574,10 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 	b.WriteString(boldStyle.Render("  Transcript:"))
 	b.WriteString("\n")
 
-	wrapWidth := max(m.width-8, 40)
+	wrapWidth := m.width - 8
+	if wrapWidth < 40 {
+		wrapWidth = 40
+	}
 	wrapStyle := lipgloss.NewStyle().Width(wrapWidth)
 
 	for _, item := range chatCtx.Items {
@@ -1493,9 +1598,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 				fmt.Fprintf(&b, "    %s\n", dimStyle.Render(string(msg.Role)))
 			}
 			for line := range strings.SplitSeq(wrapStyle.Render(text), "\n") {
-				b.WriteString("      ")
-				b.WriteString(line)
-				b.WriteString("\n")
+				b.WriteString("      " + line + "\n")
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
@@ -1547,8 +1650,14 @@ func (m *simulateModel) renderLogs(roomName string) string {
 		return ""
 	}
 	var b strings.Builder
-	logBudget := max(m.height/3, 3)
-	maxWidth := max(m.width-4, 20)
+	logBudget := m.height / 3
+	if logBudget < 3 {
+		logBudget = 3
+	}
+	maxWidth := m.width - 4
+	if maxWidth < 20 {
+		maxWidth = 20
+	}
 	wrapStyle := lipgloss.NewStyle().Width(maxWidth)
 
 	var rawLines []string
@@ -1570,13 +1679,18 @@ func (m *simulateModel) renderLogs(roomName string) string {
 		return b.String()
 	}
 
-	maxScroll := max(total-logBudget, 0)
+	maxScroll := total - logBudget
+	if maxScroll < 0 {
+		maxScroll = 0
+	}
 
 	if m.logPinned {
-		// Convert from-bottom offset to stable from-top position
-		// When pinned, new lines arriving shouldn't move the viewport
+		// pinned: new lines arriving shouldn't move the viewport
 		pinnedStart := m.logPinnedTotal - logBudget - m.logScrollOff
-		newOffset := max(total-logBudget-pinnedStart, 0)
+		newOffset := total - logBudget - pinnedStart
+		if newOffset < 0 {
+			newOffset = 0
+		}
 		m.logScrollOff = newOffset
 	}
 	m.logPinnedTotal = total
@@ -1588,17 +1702,21 @@ func (m *simulateModel) renderLogs(roomName string) string {
 		m.logScrollOff = 0
 	}
 
-	start := max(total-logBudget-m.logScrollOff, 0)
-	end := min(start+logBudget, total)
+	start := total - logBudget - m.logScrollOff
+	if start < 0 {
+		start = 0
+	}
+	end := start + logBudget
+	if end > total {
+		end = total
+	}
 
 	if m.logScrollOff > 0 {
 		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more lines above", start)))
 		b.WriteString("\n")
 	}
 	for _, vl := range visualLines[start:end] {
-		b.WriteString("  ")
-		b.WriteString(vl)
-		b.WriteString("\n")
+		b.WriteString("  " + vl + "\n")
 	}
 	if end < total {
 		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more lines below", total-end)))
@@ -1607,7 +1725,6 @@ func (m *simulateModel) renderLogs(roomName string) string {
 	return b.String()
 }
 
-// firstMeaningfulLine returns the first non-empty, non-heading line from text.
 func firstMeaningfulLine(text string) string {
 	for line := range strings.SplitSeq(text, "\n") {
 		line = strings.TrimSpace(line)
@@ -1620,10 +1737,16 @@ func firstMeaningfulLine(text string) string {
 }
 
 func (m *simulateModel) renderHint() string {
+	if m.confirmQuit {
+		return m.renderQuitConfirm()
+	}
+	if m.saving {
+		return m.renderSaveDialog()
+	}
 	var parts []string
 	switch {
 	case m.detailJobID != "":
-		parts = append(parts, "↑↓ scroll · ESC back")
+		parts = append(parts, "↑↓ scroll · c copy scenario · ESC back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
@@ -1634,9 +1757,10 @@ func (m *simulateModel) renderHint() string {
 	case m.descriptionExpanded():
 		parts = append(parts, "↑↓ scroll · d collapse description")
 	default:
-		nav := "↑↓ navigate · ENTER detail · d show description"
+		// the collapsed description block already carries "(press d to expand)"
+		nav := "↑↓ navigate · ENTER detail"
 		if m.canExportScenarios() {
-			nav += " · e export scenarios"
+			nav += " · s save scenarios"
 		}
 		parts = append(parts, nav)
 		if m.hasLogs() {
@@ -1648,22 +1772,94 @@ func (m *simulateModel) renderHint() string {
 		}
 	}
 	parts = append(parts, "q quit")
-	footer := dimStyle.Render("  " + strings.Join(parts, " · "))
-	if m.exportStatus != "" {
-		footer += "\n" + greenStyle().Render("  "+m.exportStatus)
+	return dimStyle.Render("  " + strings.Join(parts, " · "))
+}
+
+func (m *simulateModel) renderQuitConfirm() string {
+	keep := "Keep running"
+	stop := "Stop simulation"
+	if m.confirmQuitSel == 0 {
+		keep = reverseStyle.Bold(true).Render(" " + keep + " ")
+		stop = dimStyle.Render(" " + stop + " ")
+	} else {
+		keep = dimStyle.Render(" " + keep + " ")
+		stop = lipgloss.NewStyle().Background(util.Error()).Foreground(lipgloss.Color("15")).Bold(true).Render(" " + stop + " ")
 	}
-	return footer
+	var b strings.Builder
+	b.WriteString(boldStyle.Render("Stop simulation?") + "\n")
+	b.WriteString(dimStyle.Render("The run is still in progress. Quitting will cancel it.") + "\n\n")
+	b.WriteString(keep + "  " + stop + "\n\n")
+	b.WriteString(dimStyle.Render("←→ select · enter confirm · esc dismiss"))
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(util.Warning()).
+		Padding(0, 1).
+		Render(b.String())
+	return indentLines(box, "  ")
+}
+
+func (m *simulateModel) renderSaveDialog() string {
+	n := len(m.run.GetScenarioGroup().GetScenarios())
+	noun := "scenarios"
+	if n == 1 {
+		noun = "scenario"
+	}
+	subtitle := fmt.Sprintf("%d generated %s → %s", n, noun, m.config.projectDir)
+	// wide enough for the destination path, within the terminal
+	width := 50
+	if w := lipgloss.Width(subtitle); w > width {
+		width = w
+	}
+	if max := m.width - 8; width > max {
+		width = max
+	}
+	if width < 24 {
+		width = 24
+	}
+	var b strings.Builder
+	b.WriteString(boldStyle.Render("Save scenarios") + "\n")
+	b.WriteString(dimStyle.Render(subtitle) + "\n\n")
+	b.WriteString("File: " + m.saveInput.View())
+	if m.saveErr != "" {
+		b.WriteString("\n" + redStyle().Render(m.saveErr))
+	}
+	b.WriteString("\n\n" + dimStyle.Render("enter save · esc cancel"))
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(util.Brand()).
+		Padding(0, 1).
+		Width(width).
+		Render(b.String())
+	return indentLines(box, "  ")
+}
+
+func (m *simulateModel) renderToast() string {
+	if m.toast == "" {
+		return ""
+	}
+	borderColor := util.Success()
+	line := greenStyle().Render("✓") + " " + m.toast
+	if !m.toastOK {
+		borderColor = util.Error()
+		line = redStyle().Render("✗") + " " + m.toast
+	}
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(borderColor).
+		Padding(0, 1).
+		Render(line)
+	return indentLines(box, "  ") + "\n"
+}
+
+func indentLines(s, prefix string) string {
+	lines := strings.Split(s, "\n")
+	for i := range lines {
+		lines[i] = prefix + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }
 
 func jobIcon(job *livekit.SimulationRun_Job) string {
-	switch job.Status {
-	case livekit.SimulationRun_Job_STATUS_COMPLETED:
-		return greenStyle().Render("✓")
-	case livekit.SimulationRun_Job_STATUS_FAILED:
-		return redStyle().Render("✗")
-	case livekit.SimulationRun_Job_STATUS_RUNNING:
-		return yellowStyle().Render("⏺")
-	default:
-		return dimStyle.Render("⏺")
-	}
+	r, st := jobStatusIcon(job)
+	return st.Render(string(r))
 }

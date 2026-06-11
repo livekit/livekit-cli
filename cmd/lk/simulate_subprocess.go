@@ -134,6 +134,40 @@ type AgentStartConfig struct {
 	ForwardOutput io.Writer // if set, forward each output line to this writer
 }
 
+// thinCLIMinVersion is the first livekit-agents release that exposes the
+// start/dev/console/simulate subcommands under `python -m livekit.agents`.
+const thinCLIMinVersion = "1.6.0"
+
+// agentExitDetail surfaces the agent's own output and the log path when the
+// worker exits early or never registers.
+func agentExitDetail(ap *AgentProcess) string {
+	var b strings.Builder
+	if tail := lastNonEmptyLines(ap.RecentLogs(0), 12); len(tail) > 0 {
+		for i, l := range tail {
+			tail[i] = ansiEscapeRe.ReplaceAllString(l, "")
+		}
+		b.WriteString("Agent output:\n  " + strings.Join(tail, "\n  "))
+	}
+	if ap.LogPath != "" {
+		if b.Len() > 0 {
+			b.WriteString("\n\n")
+		}
+		b.WriteString("Full log: " + ap.LogPath)
+	}
+	return b.String()
+}
+
+// lastNonEmptyLines returns up to n trailing non-blank lines, in order.
+func lastNonEmptyLines(lines []string, n int) []string {
+	var out []string
+	for i := len(lines) - 1; i >= 0 && len(out) < n; i-- {
+		if strings.TrimSpace(lines[i]) != "" {
+			out = append([]string{lines[i]}, out...)
+		}
+	}
+	return out
+}
+
 // startAgent launches a Python agent subprocess and monitors its output.
 func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	pythonBin, prefixArgs, err := findPythonBinary(cfg.Dir, cfg.ProjectType)
@@ -141,11 +175,16 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		return nil, err
 	}
 
-	// Launch via the framework CLI module rather than running the user's file
-	// directly: python -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS. The framework
-	// discovers the AgentServer from the entrypoint and drives the thin CLI. Requires a
-	// livekit-agents that supports start/console under -m livekit.agents; older versions
-	// only expose download-files there.
+	// fail fast when livekit-agents is older than the thin-CLI baseline
+	if err := agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
+		"python-min-sdk-version": thinCLIMinVersion,
+		"node-min-sdk-version":   thinCLIMinVersion,
+	}); err != nil {
+		return nil, err
+	}
+
+	// python -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS: the framework
+	// discovers the AgentServer from the entrypoint and drives the thin CLI.
 	args := append(prefixArgs, "-m", "livekit.agents")
 	if len(cfg.CLIArgs) > 0 {
 		args = append(args, cfg.CLIArgs[0]) // subcommand: start | console
@@ -198,6 +237,8 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		scanner := bufio.NewScanner(r)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 		for scanner.Scan() {
+			// Keep ANSI colors: the TUI renders them. Plain-text consumers
+			// (log file, surfaced errors, fatal-marker matching) strip their own copy.
 			line := scanner.Text()
 			ap.appendLog(line)
 			if cfg.ForwardOutput != nil {
@@ -239,7 +280,8 @@ func (ap *AgentProcess) appendLog(line string) {
 		ap.latestRoomByPx[roomNamePrefix(room)] = room
 	}
 	if ap.logFile != nil {
-		fmt.Fprintln(ap.logFile, line)
+		// the agent logs in colored format; keep the file free of ANSI escapes
+		fmt.Fprintln(ap.logFile, ansiEscapeRe.ReplaceAllString(line, ""))
 	}
 	if ap.LogStream != nil {
 		select {
@@ -307,7 +349,7 @@ func roomNamePrefix(roomName string) string {
 
 // RecentRoomLogsByPrefix returns log lines for the most recent room matching
 // the prefix of the given room name. When a job is retried, each attempt gets
-// a new room with the same prefix — we show only the latest attempt's logs.
+// a new room with the same prefix; only the latest attempt's logs are shown.
 func (ap *AgentProcess) RecentRoomLogsByPrefix(n int, roomName string) []string {
 	ap.mu.Lock()
 	defer ap.mu.Unlock()
@@ -329,17 +371,16 @@ func (ap *AgentProcess) RecentRoomLogsByPrefix(n int, roomName string) []string 
 var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 func extractLogRoom(line string) string {
-	clean := ansiEscapeRe.ReplaceAllString(line, "")
-	idx := strings.LastIndex(clean, "{")
+	idx := strings.LastIndex(line, "{")
 	if idx < 0 {
 		return ""
 	}
-	end := strings.LastIndex(clean, "}")
+	end := strings.LastIndex(line, "}")
 	if end <= idx {
 		return ""
 	}
 	var extra map[string]any
-	if err := json.Unmarshal([]byte(clean[idx:end+1]), &extra); err != nil {
+	if err := json.Unmarshal([]byte(line[idx:end+1]), &extra); err != nil {
 		return ""
 	}
 	if room, ok := extra["room"].(string); ok {
@@ -348,7 +389,9 @@ func extractLogRoom(line string) string {
 	return ""
 }
 
-// Kill sends interrupt to the process and force-kills after a timeout.
+// Kill gives the worker a short SIGINT grace (an idle one exits cleanly; one
+// draining jobs would take minutes), then SIGKILLs the whole process group and
+// waits so the port is free on return.
 func (ap *AgentProcess) Kill() {
 	if ap.cmd.Process == nil {
 		return
@@ -364,8 +407,12 @@ func (ap *AgentProcess) Kill() {
 	}
 	select {
 	case <-ap.exitCh:
-	case <-time.After(5 * time.Second):
-		ap.sendKill()
+	case <-time.After(1 * time.Second):
+	}
+	ap.sendKill()
+	select {
+	case <-ap.exitCh:
+	case <-time.After(2 * time.Second):
 	}
 	ap.closeLogFile()
 }
