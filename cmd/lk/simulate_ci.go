@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -236,14 +234,14 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess, 
 
 		if job.Instructions != "" {
 			fmt.Fprintln(w, "Instructions:")
-			for _, line := range strings.Split(job.Instructions, "\n") {
+			for line := range strings.SplitSeq(job.Instructions, "\n") {
 				fmt.Fprintf(w, "  %s\n", line)
 			}
 		}
 
 		if job.AgentExpectations != "" {
 			fmt.Fprintln(w, "Expected:")
-			for _, line := range strings.Split(job.AgentExpectations, "\n") {
+			for line := range strings.SplitSeq(job.AgentExpectations, "\n") {
 				fmt.Fprintf(w, "  %s\n", line)
 			}
 		}
@@ -277,7 +275,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess, 
 		}
 
 		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && gh && isGitHubActions() {
-			firstLine := strings.SplitN(job.Error, "\n", 2)[0]
+			firstLine, _, _ := strings.Cut(job.Error, "\n")
 			fmt.Fprintf(w, "::error::Job %d failed: %s\n", i+1, firstLine)
 		}
 	}
@@ -309,7 +307,7 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, gh bool) {
 	if summary.GoingWell != "" {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "Going well:")
-		for _, line := range strings.Split(summary.GoingWell, "\n") {
+		for line := range strings.SplitSeq(summary.GoingWell, "\n") {
 			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
@@ -317,7 +315,7 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, gh bool) {
 	if summary.ToImprove != "" {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "To improve:")
-		for _, line := range strings.Split(summary.ToImprove, "\n") {
+		for line := range strings.SplitSeq(summary.ToImprove, "\n") {
 			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
@@ -359,7 +357,7 @@ func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {
 			default:
 				fmt.Fprintf(w, "  ● %s\n", msg.Role)
 			}
-			for _, tl := range strings.Split(text, "\n") {
+			for tl := range strings.SplitSeq(text, "\n") {
 				fmt.Fprintf(w, "    %s\n", tl)
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:

@@ -166,6 +166,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		prompts = append(prompts, huh.NewInput().
 			Title("Project Name").
 			Placeholder("my-project").
+			Prompt("").
 			Validate(validateName).
 			Value(&p.Name))
 	}
@@ -187,6 +188,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		prompts = append(prompts, huh.NewInput().
 			Title("Project URL").
 			Placeholder("wss://my-project.livekit.cloud").
+			Prompt("").
 			Validate(validateURL).
 			Value(&p.URL))
 	}
@@ -207,6 +209,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		prompts = append(prompts, huh.NewInput().
 			Title("API Key").
 			Placeholder("APIxxxxxxxxxxxx").
+			Prompt("").
 			Validate(validateKey).
 			Value(&p.APIKey))
 	}
@@ -221,6 +224,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		prompts = append(prompts, huh.NewInput().
 			Title("API Secret").
 			Placeholder("****************************").
+			Prompt("").
 			Validate(validateKey).
 			Value(&p.APISecret))
 	}

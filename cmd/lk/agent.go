@@ -755,20 +755,35 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 
+	secrets, err := requireSecrets(ctx, cmd, false, true)
+	if err != nil {
+		return err
+	}
+
 	// --image or --image-tar: skip source build and push a prebuilt image via the OCI proxy.
 	imageRef := cmd.String("image")
 	imageTar := cmd.String("image-tar")
 	if imageRef != "" || imageTar != "" {
+		if len(secrets) > 0 {
+			resp, err := agentsClient.UpdateAgentSecrets(buildContext, &lkproto.UpdateAgentSecretsRequest{
+				AgentId: agentId,
+				Secrets: secrets,
+			})
+			if err != nil {
+				if twerr, ok := err.(twirp.Error); ok {
+					return fmt.Errorf("unable to update agent secrets: %s", twerr.Msg())
+				}
+				return fmt.Errorf("unable to update agent secrets: %w", err)
+			}
+			if !resp.Success {
+				return fmt.Errorf("failed to update agent secrets: %s", resp.Message)
+			}
+		}
 		if err := deployPrebuiltImage(buildContext, agentId, imageRef, imageTar); err != nil {
 			return fmt.Errorf("unable to deploy prebuilt image: %w", err)
 		}
 		out.Status("Deployed agent")
 		return nil
-	}
-
-	secrets, err := requireSecrets(ctx, cmd, false, true)
-	if err != nil {
-		return err
 	}
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))

@@ -12,32 +12,122 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# All builds set CGO_ENABLED=1 — audio (portaudio/webrtc APM) is in every
+# binary. Linux/Windows cross-compiles use zig cc as the C/C++ toolchain;
+# scripts/setup-cross.sh builds static libasound.a (linux) and pre-generates
+# MinGW import libs (windows) under .cross/<target>/ before each build.
+
 version: 2
 
 before:
   hooks:
     - go mod tidy
+
 builds:
-  - id: lk
-    env:
-      - CGO_ENABLED=0
+  # darwin can't be cross-compiled from Linux (no macOS SDK / CoreAudio); it
+  # builds where goreleaser runs (the macOS release runner). On the arm64 macOS
+  # runner, amd64 cross-compiles via Apple clang's -arch against the universal
+  # SDK. The build.yaml smoke test builds both arches the same way.
+  - id: lk-darwin-amd64
     main: ./cmd/lk
     binary: lk
-    goarm:
-      - "7"
-    goarch:
-      - amd64
-      - arm64
-      - arm
-    goos:
-      - linux
-      - windows
-      - darwin
-    ignore:
-      - goos: windows
-        goarch: arm
+    env:
+      - CGO_ENABLED=1
+    goos: [darwin]
+    goarch: [amd64]
     ldflags:
       - -s -w
+
+  - id: lk-darwin-arm64
+    main: ./cmd/lk
+    binary: lk
+    env:
+      - CGO_ENABLED=1
+    goos: [darwin]
+    goarch: [arm64]
+    ldflags:
+      - -s -w
+
+  - id: lk-linux-amd64
+    main: ./cmd/lk
+    binary: lk
+    hooks:
+      pre:
+        - cmd: scripts/setup-cross.sh linux/amd64
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target x86_64-linux-gnu.2.28
+      - CXX=zig c++ -target x86_64-linux-gnu.2.28
+      - CGO_CFLAGS=-I{{ .Env.PWD }}/.cross/linux_amd64/include
+      # -L points at scripts/setup-cross.sh's static libasound.a. zig's sysroot
+      # excludes /usr/lib so the `-lasound` from #cgo LDFLAGS resolves here.
+      - CGO_LDFLAGS=-L{{ .Env.PWD }}/.cross/linux_amd64/lib
+    goos: [linux]
+    goarch: [amd64]
+    ldflags:
+      - -s -w
+      - -linkmode=external
+
+  - id: lk-linux-arm64
+    main: ./cmd/lk
+    binary: lk
+    hooks:
+      pre:
+        - cmd: scripts/setup-cross.sh linux/arm64
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target aarch64-linux-gnu.2.28
+      - CXX=zig c++ -target aarch64-linux-gnu.2.28
+      - CGO_CFLAGS=-I{{ .Env.PWD }}/.cross/linux_arm64/include
+      - CGO_LDFLAGS=-L{{ .Env.PWD }}/.cross/linux_arm64/lib
+    goos: [linux]
+    goarch: [arm64]
+    ldflags:
+      - -s -w
+      - -linkmode=external
+
+  - id: lk-windows-amd64
+    main: ./cmd/lk
+    binary: lk
+    hooks:
+      pre:
+        - cmd: scripts/setup-cross.sh windows/amd64
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target x86_64-windows-gnu
+      - CXX=zig c++ -target x86_64-windows-gnu
+      # SEH (-fms-extensions) and -DNTDDI_VERSION live in the source #cgo windows
+      # directives so native and cross builds agree; -fms-extensions isn't on
+      # cgo's directive allowlist, so unlock it here. -fno-sanitize=all is a
+      # zig-0.16-specific workaround for unresolved UBSan symbols under lld.
+      - CGO_CXXFLAGS_ALLOW=-fms-extensions
+      - CGO_CXXFLAGS=-fno-sanitize=all
+    goos: [windows]
+    goarch: [amd64]
+    ldflags:
+      - -s -w
+      - -linkmode=external
+      - -extldflags=-L{{ .Env.PWD }}/.cross/windows_amd64/mingw_lib
+
+  - id: lk-windows-arm64
+    main: ./cmd/lk
+    binary: lk
+    hooks:
+      pre:
+        - cmd: scripts/setup-cross.sh windows/arm64
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target aarch64-windows-gnu
+      - CXX=zig c++ -target aarch64-windows-gnu
+      - CGO_CXXFLAGS_ALLOW=-fms-extensions
+      - CGO_CXXFLAGS=-fno-sanitize=all
+    goos: [windows]
+    goarch: [arm64]
+    ldflags:
+      - -s -w
+      - -linkmode=external
+      - -extldflags=-L{{ .Env.PWD }}/.cross/windows_arm64/mingw_lib
+
 archives:
   - name_template: "lk_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
@@ -46,21 +136,30 @@ archives:
     files:
       - LICENSE
       - 'autocomplete/*'
+
+# Docker images are built+pushed by a separate job in release.yaml (on a Linux
+# runner with a Docker daemon), since goreleaser runs on macOS here to build the
+# darwin binary natively and macOS runners have no Docker.
+
 release:
   github:
     owner: livekit
     name: livekit-cli
   draft: true
   prerelease: auto
+
 changelog:
   sort: asc
   filters:
     exclude:
       - '^docs:'
       - '^test:'
+
 gomod:
   proxy: false
+
 checksum:
   name_template: 'checksums.txt'
+
 snapshot:
   version_template: "{{ incpatch .Version }}-next"

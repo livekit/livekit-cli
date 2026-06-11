@@ -295,6 +295,67 @@ func TestRequireSecrets_InlineOverridesFile(t *testing.T) {
 	assert.Equal(t, "inline_value", string(secrets[0].Value))
 }
 
+// TestRequireSecrets_LazyDeployMode covers the secret-loading contract used by
+// `lk agent deploy` (required=false, lazy=true). Issue #860 depended on this path
+// being reached before the --image branch.
+func TestRequireSecrets_LazyDeployMode(t *testing.T) {
+	tests := []struct {
+		name            string
+		envFileContent  string
+		secretsFile     string
+		inlineSecrets   []string
+		expectedSecrets []string
+	}{
+		{
+			name:            "does not auto-read .env when lazy and no secrets flags",
+			envFileContent:  "FROM_ENV=should-not-appear",
+			expectedSecrets: nil,
+		},
+		{
+			name:            "reads secrets when --secrets-file is explicitly set",
+			envFileContent:  "OTHER=ignored",
+			secretsFile:     ".env.production",
+			expectedSecrets: []string{"API_KEY"},
+		},
+		{
+			name:            "uses inline --secrets without reading .env",
+			envFileContent:  "FROM_ENV=ignored",
+			inlineSecrets:   []string{"FROM_FLAG=value"},
+			expectedSecrets: []string{"FROM_FLAG"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir, err := os.MkdirTemp("", "agent-secrets-lazy-test")
+			require.NoError(t, err)
+			defer os.RemoveAll(tempDir)
+
+			oldWd, _ := os.Getwd()
+			require.NoError(t, os.Chdir(tempDir))
+			defer os.Chdir(oldWd)
+
+			if tt.envFileContent != "" {
+				require.NoError(t, os.WriteFile(".env", []byte(tt.envFileContent), 0644))
+			}
+			if tt.secretsFile != "" {
+				require.NoError(t, os.WriteFile(tt.secretsFile, []byte("API_KEY=secret"), 0644))
+			}
+
+			cmd := buildTestCommand(t, false, tt.secretsFile, tt.inlineSecrets)
+
+			secrets, err := requireSecrets(context.Background(), cmd, false, true)
+			require.NoError(t, err)
+
+			secretNames := make([]string, len(secrets))
+			for i, s := range secrets {
+				secretNames[i] = s.Name
+			}
+			assert.ElementsMatch(t, tt.expectedSecrets, secretNames)
+		})
+	}
+}
+
 // TestQuietFlagAlias verifies the global --quiet flag and its --silent / -q aliases all
 // resolve to the same value, so the former per-command --silent keeps working.
 func TestQuietFlagAlias(t *testing.T) {

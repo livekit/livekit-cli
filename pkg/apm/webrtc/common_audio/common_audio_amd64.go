@@ -1,4 +1,4 @@
-//go:build console && amd64
+//go:build amd64
 
 package common_audio
 

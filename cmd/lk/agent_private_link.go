@@ -9,7 +9,6 @@ import (
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/proto"
 )
 
 var privateLinkCommands = &cli.Command{
@@ -102,7 +101,7 @@ func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint, c
 	}
 
 	if cloudRegion != "" {
-		req.CloudRegion = proto.String(cloudRegion)
+		req.CloudRegion = new(cloudRegion)
 	}
 
 	return req

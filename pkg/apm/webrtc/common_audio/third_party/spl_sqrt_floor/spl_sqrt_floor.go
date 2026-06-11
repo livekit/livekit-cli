@@ -1,5 +1,3 @@
-//go:build console
-
 package spl_sqrt_floor
 
 

@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,6 +29,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	agent "github.com/livekit/protocol/livekit/agent"
 )
@@ -96,15 +95,20 @@ func runSimulateTUI(config *simulateConfig) error {
 
 // --- Styles ---
 
+// Color styles are functions so they read the active theme palette at render time and
+// follow `lk set-theme`. The colorless styles below stay vars.
+func tagStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Background(util.Brand()).Foreground(lipgloss.Color("0")).Bold(true).Padding(0, 1)
+}
+func greenStyle() lipgloss.Style  { return lipgloss.NewStyle().Foreground(util.Success()) }
+func redStyle() lipgloss.Style    { return lipgloss.NewStyle().Foreground(util.Error()) }
+func yellowStyle() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Warning()) }
+func cyanStyle() lipgloss.Style   { return lipgloss.NewStyle().Foreground(util.Brand()).Bold(true) }
+
 var (
-	tagStyle     = lipgloss.NewStyle().Background(lipgloss.Color("#1fd5f9")).Foreground(lipgloss.Color("#000000")).Bold(true).Padding(0, 1)
-	greenStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	redStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	yellowStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#e5a00d"))
 	dimStyle     = lipgloss.NewStyle().Faint(true)
 	boldStyle    = lipgloss.NewStyle().Bold(true)
 	reverseStyle = lipgloss.NewStyle().Reverse(true)
-	cyanStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("6")).Bold(true)
 
 	simSpinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 )
@@ -889,7 +893,7 @@ func (m *simulateModel) View() string {
 func (m *simulateModel) viewSetup() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(tagStyle.Render("Agent Simulation"))
+	b.WriteString(tagStyle().Render("Agent Simulation"))
 	b.WriteString("\n\n")
 
 	if m.config.pc != nil && m.config.pc.Name != "" {
@@ -917,12 +921,12 @@ func (m *simulateModel) viewSetup() string {
 		if m.run != nil && m.run.GetNumSimulations() > 0 {
 			n = m.run.GetNumSimulations()
 		}
-		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle.Render("⏺"), n, m.spinner(), dimStyle.Render(elapsed.String())))
+		b.WriteString(fmt.Sprintf("  %s Generating %d scenarios  %s %s\n", yellowStyle().Render("⏺"), n, m.spinner(), dimStyle.Render(elapsed.String())))
 	}
 
 	if m.err != nil {
 		b.WriteString("\n")
-		b.WriteString(redStyle.Render("  "+m.err.Error()) + "\n")
+		b.WriteString(redStyle().Render("  "+m.err.Error()) + "\n")
 		if m.agent != nil {
 			b.WriteString("\n")
 			b.WriteString(m.renderLogs(""))
@@ -949,7 +953,7 @@ func (m *simulateModel) hasLogs() bool {
 }
 
 func (m *simulateModel) spinner() string {
-	return yellowStyle.Render(simSpinnerFrames[m.spinnerIdx%len(simSpinnerFrames)])
+	return yellowStyle().Render(simSpinnerFrames[m.spinnerIdx%len(simSpinnerFrames)])
 }
 
 func (m *simulateModel) renderSteps() string {
@@ -961,12 +965,12 @@ func (m *simulateModel) renderSteps() string {
 			if s.elapsed > 0 {
 				elapsed = " " + dimStyle.Render(s.elapsed.Round(time.Millisecond).String())
 			}
-			b.WriteString(fmt.Sprintf("  %s %s%s\n", greenStyle.Render("✓"), s.label, elapsed))
+			b.WriteString(fmt.Sprintf("  %s %s%s\n", greenStyle().Render("✓"), s.label, elapsed))
 		case "running":
 			elapsed := time.Since(m.stepStart).Truncate(time.Second)
-			b.WriteString(fmt.Sprintf("  %s %s  %s %s\n", yellowStyle.Render("⏺"), s.label, m.spinner(), dimStyle.Render(elapsed.String())))
+			b.WriteString(fmt.Sprintf("  %s %s  %s %s\n", yellowStyle().Render("⏺"), s.label, m.spinner(), dimStyle.Render(elapsed.String())))
 		case "failed":
-			b.WriteString(fmt.Sprintf("  %s %s\n", redStyle.Render("✗"), s.label))
+			b.WriteString(fmt.Sprintf("  %s %s\n", redStyle().Render("✗"), s.label))
 		default:
 			b.WriteString(fmt.Sprintf("  %s %s\n", dimStyle.Render("–"), s.label))
 		}
@@ -991,20 +995,20 @@ func (m *simulateModel) getDashboardURL() string {
 func (m *simulateModel) viewFailed() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(tagStyle.Render("Agent Simulation"))
+	b.WriteString(tagStyle().Render("Agent Simulation"))
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(m.runID))
 	if url := m.getDashboardURL(); url != "" {
 		b.WriteString("  " + dimStyle.Render(url))
 	}
 	b.WriteString("\n\n")
-	b.WriteString("  " + redStyle.Bold(true).Render("Failed") + "\n\n")
+	b.WriteString("  " + redStyle().Bold(true).Render("Failed") + "\n\n")
 	if m.run.Error != "" {
-		for _, line := range strings.Split(m.run.Error, "\n") {
-			b.WriteString(redStyle.Render("  "+line) + "\n")
+		for line := range strings.SplitSeq(m.run.Error, "\n") {
+			b.WriteString(redStyle().Render("  "+line) + "\n")
 		}
 	} else {
-		b.WriteString(redStyle.Render("  (no error details available)") + "\n")
+		b.WriteString(redStyle().Render("  (no error details available)") + "\n")
 	}
 	b.WriteString("\n")
 	if m.showLogs {
@@ -1023,7 +1027,7 @@ func (m *simulateModel) viewRunning() string {
 	var b strings.Builder
 
 	b.WriteString("\n")
-	b.WriteString(tagStyle.Render("Agent Simulation"))
+	b.WriteString(tagStyle().Render("Agent Simulation"))
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(m.runID))
 	if url := m.getDashboardURL(); url != "" {
@@ -1086,7 +1090,7 @@ func (m *simulateModel) viewRunning() string {
 		b.WriteString(m.renderJobList())
 
 		if m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING {
-			b.WriteString(fmt.Sprintf("\n  %s %s  %s\n", yellowStyle.Render("⏺"), yellowStyle.Render("Generating summary..."), m.spinner()))
+			b.WriteString(fmt.Sprintf("\n  %s %s  %s\n", yellowStyle().Render("⏺"), yellowStyle().Render("Generating summary..."), m.spinner()))
 		} else if m.run.Summary != nil {
 			b.WriteString(m.renderSummary())
 		} else if isTerminalRunStatus(m.run.Status) {
@@ -1094,7 +1098,7 @@ func (m *simulateModel) viewRunning() string {
 			if m.run.Error != "" {
 				msg = m.run.Error
 			}
-			b.WriteString(fmt.Sprintf("\n  %s %s\n", yellowStyle.Render("⚠"), yellowStyle.Render(msg)))
+			b.WriteString(fmt.Sprintf("\n  %s %s\n", yellowStyle().Render("⚠"), yellowStyle().Render(msg)))
 		}
 	}
 
@@ -1135,11 +1139,11 @@ func (m *simulateModel) renderHeader() string {
 	header := boldStyle.Render("Simulation") + " · "
 	switch style {
 	case "green":
-		header += greenStyle.Bold(true).Render(label)
+		header += greenStyle().Bold(true).Render(label)
 	case "red":
-		header += redStyle.Bold(true).Render(label)
+		header += redStyle().Bold(true).Render(label)
 	case "yellow":
-		header += yellowStyle.Bold(true).Render(label)
+		header += yellowStyle().Bold(true).Render(label)
 	}
 	return "  " + header
 }
@@ -1158,13 +1162,13 @@ func (m *simulateModel) renderCounts() string {
 	var parts []string
 	parts = append(parts, boldStyle.Render(fmt.Sprintf("%d/%d", done, total)))
 	if passed > 0 {
-		parts = append(parts, greenStyle.Render(fmt.Sprintf("%d passed", passed)))
+		parts = append(parts, greenStyle().Render(fmt.Sprintf("%d passed", passed)))
 	}
 	if failed > 0 {
-		parts = append(parts, redStyle.Render(fmt.Sprintf("%d failed", failed)))
+		parts = append(parts, redStyle().Render(fmt.Sprintf("%d failed", failed)))
 	}
 	if running > 0 {
-		parts = append(parts, yellowStyle.Render(fmt.Sprintf("%d running", running)))
+		parts = append(parts, yellowStyle().Render(fmt.Sprintf("%d running", running)))
 	}
 
 	elapsed := ""
@@ -1318,13 +1322,17 @@ func jobLabel(job *livekit.SimulationRun_Job) string {
 // jobStatusIcon returns the status symbol for a job and the color style it
 // should render in.
 func jobStatusIcon(job *livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
+	var s lipgloss.Style
 	switch job.Status {
 	case livekit.SimulationRun_Job_STATUS_COMPLETED:
-		return '✓', &greenStyle
+		s = greenStyle()
+		return '✓', &s
 	case livekit.SimulationRun_Job_STATUS_FAILED:
-		return '✗', &redStyle
+		s = redStyle()
+		return '✗', &s
 	case livekit.SimulationRun_Job_STATUS_RUNNING:
-		return '⏺', &yellowStyle
+		s = yellowStyle()
+		return '⏺', &s
 	default:
 		return '⏺', &dimStyle
 	}
@@ -1408,7 +1416,7 @@ func (m *simulateModel) renderDetail() string {
 	if instr == "" {
 		instr = "—"
 	}
-	for _, line := range strings.Split(wrapStyle.Render(instr), "\n") {
+	for line := range strings.SplitSeq(wrapStyle.Render(instr), "\n") {
 		b.WriteString("    " + line + "\n")
 	}
 	b.WriteString("\n")
@@ -1419,23 +1427,23 @@ func (m *simulateModel) renderDetail() string {
 	if expect == "" {
 		expect = "—"
 	}
-	for _, line := range strings.Split(wrapStyle.Render(expect), "\n") {
+	for line := range strings.SplitSeq(wrapStyle.Render(expect), "\n") {
 		b.WriteString(dimStyle.Render("    "+line) + "\n")
 	}
 
 	if job.Error != "" {
 		b.WriteString("\n")
 		if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
-			b.WriteString(greenStyle.Bold(true).Render("  Result:"))
+			b.WriteString(greenStyle().Bold(true).Render("  Result:"))
 			b.WriteString("\n")
-			for _, line := range strings.Split(wrapStyle.Render(job.Error), "\n") {
-				b.WriteString(greenStyle.Render("    "+line) + "\n")
+			for line := range strings.SplitSeq(wrapStyle.Render(job.Error), "\n") {
+				b.WriteString(greenStyle().Render("    "+line) + "\n")
 			}
 		} else {
-			b.WriteString(redStyle.Bold(true).Render("  Error:"))
+			b.WriteString(redStyle().Bold(true).Render("  Error:"))
 			b.WriteString("\n")
-			for _, line := range strings.Split(wrapStyle.Render(job.Error), "\n") {
-				b.WriteString(redStyle.Render("    "+line) + "\n")
+			for line := range strings.SplitSeq(wrapStyle.Render(job.Error), "\n") {
+				b.WriteString(redStyle().Render("    "+line) + "\n")
 			}
 		}
 	}
@@ -1467,7 +1475,7 @@ func (m *simulateModel) renderDetail() string {
 			wrapLogStyle := lipgloss.NewStyle().Width(maxWidth)
 			for _, line := range rawLines {
 				wrapped := wrapLogStyle.Render(line)
-				for _, wl := range strings.Split(wrapped, "\n") {
+				for wl := range strings.SplitSeq(wrapped, "\n") {
 					b.WriteString("  " + wl + "\n")
 				}
 			}
@@ -1527,8 +1535,8 @@ func (m *simulateModel) renderSummary() string {
 	b.WriteString("\n")
 	b.WriteString("  " + boldStyle.Render("Summary"))
 	b.WriteString(fmt.Sprintf("  %s  %s\n\n",
-		greenStyle.Render(fmt.Sprintf("%d passed", summary.Passed)),
-		redStyle.Render(fmt.Sprintf("%d failed", summary.Failed)),
+		greenStyle().Render(fmt.Sprintf("%d passed", summary.Passed)),
+		redStyle().Render(fmt.Sprintf("%d failed", summary.Failed)),
 	))
 
 	wrapWidth := m.width - 6
@@ -1537,27 +1545,27 @@ func (m *simulateModel) renderSummary() string {
 	}
 
 	if summary.GoingWell != "" {
-		b.WriteString(greenStyle.Bold(true).Render("  Going well:"))
+		b.WriteString(greenStyle().Bold(true).Render("  Going well:"))
 		b.WriteString("\n")
 		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.GoingWell)
-		for _, line := range strings.Split(wrapped, "\n") {
+		for line := range strings.SplitSeq(wrapped, "\n") {
 			b.WriteString("    " + line + "\n")
 		}
 		b.WriteString("\n")
 	}
 
 	if summary.ToImprove != "" {
-		b.WriteString(yellowStyle.Bold(true).Render("  To improve:"))
+		b.WriteString(yellowStyle().Bold(true).Render("  To improve:"))
 		b.WriteString("\n")
 		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.ToImprove)
-		for _, line := range strings.Split(wrapped, "\n") {
+		for line := range strings.SplitSeq(wrapped, "\n") {
 			b.WriteString("    " + line + "\n")
 		}
 		b.WriteString("\n")
 	}
 
 	if len(summary.Issues) > 0 {
-		b.WriteString(redStyle.Bold(true).Render("  Issues:"))
+		b.WriteString(redStyle().Bold(true).Render("  Issues:"))
 		b.WriteString("\n")
 		issueWrap := wrapWidth - 4 // account for "    N. " prefix
 		if issueWrap < 30 {
@@ -1575,7 +1583,7 @@ func (m *simulateModel) renderSummary() string {
 			}
 			if issue.Suggestion != "" {
 				sugWrapped := lipgloss.NewStyle().Width(issueWrap).Render("Suggestion: " + issue.Suggestion)
-				for _, line := range strings.Split(sugWrapped, "\n") {
+				for line := range strings.SplitSeq(sugWrapped, "\n") {
 					b.WriteString(dimStyle.Render(strings.Repeat(" ", len(prefix))+line) + "\n")
 				}
 			}
@@ -1586,11 +1594,6 @@ func (m *simulateModel) renderSummary() string {
 	return b.String()
 }
 
-var (
-	lkCyanColor  = lipgloss.Color("#1fd5f9")
-	lkGreenColor = lipgloss.Color("#6BCB77")
-)
-
 func (m *simulateModel) renderChatTranscript(jobID string) string {
 	if m.run.Summary == nil || m.run.Summary.ChatHistory == nil {
 		return ""
@@ -1600,8 +1603,8 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 		return ""
 	}
 
-	userStyle := lipgloss.NewStyle().Foreground(lkCyanColor).Bold(true)
-	agentStyle := lipgloss.NewStyle().Foreground(lkGreenColor).Bold(true)
+	userStyle := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
+	agentStyle := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
 
 	var b strings.Builder
 	b.WriteString("\n")
@@ -1631,7 +1634,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			default:
 				b.WriteString(fmt.Sprintf("    %s\n", dimStyle.Render(string(msg.Role))))
 			}
-			for _, line := range strings.Split(wrapStyle.Render(text), "\n") {
+			for line := range strings.SplitSeq(wrapStyle.Render(text), "\n") {
 				b.WriteString("      " + line + "\n")
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
@@ -1703,7 +1706,7 @@ func (m *simulateModel) renderLogs(roomName string) string {
 	var visualLines []string
 	for _, line := range rawLines {
 		wrapped := wrapStyle.Render(line)
-		for _, wl := range strings.Split(wrapped, "\n") {
+		for wl := range strings.SplitSeq(wrapped, "\n") {
 			visualLines = append(visualLines, wl)
 		}
 	}
@@ -1762,7 +1765,7 @@ func (m *simulateModel) renderLogs(roomName string) string {
 
 // firstMeaningfulLine returns the first non-empty, non-heading line from text.
 func firstMeaningfulLine(text string) string {
-	for _, line := range strings.Split(text, "\n") {
+	for line := range strings.SplitSeq(text, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -1821,7 +1824,7 @@ func (m *simulateModel) renderQuitConfirm() string {
 		stop = dimStyle.Render(" " + stop + " ")
 	} else {
 		keep = dimStyle.Render(" " + keep + " ")
-		stop = lipgloss.NewStyle().Background(lipgloss.Color("1")).Foreground(lipgloss.Color("15")).Bold(true).Render(" " + stop + " ")
+		stop = lipgloss.NewStyle().Background(util.Error()).Foreground(lipgloss.Color("15")).Bold(true).Render(" " + stop + " ")
 	}
 	var b strings.Builder
 	b.WriteString(boldStyle.Render("Stop simulation?") + "\n")
@@ -1830,7 +1833,7 @@ func (m *simulateModel) renderQuitConfirm() string {
 	b.WriteString(dimStyle.Render("←→ select · enter confirm · esc dismiss"))
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#e5a00d")).
+		BorderForeground(util.Warning()).
 		Padding(0, 1).
 		Render(b.String())
 	return indentLines(box, "  ")
@@ -1860,12 +1863,12 @@ func (m *simulateModel) renderSaveDialog() string {
 	b.WriteString(dimStyle.Render(subtitle) + "\n\n")
 	b.WriteString("File: " + m.saveInput.View())
 	if m.saveErr != "" {
-		b.WriteString("\n" + redStyle.Render(m.saveErr))
+		b.WriteString("\n" + redStyle().Render(m.saveErr))
 	}
 	b.WriteString("\n\n" + dimStyle.Render("enter save · esc cancel"))
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lkCyanColor).
+		BorderForeground(util.Brand()).
 		Padding(0, 1).
 		Width(width).
 		Render(b.String())
@@ -1876,11 +1879,11 @@ func (m *simulateModel) renderToast() string {
 	if m.toast == "" {
 		return ""
 	}
-	borderColor := lipgloss.Color("2")
-	line := greenStyle.Render("✓") + " " + m.toast
+	borderColor := util.Success()
+	line := greenStyle().Render("✓") + " " + m.toast
 	if !m.toastOK {
-		borderColor = lipgloss.Color("1")
-		line = redStyle.Render("✗") + " " + m.toast
+		borderColor = util.Error()
+		line = redStyle().Render("✗") + " " + m.toast
 	}
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

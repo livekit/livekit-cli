@@ -29,6 +29,7 @@ type CLIConfig struct {
 	DefaultProject string          `yaml:"default_project"`
 	Projects       []ProjectConfig `yaml:"projects"`
 	DeviceName     string          `yaml:"device_name"`
+	Theme          string          `yaml:"theme"`
 	// absent from YAML
 	hasPersisted bool
 }
@@ -170,8 +171,8 @@ func (c *CLIConfig) RemoveProject(name string) error {
 }
 
 func (c *CLIConfig) PersistIfNeeded() error {
-	if len(c.Projects) == 0 && !c.hasPersisted {
-		// doesn't need to be persisted
+	if len(c.Projects) == 0 && c.Theme == "" && !c.hasPersisted {
+		// nothing worth persisting yet
 		return nil
 	}
 

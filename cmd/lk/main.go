@@ -29,6 +29,7 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -64,6 +65,7 @@ func main() {
 	app.Commands = append(app.Commands, CloudCommands...)
 	app.Commands = append(app.Commands, DocsCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
+	app.Commands = append(app.Commands, ThemeCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, TokenCommands...)
 	app.Commands = append(app.Commands, JoinCommands...)
@@ -92,7 +94,7 @@ func main() {
 	checkForLegacyName()
 
 	if err := app.Run(ctx, os.Args); err != nil {
-		errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+		errStyle := lipgloss.NewStyle().Foreground(util.Error())
 		fmt.Fprintln(os.Stderr, errStyle.Render(err.Error()))
 		os.Exit(1)
 	}
@@ -131,11 +133,23 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	// defaults them to os.Stdout / os.Stderr, but they're overridable in tests).
 	out = util.NewPrinter(cmd.Root().Writer, cmd.Root().ErrWriter, cmd.Bool("quiet"))
 
+	// Apply the persisted color theme before any output/forms render. An empty value
+	// resolves to the default; an invalid stored value is reported and falls back.
+	if conf, err := config.LoadOrCreate(); err == nil {
+		if err := util.SetTheme(conf.Theme); err != nil {
+			out.Warnf("%v; using default theme", err)
+		}
+	}
+
 	return nil, nil
 }
 
+// Keep autocomplete/fish_autocomplete in sync with the command tree. CI (test.yaml)
+// fails if the committed file drifts; run `go generate ./...` to refresh it.
+//
+//go:generate go run . generate-fish-completion -o ../../autocomplete/fish_autocomplete
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
-	fishScript, err := cmd.ToFishCompletion()
+	fishScript, err := cmd.Root().ToFishCompletion()
 	if err != nil {
 		return err
 	}

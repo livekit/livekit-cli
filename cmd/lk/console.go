@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +31,7 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/console"
 	"github.com/livekit/livekit-cli/v2/pkg/portaudio"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 func init() {
@@ -230,8 +229,8 @@ func listDevices() error {
 		return err
 	}
 
-	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("6"))
-	defaultStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(util.Brand())
+	defaultStyle := lipgloss.NewStyle().Foreground(util.Success())
 
 	out.Result(headerStyle.Render(fmt.Sprintf("  %-4s %-8s %-45s %s", "#", "Type", "Name", "Default")))
 	out.Result(strings.Repeat("─", 70))
