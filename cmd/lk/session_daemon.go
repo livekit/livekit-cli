@@ -47,11 +47,19 @@ func runSessionDaemon() {
 	}
 	defer server.Close()
 
+	runtimeArgs, err := sessionFwdArgs(os.Getenv(envSessionFwd))
+	if err != nil {
+		signalReady(ready, "error: "+err.Error())
+		os.Exit(1)
+	}
+
 	agentProc, err := startAgent(AgentStartConfig{
 		Dir:         os.Getenv(envSessionDir),
 		Entrypoint:  os.Getenv(envSessionEntry),
 		ProjectType: agentfs.ProjectType(os.Getenv(envSessionPType)),
+		RuntimeArgs: runtimeArgs,
 		CLIArgs:     buildConsoleArgs(server.Addr().String(), false),
+		FailSignals: consoleCrashSignals,
 	})
 	if err != nil {
 		signalReady(ready, "error: failed to start agent: "+err.Error())
@@ -81,6 +89,10 @@ func runSessionDaemon() {
 			msg += ": " + waitErr.Error()
 		}
 		signalReady(ready, msg)
+		agentProc.Kill()
+		os.Exit(1)
+	case <-agentProc.Failed():
+		signalReady(ready, "error: agent job crashed before connecting; logs: "+agentProc.LogPath)
 		agentProc.Kill()
 		os.Exit(1)
 	case <-time.After(60 * time.Second):

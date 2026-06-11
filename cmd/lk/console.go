@@ -43,7 +43,7 @@ func init() {
 var consoleCommand = &cli.Command{
 	Name:      "console",
 	Usage:     "Voice chat with an agent via mic/speakers",
-	ArgsUsage: "[entrypoint]",
+	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Category:  "Core",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
@@ -143,7 +143,9 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		Dir:         projectDir,
 		Entrypoint:  entrypoint,
 		ProjectType: projectType,
+		RuntimeArgs: forwardedArgs(cmd),
 		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
+		FailSignals: consoleCrashSignals,
 	})
 	if err != nil {
 		stopSpinner()
@@ -183,6 +185,15 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("agent exited before connecting: %w", err)
 		}
 		return fmt.Errorf("agent exited before connecting")
+	case <-agentProc.Failed():
+		stopSpinner()
+		// The crash marker arrives mid-traceback; give trailing output a moment.
+		time.Sleep(500 * time.Millisecond)
+		logs := agentProc.RecentLogs(40)
+		for _, l := range logs {
+			fmt.Fprintln(os.Stderr, l)
+		}
+		return fmt.Errorf("agent job crashed before connecting")
 	case <-time.After(60 * time.Second):
 		stopSpinner()
 		logs := agentProc.RecentLogs(20)
