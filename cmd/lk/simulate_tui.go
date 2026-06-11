@@ -806,20 +806,21 @@ func (m *simulateModel) viewSetup() string {
 		b.WriteString(dimStyle.Render("  "+url) + "\n")
 	}
 
-	// When scenarios come from a file, show that clearly: the group title, how many
-	// scenarios, the source file, and each scenario's label.
+	// When scenarios come from a file, show a single load summary — the job
+	// list renders each scenario, so they aren't listed twice.
 	if m.config.mode == modeScenarios && m.config.scenarioGroup != nil {
 		g := m.config.scenarioGroup
 		b.WriteString("\n")
-		title := g.GetName()
-		if title == "" {
-			title = "Scenarios"
+		noun := "scenarios"
+		if len(g.GetScenarios()) == 1 {
+			noun = "scenario"
 		}
-		b.WriteString("  " + cyanStyle.Render(title) + dimStyle.Render(
-			fmt.Sprintf("  %d from %s", len(g.GetScenarios()), m.config.scenariosPath)) + "\n")
-		for _, s := range g.GetScenarios() {
-			b.WriteString(dimStyle.Render("    • "+s.GetLabel()) + "\n")
+		line := fmt.Sprintf("Loaded %d %s from %s", len(g.GetScenarios()), noun, m.config.scenariosPath)
+		b.WriteString("  " + greenStyle.Render("✓") + " " + line)
+		if name := g.GetName(); name != "" {
+			b.WriteString("  " + cyanStyle.Render(name))
 		}
+		b.WriteString("\n")
 	}
 
 	b.WriteString("\n")
