@@ -1,3 +1,5 @@
+//go:build !portaudio_system
+
 package portaudio
 
 /*
