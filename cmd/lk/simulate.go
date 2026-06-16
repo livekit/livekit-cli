@@ -81,7 +81,7 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.BoolFlag{
 			Name:  "audio",
-			Usage: "Simulate over audio (TTS + the agent's full media pipeline) instead of text",
+			Usage: "Simulate speech-to-speech interactions using the agent's full audio pipeline. By default, simulations run in text-only mode.",
 		},
 		&cli.BoolFlag{
 			Name:    "yes",
