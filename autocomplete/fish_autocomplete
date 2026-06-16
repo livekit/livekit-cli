@@ -188,6 +188,7 @@ complete -x -c lk -n '__fish_seen_subcommand_from agent a; and not __fish_seen_s
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate' -f -l num-simulations -s n -r -d 'Number of scenarios to generate'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate' -f -l concurrency -r -d 'Max simulations running in parallel (default: server-side limit)'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate' -f -l scenarios -r -d 'Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent\'s source'
+complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate' -f -l audio -d 'Simulate speech-to-speech interactions using the agent\'s full audio pipeline. By default, simulations run in text-only mode.'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate' -f -l yes -s y -d 'Skip the source-upload confirmation prompt (required for non-interactive runs that generate from source)'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
