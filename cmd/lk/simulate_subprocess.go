@@ -134,7 +134,7 @@ func checkTypeStrippingSupport(dir, nodeBin string) error {
 // order. Forward slashes are valid on all platforms.
 func defaultEntrypoints(projectType agentfs.ProjectType) []string {
 	if projectType.IsNode() {
-		return []string{"agent.ts", "agent.js"}
+		return []string{"main.ts", "src/main.js"}
 	}
 	return []string{"agent.py"}
 }
@@ -144,7 +144,7 @@ func defaultEntrypoints(projectType agentfs.ProjectType) []string {
 // user's working directory.
 func fallbackEntrypoints(projectType agentfs.ProjectType) []string {
 	if projectType.IsNode() {
-		return []string{"src/agent.ts", "src/agent.js"}
+		return []string{"src/main.ts", "src/main.js"}
 	}
 	return []string{"src/agent.py"}
 }
@@ -222,36 +222,6 @@ type AgentStartConfig struct {
 // thinCLIMinVersion is the first livekit-agents release that exposes the
 // start/dev/console/simulate subcommands under `python -m livekit.agents`.
 const thinCLIMinVersion = "1.6.0"
-
-// agentExitDetail surfaces the agent's own output and the log path when the
-// worker exits early or never registers.
-func agentExitDetail(ap *AgentProcess) string {
-	var b strings.Builder
-	if tail := lastNonEmptyLines(ap.RecentLogs(0), 12); len(tail) > 0 {
-		for i, l := range tail {
-			tail[i] = ansiEscapeRe.ReplaceAllString(l, "")
-		}
-		b.WriteString("Agent output:\n  " + strings.Join(tail, "\n  "))
-	}
-	if ap.LogPath != "" {
-		if b.Len() > 0 {
-			b.WriteString("\n\n")
-		}
-		b.WriteString("Full log: " + ap.LogPath)
-	}
-	return b.String()
-}
-
-// lastNonEmptyLines returns up to n trailing non-blank lines, in order.
-func lastNonEmptyLines(lines []string, n int) []string {
-	var out []string
-	for i := len(lines) - 1; i >= 0 && len(out) < n; i-- {
-		if strings.TrimSpace(lines[i]) != "" {
-			out = append([]string{lines[i]}, out...)
-		}
-	}
-	return out
-}
 
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
 // branching on project type. Python uses the thin CLI:
@@ -502,6 +472,41 @@ func (ap *AgentProcess) RecentRoomLogsByPrefix(n int, roomName string) []string 
 }
 
 var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// agentExitDetail surfaces the agent's own output and the log path when the
+// worker exits early or never registers.
+func agentExitDetail(ap *AgentProcess) string {
+	logs := ap.RecentLogs(0)
+
+	var b strings.Builder
+
+	if len(logs) == 0 {
+		b.WriteString("Agent exited with no output.")
+	} else if tail := lastNonEmptyLines(logs, 12); len(tail) > 0 {
+		for i, l := range tail {
+			tail[i] = ansiEscapeRe.ReplaceAllString(l, "")
+		}
+		b.WriteString("Agent output:\n  " + strings.Join(tail, "\n  "))
+	}
+
+	if ap.LogPath != "" {
+		if b.Len() > 0 {
+			b.WriteString("\n\n")
+		}
+		b.WriteString("Full log: " + ap.LogPath)
+	}
+	return b.String()
+}
+
+func lastNonEmptyLines(lines []string, n int) []string {
+	var out []string
+	for i := len(lines) - 1; i >= 0 && len(out) < n; i-- {
+		if strings.TrimSpace(lines[i]) != "" {
+			out = append([]string{lines[i]}, out...)
+		}
+	}
+	return out
+}
 
 func extractLogRoom(line string) string {
 	idx := strings.LastIndex(line, "{")
