@@ -602,3 +602,21 @@ func TestResolveAttributes(t *testing.T) {
 		})
 	}
 }
+
+// TestAgentDeployRegistersIDFlag is a regression test for #830: `lk agent deploy`
+// resolves the agent via getAgentID, which reads cmd.String("id"). The deploy
+// subcommand must therefore register the --id flag; it previously omitted it, so
+// `lk agent deploy --id ...` failed at flag-parse time with "flag provided but not defined".
+func TestAgentDeployRegistersIDFlag(t *testing.T) {
+	agentCmd := findCommandByName(AgentCommands, "agent")
+	require.NotNil(t, agentCmd, "top-level 'agent' command must exist")
+
+	deployCmd := findCommandByName(agentCmd.Commands, "deploy")
+	require.NotNil(t, deployCmd, "'agent deploy' command must exist")
+
+	var names []string
+	for _, f := range deployCmd.Flags {
+		names = append(names, f.Names()...)
+	}
+	require.Contains(t, names, "id", "'agent deploy' must register the --id flag")
+}
