@@ -20,14 +20,16 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
-	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 //lint:file-ignore SA1019 we still support older APIs for compatibility
@@ -63,10 +65,7 @@ var (
 									Name:  "numbers",
 									Usage: "Sets a list of numbers for the trunk",
 								},
-								&cli.StringFlag{
-									Name:  "media-enc",
-									Usage: "Sets media encryption for the trunk",
-								},
+								sipMediaEncFlag(),
 								&cli.StringFlag{
 									Name:  "auth-user",
 									Usage: "Set username for authentication",
@@ -146,10 +145,7 @@ var (
 									Name:  "destination-country",
 									Usage: "Sets a destination country for the trunk as ISO 3166-1 alpha-2 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)",
 								},
-								&cli.StringFlag{
-									Name:  "media-enc",
-									Usage: "Sets media encryption for the trunk",
-								},
+								sipMediaEncFlag(),
 								&cli.StringSliceFlag{
 									Name:  "numbers",
 									Usage: "Sets a list of numbers for the trunk",
@@ -228,7 +224,7 @@ var (
 							Usage:     "Create a SIP Dispatch Rule",
 							Action:    createSIPDispatchRule,
 							ArgsUsage: RequestDesc[livekit.CreateSIPDispatchRuleRequest](),
-							Flags: []cli.Flag{
+							Flags: appendSIPMediaFlags([]cli.Flag{
 								&cli.StringFlag{
 									Name:  "name",
 									Usage: "Sets a new name for the dispatch rule",
@@ -237,7 +233,7 @@ var (
 									Name:  "trunks",
 									Usage: "Sets a list of trunks for the dispatch rule",
 								},
-							},
+							}),
 							MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
 								{
 									Flags: [][]cli.Flag{
@@ -334,7 +330,7 @@ var (
 							Usage:     "Create a SIP Participant",
 							Action:    createSIPParticipant,
 							ArgsUsage: RequestDesc[livekit.CreateSIPParticipantRequest](),
-							Flags: []cli.Flag{
+							Flags: appendSIPMediaFlags([]cli.Flag{
 								optional(roomFlag),
 								optional(identityFlag),
 								&cli.StringFlag{
@@ -374,7 +370,7 @@ var (
 									Name:  "header",
 									Usage: "Custom SIP header in format 'Key:Value' (can be specified multiple times)",
 								},
-							},
+							}),
 						},
 						{
 							Name:   "transfer",
@@ -481,6 +477,105 @@ func listSetFlag(cmd *cli.Command, setName string) ([]string, bool) {
 	return val, true
 }
 
+func optBoolFlag(cmd *cli.Command, setName string) (bool, bool) {
+	if !cmd.IsSet(setName) {
+		return false, false
+	}
+	return cmd.Bool(setName), true
+}
+
+func sipMediaEncFlag() cli.Flag {
+	return &cli.StringFlag{
+		Name:  "media-enc",
+		Usage: "Sets media encryption for outbound call",
+	}
+}
+
+func appendSIPMediaFlags(flags []cli.Flag) []cli.Flag {
+	flags = append(flags,
+		sipMediaEncFlag(),
+		&cli.BoolFlag{
+			Name:  "no-default-codecs",
+			Usage: "Disables a builtin list of default SIP codecs",
+		},
+		&cli.StringSliceFlag{
+			Name:  "codecs",
+			Usage: "Sets a list of SIP codecs for outbound call",
+		},
+	)
+	return flags
+}
+
+func parseSIPMediaEnc(cmd *cli.Command) (*livekit.SIPMediaEncryption, error) {
+	val := cmd.String("media-enc")
+	if val == "" {
+		return nil, nil
+	}
+	val = strings.ToUpper(val)
+	v, ok := livekit.SIPMediaEncryption_value[val]
+	if !ok {
+		v, ok = livekit.SIPMediaEncryption_value["SIP_MEDIA_ENCRYPT_"+val]
+	}
+	if !ok {
+		return nil, fmt.Errorf("invalid value for SIP media encryption: %q", val)
+	}
+	return new(livekit.SIPMediaEncryption(v)), nil
+}
+
+func parseSIPCodecs(vals []string) ([]*livekit.SIPCodec, error) {
+	var out []*livekit.SIPCodec
+	for _, s := range vals {
+		sub := strings.SplitN(s, "/", 3)
+		if len(sub) > 2 {
+			return out, fmt.Errorf("invalid media codec: %q, expected: <name> or <name>/<sample-rate>", s)
+		}
+		name := sub[0]
+		if name == "" {
+			return out, fmt.Errorf("invalid media codec: %q: empty name", s)
+		}
+		var rate uint64
+		if len(sub) >= 2 {
+			var err error
+			rate, err = strconv.ParseUint(sub[1], 10, 32)
+			if err != nil {
+				return out, fmt.Errorf("invalid media codec: %q: %w", s, err)
+			}
+		}
+		out = append(out, &livekit.SIPCodec{
+			Name: name,
+			Rate: uint32(rate),
+		})
+	}
+	return out, nil
+}
+
+func parseSIPMediaConfig(cmd *cli.Command) (*livekit.SIPMediaConfig, error) {
+	var m *livekit.SIPMediaConfig
+	getMedia := func() *livekit.SIPMediaConfig {
+		if m == nil {
+			m = new(livekit.SIPMediaConfig)
+		}
+		return m
+	}
+	if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
+		getMedia().Encryption = enc
+	} else if err != nil {
+		return nil, err
+	}
+	if vals, ok := listSetFlag(cmd, "codecs"); ok {
+		codecs, err := parseSIPCodecs(vals)
+		if err != nil {
+			return nil, err
+		}
+		m := getMedia()
+		m.Codecs = codecs
+		if val, ok := optBoolFlag(cmd, "no-default-codecs"); ok {
+			m.OnlyListedCodecs = val
+		}
+	}
+	return m, nil
+}
+
 func createSIPClient(ctx context.Context, cmd *cli.Command) (*lksdk.SIPClient, error) {
 	_, err := requireProject(ctx, cmd)
 	if err != nil {
@@ -505,16 +600,10 @@ func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		if val, ok := listSetFlag(cmd, "numbers"); ok {
 			p.Numbers = val
 		}
-		if val := cmd.String("media-enc"); val != "" {
-			val = strings.ToUpper(val)
-			v, ok := livekit.SIPMediaEncryption_value[val]
-			if !ok {
-				v, ok = livekit.SIPMediaEncryption_value["SIP_MEDIA_ENCRYPT_"+val]
-			}
-			if !ok {
-				return fmt.Errorf("invalid value for SIP media encryption: %q", val)
-			}
-			p.MediaEncryption = livekit.SIPMediaEncryption(v)
+		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
+			p.MediaEncryption = *enc
+		} else if err != nil {
+			return err
 		}
 		if val := cmd.String("auth-user"); val != "" {
 			p.AuthUsername = val
@@ -618,16 +707,10 @@ func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		if val := cmd.String("destination-country"); val != "" {
 			p.DestinationCountry = val
 		}
-		if val := cmd.String("media-enc"); val != "" {
-			val = strings.ToUpper(val)
-			v, ok := livekit.SIPMediaEncryption_value[val]
-			if !ok {
-				v, ok = livekit.SIPMediaEncryption_value["SIP_MEDIA_ENCRYPT_"+val]
-			}
-			if !ok {
-				return fmt.Errorf("invalid value for SIP media encryption: %q", val)
-			}
-			p.MediaEncryption = livekit.SIPMediaEncryption(v)
+		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
+			p.MediaEncryption = *enc
+		} else if err != nil {
+			return err
 		}
 		if val, ok := listSetFlag(cmd, "numbers"); ok {
 			p.Numbers = val
@@ -898,6 +981,16 @@ func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		if val, ok := listSetFlag(cmd, "trunks"); ok {
 			p.TrunkIds = val
 		}
+		if m, err := parseSIPMediaConfig(cmd); err == nil {
+			p.Media = m
+		} else if err != nil {
+			return err
+		}
+		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
+			p.MediaEncryption = *enc
+		} else if err != nil {
+			return err
+		}
 		if val := cmd.String("direct"); val != "" {
 			if p.Rule != nil {
 				return fmt.Errorf("only one dispatch rule type is allowed")
@@ -1154,6 +1247,16 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		}
 		if cmd.Bool("wait") {
 			req.WaitUntilAnswered = true
+		}
+		if m, err := parseSIPMediaConfig(cmd); err == nil {
+			req.Media = m
+		} else if err != nil {
+			return err
+		}
+		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
+			req.MediaEncryption = *enc
+		} else if err != nil {
+			return err
 		}
 
 		// Parse headers from repeatable "header" flag
