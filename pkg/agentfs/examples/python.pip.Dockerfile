@@ -42,15 +42,16 @@ RUN python -m venv .venv
 ENV PATH="/app/.venv/bin:$PATH"
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Pre-download any ML models or files the agent needs
+# This runs before COPY . . so the download layer is cached across code-only changes.
+# The module-level command discovers installed livekit-plugins-* packages without
+# loading your agent code.
+RUN python -m livekit.agents download-files
+
 # Copy all remaining application files into the container
 # This includes source code, configuration files, and dependency specifications
 # (Excludes files specified in .dockerignore)
 COPY . .
-
-# Pre-download any ML models or files the agent needs
-# This ensures the container is ready to run immediately without downloading
-# dependencies at runtime, which improves startup time and reliability
-RUN python "{{.ProgramMain}}" download-files
 
 # --- Production stage ---
 # Build tools (gcc, g++, python3-dev) are not included in the final image

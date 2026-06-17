@@ -35,6 +35,12 @@ COPY package.json pnpm-lock.yaml ./
 # --frozen-lockfile ensures we use exact versions from pnpm-lock.yaml for reproducible builds
 RUN pnpm install --frozen-lockfile
 
+# Pre-download any ML models or files the agent needs
+# This runs before COPY . . so the download layer is cached across code-only changes.
+# The standalone CLI discovers installed @livekit/agents-plugin-* packages without
+# loading your agent code.
+RUN npx livekit-agents download-files
+
 # Copy all remaining application files into the container
 # This includes source code, configuration files, and dependency specifications
 # (Excludes files specified in .dockerignore)
@@ -43,12 +49,6 @@ COPY . .
 # Build the project
 # Your package.json must contain a "build" script, such as `"build": "tsc"`
 RUN pnpm build
-
-# Pre-download any ML models or files the agent needs
-# This ensures the container is ready to run immediately without downloading
-# dependencies at runtime, which improves startup time and reliability
-# Your package.json must contain a "download-files" script, such as `"download-files": "pnpm run build && node dist/agent.js download-files"`
-RUN pnpm download-files
 
 # Remove dev dependencies for a leaner production image
 RUN pnpm prune --prod
