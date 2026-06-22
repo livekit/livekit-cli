@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/binary"
 	"encoding/json"
@@ -26,6 +25,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/urfave/cli/v3"
 )
@@ -38,11 +38,11 @@ const (
 	sessionHost        = "127.0.0.1"
 	defaultSessionPort = 8775
 
-	envSessionPort    = "LK_SESSION_PORT"  // fixed port
-	envSessionDir     = "LK_SESSION_DIR"   // resolved project dir
-	envSessionEntry   = "LK_SESSION_ENTRY" // resolved entrypoint (project-relative)
-	envSessionPType   = "LK_SESSION_PTYPE" // agentfs.ProjectType string
-	envSessionReadyFD = "LK_SESSION_READY_FD"
+	envSessionPort      = "LK_SESSION_PORT"       // fixed port
+	envSessionDir       = "LK_SESSION_DIR"        // resolved project dir
+	envSessionEntry     = "LK_SESSION_ENTRY"      // resolved entrypoint (project-relative)
+	envSessionPType     = "LK_SESSION_PTYPE"      // agentfs.ProjectType string
+	envSessionReadyFile = "LK_SESSION_READY_FILE" // path the daemon writes its status to
 
 	// sessionDaemonSubcommand is the hidden entrypoint `start` re-execs into.
 	sessionDaemonSubcommand = "daemon"
@@ -92,7 +92,7 @@ var agentSessionCommand = &cli.Command{
 			Name:   sessionDaemonSubcommand,
 			Hidden: true,
 			Action: func(ctx context.Context, cmd *cli.Command) error {
-				if os.Getenv(envSessionReadyFD) == "" {
+				if os.Getenv(envSessionReadyFile) == "" {
 					return fmt.Errorf("`session daemon` is an internal entrypoint; run `lk agent session start <entrypoint>` instead")
 				}
 				runSessionDaemon()
@@ -118,19 +118,20 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("could not resolve own binary: %w", err)
 	}
 
-	// Pipe the daemon uses to report readiness (or a startup error) before we
-	// return. This avoids racing a TCP probe against the agent's own connect.
-	readyR, readyW, err := os.Pipe()
+	// Readiness file the daemon writes once it is up (or failed) before we
+	// return, so we don't race a TCP probe against the agent's own connect.
+	readyFile, err := os.CreateTemp("", "lk-session-ready-*.txt")
 	if err != nil {
 		return err
 	}
-	defer readyR.Close()
+	readyPath := readyFile.Name()
+	readyFile.Close()
+	defer os.Remove(readyPath)
 
 	// The daemon is detached, so its own stdout/stderr (panics etc.) go to a
 	// temp log rather than the user's terminal.
 	logFile, err := os.CreateTemp("", "lk-session-daemon-*.log")
 	if err != nil {
-		readyW.Close()
 		return err
 	}
 
@@ -140,24 +141,19 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		envSessionDir+"="+projectDir,
 		envSessionEntry+"="+entrypoint,
 		envSessionPType+"="+string(projectType),
-		envSessionReadyFD+"=3", // ExtraFiles[0] is fd 3 in the child
+		envSessionReadyFile+"="+readyPath,
 	)
-	daemon.ExtraFiles = []*os.File{readyW}
 	daemon.Stdout = logFile
 	daemon.Stderr = logFile
 	setDetachedProcAttr(daemon)
 
 	if err := daemon.Start(); err != nil {
-		readyW.Close()
 		logFile.Close()
 		return fmt.Errorf("failed to start session daemon: %w", err)
 	}
-	// Close our copy of the write end so the read below sees EOF if the daemon dies.
-	readyW.Close()
 	logFile.Close()
 
-	status, _ := bufio.NewReader(readyR).ReadString('\n')
-	status = strings.TrimSpace(status)
+	status := awaitDaemonReady(daemon, readyPath)
 	switch {
 	case status == "ready":
 		fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
@@ -168,6 +164,43 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 	default:
 		return fmt.Errorf("session daemon exited before becoming ready (see %s)", logFile.Name())
 	}
+}
+
+// awaitDaemonReady waits for the detached daemon to report via the readiness
+// file, returning its status line ("ready" or "error: ...") or "" if the
+// daemon exits or times out without reporting.
+func awaitDaemonReady(daemon *exec.Cmd, readyPath string) string {
+	exited := make(chan struct{})
+	go func() { _ = daemon.Wait(); close(exited) }()
+
+	// Slightly longer than the daemon's own 60s agent-connect timeout so its
+	// "error: timed out ..." status reaches us before we give up.
+	timeout := time.After(65 * time.Second)
+	for {
+		if status, ok := readReadyStatus(readyPath); ok {
+			return status
+		}
+		select {
+		case <-exited:
+			if status, ok := readReadyStatus(readyPath); ok {
+				return status
+			}
+			return ""
+		case <-timeout:
+			return ""
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+}
+
+// readReadyStatus returns the daemon's status line once the readiness file has
+// content (written atomically via rename), or ok=false while it is still empty.
+func readReadyStatus(path string) (string, bool) {
+	data, err := os.ReadFile(path)
+	if err != nil || len(data) == 0 {
+		return "", false
+	}
+	return strings.TrimSpace(string(data)), true
 }
 
 func runSessionSay(ctx context.Context, cmd *cli.Command) error {
