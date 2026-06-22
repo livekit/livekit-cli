@@ -98,9 +98,18 @@ func TestSessionE2E(t *testing.T) {
 	}, 10*time.Second, 200*time.Millisecond, "session daemon still listening on port %s after end", port)
 }
 
-// buildLK compiles the lk binary into a temp dir and returns its path.
+// buildLK returns the path to the lk binary under test. If LK_SESSION_E2E_BIN
+// points at a prebuilt binary it's used as-is (the Windows CI arm cross-builds
+// lk on Linux and ships it here, so the heavy cgo build never runs on the
+// Windows runner); otherwise lk is compiled into a temp dir.
 func buildLK(t *testing.T) string {
 	t.Helper()
+	if prebuilt := os.Getenv("LK_SESSION_E2E_BIN"); prebuilt != "" {
+		abs, err := filepath.Abs(prebuilt)
+		require.NoError(t, err)
+		require.FileExists(t, abs, "LK_SESSION_E2E_BIN does not point at a binary")
+		return abs
+	}
 	bin := filepath.Join(t.TempDir(), "lk")
 	if runtime.GOOS == "windows" {
 		bin += ".exe"
