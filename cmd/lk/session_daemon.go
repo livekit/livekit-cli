@@ -100,26 +100,25 @@ func runSessionDaemon() {
 	agentProc.Kill()
 }
 
-// readyWriter returns the inherited pipe `lk agent session start` reads to learn the
-// daemon became ready (or failed). Nil if not launched via start.
-func readyWriter() *os.File {
-	fdStr := os.Getenv(envSessionReadyFD)
-	if fdStr == "" {
-		return nil
-	}
-	fd, err := strconv.Atoi(fdStr)
-	if err != nil {
-		return nil
-	}
-	return os.NewFile(uintptr(fd), "ready")
+// readyWriter returns the path of the readiness file `lk agent session start`
+// polls to learn the daemon became ready (or failed). Empty if not launched
+// via start.
+func readyWriter() string {
+	return os.Getenv(envSessionReadyFile)
 }
 
-func signalReady(f *os.File, msg string) {
-	if f == nil {
+// signalReady atomically writes the daemon's status to the readiness file the
+// parent `start` is polling. The write-then-rename keeps the parent from
+// reading a partial line.
+func signalReady(path, msg string) {
+	if path == "" {
 		return
 	}
-	fmt.Fprintln(f, msg)
-	f.Close()
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, []byte(msg+"\n"), 0o600); err != nil {
+		return
+	}
+	_ = os.Rename(tmp, path)
 }
 
 type sessionDaemon struct {

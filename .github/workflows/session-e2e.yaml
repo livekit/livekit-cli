@@ -1,0 +1,78 @@
+name: Session E2E
+
+# Drives the real `lk agent session` start/say/end lifecycle against the minimal
+# one-file echo agent in cmd/lk/testdata/echo-agent, on Linux and Windows. This
+# exercises the detached daemon, the readiness handshake, the console IPC
+# transport, and the model round-trip end to end -- runtime behavior that
+# `go test` alone never covers.
+#
+# Runs on manual dispatch and on pushes to any repo branch (forks can't trigger
+# `push`, so secrets are only exposed to trusted collaborators). It needs live
+# LiveKit credentials -- set these repo secrets first: LIVEKIT_API_KEY,
+# LIVEKIT_API_SECRET, LIVEKIT_URL. The echo agent drives its LLM through LiveKit
+# Inference, so no other provider keys are needed.
+#
+# The echo agent depends on plain PyPI livekit-agents (synced by `uv sync` from
+# its pyproject.toml). Note: on current releases/main, `cli.run_app()` routes
+# `console` through the legacy click CLI, which has no --connect-addr (that
+# lives behind `python -m livekit.agents`). The fixture's __main__ dispatches
+# console mode to the TCP console directly to bridge the daemon's
+# `python <entry> console --connect-addr` launch.
+#
+# Node is intentionally not in the matrix yet: this branch's session daemon only
+# supports Python agents (`detectProject` rejects non-Python), and Node console
+# support depends on the brian/agent-session-node-support CLI line (#868/#878)
+# plus agents-js #1804. Add a node arm once those land.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+
+concurrency:
+  group: session-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+    name: python on ${{ matrix.os }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout livekit-cli
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync echo agent deps
+        working-directory: cmd/lk/testdata/echo-agent
+        run: uv sync
+
+      - name: Run session e2e
+        env:
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+        run: go test ./cmd/lk -run TestSessionE2E -count=1 -v -timeout 600s
