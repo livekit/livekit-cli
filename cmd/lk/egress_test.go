@@ -50,6 +50,9 @@ func (f *fakeEgressService) ListEgress(_ context.Context, req *livekit.ListEgres
 	return f.listResponses[idx], nil
 }
 
+func (f *fakeEgressService) StartEgress(_ context.Context, _ *livekit.StartEgressRequest) (*livekit.EgressInfo, error) {
+	return nil, nil
+}
 func (f *fakeEgressService) StartRoomCompositeEgress(_ context.Context, _ *livekit.RoomCompositeEgressRequest) (*livekit.EgressInfo, error) {
 	return nil, nil
 }

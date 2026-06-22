@@ -1,4 +1,4 @@
-//go:build console && darwin
+//go:build darwin
 
 package gcd
 

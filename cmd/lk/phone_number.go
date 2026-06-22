@@ -21,6 +21,7 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
+	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/urfave/cli/v3"
 )
@@ -158,11 +159,7 @@ func createPhoneNumberClient(ctx context.Context, cmd *cli.Command) (*lksdk.Phon
 		return nil, err
 	}
 
-	// Debug: Print the URL being used
-	if cmd.Bool("verbose") {
-		fmt.Printf("Using phone number service URL: %s\n", project.URL)
-	}
-
+	logger.Debugw("phone number client", "service-url", project.URL)
 	return lksdk.NewPhoneNumberClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...), nil
 }
 
@@ -250,13 +247,13 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	fmt.Printf("Successfully purchased %d phone numbers:\n", len(resp.PhoneNumbers))
+	out.Resultf("Successfully purchased %d phone numbers:\n", len(resp.PhoneNumbers))
 	for _, phoneNumber := range resp.PhoneNumbers {
 		ruleInfo := ""
 		if len(phoneNumber.SipDispatchRuleIds) > 0 {
 			ruleInfo = fmt.Sprintf(" (SIP Dispatch Rules: %s)", strings.Join(phoneNumber.SipDispatchRuleIds, ", "))
 		}
-		fmt.Printf("  %s (%s) - %s%s\n", phoneNumber.E164Format, phoneNumber.Id, strings.TrimPrefix(phoneNumber.Status.String(), "PHONE_NUMBER_STATUS_"), ruleInfo)
+		out.Resultf("  %s (%s) - %s%s\n", phoneNumber.E164Format, phoneNumber.Id, strings.TrimPrefix(phoneNumber.Status.String(), "PHONE_NUMBER_STATUS_"), ruleInfo)
 	}
 
 	return nil
@@ -305,20 +302,20 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	fmt.Printf("Total phone numbers: %d", resp.TotalCount)
+	out.Resultf("Total phone numbers: %d", resp.TotalCount)
 	if resp.OfflineCount > 0 {
-		fmt.Printf(" (%d offline)", resp.OfflineCount)
+		out.Resultf(" (%d offline)", resp.OfflineCount)
 	}
-	fmt.Printf("\n")
+	out.Resultf("\n")
 
 	// Show pagination info
 	if offset > 0 {
-		fmt.Printf("Showing results from offset %d\n", offset)
+		out.Resultf("Showing results from offset %d\n", offset)
 	}
 	if resp.NextPageToken != nil {
 		nextOffset, _, err := livekit.DecodeTokenPagination(resp.NextPageToken)
 		if err == nil {
-			fmt.Printf("More results available. Use --offset %d to see the next page.\n", nextOffset)
+			out.Resultf("More results available. Use --offset %d to see the next page.\n", nextOffset)
 		}
 	}
 
@@ -389,19 +386,19 @@ func getPhoneNumber(ctx context.Context, cmd *cli.Command) error {
 		dispatchRulesStr = "-"
 	}
 
-	fmt.Printf("Phone Number Details:\n")
-	fmt.Printf("  ID: %s\n", item.Id)
-	fmt.Printf("  E164 Format: %s\n", item.E164Format)
-	fmt.Printf("  Country: %s\n", item.CountryCode)
-	fmt.Printf("  Area Code: %s\n", item.AreaCode)
-	fmt.Printf("  Type: %s\n", strings.TrimPrefix(item.NumberType.String(), "PHONE_NUMBER_TYPE_"))
-	fmt.Printf("  Locality: %s\n", item.Locality)
-	fmt.Printf("  Region: %s\n", item.Region)
-	fmt.Printf("  Capabilities: %s\n", strings.Join(item.Capabilities, ","))
-	fmt.Printf("  Status: %s\n", strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"))
-	fmt.Printf("  SIP Dispatch Rules: %s\n", dispatchRulesStr)
+	out.Resultf("Phone Number Details:\n")
+	out.Resultf("  ID: %s\n", item.Id)
+	out.Resultf("  E164 Format: %s\n", item.E164Format)
+	out.Resultf("  Country: %s\n", item.CountryCode)
+	out.Resultf("  Area Code: %s\n", item.AreaCode)
+	out.Resultf("  Type: %s\n", strings.TrimPrefix(item.NumberType.String(), "PHONE_NUMBER_TYPE_"))
+	out.Resultf("  Locality: %s\n", item.Locality)
+	out.Resultf("  Region: %s\n", item.Region)
+	out.Resultf("  Capabilities: %s\n", strings.Join(item.Capabilities, ","))
+	out.Resultf("  Status: %s\n", strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"))
+	out.Resultf("  SIP Dispatch Rules: %s\n", dispatchRulesStr)
 	if item.ReleasedAt != nil {
-		fmt.Printf("  Released At: %s\n", item.ReleasedAt.AsTime().Format("2006-01-02 15:04:05"))
+		out.Resultf("  Released At: %s\n", item.ReleasedAt.AsTime().Format("2006-01-02 15:04:05"))
 	}
 
 	return nil
@@ -453,11 +450,11 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 		dispatchRulesStr = "-"
 	}
 
-	fmt.Printf("Successfully updated phone number:\n")
-	fmt.Printf("  ID: %s\n", item.Id)
-	fmt.Printf("  E164 Format: %s\n", item.E164Format)
-	fmt.Printf("  Status: %s\n", strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"))
-	fmt.Printf("  SIP Dispatch Rules: %s\n", dispatchRulesStr)
+	out.Resultf("Successfully updated phone number:\n")
+	out.Resultf("  ID: %s\n", item.Id)
+	out.Resultf("  E164 Format: %s\n", item.E164Format)
+	out.Resultf("  Status: %s\n", strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"))
+	out.Resultf("  SIP Dispatch Rules: %s\n", dispatchRulesStr)
 
 	return nil
 }
@@ -491,9 +488,9 @@ func releasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if len(ids) > 0 {
-		fmt.Printf("Successfully released %d phone numbers by ID: %s\n", len(ids), strings.Join(ids, ", "))
+		out.Resultf("Successfully released %d phone numbers by ID: %s\n", len(ids), strings.Join(ids, ", "))
 	} else {
-		fmt.Printf("Successfully released %d phone numbers: %s\n", len(phoneNumbers), strings.Join(phoneNumbers, ", "))
+		out.Resultf("Successfully released %d phone numbers: %s\n", len(phoneNumbers), strings.Join(phoneNumbers, ", "))
 	}
 
 	return nil

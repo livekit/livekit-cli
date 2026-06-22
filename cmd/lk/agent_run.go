@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,8 +16,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"sync"
@@ -31,15 +27,6 @@ import (
 func init() {
 	AgentCommands[0].Commands = append(AgentCommands[0].Commands, startCommand, devCommand)
 }
-
-var (
-	outputToStderr = func(p *loadParams) {
-		p.output = os.Stderr
-	}
-	quietOutput = func(p *loadParams) {
-		p.output = io.Discard
-	}
-)
 
 var agentRunFlags = []cli.Flag{
 	&cli.StringFlag{
@@ -124,9 +111,9 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
 
-	cliArgs, err := buildCLIArgs("start", cmd, quietOutput)
+	cliArgs, err := buildCLIArgs("start", cmd)
 	if err != nil {
 		return err
 	}
@@ -167,7 +154,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	cliArgs, err := buildCLIArgs("start", cmd, outputToStderr)
+	cliArgs, err := buildCLIArgs("start", cmd)
 	if err != nil {
 		return err
 	}
@@ -184,7 +171,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		ForwardOutput: os.Stdout,
 	}
 
-	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
 
 	// Take over signal handling from the global NotifyContext.
 	signal.Reset(syscall.SIGINT, syscall.SIGTERM)

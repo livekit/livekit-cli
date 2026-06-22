@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2025 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +20,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -34,6 +31,7 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/console"
 	"github.com/livekit/livekit-cli/v2/pkg/portaudio"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 func init() {
@@ -126,8 +124,8 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 
 	actualAddr := server.Addr().String()
 	if inputDev != nil {
-		fmt.Fprintf(os.Stderr, "Input:  %s\n", inputDev.Name)
-		fmt.Fprintf(os.Stderr, "Output: %s\n", outputDev.Name)
+		out.Statusf("Input:  %s", inputDev.Name)
+		out.Statusf("Output: %s", outputDev.Name)
 	}
 
 	projectDir, projectType, entrypoint, err := detectProject(cmd)
@@ -135,7 +133,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
 
 	// Show spinner while starting agent
 	stopSpinner := startSpinner("Starting agent")
@@ -173,23 +171,12 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("agent connection: %w", res.err)
 		}
 		conn = res.conn
-	case err := <-agentProc.Done():
+	case <-agentProc.Done():
 		stopSpinner()
-		logs := agentProc.RecentLogs(20)
-		for _, l := range logs {
-			fmt.Fprintln(os.Stderr, l)
-		}
-		if err != nil {
-			return fmt.Errorf("agent exited before connecting: %w", err)
-		}
-		return fmt.Errorf("agent exited before connecting")
+		return fmt.Errorf("the agent exited before connecting.\n\n%s", agentExitDetail(agentProc))
 	case <-time.After(60 * time.Second):
 		stopSpinner()
-		logs := agentProc.RecentLogs(20)
-		for _, l := range logs {
-			fmt.Fprintln(os.Stderr, l)
-		}
-		return fmt.Errorf("timed out waiting for agent to connect")
+		return fmt.Errorf("timed out waiting for the agent to connect.\n\n%s", agentExitDetail(agentProc))
 	case <-ctx.Done():
 		stopSpinner()
 		return ctx.Err()
@@ -242,11 +229,11 @@ func listDevices() error {
 		return err
 	}
 
-	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("6"))
-	defaultStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(util.Brand())
+	defaultStyle := lipgloss.NewStyle().Foreground(util.Success())
 
-	fmt.Println(headerStyle.Render(fmt.Sprintf("  %-4s %-8s %-45s %s", "#", "Type", "Name", "Default")))
-	fmt.Println(strings.Repeat("─", 70))
+	out.Result(headerStyle.Render(fmt.Sprintf("  %-4s %-8s %-45s %s", "#", "Type", "Name", "Default")))
+	out.Result(strings.Repeat("─", 70))
 
 	for _, d := range devices {
 		devType := ""
@@ -269,7 +256,7 @@ func listDevices() error {
 			defStr += defaultStyle.Render("✓ output")
 		}
 
-		fmt.Printf("  %-4d %-8s %-45s %s\n", d.Index, devType, d.Name, defStr)
+		out.Resultf("  %-4d %-8s %-45s %s\n", d.Index, devType, d.Name, defStr)
 	}
 
 	return nil

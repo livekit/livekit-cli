@@ -1,5 +1,3 @@
-//go:build console
-
 package source
 
 // #cgo CFLAGS: -I${SRCDIR}/../../../../../.. -std=c11 -Wno-unused-parameter -Wno-sign-compare -Wno-deprecated-declarations

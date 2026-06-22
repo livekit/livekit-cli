@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/urfave/cli/v3"
 
@@ -156,7 +155,7 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 				item.Metadata,
 			)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 	return nil
 }
@@ -190,7 +189,7 @@ func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("json") {
 		util.PrintJSON(info)
 	} else {
-		fmt.Printf("Dispatch created: %v\n", info)
+		out.Resultf("Dispatch created: %v\n", info)
 	}
 
 	return nil
@@ -221,7 +220,7 @@ func deleteAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("json") {
 		util.PrintJSON(info)
 	} else {
-		fmt.Printf("Dispatch deleted: %v\n", info)
+		out.Resultf("Dispatch deleted: %v\n", info)
 	}
 	return nil
 }

@@ -10,7 +10,10 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # No windows-latest: its native MinGW GCC can't compile the WebRTC APM
+        # C++ (clang-only SEH __try/__except). Windows is built+validated by the
+        # zig cross-build in build.yaml; the audio packages have no unit tests.
+        os: [ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -20,6 +23,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # pkg/portaudio/pa_src is a submodule with the vendored PortAudio C
+          # source; needed now that console (cgo) builds unconditionally.
+          submodules: true
+
+      - name: Install ALSA headers (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
 
       - name: Set up Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
@@ -40,6 +51,18 @@ jobs:
         run: |
           set -euo pipefail
           go test -race -json -v ./... 2>&1 | tee test.log
+
+      - name: Verify fish_autocomplete is up to date
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          go build -o /tmp/lk ./cmd/lk
+          /tmp/lk generate-fish-completion -o /tmp/fish_autocomplete.fresh
+          if ! diff -u autocomplete/fish_autocomplete /tmp/fish_autocomplete.fresh; then
+            echo "::error::autocomplete/fish_autocomplete is stale; regenerate with:"
+            echo "  go build -o /tmp/lk ./cmd/lk && /tmp/lk generate-fish-completion -o autocomplete/fish_autocomplete"
+            exit 1
+          fi
 
       - name: Upload test log
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

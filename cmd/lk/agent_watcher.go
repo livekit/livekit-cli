@@ -1,5 +1,3 @@
-//go:build console
-
 // Copyright 2021-2024 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -135,7 +133,7 @@ func (aw *agentWatcher) restart() error {
 		aw.agent.Kill()
 	}
 
-	fmt.Fprintln(os.Stderr, "Reloading agent...")
+	out.Status("Reloading agent...")
 
 	// 3. Start new process
 	agent, err := startAgent(aw.config)
@@ -227,10 +225,10 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 		case <-debounceCh:
 			debounceTimer = nil
 			debounceCh = nil
-			fmt.Fprintf(os.Stderr, "File changed: %s\n", changedFile)
+			out.Statusf("File changed: %s", changedFile)
 			if err := aw.restart(); err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to restart agent: %v\n", err)
-				fmt.Fprintln(os.Stderr, "Waiting for file changes...")
+				out.Warnf("Failed to restart agent: %v", err)
+				out.Status("Waiting for file changes...")
 			} else {
 				exitCh = aw.agent.exitCh
 			}
@@ -239,7 +237,7 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 			if !ok {
 				return nil
 			}
-			fmt.Fprintf(os.Stderr, "Watcher error: %v\n", err)
+			out.Warnf("Watcher error: %v", err)
 
 		case <-exitCh:
 			// Nil the channel so this case won't fire again (nil channels block forever)
@@ -250,7 +248,7 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 				debounceTimer = nil
 				debounceCh = nil
 			}
-			fmt.Fprintln(os.Stderr, "Agent exited. Waiting for file changes to restart...")
+			out.Status("Agent exited. Waiting for file changes to restart...")
 		}
 	}
 }

@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"regexp"
 
@@ -162,11 +161,12 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		if err = validateName(p.Name); err != nil {
 			return err
 		}
-		fmt.Println("  Project Name:", p.Name)
+		out.Statusf("  Project Name: %s", p.Name)
 	} else {
 		prompts = append(prompts, huh.NewInput().
 			Title("Project Name").
 			Placeholder("my-project").
+			Prompt("").
 			Validate(validateName).
 			Value(&p.Name))
 	}
@@ -183,11 +183,12 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		if err = validateURL(p.URL); err != nil {
 			return err
 		}
-		fmt.Println("  URL:", p.URL)
+		out.Statusf("  URL: %s", p.URL)
 	} else {
 		prompts = append(prompts, huh.NewInput().
 			Title("Project URL").
 			Placeholder("wss://my-project.livekit.cloud").
+			Prompt("").
 			Validate(validateURL).
 			Value(&p.URL))
 	}
@@ -203,11 +204,12 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		if err = validateKey(p.APIKey); err != nil {
 			return err
 		}
-		fmt.Println("  API Key:", p.APIKey)
+		out.Statusf("  API Key: %s", p.APIKey)
 	} else {
 		prompts = append(prompts, huh.NewInput().
 			Title("API Key").
 			Placeholder("APIxxxxxxxxxxxx").
+			Prompt("").
 			Validate(validateKey).
 			Value(&p.APIKey))
 	}
@@ -217,11 +219,12 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		if err = validateKey(p.APISecret); err != nil {
 			return err
 		}
-		fmt.Println("  API Secret:", p.APISecret)
+		out.Statusf("  API Secret: %s", p.APISecret)
 	} else {
 		prompts = append(prompts, huh.NewInput().
 			Title("API Secret").
 			Placeholder("****************************").
+			Prompt("").
 			Validate(validateKey).
 			Value(&p.APISecret))
 	}
@@ -231,10 +234,9 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("default") || defaultProject == nil {
 		cliConfig.DefaultProject = p.Name
 	} else if !cmd.IsSet("default") {
-		prompts = append(prompts, huh.NewConfirm().
+		prompts = append(prompts, util.Confirm().
 			Title("Make this project default?").
 			Value(&isDefault).
-			Inline(true).
 			WithTheme(util.Theme))
 	}
 
@@ -268,7 +270,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 
 func listProjects(ctx context.Context, cmd *cli.Command) error {
 	if len(cliConfig.Projects) == 0 {
-		fmt.Println("No projects configured, use `lk cloud auth` to authenticate a new project.")
+		out.Status("No projects configured, use `lk cloud auth` to authenticate a new project.")
 		return nil
 	}
 
@@ -300,7 +302,7 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 			}
 			table.Row(pName, p.ProjectId, p.URL, p.APIKey)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 
 	return nil
@@ -331,7 +333,7 @@ func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
 		if err := cliConfig.PersistIfNeeded(); err != nil {
 			return err
 		}
-		fmt.Println("Default project set to [" + util.Theme.Focused.Title.Render(p.Name) + "]")
+		out.Statusf("Default project set to [%s]", util.Accented(p.Name))
 		return nil
 	}
 
