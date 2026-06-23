@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"net"
 	"os"
@@ -28,10 +29,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const sessionE2ETimeout = 5 * time.Second
+
 // TestSessionE2E drives the real `lk agent session` lifecycle end to end:
 // build the binary, `start` the detached daemon, `say` to make the model echo
-// a token (asserting the CLI→daemon→agent→LLM round-trip), `end`, then confirm
-// the daemon exited (nothing answers on the port).
+// a token (asserting the CLI→daemon→agent→LLM round-trip), `end`, confirm a
+// second `say` cannot still reach the agent, then confirm the daemon exited
+// (nothing answers on the port).
 //
 // Opt-in: needs a prepared agent venv + live creds, so it skips unless
 // LIVEKIT_API_KEY is set. Defaults to testdata/echo-agent; override with LK_SESSION_E2E_AGENT.
@@ -55,47 +59,87 @@ func TestSessionE2E(t *testing.T) {
 
 	bin := buildLK(t)
 
-	run := func(timeout time.Duration, args ...string) (string, error) {
+	type runResult struct {
+		stdout   string
+		stderr   string
+		exitCode int
+	}
+
+	runCapture := func(timeout time.Duration, args ...string) (runResult, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, bin, args...)
 		cmd.Env = os.Environ()
-		out, err := cmd.CombinedOutput()
-		return string(out), err
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		err := cmd.Run()
+		require.NotNil(t, cmd.ProcessState, "command did not start: %v", err)
+
+		return runResult{
+			stdout:   stdout.String(),
+			stderr:   stderr.String(),
+			exitCode: cmd.ProcessState.ExitCode(),
+		}, err
+	}
+
+	run := func(timeout time.Duration, args ...string) (string, error) {
+		res, err := runCapture(timeout, args...)
+		return res.stdout + res.stderr, err
+	}
+
+	portIsFree := func() bool {
+		conn, derr := net.DialTimeout("tcp", "127.0.0.1:"+port, 200*time.Millisecond)
+		if derr != nil {
+			return true // refused -> daemon exited
+		}
+		conn.Close()
+		return false
 	}
 
 	// Best-effort teardown so a mid-run failure doesn't leave the daemon alive.
 	t.Cleanup(func() {
-		_, _ = run(15*time.Second, "agent", "session", "end", "--port", port)
+		_, _ = run(sessionE2ETimeout, "agent", "session", "end", "--port", port)
 	})
 
 	// start: launches the detached daemon and returns once the agent is ready.
-	startOut, err := run(90*time.Second, "agent", "session", "start", "--port", port, entrypoint)
+	startOut, err := run(15*time.Second, "agent", "session", "start", "--port", port, entrypoint)
 	require.NoError(t, err, "session start failed:\n%s", startOut)
 	require.Contains(t, startOut, "Session started.", "start did not report readiness:\n%s", startOut)
 
 	// say: the token appears once in the echoed prompt and again in the reply, so
 	// >=2 occurrences proves the agent answered, not just the local echo.
 	token := "PINEAPPLE7351"
-	sayOut, err := run(90*time.Second, "agent", "session", "say", "--port", port,
+	sayOut, err := run(sessionE2ETimeout, "agent", "session", "say", "--port", port,
 		"Repeat this token back to me exactly and nothing else: "+token)
 	require.NoError(t, err, "session say failed:\n%s", sayOut)
 	require.GreaterOrEqualf(t, strings.Count(sayOut, token), 2,
 		"agent did not echo the token back; say output:\n%s", sayOut)
 
-	endOut, err := run(30*time.Second, "agent", "session", "end", "--port", port)
+	endOut, err := run(sessionE2ETimeout, "agent", "session", "end", "--port", port)
 	require.NoError(t, err, "session end failed:\n%s", endOut)
 	require.Contains(t, endOut, "Session ended.", "end did not confirm shutdown:\n%s", endOut)
 
-	// The detached daemon should now be gone: nothing should answer on the port.
-	require.Eventually(t, func() bool {
-		conn, derr := net.DialTimeout("tcp", "127.0.0.1:"+port, 200*time.Millisecond)
-		if derr != nil {
-			return true // refused → daemon exited
-		}
-		conn.Close()
-		return false
-	}, 10*time.Second, 200*time.Millisecond, "session daemon still listening on port %s after end", port)
+	require.Eventually(t, portIsFree, sessionE2ETimeout, 200*time.Millisecond,
+		"session daemon still listening on port %s after end", port)
+
+	// After a successful match and shutdown, another say must not reach a live
+	// agent or reproduce the token.
+	afterEndSay, err := runCapture(sessionE2ETimeout, "agent", "session", "say", "--port", port,
+		"Repeat this token back to me exactly and nothing else: "+token)
+	afterEndSayOut := afterEndSay.stdout + afterEndSay.stderr
+	require.Error(t, err, "session say unexpectedly succeeded after end:\n%s", afterEndSayOut)
+	require.Equal(t, 1, afterEndSay.exitCode,
+		"session say after end exited with wrong code; stdout:\n%s\nstderr:\n%s",
+		afterEndSay.stdout, afterEndSay.stderr)
+	require.Truef(t, strings.HasPrefix(afterEndSayOut, "no session running"),
+		"session say after end output did not start with no session running; stdout:\n%s\nstderr:\n%s",
+		afterEndSay.stdout, afterEndSay.stderr)
+	require.NotContains(t, afterEndSayOut, token,
+		"session say after end unexpectedly contained the matched token; stdout:\n%s\nstderr:\n%s",
+		afterEndSay.stdout, afterEndSay.stderr)
+
+	require.True(t, portIsFree(), "session daemon started listening again on port %s after failed say", port)
 }
 
 // buildLK returns the path to the lk binary under test. If LK_SESSION_E2E_BIN
