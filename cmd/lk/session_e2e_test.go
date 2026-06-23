@@ -103,7 +103,7 @@ func TestSessionE2E(t *testing.T) {
 	})
 
 	// start: launches the detached daemon and returns once the agent is ready.
-	startOut, err := run(sessionE2ETimeout, "agent", "session", "start", "--port", port, entrypoint)
+	startOut, err := run(15*time.Second, "agent", "session", "start", "--port", port, entrypoint)
 	require.NoError(t, err, "session start failed:\n%s", startOut)
 	require.Contains(t, startOut, "Session started.", "start did not report readiness:\n%s", startOut)
 
