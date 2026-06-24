@@ -17,6 +17,7 @@ package main
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -125,6 +126,56 @@ func checkTypeStrippingSupport(dir, nodeBin string) error {
 	minor, _ := strconv.Atoi(m[2])
 	if major < 22 || (major == 22 && minor < 6) {
 		return fmt.Errorf("running a TypeScript entrypoint directly requires Node >= 22.6 (found %s); upgrade Node or point at built JS output", version)
+	}
+	return nil
+}
+
+// nodeAgentMinVersion is the minimum @livekit/agents (agents-js) release the
+// CLI supports. Unlike the Python thin CLI (gated on thinCLIMinVersion), the
+// Node entrypoint exposes the start/console/simulate subcommands directly, so
+// the baseline differs. Local placeholder — the deploy path sources the
+// equivalent floor from server client settings.
+const nodeAgentMinVersion = "1.0.0"
+
+// nodeResolveVersionScript asks Node to report the installed @livekit/agents
+// version using its own module resolution paths (so pnpm/workspace symlinks
+// and hoisting resolve exactly as they will at runtime). See the source file
+// for details.
+//
+//go:embed node_resolve_version.js
+var nodeResolveVersionScript string
+
+// resolveNodeAgentVersion returns the installed @livekit/agents version as Node
+// resolves it from fromDir, or "" if it can't be determined.
+func resolveNodeAgentVersion(nodeBin, fromDir string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, nodeBin, "-e", nodeResolveVersionScript)
+	cmd.Dir = fromDir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// checkNodeSDKVersion gates a Node agent on nodeAgentMinVersion, resolving the
+// installed @livekit/agents from the entrypoint's directory so monorepo and
+// workspace layouts (where the dep is a workspace:* symlink, not a versioned
+// entry in the root package.json) report the version that will actually run.
+func checkNodeSDKVersion(cfg AgentStartConfig) error {
+	nodeBin, err := findNodeBinary()
+	if err != nil {
+		return err
+	}
+	fromDir := filepath.Dir(filepath.Join(cfg.Dir, cfg.Entrypoint))
+	version := resolveNodeAgentVersion(nodeBin, fromDir)
+	if version == "" {
+		return fmt.Errorf("@livekit/agents not found; install dependencies and make sure this is a LiveKit agent project")
+	}
+	// An unparseable version (e.g. a local "0.0.0-dev" tag) shouldn't block a run.
+	if ok, err := agentfs.IsVersionSatisfied(version, nodeAgentMinVersion); err == nil && !ok {
+		return fmt.Errorf("@livekit/agents version %s is too old, please upgrade to %s or newer", version, nodeAgentMinVersion)
 	}
 	return nil
 }
@@ -270,8 +321,14 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 
 // startAgent launches a Python or Node agent subprocess and monitors its output.
 func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
-	// fail fast when livekit-agents is older than the thin-CLI baseline
-	if err := agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
+	// fail fast when the agent SDK is older than the baseline the CLI supports.
+	// Node resolves the installed package via the runtime so workspace/monorepo
+	// layouts work; Python parses project files against the thin-CLI baseline.
+	if cfg.ProjectType.IsNode() {
+		if err := checkNodeSDKVersion(cfg); err != nil {
+			return nil, err
+		}
+	} else if err := agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
 		"python-min-sdk-version": thinCLIMinVersion,
 		"node-min-sdk-version":   thinCLIMinVersion,
 	}); err != nil {

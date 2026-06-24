@@ -36,9 +36,12 @@ func TestAgentProcessFailSignal(t *testing.T) {
 	dir := t.TempDir()
 	script := `console.log('shutting down job task {"reason": "job crashed"}'); setTimeout(() => {}, 30000);`
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "agent.js"), []byte(script), 0o644))
-	// startAgent gates on the SDK version, so declare a satisfying dependency.
-	pkgJSON := `{"dependencies": {"@livekit/agents": "1.6.0"}}`
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(pkgJSON), 0o644))
+	// startAgent gates on the SDK version, which Node resolves from node_modules,
+	// so install a satisfying @livekit/agents stub.
+	agentsDir := filepath.Join(dir, "node_modules", "@livekit", "agents")
+	require.NoError(t, os.MkdirAll(agentsDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "package.json"),
+		[]byte(`{"name": "@livekit/agents", "version": "1.6.0"}`), 0o644))
 
 	ap, err := startAgent(AgentStartConfig{
 		Dir:         dir,
