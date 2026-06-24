@@ -451,12 +451,14 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			errPrefix := lipgloss.NewStyle().Foreground(util.Error()).Render("┃ ")
 			fixPrefix := lipgloss.NewStyle().Foreground(util.Warning()).Render("┃ ")
 			var b strings.Builder
-			b.WriteString(header + "\n")
+			b.WriteString(header)
+			b.WriteString("\n")
 			for _, line := range strings.Split(strings.TrimRight(err.Error(), "\n"), "\n") {
-				b.WriteString(errPrefix + line + "\n")
+				b.WriteString(errPrefix)
+				b.WriteString(line)
+				b.WriteString("\n")
 			}
-			fmt.Fprintf(&b, "%sFix your toolchain, then re-run the install step manually in ./%s.", fixPrefix, appName)
-			out.Warnf("%s", b.String())
+			out.Warnf("%s%sFix your toolchain, then re-run the install step manually in ./%s.", b.String(), fixPrefix, appName)
 		} else {
 			// Signal a successful install to post_create so the template can skip
 			// printing the now-redundant install hint (guarded via `status:`).
