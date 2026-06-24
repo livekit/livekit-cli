@@ -2,8 +2,6 @@
 
 package main
 
-//lint:file-ignore U1000 consumed by console-tagged commands (hidden from the default tag-free lint build) and the lk session daemon (follow-up PR); remove once the daemon merges
-
 import (
 	"os/exec"
 	"syscall"

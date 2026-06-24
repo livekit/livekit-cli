@@ -1,0 +1,10 @@
+# uv project marker: [tool.uv] lets the daemon's `uv run python` auto-sync
+# these deps -- no separate install step.
+[project]
+name = "lk-session-e2e-echo-agent"
+version = "0"
+requires-python = ">=3.12"
+dependencies = ["livekit-agents", "python-dotenv"]
+
+[tool.uv]
+package = false
