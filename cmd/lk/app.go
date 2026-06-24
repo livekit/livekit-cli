@@ -457,6 +457,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			}
 			fmt.Fprintf(&b, "%sFix your toolchain, then re-run the install step manually in ./%s.", fixPrefix, appName)
 			out.Warnf("%s", b.String())
+		} else {
+			// Signal a successful install to post_create so the template can skip
+			// printing the now-redundant install hint (guarded via `status:`).
+			os.Setenv("LIVEKIT_DEPS_INSTALLED", "1")
 		}
 	}
 	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
