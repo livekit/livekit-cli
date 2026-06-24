@@ -31,7 +31,7 @@ import (
 	agent "github.com/livekit/protocol/livekit/agent"
 )
 
-// runSessionDaemon is the entry point for the hidden `lk agent daemon run`
+// runSessionDaemon is the entry point for the hidden `lk agent daemon serve`
 // subcommand that `lk agent daemon start` re-execs. It runs the detached
 // daemon to completion (until the agent exits or `stop` is received).
 func runSessionDaemon() {

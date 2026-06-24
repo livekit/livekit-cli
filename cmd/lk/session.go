@@ -45,7 +45,7 @@ const (
 	envSessionReadyFile = "LK_SESSION_READY_FILE" // path the daemon writes its status to
 
 	// sessionDaemonSubcommand is the hidden entrypoint `start` re-execs into.
-	sessionDaemonSubcommand = "run"
+	sessionDaemonSubcommand = "serve"
 )
 
 var sessionPortFlag = &cli.IntFlag{
@@ -93,7 +93,7 @@ var agentDaemonCommand = &cli.Command{
 			Hidden: true,
 			Action: func(ctx context.Context, cmd *cli.Command) error {
 				if os.Getenv(envSessionReadyFile) == "" {
-					return fmt.Errorf("`lk agent daemon run` is an internal entrypoint; run `lk agent daemon start <entrypoint>` instead")
+					return fmt.Errorf("`lk agent daemon serve` is an internal entrypoint; run `lk agent daemon start <entrypoint>` instead")
 				}
 				runSessionDaemon()
 				return nil
