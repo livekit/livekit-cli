@@ -245,6 +245,17 @@ var (
 					ArgsUsage:                 "[working-dir]",
 				},
 				{
+					Name:   "promote",
+					Usage:  "Promote an agent to a new deployment",
+					Before: createAgentClient,
+					Action: promoteAgent,
+					Flags: []cli.Flag{
+						idFlag(false),
+						deploymentFlag,
+					},
+					ArgsUsage: "[working-dir]",
+				},
+				{
 					Name:   "status",
 					Usage:  "Get the status of an agent",
 					Before: createAgentClient,
@@ -831,6 +842,25 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	out.Status("Deployed agent")
+	return nil
+}
+
+func promoteAgent(ctx context.Context, cmd *cli.Command) error {
+	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
+	if err != nil {
+		return err
+	}
+	agentDeployment := cmd.String("deployment")
+	if agentDeployment == "" {
+		return fmt.Errorf("cannot promote production deployment")
+	}
+	if err := agentsClient.PromoteAgent(ctx, agentID, agentDeployment, ""); err != nil {
+		if twerr, ok := err.(twirp.Error); ok {
+			return fmt.Errorf("unable to promote agent: %s", twerr.Msg())
+		}
+		return fmt.Errorf("unable to promote agent: %w", err)
+	}
+	out.Statusf("Promoted agent from deployment [%s] to production", util.Accented(agentDeployment))
 	return nil
 }
 
