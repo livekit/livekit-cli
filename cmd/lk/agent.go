@@ -16,9 +16,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -59,6 +61,18 @@ var (
 	idSliceFlag = &cli.StringSliceFlag{
 		Name:     "id",
 		Usage:    "`IDs` of agent(s)",
+		Required: false,
+	}
+
+	attributesFlag = &cli.StringFlag{
+		Name:     "attributes",
+		Usage:    "`JSON` literal or file path containing an object of string key-value pairs. Use \"-\" to read from stdin.",
+		Required: false,
+	}
+
+	attributeFlag = &cli.StringSliceFlag{
+		Name:     "attribute",
+		Usage:    "`KEY=VALUE` attribute pair, may be repeated. Merged with --attributes, taking precedence on conflicting keys.",
 		Required: false,
 	}
 
@@ -221,6 +235,8 @@ var (
 					Before: createAgentClient,
 					Action: deployAgent,
 					Flags: []cli.Flag{
+						attributesFlag,
+						attributeFlag,
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
@@ -242,6 +258,7 @@ var (
 					Action: getAgentStatus,
 					Flags: []cli.Flag{
 						idFlag(false),
+						jsonFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -317,6 +334,9 @@ var (
 					Action: listAgentVersions,
 					Flags: []cli.Flag{
 						idFlag(false),
+						attributeFlag,
+						attributesFlag,
+						jsonFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -327,6 +347,7 @@ var (
 					Before: createAgentClient,
 					Flags: []cli.Flag{
 						idSliceFlag,
+						jsonFlag,
 					},
 				},
 				{
@@ -336,6 +357,7 @@ var (
 					Action: listAgentSecrets,
 					Flags: []cli.Flag{
 						idFlag(false),
+						jsonFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -755,6 +777,11 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 
+	attrs, err := resolveAttributes(cmd)
+	if err != nil {
+		return err
+	}
+
 	secrets, err := requireSecrets(ctx, cmd, false, true)
 	if err != nil {
 		return err
@@ -806,7 +833,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
+	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, attrs, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
@@ -874,6 +901,11 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 
 	if len(res.Agents) == 0 {
 		return fmt.Errorf("no agents found")
+	}
+
+	if cmd.Bool("json") {
+		util.PrintJSON(res)
+		return nil
 	}
 
 	var rows [][]string
@@ -1085,6 +1117,39 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
+// resolveAttributes merges attribute inputs from the --attributes JSON flag
+// (literal, file path, or "-" for stdin) and the repeatable --attribute
+// key=value flag. The key=value pairs take precedence over the JSON object on
+// conflicting keys. Returns nil when neither flag is set.
+func resolveAttributes(cmd *cli.Command) (map[string]string, error) {
+	attrs := map[string]string{}
+	if cmd.IsSet(attributesFlag.Name) {
+		if _, err := ReadJSONFileOrLiteral(cmd.String(attributesFlag.Name), &attrs); err != nil {
+			return nil, err
+		}
+	}
+	pairs, err := parseKeyValuePairs(cmd, attributeFlag.Name)
+	if err != nil {
+		return nil, err
+	}
+	maps.Copy(attrs, pairs)
+	if len(attrs) == 0 {
+		return nil, nil
+	}
+	return attrs, nil
+}
+
+// attributesMatch reports whether attrs contains every key-value pair in
+// filter. Extra keys in attrs are allowed, so the match is inclusive.
+func attributesMatch(attrs, filter map[string]string) bool {
+	for k, want := range filter {
+		if got, ok := attrs[k]; !ok || got != want {
+			return false
+		}
+	}
+	return true
+}
+
 func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
@@ -1103,10 +1168,27 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to list agent versions: %w", err)
 	}
 
+	// Filter to versions containing all requested attributes. Extra attributes
+	// on a version are allowed; the filter is inclusive, not exclusive.
+	attrFilter, err := resolveAttributes(cmd)
+	if err != nil {
+		return err
+	}
+	if len(attrFilter) > 0 {
+		versions.Versions = slices.DeleteFunc(versions.Versions, func(v *lkproto.AgentVersion) bool {
+			return !attributesMatch(v.Attributes, attrFilter)
+		})
+	}
+
 	// Sort versions by created date descending
 	slices.SortFunc(versions.Versions, func(a, b *lkproto.AgentVersion) int {
 		return b.CreatedAt.AsTime().Compare(a.CreatedAt.AsTime())
 	})
+
+	if cmd.Bool("json") {
+		util.PrintJSON(versions)
+		return nil
+	}
 
 	showDigest := false
 	for _, v := range versions.Versions {
@@ -1116,17 +1198,22 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	headers := []string{"Version", "Current", "Status", "Created At", "Deployed At"}
+	headers := []string{"Version", "Current", "Status", "Attributes", "Created At", "Deployed At"}
 	if showDigest {
 		headers = append(headers, "Digest")
 	}
 	table := util.CreateTable().Headers(headers...)
 
 	for _, version := range versions.Versions {
+		attrs, err := json.Marshal(version.Attributes)
+		if err != nil || len(version.Attributes) == 0 {
+			attrs = []byte("--")
+		}
 		row := []string{
 			version.Version,
 			fmt.Sprintf("%t", version.Current),
 			version.Status,
+			string(attrs),
 			version.CreatedAt.AsTime().Format(time.RFC3339),
 			version.DeployedAt.AsTime().Format(time.RFC3339),
 		}
@@ -1169,14 +1256,19 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 		items = agents.Agents
 	}
 
+	slices.SortFunc(items, func(a, b *lkproto.AgentInfo) int {
+		return b.DeployedAt.AsTime().Compare(a.DeployedAt.AsTime())
+	})
+
+	if cmd.Bool("json") {
+		util.PrintJSON(&lkproto.ListAgentsResponse{Agents: items})
+		return nil
+	}
+
 	if len(items) == 0 {
 		out.Status("No agents found")
 		return nil
 	}
-
-	slices.SortFunc(items, func(a, b *lkproto.AgentInfo) int {
-		return b.DeployedAt.AsTime().Compare(a.DeployedAt.AsTime())
-	})
 
 	var rows [][]string
 	for _, agent := range items {
@@ -1219,15 +1311,25 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to list agent secrets: %w", err)
 	}
 
+	// NOTE: Maybe these should be omitted on the server side?
+	visible := make([]*lkproto.AgentSecret, 0, len(secrets.Secrets))
+	for _, secret := range secrets.Secrets {
+		if slices.Contains(ignoredSecrets, secret.Name) {
+			continue
+		}
+		visible = append(visible, secret)
+	}
+
+	if cmd.Bool("json") {
+		util.PrintJSON(&lkproto.ListAgentSecretsResponse{Secrets: visible})
+		return nil
+	}
+
 	// TODO (steveyoon): show secret.Kind.String() once cloud-agents is released
 	table := util.CreateTable().
 		Headers("Name", "Created At", "Updated At")
 
-	for _, secret := range secrets.Secrets {
-		// NOTE: Maybe these should be omitted on the server side?
-		if slices.Contains(ignoredSecrets, secret.Name) {
-			continue
-		}
+	for _, secret := range visible {
 		table.Row(secret.Name, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
 	}
 
