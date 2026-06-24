@@ -32,7 +32,7 @@ import (
 
 // Single-session model: the fixed loopback port is the singleton registry.
 // The daemon binds it; whoever wins the bind() is "the session". start, say,
-// and end all rendezvous on this one port. No session id, manifest, or dir.
+// and stop all rendezvous on this one port. No session id, manifest, or dir.
 const (
 	sessionMagic       = "LKCP" // 4-byte preamble that marks a control connection
 	sessionHost        = "127.0.0.1"
@@ -65,7 +65,7 @@ func init() {
 
 var agentSessionCommand = &cli.Command{
 	Name:     "session",
-	Usage:    "Drive a single local agent session in text mode (start/say/end)",
+	Usage:    "Drive a single local agent session in text mode (start/say/stop)",
 	Category: "Core",
 	Commands: []*cli.Command{
 		{
@@ -83,10 +83,10 @@ var agentSessionCommand = &cli.Command{
 			Action:    runSessionSay,
 		},
 		{
-			Name:   "end",
+			Name:   "stop",
 			Usage:  "Stop the running session and its agent",
 			Flags:  []cli.Flag{sessionPortFlag},
-			Action: runSessionEnd,
+			Action: runSessionStop,
 		},
 		{
 			Name:   sessionDaemonSubcommand,
@@ -157,7 +157,7 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 	switch {
 	case status == "ready":
 		fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
-		fmt.Printf("Session started. Use `lk agent session say \"...\"` to talk, `lk agent session end` to stop.\n")
+		fmt.Printf("Session started. Use `lk agent session say \"...\"` to talk, `lk agent session stop` to stop.\n")
 		return nil
 	case strings.HasPrefix(status, "error:"):
 		return fmt.Errorf("%s", strings.TrimSpace(strings.TrimPrefix(status, "error:")))
@@ -220,14 +220,14 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 	return streamControlReplies(conn)
 }
 
-func runSessionEnd(ctx context.Context, cmd *cli.Command) error {
+func runSessionStop(ctx context.Context, cmd *cli.Command) error {
 	conn, err := dialControl(int(cmd.Int("port")))
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	if err := writeControlFrame(conn, controlRequest{Cmd: "end"}); err != nil {
+	if err := writeControlFrame(conn, controlRequest{Cmd: "stop"}); err != nil {
 		return err
 	}
 	if err := streamControlReplies(conn); err != nil {

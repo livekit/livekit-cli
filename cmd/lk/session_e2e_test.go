@@ -33,7 +33,7 @@ const sessionE2ETimeout = 5 * time.Second
 
 // TestSessionE2E drives the real `lk agent session` lifecycle end to end:
 // build the binary, `start` the detached daemon, `say` to make the model echo
-// a token (asserting the CLI→daemon→agent→LLM round-trip), `end`, confirm a
+// a token (asserting the CLI→daemon→agent→LLM round-trip), `stop`, confirm a
 // second `say` cannot still reach the agent, then confirm the daemon exited
 // (nothing answers on the port).
 //
@@ -99,7 +99,7 @@ func TestSessionE2E(t *testing.T) {
 
 	// Best-effort teardown so a mid-run failure doesn't leave the daemon alive.
 	t.Cleanup(func() {
-		_, _ = run(sessionE2ETimeout, "agent", "session", "end", "--port", port)
+		_, _ = run(sessionE2ETimeout, "agent", "session", "stop", "--port", port)
 	})
 
 	// start: launches the detached daemon and returns once the agent is ready.
@@ -116,28 +116,28 @@ func TestSessionE2E(t *testing.T) {
 	require.GreaterOrEqualf(t, strings.Count(sayOut, token), 2,
 		"agent did not echo the token back; say output:\n%s", sayOut)
 
-	endOut, err := run(sessionE2ETimeout, "agent", "session", "end", "--port", port)
-	require.NoError(t, err, "session end failed:\n%s", endOut)
-	require.Contains(t, endOut, "Session ended.", "end did not confirm shutdown:\n%s", endOut)
+	stopOut, err := run(sessionE2ETimeout, "agent", "session", "stop", "--port", port)
+	require.NoError(t, err, "session stop failed:\n%s", stopOut)
+	require.Contains(t, stopOut, "Session ended.", "stop did not confirm shutdown:\n%s", stopOut)
 
 	require.Eventually(t, portIsFree, sessionE2ETimeout, 200*time.Millisecond,
-		"session daemon still listening on port %s after end", port)
+		"session daemon still listening on port %s after stop", port)
 
 	// After a successful match and shutdown, another say must not reach a live
 	// agent or reproduce the token.
-	afterEndSay, err := runCapture(sessionE2ETimeout, "agent", "session", "say", "--port", port,
+	afterStopSay, err := runCapture(sessionE2ETimeout, "agent", "session", "say", "--port", port,
 		"Repeat this token back to me exactly and nothing else: "+token)
-	afterEndSayOut := afterEndSay.stdout + afterEndSay.stderr
-	require.Error(t, err, "session say unexpectedly succeeded after end:\n%s", afterEndSayOut)
-	require.Equal(t, 1, afterEndSay.exitCode,
-		"session say after end exited with wrong code; stdout:\n%s\nstderr:\n%s",
-		afterEndSay.stdout, afterEndSay.stderr)
-	require.Truef(t, strings.HasPrefix(afterEndSayOut, "no session running"),
-		"session say after end output did not start with no session running; stdout:\n%s\nstderr:\n%s",
-		afterEndSay.stdout, afterEndSay.stderr)
-	require.NotContains(t, afterEndSayOut, token,
-		"session say after end unexpectedly contained the matched token; stdout:\n%s\nstderr:\n%s",
-		afterEndSay.stdout, afterEndSay.stderr)
+	afterStopSayOut := afterStopSay.stdout + afterStopSay.stderr
+	require.Error(t, err, "session say unexpectedly succeeded after stop:\n%s", afterStopSayOut)
+	require.Equal(t, 1, afterStopSay.exitCode,
+		"session say after stop exited with wrong code; stdout:\n%s\nstderr:\n%s",
+		afterStopSay.stdout, afterStopSay.stderr)
+	require.Truef(t, strings.HasPrefix(afterStopSayOut, "no session running"),
+		"session say after stop output did not start with no session running; stdout:\n%s\nstderr:\n%s",
+		afterStopSay.stdout, afterStopSay.stderr)
+	require.NotContains(t, afterStopSayOut, token,
+		"session say after stop unexpectedly contained the matched token; stdout:\n%s\nstderr:\n%s",
+		afterStopSay.stdout, afterStopSay.stderr)
 
 	require.True(t, portIsFree(), "session daemon started listening again on port %s after failed say", port)
 }

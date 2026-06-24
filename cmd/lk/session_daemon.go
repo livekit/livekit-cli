@@ -33,7 +33,7 @@ import (
 
 // runSessionDaemon is the entry point for the hidden `lk agent session daemon`
 // subcommand that `lk agent session start` re-execs. It runs the detached
-// daemon to completion (until the agent exits or `end` is received).
+// daemon to completion (until the agent exits or `stop` is received).
 func runSessionDaemon() {
 	ready := readyWriter()
 	port, _ := strconv.Atoi(os.Getenv(envSessionPort))
@@ -300,7 +300,7 @@ func (d *sessionDaemon) runCommand(cmd *sessionCommand) {
 	switch cmd.kind {
 	case "say":
 		d.runSay(cmd)
-	case "end":
+	case "stop":
 		_ = writeControlFrame(cmd.out, controlReply{Done: true})
 		d.shutOnce.Do(func() { close(d.shutdown) })
 	default:
