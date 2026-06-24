@@ -30,19 +30,4 @@ async def entrypoint(ctx: JobContext):
 
 
 if __name__ == "__main__":
-    import sys
-
-    argv = sys.argv[1:]
-    if argv and argv[0] == "console":
-        # The daemon launches `python agent.py console --connect-addr <addr>`, but
-        # cli.run_app() sends `console` to the legacy click CLI (no --connect-addr),
-        # so dispatch to the TCP console directly.
-        from livekit.agents.cli.cli import _run_tcp_console
-
-        _run_tcp_console(
-            server=server,
-            connect_addr=argv[argv.index("--connect-addr") + 1],
-            record="--record" in argv,
-        )
-    else:
-        cli.run_app(server)
+    cli.run_app(server)
