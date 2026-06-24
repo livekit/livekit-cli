@@ -16,9 +16,20 @@
 bin/
 .idea/
 dist/
+.cross/
 
 # Local artifacts
 .task/
 
 .DS_Store
 /lk
+
+# local secrets copied for e2e testing
+.env
+
+# python venvs created for e2e agent fixtures
+.venv/
+cmd/lk/testdata/**/.venv
+
+# uv lockfiles for test agent fixtures (resolved fresh in CI)
+cmd/lk/testdata/**/uv.lock

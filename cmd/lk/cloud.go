@@ -259,6 +259,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// get devicename
 	if err := huh.NewForm(huh.NewGroup(huh.NewInput().
 		Title("What is the name of this device?").
+		Prompt("").
 		Value(&cliConfig.DeviceName).
 		WithTheme(util.Theme))).
 		Run(); err != nil {
@@ -269,10 +270,10 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	if err := cliConfig.PersistIfNeeded(); err != nil {
 		return err
 	}
-	fmt.Printf("Device [%s]\n", util.Accented(cliConfig.DeviceName))
+	out.Statusf("Device [%s]", util.Accented(cliConfig.DeviceName))
 
 	// request token
-	fmt.Println("Requesting verification token...")
+	out.Status("Requesting verification token...")
 	token, err := authClient.GetVerificationToken(cliConfig.DeviceName)
 	if err != nil {
 		return err
@@ -284,11 +285,11 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// poll for keys
-	fmt.Printf("Please confirm access by visiting:\n\n   %s\n\n", authURL.String())
+	out.Statusf("Please confirm access by visiting:\n\n   %s\n", authURL.String())
 	_ = browser.OpenURL(authURL.String()) // discard result; this will fail in headless environments
 
 	var ak *ClaimAccessKeyResponse
-	err = util.Await(
+	err = out.Await(
 		"Awaiting confirmation...",
 		ctx,
 		func(ctx context.Context) error {
@@ -305,16 +306,15 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("operation cancelled")
 	}
 
-	fmt.Printf("Authenticated project [%s]\n", util.Accented(ak.ProjectName))
+	out.Statusf("Authenticated project [%s]", util.Accented(ak.ProjectName))
 
 	// if other authed projects, ask if this should be the default project
 	isDefault := len(cliConfig.Projects) == 0
 	if !isDefault {
-		if err := huh.NewConfirm().
+		if err := huh.NewForm(huh.NewGroup(util.Confirm().
 			Title("Make this project default?").
 			Value(&isDefault).
-			Inline(true).
-			WithTheme(util.Theme).
+			WithTheme(util.Theme))).
 			Run(); err != nil {
 			return err
 		}
@@ -329,6 +329,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		if err := huh.NewInput().
 			Title("Choose a different alias").
 			Description(fmt.Sprintf("You've already authenticated a project with the alias %q.", name)).
+			Prompt("").
 			Value(&name).
 			Validate(func(s string) error {
 				if cliConfig.ProjectExists(s) {

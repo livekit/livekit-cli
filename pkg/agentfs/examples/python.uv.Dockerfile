@@ -46,15 +46,16 @@ RUN mkdir -p src
 # Ensure your uv.lock file is checked in for consistency across environments
 RUN uv sync --locked
 
+# Pre-download any ML models or files the agent needs
+# This runs before COPY . . so the download layer is cached across code-only changes.
+# The module-level command discovers installed livekit-plugins-* packages without
+# loading your agent code.
+RUN uv run --module livekit.agents download-files
+
 # Copy all remaining application files into the container
 # This includes source code, configuration files, and dependency specifications
 # (Excludes files specified in .dockerignore)
 COPY . .
-
-# Pre-download any ML models or files the agent needs
-# This ensures the container is ready to run immediately without downloading
-# dependencies at runtime, which improves startup time and reliability
-RUN uv run "{{.ProgramMain}}" download-files
 
 # --- Production stage ---
 # Build tools (gcc, g++, python3-dev) are not included in the final image

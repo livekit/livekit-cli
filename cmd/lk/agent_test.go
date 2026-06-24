@@ -15,20 +15,24 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
+
+	"github.com/livekit/livekit-cli/v2/pkg/util"
+	lkproto "github.com/livekit/protocol/livekit"
 )
 
 // buildTestCommand creates a *cli.Command with flags set for testing requireSecrets()
 func buildTestCommand(
 	t *testing.T,
 	ignoreEmpty bool,
-	silent bool,
 	secretsFile string,
 	inlineSecrets []string,
 ) *cli.Command {
@@ -40,9 +44,6 @@ func buildTestCommand(
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name: "ignore-empty-secrets",
-			},
-			&cli.BoolFlag{
-				Name: "silent",
 			},
 			&cli.StringFlag{
 				Name: "secrets-file",
@@ -65,9 +66,6 @@ func buildTestCommand(
 	args := []string{"test"}
 	if ignoreEmpty {
 		args = append(args, "--ignore-empty-secrets")
-	}
-	if silent {
-		args = append(args, "--silent")
 	}
 	if secretsFile != "" {
 		args = append(args, "--secrets-file", secretsFile)
@@ -94,7 +92,6 @@ func TestRequireSecrets(t *testing.T) {
 	tests := []struct {
 		name               string
 		ignoreEmpty        bool
-		silent             bool
 		envFileContent     string   // .env file content to create
 		inlineSecrets      []string // --secrets flag values
 		required           bool     // required parameter
@@ -108,7 +105,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:               "Case 1: Empty secrets with ignore-empty-secrets flag",
 			ignoreEmpty:        true,
-			silent:             false,
 			envFileContent:     "KEY1=value1\nEMPTY_KEY=\nKEY2=value2",
 			required:           false,
 			lazy:               false,
@@ -119,7 +115,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:             "Case 2: Empty secrets without flag - should error",
 			ignoreEmpty:      false,
-			silent:           false,
 			envFileContent:   "KEY1=value1\nEMPTY_KEY=\nKEY2=value2",
 			required:         false,
 			lazy:             false,
@@ -129,7 +124,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:               "Case 3: No empty secrets with ignore-empty-secrets flag",
 			ignoreEmpty:        true,
-			silent:             false,
 			envFileContent:     "KEY1=value1\nKEY2=value2",
 			required:           false,
 			lazy:               false,
@@ -140,7 +134,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:               "Case 4: No empty secrets without flag (baseline)",
 			ignoreEmpty:        false,
-			silent:             false,
 			envFileContent:     "KEY1=value1\nKEY2=value2",
 			required:           false,
 			lazy:               false,
@@ -152,7 +145,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:             "Case 5: All empty with flag - should error no secrets",
 			ignoreEmpty:      true,
-			silent:           false,
 			envFileContent:   "EMPTY1=\nEMPTY2=",
 			required:         true,
 			lazy:             false,
@@ -162,7 +154,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:               "Case 6: Mixed empty/non-empty with flag",
 			ignoreEmpty:        true,
-			silent:             false,
 			envFileContent:     "EMPTY1=\nVALID=value\nEMPTY2=\nALSO_VALID=value2",
 			required:           false,
 			lazy:               false,
@@ -173,7 +164,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:               "Case 7: Multiple empty secrets tracked",
 			ignoreEmpty:        true,
-			silent:             false,
 			envFileContent:     "E1=\nE2=\nE3=\nVALID=value",
 			required:           false,
 			lazy:               false,
@@ -184,7 +174,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:               "Case 8: Inline secrets not affected by flag",
 			ignoreEmpty:        true,
-			silent:             false,
 			envFileContent:     "", // No env file
 			inlineSecrets:      []string{"EMPTY_INLINE=", "VALID_INLINE=value"},
 			required:           false,
@@ -196,7 +185,6 @@ func TestRequireSecrets(t *testing.T) {
 		{
 			name:             "Case 9: Error message mentions --ignore-empty-secrets flag",
 			ignoreEmpty:      false,
-			silent:           false,
 			envFileContent:   "EMPTY=",
 			required:         false,
 			lazy:             false,
@@ -204,9 +192,8 @@ func TestRequireSecrets(t *testing.T) {
 			expectedErrorMsg: "--ignore-empty-secrets",
 		},
 		{
-			name:               "Case 10: Silent mode suppresses skip message",
+			name:               "Case 10: Empty secret skipped, valid retained",
 			ignoreEmpty:        true,
-			silent:             true,
 			envFileContent:     "EMPTY=\nVALID=value",
 			required:           false,
 			lazy:               false,
@@ -238,7 +225,7 @@ func TestRequireSecrets(t *testing.T) {
 			}
 
 			// Build test command with proper flags
-			cmd := buildTestCommand(t, tt.ignoreEmpty, tt.silent, secretsFile, tt.inlineSecrets)
+			cmd := buildTestCommand(t, tt.ignoreEmpty, secretsFile, tt.inlineSecrets)
 
 			// Call the REAL requireSecrets function
 			secrets, err := requireSecrets(
@@ -299,11 +286,173 @@ func TestRequireSecrets_InlineOverridesFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create command with inline secret KEY=inline_value
-	cmd := buildTestCommand(t, true, false, ".env", []string{"KEY=inline_value"})
+	cmd := buildTestCommand(t, true, ".env", []string{"KEY=inline_value"})
 
 	secrets, err := requireSecrets(context.Background(), cmd, false, false)
 	require.NoError(t, err)
 	require.Len(t, secrets, 1)
 	assert.Equal(t, "KEY", secrets[0].Name)
 	assert.Equal(t, "inline_value", string(secrets[0].Value))
+}
+
+// TestRequireSecrets_LazyDeployMode covers the secret-loading contract used by
+// `lk agent deploy` (required=false, lazy=true). Issue #860 depended on this path
+// being reached before the --image branch.
+func TestRequireSecrets_LazyDeployMode(t *testing.T) {
+	tests := []struct {
+		name            string
+		envFileContent  string
+		secretsFile     string
+		inlineSecrets   []string
+		expectedSecrets []string
+	}{
+		{
+			name:            "does not auto-read .env when lazy and no secrets flags",
+			envFileContent:  "FROM_ENV=should-not-appear",
+			expectedSecrets: nil,
+		},
+		{
+			name:            "reads secrets when --secrets-file is explicitly set",
+			envFileContent:  "OTHER=ignored",
+			secretsFile:     ".env.production",
+			expectedSecrets: []string{"API_KEY"},
+		},
+		{
+			name:            "uses inline --secrets without reading .env",
+			envFileContent:  "FROM_ENV=ignored",
+			inlineSecrets:   []string{"FROM_FLAG=value"},
+			expectedSecrets: []string{"FROM_FLAG"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir, err := os.MkdirTemp("", "agent-secrets-lazy-test")
+			require.NoError(t, err)
+			defer os.RemoveAll(tempDir)
+
+			oldWd, _ := os.Getwd()
+			require.NoError(t, os.Chdir(tempDir))
+			defer os.Chdir(oldWd)
+
+			if tt.envFileContent != "" {
+				require.NoError(t, os.WriteFile(".env", []byte(tt.envFileContent), 0644))
+			}
+			if tt.secretsFile != "" {
+				require.NoError(t, os.WriteFile(tt.secretsFile, []byte("API_KEY=secret"), 0644))
+			}
+
+			cmd := buildTestCommand(t, false, tt.secretsFile, tt.inlineSecrets)
+
+			secrets, err := requireSecrets(context.Background(), cmd, false, true)
+			require.NoError(t, err)
+
+			secretNames := make([]string, len(secrets))
+			for i, s := range secrets {
+				secretNames[i] = s.Name
+			}
+			assert.ElementsMatch(t, tt.expectedSecrets, secretNames)
+		})
+	}
+}
+
+// TestQuietFlagAlias verifies the global --quiet flag and its --silent / -q aliases all
+// resolve to the same value, so the former per-command --silent keeps working.
+func TestQuietFlagAlias(t *testing.T) {
+	parse := func(t *testing.T, args ...string) *cli.Command {
+		t.Helper()
+		var captured *cli.Command
+		app := &cli.Command{
+			Name:  "lk",
+			Flags: []cli.Flag{quietFlag},
+			Action: func(_ context.Context, cmd *cli.Command) error {
+				captured = cmd
+				return nil
+			},
+		}
+		require.NoError(t, app.Run(context.Background(), append([]string{"lk"}, args...)))
+		return captured
+	}
+
+	tests := []struct {
+		name string
+		args []string
+		want bool
+	}{
+		{"unset", nil, false},
+		{"--quiet", []string{"--quiet"}, true},
+		{"-q", []string{"-q"}, true},
+		{"--silent alias", []string{"--silent"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := parse(t, tt.args...)
+			assert.Equal(t, tt.want, cmd.Bool("quiet"), "--quiet value")
+			// The flag is queryable by any of its names, including the legacy "silent".
+			assert.Equal(t, tt.want, cmd.Bool("silent"), "queryable via silent alias")
+		})
+	}
+}
+
+// TestRequireSecrets_QuietSuppressesStatus verifies that informational status (the
+// "Skipped N empty secret(s)" breadcrumb) is suppressed when the Printer is quiet, and
+// that the --silent alias drives the same suppression as --quiet — end to end through the
+// real global flag and the Printer, with no code in requireSecrets checking the flag.
+func TestRequireSecrets_QuietSuppressesStatus(t *testing.T) {
+	tests := []struct {
+		name           string
+		args           []string
+		wantSuppressed bool
+	}{
+		{"no flag prints status", nil, false},
+		{"--quiet suppresses", []string{"--quiet"}, true},
+		{"--silent alias suppresses", []string{"--silent"}, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			oldWd, _ := os.Getwd()
+			require.NoError(t, os.Chdir(dir))
+			defer os.Chdir(oldWd)
+			require.NoError(t, os.WriteFile(".env", []byte("EMPTY=\nVALID=value"), 0644))
+
+			var buf bytes.Buffer
+			var secrets []*lkproto.AgentSecret
+			var runErr error
+			app := &cli.Command{
+				Name: "lk",
+				Flags: []cli.Flag{
+					quietFlag,
+					ignoreEmptySecretsFlag,
+					secretsFileFlag,
+					secretsFlag,
+					secretsMountFlag,
+				},
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					// Build the Printer exactly as main.go does: quiet driven by the flag.
+					prev := out
+					out = util.NewPrinter(io.Discard, &buf, cmd.Bool("quiet"))
+					defer func() { out = prev }()
+					secrets, runErr = requireSecrets(context.Background(), cmd, false, false)
+					return nil
+				},
+			}
+
+			args := append([]string{"lk", "--ignore-empty-secrets", "--secrets-file", ".env"}, tt.args...)
+			require.NoError(t, app.Run(context.Background(), args))
+			require.NoError(t, runErr)
+
+			// Behavior (which secrets survive) is identical regardless of quiet.
+			require.Len(t, secrets, 1)
+			assert.Equal(t, "VALID", secrets[0].Name)
+
+			// Only the status breadcrumb is gated by quiet.
+			if tt.wantSuppressed {
+				assert.Empty(t, buf.String(), "quiet should suppress the skip-message breadcrumb")
+			} else {
+				assert.Contains(t, buf.String(), "Skipped", "non-quiet should print the skip-message breadcrumb")
+			}
+		})
+	}
 }

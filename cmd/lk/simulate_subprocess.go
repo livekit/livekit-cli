@@ -197,13 +197,14 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 	}
 
 	example := rootCandidates[0]
-	msg := "no agent entrypoint found, checked:\n"
+	var msg strings.Builder
+	msg.WriteString("no agent entrypoint found, checked:\n")
 	for _, p := range checked {
-		msg += fmt.Sprintf("  - %s\n", p)
+		fmt.Fprintf(&msg, "  - %s\n", p)
 	}
-	msg += "\nMake sure you are running this command from a directory containing a LiveKit agent.\n"
-	msg += fmt.Sprintf("Specify the entrypoint file as a positional argument, e.g.: lk agent dev %s", example)
-	return "", fmt.Errorf("%s", msg)
+	msg.WriteString("\nMake sure you are running this command from a directory containing a LiveKit agent.\n")
+	fmt.Fprintf(&msg, "Specify the entrypoint file as a positional argument, e.g.: lk agent dev %s", example)
+	return "", fmt.Errorf("%s", msg.String())
 }
 
 // AgentStartConfig configures how to launch an agent subprocess.
@@ -212,8 +213,8 @@ type AgentStartConfig struct {
 	Entrypoint    string
 	ProjectType   agentfs.ProjectType
 	RuntimeArgs   []string  // interpreter (node/python) args placed before the entrypoint, e.g. ["--env-file=.env"]
-	CLIArgs       []string  // e.g. ["start", "--url", "..."] or ["console", "--connect-addr", addr]
-	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME=x"] or nil
+	CLIArgs       []string  // subcommand first, then flags: ["start", "--url", "..."] or ["console", "--connect-addr", addr]
+	Env           []string  // e.g. ["LIVEKIT_AGENT_NAME_OVERRIDE=x"] or nil
 	ReadySignal   string    // substring to scan for in output (e.g. "registered worker"), empty to skip
 	FailSignals   []string  // output substrings meaning the agent has fatally failed even if the process is still alive
 	ForwardOutput io.Writer // if set, forward each output line to this writer
@@ -253,6 +254,49 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	args = append(args, cfg.Entrypoint)
 	args = append(args, cfg.CLIArgs...)
 	return pythonBin, args, nil
+}
+
+// thinCLIMinVersion is the first livekit-agents release that exposes the
+// start/dev/console/simulate subcommands under `python -m livekit.agents`.
+const thinCLIMinVersion = "1.6.0"
+
+// checkAgentSDKVersion fails fast when the project's livekit-agents SDK is older
+// than the thin-CLI baseline the subprocess launcher relies on.
+func checkAgentSDKVersion(dir string, projectType agentfs.ProjectType) error {
+	return agentfs.CheckSDKVersion(dir, projectType, map[string]string{
+		"python-min-sdk-version": thinCLIMinVersion,
+		"node-min-sdk-version":   thinCLIMinVersion,
+	})
+}
+
+// agentExitDetail surfaces the agent's own output and the log path when the
+// worker exits early or never registers.
+func agentExitDetail(ap *AgentProcess) string {
+	var b strings.Builder
+	if tail := lastNonEmptyLines(ap.RecentLogs(0), 12); len(tail) > 0 {
+		for i, l := range tail {
+			tail[i] = ansiEscapeRe.ReplaceAllString(l, "")
+		}
+		b.WriteString("Agent output:\n  " + strings.Join(tail, "\n  "))
+	}
+	if ap.LogPath != "" {
+		if b.Len() > 0 {
+			b.WriteString("\n\n")
+		}
+		b.WriteString("Full log: " + ap.LogPath)
+	}
+	return b.String()
+}
+
+// lastNonEmptyLines returns up to n trailing non-blank lines, in order.
+func lastNonEmptyLines(lines []string, n int) []string {
+	var out []string
+	for i := len(lines) - 1; i >= 0 && len(out) < n; i-- {
+		if strings.TrimSpace(lines[i]) != "" {
+			out = append([]string{lines[i]}, out...)
+		}
+	}
+	return out
 }
 
 // startAgent launches a Python or Node agent subprocess and monitors its output.
@@ -307,6 +351,8 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		scanner := bufio.NewScanner(r)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 		for scanner.Scan() {
+			// Keep ANSI colors: the TUI renders them. Plain-text consumers
+			// (log file, surfaced errors, fatal-marker matching) strip their own copy.
 			line := scanner.Text()
 			ap.appendLog(line)
 			if cfg.ForwardOutput != nil {
@@ -354,7 +400,8 @@ func (ap *AgentProcess) appendLog(line string) {
 		ap.latestRoomByPx[roomNamePrefix(room)] = room
 	}
 	if ap.logFile != nil {
-		fmt.Fprintln(ap.logFile, line)
+		// the agent logs in colored format; keep the file free of ANSI escapes
+		fmt.Fprintln(ap.logFile, ansiEscapeRe.ReplaceAllString(line, ""))
 	}
 	if ap.LogStream != nil {
 		select {
@@ -428,7 +475,7 @@ func roomNamePrefix(roomName string) string {
 
 // RecentRoomLogsByPrefix returns log lines for the most recent room matching
 // the prefix of the given room name. When a job is retried, each attempt gets
-// a new room with the same prefix — we show only the latest attempt's logs.
+// a new room with the same prefix; only the latest attempt's logs are shown.
 func (ap *AgentProcess) RecentRoomLogsByPrefix(n int, roomName string) []string {
 	ap.mu.Lock()
 	defer ap.mu.Unlock()
@@ -450,17 +497,16 @@ func (ap *AgentProcess) RecentRoomLogsByPrefix(n int, roomName string) []string 
 var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 func extractLogRoom(line string) string {
-	clean := ansiEscapeRe.ReplaceAllString(line, "")
-	idx := strings.LastIndex(clean, "{")
+	idx := strings.LastIndex(line, "{")
 	if idx < 0 {
 		return ""
 	}
-	end := strings.LastIndex(clean, "}")
+	end := strings.LastIndex(line, "}")
 	if end <= idx {
 		return ""
 	}
 	var extra map[string]any
-	if err := json.Unmarshal([]byte(clean[idx:end+1]), &extra); err != nil {
+	if err := json.Unmarshal([]byte(line[idx:end+1]), &extra); err != nil {
 		return ""
 	}
 	if room, ok := extra["room"].(string); ok {
@@ -469,7 +515,9 @@ func extractLogRoom(line string) string {
 	return ""
 }
 
-// Kill sends interrupt to the process and force-kills after a timeout.
+// Kill gives the worker a short SIGINT grace (an idle one exits cleanly; one
+// draining jobs would take minutes), then SIGKILLs the whole process group and
+// waits so the port is free on return.
 func (ap *AgentProcess) Kill() {
 	if ap.cmd.Process == nil {
 		return
@@ -485,8 +533,12 @@ func (ap *AgentProcess) Kill() {
 	}
 	select {
 	case <-ap.exitCh:
-	case <-time.After(5 * time.Second):
-		ap.sendKill()
+	case <-time.After(1 * time.Second):
+	}
+	ap.sendKill()
+	select {
+	case <-ap.exitCh:
+	case <-time.After(2 * time.Second):
 	}
 	ap.closeLogFile()
 }

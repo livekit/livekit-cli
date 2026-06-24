@@ -181,7 +181,7 @@ func listReplays(ctx context.Context, cmd *cli.Command) error {
 		for _, info := range res.Replays {
 			table.Row(info.ReplayId, info.RoomName, fmt.Sprint(time.Unix(0, info.StartTime)))
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 
 	return nil
@@ -210,7 +210,7 @@ func playback(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("PlaybackID:", res.PlaybackId)
+	out.Resultf("PlaybackID: %s\n", res.PlaybackId)
 
 	return nil
 }

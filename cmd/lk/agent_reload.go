@@ -1,5 +1,3 @@
-//go:build console
-
 package main
 
 import (
@@ -46,13 +44,13 @@ func (rs *reloadServer) captureJobs(conn net.Conn) {
 		},
 	}
 	if err := ipc.WriteProto(conn, req); err != nil {
-		fmt.Printf("reload: failed to send capture request: %v\n", err)
+		out.Warnf("reload: failed to send capture request: %v", err)
 		return
 	}
 
 	resp := &agent.AgentDevMessage{}
 	if err := ipc.ReadProto(conn, resp); err != nil {
-		fmt.Printf("reload: failed to read capture response: %v\n", err)
+		out.Warnf("reload: failed to read capture response: %v", err)
 		return
 	}
 
@@ -60,7 +58,7 @@ func (rs *reloadServer) captureJobs(conn net.Conn) {
 		rs.mu.Lock()
 		rs.savedJobs = jobs
 		rs.mu.Unlock()
-		fmt.Printf("reload: captured %d running job(s)\n", len(jobs.Jobs))
+		out.Statusf("reload: captured %d running job(s)", len(jobs.Jobs))
 	}
 }
 
@@ -90,9 +88,9 @@ func (rs *reloadServer) serveNewProcess(conn net.Conn) {
 		},
 	}
 	if err := ipc.WriteProto(conn, resp); err != nil {
-		fmt.Printf("reload: failed to send restore response: %v\n", err)
+		out.Warnf("reload: failed to send restore response: %v", err)
 	} else if len(saved.Jobs) > 0 {
-		fmt.Printf("reload: restored %d job(s) to new process\n", len(saved.Jobs))
+		out.Statusf("reload: restored %d job(s) to new process", len(saved.Jobs))
 	}
 }
 

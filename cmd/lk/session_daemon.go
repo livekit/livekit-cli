@@ -31,15 +31,15 @@ import (
 	agent "github.com/livekit/protocol/livekit/agent"
 )
 
-// runSessionDaemon is the entry point for the hidden `lk agent session daemon`
-// subcommand that `lk agent session start` re-execs. It runs the detached
-// daemon to completion (until the agent exits or `end` is received).
+// runSessionDaemon is the entry point for the hidden `lk agent daemon serve`
+// subcommand that `lk agent daemon start` re-execs. It runs the detached
+// daemon to completion (until the agent exits or `stop` is received).
 func runSessionDaemon() {
 	ready := readyWriter()
 	port, _ := strconv.Atoi(os.Getenv(envSessionPort))
 
 	// The fixed port is the singleton: if the bind fails, a session already
-	// owns it, which is how `lk agent session start` learns to reject.
+	// owns it, which is how `lk agent daemon start` learns to reject.
 	server, err := console.NewTCPServer(sessionAddr(port))
 	if err != nil {
 		signalReady(ready, "error: a session is already running on "+sessionAddr(port))
@@ -53,10 +53,17 @@ func runSessionDaemon() {
 		os.Exit(1)
 	}
 
+	projectDir := os.Getenv(envSessionDir)
+	projectType := agentfs.ProjectType(os.Getenv(envSessionPType))
+	if err := checkAgentSDKVersion(projectDir, projectType); err != nil {
+		signalReady(ready, "error: "+err.Error())
+		os.Exit(1)
+	}
+
 	agentProc, err := startAgent(AgentStartConfig{
-		Dir:         os.Getenv(envSessionDir),
+		Dir:         projectDir,
 		Entrypoint:  os.Getenv(envSessionEntry),
-		ProjectType: agentfs.ProjectType(os.Getenv(envSessionPType)),
+		ProjectType: projectType,
 		RuntimeArgs: runtimeArgs,
 		CLIArgs:     buildConsoleArgs(server.Addr().String(), false),
 		FailSignals: consoleCrashSignals,
@@ -110,26 +117,25 @@ func runSessionDaemon() {
 	agentProc.Kill()
 }
 
-// readyWriter returns the inherited pipe `lk agent session start` reads to learn the
-// daemon became ready (or failed). Nil if not launched via start.
-func readyWriter() *os.File {
-	fdStr := os.Getenv(envSessionReadyFD)
-	if fdStr == "" {
-		return nil
-	}
-	fd, err := strconv.Atoi(fdStr)
-	if err != nil {
-		return nil
-	}
-	return os.NewFile(uintptr(fd), "ready")
+// readyWriter returns the path of the readiness file `lk agent daemon start`
+// polls to learn the daemon became ready (or failed). Empty if not launched
+// via start.
+func readyWriter() string {
+	return os.Getenv(envSessionReadyFile)
 }
 
-func signalReady(f *os.File, msg string) {
-	if f == nil {
+// signalReady atomically writes the daemon's status to the readiness file the
+// parent `start` is polling. The write-then-rename keeps the parent from
+// reading a partial line.
+func signalReady(path, msg string) {
+	if path == "" {
 		return
 	}
-	fmt.Fprintln(f, msg)
-	f.Close()
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, []byte(msg+"\n"), 0o600); err != nil {
+		return
+	}
+	_ = os.Rename(tmp, path)
 }
 
 type sessionDaemon struct {
@@ -311,7 +317,7 @@ func (d *sessionDaemon) runCommand(cmd *sessionCommand) {
 	switch cmd.kind {
 	case "say":
 		d.runSay(cmd)
-	case "end":
+	case "stop":
 		_ = writeControlFrame(cmd.out, controlReply{Done: true})
 		d.shutOnce.Do(func() { close(d.shutdown) })
 	default:

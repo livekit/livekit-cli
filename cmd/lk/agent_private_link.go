@@ -9,7 +9,6 @@ import (
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/proto"
 )
 
 var privateLinkCommands = &cli.Command{
@@ -102,7 +101,7 @@ func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint, c
 	}
 
 	if cloudRegion != "" {
-		req.CloudRegion = proto.String(cloudRegion)
+		req.CloudRegion = new(cloudRegion)
 	}
 
 	return req
@@ -187,7 +186,7 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	settingsMap, err := getClientSettings(ctx, false)
+	settingsMap, err := getClientSettings(ctx)
 	if err != nil {
 		return err
 	}
@@ -209,19 +208,19 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.PrivateLink == nil {
-		fmt.Println("Private link created")
+		out.Status("Private link created")
 		return nil
 	}
 
-	fmt.Printf("Created private link [%s]\n", util.Accented(resp.PrivateLink.PrivateLinkId))
+	out.Statusf("Created private link [%s]", util.Accented(resp.PrivateLink.PrivateLinkId))
 	if resp.PrivateLink.Endpoint != "" {
-		fmt.Printf("Endpoint [%s]\n", util.Accented(resp.PrivateLink.Endpoint))
+		out.Statusf("Endpoint [%s]", util.Accented(resp.PrivateLink.Endpoint))
 	}
 	if resp.PrivateLink.ConnectionEndpoint != "" {
-		fmt.Printf("Gateway DNS [%s]\n", util.Accented(resp.PrivateLink.ConnectionEndpoint))
+		out.Statusf("Gateway DNS [%s]", util.Accented(resp.PrivateLink.ConnectionEndpoint))
 	}
 	if resp.PrivateLink.CloudRegion != "" {
-		fmt.Printf("Cloud Region [%s]\n", util.Accented(resp.PrivateLink.CloudRegion))
+		out.Statusf("Cloud Region [%s]", util.Accented(resp.PrivateLink.CloudRegion))
 	}
 	return nil
 }
@@ -275,13 +274,13 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if len(resp.Items) == 0 {
-		fmt.Println("No private links found")
+		out.Status("No private links found")
 		return nil
 	}
 
 	rows := buildPrivateLinkListRows(resp.Items, healthByID, healthErrByID)
 	table := util.CreateTable().Headers("ID", "Name", "Region", "Cloud Region", "Port", "Endpoint", "DNS", "Health", "Updated At", "Reason").Rows(rows...)
-	fmt.Println(table)
+	out.Result(table)
 	return nil
 }
 
@@ -298,7 +297,7 @@ func deletePrivateLink(ctx context.Context, cmd *cli.Command) error {
 		util.PrintJSON(resp)
 		return nil
 	}
-	fmt.Printf("Deleted private link [%s]\n", util.Accented(privateLinkID))
+	out.Statusf("Deleted private link [%s]", util.Accented(privateLinkID))
 	return nil
 }
 
@@ -328,6 +327,6 @@ func getPrivateLinkHealthStatus(ctx context.Context, cmd *cli.Command) error {
 	table := util.CreateTable().
 		Headers("ID", "Health", "Updated At", "Reason").
 		Row(privateLinkID, formatPrivateLinkHealthStatus(resp.Value.Status), updatedAt, reason)
-	fmt.Println(table)
+	out.Result(table)
 	return nil
 }

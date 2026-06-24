@@ -1,5 +1,3 @@
-//go:build console
-
 package console
 
 import (
@@ -55,12 +53,9 @@ func (rb *RingBuffer) ReadAvailable(out []int16) int {
 		rb.r.Add(skip)
 		avail = rb.size
 	}
-	n := len(out)
-	if n > avail {
-		n = avail
-	}
+	n := min(len(out), avail)
 	r := int(rb.r.Load())
-	for i := 0; i < n; i++ {
+	for i := range n {
 		out[i] = rb.buf[(r+i)%rb.size]
 	}
 	rb.r.Add(int64(n))
@@ -86,12 +81,9 @@ func (rb *RingBuffer) Read(out []int16) bool {
 			rb.r.Add(skip)
 			avail = rb.size
 		}
-		toCopy := needed - copied
-		if toCopy > avail {
-			toCopy = avail
-		}
+		toCopy := min(needed-copied, avail)
 		r := int(rb.r.Load())
-		for i := 0; i < toCopy; i++ {
+		for i := range toCopy {
 			out[copied+i] = rb.buf[(r+i)%rb.size]
 		}
 		rb.r.Add(int64(toCopy))
