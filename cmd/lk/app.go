@@ -430,6 +430,8 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	bootstrap.WriteDotEnv(appName, envOutputFile, env, true)
 
 	if !cmd.IsSet("install") && !SkipPrompts(cmd) {
+		// Default the prompt to "yes" — installing deps is the common case.
+		install = true
 		if err := huh.NewForm(huh.NewGroup(util.Confirm().
 			Title("Install dependencies?").
 			Value(&install).
