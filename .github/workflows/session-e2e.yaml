@@ -1,6 +1,6 @@
 name: Session E2E
 
-# Drives the real `lk agent session` start/say/stop lifecycle against the minimal
+# Drives the real `lk agent daemon` start/say/stop lifecycle against the minimal
 # one-file echo agent in cmd/lk/testdata/echo-agent, on Linux, macOS, and
 # Windows. This exercises the detached daemon, the readiness handshake, the
 # console IPC transport, and the model round-trip end to end -- runtime behavior

@@ -1,4 +1,4 @@
-"""Minimal one-file echo agent for the `lk agent session` e2e test.
+"""Minimal one-file echo agent for the `lk agent daemon` e2e test.
 
 Driven in text mode, so an LLM is the only component needed. Echoes the user's
 text verbatim, which the test asserts on.

@@ -31,15 +31,15 @@ import (
 	agent "github.com/livekit/protocol/livekit/agent"
 )
 
-// runSessionDaemon is the entry point for the hidden `lk agent session daemon`
-// subcommand that `lk agent session start` re-execs. It runs the detached
+// runSessionDaemon is the entry point for the hidden `lk agent daemon run`
+// subcommand that `lk agent daemon start` re-execs. It runs the detached
 // daemon to completion (until the agent exits or `stop` is received).
 func runSessionDaemon() {
 	ready := readyWriter()
 	port, _ := strconv.Atoi(os.Getenv(envSessionPort))
 
 	// The fixed port is the singleton: if the bind fails, a session already
-	// owns it, which is how `lk agent session start` learns to reject.
+	// owns it, which is how `lk agent daemon start` learns to reject.
 	server, err := console.NewTCPServer(sessionAddr(port))
 	if err != nil {
 		signalReady(ready, "error: a session is already running on "+sessionAddr(port))
@@ -100,7 +100,7 @@ func runSessionDaemon() {
 	agentProc.Kill()
 }
 
-// readyWriter returns the path of the readiness file `lk agent session start`
+// readyWriter returns the path of the readiness file `lk agent daemon start`
 // polls to learn the daemon became ready (or failed). Empty if not launched
 // via start.
 func readyWriter() string {

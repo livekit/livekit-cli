@@ -45,7 +45,7 @@ const (
 	envSessionReadyFile = "LK_SESSION_READY_FILE" // path the daemon writes its status to
 
 	// sessionDaemonSubcommand is the hidden entrypoint `start` re-execs into.
-	sessionDaemonSubcommand = "daemon"
+	sessionDaemonSubcommand = "run"
 )
 
 var sessionPortFlag = &cli.IntFlag{
@@ -56,15 +56,15 @@ var sessionPortFlag = &cli.IntFlag{
 }
 
 func init() {
-	// Register under the `agent` group as `lk agent session`, mirroring how
+	// Register under the `agent` group as `lk agent daemon`, mirroring how
 	// `lk agent console` attaches itself. Unlike console, this command is not
 	// gated behind the `console` build tag: it is CGO-free and ships in the
 	// default binary.
-	AgentCommands[0].Commands = append(AgentCommands[0].Commands, agentSessionCommand)
+	AgentCommands[0].Commands = append(AgentCommands[0].Commands, agentDaemonCommand)
 }
 
-var agentSessionCommand = &cli.Command{
-	Name:     "session",
+var agentDaemonCommand = &cli.Command{
+	Name:     "daemon",
 	Usage:    "Drive a single local agent session in text mode (start/say/stop)",
 	Category: "Core",
 	Commands: []*cli.Command{
@@ -93,7 +93,7 @@ var agentSessionCommand = &cli.Command{
 			Hidden: true,
 			Action: func(ctx context.Context, cmd *cli.Command) error {
 				if os.Getenv(envSessionReadyFile) == "" {
-					return fmt.Errorf("`session daemon` is an internal entrypoint; run `lk agent session start <entrypoint>` instead")
+					return fmt.Errorf("`lk agent daemon run` is an internal entrypoint; run `lk agent daemon start <entrypoint>` instead")
 				}
 				runSessionDaemon()
 				return nil
@@ -135,7 +135,7 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	daemon := exec.Command(exe, "agent", "session", sessionDaemonSubcommand)
+	daemon := exec.Command(exe, "agent", "daemon", sessionDaemonSubcommand)
 	daemon.Env = append(os.Environ(),
 		envSessionPort+"="+strconv.Itoa(port),
 		envSessionDir+"="+projectDir,
@@ -157,7 +157,7 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 	switch {
 	case status == "ready":
 		fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
-		fmt.Printf("Session started. Use `lk agent session say \"...\"` to talk, `lk agent session stop` to stop.\n")
+		fmt.Printf("Session started. Use `lk agent daemon say \"...\"` to talk, `lk agent daemon stop` to stop.\n")
 		return nil
 	case strings.HasPrefix(status, "error:"):
 		return fmt.Errorf("%s", strings.TrimSpace(strings.TrimPrefix(status, "error:")))
@@ -206,7 +206,7 @@ func readReadyStatus(path string) (string, bool) {
 func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 	text := strings.TrimSpace(strings.Join(cmd.Args().Slice(), " "))
 	if text == "" {
-		return fmt.Errorf("usage: lk agent session say <text>")
+		return fmt.Errorf("usage: lk agent daemon say <text>")
 	}
 	conn, err := dialControl(int(cmd.Int("port")))
 	if err != nil {
@@ -241,7 +241,7 @@ func runSessionStop(ctx context.Context, cmd *cli.Command) error {
 func dialControl(port int) (net.Conn, error) {
 	conn, err := net.Dial("tcp", sessionAddr(port))
 	if err != nil {
-		return nil, fmt.Errorf("no session running on %s (run `lk agent session start` first)", sessionAddr(port))
+		return nil, fmt.Errorf("no session running on %s (run `lk agent daemon start` first)", sessionAddr(port))
 	}
 	if _, err := conn.Write([]byte(sessionMagic)); err != nil {
 		conn.Close()
