@@ -221,10 +221,13 @@ type AgentStartConfig struct {
 }
 
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
-// branching on project type. Python: `<python> <runtime-args> <entry> <args>`
-// (uv prefixes `run python`). Node: `node [--experimental-strip-types]
+// branching on project type. Node: `node [--experimental-strip-types]
 // <runtime-args> <entry> <args>`, where the type-stripping flag lets a `.ts`
-// entrypoint run without a build.
+// entrypoint run without a build. Python: `<python> <runtime-args> -m
+// livekit.agents <subcommand> <entry> <flags>` — the framework discovers the
+// AgentServer from the entrypoint and drives the thin CLI. The legacy
+// cli.run_app() console exposes no --connect-addr; only the module entrypoint
+// does, so the daemon's console launch must go through `-m livekit.agents`.
 func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	if cfg.ProjectType.IsNode() {
 		nodeBin, err := findNodeBinary()
@@ -248,11 +251,20 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	args := make([]string, 0, len(prefixArgs)+len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+1)
+	// python [runtime-args] -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS: the
+	// framework discovers the AgentServer from the entrypoint and drives the
+	// thin CLI.
+	args := make([]string, 0, len(prefixArgs)+len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+3)
 	args = append(args, prefixArgs...)
 	args = append(args, cfg.RuntimeArgs...)
-	args = append(args, cfg.Entrypoint)
-	args = append(args, cfg.CLIArgs...)
+	args = append(args, "-m", "livekit.agents")
+	if len(cfg.CLIArgs) > 0 {
+		args = append(args, cfg.CLIArgs[0]) // subcommand: start | console
+		args = append(args, cfg.Entrypoint) // entrypoint positional (server discovery)
+		args = append(args, cfg.CLIArgs[1:]...)
+	} else {
+		args = append(args, cfg.Entrypoint)
+	}
 	return pythonBin, args, nil
 }
 
