@@ -76,6 +76,7 @@ func OpenInMeet(livekitURL, token string) error {
 
 type ConsoleURLParams struct {
 	AgentName    string            `url:"agentName,omitempty"`
+	Deployment   string            `url:"deployment,omitempty"`
 	JobMetadata  string            `url:"jobMetadata,omitempty"`
 	RoomName     string            `url:"roomName,omitempty"`
 	RoomMetadata string            `url:"roomMetadata,omitempty"`

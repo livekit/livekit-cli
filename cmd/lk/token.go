@@ -481,9 +481,9 @@ func createToken(ctx context.Context, c *cli.Command) error {
 				return err
 			}
 		case string(util.OpenTargetConsole):
-			// TODO (steveyoon): pass deployment to console when supported
 			if err := util.OpenInConsole(dashboardURL, project.ProjectId, &util.ConsoleURLParams{
 				AgentName:   agent,
+				Deployment:  agentDeployment,
 				JobMetadata: jobMetadata,
 				Identity:    participant,
 				RoomName:    room,
