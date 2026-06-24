@@ -80,6 +80,10 @@ var simulateCommand = &cli.Command{
 			Usage: "Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent's source",
 		},
 		&cli.BoolFlag{
+			Name:  "audio",
+			Usage: "Simulate speech-to-speech interactions using the agent's full audio pipeline. By default, simulations run in text-only mode.",
+		},
+		&cli.BoolFlag{
 			Name:    "yes",
 			Aliases: []string{"y"},
 			Usage:   "Skip the source-upload confirmation prompt (required for non-interactive runs that generate from source)",
@@ -157,6 +161,7 @@ type simulateConfig struct {
 	numSimulations int32
 	concurrency    int32
 	mode           simulateMode
+	simulationMode livekit.SimulationMode
 	agentName      string
 	projectDir     string
 	projectType    agentfs.ProjectType
@@ -259,6 +264,11 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
+	simulationMode := livekit.SimulationMode_SIMULATION_MODE_TEXT
+	if cmd.Bool("audio") {
+		simulationMode = livekit.SimulationMode_SIMULATION_MODE_AUDIO
+	}
+
 	simCfg := &simulateConfig{
 		ctx:            ctx,
 		client:         simClient,
@@ -266,6 +276,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		numSimulations: numSimulations,
 		concurrency:    concurrency,
 		mode:           mode,
+		simulationMode: simulationMode,
 		agentName:      agentName,
 		projectDir:     projectDir,
 		projectType:    projectType,
@@ -400,6 +411,7 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 	req := &livekit.SimulationRun_Create_Request{
 		AgentName:      c.agentName,
 		NumSimulations: c.numSimulations,
+		Mode:           c.simulationMode,
 	}
 	if c.concurrency > 0 {
 		req.Concurrency = &c.concurrency
