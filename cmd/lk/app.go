@@ -15,15 +15,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
@@ -438,7 +441,28 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 	if install {
 		out.Status("Installing template...")
 		if err := doInstall(ctx, bootstrap.TaskInstall, appName, verbose); err != nil {
-			out.Warnf("Warning: installation failed: %v", err)
+			// Installation is best-effort — the agent is still created below. But a
+			// failed install (e.g. missing Node/pnpm) is easy to miss once the
+			// template's post-create step prints "agent created", so render a
+			// prominent warning. Each line of the underlying command's error gets
+			// a red bar prefix so the actual failure stands out from the guidance.
+			header := lipgloss.NewStyle().Foreground(util.Warning()).Bold(true).
+				Render("⚠  Installation failed — dependencies were NOT installed")
+			errPrefix := lipgloss.NewStyle().Foreground(util.Error()).Render("┃ ")
+			fixPrefix := lipgloss.NewStyle().Foreground(util.Warning()).Render("┃ ")
+			var b strings.Builder
+			b.WriteString(header)
+			b.WriteString("\n")
+			for _, line := range strings.Split(strings.TrimRight(err.Error(), "\n"), "\n") {
+				b.WriteString(errPrefix)
+				b.WriteString(line)
+				b.WriteString("\n")
+			}
+			out.Warnf("%s%sFix your toolchain, then re-run the install step manually in ./%s.", b.String(), fixPrefix, appName)
+		} else {
+			// Signal a successful install to post_create so the template can skip
+			// printing the now-redundant install hint (guarded via `status:`).
+			os.Setenv("LIVEKIT_DEPS_INSTALLED", "1")
 		}
 	}
 	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
@@ -594,12 +618,21 @@ func doPostCreate(ctx context.Context, _ *cli.Command, rootPath string, verbose 
 }
 
 func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, verbose bool) error {
-	tf, err := bootstrap.ParseTaskfile(rootPath)
-	if err != nil {
+	// Capture the task's stderr so a failure can report the underlying command's
+	// own error (e.g. "env: node: No such file or directory") rather than just
+	// go-task's "exit status N" wrapper. Under --verbose the output also streams
+	// live to the terminal.
+	exe := bootstrap.NewTaskExecutor(rootPath, verbose)
+	var stderr bytes.Buffer
+	if verbose {
+		exe.Stderr = io.MultiWriter(os.Stderr, &stderr)
+	} else {
+		exe.Stderr = &stderr
+	}
+	if err := exe.Setup(); err != nil {
 		return err
 	}
-
-	install, err := bootstrap.NewTask(ctx, tf, rootPath, string(task), verbose)
+	install, err := bootstrap.NewTaskWithExecutor(ctx, exe, string(task), verbose)
 	if err != nil {
 		return err
 	}
@@ -612,6 +645,9 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 		},
 	)
 	if err != nil {
+		if msg := strings.TrimSpace(stderr.String()); msg != "" {
+			return errors.New(msg)
+		}
 		return err
 	}
 	return nil
