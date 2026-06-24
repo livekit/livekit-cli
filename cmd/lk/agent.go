@@ -857,7 +857,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	agentDeployment := ""
 	if cmd.IsSet("deployment") {
 		agentDeployment = cmd.String("deployment")
-		fmt.Printf("Using deployment [%s]\n", util.Accented(agentDeployment))
+		out.Statusf("Using deployment [%s]", util.Accented(agentDeployment))
 	}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
@@ -1445,7 +1445,7 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		Headers("Name", "Created At", "Updated At")
 
 	for _, secret := range visible {
-		table.Row(secret.Name, secret.CreatedAt.AsTime().Format(time.RFC3339), secret.UpdatedAt.AsTime().Format(time.RFC3339))
+		table.Row(secret.Name, formatTime(secret.CreatedAt.AsTime()), formatTime(secret.UpdatedAt.AsTime()))
 	}
 
 	out.Result(table)
@@ -1564,7 +1564,7 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 		if deployedAt := agent.DeployedAt.AsTime(); deployedAt.IsZero() {
 			deployedStr = "never deployed"
 		} else {
-			deployedStr = "deployed " + deployedAt.Format(time.RFC3339)
+			deployedStr = "deployed " + formatTime(deployedAt)
 		}
 		name := agent.AgentId + " " + util.Dimmed(deployedStr)
 		agentNames = append(agentNames, huh.Option[string]{Key: name, Value: agent.AgentId})
@@ -1876,11 +1876,4 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return nil
-}
-
-func formatTime(t time.Time) string {
-	if t.IsZero() {
-		return "---"
-	}
-	return t.Format(time.RFC3339)
 }
