@@ -19,7 +19,7 @@ require (
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.47.0
+	github.com/livekit/protocol v1.48.1-0.20260623210753-2e1bfd81dd63
 	github.com/livekit/server-sdk-go/v2 v2.16.7-0.20260608025623-a5da15b13baa
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/patternmatcher v0.6.1

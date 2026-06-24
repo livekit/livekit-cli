@@ -65,6 +65,11 @@ var (
 							Usage: "agent to dispatch",
 						},
 						&cli.StringFlag{
+							Name:    "deployment",
+							Usage:   "deployment of the agent to dispatch to (leave empty for production)",
+							Aliases: []string{"d"},
+						},
+						&cli.StringFlag{
 							Name:  "metadata",
 							Usage: "metadata to send to agent",
 						},
@@ -142,7 +147,7 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 		util.PrintJSON(res)
 	} else {
 		table := util.CreateTable().
-			Headers("DispatchID", "Room", "AgentName", "Metadata")
+			Headers("DispatchID", "Room", "AgentName", "Deployment", "Metadata")
 		for _, item := range res.AgentDispatches {
 			if item == nil {
 				continue
@@ -152,6 +157,7 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 				item.Id,
 				item.Room,
 				item.AgentName,
+				item.Deployment,
 				item.Metadata,
 			)
 		}
@@ -162,9 +168,10 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 
 func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	req := &livekit.CreateAgentDispatchRequest{
-		Room:      cmd.String("room"),
-		AgentName: cmd.String("agent-name"),
-		Metadata:  cmd.String("metadata"),
+		Room:       cmd.String("room"),
+		AgentName:  cmd.String("agent-name"),
+		Deployment: cmd.String("deployment"),
+		Metadata:   cmd.String("metadata"),
 	}
 	if cmd.Bool("new-room") {
 		req.Room = utils.NewGuid("room-")

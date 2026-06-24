@@ -101,6 +101,13 @@ var (
 		Required: false,
 	}
 
+	deploymentFlag = &cli.StringFlag{
+		Name:     "deployment",
+		Usage:    "Agent deployment",
+		Required: false,
+		Aliases:  []string{"d"},
+	}
+
 	agentPrebuiltImageFlag = &cli.StringFlag{
 		Name:  "image",
 		Usage: "Pre-built image from the local Docker daemon (e.g. myimage:latest). Requires Docker.",
@@ -181,6 +188,7 @@ var (
 						secretsMountFlag,
 						ignoreEmptySecretsFlag,
 						regionFlag,
+						deploymentFlag,
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
 						agentPrebuiltImageTarFlag,
@@ -225,6 +233,7 @@ var (
 						secretsFileFlag,
 						secretsMountFlag,
 						regionFlag,
+						deploymentFlag,
 						ignoreEmptySecretsFlag,
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
@@ -296,6 +305,7 @@ var (
 					Flags: []cli.Flag{
 						idFlag(false),
 						logTypeFlag,
+						deploymentFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -307,6 +317,7 @@ var (
 					Aliases: []string{"destroy"},
 					Flags: []cli.Flag{
 						idFlag(false),
+						deploymentFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -805,8 +816,14 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	agentDeployment := ""
+	if cmd.IsSet("deployment") {
+		agentDeployment = cmd.String("deployment")
+		fmt.Printf("Using deployment [%s]\n", util.Accented(agentDeployment))
+	}
+
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgent(buildContext, agentId, os.DirFS(workingDir), secrets, excludeFiles, os.Stderr); err != nil {
+	if err := agentsClient.DeployAgentV2(buildContext, agentId, os.DirFS(workingDir), secrets, agentDeployment, excludeFiles, os.Stderr); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
@@ -894,21 +911,52 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				logger.Errorw("error parsing mem req", err)
 			}
 
+			version := regionalAgent.Version
+			if version == "" {
+				version = agent.Version
+			}
+
+			deployment := "---"
+			if regionalAgent.DeploymentEnabled {
+				deployment = regionalAgent.Deployment
+				if deployment == "" {
+					deployment = "production"
+				}
+			}
+
+			name := regionalAgent.AgentName
+			if name == "" {
+				name = "---"
+			}
+
 			rows = append(rows, []string{
 				agent.AgentId,
-				agent.Version,
+				name,
+				version,
 				regionalAgent.Region,
+				deployment,
 				regionalAgent.Status,
 				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
 				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
-				agent.DeployedAt.AsTime().Format(time.RFC3339),
+				formatTime(agent.DeployedAt.AsTime()),
 			})
 		}
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Version", "Region", "Status", "CPU", "Mem", "Replicas", "Deployed At").
+		Headers(
+			"ID",
+			"Name",
+			"Version",
+			"Region",
+			"Deployment",
+			"Status",
+			"CPU",
+			"Mem",
+			"Replicas",
+			"Deployed At",
+		).
 		Rows(rows...)
 
 	out.Result(t)
@@ -1030,7 +1078,7 @@ func getLogs(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("no agent deployments found")
 	}
 
-	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, "", os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
+	return agentsClient.StreamLogs(ctx, cmd.String("log-type"), agentID, cmd.String("deployment"), os.Stdout, response.Agents[0].AgentDeployments[0].ServerRegion)
 }
 
 func deleteAgent(ctx context.Context, cmd *cli.Command) error {
@@ -1039,12 +1087,18 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	agentDeployment := cmd.String("deployment")
+	agentMsg := fmt.Sprintf("agent [%s]", util.Accented(agentID))
+	if agentDeployment != "" {
+		agentMsg += fmt.Sprintf(" deployment [%s]", util.Accented(agentDeployment))
+	}
+
 	if !SkipPrompts(cmd) {
 		var confirmDelete bool
 		if err := huh.NewForm(
 			huh.NewGroup(
 				util.Confirm().
-					Title(fmt.Sprintf("Are you sure you want to delete agent [%s]?", agentID)).
+					Title(fmt.Sprintf("Are you sure you want to delete agent %s?", agentMsg)).
 					Value(&confirmDelete).
 					WithTheme(util.Theme),
 			),
@@ -1058,19 +1112,18 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var res *lkproto.DeleteAgentResponse
-	err = out.Await(
-		"Deleting agent ["+util.Accented(agentID)+"]",
+	if err = out.Await(
+		fmt.Sprintf("Deleting agent %s", agentMsg),
 		ctx,
 		func(ctx context.Context) error {
 			var clientErr error
 			res, clientErr = agentsClient.DeleteAgent(ctx, &lkproto.DeleteAgentRequest{
-				AgentId: agentID,
+				AgentId:    agentID,
+				Deployment: agentDeployment,
 			})
 			return clientErr
 		},
-	)
-
-	if err != nil {
+	); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to delete agent: %s", twerr.Msg())
 		}
@@ -1081,7 +1134,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to delete agent %s", res.Message)
 	}
 
-	out.Statusf("Deleted agent [%s]", util.Accented(agentID))
+	out.Statusf("Deleted agent %s", agentMsg)
 	return nil
 }
 
@@ -1116,7 +1169,14 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	headers := []string{"Version", "Current", "Status", "Created At", "Deployed At"}
+	flag := func(b bool) string {
+		if b {
+			return "✓"
+		}
+		return "---"
+	}
+
+	headers := []string{"Version", "Production", "Draining", "Active", "Status", "Created At", "Deployed At"}
 	if showDigest {
 		headers = append(headers, "Digest")
 	}
@@ -1125,10 +1185,12 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 	for _, version := range versions.Versions {
 		row := []string{
 			version.Version,
-			fmt.Sprintf("%t", version.Current),
+			flag(version.Current),
+			flag(version.Draining),
+			flag(version.Active),
 			version.Status,
-			version.CreatedAt.AsTime().Format(time.RFC3339),
-			version.DeployedAt.AsTime().Format(time.RFC3339),
+			formatTime(version.CreatedAt.AsTime()),
+			formatTime(version.DeployedAt.AsTime()),
 		}
 		if showDigest {
 			row = append(row, version.Attributes["image_digest"])
@@ -1180,21 +1242,45 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 
 	var rows [][]string
 	for _, agent := range items {
-		var regions []string
+		regionSet := map[string]struct{}{}
+		deploymentSet := map[string]struct{}{}
 		for _, regionalAgent := range agent.AgentDeployments {
-			regions = append(regions, regionalAgent.Region)
+			regionSet[regionalAgent.Region] = struct{}{}
+			deploymentSet[regionalAgent.Deployment] = struct{}{}
 		}
+		regions := make([]string, 0, len(regionSet))
+		for region := range regionSet {
+			regions = append(regions, region)
+		}
+		deployments := make([]string, 0, len(deploymentSet))
+		for deployment := range deploymentSet {
+			if deployment == "" {
+				deployment = "production"
+			}
+			deployments = append(deployments, deployment)
+		}
+		// Always sort "production" first, then the rest alphabetically.
+		slices.SortFunc(deployments, func(a, b string) int {
+			if a == "production" {
+				return -1
+			}
+			if b == "production" {
+				return 1
+			}
+			return strings.Compare(a, b)
+		})
 		rows = append(rows, []string{
 			agent.AgentId,
 			agent.AgentName,
 			strings.Join(regions, ","),
+			strings.Join(deployments, ","),
 			agent.Version,
-			agent.DeployedAt.AsTime().Format(time.RFC3339),
+			formatTime(agent.DeployedAt.AsTime()),
 		})
 	}
 
 	t := util.CreateTable().
-		Headers("ID", "Dispatch Name", "Regions", "Version", "Deployed At").
+		Headers("ID", "Dispatch Name", "Regions", "Deployments", "Version", "Deployed At").
 		Rows(rows...)
 
 	out.Result(t)
@@ -1659,4 +1745,11 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return nil
+}
+
+func formatTime(t time.Time) string {
+	if t.IsZero() {
+		return "---"
+	}
+	return t.Format(time.RFC3339)
 }
