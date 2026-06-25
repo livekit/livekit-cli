@@ -41,7 +41,7 @@ func init() {
 var consoleCommand = &cli.Command{
 	Name:      "console",
 	Usage:     "Voice chat with an agent via mic/speakers",
-	ArgsUsage: "[entrypoint]",
+	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Category:  "Core",
 	Flags: []cli.Flag{
 		&cli.IntFlag{
@@ -141,7 +141,9 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		Dir:         projectDir,
 		Entrypoint:  entrypoint,
 		ProjectType: projectType,
+		RuntimeArgs: forwardedArgs(cmd),
 		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
+		FailSignals: consoleCrashSignals,
 	})
 	if err != nil {
 		stopSpinner()
@@ -171,9 +173,17 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("agent connection: %w", res.err)
 		}
 		conn = res.conn
-	case <-agentProc.Done():
+	case err := <-agentProc.Done():
 		stopSpinner()
+		if err != nil {
+			return fmt.Errorf("the agent exited before connecting: %w\n\n%s", err, agentExitDetail(agentProc))
+		}
 		return fmt.Errorf("the agent exited before connecting.\n\n%s", agentExitDetail(agentProc))
+	case <-agentProc.Failed():
+		stopSpinner()
+		// The crash marker arrives mid-traceback; give trailing output a moment.
+		time.Sleep(500 * time.Millisecond)
+		return fmt.Errorf("the agent job crashed before connecting.\n\n%s", agentExitDetail(agentProc))
 	case <-time.After(60 * time.Second):
 		stopSpinner()
 		return fmt.Errorf("timed out waiting for the agent to connect.\n\n%s", agentExitDetail(agentProc))

@@ -22,6 +22,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -87,6 +88,10 @@ var simulateCommand = &cli.Command{
 			Name:    "yes",
 			Aliases: []string{"y"},
 			Usage:   "Skip the source-upload confirmation prompt (required for non-interactive runs that generate from source)",
+		},
+		&cli.StringFlag{
+			Name:  "view",
+			Usage: "Open a pre-existing simulation",
 		},
 	},
 }
@@ -170,6 +175,7 @@ type simulateConfig struct {
 	entrypoint    string
 	scenarioGroup *livekit.ScenarioGroup
 	scenariosPath string // path to the --scenarios file (empty when generating from source)
+	viewModeRunID string // non-empty when --view opens a pre-existing run
 }
 
 type simulateMode int
@@ -177,6 +183,7 @@ type simulateMode int
 const (
 	modeScenarios simulateMode = iota
 	modeGenerateFromSource
+	modeView
 )
 
 func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
@@ -219,22 +226,54 @@ func generateAgentName() string {
 	return "simulation-" + string(b)
 }
 
+type PackageJSON struct {
+	Scripts map[string]string `json:"scripts"`
+}
+
+// buildTaskExists reports whether package.json defines a "build" script. Such a
+// task usually means the entrypoint path is nontrivial (todo: check dist/main.js).
+func buildTaskExists(projectDir string) (bool, error) {
+	data, err := os.ReadFile(filepath.Join(projectDir, "package.json"))
+	if err != nil {
+		return false, err
+	}
+
+	var pkg PackageJSON
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return false, err
+	}
+
+	_, ok := pkg.Scripts["build"]
+	return ok, nil
+}
+
 func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 
 	numSimulations := int32(cmd.Int("num-simulations"))
 	concurrency := int32(cmd.Int("concurrency"))
+	runID := cmd.String("view")
 	agentName := generateAgentName()
 
 	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
 	if err != nil {
 		return err
 	}
-	if !projectType.IsPython() {
-		return fmt.Errorf("simulate currently only supports Python agents (detected: %s)", projectType)
+
+	entrypointArg := cmd.Args().First()
+
+	// check if a script called "build" exists in the package.json, if so, refuse to discover the
+	// entrypoint: build tasks usually mean the entrypoint path is nontrivial (e.g. dist/main.js)
+	if projectType.IsNode() && entrypointArg == "" {
+		buildTaskDoesExist, err := buildTaskExists(projectDir)
+		if err != nil {
+			return err
+		} else if buildTaskDoesExist {
+			return fmt.Errorf("you currently have a build task in your package.json, but no entrypoint was explicitly given; so you must add an entrypoint to the simulate cli")
+		}
 	}
 
-	entrypoint, err := findEntrypoint(projectDir, cmd.Args().First(), projectType)
+	entrypoint, err := findEntrypoint(projectDir, entrypointArg, projectType)
 	if err != nil {
 		return err
 	}
@@ -252,9 +291,12 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var mode simulateMode
-	if scenarioGroup != nil && len(scenarioGroup.Scenarios) > 0 {
+	switch {
+	case runID != "":
+		mode = modeView
+	case scenarioGroup != nil && len(scenarioGroup.Scenarios) > 0:
 		mode = modeScenarios
-	} else {
+	default:
 		mode = modeGenerateFromSource
 	}
 
@@ -285,6 +327,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		entrypoint:     entrypoint,
 		scenarioGroup:  scenarioGroup,
 		scenariosPath:  scenariosPath,
+		viewModeRunID:  runID,
 	}
 
 	if !isInteractive() {
@@ -382,20 +425,26 @@ func (l *agentLauncher) ForceStop() {
 }
 
 func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentProcess, error) {
+	args := []string{
+		"start",
+		"--url", c.pc.URL,
+		"--api-key", c.pc.APIKey,
+		"--api-secret", c.pc.APISecret,
+		"--log-level", normalizeLogLevel(c.projectType, "DEBUG"),
+		// disable the worker load limit so the run can saturate the agent
+		"--simulation",
+	}
+
+	// --log-format is a Python-only flag; the Node CLI doesn't accept it.
+	if c.projectType.IsPython() {
+		args = append(args, "--log-format", "colored")
+	}
+
 	return startAgent(AgentStartConfig{
 		Dir:         c.projectDir,
 		Entrypoint:  c.entrypoint,
 		ProjectType: c.projectType,
-		CLIArgs: []string{
-			"start",
-			"--url", c.pc.URL,
-			"--api-key", c.pc.APIKey,
-			"--api-secret", c.pc.APISecret,
-			"--log-level", "DEBUG",
-			"--log-format", "colored",
-			// disable the worker load limit so the run can saturate the agent
-			"--simulation",
-		},
+		CLIArgs:     args,
 		Env: []string{
 			// register under the dispatch name regardless of any agent_name
 			// hardcoded in the user's code
