@@ -928,7 +928,6 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 		for _, regionalAgent := range agent.AgentDeployments {
 			curCPU := "-"
 			curMem := "-"
-			replicas := "-"
 			agentName := "---"
 			deployment := "---"
 			lastScrapedAt := "---"
@@ -946,14 +945,14 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				if err != nil {
 					logger.Errorw("error parsing mem", err)
 				}
-				replicas = fmt.Sprintf("%d", regionalAgent.Replicas)
-				if regionalAgent.DeploymentEnabled {
-					deployment = regionalAgent.Deployment
-					if deployment == "" {
-						deployment = "production"
-					}
-				}
 				agentName = regionalAgent.AgentName
+			}
+
+			if regionalAgent.DeploymentEnabled {
+				deployment = regionalAgent.Deployment
+				if deployment == "" {
+					deployment = "production"
+				}
 			}
 
 			memLimit, err := agentfs.ParseMem(regionalAgent.MemLimit, true)
@@ -975,7 +974,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				regionalAgent.Status,
 				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
-				fmt.Sprintf("%s / %d / %d", replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
+				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
 				formatTime(agent.DeployedAt.AsTime()),
 				lastScrapedAt,
 			})
