@@ -71,7 +71,7 @@ var agentDaemonCommand = &cli.Command{
 		{
 			Name:      "start",
 			Usage:     "Start a detached agent session daemon",
-			ArgsUsage: "[entrypoint]",
+			ArgsUsage: "[entrypoint] [-- node/python-args...]",
 			Flags:     []cli.Flag{sessionPortFlag},
 			Action:    runSessionStart,
 		},

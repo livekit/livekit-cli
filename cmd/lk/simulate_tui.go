@@ -78,8 +78,12 @@ func runSimulateTUI(config *simulateConfig) error {
 		out.Statusf("Dashboard:  %s", url)
 	}
 
-	if m.runID != "" && !m.runFinished {
+	if m.config.mode == modeView {
+		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: lk agent simulate --view %s\n", m.config.viewModeRunID)
+	} else if m.runID != "" && !m.runFinished {
 		cancelSimulationRun(config.client, m.runID)
+	} else if m.runID != "" {
+		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: lk agent simulate --view %s\n", m.runID)
 	}
 
 	if runErr != nil {
@@ -344,6 +348,18 @@ func (m *simulateModel) Init() tea.Cmd {
 func (m *simulateModel) runSetup() tea.Cmd {
 	c := m.config
 
+	if c.mode == modeView {
+		ctx, cancel := context.WithTimeout(context.Background(), simulationAPITimeout)
+		defer cancel()
+		run, err := getSimulationRun(ctx, m.config.client, m.config.viewModeRunID)
+		if err != nil {
+			m.err = err
+		}
+		m.run = run
+		m.setupDone = true
+		return nil
+	}
+
 	m.steps = nil
 	if c.mode == modeScenarios && c.scenarioGroup != nil {
 		// loaded before the TUI started, so it renders as already done
@@ -423,7 +439,7 @@ func (m *simulateModel) waitAgentReadyCmd() tea.Cmd {
 		case <-m.agent.Ready():
 			return agentReadyMsg{elapsed: time.Since(stepStart)}
 		case <-m.agent.Done():
-			return agentReadyMsg{err: fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(m.agent))}
+			return agentReadyMsg{err: fmt.Errorf("the agent exited before registering.\n\nCommand used to start agent: %s\n\n%s", m.agent.cmd.String(), agentExitDetail(m.agent))}
 		case <-timeout.C:
 			m.agent.Kill()
 			return agentReadyMsg{err: fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(m.agent))}
@@ -511,7 +527,10 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case agentReadyMsg:
 		if msg.err != nil {
 			m.failSetupStep(msg.err)
-			return m, nil
+			if m.setupCancel != nil {
+				m.setupCancel()
+			}
+			return m, tea.Quit
 		}
 		m.reporter.AgentRegistered(msg.elapsed)
 		m.advanceSetupStep(msg.elapsed)
@@ -783,7 +802,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.scrollActive(-pageScroll, true)
 	case "pgdown":
 		m.scrollActive(pageScroll, true)
-	case "enter":
+	case "enter", "right":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
@@ -791,7 +810,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.detailScrollOff = 0
 			}
 		}
-	case "esc", "backspace":
+	case "esc", "left", "backspace":
 		if m.detailJobID != "" {
 			m.detailJobID = ""
 			m.detailScrollOff = 0
@@ -1746,7 +1765,7 @@ func (m *simulateModel) renderHint() string {
 	var parts []string
 	switch {
 	case m.detailJobID != "":
-		parts = append(parts, "↑↓ scroll · c copy scenario · ESC back")
+		parts = append(parts, "↑↓ scroll · c copy scenario · ESC/← back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
@@ -1758,7 +1777,7 @@ func (m *simulateModel) renderHint() string {
 		parts = append(parts, "↑↓ scroll · d collapse description")
 	default:
 		// the collapsed description block already carries "(press d to expand)"
-		nav := "↑↓ navigate · ENTER detail"
+		nav := "↑↓ navigate · ENTER/→ detail"
 		if m.canExportScenarios() {
 			nav += " · s save scenarios"
 		}

@@ -18,14 +18,46 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 )
 
+// splitForwardedArgs recovers the argument split around a "--" separator.
+// urfave/cli strips the separator and appends everything after it to the
+// parsed positional args, so the forwarded tail is recovered from the raw
+// process argv and trimmed off the positionals.
+func splitForwardedArgs(rawArgs, positional []string) (entryArgs, forwarded []string) {
+	for i, a := range rawArgs {
+		if a != "--" {
+			continue
+		}
+		forwarded = rawArgs[i+1:]
+		if len(forwarded) > len(positional) {
+			// The "--" was consumed as a flag's value, not a separator.
+			return positional, nil
+		}
+		return positional[:len(positional)-len(forwarded)], forwarded
+	}
+	return positional, nil
+}
+
+// forwardedArgs returns the args the user passed after a "--" separator,
+// forwarded to the runtime interpreter (node/python) ahead of the
+// entrypoint, e.g. `lk agent console agent.ts -- --env-file=.env`.
+func forwardedArgs(cmd *cli.Command) []string {
+	_, fwd := splitForwardedArgs(os.Args, cmd.Args().Slice())
+	return fwd
+}
+
 func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error) {
-	explicit := cmd.Args().First()
+	entryArgs, _ := splitForwardedArgs(os.Args, cmd.Args().Slice())
+	var explicit string
+	if len(entryArgs) > 0 {
+		explicit = entryArgs[0]
+	}
 
 	detectFrom := "."
 	if explicit != "" {
@@ -44,11 +76,8 @@ func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error
 		return "", "", "", noAgentError()
 	}
 
-	// TODO(node): support JS/Node agents here. DetectProjectRoot already
-	// recognizes Node projects; once the session daemon can spawn a Node
-	// agent in console mode, drop this gate and branch on projectType.
-	if !projectType.IsPython() {
-		return "", "", "", fmt.Errorf("currently only supports Python agents (detected: %s)", projectType)
+	if !projectType.IsPython() && !projectType.IsNode() {
+		return "", "", "", fmt.Errorf("only Python and Node agents are supported (detected: %s)", projectType)
 	}
 
 	if explicit != "" {
@@ -67,6 +96,16 @@ func detectProject(cmd *cli.Command) (string, agentfs.ProjectType, string, error
 	return projectDir, projectType, entrypoint, nil
 }
 
+// consoleCrashSignals are output markers meaning the console job died even
+// though the worker process may stay alive: the Python SDK keeps the worker
+// running after the job task crashes (logging `"reason": "job crashed"`), and
+// agents-js logs FATAL `console mode failed:` before exiting. Without these,
+// a pre-connect crash leaves the user waiting out the full connect timeout.
+var consoleCrashSignals = []string{
+	`"job crashed"`,
+	"console mode failed:",
+}
+
 // buildConsoleArgs builds the agent subprocess argv for console mode, shared by
 // `lk agent console` and the `lk agent daemon` daemon.
 func buildConsoleArgs(addr string, record bool) []string {
@@ -75,4 +114,13 @@ func buildConsoleArgs(addr string, record bool) []string {
 		args = append(args, "--record")
 	}
 	return args
+}
+
+// normalizeLogLevel adapts the log level to the agent runtime's convention:
+// agents-js accepts only lowercase levels, Python expects uppercase.
+func normalizeLogLevel(projectType agentfs.ProjectType, level string) string {
+	if projectType.IsNode() {
+		return strings.ToLower(level)
+	}
+	return strings.ToUpper(level)
 }

@@ -230,7 +230,7 @@ func TestIsVersionSatisfied(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.version+"_vs_"+tt.minVersion, func(t *testing.T) {
-			result, err := isVersionSatisfied(tt.version, tt.minVersion)
+			result, err := IsVersionSatisfied(tt.version, tt.minVersion)
 
 			if tt.expectErr {
 				if err == nil {

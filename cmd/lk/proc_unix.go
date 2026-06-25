@@ -32,7 +32,7 @@ func (ap *AgentProcess) sendKill() {
 }
 
 // sendShutdown sends SIGINT to the main process only (not the group),
-// letting Python manage its own child cleanup.
+// letting the agent manage its own child cleanup.
 func (ap *AgentProcess) sendShutdown() {
 	if ap.cmd.Process != nil {
 		ap.cmd.Process.Signal(syscall.SIGINT)
