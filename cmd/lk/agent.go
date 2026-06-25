@@ -963,8 +963,11 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 			replicas := "-"
 			agentName := "---"
 			deployment := "---"
+			lastScrapedAt := "---"
+			if regionalAgent.LastScrapedAt != nil {
+				lastScrapedAt = formatTime(regionalAgent.LastScrapedAt.AsTime())
+			}
 
-			lastScrapedAt := formatTime(regionalAgent.LastScrapedAt.AsTime())
 			if regionalAgent.LastScrapedAt != nil {
 				// deployment, cpu, mem, replicas, name
 				curCPU, err = agentfs.ParseCpu(regionalAgent.CurCpu)
