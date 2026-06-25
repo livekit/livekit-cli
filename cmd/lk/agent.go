@@ -926,14 +926,31 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 	var rows [][]string
 	for _, agent := range res.Agents {
 		for _, regionalAgent := range agent.AgentDeployments {
-			curCPU, err := agentfs.ParseCpu(regionalAgent.CurCpu)
-			if err != nil {
-				logger.Errorw("error parsing cpu", err)
-			}
+			curCPU := "-"
+			curMem := "-"
+			replicas := "-"
+			agentName := "---"
+			deployment := "---"
 
-			curMem, err := agentfs.ParseMem(regionalAgent.CurMem, false)
-			if err != nil {
-				logger.Errorw("error parsing mem", err)
+			lastScrapedAt := formatTime(regionalAgent.LastScrapedAt.AsTime())
+			if regionalAgent.LastScrapedAt != nil {
+				// deployment, cpu, mem, replicas, name
+				curCPU, err = agentfs.ParseCpu(regionalAgent.CurCpu)
+				if err != nil {
+					logger.Errorw("error parsing cpu", err)
+				}
+				curMem, err = agentfs.ParseMem(regionalAgent.CurMem, false)
+				if err != nil {
+					logger.Errorw("error parsing mem", err)
+				}
+				replicas = fmt.Sprintf("%d", regionalAgent.Replicas)
+				if regionalAgent.DeploymentEnabled {
+					deployment = regionalAgent.Deployment
+					if deployment == "" {
+						deployment = "production"
+					}
+				}
+				agentName = regionalAgent.AgentName
 			}
 
 			memLimit, err := agentfs.ParseMem(regionalAgent.MemLimit, true)
@@ -946,30 +963,18 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				version = agent.Version
 			}
 
-			deployment := "---"
-			if regionalAgent.DeploymentEnabled {
-				deployment = regionalAgent.Deployment
-				if deployment == "" {
-					deployment = "production"
-				}
-			}
-
-			name := regionalAgent.AgentName
-			if name == "" {
-				name = "---"
-			}
-
 			rows = append(rows, []string{
 				agent.AgentId,
-				name,
+				agentName,
 				version,
 				regionalAgent.Region,
 				deployment,
 				regionalAgent.Status,
 				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
-				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
+				fmt.Sprintf("%s / %d / %d", replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
 				formatTime(agent.DeployedAt.AsTime()),
+				lastScrapedAt,
 			})
 		}
 	}
@@ -986,6 +991,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 			"Mem",
 			"Replicas",
 			"Deployed At",
+			"Last Observed",
 		).
 		Rows(rows...)
 
