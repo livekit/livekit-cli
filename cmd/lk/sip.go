@@ -56,7 +56,7 @@ var (
 							Usage:     "Create an inbound SIP Trunk",
 							Action:    createSIPInboundTrunk,
 							ArgsUsage: RequestDesc[livekit.CreateSIPInboundTrunkRequest](),
-							Flags: []cli.Flag{
+							Flags: appendSIPMediaFlags([]cli.Flag{
 								&cli.StringFlag{
 									Name:  "name",
 									Usage: "Sets a new name for the trunk",
@@ -65,7 +65,6 @@ var (
 									Name:  "numbers",
 									Usage: "Sets a list of numbers for the trunk",
 								},
-								sipMediaEncFlag(),
 								&cli.StringFlag{
 									Name:  "auth-user",
 									Usage: "Set username for authentication",
@@ -74,14 +73,14 @@ var (
 									Name:  "auth-pass",
 									Usage: "Set password for authentication",
 								},
-							},
+							}),
 						},
 						{
 							Name:      "update",
 							Usage:     "Update an inbound SIP Trunk",
 							Action:    updateSIPInboundTrunk,
 							ArgsUsage: RequestDesc[livekit.UpdateSIPInboundTrunkRequest](),
-							Flags: []cli.Flag{
+							Flags: appendSIPMediaFlags([]cli.Flag{
 								&cli.StringFlag{
 									Name:  "id",
 									Usage: "ID for the trunk to update",
@@ -102,7 +101,7 @@ var (
 									Name:  "auth-pass",
 									Usage: "Set password for authentication",
 								},
-							},
+							}),
 						},
 						{
 							Name:      "delete",
@@ -128,7 +127,7 @@ var (
 							Usage:     "Create an outbound SIP Trunk",
 							Action:    createSIPOutboundTrunk,
 							ArgsUsage: RequestDesc[livekit.CreateSIPOutboundTrunkRequest](),
-							Flags: []cli.Flag{
+							Flags: appendSIPMediaFlags([]cli.Flag{
 								&cli.StringFlag{
 									Name:  "name",
 									Usage: "Sets a new name for the trunk",
@@ -145,7 +144,6 @@ var (
 									Name:  "destination-country",
 									Usage: "Sets a destination country for the trunk as ISO 3166-1 alpha-2 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)",
 								},
-								sipMediaEncFlag(),
 								&cli.StringSliceFlag{
 									Name:  "numbers",
 									Usage: "Sets a list of numbers for the trunk",
@@ -158,14 +156,14 @@ var (
 									Name:  "auth-pass",
 									Usage: "Set password for authentication",
 								},
-							},
+							}),
 						},
 						{
 							Name:      "update",
 							Usage:     "Update an outbound SIP Trunk",
 							Action:    updateSIPOutboundTrunk,
 							ArgsUsage: RequestDesc[livekit.UpdateSIPOutboundTrunkRequest](),
-							Flags: []cli.Flag{
+							Flags: appendSIPMediaFlags([]cli.Flag{
 								&cli.StringFlag{
 									Name:  "id",
 									Usage: "ID for the trunk to update",
@@ -198,7 +196,7 @@ var (
 									Name:  "auth-pass",
 									Usage: "Set password for authentication",
 								},
-							},
+							}),
 						},
 						{
 							Name:      "delete",
@@ -269,7 +267,7 @@ var (
 							Usage:     "Update a SIP Dispatch Rule",
 							Action:    updateSIPDispatchRule,
 							ArgsUsage: RequestDesc[livekit.UpdateSIPDispatchRuleRequest](),
-							Flags: []cli.Flag{
+							Flags: appendSIPMediaFlags([]cli.Flag{
 								&cli.StringFlag{
 									Name:  "id",
 									Usage: "ID for the rule to update",
@@ -282,7 +280,7 @@ var (
 									Name:  "trunks",
 									Usage: "Sets a new list of trunk IDs",
 								},
-							},
+							}),
 							MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
 								{
 									Flags: [][]cli.Flag{
@@ -484,16 +482,12 @@ func optBoolFlag(cmd *cli.Command, setName string) (bool, bool) {
 	return cmd.Bool(setName), true
 }
 
-func sipMediaEncFlag() cli.Flag {
-	return &cli.StringFlag{
-		Name:  "media-enc",
-		Usage: "Sets media encryption for outbound call",
-	}
-}
-
 func appendSIPMediaFlags(flags []cli.Flag) []cli.Flag {
 	flags = append(flags,
-		sipMediaEncFlag(),
+		&cli.StringFlag{
+			Name:  "media-enc",
+			Usage: "Sets media encryption for outbound call",
+		},
 		&cli.BoolFlag{
 			Name:  "no-default-codecs",
 			Usage: "Disables a builtin list of default SIP codecs",
@@ -600,6 +594,11 @@ func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		if val, ok := listSetFlag(cmd, "numbers"); ok {
 			p.Numbers = val
 		}
+		if m, err := parseSIPMediaConfig(cmd); err == nil {
+			p.Media = m
+		} else if err != nil {
+			return err
+		}
 		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
 			p.MediaEncryption = *enc
 		} else if err != nil {
@@ -663,6 +662,16 @@ func updateSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	if val := cmd.String("auth-pass"); val != "" {
 		req.AuthPassword = &val
 	}
+	if m, err := parseSIPMediaConfig(cmd); err == nil {
+		req.Media = m
+	} else if err != nil {
+		return err
+	}
+	if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
+		req.MediaEncryption = enc
+	} else if err != nil {
+		return err
+	}
 	req.Numbers = listUpdateFlag(cmd, "numbers")
 	info, err := cli.UpdateSIPInboundTrunk(ctx, &livekit.UpdateSIPInboundTrunkRequest{
 		SipTrunkId: id,
@@ -706,6 +715,11 @@ func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		}
 		if val := cmd.String("destination-country"); val != "" {
 			p.DestinationCountry = val
+		}
+		if m, err := parseSIPMediaConfig(cmd); err == nil {
+			p.Media = m
+		} else if err != nil {
+			return err
 		}
 		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
 			p.MediaEncryption = *enc
@@ -790,6 +804,16 @@ func updateSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	}
 	if val := cmd.String("auth-pass"); val != "" {
 		req.AuthPassword = &val
+	}
+	if m, err := parseSIPMediaConfig(cmd); err == nil {
+		req.Media = m
+	} else if err != nil {
+		return err
+	}
+	if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
+		req.MediaEncryption = enc
+	} else if err != nil {
+		return err
 	}
 	req.Numbers = listUpdateFlag(cmd, "numbers")
 	info, err := cli.UpdateSIPOutboundTrunk(ctx, &livekit.UpdateSIPOutboundTrunkRequest{
@@ -1083,6 +1107,16 @@ func updateSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		req.Name = &val
 	}
 	req.TrunkIds = listUpdateFlag(cmd, "trunks")
+	if m, err := parseSIPMediaConfig(cmd); err == nil {
+		req.Media = m
+	} else if err != nil {
+		return err
+	}
+	if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
+		req.MediaEncryption = enc
+	} else if err != nil {
+		return err
+	}
 	if val := cmd.String("direct"); val != "" {
 		if req.Rule != nil {
 			return fmt.Errorf("only one dispatch rule type is allowed")
