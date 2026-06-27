@@ -168,12 +168,14 @@ type simulateConfig struct {
 	mode           simulateMode
 	simulationMode livekit.SimulationMode
 	agentName      string
-	projectDir     string
-	projectType    agentfs.ProjectType
-	entrypoint     string
-	scenarioGroup  *livekit.ScenarioGroup
-	scenariosPath  string // path to the --scenarios file (empty when generating from source)
-	viewModeRunID  string // non-empty when --view opens a pre-existing run
+	// TODO (steveyoon): add agent deployment support
+	// agentDeployment string
+	projectDir    string
+	projectType   agentfs.ProjectType
+	entrypoint    string
+	scenarioGroup *livekit.ScenarioGroup
+	scenariosPath string // path to the --scenarios file (empty when generating from source)
+	viewModeRunID string // non-empty when --view opens a pre-existing run
 }
 
 type simulateMode int
