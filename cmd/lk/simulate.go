@@ -95,7 +95,7 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "agent-name",
-			Usage: "Run against an already-running agent registered under this `NAME` instead of spawning one locally. Requires --scenarios.",
+			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
 		},
 	},
 }
@@ -271,8 +271,10 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		err         error
 	)
 
-	if liveAgentName != "" {
-		// Run against an already-running agent (registered under liveAgentName):
+	// --agent-name (even empty) means: run against an already-running agent,
+	// don't spawn one. An empty name targets the project's default agent — the
+	// one that auto-joins every room (registered with no agent_name).
+	if cmd.IsSet("agent-name") {
 		// nothing is spawned, so there's no source to generate scenarios from.
 		if scenariosPath == "" {
 			return fmt.Errorf("--agent-name requires --scenarios (no source to generate scenarios from when running against a live agent)")
