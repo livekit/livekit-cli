@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,8 +50,8 @@ type agentWatcher struct {
 	agent     *AgentProcess
 	restartCh chan struct{}
 
-	reloadSrv *reloadServer
-	conn      net.Conn
+	devSrv  *devServer
+	session *devSession
 }
 
 func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
@@ -82,9 +81,9 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 
 	// The reload protocol (capture running jobs from the old process, restore
 	// them in the new one) is Python-only; Node reloads are a plain kill+respawn.
-	var rs *reloadServer
+	var rs *devServer
 	if config.ProjectType.IsPython() {
-		rs, err = newReloadServer()
+		rs, err = newDevServer()
 		if err != nil {
 			w.Close()
 			return nil, err
@@ -92,6 +91,7 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		// Append --reload-addr to CLI args so the Python process connects back
 		config.CLIArgs = append(config.CLIArgs, "--reload-addr", rs.addr())
 	}
+	rs.onServerInfo = config.OnServerInfo
 
 	return &agentWatcher{
 		config:    config,
@@ -99,7 +99,7 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		debounce:  500 * time.Millisecond,
 		watcher:   w,
 		restartCh: make(chan struct{}, 1),
-		reloadSrv: rs,
+		devSrv:    rs,
 	}, nil
 }
 
@@ -110,28 +110,34 @@ func (aw *agentWatcher) start() error {
 	}
 	aw.agent = agent
 
-	// Accept connection from new Python process in background
-	if aw.reloadSrv != nil {
-		go func() {
-			conn, err := aw.reloadSrv.listener.Accept()
-			if err != nil {
-				return
-			}
-			aw.conn = conn
-			// Serve the initial restore request (will be empty on first start)
-			go aw.reloadSrv.serveNewProcess(conn)
-		}()
-	}
+	aw.acceptSession()
 
 	return nil
 }
 
+// acceptSession waits (in the background) for the next process to connect back on
+// the reload channel and hands the connection to a devSession read loop.
+func (aw *agentWatcher) acceptSession() {
+	if aw.devSrv == nil {
+		return
+	}
+	go func() {
+		conn, err := aw.devSrv.listener.Accept()
+		if err != nil {
+			return
+		}
+		s := aw.devSrv.newSession(conn)
+		aw.session = s
+		go s.run()
+	}()
+}
+
 func (aw *agentWatcher) restart() error {
 	// 1. Capture active jobs from the current process (best-effort)
-	if aw.conn != nil {
-		aw.reloadSrv.captureJobs(aw.conn)
-		aw.conn.Close()
-		aw.conn = nil
+	if aw.session != nil {
+		aw.devSrv.captureJobs(aw.session)
+		aw.session.close()
+		aw.session = nil
 	}
 
 	// 2. Kill old process
@@ -149,16 +155,7 @@ func (aw *agentWatcher) restart() error {
 	aw.agent = agent
 
 	// 4. Accept new connection and serve restored jobs
-	if aw.reloadSrv != nil {
-		go func() {
-			conn, err := aw.reloadSrv.listener.Accept()
-			if err != nil {
-				return
-			}
-			aw.conn = conn
-			go aw.reloadSrv.serveNewProcess(conn)
-		}()
-	}
+	aw.acceptSession()
 
 	return nil
 }
@@ -181,11 +178,11 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 				aw.agent.ForceKill()
 			}
 		}
-		if aw.conn != nil {
-			aw.conn.Close()
+		if aw.session != nil {
+			aw.session.close()
 		}
-		if aw.reloadSrv != nil {
-			aw.reloadSrv.close()
+		if aw.devSrv != nil {
+			aw.devSrv.close()
 		}
 		aw.watcher.Close()
 	}()
