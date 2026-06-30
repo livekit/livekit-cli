@@ -272,8 +272,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	)
 
 	// --agent-name (even empty) means: run against an already-running agent,
-	// don't spawn one. An empty name targets the project's default agent — the
-	// one that auto-joins every room (registered with no agent_name).
+	// don't spawn one. https://docs.livekit.io/agents/server/agent-dispatch/#automatic
 	if cmd.IsSet("agent-name") {
 		// nothing is spawned, so there's no source to generate scenarios from.
 		if scenariosPath == "" {
