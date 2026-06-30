@@ -33,3 +33,7 @@ cmd/lk/testdata/**/.venv
 
 # uv lockfiles for test agent fixtures (resolved fresh in CI)
 cmd/lk/testdata/**/uv.lock
+
+# node deps installed for e2e agent fixtures (resolved fresh in CI)
+cmd/lk/testdata/**/node_modules
+cmd/lk/testdata/**/package-lock.json
