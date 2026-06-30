@@ -93,6 +93,10 @@ var simulateCommand = &cli.Command{
 			Name:  "view",
 			Usage: "Open a pre-existing simulation",
 		},
+		&cli.StringFlag{
+			Name:  "agent-name",
+			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
+		},
 	},
 }
 
@@ -174,6 +178,7 @@ type simulateConfig struct {
 	scenarioGroup  *livekit.ScenarioGroup
 	scenariosPath  string // path to the --scenarios file (empty when generating from source)
 	viewModeRunID  string // non-empty when --view opens a pre-existing run
+	liveAgent      bool   // --agent-name: run against an already-running agent, don't spawn one
 }
 
 type simulateMode int
@@ -251,34 +256,55 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	numSimulations := int32(cmd.Int("num-simulations"))
 	concurrency := int32(cmd.Int("concurrency"))
 	runID := cmd.String("view")
-	agentName := generateAgentName()
-
-	projectDir, projectType, err := agentfs.DetectProjectRoot(".")
-	if err != nil {
-		return err
-	}
-
-	entrypointArg := cmd.Args().First()
-
-	// check if a script called "build" exists in the package.json, if so, refuse to discover the
-	// entrypoint: build tasks usually mean the entrypoint path is nontrivial (e.g. dist/main.js)
-	if projectType.IsNode() && entrypointArg == "" {
-		buildTaskDoesExist, err := buildTaskExists(projectDir)
-		if err != nil {
-			return err
-		} else if buildTaskDoesExist {
-			return fmt.Errorf("you currently have a build task in your package.json, but no entrypoint was explicitly given; so you must add an entrypoint to the simulate cli")
-		}
-	}
-
-	entrypoint, err := findEntrypoint(projectDir, entrypointArg, projectType)
-	if err != nil {
-		return err
-	}
+	liveAgentName := cmd.String("agent-name")
 
 	// never auto-discovered: an explicit --scenarios file is the source of
 	// truth, otherwise scenarios are generated from the agent's source
 	scenariosPath := cmd.String("scenarios")
+
+	var (
+		agentName   string
+		projectDir  string
+		projectType agentfs.ProjectType
+		entrypoint  string
+		liveAgent   bool
+		err         error
+	)
+
+	// --agent-name (even empty) means: run against an already-running agent,
+	// don't spawn one. https://docs.livekit.io/agents/server/agent-dispatch/#automatic
+	if cmd.IsSet("agent-name") {
+		// nothing is spawned, so there's no source to generate scenarios from.
+		if scenariosPath == "" {
+			return fmt.Errorf("--agent-name requires --scenarios (no source to generate scenarios from when running against a live agent)")
+		}
+		liveAgent = true
+		agentName = liveAgentName
+	} else {
+		agentName = generateAgentName()
+		projectDir, projectType, err = agentfs.DetectProjectRoot(".")
+		if err != nil {
+			return err
+		}
+
+		entrypointArg := cmd.Args().First()
+
+		// check if a script called "build" exists in the package.json, if so, refuse to discover the
+		// entrypoint: build tasks usually mean the entrypoint path is nontrivial (e.g. dist/main.js)
+		if projectType.IsNode() && entrypointArg == "" {
+			buildTaskDoesExist, err := buildTaskExists(projectDir)
+			if err != nil {
+				return err
+			} else if buildTaskDoesExist {
+				return fmt.Errorf("you currently have a build task in your package.json, but no entrypoint was explicitly given; so you must add an entrypoint to the simulate cli")
+			}
+		}
+
+		entrypoint, err = findEntrypoint(projectDir, entrypointArg, projectType)
+		if err != nil {
+			return err
+		}
+	}
 
 	var scenarioGroup *livekit.ScenarioGroup
 	if scenariosPath != "" {
@@ -326,6 +352,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		scenarioGroup:  scenarioGroup,
 		scenariosPath:  scenariosPath,
 		viewModeRunID:  runID,
+		liveAgent:      liveAgent,
 	}
 
 	if !isInteractive() {

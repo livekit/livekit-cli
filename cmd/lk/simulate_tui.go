@@ -35,31 +35,32 @@ import (
 )
 
 func runSimulateTUI(config *simulateConfig) error {
-	launcher := launchSimulationAgent(config)
-	m := newSimulateModel(config, launcher)
+	m := newSimulateModel(config)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	_, runErr := p.Run()
 
-	// A second ctrl+c during cleanup would kill the CLI and leak the worker
-	// (own process group, port stays bound); escalate to SIGKILL instead.
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt)
-	defer signal.Stop(sigCh)
-	go func() {
-		<-sigCh
-		launcher.ForceStop()
-		os.Exit(130)
-	}()
+	if m.launcher != nil {
+    // A second ctrl+c during cleanup would kill the CLI and leak the worker
+    // (own process group, port stays bound); escalate to SIGKILL instead.
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt)
+		defer signal.Stop(sigCh)
+		go func() {
+			<-sigCh
+			m.launcher.ForceStop()
+			os.Exit(130)
+		}()
 
-	if agentProc := launcher.Stop(); agentProc != nil {
-		if m.brokenAgent {
-			writeBrokenAgentNote(out.WarnWriter(), agentProc)
-			fmt.Fprintln(out.WarnWriter())
+		if agentProc := m.launcher.Stop(); agentProc != nil {
+			if m.brokenAgent {
+				writeBrokenAgentNote(out.WarnWriter(), agentProc)
+				fmt.Fprintln(out.WarnWriter())
+			}
+			if agentProc.LogPath != "" {
+				out.Statusf("Agent logs: %s", agentProc.LogPath)
+			}
+			m.agent = agentProc
 		}
-		if agentProc.LogPath != "" {
-			out.Statusf("Agent logs: %s", agentProc.LogPath)
-		}
-		m.agent = agentProc
 	}
 
 	// generated scenarios are saved to a temp file so they're never lost
@@ -297,14 +298,13 @@ func (m *simulateModel) showToast(text string, ok bool) tea.Cmd {
 	return tea.Tick(4*time.Second, func(time.Time) tea.Msg { return toastExpireMsg{id: id} })
 }
 
-func newSimulateModel(config *simulateConfig, launcher *agentLauncher) *simulateModel {
+func newSimulateModel(config *simulateConfig) *simulateModel {
 	ti := textinput.New()
 	ti.Placeholder = "scenarios.yaml"
 	ti.CharLimit = 128
 	ti.Prompt = ""
 	return &simulateModel{
 		config:         config,
-		launcher:       launcher,
 		reporter:       newRunReporter(),
 		numSimulations: config.numSimulations,
 		width:          80,
@@ -374,6 +374,22 @@ func (m *simulateModel) runSetup() tea.Cmd {
 		m.steps = append(m.steps, step{label: label, status: "done"})
 	}
 	m.currentStep = len(m.steps)
+
+	m.reporter.BeginSetup()
+	if c.mode == modeScenarios && c.scenarioGroup != nil {
+		m.reporter.ScenariosLoaded(c.scenarioGroup, c.scenariosPath)
+	}
+
+	ctx, cancel := context.WithCancel(c.ctx)
+	m.setupCtx = ctx
+	m.setupCancel = cancel
+	m.stepStart = time.Now()
+
+	if c.liveAgent {
+		m.steps = append(m.steps, step{label: "Creating simulation", status: "running"})
+		return m.createSimulationCmd()
+	}
+
 	m.steps = append(m.steps,
 		step{label: "Starting agent", status: "running"},
 		step{label: "Creating simulation", status: "pending"},
@@ -381,18 +397,9 @@ func (m *simulateModel) runSetup() tea.Cmd {
 	if c.mode == modeGenerateFromSource {
 		m.steps = append(m.steps, step{label: "Uploading source", status: "pending"})
 	}
-
-	m.reporter.BeginSetup()
-	if c.mode == modeScenarios && c.scenarioGroup != nil {
-		m.reporter.ScenariosLoaded(c.scenarioGroup, c.scenariosPath)
-	}
 	m.reporter.StartingAgent()
 
-	ctx, cancel := context.WithCancel(c.ctx)
-	m.setupCtx = ctx
-	m.setupCancel = cancel
-	m.stepStart = time.Now()
-
+	m.launcher = launchSimulationAgent(c)
 	return m.startAgentCmd()
 }
 
