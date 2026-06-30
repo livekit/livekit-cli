@@ -1,0 +1,136 @@
+name: Go Test (Windows)
+
+# Runs the Go test suite on Windows. test.yaml covers Linux and macOS but
+# excludes Windows: pkg/apm/webrtc's C++ uses MSVC SEH (__try/__except) that the
+# runner's mingw GCC can't compile, and on native Windows the cgo link of ~560
+# webrtc/portaudio objects overflows the ~32KB command-line limit. So -- exactly
+# like .goreleaser.yaml and session-e2e.yaml -- the per-package test binaries are
+# cross-compiled on Linux with zig (clang) and then run natively on
+# windows-latest, where nothing is rebuilt.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: test-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Cross-compile a test binary per package on Linux with zig, mirroring
+  # .goreleaser.yaml's lk-windows-amd64 build. manifest.tsv maps each binary to
+  # its package directory so the Windows job can run it from there (tests read
+  # cwd-relative fixtures, e.g. cmd/lk/testdata and pkg/agentfs/examples).
+  cross-build:
+    runs-on: ubuntu-latest
+    name: Cross-build Windows test binaries (zig)
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout livekit-cli
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # pkg/portaudio/pa_src is a submodule with the vendored PortAudio C
+          # source linked into cmd/lk via cgo.
+          submodules: true
+
+      - name: Set up Zig
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        with:
+          version: 0.14.1
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Generate the MinGW import libs lld needs for Go's /DEFAULTLIB references
+      # (dbghelp, bcrypt, ...), exactly as goreleaser's before-hook does.
+      - name: Generate MinGW import libs
+        run: scripts/setup-cross.sh windows/amd64
+
+      - name: Cross-compile per-package test binaries
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: "1"
+          # zig cc/c++ as the cgo toolchain, matching .goreleaser.yaml's Windows
+          # build. -fms-extensions (SEH) isn't on cgo's allowlist; -fno-sanitize
+          # is a zig UBSan-under-lld workaround -- both copied from goreleaser.
+          CC: zig cc -target x86_64-windows-gnu
+          CXX: zig c++ -target x86_64-windows-gnu
+          CGO_CXXFLAGS_ALLOW: -fms-extensions
+          CGO_CXXFLAGS: -fno-sanitize=all
+        run: |
+          set -euo pipefail
+          ldflags="-extldflags=-L$PWD/.cross/windows_amd64/mingw_lib"
+          module=$(go list -m)
+          mkdir -p dist
+          : > dist/manifest.tsv
+          for pkg in $(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...); do
+            rel=${pkg#"$module"/}
+            [ "$rel" = "$module" ] && rel="."
+            safe=$(echo "$rel" | tr '/' '_')
+            go test -c -ldflags="$ldflags" -o "dist/${safe}.test.exe" "$pkg"
+            printf '%s\t%s\n' "${safe}.test.exe" "$rel" >> dist/manifest.tsv
+          done
+          echo "Built:"; cat dist/manifest.tsv
+
+      - name: Upload Windows test binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-binaries
+          path: dist
+          retention-days: 1
+          if-no-files-found: error
+
+  # Run each prebuilt test binary natively on Windows, from its package
+  # directory so cwd-relative fixtures resolve. No Go/zig/cgo here; node ships on
+  # the runner and uv is installed for the Python agent SDK-version tests.
+  test-windows:
+    needs: cross-build
+    runs-on: windows-latest
+    name: Go test on windows-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout livekit-cli
+        # Test fixtures (cmd/lk/testdata, pkg/agentfs/examples) are read at
+        # runtime; submodules are C source already compiled into the binaries.
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Download Windows test binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-test-binaries
+          path: dist
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run test binaries
+        shell: bash
+        run: |
+          set -uo pipefail
+          root=$(pwd)
+          fail=0
+          while IFS=$'\t' read -r exe rel; do
+            echo "::group::$rel"
+            ( cd "$rel" && "$root/dist/$exe" -test.v -test.count=1 ) || fail=1
+            echo "::endgroup::"
+          done < "$root/dist/manifest.tsv"
+          exit $fail

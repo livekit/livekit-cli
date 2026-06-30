@@ -180,6 +180,53 @@ func checkNodeSDKVersion(cfg AgentStartConfig) error {
 	return nil
 }
 
+// pythonResolveVersionScript prints the installed livekit-agents version, or
+// exits non-zero if it isn't importable.
+const pythonResolveVersionScript = `import importlib.metadata as m; print(m.version("livekit-agents"))`
+
+// resolvePythonAgentVersion returns the installed livekit-agents version read
+// via the project's interpreter, so any installer (uv, pip, poetry) reports the
+// version that will actually run. Returns "" when it can't be determined (no
+// interpreter, dependencies not installed, etc.). For uv it reads the existing
+// environment without syncing, so a pre-flight check never mutates or downloads.
+func resolvePythonAgentVersion(dir string, projectType agentfs.ProjectType) string {
+	pythonBin, prefixArgs, err := findPythonBinary(dir, projectType)
+	if err != nil {
+		return ""
+	}
+	if projectType == agentfs.ProjectTypePythonUV && len(prefixArgs) > 0 && prefixArgs[0] == "run" {
+		prefixArgs = append([]string{"run", "--no-sync"}, prefixArgs[1:]...)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	args := append(append([]string{}, prefixArgs...), "-c", pythonResolveVersionScript)
+	cmd := exec.CommandContext(ctx, pythonBin, args...)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// checkPythonSDKVersion gates a Python agent on thinCLIMinVersion. It prefers
+// the installed version (resolved via the interpreter, accurate regardless of
+// the package manager and not fooled by a loose version constraint); when
+// dependencies aren't installed it falls back to static project-file parsing.
+func checkPythonSDKVersion(cfg AgentStartConfig) error {
+	if version := resolvePythonAgentVersion(cfg.Dir, cfg.ProjectType); version != "" {
+		// An unparseable version (e.g. a local "0.0.0.dev" tag) shouldn't block a run.
+		if ok, err := agentfs.IsVersionSatisfied(version, thinCLIMinVersion); err == nil && !ok {
+			return fmt.Errorf("livekit-agents version %s is too old, please upgrade to %s or newer", version, thinCLIMinVersion)
+		}
+		return nil
+	}
+	return agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
+		"python-min-sdk-version": thinCLIMinVersion,
+		"node-min-sdk-version":   thinCLIMinVersion,
+	})
+}
+
 // defaultEntrypoints returns candidate entrypoint paths (relative to the
 // project root or working directory) probed for a project type, in priority
 // order. Forward slashes are valid on all platforms.
@@ -328,10 +375,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		if err := checkNodeSDKVersion(cfg); err != nil {
 			return nil, err
 		}
-	} else if err := agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
-		"python-min-sdk-version": thinCLIMinVersion,
-		"node-min-sdk-version":   thinCLIMinVersion,
-	}); err != nil {
+	} else if err := checkPythonSDKVersion(cfg); err != nil {
 		return nil, err
 	}
 
