@@ -53,7 +53,7 @@ jobs:
         lang: [python, node]
 
     runs-on: ${{ matrix.os }}
-    name: Agent Session with ${{ matrix.lang }} Agent on ${{ matrix.os }}
+    name: lk agent with ${{ matrix.lang }} agent on ${{ matrix.os }}
 
     permissions:
       contents: read
