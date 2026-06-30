@@ -582,8 +582,10 @@ func checkUvLock(filePath, minVersion string) VersionCheckResult {
 		return VersionCheckResult{Error: err}
 	}
 
-	// Look for livekit-agents in the lock file
-	pattern := regexp.MustCompile(`(?m)^\s*livekit-agents\s*=\s*"([^"]+)"`)
+	// Look for the [[package]] block with livekit-agents. uv.lock shares
+	// poetry.lock's TOML layout (name then version on separate lines), so the
+	// resolved version lives in the block, not on a `livekit-agents = "..."` line.
+	pattern := regexp.MustCompile(`(?s)\[\[package\]\]\s*\nname\s*=\s*"livekit-agents"\s*\nversion\s*=\s*"([^"]+)"`)
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
