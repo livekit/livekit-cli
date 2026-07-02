@@ -1,0 +1,12 @@
+{
+  "name": "lk-session-e2e-echo-agent-node",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@livekit/agents": "^1.4.9",
+    "@livekit/rtc-node": "^0.13.29",
+    "dotenv": "^16.4.5",
+    "zod": "^3.25.76"
+  }
+}
