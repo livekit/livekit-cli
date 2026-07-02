@@ -2,10 +2,6 @@ module github.com/livekit/livekit-cli/v2
 
 go 1.26.0
 
-replace github.com/livekit/protocol => ../protocol
-
-replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
-
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/Masterminds/semver/v3 v3.5.0
@@ -23,8 +19,8 @@ require (
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.47.0
-	github.com/livekit/server-sdk-go/v2 v2.16.7-0.20260608025623-a5da15b13baa
+	github.com/livekit/protocol v1.49.0
+	github.com/livekit/server-sdk-go/v2 v2.16.8-0.20260702164219-6126610d4e22
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/patternmatcher v0.6.1
 	github.com/modelcontextprotocol/go-sdk v1.6.1
@@ -190,7 +186,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pion/datachannel v1.6.0 // indirect
-	github.com/pion/dtls/v3 v3.1.3 // indirect
+	github.com/pion/dtls/v3 v3.1.4 // indirect
 	github.com/pion/ice/v4 v4.2.7 // indirect
 	github.com/pion/interceptor v0.1.45 // indirect
 	github.com/pion/logging v0.2.4 // indirect
