@@ -456,3 +456,149 @@ func TestRequireSecrets_QuietSuppressesStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestAttributesMatch(t *testing.T) {
+	tests := []struct {
+		name   string
+		attrs  map[string]string
+		filter map[string]string
+		want   bool
+	}{
+		{
+			name:   "empty filter matches anything",
+			attrs:  map[string]string{"env": "prod"},
+			filter: nil,
+			want:   true,
+		},
+		{
+			name:   "empty filter matches empty attrs",
+			attrs:  nil,
+			filter: map[string]string{},
+			want:   true,
+		},
+		{
+			name:   "single matching pair",
+			attrs:  map[string]string{"env": "prod"},
+			filter: map[string]string{"env": "prod"},
+			want:   true,
+		},
+		{
+			name:   "extra attributes on version are allowed",
+			attrs:  map[string]string{"env": "prod", "region": "us-east", "team": "core"},
+			filter: map[string]string{"env": "prod"},
+			want:   true,
+		},
+		{
+			name:   "all filter pairs must match",
+			attrs:  map[string]string{"env": "prod", "region": "us-east"},
+			filter: map[string]string{"env": "prod", "region": "us-east"},
+			want:   true,
+		},
+		{
+			name:   "missing key fails",
+			attrs:  map[string]string{"env": "prod"},
+			filter: map[string]string{"region": "us-east"},
+			want:   false,
+		},
+		{
+			name:   "mismatched value fails",
+			attrs:  map[string]string{"env": "staging"},
+			filter: map[string]string{"env": "prod"},
+			want:   false,
+		},
+		{
+			name:   "partial match fails when one pair differs",
+			attrs:  map[string]string{"env": "prod", "region": "eu-west"},
+			filter: map[string]string{"env": "prod", "region": "us-east"},
+			want:   false,
+		},
+		{
+			name:   "filter against nil attrs fails",
+			attrs:  nil,
+			filter: map[string]string{"env": "prod"},
+			want:   false,
+		},
+		{
+			name:   "empty string value must match exactly",
+			attrs:  map[string]string{"env": "prod"},
+			filter: map[string]string{"env": ""},
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, attributesMatch(tt.attrs, tt.filter))
+		})
+	}
+}
+
+func TestResolveAttributes(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    map[string]string
+		wantErr bool
+	}{
+		{
+			name: "neither flag set returns nil",
+			args: nil,
+			want: nil,
+		},
+		{
+			name: "json only",
+			args: []string{"--attributes", `{"env":"prod","region":"us-east"}`},
+			want: map[string]string{"env": "prod", "region": "us-east"},
+		},
+		{
+			name: "pairs only",
+			args: []string{"--attribute", "env=prod", "--attribute", "region=us-east"},
+			want: map[string]string{"env": "prod", "region": "us-east"},
+		},
+		{
+			name: "merged, disjoint keys",
+			args: []string{"--attributes", `{"env":"prod"}`, "--attribute", "region=us-east"},
+			want: map[string]string{"env": "prod", "region": "us-east"},
+		},
+		{
+			name: "pairs take precedence on conflict",
+			args: []string{"--attributes", `{"env":"prod","region":"us-east"}`, "--attribute", "env=staging"},
+			want: map[string]string{"env": "staging", "region": "us-east"},
+		},
+		{
+			name:    "invalid json surfaces error",
+			args:    []string{"--attributes", `not json`},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got map[string]string
+			var gotErr error
+			// Fresh flag instances per subtest: the package-level flag vars
+			// retain parsed state across app.Run calls, which would leak
+			// between subtests. Names must match what resolveAttributes reads.
+			app := &cli.Command{
+				Name: "lk",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: attributesFlag.Name},
+					&cli.StringSliceFlag{Name: attributeFlag.Name},
+				},
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					got, gotErr = resolveAttributes(cmd)
+					return nil
+				},
+			}
+
+			require.NoError(t, app.Run(context.Background(), append([]string{"lk"}, tt.args...)))
+
+			if tt.wantErr {
+				require.Error(t, gotErr)
+				return
+			}
+			require.NoError(t, gotErr)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
