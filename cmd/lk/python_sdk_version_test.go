@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -71,7 +72,9 @@ func setupUvAgentProject(t *testing.T, stubVersion, depSpec string, sync bool) s
 
 func TestResolvePythonAgentVersion_ReadsInstalledVersion(t *testing.T) {
 	dir := setupUvAgentProject(t, "1.6.7", "livekit-agents", true)
-	require.Equal(t, "1.6.7", resolvePythonAgentVersion(dir, agentfs.ProjectTypePythonUV))
+	version, notInstalled := resolvePythonAgentVersion(dir, agentfs.ProjectTypePythonUV)
+	require.Equal(t, "1.6.7", version)
+	require.False(t, notInstalled)
 }
 
 func TestCheckPythonSDKVersion_TooOld(t *testing.T) {
@@ -88,9 +91,32 @@ func TestCheckPythonSDKVersion_InstalledBeatsLooseConstraint(t *testing.T) {
 	require.NoError(t, checkPythonSDKVersion(AgentStartConfig{Dir: dir, ProjectType: agentfs.ProjectTypePythonUV}))
 }
 
-func TestCheckPythonSDKVersion_FallsBackToFilesWhenNotInstalled(t *testing.T) {
-	// Not synced: `uv run --no-sync` can't resolve an installed version, so the
-	// check falls back to parsing the pyproject constraint (>=1.6.0 satisfies).
+func TestCheckPythonSDKVersion_UnsyncedUVProjectSuggestsSync(t *testing.T) {
+	// Models a fresh clone where dependencies were never installed. The CLI is
+	// a proxy for the local environment and never syncs it implicitly, so the
+	// agent would die at launch with ModuleNotFoundError; the pre-flight must
+	// fail fast and tell the user how to fix it instead.
 	dir := setupUvAgentProject(t, "1.6.7", "livekit-agents>=1.6.0", false)
-	require.NoError(t, checkPythonSDKVersion(AgentStartConfig{Dir: dir, ProjectType: agentfs.ProjectTypePythonUV}))
+	err := checkPythonSDKVersion(AgentStartConfig{Dir: dir, ProjectType: agentfs.ProjectTypePythonUV})
+	require.ErrorContains(t, err, "uv sync")
+}
+
+func TestFindPythonBinary_UVRunDoesNotSyncEnvironment(t *testing.T) {
+	// Models a user who synced their env, then edited a dependency's version
+	// without re-syncing. Running through the CLI-resolved interpreter must
+	// execute against the environment as it exists on disk — a plain `uv run`
+	// would re-lock and install 9.9.9 as a side effect of launching.
+	dir := setupUvAgentProject(t, "1.6.7", "livekit-agents", true)
+	stubPyproject := filepath.Join(dir, "stub", "pyproject.toml")
+	orig, err := os.ReadFile(stubPyproject)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(stubPyproject, []byte(strings.Replace(string(orig), "1.6.7", "9.9.9", 1)), 0o644))
+
+	bin, prefixArgs, err := findPythonBinary(dir, agentfs.ProjectTypePythonUV)
+	require.NoError(t, err)
+	cmd := exec.Command(bin, append(prefixArgs, "-c", `import importlib.metadata as m; print(m.version("livekit-agents"))`)...)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	require.NoError(t, err)
+	require.Equal(t, "1.6.7", strings.TrimSpace(string(out)))
 }
