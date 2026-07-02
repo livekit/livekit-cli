@@ -58,7 +58,9 @@ func findPythonBinary(dir string, projectType agentfs.ProjectType) (string, []st
 	if projectType == agentfs.ProjectTypePythonUV {
 		uvPath, err := exec.LookPath("uv")
 		if err == nil {
-			return uvPath, []string{"run", "python"}, nil
+			// --no-sync: the CLI proxies the environment as it exists on disk
+			// and must never install or upgrade packages as a side effect.
+			return uvPath, []string{"run", "--no-sync", "python"}, nil
 		}
 	}
 
@@ -180,6 +182,68 @@ func checkNodeSDKVersion(cfg AgentStartConfig) error {
 	return nil
 }
 
+// pythonResolveVersionScript prints the installed livekit-agents version, or a
+// sentinel when the interpreter runs fine but the package isn't installed —
+// distinguishing "dependencies not synced" from probe failures (no
+// interpreter, timeout), which exit non-zero.
+const pythonResolveVersionScript = `import importlib.metadata as m
+try:
+    print(m.version("livekit-agents"))
+except m.PackageNotFoundError:
+    print("` + pythonAgentNotInstalled + `")`
+
+const pythonAgentNotInstalled = "__NOT_INSTALLED__"
+
+// resolvePythonAgentVersion returns the installed livekit-agents version read
+// via the project's interpreter, so any installer (uv, pip, poetry) reports the
+// version that will actually run. notInstalled reports that the interpreter ran
+// but the package is missing from its environment; version is "" when it can't
+// be determined at all (no interpreter, probe failure, etc.).
+func resolvePythonAgentVersion(dir string, projectType agentfs.ProjectType) (version string, notInstalled bool) {
+	pythonBin, prefixArgs, err := findPythonBinary(dir, projectType)
+	if err != nil {
+		return "", false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	args := append(append([]string{}, prefixArgs...), "-c", pythonResolveVersionScript)
+	cmd := exec.CommandContext(ctx, pythonBin, args...)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", false
+	}
+	v := strings.TrimSpace(string(out))
+	if v == pythonAgentNotInstalled {
+		return "", true
+	}
+	return v, false
+}
+
+// checkPythonSDKVersion gates a Python agent on thinCLIMinVersion. It prefers
+// the installed version (resolved via the interpreter, accurate regardless of
+// the package manager and not fooled by a loose version constraint); when
+// dependencies aren't installed it falls back to static project-file parsing.
+func checkPythonSDKVersion(cfg AgentStartConfig) error {
+	version, notInstalled := resolvePythonAgentVersion(cfg.Dir, cfg.ProjectType)
+	if notInstalled && cfg.ProjectType == agentfs.ProjectTypePythonUV {
+		// The launch runs `uv run --no-sync`, so a missing package won't be
+		// installed on the way up — fail fast with the fix instead.
+		return fmt.Errorf("livekit-agents is not installed in the project environment; run `uv sync` and try again")
+	}
+	if version != "" {
+		// An unparseable version (e.g. a local "0.0.0.dev" tag) shouldn't block a run.
+		if ok, err := agentfs.IsVersionSatisfied(version, thinCLIMinVersion); err == nil && !ok {
+			return fmt.Errorf("livekit-agents version %s is too old, please upgrade to %s or newer", version, thinCLIMinVersion)
+		}
+		return nil
+	}
+	return agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
+		"python-min-sdk-version": thinCLIMinVersion,
+		"node-min-sdk-version":   thinCLIMinVersion,
+	})
+}
+
 // defaultEntrypoints returns candidate entrypoint paths (relative to the
 // project root or working directory) probed for a project type, in priority
 // order. Forward slashes are valid on all platforms.
@@ -277,7 +341,7 @@ const thinCLIMinVersion = "1.6.0"
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
 // branching on project type. Python uses the thin CLI:
 // `<python> <runtime-args> -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS`
-// (uv prefixes `run python`). Node runs the entrypoint directly:
+// (uv prefixes `run --no-sync python`). Node runs the entrypoint directly:
 // `node [--experimental-strip-types] <runtime-args> ENTRYPOINT SUBCOMMAND FLAGS`,
 // where the type-stripping flag lets a `.ts` entrypoint run without a build.
 func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
@@ -328,10 +392,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		if err := checkNodeSDKVersion(cfg); err != nil {
 			return nil, err
 		}
-	} else if err := agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
-		"python-min-sdk-version": thinCLIMinVersion,
-		"node-min-sdk-version":   thinCLIMinVersion,
-	}); err != nil {
+	} else if err := checkPythonSDKVersion(cfg); err != nil {
 		return nil, err
 	}
 
