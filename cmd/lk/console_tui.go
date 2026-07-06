@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -51,22 +52,30 @@ var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "�
 // startSpinner shows a braille spinner on stderr with the given message.
 // Returns a stop function that clears the spinner line.
 func startSpinner(msg string) func() {
+	return startSpinnerTo(os.Stderr, msg)
+}
+
+func startSpinnerTo(w io.Writer, msg string) func() {
 	done := make(chan struct{})
+	cleared := make(chan struct{})
 	go func() {
-		i := 0
-		for {
+		defer close(cleared)
+		for i := 0; ; i++ {
+			fmt.Fprintf(w, "\r  %s %s", spinnerFrames[i%len(spinnerFrames)], msg)
 			select {
 			case <-done:
-				fmt.Fprintf(os.Stderr, "\r\033[K")
+				fmt.Fprintf(w, "\r\033[K")
 				return
-			default:
-				fmt.Fprintf(os.Stderr, "\r  %s %s", spinnerFrames[i%len(spinnerFrames)], msg)
-				i++
-				time.Sleep(80 * time.Millisecond)
+			case <-time.After(80 * time.Millisecond):
 			}
 		}
 	}()
-	return func() { close(done) }
+	// Stopping blocks until the line is cleared, so the caller's next print
+	// (e.g. an error) never lands on the leftover spinner text.
+	return func() {
+		close(done)
+		<-cleared
+	}
 }
 
 type consoleTickMsg struct{}

@@ -1,5 +1,5 @@
-# uv project marker: [tool.uv] lets the daemon's `uv run python` auto-sync
-# these deps -- no separate install step.
+# uv project marker. The daemon launches via `uv run --no-sync`, so deps must
+# be installed up front (CI runs `uv sync`; see session-e2e.yaml).
 [project]
 name = "lk-session-e2e-echo-agent"
 version = "0"

@@ -138,7 +138,10 @@ version = "1.5.0"`,
 			name:        "Python uv.lock with valid version",
 			projectType: ProjectTypePythonUV,
 			setupFiles: map[string]string{
-				"uv.lock": `livekit-agents = "1.5.0"`,
+				"uv.lock": `[[package]]
+name = "livekit-agents"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }`,
 			},
 			expectError: false,
 		},
@@ -197,6 +200,41 @@ version = "1.5.0"`,
 				}
 			}
 		})
+	}
+}
+
+// TestCheckSDKVersion_UvLockPreferredOverPyprojectFloor reproduces the case where
+// pyproject.toml declares a loose lower bound (e.g. >=1.0) but uv.lock pins a
+// resolved version that satisfies the minimum. The resolved lock version must win,
+// otherwise the loose floor is misread as the installed version and wrongly rejected.
+func TestCheckSDKVersion_UvLockPreferredOverPyprojectFloor(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "sdk-version-uvlock-test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	settingsMap := map[string]string{
+		"python-min-sdk-version": "1.6.0",
+		"node-min-sdk-version":   "1.6.0",
+	}
+
+	files := map[string]string{
+		"pyproject.toml": `[project]
+dependencies = ["livekit-agents>=1.0"]`,
+		"uv.lock": `[[package]]
+name = "livekit-agents"
+version = "1.6.7"
+source = { registry = "https://pypi.org/simple" }`,
+	}
+	for filename, content := range files {
+		if err := os.WriteFile(filepath.Join(tempDir, filename), []byte(content), 0644); err != nil {
+			t.Fatalf("Failed to create test file %s: %v", filename, err)
+		}
+	}
+
+	if err := CheckSDKVersion(tempDir, ProjectTypePythonUV, settingsMap); err != nil {
+		t.Errorf("Expected no error (uv.lock resolves 1.6.7 >= 1.6.0), got: %v", err)
 	}
 }
 
