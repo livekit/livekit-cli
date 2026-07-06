@@ -6,7 +6,7 @@
   "dependencies": {
     "@livekit/agents": "^1.4.9",
     "@livekit/rtc-node": "^0.13.29",
-    "dotenv": "^16.4.5",
+    "dotenv": "^17.0.0",
     "zod": "^3.25.76"
   }
 }
