@@ -34,6 +34,7 @@ abort() { printf "%s\n" "$@" >&2; exit 1; }
 [ -n "${BASH_VERSION:-}" ] || abort "This script requires bash"
 [ -d "$INSTALL_PATH" ]     || abort "Could not install, $INSTALL_PATH doesn't exist"
 command -v curl >/dev/null || abort "cURL is required and is not found"
+command -v sha256sum >/dev/null || abort "sha256sum is required and is not found"
 
 OS="$(uname)"
 case "$OS" in
@@ -59,7 +60,9 @@ VERSION=$(curl -fsSL https://api.github.com/repos/livekit/$REPO/releases/latest 
 
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || abort "Invalid version: $VERSION"
 
-ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${BIN_NAME}_${VERSION}_linux_${ARCH}.tar.gz"
+ARCHIVE_NAME="${BIN_NAME}_${VERSION}_linux_${ARCH}.tar.gz"
+ARCHIVE_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/${ARCHIVE_NAME}"
+CHECKSUMS_URL="https://github.com/livekit/$REPO/releases/download/v${VERSION}/checksums.txt"
 
 log "Installing $REPO $VERSION"
 log "Downloading from $ARCHIVE_URL..."
@@ -67,7 +70,21 @@ log "Downloading from $ARCHIVE_URL..."
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
-curl -fsSL "$ARCHIVE_URL" | tar xzf - -C "$TEMP_DIR"
+curl -fsSL "$ARCHIVE_URL" -o "$TEMP_DIR/$ARCHIVE_NAME"
+curl -fsSL "$CHECKSUMS_URL" -o "$TEMP_DIR/checksums.txt"
+
+# Verify the archive against the release's checksums.txt before extracting. The checksums
+# file is fetched from the same release over HTTPS, so this guards against corrupted/partial
+# downloads and accidental mismatches; it is not a substitute for signature verification
+# against an out-of-band key.
+log "Verifying checksum..."
+expected_sum=$(awk -v f="$ARCHIVE_NAME" '$2 == f {print $1}' "$TEMP_DIR/checksums.txt")
+[ -n "$expected_sum" ] || abort "Could not find a checksum for $ARCHIVE_NAME in checksums.txt"
+actual_sum=$(sha256sum "$TEMP_DIR/$ARCHIVE_NAME" | awk '{print $1}')
+[ "$expected_sum" = "$actual_sum" ] || \
+  abort "Checksum verification failed for $ARCHIVE_NAME (expected $expected_sum, got $actual_sum)"
+
+tar xzf "$TEMP_DIR/$ARCHIVE_NAME" -C "$TEMP_DIR"
 
 $SUDO_PREFIX mv "$TEMP_DIR/$BIN_NAME" "$INSTALL_PATH/$BIN_NAME"
 $SUDO_PREFIX ln -sf "$INSTALL_PATH/$BIN_NAME" "$INSTALL_PATH/livekit-cli"
