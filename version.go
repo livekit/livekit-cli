@@ -15,5 +15,5 @@
 package livekitcli
 
 const (
-	Version = "2.16.7"
+	Version = "2.17.0"
 )
