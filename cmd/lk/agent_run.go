@@ -295,8 +295,14 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 				// Delay briefly so the link prints after the agent's own startup
 				// logs rather than getting buried in them.
 				time.AfterFunc(time.Second, func() {
+					// Accent-colored, and a clickable OSC 8 hyperlink on terminals
+					// that support it (gated so the escape never leaks into pipes).
+					label := util.Accented(link)
+					if out.Interactive() {
+						label = util.Hyperlink(link, label)
+					}
 					out.Status("")
-					out.Statusf("Agent console: %s", link)
+					out.Statusf("Agent console: %s", label)
 				})
 			})
 		}
