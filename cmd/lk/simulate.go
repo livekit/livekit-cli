@@ -57,6 +57,9 @@ var simulateCommand = &cli.Command{
 	Name:      "simulate",
 	Usage:     "Run agent simulations against LiveKit Cloud",
 	ArgsUsage: "[entrypoint]",
+	// Hide the implicit `help` subcommand so shell completion falls back to
+	// native filename completion for the entrypoint arg (see startCommand).
+	HideHelpCommand: true,
 	Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 		pc, err := loadProjectDetails(cmd)
 		if err != nil {

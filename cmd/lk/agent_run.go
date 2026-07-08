@@ -89,6 +89,10 @@ var startCommand = &cli.Command{
 	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Flags:     agentRunFlags,
 	Action:    runAgentStart,
+	// Leaf command whose positional arg is an entrypoint file. Drop the implicit
+	// `help` subcommand so shell completion returns nothing for the positional,
+	// letting the shell fall back to native filename completion (--help kept).
+	HideHelpCommand: true,
 }
 
 var devCommand = &cli.Command{
@@ -100,6 +104,8 @@ var devCommand = &cli.Command{
 		Usage: "Disable auto-reload on file changes",
 	}),
 	Action: runAgentDev,
+	// See startCommand: hide `help` so filenames complete for the entrypoint arg.
+	HideHelpCommand: true,
 }
 
 // agentCredentials holds the connection details forwarded to the agent subprocess.
