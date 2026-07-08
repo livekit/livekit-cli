@@ -167,6 +167,14 @@ func Dimmed(text string) string {
 	return Theme.Focused.Description.Render(text)
 }
 
+// Hyperlink wraps label in an OSC 8 terminal hyperlink pointing at url. Terminals
+// that support OSC 8 render label as a clickable link; others ignore the escape
+// and show label unchanged. Gate calls on an interactive terminal (see
+// Printer.Interactive) so the escape never leaks into piped/redirected output.
+func Hyperlink(url, label string) string {
+	return "\x1b]8;;" + url + "\x1b\\" + label + "\x1b]8;;\x1b\\"
+}
+
 // Confirm is a yes/no select styled by the active theme.
 func Confirm() *huh.Select[bool] {
 	return huh.NewSelect[bool]().

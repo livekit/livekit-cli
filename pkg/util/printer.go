@@ -55,6 +55,13 @@ func NewPrinter(out, err io.Writer, quiet bool) *Printer {
 	return &Printer{Out: out, Err: err, Quiet: quiet, interactive: isTerminal(err)}
 }
 
+// Interactive reports whether status output is going to a real terminal, so
+// callers can gate terminal-only escapes (e.g. OSC 8 hyperlinks) and avoid
+// leaking them into piped or redirected output.
+func (p *Printer) Interactive() bool {
+	return p != nil && p.interactive
+}
+
 // isTerminal reports whether w is a terminal-backed *os.File. Non-file writers
 // (bytes.Buffer in tests, pipes) are never terminals.
 func isTerminal(w io.Writer) bool {

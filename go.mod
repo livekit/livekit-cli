@@ -264,3 +264,7 @@ require (
 	mvdan.cc/sh/v3 v3.13.2-0.20260510185049-f5c6e2779117 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
+
+// TEMP (local dev): use local protocol with the WorkerInfo dev message.
+// Drop once github.com/livekit/protocol publishes it.
+// replace github.com/livekit/protocol => ../protocol

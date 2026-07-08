@@ -43,6 +43,9 @@ var consoleCommand = &cli.Command{
 	Usage:     "Voice chat with an agent via mic/speakers",
 	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Category:  "Core",
+	// Hide the implicit `help` subcommand so shell completion falls back to
+	// native filename completion for the entrypoint arg (see startCommand).
+	HideHelpCommand: true,
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:    "port",

@@ -332,6 +332,11 @@ type AgentStartConfig struct {
 	ReadySignal   string    // substring to scan for in output (e.g. "registered worker"), empty to skip
 	FailSignals   []string  // output substrings meaning the agent has fatally failed even if the process is still alive
 	ForwardOutput io.Writer // if set, forward each output line to this writer
+
+	// OnServerInfo, if set, is invoked when the agent reports its ServerInfo over
+	// the dev-reload channel (agent name + the LiveKit URL it uses). Only wired
+	// for the reload-based dev path, which owns the channel.
+	OnServerInfo func(agentName, wsURL string)
 }
 
 // thinCLIMinVersion is the first livekit-agents release that exposes the

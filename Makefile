@@ -20,10 +20,13 @@ endif
 # init makes this work from a fresh clone (and under CodeQL, whose checkout may
 # skip submodules). ALSA headers (libasound2-dev) come from CodeQL's automatic
 # dependency installation on Linux.
-lk$(EXE):
+./bin/lk$(EXE):
 	git submodule update --init --recursive
 	CGO_ENABLED=1 go build -o ./bin/lk$(EXE) ./cmd/lk
 
-install: lk$(EXE)
+install: ./bin/lk$(EXE)
 	cp ./bin/lk$(EXE) "$(GOBIN)/lk$(EXE)"
 	ln -sf "$(GOBIN)/lk$(EXE)" "$(GOBIN)/livekit-cli$(EXE)"
+
+clean:
+	rm -rf ./bin
