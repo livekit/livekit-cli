@@ -167,7 +167,6 @@ type simulateModel struct {
 	spinnerIdx int
 
 	cursor          int
-	scrollOff       int
 	detailJobID     string
 	detailScrollOff int
 	showLogs        bool
@@ -176,6 +175,13 @@ type simulateModel struct {
 	logPinnedTotal  int
 	showDescription bool
 	descScrollOff   int
+	// whole-page scrolling for the main list view: the full content (header,
+	// job list, summary, logs) is composed unbounded, then windowed to the
+	// terminal height with the toast and hint bar pinned below.
+	viewScrollOff  int
+	followCursor   bool // scroll the page to keep the cursor row visible
+	cursorViewLine int  // absolute line of the cursor row in the composed page
+	pageOverflow   bool // last render had more lines than fit
 
 	toast   string
 	toastOK bool
@@ -666,28 +672,22 @@ func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	return true
 }
 
-// scrollBy routes a mouse-wheel step to the focused pane, falling back to the
-// job-list cursor.
+// scrollBy routes a mouse-wheel step to the focused pane, falling back to
+// scrolling the whole page.
 func (m *simulateModel) scrollBy(delta int) {
 	if m.scrollActive(delta, true) {
 		return
 	}
-	jobs := m.filteredJobs()
-	if len(jobs) == 0 {
-		return
-	}
-	m.cursor += delta
-	if m.cursor < 0 {
-		m.cursor = 0
-	}
-	if m.cursor >= len(jobs) {
-		m.cursor = len(jobs) - 1
+	m.viewScrollOff += delta // clamped on render
+	if m.viewScrollOff < 0 {
+		m.viewScrollOff = 0
 	}
 }
 
 func (m *simulateModel) moveCursor(delta int) {
 	if n := len(m.filteredJobs()); n > 0 {
 		m.cursor = ((m.cursor+delta)%n + n) % n
+		m.followCursor = true
 	}
 }
 
@@ -806,9 +806,16 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.moveCursor(1)
 		}
 	case "pgup":
-		m.scrollActive(-pageScroll, true)
+		if !m.scrollActive(-pageScroll, true) {
+			m.viewScrollOff -= pageScroll
+			if m.viewScrollOff < 0 {
+				m.viewScrollOff = 0
+			}
+		}
 	case "pgdown":
-		m.scrollActive(pageScroll, true)
+		if !m.scrollActive(pageScroll, true) {
+			m.viewScrollOff += pageScroll // clamped on render
+		}
 	case "enter", "right":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
@@ -1087,6 +1094,9 @@ func (m *simulateModel) viewRunning() string {
 	} else if m.matrix.active {
 		b.WriteString(m.matrix.render(m.buildMatrixRows()))
 	} else {
+		// the job list renders in full; pageWindow scrolls the whole view.
+		// track the cursor row's absolute line so the page can follow it.
+		m.cursorViewLine = strings.Count(b.String(), "\n") + m.cursor
 		b.WriteString(m.renderJobList())
 
 		if m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING {
@@ -1106,8 +1116,64 @@ func (m *simulateModel) viewRunning() string {
 	if m.showLogs && m.detailJobID == "" {
 		b.WriteString(m.renderLogs(""))
 	}
-	b.WriteString(m.renderToast())
-	b.WriteString(m.renderHint())
+	content := b.String()
+	if m.detailJobID == "" && !m.matrix.active {
+		content = m.pageWindow(content)
+	}
+	return content + m.renderToast() + m.renderHint() + "\n"
+}
+
+// pageWindow clamps the composed page to the terminal height, showing a
+// viewScrollOff-positioned window with overflow markers. Without this a long
+// summary or job list pushes the header and the top of the list off-screen on
+// short terminals. The toast and hint bar are appended after windowing so
+// they stay pinned at the bottom.
+func (m *simulateModel) pageWindow(content string) string {
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	reserved := 2 // hint bar + trailing newline
+	if m.toast != "" {
+		reserved += strings.Count(m.renderToast(), "\n")
+	}
+	budget := m.height - reserved
+	if budget < 5 {
+		budget = 5
+	}
+	if len(lines) <= budget {
+		m.viewScrollOff = 0
+		m.pageOverflow = false
+		return content
+	}
+	m.pageOverflow = true
+
+	window := budget - 2 // top and bottom marker rows
+	maxScroll := len(lines) - window
+	if m.followCursor {
+		if m.cursorViewLine < m.viewScrollOff {
+			m.viewScrollOff = m.cursorViewLine
+		} else if m.cursorViewLine >= m.viewScrollOff+window {
+			m.viewScrollOff = m.cursorViewLine - window + 1
+		}
+		m.followCursor = false
+	}
+	if m.viewScrollOff > maxScroll {
+		m.viewScrollOff = maxScroll
+	}
+	if m.viewScrollOff < 0 {
+		m.viewScrollOff = 0
+	}
+
+	start := m.viewScrollOff
+	end := start + window
+	var b strings.Builder
+	if start > 0 {
+		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more lines", start)))
+	}
+	b.WriteString("\n")
+	b.WriteString(strings.Join(lines[start:end], "\n"))
+	b.WriteString("\n")
+	if rem := len(lines) - end; rem > 0 {
+		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more lines", rem)))
+	}
 	b.WriteString("\n")
 	return b.String()
 }
@@ -1196,8 +1262,9 @@ func (m *simulateModel) renderCounts() string {
 	return result
 }
 
-// visibleWindow clamps m.cursor / m.scrollOff against the current filtered
-// job list and returns the visible slice plus overflow counts.
+// visibleWindow clamps m.cursor against the current filtered job list. The
+// list renders in full — pageWindow scrolls the whole view — so there is no
+// internal windowing and the overflow counts are always zero.
 func (m *simulateModel) visibleWindow() (jobs []indexedJob, winStart, winEnd, overflowAbove, overflowBelow int) {
 	jobs = m.filteredJobs()
 	if len(jobs) == 0 {
@@ -1209,36 +1276,7 @@ func (m *simulateModel) visibleWindow() (jobs []indexedJob, winStart, winEnd, ov
 	if m.cursor >= len(jobs) {
 		m.cursor = len(jobs) - 1
 	}
-	availHeight := matrixAvailHeight(m.height)
-	maxJobListHeight := m.height * 2 / 3
-	if maxJobListHeight < 5 {
-		maxJobListHeight = 5
-	}
-	if availHeight > maxJobListHeight {
-		availHeight = maxJobListHeight
-	}
-	if m.cursor < m.scrollOff {
-		m.scrollOff = m.cursor
-	} else if m.cursor >= m.scrollOff+availHeight {
-		m.scrollOff = m.cursor - availHeight + 1
-	}
-	if m.scrollOff < 0 {
-		m.scrollOff = 0
-	}
-	if m.scrollOff > len(jobs)-availHeight {
-		m.scrollOff = len(jobs) - availHeight
-	}
-	if m.scrollOff < 0 {
-		m.scrollOff = 0
-	}
-	winStart = m.scrollOff
-	winEnd = m.scrollOff + availHeight
-	if winEnd > len(jobs) {
-		winEnd = len(jobs)
-	}
-	overflowAbove = winStart
-	overflowBelow = len(jobs) - winEnd
-	return
+	return jobs, 0, len(jobs), 0, 0
 }
 
 func (m *simulateModel) renderJobList() string {
@@ -1785,6 +1823,9 @@ func (m *simulateModel) renderHint() string {
 	default:
 		// the collapsed description block already carries "(press d to expand)"
 		nav := "↑↓ navigate · ENTER/→ detail"
+		if m.pageOverflow || m.viewScrollOff > 0 {
+			nav += " · PgUp/PgDn scroll"
+		}
 		if m.canExportScenarios() {
 			nav += " · s save scenarios"
 		}
