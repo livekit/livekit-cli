@@ -182,6 +182,8 @@ type simulateConfig struct {
 	scenariosPath  string // path to the --scenarios file (empty when generating from source)
 	viewModeRunID  string // non-empty when --view opens a pre-existing run
 	liveAgent      bool   // --agent-name: run against an already-running agent, don't spawn one
+	// TODO (steveyoon): add agent deployment support
+	// agentDeployment string
 }
 
 type simulateMode int

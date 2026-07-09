@@ -141,6 +141,11 @@ var (
 							Usage: "Agent to dispatch to the room (identified by agent_name)",
 						},
 						&cli.StringFlag{
+							Name:    "deployment",
+							Usage:   "deployment of the agent to dispatch to (leave empty for production)",
+							Aliases: []string{"d"},
+						},
+						&cli.StringFlag{
 							Name:  "job-metadata",
 							Usage: "Metadata attached to job dispatched to the agent (ctx.job.metadata)",
 						},
@@ -414,14 +419,16 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	}
 
 	agent := c.String("agent")
+	agentDeployment := c.String("deployment")
 	jobMetadata := c.String("job-metadata")
 	if grant.RoomJoin {
 		if agent != "" {
 			at.SetRoomConfig(&livekit.RoomConfiguration{
 				Agents: []*livekit.RoomAgentDispatch{
 					{
-						AgentName: agent,
-						Metadata:  jobMetadata,
+						AgentName:  agent,
+						Deployment: agentDeployment,
+						Metadata:   jobMetadata,
 					},
 				},
 			})
@@ -476,6 +483,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		case string(util.OpenTargetConsole):
 			if err := util.OpenInConsole(dashboardURL, project.ProjectId, &util.ConsoleURLParams{
 				AgentName:   agent,
+				Deployment:  agentDeployment,
 				JobMetadata: jobMetadata,
 				Identity:    participant,
 				RoomName:    room,
