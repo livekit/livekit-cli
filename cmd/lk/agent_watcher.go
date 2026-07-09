@@ -79,19 +79,27 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		return nil, fmt.Errorf("failed to setup file watcher: %w", err)
 	}
 
-	// The reload protocol (capture running jobs from the old process, restore
-	// them in the new one) is Python-only; Node reloads are a plain kill+respawn.
-	var rs *devServer
-	if config.ProjectType.IsPython() {
-		rs, err = newDevServer()
-		if err != nil {
-			w.Close()
-			return nil, err
-		}
-		// Append --reload-addr to CLI args so the Python process connects back
-		config.CLIArgs = append(config.CLIArgs, "--reload-addr", rs.addr())
+	// The dev server backs two things over one channel: the ServerInfo the agent
+	// reports on connect (e.g. for the Cloud console link) and the reload protocol
+	// (capture running jobs from the old process, restore them in the new one). It
+	// is created for every agent type so ServerInfo works; the job capture/restore
+	// is Python-only and gated in restart() (Node reloads are a plain kill+respawn).
+	rs, err := newDevServer()
+	if err != nil {
+		w.Close()
+		return nil, err
 	}
 	rs.onServerInfo = config.OnServerInfo
+	// The agent connects back to this address over the dev channel. The flag was
+	// renamed --reload-addr -> --cli-addr (it now carries more than reloads). Node
+	// uses the new name; Python keeps the legacy --reload-addr for backwards
+	// compatibility with already-released agents (newer Python accepts both), and
+	// will switch to --cli-addr once those are no longer supported.
+	addrFlag := "--reload-addr"
+	if config.ProjectType.IsNode() {
+		addrFlag = "--cli-addr"
+	}
+	config.CLIArgs = append(config.CLIArgs, addrFlag, rs.addr())
 
 	return &agentWatcher{
 		config:    config,
@@ -133,9 +141,12 @@ func (aw *agentWatcher) acceptSession() {
 }
 
 func (aw *agentWatcher) restart() error {
-	// 1. Capture active jobs from the current process (best-effort)
+	// 1. Capture active jobs from the current process (best-effort). Job
+	// capture/restore is Python-only; Node reloads are a plain kill+respawn.
 	if aw.session != nil {
-		aw.devSrv.captureJobs(aw.session)
+		if aw.config.ProjectType.IsPython() {
+			aw.devSrv.captureJobs(aw.session)
+		}
 		aw.session.close()
 		aw.session = nil
 	}
