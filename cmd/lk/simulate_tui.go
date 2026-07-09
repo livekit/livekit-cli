@@ -176,6 +176,13 @@ type simulateModel struct {
 	logPinnedTotal  int
 	showDescription bool
 	descScrollOff   int
+	// summaryExpanded shows the run summary full-height (scrollable) instead
+	// of the job list; in the list view the summary is clamped to fit.
+	// summaryTruncated records whether the last render actually clamped it,
+	// gating the S binding and its hint.
+	summaryExpanded  bool
+	summaryScrollOff int
+	summaryTruncated bool
 
 	toast   string
 	toastOK bool
@@ -651,6 +658,11 @@ func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 		if m.descScrollOff < 0 {
 			m.descScrollOff = 0
 		}
+	case m.summaryExpanded:
+		m.summaryScrollOff += delta
+		if m.summaryScrollOff < 0 {
+			m.summaryScrollOff = 0
+		}
 	case includeLogs && m.showLogs:
 		// logScrollOff counts up from the bottom; scrolling down decreases it
 		m.logScrollOff -= delta
@@ -782,6 +794,14 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.showDescription = !m.showDescription
 			m.descScrollOff = 0
 		}
+	case "S":
+		// only meaningful when the collapsed view had to clamp the summary
+		// (or to collapse an already-expanded one)
+		if m.detailJobID == "" && m.run != nil && m.run.Summary != nil &&
+			(m.summaryExpanded || m.summaryTruncated) {
+			m.summaryExpanded = !m.summaryExpanded
+			m.summaryScrollOff = 0
+		}
 	case "s":
 		if m.canExportScenarios() && m.detailJobID == "" {
 			m.saving = true
@@ -810,7 +830,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "pgdown":
 		m.scrollActive(pageScroll, true)
 	case "enter", "right":
-		if m.detailJobID == "" {
+		if m.detailJobID == "" && !m.summaryExpanded {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
 				m.detailJobID = jobs[m.cursor].job.Id
@@ -821,6 +841,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.detailJobID != "" {
 			m.detailJobID = ""
 			m.detailScrollOff = 0
+		} else if m.summaryExpanded {
+			m.summaryExpanded = false
+			m.summaryScrollOff = 0
 		} else if m.showDescription {
 			m.showDescription = false
 			m.descScrollOff = 0
@@ -830,6 +853,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case m.detailJobID != "":
 			m.detailJobID = ""
 			m.detailScrollOff = 0
+		case m.summaryExpanded:
+			m.summaryExpanded = false
+			m.summaryScrollOff = 0
 		case m.showDescription:
 			m.showDescription = false
 			m.descScrollOff = 0
@@ -1086,13 +1112,15 @@ func (m *simulateModel) viewRunning() string {
 		b.WriteString(m.scrolledDetail())
 	} else if m.matrix.active {
 		b.WriteString(m.matrix.render(m.buildMatrixRows()))
+	} else if m.summaryExpanded && m.run.Summary != nil {
+		b.WriteString(m.scrolledSummary())
 	} else {
 		b.WriteString(m.renderJobList())
 
 		if m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING {
 			fmt.Fprintf(&b, "\n  %s %s  %s\n", yellowStyle().Render("⏺"), yellowStyle().Render("Generating summary..."), m.spinner())
 		} else if m.run.Summary != nil {
-			b.WriteString(m.renderSummary())
+			b.WriteString(m.clampedSummary(strings.Count(b.String(), "\n")))
 		} else if isTerminalRunStatus(m.run.Status) {
 			msg := "The summary for this run is not available"
 			if m.run.Error != "" {
@@ -1583,6 +1611,75 @@ func (m *simulateModel) renderSummary() string {
 	return b.String()
 }
 
+// clampedSummary caps the summary block so the whole list view fits the
+// terminal height; without this, a long summary pushes the header and the top
+// of the job list off-screen on short terminals. usedLines is the number of
+// lines already rendered above the summary.
+func (m *simulateModel) clampedSummary(usedLines int) string {
+	content := m.renderSummary()
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	reserved := 3 // toast + hint + trailing blank line
+	if m.showLogs {
+		reserved += m.height/3 + 2
+	}
+	budget := m.height - usedLines - reserved
+	if budget < 3 {
+		budget = 3
+	}
+	m.summaryTruncated = len(lines) > budget
+	if !m.summaryTruncated {
+		return content
+	}
+	var b strings.Builder
+	for _, line := range lines[:budget-1] {
+		b.WriteString(line + "\n")
+	}
+	b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more summary lines · press S to expand", len(lines)-(budget-1))) + "\n")
+	return b.String()
+}
+
+// scrolledSummary renders the full summary in place of the job list, windowed
+// by summaryScrollOff — the same pattern as scrolledDetail.
+func (m *simulateModel) scrolledSummary() string {
+	content := m.renderSummary()
+	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
+	budget := m.height - 12
+	if budget < 5 {
+		budget = 5
+	}
+	if len(lines) <= budget {
+		m.summaryScrollOff = 0
+		return content
+	}
+
+	maxScroll := len(lines) - budget
+	if m.summaryScrollOff > maxScroll {
+		m.summaryScrollOff = maxScroll
+	}
+	if m.summaryScrollOff < 0 {
+		m.summaryScrollOff = 0
+	}
+
+	start := m.summaryScrollOff
+	end := start + budget
+	if end > len(lines) {
+		end = len(lines)
+	}
+
+	var b strings.Builder
+	if start > 0 {
+		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more lines above", start)))
+		b.WriteString("\n")
+	}
+	b.WriteString(strings.Join(lines[start:end], "\n"))
+	b.WriteString("\n")
+	if end < len(lines) {
+		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more lines below", len(lines)-end)))
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
 func (m *simulateModel) renderChatTranscript(jobID string) string {
 	if m.run.Summary == nil || m.run.Summary.ChatHistory == nil {
 		return ""
@@ -1782,9 +1879,14 @@ func (m *simulateModel) renderHint() string {
 		}
 	case m.descriptionExpanded():
 		parts = append(parts, "↑↓ scroll · d collapse description")
+	case m.summaryExpanded:
+		parts = append(parts, "↑↓ scroll · S/ESC collapse summary")
 	default:
 		// the collapsed description block already carries "(press d to expand)"
 		nav := "↑↓ navigate · ENTER/→ detail"
+		if m.run != nil && m.run.Summary != nil && m.summaryTruncated {
+			nav += " · S summary"
+		}
 		if m.canExportScenarios() {
 			nav += " · s save scenarios"
 		}
