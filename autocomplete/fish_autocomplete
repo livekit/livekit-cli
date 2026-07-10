@@ -20,6 +20,7 @@ complete -c lk -n '__fish_lk_no_subcommand' -f -l curl -d 'Print curl commands f
 complete -c lk -n '__fish_lk_no_subcommand' -f -l verbose
 complete -c lk -n '__fish_lk_no_subcommand' -f -l yes -s y -d 'Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)'
 complete -c lk -n '__fish_lk_no_subcommand' -f -l quiet -s q -s silent -d 'Suppress informational output to stderr (warnings and errors still print)'
+complete -c lk -n '__fish_lk_no_subcommand' -f -l experimental-auth -d 'EXPERIMENTAL: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.'
 complete -c lk -n '__fish_lk_no_subcommand' -f -l help -s h -d 'show help'
 complete -c lk -n '__fish_lk_no_subcommand' -f -l version -s v -d 'print the version'
 complete -c lk -n '__fish_lk_no_subcommand' -xa '(lk --generate-shell-completion 2>/dev/null)'

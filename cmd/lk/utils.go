@@ -1,4 +1,4 @@
-// Copyright 2021-2024 LiveKit, Inc.
+// Copyright 2021-2026 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,14 +38,20 @@ import (
 const (
 	cloudAPIServerURL = "https://cloud-api.livekit.io"
 	cloudDashboardURL = "https://cloud.livekit.io"
+	// publicAPIBaseURL is the production base URL of the user-authenticated
+	// LiveKit Public API (the OpenAPI REST service). Used only under
+	// --experimental-auth; override with --experimental-api-url for dev
+	// (e.g. http://localhost:8000/v1).
+	publicAPIBaseURL = "https://api.livekit.cloud/v1"
 )
 
 var (
-	printCurl    bool
-	workingDir   string = "."
-	tomlFilename string = config.LiveKitTOMLFile
-	serverURL    string = cloudAPIServerURL
-	dashboardURL string = cloudDashboardURL
+	printCurl          bool
+	workingDir         string = "."
+	tomlFilename       string = config.LiveKitTOMLFile
+	serverURL          string = cloudAPIServerURL
+	dashboardURL       string = cloudDashboardURL
+	experimentalAPIURL string = publicAPIBaseURL
 
 	roomFlag = &TemplateStringFlag{
 		Name:     "room",
@@ -152,6 +158,18 @@ var (
 			Usage:   "Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)",
 		},
 		quietFlag,
+		&cli.BoolFlag{
+			Name:  "experimental-auth",
+			Usage: "EXPERIMENTAL: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
+		},
+		&cli.StringFlag{
+			Name:        "experimental-api-url",
+			Usage:       "Base `URL` of the LiveKit Public API used with --experimental-auth",
+			Value:       publicAPIBaseURL,
+			Destination: &experimentalAPIURL,
+			Sources:     cli.EnvVars("LIVEKIT_API_URL"),
+			Hidden:      true,
+		},
 		&cli.StringFlag{
 			Name:        "server-url",
 			Value:       cloudAPIServerURL,
@@ -424,6 +442,9 @@ func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 // the package-level `project` (app/agent) go through requireProject instead, which layers
 // interactive selection on top of the same resolver before announcing.
 func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
+	if err := experimentalAuthGate(c); err != nil {
+		return nil, err
+	}
 	p := loadParams{requireURL: true}
 	for _, opt := range opts {
 		opt(&p)
