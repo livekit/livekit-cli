@@ -126,9 +126,6 @@ func (aw *agentWatcher) start() error {
 // acceptSession waits (in the background) for the next process to connect back on
 // the reload channel and hands the connection to a devSession read loop.
 func (aw *agentWatcher) acceptSession() {
-	if aw.devSrv == nil {
-		return
-	}
 	go func() {
 		conn, err := aw.devSrv.listener.Accept()
 		if err != nil {
@@ -192,9 +189,7 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 		if aw.session != nil {
 			aw.session.close()
 		}
-		if aw.devSrv != nil {
-			aw.devSrv.close()
-		}
+		aw.devSrv.close()
 		aw.watcher.Close()
 	}()
 
@@ -260,7 +255,7 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 		case <-exitCh:
 			// Nil the channel so this case won't fire again (nil channels block forever)
 			exitCh = nil
-			// Drain any pending debounce — don't restart immediately
+			// Drain any pending debounce - don't restart immediately
 			if debounceTimer != nil {
 				debounceTimer.Stop()
 				debounceTimer = nil
