@@ -1,4 +1,4 @@
-// Copyright 2022-2024 LiveKit, Inc.
+// Copyright 2022-2026 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"regexp"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -269,6 +271,10 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listProjects(ctx context.Context, cmd *cli.Command) error {
+	if experimentalAuthEnabled(cmd) {
+		return listUserProjects(ctx, cmd)
+	}
+
 	if len(cliConfig.Projects) == 0 {
 		out.Status("No projects configured, use `lk cloud auth` to authenticate a new project.")
 		return nil
@@ -305,6 +311,45 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 		out.Result(table)
 	}
 
+	return nil
+}
+
+// listUserProjects lists the projects accessible to the signed-in user via the
+// Public API (user-based auth). Invoked by `lk project list --experimental-auth`.
+//
+// NOTE: it fetches live on each call. The per-user project cache
+// (config.UserConfig.Projects) exists for project *resolution* by scoped
+// commands and is populated there; a read-only list stays quiet and does not
+// persist config.
+func listUserProjects(ctx context.Context, cmd *cli.Command) error {
+	client, _, _, err := newCloudAPIClient(cmd)
+	if err != nil {
+		return err
+	}
+
+	projects, err := client.ListProjects(ctx)
+	if err != nil {
+		if public.IsUnauthenticated(err) {
+			return fmt.Errorf("%w (run `lk cloud auth` to sign in again)", err)
+		}
+		return err
+	}
+
+	if cmd.Bool("json") {
+		util.PrintJSON(projects)
+		return nil
+	}
+
+	if len(projects) == 0 {
+		out.Status("No projects found for this account.")
+		return nil
+	}
+
+	table := util.CreateTable().Headers("Project ID")
+	for _, p := range projects {
+		table.Row(p.ID)
+	}
+	out.Result(table)
 	return nil
 }
 
