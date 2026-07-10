@@ -41,6 +41,53 @@ func watchExtensions(pt agentfs.ProjectType) map[string]bool {
 	return map[string]bool{".js": true, ".ts": true, ".mjs": true, ".mts": true}
 }
 
+// firstPythonCLIAddrVersion is the first Python livekit-agents release that
+// accepts --cli-addr; releases up to and including 1.6.5 only accept the legacy
+// --reload-addr.
+const firstPythonCLIAddrVersion = "1.6.6"
+
+// firstNodeCLIAddrVersion is the first @livekit/agents release that accepts
+// --cli-addr; releases up to and including 1.5.0 reject unknown options, so
+// older SDKs must not be passed any dev-channel flag.
+const firstNodeCLIAddrVersion = "1.5.1"
+
+// devChannelAddrFlag picks the CLI flag used to hand the agent the dev-channel
+// address, or "" when the installed SDK predates any flag it would accept. The
+// installed version is resolved via the project's interpreter so symlinked/
+// workspace deps and loose constraints report what will actually run.
+func devChannelAddrFlag(config AgentStartConfig) string {
+	return devChannelAddrFlagFor(config.ProjectType, agentfs.ResolveInstalledSDKVersion(config.Dir, config.Entrypoint, config.ProjectType))
+}
+
+// devChannelAddrFlagFor implements the flag choice. The flag was renamed
+// --reload-addr -> --cli-addr (it now carries more than reloads), but an SDK
+// must not be handed a flag it predates, so anything not positively new
+// enough — including an undetermined version — falls back to what released
+// SDKs accept: the legacy --reload-addr for Python, no flag at all for Node
+// (whose CLI hard-fails on unknown options).
+func devChannelAddrFlagFor(projectType agentfs.ProjectType, installedVersion string) string {
+	newEnough := func(minVersion string) bool {
+		if installedVersion == "" {
+			return false
+		}
+		ok, err := agentfs.IsVersionSatisfied(installedVersion, minVersion)
+		return err == nil && ok
+	}
+	switch {
+	case projectType.IsPython():
+		if newEnough(firstPythonCLIAddrVersion) {
+			return "--cli-addr"
+		}
+		return "--reload-addr"
+	case projectType.IsNode():
+		if newEnough(firstNodeCLIAddrVersion) {
+			return "--cli-addr"
+		}
+		return ""
+	}
+	return ""
+}
+
 // agentWatcher watches for file changes and restarts an agent subprocess.
 type agentWatcher struct {
 	config    AgentStartConfig
@@ -79,19 +126,21 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		return nil, fmt.Errorf("failed to setup file watcher: %w", err)
 	}
 
-	// The reload protocol (capture running jobs from the old process, restore
-	// them in the new one) is Python-only; Node reloads are a plain kill+respawn.
-	var rs *devServer
-	if config.ProjectType.IsPython() {
-		rs, err = newDevServer()
-		if err != nil {
-			w.Close()
-			return nil, err
-		}
-		// Append --reload-addr to CLI args so the Python process connects back
-		config.CLIArgs = append(config.CLIArgs, "--reload-addr", rs.addr())
+	// The dev server backs two things over one channel: the ServerInfo the agent
+	// reports on connect (e.g. for the Cloud console link) and the reload protocol
+	// (capture running jobs from the old process, restore them in the new one). It
+	// is created for every agent type so ServerInfo works; the job capture/restore
+	// is Python-only and gated in restart() (Node reloads are a plain kill+respawn).
+	rs, err := newDevServer()
+	if err != nil {
+		w.Close()
+		return nil, err
 	}
 	rs.onServerInfo = config.OnServerInfo
+	// The agent connects back to this address over the dev channel.
+	if addrFlag := devChannelAddrFlag(config); addrFlag != "" {
+		config.CLIArgs = append(config.CLIArgs, addrFlag, rs.addr())
+	}
 
 	return &agentWatcher{
 		config:    config,
@@ -118,9 +167,6 @@ func (aw *agentWatcher) start() error {
 // acceptSession waits (in the background) for the next process to connect back on
 // the reload channel and hands the connection to a devSession read loop.
 func (aw *agentWatcher) acceptSession() {
-	if aw.devSrv == nil {
-		return
-	}
 	go func() {
 		conn, err := aw.devSrv.listener.Accept()
 		if err != nil {
@@ -133,9 +179,12 @@ func (aw *agentWatcher) acceptSession() {
 }
 
 func (aw *agentWatcher) restart() error {
-	// 1. Capture active jobs from the current process (best-effort)
+	// 1. Capture active jobs from the current process (best-effort). Job
+	// capture/restore is Python-only; Node reloads are a plain kill+respawn.
 	if aw.session != nil {
-		aw.devSrv.captureJobs(aw.session)
+		if aw.config.ProjectType.IsPython() {
+			aw.devSrv.captureJobs(aw.session)
+		}
 		aw.session.close()
 		aw.session = nil
 	}
@@ -181,9 +230,7 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 		if aw.session != nil {
 			aw.session.close()
 		}
-		if aw.devSrv != nil {
-			aw.devSrv.close()
-		}
+		aw.devSrv.close()
 		aw.watcher.Close()
 	}()
 
@@ -249,7 +296,7 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 		case <-exitCh:
 			// Nil the channel so this case won't fire again (nil channels block forever)
 			exitCh = nil
-			// Drain any pending debounce — don't restart immediately
+			// Drain any pending debounce - don't restart immediately
 			if debounceTimer != nil {
 				debounceTimer.Stop()
 				debounceTimer = nil

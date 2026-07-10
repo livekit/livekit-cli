@@ -72,7 +72,7 @@ func setupUvAgentProject(t *testing.T, stubVersion, depSpec string, sync bool) s
 
 func TestResolvePythonAgentVersion_ReadsInstalledVersion(t *testing.T) {
 	dir := setupUvAgentProject(t, "1.6.7", "livekit-agents", true)
-	version, notInstalled := resolvePythonAgentVersion(dir, agentfs.ProjectTypePythonUV)
+	version, notInstalled := agentfs.ResolvePythonAgentVersion(dir, agentfs.ProjectTypePythonUV)
 	require.Equal(t, "1.6.7", version)
 	require.False(t, notInstalled)
 }
@@ -112,7 +112,7 @@ func TestFindPythonBinary_UVRunDoesNotSyncEnvironment(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(stubPyproject, []byte(strings.Replace(string(orig), "1.6.7", "9.9.9", 1)), 0o644))
 
-	bin, prefixArgs, err := findPythonBinary(dir, agentfs.ProjectTypePythonUV)
+	bin, prefixArgs, err := agentfs.FindPythonBinary(dir, agentfs.ProjectTypePythonUV)
 	require.NoError(t, err)
 	cmd := exec.Command(bin, append(prefixArgs, "-c", `import importlib.metadata as m; print(m.version("livekit-agents"))`)...)
 	cmd.Dir = dir

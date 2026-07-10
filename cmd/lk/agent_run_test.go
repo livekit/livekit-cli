@@ -35,6 +35,13 @@ func TestAgentProcessFailSignal(t *testing.T) {
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node not on PATH")
 	}
+	// The first node.exe spawn on a Windows CI runner can take several seconds
+	// (Defender scans the binary on first exec), which blows the SDK version
+	// probe's 5s timeout inside startAgent and fails the test before the
+	// crash-signal behavior under test ever runs. Spawn a throwaway Node
+	// process first to absorb the cold start.
+	require.NoError(t, exec.Command("node", "-e",
+		`console.log('pre-warming node so the SDK version probe does not time out on a cold runner')`).Run())
 
 	// An agent whose job crashes logs a marker but keeps the process alive;
 	// Failed() must fire without waiting for exit.

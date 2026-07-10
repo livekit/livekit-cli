@@ -53,45 +53,6 @@ type AgentProcess struct {
 	LogPath        string
 }
 
-// findPythonBinary locates a Python binary for the given project type.
-func findPythonBinary(dir string, projectType agentfs.ProjectType) (string, []string, error) {
-	if projectType == agentfs.ProjectTypePythonUV {
-		uvPath, err := exec.LookPath("uv")
-		if err == nil {
-			// --no-sync: the CLI proxies the environment as it exists on disk
-			// and must never install or upgrade packages as a side effect.
-			return uvPath, []string{"run", "--no-sync", "python"}, nil
-		}
-	}
-
-	// Check common venv locations
-	for _, venvDir := range []string{".venv", "venv"} {
-		candidate := filepath.Join(dir, venvDir, "bin", "python")
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate, nil, nil
-		}
-	}
-
-	// Fall back to system python
-	pythonPath, err := exec.LookPath("python3")
-	if err != nil {
-		pythonPath, err = exec.LookPath("python")
-		if err != nil {
-			return "", nil, fmt.Errorf("could not find Python binary; ensure a virtual environment exists or Python is on PATH")
-		}
-	}
-	return pythonPath, nil, nil
-}
-
-// findNodeBinary locates the Node binary used to run a JS/TS agent.
-func findNodeBinary() (string, error) {
-	nodePath, err := exec.LookPath("node")
-	if err != nil {
-		return "", fmt.Errorf("could not find Node binary; ensure node is on PATH")
-	}
-	return nodePath, nil
-}
-
 // isTypeScriptEntry reports whether the entrypoint is TypeScript source that
 // needs Node's type-stripping loader to run directly (no build step).
 func isTypeScriptEntry(entry string) bool {
@@ -139,39 +100,16 @@ func checkTypeStrippingSupport(dir, nodeBin string) error {
 // equivalent floor from server client settings.
 const nodeAgentMinVersion = "1.0.0"
 
-// nodeResolveVersionScript asks Node to report the installed @livekit/agents
-// version using its own module resolution paths (so pnpm/workspace symlinks
-// and hoisting resolve exactly as they will at runtime). See the source file
-// for details.
-//
-//go:embed node_resolve_version.js
-var nodeResolveVersionScript string
-
-// resolveNodeAgentVersion returns the installed @livekit/agents version as Node
-// resolves it from fromDir, or "" if it can't be determined.
-func resolveNodeAgentVersion(nodeBin, fromDir string) string {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, nodeBin, "-e", nodeResolveVersionScript)
-	cmd.Dir = fromDir
-	out, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
-}
-
 // checkNodeSDKVersion gates a Node agent on nodeAgentMinVersion, resolving the
-// installed @livekit/agents from the entrypoint's directory so monorepo and
-// workspace layouts (where the dep is a workspace:* symlink, not a versioned
-// entry in the root package.json) report the version that will actually run.
+// installed @livekit/agents via the project's own runtime (see
+// agentfs.ResolveInstalledSDKVersion).
 func checkNodeSDKVersion(cfg AgentStartConfig) error {
-	nodeBin, err := findNodeBinary()
-	if err != nil {
+	// Surface a missing Node binary as its own error rather than folding it
+	// into "package not found".
+	if _, err := agentfs.FindNodeBinary(); err != nil {
 		return err
 	}
-	fromDir := filepath.Dir(filepath.Join(cfg.Dir, cfg.Entrypoint))
-	version := resolveNodeAgentVersion(nodeBin, fromDir)
+	version := agentfs.ResolveInstalledSDKVersion(cfg.Dir, cfg.Entrypoint, cfg.ProjectType)
 	if version == "" {
 		return fmt.Errorf("@livekit/agents not found; install dependencies and make sure this is a LiveKit agent project")
 	}
@@ -182,50 +120,12 @@ func checkNodeSDKVersion(cfg AgentStartConfig) error {
 	return nil
 }
 
-// pythonResolveVersionScript prints the installed livekit-agents version, or a
-// sentinel when the interpreter runs fine but the package isn't installed —
-// distinguishing "dependencies not synced" from probe failures (no
-// interpreter, timeout), which exit non-zero.
-const pythonResolveVersionScript = `import importlib.metadata as m
-try:
-    print(m.version("livekit-agents"))
-except m.PackageNotFoundError:
-    print("` + pythonAgentNotInstalled + `")`
-
-const pythonAgentNotInstalled = "__NOT_INSTALLED__"
-
-// resolvePythonAgentVersion returns the installed livekit-agents version read
-// via the project's interpreter, so any installer (uv, pip, poetry) reports the
-// version that will actually run. notInstalled reports that the interpreter ran
-// but the package is missing from its environment; version is "" when it can't
-// be determined at all (no interpreter, probe failure, etc.).
-func resolvePythonAgentVersion(dir string, projectType agentfs.ProjectType) (version string, notInstalled bool) {
-	pythonBin, prefixArgs, err := findPythonBinary(dir, projectType)
-	if err != nil {
-		return "", false
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	args := append(append([]string{}, prefixArgs...), "-c", pythonResolveVersionScript)
-	cmd := exec.CommandContext(ctx, pythonBin, args...)
-	cmd.Dir = dir
-	out, err := cmd.Output()
-	if err != nil {
-		return "", false
-	}
-	v := strings.TrimSpace(string(out))
-	if v == pythonAgentNotInstalled {
-		return "", true
-	}
-	return v, false
-}
-
 // checkPythonSDKVersion gates a Python agent on thinCLIMinVersion. It prefers
 // the installed version (resolved via the interpreter, accurate regardless of
 // the package manager and not fooled by a loose version constraint); when
 // dependencies aren't installed it falls back to static project-file parsing.
 func checkPythonSDKVersion(cfg AgentStartConfig) error {
-	version, notInstalled := resolvePythonAgentVersion(cfg.Dir, cfg.ProjectType)
+	version, notInstalled := agentfs.ResolvePythonAgentVersion(cfg.Dir, cfg.ProjectType)
 	if notInstalled && cfg.ProjectType == agentfs.ProjectTypePythonUV {
 		// The launch runs `uv run --no-sync`, so a missing package won't be
 		// installed on the way up — fail fast with the fix instead.
@@ -351,7 +251,7 @@ const thinCLIMinVersion = "1.6.0"
 // where the type-stripping flag lets a `.ts` entrypoint run without a build.
 func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	if cfg.ProjectType.IsNode() {
-		nodeBin, err := findNodeBinary()
+		nodeBin, err := agentfs.FindNodeBinary()
 		if err != nil {
 			return "", nil, err
 		}
@@ -368,7 +268,7 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 		return nodeBin, args, nil
 	}
 
-	pythonBin, prefixArgs, err := findPythonBinary(cfg.Dir, cfg.ProjectType)
+	pythonBin, prefixArgs, err := agentfs.FindPythonBinary(cfg.Dir, cfg.ProjectType)
 	if err != nil {
 		return "", nil, err
 	}
