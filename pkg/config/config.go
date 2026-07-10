@@ -1,4 +1,4 @@
-// Copyright 2022-2024 LiveKit, Inc.
+// Copyright 2022-2026 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"gopkg.in/yaml.v3"
@@ -27,7 +28,9 @@ import (
 
 type CLIConfig struct {
 	DefaultProject string          `yaml:"default_project"`
+	DefaultUser    string          `yaml:"default_user"`
 	Projects       []ProjectConfig `yaml:"projects"`
+	Users          []UserConfig    `yaml:"users"`
 	DeviceName     string          `yaml:"device_name"`
 	Theme          string          `yaml:"theme"`
 	// absent from YAML
@@ -40,6 +43,83 @@ type ProjectConfig struct {
 	URL       string `yaml:"url"`
 	APIKey    string `yaml:"api_key"`
 	APISecret string `yaml:"api_secret"`
+}
+
+type UserConfig struct {
+	Id            string `yaml:"id"`
+	Name          string `yaml:"name"`
+	Email         string `yaml:"email"`
+	SessionToken  string `yaml:"session_token"`
+	SessionExpiry int64  `yaml:"session_expiry"`
+	// Projects caches the projects this user can access, as last fetched from
+	// the Public API (listProjects). Caching lets project resolution avoid a
+	// network round-trip on every command; ProjectsFetchedAt records the Unix
+	// time it was populated so callers can refresh a stale cache.
+	Projects          []UserProjectConfig `yaml:"projects,omitempty"`
+	ProjectsFetchedAt int64               `yaml:"projects_fetched_at,omitempty"`
+}
+
+// UserProjectConfig is a project accessible under user-based auth. Unlike
+// ProjectConfig it carries no API key/secret: requests are authorized with the
+// user's session token and scoped to a project by id.
+type UserProjectConfig struct {
+	ProjectId string `yaml:"project_id"`
+	Name      string `yaml:"name,omitempty"`
+	Subdomain string `yaml:"subdomain,omitempty"`
+	URL       string `yaml:"url,omitempty"`
+}
+
+// SessionValid reports whether the user has a session token that has not
+// expired. A zero SessionExpiry means "no known expiry" and is treated as
+// valid, so a manually-injected token without an expiry remains usable.
+func (u *UserConfig) SessionValid() bool {
+	if u == nil || u.SessionToken == "" {
+		return false
+	}
+	return u.SessionExpiry == 0 || time.Now().Unix() < u.SessionExpiry
+}
+
+// GetUser returns the configured user matching idOrEmail (by id, or
+// case-insensitively by email), or nil if none is configured. The returned
+// pointer aliases the slice element, so mutations persist through a subsequent
+// PersistIfNeeded on the same CLIConfig.
+func (c *CLIConfig) GetUser(idOrEmail string) *UserConfig {
+	for i := range c.Users {
+		u := &c.Users[i]
+		if u.Id == idOrEmail || (u.Email != "" && strings.EqualFold(u.Email, idOrEmail)) {
+			return u
+		}
+	}
+	return nil
+}
+
+// LoadDefaultUser returns the configured default user. It mirrors
+// LoadDefaultProject and is used by user-based (experimental) auth.
+func LoadDefaultUser() (*UserConfig, error) {
+	conf, err := LoadOrCreate()
+	if err != nil {
+		return nil, err
+	}
+	if conf.DefaultUser == "" {
+		return nil, errors.New("no default user set. Run `lk cloud auth` to sign in")
+	}
+	if u := conf.GetUser(conf.DefaultUser); u != nil {
+		return u, nil
+	}
+	return nil, fmt.Errorf("default user %q not found in config", conf.DefaultUser)
+}
+
+// SetUserProjects replaces the cached project list for the user identified by
+// idOrEmail and persists the config. fetchedAt is the Unix time the list was
+// retrieved.
+func (c *CLIConfig) SetUserProjects(idOrEmail string, projects []UserProjectConfig, fetchedAt int64) error {
+	u := c.GetUser(idOrEmail)
+	if u == nil {
+		return fmt.Errorf("user %q not found in config", idOrEmail)
+	}
+	u.Projects = projects
+	u.ProjectsFetchedAt = fetchedAt
+	return c.PersistIfNeeded()
 }
 
 func LoadDefaultProject() (*ProjectConfig, error) {
