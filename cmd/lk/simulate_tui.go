@@ -123,6 +123,11 @@ type simulationRunMsg struct {
 	err error
 }
 
+type simulationEventsMsg struct {
+	resp *livekit.SimulationRun_GetEvents_Response
+	err  error
+}
+
 type pollTickMsg struct{}
 type spinnerTickMsg struct{}
 
@@ -165,6 +170,11 @@ type simulateModel struct {
 	genStart       time.Time
 
 	spinnerIdx int
+
+	// Live event feed (uttered/heard turns); polled beside the run poll.
+	events         *eventStore
+	eventsInFlight bool
+	detailFollow   bool
 
 	cursor          int
 	scrollOff       int
@@ -495,6 +505,16 @@ func (m *simulateModel) pollSimulation() tea.Cmd {
 	}
 }
 
+func (m *simulateModel) pollEvents() tea.Cmd {
+	client, runID, after := m.config.client, m.runID, m.events.cursor
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), simulationAPITimeout)
+		defer cancel()
+		resp, err := getSimulationRunEvents(ctx, client, runID, after)
+		return simulationEventsMsg{resp: resp, err: err}
+	}
+}
+
 func (m *simulateModel) cancelRunCmd() tea.Cmd {
 	client, runID := m.config.client, m.runID
 	return func() tea.Msg {
@@ -615,8 +635,30 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.setupDone && !m.runFinished {
 			cmds = append(cmds, m.pollSimulation())
 		}
+		if m.events == nil {
+			m.events = newEventStore()
+		}
+		// The event feed keeps draining after the run terminalizes until a
+		// page comes back empty — the tail flush may land after the verdict.
+		if m.setupDone && m.runID != "" && !m.eventsInFlight && m.events.tickEligible() {
+			m.eventsInFlight = true
+			cmds = append(cmds, m.pollEvents())
+		}
 		cmds = append(cmds, tickCmd())
 		return m, tea.Batch(cmds...)
+
+	case simulationEventsMsg:
+		m.eventsInFlight = false
+		if msg.err != nil {
+			m.events.applyError(msg.err)
+			return m, nil
+		}
+		m.events.Apply(msg.resp)
+		if msg.resp.HasMore && m.events.tickEligible() {
+			m.eventsInFlight = true
+			return m, m.pollEvents()
+		}
+		return m, nil
 
 	case subprocessExitMsg:
 		// the TUI stays up; the exit is surfaced via agentBroken / on quit
@@ -643,6 +685,10 @@ const pageScroll = 20
 func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	switch {
 	case m.detailJobID != "":
+		if delta < 0 {
+			// scrolling up releases the live-feed bottom pin
+			m.detailFollow = false
+		}
 		m.detailScrollOff += delta
 		if m.detailScrollOff < 0 {
 			m.detailScrollOff = 0
@@ -816,6 +862,8 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if m.cursor >= 0 && m.cursor < len(jobs) {
 				m.detailJobID = jobs[m.cursor].job.Id
 				m.detailScrollOff = 0
+				// a running job's live feed follows the newest turn
+				m.detailFollow = jobs[m.cursor].job.Status == livekit.SimulationRun_Job_STATUS_RUNNING
 			}
 		}
 	case "esc", "left", "backspace":
@@ -1440,7 +1488,7 @@ func (m *simulateModel) renderDetail() string {
 		}
 	}
 
-	b.WriteString(m.renderChatTranscript(job.Id))
+	b.WriteString(m.renderConversation(job))
 
 	if m.showLogs && m.agent != nil {
 		roomFilter := ""
@@ -1488,6 +1536,9 @@ func (m *simulateModel) scrolledDetail() string {
 	}
 
 	maxScroll := len(lines) - budget
+	if m.detailFollow {
+		m.detailScrollOff = maxScroll
+	}
 	if m.detailScrollOff > maxScroll {
 		m.detailScrollOff = maxScroll
 	}
@@ -1582,6 +1633,26 @@ func (m *simulateModel) renderSummary() string {
 	}
 
 	return b.String()
+}
+
+// renderConversation prefers the live event feed while it is richer than the
+// summary: audio matrices always (per-turn perception beats a flat
+// transcript), text runs until the summarized ChatHistory lands.
+func (m *simulateModel) renderConversation(job *livekit.SimulationRun_Job) string {
+	var feed *jobFeed
+	if m.events != nil {
+		feed = m.events.feed(job.Id)
+	}
+	if feed != nil && feed.audioShaped() {
+		return renderUtteredHeard(feed, m.width, job.Status == livekit.SimulationRun_Job_STATUS_RUNNING)
+	}
+	if final := m.renderChatTranscript(job.Id); final != "" {
+		return final
+	}
+	if feed != nil && len(feed.events) > 0 {
+		return renderEventTranscript(feed, m.width)
+	}
+	return ""
 }
 
 func (m *simulateModel) renderChatTranscript(jobID string) string {

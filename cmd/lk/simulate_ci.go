@@ -28,6 +28,43 @@ import (
 	agent "github.com/livekit/protocol/livekit/agent"
 )
 
+// pollEventsCI fetches one page of the run's live event feed and prints the
+// newly applied turns, one [label]-prefixed line each, in arrival order —
+// concurrent jobs interleave docker-compose style. Reports whether anything
+// new arrived (the terminal drain loop stops when it returns false).
+func pollEventsCI(ctx context.Context, config *simulateConfig, runID string, events *eventStore, jobLabels map[string]string, run *livekit.SimulationRun) bool {
+	if run != nil {
+		for i, j := range run.Jobs {
+			label := j.Label
+			if label == "" {
+				label = fmt.Sprintf("job %d", i+1)
+			}
+			jobLabels[j.Id] = label
+		}
+	}
+	if !events.tickEligible() {
+		return false
+	}
+	evCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
+	resp, err := getSimulationRunEvents(evCtx, config.client, runID, events.cursor)
+	cancel()
+	if err != nil {
+		events.applyError(err)
+		return false
+	}
+	applied := events.Apply(resp)
+	for _, ev := range applied {
+		label, ok := jobLabels[ev.JobId]
+		if !ok {
+			label = ev.JobId
+		}
+		if line := formatEventLine(label, ev); line != "" {
+			out.Statusf("%s", line)
+		}
+	}
+	return len(applied) > 0 || resp.HasMore
+}
+
 type toggleWriter struct {
 	w       io.Writer
 	enabled atomic.Bool
@@ -135,10 +172,15 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	ticker := time.NewTicker(simulationPollInterval)
 	defer ticker.Stop()
 
+	events := newEventStore()
+	jobLabels := map[string]string{}
+
 	for {
 		pollCtx, pollCancel := context.WithTimeout(ctx, simulationAPITimeout)
 		run, err = getSimulationRun(pollCtx, config.client, runID)
 		pollCancel()
+
+		pollEventsCI(ctx, config, runID, events, jobLabels, run)
 
 		if err != nil {
 			if ctx.Err() != nil {
@@ -168,6 +210,14 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		case <-ticker.C:
 		case <-ctx.Done():
 			return ctx.Err()
+		}
+	}
+
+	// The final event flush can land just after the run terminalizes; drain
+	// before printing results so the live feed doesn't cut mid-conversation.
+	for range 10 {
+		if !pollEventsCI(ctx, config, runID, events, jobLabels, run) {
+			break
 		}
 	}
 
