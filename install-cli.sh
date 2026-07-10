@@ -73,10 +73,36 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 curl -fsSL "$ARCHIVE_URL" -o "$TEMP_DIR/$ARCHIVE_NAME"
 curl -fsSL "$CHECKSUMS_URL" -o "$TEMP_DIR/checksums.txt"
 
+# When cosign is available, verify the Sigstore signature on checksums.txt. The
+# certificate identity is pinned to this repo's release workflow running for this
+# exact version tag, so a valid signature proves the checksums were produced by
+# livekit-cli's release CI and not substituted alongside a tampered archive.
+# Releases published before signing was introduced have no .sig/.pem assets, so a
+# missing signature is skipped rather than fatal; a present-but-invalid one aborts.
+if command -v cosign >/dev/null; then
+  # No -S here: a 404 is the expected outcome for releases that predate signing,
+  # so curl's error output would just be noise.
+  if curl -fsL "$CHECKSUMS_URL.sig" -o "$TEMP_DIR/checksums.txt.sig" &&
+     curl -fsL "$CHECKSUMS_URL.pem" -o "$TEMP_DIR/checksums.txt.pem"; then
+    log "Verifying signature..."
+    cosign verify-blob \
+      --certificate "$TEMP_DIR/checksums.txt.pem" \
+      --signature "$TEMP_DIR/checksums.txt.sig" \
+      --certificate-identity-regexp "^https://github.com/livekit/$REPO/\.github/workflows/release\.yaml@refs/tags/v${VERSION}$" \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+      "$TEMP_DIR/checksums.txt" \
+      || abort "Signature verification failed for checksums.txt"
+  else
+    log "No signature published for this release; skipping signature verification."
+  fi
+else
+  log "cosign not found; skipping signature verification."
+fi
+
 # Verify the archive against the release's checksums.txt before extracting. The checksums
 # file is fetched from the same release over HTTPS, so this guards against corrupted/partial
-# downloads and accidental mismatches; it is not a substitute for signature verification
-# against an out-of-band key.
+# downloads and accidental mismatches; when cosign is absent it is not a substitute for
+# signature verification against an out-of-band key.
 log "Verifying checksum..."
 expected_sum=$(awk -v f="$ARCHIVE_NAME" '$2 == f {print $1}' "$TEMP_DIR/checksums.txt")
 [ -n "$expected_sum" ] || abort "Could not find a checksum for $ARCHIVE_NAME in checksums.txt"
