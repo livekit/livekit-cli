@@ -106,7 +106,11 @@ func (f *jobFeed) apply(ev *livekit.SimulationRun_JobEvent) {
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_HEARD_AGENT:
 		f.turn(heardKey(false, ev)).heard = ev
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_PLAYOUT:
-		f.turn(turnKey{persona: true, ordinal: ev.RefOrdinal}).playout = ev
+		// a turn endpointed into several segments: the first one carries the
+		// turn's start time
+		if t := f.turn(turnKey{persona: true, ordinal: ev.RefOrdinal}); t.playout == nil {
+			t.playout = ev
+		}
 	case livekit.SimulationRun_JobEvent_TYPE_JOB_PHASE:
 		f.phase = ev.Phase
 		f.phaseDetail = ev.Detail
@@ -285,6 +289,22 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 		b.WriteString(dimStyle.Render("    agent-side capture unavailable (no remote session)") + "\n")
 	}
 
+	// The newest heard snapshot per lane is provisional while the job runs:
+	// its turn may still be mid-transcription, so verdicts soften to "so far".
+	var lastPersona, lastAgent turnKey
+	var maxPersona, maxAgent int64
+	for key, t := range feed.turns {
+		if t == nil || t.heard == nil {
+			continue
+		}
+		if key.persona && t.heard.Seq > maxPersona {
+			maxPersona, lastPersona = t.heard.Seq, key
+		}
+		if !key.persona && t.heard.Seq > maxAgent {
+			maxAgent, lastAgent = t.heard.Seq, key
+		}
+	}
+
 	for _, key := range feed.order {
 		t := feed.turns[key]
 		if t == nil {
@@ -303,7 +323,10 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 			}
 			b.WriteString("\n" + header + "\n")
 			writeWrapped(&b, wrapStyle, t.uttered, "      ", "")
-			b.WriteString(renderHeardLine(t, "agent heard", wrapStyle, jobRunning, feed.hasAgentSide))
+			b.WriteString(renderHeardLine(
+				t, "agent heard", wrapStyle, jobRunning, feed.hasAgentSide,
+				jobRunning && maxPersona > 0 && key == lastPersona,
+			))
 		} else {
 			if t.uttered == "" && t.heard == nil {
 				continue
@@ -324,7 +347,10 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 				writeWrapped(&b, wrapStyle, t.heard.Text, "      ", dimStyle.Render(" (simulator transcription)"))
 				continue
 			}
-			b.WriteString(renderHeardLine(t, "sim heard", wrapStyle, jobRunning, true))
+			b.WriteString(renderHeardLine(
+				t, "sim heard", wrapStyle, jobRunning, true,
+				jobRunning && maxAgent > 0 && key == lastAgent,
+			))
 		}
 	}
 	return b.String()
@@ -348,7 +374,7 @@ func turnOffset(feed *jobFeed, t *matrixTurn) (time.Duration, bool) {
 // renderHeardLine renders the perception sub-line of a turn: verbatim
 // collapse, the simulator-computed alignment with errors highlighted, or a
 // pending marker while the job still runs.
-func renderHeardLine(t *matrixTurn, label string, wrapStyle lipgloss.Style, jobRunning, captured bool) string {
+func renderHeardLine(t *matrixTurn, label string, wrapStyle lipgloss.Style, jobRunning, captured, provisional bool) string {
 	if t.heard == nil {
 		if t.uttered == "" || !captured {
 			return ""
@@ -369,6 +395,10 @@ func renderHeardLine(t *matrixTurn, label string, wrapStyle lipgloss.Style, jobR
 	ev := t.heard
 	chip := ""
 	if ev.Wer != nil && *ev.Wer == 0 {
+		if provisional {
+			// scored against the gold prefix heard so far — no verdict yet
+			return dimStyle.Render("      ✓ heard cleanly · so far") + "\n"
+		}
 		return "      " + greenStyle().Render("✓ heard verbatim") + "\n"
 	}
 	if ev.Wer != nil {
@@ -377,6 +407,9 @@ func renderHeardLine(t *matrixTurn, label string, wrapStyle lipgloss.Style, jobR
 			pct = 0
 		}
 		chip = fmt.Sprintf(" · %d%% correct", pct)
+		if provisional {
+			chip += " · so far"
+		}
 	}
 	body := ev.Text
 	if len(ev.Alignment) > 0 {
