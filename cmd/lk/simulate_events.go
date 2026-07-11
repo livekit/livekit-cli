@@ -303,7 +303,7 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 			}
 			b.WriteString("\n" + header + "\n")
 			writeWrapped(&b, wrapStyle, t.uttered, "      ", "")
-			b.WriteString(renderHeardLine(t, "agent heard", wrapStyle, feed.hasAgentSide && jobRunning))
+			b.WriteString(renderHeardLine(t, "agent heard", wrapStyle, jobRunning, feed.hasAgentSide))
 		} else {
 			if t.uttered == "" && t.heard == nil {
 				continue
@@ -324,7 +324,7 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 				writeWrapped(&b, wrapStyle, t.heard.Text, "      ", dimStyle.Render(" (simulator transcription)"))
 				continue
 			}
-			b.WriteString(renderHeardLine(t, "sim heard", wrapStyle, jobRunning))
+			b.WriteString(renderHeardLine(t, "sim heard", wrapStyle, jobRunning, true))
 		}
 	}
 	return b.String()
@@ -348,12 +348,23 @@ func turnOffset(feed *jobFeed, t *matrixTurn) (time.Duration, bool) {
 // renderHeardLine renders the perception sub-line of a turn: verbatim
 // collapse, the simulator-computed alignment with errors highlighted, or a
 // pending marker while the job still runs.
-func renderHeardLine(t *matrixTurn, label string, wrapStyle lipgloss.Style, pendingVisible bool) string {
+func renderHeardLine(t *matrixTurn, label string, wrapStyle lipgloss.Style, jobRunning, captured bool) string {
 	if t.heard == nil {
-		if pendingVisible && t.uttered != "" {
+		if t.uttered == "" || !captured {
+			return ""
+		}
+		if jobRunning {
 			return dimStyle.Render("      … awaiting transcription") + "\n"
 		}
-		return ""
+		// Job over, nothing ever heard: say why instead of going silent.
+		// A persona turn without a playout event was generated but never
+		// voiced (interrupted before speaking) — nothing existed to hear.
+		if t.utteredEv != nil &&
+			t.utteredEv.Type == livekit.SimulationRun_JobEvent_TYPE_PERSONA_UTTERANCE &&
+			t.playout == nil {
+			return dimStyle.Render("      ∅ never spoken (playout interrupted)") + "\n"
+		}
+		return dimStyle.Render("      ∅ no transcript received") + "\n"
 	}
 	ev := t.heard
 	chip := ""
@@ -387,10 +398,11 @@ func renderAlignment(spans []*livekit.SimulationRun_JobEvent_Align) string {
 	for _, span := range spans {
 		switch span.Kind {
 		case livekit.SimulationRun_JobEvent_Align_KIND_EQUAL:
+			// heard side only: an equal span with no heard text is a gold
+			// word whose heard words were already rendered elsewhere —
+			// repeating the gold here would duplicate content
 			if span.Heard != "" {
 				parts = append(parts, dimStyle.Render(span.Heard))
-			} else if span.Gold != "" {
-				parts = append(parts, dimStyle.Render(span.Gold))
 			}
 		case livekit.SimulationRun_JobEvent_Align_KIND_SUBSTITUTION:
 			if span.Heard != "" {
