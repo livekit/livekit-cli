@@ -59,6 +59,9 @@ func pollEventsCI(ctx context.Context, config *simulateConfig, runID string, eve
 			label = ev.JobId
 		}
 		if line := formatEventLine(label, ev); line != "" {
+			if os.Getenv("LK_SIM_EVENTS_SEQ") != "" {
+				line = fmt.Sprintf("(seq %d att %d) %s", ev.Seq, ev.Attempt, line)
+			}
 			out.Statusf("%s", line)
 		}
 	}
