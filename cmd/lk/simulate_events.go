@@ -317,9 +317,24 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 		}
 	}
 
+	// Real agent turns supersede the bare pre-gold snapshots (a greeting's
+	// STT final lands before the first gold event): once any agent turn has
+	// its own text, standalone simulator-transcription cards are stale
+	// duplicates of content shown under the real turns.
+	agentGold := false
+	for key, t := range feed.turns {
+		if !key.persona && !key.standalone && t != nil && t.uttered != "" {
+			agentGold = true
+			break
+		}
+	}
+
 	for _, key := range sortedTurnKeys(feed) {
 		t := feed.turns[key]
 		if t == nil {
+			continue
+		}
+		if !key.persona && key.standalone && agentGold {
 			continue
 		}
 		if key.persona {
@@ -496,7 +511,15 @@ func renderAlignment(spans []*livekit.SimulationRun_JobEvent_Align) string {
 			}
 		case livekit.SimulationRun_JobEvent_Align_KIND_DELETION:
 			if span.Gold != "" {
-				parts = append(parts, strike.Render("["+span.Gold+"]"))
+				words := strings.Fields(span.Gold)
+				if len(words) > 4 {
+					// a long unheard stretch reads better as a count than
+					// as a paragraph of strikethrough
+					head := strings.Join(words[:3], " ")
+					parts = append(parts, strike.Render(fmt.Sprintf("[%s … +%d unheard]", head, len(words)-3)))
+				} else {
+					parts = append(parts, strike.Render("["+span.Gold+"]"))
+				}
 			}
 		}
 	}
