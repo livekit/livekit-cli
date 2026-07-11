@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -45,6 +46,8 @@ type matrixTurn struct {
 	utteredEv *livekit.SimulationRun_JobEvent // the utterance event: ts, agent self-reports
 	heard     *livekit.SimulationRun_JobEvent // AGENT_HEARD_PERSONA / PERSONA_HEARD_AGENT
 	playout   *livekit.SimulationRun_JobEvent // PERSONA_PLAYOUT
+	// any playout segment cut by barge-in: the scripted tail was never voiced
+	playoutInterrupted bool
 }
 
 type jobFeed struct {
@@ -114,10 +117,12 @@ func (f *jobFeed) apply(ev *livekit.SimulationRun_JobEvent) {
 		}
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_PLAYOUT:
 		// a turn endpointed into several segments: the first one carries the
-		// turn's start time
-		if t := f.turn(turnKey{persona: true, ordinal: ev.RefOrdinal}); t.playout == nil {
+		// turn's start time; interruption on any segment is sticky
+		t := f.turn(turnKey{persona: true, ordinal: ev.RefOrdinal})
+		if t.playout == nil {
 			t.playout = ev
 		}
+		t.playoutInterrupted = t.playoutInterrupted || ev.Interrupted
 	case livekit.SimulationRun_JobEvent_TYPE_JOB_PHASE:
 		f.phase = ev.Phase
 		f.phaseDetail = ev.Detail
@@ -312,7 +317,7 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 		}
 	}
 
-	for _, key := range feed.order {
+	for _, key := range sortedTurnKeys(feed) {
 		t := feed.turns[key]
 		if t == nil {
 			continue
@@ -327,6 +332,9 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 			header := "    " + userStyle.Render("Persona (spoke)")
 			if off, ok := turnOffset(feed, t); ok {
 				header += dimStyle.Render(" · " + formatTurnOffset(off))
+			}
+			if t.playoutInterrupted {
+				header += " " + redStyle().Render("· ⚡ interrupted")
 			}
 			b.WriteString("\n" + header + "\n")
 			writeWrapped(&b, wrapStyle, t.uttered, "      ", "")
@@ -361,6 +369,40 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 		}
 	}
 	return b.String()
+}
+
+// sortedTurnKeys orders cards by when their turn actually happened — playout
+// start when audio timing exists, event timestamps otherwise — not by event
+// arrival, which interleaves lanes out of conversational order. The sort is
+// stable on arrival order for ties and unknown times.
+func sortedTurnKeys(feed *jobFeed) []turnKey {
+	keys := make([]turnKey, len(feed.order))
+	copy(keys, feed.order)
+	at := func(key turnKey) (time.Time, bool) {
+		t := feed.turns[key]
+		if t == nil {
+			return time.Time{}, false
+		}
+		if t.playout != nil {
+			return t.playout.GetStartedAt().AsTime(), true
+		}
+		if t.utteredEv != nil && t.utteredEv.Ts != nil {
+			return t.utteredEv.Ts.AsTime(), true
+		}
+		if t.heard != nil && t.heard.Ts != nil {
+			return t.heard.Ts.AsTime(), true
+		}
+		return time.Time{}, false
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		ti, iok := at(keys[i])
+		tj, jok := at(keys[j])
+		if !iok || !jok {
+			return false // keep arrival order when either time is unknown
+		}
+		return ti.Before(tj)
+	})
+	return keys
 }
 
 // turnOffset is the turn's start relative to the first event: the playout
