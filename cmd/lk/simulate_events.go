@@ -32,6 +32,9 @@ const (
 type turnKey struct {
 	persona bool
 	ordinal uint32
+	// A transcript with no uttered turn to anchor to (e.g. the agent's speech
+	// when no session host reports its text) renders as its own card.
+	standalone bool
 }
 
 // matrixTurn is one uttered/heard pair: what a party said and what the other
@@ -47,10 +50,9 @@ type jobFeed struct {
 	attempt uint32
 	lastSeq int64
 
-	events  []*livekit.SimulationRun_JobEvent // arrival order, capped
-	order   []turnKey
-	persona map[uint32]*matrixTurn
-	agent   map[uint32]*matrixTurn
+	events []*livekit.SimulationRun_JobEvent // arrival order, capped
+	order  []turnKey
+	turns  map[turnKey]*matrixTurn
 
 	phase       livekit.SimulationRun_JobEvent_Phase
 	phaseDetail string
@@ -65,22 +67,15 @@ type jobFeed struct {
 }
 
 func newJobFeed() *jobFeed {
-	return &jobFeed{
-		persona: make(map[uint32]*matrixTurn),
-		agent:   make(map[uint32]*matrixTurn),
-	}
+	return &jobFeed{turns: make(map[turnKey]*matrixTurn)}
 }
 
-func (f *jobFeed) turn(persona bool, ordinal uint32) *matrixTurn {
-	turns := f.agent
-	if persona {
-		turns = f.persona
-	}
-	t, ok := turns[ordinal]
+func (f *jobFeed) turn(key turnKey) *matrixTurn {
+	t, ok := f.turns[key]
 	if !ok {
 		t = &matrixTurn{}
-		turns[ordinal] = t
-		f.order = append(f.order, turnKey{persona: persona, ordinal: ordinal})
+		f.turns[key] = t
+		f.order = append(f.order, key)
 	}
 	return t
 }
@@ -96,35 +91,39 @@ func (f *jobFeed) apply(ev *livekit.SimulationRun_JobEvent) {
 
 	switch ev.Type {
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_UTTERANCE:
-		f.turn(true, ev.Ordinal).uttered = ev.Text
+		f.turn(turnKey{persona: true, ordinal: ev.Ordinal}).uttered = ev.Text
 	case livekit.SimulationRun_JobEvent_TYPE_AGENT_UTTERANCE:
-		t := f.turn(false, ev.Ordinal)
+		t := f.turn(turnKey{persona: false, ordinal: ev.Ordinal})
 		t.uttered = ev.Text
 		t.timings = ev
 		f.hasAgentSide = true
 	case livekit.SimulationRun_JobEvent_TYPE_AGENT_HEARD_PERSONA:
-		f.turn(true, ev.RefOrdinal).heard = ev
+		f.turn(heardKey(true, ev)).heard = ev
 		f.hasAgentSide = true
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_HEARD_AGENT:
-		f.turn(false, ev.RefOrdinal).heard = ev
+		f.turn(heardKey(false, ev)).heard = ev
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_PLAYOUT:
-		f.turn(true, ev.RefOrdinal).playout = ev
+		f.turn(turnKey{persona: true, ordinal: ev.RefOrdinal}).playout = ev
 	case livekit.SimulationRun_JobEvent_TYPE_JOB_PHASE:
 		f.phase = ev.Phase
 		f.phaseDetail = ev.Detail
 	}
 }
 
+// heardKey anchors a transcript to its uttered turn; unanchored transcripts
+// (ref_ordinal 0) become standalone cards keyed by their own ordinal.
+func heardKey(persona bool, ev *livekit.SimulationRun_JobEvent) turnKey {
+	if ev.RefOrdinal == 0 {
+		return turnKey{persona: persona, ordinal: ev.Ordinal, standalone: true}
+	}
+	return turnKey{persona: persona, ordinal: ev.RefOrdinal}
+}
+
 // audioShaped reports whether the feed carries perception or playout streams —
 // the signal to render the uttered/heard matrix instead of a plain transcript.
 func (f *jobFeed) audioShaped() bool {
-	for _, t := range f.persona {
+	for _, t := range f.turns {
 		if t.heard != nil || t.playout != nil {
-			return true
-		}
-	}
-	for _, t := range f.agent {
-		if t.heard != nil {
 			return true
 		}
 	}
@@ -284,8 +283,11 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 	}
 
 	for _, key := range feed.order {
+		t := feed.turns[key]
+		if t == nil {
+			continue
+		}
 		if key.persona {
-			t := feed.persona[key.ordinal]
 			header := "    " + userStyle.Render("You (spoke)")
 			if t.playout != nil && !feed.firstTs.IsZero() {
 				at := t.playout.GetStartedAt().AsTime().Sub(feed.firstTs)
@@ -295,7 +297,6 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 			writeWrapped(&b, wrapStyle, t.uttered, "      ", "")
 			b.WriteString(renderHeardLine(t, "agent heard", wrapStyle, feed.hasAgentSide && jobRunning))
 		} else {
-			t := feed.agent[key.ordinal]
 			header := "    " + agentStyle.Render("Agent (spoke)")
 			if t.timings != nil && t.timings.E2ELatencyMs != nil {
 				header += dimStyle.Render(fmt.Sprintf(" · ↳ %dms", *t.timings.E2ELatencyMs))
