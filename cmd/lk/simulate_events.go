@@ -324,7 +324,7 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 				writeWrapped(&b, wrapStyle, t.heard.Text, "      ", dimStyle.Render(" (simulator transcription)"))
 				continue
 			}
-			b.WriteString(renderHeardLine(t, "you heard", wrapStyle, jobRunning))
+			b.WriteString(renderHeardLine(t, "sim heard", wrapStyle, jobRunning))
 		}
 	}
 	return b.String()
@@ -460,7 +460,7 @@ func formatEventLine(label string, ev *livekit.SimulationRun_JobEvent) string {
 		}
 		return prefix + fmt.Sprintf("agent heard #%d%s: %s", ev.RefOrdinal, chip, ev.Text)
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_HEARD_AGENT:
-		return prefix + fmt.Sprintf("you heard #%d: %s", ev.RefOrdinal, ev.Text)
+		return prefix + fmt.Sprintf("sim heard #%d: %s", ev.RefOrdinal, ev.Text)
 	case livekit.SimulationRun_JobEvent_TYPE_JOB_PHASE:
 		return prefix + "· " + phaseLabel(ev)
 	default:

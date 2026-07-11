@@ -174,7 +174,9 @@ type simulateModel struct {
 	// Live event feed (uttered/heard turns); polled beside the run poll.
 	events         *eventStore
 	eventsInFlight bool
-	detailFollow   bool
+	detailFollow    bool
+	detailFollowOff bool // follow disabled explicitly (hotkey); only the hotkey re-enables
+	detailMaxScroll int  // last render's scroll ceiling, the "all the way down" mark
 
 	cursor          int
 	scrollOff       int
@@ -693,6 +695,11 @@ func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 		if m.detailScrollOff < 0 {
 			m.detailScrollOff = 0
 		}
+		// scrolling back to the bottom re-arms the pin — unless follow was
+		// switched off explicitly, which only the hotkey undoes
+		if delta > 0 && !m.detailFollowOff && m.detailScrollOff >= m.detailMaxScroll {
+			m.detailFollow = true
+		}
 	case m.descriptionExpanded():
 		m.descScrollOff += delta
 		if m.descScrollOff < 0 {
@@ -843,6 +850,16 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			text, ok := m.copyScenario(m.detailJobID)
 			return m, m.showToast(text, ok)
 		}
+	case "f":
+		if m.detailJobID != "" {
+			if m.detailFollow {
+				m.detailFollow = false
+				m.detailFollowOff = true
+			} else {
+				m.detailFollowOff = false
+				m.detailFollow = true
+			}
+		}
 	case "up", "shift+tab":
 		// arrows never scroll logs (PgUp/PgDn do); in the list they move the cursor
 		if !m.scrollActive(-1, false) {
@@ -863,7 +880,8 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.detailJobID = jobs[m.cursor].job.Id
 				m.detailScrollOff = 0
 				// a running job's live feed follows the newest turn
-				m.detailFollow = jobs[m.cursor].job.Status == livekit.SimulationRun_Job_STATUS_RUNNING
+				m.detailFollow = !m.detailFollowOff &&
+					jobs[m.cursor].job.Status == livekit.SimulationRun_Job_STATUS_RUNNING
 			}
 		}
 	case "esc", "left", "backspace":
@@ -1532,10 +1550,12 @@ func (m *simulateModel) scrolledDetail() string {
 	}
 	if len(lines) <= budget {
 		m.detailScrollOff = 0
+		m.detailMaxScroll = 0
 		return content
 	}
 
 	maxScroll := len(lines) - budget
+	m.detailMaxScroll = maxScroll
 	if m.detailFollow {
 		m.detailScrollOff = maxScroll
 	}
@@ -1844,7 +1864,11 @@ func (m *simulateModel) renderHint() string {
 	var parts []string
 	switch {
 	case m.detailJobID != "":
-		parts = append(parts, "↑↓ scroll · c copy scenario · ESC/← back")
+		follow := "f follow"
+		if m.detailFollow {
+			follow = "f follow ✓"
+		}
+		parts = append(parts, "↑↓ scroll · "+follow+" · c copy scenario · ESC/← back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")

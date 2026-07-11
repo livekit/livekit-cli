@@ -98,7 +98,8 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 				out.Statusf("Generated scenarios: %s", path)
 			}
 		}
-		if runID != "" && !runFinished {
+		// A viewed run is someone else's: never cancel it on exit.
+		if runID != "" && !runFinished && config.mode != modeView {
 			cancelSimulationRun(config.client, runID)
 		}
 	}
@@ -107,63 +108,69 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	// --- Setup ---
 
 	report := newSimLog(out.ResultWriter(), out.StatusWriter())
-	report.BeginSetup()
 
 	var err error
-	if !config.liveAgent {
-		report.StartingAgent()
+	if config.mode == modeView {
+		// attaching to an existing run: no agent, no creation — poll only
+		runID = config.viewModeRunID
+	} else {
+		report.BeginSetup()
+
+		if !config.liveAgent {
+			report.StartingAgent()
+			start := time.Now()
+			logFwd := &toggleWriter{w: out.StatusWriter()}
+			logFwd.enabled.Store(true)
+			agent, err = startSimulationAgent(config, logFwd)
+			if err != nil {
+				report.AgentStartFailed(err)
+				report.EndSetup()
+				return fmt.Errorf("failed to start agent: %w", err)
+			}
+
+			report.WaitingForRegister()
+			timeout := time.NewTimer(agentRegisterTimeout)
+			defer timeout.Stop()
+			select {
+			case <-agent.Ready():
+				logFwd.enabled.Store(false)
+				report.AgentRegistered(time.Since(start))
+			case <-agent.Done():
+				report.EndSetup()
+				return fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(agent))
+			case <-timeout.C:
+				report.EndSetup()
+				return fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(agent))
+			case <-ctx.Done():
+				report.EndSetup()
+				return ctx.Err()
+			}
+		}
+
 		start := time.Now()
-		logFwd := &toggleWriter{w: out.StatusWriter()}
-		logFwd.enabled.Store(true)
-		agent, err = startSimulationAgent(config, logFwd)
+		var presigned *livekit.PresignedPostRequest
+		runID, presigned, err = createSimulationRun(ctx, config)
 		if err != nil {
-			report.AgentStartFailed(err)
-			report.EndSetup()
-			return fmt.Errorf("failed to start agent: %w", err)
-		}
-
-		report.WaitingForRegister()
-		timeout := time.NewTimer(agentRegisterTimeout)
-		defer timeout.Stop()
-		select {
-		case <-agent.Ready():
-			logFwd.enabled.Store(false)
-			report.AgentRegistered(time.Since(start))
-		case <-agent.Done():
-			report.EndSetup()
-			return fmt.Errorf("the agent exited before registering.\n\n%s", agentExitDetail(agent))
-		case <-timeout.C:
-			report.EndSetup()
-			return fmt.Errorf("timed out after %s waiting for the agent to register.\n\n%s", agentRegisterTimeout, agentExitDetail(agent))
-		case <-ctx.Done():
-			report.EndSetup()
-			return ctx.Err()
-		}
-	}
-
-	start := time.Now()
-	var presigned *livekit.PresignedPostRequest
-	runID, presigned, err = createSimulationRun(ctx, config)
-	if err != nil {
-		report.SetupFailed(err)
-		report.EndSetup()
-		return err
-	}
-	report.SimulationCreated(time.Since(start))
-
-	if config.mode == modeGenerateFromSource {
-		start = time.Now()
-		if err := uploadSource(ctx, config.client, runID, presigned, config.projectDir, config.entrypoint); err != nil {
 			report.SetupFailed(err)
 			report.EndSetup()
 			return err
 		}
-		report.SourceUploaded(time.Since(start))
-	} else if g := config.scenarioGroup; g != nil {
-		report.ScenariosLoaded(g, config.scenariosPath)
-	}
+		report.SimulationCreated(time.Since(start))
 
-	report.EndSetup()
+		if config.mode == modeGenerateFromSource {
+			start = time.Now()
+			if err := uploadSource(ctx, config.client, runID, presigned, config.projectDir, config.entrypoint); err != nil {
+				report.SetupFailed(err)
+				report.EndSetup()
+				return err
+			}
+			report.SourceUploaded(time.Since(start))
+		} else if g := config.scenarioGroup; g != nil {
+			report.ScenariosLoaded(g, config.scenariosPath)
+		}
+
+		report.EndSetup()
+	}
 	report.RunCreated(runID, simulationDashboardURL(config.pc.ProjectId, runID))
 
 	// --- Poll until terminal ---
