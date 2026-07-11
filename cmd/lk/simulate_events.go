@@ -49,7 +49,10 @@ type matrixTurn struct {
 
 type jobFeed struct {
 	attempt uint32
-	lastSeq int64
+	// exact-seq dedup: redelivered events drop, but a lower-seq event
+	// arriving after a higher one (producer emitted out of order) still
+	// applies — a high-water mark would silently eat whole turns
+	seen map[int64]struct{}
 
 	events []*livekit.SimulationRun_JobEvent // arrival order, capped
 	order  []turnKey
@@ -68,7 +71,7 @@ type jobFeed struct {
 }
 
 func newJobFeed() *jobFeed {
-	return &jobFeed{turns: make(map[turnKey]*matrixTurn)}
+	return &jobFeed{turns: make(map[turnKey]*matrixTurn), seen: make(map[int64]struct{})}
 }
 
 func (f *jobFeed) turn(key turnKey) *matrixTurn {
@@ -101,10 +104,14 @@ func (f *jobFeed) apply(ev *livekit.SimulationRun_JobEvent) {
 		t.utteredEv = ev
 		f.hasAgentSide = true
 	case livekit.SimulationRun_JobEvent_TYPE_AGENT_HEARD_PERSONA:
-		f.turn(heardKey(true, ev)).heard = ev
+		if t := f.turn(heardKey(true, ev)); t.heard == nil || ev.Seq > t.heard.Seq {
+			t.heard = ev
+		}
 		f.hasAgentSide = true
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_HEARD_AGENT:
-		f.turn(heardKey(false, ev)).heard = ev
+		if t := f.turn(heardKey(false, ev)); t.heard == nil || ev.Seq > t.heard.Seq {
+			t.heard = ev
+		}
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_PLAYOUT:
 		// a turn endpointed into several segments: the first one carries the
 		// turn's start time
@@ -206,10 +213,10 @@ func (s *eventStore) Apply(resp *livekit.SimulationRun_GetEvents_Response) []*li
 			s.feeds[ev.JobId] = reset
 			feed = reset
 		}
-		if ev.Seq <= feed.lastSeq {
+		if _, dup := feed.seen[ev.Seq]; dup {
 			continue
 		}
-		feed.lastSeq = ev.Seq
+		feed.seen[ev.Seq] = struct{}{}
 		feed.apply(ev)
 		s.total++
 		applied = append(applied, ev)

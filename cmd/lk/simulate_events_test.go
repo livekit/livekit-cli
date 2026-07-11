@@ -51,8 +51,23 @@ func TestEventStoreDedupesRedeliveredPages(t *testing.T) {
 	if got := len(s.Apply(p)); got != 0 {
 		t.Fatalf("redelivered page applied %d events", got)
 	}
-	if s.total != 2 || s.feed("SRJ_a").lastSeq != 2 {
-		t.Fatalf("store state: total=%d lastSeq=%d", s.total, s.feed("SRJ_a").lastSeq)
+	if s.total != 2 || len(s.feed("SRJ_a").seen) != 2 {
+		t.Fatalf("store state: total=%d seen=%d", s.total, len(s.feed("SRJ_a").seen))
+	}
+}
+
+func TestEventStoreAppliesOutOfOrderSeqs(t *testing.T) {
+	// A new turn's re-anchoring snapshots can hit the wire before the turn
+	// itself; a seq high-water mark would silently eat the turn.
+	s := newEventStore()
+	s.Apply(page(livekit.SimulationRun_STATUS_RUNNING, false,
+		evUtterance("SRJ_a", 0, 6, 2, "snapshot went first"),
+	))
+	applied := s.Apply(page(livekit.SimulationRun_STATUS_RUNNING, false,
+		evUtterance("SRJ_a", 0, 5, 1, "the turn itself"),
+	))
+	if len(applied) != 1 {
+		t.Fatalf("out-of-order event dropped")
 	}
 }
 
