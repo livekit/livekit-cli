@@ -268,7 +268,7 @@ func renderEventTranscript(feed *jobFeed, width int) string {
 	for _, ev := range feed.events {
 		switch ev.Type {
 		case livekit.SimulationRun_JobEvent_TYPE_PERSONA_UTTERANCE:
-			b.WriteString("\n    " + userStyle.Render("You") + "\n")
+			b.WriteString("\n    " + userStyle.Render("Persona") + "\n")
 			writeWrapped(&b, wrapStyle, ev.Text, "      ", "")
 		case livekit.SimulationRun_JobEvent_TYPE_AGENT_UTTERANCE:
 			b.WriteString("\n    " + agentStyle.Render("Agent") + "\n")
@@ -324,7 +324,7 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 			if t.uttered == "" {
 				continue
 			}
-			header := "    " + userStyle.Render("You (spoke)")
+			header := "    " + userStyle.Render("Persona (spoke)")
 			if off, ok := turnOffset(feed, t); ok {
 				header += dimStyle.Render(" · " + formatTurnOffset(off))
 			}
@@ -502,7 +502,7 @@ func formatEventLine(label string, ev *livekit.SimulationRun_JobEvent) string {
 	prefix := fmt.Sprintf("[%s] ", label)
 	switch ev.Type {
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_UTTERANCE:
-		return prefix + "You: " + ev.Text
+		return prefix + "Persona: " + ev.Text
 	case livekit.SimulationRun_JobEvent_TYPE_AGENT_UTTERANCE:
 		return prefix + "Agent: " + ev.Text
 	case livekit.SimulationRun_JobEvent_TYPE_AGENT_HEARD_PERSONA:

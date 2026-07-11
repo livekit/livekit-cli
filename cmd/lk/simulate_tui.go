@@ -1734,7 +1734,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			b.WriteString("\n")
 			switch msg.Role {
 			case agent.ChatRole_USER:
-				fmt.Fprintf(&b, "    %s\n", userStyle.Render("You"))
+				fmt.Fprintf(&b, "    %s\n", userStyle.Render("Persona"))
 			case agent.ChatRole_ASSISTANT:
 				fmt.Fprintf(&b, "    %s\n", agentStyle.Render("Agent"))
 			default:
