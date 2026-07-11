@@ -1713,8 +1713,8 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 		return ""
 	}
 
-	userStyle := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
-	agentStyle := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+	userStyle := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+	agentStyle := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
 
 	var b strings.Builder
 	b.WriteString("\n")

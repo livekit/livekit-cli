@@ -261,8 +261,8 @@ func isEventsUnsupported(err error) bool {
 // arrival order with the same You/Agent styling as the final transcript,
 // phase milestones as dim markers.
 func renderEventTranscript(feed *jobFeed, width int) string {
-	userStyle := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
-	agentStyle := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+	userStyle := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+	agentStyle := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
 	wrapStyle := lipgloss.NewStyle().Width(eventWrapWidth(width))
 
 	var b strings.Builder
@@ -299,8 +299,8 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning, raw bool) string {
 }
 
 func renderUtteredHeardClassic(feed *jobFeed, width int, jobRunning bool) string {
-	userStyle := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
-	agentStyle := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+	userStyle := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+	agentStyle := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
 	wrapStyle := lipgloss.NewStyle().Width(eventWrapWidth(width))
 
 	var b strings.Builder
@@ -464,11 +464,11 @@ func annotatedWords(t *matrixTurn, speech lipgloss.Style, cutAt string) []styled
 	warn := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
 
 	var words []styledWord
-	goldCount := 0
+	var spanGold []string
 	if t.heard != nil && len(t.heard.Alignment) > 0 {
 		for _, span := range t.heard.Alignment {
 			goldFields := strings.Fields(span.Gold)
-			goldCount += len(goldFields)
+			spanGold = append(spanGold, goldFields...)
 			switch span.Kind {
 			case livekit.SimulationRun_JobEvent_Align_KIND_EQUAL:
 				for _, w := range goldFields {
@@ -506,13 +506,25 @@ func annotatedWords(t *matrixTurn, speech lipgloss.Style, cutAt string) []styled
 		}
 		return words
 	}
-	// the scored gold is a prefix of the script; anything beyond it was
-	// never voiced (interrupted) or not yet confirmed — render it faint
-	if goldCount < len(uttered) {
+	// The scored gold is a prefix of the script; anything beyond it was
+	// never voiced (interrupted) or not yet confirmed — render it faint.
+	// Walk the script consuming the spans' gold words in order: words the
+	// normalizer drops entirely (a bare em-dash) never appear in spans and
+	// must count as consumed, not as a phantom tail.
+	consumed := 0
+	for _, g := range spanGold {
+		for consumed < len(uttered) && uttered[consumed] != g {
+			consumed++
+		}
+		if consumed < len(uttered) {
+			consumed++
+		}
+	}
+	if consumed < len(uttered) {
 		if cutAt != "" {
 			words = append(words, styledWord{"⚡" + cutAt, warn})
 		}
-		for _, w := range uttered[goldCount:] {
+		for _, w := range uttered[consumed:] {
 			words = append(words, styledWord{w, faint})
 		}
 	}
@@ -618,10 +630,11 @@ func transcriptSuspect(feed *jobFeed, key turnKey, t *matrixTurn) bool {
 }
 
 func renderAnnotatedConversation(feed *jobFeed, width int, jobRunning bool) string {
-	personaName := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
-	agentName := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
-	personaSpeech := lipgloss.NewStyle().Foreground(util.Brand())
-	agentSpeech := lipgloss.NewStyle().Foreground(util.Success())
+	// the dashboard renders the agent blue; the TUI matches
+	personaName := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+	agentName := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
+	personaSpeech := lipgloss.NewStyle().Foreground(util.Success())
+	agentSpeech := lipgloss.NewStyle().Foreground(util.Brand())
 
 	const gutter = 16 // "m:ss Persona › "
 	wrapWidth := width - 6
