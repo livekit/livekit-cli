@@ -174,9 +174,10 @@ type simulateModel struct {
 	// Live event feed (uttered/heard turns); polled beside the run poll.
 	events         *eventStore
 	eventsInFlight bool
-	detailFollow    bool
-	detailFollowOff bool // follow disabled explicitly (hotkey); only the hotkey re-enables
-	detailMaxScroll int  // last render's scroll ceiling, the "all the way down" mark
+	detailFollow     bool
+	detailFollowOff  bool // follow disabled explicitly (hotkey); only the hotkey re-enables
+	detailMaxScroll  int  // last render's scroll ceiling, the "all the way down" mark
+	detailTranscript bool // audio detail shows the chat transcript (tool calls) instead of the matrix
 
 	cursor          int
 	scrollOff       int
@@ -860,6 +861,17 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.detailFollow = true
 			}
 		}
+	case "t":
+		if m.detailJobID != "" {
+			m.detailTranscript = !m.detailTranscript
+			m.detailScrollOff = 0
+			if m.detailTranscript {
+				m.detailFollow = false
+			} else if job := m.findJob(m.detailJobID); job != nil {
+				m.detailFollow = !m.detailFollowOff &&
+					job.Status == livekit.SimulationRun_Job_STATUS_RUNNING
+			}
+		}
 	case "up", "shift+tab":
 		// arrows never scroll logs (PgUp/PgDn do); in the list they move the cursor
 		if !m.scrollActive(-1, false) {
@@ -879,6 +891,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			if m.cursor >= 0 && m.cursor < len(jobs) {
 				m.detailJobID = jobs[m.cursor].job.Id
 				m.detailScrollOff = 0
+				m.detailTranscript = false
 				// a running job's live feed follows the newest turn
 				m.detailFollow = !m.detailFollowOff &&
 					jobs[m.cursor].job.Status == livekit.SimulationRun_Job_STATUS_RUNNING
@@ -1663,16 +1676,28 @@ func (m *simulateModel) renderConversation(job *livekit.SimulationRun_Job) strin
 	if m.events != nil {
 		feed = m.events.feed(job.Id)
 	}
-	if feed != nil && feed.audioShaped() {
+	if feed != nil && feed.audioShaped() && !m.detailTranscript {
 		return renderUtteredHeard(feed, m.width, job.Status == livekit.SimulationRun_Job_STATUS_RUNNING)
 	}
 	if final := m.renderChatTranscript(job.Id); final != "" {
 		return final
 	}
+	// transcript requested but the summary hasn't landed: stay on the matrix
+	if feed != nil && feed.audioShaped() {
+		return renderUtteredHeard(feed, m.width, job.Status == livekit.SimulationRun_Job_STATUS_RUNNING)
+	}
 	if feed != nil && len(feed.events) > 0 {
 		return renderEventTranscript(feed, m.width)
 	}
 	return ""
+}
+
+func (m *simulateModel) hasChatTranscript(jobID string) bool {
+	if m.run == nil || m.run.Summary == nil || m.run.Summary.ChatHistory == nil {
+		return false
+	}
+	chatCtx, ok := m.run.Summary.ChatHistory[jobID]
+	return ok && chatCtx != nil && len(chatCtx.Items) > 0
 }
 
 func (m *simulateModel) renderChatTranscript(jobID string) string {
@@ -1868,7 +1893,15 @@ func (m *simulateModel) renderHint() string {
 		if m.detailFollow {
 			follow = "f follow ✓"
 		}
-		parts = append(parts, "↑↓ scroll · "+follow+" · c copy scenario · ESC/← back")
+		hint := "↑↓ scroll · " + follow
+		if m.hasChatTranscript(m.detailJobID) {
+			if m.detailTranscript {
+				hint += " · t matrix"
+			} else {
+				hint += " · t transcript"
+			}
+		}
+		parts = append(parts, hint+" · c copy scenario · ESC/← back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
