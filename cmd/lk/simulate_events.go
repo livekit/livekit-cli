@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -40,10 +41,10 @@ type turnKey struct {
 // matrixTurn is one uttered/heard pair: what a party said and what the other
 // party's transcription of it looked like, as the events arrive.
 type matrixTurn struct {
-	uttered string
-	heard   *livekit.SimulationRun_JobEvent // AGENT_HEARD_PERSONA / PERSONA_HEARD_AGENT
-	timings *livekit.SimulationRun_JobEvent // AGENT_UTTERANCE carrying self-reports
-	playout *livekit.SimulationRun_JobEvent // PERSONA_PLAYOUT
+	uttered   string
+	utteredEv *livekit.SimulationRun_JobEvent // the utterance event: ts, agent self-reports
+	heard     *livekit.SimulationRun_JobEvent // AGENT_HEARD_PERSONA / PERSONA_HEARD_AGENT
+	playout   *livekit.SimulationRun_JobEvent // PERSONA_PLAYOUT
 }
 
 type jobFeed struct {
@@ -91,11 +92,13 @@ func (f *jobFeed) apply(ev *livekit.SimulationRun_JobEvent) {
 
 	switch ev.Type {
 	case livekit.SimulationRun_JobEvent_TYPE_PERSONA_UTTERANCE:
-		f.turn(turnKey{persona: true, ordinal: ev.Ordinal}).uttered = ev.Text
+		t := f.turn(turnKey{persona: true, ordinal: ev.Ordinal})
+		t.uttered = ev.Text
+		t.utteredEv = ev
 	case livekit.SimulationRun_JobEvent_TYPE_AGENT_UTTERANCE:
 		t := f.turn(turnKey{persona: false, ordinal: ev.Ordinal})
 		t.uttered = ev.Text
-		t.timings = ev
+		t.utteredEv = ev
 		f.hasAgentSide = true
 	case livekit.SimulationRun_JobEvent_TYPE_AGENT_HEARD_PERSONA:
 		f.turn(heardKey(true, ev)).heard = ev
@@ -288,23 +291,34 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 			continue
 		}
 		if key.persona {
+			// No uttered text: either a playout-only ghost or a perception
+			// fragment that raced ahead of any persona turn — a later
+			// re-segmentation anchors it, so an empty card would be noise.
+			if t.uttered == "" {
+				continue
+			}
 			header := "    " + userStyle.Render("You (spoke)")
-			if t.playout != nil && !feed.firstTs.IsZero() {
-				at := t.playout.GetStartedAt().AsTime().Sub(feed.firstTs)
-				header += dimStyle.Render(" · " + formatTurnOffset(at))
+			if off, ok := turnOffset(feed, t); ok {
+				header += dimStyle.Render(" · " + formatTurnOffset(off))
 			}
 			b.WriteString("\n" + header + "\n")
 			writeWrapped(&b, wrapStyle, t.uttered, "      ", "")
 			b.WriteString(renderHeardLine(t, "agent heard", wrapStyle, feed.hasAgentSide && jobRunning))
 		} else {
+			if t.uttered == "" && t.heard == nil {
+				continue
+			}
 			header := "    " + agentStyle.Render("Agent (spoke)")
-			if t.timings != nil && t.timings.E2ELatencyMs != nil {
-				header += dimStyle.Render(fmt.Sprintf(" · ↳ %dms", *t.timings.E2ELatencyMs))
+			if off, ok := turnOffset(feed, t); ok {
+				header += dimStyle.Render(" · " + formatTurnOffset(off))
+			}
+			if t.utteredEv != nil && t.utteredEv.E2ELatencyMs != nil {
+				header += dimStyle.Render(fmt.Sprintf(" · ↳ %dms", *t.utteredEv.E2ELatencyMs))
 			}
 			b.WriteString("\n" + header + "\n")
 			if t.uttered != "" {
 				writeWrapped(&b, wrapStyle, t.uttered, "      ", "")
-			} else if t.heard != nil {
+			} else {
 				// No agent gold text (no session host): the simulator's own
 				// transcription is the only record of what was said.
 				writeWrapped(&b, wrapStyle, t.heard.Text, "      ", dimStyle.Render(" (simulator transcription)"))
@@ -314,6 +328,21 @@ func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
 		}
 	}
 	return b.String()
+}
+
+// turnOffset is the turn's start relative to the first event: the playout
+// clock when audio timing exists, the utterance event's timestamp otherwise.
+func turnOffset(feed *jobFeed, t *matrixTurn) (time.Duration, bool) {
+	if feed.firstTs.IsZero() {
+		return 0, false
+	}
+	if t.playout != nil {
+		return t.playout.GetStartedAt().AsTime().Sub(feed.firstTs), true
+	}
+	if t.utteredEv != nil && t.utteredEv.Ts != nil {
+		return t.utteredEv.Ts.AsTime().Sub(feed.firstTs), true
+	}
+	return 0, false
 }
 
 // renderHeardLine renders the perception sub-line of a turn: verbatim
@@ -328,18 +357,22 @@ func renderHeardLine(t *matrixTurn, label string, wrapStyle lipgloss.Style, pend
 	}
 	ev := t.heard
 	chip := ""
-	if ev.Wer != nil {
-		chip = fmt.Sprintf(" · WER %.0f%%", *ev.Wer*100)
-	}
 	if ev.Wer != nil && *ev.Wer == 0 {
-		return dimStyle.Render("      "+label+chip+" · ✓ heard verbatim") + "\n"
+		return "      " + greenStyle().Render("✓ heard verbatim") + "\n"
+	}
+	if ev.Wer != nil {
+		pct := 100 - int(math.Round(float64(*ev.Wer)*100))
+		if pct < 0 {
+			pct = 0
+		}
+		chip = fmt.Sprintf(" · %d%% correct", pct)
 	}
 	body := ev.Text
 	if len(ev.Alignment) > 0 {
 		body = renderAlignment(ev.Alignment)
 	}
 	var b strings.Builder
-	b.WriteString(dimStyle.Render("      "+label+chip+" · "))
+	b.WriteString(dimStyle.Render("      " + label + chip + ":"))
 	b.WriteString("\n")
 	writeWrapped(&b, wrapStyle, body, "        ", "")
 	return b.String()
@@ -354,13 +387,23 @@ func renderAlignment(spans []*livekit.SimulationRun_JobEvent_Align) string {
 	for _, span := range spans {
 		switch span.Kind {
 		case livekit.SimulationRun_JobEvent_Align_KIND_EQUAL:
-			parts = append(parts, dimStyle.Render(span.Heard))
+			if span.Heard != "" {
+				parts = append(parts, dimStyle.Render(span.Heard))
+			} else if span.Gold != "" {
+				parts = append(parts, dimStyle.Render(span.Gold))
+			}
 		case livekit.SimulationRun_JobEvent_Align_KIND_SUBSTITUTION:
-			parts = append(parts, redStyle().Render(span.Heard))
+			if span.Heard != "" {
+				parts = append(parts, redStyle().Render(span.Heard))
+			}
 		case livekit.SimulationRun_JobEvent_Align_KIND_INSERTION:
-			parts = append(parts, redStyle().Render("+"+span.Heard))
+			if span.Heard != "" {
+				parts = append(parts, redStyle().Render("+"+span.Heard))
+			}
 		case livekit.SimulationRun_JobEvent_Align_KIND_DELETION:
-			parts = append(parts, strike.Render("["+span.Gold+"]"))
+			if span.Gold != "" {
+				parts = append(parts, strike.Render("["+span.Gold+"]"))
+			}
 		}
 	}
 	return strings.Join(parts, " ")
