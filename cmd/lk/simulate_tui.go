@@ -178,6 +178,7 @@ type simulateModel struct {
 	detailFollowOff  bool // follow disabled explicitly (hotkey); only the hotkey re-enables
 	detailMaxScroll  int  // last render's scroll ceiling, the "all the way down" mark
 	detailTranscript bool // audio detail shows the chat transcript (tool calls) instead of the matrix
+	detailRaw        bool // annotated view swapped for the classic two-transcript view
 
 	cursor          int
 	scrollOff       int
@@ -833,7 +834,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.logScrollOff = 0
 		m.logPinned = false
 	case "d":
-		if m.detailJobID == "" && m.hasDescription() {
+		if m.detailJobID != "" {
+			m.detailRaw = !m.detailRaw
+		} else if m.hasDescription() {
 			m.showDescription = !m.showDescription
 			m.descScrollOff = 0
 		}
@@ -892,6 +895,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.detailJobID = jobs[m.cursor].job.Id
 				m.detailScrollOff = 0
 				m.detailTranscript = false
+				m.detailRaw = false
 				// a running job's live feed follows the newest turn
 				m.detailFollow = !m.detailFollowOff &&
 					jobs[m.cursor].job.Status == livekit.SimulationRun_Job_STATUS_RUNNING
@@ -1677,14 +1681,14 @@ func (m *simulateModel) renderConversation(job *livekit.SimulationRun_Job) strin
 		feed = m.events.feed(job.Id)
 	}
 	if feed != nil && feed.audioShaped() && !m.detailTranscript {
-		return renderUtteredHeard(feed, m.width, job.Status == livekit.SimulationRun_Job_STATUS_RUNNING)
+		return renderUtteredHeard(feed, m.width, job.Status == livekit.SimulationRun_Job_STATUS_RUNNING, m.detailRaw)
 	}
 	if final := m.renderChatTranscript(job.Id); final != "" {
 		return final
 	}
 	// transcript requested but the summary hasn't landed: stay on the matrix
 	if feed != nil && feed.audioShaped() {
-		return renderUtteredHeard(feed, m.width, job.Status == livekit.SimulationRun_Job_STATUS_RUNNING)
+		return renderUtteredHeard(feed, m.width, job.Status == livekit.SimulationRun_Job_STATUS_RUNNING, m.detailRaw)
 	}
 	if feed != nil && len(feed.events) > 0 {
 		return renderEventTranscript(feed, m.width)
@@ -1893,7 +1897,7 @@ func (m *simulateModel) renderHint() string {
 		if m.detailFollow {
 			follow = "f follow ✓"
 		}
-		hint := "↑↓ scroll · " + follow
+		hint := "↑↓ scroll · " + follow + " · d raw"
 		if m.hasChatTranscript(m.detailJobID) {
 			if m.detailTranscript {
 				hint += " · t matrix"

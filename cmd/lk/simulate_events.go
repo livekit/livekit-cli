@@ -287,7 +287,18 @@ func renderEventTranscript(feed *jobFeed, width int) string {
 
 // renderUtteredHeard is the audio-mode matrix: per turn, what each party said
 // and what the other heard, with the simulator-computed WER and alignment.
-func renderUtteredHeard(feed *jobFeed, width int, jobRunning bool) string {
+// renderUtteredHeard is the annotated conversation: one text per turn set in
+// the speaker's color, perception rendered as marks ON the words (missed =
+// red underline, misheard = underline + →gloss, invented = +word), state as
+// right-aligned chips. `raw` switches to the classic two-transcript view.
+func renderUtteredHeard(feed *jobFeed, width int, jobRunning, raw bool) string {
+	if raw {
+		return renderUtteredHeardClassic(feed, width, jobRunning)
+	}
+	return renderAnnotatedConversation(feed, width, jobRunning)
+}
+
+func renderUtteredHeardClassic(feed *jobFeed, width int, jobRunning bool) string {
 	userStyle := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
 	agentStyle := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
 	wrapStyle := lipgloss.NewStyle().Width(eventWrapWidth(width))
@@ -438,6 +449,295 @@ func turnOffset(feed *jobFeed, t *matrixTurn) (time.Duration, bool) {
 // renderHeardLine renders the perception sub-line of a turn: verbatim
 // collapse, the simulator-computed alignment with errors highlighted, or a
 // pending marker while the job still runs.
+type styledWord struct {
+	text  string
+	style lipgloss.Style
+}
+
+// annotatedWords builds the turn's word flow: gold text styled by span
+// status, glosses and insertions interleaved where they happened, and an
+// interrupted tail faded after the inline cut marker.
+func annotatedWords(t *matrixTurn, speech lipgloss.Style, cutAt string) []styledWord {
+	missed := lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Underline(true)
+	gloss := redStyle()
+	faint := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	warn := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
+
+	var words []styledWord
+	goldCount := 0
+	if t.heard != nil && len(t.heard.Alignment) > 0 {
+		for _, span := range t.heard.Alignment {
+			goldFields := strings.Fields(span.Gold)
+			goldCount += len(goldFields)
+			switch span.Kind {
+			case livekit.SimulationRun_JobEvent_Align_KIND_EQUAL:
+				for _, w := range goldFields {
+					words = append(words, styledWord{w, speech})
+				}
+			case livekit.SimulationRun_JobEvent_Align_KIND_DELETION:
+				for _, w := range goldFields {
+					words = append(words, styledWord{w, missed})
+				}
+			case livekit.SimulationRun_JobEvent_Align_KIND_SUBSTITUTION:
+				for _, w := range goldFields {
+					words = append(words, styledWord{w, missed})
+				}
+				if span.Heard != "" {
+					words = append(words, styledWord{"→" + span.Heard, gloss})
+				}
+			case livekit.SimulationRun_JobEvent_Align_KIND_INSERTION:
+				if span.Heard != "" {
+					words = append(words, styledWord{"+" + span.Heard, gloss})
+				}
+			}
+		}
+	}
+	uttered := strings.Fields(t.uttered)
+	if len(words) == 0 {
+		for _, w := range uttered {
+			words = append(words, styledWord{w, speech})
+		}
+		if t.playoutInterrupted && cutAt != "" && len(words) > 0 {
+			// cut position unknown without alignment: mark up front
+			words = append([]styledWord{{"⚡" + cutAt, warn}}, words...)
+			for i := 1; i < len(words); i++ {
+				words[i].style = faint
+			}
+		}
+		return words
+	}
+	// the scored gold is a prefix of the script; anything beyond it was
+	// never voiced (interrupted) or not yet confirmed — render it faint
+	if goldCount < len(uttered) {
+		if cutAt != "" {
+			words = append(words, styledWord{"⚡" + cutAt, warn})
+		}
+		for _, w := range uttered[goldCount:] {
+			words = append(words, styledWord{w, faint})
+		}
+	}
+	return words
+}
+
+// wrapStyledWords lays out pre-styled words with a hanging indent, returning
+// rendered lines. Widths are computed on plain text so ANSI codes never split.
+func wrapStyledWords(words []styledWord, width, indent int) []string {
+	if width < 20 {
+		width = 20
+	}
+	var lines []string
+	var line strings.Builder
+	lineWidth := 0
+	pad := strings.Repeat(" ", indent)
+	flush := func() {
+		if lineWidth > 0 {
+			lines = append(lines, line.String())
+			line.Reset()
+			lineWidth = 0
+		}
+	}
+	for _, w := range words {
+		wl := len([]rune(w.text))
+		if lineWidth > 0 && indent+lineWidth+1+wl > width {
+			flush()
+		}
+		if lineWidth == 0 {
+			line.WriteString(pad)
+		} else {
+			line.WriteString(" ")
+			lineWidth++
+		}
+		line.WriteString(w.style.Render(w.text))
+		lineWidth += wl
+	}
+	flush()
+	return lines
+}
+
+// turnChips is the right-aligned state column: verdict, latency, honesty.
+func turnChips(t *matrixTurn, jobRunning, captured, provisional, suspect bool, cutAt string) string {
+	var chips []string
+	ev := t.heard
+	switch {
+	case ev == nil && t.uttered == "":
+	case ev == nil && !captured:
+	case ev == nil && jobRunning:
+		chips = append(chips, dimStyle.Render("… listening"))
+	case ev == nil && t.playoutInterrupted && cutAt != "":
+		chips = append(chips, lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Render("⚡ cut "+cutAt))
+	case ev == nil:
+		chips = append(chips, dimStyle.Render("∅ no transcript"))
+	case ev.Wer != nil && *ev.Wer == 0 && !provisional:
+		chips = append(chips, greenStyle().Render("✓ verbatim"))
+	case ev.Wer != nil && *ev.Wer == 0:
+		chips = append(chips, dimStyle.Render("✓ so far"))
+	case ev.Wer != nil:
+		pct := 100 - int(math.Round(float64(*ev.Wer)*100))
+		if pct < 0 {
+			pct = 0
+		}
+		total := int(ev.GetWords())
+		correct := total - int(ev.GetWordErrors())
+		if correct < 0 {
+			correct = 0
+		}
+		label := fmt.Sprintf("%d%% · %d/%d", pct, correct, total)
+		style := lipgloss.NewStyle().Foreground(lipgloss.Color("11"))
+		if pct < 80 {
+			style = redStyle()
+		}
+		if provisional {
+			chips = append(chips, dimStyle.Render("~"+label))
+		} else {
+			chips = append(chips, style.Render(label))
+		}
+	}
+	if suspect {
+		chips = append(chips, redStyle().Render("⚠"))
+	}
+	if t.utteredEv != nil && t.utteredEv.E2ELatencyMs != nil {
+		chips = append(chips, dimStyle.Render(fmt.Sprintf("↳ %.1fs reply", float64(*t.utteredEv.E2ELatencyMs)/1000)))
+	}
+	return strings.Join(chips, " ")
+}
+
+// transcriptSuspect flags a confirmed catastrophic turn between clean
+// neighbors — the signature of a transcript that doesn't match the audio.
+func transcriptSuspect(feed *jobFeed, key turnKey, t *matrixTurn) bool {
+	if key.standalone || t.heard == nil || t.heard.Wer == nil || *t.heard.Wer < 0.9 {
+		return false
+	}
+	clean := 0
+	for _, d := range []int{-1, 1} {
+		n := feed.turns[turnKey{persona: key.persona, ordinal: uint32(int(key.ordinal) + d)}]
+		if n != nil && n.heard != nil && n.heard.Wer != nil && *n.heard.Wer <= 0.1 {
+			clean++
+		}
+	}
+	return clean == 2
+}
+
+func renderAnnotatedConversation(feed *jobFeed, width int, jobRunning bool) string {
+	personaName := lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
+	agentName := lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+	personaSpeech := lipgloss.NewStyle().Foreground(util.Brand())
+	agentSpeech := lipgloss.NewStyle().Foreground(util.Success())
+
+	const gutter = 16 // "m:ss Persona › "
+	wrapWidth := width - 6
+	if wrapWidth < 40 {
+		wrapWidth = 40
+	}
+
+	var lastPersona, lastAgent turnKey
+	var maxPersona, maxAgent int64
+	for key, t := range feed.turns {
+		if t == nil || t.heard == nil {
+			continue
+		}
+		if key.persona && t.heard.Seq > maxPersona {
+			maxPersona, lastPersona = t.heard.Seq, key
+		}
+		if !key.persona && t.heard.Seq > maxAgent {
+			maxAgent, lastAgent = t.heard.Seq, key
+		}
+	}
+	agentGold := false
+	for key, t := range feed.turns {
+		if !key.persona && !key.standalone && t != nil && t.uttered != "" {
+			agentGold = true
+			break
+		}
+	}
+
+	var b strings.Builder
+	b.WriteString("\n")
+	b.WriteString(boldStyle.Render("  Conversation"))
+	b.WriteString(dimStyle.Render(" · live · d raw transcripts"))
+	b.WriteString("\n\n")
+	if !feed.hasAgentSide {
+		b.WriteString(dimStyle.Render("    agent-side capture unavailable (no remote session)") + "\n\n")
+	}
+
+	for _, key := range sortedTurnKeys(feed) {
+		t := feed.turns[key]
+		if t == nil {
+			continue
+		}
+		if key.persona && t.uttered == "" {
+			continue
+		}
+		if !key.persona && key.standalone && agentGold {
+			continue
+		}
+		if !key.persona && t.uttered == "" && t.heard == nil {
+			continue
+		}
+
+		offset := "     "
+		if off, ok := turnOffset(feed, t); ok {
+			offset = fmt.Sprintf("%5s", formatTurnOffset(off))
+		}
+		var nameCell string
+		var speech lipgloss.Style
+		if key.persona {
+			nameCell = personaName.Render("Persona ›")
+			speech = personaSpeech
+		} else {
+			nameCell = agentName.Render("Agent   ‹")
+			speech = agentSpeech
+		}
+
+		cutAt := ""
+		if t.playoutInterrupted && t.playout != nil && !feed.firstTs.IsZero() {
+			cutAt = formatTurnOffset(t.playout.GetEndedAt().AsTime().Sub(feed.firstTs))
+		}
+		body := t.uttered
+		if body == "" && t.heard != nil {
+			body = t.heard.Text // simulator transcription is the only record
+		}
+		turn := *t
+		turn.uttered = body
+
+		provisional := jobRunning &&
+			((key.persona && maxPersona > 0 && key == lastPersona) ||
+				(!key.persona && maxAgent > 0 && key == lastAgent))
+		captured := !key.persona || feed.hasAgentSide
+		suspect := transcriptSuspect(feed, key, t)
+
+		words := annotatedWords(&turn, speech, cutAt)
+		lines := wrapStyledWords(words, wrapWidth, gutter)
+		chips := turnChips(t, jobRunning, captured, provisional, suspect, cutAt)
+
+		for i, line := range lines {
+			if i == 0 {
+				prefix := dimStyle.Render(offset) + " " + nameCell + " "
+				content := prefix + strings.TrimPrefix(line, strings.Repeat(" ", gutter))
+				if chips != "" {
+					pad := wrapWidth - lipgloss.Width(content) - lipgloss.Width(chips)
+					if pad < 2 {
+						b.WriteString(content + "\n")
+						b.WriteString(strings.Repeat(" ", max(2, wrapWidth-lipgloss.Width(chips))) + chips + "\n")
+						continue
+					}
+					content += strings.Repeat(" ", pad) + chips
+				}
+				b.WriteString(content + "\n")
+			} else {
+				b.WriteString(line + "\n")
+			}
+		}
+		if len(lines) == 0 {
+			prefix := dimStyle.Render(offset) + " " + nameCell + " "
+			if chips != "" {
+				b.WriteString(prefix + chips + "\n")
+			}
+		}
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
 func renderHeardLine(t *matrixTurn, label string, wrapStyle lipgloss.Style, jobRunning, captured, provisional bool) string {
 	if t.heard == nil {
 		if t.uttered == "" || !captured {

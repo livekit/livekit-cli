@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/twitchtv/twirp"
@@ -185,5 +186,35 @@ func TestFormatEventLine(t *testing.T) {
 	}
 	if got := formatEventLine("greeting", phase); got != "[greeting] · finished (goal met)" {
 		t.Fatalf("phase line: %q", got)
+	}
+}
+
+func TestAnnotatedConversationRendersMarksAndChips(t *testing.T) {
+	s := newEventStore()
+	utt := evUtterance("SRJ_a", 0, 1, 1, "the card is 4471 thanks")
+	utt.Type = livekit.SimulationRun_JobEvent_TYPE_PERSONA_UTTERANCE
+	h := evUtterance("SRJ_a", 0, 2, 1, "the card is 4471")
+	h.Type = livekit.SimulationRun_JobEvent_TYPE_AGENT_HEARD_PERSONA
+	h.RefOrdinal = 1
+	wer := float32(0.2)
+	we := uint32(1)
+	words := uint32(5)
+	h.Wer = &wer
+	h.WordErrors = &we
+	h.Words = &words
+	h.Alignment = []*livekit.SimulationRun_JobEvent_Align{
+		{Kind: livekit.SimulationRun_JobEvent_Align_KIND_EQUAL, Gold: "the card is 4471", Heard: "the card is 4471"},
+		{Kind: livekit.SimulationRun_JobEvent_Align_KIND_DELETION, Gold: "thanks", Heard: ""},
+	}
+	s.Apply(page(livekit.SimulationRun_STATUS_RUNNING, false, utt, h))
+	out := renderUtteredHeard(s.feed("SRJ_a"), 100, false, false)
+	for _, want := range []string{"Persona", "the card is 4471", "thanks", "80% · 4/5"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("annotated view missing %q in:\n%s", want, out)
+		}
+	}
+	raw := renderUtteredHeard(s.feed("SRJ_a"), 100, false, true)
+	if !strings.Contains(raw, "agent heard") {
+		t.Fatalf("raw view missing classic lane label:\n%s", raw)
 	}
 }
