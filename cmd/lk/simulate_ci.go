@@ -198,14 +198,14 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
-		errPrefix := ""
-		if !out.Interactive() {
-			errPrefix = "::error::"
-		}
-		if failed > 0 {
-			out.Resultf("%s%d simulation(s) failed\n", errPrefix, failed)
-		} else {
-			out.Resultf("%sSimulation run failed: %s\n", errPrefix, run.Error)
+		// non-interactive output already carries the failures in the full
+		// dump, and the returned error prints either way
+		if out.Interactive() {
+			if failed > 0 {
+				out.Resultf("%d simulation(s) failed\n", failed)
+			} else {
+				out.Resultf("Simulation run failed: %s\n", run.Error)
+			}
 		}
 		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
 			return fmt.Errorf("simulation failed: %s", run.Error)
