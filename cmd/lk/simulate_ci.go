@@ -26,6 +26,8 @@ import (
 
 	"github.com/livekit/protocol/livekit"
 	agent "github.com/livekit/protocol/livekit/agent"
+
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 type toggleWriter struct {
@@ -173,7 +175,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Results ---
 
-	if os.Getenv("CI") != "" {
+	if util.InCI() {
 		report.Results(run, agent)
 	} else {
 		// This path also serves humans whose stdin/stdout merely isn't a TTY
@@ -199,7 +201,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
 		errPrefix := ""
-		if os.Getenv("CI") != "" {
+		if util.InCI() {
 			errPrefix = "::error::"
 		}
 		if failed > 0 {
