@@ -604,9 +604,7 @@ func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, faile
 	return
 }
 
-// The server ships the run summary as summary_zstd: a SimulationRunSummary,
-// proto.Marshal'ed then zstd-compressed (still a plain proto - decompress,
-// then proto.Unmarshal). Memoized per run pointer: the TUI re-renders often.
+// Memoized per run pointer: the TUI re-renders often.
 var (
 	summaryDecoder, _ = zstd.NewReader(nil)
 	lastSummaryRun    *livekit.SimulationRun
