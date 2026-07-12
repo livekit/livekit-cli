@@ -19,7 +19,8 @@ require (
 	github.com/google/go-containerregistry v0.20.7
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
-	github.com/livekit/protocol v1.49.1-0.20260707153508-a36bd7e4afe5
+	github.com/klauspost/compress v1.18.6
+	github.com/livekit/protocol v1.49.1-0.20260712215709-8847d7456816
 	github.com/livekit/server-sdk-go/v2 v2.17.0
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/patternmatcher v0.6.1
@@ -155,7 +156,6 @@ require (
 	github.com/in-toto/attestation v1.1.2 // indirect
 	github.com/in-toto/in-toto-golang v0.11.0 // indirect
 	github.com/jxskiss/base62 v1.1.0 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/lithammer/shortuuid/v4 v4.2.0 // indirect
