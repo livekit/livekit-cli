@@ -194,17 +194,10 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		out.Statusf("Dashboard:  %s", url)
 	}
 
+	// the returned error is printed by main and reports the failure; the
+	// counts line / full dump above already carries the detail
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
-		// non-interactive output already carries the failures in the full
-		// dump, and the returned error prints either way
-		if out.Interactive() {
-			if failed > 0 {
-				out.Resultf("%d simulation(s) failed\n", failed)
-			} else {
-				out.Resultf("Simulation run failed: %s\n", run.Error)
-			}
-		}
 		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
 			return fmt.Errorf("simulation failed: %s", run.Error)
 		}
