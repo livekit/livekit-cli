@@ -663,6 +663,34 @@ func renderAnnotatedConversation(feed *jobFeed, width int, jobRunning bool) stri
 		}
 	}
 
+	// Chips live in a reserved right column so verdicts align across turns:
+	// text never enters it, and every chip row right-justifies to the same
+	// edge on the turn's first line.
+	chipZone := 0
+	chipCache := make(map[turnKey]string)
+	for key, t := range feed.turns {
+		if t == nil {
+			continue
+		}
+		provisional := jobRunning &&
+			((key.persona && maxPersona > 0 && key == lastPersona) ||
+				(!key.persona && maxAgent > 0 && key == lastAgent))
+		captured := !key.persona || feed.hasAgentSide
+		cutAt := ""
+		if t.playoutInterrupted && t.playout != nil && !feed.firstTs.IsZero() {
+			cutAt = formatTurnOffset(t.playout.GetEndedAt().AsTime().Sub(feed.firstTs))
+		}
+		chips := turnChips(t, jobRunning, captured, provisional, transcriptSuspect(feed, key, t), cutAt)
+		chipCache[key] = chips
+		if w := lipgloss.Width(chips); w > chipZone {
+			chipZone = w
+		}
+	}
+	if chipZone > (wrapWidth-gutter)/2 {
+		chipZone = (wrapWidth - gutter) / 2
+	}
+	textWidth := wrapWidth - chipZone - 2
+
 	var b strings.Builder
 	b.WriteString("\n")
 	b.WriteString(boldStyle.Render("  Conversation"))
@@ -712,15 +740,9 @@ func renderAnnotatedConversation(feed *jobFeed, width int, jobRunning bool) stri
 		turn := *t
 		turn.uttered = body
 
-		provisional := jobRunning &&
-			((key.persona && maxPersona > 0 && key == lastPersona) ||
-				(!key.persona && maxAgent > 0 && key == lastAgent))
-		captured := !key.persona || feed.hasAgentSide
-		suspect := transcriptSuspect(feed, key, t)
-
 		words := annotatedWords(&turn, speech, cutAt)
-		lines := wrapStyledWords(words, wrapWidth, gutter)
-		chips := turnChips(t, jobRunning, captured, provisional, suspect, cutAt)
+		lines := wrapStyledWords(words, textWidth, gutter)
+		chips := chipCache[key]
 
 		for i, line := range lines {
 			if i == 0 {
@@ -728,10 +750,8 @@ func renderAnnotatedConversation(feed *jobFeed, width int, jobRunning bool) stri
 				content := prefix + strings.TrimPrefix(line, strings.Repeat(" ", gutter))
 				if chips != "" {
 					pad := wrapWidth - lipgloss.Width(content) - lipgloss.Width(chips)
-					if pad < 2 {
-						b.WriteString(content + "\n")
-						b.WriteString(strings.Repeat(" ", max(2, wrapWidth-lipgloss.Width(chips))) + chips + "\n")
-						continue
+					if pad < 1 {
+						pad = 1
 					}
 					content += strings.Repeat(" ", pad) + chips
 				}
