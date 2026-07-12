@@ -26,8 +26,6 @@ import (
 
 	"github.com/livekit/protocol/livekit"
 	agent "github.com/livekit/protocol/livekit/agent"
-
-	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 type toggleWriter struct {
@@ -175,12 +173,12 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Results ---
 
-	if util.InCI() {
+	if !out.Interactive() {
 		report.Results(run, agent)
 	} else {
-		// This path also serves humans whose stdin/stdout merely isn't a TTY
-		// (pipes, task runners): keep the terminal to counts and pointers,
-		// the per-scenario transcripts go to a report file like the TUI's.
+		// A terminal is watching; we just couldn't open the TUI (e.g. stdin
+		// isn't a TTY). Keep it to counts and pointers, the per-scenario
+		// transcripts go to a report file like the TUI's.
 		if f, err := os.CreateTemp("", "lk-simulate-report-*.txt"); err == nil {
 			writeRunResults(asciiWriter{f}, run, agent)
 			f.Close()
@@ -201,7 +199,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
 		errPrefix := ""
-		if util.InCI() {
+		if !out.Interactive() {
 			errPrefix = "::error::"
 		}
 		if failed > 0 {

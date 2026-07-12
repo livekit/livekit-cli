@@ -369,7 +369,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 }
 
 func isInteractive() bool {
-	if util.InCI() {
+	if os.Getenv("CI") != "" {
 		return false
 	}
 	return isatty.IsTerminal(os.Stdin.Fd()) && isatty.IsTerminal(os.Stdout.Fd())
