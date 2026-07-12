@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/livekit/protocol/livekit"
+	agent "github.com/livekit/protocol/livekit/agent"
 )
 
 // simLog is the single source of the plain-text simulation output, shared by
@@ -142,6 +143,169 @@ var asciiGlyphs = strings.NewReplacer(
 func (a asciiWriter) Write(p []byte) (int, error) {
 	_, err := io.WriteString(a.w, asciiGlyphs.Replace(string(p)))
 	return len(p), err
+}
+
+// writeRunResults writes the per-job results and the run summary, with GitHub
+// group markers (a useful delimiter outside GitHub too).
+func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) {
+	if run == nil {
+		return
+	}
+	summary := decodeRunSummary(run)
+
+	if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
+		fmt.Fprintf(w, "✗ Simulation failed: %s\n", run.Error)
+		return
+	}
+
+	for i, job := range run.Jobs {
+		icon := "⏺"
+		switch job.Status {
+		case livekit.SimulationRun_Job_STATUS_COMPLETED:
+			icon = "✓"
+		case livekit.SimulationRun_Job_STATUS_FAILED:
+			icon = "✗"
+		}
+
+		label := job.Label
+		if label == "" {
+			label = fmt.Sprintf("Job %d", i+1)
+		}
+
+		fmt.Fprintf(w, "::group::%s %s (%s)\n", icon, label, job.Id)
+
+		if job.Instructions != "" {
+			fmt.Fprintln(w, "Instructions:")
+			for line := range strings.SplitSeq(job.Instructions, "\n") {
+				fmt.Fprintf(w, "  %s\n", line)
+			}
+		}
+
+		if job.AgentExpectations != "" {
+			fmt.Fprintln(w, "Expected:")
+			for line := range strings.SplitSeq(job.AgentExpectations, "\n") {
+				fmt.Fprintf(w, "  %s\n", line)
+			}
+		}
+
+		if job.Error != "" {
+			if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
+				fmt.Fprintf(w, "Result: %s\n", job.Error)
+			} else {
+				fmt.Fprintf(w, "Error: %s\n", job.Error)
+			}
+		}
+
+		if summary != nil && summary.ChatHistory != nil {
+			writeChatHistory(w, summary.ChatHistory[job.Id])
+		}
+
+		if ap != nil && job.RoomName != "" {
+			logs := ap.RecentRoomLogs(0, job.RoomName)
+			if len(logs) > 0 {
+				fmt.Fprintln(w, "Logs:")
+				for _, line := range logs {
+					fmt.Fprintf(w, "  %s\n", ansiEscapeRe.ReplaceAllString(line, ""))
+				}
+			}
+		}
+
+		fmt.Fprintln(w, "::endgroup::")
+
+		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED {
+			firstLine, _, _ := strings.Cut(job.Error, "\n")
+			fmt.Fprintf(w, "::error::Job %d failed: %s\n", i+1, firstLine)
+		}
+	}
+
+	if summary != nil {
+		writeRunSummary(w, run, summary)
+	} else {
+		msg := "The summary for this run is not available"
+		if run.Error != "" {
+			msg = run.Error
+		}
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "⚠ "+msg)
+	}
+}
+
+func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.SimulationRunSummary) {
+	total, _, passed, failed := simulationJobCounts(run)
+
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "::group::Summary")
+	fmt.Fprintf(w, "%d total, %d passed, %d failed\n", total, passed, failed)
+
+	if summary.GoingWell != "" {
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Going well:")
+		for line := range strings.SplitSeq(summary.GoingWell, "\n") {
+			fmt.Fprintf(w, "  %s\n", line)
+		}
+	}
+
+	if summary.ToImprove != "" {
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "To improve:")
+		for line := range strings.SplitSeq(summary.ToImprove, "\n") {
+			fmt.Fprintf(w, "  %s\n", line)
+		}
+	}
+
+	if len(summary.Issues) > 0 {
+		fmt.Fprintln(w)
+		fmt.Fprintln(w, "Issues:")
+		for i, issue := range summary.Issues {
+			fmt.Fprintf(w, "  %d. %s\n", i+1, issue.Description)
+			if issue.Suggestion != "" {
+				fmt.Fprintf(w, "     Suggestion: %s\n", issue.Suggestion)
+			}
+		}
+	}
+
+	fmt.Fprintln(w, "::endgroup::")
+}
+
+func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {
+	if chatCtx == nil || len(chatCtx.Items) == 0 {
+		return
+	}
+	fmt.Fprintln(w, "Transcript:")
+	for _, item := range chatCtx.Items {
+		switch v := item.Item.(type) {
+		case *agent.ChatContext_ChatItem_Message:
+			msg := v.Message
+			text := chatMessageText(msg)
+			if text == "" {
+				continue
+			}
+			switch msg.Role {
+			case agent.ChatRole_USER:
+				fmt.Fprintf(w, "  ● You\n")
+			case agent.ChatRole_ASSISTANT:
+				fmt.Fprintf(w, "  ● Agent\n")
+			default:
+				fmt.Fprintf(w, "  ● %s\n", msg.Role)
+			}
+			for tl := range strings.SplitSeq(text, "\n") {
+				fmt.Fprintf(w, "    %s\n", tl)
+			}
+		case *agent.ChatContext_ChatItem_FunctionCall:
+			fc := v.FunctionCall
+			fmt.Fprintf(w, "  [call] %s(%s)\n", fc.Name, fc.Arguments)
+		case *agent.ChatContext_ChatItem_FunctionCallOutput:
+			fco := v.FunctionCallOutput
+			label := "output"
+			if fco.IsError {
+				label = "error"
+			}
+			fmt.Fprintf(w, "  [%s] %s -> %s\n", label, fco.Name, fco.Output)
+		case *agent.ChatContext_ChatItem_AgentHandoff:
+			h := v.AgentHandoff
+			fmt.Fprintf(w, "  [handoff] -> %s\n", h.NewAgentId)
+		}
+	}
 }
 
 // runReporter writes the simLog to a temp file so TUI runs leave the same
