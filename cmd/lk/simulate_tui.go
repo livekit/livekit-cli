@@ -1101,7 +1101,7 @@ func (m *simulateModel) viewRunning() string {
 
 		if m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING {
 			fmt.Fprintf(&b, "\n  %s %s  %s\n", yellowStyle().Render("⏺"), yellowStyle().Render("Generating summary..."), m.spinner())
-		} else if m.run.Summary != nil {
+		} else if runSummary(m.run) != nil {
 			b.WriteString(m.renderSummary())
 		} else if isTerminalRunStatus(m.run.Status) {
 			msg := "The summary for this run is not available"
@@ -1553,7 +1553,7 @@ func (m *simulateModel) scrolledDetail() string {
 }
 
 func (m *simulateModel) renderSummary() string {
-	summary := m.run.Summary
+	summary := runSummary(m.run)
 	if summary == nil {
 		return ""
 	}
@@ -1622,10 +1622,10 @@ func (m *simulateModel) renderSummary() string {
 }
 
 func (m *simulateModel) renderChatTranscript(jobID string) string {
-	if m.run.Summary == nil || m.run.Summary.ChatHistory == nil {
+	if runSummary(m.run) == nil || runSummary(m.run).ChatHistory == nil {
 		return ""
 	}
-	chatCtx, ok := m.run.Summary.ChatHistory[jobID]
+	chatCtx, ok := runSummary(m.run).ChatHistory[jobID]
 	if !ok || chatCtx == nil || len(chatCtx.Items) == 0 {
 		return ""
 	}

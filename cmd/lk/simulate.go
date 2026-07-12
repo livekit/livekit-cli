@@ -31,12 +31,14 @@ import (
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
+	"google.golang.org/protobuf/proto"
 )
 
 func init() {
@@ -600,4 +602,32 @@ func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, faile
 		}
 	}
 	return
+}
+
+// The server ships the run summary as summary_zstd: a SimulationRunSummary,
+// proto.Marshal'ed then zstd-compressed (still a plain proto - decompress,
+// then proto.Unmarshal). Memoized per run pointer: the TUI re-renders often.
+var (
+	summaryDecoder, _ = zstd.NewReader(nil)
+	lastSummaryRun    *livekit.SimulationRun
+	lastSummary       *livekit.SimulationRunSummary
+)
+
+func runSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
+	if run == nil || len(run.SummaryZstd) == 0 {
+		return nil
+	}
+	if run == lastSummaryRun {
+		return lastSummary
+	}
+	raw, err := summaryDecoder.DecodeAll(run.SummaryZstd, nil)
+	if err != nil {
+		return nil
+	}
+	summary := &livekit.SimulationRunSummary{}
+	if err := proto.Unmarshal(raw, summary); err != nil {
+		return nil
+	}
+	lastSummaryRun, lastSummary = run, summary
+	return summary
 }

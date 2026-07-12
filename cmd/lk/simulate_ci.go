@@ -249,8 +249,8 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 			}
 		}
 
-		if run.Summary != nil && run.Summary.ChatHistory != nil {
-			writeChatHistory(w, run.Summary.ChatHistory[job.Id])
+		if runSummary(run) != nil && runSummary(run).ChatHistory != nil {
+			writeChatHistory(w, runSummary(run).ChatHistory[job.Id])
 		}
 
 		if ap != nil && job.RoomName != "" {
@@ -271,7 +271,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 		}
 	}
 
-	if run.Summary != nil {
+	if runSummary(run) != nil {
 		writeRunSummary(w, run)
 	} else {
 		msg := "The summary for this run is not available"
@@ -284,7 +284,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 }
 
 func writeRunSummary(w io.Writer, run *livekit.SimulationRun) {
-	summary := run.Summary
+	summary := runSummary(run)
 	total, _, passed, failed := simulationJobCounts(run)
 
 	fmt.Fprintln(w)
