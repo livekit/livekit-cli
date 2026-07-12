@@ -173,7 +173,20 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Results ---
 
-	report.Results(run, agent)
+	if os.Getenv("CI") != "" {
+		report.Results(run, agent)
+	} else {
+		// This path also serves humans whose stdin/stdout merely isn't a TTY
+		// (pipes, task runners): keep the terminal to counts and pointers,
+		// the per-scenario transcripts go to a report file like the TUI's.
+		if f, err := os.CreateTemp("", "lk-simulate-report-*.txt"); err == nil {
+			writeRunResults(asciiWriter{f}, run, agent)
+			f.Close()
+			out.Statusf("Run report: %s", f.Name())
+		}
+		total, _, passed, failedN := simulationJobCounts(run)
+		fmt.Fprintf(out.ResultWriter(), "%d total, %d passed, %d failed\n", total, passed, failedN)
+	}
 
 	if brokenAgent && agent != nil {
 		writeBrokenAgentNote(out.WarnWriter(), agent)
@@ -185,10 +198,14 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
+		errPrefix := ""
+		if os.Getenv("CI") != "" {
+			errPrefix = "::error::"
+		}
 		if failed > 0 {
-			out.Resultf("::error::%d simulation(s) failed\n", failed)
+			out.Resultf("%s%d simulation(s) failed\n", errPrefix, failed)
 		} else {
-			out.Resultf("::error::Simulation run failed: %s\n", run.Error)
+			out.Resultf("%sSimulation run failed: %s\n", errPrefix, run.Error)
 		}
 		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
 			return fmt.Errorf("simulation failed: %s", run.Error)
