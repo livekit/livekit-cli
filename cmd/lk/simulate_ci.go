@@ -205,6 +205,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 	if run == nil {
 		return
 	}
+	summary := decodeRunSummary(run)
 
 	if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
 		fmt.Fprintf(w, "✗ Simulation failed: %s\n", run.Error)
@@ -249,8 +250,8 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 			}
 		}
 
-		if runSummary(run) != nil && runSummary(run).ChatHistory != nil {
-			writeChatHistory(w, runSummary(run).ChatHistory[job.Id])
+		if summary != nil && summary.ChatHistory != nil {
+			writeChatHistory(w, summary.ChatHistory[job.Id])
 		}
 
 		if ap != nil && job.RoomName != "" {
@@ -271,8 +272,8 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 		}
 	}
 
-	if runSummary(run) != nil {
-		writeRunSummary(w, run)
+	if summary != nil {
+		writeRunSummary(w, run, summary)
 	} else {
 		msg := "The summary for this run is not available"
 		if run.Error != "" {
@@ -283,8 +284,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 	}
 }
 
-func writeRunSummary(w io.Writer, run *livekit.SimulationRun) {
-	summary := runSummary(run)
+func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.SimulationRunSummary) {
 	total, _, passed, failed := simulationJobCounts(run)
 
 	fmt.Fprintln(w)

@@ -40,8 +40,8 @@ func runSimulateTUI(config *simulateConfig) error {
 	_, runErr := p.Run()
 
 	if m.launcher != nil {
-    // A second ctrl+c during cleanup would kill the CLI and leak the worker
-    // (own process group, port stays bound); escalate to SIGKILL instead.
+		// A second ctrl+c during cleanup would kill the CLI and leak the worker
+		// (own process group, port stays bound); escalate to SIGKILL instead.
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt)
 		defer signal.Stop(sigCh)
@@ -157,6 +157,7 @@ type simulateModel struct {
 
 	// Run phase
 	run            *livekit.SimulationRun
+	summary        *livekit.SimulationRunSummary
 	runFinished    bool
 	brokenAgent    bool
 	numSimulations int32
@@ -362,6 +363,7 @@ func (m *simulateModel) runSetup() tea.Cmd {
 			m.err = err
 		}
 		m.run = run
+		m.summary = decodeRunSummary(run)
 		m.setupDone = true
 		return nil
 	}
@@ -575,6 +577,7 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case simulationRunMsg:
 		if msg.err == nil && msg.run != nil {
 			m.run = msg.run
+			m.summary = decodeRunSummary(msg.run)
 			m.reporter.RunUpdate(msg.run, m.config.numSimulations)
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
@@ -1101,7 +1104,7 @@ func (m *simulateModel) viewRunning() string {
 
 		if m.run.Status == livekit.SimulationRun_STATUS_SUMMARIZING {
 			fmt.Fprintf(&b, "\n  %s %s  %s\n", yellowStyle().Render("⏺"), yellowStyle().Render("Generating summary..."), m.spinner())
-		} else if runSummary(m.run) != nil {
+		} else if m.summary != nil {
 			b.WriteString(m.renderSummary())
 		} else if isTerminalRunStatus(m.run.Status) {
 			msg := "The summary for this run is not available"
@@ -1553,7 +1556,7 @@ func (m *simulateModel) scrolledDetail() string {
 }
 
 func (m *simulateModel) renderSummary() string {
-	summary := runSummary(m.run)
+	summary := m.summary
 	if summary == nil {
 		return ""
 	}
@@ -1622,10 +1625,10 @@ func (m *simulateModel) renderSummary() string {
 }
 
 func (m *simulateModel) renderChatTranscript(jobID string) string {
-	if runSummary(m.run) == nil || runSummary(m.run).ChatHistory == nil {
+	if m.summary == nil || m.summary.ChatHistory == nil {
 		return ""
 	}
-	chatCtx, ok := runSummary(m.run).ChatHistory[jobID]
+	chatCtx, ok := m.summary.ChatHistory[jobID]
 	if !ok || chatCtx == nil || len(chatCtx.Items) == 0 {
 		return ""
 	}

@@ -604,21 +604,16 @@ func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, faile
 	return
 }
 
-// Memoized per run pointer: the TUI re-renders often.
-var (
-	summaryDecoder, _ = zstd.NewReader(nil)
-	lastSummaryRun    *livekit.SimulationRun
-	lastSummary       *livekit.SimulationRunSummary
-)
-
-func runSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
+func decodeRunSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
 	if run == nil || len(run.SummaryZstd) == 0 {
 		return nil
 	}
-	if run == lastSummaryRun {
-		return lastSummary
+	dec, err := zstd.NewReader(nil)
+	if err != nil {
+		return nil
 	}
-	raw, err := summaryDecoder.DecodeAll(run.SummaryZstd, nil)
+	defer dec.Close()
+	raw, err := dec.DecodeAll(run.SummaryZstd, nil)
 	if err != nil {
 		return nil
 	}
@@ -626,6 +621,5 @@ func runSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
 	if err := proto.Unmarshal(raw, summary); err != nil {
 		return nil
 	}
-	lastSummaryRun, lastSummary = run, summary
 	return summary
 }
