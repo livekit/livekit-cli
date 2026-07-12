@@ -52,8 +52,10 @@ func runSimulateTUI(config *simulateConfig) error {
 		}()
 
 		if agentProc := m.launcher.Stop(); agentProc != nil {
-			// A broken agent was already shown in the TUI and lands in the
-			// report file; the terminal only gets the pointers below.
+			if m.brokenAgent {
+				writeBrokenAgentNote(out.WarnWriter(), agentProc)
+				fmt.Fprintln(out.WarnWriter())
+			}
 			if agentProc.LogPath != "" {
 				out.Statusf("Agent logs: %s", agentProc.LogPath)
 			}
