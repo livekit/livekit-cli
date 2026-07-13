@@ -177,10 +177,9 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		// A terminal is watching; we just couldn't open the TUI (e.g. stdin
 		// isn't a TTY). Keep it to counts and pointers, the per-scenario
 		// transcripts go to a report file like the TUI's.
-		if f, err := os.CreateTemp("", "lk-simulate-report-*.txt"); err == nil {
-			writeRunResults(asciiWriter{f}, run, agent)
-			f.Close()
-			out.Statusf("Run report: %s", f.Name())
+		dashboardURL := simulationDashboardURL(config.pc.ProjectId, runID)
+		if path := newRunReporter().Finish(run, agent, brokenAgent, dashboardURL); path != "" {
+			out.Statusf("Run report: %s", path)
 		}
 		total, _, passed, failedN := simulationJobCounts(run)
 		fmt.Fprintf(out.ResultWriter(), "%d total, %d passed, %d failed\n", total, passed, failedN)
