@@ -103,7 +103,11 @@ func TestSessionE2E(t *testing.T) {
 	})
 
 	// start: launches the detached daemon and returns once the agent is ready.
-	startOut, err := run(15*time.Second, "agent", "daemon", "start", "--port", port, entrypoint)
+	// The CLI itself waits up to 65s for daemon readiness (awaitDaemonReady),
+	// so give it just over that: on a cold Windows runner the chain of first
+	// execs (lk.exe, uv, python) can alone eat a tighter budget, and killing
+	// the command mid-wait loses the CLI's own error report.
+	startOut, err := run(70*time.Second, "agent", "daemon", "start", "--port", port, entrypoint)
 	require.NoError(t, err, "session start failed:\n%s", startOut)
 	require.Contains(t, startOut, "Session started.", "start did not report readiness:\n%s", startOut)
 
