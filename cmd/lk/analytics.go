@@ -33,6 +33,7 @@ import (
 )
 
 const (
+	defaultAnalyticsLimit         = 10
 	analyticsProjectIDRequirement = "analytics API requires a LiveKit Cloud project with a known project_id"
 	analyticsProjectSelectHint    = "Select a cloud project via --project or run `lk cloud auth`"
 )
@@ -52,6 +53,7 @@ var (
 						&cli.IntFlag{
 							Name:  "limit",
 							Usage: "Maximum number of sessions to return",
+							Value: defaultAnalyticsLimit,
 						},
 						&cli.IntFlag{
 							Name:  "page",
@@ -145,7 +147,7 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if len(res.Sessions) == 0 {
-		fmt.Println("No sessions found")
+		out.Result("No sessions found")
 		return nil
 	}
 
@@ -163,12 +165,12 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 			emptyDash(session.EndedAt),
 			strconv.Itoa(session.NumParticipants),
 			strconv.Itoa(session.NumActiveParticipants),
-			rawJSONToString(session.BandwidthIn),
-			rawJSONToString(session.BandwidthOut),
+			formatBytes(session.BandwidthIn),
+			formatBytes(session.BandwidthOut),
 		)
 	}
 
-	fmt.Println(table)
+	out.Result(table)
 	return nil
 }
 
@@ -207,9 +209,9 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 			emptyDash(details.EndTime),
 			strconv.Itoa(details.NumParticipants),
 			rawJSONToString(details.ConnectionMinutes),
-			rawJSONToString(details.Bandwidth),
+			formatBytes(details.Bandwidth),
 		)
-	fmt.Println(summary)
+	out.Result(summary)
 
 	if len(details.Participants) == 0 {
 		return nil
@@ -233,20 +235,18 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 		)
 	}
 
-	fmt.Println(participantTable)
+	out.Result(participantTable)
 	return nil
 }
 
 func buildAnalyticsListQuery(cmd *cli.Command) (url.Values, error) {
 	query := url.Values{}
 
-	if cmd.IsSet("limit") {
-		limit := cmd.Int("limit")
-		if limit <= 0 {
-			return nil, errors.New("limit must be greater than 0")
-		}
-		query.Set("limit", strconv.Itoa(limit))
+	limit := cmd.Int("limit")
+	if limit <= 0 {
+		return nil, errors.New("limit must be greater than 0")
 	}
+	query.Set("limit", strconv.Itoa(limit))
 
 	if cmd.IsSet("page") {
 		page := cmd.Int("page")
@@ -333,7 +333,7 @@ func callAnalyticsAPI(ctx context.Context, cmd *cli.Command, sessionID string, q
 	}
 
 	if printCurl {
-		fmt.Printf("curl -H \"Authorization: Bearer %s\" \"%s\"\n", token, reqURL.String())
+		out.Resultf("curl -H \"Authorization: Bearer %s\" \"%s\"\n", token, reqURL.String())
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL.String(), nil)
@@ -440,6 +440,28 @@ func rawJSONToString(value json.RawMessage) string {
 	}
 
 	return emptyDash(string(value))
+}
+
+func formatBytes(value json.RawMessage) string {
+	raw := rawJSONToString(value)
+	bytes, err := strconv.ParseFloat(raw, 64)
+	if err != nil || bytes < 0 {
+		return raw
+	}
+
+	if bytes < 1000 {
+		return fmt.Sprintf("%.0f B", bytes)
+	}
+
+	units := "KMGTPE"
+	unitIndex := 0
+	size := bytes / 1000
+	for size >= 1000 && unitIndex < len(units)-1 {
+		size /= 1000
+		unitIndex++
+	}
+
+	return fmt.Sprintf("%.1f %cB", size, units[unitIndex])
 }
 
 func emptyDash(value string) string {

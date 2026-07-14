@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
 )
 
 func TestAnalyticsCommandTree(t *testing.T) {
@@ -79,6 +81,31 @@ func TestRawJSONToString(t *testing.T) {
 
 	val = json.RawMessage(``)
 	assert.Equal(t, "-", rawJSONToString(val))
+}
+
+func TestBuildAnalyticsListQueryUsesDefaultLimit(t *testing.T) {
+	var queryLimit string
+	cmd := &cli.Command{
+		Flags: []cli.Flag{
+			&cli.IntFlag{Name: "limit", Value: defaultAnalyticsLimit},
+		},
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			query, err := buildAnalyticsListQuery(cmd)
+			queryLimit = query.Get("limit")
+			return err
+		},
+	}
+
+	require.NoError(t, cmd.Run(context.Background(), []string{"analytics-list"}))
+	assert.Equal(t, "10", queryLimit)
+}
+
+func TestFormatBytes(t *testing.T) {
+	assert.Equal(t, "999 B", formatBytes(json.RawMessage(`999`)))
+	assert.Equal(t, "1.2 KB", formatBytes(json.RawMessage(`1234`)))
+	assert.Equal(t, "1.3 MB", formatBytes(json.RawMessage(`1260393`)))
+	assert.Equal(t, "-", formatBytes(nil))
+	assert.Equal(t, "unknown", formatBytes(json.RawMessage(`"unknown"`)))
 }
 
 func TestResolveAnalyticsProjectID(t *testing.T) {
