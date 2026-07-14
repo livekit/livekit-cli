@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -65,25 +66,47 @@ func ReadRequestArgOrFlag[T any, P protoType[T]](cmd *cli.Command) (*T, error) {
 	return ReadRequestFileOrLiteral[T, P](reqFile)
 }
 
-func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (P, error) {
-	var reqBytes []byte
-	var err error
-
-	// This allows us to read JSON from either CLI arg or FS
+// readFileOrLiteral resolves the input to raw bytes, accepting a literal
+// value, a filesystem path, or "-" to read from stdin.
+func readFileOrLiteral(pathOrLiteral string) ([]byte, error) {
 	if pathOrLiteral == "-" {
-		reqBytes, err = io.ReadAll(os.Stdin)
-	} else if _, err = os.Stat(pathOrLiteral); err == nil {
-		reqBytes, err = os.ReadFile(pathOrLiteral)
-	} else {
-		reqBytes = []byte(pathOrLiteral)
+		return io.ReadAll(os.Stdin)
 	}
+	if _, err := os.Stat(pathOrLiteral); err == nil {
+		return os.ReadFile(pathOrLiteral)
+	}
+	return []byte(pathOrLiteral), nil
+}
+
+// ReadJSONFileOrLiteral reads JSON from a literal string, a file path, or
+// stdin (when pathOrLiteral is "-"). If a non-nil target pointer is provided,
+// the JSON is decoded into it. The raw, validated JSON is always returned.
+func ReadJSONFileOrLiteral(pathOrLiteral string, target ...any) (json.RawMessage, error) {
+	b, err := readFileOrLiteral(pathOrLiteral)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(target) > 0 && target[0] != nil {
+		if err := json.Unmarshal(b, target[0]); err != nil {
+			return nil, err
+		}
+	} else if !json.Valid(b) {
+		return nil, errors.New("invalid JSON input")
+	}
+
+	return json.RawMessage(b), nil
+}
+
+func ReadRequestFileOrLiteral[T any, P protoType[T]](pathOrLiteral string) (P, error) {
+	// This allows us to read JSON from either CLI arg or FS
+	reqBytes, err := readFileOrLiteral(pathOrLiteral)
 	if err != nil {
 		return nil, err
 	}
 
 	var req P = new(T)
-	err = unmarshaller.Unmarshal(reqBytes, req)
-	if err != nil {
+	if err := unmarshaller.Unmarshal(reqBytes, req); err != nil {
 		return nil, err
 	}
 	return req, nil
@@ -243,7 +266,7 @@ func listAndPrint[
 			}
 			table.Row(row...)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 
 	return nil

@@ -79,7 +79,7 @@ func (d *LoadTestDepacketizer) IsPartitionHead(payload []byte) bool {
 	if len(payload) < 4 {
 		return false
 	}
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if payload[i] != 0xfa {
 			return false
 		}

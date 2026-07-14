@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -43,7 +42,7 @@ const docsRequestTimeout = 30 * time.Second
 // server that this CLI was built against. If the server reports a newer
 // major or minor version, a warning is printed to stderr suggesting the
 // user update their CLI.
-var expectedServerVersion = [2]int{1, 3}
+var expectedServerVersion = [2]int{1, 4}
 
 var (
 	DocsCommands = []*cli.Command{
@@ -220,6 +219,14 @@ Useful for cross-referencing dependencies and finding the right SDK.`,
 					Action: docsListSDKs,
 				},
 				{
+					Name:  "pricing-info",
+					Usage: "Get LiveKit Cloud pricing information",
+					Description: `Returns LiveKit Cloud pricing information including plans, feature
+comparison matrix, inference model pricing, and calculator assumptions.
+Use this when you need details about pricing, costs, plans, or billing.`,
+					Action: docsPricingInfo,
+				},
+				{
 					Name:      "submit-feedback",
 					Usage:     "Submit feedback on the LiveKit documentation",
 					ArgsUsage: "[FEEDBACK]",
@@ -348,6 +355,10 @@ func docsListSDKs(ctx context.Context, cmd *cli.Command) error {
 	return callDocsToolAndPrint(ctx, cmd, "get_sdks", map[string]any{})
 }
 
+func docsPricingInfo(ctx context.Context, cmd *cli.Command) error {
+	return callDocsToolAndPrint(ctx, cmd, "get_pricing_info", map[string]any{})
+}
+
 func docsSubmitFeedback(ctx context.Context, cmd *cli.Command) error {
 	feedback := cmd.String("feedback")
 	if feedback == "" && cmd.Args().Len() > 0 {
@@ -417,7 +428,7 @@ func callDocsToolAndPrint(ctx context.Context, cmd *cli.Command, tool string, ar
 
 	for _, c := range result.Content {
 		if tc, ok := c.(*mcp.TextContent); ok {
-			fmt.Println(tc.Text)
+			out.Result(tc.Text)
 		}
 	}
 	return nil
@@ -497,8 +508,8 @@ func checkServerVersion(session *mcp.ClientSession) {
 		return
 	}
 	if major > expectedServerVersion[0] || (major == expectedServerVersion[0] && minor > expectedServerVersion[1]) {
-		fmt.Fprintf(os.Stderr,
-			"warning: the LiveKit docs server is version %s but this CLI was built for %d.%d.x — consider updating lk to the latest version\n\n",
+		out.Warnf(
+			"warning: the LiveKit docs server is version %s but this CLI was built for %d.%d.x — consider updating lk to the latest version\n",
 			info.ServerInfo.Version, expectedServerVersion[0], expectedServerVersion[1],
 		)
 	}

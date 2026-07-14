@@ -19,8 +19,10 @@ var privateLinkCommands = &cli.Command{
 			Name:  "create",
 			Usage: "Create a private link",
 			Description: "Creates a private link to a customer endpoint.\n\n" +
-				"Currently expects an AWS VPC Endpoint Service Name for --endpoint.\n" +
-				"Example: com.amazonaws.vpce.us-east-1.vpce-svc-123123a1c43abc123",
+				"Supports Azure Private Link Service aliases and Azure Resource IDs for --endpoint.\n" +
+				"Azure alias example: my-pls.12345678-abcd-1234-abcd-1234567890ab.eastus.azure.privatelinkservice\n" +
+				"Azure Resource ID example: /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Network/privateLinkServices/{name}\n" +
+				"When using an Azure Resource ID, --cloud-region is required.",
 			Before: createAgentClient,
 			Action: createPrivateLink,
 			Flags: []cli.Flag{
@@ -30,9 +32,8 @@ var privateLinkCommands = &cli.Command{
 					Required: true,
 				},
 				&cli.StringFlag{
-					Name:     "region",
-					Usage:    "LiveKit region",
-					Required: true,
+					Name:  "region",
+					Usage: "LiveKit region. If unset in interactive mode, a picker of available regions is shown.",
 				},
 				&cli.UintFlag{
 					Name:     "port",
@@ -43,6 +44,10 @@ var privateLinkCommands = &cli.Command{
 					Name:     "endpoint",
 					Usage:    "Customer-provided endpoint identifier",
 					Required: true,
+				},
+				&cli.StringFlag{
+					Name:  "cloud-region",
+					Usage: "Cloud provider region (e.g. eastus, us-east-2). Required when --endpoint is an Azure Resource ID",
 				},
 				jsonFlag,
 			},
@@ -87,21 +92,19 @@ var privateLinkCommands = &cli.Command{
 	},
 }
 
-func buildCreatePrivateLinkRequest(name, region string, port uint32, awsEndpoint string) *lkproto.CreatePrivateLinkRequest {
-	return &lkproto.CreatePrivateLinkRequest{
-		Name:   name,
-		Region: region,
-		Port:   port,
-		Config: &lkproto.CreatePrivateLinkRequest_Aws{
-			Aws: &lkproto.CreatePrivateLinkRequest_AWSCreateConfig{
-				Endpoint: awsEndpoint,
-			},
-		},
+func buildCreatePrivateLinkRequest(name, region string, port uint32, endpoint, cloudRegion string) *lkproto.CreatePrivateLinkRequest {
+	req := &lkproto.CreatePrivateLinkRequest{
+		Name:     name,
+		Region:   region,
+		Port:     port,
+		Endpoint: endpoint,
 	}
-}
 
-func privateLinkServiceDNS(name, projectID string) string {
-	return fmt.Sprintf("%s-%s.plg.svc", name, projectID)
+	if cloudRegion != "" {
+		req.CloudRegion = new(cloudRegion)
+	}
+
+	return req
 }
 
 func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[string]*lkproto.PrivateLinkStatus, healthErrByID map[string]error) [][]string {
@@ -111,29 +114,68 @@ func buildPrivateLinkListRows(links []*lkproto.PrivateLink, healthByID map[strin
 			continue
 		}
 
-		status := lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN.String()
+		status := formatPrivateLinkHealthStatus(lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN)
 		updatedAt := "-"
+		reason := "-"
 
 		if err, ok := healthErrByID[link.PrivateLinkId]; ok && err != nil {
-			status = "ERROR"
-			updatedAt = err.Error()
+			status = "Error"
+			reason = err.Error()
 		} else if health, ok := healthByID[link.PrivateLinkId]; ok && health != nil {
-			status = health.Status.String()
+			status = formatPrivateLinkHealthStatus(health.Status)
 			if health.UpdatedAt != nil {
 				updatedAt = health.UpdatedAt.AsTime().UTC().Format("2006-01-02T15:04:05Z07:00")
 			}
+			if health.Reason != "" {
+				reason = health.Reason
+			}
+		}
+		endpoint := link.Endpoint
+		if endpoint == "" {
+			endpoint = "-"
+		}
+		dns := link.ConnectionEndpoint
+		if dns == "" {
+			dns = "-"
+		}
+		cloudRegion := link.CloudRegion
+		if cloudRegion == "" {
+			cloudRegion = "-"
 		}
 
 		rows = append(rows, []string{
 			link.PrivateLinkId,
 			link.Name,
 			link.Region,
+			cloudRegion,
 			strconv.FormatUint(uint64(link.Port), 10),
+			endpoint,
+			dns,
 			status,
 			updatedAt,
+			reason,
 		})
 	}
 	return rows
+}
+
+func formatPrivateLinkHealthStatus(status lkproto.PrivateLinkStatus_Status) string {
+	switch status {
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PROVISIONING:
+		return "Provisioning"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_PENDING_APPROVAL:
+		return "Pending Approval"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_APPROVED:
+		return "Approved"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_HEALTHY:
+		return "Healthy"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNHEALTHY:
+		return "Unhealthy"
+	case lkproto.PrivateLinkStatus_PRIVATE_LINK_STATUS_UNKNOWN:
+		return "Unknown"
+	default:
+		return status.String()
+	}
 }
 
 func formatPrivateLinkClientError(action string, err error) error {
@@ -144,7 +186,17 @@ func formatPrivateLinkClientError(action string, err error) error {
 }
 
 func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
-	req := buildCreatePrivateLinkRequest(cmd.String("name"), cmd.String("region"), uint32(cmd.Uint("port")), cmd.String("endpoint"))
+	settingsMap, err := getClientSettings(ctx)
+	if err != nil {
+		return err
+	}
+
+	region, err := resolveRegion(cmd, settingsMap, "Select region for private link")
+	if err != nil {
+		return err
+	}
+
+	req := buildCreatePrivateLinkRequest(cmd.String("name"), region, uint32(cmd.Uint("port")), cmd.String("endpoint"), cmd.String("cloud-region"))
 	resp, err := agentsClient.CreatePrivateLink(ctx, req)
 	if err != nil {
 		return formatPrivateLinkClientError("create", err)
@@ -156,13 +208,19 @@ func createPrivateLink(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.PrivateLink == nil {
-		fmt.Println("Private link created")
+		out.Status("Private link created")
 		return nil
 	}
 
-	fmt.Printf("Created private link [%s]\n", util.Accented(resp.PrivateLink.PrivateLinkId))
-	if project != nil && project.ProjectId != "" {
-		fmt.Printf("Gateway DNS [%s]\n", util.Accented(privateLinkServiceDNS(req.Name, project.ProjectId)))
+	out.Statusf("Created private link [%s]", util.Accented(resp.PrivateLink.PrivateLinkId))
+	if resp.PrivateLink.Endpoint != "" {
+		out.Statusf("Endpoint [%s]", util.Accented(resp.PrivateLink.Endpoint))
+	}
+	if resp.PrivateLink.ConnectionEndpoint != "" {
+		out.Statusf("Gateway DNS [%s]", util.Accented(resp.PrivateLink.ConnectionEndpoint))
+	}
+	if resp.PrivateLink.CloudRegion != "" {
+		out.Statusf("Cloud Region [%s]", util.Accented(resp.PrivateLink.CloudRegion))
 	}
 	return nil
 }
@@ -216,13 +274,13 @@ func listPrivateLinks(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if len(resp.Items) == 0 {
-		fmt.Println("No private links found")
+		out.Status("No private links found")
 		return nil
 	}
 
 	rows := buildPrivateLinkListRows(resp.Items, healthByID, healthErrByID)
-	table := util.CreateTable().Headers("ID", "Name", "Region", "Port", "Health", "Updated At").Rows(rows...)
-	fmt.Println(table)
+	table := util.CreateTable().Headers("ID", "Name", "Region", "Cloud Region", "Port", "Endpoint", "DNS", "Health", "Updated At", "Reason").Rows(rows...)
+	out.Result(table)
 	return nil
 }
 
@@ -239,7 +297,7 @@ func deletePrivateLink(ctx context.Context, cmd *cli.Command) error {
 		util.PrintJSON(resp)
 		return nil
 	}
-	fmt.Printf("Deleted private link [%s]\n", util.Accented(privateLinkID))
+	out.Statusf("Deleted private link [%s]", util.Accented(privateLinkID))
 	return nil
 }
 
@@ -262,9 +320,13 @@ func getPrivateLinkHealthStatus(ctx context.Context, cmd *cli.Command) error {
 	if resp.Value.UpdatedAt != nil {
 		updatedAt = resp.Value.UpdatedAt.AsTime().UTC().Format("2006-01-02T15:04:05Z07:00")
 	}
+	reason := "-"
+	if resp.Value.Reason != "" {
+		reason = resp.Value.Reason
+	}
 	table := util.CreateTable().
-		Headers("ID", "Health", "Updated At").
-		Row(privateLinkID, resp.Value.Status.String(), updatedAt)
-	fmt.Println(table)
+		Headers("ID", "Health", "Updated At", "Reason").
+		Row(privateLinkID, formatPrivateLinkHealthStatus(resp.Value.Status), updatedAt, reason)
+	out.Result(table)
 	return nil
 }

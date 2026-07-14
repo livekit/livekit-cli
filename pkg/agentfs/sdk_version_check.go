@@ -159,8 +159,8 @@ func parsePythonPackageVersion(line string) (string, bool) {
 	// clean up the version string if it contains multiple constraints
 	// handle comma-separated version constraints like ">=1.2.5,<2"
 	if strings.Contains(version, ",") {
-		parts := strings.Split(version, ",")
-		for _, part := range parts {
+		parts := strings.SplitSeq(version, ",")
+		for part := range parts {
 			trimmed := strings.TrimSpace(part)
 			if regexp.MustCompile(`\d`).MatchString(trimmed) {
 				if strings.ContainsAny(trimmed, "=~><") {
@@ -205,7 +205,7 @@ func checkRequirementsFile(filePath, minVersion string) VersionCheckResult {
 
 		version, found := parsePythonPackageVersion(line)
 		if found {
-			satisfied, err := isVersionSatisfied(version, minVersion)
+			satisfied, err := IsVersionSatisfied(version, minVersion)
 			return VersionCheckResult{
 				PackageInfo: PackageInfo{
 					Name:        "livekit-agents",
@@ -243,7 +243,7 @@ func checkPyprojectToml(filePath, minVersion string) VersionCheckResult {
 				if line, ok := dep.(string); ok {
 					version, found := parsePythonPackageVersion(line)
 					if found {
-						satisfied, err := isVersionSatisfied(version, minVersion)
+						satisfied, err := IsVersionSatisfied(version, minVersion)
 						return VersionCheckResult{
 							PackageInfo: PackageInfo{
 								Name:        "livekit-agents",
@@ -281,7 +281,7 @@ func checkPipfile(filePath, minVersion string) VersionCheckResult {
 			version = "latest"
 		}
 
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := IsVersionSatisfied(version, minVersion)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -326,7 +326,7 @@ func checkSetupPy(filePath, minVersion string) VersionCheckResult {
 				}
 				version, found := parsePythonPackageVersion(packageLine)
 				if found {
-					satisfied, err := isVersionSatisfied(version, minVersion)
+					satisfied, err := IsVersionSatisfied(version, minVersion)
 					return VersionCheckResult{
 						PackageInfo: PackageInfo{
 							Name:        "livekit-agents",
@@ -360,7 +360,7 @@ func checkSetupCfg(filePath, minVersion string) VersionCheckResult {
 	if matches != nil {
 		version := strings.TrimSpace(matches[2])
 
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := IsVersionSatisfied(version, minVersion)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -407,7 +407,7 @@ func checkPackageJSON(filePath, minVersion string) VersionCheckResult {
 
 	for _, deps := range dependencyMaps {
 		if version, ok := deps["@livekit/agents"]; ok {
-			satisfied, err := isVersionSatisfied(version, minVersion)
+			satisfied, err := IsVersionSatisfied(version, minVersion)
 			return VersionCheckResult{
 				PackageInfo: PackageInfo{
 					Name:        "@livekit/agents",
@@ -467,7 +467,7 @@ func checkPackageLockJSON(filePath, minVersion string) VersionCheckResult {
 	}
 
 	if dep, ok := lockJSON.Dependencies["@livekit/agents"]; ok {
-		satisfied, err := isVersionSatisfied(dep.Version, minVersion)
+		satisfied, err := IsVersionSatisfied(dep.Version, minVersion)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "@livekit/agents",
@@ -497,7 +497,7 @@ func checkYarnLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := IsVersionSatisfied(version, minVersion)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "@livekit/agents",
@@ -527,7 +527,7 @@ func checkPnpmLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := strings.TrimSpace(matches[1])
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := IsVersionSatisfied(version, minVersion)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "@livekit/agents",
@@ -557,7 +557,7 @@ func checkPoetryLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := IsVersionSatisfied(version, minVersion)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -582,12 +582,14 @@ func checkUvLock(filePath, minVersion string) VersionCheckResult {
 		return VersionCheckResult{Error: err}
 	}
 
-	// Look for livekit-agents in the lock file
-	pattern := regexp.MustCompile(`(?m)^\s*livekit-agents\s*=\s*"([^"]+)"`)
+	// Look for the [[package]] block with livekit-agents. uv.lock shares
+	// poetry.lock's TOML layout (name then version on separate lines), so the
+	// resolved version lives in the block, not on a `livekit-agents = "..."` line.
+	pattern := regexp.MustCompile(`(?s)\[\[package\]\]\s*\nname\s*=\s*"livekit-agents"\s*\nversion\s*=\s*"([^"]+)"`)
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := IsVersionSatisfied(version, minVersion)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -617,7 +619,7 @@ func checkPipfileLock(filePath, minVersion string) VersionCheckResult {
 	matches := pattern.FindStringSubmatch(string(content))
 	if matches != nil {
 		version := matches[1]
-		satisfied, err := isVersionSatisfied(version, minVersion)
+		satisfied, err := IsVersionSatisfied(version, minVersion)
 		return VersionCheckResult{
 			PackageInfo: PackageInfo{
 				Name:        "livekit-agents",
@@ -635,8 +637,8 @@ func checkPipfileLock(filePath, minVersion string) VersionCheckResult {
 	return VersionCheckResult{}
 }
 
-// isVersionSatisfied checks if a version satisfies the minimum requirement
-func isVersionSatisfied(version, minVersion string) (bool, error) {
+// IsVersionSatisfied checks if a version satisfies the minimum requirement
+func IsVersionSatisfied(version, minVersion string) (bool, error) {
 	// Handle special cases
 	if version == "latest" || version == "*" || version == "" || version == "next" {
 		return true, nil // Latest version always satisfies

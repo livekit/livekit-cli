@@ -1,25 +1,32 @@
+# Project tests
+**/*.test.ts
+**/*.spec.ts
+__tests__/
+tests/
+evals/
+
 # Node.js dependencies
-**/node_modules
-**/npm-debug.log
-**/yarn-error.log
-**/pnpm-debug.log
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
 
 # Build outputs
-**/dist
-**/build
-**/coverage
+dist/
+build/
+coverage/
 
 # Local environment & config files
-**/.env
-**/.env.local
+.env
+.env.local
 .DS_Store
 
 # Logs & temp files
-**/*.log
-**/*.gz
-**/*.tgz
-**/.tmp
-**/.cache
+*.log
+*.gz
+*.tgz
+.tmp
+.cache
 
 # Docker artifacts
 Dockerfile*
@@ -31,3 +38,34 @@ Dockerfile*
 .idea
 .vscode
 
+# Test artifacts
+coverage/
+
+# Project docs and misc
+README.md
+CONTRIBUTING.md
+LICENSE
+
+# Coding agent files
+.claude/
+.codex/
+.cursor/
+.windsurf/
+.gemini/
+.cline/
+.clinerules
+.clinerules/
+.aider*
+.cursorrules
+.cursorignore
+.cursorindexingignore
+.clineignore
+.codeiumignore
+.geminiignore
+.windsurfrules
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.github/copilot-instructions.md
+.github/personal-instructions.md
+.github/instructions/

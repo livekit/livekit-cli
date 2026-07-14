@@ -12,31 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.25-alpine as builder
+# Consumed by the docker job in release.yaml via `docker buildx`. The release
+# job (goreleaser, on macOS) cross-builds the cgo Linux binaries with zig and
+# stages them as lk_linux_<arch> in the build context; buildx sets TARGETARCH
+# per platform. Distroless gives glibc (the binaries target glibc 2.28+) plus CA
+# certs, without a shell or package manager.
+FROM gcr.io/distroless/base-debian12
 
-ARG TARGETPLATFORM
 ARG TARGETARCH
-RUN echo building for "$TARGETPLATFORM"
+COPY lk_linux_${TARGETARCH} /lk
 
-WORKDIR /workspace
-
-# Copy the Go Modules manifests
-COPY go.mod go.mod
-COPY go.sum go.sum
-# cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
-RUN go mod download
-
-# Copy the go source
-COPY cmd/ cmd/
-COPY pkg/ pkg/
-COPY version.go version.go
-
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -a -o lk ./cmd/lk
-
-FROM alpine:3.21
-
-COPY --from=builder /workspace/lk /lk
-
-# Run the binary.
 ENTRYPOINT ["/lk"]

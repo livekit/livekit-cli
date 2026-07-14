@@ -1,0 +1,218 @@
+name: Windows
+
+# All Windows CI for the repo. test.yaml covers Linux/macOS Go tests and the
+# `e2e` job in session-e2e.yaml covers Linux/macOS session e2e; Windows is here.
+#
+# pkg/apm/webrtc's C++ uses MSVC SEH (__try/__except) that the runner's mingw GCC
+# can't compile, and on native Windows the cgo link of ~560 webrtc/portaudio
+# objects overflows the ~32KB command-line limit. So -- exactly like
+# .goreleaser.yaml -- everything is cross-compiled on Linux with zig (clang) in a
+# single `cross-build` job, then run natively on windows-latest. Both consumers
+# (the unit-test run and the session e2e run) depend on that one build, so the
+# expensive cgo compile happens once.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Cross-compile lk.exe and a test binary per package on Linux with zig.
+  # manifest.tsv maps each test binary to its package directory so the unit-test
+  # job can run it from there (tests read cwd-relative fixtures, e.g.
+  # cmd/lk/testdata and pkg/agentfs/examples).
+  cross-build:
+    runs-on: ubuntu-latest
+    name: Cross-build Windows artifacts (zig)
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout livekit-cli
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # pkg/portaudio/pa_src is a submodule with the vendored PortAudio C
+          # source linked into cmd/lk via cgo.
+          submodules: true
+
+      - name: Set up Zig
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        with:
+          version: 0.14.1
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Generate the MinGW import libs lld needs for Go's /DEFAULTLIB references
+      # (dbghelp, bcrypt, ...), exactly as goreleaser's before-hook does.
+      - name: Generate MinGW import libs
+        run: scripts/setup-cross.sh windows/amd64
+
+      - name: Cross-compile lk.exe and per-package test binaries
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: "1"
+          # zig cc/c++ as the cgo toolchain, matching .goreleaser.yaml's Windows
+          # build. -fms-extensions (SEH) isn't on cgo's allowlist; -fno-sanitize
+          # is a zig UBSan-under-lld workaround -- both copied from goreleaser.
+          CC: zig cc -target x86_64-windows-gnu
+          CXX: zig c++ -target x86_64-windows-gnu
+          CGO_CXXFLAGS_ALLOW: -fms-extensions
+          CGO_CXXFLAGS: -fno-sanitize=all
+        run: |
+          set -euo pipefail
+          ldflags="-extldflags=-L$PWD/.cross/windows_amd64/mingw_lib"
+          module=$(go list -m)
+          mkdir -p dist
+          go build -ldflags="$ldflags" -o dist/lk.exe ./cmd/lk
+          : > dist/manifest.tsv
+          for pkg in $(go list -f '{{if or .TestGoFiles .XTestGoFiles}}{{.ImportPath}}{{end}}' ./...); do
+            rel=${pkg#"$module"/}
+            [ "$rel" = "$module" ] && rel="."
+            safe=$(echo "$rel" | tr '/' '_')
+            go test -c -ldflags="$ldflags" -o "dist/${safe}.test.exe" "$pkg"
+            printf '%s\t%s\n' "${safe}.test.exe" "$rel" >> dist/manifest.tsv
+          done
+          echo "Built lk.exe and:"; cat dist/manifest.tsv
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: dist
+          retention-days: 1
+          if-no-files-found: error
+
+  # Run every package's test binary natively, from its package directory so
+  # cwd-relative fixtures resolve. No secrets: TestSessionE2E (in the cmd/lk
+  # binary) skips without LIVEKIT_API_KEY and is exercised by windows-session-e2e
+  # below. node ships on the runner; uv is installed for the Python SDK tests.
+  windows-tests:
+    needs: cross-build
+    runs-on: windows-latest
+    name: Go test on windows-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout livekit-cli
+        # Test fixtures (cmd/lk/testdata, pkg/agentfs/examples) are read at
+        # runtime; submodules are C source already compiled into the binaries.
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: dist
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Run test binaries
+        shell: bash
+        run: |
+          set -uo pipefail
+          root=$(pwd)
+          fail=0
+          while IFS=$'\t' read -r exe rel; do
+            echo "::group::$rel"
+            ( cd "$rel" && "$root/dist/$exe" -test.v -test.count=1 ) || fail=1
+            echo "::endgroup::"
+          done < "$root/dist/manifest.tsv"
+          exit $fail
+
+  # Drive the real session lifecycle on Windows against the prebuilt lk.exe.
+  # Needs live LiveKit credentials, so skip on pull_request (forks can't read
+  # secrets); the cmd/lk test binary already exists from cross-build.
+  windows-session-e2e:
+    needs: cross-build
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    name: lk agent with ${{ matrix.lang }} agent on windows-latest
+
+    # Same `lang` matrix as session-e2e.yaml's e2e job: Python and Node echo
+    # agents. The cross-built binaries are language-agnostic, so one build
+    # feeds both arms.
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [python, node]
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout livekit-cli
+        # Needed for the echo-agent fixtures; submodules are compiled into lk.exe.
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: dist
+
+      - name: Set up Python
+        if: matrix.lang == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        if: matrix.lang == 'python'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync echo agent deps
+        if: matrix.lang == 'python'
+        working-directory: cmd/lk/testdata/echo-agent
+        run: uv sync
+
+      - name: Set up Node
+        if: matrix.lang == 'node'
+        uses: actions/setup-node@v4
+        with:
+          # --experimental-strip-types (used to run the .ts entrypoint) needs >= 22.6.
+          node-version: "22"
+
+      - name: Install Node echo agent deps
+        if: matrix.lang == 'node'
+        working-directory: cmd/lk/testdata/echo-agent-node
+        run: npm install
+
+      - name: Run session e2e
+        # Run from cmd/lk so the test's relative testdata/ entrypoint paths
+        # resolve; point it at the cross-built lk.exe so nothing rebuilds.
+        shell: bash
+        working-directory: cmd/lk
+        env:
+          LK_SESSION_E2E_BIN: ../../dist/lk.exe
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          # Default (unset) targets the Python fixture; point at the Node one for that arm.
+          LK_SESSION_E2E_AGENT: ${{ matrix.lang == 'node' && 'testdata/echo-agent-node/agent.ts' || '' }}
+        run: |
+          ../../dist/cmd_lk.test.exe \
+            -test.run TestSessionE2E -test.count=1 -test.v -test.timeout 600s

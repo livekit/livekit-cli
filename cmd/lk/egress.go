@@ -107,6 +107,10 @@ var (
 							Aliases: []string{"a"},
 							Usage:   "Lists only active egresses",
 						},
+						&cli.IntFlag{
+							Name:  "limit",
+							Usage: "maximum number of items to return. If unset, defaults to API page size",
+						},
 						jsonFlag,
 					},
 				},
@@ -587,18 +591,36 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 			items = append(items, res.Items...)
 		}
 	} else {
-		res, err := egressClient.ListEgress(ctx, &livekit.ListEgressRequest{
-			RoomName: cmd.String("room"),
-			Active:   cmd.Bool("active"),
-		})
-		if err != nil {
-			return err
+		limit := cmd.Int("limit")
+		var err error
+		var res *livekit.ListEgressResponse
+		for res == nil || (len(items) < limit && res.NextPageToken.GetToken() != "") {
+			req := &livekit.ListEgressRequest{
+				RoomName: cmd.String("room"),
+				Active:   cmd.Bool("active"),
+			}
+
+			if res != nil {
+				req.PageToken = &livekit.TokenPagination{Token: res.NextPageToken.GetToken()}
+			}
+
+			res, err = egressClient.ListEgress(ctx, req)
+			if err != nil {
+				return err
+			}
+
+			resItems := res.Items
+			if remaining := limit - len(items); limit > 0 && len(resItems) > remaining {
+				resItems = resItems[len(resItems)-remaining:]
+			}
+
+			// each page has older items than the previous one, but ordering within each page is newest last
+			items = append(resItems, items...)
 		}
-		items = res.Items
 	}
 
 	if cmd.Bool("json") {
-		util.PrintJSON(items)
+		return util.PrintJSONTo(cmd.Root().Writer, items)
 	} else {
 		table := util.CreateTable().
 			Headers("EgressID", "Status", "Type", "Source", "Started At", "Error")
@@ -641,7 +663,7 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 				item.Error,
 			)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 
 	return nil
@@ -691,9 +713,9 @@ func stopEgress(ctx context.Context, cmd *cli.Command) error {
 		})
 		if err != nil {
 			errors = append(errors, err)
-			fmt.Println("Error stopping Egress", id, err)
+			out.Warnf("Error stopping Egress %s: %v", id, err)
 		} else {
-			fmt.Println("Stopping Egress", id)
+			out.Statusf("Stopping Egress %s", id)
 		}
 	}
 	if len(errors) != 0 {
@@ -729,7 +751,7 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 	apiSecret := pc.APISecret
 
 	var testers []*loadtester.LoadTester
-	for i := 0; i < numPublishers; i++ {
+	for i := range numPublishers {
 		lt := loadtester.NewLoadTester(loadtester.TesterParams{
 			URL:            serverURL,
 			APIKey:         apiKey,
@@ -767,7 +789,7 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 		Testers: testers,
 	})
 	sim.Start()
-	fmt.Println("simulating speakers...")
+	out.Status("simulating speakers...")
 
 	<-done
 
@@ -780,8 +802,8 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 
 func printInfo(info *livekit.EgressInfo) {
 	if info.Error == "" {
-		fmt.Printf("EgressID: %v Status: %v\n", info.EgressId, info.Status)
+		out.Resultf("EgressID: %v Status: %v\n", info.EgressId, info.Status)
 	} else {
-		fmt.Printf("EgressID: %v Error: %v\n", info.EgressId, info.Error)
+		out.Resultf("EgressID: %v Error: %v\n", info.EgressId, info.Error)
 	}
 }

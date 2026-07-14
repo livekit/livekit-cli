@@ -14,7 +14,6 @@
 
 name: Release
 
-# on events
 on:
   push:
     tags:
@@ -23,17 +22,23 @@ on:
 permissions:
   contents: write
 
-# workflow tasks
 jobs:
+  # GoReleaser runs on macOS so the darwin binary builds natively (CoreAudio
+  # frameworks only exist on a Mac); zig still cross-compiles linux + windows
+  # from here. Produces all binaries, archives, checksums, and the GitHub
+  # release. Docker is handled by the separate job below (macOS has no Docker).
   release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout Git LFS
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           lfs: 'true'
-      
+          # pkg/portaudio/pa_src holds the vendored PortAudio C source the cgo
+          # build links against.
+          submodules: true
+
       - name: Verify version.go matches tag
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
@@ -47,7 +52,7 @@ jobs:
             exit 1
           fi
           echo "✓ Versions match: $CODE_VERSION"
-      
+
       - name: Verify server-sdk-go version
         run: |
           livekit_cli_ver=${GITHUB_REF#refs/tags/}
@@ -70,24 +75,94 @@ jobs:
       - name: Fetch all tags
         run: git fetch --force --tags
 
-      - uses: actions/cache@v5
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/go/bin
-            ~/.cache
-          key: livekit-cli
-
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
+        with:
+          version: 0.14.1
+
+      - name: Cache cross-compile inputs
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        with:
+          path: .cross
+          key: cross-${{ runner.os }}-zig0.14.1-alsa1.2.12-${{ hashFiles('scripts/setup-cross.sh') }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7
         with:
           distribution: goreleaser
           version: latest
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # goreleaser-action runs goreleaser via a Node wrapper that doesn't
+          # forward PWD; the .goreleaser.yaml CGO flags template {{ .Env.PWD }}
+          # to locate .cross/<target>. Provide it explicitly.
+          PWD: ${{ github.workspace }}
+
+      - name: Stage linux binaries for Docker
+        run: |
+          mkdir -p docker-bin
+          cp dist/lk-linux-amd64_*/lk docker-bin/lk_linux_amd64
+          cp dist/lk-linux-arm64_*/lk docker-bin/lk_linux_arm64
+
+      - name: Upload linux binaries
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: docker-bin
+          path: docker-bin/
+          if-no-files-found: error
+
+  # Build + push multi-arch Docker images on Linux (where the Docker daemon
+  # lives), reusing the cgo linux binaries staged by the release job.
+  docker:
+    name: Release to Docker
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Download linux binaries
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: docker-bin
+          path: .
+
+      - name: Restore executable bit
+        run: chmod +x lk_linux_amd64 lk_linux_arm64
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: livekit/livekit-cli
+          tags: |
+            type=semver,pattern=v{{version}}
+            type=semver,pattern=v{{major}}.{{minor}}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

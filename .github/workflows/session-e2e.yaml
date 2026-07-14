@@ -1,0 +1,107 @@
+name: Session E2E
+
+# Drives the real `lk agent daemon` start/say/stop lifecycle against the minimal
+# one-file echo agents in cmd/lk/testdata, on Linux and macOS (the Windows arm
+# lives in windows.yaml, which cross-compiles with zig). This exercises the
+# detached daemon, the readiness handshake, the console IPC transport, and the
+# model round-trip end to end -- runtime behavior that `go test` alone never
+# covers.
+#
+# Both agent runtimes are exercised via the `lang` matrix dimension: Python
+# (testdata/echo-agent, the test's default) and Node (testdata/echo-agent-node,
+# selected with LK_SESSION_E2E_AGENT). The daemon launches each as
+# `<python> -m livekit.agents console ...` or `node <entry> console ...`, so a
+# pass proves the language-specific launch path as well as the shared transport.
+#
+# Runs on manual dispatch and on pushes to any repo branch (forks can't trigger
+# `push`, so secrets are only exposed to trusted collaborators). It needs live
+# LiveKit credentials -- set these repo secrets first: LIVEKIT_API_KEY,
+# LIVEKIT_API_SECRET, LIVEKIT_URL. The echo agents drive their LLM through
+# LiveKit Inference, so no other provider keys are needed.
+#
+# Each agent's deps are resolved fresh in CI (they're gitignored): the Python
+# fixture via `uv sync` from its pyproject.toml; the Node fixture via
+# `npm install` from its package.json. The Node `.ts` entrypoint runs through
+# Node's --experimental-strip-types loader, which needs Node >= 22.6.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+
+concurrency:
+  group: session-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Linux and macOS build + run natively in one job -- their linkers have no
+  # command-line-length limit, so `go test` building lk in-process is fine.
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        lang: [python, node]
+
+    runs-on: ${{ matrix.os }}
+    name: lk agent with ${{ matrix.lang }} agent on ${{ matrix.os }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout livekit-cli
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # pkg/portaudio/pa_src is a submodule with the vendored PortAudio C
+          # source; needed now that console (cgo) builds unconditionally.
+          submodules: true
+
+      - name: Install ALSA headers (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Python
+        if: matrix.lang == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        if: matrix.lang == 'python'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync echo agent deps
+        if: matrix.lang == 'python'
+        working-directory: cmd/lk/testdata/echo-agent
+        run: uv sync
+
+      - name: Set up Node
+        if: matrix.lang == 'node'
+        uses: actions/setup-node@v4
+        with:
+          # --experimental-strip-types (used to run the .ts entrypoint) needs >= 22.6.
+          node-version: "22"
+
+      - name: Install Node echo agent deps
+        if: matrix.lang == 'node'
+        working-directory: cmd/lk/testdata/echo-agent-node
+        run: npm install
+
+      - name: Run session e2e
+        env:
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          # Default (unset) targets the Python fixture; point at the Node one for that arm.
+          # Resolved relative to cmd/lk, the test binary's working directory.
+          LK_SESSION_E2E_AGENT: ${{ matrix.lang == 'node' && 'testdata/echo-agent-node/agent.ts' || '' }}
+        run: go test ./cmd/lk -run TestSessionE2E -count=1 -v -timeout 600s

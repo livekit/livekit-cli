@@ -22,12 +22,15 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 func main() {
@@ -63,6 +66,7 @@ func main() {
 	app.Commands = append(app.Commands, CloudCommands...)
 	app.Commands = append(app.Commands, DocsCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
+	app.Commands = append(app.Commands, ThemeCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, TokenCommands...)
 	app.Commands = append(app.Commands, JoinCommands...)
@@ -91,13 +95,17 @@ func main() {
 	checkForLegacyName()
 
 	if err := app.Run(ctx, os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		errStyle := lipgloss.NewStyle().Foreground(util.Error())
+		fmt.Fprintln(os.Stderr, errStyle.Render(err.Error()))
 		os.Exit(1)
 	}
 }
 
 func checkForLegacyName() {
-	if !(strings.HasSuffix(os.Args[0], "lk") || strings.HasSuffix(os.Args[0], "lk.exe")) {
+	if !strings.HasSuffix(os.Args[0], "lk") && !strings.HasSuffix(os.Args[0], "lk.exe") {
+		// Stays on raw os.Stderr: this runs before the cli command parses (so the
+		// Printer isn't initialized yet) and is a deprecation warning that should
+		// not be suppressed by --quiet.
 		fmt.Fprintf(
 			os.Stderr,
 			"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEPRECATION NOTICE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
@@ -112,6 +120,9 @@ func checkForLegacyName() {
 func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	logConfig := &logger.Config{
 		Level: "info",
+		ComponentLevels: map[string]string{
+			"pion": "error",
+		},
 	}
 	if cmd.Bool("verbose") {
 		logConfig.Level = "debug"
@@ -119,11 +130,27 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	logger.InitFromConfig(logConfig, "lk")
 	lksdk.SetLogger(logger.GetLogger())
 
+	// Bind the human-facing output sink to the root command's writers (cli/v3
+	// defaults them to os.Stdout / os.Stderr, but they're overridable in tests).
+	out = util.NewPrinter(cmd.Root().Writer, cmd.Root().ErrWriter, cmd.Bool("quiet"))
+
+	// Apply the persisted color theme before any output/forms render. An empty value
+	// resolves to the default; an invalid stored value is reported and falls back.
+	if conf, err := config.LoadOrCreate(); err == nil {
+		if err := util.SetTheme(conf.Theme); err != nil {
+			out.Warnf("%v; using default theme", err)
+		}
+	}
+
 	return nil, nil
 }
 
+// Keep autocomplete/fish_autocomplete in sync with the command tree. CI (test.yaml)
+// fails if the committed file drifts; run `go generate ./...` to refresh it.
+//
+//go:generate go run . generate-fish-completion -o ../../autocomplete/fish_autocomplete
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
-	fishScript, err := cmd.ToFishCompletion()
+	fishScript, err := cmd.Root().ToFishCompletion()
 	if err != nil {
 		return err
 	}
@@ -134,7 +161,7 @@ func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 	} else {
-		fmt.Println(fishScript)
+		out.Result(fishScript)
 	}
 
 	return nil

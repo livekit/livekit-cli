@@ -1,0 +1,40 @@
+//go:build !windows
+
+package main
+
+import (
+	"os/exec"
+	"syscall"
+)
+
+func setProcAttr(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+}
+
+// setDetachedProcAttr puts the child in its own session so it survives the
+// parent CLI invocation exiting (used for the detached session daemon).
+func setDetachedProcAttr(cmd *exec.Cmd) {
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+}
+
+// sendInterrupt sends SIGINT to the entire process group.
+func (ap *AgentProcess) sendInterrupt() {
+	if ap.cmd.Process != nil {
+		_ = syscall.Kill(-ap.cmd.Process.Pid, syscall.SIGINT)
+	}
+}
+
+// sendKill sends SIGKILL to the entire process group.
+func (ap *AgentProcess) sendKill() {
+	if ap.cmd.Process != nil {
+		_ = syscall.Kill(-ap.cmd.Process.Pid, syscall.SIGKILL)
+	}
+}
+
+// sendShutdown sends SIGINT to the main process only (not the group),
+// letting the agent manage its own child cleanup.
+func (ap *AgentProcess) sendShutdown() {
+	if ap.cmd.Process != nil {
+		ap.cmd.Process.Signal(syscall.SIGINT)
+	}
+}

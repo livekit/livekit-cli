@@ -22,7 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
-	"strings"
+	"slices"
 	"syscall"
 
 	"github.com/pion/webrtc/v4"
@@ -176,6 +176,10 @@ var (
 							Name:  "h26x-streaming-format",
 							Usage: "Format to use when reading H.264 from file or socket, \"annex-b\" OR \"length-prefixed\"",
 							Value: "annex-b",
+						},
+						&cli.BoolFlag{
+							Name:  "attach-frame-metadata",
+							Usage: "Parse H264/H265 SEI for LKTS frame metadata (user timestamp and frame ID) and append packet trailer to each encoded frame",
 						},
 						&cli.BoolFlag{
 							Name:  "exit-after-publish",
@@ -673,32 +677,32 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Uint("min-playout-delay") != 0 {
-		fmt.Printf("setting min playout delay: %d\n", cmd.Uint("min-playout-delay"))
+		out.Statusf("setting min playout delay: %d", cmd.Uint("min-playout-delay"))
 		req.MinPlayoutDelay = uint32(cmd.Uint("min-playout-delay"))
 	}
 
 	if maxPlayoutDelay := cmd.Uint("max-playout-delay"); maxPlayoutDelay != 0 {
-		fmt.Printf("setting max playout delay: %d\n", maxPlayoutDelay)
+		out.Statusf("setting max playout delay: %d", maxPlayoutDelay)
 		req.MaxPlayoutDelay = uint32(maxPlayoutDelay)
 	}
 
 	if syncStreams := cmd.Bool("sync-streams"); syncStreams {
-		fmt.Printf("setting sync streams: %t\n", syncStreams)
+		out.Statusf("setting sync streams: %t", syncStreams)
 		req.SyncStreams = syncStreams
 	}
 
 	if emptyTimeout := cmd.Uint("empty-timeout"); emptyTimeout != 0 {
-		fmt.Printf("setting empty timeout: %d\n", emptyTimeout)
+		out.Statusf("setting empty timeout: %d", emptyTimeout)
 		req.EmptyTimeout = uint32(emptyTimeout)
 	}
 
 	if departureTimeout := cmd.Uint("departure-timeout"); departureTimeout != 0 {
-		fmt.Printf("setting departure timeout: %d\n", departureTimeout)
+		out.Statusf("setting departure timeout: %d", departureTimeout)
 		req.DepartureTimeout = uint32(departureTimeout)
 	}
 
 	if replayEnabled := cmd.Bool("replay-enabled"); replayEnabled {
-		fmt.Printf("setting replay enabled: %t\n", replayEnabled)
+		out.Statusf("setting replay enabled: %t", replayEnabled)
 		req.ReplayEnabled = replayEnabled
 	}
 
@@ -713,11 +717,8 @@ func createRoom(ctx context.Context, cmd *cli.Command) error {
 
 func listRooms(ctx context.Context, cmd *cli.Command) error {
 	names, _ := extractArgs(cmd)
-	if cmd.Bool("verbose") && len(names) > 0 {
-		fmt.Printf(
-			"Querying rooms matching %s",
-			strings.Join(util.MapStrings(names, util.WrapWith("\"")), ", "),
-		)
+	if len(names) > 0 {
+		logger.Debugw("querying rooms", "names", names)
 	}
 
 	req := livekit.ListRoomsRequest{}
@@ -742,7 +743,7 @@ func listRooms(ctx context.Context, cmd *cli.Command) error {
 				fmt.Sprintf("%d", rm.NumPublishers),
 			)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 
 	return nil
@@ -756,7 +757,7 @@ func _deprecatedListRoom(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	if len(res.Rooms) == 0 {
-		fmt.Printf("there is no matching room with name: %s\n", cmd.String("room"))
+		out.Statusf("there is no matching room with name: %s", cmd.String("room"))
 		return nil
 	}
 	rm := res.Rooms[0]
@@ -777,7 +778,7 @@ func deleteRoom(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("deleted room", roomId)
+	out.Statusf("deleted room %s", roomId)
 	return nil
 }
 
@@ -791,7 +792,7 @@ func updateRoomMetadata(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("Updated room metadata")
+	out.Status("Updated room metadata")
 	util.PrintJSON(res)
 	return nil
 }
@@ -806,7 +807,7 @@ func _deprecatedUpdateRoomMetadata(ctx context.Context, cmd *cli.Command) error 
 		return err
 	}
 
-	fmt.Println("Updated room metadata")
+	out.Status("Updated room metadata")
 	util.PrintJSON(res)
 	return nil
 }
@@ -815,13 +816,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	publishUrls := cmd.StringSlice("publish")
 
 	// Determine simulcast mode by checking if any URL has simulcast format
-	simulcastMode := false
-	for _, url := range publishUrls {
-		if simulcastURLRegex.MatchString(url) {
-			simulcastMode = true
-			break
-		}
-	}
+	simulcastMode := slices.ContainsFunc(publishUrls, simulcastURLRegex.MatchString)
 
 	// Validate publish flags
 	if len(publishUrls) > 3 {
@@ -860,7 +855,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	participantIdentity := cmd.String("identity")
 	if participantIdentity == "" {
 		participantIdentity = util.ExpandTemplate("participant-%x")
-		fmt.Printf("Using generated participant identity [%s]\n", util.Accented(participantIdentity))
+		out.Statusf("Using generated participant identity [%s]", util.Accented(participantIdentity))
 	}
 
 	autoSubscribe := cmd.Bool("auto-subscribe")
@@ -870,14 +865,14 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		OnParticipantConnected: func(p *lksdk.RemoteParticipant) {
 			logger.Infow("participant connected",
 				"kind", p.Kind(),
-				"pID", p.SID(),
+				"participantID", p.SID(),
 				"participant", p.Identity(),
 			)
 		},
 		OnParticipantDisconnected: func(p *lksdk.RemoteParticipant) {
 			logger.Infow("participant disconnected",
 				"kind", p.Kind(),
-				"pID", p.SID(),
+				"participantID", p.SID(),
 				"participant", p.Identity(),
 			)
 		},
@@ -997,6 +992,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	exitAfterPublish := cmd.Bool("exit-after-publish")
+	attachFrameMetadata := cmd.Bool("attach-frame-metadata")
 
 	// Handle publishing
 	if len(publishUrls) > 0 {
@@ -1010,12 +1006,12 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 					return
 				}
 				if pub != nil {
-					fmt.Printf("finished simulcast stream %s\n", pub.Name())
+					out.Statusf("finished simulcast stream %s", pub.Name())
 					_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 				}
 			}
 
-			if err = handleSimulcastPublish(room, publishUrls, fps, h26xStreamingFormat, onPublishComplete); err != nil {
+			if err = handleSimulcastPublish(room, publishUrls, fps, h26xStreamingFormat, attachFrameMetadata, onPublishComplete); err != nil {
 				return err
 			}
 		} else {
@@ -1029,11 +1025,11 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 						return
 					}
 					if pub != nil {
-						fmt.Printf("finished writing %s\n", pub.Name())
+						out.Statusf("finished writing %s", pub.Name())
 						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 					}
 				}
-				if err = handlePublish(room, pub, fps, h26xStreamingFormat, onPublishComplete); err != nil {
+				if err = handlePublish(room, pub, fps, h26xStreamingFormat, attachFrameMetadata, onPublishComplete); err != nil {
 					return err
 				}
 			}
@@ -1071,6 +1067,13 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 				})
 			token, _ := at.ToJWT()
 			_ = util.OpenInMeet(project.URL, token)
+		case string(util.OpenTargetConsole):
+			_ = util.OpenInConsole(dashboardURL, project.ProjectId, &util.ConsoleURLParams{
+				Identity:  participantIdentity,
+				RoomName:  roomName,
+				Hidden:    true,
+				AutoStart: true,
+			})
 		}
 	}
 
@@ -1092,7 +1095,7 @@ func listParticipants(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	for _, p := range res.Participants {
-		fmt.Printf("%s (%s)\t tracks: %d\n", p.Identity, p.State.String(), len(p.Tracks))
+		out.Resultf("%s (%s)\t tracks: %d\n", p.Identity, p.State.String(), len(p.Tracks))
 	}
 	return nil
 }
@@ -1107,7 +1110,7 @@ func _deprecatedListParticipants(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	for _, p := range res.Participants {
-		fmt.Printf("%s (%s)\t tracks: %d\n", p.Identity, p.State.String(), len(p.Tracks))
+		out.Resultf("%s (%s)\t tracks: %d\n", p.Identity, p.State.String(), len(p.Tracks))
 	}
 	return nil
 }
@@ -1159,12 +1162,12 @@ func updateParticipant(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	fmt.Println("updating participant...")
+	out.Status("updating participant...")
 	util.PrintJSON(req)
 	if _, err := roomClient.UpdateParticipant(ctx, req); err != nil {
 		return err
 	}
-	fmt.Println("participant updated.")
+	out.Status("participant updated.")
 
 	return nil
 }
@@ -1180,7 +1183,7 @@ func removeParticipant(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("successfully removed participant", identity)
+	out.Statusf("successfully removed participant %s", identity)
 
 	return nil
 }
@@ -1201,7 +1204,7 @@ func forwardParticipant(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("successfully forwarded participant", identity, "from", roomName, "to", destinationRoomName)
+	out.Statusf("successfully forwarded participant %s from %s to %s", identity, roomName, destinationRoomName)
 
 	return nil
 }
@@ -1222,7 +1225,7 @@ func moveParticipant(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("successfully moved participant", identity, "from", roomName, "to", destinationRoomName)
+	out.Statusf("successfully moved participant %s from %s to %s", identity, roomName, destinationRoomName)
 	return nil
 }
 
@@ -1247,7 +1250,7 @@ func muteTrack(ctx context.Context, cmd *cli.Command) error {
 	if !muted {
 		verb = "Unmuted"
 	}
-	fmt.Printf("%s track [%s]\n", verb, trackSid)
+	out.Statusf("%s track [%s]", verb, trackSid)
 	return nil
 }
 
@@ -1272,7 +1275,7 @@ func updateSubscriptions(ctx context.Context, cmd *cli.Command) error {
 	if !subscribe {
 		verb = "Unsubscribed from"
 	}
-	fmt.Printf("%s tracks %v\n", verb, trackSids)
+	out.Statusf("%s tracks %v", verb, trackSids)
 	return nil
 }
 
@@ -1299,7 +1302,7 @@ func sendData(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("successfully sent data to room", roomName)
+	out.Statusf("successfully sent data to room %s", roomName)
 	return nil
 }
 

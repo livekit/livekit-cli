@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/urfave/cli/v3"
 
@@ -64,6 +63,11 @@ var (
 						&cli.StringFlag{
 							Name:  "agent-name",
 							Usage: "agent to dispatch",
+						},
+						&cli.StringFlag{
+							Name:    "deployment",
+							Usage:   "deployment of the agent to dispatch to (leave empty for production)",
+							Aliases: []string{"d"},
 						},
 						&cli.StringFlag{
 							Name:  "metadata",
@@ -143,7 +147,7 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 		util.PrintJSON(res)
 	} else {
 		table := util.CreateTable().
-			Headers("DispatchID", "Room", "AgentName", "Metadata")
+			Headers("DispatchID", "Room", "AgentName", "Deployment", "Metadata")
 		for _, item := range res.AgentDispatches {
 			if item == nil {
 				continue
@@ -153,19 +157,21 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 				item.Id,
 				item.Room,
 				item.AgentName,
+				item.Deployment,
 				item.Metadata,
 			)
 		}
-		fmt.Println(table)
+		out.Result(table)
 	}
 	return nil
 }
 
 func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	req := &livekit.CreateAgentDispatchRequest{
-		Room:      cmd.String("room"),
-		AgentName: cmd.String("agent-name"),
-		Metadata:  cmd.String("metadata"),
+		Room:       cmd.String("room"),
+		AgentName:  cmd.String("agent-name"),
+		Deployment: cmd.String("deployment"),
+		Metadata:   cmd.String("metadata"),
 	}
 	if cmd.Bool("new-room") {
 		req.Room = utils.NewGuid("room-")
@@ -190,7 +196,7 @@ func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("json") {
 		util.PrintJSON(info)
 	} else {
-		fmt.Printf("Dispatch created: %v\n", info)
+		out.Resultf("Dispatch created: %v\n", info)
 	}
 
 	return nil
@@ -221,7 +227,7 @@ func deleteAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool("json") {
 		util.PrintJSON(info)
 	} else {
-		fmt.Printf("Dispatch deleted: %v\n", info)
+		out.Resultf("Dispatch deleted: %v\n", info)
 	}
 	return nil
 }

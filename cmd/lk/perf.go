@@ -276,13 +276,13 @@ func agentLoadTest(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	params := loadtester.AgentLoadTestParams{
-		URL:             pc.URL,
-		APIKey:          pc.APIKey,
-		APISecret:       pc.APISecret,
-		Rooms:           int(cmd.Int("rooms")),
-		AgentName:       cmd.String("agent-name"),
-		EchoSpeechDelay: cmd.Duration("echo-speech-delay"),
-		Duration:        cmd.Duration("duration"),
+		URL:                   pc.URL,
+		APIKey:                pc.APIKey,
+		APISecret:             pc.APISecret,
+		Rooms:                 int(cmd.Int("rooms")),
+		AgentName:             cmd.String("agent-name"),
+		EchoSpeechDelay:       cmd.Duration("echo-speech-delay"),
+		Duration:              cmd.Duration("duration"),
 		ParticipantAttributes: participantAttributes,
 	}
 

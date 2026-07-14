@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"maps"
 	"os"
 	"slices"
 	"time"
@@ -33,17 +35,30 @@ import (
 )
 
 const (
-	usageCreate   = "Ability to create or delete rooms"
-	usageList     = "Ability to list rooms"
-	usageJoin     = "Ability to join a room (requires --room and --identity)"
-	usageAdmin    = "Ability to moderate a room (requires --room)"
-	usageEgress   = "Ability to interact with Egress services"
-	usageIngress  = "Ability to interact with Ingress services"
+	usageCreate    = "Ability to create or delete rooms"
+	usageList      = "Ability to list rooms"
+	usageJoin      = "Ability to join a room (requires --room and --identity)"
+	usageAdmin     = "Ability to moderate a room (requires --room)"
+	usageEgress    = "Ability to interact with Egress services"
+	usageIngress   = "Ability to interact with Ingress services"
 	usageMetadata  = "Ability to update their own name and metadata"
 	usageInference = "Ability to perform inference (AI endpoints)"
 )
 
 var (
+	tokenOnlyFlag = &cli.BoolFlag{
+		Name:  "token-only",
+		Usage: "Output only the access token",
+	}
+
+	tokenOutputMutuallyExclusiveFlags = []cli.MutuallyExclusiveFlags{{
+		Flags: [][]cli.Flag{{
+			jsonFlag,
+		}, {
+			tokenOnlyFlag,
+		}},
+	}}
+
 	TokenCommands = []*cli.Command{
 		{
 			Name:   "token",
@@ -58,7 +73,6 @@ var (
 						optional(roomFlag),
 						optional(identityFlag),
 						openFlag,
-
 						&cli.BoolFlag{
 							Name:  "create",
 							Usage: usageCreate,
@@ -127,10 +141,16 @@ var (
 							Usage: "Agent to dispatch to the room (identified by agent_name)",
 						},
 						&cli.StringFlag{
+							Name:    "deployment",
+							Usage:   "deployment of the agent to dispatch to (leave empty for production)",
+							Aliases: []string{"d"},
+						},
+						&cli.StringFlag{
 							Name:  "job-metadata",
 							Usage: "Metadata attached to job dispatched to the agent (ctx.job.metadata)",
 						},
 					},
+					MutuallyExclusiveFlags: tokenOutputMutuallyExclusiveFlags,
 				},
 			},
 		},
@@ -143,7 +163,6 @@ var (
 			Action: createToken,
 			Flags: []cli.Flag{
 				optional(roomFlag),
-
 				&cli.BoolFlag{
 					Name:  "create",
 					Usage: usageCreate,
@@ -217,11 +236,17 @@ var (
 					Usage: "Additional `VIDEO_GRANT` fields. It'll be merged with other arguments (JSON formatted)",
 				},
 			},
+			MutuallyExclusiveFlags: tokenOutputMutuallyExclusiveFlags,
 		},
 	}
 )
 
 func createToken(ctx context.Context, c *cli.Command) error {
+	tokenOnly := c.Bool("token-only")
+	jsonOutput := c.Bool("json")
+	stdout := c.Root().Writer
+	stderr := c.Root().ErrWriter
+
 	name := c.String("name")
 	metadata := c.String("metadata")
 	validFor := c.String("valid-for")
@@ -245,22 +270,24 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		if participantAttributes == nil {
 			participantAttributes = make(map[string]string)
 		}
-		for key, value := range fileAttrs {
-			participantAttributes[key] = value
-		}
+		maps.Copy(participantAttributes, fileAttrs)
 	}
 
 	// required only for join, will be generated if not provided
 	participant := c.String("identity")
 	if participant == "" {
 		participant = util.ExpandTemplate("participant-%x")
-		fmt.Printf("Using generated participant identity [%s]\n", util.Accented(participant))
+		if !tokenOnly && !jsonOutput {
+			fmt.Fprintf(stderr, "Using generated participant identity [%s]\n", util.Accented(participant))
+		}
 	}
 
 	room := c.String("room")
 	if room == "" {
 		room = util.ExpandTemplate("room-%t")
-		fmt.Printf("Using generated room name [%s]\n", util.Accented(room))
+		if !tokenOnly && !jsonOutput {
+			fmt.Fprintf(stderr, "Using generated room name [%s]\n", util.Accented(room))
+		}
 	}
 
 	grant := &auth.VideoGrant{
@@ -391,14 +418,17 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		at.SetInferenceGrant(&auth.InferenceGrant{Perform: true})
 	}
 
+	agent := c.String("agent")
+	agentDeployment := c.String("deployment")
+	jobMetadata := c.String("job-metadata")
 	if grant.RoomJoin {
-		if agent := c.String("agent"); agent != "" {
-			jobMetadata := c.String("job-metadata")
+		if agent != "" {
 			at.SetRoomConfig(&livekit.RoomConfiguration{
 				Agents: []*livekit.RoomAgentDispatch{
 					{
-						AgentName: agent,
-						Metadata:  jobMetadata,
+						AgentName:  agent,
+						Deployment: agentDeployment,
+						Metadata:   jobMetadata,
 					},
 				},
 			})
@@ -419,7 +449,9 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	at.SetName(name)
 	if validFor != "" {
 		if dur, err := time.ParseDuration(validFor); err == nil {
-			fmt.Println("valid for (mins): ", int(dur/time.Minute))
+			if !tokenOnly && !jsonOutput {
+				fmt.Fprintf(stderr, "valid for (mins): %d\n", int(dur/time.Minute))
+			}
 			at.SetValidFor(dur)
 		} else {
 			return err
@@ -431,18 +463,37 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 
-	fmt.Println("Token grants:")
-	util.PrintJSON(at.GetGrants())
-	fmt.Println()
-	if project.URL != "" {
-		fmt.Println("Project URL:", project.URL)
+	if err = printTokenCreateOutput(stdout, tokenOnly, jsonOutput, tokenCreateOutput{
+		AccessToken: token,
+		ProjectURL:  project.URL,
+		Identity:    participant,
+		Name:        name,
+		Room:        room,
+		Grants:      at.GetGrants(),
+	}); err != nil {
+		return err
 	}
-	fmt.Println("Access token:", token)
 
 	if c.IsSet("open") {
 		switch c.String("open") {
 		case string(util.OpenTargetMeet):
-			_ = util.OpenInMeet(project.URL, token)
+			if err := util.OpenInMeet(project.URL, token); err != nil {
+				return err
+			}
+		case string(util.OpenTargetConsole):
+			if err := util.OpenInConsole(dashboardURL, project.ProjectId, &util.ConsoleURLParams{
+				AgentName:   agent,
+				Deployment:  agentDeployment,
+				JobMetadata: jobMetadata,
+				Identity:    participant,
+				RoomName:    room,
+				Metadata:    metadata,
+				Attributes:  participantAttributes,
+				Hidden:      false,
+				AutoStart:   true,
+			}); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -458,4 +509,34 @@ func accessToken(apiKey, apiSecret string, grant *auth.VideoGrant, identity stri
 		SetVideoGrant(grant).
 		SetIdentity(identity)
 	return at
+}
+
+type tokenCreateOutput struct {
+	AccessToken string            `json:"access_token"`
+	ProjectURL  string            `json:"project_url,omitempty"`
+	Identity    string            `json:"identity"`
+	Name        string            `json:"name"`
+	Room        string            `json:"room"`
+	Grants      *auth.ClaimGrants `json:"grants"`
+}
+
+func printTokenCreateOutput(w io.Writer, tokenOnly, jsonOutput bool, out tokenCreateOutput) error {
+	switch {
+	case tokenOnly:
+		_, _ = fmt.Fprintln(w, out.AccessToken)
+	case jsonOutput:
+		return util.PrintJSONTo(w, out)
+	default:
+		_, _ = fmt.Fprintln(w, "Token grants:")
+		if err := util.PrintJSONTo(w, out.Grants); err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintln(w)
+		if out.ProjectURL != "" {
+			_, _ = fmt.Fprintln(w, "Project URL:", out.ProjectURL)
+		}
+		_, _ = fmt.Fprintln(w, "Access token:", out.AccessToken)
+	}
+
+	return nil
 }
