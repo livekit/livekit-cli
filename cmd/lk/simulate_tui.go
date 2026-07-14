@@ -80,11 +80,11 @@ func runSimulateTUI(config *simulateConfig) error {
 	}
 
 	if m.config.mode == modeView {
-		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: lk agent simulate --view %s\n", m.config.viewModeRunID)
+		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: %s\n", viewCommandHint(m.config.viewModeRunID))
 	} else if m.runID != "" && !m.runFinished {
 		cancelSimulationRun(config.client, m.runID)
 	} else if m.runID != "" {
-		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: lk agent simulate --view %s\n", m.runID)
+		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: %s\n", viewCommandHint(m.runID))
 	}
 
 	if runErr != nil {
