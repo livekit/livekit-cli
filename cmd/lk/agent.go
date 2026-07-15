@@ -206,6 +206,8 @@ var (
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
 						agentPrebuiltImageTarFlag,
+						attributeFlag,
+						attributesFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -644,7 +646,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		out.Statusf("Created agent with ID [%s]", util.Accented(agentID))
-		return deployPrebuiltImage(buildContext, agentID, imageRef, imageTar)
+		attrs, err := resolveAttributes(cmd)
+		if err != nil {
+			return err
+		}
+		return deployPrebuiltImage(buildContext, agentID, imageRef, imageTar, attrs)
 	}
 
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
@@ -828,7 +834,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 				return fmt.Errorf("failed to update agent secrets: %s", resp.Message)
 			}
 		}
-		if err := deployPrebuiltImage(buildContext, agentId, imageRef, imageTar); err != nil {
+		if err := deployPrebuiltImage(buildContext, agentId, imageRef, imageTar, attrs); err != nil {
 			return fmt.Errorf("unable to deploy prebuilt image: %w", err)
 		}
 		out.Status("Deployed agent")
@@ -893,7 +899,7 @@ func promoteAgent(ctx context.Context, cmd *cli.Command) error {
 
 // deployPrebuiltImage pushes a locally-built image through the cloud-agents OCI proxy.
 // Exactly one of imageRef (Docker daemon via the Docker API) or imageTar must be non-empty.
-func deployPrebuiltImage(ctx context.Context, agentID, imageRef, imageTar string) error {
+func deployPrebuiltImage(ctx context.Context, agentID, imageRef, imageTar string, attrs map[string]string) error {
 	target, err := agentsClient.GetPushTarget(ctx, agentID)
 	if err != nil {
 		return fmt.Errorf("failed to get push target: %w", err)
@@ -920,7 +926,7 @@ func deployPrebuiltImage(ctx context.Context, agentID, imageRef, imageTar string
 	proxyRef := fmt.Sprintf("%s/%s:%s", target.ProxyHost, target.Name, target.Tag)
 	out.Statusf("Pushing image [%s]", util.Accented(proxyRef))
 
-	rt := agentsClient.NewRegistryTransport()
+	rt := agentsClient.NewRegistryTransport(attrs)
 	if err := crane.Push(img, proxyRef,
 		crane.WithTransport(rt),
 		crane.WithAuth(authn.Anonymous),
