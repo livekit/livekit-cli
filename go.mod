@@ -21,7 +21,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.18.6
 	github.com/livekit/protocol v1.49.1-0.20260712215709-8847d7456816
-	github.com/livekit/server-sdk-go/v2 v2.17.0
+	github.com/livekit/server-sdk-go/v2 v2.18.1
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/patternmatcher v0.6.1
 	github.com/modelcontextprotocol/go-sdk v1.6.1
@@ -268,5 +268,3 @@ require (
 // TEMP (local dev): use local protocol with the WorkerInfo dev message.
 // Drop once github.com/livekit/protocol publishes it.
 // replace github.com/livekit/protocol => ../protocol
-
-replace github.com/livekit/server-sdk-go/v2 => ../server-sdk-go
