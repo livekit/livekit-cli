@@ -571,10 +571,8 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			if err := huh.NewForm(huh.NewGroup(util.Confirm().
 				Title(fmt.Sprintf("Use project [%s] (%s) to create agent deployment?", project.Name, project.URL)).
 				Value(&useProject).
-				Options(
-					huh.NewOption("Yes", true),
-					huh.NewOption("No, select another...", false),
-				).
+				Affirmative("Yes").
+				Negative("No, select another...").
 				WithTheme(util.Theme))).
 				Run(); err != nil {
 				return err
@@ -646,7 +644,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		out.Statusf("Created agent with ID [%s]", util.Accented(agentID))
-		attrs, err := resolveAttributes(cmd)
+		attrs, err := resolveDeployAttributes(buildContext, cmd)
 		if err != nil {
 			return err
 		}
@@ -805,7 +803,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 	defer cancel()
 
-	attrs, err := resolveAttributes(cmd)
+	attrs, err := resolveDeployAttributes(buildContext, cmd)
 	if err != nil {
 		return err
 	}
@@ -966,9 +964,9 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 		for _, regionalAgent := range agent.AgentDeployments {
 			curCPU := "-"
 			curMem := "-"
-			agentName := "---"
-			deployment := "---"
-			lastScrapedAt := "---"
+			agentName := "--"
+			deployment := "--"
+			lastScrapedAt := "--"
 			if regionalAgent.LastScrapedAt != nil {
 				lastScrapedAt = formatTime(regionalAgent.LastScrapedAt.AsTime())
 			}
@@ -1236,6 +1234,98 @@ func resolveAttributes(cmd *cli.Command) (map[string]string, error) {
 	return attrs, nil
 }
 
+// Attribute keys used to tag a deployed agent version with the git metadata it
+// was built from. Any of these supplied explicitly by the user takes precedence.
+const (
+	gitCommitAttribute = "git_commit"
+	gitBranchAttribute = "git_branch"
+	gitTreeAttribute   = "git_tree"
+)
+
+// resolveDeployAttributes resolves the user-supplied attributes and, when the
+// working directory is inside a git repository, automatically tags the
+// deployment with git metadata: git_commit (HEAD SHA) and git_branch (current
+// branch). Any attribute the user supplied explicitly always wins. When the
+// working tree has uncommitted changes the tagged commit may not reflect the
+// deployed code, so the user is asked to confirm (skipped, with a warning,
+// under --yes or a non-interactive terminal); if they proceed, a git_tree
+// attribute is added with a content hash that uniquely identifies the dirty
+// working state.
+func resolveDeployAttributes(ctx context.Context, cmd *cli.Command) (map[string]string, error) {
+	attrs, err := resolveAttributes(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsGitRepository(ctx, workingDir) {
+		return attrs, nil
+	}
+
+	// setDefault assigns key=value only when value is non-empty and the user
+	// hasn't already supplied the key. Reports whether it assigned.
+	setDefault := func(key, value string) bool {
+		if value == "" {
+			return false
+		}
+		if _, ok := attrs[key]; ok {
+			return false
+		}
+		if attrs == nil {
+			attrs = map[string]string{}
+		}
+		attrs[key] = value
+		return true
+	}
+
+	commit, _ := util.GitHeadCommit(ctx, workingDir)
+	branch, _ := util.GitCurrentBranch(ctx, workingDir)
+
+	// Warn/confirm on a dirty tree before auto-tagging the commit, unless the
+	// user pinned the commit attribute themselves.
+	var treeHash string
+	_, commitPinned := attrs[gitCommitAttribute]
+	if commit != "" && !commitPinned {
+		if dirty, err := util.HasUncommittedChanges(ctx, workingDir); err == nil && dirty {
+			out.Warnf("Working tree has uncommitted changes; commit [%s] may not reflect the deployed code.", util.Accented(commit))
+			if !SkipPrompts(cmd) {
+				proceed := false
+				if err := huh.NewForm(
+					huh.NewGroup(
+						util.Confirm().
+							Title("Continue deploying anyway?").
+							Value(&proceed).
+							WithTheme(util.Theme),
+					),
+				).Run(); err != nil {
+					return nil, err
+				}
+				if !proceed {
+					return nil, errors.New("deployment cancelled")
+				}
+			}
+			// Proceeding with a dirty tree: capture a content hash so the exact
+			// working state remains identifiable despite the mismatched commit.
+			treeHash, _ = util.GitWorkingTreeHash(ctx, workingDir)
+		}
+	}
+
+	taggedCommit := setDefault(gitCommitAttribute, commit)
+	setDefault(gitBranchAttribute, branch)
+	setDefault(gitTreeAttribute, treeHash)
+
+	if taggedCommit {
+		if branch != "" {
+			out.Statusf("Tagging deployment with commit [%s] on branch [%s]", util.Accented(commit), util.Accented(branch))
+		} else {
+			out.Statusf("Tagging deployment with commit [%s]", util.Accented(commit))
+		}
+		if treeHash != "" {
+			out.Statusf("Working tree is dirty; tagged with tree hash [%s]", util.Accented(treeHash))
+		}
+	}
+	return attrs, nil
+}
+
 // attributesMatch reports whether attrs contains every key-value pair in
 // filter. Extra keys in attrs are allowed, so the match is inclusive.
 func attributesMatch(attrs, filter map[string]string) bool {
@@ -1299,7 +1389,7 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 		if b {
 			return "✓"
 		}
-		return "---"
+		return "--"
 	}
 	headers := []string{"Version", "Production", "Draining", "Active", "Status", "Attributes", "Created At", "Deployed At"}
 	if showDigest {
@@ -1571,7 +1661,7 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 
 	var agentNames []huh.Option[string]
 	for _, agent := range agents.Agents {
-		if excludeEmptyVersion && agent.Version == "---" {
+		if excludeEmptyVersion && agent.Version == "--" {
 			continue
 		}
 		var deployedStr string

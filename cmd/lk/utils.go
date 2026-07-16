@@ -478,7 +478,7 @@ func (s *templateStringValue) String() string {
 
 func formatTime(t time.Time) string {
 	if t.IsZero() {
-		return "---"
+		return "--"
 	}
 	return t.Format(time.RFC3339)
 }
