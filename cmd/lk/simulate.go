@@ -287,6 +287,9 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		}
 		liveAgent = true
 		agentName = liveAgentName
+	} else if runID != "" {
+		// --view opens a pre-existing run: nothing is spawned, so no agent
+		// project or entrypoint is needed.
 	} else {
 		agentName = generateAgentName()
 		projectDir, projectType, err = agentfs.DetectProjectRoot(".")

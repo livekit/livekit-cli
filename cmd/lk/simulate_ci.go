@@ -39,6 +39,10 @@ func (tw *toggleWriter) Write(p []byte) (int, error) {
 }
 
 func runSimulateCI(ctx context.Context, config *simulateConfig) error {
+	if config.mode == modeView {
+		return runSimulateCIView(ctx, config)
+	}
+
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 	defer stop()
 
@@ -193,8 +197,14 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		out.Statusf("Dashboard:  %s", url)
 	}
 
-	// the returned error is printed by main and reports the failure; the
-	// counts line / full dump above already carries the detail
+	return runFailureError(run)
+}
+
+// runFailureError converts a terminal run's failures into the CI exit error;
+// the error is printed by main and reports the failure — the counts line /
+// full dump above already carries the detail. Returns nil when everything
+// passed.
+func runFailureError(run *livekit.SimulationRun) error {
 	_, _, _, failed := simulationJobCounts(run)
 	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
 		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
@@ -204,4 +214,52 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	}
 
 	return nil
+}
+
+// runSimulateCIView handles --view in non-interactive mode: it fetches the
+// pre-existing run (polling until it reaches a terminal state if it is still
+// in progress) and prints the report. Nothing is spawned or cancelled — the
+// run belongs to whoever created it.
+func runSimulateCIView(ctx context.Context, config *simulateConfig) error {
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+	defer stop()
+
+	report := newSimLog(out.ResultWriter(), out.StatusWriter())
+	runID := config.viewModeRunID
+
+	ticker := time.NewTicker(simulationPollInterval)
+	defer ticker.Stop()
+
+	var run *livekit.SimulationRun
+	for {
+		pollCtx, pollCancel := context.WithTimeout(ctx, simulationAPITimeout)
+		var err error
+		run, err = getSimulationRun(pollCtx, config.client, runID)
+		pollCancel()
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return err
+		}
+
+		if isTerminalRunStatus(run.Status) {
+			break
+		}
+		report.RunUpdate(run, config.numSimulations)
+
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+
+	report.Results(run, nil)
+
+	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
+		out.Statusf("Dashboard:  %s", url)
+	}
+
+	return runFailureError(run)
 }
