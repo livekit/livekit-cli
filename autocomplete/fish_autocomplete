@@ -619,6 +619,7 @@ complete -x -c lk -n '__fish_seen_subcommand_from ingress; and __fish_seen_subco
 complete -x -c lk -n '__fish_seen_subcommand_from ingress; and not __fish_seen_subcommand_from create update list delete help h' -a 'list' -d 'List all active ingress'
 complete -c lk -n '__fish_seen_subcommand_from ingress; and __fish_seen_subcommand_from list' -f -l room -r -d 'Limits list to a certain room `NAME`'
 complete -c lk -n '__fish_seen_subcommand_from ingress; and __fish_seen_subcommand_from list' -f -l id -r -d 'List a specific ingress `ID`'
+complete -c lk -n '__fish_seen_subcommand_from ingress; and __fish_seen_subcommand_from list' -f -l limit -r -d 'maximum number of items to return. If unset, defaults to API page size'
 complete -c lk -n '__fish_seen_subcommand_from ingress; and __fish_seen_subcommand_from list' -f -l json -s j -d 'Output as JSON'
 complete -c lk -n '__fish_seen_subcommand_from ingress; and __fish_seen_subcommand_from list' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from ingress; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'

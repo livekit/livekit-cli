@@ -79,6 +79,10 @@ var (
 							Usage:    "List a specific ingress `ID`",
 							Required: false,
 						},
+						&cli.IntFlag{
+							Name:  "limit",
+							Usage: "maximum number of items to return. If unset, defaults to API page size",
+						},
 						jsonFlag,
 					},
 				},
@@ -209,23 +213,53 @@ func updateIngress(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listIngress(ctx context.Context, cmd *cli.Command) error {
-	res, err := ingressClient.ListIngress(context.Background(), &livekit.ListIngressRequest{
-		RoomName:  cmd.String("room"),
-		IngressId: cmd.String("id"),
-	})
-	if err != nil {
-		return err
+	var items []*livekit.IngressInfo
+	if cmd.IsSet("id") {
+		res, err := ingressClient.ListIngress(ctx, &livekit.ListIngressRequest{
+			RoomName:  cmd.String("room"),
+			IngressId: cmd.String("id"),
+		})
+		if err != nil {
+			return err
+		}
+		items = res.Items
+	} else {
+		limit := cmd.Int("limit")
+		var err error
+		var res *livekit.ListIngressResponse
+		for res == nil || (len(items) < limit && res.NextPageToken.GetToken() != "") {
+			req := &livekit.ListIngressRequest{
+				RoomName: cmd.String("room"),
+			}
+
+			if res != nil {
+				req.PageToken = &livekit.TokenPagination{Token: res.NextPageToken.GetToken()}
+			}
+
+			res, err = ingressClient.ListIngress(ctx, req)
+			if err != nil {
+				return err
+			}
+
+			resItems := res.Items
+			if remaining := limit - len(items); limit > 0 && len(resItems) > remaining {
+				resItems = resItems[len(resItems)-remaining:]
+			}
+
+			// each page has older items than the previous one, but ordering within each page is newest last
+			items = append(resItems, items...)
+		}
 	}
 
 	// NOTE: previously, the `verbose` flag was used to output JSON in addition to the table.
 	// This is inconsistent with other commands in which verbose is used for debug info, but is
 	// kept for compatibility with the previous behavior.
 	if cmd.Bool("verbose") || cmd.Bool("json") {
-		util.PrintJSON(res)
+		return util.PrintJSONTo(cmd.Root().Writer, &livekit.ListIngressResponse{Items: items})
 	} else {
 		table := util.CreateTable().
 			Headers("IngressID", "Name", "Room", "StreamKey", "URL", "Status", "Error")
-		for _, item := range res.Items {
+		for _, item := range items {
 			if item == nil {
 				continue
 			}
