@@ -74,6 +74,11 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	report := newSimLog(out.ResultWriter(), out.StatusWriter())
 	report.BeginSetup()
 
+	for _, w := range config.warnings {
+		out.Warnf("Warning: %s", w)
+		report.ConfigWarning(w)
+	}
+
 	var err error
 	if !config.liveAgent {
 		report.StartingAgent()

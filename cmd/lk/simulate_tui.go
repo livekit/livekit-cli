@@ -386,6 +386,9 @@ func (m *simulateModel) runSetup() tea.Cmd {
 	m.currentStep = len(m.steps)
 
 	m.reporter.BeginSetup()
+	for _, w := range c.warnings {
+		m.reporter.ConfigWarning(w)
+	}
 	if c.mode == modeScenarios && c.scenarioGroup != nil {
 		m.reporter.ScenariosLoaded(c.scenarioGroup, c.scenariosPath)
 	}
@@ -927,6 +930,10 @@ func (m *simulateModel) viewSetup() string {
 	b.WriteString("\n")
 
 	b.WriteString(m.renderSteps())
+
+	for _, w := range m.config.warnings {
+		b.WriteString(yellowStyle().Render("  ⚠ "+w) + "\n")
+	}
 
 	// in file mode the scenarios are already known, nothing is generated
 	if m.setupDone && m.err == nil && m.config.mode == modeGenerateFromSource {

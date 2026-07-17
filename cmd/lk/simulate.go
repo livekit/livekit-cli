@@ -181,9 +181,10 @@ type simulateConfig struct {
 	projectType    agentfs.ProjectType
 	entrypoint     string
 	scenarioGroup  *livekit.ScenarioGroup
-	scenariosPath  string // path to the --scenarios file (empty when generating from source)
-	viewModeRunID  string // non-empty when --view opens a pre-existing run
-	liveAgent      bool   // --agent-name: run against an already-running agent, don't spawn one
+	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
+	viewModeRunID  string   // non-empty when --view opens a pre-existing run
+	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
+	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
 	// TODO (steveyoon): add agent deployment support
 	// agentDeployment string
 }
@@ -195,6 +196,17 @@ const (
 	modeGenerateFromSource
 	modeView
 )
+
+const numSimulationsIgnoredWarning = "--num-simulations has no effect when --scenarios is provided (it only controls scenario generation); did you mean --concurrency?"
+
+// simulateConfigWarnings flags configurations that silently do nothing, so the
+// user learns before the run burns quota.
+func simulateConfigWarnings(mode simulateMode, numSimulations int32) []string {
+	if mode == modeScenarios && numSimulations > 0 {
+		return []string{numSimulationsIgnoredWarning}
+	}
+	return nil
+}
 
 func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	data, err := os.ReadFile(path)
@@ -363,6 +375,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		scenariosPath:  scenariosPath,
 		viewModeRunID:  runID,
 		liveAgent:      liveAgent,
+		warnings:       simulateConfigWarnings(mode, numSimulations),
 	}
 
 	if !isInteractive() {

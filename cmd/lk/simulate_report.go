@@ -73,6 +73,10 @@ func (l *simLog) ScenariosLoaded(g *livekit.ScenarioGroup, path string) {
 	fmt.Fprintf(l.out, "✓ Loaded %d scenarios from %s (%q)\n", len(g.GetScenarios()), path, name)
 }
 
+func (l *simLog) ConfigWarning(msg string) {
+	fmt.Fprintf(l.out, "⚠ %s\n", msg)
+}
+
 func (l *simLog) RunCreated(runID, dashboardURL string) {
 	fmt.Fprintln(l.out)
 	fmt.Fprintf(l.out, "Run:       %s\n", runID)
