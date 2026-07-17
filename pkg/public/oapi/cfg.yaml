@@ -1,0 +1,15 @@
+# oapi-codegen configuration for the CLI's LiveKit Public API client.
+#
+# Generates Go models and a net/http client. The spec is fetched from its
+# published URL at generate time (see generate.sh); no spec copy is kept in the
+# repo. This mirrors public-api-server's oapi-codegen setup (pkg/api/v1/oapi) so
+# the two sides share a generator and conventions — the CLI generates a `client`
+# where the server generates a `std-http-server`. See ../gen.go.
+package: oapi
+output: oapi.gen.go
+generate:
+  models: true
+  client: true
+output-options:
+  # Keep the generated file readable and stable.
+  skip-prune: false
