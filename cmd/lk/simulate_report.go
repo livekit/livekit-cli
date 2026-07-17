@@ -32,6 +32,7 @@ type simLog struct {
 	info       io.Writer
 	prevStatus livekit.SimulationRun_Status
 	prevDone   int
+	quotaNote  string
 }
 
 func newSimLog(out, info io.Writer) *simLog {
@@ -75,6 +76,13 @@ func (l *simLog) ScenariosLoaded(g *livekit.ScenarioGroup, path string) {
 
 func (l *simLog) ConfigWarning(msg string) {
 	fmt.Fprintf(l.out, "⚠ %s\n", msg)
+}
+
+func (l *simLog) QuotaExceeded(desc string, suggested int) {
+	l.quotaNote = fmt.Sprintf(
+		"This run hit the project's %s (inference 429s). Try re-running with --concurrency %d.",
+		desc, suggested)
+	fmt.Fprintf(l.info, "⚠ %s\n", l.quotaNote)
 }
 
 func (l *simLog) RunCreated(runID, dashboardURL string) {

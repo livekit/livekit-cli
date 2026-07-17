@@ -194,6 +194,12 @@ type simulateModel struct {
 	confirmQuit    bool
 	confirmQuitSel int
 
+	// inference-quota (429) dialog; shows at most once per run
+	quotaWarning   *quotaInfo
+	quotaDismissed bool
+	quotaSuggested int
+	peakRunning    int
+
 	saving    bool
 	saveInput textinput.Model
 	saveErr   string
@@ -212,6 +218,10 @@ func (m *simulateModel) hasDescription() bool {
 
 func (m *simulateModel) descriptionExpanded() bool {
 	return m.detailJobID == "" && m.showDescription && m.hasDescription()
+}
+
+func (m *simulateModel) quotaModalActive() bool {
+	return m.quotaWarning != nil && !m.quotaDismissed
 }
 
 // A run that started from a scenarios.yaml has nothing new to export.
@@ -587,6 +597,16 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
 			}
+			if running := runningJobCount(msg.run); running > m.peakRunning {
+				m.peakRunning = running
+			}
+			if m.quotaWarning == nil && !m.quotaDismissed && m.agent != nil {
+				if info := detectQuotaExceeded(m.agent.RecentLogs(0)); info != nil {
+					m.quotaWarning = info
+					m.quotaSuggested = suggestConcurrency(m.config.concurrency, m.peakRunning)
+					m.reporter.QuotaExceeded(info.describe(), m.quotaSuggested)
+				}
+			}
 			// the worker is failing systemically: cancel the run and surface
 			// its log on exit
 			if !m.brokenAgent && agentBroken(msg.run, m.agent) {
@@ -723,6 +743,18 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "esc", "q", "n":
 			m.confirmQuit = false
 		case "ctrl+c":
+			return m, tea.Quit
+		}
+		return m, nil
+	}
+	if m.quotaModalActive() {
+		switch key {
+		case "enter", "esc", "q", " ":
+			m.quotaDismissed = true
+		case "ctrl+c":
+			if m.setupCancel != nil {
+				m.setupCancel()
+			}
 			return m, tea.Quit
 		}
 		return m, nil
@@ -1818,6 +1850,9 @@ func (m *simulateModel) renderHint() string {
 	if m.saving {
 		return m.renderSaveDialog()
 	}
+	if m.quotaModalActive() {
+		return m.renderQuotaWarning()
+	}
 	var parts []string
 	switch {
 	case m.detailJobID != "":
@@ -1908,6 +1943,37 @@ func (m *simulateModel) renderSaveDialog() string {
 		Padding(0, 1).
 		Width(width).
 		Render(b.String())
+	return indentLines(box, "  ")
+}
+
+// renderQuotaWarning is the once-per-run 429 dialog: the project's inference
+// quota is exhausted, so every LLM completion — and with it every job — is
+// failing. Pinned where the hint bar renders, dismissed from the keyboard
+// (the TUI runs without mouse capture).
+func (m *simulateModel) renderQuotaWarning() string {
+	suggested := m.quotaSuggested
+	width := 56
+	if max := m.width - 8; width > max {
+		width = max
+	}
+	if width < 24 {
+		width = 24
+	}
+	body := lipgloss.NewStyle().Width(width)
+	var b strings.Builder
+	b.WriteString(boldStyle.Render("Inference quota exceeded") + "\n")
+	b.WriteString(body.Render(fmt.Sprintf(
+		"This project is hitting its %s. LLM completions are being rejected (429), and simulation jobs are failing with them.",
+		m.quotaWarning.describe())) + "\n\n")
+	b.WriteString(body.Render(fmt.Sprintf(
+		"Suggested fix: re-run with --concurrency %d", suggested)) + "\n\n")
+	btn := reverseStyle.Bold(true).Render(" Dismiss ")
+	b.WriteString(lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Render(btn))
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(util.Error()).
+		Padding(0, 1).
+		Render(b.String() + "\n" + dimStyle.Render("enter/esc dismiss"))
 	return indentLines(box, "  ")
 }
 
