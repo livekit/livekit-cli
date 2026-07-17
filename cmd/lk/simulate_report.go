@@ -129,6 +129,9 @@ func (l *simLog) BrokenAgent() {
 
 func (l *simLog) Results(run *livekit.SimulationRun, ap *AgentProcess) {
 	writeRunResults(l.out, run, ap)
+	if l.quotaNote != "" {
+		fmt.Fprintf(l.out, "\n⚠ %s\n", l.quotaNote)
+	}
 }
 
 func writeBrokenAgentNote(w io.Writer, ap *AgentProcess) {

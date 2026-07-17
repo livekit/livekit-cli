@@ -139,6 +139,8 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	// --- Poll until terminal ---
 
 	brokenAgent := false
+	quotaWarned := false
+	peakRunning := 0
 	ticker := time.NewTicker(simulationPollInterval)
 	defer ticker.Stop()
 
@@ -153,6 +155,19 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			}
 			out.Warnf("Warning: poll failed: %v", err)
 		} else {
+			if running := runningJobCount(run); running > peakRunning {
+				peakRunning = running
+			}
+			if !quotaWarned && agent != nil {
+				if info := detectQuotaExceeded(agent.RecentLogs(0)); info != nil {
+					quotaWarned = true
+					suggested := suggestConcurrency(config.concurrency, peakRunning)
+					out.Warnf("Warning: inference quota exceeded — this project is hitting its %s; LLM completions are failing with 429s. Suggested fix: re-run with --concurrency %d",
+						info.describe(), suggested)
+					report.QuotaExceeded(info.describe(), suggested)
+				}
+			}
+
 			// the worker is failing systemically (or, in live-agent mode, the
 			// agent never joined): stop early and surface its log
 			if !brokenAgent && agentBroken(run, agent) {
