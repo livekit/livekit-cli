@@ -470,9 +470,13 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 			b.WriteString(fc.Name)
 			if fco, ok := outputsByCallID[fc.CallId]; ok {
 				if fco.IsError {
-					b.WriteString("\n    ")
-					b.WriteString(redBoldStyle().Render("✗ "))
-					b.WriteString(redStyle().Render(truncateOutput(fco.Output)))
+					for j, line := range wrapLines(truncateOutput(fco.Output), m.width-6) {
+						if j == 0 {
+							b.WriteString("\n    " + redBoldStyle().Render("✗ ") + redStyle().Render(line))
+						} else {
+							b.WriteString("\n      " + redStyle().Render(line))
+						}
+					}
 				} else {
 					b.WriteString("\n    ")
 					b.WriteString(greenStyle().Render("✓ "))
@@ -484,9 +488,18 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 		cmds = append(cmds, tea.Println(b.String()))
 
 	case *agent.AgentSessionEvent_Error_:
-		cmds = append(cmds, tea.Println(
-			"  "+redBoldStyle().Render("✗ ")+redStyle().Render(e.Error.Message),
-		))
+		var b strings.Builder
+		for i, line := range wrapLines(e.Error.Message, m.width-4) {
+			if i > 0 {
+				b.WriteString("\n")
+			}
+			if i == 0 {
+				b.WriteString("  " + redBoldStyle().Render("✗ ") + redStyle().Render(line))
+			} else {
+				b.WriteString("    " + redStyle().Render(line))
+			}
+		}
+		cmds = append(cmds, tea.Println(b.String()))
 	}
 
 	return cmds
@@ -572,9 +585,9 @@ func (m consoleModel) View() string {
 		}
 
 		if m.audioError != "" {
-			b.WriteString("\n")
-			b.WriteString("  ")
-			b.WriteString(redStyle().Render("audio: " + m.audioError))
+			for _, line := range wrapLines("audio: "+m.audioError, m.width-2) {
+				b.WriteString("\n  " + redStyle().Render(line))
+			}
 		}
 
 		if m.showShortcuts {

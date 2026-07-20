@@ -15,12 +15,44 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/livekit/protocol/livekit"
 	"github.com/stretchr/testify/require"
 )
+
+func TestWriteWrappedLines(t *testing.T) {
+	style := lipgloss.NewStyle()
+
+	// With a known width, every rendered row fits the terminal.
+	var b strings.Builder
+	writeWrappedLines(&b, style, "  ", strings.Repeat("x", 100)+"\nshort", 40)
+	lines := strings.Split(strings.TrimRight(b.String(), "\n"), "\n")
+	require.Greater(t, len(lines), 2, "long line should wrap into multiple rows")
+	for _, line := range lines {
+		require.LessOrEqual(t, lipgloss.Width(line), 40)
+	}
+
+	// Width unknown: lines pass through unwrapped, and short lines are not
+	// padded out to the widest line.
+	b.Reset()
+	writeWrappedLines(&b, style, "  ", "aaaa\nbb", 0)
+	require.Equal(t, "  aaaa\n  bb\n", b.String())
+}
+
+func TestWrapLines(t *testing.T) {
+	// Known width: every row fits.
+	for _, line := range wrapLines(strings.Repeat("x", 90), 30) {
+		require.LessOrEqual(t, lipgloss.Width(line), 30)
+	}
+
+	// Unknown/tiny width: lines pass through untouched.
+	require.Equal(t, []string{"aaaa", "bb"}, wrapLines("aaaa\nbb", 0))
+	require.Equal(t, []string{strings.Repeat("x", 90)}, wrapLines(strings.Repeat("x", 90), 10))
+}
 
 func quotaTestModel(t *testing.T) *simulateModel {
 	t.Helper()

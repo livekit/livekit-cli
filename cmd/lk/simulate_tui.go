@@ -118,6 +118,26 @@ var (
 	simSpinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 )
 
+// wrapLines splits text into rows no wider than width; unknown or tiny
+// widths leave the lines unwrapped.
+func wrapLines(text string, width int) []string {
+	if width >= 20 {
+		text = lipgloss.NewStyle().Width(width).Render(text)
+	}
+	return strings.Split(text, "\n")
+}
+
+// writeWrappedLines appends text to b as one styled row per line, wrapped to
+// the window width when it is known. Rendering line by line keeps lipgloss
+// from padding the block to its widest line with trailing spaces, and
+// wrapping keeps long lines (e.g. the full agent command in an error) from
+// being hard-wrapped by the terminal, which breaks the inline layout.
+func writeWrappedLines(b *strings.Builder, style lipgloss.Style, indent, text string, width int) {
+	for _, line := range wrapLines(text, width-len(indent)-2) {
+		b.WriteString(style.Render(indent+line) + "\n")
+	}
+}
+
 // --- Message types ---
 
 type simulationRunMsg struct {
@@ -964,7 +984,7 @@ func (m *simulateModel) viewSetup() string {
 	b.WriteString(m.renderSteps())
 
 	for _, w := range m.config.warnings {
-		b.WriteString(yellowStyle().Render("  ⚠ "+w) + "\n")
+		writeWrappedLines(&b, yellowStyle(), "  ", "⚠ "+w, m.width)
 	}
 
 	// in file mode the scenarios are already known, nothing is generated
@@ -979,7 +999,7 @@ func (m *simulateModel) viewSetup() string {
 
 	if m.err != nil {
 		b.WriteString("\n")
-		b.WriteString(redStyle().Render("  "+m.err.Error()) + "\n")
+		writeWrappedLines(&b, redStyle(), "  ", m.err.Error(), m.width)
 		if m.agent != nil {
 			b.WriteString("\n")
 			b.WriteString(m.renderLogs(""))
@@ -1057,9 +1077,7 @@ func (m *simulateModel) viewFailed() string {
 	b.WriteString("\n\n")
 	b.WriteString("  " + redStyle().Bold(true).Render("Failed") + "\n\n")
 	if m.run.Error != "" {
-		for line := range strings.SplitSeq(m.run.Error, "\n") {
-			b.WriteString(redStyle().Render("  "+line) + "\n")
-		}
+		writeWrappedLines(&b, redStyle(), "  ", m.run.Error, m.width)
 	} else {
 		b.WriteString(redStyle().Render("  (no error details available)") + "\n")
 	}
