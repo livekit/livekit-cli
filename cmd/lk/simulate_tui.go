@@ -1648,6 +1648,22 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 	}
 	wrapStyle := lipgloss.NewStyle().Width(wrapWidth)
 
+	// Tool calls, tool outputs, and handoffs are agent actions, but appear in
+	// the chat history after the user message that triggered them and before
+	// the agent's spoken reply. Open an Agent block for them when needed so
+	// they don't render under the user's header.
+	currentSpeaker := ""
+	toolOpenedAgentBlock := false
+	ensureAgentBlock := func() {
+		if currentSpeaker == "agent" {
+			return
+		}
+		b.WriteString("\n")
+		fmt.Fprintf(&b, "    %s\n", agentStyle.Render("Agent"))
+		currentSpeaker = "agent"
+		toolOpenedAgentBlock = true
+	}
+
 	for _, item := range chatCtx.Items {
 		switch v := item.Item.(type) {
 		case *agent.ChatContext_ChatItem_Message:
@@ -1656,15 +1672,21 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			if text == "" {
 				continue
 			}
-			b.WriteString("\n")
-			switch msg.Role {
-			case agent.ChatRole_USER:
-				fmt.Fprintf(&b, "    %s\n", userStyle.Render("You"))
-			case agent.ChatRole_ASSISTANT:
-				fmt.Fprintf(&b, "    %s\n", agentStyle.Render("Agent"))
-			default:
-				fmt.Fprintf(&b, "    %s\n", dimStyle.Render(string(msg.Role)))
+			if msg.Role != agent.ChatRole_ASSISTANT || !toolOpenedAgentBlock {
+				b.WriteString("\n")
+				switch msg.Role {
+				case agent.ChatRole_USER:
+					fmt.Fprintf(&b, "    %s\n", userStyle.Render("You"))
+					currentSpeaker = "user"
+				case agent.ChatRole_ASSISTANT:
+					fmt.Fprintf(&b, "    %s\n", agentStyle.Render("Agent"))
+					currentSpeaker = "agent"
+				default:
+					fmt.Fprintf(&b, "    %s\n", dimStyle.Render(string(msg.Role)))
+					currentSpeaker = string(msg.Role)
+				}
 			}
+			toolOpenedAgentBlock = false
 			for line := range strings.SplitSeq(wrapStyle.Render(text), "\n") {
 				b.WriteString("      " + line + "\n")
 			}
@@ -1674,6 +1696,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			if len(args) > 80 {
 				args = args[:80] + "..."
 			}
+			ensureAgentBlock()
 			b.WriteString(dimStyle.Render(fmt.Sprintf("      ƒ %s(%s)", fc.Name, args)))
 			b.WriteString("\n")
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
@@ -1685,6 +1708,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			if len(output) > 80 {
 				output = output[:80] + "..."
 			}
+			ensureAgentBlock()
 			b.WriteString(dimStyle.Render(fmt.Sprintf("      → %s", output)))
 			b.WriteString("\n")
 		case *agent.ChatContext_ChatItem_AgentHandoff:
@@ -1693,6 +1717,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			if h.OldAgentId != nil && *h.OldAgentId != "" {
 				old = *h.OldAgentId + " → "
 			}
+			ensureAgentBlock()
 			b.WriteString(dimStyle.Render(fmt.Sprintf("      ⤳ %s%s", old, h.NewAgentId)))
 			b.WriteString("\n")
 		}
