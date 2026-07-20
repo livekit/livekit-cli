@@ -15,6 +15,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,4 +34,45 @@ func TestSimulateConfigWarnings(t *testing.T) {
 	require.Empty(t, simulateConfigWarnings(modeScenarios, 0))
 	// view mode ignores everything silently.
 	require.Empty(t, simulateConfigWarnings(modeView, 5))
+}
+
+func TestViewCommandHintUsesArgv0(t *testing.T) {
+	origArgs := os.Args
+	origServerURL := serverURL
+	t.Cleanup(func() {
+		os.Args = origArgs
+		serverURL = origServerURL
+	})
+	serverURL = cloudAPIServerURL
+
+	for _, tc := range []struct {
+		name  string
+		argv0 string
+		want  string
+	}{
+		{"plain lk", "lk", "lk agent simulate --view run_123"},
+		{"path-qualified", "/usr/local/bin/lk", "/usr/local/bin/lk agent simulate --view run_123"},
+		{"renamed binary", "lk-dev", "lk-dev agent simulate --view run_123"},
+		{"empty argv0 falls back", "", "lk agent simulate --view run_123"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			os.Args = []string{tc.argv0}
+			require.Equal(t, tc.want, viewCommandHint("run_123"))
+		})
+	}
+}
+
+func TestViewCommandHintCarriesServerURL(t *testing.T) {
+	origArgs := os.Args
+	origServerURL := serverURL
+	t.Cleanup(func() {
+		os.Args = origArgs
+		serverURL = origServerURL
+	})
+	os.Args = []string{"lk"}
+	serverURL = "https://cloud-api.staging.livekit.io"
+
+	require.Equal(t,
+		"lk agent simulate --view run_123 --server-url https://cloud-api.staging.livekit.io",
+		viewCommandHint("run_123"))
 }

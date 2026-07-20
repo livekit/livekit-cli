@@ -578,8 +578,14 @@ func dashboardBaseURL() string {
 // viewCommandHint returns the command to re-open a simulation run, carrying
 // over --server-url when the run lives somewhere other than the default cloud
 // API (e.g. staging), so the printed command targets the same environment.
+// The binary name comes from argv[0] so a renamed or path-qualified lk is
+// reproduced verbatim.
 func viewCommandHint(runID string) string {
-	hint := "lk agent simulate --view " + runID
+	binary := "lk"
+	if len(os.Args) > 0 && os.Args[0] != "" {
+		binary = os.Args[0]
+	}
+	hint := binary + " agent simulate --view " + runID
 	if serverURL != cloudAPIServerURL {
 		hint += " --server-url " + serverURL
 	}
