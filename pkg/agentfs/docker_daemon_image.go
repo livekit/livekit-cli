@@ -23,12 +23,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
+	"github.com/moby/moby/client"
 )
 
 // LoadDockerDaemonImage loads a v1.Image from the local Docker daemon by tag or equivalent
@@ -143,24 +141,24 @@ func resolveLocalDockerImageID(ctx context.Context, c *client.Client, ref string
 	}
 
 	for _, candidate := range dockerImageRefKeyList(ref) {
-		f := filters.NewArgs(filters.Arg("reference", candidate))
-		imgs, err := c.ImageList(ctx, image.ListOptions{Filters: f})
+		f := client.Filters{}.Add("reference", candidate)
+		res, err := c.ImageList(ctx, client.ImageListOptions{Filters: f})
 		if err != nil {
 			continue
 		}
-		for _, im := range imgs {
+		for _, im := range res.Items {
 			if im.ID != "" {
 				return im.ID, nil
 			}
 		}
 	}
 
-	imgs, err := c.ImageList(ctx, image.ListOptions{})
+	res, err := c.ImageList(ctx, client.ImageListOptions{})
 	if err != nil {
 		return "", fmt.Errorf("docker image list: %w", err)
 	}
 
-	for _, im := range imgs {
+	for _, im := range res.Items {
 		for _, tag := range im.RepoTags {
 			if dockerImageRefsMatch(ref, tag) {
 				return im.ID, nil
@@ -193,7 +191,7 @@ func dockerClientForImage(ctx context.Context, ref string) (*client.Client, stri
 	}
 
 	try := func(opts ...client.Opt) (*client.Client, error) {
-		return client.NewClientWithOpts(opts...)
+		return client.New(opts...)
 	}
 
 	var hostOrder []string
@@ -221,9 +219,9 @@ func dockerClientForImage(ctx context.Context, ref string) (*client.Client, stri
 		var cli *client.Client
 		var err error
 		if explicitHost == "" {
-			cli, err = try(client.FromEnv, client.WithAPIVersionNegotiation())
+			cli, err = try(client.FromEnv)
 		} else {
-			cli, err = try(client.WithHost(explicitHost), client.WithAPIVersionNegotiation())
+			cli, err = try(client.WithHost(explicitHost))
 		}
 		if err != nil {
 			lastErr = err

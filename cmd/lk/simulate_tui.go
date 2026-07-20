@@ -36,7 +36,9 @@ import (
 
 func runSimulateTUI(config *simulateConfig) error {
 	m := newSimulateModel(config)
-	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
+	// No mouse capture, so the terminal keeps native drag-to-select. Arrow keys
+	// scroll (the wheel maps to them in alt-screen); i/j/k/l navigate the list.
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	_, runErr := p.Run()
 
 	if m.launcher != nil {
@@ -80,11 +82,11 @@ func runSimulateTUI(config *simulateConfig) error {
 	}
 
 	if m.config.mode == modeView {
-		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: lk agent simulate --view %s\n", m.config.viewModeRunID)
+		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: %s\n", viewCommandHint(m.config.viewModeRunID))
 	} else if m.runID != "" && !m.runFinished {
 		cancelSimulationRun(config.client, m.runID)
 	} else if m.runID != "" {
-		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: lk agent simulate --view %s\n", m.runID)
+		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: %s\n", viewCommandHint(m.runID))
 	}
 
 	if runErr != nil {
@@ -631,15 +633,6 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		return m.handleKey(msg)
-
-	case tea.MouseMsg:
-		switch msg.Button {
-		case tea.MouseButtonWheelUp:
-			m.scrollBy(-1)
-		case tea.MouseButtonWheelDown:
-			m.scrollBy(1)
-		}
-		return m, nil
 	}
 	return m, nil
 }
@@ -675,8 +668,8 @@ func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	return true
 }
 
-// scrollBy routes a mouse-wheel step to the focused pane, falling back to
-// scrolling the whole page.
+// scrollBy scrolls the focused pane by delta lines (one arrow/wheel step),
+// falling back to scrolling the whole page.
 func (m *simulateModel) scrollBy(delta int) {
 	if m.scrollActive(delta, true) {
 		return
@@ -799,12 +792,20 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			text, ok := m.copyScenario(m.detailJobID)
 			return m, m.showToast(text, ok)
 		}
-	case "up", "shift+tab":
-		// arrows never scroll logs (PgUp/PgDn do); in the list they move the cursor
+	case "up", "down":
+		// arrows scroll (the mouse wheel maps here in alt-screen): the focused
+		// pane if any, otherwise the whole page. i/k navigate the list.
+		delta := -1
+		if key == "down" {
+			delta = 1
+		}
+		m.scrollBy(delta)
+	case "i", "shift+tab":
+		// in a detail/description pane there is no cursor, so fall back to scroll
 		if !m.scrollActive(-1, false) {
 			m.moveCursor(-1)
 		}
-	case "down", "tab":
+	case "k", "tab":
 		if !m.scrollActive(1, false) {
 			m.moveCursor(1)
 		}
@@ -819,7 +820,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if !m.scrollActive(pageScroll, true) {
 			m.viewScrollOff += pageScroll // clamped on render
 		}
-	case "enter", "right":
+	case "enter", "l":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
@@ -827,7 +828,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.detailScrollOff = 0
 			}
 		}
-	case "esc", "left", "backspace":
+	case "esc", "j", "backspace":
 		if m.detailJobID != "" {
 			m.detailJobID = ""
 			m.detailScrollOff = 0
@@ -1813,7 +1814,7 @@ func (m *simulateModel) renderHint() string {
 	var parts []string
 	switch {
 	case m.detailJobID != "":
-		parts = append(parts, "↑↓ scroll · c copy scenario · ESC/← back")
+		parts = append(parts, "↑↓ scroll · c copy scenario · ESC/j back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
@@ -1825,9 +1826,9 @@ func (m *simulateModel) renderHint() string {
 		parts = append(parts, "↑↓ scroll · d collapse description")
 	default:
 		// the collapsed description block already carries "(press d to expand)"
-		nav := "↑↓ navigate · ENTER/→ detail"
+		nav := "i/k navigate · ENTER/l detail · ↑↓ scroll"
 		if m.pageOverflow || m.viewScrollOff > 0 {
-			nav += " · PgUp/PgDn scroll"
+			nav += " · PgUp/PgDn page"
 		}
 		if m.canExportScenarios() {
 			nav += " · s save scenarios"

@@ -127,6 +127,16 @@ func buildHuhTheme(tn ThemeName, p palette) *huh.Theme {
 		t.Focused.FocusedButton = t.Focused.FocusedButton.Foreground(lipgloss.Color("7")).Background(lipgloss.Color("4"))
 	}
 
+	// The inactive (blurred) confirm button gets a transparent background so the
+	// active button — which carries a solid fill — is unambiguously the selected
+	// one. Without this it defaults to a filled block that reads as also-active.
+	transparentButton := func(s lipgloss.Style) lipgloss.Style {
+		return s.Background(lipgloss.NoColor{}).Bold(false)
+	}
+	t.Focused.BlurredButton = transparentButton(t.Focused.BlurredButton)
+	t.Blurred.BlurredButton = transparentButton(t.Blurred.BlurredButton)
+	t.Blurred.FocusedButton = transparentButton(t.Blurred.FocusedButton)
+
 	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(p.Accent).SetString("▶︎ ")
 	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(p.Accent)
 	t.Focused.SelectedPrefix = t.Focused.SelectedPrefix.Foreground(p.Accent).SetString("[x] ")
@@ -175,12 +185,9 @@ func Hyperlink(url, label string) string {
 	return "\x1b]8;;" + url + "\x1b\\" + label + "\x1b]8;;\x1b\\"
 }
 
-// Confirm is a yes/no select styled by the active theme.
-func Confirm() *huh.Select[bool] {
-	return huh.NewSelect[bool]().
-		Options(
-			huh.NewOption("Yes", true),
-			huh.NewOption("No", false),
-		).
-		Inline(false)
+// Confirm is a yes/no prompt styled by the active theme. It uses huh's built-in
+// confirm field, which supports y/n quick entry (Accept: y/Y, Reject: n/N) and
+// renders both choices as side-by-side buttons.
+func Confirm() *huh.Confirm {
+	return huh.NewConfirm()
 }

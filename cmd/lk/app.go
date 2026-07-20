@@ -169,10 +169,8 @@ func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadO
 				Title(fmt.Sprintf("Use project [%s]?", rp.project.Name)).
 				Description(rp.project.URL).
 				Value(&useDefault).
-				Options(
-					huh.NewOption("Yes", true),
-					huh.NewOption("No, select another...", false),
-				).
+				Affirmative("Yes").
+				Negative("No, select another...").
 				WithTheme(util.Theme))).
 				Run(); err != nil {
 				return ctx, fmt.Errorf("failed to confirm project: %w", err)
