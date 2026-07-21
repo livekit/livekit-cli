@@ -76,6 +76,11 @@ var (
 		Required: false,
 	}
 
+	noDefaultAttributesFlag = &cli.BoolFlag{
+		Name:  "no-default-attributes",
+		Usage: `Omit default git attributes from deployment.`,
+	}
+
 	secretsFileFlag = &cli.StringFlag{
 		Name:      "secrets-file",
 		Usage:     "`FILE` containing secret KEY=VALUE pairs, one per line. These will be injected as environment variables into the agent.",
@@ -91,20 +96,20 @@ var (
 
 	secretsMountFlag = &cli.StringSliceFlag{
 		Name:     "secret-mount",
-		Usage:    "Local path to a secret file to be mounted on agent environment",
+		Usage:    "Local path to a secret file to be mounted on agent environment.",
 		Required: false,
 	}
 
 	ignoreEmptySecretsFlag = &cli.BoolFlag{
 		Name:     "ignore-empty-secrets",
-		Usage:    "If set, will skip environment variables with empty values from secrets files instead of failing",
+		Usage:    "If set, will skip environment variables with empty values from secrets files instead of failing.",
 		Required: false,
 		Value:    false,
 	}
 
 	logTypeFlag = &cli.StringFlag{
 		Name:     "log-type",
-		Usage:    "Type of logs to retrieve. Valid values are 'deploy' and 'build'",
+		Usage:    "Type of logs to retrieve. Valid values are 'deploy' and 'build'.",
 		Value:    "deploy",
 		Required: false,
 	}
@@ -155,7 +160,7 @@ var (
 						Flags: [][]cli.Flag{{
 							&cli.StringFlag{
 								Name:  "lang",
-								Usage: "`LANGUAGE` of the project, one of \"node\", \"python\"",
+								Usage: "`LANGUAGE` of the project, one of \"node\", \"python\".",
 								Action: func(ctx context.Context, cmd *cli.Command, l string) error {
 									if l == "" {
 										return nil
@@ -178,7 +183,7 @@ var (
 							sandboxFlag,
 							&cli.BoolFlag{
 								Name:   "no-sandbox",
-								Usage:  "If set, will not create a sandbox for the project. ",
+								Usage:  "If set, will not create a sandbox for the project.",
 								Value:  true,
 								Hidden: true,
 							},
@@ -208,6 +213,7 @@ var (
 						agentPrebuiltImageTarFlag,
 						attributeFlag,
 						attributesFlag,
+						noDefaultAttributesFlag,
 					},
 					// NOTE: since secrets may contain commas, or indeed any special character we might want to treat as a flag separator,
 					// we disable it entirely here and require multiple --secrets flags to be used.
@@ -222,7 +228,7 @@ var (
 					Flags: []cli.Flag{
 						&cli.BoolFlag{
 							Name:     "overwrite",
-							Usage:    "Overwrite existing Dockerfile and/or .dockerignore if they exist",
+							Usage:    "Overwrite existing Dockerfile and/or .dockerignore if they exist.",
 							Required: false,
 							Value:    false,
 						},
@@ -247,6 +253,7 @@ var (
 					Flags: []cli.Flag{
 						attributesFlag,
 						attributeFlag,
+						noDefaultAttributesFlag,
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
@@ -398,7 +405,7 @@ var (
 						idFlag(false),
 						&cli.BoolFlag{
 							Name:     "overwrite",
-							Usage:    "If set, will overwrite existing secrets",
+							Usage:    "If set, will overwrite existing secrets.",
 							Required: false,
 							Value:    false,
 						},
@@ -1257,7 +1264,7 @@ func resolveDeployAttributes(ctx context.Context, cmd *cli.Command) (map[string]
 		return nil, err
 	}
 
-	if !util.IsGitRepository(ctx, workingDir) {
+	if cmd.Bool("no-default-attributes") || !util.IsGitRepository(ctx, workingDir) {
 		return attrs, nil
 	}
 
