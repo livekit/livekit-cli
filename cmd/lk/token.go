@@ -463,9 +463,16 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		return err
 	}
 
+	// The --url flag defaults to localhost:7880, so don't display it unless
+	// the user actually configured a URL.
+	projectURL := project.URL
+	if !c.IsSet("url") && projectURL == "http://localhost:7880" {
+		projectURL = ""
+	}
+
 	if err = printTokenCreateOutput(stdout, tokenOnly, jsonOutput, tokenCreateOutput{
 		AccessToken: token,
-		ProjectURL:  project.URL,
+		ProjectURL:  projectURL,
 		Identity:    participant,
 		Name:        name,
 		Room:        room,
