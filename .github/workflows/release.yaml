@@ -21,6 +21,9 @@ on:
 
 permissions:
   contents: write
+  # id-token lets cosign obtain a GitHub OIDC token for keyless (Sigstore)
+  # signing of checksums.txt during the goreleaser step.
+  id-token: write
 
 jobs:
   # GoReleaser runs on macOS so the darwin binary builds natively (CoreAudio
@@ -91,6 +94,9 @@ jobs:
         with:
           path: .cross
           key: cross-${{ runner.os }}-zig0.14.1-alsa1.2.12-${{ hashFiles('scripts/setup-cross.sh') }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7
