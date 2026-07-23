@@ -2,7 +2,7 @@
 
 function __fish_lk_no_subcommand --description 'Test if there has been any subcommand yet'
     for i in (commandline -opc)
-        if contains -- $i generate-fish-completion app agent a cloud docs project set-theme room create-room list-rooms list-room update-room-metadata list-participants get-participant remove-participant update-participant mute-track update-subscriptions send-data token create-token join-room dispatch egress start-room-composite-egress start-web-egress start-participant-egress start-track-composite-egress start-track-egress list-egress update-layout update-stream stop-egress test-egress-template ingress create-ingress update-ingress list-ingress delete-ingress sip list-sip-trunk delete-sip-trunk create-sip-dispatch-rule list-sip-dispatch-rule delete-sip-dispatch-rule create-sip-participant number replay perf load-test completion
+        if contains -- $i generate-fish-completion app agent a analytics cloud docs project set-theme room create-room list-rooms list-room update-room-metadata list-participants get-participant remove-participant update-participant mute-track update-subscriptions send-data token create-token join-room dispatch egress start-room-composite-egress start-web-egress start-participant-egress start-track-composite-egress start-track-egress list-egress update-layout update-stream stop-egress test-egress-template ingress create-ingress update-ingress list-ingress delete-ingress sip list-sip-trunk delete-sip-trunk create-sip-dispatch-rule list-sip-dispatch-rule delete-sip-dispatch-rule create-sip-participant number replay perf load-test completion
             return 1
         end
     end
@@ -229,6 +229,21 @@ complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcomma
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate' -f -l agent-name -r -d 'Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or "" to target the project\'s default agent (the one that auto-joins every room). Requires --scenarios.'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from agent a; and not __fish_seen_subcommand_from init create dockerfile config deploy promote status update restart rollback logs tail delete destroy versions list secrets update-secrets private-link start dev console daemon simulate help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -x -c lk -n '__fish_lk_no_subcommand' -a 'analytics' -d 'List and inspect LiveKit Cloud analytics sessions'
+complete -c lk -n '__fish_seen_subcommand_from analytics' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from analytics; and not __fish_seen_subcommand_from list get help h' -a 'list' -d 'List analytics sessions'
+complete -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from list' -f -l json -s j -d 'Output as JSON'
+complete -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from list' -f -l limit -r -d 'Maximum number of sessions to return'
+complete -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from list' -f -l page -r -d 'Page number (starts at 0)'
+complete -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from list' -f -l start -r -d 'Start date in `YYYY-MM-DD` format'
+complete -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from list' -f -l end -r -d 'End date in `YYYY-MM-DD` format'
+complete -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from list' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from list; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -x -c lk -n '__fish_seen_subcommand_from analytics; and not __fish_seen_subcommand_from list get help h' -a 'get' -d 'Get analytics session details by session ID'
+complete -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from get' -f -l json -s j -d 'Output as JSON'
+complete -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from get' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from analytics; and __fish_seen_subcommand_from get; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -x -c lk -n '__fish_seen_subcommand_from analytics; and not __fish_seen_subcommand_from list get help h' -a 'help' -d 'Shows a list of commands or help for one command'
 complete -x -c lk -n '__fish_lk_no_subcommand' -a 'cloud' -d 'Interact with LiveKit Cloud services'
 complete -c lk -n '__fish_seen_subcommand_from cloud' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from cloud; and not __fish_seen_subcommand_from auth help h' -a 'auth' -d 'Authenticate LiveKit Cloud account to link your projects'
