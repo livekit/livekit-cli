@@ -181,9 +181,10 @@ type simulateConfig struct {
 	projectType    agentfs.ProjectType
 	entrypoint     string
 	scenarioGroup  *livekit.ScenarioGroup
-	scenariosPath  string // path to the --scenarios file (empty when generating from source)
-	viewModeRunID  string // non-empty when --view opens a pre-existing run
-	liveAgent      bool   // --agent-name: run against an already-running agent, don't spawn one
+	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
+	viewModeRunID  string   // non-empty when --view opens a pre-existing run
+	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
+	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
 	// TODO (steveyoon): add agent deployment support
 	// agentDeployment string
 }
@@ -195,6 +196,17 @@ const (
 	modeGenerateFromSource
 	modeView
 )
+
+const numSimulationsIgnoredWarning = "--num-simulations has no effect when --scenarios is provided (it only controls scenario generation); did you mean --concurrency?"
+
+// simulateConfigWarnings flags configurations that silently do nothing, so the
+// user learns before the run burns quota.
+func simulateConfigWarnings(mode simulateMode, numSimulations int32) []string {
+	if mode == modeScenarios && numSimulations > 0 {
+		return []string{numSimulationsIgnoredWarning}
+	}
+	return nil
+}
 
 func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	data, err := os.ReadFile(path)
@@ -287,6 +299,9 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		}
 		liveAgent = true
 		agentName = liveAgentName
+	} else if runID != "" {
+		// --view opens a pre-existing run: nothing is spawned, so no agent
+		// project or entrypoint is needed.
 	} else {
 		agentName = generateAgentName()
 		projectDir, projectType, err = agentfs.DetectProjectRoot(".")
@@ -360,6 +375,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		scenariosPath:  scenariosPath,
 		viewModeRunID:  runID,
 		liveAgent:      liveAgent,
+		warnings:       simulateConfigWarnings(mode, numSimulations),
 	}
 
 	if !isInteractive() {
@@ -562,8 +578,14 @@ func dashboardBaseURL() string {
 // viewCommandHint returns the command to re-open a simulation run, carrying
 // over --server-url when the run lives somewhere other than the default cloud
 // API (e.g. staging), so the printed command targets the same environment.
+// The binary name comes from argv[0] so a renamed or path-qualified lk is
+// reproduced verbatim.
 func viewCommandHint(runID string) string {
-	hint := "lk agent simulate --view " + runID
+	binary := "lk"
+	if len(os.Args) > 0 && os.Args[0] != "" {
+		binary = os.Args[0]
+	}
+	hint := binary + " agent simulate --view " + runID
 	if serverURL != cloudAPIServerURL {
 		hint += " --server-url " + serverURL
 	}

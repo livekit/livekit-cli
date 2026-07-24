@@ -96,7 +96,12 @@ func main() {
 
 	if err := app.Run(ctx, os.Args); err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
-		fmt.Fprintln(os.Stderr, errStyle.Render(err.Error()))
+		// Render line by line: a multiline Render pads every line with
+		// trailing spaces to match the widest one, which wraps into garbage
+		// on terminals narrower than the longest line.
+		for line := range strings.SplitSeq(err.Error(), "\n") {
+			fmt.Fprintln(os.Stderr, errStyle.Render(line))
+		}
 		os.Exit(1)
 	}
 }

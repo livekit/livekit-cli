@@ -15,6 +15,7 @@
 package main
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/livekit/protocol/livekit"
@@ -106,4 +107,72 @@ func isFatalMarker(line string) bool {
 		}
 	}
 	return false
+}
+
+// Inference-gateway quota exhaustion (HTTP 429) detection. When the LiveKit
+// Cloud gateway rate-limits LLM completions, every simulation job fails with a
+// generic "failed to generate LLM completion" — the real cause only appears in
+// the agent's log output, so the CLI scans for it and surfaces it.
+
+var quotaCategoryRe = regexp.MustCompile(`'?category'?:\s*'?([A-Za-z0-9_]+)'?`)
+
+type quotaInfo struct {
+	category string // raw gateway category, e.g. MaxConcurrentGatewayLLMTpm
+}
+
+// detectQuotaExceeded returns info about the first inference-quota error in
+// the agent's output, or nil if none appears.
+func detectQuotaExceeded(logs []string) *quotaInfo {
+	for _, line := range logs {
+		plain := ansiEscapeRe.ReplaceAllString(line, "")
+		if !strings.Contains(plain, "inference_quota_exceeded") &&
+			!strings.Contains(plain, "QuotaStatusExceeded") {
+			continue
+		}
+		info := &quotaInfo{}
+		if m := quotaCategoryRe.FindStringSubmatch(plain); m != nil {
+			info.category = m[1]
+		}
+		return info
+	}
+	return nil
+}
+
+// describe renders the gateway's quota category in plain words.
+func (q *quotaInfo) describe() string {
+	switch {
+	case strings.Contains(q.category, "Tpm"):
+		return "LLM tokens-per-minute rate limit"
+	case strings.Contains(q.category, "Rpm"):
+		return "LLM requests-per-minute rate limit"
+	case q.category != "":
+		return q.category + " rate limit"
+	default:
+		return "an inference rate limit"
+	}
+}
+
+// suggestConcurrency proposes half the current effective concurrency (never
+// below 1). Without an explicit --concurrency the server default applies, so
+// the caller passes the peak simultaneously-running job count it observed.
+func suggestConcurrency(configured int32, peakRunning int) int {
+	current := int(configured)
+	if current <= 0 {
+		current = peakRunning
+	}
+	if current/2 < 1 {
+		return 1
+	}
+	return current / 2
+}
+
+// runningJobCount returns how many of the run's jobs are currently running.
+func runningJobCount(run *livekit.SimulationRun) int {
+	n := 0
+	for _, j := range run.GetJobs() {
+		if j.GetStatus() == livekit.SimulationRun_Job_STATUS_RUNNING {
+			n++
+		}
+	}
+	return n
 }

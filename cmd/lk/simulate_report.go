@@ -32,6 +32,7 @@ type simLog struct {
 	info       io.Writer
 	prevStatus livekit.SimulationRun_Status
 	prevDone   int
+	quotaNote  string
 }
 
 func newSimLog(out, info io.Writer) *simLog {
@@ -71,6 +72,17 @@ func (l *simLog) ScenariosLoaded(g *livekit.ScenarioGroup, path string) {
 		name = "scenarios"
 	}
 	fmt.Fprintf(l.out, "✓ Loaded %d scenarios from %s (%q)\n", len(g.GetScenarios()), path, name)
+}
+
+func (l *simLog) ConfigWarning(msg string) {
+	fmt.Fprintf(l.out, "⚠ %s\n", msg)
+}
+
+func (l *simLog) QuotaExceeded(desc string, suggested int) {
+	l.quotaNote = fmt.Sprintf(
+		"This run hit the project's %s (inference 429s). Try re-running with --concurrency %d.",
+		desc, suggested)
+	fmt.Fprintf(l.info, "⚠ %s\n", l.quotaNote)
 }
 
 func (l *simLog) RunCreated(runID, dashboardURL string) {
@@ -117,6 +129,9 @@ func (l *simLog) BrokenAgent() {
 
 func (l *simLog) Results(run *livekit.SimulationRun, ap *AgentProcess) {
 	writeRunResults(l.out, run, ap)
+	if l.quotaNote != "" {
+		fmt.Fprintf(l.out, "\n⚠ %s\n", l.quotaNote)
+	}
 }
 
 func writeBrokenAgentNote(w io.Writer, ap *AgentProcess) {
