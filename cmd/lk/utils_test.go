@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,29 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
+
+// findCommandByName returns the command with the given name from commands, or nil.
+func findCommandByName(commands []*cli.Command, name string) *cli.Command {
+	for _, cmd := range commands {
+		if cmd != nil && cmd.Name == name {
+			return cmd
+		}
+	}
+	return nil
+}
+
+// findFlagByName returns the flag matching name (by any of its names) from flags, or nil.
+func findFlagByName(flags []cli.Flag, name string) cli.Flag {
+	for _, flag := range flags {
+		if flag == nil {
+			continue
+		}
+		if slices.Contains(flag.Names(), name) {
+			return flag
+		}
+	}
+	return nil
+}
 
 // withCapturedAnnounce swaps the package-level Printer for a buffer-backed one for the
 // duration of the test, returning the buffer that captures status output. The Printer's
