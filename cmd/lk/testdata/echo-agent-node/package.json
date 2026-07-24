@@ -7,6 +7,6 @@
     "@livekit/agents": "^1.4.9",
     "@livekit/rtc-node": "^0.13.29",
     "dotenv": "^17.0.0",
-    "zod": "^3.25.76"
+    "zod": "^4.0.0"
   }
 }
