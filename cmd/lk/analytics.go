@@ -41,41 +41,50 @@ const (
 var (
 	AnalyticsCommands = []*cli.Command{
 		{
-			Name:  "analytics",
-			Usage: "List and inspect LiveKit Cloud analytics sessions",
+			Name:   "analytics",
+			Usage:  "List and inspect LiveKit Cloud analytics",
+			Hidden: true,
+			Flags: []cli.Flag{
+				experimentalFlag,
+			},
 			Commands: []*cli.Command{
 				{
-					Name:   "list",
-					Usage:  "List analytics sessions",
-					Action: listAnalyticsSessions,
-					Flags: []cli.Flag{
-						jsonFlag,
-						&cli.IntFlag{
-							Name:  "limit",
-							Usage: "Maximum number of sessions to return",
-							Value: defaultAnalyticsLimit,
+					Name:  "session",
+					Usage: "List and inspect sessions", Commands: []*cli.Command{
+						{
+							Name:   "list",
+							Usage:  "List analytics sessions",
+							Action: listAnalyticsSessions,
+							Flags: []cli.Flag{
+								jsonFlag,
+								&cli.IntFlag{
+									Name:  "limit",
+									Usage: "Maximum number of sessions to return",
+									Value: defaultAnalyticsLimit,
+								},
+								&cli.IntFlag{
+									Name:  "page",
+									Usage: "Page number (starts at 0)",
+								},
+								&cli.StringFlag{
+									Name:  "start",
+									Usage: "Start date in `YYYY-MM-DD` format",
+								},
+								&cli.StringFlag{
+									Name:  "end",
+									Usage: "End date in `YYYY-MM-DD` format",
+								},
+							},
 						},
-						&cli.IntFlag{
-							Name:  "page",
-							Usage: "Page number (starts at 0)",
+						{
+							Name:      "get",
+							Usage:     "Get analytics session details by session ID",
+							ArgsUsage: "SESSION_ID",
+							Action:    getAnalyticsSession,
+							Flags: []cli.Flag{
+								jsonFlag,
+							},
 						},
-						&cli.StringFlag{
-							Name:  "start",
-							Usage: "Start date in `YYYY-MM-DD` format",
-						},
-						&cli.StringFlag{
-							Name:  "end",
-							Usage: "End date in `YYYY-MM-DD` format",
-						},
-					},
-				},
-				{
-					Name:      "get",
-					Usage:     "Get analytics session details by session ID",
-					ArgsUsage: "SESSION_ID",
-					Action:    getAnalyticsSession,
-					Flags: []cli.Flag{
-						jsonFlag,
 					},
 				},
 			},

@@ -93,6 +93,19 @@ var (
 		Name:  "install",
 		Usage: "Run installation after creating the application",
 	}
+	experimentalFlag = &cli.BoolFlag{
+		Name:     "experimental",
+		Usage:    "Enable experimental features",
+		Required: true,
+		// Required only asserts the flag was provided; the Validator rejects an
+		// explicit --experimental=false so the value must actually be true.
+		Validator: func(enabled bool) error {
+			if !enabled {
+				return errors.New("--experimental must be enabled to use this command")
+			}
+			return nil
+		},
+	}
 
 	// out is the process-wide sink for human-facing CLI output. It is initialized
 	// in main.go's root Before hook from the parsed root command, so all status,
