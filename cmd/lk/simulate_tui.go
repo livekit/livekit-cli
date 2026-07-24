@@ -36,8 +36,9 @@ import (
 
 func runSimulateTUI(config *simulateConfig) error {
 	m := newSimulateModel(config)
-	// No mouse capture, so the terminal keeps native drag-to-select. Arrow keys
-	// scroll (the wheel maps to them in alt-screen); i/j/k/l navigate the list.
+	// No mouse capture, so the terminal keeps native drag-to-select. The arrow
+	// keys (the wheel maps to them in alt-screen) move the cursor through the
+	// job list and spill into page scrolling at each end.
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	_, runErr := p.Run()
 
@@ -205,6 +206,7 @@ type simulateModel struct {
 	followCursor   bool // scroll the page to keep the cursor row visible
 	cursorViewLine int  // absolute line of the cursor row in the composed page
 	pageOverflow   bool // last render had more lines than fit
+	pageWinRows    int  // visible window height from the last pageWindow render
 
 	toast   string
 	toastOK bool
@@ -711,23 +713,49 @@ func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	return true
 }
 
-// scrollBy scrolls the focused pane by delta lines (one arrow/wheel step),
-// falling back to scrolling the whole page.
-func (m *simulateModel) scrollBy(delta int) {
-	if m.scrollActive(delta, true) {
-		return
-	}
+// scrollPage scrolls the whole composed page by delta lines and pins the
+// viewport so a subsequent render doesn't snap back to the cursor.
+func (m *simulateModel) scrollPage(delta int) {
 	m.viewScrollOff += delta // clamped on render
 	if m.viewScrollOff < 0 {
 		m.viewScrollOff = 0
 	}
+	m.followCursor = false
 }
 
-func (m *simulateModel) moveCursor(delta int) {
-	if n := len(m.filteredJobs()); n > 0 {
-		m.cursor = ((m.cursor+delta)%n + n) % n
-		m.followCursor = true
+// navVertical is the single up/down handler for the main list view. It moves
+// the cursor through the job list and, at each end, spills into page scrolling
+// so the header/description above and the summary/logs below come into view —
+// one continuous motion, no separate list-navigation keys. delta is -1 (up) or
+// +1 (down). It reads cursorViewLine/pageWinRows from the previous render (the
+// same one-frame coupling followCursor already relies on).
+func (m *simulateModel) navVertical(delta int) {
+	n := len(m.filteredJobs())
+	if n == 0 {
+		m.scrollPage(delta)
+		return
 	}
+	// When the cursor has scrolled out of the visible window (we deliberately
+	// scrolled past it into the tail/header), walk the page back toward it
+	// before resuming cursor movement.
+	if m.pageOverflow && m.pageWinRows > 0 {
+		if delta > 0 && m.cursorViewLine >= m.viewScrollOff+m.pageWinRows {
+			m.scrollPage(delta)
+			return
+		}
+		if delta < 0 && m.cursorViewLine < m.viewScrollOff {
+			m.scrollPage(delta)
+			return
+		}
+	}
+	next := m.cursor + delta
+	if next < 0 || next >= n {
+		// at an end: keep scrolling the page to reveal content beyond the list
+		m.scrollPage(delta)
+		return
+	}
+	m.cursor = next
+	m.followCursor = true
 }
 
 func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -848,21 +876,16 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, m.showToast(text, ok)
 		}
 	case "up", "down":
-		// arrows scroll (the mouse wheel maps here in alt-screen): the focused
-		// pane if any, otherwise the whole page. i/k navigate the list.
+		// One unified motion (the mouse wheel maps here in alt-screen): a
+		// detail/description pane scrolls its own text; otherwise the arrows
+		// move the cursor through the job list and spill into page scrolling at
+		// each end so the summary/logs and header come into view.
 		delta := -1
 		if key == "down" {
 			delta = 1
 		}
-		m.scrollBy(delta)
-	case "i", "shift+tab":
-		// in a detail/description pane there is no cursor, so fall back to scroll
-		if !m.scrollActive(-1, false) {
-			m.moveCursor(-1)
-		}
-	case "k", "tab":
-		if !m.scrollActive(1, false) {
-			m.moveCursor(1)
+		if !m.scrollActive(delta, false) {
+			m.navVertical(delta)
 		}
 	case "pgup":
 		if !m.scrollActive(-pageScroll, true) {
@@ -875,7 +898,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if !m.scrollActive(pageScroll, true) {
 			m.viewScrollOff += pageScroll // clamped on render
 		}
-	case "enter", "l":
+	case "enter":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
@@ -883,7 +906,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.detailScrollOff = 0
 			}
 		}
-	case "esc", "j", "backspace":
+	case "esc", "backspace":
 		if m.detailJobID != "" {
 			m.detailJobID = ""
 			m.detailScrollOff = 0
@@ -1207,6 +1230,7 @@ func (m *simulateModel) pageWindow(content string) string {
 	m.pageOverflow = true
 
 	window := budget - 2 // top and bottom marker rows
+	m.pageWinRows = window
 	maxScroll := len(lines) - window
 	if m.followCursor {
 		if m.cursorViewLine < m.viewScrollOff {
@@ -1899,7 +1923,7 @@ func (m *simulateModel) renderHint() string {
 	var parts []string
 	switch {
 	case m.detailJobID != "":
-		parts = append(parts, "↑↓ scroll · c copy scenario · ESC/j back")
+		parts = append(parts, "↑↓ scroll · c copy scenario · ESC back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
@@ -1911,7 +1935,7 @@ func (m *simulateModel) renderHint() string {
 		parts = append(parts, "↑↓ scroll · d collapse description")
 	default:
 		// the collapsed description block already carries "(press d to expand)"
-		nav := "i/k navigate · ENTER/l detail · ↑↓ scroll"
+		nav := "↑↓ navigate · ENTER detail"
 		if m.pageOverflow || m.viewScrollOff > 0 {
 			nav += " · PgUp/PgDn page"
 		}
