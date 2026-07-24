@@ -291,7 +291,7 @@ func TestMergeCredentials(t *testing.T) {
 	}
 }
 
-// --- agentCredentials.complete / args ----------------------------------------
+// --- agentCredentials.complete / env ------------------------------------------
 
 func TestAgentCredentialsComplete(t *testing.T) {
 	assert.True(t, agentCredentials{url: "u", apiKey: "k", apiSecret: "s"}.complete())
@@ -301,7 +301,7 @@ func TestAgentCredentialsComplete(t *testing.T) {
 	assert.False(t, agentCredentials{}.complete())
 }
 
-func TestAgentCredentialsArgs(t *testing.T) {
+func TestAgentCredentialsEnv(t *testing.T) {
 	tests := []struct {
 		name  string
 		creds agentCredentials
@@ -310,22 +310,22 @@ func TestAgentCredentialsArgs(t *testing.T) {
 		{
 			name:  "all set",
 			creds: agentCredentials{url: "u", apiKey: "k", apiSecret: "s"},
-			want:  []string{"--url", "u", "--api-key", "k", "--api-secret", "s"},
+			want:  []string{"LIVEKIT_URL=u", "LIVEKIT_API_KEY=k", "LIVEKIT_API_SECRET=s"},
 		},
 		{
 			name:  "empty fields are skipped",
 			creds: agentCredentials{apiKey: "k"},
-			want:  []string{"--api-key", "k"},
+			want:  []string{"LIVEKIT_API_KEY=k"},
 		},
 		{
-			name:  "nothing set -> no args",
+			name:  "nothing set -> no env",
 			creds: agentCredentials{},
 			want:  nil,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, tc.creds.args())
+			assert.Equal(t, tc.want, tc.creds.env())
 		})
 	}
 }
@@ -340,13 +340,13 @@ func TestAgentCredentialsArgs(t *testing.T) {
 func TestResolveCredentials_FullyExplicitSkipsProjectLookup(t *testing.T) {
 	clearLiveKitEnv(t)
 
-	var args []string
+	var env []string
 	app := &cli.Command{
 		Name:  "lk",
 		Flags: globalFlags,
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			var err error
-			args, err = resolveCredentials(cmd)
+			env, err = resolveCredentials(cmd)
 			return err
 		},
 	}
@@ -359,10 +359,10 @@ func TestResolveCredentials_FullyExplicitSkipsProjectLookup(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, []string{
-		"--url", "wss://example.livekit.cloud",
-		"--api-key", "flagkey",
-		"--api-secret", "flagsecret",
-	}, args)
+		"LIVEKIT_URL=wss://example.livekit.cloud",
+		"LIVEKIT_API_KEY=flagkey",
+		"LIVEKIT_API_SECRET=flagsecret",
+	}, env)
 }
 
 // --- cloud console link --------------------------------------------------------
