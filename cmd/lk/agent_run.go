@@ -121,20 +121,23 @@ func (c agentCredentials) complete() bool {
 	return c.url != "" && c.apiKey != "" && c.apiSecret != ""
 }
 
-// args renders the credentials as agent subprocess CLI flags, skipping any empty
-// field so the agent can fall back to its own defaults / environment.
-func (c agentCredentials) args() []string {
-	var args []string
+// env renders the credentials as LIVEKIT_* environment entries for the agent
+// subprocess, skipping any empty field so the agent can fall back to its own
+// environment / .env file. Credentials travel by environment rather than argv
+// so the API secret never shows up in `ps` output; entries are appended after
+// the inherited environment, so they override any stale shell values.
+func (c agentCredentials) env() []string {
+	var env []string
 	if c.url != "" {
-		args = append(args, "--url", c.url)
+		env = append(env, "LIVEKIT_URL="+c.url)
 	}
 	if c.apiKey != "" {
-		args = append(args, "--api-key", c.apiKey)
+		env = append(env, "LIVEKIT_API_KEY="+c.apiKey)
 	}
 	if c.apiSecret != "" {
-		args = append(args, "--api-secret", c.apiSecret)
+		env = append(env, "LIVEKIT_API_SECRET="+c.apiSecret)
 	}
-	return args
+	return env
 }
 
 // explicitCredentials returns only the credentials the user explicitly provided,
@@ -178,9 +181,18 @@ func mergeCredentials(explicit, project agentCredentials) agentCredentials {
 	return merged
 }
 
-// resolveCredentials returns CLI args (--url, --api-key, --api-secret) for the agent subprocess.
+// resolveCredentials returns LIVEKIT_* environment entries for the agent subprocess.
 func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, error) {
 	explicit := explicitCredentials(cmd)
+
+	// An explicitly named project always wins, mirroring resolveProject's
+	// priority order. Without this, ambient LIVEKIT_* shell variables (which
+	// count as explicit above) would override — or worse, mix into — the
+	// project the user asked for by name.
+	if cmd.String("project") != "" || cmd.String("subdomain") != "" {
+		explicit = agentCredentials{}
+	}
+
 	merged := explicit
 
 	// Only consult the project config when the user didn't fully specify the
@@ -200,20 +212,15 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 		}
 	}
 
-	return merged.args(), nil
+	return merged.env(), nil
 }
 
-func buildCLIArgs(projectType agentfs.ProjectType, subcmd string, cmd *cli.Command, loadOpts ...loadOption) ([]string, error) {
+func buildCLIArgs(projectType agentfs.ProjectType, subcmd string, cmd *cli.Command) []string {
 	args := []string{subcmd}
 	if logLevel := cmd.String("log-level"); logLevel != "" {
 		args = append(args, "--log-level", normalizeLogLevel(projectType, logLevel))
 	}
-	creds, err := resolveCredentials(cmd, loadOpts...)
-	if err != nil {
-		return nil, err
-	}
-	args = append(args, creds...)
-	return args, nil
+	return args
 }
 
 func runAgentStart(ctx context.Context, cmd *cli.Command) error {
@@ -223,7 +230,7 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 	}
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
 
-	cliArgs, err := buildCLIArgs(projectType, "start", cmd)
+	credsEnv, err := resolveCredentials(cmd)
 	if err != nil {
 		return err
 	}
@@ -233,7 +240,8 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 		Entrypoint:    entrypoint,
 		ProjectType:   projectType,
 		RuntimeArgs:   forwardedArgs(cmd),
-		CLIArgs:       cliArgs,
+		CLIArgs:       buildCLIArgs(projectType, "start", cmd),
+		Env:           credsEnv,
 		ForwardOutput: os.Stdout,
 	})
 	if err != nil {
@@ -271,7 +279,8 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	if projectType.IsPython() {
 		subcmd = "start"
 	}
-	cliArgs, err := buildCLIArgs(projectType, subcmd, cmd)
+	cliArgs := buildCLIArgs(projectType, subcmd, cmd)
+	credsEnv, err := resolveCredentials(cmd)
 	if err != nil {
 		return err
 	}
@@ -288,6 +297,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		ProjectType:   projectType,
 		RuntimeArgs:   forwardedArgs(cmd),
 		CLIArgs:       cliArgs,
+		Env:           credsEnv,
 		ForwardOutput: os.Stdout,
 	}
 
