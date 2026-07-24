@@ -73,6 +73,14 @@ func TestAnalyticsFailsWithoutExperimentalFlag(t *testing.T) {
 	assert.Contains(t, err.Error(), `Required flag "experimental" not set`)
 }
 
+func TestAnalyticsFailsWithExperimentalFlagDisabled(t *testing.T) {
+	// Required only checks presence; an explicit --experimental=false must still
+	// be rejected by the flag's Validator rather than running the command.
+	err := runAnalytics("--experimental=false", "session", "list")
+	require.Error(t, err, "'analytics session list' must fail when --experimental is disabled")
+	assert.Contains(t, err.Error(), "--experimental must be enabled")
+}
+
 func TestAnalyticsPassesFlagValidationWithExperimentalFlag(t *testing.T) {
 	// With --experimental set, flag validation passes; any resulting error comes
 	// from the action itself (e.g. project resolution), not the required flag.

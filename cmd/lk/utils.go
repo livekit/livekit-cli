@@ -97,6 +97,14 @@ var (
 		Name:     "experimental",
 		Usage:    "Enable experimental features",
 		Required: true,
+		// Required only asserts the flag was provided; the Validator rejects an
+		// explicit --experimental=false so the value must actually be true.
+		Validator: func(enabled bool) error {
+			if !enabled {
+				return errors.New("--experimental must be enabled to use this command")
+			}
+			return nil
+		},
 	}
 
 	// out is the process-wide sink for human-facing CLI output. It is initialized
