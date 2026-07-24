@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout livekit-cli
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           # pkg/portaudio/pa_src is a submodule with the vendored PortAudio C
           # source linked into cmd/lk via cgo.
@@ -48,7 +48,7 @@ jobs:
           version: 0.14.1
 
       - name: Set up Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
           cache: true
@@ -87,7 +87,7 @@ jobs:
           echo "Built lk.exe and:"; cat dist/manifest.tsv
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-artifacts
           path: dist
@@ -110,21 +110,21 @@ jobs:
       - name: Checkout livekit-cli
         # Test fixtures (cmd/lk/testdata, pkg/agentfs/examples) are read at
         # runtime; submodules are C source already compiled into the binaries.
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: windows-artifacts
           path: dist
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with:
           enable-cache: true
 
@@ -164,23 +164,23 @@ jobs:
     steps:
       - name: Checkout livekit-cli
         # Needed for the echo-agent fixtures; submodules are compiled into lk.exe.
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: windows-artifacts
           path: dist
 
       - name: Set up Python
         if: matrix.lang == 'python'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Set up uv
         if: matrix.lang == 'python'
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with:
           enable-cache: true
 
@@ -191,7 +191,7 @@ jobs:
 
       - name: Set up Node
         if: matrix.lang == 'node'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           # --experimental-strip-types (used to run the .ts entrypoint) needs >= 22.6.
           node-version: "22"
