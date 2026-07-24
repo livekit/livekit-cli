@@ -898,7 +898,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if !m.scrollActive(pageScroll, true) {
 			m.viewScrollOff += pageScroll // clamped on render
 		}
-	case "enter":
+	case "enter", "right":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
@@ -906,7 +906,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.detailScrollOff = 0
 			}
 		}
-	case "esc", "backspace":
+	case "esc", "left", "backspace":
 		if m.detailJobID != "" {
 			m.detailJobID = ""
 			m.detailScrollOff = 0
@@ -1923,7 +1923,7 @@ func (m *simulateModel) renderHint() string {
 	var parts []string
 	switch {
 	case m.detailJobID != "":
-		parts = append(parts, "↑↓ scroll · c copy scenario · ESC back")
+		parts = append(parts, "↑↓ scroll · c copy scenario · ←/ESC back")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
@@ -1935,7 +1935,7 @@ func (m *simulateModel) renderHint() string {
 		parts = append(parts, "↑↓ scroll · d collapse description")
 	default:
 		// the collapsed description block already carries "(press d to expand)"
-		nav := "↑↓ navigate · ENTER detail"
+		nav := "↑↓ navigate · →/ENTER detail"
 		if m.pageOverflow || m.viewScrollOff > 0 {
 			nav += " · PgUp/PgDn page"
 		}
