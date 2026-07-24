@@ -98,6 +98,10 @@ var simulateCommand = &cli.Command{
 			Name:  "view",
 			Usage: "Open a pre-existing simulation",
 		},
+		&cli.BoolFlag{
+			Name:  "run-json",
+			Usage: "Print the completed run and exact per-job chat contexts as JSON",
+		},
 		&cli.StringFlag{
 			Name:  "agent-name",
 			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
@@ -183,6 +187,7 @@ type simulateConfig struct {
 	scenarioGroup  *livekit.ScenarioGroup
 	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
 	viewModeRunID  string   // non-empty when --view opens a pre-existing run
+	runJSON        bool     // emit a machine-readable run/transcript artifact on stdout
 	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
 	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
 	// TODO (steveyoon): add agent deployment support
@@ -374,11 +379,12 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		scenarioGroup:  scenarioGroup,
 		scenariosPath:  scenariosPath,
 		viewModeRunID:  runID,
+		runJSON:        cmd.Bool("run-json"),
 		liveAgent:      liveAgent,
 		warnings:       simulateConfigWarnings(mode, numSimulations),
 	}
 
-	if !isInteractive() {
+	if simCfg.runJSON || !isInteractive() {
 		return runSimulateCI(ctx, simCfg)
 	}
 	return runSimulateTUI(simCfg)
@@ -590,6 +596,15 @@ func viewCommandHint(runID string) string {
 		hint += " --server-url " + serverURL
 	}
 	return hint
+}
+
+func runJSONCommandHint(runID string) string {
+	return viewCommandHint(runID) + " --run-json > " + runID + ".json"
+}
+
+func writeSimulationRunHints(w io.Writer, runID string) {
+	fmt.Fprintf(w, "To re-open this simulation, run: %s\n", viewCommandHint(runID))
+	fmt.Fprintf(w, "To export replay JSON, run:      %s\n", runJSONCommandHint(runID))
 }
 
 func simulationDashboardURL(projectID, runID string) string {
