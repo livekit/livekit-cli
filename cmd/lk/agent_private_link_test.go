@@ -7,18 +7,8 @@ import (
 	lkproto "github.com/livekit/protocol/livekit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/urfave/cli/v3"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-func findCommandByName(commands []*cli.Command, name string) *cli.Command {
-	for _, cmd := range commands {
-		if cmd != nil && cmd.Name == name {
-			return cmd
-		}
-	}
-	return nil
-}
 
 func TestAgentPrivateLinkCommandTree(t *testing.T) {
 	agentCmd := findCommandByName(AgentCommands, "agent")

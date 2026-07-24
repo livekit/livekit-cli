@@ -30,13 +30,56 @@ func TestAnalyticsCommandTree(t *testing.T) {
 	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
 	require.NotNil(t, analyticsCmd, "top-level 'analytics' command must exist")
 
-	listCmd := findCommandByName(analyticsCmd.Commands, "list")
-	require.NotNil(t, listCmd, "'analytics list' command must exist")
-	require.NotNil(t, listCmd.Action, "'analytics list' must have an action")
+	sessionCmd := findCommandByName(analyticsCmd.Commands, "session")
+	require.NotNil(t, sessionCmd, "'analytics session' command must exist")
 
-	getCmd := findCommandByName(analyticsCmd.Commands, "get")
-	require.NotNil(t, getCmd, "'analytics get' command must exist")
-	require.NotNil(t, getCmd.Action, "'analytics get' must have an action")
+	listCmd := findCommandByName(sessionCmd.Commands, "list")
+	require.NotNil(t, listCmd, "'analytics session list' command must exist")
+	require.NotNil(t, listCmd.Action, "'analytics session list' must have an action")
+
+	getCmd := findCommandByName(sessionCmd.Commands, "get")
+	require.NotNil(t, getCmd, "'analytics session get' command must exist")
+	require.NotNil(t, getCmd.Action, "'analytics session get' must have an action")
+}
+
+func TestAnalyticsCommandRequiresExperimentalFlag(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd, "top-level 'analytics' command must exist")
+
+	experimental := findFlagByName(analyticsCmd.Flags, "experimental")
+	require.NotNil(t, experimental, "'analytics' command must declare an --experimental flag")
+
+	boolFlag, ok := experimental.(*cli.BoolFlag)
+	require.True(t, ok, "--experimental must be a bool flag")
+	assert.True(t, boolFlag.Required, "--experimental flag must be required")
+}
+
+// runAnalytics runs the analytics command tree in isolation (as a subcommand of
+// a bare root) so flag validation is exercised without touching global CLI state.
+func runAnalytics(args ...string) error {
+	app := &cli.Command{Name: "lk", Commands: AnalyticsCommands}
+	return app.Run(context.Background(), append([]string{"lk", "analytics"}, args...))
+}
+
+func TestAnalyticsFailsWithoutExperimentalFlag(t *testing.T) {
+	// Every leaf must reject invocation when --experimental is omitted, before
+	// any action (and its network calls) runs.
+	err := runAnalytics("session", "list")
+	require.Error(t, err, "'analytics session list' must fail without --experimental")
+	assert.Contains(t, err.Error(), `Required flag "experimental" not set`)
+
+	err = runAnalytics("session", "get", "sess_123")
+	require.Error(t, err, "'analytics session get' must fail without --experimental")
+	assert.Contains(t, err.Error(), `Required flag "experimental" not set`)
+}
+
+func TestAnalyticsPassesFlagValidationWithExperimentalFlag(t *testing.T) {
+	// With --experimental set, flag validation passes; any resulting error comes
+	// from the action itself (e.g. project resolution), not the required flag.
+	err := runAnalytics("--experimental", "session", "list")
+	if err != nil {
+		assert.NotContains(t, err.Error(), `Required flag "experimental" not set`)
+	}
 }
 
 func TestValidateAnalyticsDateRange(t *testing.T) {
