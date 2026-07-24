@@ -93,6 +93,11 @@ var (
 		Name:  "install",
 		Usage: "Run installation after creating the application",
 	}
+	experimentalFlag = &cli.BoolFlag{
+		Name:     "experimental",
+		Usage:    "Enable experimental features",
+		Required: true,
+	}
 
 	// out is the process-wide sink for human-facing CLI output. It is initialized
 	// in main.go's root Before hook from the parsed root command, so all status,
