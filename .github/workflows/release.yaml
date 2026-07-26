@@ -21,9 +21,6 @@ on:
 
 permissions:
   contents: write
-  # id-token lets cosign obtain a GitHub OIDC token for keyless (Sigstore)
-  # signing of checksums.txt during the goreleaser step.
-  id-token: write
 
 jobs:
   # GoReleaser runs on macOS so the darwin binary builds natively (CoreAudio
@@ -33,6 +30,13 @@ jobs:
   release:
     name: Release
     runs-on: macos-latest
+    # id-token lets cosign obtain a GitHub OIDC token for keyless (Sigstore)
+    # signing of checksums.txt during the goreleaser step. Scoped to this job
+    # only: the Fulcio certificate identity is per-workflow, not per-job, so
+    # any job holding id-token could sign as the identity installers trust.
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - name: Checkout Git LFS
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6

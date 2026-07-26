@@ -77,13 +77,33 @@ curl -fsSL "$CHECKSUMS_URL" -o "$TEMP_DIR/checksums.txt"
 # certificate identity is pinned to this repo's release workflow running for this
 # exact version tag, so a valid signature proves the checksums were produced by
 # livekit-cli's release CI and not substituted alongside a tampered archive.
-# Releases published before signing was introduced have no .sig/.pem assets, so a
-# missing signature is skipped rather than fatal; a present-but-invalid one aborts.
+#
+# Every release after v$LAST_UNSIGNED_VERSION publishes checksums.txt.sig/.pem,
+# so for those a missing signature means the assets were tampered with (an
+# attacker stripping the signature to force a checksum-only fallback) and is
+# fatal. Only releases predating signing may legitimately lack one, and only a
+# clean 404 counts as "not published" — transport errors and other HTTP
+# failures abort rather than silently skipping verification.
+#
+# NOTE for maintainers: if a release ships between this script landing and the
+# signing config landing, bump LAST_UNSIGNED_VERSION to that release.
+LAST_UNSIGNED_VERSION="2.17.0"
+
+version_gt() {
+  [ "$1" != "$2" ] && [ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" = "$2" ]
+}
+
+# Downloads $1 to $2 and prints the final HTTP status code; transport failures
+# (DNS, TLS, reset) print curl's 000. Never returns non-zero, so callers can
+# branch on the status code under errexit.
+fetch_status() {
+  curl -fsL -o "$2" -w '%{http_code}' "$1" 2>/dev/null || true
+}
+
 if command -v cosign >/dev/null; then
-  # No -S here: a 404 is the expected outcome for releases that predate signing,
-  # so curl's error output would just be noise.
-  if curl -fsL "$CHECKSUMS_URL.sig" -o "$TEMP_DIR/checksums.txt.sig" &&
-     curl -fsL "$CHECKSUMS_URL.pem" -o "$TEMP_DIR/checksums.txt.pem"; then
+  sig_status=$(fetch_status "$CHECKSUMS_URL.sig" "$TEMP_DIR/checksums.txt.sig")
+  pem_status=$(fetch_status "$CHECKSUMS_URL.pem" "$TEMP_DIR/checksums.txt.pem")
+  if [ "$sig_status" = "200" ] && [ "$pem_status" = "200" ]; then
     log "Verifying signature..."
     cosign verify-blob \
       --certificate "$TEMP_DIR/checksums.txt.pem" \
@@ -92,8 +112,13 @@ if command -v cosign >/dev/null; then
       --certificate-oidc-issuer https://token.actions.githubusercontent.com \
       "$TEMP_DIR/checksums.txt" \
       || abort "Signature verification failed for checksums.txt"
+  elif [ "$sig_status" = "404" ] && [ "$pem_status" = "404" ]; then
+    if version_gt "$VERSION" "$LAST_UNSIGNED_VERSION"; then
+      abort "No signature published for v$VERSION, but every release after v$LAST_UNSIGNED_VERSION is signed; refusing to install."
+    fi
+    log "Release predates signing; skipping signature verification."
   else
-    log "No signature published for this release; skipping signature verification."
+    abort "Could not download the signature for checksums.txt (HTTP $sig_status/$pem_status)"
   fi
 else
   log "cosign not found; skipping signature verification."
@@ -101,8 +126,8 @@ fi
 
 # Verify the archive against the release's checksums.txt before extracting. The checksums
 # file is fetched from the same release over HTTPS, so this guards against corrupted/partial
-# downloads and accidental mismatches; when cosign is absent it is not a substitute for
-# signature verification against an out-of-band key.
+# downloads and accidental mismatches; unless the signature was verified above, it is not
+# a substitute for signature verification against an out-of-band key.
 log "Verifying checksum..."
 expected_sum=$(awk -v f="$ARCHIVE_NAME" '$2 == f {print $1}' "$TEMP_DIR/checksums.txt")
 [ -n "$expected_sum" ] || abort "Could not find a checksum for $ARCHIVE_NAME in checksums.txt"
