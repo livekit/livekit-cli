@@ -108,7 +108,7 @@ if command -v cosign >/dev/null; then
     cosign verify-blob \
       --certificate "$TEMP_DIR/checksums.txt.pem" \
       --signature "$TEMP_DIR/checksums.txt.sig" \
-      --certificate-identity-regexp "^https://github.com/livekit/$REPO/\.github/workflows/release\.yaml@refs/tags/v${VERSION}$" \
+      --certificate-identity "https://github.com/livekit/$REPO/.github/workflows/release.yaml@refs/tags/v${VERSION}" \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com \
       "$TEMP_DIR/checksums.txt" \
       || abort "Signature verification failed for checksums.txt"

@@ -164,10 +164,11 @@ checksum:
 # Keyless (Sigstore) signing: cosign signs checksums.txt with the release
 # workflow's GitHub OIDC identity — no long-lived key to manage. Every archive
 # is listed in checksums.txt, so one signature covers all release artifacts.
-# Verify with:
+# Verify with (substitute the exact version you downloaded — pinning the tag
+# rejects signatures replayed from a different, older release):
 #   cosign verify-blob \
 #     --certificate checksums.txt.pem --signature checksums.txt.sig \
-#     --certificate-identity-regexp '^https://github.com/livekit/livekit-cli/\.github/workflows/release\.yaml@.*$' \
+#     --certificate-identity "https://github.com/livekit/livekit-cli/.github/workflows/release.yaml@refs/tags/v<VERSION>" \
 #     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
 #     checksums.txt
 signs:
