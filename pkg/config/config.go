@@ -93,6 +93,31 @@ func (c *CLIConfig) GetUser(idOrEmail string) *UserConfig {
 	return nil
 }
 
+// UpsertUser stores u in the config. If a user matching the same person — by
+// non-empty Id or (case-insensitively) email — already exists, that entry is
+// replaced outright rather than a duplicate being inserted; otherwise u is
+// appended. It returns the stored user and whether an existing entry was
+// replaced.
+func (c *CLIConfig) UpsertUser(u UserConfig) (stored *UserConfig, replaced bool) {
+	for i := range c.Users {
+		if sameUser(c.Users[i], u) {
+			c.Users[i] = u
+			return &c.Users[i], true
+		}
+	}
+	c.Users = append(c.Users, u)
+	return &c.Users[len(c.Users)-1], false
+}
+
+// sameUser reports whether two entries refer to the same person, matching by
+// non-empty Id or case-insensitive email.
+func sameUser(a, b UserConfig) bool {
+	if a.Id != "" && a.Id == b.Id {
+		return true
+	}
+	return a.Email != "" && strings.EqualFold(a.Email, b.Email)
+}
+
 // LoadDefaultUser returns the configured default user. It mirrors
 // LoadDefaultProject and is used by user-based (experimental) auth.
 func LoadDefaultUser() (*UserConfig, error) {
