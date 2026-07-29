@@ -61,3 +61,33 @@ func TestCLIConfigGetUser(t *testing.T) {
 	assert.Len(t, c.Users[0].Projects, 1)
 	assert.Equal(t, "p_abc", c.Users[0].Projects[0].ProjectId)
 }
+
+func TestCLIConfigUpsertUser(t *testing.T) {
+	c := &CLIConfig{
+		Users: []UserConfig{
+			{Id: "usr_1", Email: "alice@livekit.io", Name: "Alice", SessionToken: "old"},
+		},
+	}
+
+	// Re-auth as the same person by Id replaces wholesale (new token, and stale
+	// fields like a cached project list are dropped, not merged).
+	c.Users[0].Projects = []UserProjectConfig{{ProjectId: "p_stale"}}
+	stored, replaced := c.UpsertUser(UserConfig{Id: "usr_1", Email: "alice@livekit.io", Name: "Alice A.", SessionToken: "new"})
+	assert.True(t, replaced)
+	assert.Len(t, c.Users, 1, "must not duplicate")
+	assert.Equal(t, "new", stored.SessionToken)
+	assert.Equal(t, "Alice A.", c.Users[0].Name)
+	assert.Empty(t, c.Users[0].Projects, "replace is wholesale, not a merge")
+
+	// Match by email (case-insensitive) even when the Id differs.
+	_, replaced = c.UpsertUser(UserConfig{Id: "usr_1_new", Email: "ALICE@livekit.io", SessionToken: "newer"})
+	assert.True(t, replaced)
+	assert.Len(t, c.Users, 1)
+	assert.Equal(t, "usr_1_new", c.Users[0].Id)
+	assert.Equal(t, "newer", c.Users[0].SessionToken)
+
+	// A genuinely new user is appended.
+	_, replaced = c.UpsertUser(UserConfig{Id: "usr_2", Email: "bob@livekit.io"})
+	assert.False(t, replaced)
+	assert.Len(t, c.Users, 2)
+}

@@ -43,11 +43,30 @@ type ClaimAccessKeyResponse struct {
 	URL         string
 }
 
+type ClaimCliSessionResponse struct {
+	Session struct {
+		Id           string `json:"id"`
+		SessionToken string `json:"session_token"`
+		UserId       string `json:"user_id"`
+		Expires      int64  `json:"expires"`
+		DeviceName   string `json:"device_name"`
+		IsRestricted bool   `json:"is_restricted"`
+	}
+	User struct {
+		Id        string `json:"id"`
+		Email     string `json:"email"`
+		Name      string `json:"name"`
+		CreatedAt int64  `json:"created_at"`
+	}
+}
+
 const (
-	createTokenEndpoint = "/cli/auth"
-	claimKeyEndpoint    = "/cli/claim"
-	confirmAuthEndpoint = "/cli/confirm-auth"
-	revokeKeyEndpoint   = "/cli/revoke"
+	createTokenEndpoint     = "/cli/auth"
+	claimKeyEndpoint        = "/cli/claim"
+	claimSessionEndpoint    = "/cli/claim-session"
+	confirmUserAuthEndpoint = "/cli/claim"
+	confirmAuthEndpoint     = "/cli/confirm-auth"
+	revokeKeyEndpoint       = "/cli/revoke"
 )
 
 var (
@@ -173,6 +192,50 @@ func (a *AuthClient) ClaimCliKey(ctx context.Context) (*ClaimAccessKeyResponse, 
 	return ak, nil
 }
 
+// ClaimCliSession polls the session claim endpoint for the experimental
+// user-based auth flow. It mirrors ClaimCliKey: 401 means "not yet approved"
+// (returns nil, nil so the caller keeps polling), 404 means access was denied,
+// and 200 returns the claimed session.
+func (a *AuthClient) ClaimCliSession(ctx context.Context) (*ClaimCliSessionResponse, error) {
+	if a.verificationToken.Token == "" || time.Now().Unix() > a.verificationToken.Expires {
+		return nil, errors.New("session expired")
+	}
+
+	reqURL, err := url.Parse(a.baseURL + claimSessionEndpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	params := url.Values{}
+	params.Add("t", a.verificationToken.Token)
+	reqURL.RawQuery = params.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, "POST", reqURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := a.client.Do(req)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		return nil, errors.New("access denied")
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		// Not yet approved
+		return nil, nil
+	}
+
+	session := &ClaimCliSessionResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(session); err != nil {
+		return nil, err
+	}
+
+	return session, nil
+}
+
 func (a *AuthClient) Deauthenticate(ctx context.Context, projectName, token string) error {
 	reqURL, err := url.Parse(a.baseURL + revokeKeyEndpoint)
 	if err != nil {
@@ -210,6 +273,9 @@ func initAuth(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 
 func handleAuth(ctx context.Context, cmd *cli.Command) error {
 	if revoke {
+		if experimentalAuthEnabled(cmd) {
+			return errors.New("revoking a user session is not yet supported under --experimental-auth")
+		}
 		if _, err := loadProjectConfig(ctx, cmd); err != nil {
 			return err
 		}
@@ -218,6 +284,9 @@ func handleAuth(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		return authClient.Deauthenticate(ctx, project.Name, token)
+	}
+	if experimentalAuthEnabled(cmd) {
+		return tryUserAuthIfNeeded(ctx, cmd)
 	}
 	return tryAuthIfNeeded(ctx, cmd)
 }
@@ -279,7 +348,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	authURL, err := generateConfirmURL(token.Token)
+	authURL, err := generateConfirmURL(confirmAuthEndpoint, token.Token)
 	if err != nil {
 		return err
 	}
@@ -362,8 +431,8 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	return err
 }
 
-func generateConfirmURL(token string) (*url.URL, error) {
-	base, err := url.Parse(dashboardURL + confirmAuthEndpoint)
+func generateConfirmURL(endpoint, token string) (*url.URL, error) {
+	base, err := url.Parse(dashboardURL + endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -400,5 +469,146 @@ func pollClaim(ctx context.Context, _ *cli.Command) (*ClaimAccessKeyResponse, er
 		return nil, err
 	case accessKey := <-claim:
 		return accessKey, nil
+	}
+}
+
+// tryUserAuthIfNeeded runs the experimental user-based auth flow: it requests a
+// verification token (shared with the API-key flow), opens the browser to the
+// user-auth confirm page, polls the session claim endpoint, and persists the
+// resulting session as a config.UserConfig. It mirrors tryAuthIfNeeded.
+func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
+	if _, err := loadProjectConfig(ctx, cmd); err != nil {
+		return err
+	}
+
+	if SkipPrompts(cmd) {
+		return errors.New("run `lk cloud auth --experimental-auth` in an interactive terminal to sign in")
+	}
+
+	// get device name
+	if err := huh.NewForm(huh.NewGroup(huh.NewInput().
+		Title("What is the name of this device?").
+		Prompt("").
+		Value(&cliConfig.DeviceName).
+		WithTheme(util.Theme))).
+		Run(); err != nil {
+		return err
+	}
+
+	// remember device name for next time
+	if err := cliConfig.PersistIfNeeded(); err != nil {
+		return err
+	}
+	out.Statusf("Device [%s]", util.Accented(cliConfig.DeviceName))
+
+	// request token (shared with the API-key flow)
+	out.Status("Requesting verification token...")
+	token, err := authClient.GetVerificationToken(cliConfig.DeviceName)
+	if err != nil {
+		return err
+	}
+
+	authURL, err := generateConfirmURL(confirmUserAuthEndpoint, token.Token)
+	if err != nil {
+		return err
+	}
+
+	// poll for the session
+	out.Statusf("Please confirm access by visiting:\n\n   %s\n", authURL.String())
+	_ = browser.OpenURL(authURL.String()) // discard result; this will fail in headless environments
+
+	var session *ClaimCliSessionResponse
+	err = out.Await(
+		"Awaiting confirmation...",
+		ctx,
+		func(ctx context.Context) error {
+			var pollErr error
+			session, pollErr = pollSessionClaim(ctx)
+			return pollErr
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	if session == nil {
+		return errors.New("operation cancelled")
+	}
+
+	user := config.UserConfig{
+		Id:            session.User.Id,
+		Name:          session.User.Name,
+		Email:         session.User.Email,
+		SessionToken:  session.Session.SessionToken,
+		SessionExpiry: session.Session.Expires,
+	}
+
+	label := user.Email
+	if label == "" {
+		label = user.Id
+	}
+	out.Statusf("Authenticated as %s", util.Accented(label))
+
+	// key used to reference this user as the default (id preferred, email fallback)
+	userKey := user.Id
+	if userKey == "" {
+		userKey = user.Email
+	}
+
+	// Store the session. Re-authenticating as the same person (matched by id or
+	// email) replaces the existing entry wholesale rather than adding a duplicate.
+	wasFirstUser := len(cliConfig.Users) == 0
+	if _, replaced := cliConfig.UpsertUser(user); !replaced {
+		// New user: the first one becomes the default automatically; otherwise
+		// ask whether to make it the default.
+		isDefault := wasFirstUser
+		if !isDefault {
+			if err := huh.NewForm(huh.NewGroup(util.Confirm().
+				Title("Make this the default user?").
+				Value(&isDefault).
+				WithTheme(util.Theme))).
+				Run(); err != nil {
+				return err
+			}
+		}
+		if isDefault {
+			cliConfig.DefaultUser = userKey
+		}
+	}
+
+	// ensure a default is always set
+	if cliConfig.DefaultUser == "" {
+		cliConfig.DefaultUser = userKey
+	}
+
+	return cliConfig.PersistIfNeeded()
+}
+
+func pollSessionClaim(ctx context.Context) (*ClaimCliSessionResponse, error) {
+	claim := make(chan *ClaimCliSessionResponse)
+	cancel := make(chan error)
+
+	// every <interval> seconds, poll
+	go func() {
+		for {
+			time.Sleep(time.Duration(interval) * time.Second)
+			session, err := authClient.ClaimCliSession(ctx)
+			if err != nil {
+				cancel <- err
+				return
+			}
+			if session != nil {
+				claim <- session
+			}
+		}
+	}()
+
+	select {
+	case <-time.After(time.Duration(timeout) * time.Second):
+		return nil, errors.New("session claim timed out")
+	case err := <-cancel:
+		return nil, err
+	case session := <-claim:
+		return session, nil
 	}
 }
