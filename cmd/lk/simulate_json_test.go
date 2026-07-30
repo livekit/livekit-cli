@@ -19,11 +19,14 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/livekit/protocol/livekit"
 	agent "github.com/livekit/protocol/livekit/agent"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestWriteSimulationRunJSONExportsReplayableChatContext(t *testing.T) {
@@ -102,22 +105,19 @@ func TestWriteSimulationRunJSONExportsReplayableChatContext(t *testing.T) {
 	var exported simulationRunJSON
 	require.NoError(t, json.Unmarshal(output.Bytes(), &exported))
 	require.Equal(t, simulationRunJSONVersion, exported.Version)
-	require.Equal(t, "run-1", exported.RunID)
-	require.Len(t, exported.Jobs, 1)
-	require.NotNil(t, exported.Jobs[0].ChatContext)
-	items := exported.Jobs[0].ChatContext.Items
-	require.Len(t, items, 4)
-	require.Equal(t, "agent_config_update", items[0]["type"])
-	require.Equal(t, instructions, items[0]["instructions"])
-	require.Equal(t, "message", items[1]["type"])
-	require.Equal(t, "user", items[1]["role"])
-	require.Equal(t, "function_call", items[2]["type"])
-	require.Equal(t, `{"code":"HTL-1"}`, items[2]["arguments"])
-	require.Equal(t, "function_call_output", items[3]["type"])
-	require.Equal(t, `"Room (2 nights)" at 560 dollars`, items[3]["output"])
+
+	var exportedRun livekit.SimulationRun
+	require.NoError(t, protojson.Unmarshal(exported.Run, &exportedRun))
+	require.Empty(t, exportedRun.SummaryZstd)
+	require.Empty(t, cmp.Diff(run, &exportedRun, protocmp.Transform(),
+		protocmp.IgnoreFields(&livekit.SimulationRun{}, "summary_zstd")))
+
+	var exportedSummary livekit.SimulationRunSummary
+	require.NoError(t, protojson.Unmarshal(exported.Summary, &exportedSummary))
+	require.Empty(t, cmp.Diff(summary, &exportedSummary, protocmp.Transform()))
 }
 
-func TestWriteSimulationRunJSONKeepsJobWithoutChatHistory(t *testing.T) {
+func TestWriteSimulationRunJSONOmitsSummaryWhenAbsent(t *testing.T) {
 	run := &livekit.SimulationRun{
 		Id:     "run-1",
 		Status: livekit.SimulationRun_STATUS_FAILED,
@@ -131,7 +131,9 @@ func TestWriteSimulationRunJSONKeepsJobWithoutChatHistory(t *testing.T) {
 
 	var exported simulationRunJSON
 	require.NoError(t, json.Unmarshal(output.Bytes(), &exported))
-	require.Len(t, exported.Jobs, 1)
-	require.Nil(t, exported.Jobs[0].ChatContext)
-	require.Equal(t, "timeout", exported.Jobs[0].Error)
+	require.Nil(t, exported.Summary)
+
+	var exportedRun livekit.SimulationRun
+	require.NoError(t, protojson.Unmarshal(exported.Run, &exportedRun))
+	require.Empty(t, cmp.Diff(run, &exportedRun, protocmp.Transform()))
 }
