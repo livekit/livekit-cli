@@ -602,9 +602,13 @@ func runJSONCommandHint(runID string) string {
 	return viewCommandHint(runID) + " --run-json > " + runID + ".json"
 }
 
-func writeSimulationRunHints(w io.Writer, runID string) {
-	fmt.Fprintf(w, "To re-open this simulation, run: %s\n", viewCommandHint(runID))
-	fmt.Fprintf(w, "To export replay JSON, run:      %s\n", runJSONCommandHint(runID))
+// In view mode the re-open hint would echo the command the user just ran, so
+// only the export hint is worth printing.
+func writeSimulationRunHints(w io.Writer, runID string, viewing bool) {
+	if !viewing {
+		fmt.Fprintf(w, "To re-open this simulation, run: %s\n", viewCommandHint(runID))
+	}
+	fmt.Fprintf(w, "To export replay JSON, run: %s\n", runJSONCommandHint(runID))
 }
 
 func simulationDashboardURL(projectID, runID string) string {

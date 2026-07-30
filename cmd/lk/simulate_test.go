@@ -89,10 +89,17 @@ func TestSimulationRunHintsPutReplayJSONBelowViewTip(t *testing.T) {
 	serverURL = cloudAPIServerURL
 
 	var output bytes.Buffer
-	writeSimulationRunHints(&output, "run_123")
+	writeSimulationRunHints(&output, "run_123", false)
 
 	require.Equal(t,
 		"To re-open this simulation, run: lk agent simulate --view run_123\n"+
-			"To export replay JSON, run:      lk agent simulate --view run_123 --run-json > run_123.json\n",
+			"To export replay JSON, run: lk agent simulate --view run_123 --run-json > run_123.json\n",
+		output.String())
+
+	output.Reset()
+	writeSimulationRunHints(&output, "run_123", true)
+
+	require.Equal(t,
+		"To export replay JSON, run: lk agent simulate --view run_123 --run-json > run_123.json\n",
 		output.String())
 }

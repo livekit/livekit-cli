@@ -82,11 +82,11 @@ func runSimulateTUI(config *simulateConfig) error {
 	}
 
 	if m.config.mode == modeView {
-		writeSimulationRunHints(os.Stderr, m.config.viewModeRunID)
+		writeSimulationRunHints(os.Stderr, m.config.viewModeRunID, true)
 	} else if m.runID != "" && !m.runFinished {
 		cancelSimulationRun(config.client, m.runID)
 	} else if m.runID != "" {
-		writeSimulationRunHints(os.Stderr, m.runID)
+		writeSimulationRunHints(os.Stderr, m.runID, false)
 	}
 
 	if runErr != nil {
