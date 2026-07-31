@@ -42,12 +42,33 @@ func FindPythonBinary(dir string, projectType ProjectType) (string, []string, er
 		}
 	}
 
-	// Check common venv locations
-	for _, venvDir := range []string{".venv", "venv"} {
-		candidate := filepath.Join(dir, venvDir, "bin", "python")
+	// An activated venv is an explicit choice by the caller and outranks
+	// anything discovered on disk.
+	if venv := os.Getenv("VIRTUAL_ENV"); venv != "" {
+		candidate := filepath.Join(venv, "bin", "python")
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate, nil, nil
 		}
+	}
+
+	// Check common venv locations, walking up so an agent in a subdirectory
+	// resolves the environment its repository root owns.
+	start := dir
+	if abs, err := filepath.Abs(dir); err == nil {
+		start = abs
+	}
+	for cur := start; ; {
+		for _, venvDir := range []string{".venv", "venv"} {
+			candidate := filepath.Join(cur, venvDir, "bin", "python")
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate, nil, nil
+			}
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			break
+		}
+		cur = parent
 	}
 
 	// Fall back to system python
