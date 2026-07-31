@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -129,4 +130,48 @@ func TestQuotaDialog_EscDismissesAndKeysAreCaptured(t *testing.T) {
 
 	m.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
 	require.False(t, m.quotaModalActive())
+}
+
+func TestDetailTail(t *testing.T) {
+	// Nothing printed yet: the whole view is the tail.
+	tail, ok := detailTail("", "a\nb")
+	require.True(t, ok)
+	require.Equal(t, "a\nb", tail)
+
+	// Growth by appending prints only what was added.
+	tail, ok = detailTail("a\nb", "a\nb\n\nc\nd")
+	require.True(t, ok)
+	require.Equal(t, "c\nd", tail)
+
+	// Unchanged view prints nothing.
+	_, ok = detailTail("a\nb", "a\nb")
+	require.False(t, ok)
+
+	// A view that rewrites what came before is reprinted whole.
+	tail, ok = detailTail("a\nlogs", "a\ntranscript\nlogs")
+	require.True(t, ok)
+	require.Equal(t, "a\ntranscript\nlogs", tail)
+}
+
+func TestDetailNavigationKeysLeaveListAlone(t *testing.T) {
+	m := quotaTestModel(t)
+	m.run = runningRun(3)
+	for i, j := range m.run.Jobs {
+		j.Id = fmt.Sprintf("job_%d", i)
+	}
+
+	// Opening a job leaves the alt screen; the list cursor stays put while the
+	// terminal owns the scrolling.
+	m.handleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	require.Equal(t, "job_0", m.detailJobID)
+	for _, k := range []tea.KeyType{tea.KeyDown, tea.KeyUp, tea.KeyPgDown, tea.KeyPgUp} {
+		m.handleKey(tea.KeyMsg{Type: k})
+	}
+	require.Equal(t, 0, m.cursor)
+	require.Equal(t, 0, m.viewScrollOff)
+
+	// Going back clears what was printed so the next job starts fresh.
+	m.handleKey(tea.KeyMsg{Type: tea.KeyEsc})
+	require.Equal(t, "", m.detailJobID)
+	require.Equal(t, "", m.detailPrinted)
 }

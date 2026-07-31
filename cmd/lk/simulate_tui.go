@@ -190,9 +190,15 @@ type simulateModel struct {
 
 	spinnerIdx int
 
-	cursor          int
-	detailJobID     string
-	detailScrollOff int
+	cursor      int
+	detailJobID string
+	// The open job's view is printed into the terminal's own scrollback instead
+	// of being windowed in the live region; detailPrinted is what has already
+	// been emitted for it, so a re-render only ever appends its new tail.
+	// detailWidth is the width that text was wrapped at: scrollback cannot be
+	// re-wrapped, so a resize rebaselines instead of reprinting.
+	detailPrinted   string
+	detailWidth     int
 	showLogs        bool
 	logScrollOff    int
 	logPinned       bool
@@ -558,6 +564,17 @@ func (m *simulateModel) waitSubprocess() tea.Cmd {
 }
 
 func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	model, cmd := m.update(msg)
+	// Every state change can extend the open job's view (a log line, the
+	// transcript arriving with the summary), and the extension belongs in the
+	// scrollback right after what is already there.
+	if flush := m.flushDetail(); flush != nil {
+		cmd = tea.Batch(cmd, flush)
+	}
+	return model, cmd
+}
+
+func (m *simulateModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -686,13 +703,10 @@ const pageScroll = 20
 
 // scrollActive scrolls the focused pane by delta lines (positive toward the
 // bottom); false if nothing is focused so the caller falls back to the list.
+// The detail view is absent here: it lives in the terminal's scrollback, which
+// the terminal itself scrolls.
 func (m *simulateModel) scrollActive(delta int, includeLogs bool) bool {
 	switch {
-	case m.detailJobID != "":
-		m.detailScrollOff += delta
-		if m.detailScrollOff < 0 {
-			m.detailScrollOff = 0
-		}
 	case m.descriptionExpanded():
 		m.descScrollOff += delta
 		if m.descScrollOff < 0 {
@@ -875,41 +889,48 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			text, ok := m.copyScenario(m.detailJobID)
 			return m, m.showToast(text, ok)
 		}
-	case "up", "down":
-		// One unified motion (the mouse wheel maps here in alt-screen): a
-		// detail/description pane scrolls its own text; otherwise the arrows
-		// move the cursor through the job list and spill into page scrolling at
-		// each end so the summary/logs and header come into view.
-		delta := -1
-		if key == "down" {
-			delta = 1
+	case "up", "down", "pgup", "pgdown":
+		// The open job's view is scrolled by the terminal, so these keys must
+		// not disturb the list underneath it.
+		if m.detailJobID != "" {
+			return m, nil
 		}
-		if !m.scrollActive(delta, false) {
-			m.navVertical(delta)
-		}
-	case "pgup":
-		if !m.scrollActive(-pageScroll, true) {
-			m.viewScrollOff -= pageScroll
-			if m.viewScrollOff < 0 {
-				m.viewScrollOff = 0
+		switch key {
+		case "up", "down":
+			// One unified motion (the mouse wheel maps here in alt-screen): an
+			// expanded description scrolls its own text; otherwise the arrows move
+			// the cursor through the job list and spill into page scrolling at each
+			// end so the summary/logs and header come into view.
+			delta := -1
+			if key == "down" {
+				delta = 1
 			}
-		}
-	case "pgdown":
-		if !m.scrollActive(pageScroll, true) {
-			m.viewScrollOff += pageScroll // clamped on render
+			if !m.scrollActive(delta, false) {
+				m.navVertical(delta)
+			}
+		case "pgup":
+			if !m.scrollActive(-pageScroll, true) {
+				m.viewScrollOff -= pageScroll
+				if m.viewScrollOff < 0 {
+					m.viewScrollOff = 0
+				}
+			}
+		case "pgdown":
+			if !m.scrollActive(pageScroll, true) {
+				m.viewScrollOff += pageScroll // clamped on render
+			}
 		}
 	case "enter", "right":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
 				m.detailJobID = jobs[m.cursor].job.Id
-				m.detailScrollOff = 0
+				return m, m.openDetailCmd()
 			}
 		}
 	case "esc", "left", "backspace":
 		if m.detailJobID != "" {
-			m.detailJobID = ""
-			m.detailScrollOff = 0
+			return m, m.closeDetailCmd()
 		} else if m.showDescription {
 			m.showDescription = false
 			m.descScrollOff = 0
@@ -917,8 +938,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "q":
 		switch {
 		case m.detailJobID != "":
-			m.detailJobID = ""
-			m.detailScrollOff = 0
+			return m, m.closeDetailCmd()
 		case m.showDescription:
 			m.showDescription = false
 			m.descScrollOff = 0
@@ -971,6 +991,9 @@ func (m *simulateModel) findJob(id string) *livekit.SimulationRun_Job {
 func (m *simulateModel) View() string {
 	if !m.setupDone || m.run == nil || m.run.Status == livekit.SimulationRun_STATUS_GENERATING {
 		return m.viewSetup()
+	}
+	if m.detailJobID != "" {
+		return m.viewDetailLive()
 	}
 	switch m.run.Status {
 	case livekit.SimulationRun_STATUS_FAILED:
@@ -1129,7 +1152,7 @@ func (m *simulateModel) viewRunning() string {
 	}
 	b.WriteString("\n\n")
 
-	if m.detailJobID == "" && m.hasDescription() {
+	if m.hasDescription() {
 		b.WriteString(boldStyle.Render("  Agent Description") + "\n")
 		if m.showDescription {
 			// bounded window so expanding never pushes the list off-screen
@@ -1173,9 +1196,7 @@ func (m *simulateModel) viewRunning() string {
 
 	b.WriteString("\n")
 
-	if m.detailJobID != "" {
-		b.WriteString(m.scrolledDetail())
-	} else if m.matrix.active {
+	if m.matrix.active {
 		b.WriteString(m.matrix.render(m.buildMatrixRows()))
 	} else {
 		// the job list renders in full; pageWindow scrolls the whole view.
@@ -1197,11 +1218,11 @@ func (m *simulateModel) viewRunning() string {
 	}
 
 	b.WriteString("\n")
-	if m.showLogs && m.detailJobID == "" {
+	if m.showLogs {
 		b.WriteString(m.renderLogs(""))
 	}
 	content := b.String()
-	if m.detailJobID == "" && !m.matrix.active {
+	if !m.matrix.active {
 		content = m.pageWindow(content)
 	}
 	return content + m.renderToast() + m.renderHint() + "\n"
@@ -1597,44 +1618,83 @@ func (m *simulateModel) renderDetail() string {
 	return b.String()
 }
 
-func (m *simulateModel) scrolledDetail() string {
-	content := m.renderDetail()
-	lines := strings.Split(content, "\n")
-	budget := m.height - 12
-	if budget < 5 {
-		budget = 5
-	}
-	if len(lines) <= budget {
-		m.detailScrollOff = 0
-		return content
-	}
+// --- Job detail (native scrollback) ---
+//
+// The detail view is printed into the terminal below the alt screen rather than
+// windowed inside it, so the whole job — instructions, transcript, logs — is
+// there at once and the terminal scrolls, selects, and searches it. The list
+// view is untouched: it keeps the alt screen and its own windowing.
+//
+// tea.Println is silently dropped while the alt screen is active (bubbletea
+// standard_renderer.go), so leaving it must be sequenced before any print.
 
-	maxScroll := len(lines) - budget
-	if m.detailScrollOff > maxScroll {
-		m.detailScrollOff = maxScroll
-	}
-	if m.detailScrollOff < 0 {
-		m.detailScrollOff = 0
-	}
+// openDetailCmd leaves the alt screen and prints the job's view.
+func (m *simulateModel) openDetailCmd() tea.Cmd {
+	m.detailPrinted = ""
+	m.detailWidth = m.width
+	return tea.Sequence(tea.ExitAltScreen, m.flushDetail())
+}
 
-	start := m.detailScrollOff
-	end := start + budget
-	if end > len(lines) {
-		end = len(lines)
-	}
+// closeDetailCmd returns to the list view, leaving the printed job in the
+// terminal's scrollback.
+func (m *simulateModel) closeDetailCmd() tea.Cmd {
+	m.detailJobID = ""
+	m.detailPrinted = ""
+	return tea.EnterAltScreen
+}
 
+// flushDetail returns a command printing whatever the open job's view has
+// gained since the last call, or nil when it has gained nothing. Callers do not
+// need to know whether anything changed.
+func (m *simulateModel) flushDetail() tea.Cmd {
+	if m.detailJobID == "" {
+		return nil
+	}
+	rendered := strings.TrimRight(m.renderDetail(), "\n")
+	// renderDetail clears detailJobID when the job is gone from the run
+	if m.detailJobID == "" || rendered == "" {
+		return nil
+	}
+	if m.width != m.detailWidth {
+		// every line re-wraps, so nothing lines up with what was printed
+		m.detailPrinted = rendered
+		m.detailWidth = m.width
+		return nil
+	}
+	tail, ok := detailTail(m.detailPrinted, rendered)
+	m.detailPrinted = rendered
+	if !ok {
+		return nil
+	}
+	return tea.Println(tail)
+}
+
+// detailTail is what remains of rendered once printed has been accounted for,
+// and whether anything remains at all. Growth is normally an append (a log
+// line, the transcript arriving with the summary), which prints as the new tail
+// alone; a render that instead rewrites what came before is reprinted whole,
+// since scrollback cannot be edited in place.
+func detailTail(printed, rendered string) (string, bool) {
+	if printed == "" {
+		return rendered, true
+	}
+	if !strings.HasPrefix(rendered, printed) {
+		return rendered, true
+	}
+	tail := strings.Trim(rendered[len(printed):], "\n")
+	return tail, tail != ""
+}
+
+// viewDetailLive is the live region under the printed job view: the status of
+// the job, which is the only part of it that is still moving.
+func (m *simulateModel) viewDetailLive() string {
 	var b strings.Builder
-	if start > 0 {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↑ %d more lines above", start)))
+	if job := m.findJob(m.detailJobID); job != nil && !isTerminalJobStatus(job.Status) {
+		fmt.Fprintf(&b, "\n  %s %s  %s\n", jobIcon(job), dimStyle.Render(jobLabel(job)), m.spinner())
+	} else {
 		b.WriteString("\n")
 	}
-	b.WriteString(strings.Join(lines[start:end], "\n"))
-	b.WriteString("\n")
-	if end < len(lines) {
-		b.WriteString(dimStyle.Render(fmt.Sprintf("  ↓ %d more lines below", len(lines)-end)))
-		b.WriteString("\n")
-	}
-	return b.String()
+	return b.String() + m.renderToast() + m.renderHint() + "\n"
 }
 
 func (m *simulateModel) renderSummary() string {
@@ -1923,7 +1983,8 @@ func (m *simulateModel) renderHint() string {
 	var parts []string
 	switch {
 	case m.detailJobID != "":
-		parts = append(parts, "↑↓ scroll · c copy scenario · ←/ESC back")
+		// the job view is in the terminal's scrollback, which scrolls itself
+		parts = append(parts, "c copy scenario · ←/ESC back to list")
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
