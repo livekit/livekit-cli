@@ -16,27 +16,58 @@ package agentfs
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
 
-func writeVenv(t *testing.T, root, name string) string {
+func requireUv(t *testing.T) {
 	t.Helper()
-	bin := filepath.Join(root, name, "bin")
-	if err := os.MkdirAll(bin, 0o755); err != nil {
-		t.Fatal(err)
+	if _, err := exec.LookPath("uv"); err != nil {
+		t.Skip("uv not installed")
 	}
-	python := filepath.Join(bin, "python")
-	if err := os.WriteFile(python, []byte("#!/bin/sh\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return python
 }
 
-func TestFindPythonBinaryWalksUpToRepoVenv(t *testing.T) {
+// venvOf returns the environment root a resolved interpreter belongs to, with
+// symlinks evaluated so a /var vs /private/var temp dir compares equal.
+func venvOf(t *testing.T, python string) string {
+	t.Helper()
+	root := filepath.Dir(filepath.Dir(python))
+	resolved, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return root
+	}
+	return resolved
+}
+
+func wantVenv(t *testing.T, dir string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return dir
+	}
+	return resolved
+}
+
+// makeVenv creates a real virtual environment at root/name.
+func makeVenv(t *testing.T, root, name string) string {
+	t.Helper()
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command("uv", "venv", "--offline", name)
+	cmd.Dir = root
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("uv venv: %v\n%s", err, out)
+	}
+	return filepath.Join(root, name)
+}
+
+func TestFindPythonBinaryResolvesVenvFromSubdirectory(t *testing.T) {
+	requireUv(t)
 	t.Setenv("VIRTUAL_ENV", "")
 	root := t.TempDir()
-	want := writeVenv(t, root, ".venv")
+	venv := makeVenv(t, root, ".venv")
 	agentDir := filepath.Join(root, "examples", "myagent")
 	if err := os.MkdirAll(agentDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -46,8 +77,8 @@ func TestFindPythonBinaryWalksUpToRepoVenv(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != want {
-		t.Errorf("got %s, want %s", got, want)
+	if venvOf(t, got) != wantVenv(t, venv) {
+		t.Errorf("got %s, want an interpreter inside %s", got, venv)
 	}
 	if len(prefixArgs) != 0 {
 		t.Errorf("got prefix args %v, want none", prefixArgs)
@@ -55,17 +86,40 @@ func TestFindPythonBinaryWalksUpToRepoVenv(t *testing.T) {
 }
 
 func TestFindPythonBinaryPrefersActivatedVenv(t *testing.T) {
+	requireUv(t)
 	root := t.TempDir()
-	writeVenv(t, root, ".venv")
-	activated := filepath.Join(root, "activated")
-	want := writeVenv(t, activated, "venv")
-	t.Setenv("VIRTUAL_ENV", filepath.Join(activated, "venv"))
+	makeVenv(t, root, ".venv")
+	activated := makeVenv(t, filepath.Join(root, "elsewhere"), "venv")
+	t.Setenv("VIRTUAL_ENV", activated)
 
 	got, _, err := FindPythonBinary(root, ProjectTypePythonPip)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != want {
-		t.Errorf("got %s, want %s", got, want)
+	if venvOf(t, got) != wantVenv(t, activated) {
+		t.Errorf("got %s, want an interpreter inside %s", got, activated)
+	}
+}
+
+// With no venv anywhere, uv answers with a managed standalone interpreter that
+// has no dependencies installed; resolution must reject it and keep searching.
+func TestFindPythonBinaryRejectsNonVenvInterpreter(t *testing.T) {
+	requireUv(t)
+	t.Setenv("VIRTUAL_ENV", "")
+	agentDir := filepath.Join(t.TempDir(), "agent")
+	if err := os.MkdirAll(agentDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got, _, err := FindPythonBinary(agentDir, ProjectTypePythonPip)
+	if err != nil {
+		t.Skip("no system Python on PATH")
+	}
+	systemPython, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("no python3 on PATH")
+	}
+	if got != systemPython {
+		t.Errorf("got %s, want system python %s", got, systemPython)
 	}
 }

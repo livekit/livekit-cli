@@ -31,6 +31,38 @@ import (
 // will really run. Static project-file parsing (sdk_version_check.go) is the
 // fallback for when no runtime environment exists.
 
+// uvDiscoverVenv returns the virtual environment interpreter uv resolves from
+// dir, or "" if uv is unavailable or resolves something that is not a venv.
+//
+// With no venv to find, uv answers with a managed standalone interpreter that
+// has no project dependencies installed; a pyvenv.cfg beside the interpreter
+// is what distinguishes the two, and only a venv may pre-empt the search for
+// a system Python the user installed the SDK into.
+func uvDiscoverVenv(dir string) string {
+	uvPath, err := exec.LookPath("uv")
+	if err != nil {
+		return ""
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// --offline: discovery must never reach the network, and never trigger a
+	// Python download as a side effect.
+	cmd := exec.CommandContext(ctx, uvPath, "python", "find", "--offline")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	python := strings.TrimSpace(string(out))
+	if python == "" {
+		return ""
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(python), "..", "pyvenv.cfg")); err != nil {
+		return ""
+	}
+	return python
+}
+
 // FindPythonBinary locates a Python binary for the given project type.
 func FindPythonBinary(dir string, projectType ProjectType) (string, []string, error) {
 	if projectType == ProjectTypePythonUV {
@@ -42,33 +74,19 @@ func FindPythonBinary(dir string, projectType ProjectType) (string, []string, er
 		}
 	}
 
-	// An activated venv is an explicit choice by the caller and outranks
-	// anything discovered on disk.
-	if venv := os.Getenv("VIRTUAL_ENV"); venv != "" {
-		candidate := filepath.Join(venv, "bin", "python")
+	// Defer venv discovery to uv, which honors $VIRTUAL_ENV and walks up to
+	// the enclosing project or workspace — an agent in a subdirectory has no
+	// environment of its own.
+	if venvPython := uvDiscoverVenv(dir); venvPython != "" {
+		return venvPython, nil, nil
+	}
+
+	// Check common venv locations
+	for _, venvDir := range []string{".venv", "venv"} {
+		candidate := filepath.Join(dir, venvDir, "bin", "python")
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate, nil, nil
 		}
-	}
-
-	// Check common venv locations, walking up so an agent in a subdirectory
-	// resolves the environment its repository root owns.
-	start := dir
-	if abs, err := filepath.Abs(dir); err == nil {
-		start = abs
-	}
-	for cur := start; ; {
-		for _, venvDir := range []string{".venv", "venv"} {
-			candidate := filepath.Join(cur, venvDir, "bin", "python")
-			if _, err := os.Stat(candidate); err == nil {
-				return candidate, nil, nil
-			}
-		}
-		parent := filepath.Dir(cur)
-		if parent == cur {
-			break
-		}
-		cur = parent
 	}
 
 	// Fall back to system python
