@@ -942,7 +942,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.viewScrollOff += pageScroll // clamped on render
 			}
 		}
-	case "enter", "right":
+	// j and l sit either side of k on the home row, so they double for the
+	// left/right arrows without reaching for them.
+	case "enter", "right", "l":
 		if m.detailJobID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
@@ -950,7 +952,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m, m.openDetailCmd()
 			}
 		}
-	case "esc", "left", "backspace":
+	case "esc", "left", "backspace", "j":
 		if m.detailJobID != "" {
 			return m, m.closeDetailCmd()
 		} else if m.showDescription {

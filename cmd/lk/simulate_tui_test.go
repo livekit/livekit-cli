@@ -196,3 +196,25 @@ func TestProseWidth(t *testing.T) {
 	require.Equal(t, 40, proseWidth(0, 6))
 	require.Equal(t, 40, proseWidth(20, 6))
 }
+
+func TestHomeRowKeysOpenAndCloseDetail(t *testing.T) {
+	m := quotaTestModel(t)
+	m.run = runningRun(2)
+	for i, j := range m.run.Jobs {
+		j.Id = fmt.Sprintf("job_%d", i)
+	}
+
+	// l opens the job under the cursor, like enter/right.
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	require.Equal(t, "job_0", m.detailJobID)
+
+	// j goes back, like esc/left.
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	require.Equal(t, "", m.detailJobID)
+
+	// j also collapses the description, the other thing left/esc backs out of.
+	m.run.AgentDescription = "an agent"
+	m.showDescription = true
+	m.handleKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	require.False(t, m.showDescription)
+}
