@@ -101,6 +101,29 @@ func TestFindPythonBinaryPrefersActivatedVenv(t *testing.T) {
 	}
 }
 
+// $VIRTUAL_ENV is honored without uv, so an activated environment resolves for
+// users who don't have it installed.
+func TestFindPythonBinaryPrefersActivatedVenvWithoutUv(t *testing.T) {
+	root := t.TempDir()
+	activated := filepath.Join(root, "venv")
+	if err := os.MkdirAll(filepath.Join(activated, "bin"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	python := filepath.Join(activated, "bin", "python")
+	if err := os.WriteFile(python, nil, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("VIRTUAL_ENV", activated)
+
+	got, _, err := FindPythonBinary(root, ProjectTypePythonPip)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != python {
+		t.Errorf("got %s, want %s", got, python)
+	}
+}
+
 // With no venv anywhere, uv answers with a managed standalone interpreter that
 // has no dependencies installed; resolution must reject it and keep searching.
 func TestFindPythonBinaryRejectsNonVenvInterpreter(t *testing.T) {

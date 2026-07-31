@@ -63,6 +63,21 @@ func uvDiscoverVenv(dir string) string {
 	return python
 }
 
+// activatedVenvPython returns the interpreter of the activated virtual
+// environment, or "" if none is activated. uv discovery already honors
+// $VIRTUAL_ENV; checking it directly keeps that behavior when uv is absent.
+func activatedVenvPython() string {
+	venv := os.Getenv("VIRTUAL_ENV")
+	if venv == "" {
+		return ""
+	}
+	python := filepath.Join(venv, "bin", "python")
+	if _, err := os.Stat(python); err != nil {
+		return ""
+	}
+	return python
+}
+
 // FindPythonBinary locates a Python binary for the given project type.
 func FindPythonBinary(dir string, projectType ProjectType) (string, []string, error) {
 	if projectType == ProjectTypePythonUV {
@@ -74,9 +89,13 @@ func FindPythonBinary(dir string, projectType ProjectType) (string, []string, er
 		}
 	}
 
-	// Defer venv discovery to uv, which honors $VIRTUAL_ENV and walks up to
-	// the enclosing project or workspace — an agent in a subdirectory has no
-	// environment of its own.
+	if venvPython := activatedVenvPython(); venvPython != "" {
+		return venvPython, nil, nil
+	}
+
+	// Defer the rest of venv discovery to uv, which walks up to the enclosing
+	// project or workspace — an agent in a subdirectory has no environment of
+	// its own.
 	if venvPython := uvDiscoverVenv(dir); venvPython != "" {
 		return venvPython, nil, nil
 	}
