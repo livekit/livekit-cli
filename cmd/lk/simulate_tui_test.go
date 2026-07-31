@@ -181,3 +181,18 @@ func TestDetailNavigationKeysLeaveListAlone(t *testing.T) {
 	require.Equal(t, "", m.detailJobID)
 	require.Equal(t, "", m.detailPrinted)
 }
+
+func TestProseWidth(t *testing.T) {
+	// Narrow terminals get what is left after the indent.
+	require.Equal(t, 54, proseWidth(60, 6))
+	require.Equal(t, 74, proseWidth(80, 6))
+
+	// Wide ones are capped: a paragraph set to the full width of a 200-column
+	// terminal is hard to read back across.
+	require.Equal(t, maxProseWidth, proseWidth(200, 6))
+	require.Equal(t, maxProseWidth, proseWidth(300, 8))
+
+	// Unknown or tiny widths still leave a usable measure.
+	require.Equal(t, 40, proseWidth(0, 6))
+	require.Equal(t, 40, proseWidth(20, 6))
+}

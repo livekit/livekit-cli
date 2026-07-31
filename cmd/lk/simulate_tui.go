@@ -120,6 +120,23 @@ var (
 	simSpinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 )
 
+// maxProseWidth caps how wide running text is set. A wide terminal would
+// otherwise wrap a paragraph to ~190 columns, which is hard to read back across
+// and leaves the remainder orphaned on a line of its own.
+const maxProseWidth = 100
+
+// proseWidth is the measure body text wraps to, given the indent it sits at.
+func proseWidth(termWidth, indent int) int {
+	width := termWidth - indent
+	if width > maxProseWidth {
+		width = maxProseWidth
+	}
+	if width < 40 {
+		width = 40
+	}
+	return width
+}
+
 // wrapLines splits text into rows no wider than width; unknown or tiny
 // widths leave the lines unwrapped.
 func wrapLines(text string, width int) []string {
@@ -1544,10 +1561,7 @@ func (m *simulateModel) renderDetail() string {
 	}
 	b.WriteString("\n")
 
-	wrapWidth := m.width - 6
-	if wrapWidth < 40 {
-		wrapWidth = 40
-	}
+	wrapWidth := proseWidth(m.width, 6)
 
 	b.WriteString(boldStyle.Render("  Instructions:"))
 	b.WriteString("\n")
@@ -1713,10 +1727,7 @@ func (m *simulateModel) renderSummary() string {
 		redStyle().Render(fmt.Sprintf("%d failed", summary.Failed)),
 	)
 
-	wrapWidth := m.width - 6
-	if wrapWidth < 40 {
-		wrapWidth = 40
-	}
+	wrapWidth := proseWidth(m.width, 6)
 
 	if summary.GoingWell != "" {
 		b.WriteString(greenStyle().Bold(true).Render("  Going well:"))
@@ -1785,10 +1796,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 	b.WriteString(boldStyle.Render("  Transcript:"))
 	b.WriteString("\n")
 
-	wrapWidth := m.width - 8
-	if wrapWidth < 40 {
-		wrapWidth = 40
-	}
+	wrapWidth := proseWidth(m.width, 8)
 
 	// Tool calls, tool outputs, and handoffs are agent actions, but appear in
 	// the chat history after the user message that triggered them and before
