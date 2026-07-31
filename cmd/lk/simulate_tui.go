@@ -121,8 +121,11 @@ var (
 )
 
 // maxProseWidth caps how wide running text is set. A wide terminal would
-// otherwise wrap a paragraph to ~190 columns, which is hard to read back across
-// and leaves the remainder orphaned on a line of its own.
+// otherwise wrap a paragraph to ~190 columns, well past the 45-75 the eye
+// tracks comfortably between saccades and the 80 WCAG 1.4.8 asks for. The value
+// is clap's default cap; the prose-only renderers sit lower (glamour and go/doc
+// at 80, mandoc at 78, git shortlog at 76) and the ones carrying code or tables
+// sit higher (gh and glow at 120).
 const maxProseWidth = 100
 
 // proseWidth is the measure body text wraps to, given the indent it sits at.
