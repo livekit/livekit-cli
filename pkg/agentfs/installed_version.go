@@ -31,6 +31,53 @@ import (
 // will really run. Static project-file parsing (sdk_version_check.go) is the
 // fallback for when no runtime environment exists.
 
+// uvDiscoverVenv returns the virtual environment interpreter uv resolves from
+// dir, or "" if uv is unavailable or resolves something that is not a venv.
+//
+// With no venv to find, uv answers with a managed standalone interpreter that
+// has no project dependencies installed; a pyvenv.cfg beside the interpreter
+// is what distinguishes the two, and only a venv may pre-empt the search for
+// a system Python the user installed the SDK into.
+func uvDiscoverVenv(dir string) string {
+	uvPath, err := exec.LookPath("uv")
+	if err != nil {
+		return ""
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// --offline: discovery must never reach the network, and never trigger a
+	// Python download as a side effect.
+	cmd := exec.CommandContext(ctx, uvPath, "python", "find", "--offline")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	python := strings.TrimSpace(string(out))
+	if python == "" {
+		return ""
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(python), "..", "pyvenv.cfg")); err != nil {
+		return ""
+	}
+	return python
+}
+
+// activatedVenvPython returns the interpreter of the activated virtual
+// environment, or "" if none is activated. uv discovery already honors
+// $VIRTUAL_ENV; checking it directly keeps that behavior when uv is absent.
+func activatedVenvPython() string {
+	venv := os.Getenv("VIRTUAL_ENV")
+	if venv == "" {
+		return ""
+	}
+	python := filepath.Join(venv, "bin", "python")
+	if _, err := os.Stat(python); err != nil {
+		return ""
+	}
+	return python
+}
+
 // FindPythonBinary locates a Python binary for the given project type.
 func FindPythonBinary(dir string, projectType ProjectType) (string, []string, error) {
 	if projectType == ProjectTypePythonUV {
@@ -40,6 +87,17 @@ func FindPythonBinary(dir string, projectType ProjectType) (string, []string, er
 			// and must never install or upgrade packages as a side effect.
 			return uvPath, []string{"run", "--no-sync", "python"}, nil
 		}
+	}
+
+	if venvPython := activatedVenvPython(); venvPython != "" {
+		return venvPython, nil, nil
+	}
+
+	// Defer the rest of venv discovery to uv, which walks up to the enclosing
+	// project or workspace — an agent in a subdirectory has no environment of
+	// its own.
+	if venvPython := uvDiscoverVenv(dir); venvPython != "" {
+		return venvPython, nil, nil
 	}
 
 	// Check common venv locations
