@@ -562,6 +562,12 @@ func isTerminalRunStatus(status livekit.SimulationRun_Status) bool {
 		status == livekit.SimulationRun_STATUS_CANCELLED
 }
 
+// isTerminalJobStatus reports whether a job will never change again.
+func isTerminalJobStatus(status livekit.SimulationRun_Job_Status) bool {
+	return status == livekit.SimulationRun_Job_STATUS_COMPLETED ||
+		status == livekit.SimulationRun_Job_STATUS_FAILED
+}
+
 // dashboardBaseURL returns the cloud dashboard URL, derived from the API
 // server URL so that --server-url (e.g. staging) is respected without a
 // separate flag. The cloud API and dashboard hosts differ only by "-api":
