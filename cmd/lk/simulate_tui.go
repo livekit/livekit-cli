@@ -1644,20 +1644,33 @@ func (m *simulateModel) renderDetail() string {
 // tea.Println is silently dropped while the alt screen is active (bubbletea
 // standard_renderer.go), so leaving it must be sequenced before any print.
 
-// openDetailCmd leaves the alt screen and prints the job's view.
+// openDetailCmd leaves the alt screen, clears the scrollback, and prints the
+// job's view, so the terminal holds one job at a time instead of every job
+// visited this run. Erasing only the previous job is not possible: once its
+// rows have scrolled off, ESC[3J is the only way to reach them, and it takes
+// the whole scrollback with it.
 func (m *simulateModel) openDetailCmd() tea.Cmd {
 	m.detailPrinted = ""
 	m.detailWidth = m.width
 	return tea.Sequence(tea.ExitAltScreen, m.flushDetail())
 }
 
-// closeDetailCmd returns to the list view, leaving the printed job in the
-// terminal's scrollback.
+// closeDetailCmd returns to the list view. The printed job stays in the
+// scrollback until the next one replaces it.
 func (m *simulateModel) closeDetailCmd() tea.Cmd {
 	m.detailJobID = ""
 	m.detailPrinted = ""
 	return tea.EnterAltScreen
 }
+
+// clearScrollback empties the screen and the scrollback behind it. It rides
+// along with the first print of a job rather than being written to stdout
+// directly: a write inside a Cmd is not ordered against the event loop, so it
+// could land while the alt screen is still active and clear that instead, and
+// the renderer owns stdout while the program is running. bubbletea's
+// ClearScreen is no use here — it leaves the scrollback, which is the part that
+// has to go.
+const clearScrollback = ansi.CursorHomePosition + ansi.EraseEntireScreen + ansi.EraseEntireDisplay
 
 // flushDetail returns a command printing whatever the open job's view has
 // gained since the last call, or nil when it has gained nothing. Callers do not
@@ -1678,9 +1691,13 @@ func (m *simulateModel) flushDetail() tea.Cmd {
 		return nil
 	}
 	tail, ok := detailTail(m.detailPrinted, rendered)
+	first := m.detailPrinted == ""
 	m.detailPrinted = rendered
 	if !ok {
 		return nil
+	}
+	if first {
+		tail = clearScrollback + tail
 	}
 	return tea.Println(tail)
 }
