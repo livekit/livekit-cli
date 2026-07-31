@@ -28,6 +28,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
@@ -123,7 +124,11 @@ var (
 // widths leave the lines unwrapped.
 func wrapLines(text string, width int) []string {
 	if width >= 20 {
-		text = lipgloss.NewStyle().Width(width).Render(text)
+		// ansi.Wrap is the wrap lipgloss itself runs before it aligns. Going
+		// straight to it skips the align pass, which pads every row out to width:
+		// invisible on screen, but a row printed into the scrollback keeps the
+		// padding, and it comes along when the text is selected and copied.
+		text = ansi.Wrap(text, width, "")
 	}
 	return strings.Split(text, "\n")
 }
@@ -1543,7 +1548,6 @@ func (m *simulateModel) renderDetail() string {
 	if wrapWidth < 40 {
 		wrapWidth = 40
 	}
-	wrapStyle := lipgloss.NewStyle().Width(wrapWidth)
 
 	b.WriteString(boldStyle.Render("  Instructions:"))
 	b.WriteString("\n")
@@ -1551,7 +1555,7 @@ func (m *simulateModel) renderDetail() string {
 	if instr == "" {
 		instr = "—"
 	}
-	for line := range strings.SplitSeq(wrapStyle.Render(instr), "\n") {
+	for _, line := range wrapLines(instr, wrapWidth) {
 		b.WriteString("    " + line + "\n")
 	}
 	b.WriteString("\n")
@@ -1562,7 +1566,7 @@ func (m *simulateModel) renderDetail() string {
 	if expect == "" {
 		expect = "—"
 	}
-	for line := range strings.SplitSeq(wrapStyle.Render(expect), "\n") {
+	for _, line := range wrapLines(expect, wrapWidth) {
 		b.WriteString(dimStyle.Render("    "+line) + "\n")
 	}
 
@@ -1571,13 +1575,13 @@ func (m *simulateModel) renderDetail() string {
 		if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
 			b.WriteString(greenStyle().Bold(true).Render("  Result:"))
 			b.WriteString("\n")
-			for line := range strings.SplitSeq(wrapStyle.Render(job.Error), "\n") {
+			for _, line := range wrapLines(job.Error, wrapWidth) {
 				b.WriteString(greenStyle().Render("    "+line) + "\n")
 			}
 		} else {
 			b.WriteString(redStyle().Bold(true).Render("  Error:"))
 			b.WriteString("\n")
-			for line := range strings.SplitSeq(wrapStyle.Render(job.Error), "\n") {
+			for _, line := range wrapLines(job.Error, wrapWidth) {
 				b.WriteString(redStyle().Render("    "+line) + "\n")
 			}
 		}
@@ -1605,10 +1609,8 @@ func (m *simulateModel) renderDetail() string {
 			if maxWidth < 20 {
 				maxWidth = 20
 			}
-			wrapLogStyle := lipgloss.NewStyle().Width(maxWidth)
 			for _, line := range rawLines {
-				wrapped := wrapLogStyle.Render(line)
-				for wl := range strings.SplitSeq(wrapped, "\n") {
+				for _, wl := range wrapLines(line, maxWidth) {
 					b.WriteString("  " + wl + "\n")
 				}
 			}
@@ -1787,7 +1789,6 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 	if wrapWidth < 40 {
 		wrapWidth = 40
 	}
-	wrapStyle := lipgloss.NewStyle().Width(wrapWidth)
 
 	// Tool calls, tool outputs, and handoffs are agent actions, but appear in
 	// the chat history after the user message that triggered them and before
@@ -1828,7 +1829,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 				}
 			}
 			toolOpenedAgentBlock = false
-			for line := range strings.SplitSeq(wrapStyle.Render(text), "\n") {
+			for _, line := range wrapLines(text, wrapWidth) {
 				b.WriteString("      " + line + "\n")
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:

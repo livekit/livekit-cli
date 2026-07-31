@@ -50,6 +50,12 @@ func TestWrapLines(t *testing.T) {
 		require.LessOrEqual(t, lipgloss.Width(line), 30)
 	}
 
+	// Rows carry no right padding: lipgloss pads to the fixed width, which is
+	// invisible on screen but survives into the scrollback and into a copy.
+	for _, line := range wrapLines("aaaa bb\nc", 30) {
+		require.Equal(t, strings.TrimRight(line, " "), line)
+	}
+
 	// Unknown/tiny width: lines pass through untouched.
 	require.Equal(t, []string{"aaaa", "bb"}, wrapLines("aaaa\nbb", 0))
 	require.Equal(t, []string{strings.Repeat("x", 90)}, wrapLines(strings.Repeat("x", 90), 10))
