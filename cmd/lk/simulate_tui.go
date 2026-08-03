@@ -1696,12 +1696,14 @@ func (m *simulateModel) flushDetail() tea.Cmd {
 		return nil
 	}
 	tail, ok := detailTail(m.detailPrinted, rendered)
-	first := m.detailPrinted == ""
+	// a whole-body reprint has to erase what it replaces, or the copy it
+	// supersedes stays in the scrollback above it
+	reprint := m.detailPrinted == "" || !strings.HasPrefix(rendered, m.detailPrinted)
 	m.detailPrinted = rendered
 	if !ok {
 		return nil
 	}
-	if first {
+	if reprint {
 		tail = clearScrollback + tail
 	}
 	return tea.Println(tail)
