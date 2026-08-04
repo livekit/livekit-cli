@@ -2077,7 +2077,7 @@ func (m *simulateModel) renderHint() string {
 			if m.showToolOutput {
 				parts = append(parts, "t hide tool output")
 			} else {
-				parts = append(parts, "t tool output")
+				parts = append(parts, "t show tool output")
 			}
 		}
 		if m.hasLogs() {
