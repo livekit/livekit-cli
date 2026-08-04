@@ -564,9 +564,13 @@ func uploadSource(ctx context.Context, client *lksdk.AgentSimulationClient, runI
 	return nil
 }
 
-func getSimulationRun(ctx context.Context, client *lksdk.AgentSimulationClient, runID string) (*livekit.SimulationRun, error) {
+// getSimulationRun carries the project ID because the server accepts either an
+// API key or a session token, and the session path cannot resolve the run
+// without it.
+func getSimulationRun(ctx context.Context, client *lksdk.AgentSimulationClient, runID, projectID string) (*livekit.SimulationRun, error) {
 	resp, err := client.GetSimulationRun(ctx, &livekit.SimulationRun_Get_Request{
 		SimulationRunId: runID,
+		ProjectId:       projectID,
 	})
 	if err != nil {
 		return nil, err

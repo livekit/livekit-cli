@@ -427,7 +427,7 @@ func (m *simulateModel) runSetup() tea.Cmd {
 	if c.mode == modeView {
 		ctx, cancel := context.WithTimeout(context.Background(), simulationAPITimeout)
 		defer cancel()
-		run, err := getSimulationRun(ctx, m.config.client, m.config.viewModeRunID)
+		run, err := getSimulationRun(ctx, m.config.client, m.config.viewModeRunID, m.config.pc.ProjectId)
 		if err != nil {
 			m.err = err
 		}
@@ -569,7 +569,7 @@ func (m *simulateModel) pollSimulation() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), simulationAPITimeout)
 		defer cancel()
-		run, err := getSimulationRun(ctx, m.config.client, m.runID)
+		run, err := getSimulationRun(ctx, m.config.client, m.runID, m.config.pc.ProjectId)
 		return simulationRunMsg{run: run, err: err}
 	}
 }
