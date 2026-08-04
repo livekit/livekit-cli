@@ -90,3 +90,27 @@ func TestRunSimulateRejectsEmptyExportRunID(t *testing.T) {
 	err := cmd.Run(context.Background(), []string{"lk", "--export="})
 	require.EqualError(t, err, "--export requires a run ID")
 }
+
+func TestViewCommandHintCarriesProject(t *testing.T) {
+	origArgs := os.Args
+	origServerURL := serverURL
+	origProject := simulateProjectFlag
+	t.Cleanup(func() {
+		os.Args = origArgs
+		serverURL = origServerURL
+		simulateProjectFlag = origProject
+	})
+	os.Args = []string{"lk"}
+	serverURL = "https://cloud-api.example.com"
+	simulateProjectFlag = "my-project"
+
+	require.Equal(t,
+		"lk agent simulate --view run_123 --project my-project"+
+			" --server-url https://cloud-api.example.com",
+		viewCommandHint("run_123"))
+
+	simulateProjectFlag = ""
+	require.Equal(t,
+		"lk agent simulate --view run_123 --server-url https://cloud-api.example.com",
+		viewCommandHint("run_123"))
+}
