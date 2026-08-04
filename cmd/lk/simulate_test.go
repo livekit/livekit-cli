@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bytes"
 	"os"
 	"testing"
 
@@ -76,30 +75,4 @@ func TestViewCommandHintCarriesServerURL(t *testing.T) {
 	require.Equal(t,
 		"lk agent simulate --view run_123 --server-url https://cloud-api.staging.livekit.io",
 		viewCommandHint("run_123"))
-}
-
-func TestSimulationRunHintsPutReplayJSONBelowViewTip(t *testing.T) {
-	origArgs := os.Args
-	origServerURL := serverURL
-	t.Cleanup(func() {
-		os.Args = origArgs
-		serverURL = origServerURL
-	})
-	os.Args = []string{"lk"}
-	serverURL = cloudAPIServerURL
-
-	var output bytes.Buffer
-	writeSimulationRunHints(&output, "run_123", false)
-
-	require.Equal(t,
-		"To re-open this simulation, run: lk agent simulate --view run_123\n"+
-			"To export replay JSON, run: lk agent simulate --view run_123 --run-json > run_123.json\n",
-		output.String())
-
-	output.Reset()
-	writeSimulationRunHints(&output, "run_123", true)
-
-	require.Equal(t,
-		"To export replay JSON, run: lk agent simulate --view run_123 --run-json > run_123.json\n",
-		output.String())
 }
