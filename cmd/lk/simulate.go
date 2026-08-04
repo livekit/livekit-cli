@@ -47,6 +47,9 @@ func init() {
 
 var (
 	simulateProjectConfig *config.ProjectConfig
+	// simulateProjectFlag is the explicit --project name, if any; the hints must
+	// reproduce it or a re-open resolves against a different project.
+	simulateProjectFlag string
 )
 
 const (
@@ -68,6 +71,7 @@ var simulateCommand = &cli.Command{
 			return nil, err
 		}
 		simulateProjectConfig = pc
+		simulateProjectFlag = cmd.String("project")
 		return nil, nil
 	},
 	Action: runSimulate,
@@ -588,8 +592,9 @@ func dashboardBaseURL() string {
 }
 
 // viewCommandHint returns the command to re-open a simulation run, carrying
-// over --server-url when the run lives somewhere other than the default cloud
-// API (e.g. staging), so the printed command targets the same environment.
+// over --project and --server-url when the run lives somewhere other than the
+// default project and cloud API (e.g. staging), so the printed command targets
+// the same project and environment.
 // The binary name comes from argv[0] so a renamed or path-qualified lk is
 // reproduced verbatim.
 func viewCommandHint(runID string) string {
@@ -598,6 +603,9 @@ func viewCommandHint(runID string) string {
 		binary = os.Args[0]
 	}
 	hint := binary + " agent simulate --view " + runID
+	if simulateProjectFlag != "" {
+		hint += " --project " + simulateProjectFlag
+	}
 	if serverURL != cloudAPIServerURL {
 		hint += " --server-url " + serverURL
 	}
