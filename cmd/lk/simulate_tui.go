@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -222,9 +223,12 @@ type simulateModel struct {
 	// been emitted for it, so a re-render only ever appends its new tail.
 	// detailWidth is the width that text was wrapped at: scrollback cannot be
 	// re-wrapped, so a resize rebaselines instead of reprinting.
-	detailPrinted   string
-	detailWidth     int
-	showLogs        bool
+	detailPrinted string
+	detailWidth   int
+	showLogs      bool
+	// tool call arguments and outputs are clipped to a preview in the
+	// transcript; showToolDetail renders them whole instead
+	showToolDetail  bool
 	logScrollOff    int
 	logPinned       bool
 	logPinnedTotal  int
@@ -895,6 +899,10 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.showLogs = !m.showLogs
 		m.logScrollOff = 0
 		m.logPinned = false
+	case "t":
+		if m.detailJobID != "" {
+			m.showToolDetail = !m.showToolDetail
+		}
 	case "d":
 		if m.detailJobID == "" && m.hasDescription() {
 			m.showDescription = !m.showDescription
@@ -1866,25 +1874,16 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
-			args := fc.Arguments
-			if len(args) > 80 {
-				args = args[:80] + "..."
-			}
 			ensureAgentBlock()
-			b.WriteString(dimStyle.Render(fmt.Sprintf("      ƒ %s(%s)", fc.Name, args)))
-			b.WriteString("\n")
+			m.writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, m.toolValue(fc.Arguments)), wrapWidth)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			fco := v.FunctionCallOutput
 			output := strings.TrimSpace(fco.Output)
 			if output == "" {
 				continue
 			}
-			if len(output) > 80 {
-				output = output[:80] + "..."
-			}
 			ensureAgentBlock()
-			b.WriteString(dimStyle.Render(fmt.Sprintf("      → %s", output)))
-			b.WriteString("\n")
+			m.writeToolItem(&b, "→ "+m.toolValue(output), wrapWidth)
 		case *agent.ChatContext_ChatItem_AgentHandoff:
 			h := v.AgentHandoff
 			old := ""
@@ -1897,6 +1896,72 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 		}
 	}
 	return b.String()
+}
+
+// toolPreviewLen is how much of a tool call's arguments or output the
+// transcript shows when tool detail is collapsed — enough to tell two calls
+// apart without a lookup table's worth of JSON burying the conversation.
+const toolPreviewLen = 80
+
+// toolValue is a tool argument blob or output as the transcript should carry
+// it: clipped to a preview, or whole when tool detail is expanded.
+func (m *simulateModel) toolValue(s string) string {
+	if m.showToolDetail || len(s) <= toolPreviewLen {
+		return s
+	}
+	// clip on a rune boundary; arguments and outputs carry guest names,
+	// currency symbols, and quoted speech
+	clipped := s[:toolPreviewLen]
+	for len(clipped) > 0 && !utf8.ValidString(clipped) {
+		clipped = clipped[:len(clipped)-1]
+	}
+	return clipped + "..."
+}
+
+// writeToolItem appends one tool line to b. Collapsed, it is a single row and
+// the terminal deals with any overflow. Expanded, it wraps to the transcript's
+// measure with its continuations indented under the marker, so a long output
+// stays readable as a block instead of one run-on row.
+func (m *simulateModel) writeToolItem(b *strings.Builder, text string, wrapWidth int) {
+	if !m.showToolDetail {
+		b.WriteString(dimStyle.Render("      " + text))
+		b.WriteString("\n")
+		return
+	}
+	for i, line := range wrapLines(text, wrapWidth-2) {
+		indent := "      "
+		if i > 0 {
+			indent = "        "
+		}
+		b.WriteString(dimStyle.Render(indent + line))
+		b.WriteString("\n")
+	}
+}
+
+// hasToolDetail reports whether the open job's transcript holds anything the
+// tool-detail toggle would reveal, so the hint is only offered when it does
+// something.
+func (m *simulateModel) hasToolDetail(jobID string) bool {
+	if m.summary == nil || m.summary.ChatHistory == nil {
+		return false
+	}
+	chatCtx, ok := m.summary.ChatHistory[jobID]
+	if !ok || chatCtx == nil {
+		return false
+	}
+	for _, item := range chatCtx.Items {
+		switch v := item.Item.(type) {
+		case *agent.ChatContext_ChatItem_FunctionCall:
+			if len(v.FunctionCall.Arguments) > toolPreviewLen {
+				return true
+			}
+		case *agent.ChatContext_ChatItem_FunctionCallOutput:
+			if len(strings.TrimSpace(v.FunctionCallOutput.Output)) > toolPreviewLen {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func chatMessageText(msg *agent.ChatMessage) string {
@@ -2018,6 +2083,13 @@ func (m *simulateModel) renderHint() string {
 	case m.detailJobID != "":
 		// the job view is in the terminal's scrollback, which scrolls itself
 		parts = append(parts, "c copy scenario · ←/ESC back to list")
+		if m.hasToolDetail(m.detailJobID) {
+			if m.showToolDetail {
+				parts = append(parts, "t clip tool detail")
+			} else {
+				parts = append(parts, "t full tool detail")
+			}
+		}
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
