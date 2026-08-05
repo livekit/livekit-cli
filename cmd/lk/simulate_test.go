@@ -21,6 +21,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
+
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 )
 
 func TestSimulateConfigWarnings(t *testing.T) {
@@ -94,22 +96,23 @@ func TestRunSimulateRejectsEmptyExportRunID(t *testing.T) {
 func TestViewCommandHintCarriesProject(t *testing.T) {
 	origArgs := os.Args
 	origServerURL := serverURL
-	origProject := simulateProjectFlag
+	origProject := simulateProjectConfig
 	t.Cleanup(func() {
 		os.Args = origArgs
 		serverURL = origServerURL
-		simulateProjectFlag = origProject
+		simulateProjectConfig = origProject
 	})
 	os.Args = []string{"lk"}
 	serverURL = "https://cloud-api.example.com"
-	simulateProjectFlag = "my-project"
+	simulateProjectConfig = &config.ProjectConfig{Name: "my-project"}
 
 	require.Equal(t,
 		"lk agent simulate --view run_123 --project my-project"+
 			" --server-url https://cloud-api.example.com",
 		viewCommandHint("run_123"))
 
-	simulateProjectFlag = ""
+	// credentials from flags or the environment resolve no project name
+	simulateProjectConfig = &config.ProjectConfig{}
 	require.Equal(t,
 		"lk agent simulate --view run_123 --server-url https://cloud-api.example.com",
 		viewCommandHint("run_123"))

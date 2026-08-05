@@ -47,9 +47,6 @@ func init() {
 
 var (
 	simulateProjectConfig *config.ProjectConfig
-	// simulateProjectFlag is the explicit --project name, if any; the hints must
-	// reproduce it or a re-open resolves against a different project.
-	simulateProjectFlag string
 )
 
 const (
@@ -71,7 +68,6 @@ var simulateCommand = &cli.Command{
 			return nil, err
 		}
 		simulateProjectConfig = pc
-		simulateProjectFlag = cmd.String("project")
 		return nil, nil
 	},
 	Action: runSimulate,
@@ -604,18 +600,22 @@ func dashboardBaseURL() string {
 }
 
 // simulateCommandHint returns a `simulate` command targeting an existing run,
-// carrying over --project and --server-url when the run lives somewhere other
-// than the default project and cloud API (e.g. staging), so the printed command
-// targets the same project and environment. The binary name comes from argv[0]
-// so a renamed or path-qualified lk is reproduced verbatim.
+// carrying over the resolved project and --server-url when the run lives
+// somewhere other than the default cloud API (e.g. staging), so the printed
+// command targets the same project and environment regardless of which project
+// is default when it is run. The project name is empty when credentials came
+// from flags or the environment rather than a configured project, and no
+// --project would resolve those.
+// The binary name comes from argv[0] so a renamed or path-qualified lk is
+// reproduced verbatim.
 func simulateCommandHint(flag, runID string) string {
 	binary := "lk"
 	if len(os.Args) > 0 && os.Args[0] != "" {
 		binary = os.Args[0]
 	}
 	hint := binary + " agent simulate " + flag + " " + runID
-	if simulateProjectFlag != "" {
-		hint += " --project " + simulateProjectFlag
+	if simulateProjectConfig != nil && simulateProjectConfig.Name != "" {
+		hint += " --project " + simulateProjectConfig.Name
 	}
 	if serverURL != cloudAPIServerURL {
 		hint += " --server-url " + serverURL
