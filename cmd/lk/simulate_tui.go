@@ -23,7 +23,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/atotto/clipboard"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -1875,7 +1874,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
 			ensureAgentBlock()
-			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, clipToolValue(fc.Arguments)), wrapWidth)
+			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, fc.Arguments), wrapWidth)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			if !m.showToolOutput {
 				continue
@@ -1899,25 +1898,6 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 		}
 	}
 	return b.String()
-}
-
-// toolPreviewLen is how much of a tool call's arguments the transcript shows —
-// enough to tell two calls apart without a lookup table's worth of JSON burying
-// the conversation. Tool outputs are shown whole, or not at all.
-const toolPreviewLen = 80
-
-// clipToolValue is a tool argument blob as the transcript carries it.
-func clipToolValue(s string) string {
-	if len(s) <= toolPreviewLen {
-		return s
-	}
-	// clip on a rune boundary; arguments carry guest names, currency symbols,
-	// and quoted speech
-	clipped := s[:toolPreviewLen]
-	for len(clipped) > 0 && !utf8.ValidString(clipped) {
-		clipped = clipped[:len(clipped)-1]
-	}
-	return clipped + "..."
 }
 
 // writeToolItem appends one tool line to b, wrapped to the transcript's measure
