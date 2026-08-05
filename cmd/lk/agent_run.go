@@ -34,15 +34,33 @@ import (
 // cloudConsoleURL returns the LiveKit Cloud agents-console URL for a worker that
 // registered against wsURL with the given agent name, or "" when wsURL is not a
 // LiveKit Cloud project (e.g. a self-hosted or localhost server), in which case
-// no console link is shown.
-func cloudConsoleURL(wsURL, agentName string) string {
+// no console link is shown. A non-empty deployment is deep-linked so the console
+// targets that deployment; an empty deployment targets production.
+func cloudConsoleURL(wsURL, agentName, deployment string) string {
+	consoleHost, sub := cloudProject(wsURL)
+	if consoleHost == "" {
+		return ""
+	}
+	link := fmt.Sprintf(
+		"https://%s/projects/d_%s/agents/console?agentName=%s&autoStart=false",
+		consoleHost, sub, url.QueryEscape(agentName),
+	)
+	if deployment != "" {
+		link += "&deployment=" + url.QueryEscape(deployment)
+	}
+	return link
+}
+
+// cloudAgentURL returns the LiveKit Cloud analytics URL for a specific agent, or
+// "" when wsURL is not a recognized LiveKit Cloud project.
+func cloudAgentURL(wsURL, agentID string) string {
 	consoleHost, sub := cloudProject(wsURL)
 	if consoleHost == "" {
 		return ""
 	}
 	return fmt.Sprintf(
-		"https://%s/projects/d_%s/agents/console?agentName=%s&autoStart=false",
-		consoleHost, sub, url.QueryEscape(agentName),
+		"https://%s/projects/d_%s/agents/%s",
+		consoleHost, sub, url.QueryEscape(agentID),
 	)
 }
 
@@ -306,7 +324,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	// agent in the browser. Printed once, even across hot reloads (link stays valid).
 	var consoleLinkOnce sync.Once
 	cfg.OnServerInfo = func(agentName, wsURL string) {
-		if link := cloudConsoleURL(wsURL, agentName); link != "" {
+		if link := cloudConsoleURL(wsURL, agentName, ""); link != "" {
 			consoleLinkOnce.Do(func() {
 				// Delay briefly so the link prints after the agent's own startup
 				// logs rather than getting buried in them.
