@@ -99,7 +99,7 @@ var simulateCommand = &cli.Command{
 			Usage: "Open a pre-existing simulation",
 		},
 		&cli.StringFlag{
-			Name:  "dump-json",
+			Name:  "export",
 			Usage: "Print the run with run `ID` and its exact per-job chat contexts as JSON. Nothing is run or polled: the run must already be finished",
 		},
 		&cli.StringFlag{
@@ -276,10 +276,10 @@ func buildTaskExists(projectDir string) (bool, error) {
 func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 
-	// --dump-json is a one-shot read of a finished run, so it short-circuits
+	// --export is a one-shot read of a finished run, so it short-circuits
 	// every other flag: no agent, no run creation, no polling.
-	if dumpRunID := cmd.String("dump-json"); dumpRunID != "" {
-		return dumpSimulationRunJSON(ctx, pc, dumpRunID)
+	if exportRunID := cmd.String("export"); exportRunID != "" {
+		return exportSimulationRunJSON(ctx, pc, exportRunID)
 	}
 
 	numSimulations := int32(cmd.Int("num-simulations"))
@@ -606,8 +606,8 @@ func viewCommandHint(runID string) string {
 	return simulateCommandHint("--view", runID)
 }
 
-func dumpJSONCommandHint(runID string) string {
-	return simulateCommandHint("--dump-json", runID) + " > " + runID + ".json"
+func exportCommandHint(runID string) string {
+	return simulateCommandHint("--export", runID) + " > " + runID + ".json"
 }
 
 // In view mode the re-open hint would echo the command the user just ran, so
@@ -616,7 +616,7 @@ func writeSimulationRunHints(w io.Writer, runID string, viewing bool) {
 	if !viewing {
 		fmt.Fprintf(w, "To re-open this simulation, run: %s\n", viewCommandHint(runID))
 	}
-	fmt.Fprintf(w, "To export replay JSON, run: %s\n", dumpJSONCommandHint(runID))
+	fmt.Fprintf(w, "To export replay JSON, run: %s\n", exportCommandHint(runID))
 }
 
 func simulationDashboardURL(projectID, runID string) string {

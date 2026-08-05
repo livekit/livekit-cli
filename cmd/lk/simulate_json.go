@@ -74,11 +74,11 @@ func writeSimulationRunJSON(w io.Writer, run *livekit.SimulationRun) error {
 	return nil
 }
 
-// dumpSimulationRunJSON exports an existing run in a single fetch. An
+// exportSimulationRunJSON exports an existing run in a single fetch. An
 // unfinished run is an error rather than a wait, so stdout is either a
 // complete export or nothing; an unknown run ID surfaces the API's not-found
 // error.
-func dumpSimulationRunJSON(ctx context.Context, pc *config.ProjectConfig, runID string) error {
+func exportSimulationRunJSON(ctx context.Context, pc *config.ProjectConfig, runID string) error {
 	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
 	fetchCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
