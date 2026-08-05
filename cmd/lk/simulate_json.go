@@ -15,11 +15,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/protocol/livekit"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -68,4 +72,30 @@ func writeSimulationRunJSON(w io.Writer, run *livekit.SimulationRun) error {
 		return fmt.Errorf("encode simulation run JSON: %w", err)
 	}
 	return nil
+}
+
+// dumpSimulationRunJSON exports an existing run in a single fetch. An
+// unfinished run is an error rather than a wait, so stdout is either a
+// complete export or nothing; an unknown run ID surfaces the API's not-found
+// error.
+func dumpSimulationRunJSON(ctx context.Context, pc *config.ProjectConfig, runID string) error {
+	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+
+	fetchCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
+	defer cancel()
+	run, err := getSimulationRun(fetchCtx, client, runID)
+	if err != nil {
+		return err
+	}
+
+	if !isTerminalRunStatus(run.GetStatus()) {
+		return fmt.Errorf(
+			"simulation run %s is still in progress (%s); follow it with %s",
+			runID,
+			strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
+			viewCommandHint(runID),
+		)
+	}
+
+	return writeSimulationRunJSON(out.ResultWriter(), run)
 }

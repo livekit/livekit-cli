@@ -71,11 +71,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Setup ---
 
-	reportOut := out.ResultWriter()
-	if config.runJSON {
-		reportOut = io.Discard
-	}
-	report := newSimLog(reportOut, out.StatusWriter())
+	report := newSimLog(out.ResultWriter(), out.StatusWriter())
 	report.BeginSetup()
 
 	for _, w := range config.warnings {
@@ -199,11 +195,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Results ---
 
-	if config.runJSON {
-		if err := writeSimulationRunJSON(out.ResultWriter(), run); err != nil {
-			return err
-		}
-	} else if !out.Interactive() {
+	if !out.Interactive() {
 		report.Results(run, agent)
 	} else {
 		// A terminal is watching; we just couldn't open the TUI (e.g. stdin
@@ -252,11 +244,7 @@ func runSimulateCIView(ctx context.Context, config *simulateConfig) error {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 	defer stop()
 
-	reportOut := out.ResultWriter()
-	if config.runJSON {
-		reportOut = io.Discard
-	}
-	report := newSimLog(reportOut, out.StatusWriter())
+	report := newSimLog(out.ResultWriter(), out.StatusWriter())
 	runID := config.viewModeRunID
 
 	ticker := time.NewTicker(simulationPollInterval)
@@ -287,13 +275,7 @@ func runSimulateCIView(ctx context.Context, config *simulateConfig) error {
 		}
 	}
 
-	if config.runJSON {
-		if err := writeSimulationRunJSON(out.ResultWriter(), run); err != nil {
-			return err
-		}
-	} else {
-		report.Results(run, nil)
-	}
+	report.Results(run, nil)
 
 	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
 		out.Statusf("Dashboard:  %s", url)

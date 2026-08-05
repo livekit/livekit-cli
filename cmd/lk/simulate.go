@@ -98,9 +98,9 @@ var simulateCommand = &cli.Command{
 			Name:  "view",
 			Usage: "Open a pre-existing simulation",
 		},
-		&cli.BoolFlag{
-			Name:  "run-json",
-			Usage: "Print the completed run and exact per-job chat contexts as JSON",
+		&cli.StringFlag{
+			Name:  "dump-json",
+			Usage: "Print the run with run `ID` and its exact per-job chat contexts as JSON. Nothing is run or polled: the run must already be finished",
 		},
 		&cli.StringFlag{
 			Name:  "agent-name",
@@ -187,7 +187,6 @@ type simulateConfig struct {
 	scenarioGroup  *livekit.ScenarioGroup
 	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
 	viewModeRunID  string   // non-empty when --view opens a pre-existing run
-	runJSON        bool     // emit a machine-readable run/transcript artifact on stdout
 	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
 	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
 	// TODO (steveyoon): add agent deployment support
@@ -276,6 +275,12 @@ func buildTaskExists(projectDir string) (bool, error) {
 
 func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
+
+	// --dump-json is a one-shot read of a finished run, so it short-circuits
+	// every other flag: no agent, no run creation, no polling.
+	if dumpRunID := cmd.String("dump-json"); dumpRunID != "" {
+		return dumpSimulationRunJSON(ctx, pc, dumpRunID)
+	}
 
 	numSimulations := int32(cmd.Int("num-simulations"))
 	concurrency := int32(cmd.Int("concurrency"))
@@ -379,12 +384,11 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		scenarioGroup:  scenarioGroup,
 		scenariosPath:  scenariosPath,
 		viewModeRunID:  runID,
-		runJSON:        cmd.Bool("run-json"),
 		liveAgent:      liveAgent,
 		warnings:       simulateConfigWarnings(mode, numSimulations),
 	}
 
-	if simCfg.runJSON || !isInteractive() {
+	if !isInteractive() {
 		return runSimulateCI(ctx, simCfg)
 	}
 	return runSimulateTUI(simCfg)
@@ -602,8 +606,8 @@ func viewCommandHint(runID string) string {
 	return simulateCommandHint("--view", runID)
 }
 
-func runJSONCommandHint(runID string) string {
-	return viewCommandHint(runID) + " --run-json > " + runID + ".json"
+func dumpJSONCommandHint(runID string) string {
+	return simulateCommandHint("--dump-json", runID) + " > " + runID + ".json"
 }
 
 // In view mode the re-open hint would echo the command the user just ran, so
@@ -612,7 +616,7 @@ func writeSimulationRunHints(w io.Writer, runID string, viewing bool) {
 	if !viewing {
 		fmt.Fprintf(w, "To re-open this simulation, run: %s\n", viewCommandHint(runID))
 	}
-	fmt.Fprintf(w, "To export replay JSON, run: %s\n", runJSONCommandHint(runID))
+	fmt.Fprintf(w, "To export replay JSON, run: %s\n", dumpJSONCommandHint(runID))
 }
 
 func simulationDashboardURL(projectID, runID string) string {
