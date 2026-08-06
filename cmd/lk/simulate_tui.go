@@ -1867,13 +1867,11 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
-			args := fc.Arguments
-			if len(args) > 80 {
-				args = args[:80] + "..."
-			}
 			ensureAgentBlock()
-			b.WriteString(dimStyle.Render(fmt.Sprintf("      ƒ %s(%s)", fc.Name, args)))
-			b.WriteString("\n")
+			call := fmt.Sprintf("ƒ %s(%s)", fc.Name, fc.Arguments)
+			for _, line := range wrapLines(call, wrapWidth) {
+				b.WriteString(dimStyle.Render("      "+line) + "\n")
+			}
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			fco := v.FunctionCallOutput
 			output := strings.TrimSpace(fco.Output)
