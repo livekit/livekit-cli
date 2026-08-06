@@ -39,7 +39,13 @@ type simulationRunJSON struct {
 }
 
 // protojson randomizes whitespace; the outer encoder re-indents, normalizing it.
-var simulationRunMarshaler = protojson.MarshalOptions{UseProtoNames: true}
+// EmitDefaultValues keeps zero-valued scalars in the export: a proto3 implicit-presence
+// bool is indistinguishable from unset once omitted, so a consumer reading a dropped
+// is_error has to guess it.
+var simulationRunMarshaler = protojson.MarshalOptions{
+	UseProtoNames:     true,
+	EmitDefaultValues: true,
+}
 
 func writeSimulationRunJSON(w io.Writer, run *livekit.SimulationRun) error {
 	if run == nil {
