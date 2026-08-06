@@ -225,8 +225,9 @@ type simulateModel struct {
 	detailPrinted string
 	detailWidth   int
 	showLogs      bool
-	// tool outputs are off the transcript unless asked for: they are payloads
-	// written for the model, and at full length they bury the conversation
+	// tool arguments and outputs are off the transcript unless asked for: they
+	// are payloads written for the model, and at full length they bury the
+	// conversation
 	showToolDetail  bool
 	logScrollOff    int
 	logPinned       bool
@@ -1874,7 +1875,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
 			ensureAgentBlock()
-			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, fc.Arguments), wrapWidth)
+			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, m.toolArguments(fc.Arguments)), wrapWidth)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			if !m.showToolDetail {
 				continue
@@ -1900,6 +1901,20 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 	return b.String()
 }
 
+// toolArguments renders a call's arguments for the transcript. Collapsed, an
+// argument list stands for itself with an ellipsis: the call's name is what
+// reads the conversation, and full JSON payloads bury it.
+func (m *simulateModel) toolArguments(arguments string) string {
+	arguments = strings.TrimSpace(arguments)
+	if m.showToolDetail {
+		return arguments
+	}
+	if arguments == "" || arguments == "{}" {
+		return ""
+	}
+	return "…"
+}
+
 // writeToolItem appends one tool line to b, wrapped to the transcript's measure
 // with its continuations indented under the marker, so a long output stays
 // readable as a block instead of one run-on row.
@@ -1914,8 +1929,9 @@ func writeToolItem(b *strings.Builder, text string, wrapWidth int) {
 	}
 }
 
-// hasToolDetail reports whether the open job's transcript holds a tool output,
-// so the hint is only offered when the toggle would show something.
+// hasToolDetail reports whether the open job's transcript holds a tool call's
+// arguments or output, so the hint is only offered when the toggle would show
+// something.
 func (m *simulateModel) hasToolDetail(jobID string) bool {
 	if m.summary == nil || m.summary.ChatHistory == nil {
 		return false
@@ -1925,7 +1941,12 @@ func (m *simulateModel) hasToolDetail(jobID string) bool {
 		return false
 	}
 	for _, item := range chatCtx.Items {
-		if v, ok := item.Item.(*agent.ChatContext_ChatItem_FunctionCallOutput); ok {
+		switch v := item.Item.(type) {
+		case *agent.ChatContext_ChatItem_FunctionCall:
+			if args := strings.TrimSpace(v.FunctionCall.Arguments); args != "" && args != "{}" {
+				return true
+			}
+		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			if strings.TrimSpace(v.FunctionCallOutput.Output) != "" {
 				return true
 			}
@@ -2055,9 +2076,9 @@ func (m *simulateModel) renderHint() string {
 		parts = append(parts, "c copy scenario · ←/ESC back to list")
 		if m.hasToolDetail(m.detailJobID) {
 			if m.showToolDetail {
-				parts = append(parts, "t hide tool output")
+				parts = append(parts, "t hide tool detail")
 			} else {
-				parts = append(parts, "t show tool output")
+				parts = append(parts, "t show tool detail")
 			}
 		}
 		if m.hasLogs() {
