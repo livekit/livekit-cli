@@ -663,6 +663,16 @@ func simulationJobDashboardURL(projectID, runID, jobID string) string {
 	return fmt.Sprintf("%s?job=%s", base, jobID)
 }
 
+// simulationItemDashboardURL points at a single chat item within a job, the
+// target of a <ref> citation in the run summary.
+func simulationItemDashboardURL(projectID, runID, jobID, itemID string) string {
+	base := simulationJobDashboardURL(projectID, runID, jobID)
+	if base == "" || itemID == "" {
+		return base
+	}
+	return fmt.Sprintf("%s&item=%s", base, itemID)
+}
+
 func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

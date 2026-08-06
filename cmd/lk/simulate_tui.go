@@ -1750,11 +1750,14 @@ func (m *simulateModel) renderSummary() string {
 	)
 
 	wrapWidth := proseWidth(m.width, 6)
+	link := func(text string) string {
+		return linkSummaryRefs(text, m.projectID(), m.runID)
+	}
 
 	if summary.GoingWell != "" {
 		b.WriteString(greenStyle().Bold(true).Render("  Going well:"))
 		b.WriteString("\n")
-		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.GoingWell)
+		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(link(summary.GoingWell))
 		for line := range strings.SplitSeq(wrapped, "\n") {
 			b.WriteString("    " + line + "\n")
 		}
@@ -1764,7 +1767,7 @@ func (m *simulateModel) renderSummary() string {
 	if summary.ToImprove != "" {
 		b.WriteString(yellowStyle().Bold(true).Render("  To improve:"))
 		b.WriteString("\n")
-		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(summary.ToImprove)
+		wrapped := lipgloss.NewStyle().Width(wrapWidth).Render(link(summary.ToImprove))
 		for line := range strings.SplitSeq(wrapped, "\n") {
 			b.WriteString("    " + line + "\n")
 		}
@@ -1780,7 +1783,7 @@ func (m *simulateModel) renderSummary() string {
 		}
 		for i, issue := range summary.Issues {
 			prefix := fmt.Sprintf("    %d. ", i+1)
-			descWrapped := lipgloss.NewStyle().Width(issueWrap).Render(issue.Description)
+			descWrapped := lipgloss.NewStyle().Width(issueWrap).Render(link(issue.Description))
 			for j, line := range strings.Split(descWrapped, "\n") {
 				if j == 0 {
 					b.WriteString(prefix + line + "\n")
@@ -1789,7 +1792,7 @@ func (m *simulateModel) renderSummary() string {
 				}
 			}
 			if issue.Suggestion != "" {
-				sugWrapped := lipgloss.NewStyle().Width(issueWrap).Render("Suggestion: " + issue.Suggestion)
+				sugWrapped := lipgloss.NewStyle().Width(issueWrap).Render("Suggestion: " + link(issue.Suggestion))
 				for line := range strings.SplitSeq(sugWrapped, "\n") {
 					b.WriteString(dimStyle.Render(strings.Repeat(" ", len(prefix))+line) + "\n")
 				}
