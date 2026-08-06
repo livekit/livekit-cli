@@ -84,11 +84,11 @@ func runSimulateTUI(config *simulateConfig) error {
 	}
 
 	if m.config.mode == modeView {
-		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: %s\n", viewCommandHint(m.config.viewModeRunID))
+		writeSimulationRunHints(out.StatusWriter(), m.config.viewModeRunID, true)
 	} else if m.runID != "" && !m.runFinished {
 		cancelSimulationRun(config.client, m.runID)
 	} else if m.runID != "" {
-		fmt.Fprintf(os.Stderr, "To re-open this simulation, run: %s\n", viewCommandHint(m.runID))
+		writeSimulationRunHints(out.StatusWriter(), m.runID, false)
 	}
 
 	if runErr != nil {

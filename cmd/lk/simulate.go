@@ -55,6 +55,20 @@ const (
 	simulationAPITimeout   = 10 * time.Second
 )
 
+// Flags that shape or follow a run, so --export has nothing to apply them to.
+// cli.MutuallyExclusiveFlags cannot express this: its check stops at a group's
+// first unset flag, so only the first flag of a group is ever enforced.
+// --quiet and --yes stay compatible — a wrapper script passes those to every
+// command.
+var exportConflictingFlags = []string{
+	"view",
+	"scenarios",
+	"audio",
+	"num-simulations",
+	"concurrency",
+	"agent-name",
+}
+
 var simulateCommand = &cli.Command{
 	Name:      "simulate",
 	Usage:     "Run agent simulations against LiveKit Cloud",
@@ -96,7 +110,11 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "view",
-			Usage: "Open a pre-existing simulation",
+			Usage: "Open the pre-existing simulation run with run `ID`",
+		},
+		&cli.StringFlag{
+			Name:  "export",
+			Usage: "Print run `ID` and its exact per-job chat contexts as JSON. Nothing is run or polled: the run must already be finished",
 		},
 		&cli.StringFlag{
 			Name:  "agent-name",
@@ -271,6 +289,21 @@ func buildTaskExists(projectDir string) (bool, error) {
 
 func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
+
+	// --export is a one-shot read of a finished run, so it short-circuits
+	// every other flag: no agent, no run creation, no polling.
+	if cmd.IsSet("export") {
+		exportRunID := cmd.String("export")
+		if exportRunID == "" {
+			return fmt.Errorf("--export requires a run ID")
+		}
+		for _, conflicting := range exportConflictingFlags {
+			if cmd.IsSet(conflicting) {
+				return fmt.Errorf("--export only reads a finished run; it cannot be combined with --%s", conflicting)
+			}
+		}
+		return exportSimulationRunJSON(ctx, pc, exportRunID)
+	}
 
 	numSimulations := int32(cmd.Int("num-simulations"))
 	concurrency := int32(cmd.Int("concurrency"))
@@ -581,21 +614,38 @@ func dashboardBaseURL() string {
 	return dashboardURL
 }
 
-// viewCommandHint returns the command to re-open a simulation run, carrying
-// over --server-url when the run lives somewhere other than the default cloud
-// API (e.g. staging), so the printed command targets the same environment.
-// The binary name comes from argv[0] so a renamed or path-qualified lk is
-// reproduced verbatim.
-func viewCommandHint(runID string) string {
+// simulateCommandHint returns a `simulate` command targeting an existing run,
+// carrying over --server-url when the run lives somewhere other than the
+// default cloud API (e.g. staging), so the printed command targets the same
+// environment. The binary name comes from argv[0] so a renamed or
+// path-qualified lk is reproduced verbatim.
+func simulateCommandHint(flag, runID string) string {
 	binary := "lk"
 	if len(os.Args) > 0 && os.Args[0] != "" {
 		binary = os.Args[0]
 	}
-	hint := binary + " agent simulate --view " + runID
+	hint := binary + " agent simulate " + flag + " " + runID
 	if serverURL != cloudAPIServerURL {
 		hint += " --server-url " + serverURL
 	}
 	return hint
+}
+
+func viewCommandHint(runID string) string {
+	return simulateCommandHint("--view", runID)
+}
+
+func exportCommandHint(runID string) string {
+	return simulateCommandHint("--export", runID) + " > " + runID + ".json"
+}
+
+// In view mode the re-open hint would echo the command the user just ran, so
+// only the export hint is worth printing.
+func writeSimulationRunHints(w io.Writer, runID string, viewing bool) {
+	if !viewing {
+		fmt.Fprintf(w, "To re-open this simulation, run: %s\n", viewCommandHint(runID))
+	}
+	fmt.Fprintf(w, "To export replay JSON, run: %s\n", exportCommandHint(runID))
 }
 
 func simulationDashboardURL(projectID, runID string) string {
@@ -643,22 +693,27 @@ func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, faile
 	return
 }
 
-func decodeRunSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
+func decodeRunSummaryStrict(run *livekit.SimulationRun) (*livekit.SimulationRunSummary, error) {
 	if run == nil || len(run.SummaryZstd) == 0 {
-		return nil
+		return nil, nil
 	}
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("create zstd decoder: %w", err)
 	}
 	defer dec.Close()
 	raw, err := dec.DecodeAll(run.SummaryZstd, nil)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("decompress summary: %w", err)
 	}
 	summary := &livekit.SimulationRunSummary{}
 	if err := proto.Unmarshal(raw, summary); err != nil {
-		return nil
+		return nil, fmt.Errorf("unmarshal summary: %w", err)
 	}
+	return summary, nil
+}
+
+func decodeRunSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
+	summary, _ := decodeRunSummaryStrict(run)
 	return summary
 }

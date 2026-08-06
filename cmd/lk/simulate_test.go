@@ -15,10 +15,12 @@
 package main
 
 import (
+	"context"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
 )
 
 func TestSimulateConfigWarnings(t *testing.T) {
@@ -75,4 +77,60 @@ func TestViewCommandHintCarriesServerURL(t *testing.T) {
 	require.Equal(t,
 		"lk agent simulate --view run_123 --server-url https://cloud-api.staging.livekit.io",
 		viewCommandHint("run_123"))
+}
+
+func TestRunSimulateRejectsEmptyExportRunID(t *testing.T) {
+	cmd := &cli.Command{
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "export"},
+		},
+		Action: runSimulate,
+	}
+
+	err := cmd.Run(context.Background(), []string{"lk", "--export="})
+	require.EqualError(t, err, "--export requires a run ID")
+}
+
+func TestRunSimulateRejectsExportWithRunFlags(t *testing.T) {
+	// A value per conflicting flag, so a flag added to exportConflictingFlags
+	// without one fails here rather than going untested.
+	values := map[string]string{
+		"view":            "run_456",
+		"scenarios":       "scenarios.yaml",
+		"audio":           "true",
+		"num-simulations": "3",
+		"concurrency":     "2",
+		"agent-name":      "my-agent",
+	}
+
+	for _, conflicting := range exportConflictingFlags {
+		t.Run(conflicting, func(t *testing.T) {
+			value, ok := values[conflicting]
+			require.True(t, ok, "no test value for --%s", conflicting)
+
+			// Fresh flags per case: cli.Flag carries its own IsSet state, so
+			// reusing simulateCommand's would leak between subtests.
+			cmd := &cli.Command{
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "export"},
+					&cli.StringFlag{Name: "view"},
+					&cli.StringFlag{Name: "scenarios"},
+					&cli.BoolFlag{Name: "audio"},
+					&cli.IntFlag{Name: "num-simulations"},
+					&cli.IntFlag{Name: "concurrency"},
+					&cli.StringFlag{Name: "agent-name"},
+				},
+				Action: runSimulate,
+			}
+
+			err := cmd.Run(context.Background(), []string{
+				"lk", "--export=run_123", "--" + conflicting + "=" + value,
+			})
+			require.EqualError(
+				t,
+				err,
+				"--export only reads a finished run; it cannot be combined with --"+conflicting,
+			)
+		})
+	}
 }
