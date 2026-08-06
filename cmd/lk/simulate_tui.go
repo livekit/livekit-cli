@@ -227,7 +227,7 @@ type simulateModel struct {
 	showLogs      bool
 	// tool outputs are off the transcript unless asked for: they are payloads
 	// written for the model, and at full length they bury the conversation
-	showToolOutput  bool
+	showToolDetail  bool
 	logScrollOff    int
 	logPinned       bool
 	logPinnedTotal  int
@@ -900,7 +900,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.logPinned = false
 	case "t":
 		if m.detailJobID != "" {
-			m.showToolOutput = !m.showToolOutput
+			m.showToolDetail = !m.showToolDetail
 		}
 	case "d":
 		if m.detailJobID == "" && m.hasDescription() {
@@ -1876,7 +1876,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			ensureAgentBlock()
 			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, fc.Arguments), wrapWidth)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
-			if !m.showToolOutput {
+			if !m.showToolDetail {
 				continue
 			}
 			fco := v.FunctionCallOutput
@@ -1914,9 +1914,9 @@ func writeToolItem(b *strings.Builder, text string, wrapWidth int) {
 	}
 }
 
-// hasToolOutput reports whether the open job's transcript holds a tool output,
+// hasToolDetail reports whether the open job's transcript holds a tool output,
 // so the hint is only offered when the toggle would show something.
-func (m *simulateModel) hasToolOutput(jobID string) bool {
+func (m *simulateModel) hasToolDetail(jobID string) bool {
 	if m.summary == nil || m.summary.ChatHistory == nil {
 		return false
 	}
@@ -2053,8 +2053,8 @@ func (m *simulateModel) renderHint() string {
 	case m.detailJobID != "":
 		// the job view is in the terminal's scrollback, which scrolls itself
 		parts = append(parts, "c copy scenario · ←/ESC back to list")
-		if m.hasToolOutput(m.detailJobID) {
-			if m.showToolOutput {
+		if m.hasToolDetail(m.detailJobID) {
+			if m.showToolDetail {
 				parts = append(parts, "t hide tool output")
 			} else {
 				parts = append(parts, "t show tool output")
