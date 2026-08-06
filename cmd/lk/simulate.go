@@ -668,22 +668,27 @@ func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, faile
 	return
 }
 
-func decodeRunSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
+func decodeRunSummaryStrict(run *livekit.SimulationRun) (*livekit.SimulationRunSummary, error) {
 	if run == nil || len(run.SummaryZstd) == 0 {
-		return nil
+		return nil, nil
 	}
 	dec, err := zstd.NewReader(nil)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("create zstd decoder: %w", err)
 	}
 	defer dec.Close()
 	raw, err := dec.DecodeAll(run.SummaryZstd, nil)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("decompress summary: %w", err)
 	}
 	summary := &livekit.SimulationRunSummary{}
 	if err := proto.Unmarshal(raw, summary); err != nil {
-		return nil
+		return nil, fmt.Errorf("unmarshal summary: %w", err)
 	}
+	return summary, nil
+}
+
+func decodeRunSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
+	summary, _ := decodeRunSummaryStrict(run)
 	return summary
 }

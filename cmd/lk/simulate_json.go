@@ -48,7 +48,11 @@ func writeSimulationRunJSON(w io.Writer, run *livekit.SimulationRun) error {
 
 	export := simulationRunJSON{Version: simulationRunJSONVersion}
 
-	if summary := decodeRunSummary(run); summary != nil {
+	summary, err := decodeRunSummaryStrict(run)
+	if err != nil {
+		return fmt.Errorf("decode simulation run summary: %w", err)
+	}
+	if summary != nil {
 		encoded, err := simulationRunMarshaler.Marshal(summary)
 		if err != nil {
 			return fmt.Errorf("encode simulation run summary: %w", err)
