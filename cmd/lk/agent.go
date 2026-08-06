@@ -879,8 +879,69 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to deploy agent: %w", err)
 	}
 
-	out.Status("Deployed agent")
+	reportDeployment(ctx, agentId, agentDeployment)
 	return nil
+}
+
+// reportDeployment prints a summary of a completed deployment — the agent name,
+// the target deployment, and links to the agent details page and the agent
+// console for the deployment. It resolves the name with a single ListAgents
+// call; on any failure it falls back to the minimal status line so a successful
+// deploy is never reported as a failure.
+//
+// The version is intentionally omitted: the deploy API doesn't return the new
+// version, the agent-level version reflects the production deployment (wrong
+// for a non-production deploy), and the per-deployment version isn't populated
+// until the agent is scraped. There is no source that is both correct and ready
+// synchronously at deploy time, so reporting it would risk showing the wrong
+// version.
+func reportDeployment(ctx context.Context, agentID, deployment string) {
+	targetDeployment := deployment
+	if targetDeployment == "" {
+		targetDeployment = "production"
+	}
+
+	// Read the agent-level name, not the per-region AgentDeployments entry: the
+	// per-region fields aren't populated until the agent is scraped (a reconcile
+	// that runs shortly after deploy), so right after a deploy they can be empty.
+	// The agent-level name is set from agent metadata and is what `lk agent list`
+	// shows immediately after deploy.
+	agentName := ""
+	if res, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{AgentId: agentID}); err == nil {
+		for _, agent := range res.Agents {
+			if agent.AgentId != agentID {
+				continue
+			}
+			agentName = agent.AgentName
+		}
+	}
+
+	summary := "Completed deployment of agent"
+	if agentName != "" {
+		summary += fmt.Sprintf(" %s", util.Accented(agentName))
+	}
+	summary += fmt.Sprintf(" to %s", util.Accented(targetDeployment))
+	out.Status(summary)
+
+	// Links use the same ws URL the deploy ran against; both are "" for
+	// non-cloud projects, in which case nothing is printed.
+	wsURL := project.URL
+	if link := cloudAgentURL(wsURL, agentID); link != "" {
+		out.Statusf("Agent details: %s", consoleLinkLabel(link))
+	}
+	if link := cloudConsoleURL(wsURL, agentName, deployment); link != "" {
+		out.Statusf("Test in Agent Console: %s", consoleLinkLabel(link))
+	}
+}
+
+// consoleLinkLabel accents a URL and makes it a clickable OSC 8 hyperlink on
+// interactive terminals, matching how `lk agent start` renders console links.
+func consoleLinkLabel(link string) string {
+	label := util.Accented(link)
+	if out.Interactive() {
+		label = util.Hyperlink(link, label)
+	}
+	return label
 }
 
 func promoteAgent(ctx context.Context, cmd *cli.Command) error {

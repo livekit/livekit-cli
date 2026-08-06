@@ -398,23 +398,47 @@ func TestCloudProject(t *testing.T) {
 func TestCloudConsoleURL(t *testing.T) {
 	assert.Equal(t,
 		"https://cloud.livekit.io/projects/d_dztest2/agents/console?agentName=my-agent&autoStart=false",
-		cloudConsoleURL("wss://dztest2.livekit.cloud", "my-agent"),
+		cloudConsoleURL("wss://dztest2.livekit.cloud", "my-agent", ""),
 	)
 	// staging projects point at the staging console host
 	assert.Equal(t,
 		"https://cloud.staging.livekit.io/projects/d_dztest2/agents/console?agentName=my-agent&autoStart=false",
-		cloudConsoleURL("wss://dztest2.staging.livekit.cloud", "my-agent"),
+		cloudConsoleURL("wss://dztest2.staging.livekit.cloud", "my-agent", ""),
 	)
 	// empty agent name (the common dev default) still yields a usable link
 	assert.Equal(t,
 		"https://cloud.livekit.io/projects/d_dztest2/agents/console?agentName=&autoStart=false",
-		cloudConsoleURL("wss://dztest2.livekit.cloud", ""),
+		cloudConsoleURL("wss://dztest2.livekit.cloud", "", ""),
 	)
 	// agent names are query-escaped
 	assert.Equal(t,
 		"https://cloud.livekit.io/projects/d_dztest2/agents/console?agentName=my+agent%2F1&autoStart=false",
-		cloudConsoleURL("wss://dztest2.livekit.cloud", "my agent/1"),
+		cloudConsoleURL("wss://dztest2.livekit.cloud", "my agent/1", ""),
+	)
+	// a non-production deployment is deep-linked via the deployment param
+	assert.Equal(t,
+		"https://cloud.livekit.io/projects/d_dztest2/agents/console?agentName=my-agent&autoStart=false&deployment=staging",
+		cloudConsoleURL("wss://dztest2.livekit.cloud", "my-agent", "staging"),
+	)
+	// deployment values are query-escaped
+	assert.Equal(t,
+		"https://cloud.livekit.io/projects/d_dztest2/agents/console?agentName=my-agent&autoStart=false&deployment=pre%2Fprod",
+		cloudConsoleURL("wss://dztest2.livekit.cloud", "my-agent", "pre/prod"),
 	)
 	// non-cloud URLs produce no link
-	assert.Empty(t, cloudConsoleURL("http://localhost:7880", "my-agent"))
+	assert.Empty(t, cloudConsoleURL("http://localhost:7880", "my-agent", ""))
+}
+
+func TestCloudAgentURL(t *testing.T) {
+	assert.Equal(t,
+		"https://cloud.livekit.io/projects/d_dztest2/agents/CA_abc123",
+		cloudAgentURL("wss://dztest2.livekit.cloud", "CA_abc123"),
+	)
+	// staging projects point at the staging console host
+	assert.Equal(t,
+		"https://cloud.staging.livekit.io/projects/d_dztest2/agents/CA_abc123",
+		cloudAgentURL("wss://dztest2.staging.livekit.cloud", "CA_abc123"),
+	)
+	// non-cloud URLs produce no link
+	assert.Empty(t, cloudAgentURL("http://localhost:7880", "CA_abc123"))
 }
