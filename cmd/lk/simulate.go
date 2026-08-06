@@ -278,7 +278,11 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 
 	// --export is a one-shot read of a finished run, so it short-circuits
 	// every other flag: no agent, no run creation, no polling.
-	if exportRunID := cmd.String("export"); exportRunID != "" {
+	if cmd.IsSet("export") {
+		exportRunID := cmd.String("export")
+		if exportRunID == "" {
+			return fmt.Errorf("--export requires a run ID")
+		}
 		return exportSimulationRunJSON(ctx, pc, exportRunID)
 	}
 
