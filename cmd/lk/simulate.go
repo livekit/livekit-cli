@@ -55,6 +55,20 @@ const (
 	simulationAPITimeout   = 10 * time.Second
 )
 
+// Flags that shape or follow a run, so --export has nothing to apply them to.
+// cli.MutuallyExclusiveFlags cannot express this: its check stops at a group's
+// first unset flag, so only the first flag of a group is ever enforced.
+// --quiet and --yes stay compatible — a wrapper script passes those to every
+// command.
+var exportConflictingFlags = []string{
+	"view",
+	"scenarios",
+	"audio",
+	"num-simulations",
+	"concurrency",
+	"agent-name",
+}
+
 var simulateCommand = &cli.Command{
 	Name:      "simulate",
 	Usage:     "Run agent simulations against LiveKit Cloud",
@@ -96,11 +110,11 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "view",
-			Usage: "Open a pre-existing simulation",
+			Usage: "Open the pre-existing simulation run with run `ID`",
 		},
 		&cli.StringFlag{
 			Name:  "export",
-			Usage: "Print the run with run `ID` and its exact per-job chat contexts as JSON. Nothing is run or polled: the run must already be finished",
+			Usage: "Print run `ID` and its exact per-job chat contexts as JSON. Nothing is run or polled: the run must already be finished",
 		},
 		&cli.StringFlag{
 			Name:  "agent-name",
@@ -282,6 +296,11 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		exportRunID := cmd.String("export")
 		if exportRunID == "" {
 			return fmt.Errorf("--export requires a run ID")
+		}
+		for _, conflicting := range exportConflictingFlags {
+			if cmd.IsSet(conflicting) {
+				return fmt.Errorf("--export only reads a finished run; it cannot be combined with --%s", conflicting)
+			}
 		}
 		return exportSimulationRunJSON(ctx, pc, exportRunID)
 	}
