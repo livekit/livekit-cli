@@ -146,7 +146,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	for {
 		pollCtx, pollCancel := context.WithTimeout(ctx, simulationAPITimeout)
-		run, err = getSimulationRun(pollCtx, config.client, runID)
+		run, err = getSimulationRun(pollCtx, config.client, runID, config.pc.ProjectId)
 		pollCancel()
 
 		if err != nil {
@@ -254,7 +254,7 @@ func runSimulateCIView(ctx context.Context, config *simulateConfig) error {
 	for {
 		pollCtx, pollCancel := context.WithTimeout(ctx, simulationAPITimeout)
 		var err error
-		run, err = getSimulationRun(pollCtx, config.client, runID)
+		run, err = getSimulationRun(pollCtx, config.client, runID, config.pc.ProjectId)
 		pollCancel()
 		if err != nil {
 			if ctx.Err() != nil {

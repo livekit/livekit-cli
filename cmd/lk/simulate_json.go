@@ -93,7 +93,7 @@ func exportSimulationRunJSON(ctx context.Context, pc *config.ProjectConfig, runI
 
 	fetchCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
 	defer cancel()
-	run, err := getSimulationRun(fetchCtx, client, runID)
+	run, err := getSimulationRun(fetchCtx, client, runID, pc.ProjectId)
 	if err != nil {
 		return err
 	}

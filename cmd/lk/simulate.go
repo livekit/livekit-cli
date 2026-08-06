@@ -560,9 +560,13 @@ func uploadSource(ctx context.Context, client *lksdk.AgentSimulationClient, runI
 	return nil
 }
 
-func getSimulationRun(ctx context.Context, client *lksdk.AgentSimulationClient, runID string) (*livekit.SimulationRun, error) {
+// getSimulationRun carries the project ID because the server accepts either an
+// API key or a session token, and the session path cannot resolve the run
+// without it.
+func getSimulationRun(ctx context.Context, client *lksdk.AgentSimulationClient, runID, projectID string) (*livekit.SimulationRun, error) {
 	resp, err := client.GetSimulationRun(ctx, &livekit.SimulationRun_Get_Request{
 		SimulationRunId: runID,
+		ProjectId:       projectID,
 	})
 	if err != nil {
 		return nil, err
@@ -596,16 +600,23 @@ func dashboardBaseURL() string {
 }
 
 // simulateCommandHint returns a `simulate` command targeting an existing run,
-// carrying over --server-url when the run lives somewhere other than the
-// default cloud API (e.g. staging), so the printed command targets the same
-// environment. The binary name comes from argv[0] so a renamed or
-// path-qualified lk is reproduced verbatim.
+// carrying over the resolved project and --server-url when the run lives
+// somewhere other than the default cloud API (e.g. staging), so the printed
+// command targets the same project and environment regardless of which project
+// is default when it is run. The project name is empty when credentials came
+// from flags or the environment rather than a configured project, and no
+// --project would resolve those.
+// The binary name comes from argv[0] so a renamed or path-qualified lk is
+// reproduced verbatim.
 func simulateCommandHint(flag, runID string) string {
 	binary := "lk"
 	if len(os.Args) > 0 && os.Args[0] != "" {
 		binary = os.Args[0]
 	}
 	hint := binary + " agent simulate " + flag + " " + runID
+	if simulateProjectConfig != nil && simulateProjectConfig.Name != "" {
+		hint += " --project " + simulateProjectConfig.Name
+	}
 	if serverURL != cloudAPIServerURL {
 		hint += " --server-url " + serverURL
 	}

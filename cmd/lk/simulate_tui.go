@@ -222,9 +222,13 @@ type simulateModel struct {
 	// been emitted for it, so a re-render only ever appends its new tail.
 	// detailWidth is the width that text was wrapped at: scrollback cannot be
 	// re-wrapped, so a resize rebaselines instead of reprinting.
-	detailPrinted   string
-	detailWidth     int
-	showLogs        bool
+	detailPrinted string
+	detailWidth   int
+	showLogs      bool
+	// tool arguments and outputs are off the transcript unless asked for: they
+	// are payloads written for the model, and at full length they bury the
+	// conversation
+	showToolDetail  bool
 	logScrollOff    int
 	logPinned       bool
 	logPinnedTotal  int
@@ -423,7 +427,7 @@ func (m *simulateModel) runSetup() tea.Cmd {
 	if c.mode == modeView {
 		ctx, cancel := context.WithTimeout(context.Background(), simulationAPITimeout)
 		defer cancel()
-		run, err := getSimulationRun(ctx, m.config.client, m.config.viewModeRunID)
+		run, err := getSimulationRun(ctx, m.config.client, m.config.viewModeRunID, m.config.pc.ProjectId)
 		if err != nil {
 			m.err = err
 		}
@@ -565,7 +569,7 @@ func (m *simulateModel) pollSimulation() tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), simulationAPITimeout)
 		defer cancel()
-		run, err := getSimulationRun(ctx, m.config.client, m.runID)
+		run, err := getSimulationRun(ctx, m.config.client, m.runID, m.config.pc.ProjectId)
 		return simulationRunMsg{run: run, err: err}
 	}
 }
@@ -895,6 +899,10 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.showLogs = !m.showLogs
 		m.logScrollOff = 0
 		m.logPinned = false
+	case "t":
+		if m.detailJobID != "" {
+			m.showToolDetail = !m.showToolDetail
+		}
 	case "d":
 		if m.detailJobID == "" && m.hasDescription() {
 			m.showDescription = !m.showDescription
@@ -1696,12 +1704,14 @@ func (m *simulateModel) flushDetail() tea.Cmd {
 		return nil
 	}
 	tail, ok := detailTail(m.detailPrinted, rendered)
-	first := m.detailPrinted == ""
+	// a whole-body reprint has to erase what it replaces, or the copy it
+	// supersedes stays in the scrollback above it
+	reprint := m.detailPrinted == "" || !strings.HasPrefix(rendered, m.detailPrinted)
 	m.detailPrinted = rendered
 	if !ok {
 		return nil
 	}
-	if first {
+	if reprint {
 		tail = clearScrollback + tail
 	}
 	return tea.Println(tail)
@@ -1864,25 +1874,19 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
-			args := fc.Arguments
-			if len(args) > 80 {
-				args = args[:80] + "..."
-			}
 			ensureAgentBlock()
-			b.WriteString(dimStyle.Render(fmt.Sprintf("      ƒ %s(%s)", fc.Name, args)))
-			b.WriteString("\n")
+			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, m.toolArguments(fc.Arguments)), wrapWidth)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
+			if !m.showToolDetail {
+				continue
+			}
 			fco := v.FunctionCallOutput
 			output := strings.TrimSpace(fco.Output)
 			if output == "" {
 				continue
 			}
-			if len(output) > 80 {
-				output = output[:80] + "..."
-			}
 			ensureAgentBlock()
-			b.WriteString(dimStyle.Render(fmt.Sprintf("      → %s", output)))
-			b.WriteString("\n")
+			writeToolItem(&b, "→ "+output, wrapWidth)
 		case *agent.ChatContext_ChatItem_AgentHandoff:
 			h := v.AgentHandoff
 			old := ""
@@ -1895,6 +1899,60 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 		}
 	}
 	return b.String()
+}
+
+// toolArguments renders a call's arguments for the transcript. Collapsed, an
+// argument list stands for itself with an ellipsis: the call's name is what
+// reads the conversation, and full JSON payloads bury it.
+func (m *simulateModel) toolArguments(arguments string) string {
+	arguments = strings.TrimSpace(arguments)
+	if m.showToolDetail {
+		return arguments
+	}
+	if arguments == "" || arguments == "{}" {
+		return ""
+	}
+	return "…"
+}
+
+// writeToolItem appends one tool line to b, wrapped to the transcript's measure
+// with its continuations indented under the marker, so a long output stays
+// readable as a block instead of one run-on row.
+func writeToolItem(b *strings.Builder, text string, wrapWidth int) {
+	for i, line := range wrapLines(text, wrapWidth-2) {
+		indent := "      "
+		if i > 0 {
+			indent = "        "
+		}
+		b.WriteString(dimStyle.Render(indent + line))
+		b.WriteString("\n")
+	}
+}
+
+// hasToolDetail reports whether the open job's transcript holds a tool call's
+// arguments or output, so the hint is only offered when the toggle would show
+// something.
+func (m *simulateModel) hasToolDetail(jobID string) bool {
+	if m.summary == nil || m.summary.ChatHistory == nil {
+		return false
+	}
+	chatCtx, ok := m.summary.ChatHistory[jobID]
+	if !ok || chatCtx == nil {
+		return false
+	}
+	for _, item := range chatCtx.Items {
+		switch v := item.Item.(type) {
+		case *agent.ChatContext_ChatItem_FunctionCall:
+			if args := strings.TrimSpace(v.FunctionCall.Arguments); args != "" && args != "{}" {
+				return true
+			}
+		case *agent.ChatContext_ChatItem_FunctionCallOutput:
+			if strings.TrimSpace(v.FunctionCallOutput.Output) != "" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func chatMessageText(msg *agent.ChatMessage) string {
@@ -2016,6 +2074,13 @@ func (m *simulateModel) renderHint() string {
 	case m.detailJobID != "":
 		// the job view is in the terminal's scrollback, which scrolls itself
 		parts = append(parts, "c copy scenario · ←/ESC back to list")
+		if m.hasToolDetail(m.detailJobID) {
+			if m.showToolDetail {
+				parts = append(parts, "t hide tool detail")
+			} else {
+				parts = append(parts, "t show tool detail")
+			}
+		}
 		if m.hasLogs() {
 			if m.showLogs {
 				parts = append(parts, "Ctrl+L hide logs")
