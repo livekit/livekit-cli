@@ -48,10 +48,6 @@ var simulationRunMarshaler = protojson.MarshalOptions{
 }
 
 func writeSimulationRunJSON(w io.Writer, run *livekit.SimulationRun) error {
-	if run == nil {
-		return fmt.Errorf("cannot export a nil simulation run")
-	}
-
 	export := simulationRunJSON{Version: simulationRunJSONVersion}
 
 	summary, err := decodeRunSummaryStrict(run)
@@ -96,6 +92,10 @@ func exportSimulationRunJSON(ctx context.Context, pc *config.ProjectConfig, runI
 	run, err := getSimulationRun(fetchCtx, client, runID)
 	if err != nil {
 		return err
+	}
+	// An empty response would otherwise read as an unfinished run below.
+	if run == nil {
+		return fmt.Errorf("simulation run %s came back empty", runID)
 	}
 
 	if !isTerminalRunStatus(run.GetStatus()) {
