@@ -15,10 +15,12 @@
 package main
 
 import (
+	"context"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
 )
 
 func TestSimulateConfigWarnings(t *testing.T) {
@@ -75,4 +77,16 @@ func TestViewCommandHintCarriesServerURL(t *testing.T) {
 	require.Equal(t,
 		"lk agent simulate --view run_123 --server-url https://cloud-api.staging.livekit.io",
 		viewCommandHint("run_123"))
+}
+
+func TestRunSimulateRejectsEmptyExportRunID(t *testing.T) {
+	cmd := &cli.Command{
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "export"},
+		},
+		Action: runSimulate,
+	}
+
+	err := cmd.Run(context.Background(), []string{"lk", "--export="})
+	require.EqualError(t, err, "--export requires a run ID")
 }
