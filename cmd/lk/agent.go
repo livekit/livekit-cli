@@ -251,6 +251,7 @@ var (
 					Before: createAgentClient,
 					Action: deployAgent,
 					Flags: []cli.Flag{
+						idFlag(false),
 						attributesFlag,
 						attributeFlag,
 						noDefaultAttributesFlag,
