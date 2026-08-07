@@ -94,6 +94,14 @@ func main() {
 
 	checkForLegacyName()
 
+	fmt.Printf("╭────────────╮\n"+
+		"│ ██      ▒▒ │\n"+
+		"│ ██    ▒▒   │\n"+
+		"│ ██  ▒▒     │\n"+
+		"│ ██    ▒▒   │ LiveKit CLI v%s\n"+
+		"│ ██████  ▒▒ │ https://livekit.io\n"+
+		"╰────────────╯\n", livekitcli.Version)
+
 	if err := app.Run(ctx, os.Args); err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
 		// Render line by line: a multiline Render pads every line with
