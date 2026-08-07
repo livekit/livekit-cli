@@ -232,6 +232,11 @@ type simulateModel struct {
 	logScrollOff    int
 	logPinned       bool
 	logPinnedTotal  int
+	// wrapped whole-run log lines, kept across frames; logWrapped is how many
+	// raw lines they cover and logWrapWidth the width they were wrapped at.
+	logVisual    []string
+	logWrapped   int
+	logWrapWidth int
 	showDescription bool
 	descScrollOff   int
 	// whole-page scrolling for the main list view: the full content (header,
@@ -1984,17 +1989,31 @@ func (m *simulateModel) renderLogs(roomName string) string {
 	wrapStyle := lipgloss.NewStyle().Width(maxWidth)
 
 	var rawLines []string
+	var visualLines []string
 	if roomName != "" {
 		rawLines = m.agent.RecentRoomLogsByPrefix(0, roomName)
-	} else {
-		rawLines = m.agent.RecentLogs(0)
-	}
-	var visualLines []string
-	for _, line := range rawLines {
-		wrapped := wrapStyle.Render(line)
-		for wl := range strings.SplitSeq(wrapped, "\n") {
-			visualLines = append(visualLines, wl)
+		for _, line := range rawLines {
+			for wl := range strings.SplitSeq(wrapStyle.Render(line), "\n") {
+				visualLines = append(visualLines, wl)
+			}
 		}
+	} else {
+		// The whole-run log is append-only and reaches six figures of lines on a
+		// large run, so only the new tail is wrapped: wrapping all of it every
+		// frame costs ~8µs/line and stalls the render loop.
+		rawLines = m.agent.RecentLogs(0)
+		if m.logWrapWidth != maxWidth || m.logWrapped > len(rawLines) {
+			m.logWrapWidth = maxWidth
+			m.logWrapped = 0
+			m.logVisual = nil
+		}
+		for _, line := range rawLines[m.logWrapped:] {
+			for wl := range strings.SplitSeq(wrapStyle.Render(line), "\n") {
+				m.logVisual = append(m.logVisual, wl)
+			}
+		}
+		m.logWrapped = len(rawLines)
+		visualLines = m.logVisual
 	}
 
 	total := len(visualLines)
