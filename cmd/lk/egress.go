@@ -778,7 +778,7 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	templateURL := fmt.Sprintf(
-		"%s/?url=%s&layout=%s&token=%s",
+		"%s?url=%s&layout=%s&token=%s",
 		cmd.String("base-url"), url.QueryEscape(serverURL), cmd.String("layout"), token,
 	)
 	if err := browser.OpenURL(templateURL); err != nil {
