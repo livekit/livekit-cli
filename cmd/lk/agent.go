@@ -1938,9 +1938,14 @@ func getClientSettings(ctx context.Context) (map[string]string, error) {
 // picker populated from server-reported available_regions when --region is
 // unset and the CLI is interactive. In non-interactive mode an unset --region
 // is an error so invocations fail loudly instead of silently defaulting.
+//
+// Regions the server flags in residency_warning_regions are annotated in the
+// picker and confirmed before use; see confirmRegionResidency.
 func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string) (string, error) {
+	warnRegions := splitSetting(settingsMap["residency_warning_regions"])
+
 	if region := cmd.String("region"); region != "" {
-		return region, nil
+		return region, confirmRegionResidency(cmd, region, settingsMap["project_data_region"], warnRegions)
 	}
 
 	availableRegionsStr, ok := settingsMap["available_regions"]
@@ -1950,10 +1955,7 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 		return "us-east", nil
 	}
 
-	regionOptions := strings.Split(availableRegionsStr, ",")
-	for i, r := range regionOptions {
-		regionOptions[i] = strings.TrimSpace(r)
-	}
+	regionOptions := splitSetting(availableRegionsStr)
 	slices.Sort(regionOptions)
 	slices.Reverse(regionOptions)
 
@@ -1961,17 +1963,82 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 		return "", fmt.Errorf("non-interactive mode: --region flag must be specified, available regions: %v", regionOptions)
 	}
 
+	options := make([]huh.Option[string], 0, len(regionOptions))
+	for _, r := range regionOptions {
+		label := r
+		if slices.Contains(warnRegions, r) {
+			label = r + " " + util.Dimmed("(WARNING: data residency)")
+		}
+		options = append(options, huh.NewOption(label, r))
+	}
+
 	var region string
 	if err := huh.NewSelect[string]().
 		Title(title).
-		Options(huh.NewOptions(regionOptions...)...).
+		Options(options...).
 		Value(&region).
 		WithTheme(util.Theme).
 		Run(); err != nil {
 		return "", err
 	}
+	if err := confirmRegionResidency(cmd, region, settingsMap["project_data_region"], warnRegions); err != nil {
+		return "", err
+	}
 	out.Statusf("Using region [%s]", util.Accented(region))
 	return region, nil
+}
+
+// confirmRegionResidency asks the user to confirm deploying into a region the
+// server flagged as a data-residency risk for this project — an EU region while
+// the project stores its data elsewhere, meaning an agent that may serve EU end
+// users records their data outside the EU.
+//
+// Deploying there is permitted, so this only prompts; in non-interactive mode it
+// warns and proceeds rather than failing, since the region was named explicitly
+// and blocking would break existing automation. An older server sends no warning
+// regions, in which case nothing here fires.
+func confirmRegionResidency(cmd *cli.Command, region, dataRegion string, warnRegions []string) error {
+	if !slices.Contains(warnRegions, region) {
+		return nil
+	}
+
+	detail := fmt.Sprintf(
+		"Your project data region is [%s]. Customer data may be stored outside of [eu].",
+		dataRegion,
+	)
+	if SkipPrompts(cmd) {
+		out.Warnf("Deploying to [%s]. %s", region, detail)
+		return nil
+	}
+
+	confirmed := false
+	if err := huh.NewForm(huh.NewGroup(util.Confirm().
+		Title(fmt.Sprintf("Are you sure you want to deploy to %s?", util.Accented(region))).
+		Description(detail).
+		Affirmative("Deploy").
+		Negative("Cancel").
+		Value(&confirmed))).
+		WithTheme(util.Theme).
+		Run(); err != nil {
+		return err
+	}
+	if !confirmed {
+		return fmt.Errorf("deployment to %s cancelled", region)
+	}
+	return nil
+}
+
+// splitSetting parses a comma-separated client setting into trimmed values,
+// returning nil for an absent or empty setting.
+func splitSetting(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	for i, p := range parts {
+		parts[i] = strings.TrimSpace(p)
+	}
+	return parts
 }
 
 func requireConfig(workingDir, tomlFilename string) (bool, error) {
