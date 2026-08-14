@@ -602,3 +602,31 @@ func TestResolveAttributes(t *testing.T) {
 		})
 	}
 }
+
+// An older server sends neither residency_warning_regions nor project_data_region.
+// The advisory must then be inert rather than erroring or prompting, so a new CLI
+// keeps working against a server that predates it.
+func TestConfirmRegionResidencyWithoutServerSettings(t *testing.T) {
+	settingsMap := map[string]string{"available_regions": "us-east,eu-central"}
+	warnRegions := splitSetting(settingsMap["residency_warning_regions"])
+	require.Empty(t, warnRegions)
+
+	err := confirmRegionResidency(&cli.Command{}, "eu-central",
+		settingsMap["project_data_region"], warnRegions)
+	require.NoError(t, err)
+}
+
+// An EU project gets the param with an empty value; it must behave like absent.
+func TestConfirmRegionResidencyWithEmptyWarningRegions(t *testing.T) {
+	warnRegions := splitSetting("")
+	require.Empty(t, warnRegions)
+	require.NoError(t, confirmRegionResidency(&cli.Command{}, "eu-central", "eu", warnRegions))
+}
+
+// A flagged region without a TTY (or with --yes) warns and proceeds rather than
+// blocking, so existing automation deploying into the EU keeps working.
+func TestConfirmRegionResidencyProceedsWhenPromptsSkipped(t *testing.T) {
+	warnRegions := splitSetting("eu-central")
+	require.Equal(t, []string{"eu-central"}, warnRegions)
+	require.NoError(t, confirmRegionResidency(&cli.Command{}, "eu-central", "us", warnRegions))
+}

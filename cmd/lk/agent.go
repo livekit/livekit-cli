@@ -1967,7 +1967,7 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 	for _, r := range regionOptions {
 		label := r
 		if slices.Contains(warnRegions, r) {
-			label = r + " " + util.Dimmed("⚠︎ GDPR compliance required")
+			label = r + " " + util.Warn("⚠︎ GDPR compliance required")
 		}
 		options = append(options, huh.NewOption(label, r))
 	}
