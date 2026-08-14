@@ -255,7 +255,7 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.S
 	if summary.GoingWell != "" {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "Going well:")
-		for line := range strings.SplitSeq(summary.GoingWell, "\n") {
+		for line := range strings.SplitSeq(stripSummaryRefs(summary.GoingWell), "\n") {
 			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
@@ -263,7 +263,7 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.S
 	if summary.ToImprove != "" {
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "To improve:")
-		for line := range strings.SplitSeq(summary.ToImprove, "\n") {
+		for line := range strings.SplitSeq(stripSummaryRefs(summary.ToImprove), "\n") {
 			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
@@ -272,9 +272,9 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.S
 		fmt.Fprintln(w)
 		fmt.Fprintln(w, "Issues:")
 		for i, issue := range summary.Issues {
-			fmt.Fprintf(w, "  %d. %s\n", i+1, issue.Description)
+			fmt.Fprintf(w, "  %d. %s\n", i+1, stripSummaryRefs(issue.Description))
 			if issue.Suggestion != "" {
-				fmt.Fprintf(w, "     Suggestion: %s\n", issue.Suggestion)
+				fmt.Fprintf(w, "     Suggestion: %s\n", stripSummaryRefs(issue.Suggestion))
 			}
 		}
 	}
