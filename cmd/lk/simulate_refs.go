@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"unicode"
@@ -40,16 +41,51 @@ func summaryRefStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(util.Brand()).Underline(true)
 }
 
-// linkSummaryRefs replaces each <ref> in summary prose with its quoted text as
-// a clickable link to the cited chat item. A ref missing a job, or a run with
-// no dashboard URL, degrades to the quoted text alone.
-func linkSummaryRefs(text, projectID, runID string) string {
+// A citation's number is an invitation to press that digit, so only as many
+// citations as there are digits to press carry one.
+const maxNumberedSummaryRefs = 9
+
+// summaryRefTarget is the chat item a numbered citation points at.
+type summaryRefTarget struct {
+	job  string
+	item string
+}
+
+// summaryRefIndex numbers citations as they are rendered. The number a reader
+// sees has to select the same citation when pressed, so one index is threaded
+// through every block of a summary and numbering follows render order.
+type summaryRefIndex struct {
+	targets []summaryRefTarget
+}
+
+// add records a citation and returns its 1-based number, or false once every
+// digit is spoken for.
+func (x *summaryRefIndex) add(attrs map[string]string) (int, bool) {
+	if len(x.targets) >= maxNumberedSummaryRefs {
+		return 0, false
+	}
+	x.targets = append(x.targets, summaryRefTarget{job: attrs["job"], item: attrs["item"]})
+	return len(x.targets), true
+}
+
+// linkSummaryRefs replaces each <ref> in summary prose with its quoted text,
+// numbered so the digit keys can open the cited turn, and hyperlinked to the
+// cited item when the run has a dashboard URL. A ref naming no job cites
+// nothing openable and degrades to the quoted text alone.
+func linkSummaryRefs(text, projectID, runID string, refs *summaryRefIndex) string {
 	return replaceSummaryRefs(text, func(attrs map[string]string, label string) string {
-		url := simulationItemDashboardURL(projectID, runID, attrs["job"], attrs["item"])
-		if url == "" {
+		if attrs["job"] == "" {
 			return label
 		}
-		return util.Hyperlink(url, summaryRefStyle().Render(label))
+		n, ok := refs.add(attrs)
+		if !ok {
+			return label
+		}
+		rendered := summaryRefStyle().Render(label)
+		if url := simulationItemDashboardURL(projectID, runID, attrs["job"], attrs["item"]); url != "" {
+			rendered = util.Hyperlink(url, rendered)
+		}
+		return rendered + dimStyle.Render(fmt.Sprintf(" [%d]", n))
 	})
 }
 

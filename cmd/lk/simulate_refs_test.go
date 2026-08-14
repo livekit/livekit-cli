@@ -41,7 +41,8 @@ func TestStripSummaryRefs(t *testing.T) {
 }
 
 func TestLinkSummaryRefs(t *testing.T) {
-	linked := linkSummaryRefs(refProse, "proj", "run")
+	var refs summaryRefIndex
+	linked := linkSummaryRefs(refProse, "proj", "run", &refs)
 
 	require.NotContains(t, linked, "<ref")
 	require.NotContains(t, linked, "</ref>")
@@ -50,10 +51,41 @@ func TestLinkSummaryRefs(t *testing.T) {
 	require.Contains(t, linked, "runs/run?job=SRJ_Bzb9ZaoJFJyp&item=item_13b90227fe38")
 	require.Contains(t, linked, `"I've had a few, sure"`)
 	require.Equal(t, 2, strings.Count(linked, "\x1b]8;;"+dashboardBaseURL()))
+
+	// the number a label carries selects the citation recorded under it
+	require.Contains(t, linked, "[1]")
+	require.Contains(t, linked, "[2]")
+	require.Equal(t, []summaryRefTarget{
+		{job: "SRJ_Bzb9ZaoJFJyp", item: "item_dd0ee81187bd"},
+		{job: "SRJ_Bzb9ZaoJFJyp", item: "item_13b90227fe38"},
+	}, refs.targets)
 }
 
 func TestLinkSummaryRefsWithoutTarget(t *testing.T) {
-	// no project or run to link to, and a ref with no job: quoted text only
-	require.Equal(t, stripSummaryRefs(refProse), linkSummaryRefs(refProse, "", ""))
-	require.Equal(t, "quoted", linkSummaryRefs(`<ref item="item_x">quoted</ref>`, "proj", "run"))
+	// a ref naming no job cites nothing that can be opened: quoted text alone
+	var unopenable summaryRefIndex
+	require.Equal(t, "quoted", linkSummaryRefs(`<ref item="item_x">quoted</ref>`, "proj", "run", &unopenable))
+	require.Empty(t, unopenable.targets)
+
+	// with no dashboard URL the job is still openable from the TUI, so the
+	// citation keeps its number and loses only the hyperlink
+	var local summaryRefIndex
+	linked := linkSummaryRefs(refProse, "", "", &local)
+	require.NotContains(t, linked, "\x1b]8;;")
+	require.Contains(t, linked, "[1]")
+	require.Len(t, local.targets, 2)
+}
+
+func TestSummaryRefIndexStopsAtTheLastDigit(t *testing.T) {
+	var b strings.Builder
+	for range maxNumberedSummaryRefs + 2 {
+		b.WriteString(`<ref job="J" item="i">q</ref>`)
+	}
+
+	var refs summaryRefIndex
+	linked := linkSummaryRefs(b.String(), "proj", "run", &refs)
+
+	require.Len(t, refs.targets, maxNumberedSummaryRefs)
+	require.Contains(t, linked, "[9]")
+	require.NotContains(t, linked, "[10]")
 }
