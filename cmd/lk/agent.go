@@ -1568,7 +1568,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 			strings.Join(regions, ","),
 			strings.Join(deployments, ","),
 			agent.Version,
-			formatTime(agent.DeployedAt.AsTime()),
+			formatDeployedAt(agent.DeployedAt.AsTime()),
 		})
 	}
 
