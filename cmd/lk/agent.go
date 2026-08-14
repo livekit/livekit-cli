@@ -1967,7 +1967,7 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 	for _, r := range regionOptions {
 		label := r
 		if slices.Contains(warnRegions, r) {
-			label = r + " " + util.Dimmed("(WARNING: data residency)")
+			label = r + " " + util.Dimmed("⚠︎ GDPR compliance required")
 		}
 		options = append(options, huh.NewOption(label, r))
 	}
@@ -2003,7 +2003,8 @@ func confirmRegionResidency(cmd *cli.Command, region, dataRegion string, warnReg
 	}
 
 	detail := fmt.Sprintf(
-		"Your project data region is [%s]. Customer data may be stored outside of [eu].",
+		"Data residency warning: This agent will run in [%s], but your project observability region is [%s]. Its recordings, transcripts, and traces will be stored outside the EU, which may breach GDPR. To keep this data in-region, create a new project with with an EU observability region.",
+		region,
 		dataRegion,
 	)
 	if SkipPrompts(cmd) {
@@ -2013,7 +2014,7 @@ func confirmRegionResidency(cmd *cli.Command, region, dataRegion string, warnReg
 
 	confirmed := false
 	if err := huh.NewForm(huh.NewGroup(util.Confirm().
-		Title(fmt.Sprintf("Are you sure you want to deploy to %s?", util.Accented(region))).
+		Title(fmt.Sprintf("Are you sure you want to deploy to [%s]?", region)).
 		Description(detail).
 		Affirmative("Deploy").
 		Negative("Cancel").
@@ -2023,7 +2024,7 @@ func confirmRegionResidency(cmd *cli.Command, region, dataRegion string, warnReg
 		return err
 	}
 	if !confirmed {
-		return fmt.Errorf("deployment to %s cancelled", region)
+		return fmt.Errorf("deployment cancelled")
 	}
 	return nil
 }
@@ -2065,7 +2066,6 @@ func generateAgentDockerfile(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-
 	projectType, err := agentfs.DetectProjectType(os.DirFS(workingDir))
 	if err != nil {
 		return noAgentError()
