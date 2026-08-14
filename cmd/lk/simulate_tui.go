@@ -217,6 +217,12 @@ type simulateModel struct {
 
 	cursor      int
 	detailJobID string
+	// The summary's citations, in the order their numbers were rendered, so a
+	// digit key resolves to the turn its label points at. refItemID is the chat
+	// item a jump cited, marked when the job view prints because printed
+	// scrollback cannot be scrolled to it.
+	summaryRefs []summaryRefTarget
+	refItemID   string
 	// The open job's view is printed into the terminal's own scrollback instead
 	// of being windowed in the live region; detailPrinted is what has already
 	// been emitted for it, so a re-render only ever appends its new tail.
@@ -953,6 +959,16 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.viewScrollOff += pageScroll // clamped on render
 			}
 		}
+	// A citation's number opens the turn it cites. Only live on the list view,
+	// which is where the numbered summary is on screen to read them off.
+	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+		if m.detailJobID == "" {
+			if ref, ok := m.summaryRef(key); ok {
+				m.detailJobID = ref.job
+				m.refItemID = ref.item
+				return m, m.openDetailCmd()
+			}
+		}
 	// j and l sit either side of k on the home row, so they double for the
 	// left/right arrows without reaching for them.
 	case "enter", "right", "l":
@@ -1673,7 +1689,17 @@ func (m *simulateModel) openDetailCmd() tea.Cmd {
 func (m *simulateModel) closeDetailCmd() tea.Cmd {
 	m.detailJobID = ""
 	m.detailPrinted = ""
+	m.refItemID = ""
 	return tea.EnterAltScreen
+}
+
+// summaryRef resolves a digit key to the citation whose label carries it.
+func (m *simulateModel) summaryRef(key string) (summaryRefTarget, bool) {
+	n := int(key[0] - '0')
+	if n < 1 || n > len(m.summaryRefs) {
+		return summaryRefTarget{}, false
+	}
+	return m.summaryRefs[n-1], true
 }
 
 // clearScrollback empties the screen and the scrollback behind it. It rides
@@ -1760,8 +1786,9 @@ func (m *simulateModel) renderSummary() string {
 	)
 
 	wrapWidth := proseWidth(m.width, 6)
+	var refs summaryRefIndex
 	link := func(text string) string {
-		return linkSummaryRefs(text, m.projectID(), m.runID)
+		return linkSummaryRefs(text, m.projectID(), m.runID, &refs)
 	}
 
 	if summary.GoingWell != "" {
@@ -1810,6 +1837,10 @@ func (m *simulateModel) renderSummary() string {
 		}
 		b.WriteString("\n")
 	}
+
+	// what the digit keys resolve to, recorded as the labels are rendered so the
+	// two cannot disagree
+	m.summaryRefs = refs.targets
 
 	return b.String()
 }
@@ -1872,8 +1903,17 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 				}
 			}
 			toolOpenedAgentBlock = false
-			for _, line := range wrapLines(text, wrapWidth) {
-				b.WriteString("      " + line + "\n")
+			cited := msg.Id != "" && msg.Id == m.refItemID
+			for i, line := range wrapLines(text, wrapWidth) {
+				b.WriteString("      " + line)
+				// a jump lands at the top of the printed job, so the cited turn
+				// says so where it prints. The mark rides the text, which every
+				// message has, and not the speaker header, which a message
+				// continuing an open agent block never prints.
+				if i == 0 && cited {
+					b.WriteString("  " + summaryRefStyle().Render("◀ cited"))
+				}
+				b.WriteString("\n")
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
@@ -2096,6 +2136,9 @@ func (m *simulateModel) renderHint() string {
 	default:
 		// the collapsed description block already carries "(press d to expand)"
 		nav := "↑↓ navigate · →/ENTER detail"
+		if len(m.summaryRefs) > 0 {
+			nav += " · 1-9 cited turn"
+		}
 		if m.pageOverflow || m.viewScrollOff > 0 {
 			nav += " · PgUp/PgDn page"
 		}
