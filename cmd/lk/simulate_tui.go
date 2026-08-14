@@ -1868,6 +1868,9 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 	// the chat history after the user message that triggered them and before
 	// the agent's spoken reply. Open an Agent block for them when needed so
 	// they don't render under the user's header.
+	// whether the citation a jump followed was found among the items below
+	cited := false
+
 	currentSpeaker := ""
 	toolOpenedAgentBlock := false
 	ensureAgentBlock := func() {
@@ -1903,22 +1906,30 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 				}
 			}
 			toolOpenedAgentBlock = false
-			cited := msg.Id != "" && msg.Id == m.refItemID
+			isCited := m.citedItem(msg.Id)
+			if isCited {
+				cited = true
+			}
 			for i, line := range wrapLines(text, wrapWidth) {
 				b.WriteString("      " + line)
 				// a jump lands at the top of the printed job, so the cited turn
 				// says so where it prints. The mark rides the text, which every
 				// message has, and not the speaker header, which a message
 				// continuing an open agent block never prints.
-				if i == 0 && cited {
-					b.WriteString("  " + summaryRefStyle().Render("◀ cited"))
+				if i == 0 && isCited {
+					b.WriteString(citedMark())
 				}
 				b.WriteString("\n")
 			}
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := v.FunctionCall
 			ensureAgentBlock()
-			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, m.toolArguments(fc.Arguments)), wrapWidth)
+			mark := ""
+			if m.citedItem(fc.Id) {
+				cited = true
+				mark = citedMark()
+			}
+			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, m.toolArguments(fc.Arguments)), wrapWidth, mark)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			if !m.showToolDetail {
 				continue
@@ -1929,7 +1940,7 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 				continue
 			}
 			ensureAgentBlock()
-			writeToolItem(&b, "→ "+output, wrapWidth)
+			writeToolItem(&b, "→ "+output, wrapWidth, "")
 		case *agent.ChatContext_ChatItem_AgentHandoff:
 			h := v.AgentHandoff
 			old := ""
@@ -1941,7 +1952,27 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			b.WriteString("\n")
 		}
 	}
+
+	// A summary can cite an item that is not in the history it summarized, and
+	// the jump still lands on the job it named. Saying so beats an unmarked
+	// transcript the reader scans for a mark that was never coming.
+	if m.refItemID != "" && !cited {
+		b.WriteString("\n")
+		b.WriteString(dimStyle.Render("    the cited turn is not in this transcript"))
+		b.WriteString("\n")
+	}
+
 	return b.String()
+}
+
+// citedMark labels the turn a jump followed.
+func citedMark() string {
+	return "  " + summaryRefStyle().Render("◀ cited")
+}
+
+// citedItem reports whether id is the chat item the open jump cited.
+func (m *simulateModel) citedItem(id string) bool {
+	return id != "" && id == m.refItemID
 }
 
 // toolArguments renders a call's arguments for the transcript. Collapsed, an
@@ -1960,14 +1991,20 @@ func (m *simulateModel) toolArguments(arguments string) string {
 
 // writeToolItem appends one tool line to b, wrapped to the transcript's measure
 // with its continuations indented under the marker, so a long output stays
-// readable as a block instead of one run-on row.
-func writeToolItem(b *strings.Builder, text string, wrapWidth int) {
-	for i, line := range wrapLines(text, wrapWidth-2) {
+// readable as a block instead of one run-on row. suffix rides the last line
+// outside the dimming, for a mark that has to carry over the payload it
+// annotates.
+func writeToolItem(b *strings.Builder, text string, wrapWidth int, suffix string) {
+	lines := wrapLines(text, wrapWidth-2)
+	for i, line := range lines {
 		indent := "      "
 		if i > 0 {
 			indent = "        "
 		}
 		b.WriteString(dimStyle.Render(indent + line))
+		if i == len(lines)-1 {
+			b.WriteString(suffix)
+		}
 		b.WriteString("\n")
 	}
 }
