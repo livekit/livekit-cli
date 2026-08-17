@@ -177,6 +177,16 @@ func Dimmed(text string) string {
 	return Theme.Focused.Description.Render(text)
 }
 
+// Warn renders text in the active theme's Warning style
+func Warn(text string) string {
+	return lipgloss.NewStyle().Foreground(activePalette.Warning).Render(text)
+}
+
+// Warn renders text in the active theme's Error style
+func Err(text string) string {
+	return lipgloss.NewStyle().Foreground(activePalette.Error).Render(text)
+}
+
 // Hyperlink wraps label in an OSC 8 terminal hyperlink pointing at url. Terminals
 // that support OSC 8 render label as a clickable link; others ignore the escape
 // and show label unchanged. Gate calls on an interactive terminal (see
