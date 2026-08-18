@@ -1,0 +1,229 @@
+syntax = "proto3";
+
+package livekit.publicapi.workspaces.v1;
+
+import "google/protobuf/timestamp.proto";
+import "livekit/publicapi/common/v1/common.proto";
+import "livekit/publicapi/projects/v1/projects.proto";
+
+// WorkspacePreferences holds per-workspace settings (mirrors backend-common
+// WorkspacePreferences).
+message WorkspacePreferences {
+  bool hipaa_compliant = 1;
+}
+
+// Workspace is a LiveKit Cloud workspace (owned by cloud-api-server).
+// Field set mirrors backend-common model.Workspace.ToProto(); members/invites
+// are separate list resources and are not embedded here.
+message Workspace {
+  string id = 1;
+  string name = 2;
+  string creator_id = 3;
+  string organization_id = 4;
+  google.protobuf.Timestamp created_at = 5;
+  WorkspacePreferences preferences = 6;
+}
+
+message ListWorkspacesRequest {
+  livekit.publicapi.common.v1.PageRequest page = 1;
+}
+
+message ListWorkspacesResponse {
+  repeated Workspace items = 1;
+  livekit.publicapi.common.v1.PageInfo page_info = 2;
+}
+
+message GetWorkspaceRequest {
+  string workspace_id = 1;
+}
+
+message GetWorkspaceResponse {
+  Workspace workspace = 1;
+}
+
+// message CreateWorkspaceRequest {
+//   string name = 1;
+//   // Optional organization association.
+//   string organization_id = 2;
+//   // Optional. When set, initializes the workspace from an existing project
+//   // (cloud admin-only today; kept for grpc passthrough parity).
+//   optional string from_project_id = 3;
+//   optional WorkspacePreferences preferences = 4;
+// }
+
+// message CreateWorkspaceResponse {
+//   Workspace workspace = 1;
+// }
+
+// Mirrors cloud-api WorkspaceService.UpdateWorkspace, which only accepts a
+// name: workspace preferences (hipaa_compliant) cascade to every project in the
+// workspace and are LK-admin-only there (AdminService.UpdateWorkspace), so they
+// are deliberately not settable on this path.
+message UpdateWorkspaceRequest {
+  string workspace_id = 1;
+  optional string name = 2;
+}
+
+message UpdateWorkspaceResponse {
+  Workspace workspace = 1;
+}
+
+message DeleteWorkspaceRequest {
+  string workspace_id = 1;
+}
+
+message DeleteWorkspaceResponse {}
+
+// Workspace-scoped project RPCs: requests are owned here (required
+// workspace_id); responses reuse projects.v1.
+message ListProjectsRequest {
+  string workspace_id = 1;
+  livekit.publicapi.common.v1.PageRequest page = 2;
+}
+
+message GetProjectRequest {
+  string workspace_id = 1;
+  string project_id = 2;
+}
+
+message CreateProjectRequest {
+  string workspace_id = 1;
+  string name = 2;
+  string subdomain = 3; // optional; generated from name when empty
+  bool is_private = 4;
+  repeated livekit.publicapi.projects.v1.CreateProjectMember members = 5;
+}
+
+message UpdateProjectRequest {
+  string workspace_id = 1;
+  // Nested projects.v1 update; the handler applies this request's workspace_id
+  // as the store constraint.
+  livekit.publicapi.projects.v1.UpdateProjectRequest update = 2;
+}
+
+message DeleteProjectRequest {
+  string workspace_id = 1;
+  string project_id = 2;
+}
+
+// WorkspaceMember is a user's membership on a workspace.
+message WorkspaceMember {
+  string workspace_id = 1;
+  string user_id = 2;
+  string email = 3;
+  // Matches cloud_protocol.ProjectMemberRole: INVITED=0, READ=1, WRITE=2, ADMIN=3.
+  int32 role = 4;
+}
+
+// WorkspaceInvite is a pending email invite to a workspace.
+message WorkspaceInvite {
+  string workspace_id = 1;
+  string email = 2;
+  int32 role = 3;
+  string invite_token = 4;
+  google.protobuf.Timestamp expires_at = 5;
+}
+
+message ListMembersRequest {
+  string workspace_id = 1;
+}
+
+message ListMembersResponse {
+  repeated WorkspaceMember items = 1;
+}
+
+message GetMemberRequest {
+  string workspace_id = 1;
+  string user_id = 2;
+}
+
+message GetMemberResponse {
+  WorkspaceMember member = 1;
+}
+
+message UpdateMemberRequest {
+  string workspace_id = 1;
+  string user_id = 2;
+  int32 role = 3;
+}
+
+message UpdateMemberResponse {
+  WorkspaceMember member = 1;
+}
+
+message DeleteMemberRequest {
+  string workspace_id = 1;
+  string user_id = 2;
+}
+
+message DeleteMemberResponse {}
+
+message CreateInviteRequest {
+  string workspace_id = 1;
+  string email = 2;
+  int32 role = 3;
+}
+
+message CreateInviteResponse {
+  string workspace_id = 1;
+  string invite_token = 2;
+}
+
+message ListInvitesRequest {
+  string workspace_id = 1;
+}
+
+message ListInvitesResponse {
+  repeated WorkspaceInvite items = 1;
+}
+
+message GetInviteRequest {
+  string invite_token = 1;
+}
+
+message GetInviteResponse {
+  WorkspaceInvite invite = 1;
+}
+
+message DeleteInviteRequest {
+  string workspace_id = 1;
+  string email = 2;
+}
+
+message DeleteInviteResponse {}
+
+message AnswerInviteRequest {
+  string invite_token = 1;
+  bool accept = 2;
+}
+
+message AnswerInviteResponse {
+  WorkspaceMember member = 1; // set when accept=true
+}
+
+// WorkspaceService is the workspaces domain of the public API.
+service WorkspaceService {
+  rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse);
+  rpc GetWorkspace(GetWorkspaceRequest) returns (GetWorkspaceResponse);
+  // rpc CreateWorkspace(CreateWorkspaceRequest) returns (CreateWorkspaceResponse);  // TODO: Will we want to allow creation of workspaces?
+  rpc UpdateWorkspace(UpdateWorkspaceRequest) returns (UpdateWorkspaceResponse);
+  rpc DeleteWorkspace(DeleteWorkspaceRequest) returns (DeleteWorkspaceResponse);
+
+  // Project CRUD scoped to a workspace — responses owned by projects.v1.
+  rpc ListProjects(ListProjectsRequest) returns (livekit.publicapi.projects.v1.ListProjectsResponse);
+  rpc GetProject(GetProjectRequest) returns (livekit.publicapi.projects.v1.GetProjectResponse);
+  rpc CreateProject(CreateProjectRequest) returns (livekit.publicapi.projects.v1.CreateProjectResponse);
+  rpc UpdateProject(UpdateProjectRequest) returns (livekit.publicapi.projects.v1.UpdateProjectResponse);
+  rpc DeleteProject(DeleteProjectRequest) returns (livekit.publicapi.projects.v1.DeleteProjectResponse);
+
+  // Members & invites (mirrors cloud WorkspaceService current flows).
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc GetMember(GetMemberRequest) returns (GetMemberResponse);
+  rpc UpdateMember(UpdateMemberRequest) returns (UpdateMemberResponse);
+  rpc DeleteMember(DeleteMemberRequest) returns (DeleteMemberResponse);
+  rpc CreateInvite(CreateInviteRequest) returns (CreateInviteResponse);
+  rpc ListInvites(ListInvitesRequest) returns (ListInvitesResponse);
+  rpc GetInvite(GetInviteRequest) returns (GetInviteResponse);
+  rpc DeleteInvite(DeleteInviteRequest) returns (DeleteInviteResponse);
+  rpc AnswerInvite(AnswerInviteRequest) returns (AnswerInviteResponse);
+}

@@ -1,0 +1,306 @@
+syntax = "proto3";
+
+package livekit.publicapi.projects.v1;
+
+import "google/protobuf/timestamp.proto";
+import "livekit/publicapi/common/v1/common.proto";
+import "livekit_models.proto";
+import "livekit_room.proto";
+import "pii.proto";
+
+// Webhook is a project webhook destination (mirrors backend-common Webhook).
+message Webhook {
+  string id = 1;
+  string name = 2;
+  string url = 3;
+  string signing_key = 4;
+  livekit.FilterParams filter_params = 5;
+}
+
+// ProjectPreferences holds per-project UI/feature settings (mirrors
+// backend-common ProjectPreferences).
+message ProjectPreferences {
+  bool hide_onboarding = 1;
+  bool discoverable_by_domain = 2;
+  bool joinable_by_domain = 3;
+  bool hide_sample_app_gallery = 4;
+  bool disable_token_endpoint = 5;
+  string token_endpoint_key = 6;
+  bool sfu_allow_pause = 7;
+  bool enable_egress_backup_storage = 8;
+  map<string, string> feature_flags = 9;
+  bool enable_egress_auto_retry = 10;
+  bool hipaa_compliant = 11;
+  map<string, livekit.RoomConfiguration> room_configurations = 12;
+}
+
+// Project is a LiveKit Cloud project (owned by cloud-api-server).
+// Field set mirrors backend-common model.Project (most config fields);
+// members/domains are separate list resources and are not embedded here.
+message Project {
+  string id = 1;
+  string name = 2;
+  string workspace_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+  repeated Webhook webhooks = 5;
+  string creator_id = 6;
+  string subdomain = 7;
+  bool enable_analytics = 8;
+  string analytics_access_key = 9;
+  bool enable_auto_create = 10;
+  bool enable_remote_unmute = 11;
+  bool enable_enhanced_noise_cancellation = 12;
+  bool enable_hosted_agents = 13;
+  ProjectPreferences preferences = 14;
+  repeated string enabled_codecs = 15;
+  repeated string pinned_regions = 16;
+  string egress_cluster_id = 17;
+  bool enable_safe_mode = 18;
+  bool enable_user_data_recording = 19;
+  bool enable_user_data_training = 20;
+  string user_data_region = 21;
+  int32 user_data_lifetime_days = 22;
+  bool enable_sip_custom_domain = 23;
+  bool require_explicit_dispatch = 24;
+  bool is_private = 25;
+	bool enable_pii_redaction = 26;
+  // Categories to redact when enable_pii_redaction is on. Empty on read means
+  // the stored set (or defaults applied at enable time) — never "redact nothing".
+  // Same taxonomy as cloud-api UpdateProject (cloud_protocol.PIIRedactionCategory).
+  repeated cloud_protocol.PIIRedactionCategory pii_redaction_categories = 27;
+  bool enable_inference_region_restriction = 28;
+}
+
+message ListProjectsRequest {
+  livekit.publicapi.common.v1.PageRequest page = 1;
+  // Mutually exclusive: only one of workspace_id or member_id can be set
+  // if workspace_id is set, list projects for the workspace
+  string workspace_id = 2;
+  // if member_id is set, list projects for the member
+  string member_id = 3;
+}
+
+message ListProjectsResponse {
+  repeated Project items = 1;
+  livekit.publicapi.common.v1.PageInfo page_info = 2;
+}
+
+message GetProjectRequest {
+  string project_id = 1;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+}
+
+// TODO: Add more parts that allow for a full project creation, not just the name
+message CreateProjectMember {
+  string user_id = 1;
+  // Matches cloud_protocol.ProjectMemberRole: INVITED=0, READ=1, WRITE=2, ADMIN=3.
+  int32 role = 2;
+}
+
+message CreateProjectRequest {
+  string workspace_id = 1; // optional; when empty a new workspace is created
+  string name = 2;
+  string subdomain = 3; // optional; generated from name when empty
+  bool is_private = 4;
+  repeated CreateProjectMember members = 5; // private projects only
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+// UpdateProjectRequest patches a project. Unset optional fields are left
+// unchanged (proto3 optional). Mirrors cloud-api UpdateProject for local mode;
+// webhooks are separate RPCs (not included here).
+message UpdateProjectRequest {
+  string project_id = 1;
+
+  optional string name = 2;
+  optional string subdomain = 3;
+  optional string custom_domain = 4;
+  optional bool enable_analytics = 5;
+  optional bool enable_auto_create = 6;
+  optional bool enable_remote_unmute = 7;
+  repeated string enabled_codecs = 8;
+  optional string egress_cluster_id = 9; // LK-admin only
+  optional bool enable_hosted_agents = 10; // LK-admin only
+  optional bool enable_user_data_recording = 11;
+  optional string user_data_region = 12;
+  optional bool require_explicit_dispatch = 13;
+  optional bool is_private = 14;
+  // Used when becoming private: explicit member set (actor kept as ADMIN).
+  repeated CreateProjectMember members = 15;
+	optional bool enable_pii_redaction = 16;
+  // Non-empty list replaces the stored set (validated via Canonical).
+  // Empty is ignored (cannot clear). When enabling with nothing stored,
+  // defaults are applied server-side — same as cloud-api UpdateProject.
+  repeated cloud_protocol.PIIRedactionCategory pii_redaction_categories = 17;
+  optional bool enable_inference_region_restriction = 18;
+
+  // Preferences (flat, matching cloud-api UpdateProjectRequest).
+  optional bool hide_onboarding = 19;
+  optional bool discoverable_by_domain = 20;
+  optional bool joinable_by_domain = 21;
+  optional bool hide_sample_app_gallery = 22;
+  optional bool disable_token_endpoint = 23;
+  optional string token_endpoint_key = 24;
+  optional bool sfu_allow_pause = 25;
+  optional bool enable_egress_backup_storage = 26;
+  optional bool enable_egress_auto_retry = 27;
+  map<string, string> feature_flags = 28;
+
+  // RoomConfiguration management (stored on project preferences).
+  repeated livekit.RoomConfiguration room_configs_to_upsert = 29;
+  repeated string room_configs_to_delete = 30;
+}
+
+message UpdateProjectResponse {
+  Project project = 1;
+}
+
+message DeleteProjectRequest {
+  string project_id = 1;
+}
+
+message DeleteProjectResponse {}
+
+// ProjectMember is a user's membership on a project.
+message ProjectMember {
+  string project_id = 1;
+  string user_id = 2;
+  string email = 3;
+  // Matches cloud_protocol.ProjectMemberRole: INVITED=0, READ=1, WRITE=2, ADMIN=3.
+  int32 role = 4;
+}
+
+// ProjectInvite is a pending email invite to a project (token-based, cloud InviteMember2).
+message ProjectInvite {
+  string project_id = 1;
+  string email = 2;
+  int32 role = 3;
+  string invite_token = 4;
+  google.protobuf.Timestamp expires_at = 5;
+}
+
+message ListMembersRequest {
+  string project_id = 1;
+}
+
+message ListMembersResponse {
+  repeated ProjectMember items = 1;
+}
+
+message GetMemberRequest {
+  string project_id = 1;
+  string user_id = 2;
+}
+
+message GetMemberResponse {
+  ProjectMember member = 1;
+}
+
+message UpdateMemberRequest {
+  string project_id = 1;
+  string user_id = 2;
+  int32 role = 3;
+}
+
+message UpdateMemberResponse {
+  ProjectMember member = 1;
+}
+
+message RemoveMemberRequest {
+  string project_id = 1;
+  string user_id = 2;
+}
+
+message RemoveMemberResponse {}
+
+// InviteMember creates or refreshes a token invite (cloud InviteMember2).
+message InviteMemberRequest {
+  string project_id = 1;
+  string email = 2;
+  int32 role = 3;
+}
+
+message InviteMemberResponse {
+  string project_id = 1;
+  string invite_token = 2;
+}
+
+message ListInvitesRequest {
+  string project_id = 1;
+}
+
+message ListInvitesResponse {
+  repeated ProjectInvite items = 1;
+}
+
+message GetInviteRequest {
+  string invite_token = 1;
+}
+
+message GetInviteResponse {
+  ProjectInvite invite = 1;
+}
+
+message UpdateInviteRequest {
+  string project_id = 1;
+  string email = 2;
+  int32 role = 3;
+}
+
+message UpdateInviteResponse {
+  ProjectInvite invite = 1;
+}
+
+message DeleteInviteRequest {
+  string project_id = 1;
+  string email = 2;
+}
+
+message DeleteInviteResponse {}
+
+message AnswerInvitationRequest {
+  string invite_token = 1;
+  bool accept = 2;
+}
+
+message AnswerInvitationResponse {
+  ProjectMember member = 1; // set when accept=true
+}
+
+message AddWorkspaceMembersToProjectRequest {
+  string project_id = 1;
+  repeated string user_ids = 2;
+  int32 role = 3;
+}
+
+message AddWorkspaceMembersToProjectResponse {
+  repeated ProjectMember items = 1;
+}
+
+// ProjectService is the projects domain of the public API.
+service ProjectService {
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse);
+  rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse);
+
+  // Members & invites (token-based; mirrors cloud ProjectService current flows).
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc GetMember(GetMemberRequest) returns (GetMemberResponse);
+  rpc UpdateMember(UpdateMemberRequest) returns (UpdateMemberResponse);
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
+  rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
+  rpc ListInvites(ListInvitesRequest) returns (ListInvitesResponse);
+  rpc GetInvite(GetInviteRequest) returns (GetInviteResponse);
+  rpc UpdateInvite(UpdateInviteRequest) returns (UpdateInviteResponse);
+  rpc DeleteInvite(DeleteInviteRequest) returns (DeleteInviteResponse);
+  rpc AnswerInvitation(AnswerInvitationRequest) returns (AnswerInvitationResponse);
+  rpc AddWorkspaceMembersToProject(AddWorkspaceMembersToProjectRequest) returns (AddWorkspaceMembersToProjectResponse);
+}

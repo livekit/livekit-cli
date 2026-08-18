@@ -25,6 +25,7 @@ import (
 	"go.uber.org/atomic"
 
 	provider2 "github.com/livekit/livekit-cli/v2/pkg/provider"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/livekit/server-sdk-go/v2/pkg/samplebuilder"
@@ -108,7 +109,7 @@ func (t *LoadTester) Start() error {
 		ParticipantCallback: lksdk.ParticipantCallback{
 			OnTrackSubscribed: t.onTrackSubscribed,
 			OnTrackSubscriptionFailed: func(sid string, rp *lksdk.RemoteParticipant) {
-				fmt.Printf("track subscription failed, lp:%v, sid:%v, rp:%v/%v\n", identity, sid, rp.Identity(), rp.SID())
+				util.Warnf("track subscription failed, lp:%v, sid:%v, rp:%v/%v", identity, sid, rp.Identity(), rp.SID())
 			},
 			OnTrackPublished: t.onTrackPublished,
 		},
@@ -152,7 +153,7 @@ func (t *LoadTester) PublishAudioTrack(name string) (string, error) {
 		return "", nil
 	}
 
-	fmt.Println("publishing audio track -", t.room.LocalParticipant.Identity())
+	util.Status("publishing audio track -", t.room.LocalParticipant.Identity())
 	audioLooper, err := provider2.CreateAudioLooper()
 	if err != nil {
 		return "", err
@@ -179,7 +180,7 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 		return "", nil
 	}
 
-	fmt.Println("publishing video track -", t.room.LocalParticipant.Identity())
+	util.Status("publishing video track -", t.room.LocalParticipant.Identity())
 	loopers, err := provider2.CreateVideoLoopers(resolution, codec, false)
 	if err != nil {
 		return "", err
@@ -204,7 +205,7 @@ func (t *LoadTester) PublishVideoTrack(name, resolution, codec string) (string, 
 func (t *LoadTester) PublishSimulcastTrack(name, resolution, codec string) (string, error) {
 	var tracks []*lksdk.LocalTrack
 
-	fmt.Println("publishing simulcast video track -", t.room.LocalParticipant.Identity())
+	util.Status("publishing simulcast video track -", t.room.LocalParticipant.Identity())
 	loopers, err := provider2.CreateVideoLoopers(resolution, codec, true)
 	if err != nil {
 		return "", err
@@ -317,7 +318,7 @@ func (t *LoadTester) onTrackSubscribed(track *webrtc.TrackRemote, pub *lksdk.Rem
 		kind:    pub.Kind(),
 	}
 	t.stats.Store(track.ID(), s)
-	fmt.Println("subscribed to track", t.room.LocalParticipant.Identity(), pub.SID(), pub.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
+	util.Status("subscribed to track", t.room.LocalParticipant.Identity(), pub.SID(), pub.Kind(), fmt.Sprintf("%d/%d", numSubscribed, numTotal))
 
 	// consume track
 	go t.consumeTrack(track, pub, rp)
@@ -379,7 +380,7 @@ func (t *LoadTester) consumeTrack(track *webrtc.TrackRemote, pub *lksdk.RemoteTr
 
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Println("caught panic in consumeTrack", e)
+			util.Warnf("caught panic in consumeTrack: %v", e)
 		}
 	}()
 

@@ -62,6 +62,25 @@ func TestCLIConfigGetUser(t *testing.T) {
 	assert.Equal(t, "p_abc", c.Users[0].Projects[0].ProjectId)
 }
 
+func TestUserConfigFindProject(t *testing.T) {
+	u := &UserConfig{
+		Projects: []UserProjectConfig{
+			{ProjectId: "p_abc", Name: "My App"},
+			{ProjectId: "p_def", Name: "other"},
+		},
+	}
+
+	// by id
+	assert.Equal(t, "p_abc", u.FindProject("p_abc").ProjectId)
+	// by name/alias (case-insensitive)
+	assert.Equal(t, "p_abc", u.FindProject("my app").ProjectId)
+	assert.Equal(t, "p_def", u.FindProject("other").ProjectId)
+	// misses
+	assert.Nil(t, u.FindProject("nope"))
+	assert.Nil(t, u.FindProject(""))
+	assert.Nil(t, (*UserConfig)(nil).FindProject("p_abc"))
+}
+
 func TestCLIConfigUpsertUser(t *testing.T) {
 	c := &CLIConfig{
 		Users: []UserConfig{

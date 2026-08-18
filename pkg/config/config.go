@@ -63,10 +63,31 @@ type UserConfig struct {
 // ProjectConfig it carries no API key/secret: requests are authorized with the
 // user's session token and scoped to a project by id.
 type UserProjectConfig struct {
-	ProjectId string `yaml:"project_id"`
-	Name      string `yaml:"name,omitempty"`
-	Subdomain string `yaml:"subdomain,omitempty"`
-	URL       string `yaml:"url,omitempty"`
+	ProjectId string `yaml:"project_id" json:"id"`
+	Name      string `yaml:"name,omitempty" json:"name,omitempty"`
+	// Alias is a URL-safe handle derived from Name (deduplicated with a numeric
+	// suffix), so a project can be referenced by a short, typeable name.
+	Alias     string `yaml:"alias,omitempty" json:"alias,omitempty"`
+	Subdomain string `yaml:"subdomain,omitempty" json:"subdomain,omitempty"`
+	URL       string `yaml:"url,omitempty" json:"url,omitempty"`
+}
+
+// FindProject returns the cached project matching ref by ProjectId or
+// (case-insensitively) by Name/alias, or nil if none matches. Used to resolve
+// the --project flag against the user's project cache in user-auth mode.
+func (u *UserConfig) FindProject(ref string) *UserProjectConfig {
+	if u == nil || ref == "" {
+		return nil
+	}
+	for i := range u.Projects {
+		p := &u.Projects[i]
+		if p.ProjectId == ref ||
+			(p.Name != "" && strings.EqualFold(p.Name, ref)) ||
+			(p.Alias != "" && strings.EqualFold(p.Alias, ref)) {
+			return p
+		}
+	}
+	return nil
 }
 
 // SessionValid reports whether the user has a session token that has not
@@ -227,7 +248,7 @@ func LoadOrCreate() (*CLIConfig, error) {
 	} else if s.Mode().Perm()&0077 != 0 {
 		// because this file contains private keys, warn that
 		// only the owner should have permission to access it
-		fmt.Fprintf(os.Stderr, "WARNING: config file %s should have permissions %o\n", configPath, 0600)
+		util.Warnf("WARNING: config file %s should have permissions %o", configPath, 0600)
 	}
 
 	content, err := os.ReadFile(configPath)
@@ -271,12 +292,23 @@ func (c *CLIConfig) RemoveProject(name string) error {
 		return err
 	}
 
-	fmt.Println("Removed project", name)
+	util.Status("Removed project", name)
 	return nil
 }
 
 func (c *CLIConfig) PersistIfNeeded() error {
-	if len(c.Projects) == 0 && c.Theme == "" && !c.hasPersisted {
+	return c.persist(true)
+}
+
+// PersistQuietly writes the config without printing the "Saved CLI config"
+// notice. Use it for background updates (e.g. refreshing the project cache) that
+// shouldn't announce themselves — and must not pollute stdout/JSON output.
+func (c *CLIConfig) PersistQuietly() error {
+	return c.persist(false)
+}
+
+func (c *CLIConfig) persist(announce bool) error {
+	if len(c.Projects) == 0 && len(c.Users) == 0 && c.Theme == "" && !c.hasPersisted {
 		// nothing worth persisting yet
 		return nil
 	}
@@ -297,7 +329,9 @@ func (c *CLIConfig) PersistIfNeeded() error {
 	if err = os.WriteFile(configPath, data, 0600); err != nil {
 		return err
 	}
-	fmt.Printf("Saved CLI config to [%s]\n", util.Accented(configPath))
+	if announce {
+		util.Statusf("Saved CLI config to [%s]", util.Accented(configPath))
+	}
 	c.hasPersisted = true
 	return nil
 }

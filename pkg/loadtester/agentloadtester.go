@@ -342,8 +342,8 @@ func (t *AgentLoadTester) printStats() {
 		index++
 	}
 
-	fmt.Println("\nTest Statistics:")
-	fmt.Println(table)
+	util.Result("\nTest Statistics:")
+	util.Result(table)
 }
 
 func newAccessToken(apiKey, apiSecret, roomName, pID string) (string, error) {

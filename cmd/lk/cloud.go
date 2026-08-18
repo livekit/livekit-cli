@@ -558,7 +558,8 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// Store the session. Re-authenticating as the same person (matched by id or
 	// email) replaces the existing entry wholesale rather than adding a duplicate.
 	wasFirstUser := len(cliConfig.Users) == 0
-	if _, replaced := cliConfig.UpsertUser(user); !replaced {
+	stored, replaced := cliConfig.UpsertUser(user)
+	if !replaced {
 		// New user: the first one becomes the default automatically; otherwise
 		// ask whether to make it the default.
 		isDefault := wasFirstUser
@@ -579,6 +580,17 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// ensure a default is always set
 	if cliConfig.DefaultUser == "" {
 		cliConfig.DefaultUser = userKey
+	}
+
+	// Populate the per-user project cache immediately from the Public API so that
+	// `--project` can resolve project names/ids offline. Best-effort: a failure
+	// here does not fail sign-in (the cache can be refreshed later).
+	if projects, ferr := fetchUserProjects(ctx, stored.SessionToken); ferr != nil {
+		out.Warnf("Signed in, but couldn't fetch your projects (%v); run `lk project list --experimental-auth` to retry", ferr)
+	} else {
+		stored.Projects = projects
+		stored.ProjectsFetchedAt = time.Now().Unix()
+		out.Statusf("Cached %d project(s)", len(projects))
 	}
 
 	return cliConfig.PersistIfNeeded()

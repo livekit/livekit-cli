@@ -144,8 +144,8 @@ func (t *LoadTest) Run(ctx context.Context) error {
 	}
 
 	if len(names) > 0 {
-		fmt.Println("\nTrack loading:")
-		fmt.Println(testerTable)
+		util.Result("\nTrack loading:")
+		util.Result(testerTable)
 	}
 
 	if len(summaries) == 0 {
@@ -181,8 +181,8 @@ func (t *LoadTest) Run(ctx context.Context) error {
 		)
 		summaryTable.Row("Total", fmt.Sprintf("%d/%d", s.tracks, s.expected), sBitrate, sDropped, strconv.FormatInt(s.errCount, 10))
 	}
-	fmt.Println("\nSubscriber summaries:")
-	fmt.Println(summaryTable)
+	util.Result("\nSubscriber summaries:")
+	util.Result(summaryTable)
 
 	return nil
 }
@@ -229,7 +229,7 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 		if caseParams.Duration == 0 {
 			caseParams.Duration = 15 * time.Second
 		}
-		fmt.Printf("\nRunning test: %d pub, %d sub, video: %s\n", c.publishers, c.subscribers, videoString)
+		util.Statusf("\nRunning test: %d pub, %d sub, video: %s", c.publishers, c.subscribers, videoString)
 
 		stats, err := t.run(ctx, caseParams)
 		if err != nil {
@@ -265,8 +265,8 @@ func (t *LoadTest) RunSuite(ctx context.Context) error {
 	}
 
 	if showTrackStats {
-		fmt.Println("\nSuite results:")
-		fmt.Println(table)
+		util.Result("\nSuite results:")
+		util.Result(table)
 	}
 	return nil
 }
@@ -291,7 +291,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 	if params.Subscribers > 0 {
 		participantStrings = append(participantStrings, fmt.Sprintf("%d subscribers", params.Subscribers))
 	}
-	fmt.Printf("Starting load test with %s, room: %s\n",
+	util.Statusf("Starting load test with %s, room: %s",
 		strings.Join(participantStrings, ", "), params.Room)
 
 	var publishers, testers []*LoadTester
@@ -325,7 +325,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 
 		group.Go(func() error {
 			if err := tester.Start(); err != nil {
-				fmt.Println(fmt.Errorf("could not connect %s: %w", testerParams.name, err))
+				util.Warnf("could not connect %s: %v", testerParams.name, err)
 				errs.Store(testerParams.name, err)
 				return nil
 			}
@@ -384,7 +384,7 @@ func (t *LoadTest) run(ctx context.Context, params Params) (map[string]*testerSt
 		// a really long time
 		duration = 1000 * time.Hour
 	}
-	fmt.Printf("Finished connecting to room, waiting %s\n", duration.String())
+	util.Statusf("Finished connecting to room, waiting %s", duration.String())
 
 	select {
 	case <-ctx.Done():

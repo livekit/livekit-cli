@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package livekit.publicapi.analytics.v1;
+
+import "google/protobuf/timestamp.proto";
+import "livekit/publicapi/common/v1/common.proto";
+
+// SessionStatus is the lifecycle state of a session.
+enum SessionStatus {
+  SESSION_STATUS_UNSPECIFIED = 0;
+  SESSION_STATUS_ACTIVE = 1;
+  SESSION_STATUS_CLOSED = 2;
+}
+
+// Session is one analytics session row. A representative subset of the former
+// REST `Session` schema — the full field set can be filled in incrementally.
+message Session {
+  string session_id = 1;
+  string room_name = 2;
+  SessionStatus status = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp ended_at = 5;
+  int64 bandwidth_in = 6;
+  int64 bandwidth_out = 7;
+  int32 num_participants = 8;
+  repeated string tags = 9;
+}
+
+message ListProjectSessionsRequest {
+  string project_id = 1;
+  livekit.publicapi.common.v1.PageRequest page = 2;
+}
+
+message ListProjectSessionsResponse {
+  repeated Session items = 1;
+  livekit.publicapi.common.v1.PageInfo page_info = 2;
+}
+
+message GetSessionRequest {
+  string project_id = 1;
+  string session_id = 2;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+}
+
+// AnalyticsService is the (always project-scoped) analytics domain. Only the
+// sessions endpoints are modelled here as a sample; egresses/ingresses/sip/usage
+// /timeseries/exports follow the same pattern.
+service AnalyticsService {
+  rpc ListProjectSessions(ListProjectSessionsRequest) returns (ListProjectSessionsResponse);
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse);
+}
