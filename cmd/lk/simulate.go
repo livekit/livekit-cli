@@ -70,7 +70,13 @@ var simulateCommand = &cli.Command{
 		simulateProjectConfig = pc
 		return nil, nil
 	},
-	Action: runSimulate,
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		mode := livekit.SimulationMode_SIMULATION_MODE_TEXT
+		if cmd.Bool("audio") {
+			mode = livekit.SimulationMode_SIMULATION_MODE_AUDIO
+		}
+		return runSimulate(ctx, cmd, mode)
+	},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:    "num-simulations",
@@ -273,7 +279,7 @@ func buildTaskExists(projectDir string) (bool, error) {
 	return ok, nil
 }
 
-func runSimulate(ctx context.Context, cmd *cli.Command) error {
+func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.SimulationMode) error {
 	pc := simulateProjectConfig
 
 	// --export is a one-shot read of a finished run, so it short-circuits
@@ -367,11 +373,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
-
-	simulationMode := livekit.SimulationMode_SIMULATION_MODE_TEXT
-	if cmd.Bool("audio") {
-		simulationMode = livekit.SimulationMode_SIMULATION_MODE_AUDIO
-	}
 
 	simCfg := &simulateConfig{
 		ctx:            ctx,
