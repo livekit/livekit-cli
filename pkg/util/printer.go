@@ -30,6 +30,33 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+// Default is the process-wide Printer, set once from the root command via
+// SetDefault. It lets lower-level packages that can't reach the command's
+// Printer (config, agentfs, …) route output through the same streams and gating
+// using the package-level Status/Statusf/Warnf/Result helpers below. It is nil
+// until SetDefault runs; every helper (and every Printer method) is nil-safe, so
+// pre-init or in tests they are no-ops.
+var Default *Printer
+
+// SetDefault registers the process-wide Printer.
+func SetDefault(p *Printer) { Default = p }
+
+// Status writes an informational breadcrumb to the default Printer (stderr,
+// suppressed by --quiet).
+func Status(a ...any) { Default.Status(a...) }
+
+// Statusf is Printf-style Status on the default Printer.
+func Statusf(format string, a ...any) { Default.Statusf(format, a...) }
+
+// Warnf writes a warning to the default Printer (stderr, never suppressed).
+func Warnf(format string, a ...any) { Default.Warnf(format, a...) }
+
+// Result writes primary output to the default Printer (stdout, always printed).
+func Result(a ...any) { Default.Result(a...) }
+
+// Resultf is Printf-style Result on the default Printer.
+func Resultf(format string, a ...any) { Default.Resultf(format, a...) }
+
 // Printer is a single sink for human-facing CLI output. One instance per process
 // is initialized from the root command and reused everywhere, so all status,
 // warning, and result lines share consistent streams and gating.

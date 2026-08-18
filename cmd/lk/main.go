@@ -44,6 +44,17 @@ func main() {
 		HideHelpCommand:        true,
 		UseShortOptionHandling: true,
 		Flags:                  globalFlags,
+		// --experimental-auth and --legacy-auth pick opposite auth modes; you may
+		// pass at most one. (These flags are registered via this group, not
+		// globalFlags.)
+		MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
+			{
+				Flags: [][]cli.Flag{
+					{experimentalAuthFlag},
+					{legacyAuthFlag},
+				},
+			},
+		},
 		Commands: []*cli.Command{
 			{
 				Name:   "generate-fish-completion",
@@ -138,14 +149,21 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	// Bind the human-facing output sink to the root command's writers (cli/v3
 	// defaults them to os.Stdout / os.Stderr, but they're overridable in tests).
 	out = util.NewPrinter(cmd.Root().Writer, cmd.Root().ErrWriter, cmd.Bool("quiet"))
+	// Register the same Printer as the process-wide default so lower-level
+	// packages (config, agentfs, …) route through the same streams/gating.
+	util.SetDefault(out)
 
 	// Apply the persisted color theme before any output/forms render. An empty value
 	// resolves to the default; an invalid stored value is reported and falls back.
-	if conf, err := config.LoadOrCreate(); err == nil {
+	conf, _ := config.LoadOrCreate()
+	if conf != nil {
 		if err := util.SetTheme(conf.Theme); err != nil {
 			out.Warnf("%v; using default theme", err)
 		}
 	}
+
+	// Nudge users still on API-key auth toward the new account-based flow.
+	maybeShowUpgradeNotice(cmd, conf)
 
 	return nil, nil
 }

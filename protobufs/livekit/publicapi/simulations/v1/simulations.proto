@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package livekit.publicapi.simulations.v1;
+
+// The agent-simulation messages are owned by LiveKit's shared protobufs and are
+// imported rather than redefined here. Only the public RPCs/service live in this
+// repo. See github.com/livekit/protocol/blob/main/protobufs/livekit_agent_simulation.proto
+// (wired via the buf.build/livekit/protocol dep in protobufs/buf.yaml).
+import "livekit_agent_simulation.proto";
+
+// SimulationService is the agent-simulation domain of the public API. It reuses
+// the request/response messages from livekit.AgentSimulation; only the surface
+// (service + RPCs) is defined here.
+service SimulationService {
+  rpc CreateSimulationRun(livekit.SimulationRun.Create.Request) returns (livekit.SimulationRun.Create.Response);
+  rpc GetSimulationRun(livekit.SimulationRun.Get.Request) returns (livekit.SimulationRun.Get.Response);
+  rpc ListSimulationRuns(livekit.SimulationRun.List.Request) returns (livekit.SimulationRun.List.Response);
+  rpc CancelSimulationRun(livekit.SimulationRun.Cancel.Request) returns (livekit.SimulationRun.Cancel.Response);
+}

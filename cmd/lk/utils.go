@@ -40,10 +40,10 @@ const (
 	cloudAPIServerURL = "https://cloud-api.livekit.io"
 	cloudDashboardURL = "https://cloud.livekit.io"
 	// publicAPIBaseURL is the production base URL of the user-authenticated
-	// LiveKit Public API (the OpenAPI REST service). Used only under
-	// --experimental-auth; override with --experimental-api-url for dev
-	// (e.g. http://localhost:8000/v1).
-	publicAPIBaseURL = "https://api.livekit.cloud/v1"
+	// LiveKit Public API (Connect/gRPC). Used only under --experimental-auth;
+	// override with --experimental-api-url for dev (e.g. http://localhost:8000).
+	// Connect appends the RPC path, so this is the host root — not a REST prefix.
+	publicAPIBaseURL = "https://api.livekit.cloud"
 )
 
 var (
@@ -78,6 +78,19 @@ var (
 		Name:    "quiet",
 		Aliases: []string{"q", "silent"},
 		Usage:   "Suppress informational output to stderr (warnings and errors still print)",
+	}
+	// experimentalAuthFlag and legacyAuthFlag select the auth mode and are
+	// mutually exclusive (enforced via the root command's MutuallyExclusiveFlags,
+	// see main.go), so they aren't listed in globalFlags directly.
+	experimentalAuthFlag = &cli.BoolFlag{
+		Name:   "experimental-auth",
+		Usage:  "EXPERIMENTAL: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
+		Hidden: true,
+	}
+	legacyAuthFlag = &cli.BoolFlag{
+		Name:   "legacy-auth",
+		Usage:  "Force API-key (SDK) authentication, ignoring any signed-in user session. Explicit --api-key/--api-secret imply this.",
+		Hidden: true,
 	}
 	templateFlag = &cli.StringFlag{
 		Name:        "template",
@@ -172,10 +185,6 @@ var (
 			Usage:   "Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)",
 		},
 		quietFlag,
-		&cli.BoolFlag{
-			Name:  "experimental-auth",
-			Usage: "EXPERIMENTAL: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
-		},
 		&cli.StringFlag{
 			Name:        "experimental-api-url",
 			Usage:       "Base `URL` of the LiveKit Public API used with --experimental-auth",

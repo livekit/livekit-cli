@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package livekit.publicapi.users.v1;
+
+import "google/protobuf/timestamp.proto";
+import "livekit/publicapi/common/v1/common.proto";
+
+// User is a LiveKit Cloud user (owned by cloud-api-server).
+message User {
+  string id = 1;
+  string email = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message ListUsersRequest {
+  livekit.publicapi.common.v1.PageRequest page = 1;
+
+  // At least one of project_id or workspace_id is required.
+  // If both are set, project_id must belong to workspace_id; members are
+  // the project's members.
+  string project_id = 2;
+  string workspace_id = 3;
+}
+
+message ListUsersResponse {
+  repeated User items = 1;
+  livekit.publicapi.common.v1.PageInfo page_info = 2;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetCurrentUserRequest {}
+
+message GetCurrentUserResponse {
+  User user = 1;
+}
+
+// UserService is the users domain of the public API.
+service UserService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse);
+}

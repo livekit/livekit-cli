@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package livekit.publicapi.common.v1;
+
+// Error mirrors the JSON error envelope the REST surface used to return. Connect
+// carries its own structured error model (code + message + details), so most
+// handlers should prefer returning a *connect.Error; this message exists for
+// endpoints that want to embed a structured error inside a normal response.
+message Error {
+  message Detail {
+    string code = 1;
+    string message = 2;
+  }
+  Detail error = 1;
+}
+
+// PageInfo is the cursor-pagination metadata shared by every list response.
+message PageInfo {
+  // Pass as `cursor` on the next request to fetch the following page. Empty on
+  // the last page.
+  string next_cursor = 1;
+  bool has_more = 2;
+}
+
+// PageRequest is the shared cursor-pagination request fragment. Embed it in a
+// list request.
+message PageRequest {
+  // Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+  // from the beginning.
+  string cursor = 1;
+  // Maximum items to return; 0 lets the server pick a default.
+  int32 page_size = 2;
+}
