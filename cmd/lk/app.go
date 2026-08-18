@@ -128,6 +128,12 @@ var (
 	}
 )
 
+var missingExecutablePatterns = []*regexp.Regexp{
+	regexp.MustCompile(`(?m)["']?([a-zA-Z0-9][a-zA-Z0-9._+-]*)["']?: executable file not found in (?:\$PATH|%PATH%)`),
+	regexp.MustCompile(`(?m)^(?:env|/usr/bin/env):[ \t]+([a-zA-Z0-9][a-zA-Z0-9._+-]*):[ \t]+No such file or directory[ \t]*\r?$`),
+	regexp.MustCompile(`(?m)^(?:/bin/)?(?:sh|bash|zsh)(?:: [0-9]+)?:[ \t]+([a-zA-Z0-9][a-zA-Z0-9._+-]*):[ \t]+(?:command )?not found[ \t]*\r?$`),
+}
+
 func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	return requireProjectWithOpts(ctx, cmd)
 }
@@ -458,7 +464,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 				b.WriteString(line)
 				b.WriteString("\n")
 			}
-			out.Warnf("%s%sFix your toolchain, then re-run the install step manually in ./%s.", b.String(), fixPrefix, appName)
+			out.Warnf("%s%s%s", b.String(), fixPrefix, installFailureGuidance(err, appName))
 		} else {
 			// Signal a successful install to post_create so the template can skip
 			// printing the now-redundant install hint (guarded via `status:`).
@@ -651,6 +657,30 @@ func doInstall(ctx context.Context, task bootstrap.KnownTask, rootPath string, v
 		return err
 	}
 	return nil
+}
+
+func missingExecutable(message string) string {
+	for _, pattern := range missingExecutablePatterns {
+		matches := pattern.FindStringSubmatch(message)
+		if len(matches) > 1 {
+			return matches[1]
+		}
+	}
+	return ""
+}
+
+func installFailureGuidance(err error, appName string) string {
+	if err != nil {
+		if command := missingExecutable(err.Error()); command != "" {
+			return fmt.Sprintf(
+				"`%s` is required but was not found in PATH. Install `%s`, ensure it is available in PATH, then re-run the install step manually in ./%s.",
+				command,
+				command,
+				appName,
+			)
+		}
+	}
+	return fmt.Sprintf("Fix your toolchain, then re-run the install step manually in ./%s.", appName)
 }
 
 func runTask(ctx context.Context, cmd *cli.Command) error {
