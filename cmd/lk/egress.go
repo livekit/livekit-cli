@@ -47,6 +47,7 @@ const (
 	EgressTypeTrack          egressType = "track"
 	EgressTypeTrackComposite egressType = "track-composite"
 	EgressTypeWeb            egressType = "web"
+	EgressTypeMedia          egressType = "media"
 )
 
 var (
@@ -56,6 +57,7 @@ var (
 	- "track" captures a single track without transcoding
 	- "track-composite" captures an audio and a video track
 	- "web" captures any website, with a lifecycle detached from LiveKit rooms
+	- "media" captures tracks directly from a room, optionally without transcoding
 
 REQUEST_JSON is one of:
 	- ` + reflect.TypeFor[livekit.RoomCompositeEgressRequest]().Name() + `
@@ -63,7 +65,8 @@ REQUEST_JSON is one of:
 	- ` + reflect.TypeFor[livekit.TrackEgressRequest]().Name() + `
 	- ` + reflect.TypeFor[livekit.TrackCompositeEgressRequest]().Name() + `
 	- ` + reflect.TypeFor[livekit.WebEgressRequest]().Name() + `
-	
+	- ` + reflect.TypeFor[livekit.StartEgressRequest]().Name() + `
+
 See cmd/livekit-cli/examples`
 )
 
@@ -407,6 +410,8 @@ func handleEgressStart(ctx context.Context, cmd *cli.Command) error {
 		return startTrackEgress(ctx, cmd)
 	case string(EgressTypeTrackComposite):
 		return startTrackCompositeEgress(ctx, cmd)
+	case string(EgressTypeMedia):
+		return startEgress(ctx, cmd)
 	default:
 		return errors.New("unrecognized egress type " + util.WrapWith("\"")(cmd.String("type")))
 	}
@@ -555,6 +560,21 @@ func _deprecatedStartTrackEgress(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	info, err := egressClient.StartTrackEgress(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
+}
+
+func startEgress(ctx context.Context, cmd *cli.Command) error {
+	req, err := ReadRequestArg[livekit.StartEgressRequest](cmd)
+	if err != nil {
+		return err
+	}
+
+	info, err := egressClient.StartEgress(ctx, req)
 	if err != nil {
 		return err
 	}

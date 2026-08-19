@@ -1,0 +1,6 @@
+{
+  "room_name": "my-room",
+  "media": { "video_track_id": "TR_XXXXXXXXXXXX" },
+  "preset": "PASSTHROUGH",
+  "outputs": [{ "file": { "filepath": "my-track.mp4" } }]
+}
