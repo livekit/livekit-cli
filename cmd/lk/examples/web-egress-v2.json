@@ -1,0 +1,20 @@
+{
+  "web": {
+    "url": "https://docs.livekit.io/server/egress"
+  },
+  "outputs": [
+    {
+      "file": {
+        "filepath": "livekit-demo/my-web-test.mp4"
+      }
+    }
+  ],
+  "storage": {
+    "s3": {
+      "access_key": "aws-access-key",
+      "secret": "aws-access-secret",
+      "region": "aws-region",
+      "bucket": "my-bucket"
+    }
+  }
+}

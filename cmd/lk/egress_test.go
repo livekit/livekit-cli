@@ -430,9 +430,6 @@ func TestListEgress_JSONOrdering_ByID(t *testing.T) {
 	assert.Equal(t, []string{"EG_C", "EG_A", "EG_B"}, extractEgressIDs(t, buf.Bytes()))
 }
 
-// buildEgressStartCommand parses the given type and request through a
-// urfave/cli command that mirrors `egress start`. The request goes in as a
-// positional arg, which ReadRequestArg takes as either a path or a JSON literal.
 func buildEgressStartCommand(t *testing.T, egressType, request string) *cli.Command {
 	t.Helper()
 	var captured *cli.Command
@@ -450,9 +447,6 @@ func buildEgressStartCommand(t *testing.T, egressType, request string) *cli.Comm
 	return captured
 }
 
-// TestEgressStart_Media_Passthrough verifies that a StartEgressRequest reaches
-// StartEgress intact, and in particular that the PASSTHROUGH preset survives
-// protojson unmarshalling into the request's encoding oneof.
 func TestEgressStart_Media_Passthrough(t *testing.T) {
 	svc := &fakeEgressService{}
 	setupFakeEgressClient(t, svc)
