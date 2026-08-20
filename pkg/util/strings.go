@@ -82,10 +82,31 @@ func URLSafeName(projectURL string) (string, error) {
 	if err != nil {
 		return "", errors.New("invalid URL")
 	}
-	subdomain := strings.Split(parsed.Hostname(), ".")[0]
+	subdomain, _, _ := strings.Cut(parsed.Hostname(), ".")
 	lastHyphen := strings.LastIndex(subdomain, "-")
 	if lastHyphen == -1 {
 		return subdomain, nil
 	}
 	return subdomain[:lastHyphen], nil
+}
+
+// Slugify converts s into a lowercase, URL-safe alias: runs of characters that
+// aren't ASCII letters or digits collapse to a single hyphen, and leading and
+// trailing hyphens are trimmed. Input with no usable characters yields "".
+func Slugify(s string) string {
+	var b strings.Builder
+	pendingHyphen := false
+	for _, r := range strings.ToLower(s) {
+		switch {
+		case (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9'):
+			if pendingHyphen && b.Len() > 0 {
+				b.WriteByte('-')
+			}
+			pendingHyphen = false
+			b.WriteRune(r)
+		default:
+			pendingHyphen = true
+		}
+	}
+	return b.String()
 }

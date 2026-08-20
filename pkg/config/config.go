@@ -1,4 +1,4 @@
-// Copyright 2022-2024 LiveKit, Inc.
+// Copyright 2022-2026 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"gopkg.in/yaml.v3"
@@ -27,7 +28,9 @@ import (
 
 type CLIConfig struct {
 	DefaultProject string          `yaml:"default_project"`
+	DefaultUser    string          `yaml:"default_user"`
 	Projects       []ProjectConfig `yaml:"projects"`
+	Users          []UserConfig    `yaml:"users"`
 	DeviceName     string          `yaml:"device_name"`
 	Theme          string          `yaml:"theme"`
 	// absent from YAML
@@ -40,6 +43,129 @@ type ProjectConfig struct {
 	URL       string `yaml:"url"`
 	APIKey    string `yaml:"api_key"`
 	APISecret string `yaml:"api_secret"`
+}
+
+type UserConfig struct {
+	Id            string `yaml:"id"`
+	Name          string `yaml:"name"`
+	Email         string `yaml:"email"`
+	SessionToken  string `yaml:"session_token"`
+	SessionExpiry int64  `yaml:"session_expiry"`
+	// Projects caches the projects this user can access, as last fetched from
+	// the Public API (listProjects). Caching lets project resolution avoid a
+	// network round-trip on every command; ProjectsFetchedAt records the Unix
+	// time it was populated so callers can refresh a stale cache.
+	Projects          []UserProjectConfig `yaml:"projects,omitempty"`
+	ProjectsFetchedAt int64               `yaml:"projects_fetched_at,omitempty"`
+}
+
+// UserProjectConfig is a project accessible under user-based auth. Unlike
+// ProjectConfig it carries no API key/secret: requests are authorized with the
+// user's session token and scoped to a project by id.
+type UserProjectConfig struct {
+	ProjectId string `yaml:"project_id" json:"id"`
+	Name      string `yaml:"name,omitempty" json:"name,omitempty"`
+	// Alias is a URL-safe handle derived from Name (deduplicated with a numeric
+	// suffix), so a project can be referenced by a short, typeable name.
+	Alias     string `yaml:"alias,omitempty" json:"alias,omitempty"`
+	Subdomain string `yaml:"subdomain,omitempty" json:"subdomain,omitempty"`
+	URL       string `yaml:"url,omitempty" json:"url,omitempty"`
+}
+
+// FindProject returns the cached project matching ref by ProjectId or
+// (case-insensitively) by Name/alias, or nil if none matches. Used to resolve
+// the --project flag against the user's project cache in user-auth mode.
+func (u *UserConfig) FindProject(ref string) *UserProjectConfig {
+	if u == nil || ref == "" {
+		return nil
+	}
+	for i := range u.Projects {
+		p := &u.Projects[i]
+		if p.ProjectId == ref ||
+			(p.Name != "" && strings.EqualFold(p.Name, ref)) ||
+			(p.Alias != "" && strings.EqualFold(p.Alias, ref)) {
+			return p
+		}
+	}
+	return nil
+}
+
+// SessionValid reports whether the user has a session token that has not
+// expired. A zero SessionExpiry means "no known expiry" and is treated as
+// valid, so a manually-injected token without an expiry remains usable.
+func (u *UserConfig) SessionValid() bool {
+	if u == nil || u.SessionToken == "" {
+		return false
+	}
+	return u.SessionExpiry == 0 || time.Now().Unix() < u.SessionExpiry
+}
+
+// GetUser returns the configured user matching idOrEmail (by id, or
+// case-insensitively by email), or nil if none is configured. The returned
+// pointer aliases the slice element, so mutations persist through a subsequent
+// PersistIfNeeded on the same CLIConfig.
+func (c *CLIConfig) GetUser(idOrEmail string) *UserConfig {
+	for i := range c.Users {
+		u := &c.Users[i]
+		if u.Id == idOrEmail || (u.Email != "" && strings.EqualFold(u.Email, idOrEmail)) {
+			return u
+		}
+	}
+	return nil
+}
+
+// UpsertUser stores u in the config. If a user matching the same person — by
+// non-empty Id or (case-insensitively) email — already exists, that entry is
+// replaced outright rather than a duplicate being inserted; otherwise u is
+// appended. It returns the stored user and whether an existing entry was
+// replaced.
+func (c *CLIConfig) UpsertUser(u UserConfig) (stored *UserConfig, replaced bool) {
+	for i := range c.Users {
+		if sameUser(c.Users[i], u) {
+			c.Users[i] = u
+			return &c.Users[i], true
+		}
+	}
+	c.Users = append(c.Users, u)
+	return &c.Users[len(c.Users)-1], false
+}
+
+// sameUser reports whether two entries refer to the same person, matching by
+// non-empty Id or case-insensitive email.
+func sameUser(a, b UserConfig) bool {
+	if a.Id != "" && a.Id == b.Id {
+		return true
+	}
+	return a.Email != "" && strings.EqualFold(a.Email, b.Email)
+}
+
+// LoadDefaultUser returns the configured default user. It mirrors
+// LoadDefaultProject and is used by user-based (experimental) auth.
+func LoadDefaultUser() (*UserConfig, error) {
+	conf, err := LoadOrCreate()
+	if err != nil {
+		return nil, err
+	}
+	if conf.DefaultUser == "" {
+		return nil, errors.New("no default user set. Run `lk cloud auth` to sign in")
+	}
+	if u := conf.GetUser(conf.DefaultUser); u != nil {
+		return u, nil
+	}
+	return nil, fmt.Errorf("default user %q not found in config", conf.DefaultUser)
+}
+
+// SetUserProjects replaces the cached project list for the user identified by
+// idOrEmail and persists the config. fetchedAt is the Unix time the list was
+// retrieved.
+func (c *CLIConfig) SetUserProjects(idOrEmail string, projects []UserProjectConfig, fetchedAt int64) error {
+	u := c.GetUser(idOrEmail)
+	if u == nil {
+		return fmt.Errorf("user %q not found in config", idOrEmail)
+	}
+	u.Projects = projects
+	u.ProjectsFetchedAt = fetchedAt
+	return c.PersistIfNeeded()
 }
 
 func LoadDefaultProject() (*ProjectConfig, error) {
@@ -122,7 +248,7 @@ func LoadOrCreate() (*CLIConfig, error) {
 	} else if s.Mode().Perm()&0077 != 0 {
 		// because this file contains private keys, warn that
 		// only the owner should have permission to access it
-		fmt.Fprintf(os.Stderr, "WARNING: config file %s should have permissions %o\n", configPath, 0600)
+		util.Warnf("WARNING: config file %s should have permissions %o", configPath, 0600)
 	}
 
 	content, err := os.ReadFile(configPath)
@@ -166,12 +292,23 @@ func (c *CLIConfig) RemoveProject(name string) error {
 		return err
 	}
 
-	fmt.Println("Removed project", name)
+	util.Status("Removed project", name)
 	return nil
 }
 
 func (c *CLIConfig) PersistIfNeeded() error {
-	if len(c.Projects) == 0 && c.Theme == "" && !c.hasPersisted {
+	return c.persist(true)
+}
+
+// PersistQuietly writes the config without printing the "Saved CLI config"
+// notice. Use it for background updates (e.g. refreshing the project cache) that
+// shouldn't announce themselves — and must not pollute stdout/JSON output.
+func (c *CLIConfig) PersistQuietly() error {
+	return c.persist(false)
+}
+
+func (c *CLIConfig) persist(announce bool) error {
+	if len(c.Projects) == 0 && len(c.Users) == 0 && c.Theme == "" && !c.hasPersisted {
 		// nothing worth persisting yet
 		return nil
 	}
@@ -192,7 +329,9 @@ func (c *CLIConfig) PersistIfNeeded() error {
 	if err = os.WriteFile(configPath, data, 0600); err != nil {
 		return err
 	}
-	fmt.Printf("Saved CLI config to [%s]\n", util.Accented(configPath))
+	if announce {
+		util.Statusf("Saved CLI config to [%s]", util.Accented(configPath))
+	}
 	c.hasPersisted = true
 	return nil
 }

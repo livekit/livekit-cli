@@ -1,4 +1,4 @@
-// Copyright 2024 LiveKit, Inc.
+// Copyright 2024-2026 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -133,6 +133,9 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 }
 
 func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
+	if err := experimentalAuthGate(cmd); err != nil {
+		return ctx, err
+	}
 	if project != nil {
 		// already resolved (and announced) earlier in this command
 		return ctx, nil
