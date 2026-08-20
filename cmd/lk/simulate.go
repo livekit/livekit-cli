@@ -514,6 +514,13 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 			"LIVEKIT_URL=" + c.pc.URL,
 			"LIVEKIT_API_KEY=" + c.pc.APIKey,
 			"LIVEKIT_API_SECRET=" + c.pc.APISecret,
+			// the agent under test is spawned locally, so the SDK reads it as
+			// neither hosted nor dev and falls back to the local v1-mini turn
+			// detector and VAD interruption. Deployed, the same agent gets cloud
+			// EOT and adaptive interruption; simulating the weaker pair measures
+			// turn-taking the user will never ship. This env var is what the SDK
+			// gates both defaults on.
+			"LIVEKIT_DEV_MODE=1",
 		},
 		ReadySignal:   "registered worker",
 		ForwardOutput: forwardOutput,
