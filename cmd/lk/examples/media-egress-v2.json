@@ -3,7 +3,6 @@
   "media": {
     "video_track_id": "TR_XXXXXXXXXXXX"
   },
-  "preset": "PASSTHROUGH",
   "outputs": [
     {
       "file": {

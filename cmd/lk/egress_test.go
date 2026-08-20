@@ -442,19 +442,24 @@ func buildEgressStartCommand(t *testing.T, egressType, request string) *cli.Comm
 		},
 	}
 
-	require.NoError(t, app.Run(context.Background(), []string{"test", "--type", egressType, request}))
+	args := []string{"test"}
+	if egressType != "" {
+		args = append(args, "--type", egressType)
+	}
+	args = append(args, request)
+
+	require.NoError(t, app.Run(context.Background(), args))
 	require.NotNil(t, captured)
 	return captured
 }
 
-func TestEgressStart_Media_Passthrough(t *testing.T) {
+func TestEgressStart_Media(t *testing.T) {
 	svc := &fakeEgressService{}
 	setupFakeEgressClient(t, svc)
 
-	cmd := buildEgressStartCommand(t, "media", `{
+	cmd := buildEgressStartCommand(t, "", `{
 		"room_name": "my-room",
 		"media": { "video_track_id": "TR_XXXXXXXXXXXX" },
-		"preset": "PASSTHROUGH",
 		"outputs": [{ "file": { "filepath": "my-track.mp4" } }]
 	}`)
 	require.NoError(t, handleEgressStart(context.Background(), cmd))
@@ -463,7 +468,6 @@ func TestEgressStart_Media_Passthrough(t *testing.T) {
 	req := svc.startRequests[0]
 	assert.Equal(t, "my-room", req.GetRoomName())
 	assert.Equal(t, "TR_XXXXXXXXXXXX", req.GetMedia().GetVideoTrackId())
-	assert.Equal(t, livekit.EncodingOptionsPreset_PASSTHROUGH, req.GetPreset())
 	require.Len(t, req.GetOutputs(), 1)
 	assert.Equal(t, "my-track.mp4", req.GetOutputs()[0].GetFile().GetFilepath())
 }
