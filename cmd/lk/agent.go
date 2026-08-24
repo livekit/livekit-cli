@@ -628,6 +628,11 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	attrs, err := resolveDeployAttributes(ctx, cmd)
+	if err != nil {
+		return err
+	}
+
 	imageRef := cmd.String("image")
 	imageTar := cmd.String("image-tar")
 	// Prebuilt image: no local project layout is required; skip language/dockerfile/sdk checks.
@@ -651,10 +656,6 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		out.Statusf("Created agent with ID [%s]", util.Accented(agentID))
-		attrs, err := resolveDeployAttributes(buildContext, cmd)
-		if err != nil {
-			return err
-		}
 		return deployPrebuiltImage(buildContext, agentID, imageRef, imageTar, attrs)
 	}
 
@@ -686,7 +687,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	regions := []string{region}
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, excludeFiles, os.Stderr)
+	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, attrs, excludeFiles, os.Stderr)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return fmt.Errorf("build timed out possibly due to large image size")
