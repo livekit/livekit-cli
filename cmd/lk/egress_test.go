@@ -30,12 +30,13 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
-// fakeEgressService implements livekit.Egress. Only ListEgress is exercised
-// by the egress list tests; the other RPCs return empty results.
+// fakeEgressService implements livekit.Egress. Only ListEgress and StartEgress
+// are exercised by the egress tests; the other RPCs return empty results.
 type fakeEgressService struct {
 	listRequests  []*livekit.ListEgressRequest
 	listResponses []*livekit.ListEgressResponse
 	listErr       error
+	startRequests []*livekit.StartEgressRequest
 }
 
 func (f *fakeEgressService) ListEgress(_ context.Context, req *livekit.ListEgressRequest) (*livekit.ListEgressResponse, error) {
@@ -50,8 +51,9 @@ func (f *fakeEgressService) ListEgress(_ context.Context, req *livekit.ListEgres
 	return f.listResponses[idx], nil
 }
 
-func (f *fakeEgressService) StartEgress(_ context.Context, _ *livekit.StartEgressRequest) (*livekit.EgressInfo, error) {
-	return nil, nil
+func (f *fakeEgressService) StartEgress(_ context.Context, req *livekit.StartEgressRequest) (*livekit.EgressInfo, error) {
+	f.startRequests = append(f.startRequests, req)
+	return &livekit.EgressInfo{EgressId: "EG_test"}, nil
 }
 func (f *fakeEgressService) StartRoomCompositeEgress(_ context.Context, _ *livekit.RoomCompositeEgressRequest) (*livekit.EgressInfo, error) {
 	return nil, nil
@@ -426,4 +428,50 @@ func TestListEgress_JSONOrdering_ByID(t *testing.T) {
 	require.NoError(t, listEgress(context.Background(), cmd))
 
 	assert.Equal(t, []string{"EG_C", "EG_A", "EG_B"}, extractEgressIDs(t, buf.Bytes()))
+}
+
+func buildEgressStartCommand(t *testing.T, egressType, request string) *cli.Command {
+	t.Helper()
+	var captured *cli.Command
+	app := &cli.Command{
+		Name:  "test",
+		Flags: []cli.Flag{&cli.StringFlag{Name: "type"}},
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			captured = cmd
+			return nil
+		},
+	}
+
+	args := []string{"test"}
+	if egressType != "" {
+		args = append(args, "--type", egressType)
+	}
+	args = append(args, request)
+
+	require.NoError(t, app.Run(context.Background(), args))
+	require.NotNil(t, captured)
+	return captured
+}
+
+func TestEgressStart_Media(t *testing.T) {
+	svc := &fakeEgressService{}
+	setupFakeEgressClient(t, svc)
+
+	cmd := buildEgressStartCommand(t, "", `{
+		"room_name": "my-room",
+		"media": { "video_track_id": "TR_XXXXXXXXXXXX" },
+		"outputs": [{ "file": { "filepath": "my-track.mp4" } }]
+	}`)
+	require.NoError(t, handleEgressStart(context.Background(), cmd))
+
+	require.Len(t, svc.startRequests, 1)
+	req := svc.startRequests[0]
+	assert.Equal(t, "my-room", req.GetRoomName())
+	assert.Equal(t, "TR_XXXXXXXXXXXX", req.GetMedia().GetVideoTrackId())
+	require.Len(t, req.GetOutputs(), 1)
+	assert.Equal(t, "my-track.mp4", req.GetOutputs()[0].GetFile().GetFilepath())
+}
+
+func TestEgressStart_UnknownType(t *testing.T) {
+	require.Error(t, handleEgressStart(context.Background(), buildEgressStartCommand(t, "nonsense", "{}")))
 }

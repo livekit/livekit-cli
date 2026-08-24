@@ -50,20 +50,18 @@ const (
 )
 
 var (
-	egressStartDescription = `Initiates a new egress of the chosen TYPE:
-	- "room-composite" composes multiple participant tracks into a single output stream
-	- "participant" captures a single participant
-	- "track" captures a single track without transcoding
-	- "track-composite" captures an audio and a video track
-	- "web" captures any website, with a lifecycle detached from LiveKit rooms
+	egressStartDescription = `Initiates a new egress.
 
-REQUEST_JSON is one of:
-	- ` + reflect.TypeFor[livekit.RoomCompositeEgressRequest]().Name() + `
-	- ` + reflect.TypeFor[livekit.ParticipantEgressRequest]().Name() + `
-	- ` + reflect.TypeFor[livekit.TrackEgressRequest]().Name() + `
-	- ` + reflect.TypeFor[livekit.TrackCompositeEgressRequest]().Name() + `
-	- ` + reflect.TypeFor[livekit.WebEgressRequest]().Name() + `
-	
+REQUEST_JSON is a ` + reflect.TypeFor[livekit.StartEgressRequest]().Name() + `, whose source is a
+layout template, a web page, or media tracks from a room.
+
+TYPE selects a deprecated per-type request instead:
+	- "room-composite" composes multiple participant tracks into a single output stream, as ` + reflect.TypeFor[livekit.RoomCompositeEgressRequest]().Name() + `
+	- "participant" captures a single participant, as ` + reflect.TypeFor[livekit.ParticipantEgressRequest]().Name() + `
+	- "track" captures a single track without transcoding, as ` + reflect.TypeFor[livekit.TrackEgressRequest]().Name() + `
+	- "track-composite" captures an audio and a video track, as ` + reflect.TypeFor[livekit.TrackCompositeEgressRequest]().Name() + `
+	- "web" captures any website, with a lifecycle detached from LiveKit rooms, as ` + reflect.TypeFor[livekit.WebEgressRequest]().Name() + `
+
 See cmd/livekit-cli/examples`
 )
 
@@ -83,7 +81,6 @@ var (
 						&cli.StringFlag{
 							Name:  "type",
 							Usage: "Specify `TYPE` of egress (see above)",
-							Value: string(EgressTypeRoomComposite),
 						},
 					},
 					ArgsUsage: "REQUEST_JSON",
@@ -397,6 +394,8 @@ func createEgressClient(ctx context.Context, cmd *cli.Command) (context.Context,
 
 func handleEgressStart(ctx context.Context, cmd *cli.Command) error {
 	switch cmd.String("type") {
+	case "":
+		return startEgress(ctx, cmd)
 	case string(EgressTypeRoomComposite):
 		return startRoomCompositeEgress(ctx, cmd)
 	case string(EgressTypeWeb):
@@ -555,6 +554,21 @@ func _deprecatedStartTrackEgress(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	info, err := egressClient.StartTrackEgress(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	printInfo(info)
+	return nil
+}
+
+func startEgress(ctx context.Context, cmd *cli.Command) error {
+	req, err := ReadRequestArg[livekit.StartEgressRequest](cmd)
+	if err != nil {
+		return err
+	}
+
+	info, err := egressClient.StartEgress(ctx, req)
 	if err != nil {
 		return err
 	}

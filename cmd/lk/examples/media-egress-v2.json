@@ -1,0 +1,13 @@
+{
+  "room_name": "my-room",
+  "media": {
+    "video_track_id": "TR_XXXXXXXXXXXX"
+  },
+  "outputs": [
+    {
+      "file": {
+        "filepath": "my-track.mp4"
+      }
+    }
+  ]
+}
