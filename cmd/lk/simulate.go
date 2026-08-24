@@ -70,7 +70,10 @@ var simulateCommand = &cli.Command{
 		simulateProjectConfig = pc
 		return nil, nil
 	},
-	Action: runSimulate,
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
+	},
+	Commands: []*cli.Command{simulateAudioCommand},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:    "num-simulations",
@@ -84,10 +87,6 @@ var simulateCommand = &cli.Command{
 		&cli.StringFlag{
 			Name:  "scenarios",
 			Usage: "Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent's source",
-		},
-		&cli.BoolFlag{
-			Name:  "audio",
-			Usage: "Simulate speech-to-speech interactions using the agent's full audio pipeline. By default, simulations run in text-only mode.",
 		},
 		&cli.BoolFlag{
 			Name:    "yes",
@@ -105,6 +104,34 @@ var simulateCommand = &cli.Command{
 		&cli.StringFlag{
 			Name:  "agent-name",
 			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
+		},
+	},
+}
+
+// simulateAudioCommand inherits every flag on `simulate`: flags there are
+// persistent (cli.FlagBase.Local defaults to false), so they parse on either
+// side of the subcommand name.
+var simulateAudioCommand = &cli.Command{
+	Name:            "audio",
+	Usage:           "Simulate speech-to-speech interactions using the agent's full audio pipeline",
+	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
+	ArgsUsage:       "[entrypoint]",
+	HideHelpCommand: true,
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_AUDIO)
+	},
+	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "background-noise",
+			Usage: "Mix ambient noise into the simulated user's audio",
+		},
+		&cli.BoolFlag{
+			Name:  "low-quality-microphone",
+			Usage: "Publish the simulated user's audio as a low-quality microphone would capture it",
+		},
+		&cli.BoolFlag{
+			Name:  "packet-loss",
+			Usage: "Drop packets from the simulated user's audio track",
 		},
 	},
 }
@@ -189,6 +216,12 @@ type simulateConfig struct {
 	viewModeRunID  string   // non-empty when --view opens a pre-existing run
 	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
 	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
+
+	// impairments on the simulated user's audio, set only in SIMULATION_MODE_AUDIO
+	backgroundNoise      bool
+	lowQualityMicrophone bool
+	packetLoss           bool
+
 	// TODO (steveyoon): add agent deployment support
 	// agentDeployment string
 }
@@ -273,7 +306,7 @@ func buildTaskExists(projectDir string) (bool, error) {
 	return ok, nil
 }
 
-func runSimulate(ctx context.Context, cmd *cli.Command) error {
+func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.SimulationMode) error {
 	pc := simulateProjectConfig
 
 	// --export is a one-shot read of a finished run, so it short-circuits
@@ -368,11 +401,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
-	simulationMode := livekit.SimulationMode_SIMULATION_MODE_TEXT
-	if cmd.Bool("audio") {
-		simulationMode = livekit.SimulationMode_SIMULATION_MODE_AUDIO
-	}
-
 	simCfg := &simulateConfig{
 		ctx:            ctx,
 		client:         simClient,
@@ -390,6 +418,12 @@ func runSimulate(ctx context.Context, cmd *cli.Command) error {
 		viewModeRunID:  runID,
 		liveAgent:      liveAgent,
 		warnings:       simulateConfigWarnings(mode, numSimulations),
+	}
+
+	if simulationMode == livekit.SimulationMode_SIMULATION_MODE_AUDIO {
+		simCfg.backgroundNoise = cmd.Bool("background-noise")
+		simCfg.lowQualityMicrophone = cmd.Bool("low-quality-microphone")
+		simCfg.packetLoss = cmd.Bool("packet-loss")
 	}
 
 	if !isInteractive() {
@@ -522,9 +556,12 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 
 func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livekit.PresignedPostRequest, error) {
 	req := &livekit.SimulationRun_Create_Request{
-		AgentName:      c.agentName,
-		NumSimulations: c.numSimulations,
-		Mode:           c.simulationMode,
+		AgentName:            c.agentName,
+		NumSimulations:       c.numSimulations,
+		Mode:                 c.simulationMode,
+		BackgroundNoise:      c.backgroundNoise,
+		LowQualityMicrophone: c.lowQualityMicrophone,
+		PacketLoss:           c.packetLoss,
 	}
 	if c.concurrency > 0 {
 		req.Concurrency = &c.concurrency
