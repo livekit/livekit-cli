@@ -1931,16 +1931,23 @@ func (m *simulateModel) renderChatTranscript(jobID string) string {
 			}
 			writeToolItem(&b, fmt.Sprintf("ƒ %s(%s)", fc.Name, m.toolArguments(fc.Arguments)), wrapWidth, mark)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
-			if !m.showToolDetail {
+			fco := v.FunctionCallOutput
+			// a jump has to land on the turn it cited, so a cited output prints
+			// whether or not tool detail is on
+			mark := ""
+			if m.citedItem(fco.Id) {
+				cited = true
+				mark = citedMark()
+			}
+			if !m.showToolDetail && mark == "" {
 				continue
 			}
-			fco := v.FunctionCallOutput
 			output := strings.TrimSpace(fco.Output)
 			if output == "" {
 				continue
 			}
 			ensureAgentBlock()
-			writeToolItem(&b, "→ "+output, wrapWidth, "")
+			writeToolItem(&b, "→ "+output, wrapWidth, mark)
 		case *agent.ChatContext_ChatItem_AgentHandoff:
 			h := v.AgentHandoff
 			old := ""
