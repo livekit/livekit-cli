@@ -21,7 +21,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.19.1
 	github.com/livekit/protocol v1.50.5-0.20260824151414-2122e1d08bc9
-	github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260824093707-96a978c6d455
+	github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260824201634-1f82cc396645
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
 	github.com/moby/patternmatcher v0.6.1
