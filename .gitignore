@@ -20,6 +20,7 @@ dist/
 
 # Local artifacts
 .task/
+.zig-cache/
 
 .DS_Store
 /lk
