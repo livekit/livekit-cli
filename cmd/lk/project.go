@@ -232,7 +232,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 	// if it's first project, make it default
 	isDefault := false
 	if cmd.Bool("default") || defaultProject == nil {
-		cliConfig.DefaultProject = p.Name
+		isDefault = true
 	} else if !cmd.IsSet("default") {
 		prompts = append(prompts, util.Confirm().
 			Title("Make this project default?").
@@ -251,9 +251,10 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		if isDefault {
-			cliConfig.DefaultProject = p.Name
-		}
+	}
+
+	if isDefault {
+		cliConfig.DefaultProject = p.Name
 	}
 
 	cliConfig.Projects = append(cliConfig.Projects, p)
