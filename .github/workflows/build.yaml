@@ -44,6 +44,25 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
+          # setup-go's default cache key is keyed only on OS/arch/go version/
+          # go.sum, so it collides with the Go Test workflow's. Test finishes
+          # first, claims the key, and this job's save then fails with "Unable
+          # to reserve cache" — leaving it to restore native-gcc `go test -race`
+          # objects that no zig cross target can use. Own cache below instead.
+          cache: false
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ runner.os }}-${{ matrix.id }}-${{ hashFiles('go.sum') }}
+          # A go.sum bump changes the key but leaves the webrtc/portaudio C++
+          # objects — the expensive part — valid, so fall back to any build of
+          # this target.
+          restore-keys: |
+            go-${{ runner.os }}-${{ matrix.id }}-
 
       - name: Install Zig
         uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
