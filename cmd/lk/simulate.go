@@ -630,13 +630,20 @@ func isTerminalJobStatus(status livekit.SimulationRun_Job_Status) bool {
 		status == livekit.SimulationRun_Job_STATUS_FAILED
 }
 
-// dashboardBaseURL returns the cloud dashboard URL, derived from the API
-// server URL so that --server-url (e.g. staging) is respected without a
-// separate flag. The cloud API and dashboard hosts differ only by "-api":
+// dashboardBaseURL returns the cloud dashboard URL for the project whose
+// credentials the simulation runs under, so a staging project links to the
+// staging dashboard without any flag. When the project URL is not a recognized
+// cloud host, it falls back to deriving the dashboard from --server-url; the
+// cloud API and dashboard hosts differ only by "-api":
 //
 //	https://cloud-api.livekit.io          -> https://cloud.livekit.io
 //	https://cloud-api.staging.livekit.io  -> https://cloud.staging.livekit.io
 func dashboardBaseURL() string {
+	if simulateProjectConfig != nil {
+		if host, _ := cloudProject(simulateProjectConfig.URL); host != "" {
+			return "https://" + host
+		}
+	}
 	if base := strings.Replace(serverURL, "cloud-api", "cloud", 1); base != serverURL {
 		return base
 	}
