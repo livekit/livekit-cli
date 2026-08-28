@@ -120,6 +120,21 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
+          # setup-go's `cache` defaults to true, which collides with test.yaml's
+          # macos leg — that job wins the key and stores `-race` objects this
+          # non-race build can't reuse. Own cache below.
+          cache: false
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          # GOCACHE is under ~/Library/Caches on darwin, not ~/.cache.
+          path: |
+            ~/go/pkg/mod
+            ~/Library/Caches/go-build
+          key: go-${{ runner.os }}-darwin-build-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-${{ runner.os }}-darwin-build-
 
       - name: Build and verify
         run: |

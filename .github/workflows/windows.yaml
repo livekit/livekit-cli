@@ -51,7 +51,23 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
-          cache: true
+          # setup-go's default key carries no workflow or job component, so this
+          # job and test.yaml generate the same one. Test finishes first and
+          # claims it; the save here then fails with "Unable to reserve cache",
+          # leaving this job to restore native-gcc objects no zig target can use.
+          cache: false
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ runner.os }}-windows-cross-${{ hashFiles('go.sum') }}
+          # A go.sum bump leaves the webrtc/portaudio C++ objects — the
+          # expensive part — valid, so fall back to any earlier build.
+          restore-keys: |
+            go-${{ runner.os }}-windows-cross-
 
       # Generate the MinGW import libs lld needs for Go's /DEFAULTLIB references
       # (dbghelp, bcrypt, ...), exactly as goreleaser's before-hook does.
