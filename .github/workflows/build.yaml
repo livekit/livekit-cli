@@ -32,18 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # PRs build one target per OS; main covers all four before release.
-      # fromJSON is required, not decorative: a matrix value must be an array,
-      # and the expression language has no array literal — only boolean, null,
-      # number and string — so a list that varies by event has to arrive as
-      # parsed JSON.
       matrix:
-        id: |-
-          ${{ case(
-            github.event_name == 'pull_request',
-            fromJSON('["lk-linux-amd64", "lk-windows-amd64"]'),
-            fromJSON('["lk-linux-amd64", "lk-linux-arm64", "lk-windows-amd64", "lk-windows-arm64"]')
-          ) }}
+        id: [lk-linux-amd64, lk-linux-arm64, lk-windows-amd64, lk-windows-arm64]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
