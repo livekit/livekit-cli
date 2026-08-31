@@ -561,6 +561,34 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 	})
 }
 
+// ciFromEnv reports the pipeline that started this run, so the dashboard can
+// link a run back to it. GitHub Actions is the only provider recognized; nil
+// means the run did not come from one.
+func ciFromEnv() *livekit.SimulationRun_CI {
+	if os.Getenv("GITHUB_ACTIONS") == "" {
+		return nil
+	}
+	// On a pull_request event GITHUB_REF_NAME is "<number>/merge", which names
+	// neither a branch nor a tag; the head ref is the branch under test.
+	ref := os.Getenv("GITHUB_REF_NAME")
+	if head := os.Getenv("GITHUB_HEAD_REF"); head != "" {
+		ref = head
+	}
+	var pullRequest string
+	if gitRef := os.Getenv("GITHUB_REF"); strings.HasPrefix(gitRef, "refs/pull/") {
+		pullRequest, _, _ = strings.Cut(strings.TrimPrefix(gitRef, "refs/pull/"), "/")
+	}
+	return &livekit.SimulationRun_CI{
+		Provider:    "github_actions",
+		CommitSha:   os.Getenv("GITHUB_SHA"),
+		Ref:         ref,
+		PullRequest: pullRequest,
+		RunUrl: fmt.Sprintf("%s/%s/actions/runs/%s",
+			os.Getenv("GITHUB_SERVER_URL"), os.Getenv("GITHUB_REPOSITORY"), os.Getenv("GITHUB_RUN_ID")),
+		Actor: os.Getenv("GITHUB_ACTOR"),
+	}
+}
+
 func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livekit.PresignedPostRequest, error) {
 	req := &livekit.SimulationRun_Create_Request{
 		AgentName:            c.agentName,
@@ -569,6 +597,7 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 		BackgroundNoise:      c.backgroundNoise,
 		LowQualityMicrophone: c.lowQualityMicrophone,
 		PacketLoss:           c.packetLoss,
+		Ci:                   ciFromEnv(),
 	}
 	if c.concurrency > 0 {
 		req.Concurrency = &c.concurrency
