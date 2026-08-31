@@ -127,8 +127,48 @@ func (l *simLog) BrokenAgent() {
 	fmt.Fprintln(l.info, "The agent is failing to run jobs; cancelling the run.")
 }
 
+// RetryingFailed announces the next retry run and resets per-run progress
+// tracking so the retry's counts print from zero.
+func (l *simLog) RetryingFailed(retryNum, maxRetries int, keys []string) {
+	l.prevStatus = livekit.SimulationRun_Status(-1)
+	l.prevDone = 0
+	fmt.Fprintln(l.out)
+	fmt.Fprintf(l.out, "%d scenario(s) still failing, retrying (%d of %d): %s\n",
+		len(keys), retryNum, maxRetries, strings.Join(keys, ", "))
+}
+
 func (l *simLog) Results(run *livekit.SimulationRun, ap *AgentProcess) {
-	writeRunResults(l.out, run, ap)
+	l.ResultsAll([]*livekit.SimulationRun{run}, ap)
+}
+
+// ResultsAll writes each attempt's results in order. A job that failed but
+// passed on a later attempt keeps its transcript and loses only the ::error::
+// annotation; the merged counts at the end are the run's verdict.
+func (l *simLog) ResultsAll(attempts []*livekit.SimulationRun, ap *AgentProcess) {
+	if len(attempts) == 0 {
+		return
+	}
+	flaky := passedOnRetry(attempts)
+	resolved := make(map[string]bool, len(flaky))
+	for _, key := range flaky {
+		resolved[key] = true
+	}
+	for i, run := range attempts {
+		if i > 0 {
+			fmt.Fprintln(l.out)
+			fmt.Fprintf(l.out, "--- Retry %d ---\n", i)
+		}
+		writeRunResults(l.out, run, ap, resolved)
+	}
+	if len(attempts) > 1 {
+		total, _, passed, failed := simulationJobCounts(mergedFinalRun(attempts))
+		fmt.Fprintln(l.out)
+		fmt.Fprintf(l.out, "After retries: %d total, %d passed, %d failed", total, passed, failed)
+		if len(flaky) > 0 {
+			fmt.Fprintf(l.out, " (passed on retry: %s)", strings.Join(flaky, ", "))
+		}
+		fmt.Fprintln(l.out)
+	}
 	if l.quotaNote != "" {
 		fmt.Fprintf(l.out, "\n⚠ %s\n", l.quotaNote)
 	}
@@ -161,8 +201,10 @@ func (a asciiWriter) Write(p []byte) (int, error) {
 }
 
 // writeRunResults writes the per-job results and the run summary, with GitHub
-// group markers (a useful delimiter outside GitHub too).
-func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) {
+// group markers (a useful delimiter outside GitHub too). Failed jobs whose
+// scenario is in passedOnRetry get no ::error:: annotation — a later attempt
+// passed them.
+func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess, passedOnRetry map[string]bool) {
 	if run == nil {
 		return
 	}
@@ -227,7 +269,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 
 		fmt.Fprintln(w, "::endgroup::")
 
-		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED {
+		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && !passedOnRetry[scenarioKey(job)] {
 			firstLine, _, _ := strings.Cut(job.Error, "\n")
 			fmt.Fprintf(w, "::error::Job %d failed: %s\n", i+1, firstLine)
 		}
@@ -340,12 +382,18 @@ func newRunReporter() *runReporter {
 }
 
 func (r *runReporter) Finish(run *livekit.SimulationRun, ap *AgentProcess, brokenAgent bool, dashboardURL string) string {
+	var attempts []*livekit.SimulationRun
+	if run != nil {
+		attempts = []*livekit.SimulationRun{run}
+	}
+	return r.FinishAll(attempts, ap, brokenAgent, dashboardURL)
+}
+
+func (r *runReporter) FinishAll(attempts []*livekit.SimulationRun, ap *AgentProcess, brokenAgent bool, dashboardURL string) string {
 	if r.f == nil {
 		return ""
 	}
-	if run != nil {
-		r.Results(run, ap)
-	}
+	r.ResultsAll(attempts, ap)
 	if brokenAgent && ap != nil {
 		writeBrokenAgentNote(r.info, ap)
 	}

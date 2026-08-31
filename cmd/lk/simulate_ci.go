@@ -145,33 +145,76 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		return err
 	}
 	runFinished = true
+	firstRunID := runID
+
+	// --- Retry still-failing scenarios ---
+	//
+	// Each retry re-runs only the scenarios still failing, against the same
+	// already-registered agent. Systemic conditions (broken agent, quota
+	// exhaustion) fail the same way again, so they are not retried.
+	attempts := []*livekit.SimulationRun{run}
+	for len(attempts)-1 < config.retries && !poller.brokenAgent && !poller.quotaWarned {
+		failed := failedScenarioKeys(mergedFinalRun(attempts))
+		if len(failed) == 0 {
+			break
+		}
+		group := retryScenarioGroup(run, config.scenarioGroup, failed)
+		if group == nil {
+			break
+		}
+
+		report.RetryingFailed(len(attempts), config.retries, failed)
+
+		retryCfg := *config
+		retryCfg.mode = modeScenarios
+		retryCfg.scenarioGroup = group
+		retryID, _, err := createSimulationRun(ctx, &retryCfg)
+		if err != nil {
+			out.Warnf("Warning: could not create the retry run: %v", err)
+			break
+		}
+		runID, runFinished = retryID, false
+		report.RunCreated(runID, simulationDashboardURL(config.pc.ProjectId, runID))
+
+		retryRun, err := poller.poll(ctx, runID)
+		if err != nil {
+			return err
+		}
+		runFinished = true
+		attempts = append(attempts, retryRun)
+	}
 	brokenAgent := poller.brokenAgent
+	finalRun := mergedFinalRun(attempts)
 
 	// --- Results ---
 
 	if !out.Interactive() {
-		report.Results(run, agent)
+		report.ResultsAll(attempts, agent)
 	} else {
 		// A terminal is watching; we just couldn't open the TUI (e.g. stdin
 		// isn't a TTY). Keep it to counts and pointers, the per-scenario
 		// transcripts go to a report file like the TUI's.
-		dashboardURL := simulationDashboardURL(config.pc.ProjectId, runID)
-		if path := newRunReporter().Finish(run, agent, brokenAgent, dashboardURL); path != "" {
+		dashboardURL := simulationDashboardURL(config.pc.ProjectId, firstRunID)
+		if path := newRunReporter().FinishAll(attempts, agent, brokenAgent, dashboardURL); path != "" {
 			out.Statusf("Run report: %s", path)
 		}
-		total, _, passed, failedN := simulationJobCounts(run)
-		fmt.Fprintf(out.ResultWriter(), "%d total, %d passed, %d failed\n", total, passed, failedN)
+		total, _, passed, failedN := simulationJobCounts(finalRun)
+		line := fmt.Sprintf("%d total, %d passed, %d failed", total, passed, failedN)
+		if flaky := passedOnRetry(attempts); len(flaky) > 0 {
+			line += fmt.Sprintf(" (%d passed on retry)", len(flaky))
+		}
+		fmt.Fprintln(out.ResultWriter(), line)
 	}
 
 	if brokenAgent && agent != nil {
 		writeBrokenAgentNote(out.WarnWriter(), agent)
 	}
 
-	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
+	if url := simulationDashboardURL(config.pc.ProjectId, firstRunID); url != "" {
 		out.Statusf("Dashboard:  %s", url)
 	}
 
-	return baselineFailureError(ctx, config, run)
+	return baselineFailureError(ctx, config, finalRun)
 }
 
 // ciRunPoller polls a run until it reaches a terminal state. Detection state
