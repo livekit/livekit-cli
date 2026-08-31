@@ -455,6 +455,20 @@ The above simulates 5 concurrent rooms, where each room has:
 
 Once the specified duration is over (or if the load test is manually stopped), the load test statistics will be displayed in the form of a table.
 
+## Agent simulations in CI
+
+Use a finished simulation run as a baseline so known failures are reported without failing CI, while regressions still return a nonzero exit code:
+
+```shell
+lk agent simulate \
+  --scenarios scenarios.yaml \
+  --baseline "$SIMULATION_BASELINE_RUN_ID" \
+  --run-id-file "$RUNNER_TEMP/simulation-run-id"
+```
+
+The CLI writes the new run ID to `--run-id-file` as soon as the run is created, even if the simulation later fails. Store the ID in your CI provider's variable or artifact store. Only a successful run on the main branch should replace the stored baseline; pull requests and failed main runs should leave it unchanged.
+
+For the first run, omit `--baseline`, inspect and accept its results, then store the ID written to the file. A missing, unfinished, or inaccessible baseline fails CI rather than silently using strict comparison.
 
 ## Browsing documentation
 

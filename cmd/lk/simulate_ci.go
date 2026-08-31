@@ -120,6 +120,11 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		report.EndSetup()
 		return err
 	}
+	if err := writeSimulationRunID(config.runIDFile, runID); err != nil {
+		report.SetupFailed(err)
+		report.EndSetup()
+		return err
+	}
 	report.SimulationCreated(time.Since(start))
 
 	if config.mode == modeGenerateFromSource {
@@ -219,6 +224,16 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	}
 
 	return baselineFailureError(ctx, config, run)
+}
+
+func writeSimulationRunID(path, runID string) error {
+	if path == "" {
+		return nil
+	}
+	if err := os.WriteFile(path, []byte(runID+"\n"), 0o644); err != nil {
+		return fmt.Errorf("write simulation run ID to %s: %w", path, err)
+	}
+	return nil
 }
 
 // baselineFailureError fetches the --baseline run when one was given and
@@ -332,6 +347,9 @@ func runSimulateCIView(ctx context.Context, config *simulateConfig) error {
 
 	report := newSimLog(out.ResultWriter(), out.StatusWriter())
 	runID := config.viewModeRunID
+	if err := writeSimulationRunID(config.runIDFile, runID); err != nil {
+		return err
+	}
 
 	ticker := time.NewTicker(simulationPollInterval)
 	defer ticker.Stop()

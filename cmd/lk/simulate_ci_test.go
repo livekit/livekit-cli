@@ -15,11 +15,28 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/livekit/protocol/livekit"
 )
+
+func TestWriteSimulationRunID(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "run-id")
+
+	if err := writeSimulationRunID(path, "SR_test123"); err != nil {
+		t.Fatalf("writeSimulationRunID: %v", err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read run ID file: %v", err)
+	}
+	if string(got) != "SR_test123\n" {
+		t.Errorf("run ID file = %q, want %q", got, "SR_test123\\n")
+	}
+}
 
 func simJob(label string, failed bool) *livekit.SimulationRun_Job {
 	status := livekit.SimulationRun_Job_STATUS_COMPLETED
