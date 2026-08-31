@@ -24,10 +24,16 @@ permissions:
   contents: read
 
 jobs:
-  # Linux + Windows are cross-compiled with zig on a (cheap) Linux runner.
+  # Linux + Windows are cross-compiled with zig on (cheap) Linux runners, one
+  # target per runner — a single runner compiling all four serializes ~560 C/C++
+  # translation units (webrtc APM + portaudio) per target onto 4 vCPUs.
   cross-build:
-    name: Cross-build linux+windows (zig)
+    name: Cross-build ${{ matrix.id }} (zig)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        id: [lk-linux-amd64, lk-linux-arm64, lk-windows-amd64, lk-windows-arm64]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -37,6 +43,25 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
+          # setup-go's default cache key is keyed only on OS/arch/go version/
+          # go.sum, so it collides with the Go Test workflow's. Test finishes
+          # first, claims the key, and this job's save then fails with "Unable
+          # to reserve cache" — leaving it to restore native-gcc `go test -race`
+          # objects that no zig cross target can use. Own cache below instead.
+          cache: false
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ runner.os }}-${{ matrix.id }}-${{ hashFiles('go.sum') }}
+          # A go.sum bump changes the key but leaves the webrtc/portaudio C++
+          # objects — the expensive part — valid, so fall back to any build of
+          # this target.
+          restore-keys: |
+            go-${{ runner.os }}-${{ matrix.id }}-
 
       - name: Install Zig
         uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
@@ -47,7 +72,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .cross
-          key: cross-${{ runner.os }}-zig0.14.1-alsa1.2.12-${{ hashFiles('scripts/setup-cross.sh') }}
+          key: cross-${{ runner.os }}-${{ matrix.id }}-zig0.14.1-alsa1.2.12-${{ hashFiles('scripts/setup-cross.sh') }}
 
       - name: GoReleaser snapshot build
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7
@@ -56,10 +81,7 @@ jobs:
           version: latest
           # darwin is excluded here — it can't be cross-compiled from Linux
           # (no macOS SDK/CoreAudio); it builds natively in the macos job below.
-          args: >-
-            build --snapshot --clean
-            --id lk-linux-amd64 --id lk-linux-arm64
-            --id lk-windows-amd64 --id lk-windows-arm64
+          args: build --snapshot --clean --id ${{ matrix.id }}
         env:
           # goreleaser-action runs goreleaser via a Node wrapper that doesn't
           # forward PWD; the .goreleaser.yaml CGO flags template {{ .Env.PWD }}
@@ -67,6 +89,7 @@ jobs:
           PWD: ${{ github.workspace }}
 
       - name: Verify linux binary runs
+        if: matrix.id == 'lk-linux-amd64'
         run: |
           binary=$(find dist -type f -name lk -path '*linux*amd64*' | head -n1)
           test -n "$binary" || { echo "no linux/amd64 binary in dist/"; exit 1; }
@@ -87,6 +110,21 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
+          # setup-go's `cache` defaults to true, which collides with test.yaml's
+          # macos leg — that job wins the key and stores `-race` objects this
+          # non-race build can't reuse. Own cache below.
+          cache: false
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          # GOCACHE is under ~/Library/Caches on darwin, not ~/.cache.
+          path: |
+            ~/go/pkg/mod
+            ~/Library/Caches/go-build
+          key: go-${{ runner.os }}-darwin-build-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-${{ runner.os }}-darwin-build-
 
       - name: Build and verify
         run: |
