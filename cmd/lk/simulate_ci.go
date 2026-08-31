@@ -139,86 +139,152 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Poll until terminal ---
 
-	brokenAgent := false
-	quotaWarned := false
-	peakRunning := 0
-	ticker := time.NewTicker(simulationPollInterval)
-	defer ticker.Stop()
-
-	for {
-		pollCtx, pollCancel := context.WithTimeout(ctx, simulationAPITimeout)
-		run, err = getSimulationRun(pollCtx, config.client, runID, config.pc.ProjectId)
-		pollCancel()
-
-		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			out.Warnf("Warning: poll failed: %v", err)
-		} else {
-			if running := runningJobCount(run); running > peakRunning {
-				peakRunning = running
-			}
-			if !quotaWarned && agent != nil {
-				if info := detectQuotaExceeded(agent.RecentLogs(0)); info != nil {
-					quotaWarned = true
-					suggested := suggestConcurrency(config.concurrency, peakRunning)
-					out.Warnf("Warning: inference quota exceeded — this project is hitting its %s; LLM completions are failing with 429s. Suggested fix: re-run with --concurrency %d",
-						info.describe(), suggested)
-					report.QuotaExceeded(info.describe(), suggested)
-				}
-			}
-
-			// the worker is failing systemically (or, in live-agent mode, the
-			// agent never joined): stop early and surface its log
-			if !brokenAgent && agentBroken(run, agent) {
-				brokenAgent = true
-				report.BrokenAgent()
-				cancelSimulationRun(config.client, runID)
-				runFinished = true
-				break
-			}
-
-			report.RunUpdate(run, config.numSimulations)
-
-			if isTerminalRunStatus(run.Status) {
-				runFinished = true
-				break
-			}
-		}
-
-		select {
-		case <-ticker.C:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
+	poller := &ciRunPoller{config: config, report: report, agent: agent}
+	run, err = poller.poll(ctx, runID)
+	if err != nil {
+		return err
 	}
+	runFinished = true
+	firstRunID := runID
+
+	// --- Retry still-failing scenarios ---
+	//
+	// Each retry re-runs only the scenarios still failing, against the same
+	// already-registered agent. Systemic conditions (broken agent, quota
+	// exhaustion) fail the same way again, so they are not retried.
+	attempts := []*livekit.SimulationRun{run}
+	for len(attempts)-1 < config.retries && !poller.brokenAgent && !poller.quotaWarned {
+		failed := failedScenarioKeys(mergedFinalRun(attempts))
+		if len(failed) == 0 {
+			break
+		}
+		group := retryScenarioGroup(run, config.scenarioGroup, failed)
+		if group == nil {
+			break
+		}
+
+		report.RetryingFailed(len(attempts), config.retries, failed)
+
+		retryCfg := *config
+		retryCfg.mode = modeScenarios
+		retryCfg.scenarioGroup = group
+		retryID, _, err := createSimulationRun(ctx, &retryCfg)
+		if err != nil {
+			out.Warnf("Warning: could not create the retry run: %v", err)
+			break
+		}
+		runID, runFinished = retryID, false
+		report.RunCreated(runID, simulationDashboardURL(config.pc.ProjectId, runID))
+
+		retryRun, err := poller.poll(ctx, runID)
+		if err != nil {
+			return err
+		}
+		runFinished = true
+		attempts = append(attempts, retryRun)
+	}
+	brokenAgent := poller.brokenAgent
+	finalRun := mergedFinalRun(attempts)
 
 	// --- Results ---
 
 	if !out.Interactive() {
-		report.Results(run, agent)
+		report.ResultsAll(attempts, agent)
 	} else {
 		// A terminal is watching; we just couldn't open the TUI (e.g. stdin
 		// isn't a TTY). Keep it to counts and pointers, the per-scenario
 		// transcripts go to a report file like the TUI's.
-		dashboardURL := simulationDashboardURL(config.pc.ProjectId, runID)
-		if path := newRunReporter().Finish(run, agent, brokenAgent, dashboardURL); path != "" {
+		dashboardURL := simulationDashboardURL(config.pc.ProjectId, firstRunID)
+		if path := newRunReporter().FinishAll(attempts, agent, brokenAgent, dashboardURL); path != "" {
 			out.Statusf("Run report: %s", path)
 		}
-		total, _, passed, failedN := simulationJobCounts(run)
-		fmt.Fprintf(out.ResultWriter(), "%d total, %d passed, %d failed\n", total, passed, failedN)
+		total, _, passed, failedN := simulationJobCounts(finalRun)
+		line := fmt.Sprintf("%d total, %d passed, %d failed", total, passed, failedN)
+		if flaky := passedOnRetry(attempts); len(flaky) > 0 {
+			line += fmt.Sprintf(" (%d passed on retry)", len(flaky))
+		}
+		fmt.Fprintln(out.ResultWriter(), line)
 	}
 
 	if brokenAgent && agent != nil {
 		writeBrokenAgentNote(out.WarnWriter(), agent)
 	}
 
-	if url := simulationDashboardURL(config.pc.ProjectId, runID); url != "" {
+	if url := simulationDashboardURL(config.pc.ProjectId, firstRunID); url != "" {
 		out.Statusf("Dashboard:  %s", url)
 	}
 
-	return baselineFailureError(ctx, config, run)
+	return baselineFailureError(ctx, config, finalRun)
+}
+
+// ciRunPoller polls a run until it reaches a terminal state. Detection state
+// lives on the struct because it must outlive a single run: the quota warning
+// fires at most once per invocation, and peak concurrency is observed across
+// everything the invocation runs.
+type ciRunPoller struct {
+	config      *simulateConfig
+	report      *simLog
+	agent       *AgentProcess
+	brokenAgent bool
+	quotaWarned bool
+	peakRunning int
+}
+
+// poll returns the run in its terminal state, or the last state seen when ctx
+// is cancelled (so the caller's cleanup can still act on it). A broken agent
+// cancels the run and returns it without error; the caller reads brokenAgent.
+func (p *ciRunPoller) poll(ctx context.Context, runID string) (*livekit.SimulationRun, error) {
+	ticker := time.NewTicker(simulationPollInterval)
+	defer ticker.Stop()
+
+	var run *livekit.SimulationRun
+	var err error
+	for {
+		pollCtx, pollCancel := context.WithTimeout(ctx, simulationAPITimeout)
+		run, err = getSimulationRun(pollCtx, p.config.client, runID, p.config.pc.ProjectId)
+		pollCancel()
+
+		if err != nil {
+			if ctx.Err() != nil {
+				return run, ctx.Err()
+			}
+			out.Warnf("Warning: poll failed: %v", err)
+		} else {
+			if running := runningJobCount(run); running > p.peakRunning {
+				p.peakRunning = running
+			}
+			if !p.quotaWarned && p.agent != nil {
+				if info := detectQuotaExceeded(p.agent.RecentLogs(0)); info != nil {
+					p.quotaWarned = true
+					suggested := suggestConcurrency(p.config.concurrency, p.peakRunning)
+					out.Warnf("Warning: inference quota exceeded — this project is hitting its %s; LLM completions are failing with 429s. Suggested fix: re-run with --concurrency %d",
+						info.describe(), suggested)
+					p.report.QuotaExceeded(info.describe(), suggested)
+				}
+			}
+
+			// the worker is failing systemically (or, in live-agent mode, the
+			// agent never joined): stop early and surface its log
+			if !p.brokenAgent && agentBroken(run, p.agent) {
+				p.brokenAgent = true
+				p.report.BrokenAgent()
+				cancelSimulationRun(p.config.client, runID)
+				return run, nil
+			}
+
+			p.report.RunUpdate(run, p.config.numSimulations)
+
+			if isTerminalRunStatus(run.Status) {
+				return run, nil
+			}
+		}
+
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return run, ctx.Err()
+		}
+	}
 }
 
 // baselineFailureError fetches the --baseline run when one was given and

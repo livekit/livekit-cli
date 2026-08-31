@@ -105,6 +105,11 @@ var simulateCommand = &cli.Command{
 			Name:  "baseline",
 			Usage: "Compare failures against the finished run with run `ID`: only scenarios that pass there and fail here fail the exit code. Non-interactive (CI) runs only",
 		},
+		&cli.IntFlag{
+			Name:  "retries",
+			Value: 3,
+			Usage: "Times to re-run scenarios that still fail before giving up (0 disables). A scenario passes when any attempt passes. Non-interactive (CI) runs only",
+		},
 		&cli.StringFlag{
 			Name:  "agent-name",
 			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
@@ -219,6 +224,7 @@ type simulateConfig struct {
 	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
 	viewModeRunID  string   // non-empty when --view opens a pre-existing run
 	baselineRunID  string   // --baseline: failures this run also has don't fail CI
+	retries        int      // --retries: times to re-run still-failing scenarios (CI only)
 	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
 	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
 
@@ -422,6 +428,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		scenariosPath:  scenariosPath,
 		viewModeRunID:  runID,
 		baselineRunID:  cmd.String("baseline"),
+		retries:        int(cmd.Int("retries")),
 		liveAgent:      liveAgent,
 		warnings:       simulateConfigWarnings(mode, numSimulations),
 	}
