@@ -139,60 +139,13 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 
 	// --- Poll until terminal ---
 
-	brokenAgent := false
-	quotaWarned := false
-	peakRunning := 0
-	ticker := time.NewTicker(simulationPollInterval)
-	defer ticker.Stop()
-
-	for {
-		pollCtx, pollCancel := context.WithTimeout(ctx, simulationAPITimeout)
-		run, err = getSimulationRun(pollCtx, config.client, runID, config.pc.ProjectId)
-		pollCancel()
-
-		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			out.Warnf("Warning: poll failed: %v", err)
-		} else {
-			if running := runningJobCount(run); running > peakRunning {
-				peakRunning = running
-			}
-			if !quotaWarned && agent != nil {
-				if info := detectQuotaExceeded(agent.RecentLogs(0)); info != nil {
-					quotaWarned = true
-					suggested := suggestConcurrency(config.concurrency, peakRunning)
-					out.Warnf("Warning: inference quota exceeded — this project is hitting its %s; LLM completions are failing with 429s. Suggested fix: re-run with --concurrency %d",
-						info.describe(), suggested)
-					report.QuotaExceeded(info.describe(), suggested)
-				}
-			}
-
-			// the worker is failing systemically (or, in live-agent mode, the
-			// agent never joined): stop early and surface its log
-			if !brokenAgent && agentBroken(run, agent) {
-				brokenAgent = true
-				report.BrokenAgent()
-				cancelSimulationRun(config.client, runID)
-				runFinished = true
-				break
-			}
-
-			report.RunUpdate(run, config.numSimulations)
-
-			if isTerminalRunStatus(run.Status) {
-				runFinished = true
-				break
-			}
-		}
-
-		select {
-		case <-ticker.C:
-		case <-ctx.Done():
-			return ctx.Err()
-		}
+	poller := &ciRunPoller{config: config, report: report, agent: agent}
+	run, err = poller.poll(ctx, runID)
+	if err != nil {
+		return err
 	}
+	runFinished = true
+	brokenAgent := poller.brokenAgent
 
 	// --- Results ---
 
@@ -219,6 +172,76 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	}
 
 	return baselineFailureError(ctx, config, run)
+}
+
+// ciRunPoller polls a run until it reaches a terminal state. Detection state
+// lives on the struct because it must outlive a single run: the quota warning
+// fires at most once per invocation, and peak concurrency is observed across
+// everything the invocation runs.
+type ciRunPoller struct {
+	config      *simulateConfig
+	report      *simLog
+	agent       *AgentProcess
+	brokenAgent bool
+	quotaWarned bool
+	peakRunning int
+}
+
+// poll returns the run in its terminal state, or the last state seen when ctx
+// is cancelled (so the caller's cleanup can still act on it). A broken agent
+// cancels the run and returns it without error; the caller reads brokenAgent.
+func (p *ciRunPoller) poll(ctx context.Context, runID string) (*livekit.SimulationRun, error) {
+	ticker := time.NewTicker(simulationPollInterval)
+	defer ticker.Stop()
+
+	var run *livekit.SimulationRun
+	var err error
+	for {
+		pollCtx, pollCancel := context.WithTimeout(ctx, simulationAPITimeout)
+		run, err = getSimulationRun(pollCtx, p.config.client, runID, p.config.pc.ProjectId)
+		pollCancel()
+
+		if err != nil {
+			if ctx.Err() != nil {
+				return run, ctx.Err()
+			}
+			out.Warnf("Warning: poll failed: %v", err)
+		} else {
+			if running := runningJobCount(run); running > p.peakRunning {
+				p.peakRunning = running
+			}
+			if !p.quotaWarned && p.agent != nil {
+				if info := detectQuotaExceeded(p.agent.RecentLogs(0)); info != nil {
+					p.quotaWarned = true
+					suggested := suggestConcurrency(p.config.concurrency, p.peakRunning)
+					out.Warnf("Warning: inference quota exceeded — this project is hitting its %s; LLM completions are failing with 429s. Suggested fix: re-run with --concurrency %d",
+						info.describe(), suggested)
+					p.report.QuotaExceeded(info.describe(), suggested)
+				}
+			}
+
+			// the worker is failing systemically (or, in live-agent mode, the
+			// agent never joined): stop early and surface its log
+			if !p.brokenAgent && agentBroken(run, p.agent) {
+				p.brokenAgent = true
+				p.report.BrokenAgent()
+				cancelSimulationRun(p.config.client, runID)
+				return run, nil
+			}
+
+			p.report.RunUpdate(run, p.config.numSimulations)
+
+			if isTerminalRunStatus(run.Status) {
+				return run, nil
+			}
+		}
+
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return run, ctx.Err()
+		}
+	}
 }
 
 // baselineFailureError fetches the --baseline run when one was given and
