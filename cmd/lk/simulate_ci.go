@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -217,23 +218,108 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		out.Statusf("Dashboard:  %s", url)
 	}
 
-	return runFailureError(run)
+	return baselineFailureError(ctx, config, run)
+}
+
+// baselineFailureError fetches the --baseline run when one was given and
+// reports which failures it already had before deciding the exit error. A
+// baseline that can't be fetched fails CI loudly rather than silently
+// falling back to strict comparison.
+func baselineFailureError(ctx context.Context, config *simulateConfig, run *livekit.SimulationRun) error {
+	var baseline *livekit.SimulationRun
+	if config.baselineRunID != "" {
+		fetchCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
+		defer cancel()
+		var err error
+		baseline, err = getSimulationRun(fetchCtx, config.client, config.baselineRunID, config.pc.ProjectId)
+		if err != nil {
+			return fmt.Errorf("fetch baseline run %s: %w", config.baselineRunID, err)
+		}
+		if !isTerminalRunStatus(baseline.GetStatus()) {
+			return fmt.Errorf("baseline run %s is still in progress", config.baselineRunID)
+		}
+		if cmp := compareToBaseline(run, baseline); len(cmp.knownFailures) > 0 {
+			out.Statusf("%d failure(s) already failing in baseline %s (not failing CI): %s",
+				len(cmp.knownFailures), config.baselineRunID, strings.Join(cmp.knownFailures, ", "))
+		}
+	}
+	return runFailureError(run, baseline)
 }
 
 // runFailureError converts a terminal run's failures into the CI exit error;
 // the error is printed by main and reports the failure — the counts line /
 // full dump above already carries the detail. Returns nil when everything
-// passed.
-func runFailureError(run *livekit.SimulationRun) error {
+// passed. With a baseline run, scenario failures the baseline already had
+// don't fail CI; a run-level STATUS_FAILED is systemic (the server only sets
+// it when generation/submission breaks, never for scenario failures) and
+// fails regardless of baseline.
+func runFailureError(run, baseline *livekit.SimulationRun) error {
 	_, _, _, failed := simulationJobCounts(run)
-	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
-		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
+	if failed == 0 && run.Status != livekit.SimulationRun_STATUS_FAILED {
+		return nil
+	}
+	if run.Status == livekit.SimulationRun_STATUS_FAILED {
+		if len(run.Jobs) == 0 {
 			return fmt.Errorf("simulation failed: %s", run.Error)
 		}
 		return fmt.Errorf("%d of %d simulations failed", failed, len(run.Jobs))
 	}
+	if baseline == nil {
+		return fmt.Errorf("%d of %d simulations failed", failed, len(run.Jobs))
+	}
 
-	return nil
+	cmp := compareToBaseline(run, baseline)
+	if len(cmp.newFailures) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%d new simulation failure(s) not failing in the baseline: %s",
+		len(cmp.newFailures), strings.Join(cmp.newFailures, ", "))
+}
+
+// baselineComparison splits the run's failed scenarios by whether the
+// baseline run already failed them.
+type baselineComparison struct {
+	newFailures   []string
+	knownFailures []string
+}
+
+func compareToBaseline(run, baseline *livekit.SimulationRun) baselineComparison {
+	known := make(map[string]bool)
+	for _, key := range failedScenarioKeys(baseline) {
+		known[key] = true
+	}
+	var cmp baselineComparison
+	for _, key := range failedScenarioKeys(run) {
+		if known[key] {
+			cmp.knownFailures = append(cmp.knownFailures, key)
+		} else {
+			cmp.newFailures = append(cmp.newFailures, key)
+		}
+	}
+	return cmp
+}
+
+// failedScenarioKeys returns each failed scenario once, in job order. The
+// label (scenario name) identifies a scenario across runs; generated jobs may
+// carry only instructions. Repeats of one scenario (--num-simulations) share
+// a key, so any failed repeat marks the scenario failed.
+func failedScenarioKeys(run *livekit.SimulationRun) []string {
+	seen := make(map[string]bool)
+	var keys []string
+	for _, job := range run.GetJobs() {
+		if job.GetStatus() != livekit.SimulationRun_Job_STATUS_FAILED {
+			continue
+		}
+		key := job.GetLabel()
+		if key == "" {
+			key = job.GetInstructions()
+		}
+		if !seen[key] {
+			seen[key] = true
+			keys = append(keys, key)
+		}
+	}
+	return keys
 }
 
 // runSimulateCIView handles --view in non-interactive mode: it fetches the
@@ -281,5 +367,5 @@ func runSimulateCIView(ctx context.Context, config *simulateConfig) error {
 		out.Statusf("Dashboard:  %s", url)
 	}
 
-	return runFailureError(run)
+	return baselineFailureError(ctx, config, run)
 }
