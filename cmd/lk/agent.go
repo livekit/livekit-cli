@@ -689,6 +689,13 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, attrs, excludeFiles, os.Stderr)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			// The client disconnected (Ctrl-C). The agent is registered and its build runs
+			// to completion on the server, so this is not a failure. The agent ID was not
+			// saved locally (resp is nil here), so point at `list` rather than `status`.
+			out.Status("Disconnected. The build continues on the server; run `lk agent list` to find it.")
+			return nil
+		}
 		if errors.Is(err, context.DeadlineExceeded) {
 			return fmt.Errorf("build timed out possibly due to large image size")
 		}
@@ -874,6 +881,12 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	if err := agentsClient.DeployAgentV2(buildContext, agentId, os.DirFS(workingDir), secrets, attrs, agentDeployment, excludeFiles, os.Stderr); err != nil {
+		if errors.Is(err, context.Canceled) {
+			// The client disconnected (Ctrl-C). Deploys are durable — the build runs to
+			// completion and deploys on the server regardless, so this is not a failure.
+			out.Status("Disconnected. The deploy continues on the server; run `lk agent status` to check.")
+			return nil
+		}
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
