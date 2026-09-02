@@ -122,9 +122,9 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/Library/Caches/go-build
-          key: go-${{ runner.os }}-darwin-build-${{ hashFiles('go.sum') }}
+          key: go-${{ runner.os }}-lk-darwin-${{ hashFiles('go.sum') }}
           restore-keys: |
-            go-${{ runner.os }}-darwin-build-
+            go-${{ runner.os }}-lk-darwin-
 
       - name: Build and verify
         run: |
