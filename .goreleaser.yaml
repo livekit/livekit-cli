@@ -28,23 +28,13 @@ builds:
   # builds where goreleaser runs (the macOS release runner). On the arm64 macOS
   # runner, amd64 cross-compiles via Apple clang's -arch against the universal
   # SDK. The build.yaml smoke test builds both arches the same way.
-  - id: lk-darwin-amd64
+  - id: lk-darwin
     main: ./cmd/lk
     binary: lk
     env:
       - CGO_ENABLED=1
     goos: [darwin]
-    goarch: [amd64]
-    ldflags:
-      - -s -w
-
-  - id: lk-darwin-arm64
-    main: ./cmd/lk
-    binary: lk
-    env:
-      - CGO_ENABLED=1
-    goos: [darwin]
-    goarch: [arm64]
+    goarch: [amd64, arm64]
     ldflags:
       - -s -w
 
