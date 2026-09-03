@@ -1981,7 +1981,7 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 	for _, r := range regionOptions {
 		label := r
 		if slices.Contains(warnRegions, r) {
-			label = r + " " + util.Warn("⚠︎ GDPR compliance required")
+			label = r + " " + util.Warn("⚠︎ Compliance warning for GDPR")
 		}
 		options = append(options, huh.NewOption(label, r))
 	}
@@ -2016,11 +2016,11 @@ func confirmRegionResidency(cmd *cli.Command, region, dataRegion string, warnReg
 		return nil
 	}
 
-	detail := fmt.Sprintf(
+	detail := util.Warn(fmt.Sprintf(
 		"Data residency warning: This agent will run in [%s], but your project observability region is [%s]. Its recordings, transcripts, and traces will be stored outside the EU, which may breach GDPR. To keep this data in-region, create a new project with with an EU observability region.",
 		region,
 		dataRegion,
-	)
+	))
 	if SkipPrompts(cmd) {
 		out.Warnf("Deploying to [%s]. %s", region, detail)
 		return nil
