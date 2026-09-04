@@ -20,8 +20,8 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.0
-	github.com/livekit/protocol v1.51.0
-	github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260824201634-1f82cc396645
+	github.com/livekit/protocol v1.51.1-0.20260904055839-9e3ea3689ef8
+	github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260904062056-1da58cd7b795
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
 	github.com/moby/patternmatcher v0.6.1
@@ -164,7 +164,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.23 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
-	github.com/moby/buildkit v0.32.0 // indirect
+	github.com/moby/buildkit v0.32.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/moby/api v1.54.2 // indirect

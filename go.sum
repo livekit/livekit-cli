@@ -344,12 +344,12 @@ github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 h1:9x+U2HGLrSw5AT
 github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731/go.mod h1:Rs3MhFwutWhGwmY1VQsygw28z5bWcnEYmS1OG9OxjOQ=
 github.com/livekit/mediatransportutil v0.0.0-20260821083140-f234b534b095 h1:BcliKAXoMhl/nWmzQweQ5kmh4Qqagxl4s3Z5pvM/7AY=
 github.com/livekit/mediatransportutil v0.0.0-20260821083140-f234b534b095/go.mod h1:o8CFmAdrVwzJNOCsQCLUzXRjokkufNshnQHOe4fRaqU=
-github.com/livekit/protocol v1.51.0 h1:7aE0Ym8MIbGuWuX7kYSKV7Yh17g63xodp/antjZNJvQ=
-github.com/livekit/protocol v1.51.0/go.mod h1:x7m1nX86XfvS0YoqXnVe0jixkCmAZglR4mcbRHURSro=
+github.com/livekit/protocol v1.51.1-0.20260904055839-9e3ea3689ef8 h1:bf2RoHRo+ZvVRp8X8acp6bHHkDtmQ77pHL+U7Fnay7U=
+github.com/livekit/protocol v1.51.1-0.20260904055839-9e3ea3689ef8/go.mod h1:qt6LOKs6pzIwJF+P/dSUKHJE1SPowzFWDK6byqktdfU=
 github.com/livekit/psrpc v0.7.5 h1:WxfJIQ41X1b+48A1uzc8Gy9FhYEMxBJNCpCYqPdO/Ds=
 github.com/livekit/psrpc v0.7.5/go.mod h1:rAI+m2+/cb4x9RXhLRtUx5ZwdfjjXOl4zi46IjEetaw=
-github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260824201634-1f82cc396645 h1:KGS5da8KCS1sg3PwNUaZMYB2gjn8HJVji8alF9UU7Ys=
-github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260824201634-1f82cc396645/go.mod h1:qkHEZCUjVLpBs2zIhDo7zbX5f1mehGAROkRkPNSyfpc=
+github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260904062056-1da58cd7b795 h1:0gljvZ5rt8vSLgoyaQl3ocD9D6RQt4Iyn4kXjVr4un0=
+github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260904062056-1da58cd7b795/go.mod h1:XjoifafCULiHBrmrefkzHX+YEhgraLykU4UAuT8Cf3U=
 github.com/lucasb-eyer/go-colorful v1.4.0 h1:UtrWVfLdarDgc44HcS7pYloGHJUjHV/4FwW4TvVgFr4=
 github.com/lucasb-eyer/go-colorful v1.4.0/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/magefile/mage v1.17.2 h1:fyXVu1eadI8Ap1HCCNgEhJ5McIWiYhLR8uol64ZZc40=
@@ -366,8 +366,8 @@ github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/mitchellh/hashstructure/v2 v2.0.2 h1:vGKWl0YJqUNxE8d+h8f6NJLcCJrgbhC4NcD46KavDd4=
 github.com/mitchellh/hashstructure/v2 v2.0.2/go.mod h1:MG3aRVU/N29oo/V/IhBX8GR/zz4kQkprJgF2EVszyDE=
-github.com/moby/buildkit v0.32.0 h1:slXarYQoMo4cp2d9x30M9t0L4R+c0CVMov+5P1hhiHY=
-github.com/moby/buildkit v0.32.0/go.mod h1:Y10FBWvqxl/Wmhdzjee1Y2wQfjifTiwxENIUdaVNdME=
+github.com/moby/buildkit v0.32.2 h1:Sfy7+u6dUv/2yuBc9KCoK70Re8atuV8aPZ5UOC068Vc=
+github.com/moby/buildkit v0.32.2/go.mod h1:0GB/EJ1d+4VIVqIAgy3asaoGkVXy7IrDfVy7mPhOvg8=
 github.com/moby/docker-image-spec v1.3.1 h1:jMKff3w6PgbfSa69GfNg+zN/XLhfXJGnEx3Nl2EsFP0=
 github.com/moby/docker-image-spec v1.3.1/go.mod h1:eKmb5VW8vQEh/BAr2yvVNvuiJuY6UIocYsFu/DxxRpo=
 github.com/moby/locker v1.0.1 h1:fOXqR41zeveg4fFODix+1Ch4mj/gT0NE1XJbp/epuBg=
