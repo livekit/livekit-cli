@@ -140,18 +140,15 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	defer body.Close()
 
 	if cmd.Bool("json") {
-		var obj any
-		if err := json.Unmarshal(body, &obj); err != nil {
-			return err
-		}
-		util.PrintJSON(obj)
-		return nil
+		_, err := io.Copy(out.ResultWriter(), body)
+		return err
 	}
 
 	var res analyticsListResponse
-	if err := json.Unmarshal(body, &res); err != nil {
+	if err := json.NewDecoder(body).Decode(&res); err != nil {
 		return fmt.Errorf("failed to parse analytics list response: %w", err)
 	}
 
@@ -194,18 +191,15 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	defer body.Close()
 
 	if cmd.Bool("json") {
-		var obj any
-		if err := json.Unmarshal(body, &obj); err != nil {
-			return err
-		}
-		util.PrintJSON(obj)
-		return nil
+		_, err := io.Copy(out.ResultWriter(), body)
+		return err
 	}
 
 	var details analyticsSessionDetails
-	if err := json.Unmarshal(body, &details); err != nil {
+	if err := json.NewDecoder(body).Decode(&details); err != nil {
 		return fmt.Errorf("failed to parse analytics details response: %w", err)
 	}
 
@@ -310,7 +304,7 @@ func validateAnalyticsDateRange(startDate, endDate string) (time.Time, time.Time
 	return start, end, nil
 }
 
-func callAnalyticsAPI(ctx context.Context, cmd *cli.Command, sessionID string, query url.Values) ([]byte, error) {
+func callAnalyticsAPI(ctx context.Context, cmd *cli.Command, sessionID string, query url.Values) (io.ReadCloser, error) {
 	_, err := requireProject(ctx, cmd)
 	if err != nil {
 		return nil, err
@@ -356,18 +350,18 @@ func callAnalyticsAPI(ctx context.Context, cmd *cli.Command, sessionID string, q
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	if resp.StatusCode < 400 {
+		return resp.Body, nil
+	}
+
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 201))
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.StatusCode >= 400 {
-		return nil, mapAnalyticsHTTPError(resp.StatusCode, string(body))
-	}
-
-	return body, nil
+	return nil, mapAnalyticsHTTPError(resp.StatusCode, string(body))
 }
 
 func resolveAnalyticsProjectID() (string, error) {
