@@ -102,6 +102,14 @@ var simulateCommand = &cli.Command{
 			Usage: "Print the run with run `ID` and its exact per-job chat contexts as JSON. Nothing is run or polled: the run must already be finished",
 		},
 		&cli.StringFlag{
+			Name:  "baseline",
+			Usage: "Compare failures against the finished run with run `ID`: only scenarios that pass there and fail here fail the exit code. Non-interactive (CI) runs only",
+		},
+		&cli.StringFlag{
+			Name:  "run-id-file",
+			Usage: "Write the simulation run ID to `FILE` as soon as it is available. Non-interactive (CI) runs only",
+		},
+		&cli.StringFlag{
 			Name:  "agent-name",
 			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
 		},
@@ -214,6 +222,8 @@ type simulateConfig struct {
 	scenarioGroup  *livekit.ScenarioGroup
 	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
 	viewModeRunID  string   // non-empty when --view opens a pre-existing run
+	baselineRunID  string   // --baseline: failures this run also has don't fail CI
+	runIDFile      string   // --run-id-file: machine-readable handoff to CI
 	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
 	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
 
@@ -416,6 +426,8 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		scenarioGroup:  scenarioGroup,
 		scenariosPath:  scenariosPath,
 		viewModeRunID:  runID,
+		baselineRunID:  cmd.String("baseline"),
+		runIDFile:      cmd.String("run-id-file"),
 		liveAgent:      liveAgent,
 		warnings:       simulateConfigWarnings(mode, numSimulations),
 	}
@@ -428,6 +440,12 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 
 	if !isInteractive() {
 		return runSimulateCI(ctx, simCfg)
+	}
+	if simCfg.baselineRunID != "" {
+		return fmt.Errorf("--baseline only applies to non-interactive (CI) runs; the TUI already shows every failure")
+	}
+	if simCfg.runIDFile != "" {
+		return fmt.Errorf("--run-id-file only applies to non-interactive (CI) runs; the TUI already shows the run ID")
 	}
 	return runSimulateTUI(simCfg)
 }
