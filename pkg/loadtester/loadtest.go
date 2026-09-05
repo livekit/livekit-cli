@@ -26,8 +26,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/table"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/syncmap"

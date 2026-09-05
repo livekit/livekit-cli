@@ -1,0 +1,12 @@
+
+ Agent Simulation
+
+  Project: demo
+  URL:     wss://demo.livekit.cloud
+  Run:     SR_fixture0001
+
+  ✓ Starting agent <dur>
+  ✗ Creating simulation
+  – Uploading source
+
+  agent worker exited before registering

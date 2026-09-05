@@ -18,6 +18,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,7 +50,10 @@ func TestLinkSummaryRefs(t *testing.T) {
 	// both refs link to their own item, whatever the attribute order
 	require.Contains(t, linked, "runs/run?job=SRJ_Bzb9ZaoJFJyp&item=item_dd0ee81187bd")
 	require.Contains(t, linked, "runs/run?job=SRJ_Bzb9ZaoJFJyp&item=item_13b90227fe38")
-	require.Contains(t, linked, `"I've had a few, sure"`)
+	// Lip Gloss v2 emits underlined text one grapheme at a time (it styles the
+	// spaces separately), so the label is only contiguous once the SGR sequences
+	// are stripped.
+	require.Contains(t, ansi.Strip(linked), `"I've had a few, sure"`)
 	require.Equal(t, 2, strings.Count(linked, "\x1b]8;;"+dashboardBaseURL()))
 
 	// the number a label carries selects the citation recorded under it

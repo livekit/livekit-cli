@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -490,7 +490,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 					huh.NewOption("Node.js", "node"),
 				).
 				Value(&lang).
-				WithTheme(util.Theme).
+				WithTheme(util.FormTheme()).
 				Run(); err != nil {
 				return err
 			}
@@ -580,7 +580,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				Value(&useProject).
 				Affirmative("Yes").
 				Negative("No, select another...").
-				WithTheme(util.Theme))).
+				WithTheme(util.FormTheme()))).
 				Run(); err != nil {
 				return err
 			}
@@ -722,7 +722,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 					Title("Agent deploying. Would you like to view logs?").
 					Description("You can view logs later with `lk agent logs`").
 					Value(&viewLogs).
-					WithTheme(util.Theme),
+					WithTheme(util.FormTheme()),
 			),
 		).Run(); err != nil {
 			return err
@@ -748,7 +748,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 							fmt.Sprintf("Config file [%s] file already exists. Overwrite?", tomlFilename),
 						).
 						Value(&overwriteVal).
-						WithTheme(util.Theme),
+						WithTheme(util.FormTheme()),
 				),
 			).
 				Run(); err != nil {
@@ -1256,7 +1256,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 				util.Confirm().
 					Title(fmt.Sprintf("Are you sure you want to delete agent %s?", agentMsg)).
 					Value(&confirmDelete).
-					WithTheme(util.Theme),
+					WithTheme(util.FormTheme()),
 			),
 		).Run(); err != nil {
 			return err
@@ -1376,7 +1376,7 @@ func resolveDeployAttributes(ctx context.Context, cmd *cli.Command) (map[string]
 						util.Confirm().
 							Title("Continue deploying anyway?").
 							Value(&proceed).
-							WithTheme(util.Theme),
+							WithTheme(util.FormTheme()),
 					),
 				).Run(); err != nil {
 					return nil, err
@@ -1658,7 +1658,7 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 					util.Confirm().
 						Title(fmt.Sprintf("This will remove all existing secrets. Are you sure you want to proceed [%s]?", agentID)).
 						Value(&confirmOverwrite).
-						WithTheme(util.Theme),
+						WithTheme(util.FormTheme()),
 				),
 			).Run(); err != nil {
 				return err
@@ -1768,7 +1768,7 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 		Title("Select an agent").
 		Options(agentNames...).
 		Value(&selectedAgent).
-		WithTheme(util.Theme).
+		WithTheme(util.FormTheme()).
 		Run(); err != nil {
 		return "", err
 	}
@@ -1991,7 +1991,7 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 		Title(title).
 		Options(options...).
 		Value(&region).
-		WithTheme(util.Theme).
+		WithTheme(util.FormTheme()).
 		Run(); err != nil {
 		return "", err
 	}
@@ -2033,7 +2033,7 @@ func confirmRegionResidency(cmd *cli.Command, region, dataRegion string, warnReg
 		Affirmative("Deploy").
 		Negative("Cancel").
 		Value(&confirmed))).
-		WithTheme(util.Theme).
+		WithTheme(util.FormTheme()).
 		Run(); err != nil {
 		return err
 	}

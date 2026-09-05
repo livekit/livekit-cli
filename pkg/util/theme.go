@@ -16,9 +16,12 @@ package util
 
 import (
 	"fmt"
+	"image/color"
+	"os"
+	"sync"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // ThemeName identifies a color theme. The active theme is selected once at startup
@@ -39,15 +42,49 @@ var ValidThemes = []ThemeName{ThemeDefault, ThemeLiveKit}
 // palette holds a theme's semantic colors. Each is adaptive (light/dark) so it renders
 // legibly on either terminal background.
 type palette struct {
-	Brand   lipgloss.TerminalColor
-	Accent  lipgloss.TerminalColor
-	Success lipgloss.TerminalColor
-	Warning lipgloss.TerminalColor
-	Error   lipgloss.TerminalColor
+	Brand   color.Color
+	Accent  color.Color
+	Success color.Color
+	Warning color.Color
+	Error   color.Color
 }
 
-// palettes defines the semantic colors per theme. AdaptiveColor{Light, Dark}: Light is the
-// shade used on light terminals, Dark on dark terminals.
+// adaptive is a color that resolves to its light or dark variant depending on the
+// terminal background. Lip Gloss v2 dropped AdaptiveColor in favour of plain
+// color.Color values plus a background flag the caller supplies; resolving in
+// RGBA keeps that flag out of every style definition, and lets the styles be
+// built before the background is known (see DetectBackground).
+type adaptive struct{ light, dark color.Color }
+
+func (a adaptive) RGBA() (r, g, b, al uint32) {
+	if hasDarkBackground() {
+		return a.dark.RGBA()
+	}
+	return a.light.RGBA()
+}
+
+func adaptiveColor(light, dark string) color.Color {
+	return adaptive{light: lipgloss.Color(light), dark: lipgloss.Color(dark)}
+}
+
+// hasDarkBackground reports whether the terminal has a dark background, querying
+// it once per process. It defaults to dark when the query fails or the terminal
+// isn't interactive, matching Lip Gloss v1's behaviour.
+var hasDarkBackground = sync.OnceValue(func() bool {
+	return lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+})
+
+// DetectBackground resolves the terminal background now, so no later render has
+// to. The query puts stdin in raw mode and waits for the terminal to answer,
+// which must not happen once a Bubble Tea program or a huh form owns the input;
+// running it before any command does keeps it out of their way. It's a no-op on
+// a non-interactive terminal.
+func DetectBackground() {
+	hasDarkBackground()
+}
+
+// palettes defines the semantic colors per theme. In adaptiveColor(light, dark) the
+// first shade is used on light terminals, the second on dark ones.
 var palettes = map[ThemeName]palette{
 	// Default: ANSI only (normal on light, bright on dark). Adapts to the terminal palette.
 	ThemeDefault: {
@@ -59,11 +96,11 @@ var palettes = map[ThemeName]palette{
 	},
 	// LiveKit: brand truecolor palette.
 	ThemeLiveKit: {
-		Brand:   lipgloss.AdaptiveColor{Light: "#002CF2", Dark: "#1FD5F9"},
-		Accent:  lipgloss.AdaptiveColor{Light: "#7A15A2", Dark: "#DC85FF"},
-		Success: lipgloss.AdaptiveColor{Light: "#00753B", Dark: "#23DE6B"},
-		Warning: lipgloss.AdaptiveColor{Light: "#9D4D06", Dark: "#FFB752"},
-		Error:   lipgloss.AdaptiveColor{Light: "#B32909", Dark: "#FF7566"},
+		Brand:   adaptiveColor("#002CF2", "#1FD5F9"),
+		Accent:  adaptiveColor("#7A15A2", "#DC85FF"),
+		Success: adaptiveColor("#00753B", "#23DE6B"),
+		Warning: adaptiveColor("#9D4D06", "#FFB752"),
+		Error:   adaptiveColor("#B32909", "#FF7566"),
 	},
 }
 
@@ -74,10 +111,11 @@ var (
 	activeTheme   = ThemeDefault
 	activePalette = palettes[ThemeDefault]
 
-	// Theme is the huh form theme for the active color theme.
-	Theme *huh.Theme
+	// Theme holds the huh form styles for the active color theme. Pass it to a form
+	// with FormTheme(); read it directly for individual styles.
+	Theme *huh.Styles
 
-	Fg              lipgloss.AdaptiveColor
+	Fg              color.Color
 	FormBaseStyle   lipgloss.Style
 	FormHeaderStyle lipgloss.Style
 )
@@ -104,16 +142,20 @@ func SetTheme(name string) error {
 func applyTheme(tn ThemeName) {
 	activeTheme = tn
 	activePalette = palettes[tn]
+	Fg = adaptiveColor("235", "252")
 	Theme = buildHuhTheme(tn, activePalette)
-	Fg = lipgloss.AdaptiveColor{Light: "235", Dark: "252"}
 	FormBaseStyle = Theme.Form.Base.Foreground(Fg).Padding(0, 1)
 	FormHeaderStyle = FormBaseStyle.Bold(true)
 }
 
 // buildHuhTheme constructs the huh form theme. The default theme reproduces the original
 // ANSI look; the livekit theme styles selection/title/cursor with the brand color.
-func buildHuhTheme(tn ThemeName, p palette) *huh.Theme {
-	t := huh.ThemeBase()
+func buildHuhTheme(tn ThemeName, p palette) *huh.Styles {
+	// huh v2 themes take the terminal's background brightness. Both bases we
+	// build on use only ANSI palette colors and ignore the flag, and the colors
+	// we layer on top adapt on their own, so the value passed here is moot —
+	// which is what lets the theme be built at init, before detection runs.
+	t := huh.ThemeBase(true)
 	switch tn {
 	case ThemeLiveKit:
 		// Selected action uses the brand color with black text, mirroring the LiveKit tag.
@@ -122,7 +164,7 @@ func buildHuhTheme(tn ThemeName, p palette) *huh.Theme {
 	case ThemeDefault:
 		fallthrough
 	default:
-		t = huh.ThemeBase16()
+		t = huh.ThemeBase16(true)
 		// ANSI: white text on a blue selection, base16 defaults elsewhere.
 		t.Focused.FocusedButton = t.Focused.FocusedButton.Foreground(lipgloss.Color("7")).Background(lipgloss.Color("4"))
 	}
@@ -161,11 +203,18 @@ func buildHuhTheme(tn ThemeName, p palette) *huh.Theme {
 
 // Semantic color accessors. They read the active palette at call time, so they reflect the
 // selected theme even when used to build styles lazily.
-func Brand() lipgloss.TerminalColor   { return activePalette.Brand }
-func Accent() lipgloss.TerminalColor  { return activePalette.Accent }
-func Success() lipgloss.TerminalColor { return activePalette.Success }
-func Warning() lipgloss.TerminalColor { return activePalette.Warning }
-func Error() lipgloss.TerminalColor   { return activePalette.Error }
+func Brand() color.Color   { return activePalette.Brand }
+func Accent() color.Color  { return activePalette.Accent }
+func Success() color.Color { return activePalette.Success }
+func Warning() color.Color { return activePalette.Warning }
+func Error() color.Color   { return activePalette.Error }
+
+// FormTheme adapts the active theme to huh v2's Theme interface, which asks for a
+// func(isDark bool) *Styles. Our styles already resolve light/dark per color (see
+// adaptive), so the flag is ignored.
+func FormTheme() huh.Theme {
+	return huh.ThemeFunc(func(bool) *huh.Styles { return Theme })
+}
 
 // Accented renders text in the active theme's title style (brand color under livekit).
 func Accented(text string) string {

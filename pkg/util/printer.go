@@ -26,7 +26,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/mattn/go-isatty"
 )
 
@@ -41,6 +43,19 @@ type Printer struct {
 	// interactive reports whether Err is a real terminal. It gates decoration
 	// (spinners) — never content — so redirected or piped runs stay clean.
 	interactive bool
+
+	// rawErr is Err before the color-profile wrapper. Bubble Tea needs the
+	// underlying file to drive the terminal, so the spinner gets this one.
+	rawErr io.Writer
+}
+
+// colorWriter adapts w to the color support of its destination. Lip Gloss v2
+// renders styles unconditionally — unlike v1, whose renderer consulted the
+// terminal's capabilities — so the downsampling has to happen on the way out:
+// truecolor degrades to ANSI256/ANSI where that's all the terminal has, and
+// color is dropped entirely for non-terminals and under NO_COLOR.
+func colorWriter(w io.Writer) io.Writer {
+	return colorprofile.NewWriter(w, os.Environ())
 }
 
 // NewPrinter builds a Printer targeting the given writers. Pass nil to default
@@ -52,7 +67,13 @@ func NewPrinter(out, err io.Writer, quiet bool) *Printer {
 	if err == nil {
 		err = os.Stderr
 	}
-	return &Printer{Out: out, Err: err, Quiet: quiet, interactive: isTerminal(err)}
+	return &Printer{
+		Out:         colorWriter(out),
+		Err:         colorWriter(err),
+		Quiet:       quiet,
+		interactive: isTerminal(err),
+		rawErr:      err,
+	}
 }
 
 // Interactive reports whether status output is going to a real terminal, so
@@ -162,12 +183,17 @@ func (p *Printer) Await(title string, ctx context.Context, action func(ctx conte
 		p.Status(title)
 		return action(ctx)
 	}
+	// v2 replaced the individual Style/Output setters with a theme and WithOutput.
+	// Only the spinner glyph is themed; the title stays unstyled, as before.
+	spinnerTheme := spinner.ThemeFunc(func(bool) *spinner.Styles {
+		return &spinner.Styles{Spinner: Theme.Focused.Title, Title: lipgloss.NewStyle()}
+	})
 	return spinner.New().
 		Title(" " + title).
 		ActionWithErr(action).
 		Type(spinner.Pulse).
-		Style(Theme.Focused.Title).
-		Output(p.Err).
+		WithTheme(spinnerTheme).
+		WithOutput(p.rawErr).
 		Context(ctx).
 		Run()
 }

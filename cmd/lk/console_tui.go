@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	agent "github.com/livekit/protocol/livekit/agent"
 
@@ -125,9 +125,17 @@ func newConsoleModel(pipeline *console.AudioPipeline, pipelineCancel context.Can
 	ti := textinput.New()
 	ti.Placeholder = "Type to talk to your agent"
 	ti.CharLimit = 1000
-	ti.Width = 60
+	ti.SetWidth(60)
 	ti.Prompt = "❯ "
-	ti.PromptStyle = boldStyle
+	// v2 moved per-state styling behind Styles/SetStyles, and renders a real
+	// terminal cursor unless the virtual one is enabled. The status area is
+	// composed into a larger view, so keep the inline virtual cursor rather than
+	// positioning the terminal cursor from here.
+	tiStyles := ti.Styles()
+	tiStyles.Focused.Prompt = boldStyle
+	tiStyles.Blurred.Prompt = boldStyle
+	ti.SetStyles(tiStyles)
+	ti.SetVirtualCursor(true)
 
 	if textMode {
 		ti.Focus()
@@ -552,7 +560,11 @@ func formatChatItem(item *agent.ChatContext_ChatItem) string {
 // Layout matches the old Python console (FrequencyVisualizer + prompt).
 // ──────────────────────────────────────────────────────────────────
 
-func (m consoleModel) View() string {
+func (m consoleModel) View() tea.View {
+	return tea.NewView(m.render())
+}
+
+func (m consoleModel) render() string {
 	var b strings.Builder
 
 	if m.shuttingDown {

@@ -15,8 +15,8 @@
 package util
 
 import (
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/table"
 )
 
 func CreateTable() *table.Table {

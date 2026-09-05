@@ -1,0 +1,16 @@
+
+ Agent Simulation   SR_fixture0001
+
+  Agent Description
+  A restaurant booking agent. It takes reservations, moves them, and cancels them, and it always
+  confirms the party size before writing anything down.
+
+  Simulation · Running
+  2/4  1 passed  1 failed  1 running  <dur>
+
+  ✓   1. SRJ_aaaaaaaa booking a table
+  ⏺   2. SRJ_bbbbbbbb changing a reservation
+  ✗   3. SRJ_cccccccc cancelling outright
+  ⏺   4. SRJ_dddddddd asking for the hours
+
+  ↑↓ scroll · d collapse description · q quit
