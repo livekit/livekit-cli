@@ -90,6 +90,11 @@ func isTerminal(w io.Writer) bool {
 	if !ok {
 		return false
 	}
+	return isTerminalFile(f)
+}
+
+// isTerminalFile reports whether f is attached to a terminal.
+func isTerminalFile(f *os.File) bool {
 	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
 }
 

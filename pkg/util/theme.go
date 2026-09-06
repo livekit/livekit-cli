@@ -68,9 +68,19 @@ func adaptiveColor(light, dark string) color.Color {
 }
 
 // hasDarkBackground reports whether the terminal has a dark background, querying
-// it once per process. It defaults to dark when the query fails or the terminal
-// isn't interactive, matching Lip Gloss v1's behaviour.
+// it once per process. It defaults to dark when the query fails or there is no
+// terminal to ask, matching Lip Gloss v1's behaviour.
+//
+// The redirected-stdio check belongs here rather than to Lip Gloss: on Windows
+// its query opens CONIN$/CONOUT$ directly when stdin or stdout is not a
+// terminal, so a piped run still seizes the console and still waits out the
+// timeout. That turns every `lk` invocation in a script, a pipeline or a test
+// harness into a multi-second stall, and there is nothing to render color for
+// in the first place.
 var hasDarkBackground = sync.OnceValue(func() bool {
+	if !isTerminalFile(os.Stdin) || !isTerminalFile(os.Stdout) {
+		return true
+	}
 	return lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 })
 

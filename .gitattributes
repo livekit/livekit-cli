@@ -9,3 +9,9 @@ pkg/apm/webrtc/**/*.h linguist-vendored
 pkg/apm/webrtc/**/*.m linguist-vendored
 pkg/apm/webrtc/**/*.inc linguist-vendored
 pkg/portaudio/pa_src/** linguist-vendored
+
+# TUI visual-regression frames are compared byte for byte against what the
+# renderers emit, which is always LF. Without this a checkout under
+# core.autocrlf — the default on Windows, including the CI runners — rewrites
+# them to CRLF and every frame mismatches.
+cmd/lk/testdata/vrt/*.txt text eol=lf
