@@ -105,6 +105,11 @@ var simulateCommand = &cli.Command{
 			Name:  "agent-name",
 			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
 		},
+		&cli.StringFlag{
+			Name:    "deployment",
+			Usage:   "deployment of the agent to dispatch to (leave empty for production)",
+			Aliases: []string{"d"},
+		},
 	},
 }
 
@@ -114,7 +119,7 @@ var simulateCommand = &cli.Command{
 var simulateAudioCommand = &cli.Command{
 	Name:            "audio",
 	Usage:           "Simulate speech-to-speech interactions using the agent's full audio pipeline",
-	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
+	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios, --agent-name, and --deployment.",
 	ArgsUsage:       "[entrypoint]",
 	HideHelpCommand: true,
 	Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -222,8 +227,9 @@ type simulateConfig struct {
 	lowQualityMicrophone bool
 	packetLoss           bool
 
-	// TODO (steveyoon): add agent deployment support
-	// agentDeployment string
+	// Cloud AgentDispatch.deployment. Empty = production. Only meaningful
+	// with --agent-name; a locally spawned worker is not a Cloud deployment.
+	agentDeployment string
 }
 
 type simulateMode int
@@ -339,6 +345,11 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 
 	// --agent-name (even empty) means: run against an already-running agent,
 	// don't spawn one. https://docs.livekit.io/agents/server/agent-dispatch/#automatic
+	agentDeployment := cmd.String("deployment")
+	if cmd.IsSet("deployment") && agentDeployment != "" && !cmd.IsSet("agent-name") {
+		return fmt.Errorf("--deployment requires --agent-name (a locally spawned worker is not a Cloud deployment)")
+	}
+
 	if cmd.IsSet("agent-name") {
 		// nothing is spawned, so there's no source to generate scenarios from.
 		if scenariosPath == "" {
@@ -402,22 +413,23 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
 	simCfg := &simulateConfig{
-		ctx:            ctx,
-		client:         simClient,
-		pc:             pc,
-		numSimulations: numSimulations,
-		concurrency:    concurrency,
-		mode:           mode,
-		simulationMode: simulationMode,
-		agentName:      agentName,
-		projectDir:     projectDir,
-		projectType:    projectType,
-		entrypoint:     entrypoint,
-		scenarioGroup:  scenarioGroup,
-		scenariosPath:  scenariosPath,
-		viewModeRunID:  runID,
-		liveAgent:      liveAgent,
-		warnings:       simulateConfigWarnings(mode, numSimulations),
+		ctx:             ctx,
+		client:          simClient,
+		pc:              pc,
+		numSimulations:  numSimulations,
+		concurrency:     concurrency,
+		mode:            mode,
+		simulationMode:  simulationMode,
+		agentName:       agentName,
+		projectDir:      projectDir,
+		projectType:     projectType,
+		entrypoint:      entrypoint,
+		scenarioGroup:   scenarioGroup,
+		scenariosPath:   scenariosPath,
+		viewModeRunID:   runID,
+		liveAgent:       liveAgent,
+		agentDeployment: agentDeployment,
+		warnings:        simulateConfigWarnings(mode, numSimulations),
 	}
 
 	if simulationMode == livekit.SimulationMode_SIMULATION_MODE_AUDIO {
@@ -570,6 +582,7 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 		LowQualityMicrophone: c.lowQualityMicrophone,
 		PacketLoss:           c.packetLoss,
 	}
+	setSimulationCreateDeployment(req, c.agentDeployment)
 	if c.concurrency > 0 {
 		req.Concurrency = &c.concurrency
 	}
