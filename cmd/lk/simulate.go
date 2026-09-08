@@ -73,7 +73,7 @@ var simulateCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
 	},
-	Commands: []*cli.Command{simulateAudioCommand, simulateViewCommand, simulateExportCommand},
+	Commands: []*cli.Command{simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:    "num-simulations",
