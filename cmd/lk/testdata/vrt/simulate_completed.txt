@@ -1,0 +1,21 @@
+
+ Agent Simulation   SR_fixture0001
+
+  Simulation · Completed
+  4/4  4 passed  <dur>
+
+  ✓   1. SRJ_aaaaaaaa booking a table
+  ✓   2. SRJ_bbbbbbbb changing a reservation
+  ✓   3. SRJ_cccccccc cancelling outright
+  ✓   4. SRJ_dddddddd asking for the hours
+
+  Summary  4 passed  0 failed
+
+  Going well:
+    The agent confirmed the party size on every booking.
+
+  To improve:
+    It repeated the address more often than callers needed.
+
+
+  ↑↓ navigate · →/ENTER detail · q quit

@@ -1,0 +1,22 @@
+
+ Agent Simulation   SR_fixture0001
+
+  Simulation · Running
+  2/4  1 passed  1 failed  1 running  <dur>
+
+  ✓   1. SRJ_aaaaaaaa booking a table
+  ⏺   2. SRJ_bbbbbbbb changing a reservation
+  ✗   3. SRJ_cccccccc cancelling outright
+  ⏺   4. SRJ_dddddddd asking for the hours
+
+  ╭──────────────────────────────────────────────────────────╮
+  │ Inference quota exceeded                                 │
+  │ This project is hitting its LLM tokens-per-minute rate   │
+  │ limit. LLM completions are being rejected (429), and     │
+  │ simulation jobs are failing with them.                   │
+  │                                                          │
+  │ Suggested fix: re-run with --concurrency 1               │
+  │                                                          │
+  │                         Dismiss                          │
+  │ enter/esc dismiss                                        │
+  ╰──────────────────────────────────────────────────────────╯

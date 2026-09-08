@@ -25,7 +25,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/auth"
@@ -374,22 +374,29 @@ func createToken(ctx context.Context, c *cli.Command) error {
 
 		permissions := make([]permission, 0)
 
+		permissionOptions := []huh.Option[permission]{
+			huh.NewOption("Create", pCreate),
+			huh.NewOption("List", pList),
+			huh.NewOption("Join", pJoin),
+			huh.NewOption("Admin", pAdmin),
+			huh.NewOption("Egress", pEgress),
+			huh.NewOption("Ingress", pIngress),
+			huh.NewOption("Inference", pInference),
+			huh.NewOption("Update metadata", pMetadata),
+		}
+
 		if err := huh.NewForm(
 			huh.NewGroup(huh.NewMultiSelect[permission]().
-				Options(
-					huh.NewOption("Create", pCreate),
-					huh.NewOption("List", pList),
-					huh.NewOption("Join", pJoin),
-					huh.NewOption("Admin", pAdmin),
-					huh.NewOption("Egress", pEgress),
-					huh.NewOption("Ingress", pIngress),
-					huh.NewOption("Inference", pInference),
-					huh.NewOption("Update metadata", pMetadata),
-				).
+				Options(permissionOptions...).
 				Title("Token Permissions").
 				Description("See https://docs.livekit.io/home/get-started/authentication/#Video-grant").
+				// A multi-select with no explicit height still subtracts its
+				// title and description rows from the option list in huh v2, so
+				// the last two permissions would scroll out of sight. Ask for
+				// the options plus the two rows they'd otherwise displace.
+				Height(len(permissionOptions) + 2).
 				Value(&permissions).
-				WithTheme(util.Theme))).
+				WithTheme(util.FormTheme()))).
 			Run(); err != nil || len(permissions) == 0 {
 			return errors.New("no permissions were given in this grant, see --help")
 		} else {

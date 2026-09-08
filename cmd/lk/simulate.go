@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
@@ -462,7 +462,7 @@ func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 		Affirmative("Upload").
 		Negative("Cancel").
 		Value(&confirmed))).
-		WithTheme(util.Theme).
+		WithTheme(util.FormTheme()).
 		Run()
 	if err != nil {
 		return err

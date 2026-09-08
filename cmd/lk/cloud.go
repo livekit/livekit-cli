@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v3"
 
@@ -261,7 +261,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Title("What is the name of this device?").
 		Prompt("").
 		Value(&cliConfig.DeviceName).
-		WithTheme(util.Theme))).
+		WithTheme(util.FormTheme()))).
 		Run(); err != nil {
 		return err
 	}
@@ -314,7 +314,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		if err := huh.NewForm(huh.NewGroup(util.Confirm().
 			Title("Make this project default?").
 			Value(&isDefault).
-			WithTheme(util.Theme))).
+			WithTheme(util.FormTheme()))).
 			Run(); err != nil {
 			return err
 		}
@@ -337,7 +337,7 @@ func tryAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 				}
 				return nil
 			}).
-			WithTheme(util.Theme).
+			WithTheme(util.FormTheme()).
 			Run(); err != nil {
 			return err
 		}

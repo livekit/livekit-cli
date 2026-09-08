@@ -25,7 +25,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/moby/patternmatcher"
 	"github.com/moby/patternmatcher/ignorefile"
 
@@ -193,7 +193,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 					Title(fmt.Sprintf("Select the %s file which contains your agent's entrypoint", projectType.Lang())).
 					Options(huh.NewOptions(fileList...)...).
 					Value(&selected).
-					WithTheme(util.Theme),
+					WithTheme(util.FormTheme()),
 			),
 		)
 		if err := form.Run(); err != nil {

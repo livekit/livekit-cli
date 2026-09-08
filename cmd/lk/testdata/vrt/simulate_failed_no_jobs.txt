@@ -1,0 +1,6 @@
+
+ Agent Simulation   SR_fixture0001
+
+  Failed
+
+  scenario generation failed: model returned no scenarios

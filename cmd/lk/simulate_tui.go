@@ -24,10 +24,10 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -40,7 +40,7 @@ func runSimulateTUI(config *simulateConfig) error {
 	// No mouse capture, so the terminal keeps native drag-to-select. The arrow
 	// keys (the wheel maps to them in alt-screen) move the cursor through the
 	// job list and spill into page scrolling at each end.
-	p := tea.NewProgram(m, tea.WithAltScreen())
+	p := tea.NewProgram(m)
 	_, runErr := p.Run()
 
 	if m.launcher != nil {
@@ -273,6 +273,11 @@ type simulateModel struct {
 	width  int
 	height int
 	err    error
+
+	// altScreen drives tea.View.AltScreen. Bubble Tea v2 has no
+	// EnterAltScreen/ExitAltScreen commands or WithAltScreen option: the screen
+	// mode is part of the view the model returns, so it lives in model state.
+	altScreen bool
 }
 
 func (m *simulateModel) hasDescription() bool {
@@ -385,7 +390,11 @@ func newSimulateModel(config *simulateConfig) *simulateModel {
 	ti.Placeholder = "scenarios.yaml"
 	ti.CharLimit = 128
 	ti.Prompt = ""
+	// The save prompt is drawn inside a bordered box in the list view, so keep
+	// v1's inline cursor rather than positioning the terminal's real one.
+	ti.SetVirtualCursor(true)
 	return &simulateModel{
+		altScreen:      true,
 		config:         config,
 		reporter:       newRunReporter(),
 		numSimulations: config.numSimulations,
@@ -846,7 +855,8 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.quotaModalActive() {
 		switch key {
-		case "enter", "esc", "q", " ":
+		// Bubble Tea v2 names the space key "space"; v1 reported it as " ".
+		case "enter", "esc", "q", "space":
 			m.quotaDismissed = true
 		case "ctrl+c":
 			if m.setupCancel != nil {
@@ -1039,7 +1049,13 @@ func (m *simulateModel) findJob(id string) *livekit.SimulationRun_Job {
 	return nil
 }
 
-func (m *simulateModel) View() string {
+func (m *simulateModel) View() tea.View {
+	v := tea.NewView(m.render())
+	v.AltScreen = m.altScreen
+	return v
+}
+
+func (m *simulateModel) render() string {
 	if !m.setupDone || m.run == nil || m.run.Status == livekit.SimulationRun_STATUS_GENERATING {
 		return m.viewSetup()
 	}
@@ -1670,8 +1686,10 @@ func (m *simulateModel) renderDetail() string {
 // there at once and the terminal scrolls, selects, and searches it. The list
 // view is untouched: it keeps the alt screen and its own windowing.
 //
-// tea.Println is silently dropped while the alt screen is active (bubbletea
-// standard_renderer.go), so leaving it must be sequenced before any print.
+// tea.Println has nothing to write into while the alt screen is active, so the
+// screen mode has to be off before any print. Bubble Tea v2 renders the view
+// returned by Update before it reads the message the returned command produces,
+// so clearing altScreen in Update is enough — no ExitAltScreen to sequence.
 
 // openDetailCmd leaves the alt screen, clears the scrollback, and prints the
 // job's view, so the terminal holds one job at a time instead of every job
@@ -1681,7 +1699,8 @@ func (m *simulateModel) renderDetail() string {
 func (m *simulateModel) openDetailCmd() tea.Cmd {
 	m.detailPrinted = ""
 	m.detailWidth = m.width
-	return tea.Sequence(tea.ExitAltScreen, m.flushDetail())
+	m.altScreen = false
+	return m.flushDetail()
 }
 
 // closeDetailCmd returns to the list view. The printed job stays in the
@@ -1690,7 +1709,8 @@ func (m *simulateModel) closeDetailCmd() tea.Cmd {
 	m.detailJobID = ""
 	m.detailPrinted = ""
 	m.refItemID = ""
-	return tea.EnterAltScreen
+	m.altScreen = true
+	return nil
 }
 
 // summaryRef resolves a digit key to the citation whose label carries it.
@@ -2225,6 +2245,10 @@ func (m *simulateModel) renderQuitConfirm() string {
 	return indentLines(box, "  ")
 }
 
+// saveDialogBorder is the horizontal space the dialog's border occupies: one
+// column on each side.
+const saveDialogBorder = 2
+
 func (m *simulateModel) renderSaveDialog() string {
 	n := len(m.run.GetScenarioGroup().GetScenarios())
 	noun := "scenarios"
@@ -2255,7 +2279,10 @@ func (m *simulateModel) renderSaveDialog() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(util.Brand()).
 		Padding(0, 1).
-		Width(width).
+		// width is the width the padded content needs. Lip Gloss v2 counts the
+		// border inside Width, where v1 drew it around — so ask for the border
+		// on top, or the destination path wraps two columns early.
+		Width(width + saveDialogBorder).
 		Render(b.String())
 	return indentLines(box, "  ")
 }

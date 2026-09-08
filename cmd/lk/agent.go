@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -490,7 +490,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 					huh.NewOption("Node.js", "node"),
 				).
 				Value(&lang).
-				WithTheme(util.Theme).
+				WithTheme(util.FormTheme()).
 				Run(); err != nil {
 				return err
 			}
@@ -580,7 +580,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 				Value(&useProject).
 				Affirmative("Yes").
 				Negative("No, select another...").
-				WithTheme(util.Theme))).
+				WithTheme(util.FormTheme()))).
 				Run(); err != nil {
 				return err
 			}
@@ -689,6 +689,13 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	resp, err := agentsClient.CreateAgent(buildContext, os.DirFS(workingDir), secrets, regions, attrs, excludeFiles, os.Stderr)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			// The client disconnected (Ctrl-C). The agent is registered and its build runs
+			// to completion on the server, so this is not a failure. The agent ID was not
+			// saved locally (resp is nil here), so point at `list` rather than `status`.
+			out.Status("Disconnected. The build continues on the server; run `lk agent list` to find it.")
+			return nil
+		}
 		if errors.Is(err, context.DeadlineExceeded) {
 			return fmt.Errorf("build timed out possibly due to large image size")
 		}
@@ -715,7 +722,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 					Title("Agent deploying. Would you like to view logs?").
 					Description("You can view logs later with `lk agent logs`").
 					Value(&viewLogs).
-					WithTheme(util.Theme),
+					WithTheme(util.FormTheme()),
 			),
 		).Run(); err != nil {
 			return err
@@ -741,7 +748,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 							fmt.Sprintf("Config file [%s] file already exists. Overwrite?", tomlFilename),
 						).
 						Value(&overwriteVal).
-						WithTheme(util.Theme),
+						WithTheme(util.FormTheme()),
 				),
 			).
 				Run(); err != nil {
@@ -874,6 +881,12 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
 	if err := agentsClient.DeployAgentV2(buildContext, agentId, os.DirFS(workingDir), secrets, attrs, agentDeployment, excludeFiles, os.Stderr); err != nil {
+		if errors.Is(err, context.Canceled) {
+			// The client disconnected (Ctrl-C). Deploys are durable — the build runs to
+			// completion and deploys on the server regardless, so this is not a failure.
+			out.Status("Disconnected. The deploy continues on the server; run `lk agent status` to check.")
+			return nil
+		}
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to deploy agent: %s", twerr.Msg())
 		}
@@ -1243,7 +1256,7 @@ func deleteAgent(ctx context.Context, cmd *cli.Command) error {
 				util.Confirm().
 					Title(fmt.Sprintf("Are you sure you want to delete agent %s?", agentMsg)).
 					Value(&confirmDelete).
-					WithTheme(util.Theme),
+					WithTheme(util.FormTheme()),
 			),
 		).Run(); err != nil {
 			return err
@@ -1363,7 +1376,7 @@ func resolveDeployAttributes(ctx context.Context, cmd *cli.Command) (map[string]
 						util.Confirm().
 							Title("Continue deploying anyway?").
 							Value(&proceed).
-							WithTheme(util.Theme),
+							WithTheme(util.FormTheme()),
 					),
 				).Run(); err != nil {
 					return nil, err
@@ -1645,7 +1658,7 @@ func updateAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 					util.Confirm().
 						Title(fmt.Sprintf("This will remove all existing secrets. Are you sure you want to proceed [%s]?", agentID)).
 						Value(&confirmOverwrite).
-						WithTheme(util.Theme),
+						WithTheme(util.FormTheme()),
 				),
 			).Run(); err != nil {
 				return err
@@ -1755,7 +1768,7 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 		Title("Select an agent").
 		Options(agentNames...).
 		Value(&selectedAgent).
-		WithTheme(util.Theme).
+		WithTheme(util.FormTheme()).
 		Run(); err != nil {
 		return "", err
 	}
@@ -1968,7 +1981,7 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 	for _, r := range regionOptions {
 		label := r
 		if slices.Contains(warnRegions, r) {
-			label = r + " " + util.Warn("⚠︎ GDPR compliance required")
+			label = r + " " + util.Warn("⚠︎ Compliance warning for GDPR")
 		}
 		options = append(options, huh.NewOption(label, r))
 	}
@@ -1978,7 +1991,7 @@ func resolveRegion(cmd *cli.Command, settingsMap map[string]string, title string
 		Title(title).
 		Options(options...).
 		Value(&region).
-		WithTheme(util.Theme).
+		WithTheme(util.FormTheme()).
 		Run(); err != nil {
 		return "", err
 	}
@@ -2003,11 +2016,11 @@ func confirmRegionResidency(cmd *cli.Command, region, dataRegion string, warnReg
 		return nil
 	}
 
-	detail := fmt.Sprintf(
+	detail := util.Warn(fmt.Sprintf(
 		"Data residency warning: This agent will run in [%s], but your project observability region is [%s]. Its recordings, transcripts, and traces will be stored outside the EU, which may breach GDPR. To keep this data in-region, create a new project with with an EU observability region.",
 		region,
 		dataRegion,
-	)
+	))
 	if SkipPrompts(cmd) {
 		out.Warnf("Deploying to [%s]. %s", region, detail)
 		return nil
@@ -2020,7 +2033,7 @@ func confirmRegionResidency(cmd *cli.Command, region, dataRegion string, warnReg
 		Affirmative("Deploy").
 		Negative("Cancel").
 		Value(&confirmed))).
-		WithTheme(util.Theme).
+		WithTheme(util.FormTheme()).
 		Run(); err != nil {
 		return err
 	}

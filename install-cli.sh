@@ -31,10 +31,20 @@ FISH_COMPLETION_PATH="/usr/share/fish/vendor_completions.d"
 log()   { printf "%b\n" "$*"; }
 abort() { printf "%s\n" "$@" >&2; exit 1; }
 
+
+# GitHub is frequently flaky , so every download is retried.
+# Overridable for testing / impatient callers.
+MAX_ATTEMPTS="${LK_INSTALL_MAX_ATTEMPTS:-5}"
+RETRY_DELAY="${LK_INSTALL_RETRY_DELAY:-2}"
+
+[[ "$MAX_ATTEMPTS" =~ ^[0-9]+$ ]] && [ "$MAX_ATTEMPTS" -ge 1 ] || abort "LK_INSTALL_MAX_ATTEMPTS must be a positive integer"
+[[ "$RETRY_DELAY" =~ ^[0-9]+$ ]] && [ "$RETRY_DELAY" -ge 1 ] || abort "LK_INSTALL_RETRY_DELAY must be a positive integer (seconds)"
+
 [ -n "${BASH_VERSION:-}" ] || abort "This script requires bash"
 [ -d "$INSTALL_PATH" ]     || abort "Could not install, $INSTALL_PATH doesn't exist"
 command -v curl >/dev/null || abort "cURL is required and is not found"
 command -v sha256sum >/dev/null || abort "sha256sum is required and is not found"
+command -v jq >/dev/null || abort "jq is required and is not found"
 
 OS="$(uname)"
 case "$OS" in
@@ -55,7 +65,7 @@ if [ ! -w "$INSTALL_PATH" ]; then
   log "sudo is required to install to $INSTALL_PATH"
 fi
 
-VERSION=$(curl -fsSL https://api.github.com/repos/livekit/$REPO/releases/latest \
+VERSION=$(curl -fsSL --retry "$MAX_ATTEMPTS" --retry-delay "$RETRY_DELAY" https://api.github.com/repos/livekit/$REPO/releases/latest \
   | jq -r '.tag_name' | sed 's/^v//')
 
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || abort "Invalid version: $VERSION"
@@ -70,8 +80,8 @@ log "Downloading from $ARCHIVE_URL..."
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
-curl -fsSL "$ARCHIVE_URL" -o "$TEMP_DIR/$ARCHIVE_NAME"
-curl -fsSL "$CHECKSUMS_URL" -o "$TEMP_DIR/checksums.txt"
+curl -fsSL --retry "$MAX_ATTEMPTS" --retry-delay "$RETRY_DELAY" "$ARCHIVE_URL" -o "$TEMP_DIR/$ARCHIVE_NAME"
+curl -fsSL --retry "$MAX_ATTEMPTS" --retry-delay "$RETRY_DELAY" "$CHECKSUMS_URL" -o "$TEMP_DIR/checksums.txt"
 
 # Verify the archive against the release's checksums.txt before extracting. The checksums
 # file is fetched from the same release over HTTPS, so this guards against corrupted/partial

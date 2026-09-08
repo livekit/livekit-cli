@@ -23,21 +23,11 @@ permissions:
   contents: write
 
 jobs:
-  # GoReleaser runs on macOS so the darwin binary builds natively (CoreAudio
-  # frameworks only exist on a Mac); zig still cross-compiles linux + windows
-  # from here. Produces all binaries, archives, checksums, and the GitHub
-  # release. Docker is handled by the separate job below (macOS has no Docker).
-  release:
-    name: Release
-    runs-on: macos-latest
+  verify:
+    name: Verify versions
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout Git LFS
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          lfs: 'true'
-          # pkg/portaudio/pa_src holds the vendored PortAudio C source the cgo
-          # build links against.
-          submodules: true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Verify version.go matches tag
         run: |
@@ -70,56 +60,133 @@ jobs:
           fi
           echo "versions match ($livekit_cli_major_minor)"
 
-      - run: git lfs pull
+  # Same shape as build.yaml: each zig cross target gets its own Linux runner
+  # and restores the per-target GOCACHE the push to main just warmed (the cache
+  # keys and paths below must stay identical to build.yaml's for that to hit).
+  # darwin builds natively on macOS (CoreAudio frameworks only exist on a Mac).
+  build:
+    name: Build ${{ matrix.id }}
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - { id: lk-linux-amd64, os: ubuntu-latest, gocache: ~/.cache/go-build }
+          - { id: lk-linux-arm64, os: ubuntu-latest, gocache: ~/.cache/go-build }
+          - { id: lk-windows-amd64, os: ubuntu-latest, gocache: ~/.cache/go-build }
+          - { id: lk-windows-arm64, os: ubuntu-latest, gocache: ~/.cache/go-build }
+          - { id: lk-darwin, os: macos-latest, gocache: ~/Library/Caches/go-build }
+    steps:
+      - name: Checkout Git LFS
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          lfs: 'true'
+          # pkg/portaudio/pa_src holds the vendored PortAudio C source the cgo
+          # build links against.
+          submodules: true
 
-      - name: Fetch all tags
-        run: git fetch --force --tags
+      - run: git lfs pull
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
-          cache: true
+          # setup-go's default cache key collides with the Go Test workflow's,
+          # which stores `-race` objects no build here can reuse. Own cache below.
+          cache: false
+
+      - name: Cache Go modules and build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/go/pkg/mod
+            ${{ matrix.gocache }}
+          key: go-${{ runner.os }}-${{ matrix.id }}-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ matrix.id }}-
 
       - name: Install Zig
+        if: runner.os == 'Linux'
         uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         with:
           version: 0.14.1
 
       - name: Cache cross-compile inputs
+        if: runner.os == 'Linux'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .cross
-          key: cross-${{ runner.os }}-zig0.14.1-alsa1.2.12-${{ hashFiles('scripts/setup-cross.sh') }}
+          key: cross-${{ runner.os }}-${{ matrix.id }}-zig0.14.1-alsa1.2.12-${{ hashFiles('scripts/setup-cross.sh') }}
 
-      - name: Run GoReleaser
+      - name: GoReleaser build
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7
         with:
           distribution: goreleaser
           version: latest
-          args: release --clean
+          args: build --clean --id ${{ matrix.id }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # goreleaser-action runs goreleaser via a Node wrapper that doesn't
           # forward PWD; the .goreleaser.yaml CGO flags template {{ .Env.PWD }}
           # to locate .cross/<target>. Provide it explicitly.
           PWD: ${{ github.workspace }}
 
-      - name: Stage linux binaries for Docker
+      # goreleaser OSS can't archive binaries built elsewhere (that's the Pro
+      # `prebuilt` builder), so each job archives its own output in the layout
+      # `goreleaser release` produced: lk_<version>_<os>_<arch>.{tar.gz,zip}
+      # containing LICENSE, autocomplete/ and the binary at the root.
+      - name: Package archives
         run: |
-          mkdir -p docker-bin
-          cp dist/lk-linux-amd64_*/lk docker-bin/lk_linux_amd64
-          cp dist/lk-linux-arm64_*/lk docker-bin/lk_linux_arm64
+          version=${GITHUB_REF_NAME#v}
+          mkdir -p archives
+          jq -r '.[] | select(.type == "Binary") | [.goos, .goarch, .path] | @tsv' dist/artifacts.json |
+          while IFS=$'\t' read -r goos goarch path; do
+            stage=$(mktemp -d)
+            cp "$path" LICENSE "$stage/"
+            cp -R autocomplete "$stage/"
+            name="lk_${version}_${goos}_${goarch}"
+            if [ "$goos" = windows ]; then
+              (cd "$stage" && zip -qr "$GITHUB_WORKSPACE/archives/$name.zip" LICENSE autocomplete lk.exe)
+            else
+              tar -czf "archives/$name.tar.gz" -C "$stage" LICENSE autocomplete lk
+            fi
+            echo "packaged archives/$name"
+          done
+          ls -l archives
 
-      - name: Upload linux binaries
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: docker-bin
-          path: docker-bin/
+          name: archives-${{ matrix.id }}
+          path: archives/
           if-no-files-found: error
 
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: archives-*
+          merge-multiple: true
+          path: archives
+
+      - name: Create checksums
+        run: cd archives && sha256sum * > checksums.txt && cat checksums.txt
+
+      # Draft, like goreleaser's `release.draft: true`; a prerelease suffix on
+      # the tag marks it prerelease, like `prerelease: auto`.
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          prerelease=()
+          case "$GITHUB_REF_NAME" in *-*) prerelease=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" --draft --generate-notes --title "$GITHUB_REF_NAME" \
+            "${prerelease[@]}" archives/*
+
   # Build + push multi-arch Docker images on Linux (where the Docker daemon
-  # lives), reusing the cgo linux binaries staged by the release job.
+  # lives), reusing the cgo linux binaries from the linux build jobs.
   docker:
     name: Release to Docker
     needs: release
@@ -128,14 +195,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Download linux binaries
+      - name: Download linux archives
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: docker-bin
-          path: .
+          pattern: archives-lk-linux-*
+          merge-multiple: true
+          path: archives
 
-      - name: Restore executable bit
-        run: chmod +x lk_linux_amd64 lk_linux_arm64
+      - name: Stage linux binaries
+        run: |
+          for arch in amd64 arm64; do
+            tar -xzf archives/lk_*_linux_${arch}.tar.gz lk
+            mv lk lk_linux_${arch}
+          done
 
       - name: Docker meta
         id: meta

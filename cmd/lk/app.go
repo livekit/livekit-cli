@@ -25,8 +25,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
@@ -171,7 +171,7 @@ func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadO
 				Value(&useDefault).
 				Affirmative("Yes").
 				Negative("No, select another...").
-				WithTheme(util.Theme))).
+				WithTheme(util.FormTheme()))).
 				Run(); err != nil {
 				return ctx, fmt.Errorf("failed to confirm project: %w", err)
 			}
@@ -213,7 +213,7 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 				Description("To use a different project, run `lk cloud auth` to add credentials").
 				Options(options...).
 				Value(&project).
-				WithTheme(util.Theme))).
+				WithTheme(util.FormTheme()))).
 			Run(); err != nil {
 			return nil, fmt.Errorf("no project selected: %w", err)
 		}
@@ -227,7 +227,7 @@ func selectProject(ctx context.Context, cmd *cli.Command) (context.Context, erro
 	if err = huh.NewForm(huh.NewGroup(util.Confirm().
 		Title("No local projects found. Authenticate one?").
 		Value(&shouldAuth).
-		WithTheme(util.Theme))).
+		WithTheme(util.FormTheme()))).
 		Run(); err != nil {
 		return nil, fmt.Errorf("no project selected: %w", err)
 	}
@@ -320,7 +320,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		templateSelect := huh.NewSelect[string]().
 			Title("Select Template").
 			Value(&templateURL).
-			WithTheme(util.Theme)
+			WithTheme(util.FormTheme())
 		var options []huh.Option[string]
 		for _, t := range templateOptions {
 			if t.IsHidden {
@@ -376,12 +376,12 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 				}
 				return nil
 			}).
-			WithTheme(util.Theme))
+			WithTheme(util.FormTheme()))
 	}
 	if len(preinstallPrompts) > 0 {
 		group := huh.NewGroup(preinstallPrompts...)
 		if err := huh.NewForm(group).
-			WithTheme(util.Theme).
+			WithTheme(util.FormTheme()).
 			RunWithContext(ctx); err != nil {
 			return err
 		}
@@ -433,7 +433,7 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 		if err := huh.NewForm(huh.NewGroup(util.Confirm().
 			Title("Install dependencies?").
 			Value(&install).
-			WithTheme(util.Theme))).
+			WithTheme(util.FormTheme()))).
 			Run(); err != nil {
 			return err
 		}
@@ -579,7 +579,7 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 				Placeholder(oldValue).
 				Prompt("").
 				Value(&newValue).
-				WithTheme(util.Theme).
+				WithTheme(util.FormTheme()).
 				Run(); err != nil || newValue == "" {
 				return oldValue, err
 			}
@@ -702,7 +702,7 @@ func runTask(ctx context.Context, cmd *cli.Command) error {
 				Title("Select Task").
 				Options(options...).
 				Value(&taskName).
-				WithTheme(util.Theme))).
+				WithTheme(util.FormTheme()))).
 			Run(); err != nil {
 			return err
 		}

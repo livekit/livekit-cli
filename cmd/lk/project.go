@@ -20,9 +20,9 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/table"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
@@ -237,7 +237,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 		prompts = append(prompts, util.Confirm().
 			Title("Make this project default?").
 			Value(&isDefault).
-			WithTheme(util.Theme))
+			WithTheme(util.FormTheme()))
 	}
 
 	if len(prompts) > 0 {
@@ -246,7 +246,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 			groups = append(groups, huh.NewGroup(p))
 		}
 		err = huh.NewForm(groups...).
-			WithTheme(util.Theme).
+			WithTheme(util.FormTheme()).
 			RunWithContext(ctx)
 		if err != nil {
 			return err

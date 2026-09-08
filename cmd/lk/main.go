@@ -22,7 +22,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/protocol/logger"
@@ -96,11 +97,15 @@ func main() {
 
 	if err := app.Run(ctx, os.Args); err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
+		// Outside the Printer's reach (it may not be initialized yet), so the
+		// color profile has to be applied here too — Lip Gloss v2 emits styles
+		// regardless of whether stderr can render them.
+		errOut := colorprofile.NewWriter(os.Stderr, os.Environ())
 		// Render line by line: a multiline Render pads every line with
 		// trailing spaces to match the widest one, which wraps into garbage
 		// on terminals narrower than the longest line.
 		for line := range strings.SplitSeq(err.Error(), "\n") {
-			fmt.Fprintln(os.Stderr, errStyle.Render(line))
+			fmt.Fprintln(errOut, errStyle.Render(line))
 		}
 		os.Exit(1)
 	}
@@ -146,6 +151,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 			out.Warnf("%v; using default theme", err)
 		}
 	}
+	util.DetectBackground()
 
 	return nil, nil
 }

@@ -18,7 +18,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/joho/godotenv"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
@@ -82,7 +82,7 @@ func DetectEnvFile(maybeFile string, skipPrompts bool) (string, map[string]strin
 				}, nil).
 				Value(&selectedFile).
 				WithHeight(5).
-				WithTheme(util.Theme),
+				WithTheme(util.FormTheme()),
 		),
 	).
 		Run(); err != nil {

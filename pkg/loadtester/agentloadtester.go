@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"

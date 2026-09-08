@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Consumed by the docker job in release.yaml via `docker buildx`. The release
-# job (goreleaser, on macOS) cross-builds the cgo Linux binaries with zig and
-# stages them as lk_linux_<arch> in the build context; buildx sets TARGETARCH
-# per platform. Distroless gives glibc (the binaries target glibc 2.28+) plus CA
+# Consumed by the docker job in release.yaml via `docker buildx`. The linux
+# build jobs (goreleaser + zig) cross-build the cgo Linux binaries and the
+# docker job stages them as lk_linux_<arch> in the build context; buildx sets
+# TARGETARCH per platform. Distroless gives glibc (the binaries target glibc 2.28+) plus CA
 # certs, without a shell or package manager.
 FROM gcr.io/distroless/base-debian12
 

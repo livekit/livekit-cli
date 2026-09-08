@@ -64,6 +64,27 @@ jobs:
             exit 1
           fi
 
+      # The Test step above already fails on a VRT mismatch, but testify's diff of
+      # a full terminal frame is unreadable and says nothing about how to fix it.
+      # Re-recording here turns the failure into the diff of what actually moved
+      # on screen, and catches what the test alone cannot: a frame left behind by
+      # a fixture that no longer exists (make update-vrt clears the directory, so
+      # an orphan shows up as a deletion). Runs even when the tests failed, so the
+      # actionable message is never buried behind them.
+      - name: Verify TUI reference frames are up to date
+        if: always() && matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          make update-vrt
+          if [ -n "$(git status --porcelain -- cmd/lk/testdata/vrt)" ]; then
+            git --no-pager diff -- cmd/lk/testdata/vrt
+            git status --porcelain -- cmd/lk/testdata/vrt
+            echo "::error::The TUI renders differently than the recorded reference frames."
+            echo "::error::If the change is intended, run 'make update-vrt' and commit cmd/lk/testdata/vrt."
+            exit 1
+          fi
+
       - name: Upload test log
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
