@@ -31,22 +31,23 @@ func TestSetSimulationCreateDeploymentEmitsField14(t *testing.T) {
 	require.NoError(t, err)
 
 	var got string
-	for len(raw) > 0 {
-		num, typ, n := protowire.ConsumeTag(raw)
-		require.False(t, n < 0)
-		raw = raw[n:]
-		if typ != protowire.BytesType {
-			_, n = protowire.ConsumeFieldValue(num, typ, raw)
-			require.False(t, n < 0)
-			raw = raw[n:]
+	rest := raw
+	for len(rest) > 0 {
+		num, typ, n := protowire.ConsumeTag(rest)
+		require.Greater(t, n, 0)
+		rest = rest[n:]
+		if typ == protowire.BytesType {
+			val, n := protowire.ConsumeBytes(rest)
+			require.Greater(t, n, 0)
+			rest = rest[n:]
+			if num == simulationCreateDeploymentField {
+				got = string(val)
+			}
 			continue
 		}
-		val, n := protowire.ConsumeBytes(raw)
-		require.False(t, n < 0)
-		raw = raw[n:]
-		if num == simulationCreateDeploymentField {
-			got = string(val)
-		}
+		skip := protowire.ConsumeFieldValue(num, typ, rest)
+		require.Greater(t, skip, 0)
+		rest = rest[skip:]
 	}
 	require.Equal(t, "staging", got)
 }
