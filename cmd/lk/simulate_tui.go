@@ -267,6 +267,12 @@ type simulateModel struct {
 	saveInput textinput.Model
 	saveErr   string
 
+	// one-time offer to write generated scenarios to scenarios.yaml, raised
+	// when they first arrive; sel 0 = save, 1 = not now
+	saveOffered  bool
+	saveOffer    bool
+	saveOfferSel int
+
 	matrix              matrixRain
 	matrixSavedShowLogs bool
 
@@ -323,6 +329,37 @@ func (m *simulateModel) handleSaveKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.saveInput, cmd = m.saveInput.Update(msg)
 	return m, cmd
+}
+
+// handleSaveOfferKey answers the save offer. Accepting writes scenarios.yaml;
+// when that name is taken the file-name dialog opens instead so nothing is
+// overwritten.
+func (m *simulateModel) handleSaveOfferKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "left", "right", "tab", "shift+tab", "up", "down":
+		m.saveOfferSel = 1 - m.saveOfferSel
+	case "enter", "y":
+		m.saveOffer = false
+		if msg.String() == "y" || m.saveOfferSel == 0 {
+			status, ok := m.saveScenarios(defaultScenariosFile)
+			if !ok {
+				m.saving = true
+				m.saveErr = status
+				m.saveInput.SetValue(defaultScenariosFile)
+				m.saveInput.CursorEnd()
+				return m, m.saveInput.Focus()
+			}
+			return m, m.showToast(status, true)
+		}
+	case "esc", "n":
+		m.saveOffer = false
+	case "ctrl+c":
+		if m.setupCancel != nil {
+			m.setupCancel()
+		}
+		return m, tea.Quit
+	}
+	return m, nil
 }
 
 // saveScenarios writes to projectDir/name, never overwriting (ok=false on conflict).
@@ -677,6 +714,10 @@ func (m *simulateModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.run = msg.run
 			m.summary = decodeRunSummary(msg.run)
 			m.reporter.RunUpdate(msg.run, m.config.numSimulations)
+			if !m.saveOffered && m.canExportScenarios() {
+				m.saveOffered = true
+				m.saveOffer = true
+			}
 			if m.startTime.IsZero() && msg.run.Status == livekit.SimulationRun_STATUS_RUNNING {
 				m.startTime = time.Now()
 			}
@@ -828,6 +869,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.saving {
 		return m.handleSaveKey(msg)
+	}
+	if m.saveOffer {
+		return m.handleSaveOfferKey(msg)
 	}
 	if m.confirmQuit {
 		switch key {
@@ -2173,6 +2217,9 @@ func (m *simulateModel) renderHint() string {
 	if m.saving {
 		return m.renderSaveDialog()
 	}
+	if m.saveOffer {
+		return m.renderSaveOffer()
+	}
 	if m.quotaModalActive() {
 		return m.renderQuotaWarning()
 	}
@@ -2240,6 +2287,34 @@ func (m *simulateModel) renderQuitConfirm() string {
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(util.Warning()).
+		Padding(0, 1).
+		Render(b.String())
+	return indentLines(box, "  ")
+}
+
+func (m *simulateModel) renderSaveOffer() string {
+	n := len(m.run.GetScenarioGroup().GetScenarios())
+	noun := "scenarios"
+	if n == 1 {
+		noun = "scenario"
+	}
+	save := "Save"
+	skip := "Not now"
+	if m.saveOfferSel == 0 {
+		save = reverseStyle.Bold(true).Render(" " + save + " ")
+		skip = dimStyle.Render(" " + skip + " ")
+	} else {
+		save = dimStyle.Render(" " + save + " ")
+		skip = reverseStyle.Bold(true).Render(" " + skip + " ")
+	}
+	var b strings.Builder
+	b.WriteString(boldStyle.Render(fmt.Sprintf("Save %d generated %s to %s?", n, noun, defaultScenariosFile)) + "\n")
+	b.WriteString(dimStyle.Render("A checked-in file re-runs the same scenarios later and in CI.") + "\n\n")
+	b.WriteString(save + "  " + skip + "\n\n")
+	b.WriteString(dimStyle.Render("←→ select · enter confirm · esc not now"))
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(util.Brand()).
 		Padding(0, 1).
 		Render(b.String())
 	return indentLines(box, "  ")
