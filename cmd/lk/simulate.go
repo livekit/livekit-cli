@@ -97,6 +97,11 @@ var simulateCommand = &cli.Command{
 			Name:  "view",
 			Usage: "Open a pre-existing simulation",
 		},
+		&cli.BoolFlag{
+			Name:  "list",
+			Usage: "List the project's simulation runs, newest first. Nothing is run",
+		},
+		jsonFlag,
 		&cli.StringFlag{
 			Name:  "export",
 			Usage: "Print the run with run `ID` and its exact per-job chat contexts as JSON. Nothing is run or polled: the run must already be finished",
@@ -317,6 +322,9 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 			return fmt.Errorf("--export requires a run ID")
 		}
 		return exportSimulationRunJSON(ctx, pc, exportRunID)
+	}
+	if cmd.Bool("list") {
+		return listSimulationRuns(ctx, pc, cmd.Bool("json"))
 	}
 
 	numSimulations := int32(cmd.Int("num-simulations"))
@@ -645,6 +653,60 @@ func getSimulationRun(ctx context.Context, client *lksdk.AgentSimulationClient, 
 		return nil, err
 	}
 	return resp.Run, nil
+}
+
+// listSimulationRuns prints the first page the API returns, which is already
+// newest-first; older runs live in the dashboard.
+func listSimulationRuns(ctx context.Context, pc *config.ProjectConfig, asJSON bool) error {
+	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+
+	fetchCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
+	defer cancel()
+	resp, err := client.ListSimulationRuns(fetchCtx, &livekit.SimulationRun_List_Request{
+		ProjectId: pc.ProjectId,
+	})
+	if err != nil {
+		return err
+	}
+	if asJSON {
+		util.PrintJSON(resp)
+		return nil
+	}
+
+	table := util.CreateTable().
+		Headers("ID", "Created", "Agent", "Mode", "Status", "Passed", "Failed", "Jobs")
+	for _, run := range resp.Runs {
+		table.Row(simulationRunRow(run)...)
+	}
+	out.Result(table)
+	if len(resp.Runs) == 0 {
+		out.Status("No simulation runs yet.")
+		return nil
+	}
+	out.Statusf("To open a run: %s", viewCommandHint("<ID>"))
+	return nil
+}
+
+// SimulationRun.mode defines UNSPECIFIED as TEXT.
+func simulationRunRow(run *livekit.SimulationRun) []string {
+	mode := run.GetMode()
+	if mode == livekit.SimulationMode_SIMULATION_MODE_UNSPECIFIED {
+		mode = livekit.SimulationMode_SIMULATION_MODE_TEXT
+	}
+	created := "--"
+	if run.CreatedAt != nil {
+		created = formatTime(run.CreatedAt.AsTime())
+	}
+	return []string{
+		run.GetId(),
+		created,
+		run.GetAgentName(),
+		strings.TrimPrefix(mode.String(), "SIMULATION_MODE_"),
+		strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
+		fmt.Sprint(run.GetPassedCount()),
+		fmt.Sprint(run.GetFailedCount()),
+		fmt.Sprint(run.GetJobCount()),
+	}
 }
 
 func isTerminalRunStatus(status livekit.SimulationRun_Status) bool {
