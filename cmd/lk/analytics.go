@@ -27,6 +27,7 @@ import (
 	"time"
 
 	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/urfave/cli/v3"
@@ -316,21 +317,27 @@ func callAnalyticsAPI(ctx context.Context, cmd *cli.Command, sessionID string, q
 		return nil, err
 	}
 
-	projectID, err := resolveAnalyticsProjectID()
-	if err != nil {
+	if _, err := resolveAnalyticsProjectID(); err != nil {
 		return nil, err
 	}
 
-	token, err := createAnalyticsAccessToken(project.APIKey, project.APISecret)
+	path := "sessions"
+	if sessionID != "" {
+		path += "/" + url.PathEscape(sessionID)
+	}
+	return analyticsGET(ctx, project, path, query)
+}
+
+// analyticsGET fetches /api/project/{project_id}/{path} from the cloud API with
+// a token minted from the project's key; pc.ProjectId must be set.
+func analyticsGET(ctx context.Context, pc *config.ProjectConfig, path string, query url.Values) ([]byte, error) {
+	token, err := createAnalyticsAccessToken(pc.APIKey, pc.APISecret)
 	if err != nil {
 		return nil, err
 	}
 
 	baseURL := strings.TrimSuffix(serverURL, "/")
-	endpoint := fmt.Sprintf("%s/api/project/%s/sessions", baseURL, url.PathEscape(projectID))
-	if sessionID != "" {
-		endpoint += "/" + url.PathEscape(sessionID)
-	}
+	endpoint := fmt.Sprintf("%s/api/project/%s/%s", baseURL, url.PathEscape(pc.ProjectId), path)
 
 	reqURL, err := url.Parse(endpoint)
 	if err != nil {

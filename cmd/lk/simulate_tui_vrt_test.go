@@ -141,6 +141,14 @@ func TestVRTSimulateFrames(t *testing.T) {
 			m.peakRunning = 4
 			return m
 		}},
+		{"simulate_save_offer", func() *simulateModel {
+			m := runningFixture()
+			m.run.ScenarioGroup = &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{
+				{Label: "booking a table"}, {Label: "changing a reservation"}, {Label: "cancelling outright"},
+			}}
+			m.saveOffer = true
+			return m
+		}},
 		{"simulate_saving_prompt", func() *simulateModel {
 			m := runningFixture()
 			m.saving = true

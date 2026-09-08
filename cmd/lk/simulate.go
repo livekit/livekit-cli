@@ -73,7 +73,7 @@ var simulateCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
 	},
-	Commands: []*cli.Command{simulateAudioCommand},
+	Commands: []*cli.Command{simulateAudioCommand, simulateGenerateCommand},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:    "num-simulations",
@@ -86,7 +86,7 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "scenarios",
-			Usage: "Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent's source",
+			Usage: "Path to a scenarios `FILE` (yaml). Defaults to ./scenarios.yaml when it exists; otherwise scenarios are generated from the agent's source",
 		},
 		&cli.BoolFlag{
 			Name:    "yes",
@@ -324,9 +324,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	runID := cmd.String("view")
 	liveAgentName := cmd.String("agent-name")
 
-	// never auto-discovered: an explicit --scenarios file is the source of
-	// truth, otherwise scenarios are generated from the agent's source
-	scenariosPath := cmd.String("scenarios")
+	scenariosPath := scenariosPathOrDefault(cmd)
 
 	var (
 		agentName   string
@@ -342,7 +340,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	if cmd.IsSet("agent-name") {
 		// nothing is spawned, so there's no source to generate scenarios from.
 		if scenariosPath == "" {
-			return fmt.Errorf("--agent-name requires --scenarios (no source to generate scenarios from when running against a live agent)")
+			return fmt.Errorf("--agent-name requires a scenarios file (--scenarios or ./%s): nothing is spawned, so there is no source to generate scenarios from", defaultScenariosFile)
 		}
 		liveAgent = true
 		agentName = liveAgentName
