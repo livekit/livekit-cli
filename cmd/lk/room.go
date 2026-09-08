@@ -161,6 +161,11 @@ var (
 								"For simulcast: use 2-3 h264:// or h265:// URLs with format '<codec>://<host:port>/<width>x<height>' or '<codec>:///path/to/<socket_path>/<width>x<height>' (all layers must use the same codec; quality determined by width order)",
 						},
 						&cli.StringFlag{
+							Name: "track-name",
+							Usage: "`NAME` of the published track. Applies to all tracks published via --publish. " +
+								"If unset, file tracks are named after the file and socket tracks are unnamed",
+						},
+						&cli.StringFlag{
 							Name:  "publish-data",
 							Usage: "Publish user data to the room.",
 						},
@@ -996,6 +1001,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 
 	// Handle publishing
 	if len(publishUrls) > 0 {
+		trackName := cmd.String("track-name")
 		if simulcastMode {
 			// Handle simulcast publishing
 			fps := cmd.Float("fps")
@@ -1011,7 +1017,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 				}
 			}
 
-			if err = handleSimulcastPublish(room, publishUrls, fps, h26xStreamingFormat, attachFrameMetadata, onPublishComplete); err != nil {
+			if err = handleSimulcastPublish(room, publishUrls, trackName, fps, h26xStreamingFormat, attachFrameMetadata, onPublishComplete); err != nil {
 				return err
 			}
 		} else {
@@ -1029,7 +1035,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 						_ = room.LocalParticipant.UnpublishTrack(pub.SID())
 					}
 				}
-				if err = handlePublish(room, pub, fps, h26xStreamingFormat, attachFrameMetadata, onPublishComplete); err != nil {
+				if err = handlePublish(room, pub, trackName, fps, h26xStreamingFormat, attachFrameMetadata, onPublishComplete); err != nil {
 					return err
 				}
 			}

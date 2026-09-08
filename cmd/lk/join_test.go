@@ -84,6 +84,27 @@ func TestParseSocketString(t *testing.T) {
 	assert.Equal(t, err, nil, "Expected no error for valid vp8 TCP socket")
 }
 
+func TestTrackPublicationOptions(t *testing.T) {
+	// Default name is used when no override is given
+	opts := trackPublicationOptions("", "video.h264", false)
+	assert.Equal(t, "video.h264", opts.Name)
+	assert.False(t, opts.AttachUserTimestamp)
+	assert.False(t, opts.AttachFrameId)
+
+	// Override takes precedence over the default name
+	opts = trackPublicationOptions("camera-main", "video.h264", false)
+	assert.Equal(t, "camera-main", opts.Name)
+
+	// Socket publishes have no default name unless overridden
+	opts = trackPublicationOptions("", "", false)
+	assert.Equal(t, "", opts.Name)
+
+	opts = trackPublicationOptions("screen-share", "", true)
+	assert.Equal(t, "screen-share", opts.Name)
+	assert.True(t, opts.AttachUserTimestamp)
+	assert.True(t, opts.AttachFrameId)
+}
+
 func TestParseSimulcastURL(t *testing.T) {
 	// Test TCP format
 	parts, err := parseSimulcastURL("h264://localhost:8080/640x480")
