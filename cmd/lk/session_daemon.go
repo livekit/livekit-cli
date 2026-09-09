@@ -49,11 +49,12 @@ func runSessionDaemon() {
 
 	// startAgent branches on ProjectType, so Node entrypoints run as
 	// `node <entry> console ...` without any extra wiring here.
+	projectType := agentfs.ProjectType(os.Getenv(envSessionPType))
 	agentProc, err := startAgent(AgentStartConfig{
 		Dir:         os.Getenv(envSessionDir),
 		Entrypoint:  os.Getenv(envSessionEntry),
-		ProjectType: agentfs.ProjectType(os.Getenv(envSessionPType)),
-		CLIArgs:     buildConsoleArgs(server.Addr().String(), false),
+		ProjectType: projectType,
+		CLIArgs:     buildConsoleArgs(projectType, server.Addr().String(), false, ""),
 		FailSignals: consoleCrashSignals,
 	})
 	if err != nil {

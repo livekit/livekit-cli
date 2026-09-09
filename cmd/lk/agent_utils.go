@@ -108,12 +108,28 @@ var consoleCrashSignals = []string{
 
 // buildConsoleArgs builds the agent subprocess argv for console mode, shared by
 // `lk agent console` and the `lk agent daemon` daemon.
-func buildConsoleArgs(addr string, record bool) []string {
+func buildConsoleArgs(
+	projectType agentfs.ProjectType,
+	addr string,
+	record bool,
+	logLevel string,
+) []string {
 	args := []string{"console", "--connect-addr", addr}
 	if record {
 		args = append(args, "--record")
 	}
-	return args
+	return appendLogLevel(args, projectType, logLevel)
+}
+
+func appendLogLevel(
+	args []string,
+	projectType agentfs.ProjectType,
+	logLevel string,
+) []string {
+	if logLevel == "" {
+		return args
+	}
+	return append(args, "--log-level", normalizeLogLevel(projectType, logLevel))
 }
 
 // normalizeLogLevel adapts the log level to the agent runtime's convention:

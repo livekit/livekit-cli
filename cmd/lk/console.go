@@ -47,6 +47,7 @@ var consoleCommand = &cli.Command{
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,
 	Flags: []cli.Flag{
+		agentLogLevelFlag(),
 		&cli.IntFlag{
 			Name:    "port",
 			Aliases: []string{"p"},
@@ -145,7 +146,12 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		Entrypoint:  entrypoint,
 		ProjectType: projectType,
 		RuntimeArgs: forwardedArgs(cmd),
-		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
+		CLIArgs: buildConsoleArgs(
+			projectType,
+			actualAddr,
+			cmd.Bool("record"),
+			cmd.String("log-level"),
+		),
 		FailSignals: consoleCrashSignals,
 	})
 	if err != nil {

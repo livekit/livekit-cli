@@ -94,18 +94,19 @@ func init() {
 	AgentCommands[0].Commands = append(AgentCommands[0].Commands, startCommand, devCommand)
 }
 
-var agentRunFlags = []cli.Flag{
-	&cli.StringFlag{
-		Name:  "log-level",
-		Usage: "Log level (TRACE, DEBUG, INFO, WARN, ERROR)",
-	},
+func agentLogLevelFlag() *cli.StringFlag {
+	return &cli.StringFlag{
+		Name:    "log-level",
+		Usage:   "Log level (TRACE, DEBUG, INFO, WARN, ERROR)",
+		Sources: cli.EnvVars("LIVEKIT_LOG_LEVEL"),
+	}
 }
 
 var startCommand = &cli.Command{
 	Name:      "start",
 	Usage:     "Run an agent in production mode",
 	ArgsUsage: "[entrypoint] [-- node/python-args...]",
-	Flags:     agentRunFlags,
+	Flags:     []cli.Flag{agentLogLevelFlag()},
 	Action:    runAgentStart,
 	// Leaf command whose positional arg is an entrypoint file. Drop the implicit
 	// `help` subcommand so shell completion returns nothing for the positional,
@@ -117,10 +118,13 @@ var devCommand = &cli.Command{
 	Name:      "dev",
 	Usage:     "Run an agent in development mode with auto-reload",
 	ArgsUsage: "[entrypoint] [-- node/python-args...]",
-	Flags: append(agentRunFlags, &cli.BoolFlag{
-		Name:  "no-reload",
-		Usage: "Disable auto-reload on file changes",
-	}),
+	Flags: []cli.Flag{
+		agentLogLevelFlag(),
+		&cli.BoolFlag{
+			Name:  "no-reload",
+			Usage: "Disable auto-reload on file changes",
+		},
+	},
 	Action: runAgentDev,
 	// See startCommand: hide `help` so filenames complete for the entrypoint arg.
 	HideHelpCommand: true,
@@ -234,11 +238,7 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 }
 
 func buildCLIArgs(projectType agentfs.ProjectType, subcmd string, cmd *cli.Command) []string {
-	args := []string{subcmd}
-	if logLevel := cmd.String("log-level"); logLevel != "" {
-		args = append(args, "--log-level", normalizeLogLevel(projectType, logLevel))
-	}
-	return args
+	return appendLogLevel([]string{subcmd}, projectType, cmd.String("log-level"))
 }
 
 func runAgentStart(ctx context.Context, cmd *cli.Command) error {
