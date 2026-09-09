@@ -133,11 +133,11 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 	}
 
 	var fileList []string
-	if err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+	if err := filepath.WalkDir(dir, func(p string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if ignored, err := matcher.MatchesOrParentMatches(path); ignored {
+		if ignored, err := matcher.MatchesOrParentMatches(p); ignored {
 			return nil
 		} else if err != nil {
 			return err
@@ -148,7 +148,13 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 			if strings.HasPrefix(d.Name(), "__") && d.Name() != "__main__.py" {
 				return nil
 			}
-			fileList = append(fileList, path)
+			// Make relative to dir and use forward slashes so paths are valid inside
+			// the Linux-based Docker container regardless of the host OS.
+			rel, err := filepath.Rel(dir, p)
+			if err != nil {
+				return err
+			}
+			fileList = append(fileList, filepath.ToSlash(rel))
 		}
 		return nil
 	}); err != nil {
@@ -199,7 +205,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		if err := form.Run(); err != nil {
 			return nil, err
 		}
-		newEntrypoint = util.ToUnixPath(selected)
+		newEntrypoint = selected
 	}
 
 	fmt.Printf("Using entrypoint file [%s]\n", util.Accented(newEntrypoint))
