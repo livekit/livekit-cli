@@ -95,6 +95,14 @@ func main() {
 
 	checkForLegacyName()
 
+	fmt.Printf("╭────────────╮\n"+
+		"│ ██      ▒▒ │\n"+
+		"│ ██    ▒▒   │\n"+
+		"│ ██  ▒▒     │\n"+
+		"│ ██    ▒▒   │ LiveKit CLI v%s\n"+
+		"│ ██████  ▒▒ │ https://livekit.io\n"+
+		"╰────────────╯\n", livekitcli.Version)
+
 	if err := app.Run(ctx, os.Args); err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
 		// Outside the Printer's reach (it may not be initialized yet), so the
