@@ -36,6 +36,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
+	"github.com/livekit/protocol/utils"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 	"google.golang.org/protobuf/proto"
@@ -91,7 +92,7 @@ var simulateCommand = &cli.Command{
 		&cli.BoolFlag{
 			Name:    "yes",
 			Aliases: []string{"y"},
-			Usage:   "Skip the source-upload confirmation prompt (required for non-interactive runs that generate from source)",
+			Usage:   "Skip confirmation prompts: source upload, and adding missing ids to the --scenarios file (required for non-interactive runs)",
 		},
 		&cli.StringFlag{
 			Name:  "view",
@@ -164,13 +165,20 @@ func writeGeneratedScenariosTemp(run *livekit.SimulationRun) (string, error) {
 // scenarioGroupToYAML renders a ScenarioGroup as a scenarios.yaml document, the
 // inverse of loadScenarioGroup.
 func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
-	f := scenariosFile{Name: group.GetName()}
+	f := scenariosFile{ID: group.GetId(), Name: group.GetName()}
+	if f.ID == "" {
+		f.ID = utils.NewGuid(utils.ScenarioGroupPrefix)
+	}
 	for _, s := range group.GetScenarios() {
 		ys := yamlScenario{
+			ID:                s.GetId(),
 			Label:             s.GetLabel(),
 			Instructions:      s.GetInstructions(),
 			AgentExpectations: s.GetAgentExpectations(),
 			Tags:              s.GetTags(),
+		}
+		if ys.ID == "" {
+			ys.ID = utils.NewGuid(utils.ScenarioPrefix)
 		}
 		if s.GetUserdata() != "" {
 			var ud map[string]any
@@ -187,11 +195,13 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 // scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
 // and JSON-encoded into the proto's string field.
 type scenariosFile struct {
+	ID        string         `yaml:"id"`
 	Name      string         `yaml:"name"`
 	Scenarios []yamlScenario `yaml:"scenarios"`
 }
 
 type yamlScenario struct {
+	ID                string            `yaml:"id"`
 	Label             string            `yaml:"label"`
 	Instructions      string            `yaml:"instructions"`
 	AgentExpectations string            `yaml:"agent_expectations"`
@@ -255,8 +265,19 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		return nil, fmt.Errorf("failed to parse scenarios file: %w", err)
 	}
 
-	group := &livekit.ScenarioGroup{Name: f.Name}
+	if f.ID == "" {
+		return nil, fmt.Errorf("scenarios file has no id")
+	}
+	group := &livekit.ScenarioGroup{Id: f.ID, Name: f.Name}
+	seen := map[string]bool{}
 	for _, s := range f.Scenarios {
+		if s.ID == "" {
+			return nil, fmt.Errorf("scenario %q has no id", s.Label)
+		}
+		if seen[s.ID] {
+			return nil, fmt.Errorf("duplicate scenario id %q", s.ID)
+		}
+		seen[s.ID] = true
 		var userdata string
 		if len(s.Userdata) > 0 {
 			b, err := json.Marshal(s.Userdata)
@@ -266,6 +287,7 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			userdata = string(b)
 		}
 		group.Scenarios = append(group.Scenarios, &livekit.Scenario{
+			Id:                s.ID,
 			Label:             s.Label,
 			Instructions:      s.Instructions,
 			AgentExpectations: s.AgentExpectations,
@@ -377,6 +399,9 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 
 	var scenarioGroup *livekit.ScenarioGroup
 	if scenariosPath != "" {
+		if err := ensureScenarioIDs(cmd, scenariosPath); err != nil {
+			return err
+		}
 		scenarioGroup, err = loadScenarioGroup(scenariosPath)
 		if err != nil {
 			return err
