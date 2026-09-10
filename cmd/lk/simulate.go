@@ -20,9 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -207,15 +209,21 @@ type simulateConfig struct {
 	concurrency    int32
 	mode           simulateMode
 	simulationMode livekit.SimulationMode
-	agentName      string
-	projectDir     string
-	projectType    agentfs.ProjectType
-	entrypoint     string
-	scenarioGroup  *livekit.ScenarioGroup
-	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
-	viewModeRunID  string   // non-empty when --view opens a pre-existing run
-	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
-	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
+	// agentName is the agent under test from livekit.toml, the run's identity
+	// in the dashboard. dispatchAgentName is the name jobs are dispatched to
+	// when it differs: the throwaway name a locally spawned worker registers
+	// under (it must not collide with the deployed agent), or the live agent's
+	// name when --agent-name targets an already-running agent.
+	agentName         string
+	dispatchAgentName string
+	projectDir        string
+	projectType       agentfs.ProjectType
+	entrypoint        string
+	scenarioGroup     *livekit.ScenarioGroup
+	scenariosPath     string   // path to the --scenarios file (empty when generating from source)
+	viewModeRunID     string   // non-empty when --view opens a pre-existing run
+	liveAgent         bool     // --agent-name: run against an already-running agent, don't spawn one
+	warnings          []string // config-level warnings surfaced at setup (e.g. ignored flags)
 
 	// impairments on the simulated user's audio, set only in SIMULATION_MODE_AUDIO
 	backgroundNoise      bool
@@ -276,6 +284,58 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	return group, nil
 }
 
+// tomlAgentName returns [agent] name from the livekit.toml in dir, or "" when
+// the file or the field is absent.
+func tomlAgentName(dir string) (string, error) {
+	lkToml, exists, err := config.LoadTOMLFile(dir, tomlFilename)
+	if !exists {
+		return "", nil
+	}
+	if err != nil || lkToml.Agent == nil {
+		return "", err
+	}
+	return lkToml.Agent.Name, nil
+}
+
+// agentNameInSource matches the literal agent name an agent registers under:
+// Python `agent_name="x"` and JS `agentName: "x"`.
+var agentNameInSource = regexp.MustCompile(`(?:agent_name\s*=|agentName\s*:)\s*["'` + "`" + `]([^"'` + "`" + `]+)["'` + "`" + `]`)
+
+// suggestAgentName returns the agent name found in the project's source, or a
+// placeholder when there is none.
+func suggestAgentName(projectDir string) string {
+	found := ""
+	filepath.WalkDir(projectDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || found != "" {
+			return filepath.SkipAll
+		}
+		if d.IsDir() {
+			switch d.Name() {
+			case "node_modules", ".venv", "venv", ".git", "dist", "__pycache__":
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		switch filepath.Ext(path) {
+		case ".py", ".ts", ".tsx", ".js", ".mjs", ".cjs":
+		default:
+			return nil
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		if m := agentNameInSource.FindSubmatch(b); m != nil {
+			found = string(m[1])
+		}
+		return nil
+	})
+	if found == "" {
+		return "my-agent"
+	}
+	return found
+}
+
 func generateAgentName() string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	b := make([]byte, 8)
@@ -329,12 +389,13 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	scenariosPath := cmd.String("scenarios")
 
 	var (
-		agentName   string
-		projectDir  string
-		projectType agentfs.ProjectType
-		entrypoint  string
-		liveAgent   bool
-		err         error
+		agentName         string
+		dispatchAgentName string
+		projectDir        string
+		projectType       agentfs.ProjectType
+		entrypoint        string
+		liveAgent         bool
+		err               error
 	)
 
 	// --agent-name (even empty) means: run against an already-running agent,
@@ -345,15 +406,29 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 			return fmt.Errorf("--agent-name requires --scenarios (no source to generate scenarios from when running against a live agent)")
 		}
 		liveAgent = true
-		agentName = liveAgentName
+		dispatchAgentName = liveAgentName
+		// a livekit.toml in the working directory names the agent under test;
+		// without one the live agent's own name is already stable.
+		if tomlName, _ := tomlAgentName("."); tomlName != "" {
+			agentName = tomlName
+		} else {
+			agentName = liveAgentName
+		}
 	} else if runID != "" {
 		// --view opens a pre-existing run: nothing is spawned, so no agent
 		// project or entrypoint is needed.
 	} else {
-		agentName = generateAgentName()
+		dispatchAgentName = generateAgentName()
 		projectDir, projectType, err = agentfs.DetectProjectRoot(".")
 		if err != nil {
 			return err
+		}
+		agentName, err = tomlAgentName(projectDir)
+		if err != nil {
+			return err
+		}
+		if agentName == "" {
+			return fmt.Errorf("%s must name the agent under test so its runs can be grouped in the dashboard: run `lk agent config` for a cloud agent, or add\n\n[agent]\nname = %q\n\nfor a self-hosted one", tomlFilename, suggestAgentName(projectDir))
 		}
 
 		entrypointArg := cmd.Args().First()
@@ -402,22 +477,23 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
 	simCfg := &simulateConfig{
-		ctx:            ctx,
-		client:         simClient,
-		pc:             pc,
-		numSimulations: numSimulations,
-		concurrency:    concurrency,
-		mode:           mode,
-		simulationMode: simulationMode,
-		agentName:      agentName,
-		projectDir:     projectDir,
-		projectType:    projectType,
-		entrypoint:     entrypoint,
-		scenarioGroup:  scenarioGroup,
-		scenariosPath:  scenariosPath,
-		viewModeRunID:  runID,
-		liveAgent:      liveAgent,
-		warnings:       simulateConfigWarnings(mode, numSimulations),
+		ctx:               ctx,
+		client:            simClient,
+		pc:                pc,
+		numSimulations:    numSimulations,
+		concurrency:       concurrency,
+		mode:              mode,
+		simulationMode:    simulationMode,
+		agentName:         agentName,
+		dispatchAgentName: dispatchAgentName,
+		projectDir:        projectDir,
+		projectType:       projectType,
+		entrypoint:        entrypoint,
+		scenarioGroup:     scenarioGroup,
+		scenariosPath:     scenariosPath,
+		viewModeRunID:     runID,
+		liveAgent:         liveAgent,
+		warnings:          simulateConfigWarnings(mode, numSimulations),
 	}
 
 	if simulationMode == livekit.SimulationMode_SIMULATION_MODE_AUDIO {
@@ -544,7 +620,7 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 		Env: []string{
 			// register under the dispatch name regardless of any agent_name
 			// hardcoded in the user's code
-			"LIVEKIT_AGENT_NAME_OVERRIDE=" + c.agentName,
+			"LIVEKIT_AGENT_NAME_OVERRIDE=" + c.dispatchAgentName,
 			"LIVEKIT_URL=" + c.pc.URL,
 			"LIVEKIT_API_KEY=" + c.pc.APIKey,
 			"LIVEKIT_API_SECRET=" + c.pc.APISecret,
@@ -598,6 +674,9 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 		LowQualityMicrophone: c.lowQualityMicrophone,
 		PacketLoss:           c.packetLoss,
 		Ci:                   ciFromEnv(),
+	}
+	if c.dispatchAgentName != "" && c.dispatchAgentName != c.agentName {
+		req.DispatchAgentName = &c.dispatchAgentName
 	}
 	if c.concurrency > 0 {
 		req.Concurrency = &c.concurrency
