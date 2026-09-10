@@ -52,6 +52,9 @@ type LiveKitTOMLProjectConfig struct {
 
 type LiveKitTOMLAgentConfig struct {
 	ID string `toml:"id"`
+	// Identity of the agent under test in simulation runs; self-hosted agents
+	// set it by hand.
+	Name string `toml:"name"`
 }
 
 func NewLiveKitTOML(forSubdomain string) *LiveKitTOML {
