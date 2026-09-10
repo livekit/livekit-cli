@@ -232,6 +232,7 @@ complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcomma
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate; and __fish_seen_subcommand_from audio' -f -l packet-loss -d 'Drop packets from the simulated user\'s audio track'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate; and __fish_seen_subcommand_from audio' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate; and not __fish_seen_subcommand_from audio list view export' -a 'list' -d 'List the project\'s most recent simulation runs'
+complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate; and __fish_seen_subcommand_from list' -f -l limit -r -d 'maximum number of runs to return. If unset, defaults to API page size'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate; and __fish_seen_subcommand_from list' -f -l json -s j -d 'Output as JSON'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate; and __fish_seen_subcommand_from list' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from simulate; and not __fish_seen_subcommand_from audio list view export' -a 'view' -d 'Open a pre-existing simulation run'

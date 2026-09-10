@@ -31,34 +31,54 @@ var simulateListCommand = &cli.Command{
 	Usage:           "List the project's most recent simulation runs",
 	HideHelpCommand: true,
 	Action:          listSimulationRuns,
-	Flags:           []cli.Flag{jsonFlag},
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:  "limit",
+			Usage: "maximum number of runs to return. If unset, defaults to API page size",
+		},
+		jsonFlag,
+	},
 }
 
-// listSimulationRuns prints the first page the API returns: newest first, no
-// jobs. Pass/fail detail lives in `view`.
+// listSimulationRuns prints runs newest first, without jobs. Pass/fail detail
+// lives in `view`.
 func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
-	ctx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
-	defer cancel()
-	resp, err := client.ListSimulationRuns(ctx, &livekit.SimulationRun_List_Request{ProjectId: pc.ProjectId})
-	if err != nil {
-		return fmt.Errorf("unable to list simulation runs: %w", err)
+	limit := cmd.Int("limit")
+	var runs []*livekit.SimulationRun
+	var resp *livekit.SimulationRun_List_Response
+	for resp == nil || (len(runs) < limit && resp.NextPageToken.GetToken() != "") {
+		req := &livekit.SimulationRun_List_Request{ProjectId: pc.ProjectId}
+		if resp != nil {
+			req.PageToken = &livekit.TokenPagination{Token: resp.NextPageToken.GetToken()}
+		}
+		pageCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
+		var err error
+		resp, err = client.ListSimulationRuns(pageCtx, req)
+		cancel()
+		if err != nil {
+			return fmt.Errorf("unable to list simulation runs: %w", err)
+		}
+		runs = append(runs, resp.Runs...)
+	}
+	if limit > 0 && len(runs) > limit {
+		runs = runs[:limit]
 	}
 
 	if cmd.Bool("json") {
-		util.PrintJSON(resp)
+		util.PrintJSON(&livekit.SimulationRun_List_Response{Runs: runs})
 		return nil
 	}
 
-	if len(resp.Runs) == 0 {
+	if len(runs) == 0 {
 		out.Status("No simulation runs found")
 		return nil
 	}
 
 	var rows [][]string
-	for _, run := range resp.Runs {
+	for _, run := range runs {
 		rows = append(rows, []string{
 			run.GetId(),
 			formatDeployedAt(run.GetCreatedAt().AsTime()),
