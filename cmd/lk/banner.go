@@ -19,8 +19,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
+	"charm.land/lipgloss/v2"
 	"github.com/Masterminds/semver/v3"
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
@@ -95,17 +97,27 @@ func bannerMessages(raw []byte, version string) []string {
 	return msgs
 }
 
-// printBanner shows the fetched notices on an interactive terminal. Non-interactive
-// runs (scripts, pipes) and runs that finished before the fetch never see it.
+// printBanner shows the fetched notices on an interactive terminal via Status, so
+// they land on stderr and honor --quiet. Non-interactive runs (scripts, pipes) and
+// runs that finished before the fetch never see it.
 func printBanner(ch <-chan []string) {
 	if !out.Interactive() {
 		return
 	}
 	select {
 	case msgs := <-ch:
-		for _, msg := range msgs {
-			out.Warnf("\n%s", util.Warn(msg))
+		if len(msgs) == 0 {
+			return
 		}
+		// The fence sets the notices apart from the command's own output. The fixed
+		// width wraps long messages instead of letting the border break on narrow
+		// terminals. Built here, after the theme is applied.
+		fence := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(util.Warning()).
+			Padding(0, 1).
+			Width(76)
+		out.Statusf("\n%s", fence.Render(strings.Join(msgs, "\n\n")))
 	default:
 	}
 }
