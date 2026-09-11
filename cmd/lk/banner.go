@@ -27,8 +27,8 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
-// banner.json on main is the notice shown to installed CLIs. Editing that file is
-// the whole release process: no build or tag involved.
+// banner.json on main is the list of notices shown to installed CLIs. Editing that
+// file is the whole release process: no build or tag involved.
 const bannerURL = "https://raw.githubusercontent.com/livekit/livekit-cli/main/banner.json"
 
 type banner struct {
@@ -38,11 +38,11 @@ type banner struct {
 	Versions string `json:"versions"`
 }
 
-// fetchBanner resolves to the banner text for this build, or "" when there is
+// fetchBanner resolves to the notices for this build, or nothing when there are
 // none or the fetch fails. It never delays the command: main prints whatever has
 // arrived by the time the command finishes and drops the rest.
-func fetchBanner(ctx context.Context) <-chan string {
-	ch := make(chan string, 1)
+func fetchBanner(ctx context.Context) <-chan []string {
+	ch := make(chan []string, 1)
 	go func() {
 		defer close(ch)
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -63,35 +63,47 @@ func fetchBanner(ctx context.Context) <-chan string {
 		if err != nil {
 			return
 		}
-		ch <- bannerMessage(body, livekitcli.Version)
+		ch <- bannerMessages(body, livekitcli.Version)
 	}()
 	return ch
 }
 
-func bannerMessage(raw []byte, version string) string {
-	var b banner
-	if json.Unmarshal(raw, &b) != nil || b.Message == "" {
-		return ""
+// bannerMessages returns the message of every entry whose constraint matches
+// version, in file order.
+func bannerMessages(raw []byte, version string) []string {
+	var banners []banner
+	if json.Unmarshal(raw, &banners) != nil {
+		return nil
 	}
-	if b.Versions != "" {
-		c, err := semver.NewConstraint(b.Versions)
-		v, verr := semver.NewVersion(version)
-		if err != nil || verr != nil || !c.Check(v) {
-			return ""
+	v, err := semver.NewVersion(version)
+	if err != nil {
+		return nil
+	}
+	var msgs []string
+	for _, b := range banners {
+		if b.Message == "" {
+			continue
 		}
+		if b.Versions != "" {
+			c, err := semver.NewConstraint(b.Versions)
+			if err != nil || !c.Check(v) {
+				continue
+			}
+		}
+		msgs = append(msgs, b.Message)
 	}
-	return b.Message
+	return msgs
 }
 
-// printBanner shows a fetched banner on an interactive terminal. Non-interactive
+// printBanner shows the fetched notices on an interactive terminal. Non-interactive
 // runs (scripts, pipes) and runs that finished before the fetch never see it.
-func printBanner(ch <-chan string) {
+func printBanner(ch <-chan []string) {
 	if !out.Interactive() {
 		return
 	}
 	select {
-	case msg := <-ch:
-		if msg != "" {
+	case msgs := <-ch:
+		for _, msg := range msgs {
 			out.Warnf("\n%s", util.Warn(msg))
 		}
 	default:
