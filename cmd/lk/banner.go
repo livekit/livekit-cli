@@ -1,0 +1,99 @@
+// Copyright 2021-2026 LiveKit, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"time"
+
+	"github.com/Masterminds/semver/v3"
+
+	livekitcli "github.com/livekit/livekit-cli/v2"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
+)
+
+// banner.json on main is the notice shown to installed CLIs. Editing that file is
+// the whole release process: no build or tag involved.
+const bannerURL = "https://raw.githubusercontent.com/livekit/livekit-cli/main/banner.json"
+
+type banner struct {
+	Message string `json:"message"`
+	// Versions is a semver constraint (e.g. "< 3.0.0") selecting which CLI versions
+	// see the message. Empty matches every version.
+	Versions string `json:"versions"`
+}
+
+// fetchBanner resolves to the banner text for this build, or "" when there is
+// none or the fetch fails. It never delays the command: main prints whatever has
+// arrived by the time the command finishes and drops the rest.
+func fetchBanner(ctx context.Context) <-chan string {
+	ch := make(chan string, 1)
+	go func() {
+		defer close(ch)
+		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, bannerURL, nil)
+		if err != nil {
+			return
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return
+		}
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+		if err != nil {
+			return
+		}
+		ch <- bannerMessage(body, livekitcli.Version)
+	}()
+	return ch
+}
+
+func bannerMessage(raw []byte, version string) string {
+	var b banner
+	if json.Unmarshal(raw, &b) != nil || b.Message == "" {
+		return ""
+	}
+	if b.Versions != "" {
+		c, err := semver.NewConstraint(b.Versions)
+		v, verr := semver.NewVersion(version)
+		if err != nil || verr != nil || !c.Check(v) {
+			return ""
+		}
+	}
+	return b.Message
+}
+
+// printBanner shows a fetched banner on an interactive terminal. Non-interactive
+// runs (scripts, pipes) and runs that finished before the fetch never see it.
+func printBanner(ch <-chan string) {
+	if !out.Interactive() {
+		return
+	}
+	select {
+	case msg := <-ch:
+		if msg != "" {
+			out.Warnf("\n%s", util.Warn(msg))
+		}
+	default:
+	}
+}
