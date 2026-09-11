@@ -32,17 +32,13 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 const (
 	cloudAPIServerURL = "https://cloud-api.livekit.io"
 	cloudDashboardURL = "https://cloud.livekit.io"
-	// publicAPIBaseURL is the production base URL of the user-authenticated
-	// LiveKit Public API (Connect/gRPC). Used only under --experimental-auth;
-	// override with --experimental-api-url for dev (e.g. http://localhost:8000).
-	// Connect appends the RPC path, so this is the host root — not a REST prefix.
-	publicAPIBaseURL = "https://beta-api.livekit.cloud"
 )
 
 var (
@@ -51,7 +47,7 @@ var (
 	tomlFilename       string = config.LiveKitTOMLFile
 	serverURL          string = cloudAPIServerURL
 	dashboardURL       string = cloudDashboardURL
-	experimentalAPIURL string = publicAPIBaseURL
+	experimentalAPIURL string = public.DefaultBaseURL
 
 	roomFlag = &TemplateStringFlag{
 		Name:     "room",
@@ -193,7 +189,7 @@ var (
 		&cli.StringFlag{
 			Name:        "experimental-api-url",
 			Usage:       "Base `URL` of the LiveKit Public API used with --experimental-auth",
-			Value:       publicAPIBaseURL,
+			Value:       public.DefaultBaseURL,
 			Destination: &experimentalAPIURL,
 			Sources:     cli.EnvVars("LIVEKIT_API_URL"),
 			Hidden:      true,
