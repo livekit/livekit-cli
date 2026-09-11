@@ -96,9 +96,10 @@ func bannerMessages(raw []byte, version string) []string {
 }
 
 // printBanner shows the fetched notices on an interactive terminal. Non-interactive
-// runs (scripts, pipes) and runs that finished before the fetch never see it.
+// runs (scripts, pipes), --json runs, and runs that finished before the fetch never
+// see it.
 func printBanner(ch <-chan []string) {
-	if !out.Interactive() {
+	if !out.Interactive() || jsonOutput {
 		return
 	}
 	select {
