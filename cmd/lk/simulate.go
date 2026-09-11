@@ -56,13 +56,16 @@ const (
 )
 
 var simulateCommand = &cli.Command{
-	Name:      "simulate",
-	Usage:     "Run agent simulations against LiveKit Cloud",
-	ArgsUsage: "[entrypoint]",
+	Name:  "simulate",
+	Usage: "Run agent simulations against LiveKit Cloud",
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,
 	Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+		// Bare `simulate` only prints help; no project is needed for that.
+		if cmd.Args().Len() == 0 {
+			return nil, nil
+		}
 		pc, err := loadProjectDetails(cmd)
 		if err != nil {
 			return nil, err
@@ -71,9 +74,9 @@ var simulateCommand = &cli.Command{
 		return nil, nil
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
+		return cli.ShowSubcommandHelp(cmd)
 	},
-	Commands: []*cli.Command{simulateAudioCommand},
+	Commands: []*cli.Command{simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:    "num-simulations",
@@ -94,17 +97,20 @@ var simulateCommand = &cli.Command{
 			Usage:   "Skip the source-upload confirmation prompt (required for non-interactive runs that generate from source)",
 		},
 		&cli.StringFlag{
-			Name:  "view",
-			Usage: "Open a pre-existing simulation",
-		},
-		&cli.StringFlag{
-			Name:  "export",
-			Usage: "Print the run with run `ID` and its exact per-job chat contexts as JSON. Nothing is run or polled: the run must already be finished",
-		},
-		&cli.StringFlag{
 			Name:  "agent-name",
 			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
 		},
+	},
+}
+
+var simulateTextCommand = &cli.Command{
+	Name:            "text",
+	Usage:           "Simulate text-only interactions",
+	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
+	ArgsUsage:       "[entrypoint]",
+	HideHelpCommand: true,
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
 	},
 }
 
@@ -134,6 +140,60 @@ var simulateAudioCommand = &cli.Command{
 			Usage: "Drop packets from the simulated user's audio track",
 		},
 	},
+}
+
+// Run flags on `simulate` are persistent, so these subcommands parse them too;
+// they take a run ID instead and ignore the rest.
+var simulateViewCommand = &cli.Command{
+	Name:            "view",
+	Usage:           "Open a pre-existing simulation run",
+	ArgsUsage:       "<run-id>",
+	HideHelpCommand: true,
+	Action:          runSimulateView,
+}
+
+var simulateExportCommand = &cli.Command{
+	Name:            "export",
+	Usage:           "Print a finished run and its exact per-job chat contexts as JSON. Nothing is run or polled",
+	ArgsUsage:       "<run-id>",
+	HideHelpCommand: true,
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		runID, err := simulateRunIDArg(cmd)
+		if err != nil {
+			return err
+		}
+		return exportSimulationRunJSON(ctx, simulateProjectConfig, runID)
+	},
+}
+
+func simulateRunIDArg(cmd *cli.Command) (string, error) {
+	runID := cmd.Args().First()
+	if runID == "" {
+		return "", fmt.Errorf("%s requires a run ID", cmd.Name)
+	}
+	return runID, nil
+}
+
+// runSimulateView opens a pre-existing run: nothing is spawned, so no agent
+// project, entrypoint or scenarios are needed.
+func runSimulateView(ctx context.Context, cmd *cli.Command) error {
+	runID, err := simulateRunIDArg(cmd)
+	if err != nil {
+		return err
+	}
+	pc := simulateProjectConfig
+	simCfg := &simulateConfig{
+		ctx:            ctx,
+		client:         lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret),
+		pc:             pc,
+		mode:           modeView,
+		simulationMode: livekit.SimulationMode_SIMULATION_MODE_TEXT,
+		viewModeRunID:  runID,
+	}
+	if !isInteractive() {
+		return runSimulateCI(ctx, simCfg)
+	}
+	return runSimulateTUI(simCfg)
 }
 
 // writeGeneratedScenariosTemp writes a generated run's scenarios to a temp
@@ -213,7 +273,7 @@ type simulateConfig struct {
 	entrypoint     string
 	scenarioGroup  *livekit.ScenarioGroup
 	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
-	viewModeRunID  string   // non-empty when --view opens a pre-existing run
+	viewModeRunID  string   // non-empty when `view` opens a pre-existing run
 	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
 	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
 
@@ -309,19 +369,8 @@ func buildTaskExists(projectDir string) (bool, error) {
 func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.SimulationMode) error {
 	pc := simulateProjectConfig
 
-	// --export is a one-shot read of a finished run, so it short-circuits
-	// every other flag: no agent, no run creation, no polling.
-	if cmd.IsSet("export") {
-		exportRunID := cmd.String("export")
-		if exportRunID == "" {
-			return fmt.Errorf("--export requires a run ID")
-		}
-		return exportSimulationRunJSON(ctx, pc, exportRunID)
-	}
-
 	numSimulations := int32(cmd.Int("num-simulations"))
 	concurrency := int32(cmd.Int("concurrency"))
-	runID := cmd.String("view")
 	liveAgentName := cmd.String("agent-name")
 
 	// never auto-discovered: an explicit --scenarios file is the source of
@@ -346,9 +395,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		}
 		liveAgent = true
 		agentName = liveAgentName
-	} else if runID != "" {
-		// --view opens a pre-existing run: nothing is spawned, so no agent
-		// project or entrypoint is needed.
 	} else {
 		agentName = generateAgentName()
 		projectDir, projectType, err = agentfs.DetectProjectRoot(".")
@@ -383,14 +429,9 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		}
 	}
 
-	var mode simulateMode
-	switch {
-	case runID != "":
-		mode = modeView
-	case scenarioGroup != nil && len(scenarioGroup.Scenarios) > 0:
+	mode := modeGenerateFromSource
+	if scenarioGroup != nil && len(scenarioGroup.Scenarios) > 0 {
 		mode = modeScenarios
-	default:
-		mode = modeGenerateFromSource
 	}
 
 	if mode == modeGenerateFromSource {
@@ -415,7 +456,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		entrypoint:     entrypoint,
 		scenarioGroup:  scenarioGroup,
 		scenariosPath:  scenariosPath,
-		viewModeRunID:  runID,
 		liveAgent:      liveAgent,
 		warnings:       simulateConfigWarnings(mode, numSimulations),
 	}
@@ -688,12 +728,12 @@ func dashboardBaseURL() string {
 // --project would resolve those.
 // The binary name comes from argv[0] so a renamed or path-qualified lk is
 // reproduced verbatim.
-func simulateCommandHint(flag, runID string) string {
+func simulateCommandHint(subcommand, runID string) string {
 	binary := "lk"
 	if len(os.Args) > 0 && os.Args[0] != "" {
 		binary = os.Args[0]
 	}
-	hint := binary + " agent simulate " + flag + " " + runID
+	hint := binary + " agent simulate " + subcommand + " " + runID
 	if simulateProjectConfig != nil && simulateProjectConfig.Name != "" {
 		hint += " --project " + simulateProjectConfig.Name
 	}
@@ -704,11 +744,11 @@ func simulateCommandHint(flag, runID string) string {
 }
 
 func viewCommandHint(runID string) string {
-	return simulateCommandHint("--view", runID)
+	return simulateCommandHint("view", runID)
 }
 
 func exportCommandHint(runID string) string {
-	return simulateCommandHint("--export", runID) + " > " + runID + ".json"
+	return simulateCommandHint("export", runID) + " > " + runID + ".json"
 }
 
 // In view mode the re-open hint would echo the command the user just ran, so
