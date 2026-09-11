@@ -95,9 +95,7 @@ func main() {
 
 	checkForLegacyName()
 
-	bannerCh := fetchBanner(ctx)
 	err := app.Run(ctx, os.Args)
-	saveBanner(bannerCh)
 	if err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
 		// Outside the Printer's reach (it may not be initialized yet), so the
@@ -156,7 +154,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	}
 	util.DetectBackground()
 
-	printBanner()
+	printBanner(ctx)
 
 	return nil, nil
 }

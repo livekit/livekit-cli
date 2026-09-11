@@ -35,9 +35,13 @@ import (
 // file is the whole release process: no build or tag involved.
 const bannerURL = "https://raw.githubusercontent.com/livekit/livekit-cli/main/banner.json"
 
-// The banner is shown from the copy cached by the previous run and refreshed in
-// the background, so it prints before the command without ever delaying it. A
-// new notice therefore appears one run after it lands on main.
+// The banner prints before the command, so the fetch is awaited. To keep that off
+// most runs, the fetched file is cached and reused for bannerTTL.
+const (
+	bannerTimeout = time.Second
+	bannerTTL     = time.Hour
+)
+
 func bannerCachePath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -53,53 +57,50 @@ type banner struct {
 	Versions string `json:"versions"`
 }
 
-// fetchBanner resolves to the raw banner.json, or nothing when the fetch fails.
-// It never delays the command: main caches whatever has arrived by the time the
-// command finishes and drops the rest.
-func fetchBanner(ctx context.Context) <-chan []byte {
-	ch := make(chan []byte, 1)
-	go func() {
-		defer close(ch)
-		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-		defer cancel()
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, bannerURL, nil)
-		if err != nil {
-			return
-		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return
-		}
-		body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
-		if err != nil {
-			return
-		}
-		ch <- body
-	}()
-	return ch
+// loadBanner returns banner.json from the cache when it is fresh, otherwise from
+// the network, falling back to a stale cache when the fetch fails.
+func loadBanner(ctx context.Context) []byte {
+	path, err := bannerCachePath()
+	if err != nil {
+		return nil
+	}
+	if st, err := os.Stat(path); err == nil && time.Since(st.ModTime()) < bannerTTL {
+		raw, _ := os.ReadFile(path)
+		return raw
+	}
+	raw := fetchBanner(ctx)
+	if raw == nil {
+		raw, _ = os.ReadFile(path)
+		return raw
+	}
+	if os.MkdirAll(filepath.Dir(path), 0700) == nil {
+		_ = os.WriteFile(path, raw, 0600)
+	}
+	return raw
 }
 
-// saveBanner caches the fetched banner.json for the next run, if it has arrived.
-func saveBanner(ch <-chan []byte) {
-	select {
-	case raw, ok := <-ch:
-		if !ok {
-			return
-		}
-		path, err := bannerCachePath()
-		if err != nil {
-			return
-		}
-		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-			return
-		}
-		_ = os.WriteFile(path, raw, 0600)
-	default:
+// fetchBanner returns the raw banner.json, or nil when the fetch fails or exceeds
+// bannerTimeout.
+func fetchBanner(ctx context.Context) []byte {
+	ctx, cancel := context.WithTimeout(ctx, bannerTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, bannerURL, nil)
+	if err != nil {
+		return nil
 	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+	if err != nil {
+		return nil
+	}
+	return body
 }
 
 // bannerMessages returns the message of every entry whose constraint matches
@@ -129,22 +130,14 @@ func bannerMessages(raw []byte, version string) []string {
 	return msgs
 }
 
-// printBanner shows the cached notices for this build on an interactive terminal
-// via Status, so they land on stderr and honor --quiet. Non-interactive runs
-// (scripts, pipes) never see it.
-func printBanner() {
+// printBanner shows the notices for this build on an interactive terminal via
+// Status, so they land on stderr and honor --quiet. Non-interactive runs (scripts,
+// pipes) skip the fetch entirely.
+func printBanner(ctx context.Context) {
 	if !out.Interactive() {
 		return
 	}
-	path, err := bannerCachePath()
-	if err != nil {
-		return
-	}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return
-	}
-	msgs := bannerMessages(raw, livekitcli.Version)
+	msgs := bannerMessages(loadBanner(ctx), livekitcli.Version)
 	if len(msgs) == 0 {
 		return
 	}
