@@ -57,36 +57,24 @@ type banner struct {
 	Versions string `json:"versions"`
 }
 
-// bannerCache is the on-disk shape of ~/.livekit/banner.json: the fetched file and
-// when it was fetched, so freshness does not depend on the file's mtime.
-type bannerCache struct {
-	Data         json.RawMessage `json:"data"`
-	DownloadedAt time.Time       `json:"downloadedAt"`
-}
-
-// loadBanner returns banner.json from the cache when it was downloaded within
-// bannerTTL, otherwise from the network, falling back to a stale cache when the
-// fetch fails.
+// loadBanner returns banner.json from the cache when it is fresh, otherwise from
+// the network, falling back to a stale cache when the fetch fails.
 func loadBanner(ctx context.Context) []byte {
 	path, err := bannerCachePath()
 	if err != nil {
 		return nil
 	}
-	var cached bannerCache
-	if raw, err := os.ReadFile(path); err == nil {
-		_ = json.Unmarshal(raw, &cached)
-	}
-	if time.Since(cached.DownloadedAt) < bannerTTL {
-		return cached.Data
+	if st, err := os.Stat(path); err == nil && time.Since(st.ModTime()) < bannerTTL {
+		raw, _ := os.ReadFile(path)
+		return raw
 	}
 	raw := fetchBanner(ctx)
 	if raw == nil {
-		return cached.Data
+		raw, _ = os.ReadFile(path)
+		return raw
 	}
 	if os.MkdirAll(filepath.Dir(path), 0700) == nil {
-		if enc, err := json.Marshal(bannerCache{Data: raw, DownloadedAt: time.Now()}); err == nil {
-			_ = os.WriteFile(path, enc, 0600)
-		}
+		_ = os.WriteFile(path, raw, 0600)
 	}
 	return raw
 }
