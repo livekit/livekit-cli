@@ -69,10 +69,9 @@ Typical workflow:
 All output is rendered as markdown.`,
 			Flags: []cli.Flag{
 				&cli.BoolFlag{
-					Name:        "json",
-					Aliases:     []string{"j"},
-					Usage:       "Output as JSON instead of markdown",
-					Destination: &jsonOutput,
+					Name:    "json",
+					Aliases: []string{"j"},
+					Usage:   "Output as JSON instead of markdown",
 				},
 				&cli.StringFlag{
 					Name:   "server-url",
