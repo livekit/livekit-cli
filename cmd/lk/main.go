@@ -111,7 +111,7 @@ func main() {
 
 	bannerCh := fetchBanner(ctx)
 	err := app.Run(ctx, os.Args)
-	printBanner(bannerCh)
+	saveBanner(bannerCh)
 	if err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
 		// Outside the Printer's reach (it may not be initialized yet), so the
@@ -173,6 +173,8 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 		}
 	}
 	util.DetectBackground()
+
+	printBanner()
 
 	// Nudge users still on API-key auth toward the new account-based flow.
 	maybeShowUpgradeNotice(cmd, conf)
