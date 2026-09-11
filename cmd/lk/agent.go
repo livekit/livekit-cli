@@ -644,14 +644,19 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 		defer cancel()
 		regions := []string{region}
-		agentID, err := agentsClient.RegisterAgent(buildContext, secrets, regions)
+		created, err := agentsClient.AgentClient.CreateAgent(buildContext, &lkproto.CreateAgentRequest{
+			Secrets: secrets,
+			Regions: regions,
+		})
 		if err != nil {
 			if twerr, ok := err.(twirp.Error); ok {
 				return fmt.Errorf("unable to create agent: %s", twerr.Msg())
 			}
 			return fmt.Errorf("unable to create agent: %w", err)
 		}
+		agentID := created.AgentId
 		lkConfig.Agent.ID = agentID
+		lkConfig.Agent.Name = created.AgentName
 		if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 			return err
 		}
@@ -706,6 +711,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	lkConfig.Agent.ID = resp.AgentId
+	lkConfig.Agent.Name = resp.AgentName
 	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 		return err
 	}
@@ -800,7 +806,8 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 	agent := response.Agents[0]
 	lkConfig := config.NewLiveKitTOML(matches[1])
 	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
-		ID: agent.AgentId,
+		ID:   agent.AgentId,
+		Name: agent.AgentName,
 	}
 
 	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
