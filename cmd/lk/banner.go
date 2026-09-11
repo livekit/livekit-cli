@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -33,6 +35,17 @@ import (
 // file is the whole release process: no build or tag involved.
 const bannerURL = "https://raw.githubusercontent.com/livekit/livekit-cli/main/banner.json"
 
+// The banner is shown from the copy cached by the previous run and refreshed in
+// the background, so it prints before the command without ever delaying it. A
+// new notice therefore appears one run after it lands on main.
+func bannerCachePath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".livekit", "banner.json"), nil
+}
+
 type banner struct {
 	Message string `json:"message"`
 	// Versions is a semver constraint (e.g. "< 3.0.0") selecting which CLI versions
@@ -40,11 +53,11 @@ type banner struct {
 	Versions string `json:"versions"`
 }
 
-// fetchBanner resolves to the notices for this build, or nothing when there are
-// none or the fetch fails. It never delays the command: main prints whatever has
-// arrived by the time the command finishes and drops the rest.
-func fetchBanner(ctx context.Context) <-chan []string {
-	ch := make(chan []string, 1)
+// fetchBanner resolves to the raw banner.json, or nothing when the fetch fails.
+// It never delays the command: main caches whatever has arrived by the time the
+// command finishes and drops the rest.
+func fetchBanner(ctx context.Context) <-chan []byte {
+	ch := make(chan []byte, 1)
 	go func() {
 		defer close(ch)
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -65,9 +78,28 @@ func fetchBanner(ctx context.Context) <-chan []string {
 		if err != nil {
 			return
 		}
-		ch <- bannerMessages(body, livekitcli.Version)
+		ch <- body
 	}()
 	return ch
+}
+
+// saveBanner caches the fetched banner.json for the next run, if it has arrived.
+func saveBanner(ch <-chan []byte) {
+	select {
+	case raw, ok := <-ch:
+		if !ok {
+			return
+		}
+		path, err := bannerCachePath()
+		if err != nil {
+			return
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			return
+		}
+		_ = os.WriteFile(path, raw, 0600)
+	default:
+	}
 }
 
 // bannerMessages returns the message of every entry whose constraint matches
@@ -97,27 +129,32 @@ func bannerMessages(raw []byte, version string) []string {
 	return msgs
 }
 
-// printBanner shows the fetched notices on an interactive terminal via Status, so
-// they land on stderr and honor --quiet. Non-interactive runs (scripts, pipes) and
-// runs that finished before the fetch never see it.
-func printBanner(ch <-chan []string) {
+// printBanner shows the cached notices for this build on an interactive terminal
+// via Status, so they land on stderr and honor --quiet. Non-interactive runs
+// (scripts, pipes) never see it.
+func printBanner() {
 	if !out.Interactive() {
 		return
 	}
-	select {
-	case msgs := <-ch:
-		if len(msgs) == 0 {
-			return
-		}
-		// The fence sets the notices apart from the command's own output. The fixed
-		// width wraps long messages instead of letting the border break on narrow
-		// terminals. Built here, after the theme is applied.
-		fence := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(util.Warning()).
-			Padding(0, 1).
-			Width(76)
-		out.Statusf("\n%s", fence.Render(strings.Join(msgs, "\n\n")))
-	default:
+	path, err := bannerCachePath()
+	if err != nil {
+		return
 	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	msgs := bannerMessages(raw, livekitcli.Version)
+	if len(msgs) == 0 {
+		return
+	}
+	// The fence sets the notices apart from the command's own output. The fixed
+	// width wraps long messages instead of letting the border break on narrow
+	// terminals.
+	fence := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(util.Warning()).
+		Padding(0, 1).
+		Width(76)
+	out.Statusf("%s\n", fence.Render(strings.Join(msgs, "\n\n")))
 }
