@@ -56,13 +56,16 @@ const (
 )
 
 var simulateCommand = &cli.Command{
-	Name:      "simulate",
-	Usage:     "Run agent simulations against LiveKit Cloud",
-	ArgsUsage: "[entrypoint]",
+	Name:  "simulate",
+	Usage: "Run agent simulations against LiveKit Cloud",
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,
 	Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+		// Bare `simulate` only prints help; no project is needed for that.
+		if cmd.Args().Len() == 0 {
+			return nil, nil
+		}
 		pc, err := loadProjectDetails(cmd)
 		if err != nil {
 			return nil, err
@@ -71,7 +74,7 @@ var simulateCommand = &cli.Command{
 		return nil, nil
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
+		return cli.ShowSubcommandHelp(cmd)
 	},
 	Commands: []*cli.Command{simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand},
 	Flags: []cli.Flag{
@@ -100,11 +103,9 @@ var simulateCommand = &cli.Command{
 	},
 }
 
-// `simulate text` is the same run as bare `simulate`, named so the mode is
-// spelled out like `simulate audio`.
 var simulateTextCommand = &cli.Command{
 	Name:            "text",
-	Usage:           "Simulate text-only interactions (the default when no subcommand is given)",
+	Usage:           "Simulate text-only interactions",
 	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
 	ArgsUsage:       "[entrypoint]",
 	HideHelpCommand: true,
