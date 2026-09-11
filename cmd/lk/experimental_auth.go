@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"connectrpc.com/connect"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
@@ -127,7 +126,7 @@ func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig
 // publicClientForToken builds a Public API client authenticated with the given
 // session token, honoring --experimental-api-url.
 func publicClientForToken(token string) (*public.Client, error) {
-	return public.New(experimentalAPIURL, token, connect.WithGRPC())
+	return public.New(experimentalAPIURL, token)
 }
 
 // newCloudAPIClient builds a Public API client authenticated as the default

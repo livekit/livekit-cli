@@ -467,7 +467,7 @@ func deleteUserProject(ctx context.Context, cmd *cli.Command) error {
 		if err := huh.NewForm(huh.NewGroup(util.Confirm().
 			Title(fmt.Sprintf("Delete project %s? This cannot be undone.", id)).
 			Value(&confirm).
-			WithTheme(util.Theme))).
+			WithTheme(util.FormTheme()))).
 			Run(); err != nil {
 			return err
 		}

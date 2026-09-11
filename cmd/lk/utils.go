@@ -43,7 +43,7 @@ const (
 	// LiveKit Public API (Connect/gRPC). Used only under --experimental-auth;
 	// override with --experimental-api-url for dev (e.g. http://localhost:8000).
 	// Connect appends the RPC path, so this is the host root — not a REST prefix.
-	publicAPIBaseURL = "https://api.livekit.cloud"
+	publicAPIBaseURL = "https://beta-api.livekit.cloud"
 )
 
 var (

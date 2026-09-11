@@ -490,7 +490,7 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Title("What is the name of this device?").
 		Prompt("").
 		Value(&cliConfig.DeviceName).
-		WithTheme(util.Theme))).
+		WithTheme(util.FormTheme()))).
 		Run(); err != nil {
 		return err
 	}
@@ -567,7 +567,7 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 			if err := huh.NewForm(huh.NewGroup(util.Confirm().
 				Title("Make this the default user?").
 				Value(&isDefault).
-				WithTheme(util.Theme))).
+				WithTheme(util.FormTheme()))).
 				Run(); err != nil {
 				return err
 			}
