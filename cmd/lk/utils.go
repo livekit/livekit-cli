@@ -60,14 +60,10 @@ var (
 		Usage:    "`ID` of participant (supports templates)",
 		Required: true,
 	}
-	// jsonOutput is set by every --json flag so code outside the command (the
-	// banner) can keep stderr free of anything but the command's own output.
-	jsonOutput bool
-	jsonFlag   = &cli.BoolFlag{
-		Name:        "json",
-		Aliases:     []string{"j"},
-		Usage:       "Output as JSON",
-		Destination: &jsonOutput,
+	jsonFlag = &cli.BoolFlag{
+		Name:    "json",
+		Aliases: []string{"j"},
+		Usage:   "Output as JSON",
 	}
 	// quietFlag is global. "silent" is kept as an alias for backwards compatibility with
 	// the former per-command --silent flag; both resolve to the same value and feed the
