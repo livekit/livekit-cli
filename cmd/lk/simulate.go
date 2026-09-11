@@ -73,7 +73,7 @@ var simulateCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
 	},
-	Commands: []*cli.Command{simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand},
+	Commands: []*cli.Command{simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:    "num-simulations",
@@ -97,6 +97,19 @@ var simulateCommand = &cli.Command{
 			Name:  "agent-name",
 			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
 		},
+	},
+}
+
+// `simulate text` is the same run as bare `simulate`, named so the mode is
+// spelled out like `simulate audio`.
+var simulateTextCommand = &cli.Command{
+	Name:            "text",
+	Usage:           "Simulate text-only interactions (the default when no subcommand is given)",
+	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
+	ArgsUsage:       "[entrypoint]",
+	HideHelpCommand: true,
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
 	},
 }
 
