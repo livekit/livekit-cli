@@ -20,7 +20,6 @@ import (
 	"maps"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/mattn/go-isatty"
@@ -111,6 +110,12 @@ var (
 	installFlag = &cli.BoolFlag{
 		Name:  "install",
 		Usage: "Run installation after creating the application",
+	}
+	// roleFlag selects a member/invite access level for the Public API commands.
+	roleFlag = &cli.StringFlag{
+		Name:     "role",
+		Usage:    "Access `ROLE`: one of read, write, admin",
+		Required: true,
 	}
 	experimentalFlag = &cli.BoolFlag{
 		Name:     "experimental",
@@ -517,18 +522,4 @@ func (s *templateStringValue) String() string {
 		return *s.destination
 	}
 	return ""
-}
-
-func formatTime(t time.Time) string {
-	if t.IsZero() {
-		return "--"
-	}
-	return t.Format(time.RFC3339)
-}
-
-func formatDeployedAt(t time.Time) string {
-	if t.IsZero() {
-		return "---"
-	}
-	return t.Format(time.RFC3339)
 }

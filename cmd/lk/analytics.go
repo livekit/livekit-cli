@@ -27,6 +27,7 @@ import (
 	"time"
 
 	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
+	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/urfave/cli/v3"
@@ -131,6 +132,10 @@ type analyticsParticipant struct {
 }
 
 func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
+	if experimentalAuthEnabled(cmd) {
+		return listUserAnalyticsSessions(ctx, cmd)
+	}
+
 	query, err := buildAnalyticsListQuery(cmd)
 	if err != nil {
 		return err
@@ -168,14 +173,14 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 			continue
 		}
 		table.Row(
-			emptyDash(session.SessionID),
-			emptyDash(session.RoomName),
-			emptyDash(session.CreatedAt),
-			emptyDash(session.EndedAt),
+			util.Dash(session.SessionID),
+			util.Dash(session.RoomName),
+			util.Dash(session.CreatedAt),
+			util.Dash(session.EndedAt),
 			strconv.Itoa(session.NumParticipants),
 			strconv.Itoa(session.NumActiveParticipants),
-			formatBytes(session.BandwidthIn),
-			formatBytes(session.BandwidthOut),
+			util.FormatBytes(session.BandwidthIn),
+			util.FormatBytes(session.BandwidthOut),
 		)
 	}
 
@@ -184,6 +189,10 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
+	if experimentalAuthEnabled(cmd) {
+		return getUserAnalyticsSession(ctx, cmd)
+	}
+
 	sessionID, err := extractArg(cmd)
 	if err != nil {
 		_ = cli.ShowSubcommandHelp(cmd)
@@ -212,13 +221,13 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 	summary := util.CreateTable().
 		Headers("Session ID", "Room", "Start", "End", "Participants", "Connection Minutes", "Bandwidth").
 		Row(
-			emptyDash(details.RoomID),
-			emptyDash(details.RoomName),
-			emptyDash(details.StartTime),
-			emptyDash(details.EndTime),
+			util.Dash(details.RoomID),
+			util.Dash(details.RoomName),
+			util.Dash(details.StartTime),
+			util.Dash(details.EndTime),
 			strconv.Itoa(details.NumParticipants),
-			rawJSONToString(details.ConnectionMinutes),
-			formatBytes(details.Bandwidth),
+			util.RawJSONToString(details.ConnectionMinutes),
+			util.FormatBytes(details.Bandwidth),
 		)
 	out.Result(summary)
 
@@ -234,13 +243,13 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 			continue
 		}
 		participantTable.Row(
-			emptyDash(participant.ParticipantIdentity),
-			emptyDash(participant.ParticipantName),
-			emptyDash(participant.JoinedAt),
-			emptyDash(participant.LeftAt),
-			emptyDash(participant.Region),
-			emptyDash(participant.ConnectionType),
-			emptyDash(participant.SDKVersion),
+			util.Dash(participant.ParticipantIdentity),
+			util.Dash(participant.ParticipantName),
+			util.Dash(participant.JoinedAt),
+			util.Dash(participant.LeftAt),
+			util.Dash(participant.Region),
+			util.Dash(participant.ConnectionType),
+			util.Dash(participant.SDKVersion),
 		)
 	}
 
@@ -433,49 +442,44 @@ func mapAnalyticsHTTPError(statusCode int, body string) error {
 	return fmt.Errorf("analytics API request failed with HTTP %d: %s", statusCode, trimmedBody)
 }
 
-func rawJSONToString(value json.RawMessage) string {
-	if len(value) == 0 {
-		return "-"
+// listUserAnalyticsSessions lists project sessions via the Public API under
+// --experimental-auth. The project comes from the global --project selection (or
+// a cached alias).
+func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
+	client, conf, user, err := requireCloudClient(cmd)
+	if err != nil {
+		return err
 	}
-
-	var numeric json.Number
-	if err := json.Unmarshal(value, &numeric); err == nil {
-		return numeric.String()
+	projectID, err := resolveProjectRef(ctx, cmd, conf, user, "")
+	if err != nil {
+		return err
 	}
-
-	var text string
-	if err := json.Unmarshal(value, &text); err == nil {
-		return emptyDash(text)
+	sessions, err := client.ListProjectSessions(ctx, projectID)
+	if err != nil {
+		return cloudAPIError(err)
 	}
-
-	return emptyDash(string(value))
+	return render.Sessions(out, cmd.Bool("json"), sessions)
 }
 
-func formatBytes(value json.RawMessage) string {
-	raw := rawJSONToString(value)
-	bytes, err := strconv.ParseFloat(raw, 64)
-	if err != nil || bytes < 0 {
-		return raw
+// getUserAnalyticsSession fetches a single project session via the Public API
+// under --experimental-auth.
+func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
+	client, conf, user, err := requireCloudClient(cmd)
+	if err != nil {
+		return err
 	}
-
-	if bytes < 1000 {
-		return fmt.Sprintf("%.0f B", bytes)
+	sessionID, err := extractArg(cmd)
+	if err != nil {
+		_ = cli.ShowSubcommandHelp(cmd)
+		return errors.New("session ID is required")
 	}
-
-	units := "KMGTPE"
-	unitIndex := 0
-	size := bytes / 1000
-	for size >= 1000 && unitIndex < len(units)-1 {
-		size /= 1000
-		unitIndex++
+	projectID, err := resolveProjectRef(ctx, cmd, conf, user, "")
+	if err != nil {
+		return err
 	}
-
-	return fmt.Sprintf("%.1f %cB", size, units[unitIndex])
-}
-
-func emptyDash(value string) string {
-	if strings.TrimSpace(value) == "" {
-		return "-"
+	session, err := client.GetSession(ctx, projectID, sessionID)
+	if err != nil {
+		return cloudAPIError(err)
 	}
-	return value
+	return render.Session(out, cmd.Bool("json"), *session)
 }

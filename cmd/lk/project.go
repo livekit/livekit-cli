@@ -28,7 +28,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
-	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -423,7 +423,7 @@ func createUserProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	out.Statusf("Created project %s", util.Accented(project.Name))
+	out.Statusf("Created project %s", util.Accented(util.Deref(project.Name)))
 	return renderProject(cmd, *project)
 }
 
@@ -444,7 +444,7 @@ func updateUserProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	out.Statusf("Updated project %s", util.Accented(project.ID))
+	out.Statusf("Updated project %s", util.Accented(util.Deref(project.Id)))
 	return renderProject(cmd, *project)
 }
 
@@ -493,7 +493,7 @@ func deleteUserProject(ctx context.Context, cmd *cli.Command) error {
 // with a numeric suffix, in list order). Used both to populate the config cache
 // and to render project listings, so the displayed alias matches the one stored
 // for --project lookup.
-func projectCacheEntries(projects []public.Project) []config.UserProjectConfig {
+func projectCacheEntries(projects []oapi.LivekitPublicapiProjectsV1Project) []config.UserProjectConfig {
 	used := make(map[string]bool, len(projects))
 	entries := make([]config.UserProjectConfig, len(projects))
 	for i, p := range projects {
@@ -506,9 +506,9 @@ func projectCacheEntries(projects []public.Project) []config.UserProjectConfig {
 			used[alias] = true
 		}
 		entries[i] = config.UserProjectConfig{
-			ProjectId: p.ID,
-			Name:      p.Name,
-			Subdomain: p.Subdomain,
+			ProjectId: util.Deref(p.Id),
+			Name:      util.Deref(p.Name),
+			Subdomain: util.Deref(p.Subdomain),
 			Alias:     alias,
 		}
 	}
@@ -518,14 +518,14 @@ func projectCacheEntries(projects []public.Project) []config.UserProjectConfig {
 // projectAliasBase derives a project's base alias: the subdomain with its
 // generated suffix stripped (as the old API-key flow did via util.URLSafeName),
 // falling back to a slug of the display name when no subdomain is present.
-func projectAliasBase(p public.Project) string {
-	if p.Subdomain != "" {
-		if i := strings.LastIndex(p.Subdomain, "-"); i > 0 {
-			return p.Subdomain[:i]
+func projectAliasBase(p oapi.LivekitPublicapiProjectsV1Project) string {
+	if sub := util.Deref(p.Subdomain); sub != "" {
+		if i := strings.LastIndex(sub, "-"); i > 0 {
+			return sub[:i]
 		}
-		return p.Subdomain
+		return sub
 	}
-	return util.Slugify(p.Name)
+	return util.Slugify(util.Deref(p.Name))
 }
 
 // projectTable renders cached projects (alias, name, id) as a table.
@@ -538,10 +538,26 @@ func projectTable(projects []config.UserProjectConfig) *table.Table {
 }
 
 // renderProject outputs a single Public API project as JSON (--json) or a table.
-func renderProject(cmd *cli.Command, project public.Project) error {
-	entries := projectCacheEntries([]public.Project{project})
+func renderProject(cmd *cli.Command, project oapi.LivekitPublicapiProjectsV1Project) error {
+	entries := projectCacheEntries([]oapi.LivekitPublicapiProjectsV1Project{project})
 	if cmd.Bool("json") {
 		util.PrintJSON(entries[0])
+		return nil
+	}
+	out.Result(projectTable(entries))
+	return nil
+}
+
+// renderProjects outputs Public API projects as JSON or a table, reusing the
+// alias-deriving cache shaping so listings match `lk project list`.
+func renderProjects(cmd *cli.Command, projects []oapi.LivekitPublicapiProjectsV1Project) error {
+	entries := projectCacheEntries(projects)
+	if cmd.Bool("json") {
+		util.PrintJSON(entries)
+		return nil
+	}
+	if len(entries) == 0 {
+		out.Status("No projects found.")
 		return nil
 	}
 	out.Result(projectTable(entries))

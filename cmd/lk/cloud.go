@@ -106,6 +106,14 @@ var (
 						},
 					},
 				},
+				{
+					Name:      "whoami",
+					Usage:     "Show the signed-in LiveKit Cloud user (requires --experimental-auth)",
+					UsageText: "lk cloud whoami --experimental-auth",
+					Hidden:    true,
+					Action:    cloudWhoami,
+					Flags:     []cli.Flag{jsonFlag},
+				},
 			},
 		},
 	}

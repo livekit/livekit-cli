@@ -129,6 +129,17 @@ func publicClientForToken(token string) (*public.Client, error) {
 	return public.New(experimentalAPIURL, token)
 }
 
+// requireCloudClient is the entry point for the Public-API-only commands: it
+// enforces --experimental-auth, then builds a client authenticated as the
+// signed-in user. It returns the same *CLIConfig/*UserConfig the session was
+// read from, so callers can resolve project refs and persist the cache.
+func requireCloudClient(cmd *cli.Command) (*public.Client, *config.CLIConfig, *config.UserConfig, error) {
+	if err := requireExperimentalAuth(cmd); err != nil {
+		return nil, nil, nil, err
+	}
+	return newCloudAPIClient(cmd)
+}
+
 // newCloudAPIClient builds a Public API client authenticated as the default
 // user, honoring --experimental-api-url.
 func newCloudAPIClient(cmd *cli.Command) (*public.Client, *config.CLIConfig, *config.UserConfig, error) {
