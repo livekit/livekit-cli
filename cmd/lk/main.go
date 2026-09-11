@@ -95,7 +95,10 @@ func main() {
 
 	checkForLegacyName()
 
-	if err := app.Run(ctx, os.Args); err != nil {
+	bannerCh := fetchBanner(ctx)
+	err := app.Run(ctx, os.Args)
+	printBanner(bannerCh)
+	if err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
 		// Outside the Printer's reach (it may not be initialized yet), so the
 		// color profile has to be applied here too — Lip Gloss v2 emits styles
