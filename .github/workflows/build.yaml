@@ -56,12 +56,16 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: go-${{ runner.os }}-${{ matrix.id }}-${{ hashFiles('go.sum') }}
-          # A go.sum bump changes the key but leaves the webrtc/portaudio C++
-          # objects — the expensive part — valid, so fall back to any build of
-          # this target.
+          # The version segment (go-v1-) gates the WHOLE cache: restore-keys is a
+          # prefix, so on any exact-key miss it re-restores the newest matching
+          # cache — a poisoned build cache keeps coming back until the prefix
+          # itself changes. Bump v1->v2 to force a clean rebuild across all
+          # targets. Keyed on go.sum (not cmd/pkg): the expensive webrtc/portaudio
+          # C++ objects don't depend on Go source, and Go's build cache is
+          # content-addressed, so it recompiles changed Go packages on its own.
+          key: go-v1-${{ runner.os }}-${{ matrix.id }}-${{ hashFiles('go.sum') }}
           restore-keys: |
-            go-${{ runner.os }}-${{ matrix.id }}-
+            go-v1-${{ runner.os }}-${{ matrix.id }}-
 
       - name: Install Zig
         uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
@@ -122,9 +126,9 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/Library/Caches/go-build
-          key: go-${{ runner.os }}-lk-darwin-${{ hashFiles('go.sum') }}
+          key: go-v1-${{ runner.os }}-lk-darwin-${{ hashFiles('go.sum') }}
           restore-keys: |
-            go-${{ runner.os }}-lk-darwin-
+            go-v1-${{ runner.os }}-lk-darwin-
 
       - name: Build and verify
         run: |

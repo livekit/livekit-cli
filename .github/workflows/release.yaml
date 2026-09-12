@@ -101,9 +101,12 @@ jobs:
           path: |
             ~/go/pkg/mod
             ${{ matrix.gocache }}
-          key: go-${{ runner.os }}-${{ matrix.id }}-${{ hashFiles('go.sum') }}
+          # Version segment (go-v1-) gates the whole cache; bump it to bust a
+          # poisoned build cache (restore-keys is a prefix, so it otherwise
+          # re-restores the stale cache on any exact-key miss).
+          key: go-v1-${{ runner.os }}-${{ matrix.id }}-${{ hashFiles('go.sum') }}
           restore-keys: |
-            go-${{ runner.os }}-${{ matrix.id }}-
+            go-v1-${{ runner.os }}-${{ matrix.id }}-
 
       - name: Install Zig
         if: runner.os == 'Linux'
