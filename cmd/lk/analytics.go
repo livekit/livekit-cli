@@ -75,6 +75,14 @@ var (
 									Name:  "end",
 									Usage: "End date in `YYYY-MM-DD` format",
 								},
+								// experimental-auth only: the Public API is cursor-paginated.
+								// Hidden like the rest of the experimental surface; pass the
+								// nextCursor from a prior `--json` listing to fetch the next page.
+								&cli.StringFlag{
+									Name:   "cursor",
+									Usage:  "Page `CURSOR` from a prior --json listing (requires --experimental-auth)",
+									Hidden: true,
+								},
 							},
 						},
 						{
@@ -131,7 +139,18 @@ type analyticsParticipant struct {
 	SDKVersion          string `json:"sdkVersion"`
 }
 
+// analyticsListModeFlags: --page (offset) and --start/--end (date range) exist
+// only on the API-key analytics endpoint; the Public API session list is
+// cursor-paginated and offers neither, so they're rejected under --experimental-auth.
+var analyticsListModeFlags = authModeFlags{
+	legacyOnly:       []string{"page", "start", "end"},
+	experimentalOnly: []string{"cursor"},
+}
+
 func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
+	if err := analyticsListModeFlags.validate(cmd); err != nil {
+		return err
+	}
 	if experimentalAuthEnabled(cmd) {
 		return listUserAnalyticsSessions(ctx, cmd)
 	}
@@ -446,6 +465,11 @@ func mapAnalyticsHTTPError(statusCode int, body string) error {
 // --experimental-auth. The project comes from the global --project selection (or
 // a cached alias).
 func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
+	limit := int32(cmd.Int("limit"))
+	if limit <= 0 {
+		return errors.New("limit must be greater than 0")
+	}
+
 	client, conf, user, err := requireCloudClient(cmd)
 	if err != nil {
 		return err
@@ -454,11 +478,11 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	sessions, err := client.ListProjectSessions(ctx, projectID)
+	sessions, nextCursor, err := client.ListProjectSessions(ctx, projectID, limit, cmd.String("cursor"))
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	return render.Sessions(out, cmd.Bool("json"), sessions)
+	return render.SessionsPage(out, cmd.Bool("json"), sessions, nextCursor)
 }
 
 // getUserAnalyticsSession fetches a single project session via the Public API

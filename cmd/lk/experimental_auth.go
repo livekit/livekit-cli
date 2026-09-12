@@ -89,6 +89,36 @@ func experimentalAuthGate(cmd *cli.Command) error {
 	return nil
 }
 
+// authModeFlags declares, for a dual-mode command, which flags are valid only in
+// one auth mode. It lets a command reject cross-mode misuse up front with a clear
+// message instead of silently ignoring a flag the active mode can't honor:
+// legacyOnly flags need API-key (SDK) auth; experimentalOnly flags need
+// --experimental-auth. (This is validated at the command level rather than via
+// urfave MutuallyExclusiveFlags because the auth selector is a root flag and the
+// rule is conditional on the resolved mode, not a pairwise exclusion.)
+type authModeFlags struct {
+	legacyOnly       []string
+	experimentalOnly []string
+}
+
+// validate returns an error if any flag set on cmd belongs to the other auth mode.
+func (a authModeFlags) validate(cmd *cli.Command) error {
+	if experimentalAuthEnabled(cmd) {
+		for _, name := range a.legacyOnly {
+			if cmd.IsSet(name) {
+				return fmt.Errorf("--%s is not supported with --experimental-auth", name)
+			}
+		}
+		return nil
+	}
+	for _, name := range a.experimentalOnly {
+		if cmd.IsSet(name) {
+			return fmt.Errorf("--%s is only supported with --experimental-auth", name)
+		}
+	}
+	return nil
+}
+
 // requireExperimentalAuth is the inverse gate: it refuses commands that only
 // exist in user-based auth mode when --experimental-auth is not set. The
 // Public API operations (e.g. ProjectService create/update/delete) have no

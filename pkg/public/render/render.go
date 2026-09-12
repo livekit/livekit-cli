@@ -147,6 +147,29 @@ func Sessions(p *util.Printer, asJSON bool, sessions []oapi.LivekitPublicapiAnal
 	return util.RenderList(p, asJSON, sessions, "No sessions found", sessionHeaders, sessionRow)
 }
 
+// sessionsPage is the --json shape for a cursor-paginated session listing: the
+// items plus the cursor to fetch the next page (empty on the last page).
+type sessionsPage struct {
+	Items      []oapi.LivekitPublicapiAnalyticsV1Session `json:"items"`
+	NextCursor string                                    `json:"nextCursor,omitempty"`
+}
+
+// SessionsPage prints a cursor-paginated page of analytics sessions. As JSON it
+// emits {items, nextCursor} so a caller can iterate; as a table it prints the
+// rows and, when more pages remain, a hint to re-run with --cursor.
+func SessionsPage(p *util.Printer, asJSON bool, sessions []oapi.LivekitPublicapiAnalyticsV1Session, nextCursor string) error {
+	if asJSON {
+		return util.PrintJSONTo(p.ResultWriter(), sessionsPage{Items: sessions, NextCursor: nextCursor})
+	}
+	if err := util.RenderList(p, false, sessions, "No sessions found", sessionHeaders, sessionRow); err != nil {
+		return err
+	}
+	if nextCursor != "" {
+		p.Statusf("More results available — re-run with %s", util.Accented("--cursor "+nextCursor))
+	}
+	return nil
+}
+
 // Session prints a single analytics session.
 func Session(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalyticsV1Session) error {
 	return util.RenderOne(p, asJSON, s, sessionHeaders, sessionRow)
