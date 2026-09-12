@@ -202,7 +202,7 @@ func validateEntrypoint(dir string, dockerfileContent []byte, dockerignoreConten
 		newEntrypoint = util.ToUnixPath(selected)
 	}
 
-	fmt.Printf("Using entrypoint file [%s]\n", util.Accented(newEntrypoint))
+	util.Statusf("Using entrypoint file [%s]", util.Accented(newEntrypoint))
 
 	tpl := template.Must(template.New("Dockerfile").Parse(string(dockerfileContent)))
 	buf := &bytes.Buffer{}
