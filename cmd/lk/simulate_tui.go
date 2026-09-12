@@ -160,7 +160,8 @@ func wrapLines(text string, width int) []string {
 // being hard-wrapped by the terminal, which breaks the inline layout.
 func writeWrappedLines(b *strings.Builder, style lipgloss.Style, indent, text string, width int) {
 	for _, line := range wrapLines(text, width-len(indent)-2) {
-		b.WriteString(style.Render(indent+line) + "\n")
+		b.WriteString(style.Render(indent + line))
+		b.WriteString("\n")
 	}
 }
 
@@ -1080,16 +1081,20 @@ func (m *simulateModel) viewSetup() string {
 	b.WriteString("\n\n")
 
 	if m.config.pc != nil && m.config.pc.Name != "" {
-		b.WriteString(dimStyle.Render("  Project: "+m.config.pc.Name) + "\n")
+		b.WriteString(dimStyle.Render("  Project: " + m.config.pc.Name))
+		b.WriteString("\n")
 	}
 	if m.config.pc != nil && m.config.pc.URL != "" {
-		b.WriteString(dimStyle.Render("  URL:     "+m.config.pc.URL) + "\n")
+		b.WriteString(dimStyle.Render("  URL:     " + m.config.pc.URL))
+		b.WriteString("\n")
 	}
 	if m.runID != "" {
-		b.WriteString(dimStyle.Render("  Run:     "+m.runID) + "\n")
+		b.WriteString(dimStyle.Render("  Run:     " + m.runID))
+		b.WriteString("\n")
 	}
 	if url := m.getDashboardURL(); url != "" {
-		b.WriteString(dimStyle.Render("  "+url) + "\n")
+		b.WriteString(dimStyle.Render("  " + url))
+		b.WriteString("\n")
 	}
 
 	b.WriteString("\n")
