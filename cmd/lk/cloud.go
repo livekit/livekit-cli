@@ -235,10 +235,24 @@ func (a *AuthClient) ClaimCliSession(ctx context.Context) (*ClaimCliSessionRespo
 		// Not yet approved
 		return nil, nil
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response claiming session (HTTP %d)", resp.StatusCode)
+	}
 
 	session := &ClaimCliSessionResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(session); err != nil {
 		return nil, err
+	}
+	// A 200 does not guarantee a usable body: JSON decoding leaves any absent field
+	// at its zero value (Go struct fields aren't "required"), so a blank/partial
+	// response would otherwise persist a broken, tokenless user. Validate the
+	// essentials — a session token, and a user identity to key the config by —
+	// before returning.
+	if session.Session.SessionToken == "" {
+		return nil, errors.New("server returned a session without a token")
+	}
+	if session.User.Id == "" && session.User.Email == "" {
+		return nil, errors.New("server returned a session without a user identity")
 	}
 
 	return session, nil
