@@ -314,8 +314,8 @@ func createProjectInvite(ctx context.Context, cmd *cli.Command) error {
 		util.PrintJSON(resp)
 		return nil
 	}
-	out.Statusf("Invited %s to project", util.Accented(email))
-	out.Statusf("Invite token: %s", util.DashString(resp.InviteToken))
+	out.Statusf("Invited %s to project with code:", util.Accented(email))
+	out.Resultf("%s\n", util.Accented(*resp.InviteToken))
 	return nil
 }
 
