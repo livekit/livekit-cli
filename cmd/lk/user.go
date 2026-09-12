@@ -37,7 +37,6 @@ var UserCommands = []*cli.Command{
 				UsageText: "lk user list --project PROJECT | --workspace WORKSPACE_ID --experimental-auth",
 				Action:    listUsers,
 				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "project", Usage: "`NAME`, alias, or ID of a project"},
 					&cli.StringFlag{Name: "workspace", Usage: "Workspace `ID`"},
 					jsonFlag,
 				},

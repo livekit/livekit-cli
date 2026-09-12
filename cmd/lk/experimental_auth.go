@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"charm.land/huh/v2"
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
@@ -44,13 +45,28 @@ func legacyAuthForced(cmd *cli.Command) bool {
 	return cmd.Bool("legacy-auth") || (cmd.String("api-key") != "" && cmd.String("api-secret") != "" && cmd.String("url") != "")
 }
 
+// userAuthIsDefault reports whether user-based (session) auth is the default
+// auth mode. It is false during the experimental phase, where user auth is
+// strictly opt-in via --experimental-auth. Flip it to true when user auth
+// becomes the default (phase 2): at that point `lk cloud auth` signs a user in
+// by default and the upgrade nudge below becomes correct to show.
+const userAuthIsDefault = false
+
 // maybeShowUpgradeNotice nudges users who haven't adopted user-based auth to run
 // `lk cloud auth`. It prints once per invocation to stderr (never stdout, so it
 // can't corrupt piped data), is suppressed by --quiet, and is skipped for `cloud`
 // commands (where it would be redundant), when a session already exists, and
 // when the user explicitly opted into legacy auth (--legacy-auth or explicit
 // API-key credentials) — they've made their choice, so don't nag them.
+//
+// It is dormant while user auth is experimental: nudging every API-key user to a
+// mode that's opt-in (and that most commands don't yet support) would be noise,
+// and the message would be wrong — today it takes `lk cloud auth --experimental-auth`.
+// The userAuthIsDefault gate turns it on once that command form is the default.
 func maybeShowUpgradeNotice(cmd *cli.Command, conf *config.CLIConfig) {
+	if !userAuthIsDefault {
+		return
+	}
 	if conf == nil || len(conf.Users) > 0 {
 		return
 	}
@@ -188,7 +204,8 @@ func refreshUserProjects(ctx context.Context, conf *config.CLIConfig, user *conf
 // or the global --project flag — to a project id using the signed-in user's
 // cached projects (matched by id or by name/alias). On a cache miss it refreshes
 // the cache from the API and retries once; a ref that's still unknown is returned
-// as-is (assumed to be a literal project id). Only meaningful in experimental
+// as-is (assumed to be a literal project id). When no ref is given it falls back
+// to an interactive picker (see pickUserProject). Only meaningful in experimental
 // (user-auth) mode.
 func resolveProjectRef(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig, user *config.UserConfig, positional string) (string, error) {
 	ref := positional
@@ -196,7 +213,7 @@ func resolveProjectRef(ctx context.Context, cmd *cli.Command, conf *config.CLICo
 		ref = cmd.String("project")
 	}
 	if ref == "" {
-		return "", errors.New("a project id or name is required (pass it as an argument or via --project)")
+		return pickUserProject(ctx, cmd, conf, user)
 	}
 	if p := user.FindProject(ref); p != nil {
 		return p.ProjectId, nil
@@ -210,6 +227,50 @@ func resolveProjectRef(ctx context.Context, cmd *cli.Command, conf *config.CLICo
 		return p.ProjectId, nil
 	}
 	return ref, nil
+}
+
+// pickUserProject resolves a project id interactively when none was supplied,
+// mirroring selectProject (the API-key picker): it chooses from the signed-in
+// user's projects, refreshing the cache when it's empty. In non-interactive mode
+// it auto-selects a sole project and otherwise errors telling the user to pass
+// --project.
+func pickUserProject(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig, user *config.UserConfig) (string, error) {
+	entries := user.Projects
+	if len(entries) == 0 {
+		var err error
+		if entries, err = refreshUserProjects(ctx, conf, user); err != nil {
+			return "", cloudAPIError(err)
+		}
+	}
+	if len(entries) == 0 {
+		return "", errors.New("no projects found for this account")
+	}
+	if SkipPrompts(cmd) {
+		if len(entries) == 1 {
+			return entries[0].ProjectId, nil
+		}
+		return "", errors.New("multiple projects available; set --project in non-interactive mode")
+	}
+
+	selected := entries[0].ProjectId
+	options := make([]huh.Option[string], 0, len(entries))
+	for _, p := range entries {
+		label := p.Name
+		if p.Subdomain != "" {
+			label = p.Name + " " + util.Dimmed(p.Subdomain)
+		}
+		options = append(options, huh.NewOption(label, p.ProjectId))
+	}
+	if err := huh.NewForm(
+		huh.NewGroup(huh.NewSelect[string]().
+			Title("Select a project to use for this action").
+			Options(options...).
+			Value(&selected).
+			WithTheme(util.FormTheme()))).
+		RunWithContext(ctx); err != nil {
+		return "", fmt.Errorf("no project selected: %w", err)
+	}
+	return selected, nil
 }
 
 // userLabel is a human-friendly identifier for a user, preferring email.

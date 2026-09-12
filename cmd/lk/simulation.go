@@ -38,7 +38,6 @@ var SimulationCommands = []*cli.Command{
 				UsageText: "lk simulation list --project PROJECT [--status STATUS] --experimental-auth",
 				Action:    cloudListSimulationRuns,
 				Flags: []cli.Flag{
-					simulationProjectFlag(),
 					&cli.StringFlag{Name: "status", Usage: "Filter by `STATUS` (running, completed, failed, cancelled, ...)"},
 					jsonFlag,
 				},
@@ -49,7 +48,7 @@ var SimulationCommands = []*cli.Command{
 				UsageText: "lk simulation get RUN_ID --project PROJECT --experimental-auth",
 				ArgsUsage: "RUN_ID",
 				Action:    cloudGetSimulationRun,
-				Flags:     []cli.Flag{simulationProjectFlag(), jsonFlag},
+				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "create",
@@ -57,7 +56,6 @@ var SimulationCommands = []*cli.Command{
 				UsageText: "lk simulation create --project PROJECT [--agent NAME] [--mode text|audio] --experimental-auth",
 				Action:    cloudCreateSimulationRun,
 				Flags: []cli.Flag{
-					simulationProjectFlag(),
 					&cli.StringFlag{Name: "agent", Usage: "Agent `NAME` to simulate against"},
 					&cli.IntFlag{Name: "num", Usage: "`NUMBER` of scenarios to generate"},
 					&cli.IntFlag{Name: "concurrency", Usage: "Maximum jobs to run in `PARALLEL`"},
@@ -72,17 +70,10 @@ var SimulationCommands = []*cli.Command{
 				UsageText: "lk simulation cancel RUN_ID --project PROJECT --experimental-auth",
 				ArgsUsage: "RUN_ID",
 				Action:    cloudCancelSimulationRun,
-				Flags:     []cli.Flag{simulationProjectFlag(), jsonFlag},
+				Flags:     []cli.Flag{jsonFlag},
 			},
 		},
 	},
-}
-
-func simulationProjectFlag() *cli.StringFlag {
-	return &cli.StringFlag{
-		Name:  "project",
-		Usage: "`NAME`, alias, or ID of the LiveKit Cloud project",
-	}
 }
 
 func simulationProjectID(ctx context.Context, cmd *cli.Command) (*public.Client, string, error) {
@@ -90,7 +81,7 @@ func simulationProjectID(ctx context.Context, cmd *cli.Command) (*public.Client,
 	if err != nil {
 		return nil, "", err
 	}
-	projectID, err := resolveProjectRef(ctx, cmd, conf, user, cmd.String("project"))
+	projectID, err := resolveProjectRef(ctx, cmd, conf, user, "")
 	if err != nil {
 		return nil, "", err
 	}

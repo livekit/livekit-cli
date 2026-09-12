@@ -29,10 +29,6 @@ import (
 // They are Hidden and require --experimental-auth (user-based auth). The project
 // they act on comes from the global --project flag (or a cached alias).
 func init() {
-	projectFlag := &cli.StringFlag{
-		Name:  "project",
-		Usage: "`NAME`, alias, or ID of the LiveKit Cloud project",
-	}
 	memberCommand := &cli.Command{
 		Name:   "member",
 		Usage:  "Manage members of a LiveKit Cloud project (requires --experimental-auth)",
@@ -43,7 +39,7 @@ func init() {
 				Usage:     "List project members",
 				UsageText: "lk project member list --project PROJECT --experimental-auth",
 				Action:    listProjectMembers,
-				Flags:     []cli.Flag{projectFlag, jsonFlag},
+				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "get",
@@ -51,7 +47,7 @@ func init() {
 				UsageText: "lk project member get USER_ID --project PROJECT --experimental-auth",
 				ArgsUsage: "USER_ID",
 				Action:    getProjectMember,
-				Flags:     []cli.Flag{projectFlag, jsonFlag},
+				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "update",
@@ -59,7 +55,7 @@ func init() {
 				UsageText: "lk project member update USER_ID --role ROLE --project PROJECT --experimental-auth",
 				ArgsUsage: "USER_ID",
 				Action:    updateProjectMember,
-				Flags:     []cli.Flag{projectFlag, roleFlag, jsonFlag},
+				Flags:     []cli.Flag{roleFlag, jsonFlag},
 			},
 			{
 				Name:      "remove",
@@ -67,7 +63,7 @@ func init() {
 				UsageText: "lk project member remove USER_ID --project PROJECT --experimental-auth",
 				ArgsUsage: "USER_ID",
 				Action:    removeProjectMember,
-				Flags:     []cli.Flag{projectFlag, jsonFlag},
+				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "add",
@@ -75,7 +71,7 @@ func init() {
 				UsageText: "lk project member add USER_ID [USER_ID...] --role ROLE --project PROJECT --experimental-auth",
 				ArgsUsage: "USER_ID [USER_ID...]",
 				Action:    addProjectMembers,
-				Flags:     []cli.Flag{projectFlag, roleFlag, jsonFlag},
+				Flags:     []cli.Flag{roleFlag, jsonFlag},
 			},
 		},
 	}
@@ -89,7 +85,7 @@ func init() {
 				Usage:     "List pending project invites",
 				UsageText: "lk project invite list --project PROJECT --experimental-auth",
 				Action:    listProjectInvites,
-				Flags:     []cli.Flag{projectFlag, jsonFlag},
+				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "get",
@@ -105,7 +101,7 @@ func init() {
 				UsageText: "lk project invite create EMAIL --role ROLE --project PROJECT --experimental-auth",
 				ArgsUsage: "EMAIL",
 				Action:    createProjectInvite,
-				Flags:     []cli.Flag{projectFlag, roleFlag, jsonFlag},
+				Flags:     []cli.Flag{roleFlag, jsonFlag},
 			},
 			{
 				Name:      "update",
@@ -113,7 +109,7 @@ func init() {
 				UsageText: "lk project invite update EMAIL --role ROLE --project PROJECT --experimental-auth",
 				ArgsUsage: "EMAIL",
 				Action:    updateProjectInvite,
-				Flags:     []cli.Flag{projectFlag, roleFlag, jsonFlag},
+				Flags:     []cli.Flag{roleFlag, jsonFlag},
 			},
 			{
 				Name:      "delete",
@@ -121,7 +117,7 @@ func init() {
 				UsageText: "lk project invite delete EMAIL --project PROJECT --experimental-auth",
 				ArgsUsage: "EMAIL",
 				Action:    deleteProjectInvite,
-				Flags:     []cli.Flag{projectFlag, jsonFlag},
+				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "answer",
