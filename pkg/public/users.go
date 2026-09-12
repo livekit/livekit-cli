@@ -30,7 +30,7 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*oapi.LivekitPublicapiUser
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.User, nil
+	return requirePayload(resp.JSON200.User, "user")
 }
 
 // GetUser returns a single user by id.
@@ -42,19 +42,24 @@ func (c *Client) GetUser(ctx context.Context, userID string) (*oapi.LivekitPubli
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.User, nil
+	return requirePayload(resp.JSON200.User, "user")
 }
 
-// ListUsers returns the users in a project or workspace. At least one of
-// projectID or workspaceID must be set.
-//
-// NOTE: returns only the first page; wire up PageInfo/cursor paging when a
-// command needs the full set.
-func (c *Client) ListUsers(ctx context.Context, projectID, workspaceID string) ([]oapi.LivekitPublicapiUsersV1User, error) {
+// ListUsers returns one page of the users in a project or workspace. At least
+// one of projectID or workspaceID must be set. limit caps the page size (0 =
+// server default); cursor requests a specific page. The returned nextCursor is
+// non-empty when more pages remain.
+func (c *Client) ListUsers(ctx context.Context, projectID, workspaceID string, limit int32, cursor string) (users []oapi.LivekitPublicapiUsersV1User, nextCursor string, err error) {
 	if projectID == "" && workspaceID == "" {
-		return nil, errors.New("a project or workspace is required to list users")
+		return nil, "", errors.New("a project or workspace is required to list users")
 	}
-	params := &oapi.UserServiceListUsersParams{PagePageSize: ptr(int32(100))}
+	params := &oapi.UserServiceListUsersParams{}
+	if limit > 0 {
+		params.PagePageSize = ptr(limit)
+	}
+	if cursor != "" {
+		params.PageCursor = ptr(cursor)
+	}
 	if projectID != "" {
 		params.ProjectId = ptr(projectID)
 	}
@@ -63,10 +68,10 @@ func (c *Client) ListUsers(ctx context.Context, projectID, workspaceID string) (
 	}
 	resp, err := c.gen.UserServiceListUsersWithResponse(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
+		return nil, "", responseError(resp.StatusCode(), resp.Body)
 	}
-	return items(resp.JSON200.Items), nil
+	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
 }

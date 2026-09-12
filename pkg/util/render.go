@@ -39,6 +39,29 @@ func RenderList[T any](p *Printer, asJSON bool, list []T, empty string, headers 
 	return nil
 }
 
+// page is the --json shape for a cursor-paginated listing: the items plus the
+// cursor to fetch the next page (empty on the last page).
+type page[T any] struct {
+	Items      []T    `json:"items"`
+	NextCursor string `json:"nextCursor,omitempty"`
+}
+
+// RenderPage prints one page of a cursor-paginated listing. As JSON it emits
+// {items, nextCursor} so a caller can iterate; as a table it prints the rows
+// and, when nextCursor is non-empty, a hint to re-run with --cursor.
+func RenderPage[T any](p *Printer, asJSON bool, list []T, nextCursor, empty string, headers []string, row func(T) []string) error {
+	if asJSON {
+		return PrintJSONTo(p.ResultWriter(), page[T]{Items: list, NextCursor: nextCursor})
+	}
+	if err := RenderList(p, false, list, empty, headers, row); err != nil {
+		return err
+	}
+	if nextCursor != "" {
+		p.Statusf("More results available — re-run with %s", Accented("--cursor "+nextCursor))
+	}
+	return nil
+}
+
 // RenderOne prints a single item as JSON (asJSON) or a one-row table.
 func RenderOne[T any](p *Printer, asJSON bool, item T, headers []string, row func(T) []string) error {
 	if asJSON {

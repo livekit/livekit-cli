@@ -39,6 +39,7 @@ var SimulationCommands = []*cli.Command{
 				Action:    cloudListSimulationRuns,
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "status", Usage: "Filter by `STATUS` (running, completed, failed, cancelled, ...)"},
+					cursorFlag,
 					jsonFlag,
 				},
 			},
@@ -93,11 +94,11 @@ func cloudListSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	runs, err := client.ListSimulationRuns(ctx, projectID, cmd.String("status"))
+	runs, nextToken, err := client.ListSimulationRuns(ctx, projectID, cmd.String("status"), cmd.String("cursor"))
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	return render.SimulationRuns(out, cmd.Bool("json"), runs)
+	return render.SimulationRunsPage(out, cmd.Bool("json"), runs, nextToken)
 }
 
 func cloudGetSimulationRun(ctx context.Context, cmd *cli.Command) error {

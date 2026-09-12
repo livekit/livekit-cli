@@ -113,6 +113,24 @@ var (
 		Usage:    "Access `ROLE`: one of read, write, admin",
 		Required: true,
 	}
+	// workspaceFlag references a LiveKit Cloud workspace by id, name, or alias for
+	// the Public API commands (resolved against the per-user workspace cache).
+	workspaceFlag = &cli.StringFlag{
+		Name:  "workspace",
+		Usage: "`NAME`, alias, or ID of the LiveKit Cloud workspace",
+	}
+	// limitFlag and cursorFlag are the pagination controls shared by the
+	// cursor-paginated Public API list commands. limit caps the page size (0 lets
+	// the server choose); cursor requests the page named by a prior --json
+	// listing's nextCursor.
+	limitFlag = &cli.IntFlag{
+		Name:  "limit",
+		Usage: "Maximum number of items to return",
+	}
+	cursorFlag = &cli.StringFlag{
+		Name:  "cursor",
+		Usage: "Page `CURSOR` from a prior --json listing",
+	}
 	experimentalFlag = &cli.BoolFlag{
 		Name:     "experimental",
 		Usage:    "Enable experimental features",

@@ -67,25 +67,33 @@ func parseSimulationStatus(s string) (oapi.LivekitSimulationRunStatus, error) {
 	}
 }
 
-// ListSimulationRuns returns the simulation runs for a project, optionally
-// filtered by status name (e.g. "running", "completed").
-func (c *Client) ListSimulationRuns(ctx context.Context, projectID, status string) ([]oapi.LivekitSimulationRun, error) {
+// ListSimulationRuns returns one page of the simulation runs for a project,
+// optionally filtered by status name (e.g. "running", "completed"). This
+// operation is token-paginated: pageToken requests a specific page and the
+// returned nextToken is non-empty when more pages remain.
+func (c *Client) ListSimulationRuns(ctx context.Context, projectID, status, pageToken string) (runs []oapi.LivekitSimulationRun, nextToken string, err error) {
 	params := &oapi.SimulationServiceListSimulationRunsParams{}
 	if status != "" {
-		s, err := parseSimulationStatus(status)
-		if err != nil {
-			return nil, err
+		s, perr := parseSimulationStatus(status)
+		if perr != nil {
+			return nil, "", perr
 		}
 		params.Status = &s
 	}
+	if pageToken != "" {
+		params.PageTokenToken = ptr(pageToken)
+	}
 	resp, err := c.gen.SimulationServiceListSimulationRunsWithResponse(ctx, projectID, params)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
+		return nil, "", responseError(resp.StatusCode(), resp.Body)
 	}
-	return items(resp.JSON200.Runs), nil
+	if pt := resp.JSON200.NextPageToken; pt != nil && pt.Token != nil {
+		nextToken = *pt.Token
+	}
+	return items(resp.JSON200.Runs), nextToken, nil
 }
 
 // GetSimulationRun returns a single simulation run by id.
@@ -97,7 +105,7 @@ func (c *Client) GetSimulationRun(ctx context.Context, projectID, runID string) 
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Run, nil
+	return requirePayload(resp.JSON200.Run, "simulation run")
 }
 
 // CreateSimulationRun starts a new simulation run. The response carries the run

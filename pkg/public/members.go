@@ -41,7 +41,7 @@ func (c *Client) GetProjectMember(ctx context.Context, projectID, userID string)
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Member, nil
+	return requirePayload(resp.JSON200.Member, "member")
 }
 
 // UpdateProjectMember changes a project member's role.
@@ -55,7 +55,7 @@ func (c *Client) UpdateProjectMember(ctx context.Context, projectID, userID stri
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Member, nil
+	return requirePayload(resp.JSON200.Member, "member")
 }
 
 // RemoveProjectMember removes a member from a project.

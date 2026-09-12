@@ -22,13 +22,18 @@ import (
 	"charm.land/huh/v2"
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 // WorkspaceCommands are the Public-API-only workspace commands. The whole group
-// is Hidden and requires --experimental-auth (user-based auth).
+// is Hidden and requires --experimental-auth (user-based auth). Top-level
+// commands take the workspace as a positional (id, name, or alias, resolved
+// against the per-user cache, with a picker when omitted); nested project/member/
+// invite commands take it via --workspace so the entity id stays positional.
 var WorkspaceCommands = []*cli.Command{
 	{
 		Name:   "workspace",
@@ -40,13 +45,13 @@ var WorkspaceCommands = []*cli.Command{
 				Usage:     "List accessible workspaces",
 				UsageText: "lk workspace list --experimental-auth",
 				Action:    listWorkspaces,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{limitFlag, cursorFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
-				Usage:     "Get a workspace by ID",
-				UsageText: "lk workspace get WORKSPACE_ID --experimental-auth",
-				ArgsUsage: "WORKSPACE_ID",
+				Usage:     "Get a workspace by id, name, or alias",
+				UsageText: "lk workspace get [WORKSPACE] --experimental-auth",
+				ArgsUsage: "[WORKSPACE]",
 				Action:    getWorkspace,
 				Flags:     []cli.Flag{jsonFlag},
 			},
@@ -64,8 +69,8 @@ var WorkspaceCommands = []*cli.Command{
 			{
 				Name:      "update",
 				Usage:     "Rename a workspace",
-				UsageText: "lk workspace update WORKSPACE_ID --name NEW_NAME --experimental-auth",
-				ArgsUsage: "WORKSPACE_ID",
+				UsageText: "lk workspace update [WORKSPACE] --name NEW_NAME --experimental-auth",
+				ArgsUsage: "[WORKSPACE]",
 				Action:    updateWorkspace,
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "name", Usage: "New workspace `NAME`", Required: true},
@@ -75,8 +80,8 @@ var WorkspaceCommands = []*cli.Command{
 			{
 				Name:      "delete",
 				Usage:     "Delete a workspace",
-				UsageText: "lk workspace delete WORKSPACE_ID --experimental-auth",
-				ArgsUsage: "WORKSPACE_ID",
+				UsageText: "lk workspace delete [WORKSPACE] --experimental-auth",
+				ArgsUsage: "[WORKSPACE]",
 				Action:    deleteWorkspace,
 				Flags:     []cli.Flag{jsonFlag},
 			},
@@ -95,30 +100,34 @@ func workspaceProjectCommand() *cli.Command {
 			{
 				Name:      "list",
 				Usage:     "List projects in a workspace",
-				ArgsUsage: "WORKSPACE_ID",
+				UsageText: "lk workspace project list --workspace WORKSPACE --experimental-auth",
 				Action:    listWorkspaceProjects,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, limitFlag, cursorFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a project in a workspace",
-				ArgsUsage: "WORKSPACE_ID PROJECT_ID",
+				UsageText: "lk workspace project get PROJECT_ID --workspace WORKSPACE --experimental-auth",
+				ArgsUsage: "PROJECT_ID",
 				Action:    getWorkspaceProject,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 			{
 				Name:      "create",
 				Usage:     "Create a project in a workspace",
-				ArgsUsage: "WORKSPACE_ID NAME",
+				UsageText: "lk workspace project create NAME --workspace WORKSPACE --experimental-auth",
+				ArgsUsage: "NAME",
 				Action:    createWorkspaceProject,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 			{
 				Name:      "update",
 				Usage:     "Rename a project in a workspace",
-				ArgsUsage: "WORKSPACE_ID PROJECT_ID",
+				UsageText: "lk workspace project update PROJECT_ID --workspace WORKSPACE --name NAME --experimental-auth",
+				ArgsUsage: "PROJECT_ID",
 				Action:    updateWorkspaceProject,
 				Flags: []cli.Flag{
+					workspaceFlag,
 					&cli.StringFlag{Name: "name", Usage: "New project `NAME`", Required: true},
 					jsonFlag,
 				},
@@ -126,9 +135,10 @@ func workspaceProjectCommand() *cli.Command {
 			{
 				Name:      "delete",
 				Usage:     "Delete a project in a workspace",
-				ArgsUsage: "WORKSPACE_ID PROJECT_ID",
+				UsageText: "lk workspace project delete PROJECT_ID --workspace WORKSPACE --experimental-auth",
+				ArgsUsage: "PROJECT_ID",
 				Action:    deleteWorkspaceProject,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 		},
 	}
@@ -142,30 +152,33 @@ func workspaceMemberCommand() *cli.Command {
 			{
 				Name:      "list",
 				Usage:     "List workspace members",
-				ArgsUsage: "WORKSPACE_ID",
+				UsageText: "lk workspace member list --workspace WORKSPACE --experimental-auth",
 				Action:    listWorkspaceMembers,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a workspace member by user ID",
-				ArgsUsage: "WORKSPACE_ID USER_ID",
+				UsageText: "lk workspace member get USER_ID --workspace WORKSPACE --experimental-auth",
+				ArgsUsage: "USER_ID",
 				Action:    getWorkspaceMember,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 			{
 				Name:      "update",
 				Usage:     "Change a workspace member's role",
-				ArgsUsage: "WORKSPACE_ID USER_ID",
+				UsageText: "lk workspace member update USER_ID --role ROLE --workspace WORKSPACE --experimental-auth",
+				ArgsUsage: "USER_ID",
 				Action:    updateWorkspaceMember,
-				Flags:     []cli.Flag{roleFlag, jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, roleFlag, jsonFlag},
 			},
 			{
 				Name:      "delete",
 				Usage:     "Remove a member from a workspace",
-				ArgsUsage: "WORKSPACE_ID USER_ID",
+				UsageText: "lk workspace member delete USER_ID --workspace WORKSPACE --experimental-auth",
+				ArgsUsage: "USER_ID",
 				Action:    deleteWorkspaceMember,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 		},
 	}
@@ -179,13 +192,14 @@ func workspaceInviteCommand() *cli.Command {
 			{
 				Name:      "list",
 				Usage:     "List pending workspace invites",
-				ArgsUsage: "WORKSPACE_ID",
+				UsageText: "lk workspace invite list --workspace WORKSPACE --experimental-auth",
 				Action:    listWorkspaceInvites,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a workspace invite by its token",
+				UsageText: "lk workspace invite get INVITE_TOKEN --experimental-auth",
 				ArgsUsage: "INVITE_TOKEN",
 				Action:    getWorkspaceInvite,
 				Flags:     []cli.Flag{jsonFlag},
@@ -193,20 +207,23 @@ func workspaceInviteCommand() *cli.Command {
 			{
 				Name:      "create",
 				Usage:     "Invite a member to a workspace by email",
-				ArgsUsage: "WORKSPACE_ID EMAIL",
+				UsageText: "lk workspace invite create EMAIL --role ROLE --workspace WORKSPACE --experimental-auth",
+				ArgsUsage: "EMAIL",
 				Action:    createWorkspaceInvite,
-				Flags:     []cli.Flag{roleFlag, jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, roleFlag, jsonFlag},
 			},
 			{
 				Name:      "delete",
 				Usage:     "Revoke a pending workspace invite",
-				ArgsUsage: "WORKSPACE_ID EMAIL",
+				UsageText: "lk workspace invite delete EMAIL --workspace WORKSPACE --experimental-auth",
+				ArgsUsage: "EMAIL",
 				Action:    deleteWorkspaceInvite,
-				Flags:     []cli.Flag{jsonFlag},
+				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 			{
 				Name:      "answer",
 				Usage:     "Accept or decline a workspace invite",
+				UsageText: "lk workspace invite answer INVITE_TOKEN [--decline] --experimental-auth",
 				ArgsUsage: "INVITE_TOKEN",
 				Action:    answerWorkspaceInvite,
 				Flags: []cli.Flag{
@@ -228,24 +245,59 @@ func argN(cmd *cli.Command, n int, name string) (string, error) {
 	return v, nil
 }
 
+// resolveWorkspace builds a client and resolves ref (id, name, or alias, or a
+// picker when empty) to a workspace id.
+func resolveWorkspace(ctx context.Context, cmd *cli.Command, ref string) (*public.Client, string, error) {
+	client, conf, user, err := requireCloudClient(cmd)
+	if err != nil {
+		return nil, "", err
+	}
+	wsID, err := resolveWorkspaceRef(ctx, cmd, conf, user, ref)
+	if err != nil {
+		return nil, "", err
+	}
+	return client, wsID, nil
+}
+
+// workspaceCacheEntries builds per-user cache entries for the given workspaces,
+// assigning each a unique alias derived from its name (mirroring
+// projectCacheEntries).
+func workspaceCacheEntries(workspaces []oapi.LivekitPublicapiWorkspacesV1Workspace) []config.UserWorkspaceConfig {
+	used := make(map[string]bool, len(workspaces))
+	entries := make([]config.UserWorkspaceConfig, len(workspaces))
+	for i, w := range workspaces {
+		base := util.Slugify(util.Deref(w.Name))
+		alias := base
+		for k := 2; alias != "" && used[alias]; k++ {
+			alias = fmt.Sprintf("%s-%d", base, k)
+		}
+		if alias != "" {
+			used[alias] = true
+		}
+		entries[i] = config.UserWorkspaceConfig{
+			WorkspaceId:    util.Deref(w.Id),
+			Name:           util.Deref(w.Name),
+			Alias:          alias,
+			OrganizationId: util.Deref(w.OrganizationId),
+		}
+	}
+	return entries
+}
+
 func listWorkspaces(ctx context.Context, cmd *cli.Command) error {
 	client, _, _, err := requireCloudClient(cmd)
 	if err != nil {
 		return err
 	}
-	workspaces, err := client.ListWorkspaces(ctx)
+	workspaces, nextCursor, err := client.ListWorkspaces(ctx, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	return render.Workspaces(out, cmd.Bool("json"), workspaces)
+	return render.WorkspacesPage(out, cmd.Bool("json"), workspaces, nextCursor)
 }
 
 func getWorkspace(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
-	if err != nil {
-		return err
-	}
-	id, err := argN(cmd, 0, "workspace ID")
+	client, id, err := resolveWorkspace(ctx, cmd, cmd.Args().First())
 	if err != nil {
 		return err
 	}
@@ -274,11 +326,7 @@ func createWorkspace(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateWorkspace(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
-	if err != nil {
-		return err
-	}
-	id, err := argN(cmd, 0, "workspace ID")
+	client, id, err := resolveWorkspace(ctx, cmd, cmd.Args().First())
 	if err != nil {
 		return err
 	}
@@ -291,11 +339,7 @@ func updateWorkspace(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteWorkspace(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
-	if err != nil {
-		return err
-	}
-	id, err := argN(cmd, 0, "workspace ID")
+	client, id, err := resolveWorkspace(ctx, cmd, cmd.Args().First())
 	if err != nil {
 		return err
 	}
@@ -314,31 +358,23 @@ func deleteWorkspace(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listWorkspaceProjects(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	projects, err := client.ListWorkspaceProjects(ctx, wsID)
+	projects, nextCursor, err := client.ListWorkspaceProjects(ctx, wsID, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	return renderProjects(cmd, projects)
+	return renderProjects(cmd, projects, nextCursor)
 }
 
 func getWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	projectID, err := argN(cmd, 1, "project ID")
+	projectID, err := argN(cmd, 0, "project ID")
 	if err != nil {
 		return err
 	}
@@ -350,15 +386,11 @@ func getWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	name, err := argN(cmd, 1, "project name")
+	name, err := argN(cmd, 0, "project name")
 	if err != nil {
 		return err
 	}
@@ -371,15 +403,11 @@ func createWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	projectID, err := argN(cmd, 1, "project ID")
+	projectID, err := argN(cmd, 0, "project ID")
 	if err != nil {
 		return err
 	}
@@ -392,15 +420,11 @@ func updateWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	projectID, err := argN(cmd, 1, "project ID")
+	projectID, err := argN(cmd, 0, "project ID")
 	if err != nil {
 		return err
 	}
@@ -419,11 +443,7 @@ func deleteWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listWorkspaceMembers(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
-	if err != nil {
-		return err
-	}
-	wsID, err := argN(cmd, 0, "workspace ID")
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
@@ -435,15 +455,11 @@ func listWorkspaceMembers(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	userID, err := argN(cmd, 1, "user ID")
+	userID, err := argN(cmd, 0, "user ID")
 	if err != nil {
 		return err
 	}
@@ -455,15 +471,11 @@ func getWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	userID, err := argN(cmd, 1, "user ID")
+	userID, err := argN(cmd, 0, "user ID")
 	if err != nil {
 		return err
 	}
@@ -480,15 +492,11 @@ func updateWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	userID, err := argN(cmd, 1, "user ID")
+	userID, err := argN(cmd, 0, "user ID")
 	if err != nil {
 		return err
 	}
@@ -504,11 +512,7 @@ func deleteWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listWorkspaceInvites(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
-	if err != nil {
-		return err
-	}
-	wsID, err := argN(cmd, 0, "workspace ID")
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
@@ -536,15 +540,11 @@ func getWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	email, err := argN(cmd, 1, "email")
+	email, err := argN(cmd, 0, "email")
 	if err != nil {
 		return err
 	}
@@ -566,15 +566,11 @@ func createWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
-	client, _, _, err := requireCloudClient(cmd)
+	client, wsID, err := resolveWorkspace(ctx, cmd, cmd.String("workspace"))
 	if err != nil {
 		return err
 	}
-	wsID, err := argN(cmd, 0, "workspace ID")
-	if err != nil {
-		return err
-	}
-	email, err := argN(cmd, 1, "email")
+	email, err := argN(cmd, 0, "email")
 	if err != nil {
 		return err
 	}

@@ -20,18 +20,25 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
-// ListWorkspaces returns the workspaces the authenticated user can access.
-func (c *Client) ListWorkspaces(ctx context.Context) ([]oapi.LivekitPublicapiWorkspacesV1Workspace, error) {
-	resp, err := c.gen.WorkspaceServiceListWorkspacesWithResponse(ctx, &oapi.WorkspaceServiceListWorkspacesParams{
-		PagePageSize: ptr(int32(100)),
-	})
+// ListWorkspaces returns one page of the workspaces the authenticated user can
+// access. limit caps the page size (0 = server default); cursor requests a
+// specific page. The returned nextCursor is non-empty when more pages remain.
+func (c *Client) ListWorkspaces(ctx context.Context, limit int32, cursor string) (workspaces []oapi.LivekitPublicapiWorkspacesV1Workspace, nextCursor string, err error) {
+	params := &oapi.WorkspaceServiceListWorkspacesParams{}
+	if limit > 0 {
+		params.PagePageSize = ptr(limit)
+	}
+	if cursor != "" {
+		params.PageCursor = ptr(cursor)
+	}
+	resp, err := c.gen.WorkspaceServiceListWorkspacesWithResponse(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
+		return nil, "", responseError(resp.StatusCode(), resp.Body)
 	}
-	return items(resp.JSON200.Items), nil
+	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
 }
 
 // GetWorkspace returns a single workspace by id.
@@ -43,7 +50,7 @@ func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*oapi.Li
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Workspace, nil
+	return requirePayload(resp.JSON200.Workspace, "workspace")
 }
 
 // CreateWorkspace creates a workspace. organizationID is optional.
@@ -59,7 +66,7 @@ func (c *Client) CreateWorkspace(ctx context.Context, name, organizationID strin
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Workspace, nil
+	return requirePayload(resp.JSON200.Workspace, "workspace")
 }
 
 // UpdateWorkspace renames a workspace.
@@ -73,7 +80,7 @@ func (c *Client) UpdateWorkspace(ctx context.Context, workspaceID, name string) 
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Workspace, nil
+	return requirePayload(resp.JSON200.Workspace, "workspace")
 }
 
 // DeleteWorkspace deletes a workspace by id.
@@ -85,18 +92,23 @@ func (c *Client) DeleteWorkspace(ctx context.Context, workspaceID string) error 
 	return okOrError(resp.StatusCode(), resp.Body)
 }
 
-// ListWorkspaceProjects returns the projects within a workspace.
-func (c *Client) ListWorkspaceProjects(ctx context.Context, workspaceID string) ([]oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.WorkspaceServiceListProjectsWithResponse(ctx, workspaceID, &oapi.WorkspaceServiceListProjectsParams{
-		PagePageSize: ptr(int32(100)),
-	})
+// ListWorkspaceProjects returns one page of the projects within a workspace.
+func (c *Client) ListWorkspaceProjects(ctx context.Context, workspaceID string, limit int32, cursor string) (projects []oapi.LivekitPublicapiProjectsV1Project, nextCursor string, err error) {
+	params := &oapi.WorkspaceServiceListProjectsParams{}
+	if limit > 0 {
+		params.PagePageSize = ptr(limit)
+	}
+	if cursor != "" {
+		params.PageCursor = ptr(cursor)
+	}
+	resp, err := c.gen.WorkspaceServiceListProjectsWithResponse(ctx, workspaceID, params)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
+		return nil, "", responseError(resp.StatusCode(), resp.Body)
 	}
-	return items(resp.JSON200.Items), nil
+	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
 }
 
 // GetWorkspaceProject returns a project within a workspace.
@@ -108,7 +120,7 @@ func (c *Client) GetWorkspaceProject(ctx context.Context, workspaceID, projectID
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Project, nil
+	return requirePayload(resp.JSON200.Project, "project")
 }
 
 // CreateWorkspaceProject creates a project within a workspace.
@@ -122,7 +134,7 @@ func (c *Client) CreateWorkspaceProject(ctx context.Context, workspaceID, name s
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Project, nil
+	return requirePayload(resp.JSON200.Project, "project")
 }
 
 // UpdateWorkspaceProject renames a project within a workspace.
@@ -136,7 +148,7 @@ func (c *Client) UpdateWorkspaceProject(ctx context.Context, workspaceID, projec
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Project, nil
+	return requirePayload(resp.JSON200.Project, "project")
 }
 
 // DeleteWorkspaceProject deletes a project within a workspace.
@@ -169,7 +181,7 @@ func (c *Client) GetWorkspaceMember(ctx context.Context, workspaceID, userID str
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Member, nil
+	return requirePayload(resp.JSON200.Member, "member")
 }
 
 // UpdateWorkspaceMember changes a workspace member's role.
@@ -183,7 +195,7 @@ func (c *Client) UpdateWorkspaceMember(ctx context.Context, workspaceID, userID 
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Member, nil
+	return requirePayload(resp.JSON200.Member, "member")
 }
 
 // DeleteWorkspaceMember removes a member from a workspace.
@@ -216,7 +228,7 @@ func (c *Client) GetWorkspaceInvite(ctx context.Context, inviteToken string) (*o
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Invite, nil
+	return requirePayload(resp.JSON200.Invite, "invite")
 }
 
 // CreateWorkspaceInvite invites an email address to a workspace at the given

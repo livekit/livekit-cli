@@ -57,6 +57,20 @@ type UserConfig struct {
 	// time it was populated so callers can refresh a stale cache.
 	Projects          []UserProjectConfig `yaml:"projects,omitempty"`
 	ProjectsFetchedAt int64               `yaml:"projects_fetched_at,omitempty"`
+	// Workspaces caches the workspaces this user can access, mirroring Projects:
+	// it lets workspace references resolve by name/alias offline, and
+	// WorkspacesFetchedAt records when it was last populated.
+	Workspaces          []UserWorkspaceConfig `yaml:"workspaces,omitempty"`
+	WorkspacesFetchedAt int64                 `yaml:"workspaces_fetched_at,omitempty"`
+}
+
+type UserWorkspaceConfig struct {
+	WorkspaceId string `yaml:"workspace_id" json:"id"`
+	Name        string `yaml:"name,omitempty" json:"name,omitempty"`
+	// Alias is a URL-safe handle derived from Name (deduplicated with a numeric
+	// suffix), so a workspace can be referenced by a short, typeable name.
+	Alias          string `yaml:"alias,omitempty" json:"alias,omitempty"`
+	OrganizationId string `yaml:"organization_id,omitempty" json:"organizationId,omitempty"`
 }
 
 // UserProjectConfig is a project accessible under user-based auth. Unlike
@@ -85,6 +99,23 @@ func (u *UserConfig) FindProject(ref string) *UserProjectConfig {
 			(p.Name != "" && strings.EqualFold(p.Name, ref)) ||
 			(p.Alias != "" && strings.EqualFold(p.Alias, ref)) {
 			return p
+		}
+	}
+	return nil
+}
+
+// FindWorkspace resolves a workspace reference (id, name, or alias) against the
+// cached workspaces, mirroring FindProject.
+func (u *UserConfig) FindWorkspace(ref string) *UserWorkspaceConfig {
+	if u == nil || ref == "" {
+		return nil
+	}
+	for i := range u.Workspaces {
+		w := &u.Workspaces[i]
+		if w.WorkspaceId == ref ||
+			(w.Name != "" && strings.EqualFold(w.Name, ref)) ||
+			(w.Alias != "" && strings.EqualFold(w.Alias, ref)) {
+			return w
 		}
 	}
 	return nil

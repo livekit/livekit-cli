@@ -538,12 +538,18 @@ func renderProject(cmd *cli.Command, project oapi.LivekitPublicapiProjectsV1Proj
 	return nil
 }
 
-// renderProjects outputs Public API projects as JSON or a table, reusing the
-// alias-deriving cache shaping so listings match `lk project list`.
-func renderProjects(cmd *cli.Command, projects []oapi.LivekitPublicapiProjectsV1Project) error {
+// renderProjects outputs one page of Public API projects as JSON or a table,
+// reusing the alias-deriving cache shaping so listings match `lk project list`.
+// A non-empty nextCursor is surfaced for iteration ({items,nextCursor} in JSON;
+// a --cursor hint in table mode).
+func renderProjects(cmd *cli.Command, projects []oapi.LivekitPublicapiProjectsV1Project, nextCursor string) error {
 	entries := projectCacheEntries(projects)
 	if cmd.Bool("json") {
-		util.PrintJSON(entries)
+		payload := map[string]any{"items": entries}
+		if nextCursor != "" {
+			payload["nextCursor"] = nextCursor
+		}
+		util.PrintJSON(payload)
 		return nil
 	}
 	if len(entries) == 0 {
@@ -551,6 +557,9 @@ func renderProjects(cmd *cli.Command, projects []oapi.LivekitPublicapiProjectsV1
 		return nil
 	}
 	out.Result(projectTable(entries))
+	if nextCursor != "" {
+		out.Statusf("More results available — re-run with %s", util.Accented("--cursor "+nextCursor))
+	}
 	return nil
 }
 

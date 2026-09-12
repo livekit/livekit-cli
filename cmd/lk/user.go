@@ -34,12 +34,9 @@ var UserCommands = []*cli.Command{
 			{
 				Name:      "list",
 				Usage:     "List users in a project or workspace",
-				UsageText: "lk user list --project PROJECT | --workspace WORKSPACE_ID --experimental-auth",
+				UsageText: "lk user list --project PROJECT | --workspace WORKSPACE --experimental-auth",
 				Action:    listUsers,
-				Flags: []cli.Flag{
-					&cli.StringFlag{Name: "workspace", Usage: "Workspace `ID`"},
-					jsonFlag,
-				},
+				Flags:     []cli.Flag{workspaceFlag, limitFlag, cursorFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
@@ -58,22 +55,25 @@ func listUsers(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	workspaceID := cmd.String("workspace")
-	var projectID string
+	var projectID, workspaceID string
 	if ref := cmd.String("project"); ref != "" {
-		projectID, err = resolveProjectRef(ctx, cmd, conf, user, ref)
-		if err != nil {
+		if projectID, err = resolveProjectRef(ctx, cmd, conf, user, ref); err != nil {
+			return err
+		}
+	}
+	if ref := cmd.String("workspace"); ref != "" {
+		if workspaceID, err = resolveWorkspaceRef(ctx, cmd, conf, user, ref); err != nil {
 			return err
 		}
 	}
 	if projectID == "" && workspaceID == "" {
 		return errors.New("one of --project or --workspace is required")
 	}
-	users, err := client.ListUsers(ctx, projectID, workspaceID)
+	users, nextCursor, err := client.ListUsers(ctx, projectID, workspaceID, int32(cmd.Int("limit")), cmd.String("cursor"))
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	return render.Users(out, cmd.Bool("json"), users)
+	return render.UsersPage(out, cmd.Bool("json"), users, nextCursor)
 }
 
 func getUser(ctx context.Context, cmd *cli.Command) error {

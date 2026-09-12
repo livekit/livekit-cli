@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"charm.land/huh/v2"
@@ -228,6 +229,97 @@ func refreshUserProjects(ctx context.Context, conf *config.CLIConfig, user *conf
 		return nil, err
 	}
 	return entries, nil
+}
+
+// fetchUserWorkspaces lists the workspaces the given session can access, shaped
+// for the per-user config cache (config.UserConfig.Workspaces).
+func fetchUserWorkspaces(ctx context.Context, sessionToken string) ([]config.UserWorkspaceConfig, error) {
+	client, err := publicClientForToken(sessionToken)
+	if err != nil {
+		return nil, err
+	}
+	// Best-effort cache of the first (large) page; cache resolution refreshes on miss.
+	workspaces, _, err := client.ListWorkspaces(ctx, 200, "")
+	if err != nil {
+		return nil, err
+	}
+	return workspaceCacheEntries(workspaces), nil
+}
+
+// refreshUserWorkspaces re-fetches the signed-in user's workspaces and updates
+// the per-user cache in place, persisting quietly. Mirrors refreshUserProjects.
+func refreshUserWorkspaces(ctx context.Context, conf *config.CLIConfig, user *config.UserConfig) ([]config.UserWorkspaceConfig, error) {
+	entries, err := fetchUserWorkspaces(ctx, user.SessionToken)
+	if err != nil {
+		return nil, err
+	}
+	user.Workspaces = entries
+	user.WorkspacesFetchedAt = time.Now().Unix()
+	if err := conf.PersistQuietly(); err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
+// resolveWorkspaceRef resolves a workspace reference (id, name, or alias) to a
+// workspace id using the signed-in user's cached workspaces, refreshing on a
+// miss and falling back to an interactive picker when no ref is given. Mirrors
+// resolveProjectRef.
+func resolveWorkspaceRef(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig, user *config.UserConfig, ref string) (string, error) {
+	if ref == "" {
+		return pickUserWorkspace(ctx, cmd, conf, user)
+	}
+	if w := user.FindWorkspace(ref); w != nil {
+		return w.WorkspaceId, nil
+	}
+	if _, err := refreshUserWorkspaces(ctx, conf, user); err != nil {
+		return ref, nil
+	}
+	if w := user.FindWorkspace(ref); w != nil {
+		return w.WorkspaceId, nil
+	}
+	return ref, nil
+}
+
+// pickUserWorkspace resolves a workspace id interactively when none was supplied,
+// mirroring pickUserProject.
+func pickUserWorkspace(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig, user *config.UserConfig) (string, error) {
+	entries := user.Workspaces
+	if len(entries) == 0 {
+		var err error
+		if entries, err = refreshUserWorkspaces(ctx, conf, user); err != nil {
+			return "", cloudAPIError(err)
+		}
+	}
+	if len(entries) == 0 {
+		return "", errors.New("no workspaces found for this account")
+	}
+	if SkipPrompts(cmd) {
+		if len(entries) == 1 {
+			return entries[0].WorkspaceId, nil
+		}
+		return "", errors.New("multiple workspaces available; specify one by id, name, or alias via --workspace")
+	}
+
+	selected := entries[0].WorkspaceId
+	options := make([]huh.Option[string], 0, len(entries))
+	for _, w := range entries {
+		label := w.Name
+		if w.Alias != "" && !strings.EqualFold(w.Alias, w.Name) {
+			label = w.Name + " " + util.Dimmed(w.Alias)
+		}
+		options = append(options, huh.NewOption(label, w.WorkspaceId))
+	}
+	if err := huh.NewForm(
+		huh.NewGroup(huh.NewSelect[string]().
+			Title("Select a workspace to use for this action").
+			Options(options...).
+			Value(&selected).
+			WithTheme(util.FormTheme()))).
+		RunWithContext(ctx); err != nil {
+		return "", fmt.Errorf("no workspace selected: %w", err)
+	}
+	return selected, nil
 }
 
 // resolveProjectRef resolves a project reference — an explicit positional value,

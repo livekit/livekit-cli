@@ -615,6 +615,15 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		out.Statusf("Cached %d project(s)", len(projects))
 	}
 
+	// Likewise cache the user's workspaces so `--workspace` resolves names offline.
+	if workspaces, ferr := fetchUserWorkspaces(ctx, stored.SessionToken); ferr != nil {
+		out.Warnf("Signed in, but couldn't fetch your workspaces (%v); they'll be fetched on demand", ferr)
+	} else {
+		stored.Workspaces = workspaces
+		stored.WorkspacesFetchedAt = time.Now().Unix()
+		out.Statusf("Cached %d workspace(s)", len(workspaces))
+	}
+
 	return cliConfig.PersistIfNeeded()
 }
 

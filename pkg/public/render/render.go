@@ -147,27 +147,25 @@ func Sessions(p *util.Printer, asJSON bool, sessions []oapi.LivekitPublicapiAnal
 	return util.RenderList(p, asJSON, sessions, "No sessions found", sessionHeaders, sessionRow)
 }
 
-// sessionsPage is the --json shape for a cursor-paginated session listing: the
-// items plus the cursor to fetch the next page (empty on the last page).
-type sessionsPage struct {
-	Items      []oapi.LivekitPublicapiAnalyticsV1Session `json:"items"`
-	NextCursor string                                    `json:"nextCursor,omitempty"`
+// SessionsPage prints a cursor-paginated page of analytics sessions.
+func SessionsPage(p *util.Printer, asJSON bool, sessions []oapi.LivekitPublicapiAnalyticsV1Session, nextCursor string) error {
+	return util.RenderPage(p, asJSON, sessions, nextCursor, "No sessions found", sessionHeaders, sessionRow)
 }
 
-// SessionsPage prints a cursor-paginated page of analytics sessions. As JSON it
-// emits {items, nextCursor} so a caller can iterate; as a table it prints the
-// rows and, when more pages remain, a hint to re-run with --cursor.
-func SessionsPage(p *util.Printer, asJSON bool, sessions []oapi.LivekitPublicapiAnalyticsV1Session, nextCursor string) error {
-	if asJSON {
-		return util.PrintJSONTo(p.ResultWriter(), sessionsPage{Items: sessions, NextCursor: nextCursor})
-	}
-	if err := util.RenderList(p, false, sessions, "No sessions found", sessionHeaders, sessionRow); err != nil {
-		return err
-	}
-	if nextCursor != "" {
-		p.Statusf("More results available — re-run with %s", util.Accented("--cursor "+nextCursor))
-	}
-	return nil
+// WorkspacesPage prints a cursor-paginated page of workspaces.
+func WorkspacesPage(p *util.Printer, asJSON bool, ws []oapi.LivekitPublicapiWorkspacesV1Workspace, nextCursor string) error {
+	return util.RenderPage(p, asJSON, ws, nextCursor, "No workspaces found.", workspaceHeaders, workspaceRow)
+}
+
+// UsersPage prints a cursor-paginated page of users.
+func UsersPage(p *util.Printer, asJSON bool, users []oapi.LivekitPublicapiUsersV1User, nextCursor string) error {
+	return util.RenderPage(p, asJSON, users, nextCursor, "No users found.", userHeaders, userRow)
+}
+
+// SimulationRunsPage prints a token-paginated page of simulation runs (the
+// nextCursor is the run list's next page token).
+func SimulationRunsPage(p *util.Printer, asJSON bool, runs []oapi.LivekitSimulationRun, nextCursor string) error {
+	return util.RenderPage(p, asJSON, runs, nextCursor, "No simulation runs found.", simulationHeaders, simulationRow)
 }
 
 // Session prints a single analytics session.

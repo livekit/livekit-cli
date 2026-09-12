@@ -94,7 +94,7 @@ func (c *Client) GetProject(ctx context.Context, projectID string) (*oapi.Liveki
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Project, nil
+	return requirePayload(resp.JSON200.Project, "project")
 }
 
 // CreateProject creates a new project with the given name and returns it.
@@ -108,7 +108,7 @@ func (c *Client) CreateProject(ctx context.Context, name string) (*oapi.LivekitP
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Project, nil
+	return requirePayload(resp.JSON200.Project, "project")
 }
 
 // UpdateProject updates a project's name and returns the updated project.
@@ -122,7 +122,7 @@ func (c *Client) UpdateProject(ctx context.Context, projectID, name string) (*oa
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Project, nil
+	return requirePayload(resp.JSON200.Project, "project")
 }
 
 // DeleteProject deletes a project by id.
@@ -196,6 +196,27 @@ func items[T any](p *[]T) []T {
 		return nil
 	}
 	return *p
+}
+
+// pageCursor returns the next-page cursor from a list response's PageInfo, or ""
+// when there are no more pages.
+func pageCursor(pi *oapi.LivekitPublicapiCommonV1PageInfo) string {
+	if pi == nil || pi.NextCursor == nil {
+		return ""
+	}
+	return *pi.NextCursor
+}
+
+// requirePayload guards a nested payload pointer from an otherwise-successful
+// (200) response: the outer JSON200 can be non-nil while a nested field is nil,
+// because a 200 with a missing/blank body still decodes (Go leaves absent fields
+// at their zero value). Callers dereference the returned pointer, so surface a
+// clear error rather than handing back a nil that panics downstream.
+func requirePayload[T any](v *T, name string) (*T, error) {
+	if v == nil {
+		return nil, fmt.Errorf("unexpected response from server: missing %s", name)
+	}
+	return v, nil
 }
 
 func ptr[T any](v T) *T { return &v }

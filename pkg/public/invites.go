@@ -41,7 +41,7 @@ func (c *Client) GetProjectInvite(ctx context.Context, inviteToken string) (*oap
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Invite, nil
+	return requirePayload(resp.JSON200.Invite, "invite")
 }
 
 // InviteProjectMember invites an email address to a project at the given role.
@@ -72,7 +72,7 @@ func (c *Client) UpdateProjectInvite(ctx context.Context, projectID, email strin
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Invite, nil
+	return requirePayload(resp.JSON200.Invite, "invite")
 }
 
 // DeleteProjectInvite revokes a pending invite (keyed by email).

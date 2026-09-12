@@ -55,5 +55,5 @@ func (c *Client) GetSession(ctx context.Context, projectID, sessionID string) (*
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return resp.JSON200.Session, nil
+	return requirePayload(resp.JSON200.Session, "session")
 }
