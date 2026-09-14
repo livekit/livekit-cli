@@ -111,7 +111,7 @@ func TestSimulateKeyDispatch(t *testing.T) {
 			key:  "t",
 			setup: func() *simulateModel {
 				m := runningFixture()
-				m.detailJobID = "SRJ_aaaaaaaa"
+				m.detailID = "SRJ_aaaaaaaa"
 				return m
 			},
 			check: func(t *testing.T, m *simulateModel) { require.True(t, m.showToolDetail) },
@@ -132,17 +132,17 @@ func TestSimulateKeyDispatch(t *testing.T) {
 			name:  "enter opens the job detail",
 			key:   "enter",
 			setup: runningFixture,
-			check: func(t *testing.T, m *simulateModel) { require.Equal(t, "SRJ_bbbbbbbb", m.detailJobID) },
+			check: func(t *testing.T, m *simulateModel) { require.Equal(t, "SRJ_bbbbbbbb", m.detailID) },
 		},
 		{
 			name: "esc closes the job detail",
 			key:  "esc",
 			setup: func() *simulateModel {
 				m := runningFixture()
-				m.detailJobID = "SRJ_aaaaaaaa"
+				m.detailID = "SRJ_aaaaaaaa"
 				return m
 			},
-			check: func(t *testing.T, m *simulateModel) { require.Empty(t, m.detailJobID) },
+			check: func(t *testing.T, m *simulateModel) { require.Empty(t, m.detailID) },
 		},
 		{
 			name:  "q asks before quitting a live run",
@@ -168,7 +168,7 @@ func TestSimulateDetailLeavesAltScreen(t *testing.T) {
 	m := runningFixture()
 	require.True(t, m.View().AltScreen, "the list view runs on the alt screen")
 
-	m.detailJobID = "SRJ_aaaaaaaa"
+	m.detailID = "SRJ_aaaaaaaa"
 	m.openDetailCmd()
 	require.False(t, m.View().AltScreen, "opening a job must leave the alt screen before it prints")
 

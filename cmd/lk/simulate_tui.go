@@ -216,7 +216,7 @@ type simulateModel struct {
 	spinnerIdx int
 
 	cursor      int
-	detailJobID string
+	detailID string
 	// The summary's citations, in the order their numbers were rendered, so a
 	// digit key resolves to the turn its label points at. refItemID is the chat
 	// item a jump cited, marked when the job view prints because printed
@@ -285,7 +285,7 @@ func (m *simulateModel) hasDescription() bool {
 }
 
 func (m *simulateModel) descriptionExpanded() bool {
-	return m.detailJobID == "" && m.showDescription && m.hasDescription()
+	return m.detailID == "" && m.showDescription && m.hasDescription()
 }
 
 func (m *simulateModel) quotaModalActive() bool {
@@ -873,7 +873,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Quit
 	case "m":
-		if m.detailJobID != "" || m.run == nil || !m.setupDone || len(m.run.Jobs) == 0 || m.width < 10 {
+		if m.detailID != "" || m.run == nil || !m.setupDone || len(m.run.Jobs) == 0 || m.width < 10 {
 			return m, nil
 		}
 		rows := m.buildMatrixRows()
@@ -916,16 +916,16 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.logScrollOff = 0
 		m.logPinned = false
 	case "t":
-		if m.detailJobID != "" {
+		if m.detailID != "" {
 			m.showToolDetail = !m.showToolDetail
 		}
 	case "d":
-		if m.detailJobID == "" && m.hasDescription() {
+		if m.detailID == "" && m.hasDescription() {
 			m.showDescription = !m.showDescription
 			m.descScrollOff = 0
 		}
 	case "s":
-		if m.canExportScenarios() && m.detailJobID == "" {
+		if m.canExportScenarios() && m.detailID == "" {
 			m.saving = true
 			m.saveErr = ""
 			m.toast = ""
@@ -934,14 +934,14 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, m.saveInput.Focus()
 		}
 	case "c":
-		if m.detailJobID != "" {
-			text, ok := m.copyScenario(m.detailJobID)
+		if m.detailID != "" {
+			text, ok := m.copyScenario(m.detailID)
 			return m, m.showToast(text, ok)
 		}
 	case "up", "down", "pgup", "pgdown":
 		// The open job's view is scrolled by the terminal, so these keys must
 		// not disturb the list underneath it.
-		if m.detailJobID != "" {
+		if m.detailID != "" {
 			return m, nil
 		}
 		switch key {
@@ -972,9 +972,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// A citation's number opens the turn it cites. Only live on the list view,
 	// which is where the numbered summary is on screen to read them off.
 	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
-		if m.detailJobID == "" {
+		if m.detailID == "" {
 			if ref, ok := m.summaryRef(key); ok {
-				m.detailJobID = ref.job
+				m.detailID = ref.job
 				m.refItemID = ref.item
 				return m, m.openDetailCmd()
 			}
@@ -982,15 +982,15 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// j and l sit either side of k on the home row, so they double for the
 	// left/right arrows without reaching for them.
 	case "enter", "right", "l":
-		if m.detailJobID == "" {
+		if m.detailID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
-				m.detailJobID = jobs[m.cursor].job.Id
+				m.detailID = jobs[m.cursor].job.Id
 				return m, m.openDetailCmd()
 			}
 		}
 	case "esc", "left", "backspace", "j":
-		if m.detailJobID != "" {
+		if m.detailID != "" {
 			return m, m.closeDetailCmd()
 		} else if m.showDescription {
 			m.showDescription = false
@@ -998,7 +998,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "q":
 		switch {
-		case m.detailJobID != "":
+		case m.detailID != "":
 			return m, m.closeDetailCmd()
 		case m.showDescription:
 			m.showDescription = false
@@ -1055,7 +1055,7 @@ func (m *simulateModel) render() string {
 	if !m.setupDone || m.run == nil || m.run.Status == livekit.SimulationRun_STATUS_GENERATING {
 		return m.viewSetup()
 	}
-	if m.detailJobID != "" {
+	if m.detailID != "" {
 		return m.viewDetailLive()
 	}
 	switch m.run.Status {
@@ -1586,14 +1586,14 @@ func (m *simulateModel) renderDetail() string {
 	var job *livekit.SimulationRun_Job
 	origIdx := 0
 	for i, j := range m.run.Jobs {
-		if j.Id == m.detailJobID {
+		if j.Id == m.detailID {
 			job = j
 			origIdx = i + 1
 			break
 		}
 	}
 	if job == nil {
-		m.detailJobID = ""
+		m.detailID = ""
 		return dimStyle.Render("  (job not found)\n")
 	}
 
@@ -1709,7 +1709,7 @@ func (m *simulateModel) openDetailCmd() tea.Cmd {
 // closeDetailCmd returns to the list view. The printed job stays in the
 // scrollback until the next one replaces it.
 func (m *simulateModel) closeDetailCmd() tea.Cmd {
-	m.detailJobID = ""
+	m.detailID = ""
 	m.detailPrinted = ""
 	m.refItemID = ""
 	m.altScreen = true
@@ -1738,12 +1738,12 @@ const clearScrollback = ansi.CursorHomePosition + ansi.EraseEntireScreen + ansi.
 // gained since the last call, or nil when it has gained nothing. Callers do not
 // need to know whether anything changed.
 func (m *simulateModel) flushDetail() tea.Cmd {
-	if m.detailJobID == "" {
+	if m.detailID == "" {
 		return nil
 	}
 	rendered := strings.TrimRight(m.renderDetail(), "\n")
-	// renderDetail clears detailJobID when the job is gone from the run
-	if m.detailJobID == "" || rendered == "" {
+	// renderDetail clears detailID when the job is gone from the run
+	if m.detailID == "" || rendered == "" {
 		return nil
 	}
 	if m.width != m.detailWidth {
@@ -1786,7 +1786,7 @@ func detailTail(printed, rendered string) (string, bool) {
 // the job, which is the only part of it that is still moving.
 func (m *simulateModel) viewDetailLive() string {
 	var b strings.Builder
-	if job := m.findJob(m.detailJobID); job != nil && !isTerminalJobStatus(job.Status) {
+	if job := m.findJob(m.detailID); job != nil && !isTerminalJobStatus(job.Status) {
 		fmt.Fprintf(&b, "\n  %s %s  %s\n", jobIcon(job), dimStyle.Render(jobLabel(job)), m.spinner())
 	} else {
 		b.WriteString("\n")
@@ -2181,10 +2181,10 @@ func (m *simulateModel) renderHint() string {
 	}
 	var parts []string
 	switch {
-	case m.detailJobID != "":
+	case m.detailID != "":
 		// the job view is in the terminal's scrollback, which scrolls itself
 		parts = append(parts, "c copy scenario · ←/ESC back to list")
-		if m.hasToolDetail(m.detailJobID) {
+		if m.hasToolDetail(m.detailID) {
 			if m.showToolDetail {
 				parts = append(parts, "t hide tool detail")
 			} else {
