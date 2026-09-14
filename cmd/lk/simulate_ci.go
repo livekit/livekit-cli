@@ -207,6 +207,9 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		}
 		total, _, passed, failedN := simulationJobCounts(run)
 		fmt.Fprintf(out.ResultWriter(), "%d total, %d passed, %d failed\n", total, passed, failedN)
+		if line := passRateLine(run); line != "" {
+			fmt.Fprintln(out.ResultWriter(), line)
+		}
 	}
 
 	if brokenAgent && agent != nil {

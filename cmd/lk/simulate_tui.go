@@ -1409,6 +1409,9 @@ func (m *simulateModel) renderCounts() string {
 	if running > 0 {
 		parts = append(parts, yellowStyle().Render(fmt.Sprintf("%d running", running)))
 	}
+	if line := passRateLine(m.run); line != "" {
+		parts = append(parts, boldStyle.Render(line))
+	}
 
 	elapsed := ""
 	if !m.startTime.IsZero() {
@@ -1474,7 +1477,7 @@ func (m *simulateModel) renderJobList() string {
 	maxWidth := 0
 	for i := winStart; i < winEnd; i++ {
 		ij := jobs[i]
-		row := rowData{ij: ij, label: jobLabel(ij.job)}
+		row := rowData{ij: ij, label: jobLabel(ij.job) + attemptSuffix(m.run, ij.job)}
 		rows = append(rows, row)
 		w := lipgloss.Width(fmt.Sprintf("  ⏺ %3d. %s %s", ij.origIdx, ij.job.Id, row.label))
 		if w > maxWidth {
@@ -1556,7 +1559,7 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 	}
 	for i := winStart; i < winEnd; i++ {
 		ij := jobs[i]
-		label := jobLabel(ij.job)
+		label := jobLabel(ij.job) + attemptSuffix(m.run, ij.job)
 		iconCh, iconStyle := jobStatusIcon(ij.job)
 		line := fmt.Sprintf("  %c %3d. %s %s", iconCh, ij.origIdx, ij.job.Id, label)
 		rows = append(rows, matrixRow{
@@ -1598,7 +1601,7 @@ func (m *simulateModel) renderDetail() string {
 	b.WriteString("\n")
 	fmt.Fprintf(&b, "  %s %s %s\n",
 		jobIcon(job),
-		boldStyle.Render(fmt.Sprintf("Job %d", origIdx)),
+		boldStyle.Render(fmt.Sprintf("Job %d", origIdx)+attemptSuffix(m.run, job)),
 		dimStyle.Render(job.Id),
 	)
 	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
