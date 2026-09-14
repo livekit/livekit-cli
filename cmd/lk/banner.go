@@ -144,10 +144,13 @@ func printBanner(ctx context.Context) {
 	// The fence sets the notices apart from the command's own output. The fixed
 	// width wraps long messages instead of letting the border break on narrow
 	// terminals.
+	const width, inner = 76, 72
 	fence := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(util.Warning()).
 		Padding(0, 1).
-		Width(76)
-	out.Statusf("%s\n", fence.Render(strings.Join(msgs, "\n\n")))
+		Width(width)
+	// A rule between notices keeps two messages from reading as one paragraph.
+	rule := "\n" + util.Dimmed(strings.Repeat("─", inner)) + "\n"
+	out.Statusf("%s\n", fence.Render(strings.Join(msgs, rule)))
 }
