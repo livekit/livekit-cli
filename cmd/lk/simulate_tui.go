@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -1026,11 +1025,7 @@ func (m *simulateModel) filteredJobs() []indexedJob {
 	if m.run == nil {
 		return nil
 	}
-	// sort by job ID: the backend's ordering shuffles rows as statuses change
-	jobs := make([]*livekit.SimulationRun_Job, len(m.run.Jobs))
-	copy(jobs, m.run.Jobs)
-	sort.Slice(jobs, func(i, j int) bool { return jobs[i].GetId() < jobs[j].GetId() })
-
+	jobs := sortedJobs(m.run)
 	result := make([]indexedJob, 0, len(jobs))
 	for i, j := range jobs {
 		result = append(result, indexedJob{origIdx: i + 1, job: j})
