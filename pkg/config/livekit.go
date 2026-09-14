@@ -81,7 +81,7 @@ func (c *LiveKitTOML) SaveTOMLFile(dir string, tomlFileName string) error {
 	if err := encoder.Encode(c); err != nil {
 		return fmt.Errorf("error encoding TOML: %w", err)
 	}
-	fmt.Printf("Saving config file [%s]\n", util.Accented(tomlFileName))
+	util.Statusf("Saving config file [%s]", util.Accented(tomlFileName))
 	return nil
 }
 

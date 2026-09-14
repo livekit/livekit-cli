@@ -81,7 +81,7 @@ func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 	for _, run := range runs {
 		rows = append(rows, []string{
 			run.GetId(),
-			formatDeployedAt(run.GetCreatedAt().AsTime()),
+			util.FormatRFC3339(run.GetCreatedAt().AsTime(), "---"),
 			strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
 			strings.TrimPrefix(run.GetMode().String(), "SIMULATION_MODE_"),
 			run.GetAgentName(),

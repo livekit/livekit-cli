@@ -1050,7 +1050,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 			deployment := "--"
 			lastScrapedAt := "--"
 			if regionalAgent.LastScrapedAt != nil {
-				lastScrapedAt = formatTime(regionalAgent.LastScrapedAt.AsTime())
+				lastScrapedAt = util.FormatRFC3339(regionalAgent.LastScrapedAt.AsTime(), "--")
 			}
 
 			if regionalAgent.LastScrapedAt != nil {
@@ -1093,7 +1093,7 @@ func getAgentStatus(ctx context.Context, cmd *cli.Command) error {
 				fmt.Sprintf("%s / %s", curCPU, regionalAgent.CpuLimit),
 				fmt.Sprintf("%s / %s", curMem, memLimit),
 				fmt.Sprintf("%d / %d / %d", regionalAgent.Replicas, regionalAgent.MinReplicas, regionalAgent.MaxReplicas),
-				formatTime(agent.DeployedAt.AsTime()),
+				util.FormatRFC3339(agent.DeployedAt.AsTime(), "--"),
 				lastScrapedAt,
 			})
 		}
@@ -1491,8 +1491,8 @@ func listAgentVersions(ctx context.Context, cmd *cli.Command) error {
 			flag(version.Active),
 			version.Status,
 			string(attrs),
-			formatTime(version.CreatedAt.AsTime()),
-			formatTime(version.DeployedAt.AsTime()),
+			util.FormatRFC3339(version.CreatedAt.AsTime(), "--"),
+			util.FormatRFC3339(version.DeployedAt.AsTime(), "--"),
 		}
 		if showDigest {
 			row = append(row, version.Attributes["image_digest"])
@@ -1582,7 +1582,7 @@ func listAgents(ctx context.Context, cmd *cli.Command) error {
 			strings.Join(regions, ","),
 			strings.Join(deployments, ","),
 			agent.Version,
-			formatDeployedAt(agent.DeployedAt.AsTime()),
+			util.FormatRFC3339(agent.DeployedAt.AsTime(), "---"),
 		})
 	}
 
@@ -1631,7 +1631,7 @@ func listAgentSecrets(ctx context.Context, cmd *cli.Command) error {
 		Headers("Name", "Created At", "Updated At")
 
 	for _, secret := range visible {
-		table.Row(secret.Name, formatTime(secret.CreatedAt.AsTime()), formatTime(secret.UpdatedAt.AsTime()))
+		table.Row(secret.Name, util.FormatRFC3339(secret.CreatedAt.AsTime(), "--"), util.FormatRFC3339(secret.UpdatedAt.AsTime(), "--"))
 	}
 
 	out.Result(table)
@@ -1750,7 +1750,7 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 		if deployedAt := agent.DeployedAt.AsTime(); deployedAt.IsZero() {
 			deployedStr = "never deployed"
 		} else {
-			deployedStr = "deployed " + formatTime(deployedAt)
+			deployedStr = "deployed " + util.FormatRFC3339(deployedAt, "--")
 		}
 		name := agent.AgentId + " " + util.Dimmed(deployedStr)
 		agentNames = append(agentNames, huh.Option[string]{Key: name, Value: agent.AgentId})

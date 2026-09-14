@@ -1,4 +1,4 @@
-// Copyright 2021-2024 LiveKit, Inc.
+// Copyright 2021-2026 LiveKit, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import (
 	"maps"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/mattn/go-isatty"
@@ -33,6 +32,7 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -42,11 +42,12 @@ const (
 )
 
 var (
-	printCurl    bool
-	workingDir   string = "."
-	tomlFilename string = config.LiveKitTOMLFile
-	serverURL    string = cloudAPIServerURL
-	dashboardURL string = cloudDashboardURL
+	printCurl          bool
+	workingDir         string = "."
+	tomlFilename       string = config.LiveKitTOMLFile
+	serverURL          string = cloudAPIServerURL
+	dashboardURL       string = cloudDashboardURL
+	experimentalAPIURL string = public.DefaultBaseURL
 
 	roomFlag = &TemplateStringFlag{
 		Name:     "room",
@@ -73,6 +74,19 @@ var (
 		Aliases: []string{"q", "silent"},
 		Usage:   "Suppress informational output to stderr (warnings and errors still print)",
 	}
+	// experimentalAuthFlag and legacyAuthFlag select the auth mode and are
+	// mutually exclusive (enforced via the root command's MutuallyExclusiveFlags,
+	// see main.go), so they aren't listed in globalFlags directly.
+	experimentalAuthFlag = &cli.BoolFlag{
+		Name:   "experimental-auth",
+		Usage:  "EXPERIMENTAL: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
+		Hidden: true,
+	}
+	legacyAuthFlag = &cli.BoolFlag{
+		Name:   "legacy-auth",
+		Usage:  "Force API-key (SDK) authentication, ignoring any signed-in user session. Explicit --api-key/--api-secret imply this.",
+		Hidden: true,
+	}
 	templateFlag = &cli.StringFlag{
 		Name:        "template",
 		Usage:       "`TEMPLATE` to instantiate, see " + bootstrap.TemplateBaseURL,
@@ -92,6 +106,30 @@ var (
 	installFlag = &cli.BoolFlag{
 		Name:  "install",
 		Usage: "Run installation after creating the application",
+	}
+	// roleFlag selects a member/invite access level for the Public API commands.
+	roleFlag = &cli.StringFlag{
+		Name:     "role",
+		Usage:    "Access `ROLE`: one of read, write, admin",
+		Required: true,
+	}
+	// workspaceFlag references a LiveKit Cloud workspace by id, name, or alias for
+	// the Public API commands (resolved against the per-user workspace cache).
+	workspaceFlag = &cli.StringFlag{
+		Name:  "workspace",
+		Usage: "`NAME`, alias, or ID of the LiveKit Cloud workspace",
+	}
+	// limitFlag and cursorFlag are the pagination controls shared by the
+	// cursor-paginated Public API list commands. limit caps the page size (0 lets
+	// the server choose); cursor requests the page named by a prior --json
+	// listing's nextCursor.
+	limitFlag = &cli.IntFlag{
+		Name:  "limit",
+		Usage: "Maximum number of items to return",
+	}
+	cursorFlag = &cli.StringFlag{
+		Name:  "cursor",
+		Usage: "Page `CURSOR` from a prior --json listing",
 	}
 	experimentalFlag = &cli.BoolFlag{
 		Name:     "experimental",
@@ -166,6 +204,14 @@ var (
 			Usage:   "Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)",
 		},
 		quietFlag,
+		&cli.StringFlag{
+			Name:        "experimental-api-url",
+			Usage:       "Base `URL` of the LiveKit Public API used with --experimental-auth",
+			Value:       public.DefaultBaseURL,
+			Destination: &experimentalAPIURL,
+			Sources:     cli.EnvVars("LIVEKIT_API_URL"),
+			Hidden:      true,
+		},
 		&cli.StringFlag{
 			Name:        "server-url",
 			Value:       cloudAPIServerURL,
@@ -438,6 +484,9 @@ func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 // the package-level `project` (app/agent) go through requireProject instead, which layers
 // interactive selection on top of the same resolver before announcing.
 func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
+	if err := experimentalAuthGate(c); err != nil {
+		return nil, err
+	}
 	p := loadParams{requireURL: true}
 	for _, opt := range opts {
 		opt(&p)
@@ -487,18 +536,4 @@ func (s *templateStringValue) String() string {
 		return *s.destination
 	}
 	return ""
-}
-
-func formatTime(t time.Time) string {
-	if t.IsZero() {
-		return "--"
-	}
-	return t.Format(time.RFC3339)
-}
-
-func formatDeployedAt(t time.Time) string {
-	if t.IsZero() {
-		return "---"
-	}
-	return t.Format(time.RFC3339)
 }

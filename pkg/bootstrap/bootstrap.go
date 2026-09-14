@@ -41,6 +41,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 const (
@@ -300,8 +301,8 @@ func PrintDotEnv(envMap map[string]string) error {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Println(envContents)
-	return err
+	util.Result(envContents)
+	return nil
 }
 
 // ReadDotEnv reads filePath under rootDir as a dotenv file. Returns (nil, nil)

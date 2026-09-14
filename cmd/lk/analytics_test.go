@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -123,17 +122,6 @@ func TestMapAnalyticsHTTPError(t *testing.T) {
 	assert.Contains(t, err.Error(), "HTTP 500")
 }
 
-func TestRawJSONToString(t *testing.T) {
-	val := json.RawMessage(`"1234"`)
-	assert.Equal(t, "1234", rawJSONToString(val))
-
-	val = json.RawMessage(`1234`)
-	assert.Equal(t, "1234", rawJSONToString(val))
-
-	val = json.RawMessage(``)
-	assert.Equal(t, "-", rawJSONToString(val))
-}
-
 func TestBuildAnalyticsListQueryUsesDefaultLimit(t *testing.T) {
 	var queryLimit string
 	cmd := &cli.Command{
@@ -149,14 +137,6 @@ func TestBuildAnalyticsListQueryUsesDefaultLimit(t *testing.T) {
 
 	require.NoError(t, cmd.Run(context.Background(), []string{"analytics-list"}))
 	assert.Equal(t, "10", queryLimit)
-}
-
-func TestFormatBytes(t *testing.T) {
-	assert.Equal(t, "999 B", formatBytes(json.RawMessage(`999`)))
-	assert.Equal(t, "1.2 KB", formatBytes(json.RawMessage(`1234`)))
-	assert.Equal(t, "1.3 MB", formatBytes(json.RawMessage(`1260393`)))
-	assert.Equal(t, "-", formatBytes(nil))
-	assert.Equal(t, "unknown", formatBytes(json.RawMessage(`"unknown"`)))
 }
 
 func TestResolveAnalyticsProjectID(t *testing.T) {

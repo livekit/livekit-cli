@@ -156,8 +156,8 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 	status := awaitDaemonReady(daemon, readyPath)
 	switch {
 	case status == "ready":
-		fmt.Fprintf(os.Stderr, "Detected %s agent (%s in %s)\n", projectType.Lang(), entrypoint, projectDir)
-		fmt.Printf("Session started. Use `lk agent daemon say \"...\"` to talk, `lk agent daemon stop` to stop.\n")
+		out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
+		out.Status("Session started. Use `lk agent daemon say \"...\"` to talk, `lk agent daemon stop` to stop.")
 		return nil
 	case strings.HasPrefix(status, "error:"):
 		return fmt.Errorf("%s", strings.TrimSpace(strings.TrimPrefix(status, "error:")))
@@ -233,7 +233,7 @@ func runSessionStop(ctx context.Context, cmd *cli.Command) error {
 	if err := streamControlReplies(conn); err != nil {
 		return err
 	}
-	fmt.Println("Session ended.")
+	out.Status("Session ended.")
 	return nil
 }
 
@@ -260,7 +260,7 @@ func streamControlReplies(conn net.Conn) error {
 			return err
 		}
 		if reply.Line != "" {
-			fmt.Println(reply.Line)
+			out.Result(reply.Line)
 		}
 		if reply.Done {
 			if reply.Error != "" {

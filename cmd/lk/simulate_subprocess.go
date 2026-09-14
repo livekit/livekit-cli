@@ -212,13 +212,14 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 	}
 
 	example := rootCandidates[0]
-	msg := "no agent entrypoint found, checked:\n"
+	var msg strings.Builder
+	msg.WriteString("no agent entrypoint found, checked:\n")
 	for _, p := range checked {
-		msg += fmt.Sprintf("  - %s\n", p)
+		fmt.Fprintf(&msg, "  - %s\n", p)
 	}
-	msg += "\nMake sure you are running this command from a directory containing a LiveKit agent.\n"
-	msg += fmt.Sprintf("Specify the entrypoint file as a positional argument, e.g.: lk agent dev %s", example)
-	return "", fmt.Errorf("%s", msg)
+	msg.WriteString("\nMake sure you are running this command from a directory containing a LiveKit agent.\n")
+	fmt.Fprintf(&msg, "Specify the entrypoint file as a positional argument, e.g.: lk agent dev %s", example)
+	return "", fmt.Errorf("%s", msg.String())
 }
 
 // AgentStartConfig configures how to launch an agent subprocess.
@@ -509,7 +510,8 @@ func agentExitDetail(ap *AgentProcess) string {
 		for i, l := range tail {
 			tail[i] = ansiEscapeRe.ReplaceAllString(l, "")
 		}
-		b.WriteString("Agent output:\n  " + strings.Join(tail, "\n  "))
+		b.WriteString("Agent output:\n  ")
+		b.WriteString(strings.Join(tail, "\n  "))
 	}
 
 	if ap.LogPath != "" {

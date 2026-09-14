@@ -480,9 +480,12 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 				if fco.IsError {
 					for j, line := range wrapLines(truncateOutput(fco.Output), m.width-6) {
 						if j == 0 {
-							b.WriteString("\n    " + redBoldStyle().Render("✗ ") + redStyle().Render(line))
+							b.WriteString("\n    ")
+							b.WriteString(redBoldStyle().Render("✗ "))
+							b.WriteString(redStyle().Render(line))
 						} else {
-							b.WriteString("\n      " + redStyle().Render(line))
+							b.WriteString("\n      ")
+							b.WriteString(redStyle().Render(line))
 						}
 					}
 				} else {
@@ -502,9 +505,12 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 				b.WriteString("\n")
 			}
 			if i == 0 {
-				b.WriteString("  " + redBoldStyle().Render("✗ ") + redStyle().Render(line))
+				b.WriteString("  ")
+				b.WriteString(redBoldStyle().Render("✗ "))
+				b.WriteString(redStyle().Render(line))
 			} else {
-				b.WriteString("    " + redStyle().Render(line))
+				b.WriteString("    ")
+				b.WriteString(redStyle().Render(line))
 			}
 		}
 		cmds = append(cmds, tea.Println(b.String()))
@@ -598,7 +604,8 @@ func (m consoleModel) render() string {
 
 		if m.audioError != "" {
 			for _, line := range wrapLines("audio: "+m.audioError, m.width-2) {
-				b.WriteString("\n  " + redStyle().Render(line))
+				b.WriteString("\n  ")
+				b.WriteString(redStyle().Render(line))
 			}
 		}
 

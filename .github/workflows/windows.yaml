@@ -63,11 +63,12 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: go-${{ runner.os }}-windows-cross-${{ hashFiles('go.sum') }}
-          # A go.sum bump leaves the webrtc/portaudio C++ objects — the
-          # expensive part — valid, so fall back to any earlier build.
+          # Version segment (go-v1-) gates the whole cache; bump it to bust a
+          # poisoned build cache (restore-keys is a prefix, so it otherwise
+          # re-restores the stale cache on any exact-key miss).
+          key: go-v1-${{ runner.os }}-windows-cross-${{ hashFiles('go.sum') }}
           restore-keys: |
-            go-${{ runner.os }}-windows-cross-
+            go-v1-${{ runner.os }}-windows-cross-
 
       # Generate the MinGW import libs lld needs for Go's /DEFAULTLIB references
       # (dbghelp, bcrypt, ...), exactly as goreleaser's before-hook does.
