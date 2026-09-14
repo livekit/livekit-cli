@@ -70,6 +70,10 @@ func main() {
 			},
 		},
 		Before: initLogger,
+		After: func(context.Context, *cli.Command) error {
+			flushBanner()
+			return nil
+		},
 	}
 
 	app.Commands = append(app.Commands, AppCommands...)
@@ -172,7 +176,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	}
 	util.DetectBackground()
 
-	printBanner(ctx)
+	deferBanner(ctx)
 
 	// Nudge users still on API-key auth toward the new account-based flow.
 	maybeShowUpgradeNotice(cmd, conf)
