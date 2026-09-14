@@ -23,6 +23,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -795,6 +796,15 @@ func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
 	} else {
 		out.Status("Run cancelled")
 	}
+}
+
+// sortedJobs orders a run's jobs by job ID: the backend's ordering shuffles
+// rows as statuses change.
+func sortedJobs(run *livekit.SimulationRun) []*livekit.SimulationRun_Job {
+	jobs := make([]*livekit.SimulationRun_Job, len(run.Jobs))
+	copy(jobs, run.Jobs)
+	sort.Slice(jobs, func(i, j int) bool { return jobs[i].GetId() < jobs[j].GetId() })
+	return jobs
 }
 
 func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, failed int) {
