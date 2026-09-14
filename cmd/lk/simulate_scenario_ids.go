@@ -121,8 +121,14 @@ func detectIndent(data []byte) int {
 }
 
 func addMissingID(m *yaml.Node, prefix string) bool {
-	if mappingValue(m, "id") != nil {
-		return false
+	if existing := mappingValue(m, "id"); existing != nil {
+		if existing.Value != "" && existing.Tag != "!!null" {
+			return false
+		}
+		// Fill an empty value in place, retaining comments and key position.
+		existing.Tag = "!!str"
+		existing.Value = utils.NewGuid(prefix)
+		return true
 	}
 	m.Content = append([]*yaml.Node{
 		{Kind: yaml.ScalarNode, Value: "id"},
