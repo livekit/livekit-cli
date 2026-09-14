@@ -24,6 +24,11 @@ import (
 // as a status line. It is generic so callers render the source types directly
 // without an intermediate view model.
 func RenderList[T any](p *Printer, asJSON bool, list []T, empty string, headers []string, row func(T) []string) error {
+	// Normalize to a non-nil slice so the JSON output is always [], never null,
+	// for consumers like jq.
+	if list == nil {
+		list = []T{}
+	}
 	if asJSON {
 		return PrintJSONTo(p.ResultWriter(), list)
 	}
@@ -50,6 +55,11 @@ type page[T any] struct {
 // {items, nextCursor} so a caller can iterate; as a table it prints the rows
 // and, when nextCursor is non-empty, a hint to re-run with --cursor.
 func RenderPage[T any](p *Printer, asJSON bool, list []T, nextCursor, empty string, headers []string, row func(T) []string) error {
+	// Normalize to a non-nil slice so the JSON shape is always {"items": [...]},
+	// never {"items": null}, for consumers like jq.
+	if list == nil {
+		list = []T{}
+	}
 	if asJSON {
 		return PrintJSONTo(p.ResultWriter(), page[T]{Items: list, NextCursor: nextCursor})
 	}

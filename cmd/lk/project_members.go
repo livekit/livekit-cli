@@ -310,12 +310,18 @@ func createProjectInvite(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return cloudAPIError(err)
 	}
+
 	if cmd.Bool("json") {
 		util.PrintJSON(resp)
 		return nil
 	}
-	out.Statusf("Invited %s to project with code:", util.Accented(email))
-	out.Resultf("%s\n", util.Accented(*resp.InviteToken))
+
+	if resp.InviteToken == nil {
+		out.Statusf("Invited %s to project", util.Accented(email))
+	} else {
+		out.Statusf("Invited %s to project with code:", util.Accented(email))
+		out.Resultf("%s\n", util.Accented(util.Deref(resp.InviteToken)))
+	}
 	return nil
 }
 
