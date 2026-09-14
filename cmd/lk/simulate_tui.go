@@ -215,7 +215,7 @@ type simulateModel struct {
 
 	spinnerIdx int
 
-	cursor      int
+	cursor   int
 	detailID string
 	// The summary's citations, in the order their numbers were rendered, so a
 	// digit key resolves to the turn its label points at. refItemID is the chat
@@ -356,6 +356,11 @@ func (m *simulateModel) saveScenarios(name string) (string, bool) {
 // copyScenario puts the job's scenario on the clipboard as a one-entry scenarios.yaml.
 func (m *simulateModel) copyScenario(jobID string) (string, bool) {
 	job := m.findJob(jobID)
+	if job == nil {
+		if sc := m.findScenario(jobID); sc != nil {
+			job = sc.attempts[0]
+		}
+	}
 	if job == nil {
 		return "Copy failed: scenario not found", false
 	}
@@ -985,7 +990,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.detailID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
-				m.detailID = jobs[m.cursor].job.Id
+				m.detailID = jobs[m.cursor].id()
 				return m, m.openDetailCmd()
 			}
 		}
@@ -1016,9 +1021,31 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// indexedJob is one row of the job list. An unrepeated run has a row per job.
+// A repeated run has a row per scenario with its attempts nested under it:
+//
+//	✓  1. Book a table for two  3/3
+//	   ├─ ✓ SRJ_01 attempt 1
+//	   └─ ✓ SRJ_09 attempt 3
 type indexedJob struct {
-	origIdx int
-	job     *livekit.SimulationRun_Job
+	origIdx  int                        // 1-based number of the scenario or, unrepeated, the job; 0 on an attempt row
+	job      *livekit.SimulationRun_Job // nil on a scenario row
+	scenario *scenarioRow               // set on a scenario row only
+	last     bool                       // attempt row: the scenario's final attempt (└ rather than ├)
+}
+
+type scenarioRow struct {
+	id       string
+	label    string
+	attempts []*livekit.SimulationRun_Job
+}
+
+// id is what opening the row shows: a job, or a whole scenario.
+func (ij indexedJob) id() string {
+	if ij.scenario != nil {
+		return ij.scenario.id
+	}
+	return ij.job.GetId()
 }
 
 func (m *simulateModel) filteredJobs() []indexedJob {
@@ -1027,10 +1054,106 @@ func (m *simulateModel) filteredJobs() []indexedJob {
 	}
 	jobs := sortedJobs(m.run)
 	result := make([]indexedJob, 0, len(jobs))
-	for i, j := range jobs {
-		result = append(result, indexedJob{origIdx: i + 1, job: j})
+	if m.run.GetRepeats() < 2 {
+		for i, j := range jobs {
+			result = append(result, indexedJob{origIdx: i + 1, job: j})
+		}
+		return result
+	}
+	n := 0
+	for i := 0; i < len(jobs); {
+		j := jobs[i]
+		n++
+		if j.GetScenarioId() == "" {
+			result = append(result, indexedJob{origIdx: n, job: j})
+			i++
+			continue
+		}
+		sc := &scenarioRow{id: j.GetScenarioId(), label: jobLabel(j)}
+		for i < len(jobs) && jobs[i].GetScenarioId() == sc.id {
+			sc.attempts = append(sc.attempts, jobs[i])
+			i++
+		}
+		result = append(result, indexedJob{origIdx: n, scenario: sc})
+		for k, a := range sc.attempts {
+			result = append(result, indexedJob{job: a, last: k == len(sc.attempts)-1})
+		}
 	}
 	return result
+}
+
+func (m *simulateModel) findScenario(id string) *scenarioRow {
+	for _, ij := range m.filteredJobs() {
+		if ij.scenario != nil && ij.scenario.id == id {
+			return ij.scenario
+		}
+	}
+	return nil
+}
+
+// scenarioStatusIcon folds a scenario's attempts: running while any attempt
+// runs, pending while any waits, then passed only if every attempt did.
+func scenarioStatusIcon(attempts []*livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
+	passed := 0
+	pending := false
+	for _, a := range attempts {
+		switch a.Status {
+		case livekit.SimulationRun_Job_STATUS_RUNNING:
+			s := yellowStyle()
+			return '⏺', &s
+		case livekit.SimulationRun_Job_STATUS_COMPLETED:
+			passed++
+		case livekit.SimulationRun_Job_STATUS_FAILED, livekit.SimulationRun_Job_STATUS_CANCELLED:
+		default:
+			pending = true
+		}
+	}
+	if pending {
+		return '⏺', &dimStyle
+	}
+	if passed == len(attempts) {
+		s := greenStyle()
+		return '✓', &s
+	}
+	s := redStyle()
+	return '✗', &s
+}
+
+func scenarioPassed(attempts []*livekit.SimulationRun_Job) int {
+	n := 0
+	for _, a := range attempts {
+		if a.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
+			n++
+		}
+	}
+	return n
+}
+
+// listRowParts splits a row into the indent before its icon, the icon, and the
+// text after it, in plain and styled forms, so the cursor highlight and the
+// matrix rain can lay out the same line.
+func listRowParts(ij indexedJob) (indent string, iconCh rune, iconStyle *lipgloss.Style, text, styled string) {
+	switch {
+	case ij.scenario != nil:
+		iconCh, iconStyle = scenarioStatusIcon(ij.scenario.attempts)
+		text = fmt.Sprintf(" %3d. %s  %d/%d", ij.origIdx, ij.scenario.label, scenarioPassed(ij.scenario.attempts), len(ij.scenario.attempts))
+		return "  ", iconCh, iconStyle, text, text
+	case ij.origIdx == 0:
+		connector := "├─ "
+		if ij.last {
+			connector = "└─ "
+		}
+		iconCh, iconStyle = jobStatusIcon(ij.job)
+		text = fmt.Sprintf(" %s attempt %d", ij.job.Id, ij.job.GetAttempt())
+		styled = fmt.Sprintf(" %s attempt %d", dimStyle.Render(ij.job.Id), ij.job.GetAttempt())
+		return "     " + dimStyle.Render(connector), iconCh, iconStyle, text, styled
+	default:
+		iconCh, iconStyle = jobStatusIcon(ij.job)
+		label := jobLabel(ij.job)
+		text = fmt.Sprintf(" %3d. %s %s", ij.origIdx, ij.job.Id, label)
+		styled = fmt.Sprintf(" %3d. %s %s", ij.origIdx, dimStyle.Render(ij.job.Id), label)
+		return "  ", iconCh, iconStyle, text, styled
+	}
 }
 
 func (m *simulateModel) findJob(id string) *livekit.SimulationRun_Job {
@@ -1468,37 +1591,26 @@ func (m *simulateModel) renderJobList() string {
 		b.WriteString("\n")
 	}
 
-	// Compute labels and max width for consistent hover highlight
-	type rowData struct {
-		ij    indexedJob
-		label string
-	}
-	rows := make([]rowData, 0, winEnd-winStart)
+	// The cursor highlight pads to the widest row so the reverse bar is one width.
 	maxWidth := 0
 	for i := winStart; i < winEnd; i++ {
-		ij := jobs[i]
-		row := rowData{ij: ij, label: jobLabel(ij.job) + attemptSuffix(m.run, ij.job)}
-		rows = append(rows, row)
-		w := lipgloss.Width(fmt.Sprintf("  ⏺ %3d. %s %s", ij.origIdx, ij.job.Id, row.label))
-		if w > maxWidth {
+		indent, iconCh, _, text, _ := listRowParts(jobs[i])
+		if w := lipgloss.Width(indent + string(iconCh) + text); w > maxWidth {
 			maxWidth = w
 		}
 	}
 
-	for i, row := range rows {
-		idx := winStart + i
-		pr, _ := jobStatusIcon(row.ij.job)
-		plainIcon := string(pr)
+	for i := winStart; i < winEnd; i++ {
+		indent, iconCh, iconStyle, text, styled := listRowParts(jobs[i])
 		var line string
-		if idx == m.cursor {
-			line = fmt.Sprintf("  %s %3d. %s %s", plainIcon, row.ij.origIdx, row.ij.job.Id, row.label)
+		if i == m.cursor {
+			line = ansi.Strip(indent) + string(iconCh) + text
 			if pad := maxWidth - lipgloss.Width(line); pad > 0 {
 				line += strings.Repeat(" ", pad)
 			}
 			line = reverseStyle.Render(line)
 		} else {
-			icon := jobIcon(row.ij.job)
-			line = fmt.Sprintf("  %s %3d. %s %s", icon, row.ij.origIdx, dimStyle.Render(row.ij.job.Id), row.label)
+			line = indent + iconStyle.Render(string(iconCh)) + styled
 		}
 		b.WriteString(line)
 		b.WriteString("\n")
@@ -1558,13 +1670,12 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 		})
 	}
 	for i := winStart; i < winEnd; i++ {
-		ij := jobs[i]
-		label := jobLabel(ij.job) + attemptSuffix(m.run, ij.job)
-		iconCh, iconStyle := jobStatusIcon(ij.job)
-		line := fmt.Sprintf("  %c %3d. %s %s", iconCh, ij.origIdx, ij.job.Id, label)
+		indent, iconCh, iconStyle, text, _ := listRowParts(jobs[i])
+		indent = ansi.Strip(indent)
+		line := indent + string(iconCh) + text
 		rows = append(rows, matrixRow{
 			text:         []rune(line),
-			iconCol:      2,
+			iconCol:      len([]rune(indent)),
 			iconCh:       iconCh,
 			iconStyle:    iconStyle,
 			cursorMarker: i == m.cursor,
@@ -1593,15 +1704,22 @@ func (m *simulateModel) renderDetail() string {
 		}
 	}
 	if job == nil {
+		if sc := m.findScenario(m.detailID); sc != nil {
+			return m.renderScenarioDetail(sc)
+		}
 		m.detailID = ""
 		return dimStyle.Render("  (job not found)\n")
 	}
 
+	title := fmt.Sprintf("Job %d", origIdx)
+	if m.run.GetRepeats() >= 2 {
+		title = jobLabel(job) + attemptSuffix(m.run, job)
+	}
 	var b strings.Builder
 	b.WriteString("\n")
 	fmt.Fprintf(&b, "  %s %s %s\n",
 		jobIcon(job),
-		boldStyle.Render(fmt.Sprintf("Job %d", origIdx)+attemptSuffix(m.run, job)),
+		boldStyle.Render(title),
 		dimStyle.Render(job.Id),
 	)
 	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
@@ -1679,6 +1797,64 @@ func (m *simulateModel) renderDetail() string {
 		}
 	}
 
+	return b.String()
+}
+
+// renderScenarioDetail is a repeated scenario as a whole: its brief once, then
+// every attempt's verdict and transcript in attempt order.
+func (m *simulateModel) renderScenarioDetail(sc *scenarioRow) string {
+	var b strings.Builder
+	iconCh, iconStyle := scenarioStatusIcon(sc.attempts)
+	b.WriteString("\n")
+	fmt.Fprintf(&b, "  %s %s  %s\n",
+		iconStyle.Render(string(iconCh)),
+		boldStyle.Render(sc.label),
+		dimStyle.Render(fmt.Sprintf("%d/%d attempts passed", scenarioPassed(sc.attempts), len(sc.attempts))),
+	)
+	b.WriteString("\n")
+
+	wrapWidth := proseWidth(m.width, 6)
+	first := sc.attempts[0]
+
+	b.WriteString(boldStyle.Render("  Instructions:"))
+	b.WriteString("\n")
+	instr := first.Instructions
+	if instr == "" {
+		instr = "—"
+	}
+	for _, line := range wrapLines(instr, wrapWidth) {
+		b.WriteString("    " + line + "\n")
+	}
+	b.WriteString("\n")
+
+	b.WriteString(dimStyle.Bold(true).Render("  Expected:"))
+	b.WriteString("\n")
+	expect := first.AgentExpectations
+	if expect == "" {
+		expect = "—"
+	}
+	for _, line := range wrapLines(expect, wrapWidth) {
+		b.WriteString(dimStyle.Render("    "+line) + "\n")
+	}
+
+	for _, job := range sc.attempts {
+		b.WriteString("\n")
+		fmt.Fprintf(&b, "  %s %s %s\n",
+			jobIcon(job),
+			boldStyle.Render(fmt.Sprintf("Attempt %d", job.GetAttempt())),
+			dimStyle.Render(job.Id),
+		)
+		if job.Error != "" {
+			style := redStyle()
+			if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
+				style = greenStyle()
+			}
+			for _, line := range wrapLines(job.Error, wrapWidth) {
+				b.WriteString(style.Render("    "+line) + "\n")
+			}
+		}
+		b.WriteString(m.renderChatTranscript(job.Id))
+	}
 	return b.String()
 }
 
