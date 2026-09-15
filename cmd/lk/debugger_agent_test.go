@@ -331,7 +331,7 @@ func TestRenderTurnEvent(t *testing.T) {
 	long := strings.Repeat("x", toolOutputLimit+10)
 	capped := plain(turnEvent{Type: "tool_call", Name: "big", Output: long}, renderOptions{})
 	require.Contains(t, capped, "10 more bytes")
-	require.NotContains(t, plain(turnEvent{Type: "tool_call", Name: "big", Output: long}, renderOptions{Verbose: true}), "more bytes")
+	require.NotContains(t, plain(turnEvent{Type: "tool_call", Name: "big", Output: long}, renderOptions{FullOutput: true}), "more bytes")
 
 	require.Equal(t, "\n  ● handoff: a → b", plain(turnEvent{Type: "handoff", From: "a", To: "b"}, renderOptions{}))
 	require.Equal(t, "\n  ● agent: a", plain(turnEvent{Type: "handoff", To: "a"}, renderOptions{}))
@@ -339,7 +339,7 @@ func TestRenderTurnEvent(t *testing.T) {
 	require.Equal(t, "\n  ✗ agent error: bad", plain(turnEvent{Type: "error", Text: "bad"}, renderOptions{}))
 	require.Equal(t, "", renderTurnEvent(turnEvent{Type: "message", Role: "system", Text: "hidden"}, renderOptions{}))
 
-	metrics := plain(turnEvent{Type: "message", Role: "assistant", Text: "x", Metrics: map[string]float64{"llm_ttft": 0.45}}, renderOptions{Verbose: true})
+	metrics := plain(turnEvent{Type: "message", Role: "assistant", Text: "x", Metrics: map[string]float64{"llm_ttft": 0.45}}, renderOptions{Metrics: true})
 	require.Contains(t, metrics, "llm_ttft 450ms")
 }
 

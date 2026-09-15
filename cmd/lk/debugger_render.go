@@ -38,12 +38,13 @@ var (
 
 // renderOptions controls how much detail the text renderer shows.
 type renderOptions struct {
-	// Verbose shows full tool output (instead of a capped excerpt) and
-	// per-message latency metrics.
-	Verbose bool
+	// Metrics shows per-message latency metrics (llm_ttft, tts_ttfb, e2e).
+	Metrics bool
+	// FullOutput shows tool output in full instead of a capped excerpt.
+	FullOutput bool
 }
 
-// toolOutputLimit caps tool output in the default (non-verbose) rendering so a
+// toolOutputLimit caps tool output unless --full-output is given, so a
 // tool that returns a large payload doesn't flood the transcript.
 const toolOutputLimit = 600
 
@@ -64,7 +65,7 @@ func renderTurnEvent(e turnEvent, opts renderOptions) string {
 				suffix += " " + sessionDimStyle.Render("(interrupted)")
 			}
 			s := renderSpeaker(lipgloss.NewStyle().Foreground(sessionGreen), sessionAgentStyle, "Agent", e.Text, suffix)
-			if opts.Verbose && len(e.Metrics) > 0 {
+			if opts.Metrics && len(e.Metrics) > 0 {
 				s += "\n    " + sessionDimStyle.Render(renderMetrics(e.Metrics))
 			}
 			return s
@@ -137,10 +138,10 @@ func renderSilentTurn() string {
 		sessionAgentStyle.Render("Agent") + "\n    " + sessionDimStyle.Render("(no reply)")
 }
 
-// writeIndented appends text under a bullet, capping it unless verbose.
+// writeIndented appends text under a bullet, capping it unless FullOutput.
 func writeIndented(b *strings.Builder, style lipgloss.Style, marker, text string, opts renderOptions) {
 	truncated := 0
-	if !opts.Verbose && len(text) > toolOutputLimit {
+	if !opts.FullOutput && len(text) > toolOutputLimit {
 		truncated = len(text) - toolOutputLimit
 		text = text[:toolOutputLimit]
 	}
@@ -154,7 +155,7 @@ func writeIndented(b *strings.Builder, style lipgloss.Style, marker, text string
 	}
 	if truncated > 0 {
 		b.WriteString("\n    ")
-		b.WriteString(sessionDimStyle.Render(fmt.Sprintf("  … %d more bytes (use --verbose for the full output)", truncated)))
+		b.WriteString(sessionDimStyle.Render(fmt.Sprintf("  … %d more bytes (use --full-output to see it all)", truncated)))
 	}
 }
 

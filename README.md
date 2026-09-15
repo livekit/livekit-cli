@@ -493,7 +493,7 @@ lk agent debugger say "Hi, what can you do?"  # prints tool calls (with argument
 lk agent debugger say "Book a table for two tonight"
 lk agent debugger listen --timeout 15s        # wait for the agent to speak unprompted (a timer, a follow-up after silence)
 lk agent debugger history                     # the whole conversation so far
-lk agent debugger logs -n 40                  # the agent process's logs (tracebacks, warnings)
+lk agent debugger logs --last 40              # the agent process's logs (tracebacks, warnings)
 lk agent debugger status                      # active agent, its tools, state, log file
 lk agent debugger stop --transcript           # closing summary, plus the whole conversation
 ```
@@ -502,10 +502,10 @@ lk agent debugger stop --transcript           # closing summary, plus the whole 
 
 Useful options:
 
--   `say --logs` interleaves the agent's log lines with the turn, so a tool's traceback shows up next to the sanitized error the user would hear.
+-   `say --logs` shows the agent's log lines beneath the step they belong to, so a tool's traceback appears right under the sanitized error the user would hear.
 -   `say --timeout 30s` bounds how long to wait for the reply (default 2 minutes); the exit code is non-zero if the turn failed or timed out.
 -   `--json` on any command prints machine-readable output. Each turn is a document with `text`, `reply`, `duration_ms`, and an `events` list of `message`, `tool_call`, `handoff`, `config`, `error`, and `log` entries.
--   `--verbose` shows full tool output and per-turn latency metrics.
+-   `--metrics` adds per-turn latency metrics (time to first token, end-to-end) and `--full-output` shows tool results in full instead of a capped excerpt.
 -   `restart` relaunches the agent with a fresh conversation after the code changes.
 -   `listen --timeout 15s` waits for the agent to speak unprompted, for example after a tool set a timer, and prints whatever it says.
 -   `--port` runs several sessions side by side (one agent per port).

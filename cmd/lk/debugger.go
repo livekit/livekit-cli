@@ -71,10 +71,19 @@ var sessionIdleFlag = &cli.DurationFlag{
 	Usage: "Stop the session after this long without any command (0 to keep it running until `stop`)",
 }
 
-var sessionVerboseFlag = &cli.BoolFlag{
-	Name:    "verbose",
-	Aliases: []string{"v"},
-	Usage:   "Show full tool output and per-turn latency metrics",
+var sessionMetricsFlag = &cli.BoolFlag{
+	Name:  "metrics",
+	Usage: "Show latency metrics: time to first token per reply and how long each turn took",
+}
+
+var sessionFullOutputFlag = &cli.BoolFlag{
+	Name:  "full-output",
+	Usage: "Show tool results in full instead of a capped excerpt",
+}
+
+// renderFlags reads the shared rendering flags off a command.
+func renderFlags(cmd *cli.Command) renderOptions {
+	return renderOptions{Metrics: cmd.Bool("metrics"), FullOutput: cmd.Bool("full-output")}
 }
 
 func init() {
@@ -113,7 +122,7 @@ Typical flow, run from the agent project directory:
    lk agent debugger say "Hi, what can you do?"
    lk agent debugger say "Book me a table for two tonight"
    lk agent debugger listen --timeout 15s   # wait for the agent to speak unprompted (timers, follow-ups)
-   lk agent debugger logs -n 40             # agent process logs (tracebacks, warnings)
+   lk agent debugger logs --last 40         # agent process logs (tracebacks, warnings)
    lk agent debugger history                # full transcript so far
    lk agent debugger stop --transcript      # closing summary, plus the conversation
 
@@ -164,14 +173,16 @@ agents, errors, and the reply. Anything the agent said since the previous turn
 
 Exit code is non-zero if the agent reported an error or the turn timed out; the
 agent keeps running either way. With --logs, the agent's log lines emitted
-during the turn are interleaved, which puts a tool's traceback next to the
-sanitized error the user would hear. Text can also be piped on stdin:
+during the turn are shown beneath the step they belong to, which puts a tool's
+traceback right under the sanitized error the user would hear. Text can also
+be piped on stdin:
 
    echo "Book me a table for two" | lk agent debugger say`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
 				jsonFlag,
-				sessionVerboseFlag,
+				sessionMetricsFlag,
+				sessionFullOutputFlag,
 				&cli.DurationFlag{
 					Name:  "timeout",
 					Value: defaultSayTimeout,
@@ -197,7 +208,8 @@ did not.`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
 				jsonFlag,
-				sessionVerboseFlag,
+				sessionMetricsFlag,
+				sessionFullOutputFlag,
 				&cli.DurationFlag{
 					Name:  "timeout",
 					Value: 10 * time.Second,
@@ -213,7 +225,7 @@ did not.`,
 			Description: `Fetches the agent's own chat history, so it reflects exactly what the LLM has
 seen: user and agent messages, tool calls with results, handoffs, and
 instruction/tool changes. Works while a turn is in progress.`,
-			Flags:  []cli.Flag{sessionPortFlag, jsonFlag, sessionVerboseFlag},
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlag, sessionMetricsFlag, sessionFullOutputFlag},
 			Action: runSessionHistory,
 		},
 		{
@@ -235,7 +247,7 @@ stripped). The whole log is also kept in a file; "status" shows its path. Use
 "say --logs" to see the lines emitted during a single turn instead.`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
-				&cli.IntFlag{Name: "lines", Aliases: []string{"n"}, Value: 50, Usage: "Number of trailing lines (0 for the whole log)"},
+				&cli.IntFlag{Name: "last", Aliases: []string{"n"}, Value: 50, Usage: "How many of the most recent lines to print (0 for the whole log)"},
 				&cli.BoolFlag{Name: "follow", Aliases: []string{"f"}, Usage: "Keep streaming new lines until interrupted"},
 			},
 			Action: runSessionLogs,
@@ -259,7 +271,8 @@ entire log before the summary; --json returns everything in one document.`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
 				jsonFlag,
-				sessionVerboseFlag,
+				sessionMetricsFlag,
+				sessionFullOutputFlag,
 				&cli.BoolFlag{
 					Name:  "transcript",
 					Usage: "Also print the full conversation",
@@ -482,9 +495,21 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	asJSON := cmd.Bool("json")
-	opts := renderOptions{Verbose: cmd.Bool("verbose")}
+	opts := renderFlags(cmd)
 	doc := sayJSON{Text: text, Events: []turnEvent{}}
 	sawAgentOutput := false
+
+	// Agent log lines are emitted while the agent works on what comes next
+	// (a tool executing, a reply generating), so they are held and printed
+	// beneath the event that follows them: a tool's traceback lands under the
+	// tool's error line instead of floating above it.
+	var pendingLogs []turnEvent
+	flushLogs := func() {
+		for _, l := range pendingLogs {
+			out.Result(renderTurnEvent(l, opts))
+		}
+		pendingLogs = nil
+	}
 	final, err := streamControlReplies(conn, func(r controlReply) {
 		if r.Event == nil {
 			return
@@ -497,12 +522,20 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 			doc.Events = append(doc.Events, e)
 			return
 		}
+		if e.Type == "log" {
+			pendingLogs = append(pendingLogs, e)
+			return
+		}
 		if line := renderTurnEvent(e, opts); line != "" {
 			out.Result(line)
 		}
+		flushLogs()
 	})
 	if err != nil {
 		return err
+	}
+	if !asJSON {
+		flushLogs()
 	}
 
 	doc.Reply = final.Reply
@@ -522,7 +555,7 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 	if final.Error == "" && !sawAgentOutput {
 		out.Result(renderSilentTurn())
 	}
-	if opts.Verbose {
+	if opts.Metrics {
 		out.Result("    " + sessionDimStyle.Render(fmt.Sprintf("⏱ turn took %.1fs", float64(final.DurationMs)/1000)))
 	}
 	out.Result("")
@@ -560,7 +593,7 @@ func runSessionListen(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	asJSON := cmd.Bool("json")
-	opts := renderOptions{Verbose: cmd.Bool("verbose")}
+	opts := renderFlags(cmd)
 	doc := listenJSON{Events: []turnEvent{}}
 	final, err := streamControlReplies(conn, func(r controlReply) {
 		if r.Event == nil {
@@ -613,7 +646,7 @@ func runSessionHistory(ctx context.Context, cmd *cli.Command) error {
 		out.Status("No conversation yet.")
 		return nil
 	}
-	opts := renderOptions{Verbose: cmd.Bool("verbose")}
+	opts := renderFlags(cmd)
 	for _, e := range reply.Events {
 		if line := renderTurnEvent(e, opts); line != "" {
 			out.Result(line)
@@ -697,7 +730,7 @@ func runSessionLogs(ctx context.Context, cmd *cli.Command) error {
 	if !follow {
 		_ = conn.SetReadDeadline(time.Now().Add(15 * time.Second))
 	}
-	lines := int(cmd.Int("lines"))
+	lines := int(cmd.Int("last"))
 	if lines == 0 {
 		lines = -1 // explicit 0: the whole log
 	}
@@ -745,7 +778,7 @@ func runSessionStop(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("transcript") && len(final.Events) > 0 {
-		opts := renderOptions{Verbose: cmd.Bool("verbose")}
+		opts := renderFlags(cmd)
 		for _, e := range final.Events {
 			if line := renderTurnEvent(e, opts); line != "" {
 				out.Result(line)
