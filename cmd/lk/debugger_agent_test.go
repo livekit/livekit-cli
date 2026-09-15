@@ -328,10 +328,10 @@ func TestRenderTurnEvent(t *testing.T) {
 	require.Equal(t, "\n  ● tool: transfer()\n    ✗ boom",
 		plain(turnEvent{Type: "tool_call", Name: "transfer", Arguments: "{}", Output: "boom", IsError: true}, renderOptions{}))
 
-	long := strings.Repeat("x", toolOutputLimit+10)
-	capped := plain(turnEvent{Type: "tool_call", Name: "big", Output: long}, renderOptions{})
-	require.Contains(t, capped, "10 more bytes")
-	require.NotContains(t, plain(turnEvent{Type: "tool_call", Name: "big", Output: long}, renderOptions{FullOutput: true}), "more bytes")
+	// Tool output is never truncated: seeing exactly what a tool returned is
+	// the point of the debugger.
+	long := strings.Repeat("x", 5000)
+	require.Contains(t, plain(turnEvent{Type: "tool_call", Name: "big", Output: long}, renderOptions{}), long)
 
 	require.Equal(t, "\n  ● handoff: a → b", plain(turnEvent{Type: "handoff", From: "a", To: "b"}, renderOptions{}))
 	require.Equal(t, "\n  ● agent: a", plain(turnEvent{Type: "handoff", To: "a"}, renderOptions{}))

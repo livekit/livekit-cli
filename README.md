@@ -505,7 +505,7 @@ Useful options:
 -   `say --logs` shows the agent's log lines beneath the step they belong to, so a tool's traceback appears right under the sanitized error the user would hear.
 -   `say --timeout 30s` bounds how long to wait for the reply (default 2 minutes); the exit code is non-zero if the turn failed or timed out.
 -   `--json` on any command prints machine-readable output. Each turn is a document with `text`, `reply`, `duration_ms`, and an `events` list of `message`, `tool_call`, `handoff`, `config`, `error`, and `log` entries.
--   `--metrics` adds per-turn latency metrics (time to first token, end-to-end) and `--full-output` shows tool results in full instead of a capped excerpt.
+-   `--metrics` adds per-turn latency metrics (time to first token, end-to-end).
 -   `restart` relaunches the agent with a fresh conversation after the code changes.
 -   `listen --timeout 15s` waits for the agent to speak unprompted, for example after a tool set a timer, and prints whatever it says.
 -   `--port` runs several sessions side by side (one agent per port).

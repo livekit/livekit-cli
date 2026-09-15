@@ -40,13 +40,7 @@ var (
 type renderOptions struct {
 	// Metrics shows per-message latency metrics (llm_ttft, tts_ttfb, e2e).
 	Metrics bool
-	// FullOutput shows tool output in full instead of a capped excerpt.
-	FullOutput bool
 }
-
-// toolOutputLimit caps tool output unless --full-output is given, so a
-// tool that returns a large payload doesn't flood the transcript.
-const toolOutputLimit = 600
 
 // renderTurnEvent turns one normalized session event into printable lines, or
 // "" if the event carries nothing worth showing.
@@ -89,9 +83,9 @@ func renderTurnEvent(e turnEvent, opts renderOptions) string {
 			if output == "" {
 				output = "error"
 			}
-			writeIndented(&b, sessionRedStyle, "✗ ", output, opts)
+			writeIndented(&b, sessionRedStyle, "✗ ", output)
 		} else if output != "" {
-			writeIndented(&b, sessionDimStyle, "↳ ", output, opts)
+			writeIndented(&b, sessionDimStyle, "↳ ", output)
 		}
 		return b.String()
 	case "handoff":
@@ -138,13 +132,8 @@ func renderSilentTurn() string {
 		sessionAgentStyle.Render("Agent") + "\n    " + sessionDimStyle.Render("(no reply)")
 }
 
-// writeIndented appends text under a bullet, capping it unless FullOutput.
-func writeIndented(b *strings.Builder, style lipgloss.Style, marker, text string, opts renderOptions) {
-	truncated := 0
-	if !opts.FullOutput && len(text) > toolOutputLimit {
-		truncated = len(text) - toolOutputLimit
-		text = text[:toolOutputLimit]
-	}
+// writeIndented appends text under a bullet, one line per output line.
+func writeIndented(b *strings.Builder, style lipgloss.Style, marker, text string) {
 	for i, line := range strings.Split(text, "\n") {
 		b.WriteString("\n    ")
 		if i == 0 {
@@ -152,10 +141,6 @@ func writeIndented(b *strings.Builder, style lipgloss.Style, marker, text string
 		} else {
 			b.WriteString(style.Render("  " + line))
 		}
-	}
-	if truncated > 0 {
-		b.WriteString("\n    ")
-		b.WriteString(sessionDimStyle.Render(fmt.Sprintf("  … %d more bytes (use --full-output to see it all)", truncated)))
 	}
 }
 

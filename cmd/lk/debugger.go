@@ -76,14 +76,9 @@ var sessionMetricsFlag = &cli.BoolFlag{
 	Usage: "Show latency metrics: time to first token per reply and how long each turn took",
 }
 
-var sessionFullOutputFlag = &cli.BoolFlag{
-	Name:  "full-output",
-	Usage: "Show tool results in full instead of a capped excerpt",
-}
-
 // renderFlags reads the shared rendering flags off a command.
 func renderFlags(cmd *cli.Command) renderOptions {
-	return renderOptions{Metrics: cmd.Bool("metrics"), FullOutput: cmd.Bool("full-output")}
+	return renderOptions{Metrics: cmd.Bool("metrics")}
 }
 
 func init() {
@@ -182,7 +177,6 @@ be piped on stdin:
 				sessionPortFlag,
 				jsonFlag,
 				sessionMetricsFlag,
-				sessionFullOutputFlag,
 				&cli.DurationFlag{
 					Name:  "timeout",
 					Value: defaultSayTimeout,
@@ -209,7 +203,6 @@ did not.`,
 				sessionPortFlag,
 				jsonFlag,
 				sessionMetricsFlag,
-				sessionFullOutputFlag,
 				&cli.DurationFlag{
 					Name:  "timeout",
 					Value: 10 * time.Second,
@@ -225,7 +218,7 @@ did not.`,
 			Description: `Fetches the agent's own chat history, so it reflects exactly what the LLM has
 seen: user and agent messages, tool calls with results, handoffs, and
 instruction/tool changes. Works while a turn is in progress.`,
-			Flags:  []cli.Flag{sessionPortFlag, jsonFlag, sessionMetricsFlag, sessionFullOutputFlag},
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlag, sessionMetricsFlag},
 			Action: runSessionHistory,
 		},
 		{
@@ -272,7 +265,6 @@ entire log before the summary; --json returns everything in one document.`,
 				sessionPortFlag,
 				jsonFlag,
 				sessionMetricsFlag,
-				sessionFullOutputFlag,
 				&cli.BoolFlag{
 					Name:  "transcript",
 					Usage: "Also print the full conversation",
