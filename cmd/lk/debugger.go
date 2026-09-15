@@ -490,7 +490,7 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 			return
 		}
 		e := *r.Event
-		if e.Type != "log" && !(e.Type == "message" && e.Role == "user") && !e.Earlier {
+		if e.Type != "log" && (e.Type != "message" || e.Role != "user") && !e.Earlier {
 			sawAgentOutput = true
 		}
 		if asJSON {
