@@ -810,7 +810,7 @@ func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
 	}
 }
 
-// sortedJobs orders a run's jobs so every attempt of a scenario sits together,
+// sortedJobs orders a run's jobs so every sample of a scenario sits together,
 // scenarios in scenarios.yaml order, then by job ID: the backend's ordering
 // shuffles rows as statuses change.
 func sortedJobs(run *livekit.SimulationRun) []*livekit.SimulationRun_Job {
@@ -825,8 +825,8 @@ func sortedJobs(run *livekit.SimulationRun) []*livekit.SimulationRun_Job {
 		if a.GetScenarioId() != b.GetScenarioId() {
 			return order[a.GetScenarioId()] < order[b.GetScenarioId()]
 		}
-		if a.GetAttempt() != b.GetAttempt() {
-			return a.GetAttempt() < b.GetAttempt()
+		if a.GetSample() != b.GetSample() {
+			return a.GetSample() < b.GetSample()
 		}
 		return a.GetId() < b.GetId()
 	})
@@ -834,7 +834,7 @@ func sortedJobs(run *livekit.SimulationRun) []*livekit.SimulationRun_Job {
 }
 
 // scenarioPassCounts folds a repeated run's jobs into scenarios: how many
-// have every attempt finished, and of those how many passed at least once
+// have every sample finished, and of those how many passed at least once
 // (pass@k) and every time (pass^k). Zero scenarios when the run did not
 // repeat, so callers can skip the line.
 func scenarioPassCounts(run *livekit.SimulationRun) (scenarios, passAny, passAll int) {
@@ -876,7 +876,7 @@ func scenarioPassCounts(run *livekit.SimulationRun) (scenarios, passAny, passAll
 }
 
 // passRateLine is the pass@k / pass^k summary, or "" when the run did not
-// repeat or no scenario has finished every attempt.
+// repeat or no scenario has finished every sample.
 func passRateLine(run *livekit.SimulationRun) string {
 	scenarios, passAny, passAll := scenarioPassCounts(run)
 	if scenarios == 0 {
@@ -888,12 +888,12 @@ func passRateLine(run *livekit.SimulationRun) string {
 		k, passAll, scenarios, float64(passAll)/float64(scenarios))
 }
 
-// attemptSuffix marks a job's attempt when the run repeated scenarios.
-func attemptSuffix(run *livekit.SimulationRun, job *livekit.SimulationRun_Job) string {
-	if run.GetSamples() < 2 || job.GetAttempt() == 0 {
+// sampleSuffix marks a job's sample when the run repeated scenarios.
+func sampleSuffix(run *livekit.SimulationRun, job *livekit.SimulationRun_Job) string {
+	if run.GetSamples() < 2 || job.GetSample() == 0 {
 		return ""
 	}
-	return fmt.Sprintf(" (attempt %d/%d)", job.GetAttempt(), run.GetSamples())
+	return fmt.Sprintf(" (sample %d/%d)", job.GetSample(), run.GetSamples())
 }
 
 func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, failed int) {
