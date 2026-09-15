@@ -1,0 +1,937 @@
+// Copyright 2025 LiveKit, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package main
+
+import (
+	"context"
+	"encoding/binary"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/mattn/go-isatty"
+	"github.com/urfave/cli/v3"
+
+	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
+)
+
+// Single-session model: the fixed loopback port is the singleton registry.
+// The daemon binds it; whoever wins the bind() is "the session". start, say,
+// and stop all rendezvous on this one port. No session id, manifest, or dir.
+const (
+	sessionMagic       = "LKCP" // 4-byte preamble that marks a control connection
+	sessionHost        = "127.0.0.1"
+	defaultSessionPort = 8775
+
+	envSessionPort      = "LK_SESSION_PORT"       // fixed port
+	envSessionDir       = "LK_SESSION_DIR"        // resolved project dir
+	envSessionEntry     = "LK_SESSION_ENTRY"      // resolved entrypoint (project-relative)
+	envSessionPType     = "LK_SESSION_PTYPE"      // agentfs.ProjectType string
+	envSessionReadyFile = "LK_SESSION_READY_FILE" // path the daemon writes its status to
+
+	// sessionDaemonSubcommand is the hidden entrypoint `start` re-execs into.
+	sessionDaemonSubcommand = "serve"
+)
+
+var sessionPortFlag = &cli.IntFlag{
+	Name:    "port",
+	Sources: cli.EnvVars(envSessionPort),
+	Value:   defaultSessionPort,
+	Usage:   "Loopback port the session listens on (one session per port)",
+}
+
+var sessionVerboseFlag = &cli.BoolFlag{
+	Name:    "verbose",
+	Aliases: []string{"v"},
+	Usage:   "Show full tool output and per-turn latency metrics",
+}
+
+func init() {
+	// Register under the `agent` group as `lk agent debugger`, mirroring how
+	// `lk agent console` attaches itself. Unlike console, this command is not
+	// gated behind the `console` build tag: it is CGO-free and ships in the
+	// default binary.
+	// "daemon" is the name this shipped under first; keep it working without
+	// advertising it. cli/v3 lists aliases in help, so a hidden copy is used
+	// instead of Aliases.
+	alias := *agentDaemonCommand
+	alias.Name = "daemon"
+	alias.Hidden = true
+	AgentCommands[0].Commands = append(AgentCommands[0].Commands, agentDaemonCommand, &alias)
+}
+
+var agentDaemonCommand = &cli.Command{
+	Name:  "debugger",
+	Usage: "Drive a text conversation with a local agent from a script or coding agent",
+	Description: `Runs your agent locally in text mode as a background process, then lets
+you drive a multi-turn conversation one command at a time. Each "say" sends a
+user turn and prints everything the agent did in response: tool calls with
+their arguments and results, handoffs, errors, and the reply. Nothing is sent
+to a LiveKit room. The agent runs in console mode with STT/TTS disabled, so a
+turn costs only what your LLM (and tools) cost.
+
+This is built for coding agents (Claude Code, Codex, Cursor, ...) and shell
+scripts: the caller stands in for the user, decides the next line based on the
+reply, and can inspect logs and history between turns. Output, exit codes, and
+--json are shaped for a program driving it. To talk to your agent yourself, by
+voice or typing, use "lk agent console" instead.
+
+Typical flow, run from the agent project directory:
+
+   lk agent debugger start                  # starts the agent, prints its greeting (if any)
+   lk agent debugger say "Hi, what can you do?"
+   lk agent debugger say "Book me a table for two tonight"
+   lk agent debugger listen --timeout 15s   # wait for the agent to speak unprompted (timers, follow-ups)
+   lk agent debugger logs -n 40             # agent process logs (tracebacks, warnings)
+   lk agent debugger history                # full transcript so far
+   lk agent debugger stop --transcript      # closing summary, plus the conversation
+
+The agent is found the same way as for "lk agent console": the project in the
+current directory (or the nearest parent) with its default entrypoint, or the
+file you name explicitly:
+
+   lk agent debugger start src/my_agent.py
+   lk agent debugger start agent.ts -- --env-file=.env   # args after -- go to node/python
+
+After editing the agent's code, run "lk agent debugger restart" to relaunch it
+with a fresh conversation. Add --json to any command for machine-readable
+output: each turn is a document with "text", "reply", "duration_ms", and an
+"events" list of message, tool_call, handoff, config, error, and log entries.
+Exit codes are non-zero when a turn fails or times out, or no session is
+running. Use --port to run several agents side by side (one session per port).`,
+	Commands: []*cli.Command{
+		{
+			Name:      "start",
+			Usage:     "Start the agent in the background and wait until it is ready",
+			ArgsUsage: "[entrypoint] [-- node/python-args...]",
+			Description: `Launches the agent as a detached process and returns once it is connected
+and ready for text turns. If the agent speaks first (a greeting from on_enter),
+that is printed here. The summary line names the active agent and its tools.
+
+Without an entrypoint, the project in the current directory (or nearest parent)
+is used with its default entrypoint: agent.py or src/agent.py for Python,
+main.ts, src/main.ts, or src/main.js for Node. Pass a file to override:
+
+   lk agent debugger start src/my_agent.py
+   lk agent debugger start agent.ts -- --env-file=.env
+
+The agent reads its own .env for credentials, exactly like "lk agent console".
+Only one session runs per port; use --port for more, or "restart" to replace
+the current one.`,
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlag},
+			Action: runSessionStart,
+		},
+		{
+			Name:      "say",
+			Usage:     "Send one user turn and print the agent's tool calls and reply",
+			ArgsUsage: "<text>   (or pipe the text on stdin)",
+			Description: `Sends the text as the user's turn and streams what the agent does until the
+turn completes: tool calls with their arguments and results, handoffs to other
+agents, errors, and the reply. Anything the agent said since the previous turn
+(for example a timer firing) is printed first, marked "(before this turn)".
+
+Exit code is non-zero if the agent reported an error or the turn timed out; the
+agent keeps running either way. With --logs, the agent's log lines emitted
+during the turn are interleaved, which puts a tool's traceback next to the
+sanitized error the user would hear. Text can also be piped on stdin:
+
+   echo "Book me a table for two" | lk agent debugger say`,
+			Flags: []cli.Flag{
+				sessionPortFlag,
+				jsonFlag,
+				sessionVerboseFlag,
+				&cli.DurationFlag{
+					Name:  "timeout",
+					Value: defaultSayTimeout,
+					Usage: "Give up waiting for the agent's reply after this long",
+				},
+				&cli.BoolFlag{
+					Name:  "logs",
+					Usage: "Interleave agent log lines emitted during the turn",
+				},
+			},
+			Action: runSessionSay,
+		},
+		{
+			Name:  "listen",
+			Usage: "Wait for the agent to say something on its own (a greeting, timer, or follow-up) without sending a turn",
+			Description: `Prints agent output that no turn asked for. Anything already waiting is printed
+immediately; otherwise it waits up to --timeout for the agent to start
+speaking, then keeps printing until the agent goes quiet. Use it after a turn
+that set a timer or asked the agent to follow up on its own.
+
+Exits 0 whether or not the agent spoke; --json reports "silent": true when it
+did not.`,
+			Flags: []cli.Flag{
+				sessionPortFlag,
+				jsonFlag,
+				sessionVerboseFlag,
+				&cli.DurationFlag{
+					Name:  "timeout",
+					Value: 10 * time.Second,
+					Usage: "How long to wait for the agent to start speaking before giving up",
+				},
+			},
+			Action: runSessionListen,
+		},
+		{
+			Name:    "history",
+			Aliases: []string{"transcript"},
+			Usage:   "Print the conversation so far, as the agent recorded it",
+			Description: `Fetches the agent's own chat history, so it reflects exactly what the LLM has
+seen: user and agent messages, tool calls with results, handoffs, and
+instruction/tool changes. Works while a turn is in progress.`,
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlag, sessionVerboseFlag},
+			Action: runSessionHistory,
+		},
+		{
+			Name:  "status",
+			Usage: "Show whether a session is running, which agent is active, and its tools",
+			Description: `Reports the project and entrypoint, the agent process id, the currently active
+agent (after handoffs) with its state, tools, and the first line of its
+instructions, the number of turns so far, and the path of the agent's log
+file. Exits 1 when no session is running. With --json the full instructions
+are included, and "running": false is printed instead of an error.`,
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlag},
+			Action: runSessionStatus,
+		},
+		{
+			Name:  "logs",
+			Usage: "Print the agent process's recent log output",
+			Description: `Prints the agent's stdout/stderr as captured by the session (ANSI colors
+stripped). The whole log is also kept in a file; "status" shows its path. Use
+"say --logs" to see the lines emitted during a single turn instead.`,
+			Flags: []cli.Flag{
+				sessionPortFlag,
+				&cli.IntFlag{Name: "lines", Aliases: []string{"n"}, Value: 50, Usage: "Number of trailing lines (0 for the whole log)"},
+				&cli.BoolFlag{Name: "follow", Aliases: []string{"f"}, Usage: "Keep streaming new lines until interrupted"},
+			},
+			Action: runSessionLogs,
+		},
+		{
+			Name:  "restart",
+			Usage: "Stop the session and start it again with the same agent (picks up code changes)",
+			Description: `Stops the running session, then starts a new one with the same entrypoint and
+port. The agent process is relaunched, so code changes take effect and the
+conversation starts fresh; the new greeting (if any) is printed like "start".`,
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlag},
+			Action: runSessionRestart,
+		},
+		{
+			Name:  "stop",
+			Usage: "Stop the running session and its agent, printing a closing summary",
+			Description: `Shuts the agent down and prints how many turns ran, for how long, which agent
+was active at the end, and where the agent's log file is kept. Add
+--transcript to print the whole conversation and --logs to print the agent's
+entire log before the summary; --json returns everything in one document.`,
+			Flags: []cli.Flag{
+				sessionPortFlag,
+				jsonFlag,
+				sessionVerboseFlag,
+				&cli.BoolFlag{
+					Name:  "transcript",
+					Usage: "Also print the full conversation",
+				},
+				&cli.BoolFlag{
+					Name:  "logs",
+					Usage: "Also print the agent process's entire log",
+				},
+			},
+			Action: runSessionStop,
+		},
+		{
+			Name:   sessionDaemonSubcommand,
+			Hidden: true,
+			Action: func(ctx context.Context, cmd *cli.Command) error {
+				if os.Getenv(envSessionReadyFile) == "" {
+					return fmt.Errorf("`lk agent debugger serve` is an internal entrypoint; run `lk agent debugger start <entrypoint>` instead")
+				}
+				runSessionDaemon()
+				return nil
+			},
+		},
+	},
+}
+
+func sessionAddr(port int) string {
+	return fmt.Sprintf("%s:%d", sessionHost, port)
+}
+
+func runSessionStart(ctx context.Context, cmd *cli.Command) error {
+	projectDir, projectType, entrypoint, err := detectProject(cmd)
+	if err != nil {
+		return err
+	}
+	port := int(cmd.Int("port"))
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
+	return startSessionDaemon(port, projectDir, projectType, entrypoint, cmd.Bool("json"))
+}
+
+// startSessionDaemon launches the detached daemon, waits for it to report
+// ready, then prints the agent's opening message (if it produced one) and a
+// short status line.
+func startSessionDaemon(port int, projectDir string, projectType agentfs.ProjectType, entrypoint string, asJSON bool) error {
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("could not resolve own binary: %w", err)
+	}
+
+	// Readiness file the daemon writes once it is up (or failed) before we
+	// return, so we don't race a TCP probe against the agent's own connect.
+	readyFile, err := os.CreateTemp("", "lk-session-ready-*.txt")
+	if err != nil {
+		return err
+	}
+	readyPath := readyFile.Name()
+	readyFile.Close()
+	defer os.Remove(readyPath)
+
+	// The daemon is detached, so its own stdout/stderr (panics etc.) go to a
+	// temp log rather than the user's terminal.
+	logFile, err := os.CreateTemp("", "lk-session-daemon-*.log")
+	if err != nil {
+		return err
+	}
+
+	daemon := exec.Command(exe, "agent", "debugger", sessionDaemonSubcommand)
+	daemon.Env = append(os.Environ(),
+		envSessionPort+"="+strconv.Itoa(port),
+		envSessionDir+"="+projectDir,
+		envSessionEntry+"="+entrypoint,
+		envSessionPType+"="+string(projectType),
+		envSessionReadyFile+"="+readyPath,
+	)
+	daemon.Stdout = logFile
+	daemon.Stderr = logFile
+	setDetachedProcAttr(daemon)
+
+	if err := daemon.Start(); err != nil {
+		logFile.Close()
+		return fmt.Errorf("failed to start session daemon: %w", err)
+	}
+	logFile.Close()
+
+	status := awaitDaemonReady(daemon, readyPath)
+	switch {
+	case status == "ready":
+	case strings.HasPrefix(status, "error:"):
+		return fmt.Errorf("%s", strings.TrimSpace(strings.TrimPrefix(status, "error:")))
+	default:
+		return fmt.Errorf("session daemon exited before becoming ready (see %s)", logFile.Name())
+	}
+
+	// The daemon held the agent's opening reply (if any) for us; show it.
+	greeting, err := controlRoundTrip(port, controlRequest{Cmd: "pending"}, 15*time.Second)
+	if err != nil {
+		return err
+	}
+	st, _ := controlRoundTrip(port, controlRequest{Cmd: "status"}, 15*time.Second)
+
+	if asJSON {
+		doc := map[string]any{"events": greeting.Events}
+		if st != nil && st.Status != nil {
+			doc["status"] = st.Status
+		}
+		return printJSON(doc)
+	}
+	for _, e := range greeting.Events {
+		e.Earlier = false // shown at start, there is no "this turn" yet
+		if line := renderTurnEvent(e, renderOptions{}); line != "" {
+			out.Result(line)
+		}
+	}
+	if len(greeting.Events) > 0 {
+		out.Result("")
+	}
+	summary := "Session started."
+	if st != nil && st.Status != nil {
+		s := st.Status
+		summary = fmt.Sprintf("Session started. Listening on %s, agent pid %d.", sessionAddr(s.Port), s.Pid)
+		if s.AgentID != "" {
+			summary += fmt.Sprintf(" Agent %q", s.AgentID)
+			if len(s.Tools) > 0 {
+				summary += fmt.Sprintf(" with %d tool(s): %s", len(s.Tools), strings.Join(s.Tools, ", "))
+			} else {
+				summary += " (no tools)"
+			}
+			summary += "."
+		}
+		out.Status(summary)
+		out.Statusf("Agent logs: %s", s.LogPath)
+	} else {
+		out.Status(summary)
+	}
+	out.Status("Next: `lk agent debugger say \"...\"` to talk, `lk agent debugger logs` for agent output, `lk agent debugger stop` when done.")
+	return nil
+}
+
+// awaitDaemonReady waits for the detached daemon to report via the readiness
+// file, returning its status line ("ready" or "error: ...") or "" if the
+// daemon exits or times out without reporting.
+func awaitDaemonReady(daemon *exec.Cmd, readyPath string) string {
+	exited := make(chan struct{})
+	go func() { _ = daemon.Wait(); close(exited) }()
+
+	// The daemon waits up to agentConnectTimeout for the agent to connect and
+	// then up to greetingMaxWait for an opening reply; give it a little more so
+	// its own error report reaches us before we give up.
+	timeout := time.After(agentConnectTimeout + greetingMaxWait + 5*time.Second)
+	for {
+		if status, ok := readReadyStatus(readyPath); ok {
+			return status
+		}
+		select {
+		case <-exited:
+			if status, ok := readReadyStatus(readyPath); ok {
+				return status
+			}
+			return ""
+		case <-timeout:
+			return ""
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+}
+
+// readReadyStatus returns the daemon's status once the readiness file has
+// content (written atomically via rename), or ok=false while it is still empty.
+func readReadyStatus(path string) (string, bool) {
+	data, err := os.ReadFile(path)
+	if err != nil || len(data) == 0 {
+		return "", false
+	}
+	return strings.TrimSpace(string(data)), true
+}
+
+// sayJSON is the --json document `say` prints for one turn.
+type sayJSON struct {
+	Text       string      `json:"text"`
+	Events     []turnEvent `json:"events"`
+	Reply      string      `json:"reply"`
+	Silent     bool        `json:"silent,omitempty"`
+	Error      string      `json:"error,omitempty"`
+	DurationMs int64       `json:"duration_ms"`
+}
+
+func runSessionSay(ctx context.Context, cmd *cli.Command) error {
+	text := strings.TrimSpace(strings.Join(cmd.Args().Slice(), " "))
+	if text == "" && !isatty.IsTerminal(os.Stdin.Fd()) {
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return err
+		}
+		text = strings.TrimSpace(string(data))
+	}
+	if text == "" {
+		return fmt.Errorf("usage: lk agent debugger say <text>  (or pipe the text on stdin)")
+	}
+
+	timeout := cmd.Duration("timeout")
+	conn, err := dialControl(int(cmd.Int("port")))
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	// Safety net behind the daemon-side timeout, so a wedged daemon can't hang us.
+	_ = conn.SetReadDeadline(time.Now().Add(timeout + 15*time.Second))
+
+	if err := writeControlFrame(conn, controlRequest{
+		Cmd:       "say",
+		Text:      text,
+		TimeoutMs: timeout.Milliseconds(),
+		Logs:      cmd.Bool("logs"),
+	}); err != nil {
+		return err
+	}
+
+	asJSON := cmd.Bool("json")
+	opts := renderOptions{Verbose: cmd.Bool("verbose")}
+	doc := sayJSON{Text: text, Events: []turnEvent{}}
+	sawAgentOutput := false
+	final, err := streamControlReplies(conn, func(r controlReply) {
+		if r.Event == nil {
+			return
+		}
+		e := *r.Event
+		if e.Type != "log" && !(e.Type == "message" && e.Role == "user") && !e.Earlier {
+			sawAgentOutput = true
+		}
+		if asJSON {
+			doc.Events = append(doc.Events, e)
+			return
+		}
+		if line := renderTurnEvent(e, opts); line != "" {
+			out.Result(line)
+		}
+	})
+	if err != nil {
+		return err
+	}
+
+	doc.Reply = final.Reply
+	doc.Silent = final.Silent
+	doc.Error = final.Error
+	doc.DurationMs = final.DurationMs
+	if asJSON {
+		if err := printJSON(doc); err != nil {
+			return err
+		}
+		if final.Error != "" {
+			return cli.Exit("", 1)
+		}
+		return nil
+	}
+
+	if final.Error == "" && !sawAgentOutput {
+		out.Result(renderSilentTurn())
+	}
+	if opts.Verbose {
+		out.Result("    " + sessionDimStyle.Render(fmt.Sprintf("⏱ turn took %.1fs", float64(final.DurationMs)/1000)))
+	}
+	out.Result("")
+	if final.Error != "" {
+		return fmt.Errorf("%s", final.Error)
+	}
+	return nil
+}
+
+// listenJSON is the --json document `listen` prints.
+type listenJSON struct {
+	Events     []turnEvent `json:"events"`
+	Reply      string      `json:"reply"`
+	Silent     bool        `json:"silent"`
+	DurationMs int64       `json:"duration_ms"`
+}
+
+func runSessionListen(ctx context.Context, cmd *cli.Command) error {
+	timeout := cmd.Duration("timeout")
+	conn, err := dialControl(int(cmd.Int("port")))
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	// The daemon keeps collecting while the agent is mid-reply, so allow well
+	// past the idle timeout before treating the connection as wedged.
+	_ = conn.SetReadDeadline(time.Now().Add(timeout + defaultSayTimeout + 15*time.Second))
+	go func() {
+		<-ctx.Done()
+		conn.Close() // ctrl-C stops waiting cleanly
+	}()
+
+	if err := writeControlFrame(conn, controlRequest{Cmd: "listen", TimeoutMs: timeout.Milliseconds()}); err != nil {
+		return err
+	}
+
+	asJSON := cmd.Bool("json")
+	opts := renderOptions{Verbose: cmd.Bool("verbose")}
+	doc := listenJSON{Events: []turnEvent{}}
+	final, err := streamControlReplies(conn, func(r controlReply) {
+		if r.Event == nil {
+			return
+		}
+		e := *r.Event
+		e.Earlier = false // everything listen reports is, by definition, unprompted
+		if asJSON {
+			doc.Events = append(doc.Events, e)
+			return
+		}
+		if line := renderTurnEvent(e, opts); line != "" {
+			out.Result(line)
+		}
+	})
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil
+		}
+		return err
+	}
+	if final.Error != "" {
+		return fmt.Errorf("%s", final.Error)
+	}
+	doc.Reply, doc.Silent, doc.DurationMs = final.Reply, final.Silent, final.DurationMs
+	if asJSON {
+		return printJSON(doc)
+	}
+	if final.Silent {
+		out.Statusf("The agent said nothing for %s.", timeout)
+		return nil
+	}
+	out.Result("")
+	return nil
+}
+
+func runSessionHistory(ctx context.Context, cmd *cli.Command) error {
+	reply, err := controlRoundTrip(int(cmd.Int("port")), controlRequest{Cmd: "history"}, 30*time.Second)
+	if err != nil {
+		return err
+	}
+	if cmd.Bool("json") {
+		events := reply.Events
+		if events == nil {
+			events = []turnEvent{}
+		}
+		return printJSON(map[string]any{"events": events})
+	}
+	if len(reply.Events) == 0 {
+		out.Status("No conversation yet.")
+		return nil
+	}
+	opts := renderOptions{Verbose: cmd.Bool("verbose")}
+	for _, e := range reply.Events {
+		if line := renderTurnEvent(e, opts); line != "" {
+			out.Result(line)
+		}
+	}
+	out.Result("")
+	return nil
+}
+
+func runSessionStatus(ctx context.Context, cmd *cli.Command) error {
+	port := int(cmd.Int("port"))
+	reply, err := controlRoundTrip(port, controlRequest{Cmd: "status"}, 15*time.Second)
+	if err != nil {
+		if cmd.Bool("json") {
+			_ = printJSON(map[string]any{"running": false, "port": port, "error": err.Error()})
+			return cli.Exit("", 1)
+		}
+		return err
+	}
+	st := reply.Status
+	if st == nil {
+		return fmt.Errorf("daemon returned no status")
+	}
+	if cmd.Bool("json") {
+		return printJSON(struct {
+			Running bool `json:"running"`
+			*sessionStatus
+		}{true, st})
+	}
+	label := func(s string) string { return util.Dimmed(fmt.Sprintf("  %-14s", s)) }
+	out.Resultf("Session running on %s (pid %d, up %s)\n", sessionAddr(st.Port), st.Pid, (time.Duration(st.UptimeSeconds) * time.Second).String())
+	out.Resultf("%s%s (%s, %s)\n", label("Project:"), st.ProjectDir, agentfs.ProjectType(st.ProjectType).Lang(), st.Entrypoint)
+	agentLine := st.AgentID
+	if agentLine == "" {
+		agentLine = util.Dimmed("(unknown)")
+	}
+	state := st.AgentState
+	if st.TurnInProgress {
+		state += ", turn in progress"
+	}
+	out.Resultf("%s%s (state: %s)\n", label("Agent:"), agentLine, state)
+	if len(st.Tools) > 0 {
+		out.Resultf("%s%s\n", label("Tools:"), strings.Join(st.Tools, ", "))
+	} else {
+		out.Resultf("%s%s\n", label("Tools:"), util.Dimmed("none"))
+	}
+	if st.Instructions != "" {
+		first := strings.TrimSpace(strings.SplitN(st.Instructions, "\n", 2)[0])
+		if len(first) > 100 {
+			first = first[:100] + "…"
+		}
+		if strings.Count(st.Instructions, "\n") > 0 {
+			first += util.Dimmed(" (use --json for the full text)")
+		}
+		out.Resultf("%s%s\n", label("Instructions:"), first)
+	}
+	turns := strconv.Itoa(st.Turns)
+	if st.UnseenEvents > 0 {
+		turns += util.Dimmed(fmt.Sprintf(" (+%d agent event(s) not yet shown; run `lk agent debugger listen` to see them)", st.UnseenEvents))
+	}
+	out.Resultf("%s%s\n", label("Turns:"), turns)
+	out.Resultf("%s%s\n", label("Agent logs:"), st.LogPath)
+	if st.Error != "" {
+		out.Resultf("%s%s\n", label("Warning:"), st.Error)
+	}
+	return nil
+}
+
+func runSessionLogs(ctx context.Context, cmd *cli.Command) error {
+	conn, err := dialControl(int(cmd.Int("port")))
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	follow := cmd.Bool("follow")
+	if !follow {
+		_ = conn.SetReadDeadline(time.Now().Add(15 * time.Second))
+	}
+	lines := int(cmd.Int("lines"))
+	if lines == 0 {
+		lines = -1 // explicit 0: the whole log
+	}
+	if err := writeControlFrame(conn, controlRequest{Cmd: "logs", Lines: lines, Follow: follow}); err != nil {
+		return err
+	}
+	if follow {
+		// Stop cleanly on ctrl-C instead of surfacing a read error.
+		go func() {
+			<-ctx.Done()
+			conn.Close()
+		}()
+	}
+	_, err = streamControlReplies(conn, func(r controlReply) {
+		if r.Line != "" {
+			out.Result(r.Line)
+		}
+	})
+	if err != nil && ctx.Err() != nil {
+		return nil
+	}
+	return err
+}
+
+// stopJSON is the --json document `stop` prints.
+type stopJSON struct {
+	*sessionStatus
+	Events []turnEvent `json:"events,omitempty"`
+	Logs   []string    `json:"logs,omitempty"`
+}
+
+func runSessionStop(ctx context.Context, cmd *cli.Command) error {
+	req := controlRequest{Cmd: "stop", Transcript: cmd.Bool("transcript")}
+	if cmd.Bool("logs") {
+		req.Lines = -1 // the whole log
+	}
+	final, logs, err := stopSession(int(cmd.Int("port")), req)
+	if err != nil {
+		return err
+	}
+	st := final.Status
+
+	if cmd.Bool("json") {
+		return printJSON(stopJSON{sessionStatus: st, Events: final.Events, Logs: logs})
+	}
+
+	if cmd.Bool("transcript") && len(final.Events) > 0 {
+		opts := renderOptions{Verbose: cmd.Bool("verbose")}
+		for _, e := range final.Events {
+			if line := renderTurnEvent(e, opts); line != "" {
+				out.Result(line)
+			}
+		}
+		out.Result("")
+	}
+	if cmd.Bool("logs") {
+		for _, line := range logs {
+			out.Result(line)
+		}
+	}
+
+	if st == nil {
+		out.Status("Session ended.")
+		return nil
+	}
+	agentLabel := ""
+	if st.AgentID != "" {
+		agentLabel = fmt.Sprintf(", ending with agent %q", st.AgentID)
+	}
+	out.Statusf("Session ended. %d turn(s) over %s%s.", st.Turns,
+		(time.Duration(st.UptimeSeconds) * time.Second).String(), agentLabel)
+	if st.LogPath != "" {
+		out.Statusf("Agent log kept at: %s", st.LogPath)
+	}
+	return nil
+}
+
+// stopSession asks the daemon to shut down and returns its closing frame plus
+// any log lines it streamed first.
+func stopSession(port int, req controlRequest) (*controlReply, []string, error) {
+	conn, err := dialControl(port)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer conn.Close()
+	_ = conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	if err := writeControlFrame(conn, req); err != nil {
+		return nil, nil, err
+	}
+	var logs []string
+	final, err := streamControlReplies(conn, func(r controlReply) {
+		if r.Line != "" {
+			logs = append(logs, r.Line)
+		}
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	if final.Error != "" {
+		return nil, nil, fmt.Errorf("%s", final.Error)
+	}
+	return final, logs, nil
+}
+
+func runSessionRestart(ctx context.Context, cmd *cli.Command) error {
+	port := int(cmd.Int("port"))
+	reply, err := controlRoundTrip(port, controlRequest{Cmd: "status"}, 15*time.Second)
+	if err != nil {
+		return err
+	}
+	st := reply.Status
+	if st == nil {
+		return fmt.Errorf("daemon returned no status")
+	}
+	if _, _, err := stopSession(port, controlRequest{Cmd: "stop"}); err != nil {
+		return err
+	}
+	// The daemon frees the port as it exits; wait for it before rebinding.
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		c, derr := net.DialTimeout("tcp", sessionAddr(port), 200*time.Millisecond)
+		if derr != nil {
+			break
+		}
+		c.Close()
+		time.Sleep(100 * time.Millisecond)
+	}
+	out.Statusf("Restarting %s agent (%s in %s)", agentfs.ProjectType(st.ProjectType).Lang(), st.Entrypoint, st.ProjectDir)
+	return startSessionDaemon(port, st.ProjectDir, agentfs.ProjectType(st.ProjectType), st.Entrypoint, cmd.Bool("json"))
+}
+
+// dialControl connects to the session daemon and sends the control preamble.
+func dialControl(port int) (net.Conn, error) {
+	conn, err := net.Dial("tcp", sessionAddr(port))
+	if err != nil {
+		return nil, fmt.Errorf("no session running on %s (run `lk agent debugger start` first)", sessionAddr(port))
+	}
+	if _, err := conn.Write([]byte(sessionMagic)); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	return conn, nil
+}
+
+// controlRoundTrip sends one request and collects replies until the daemon
+// reports done, returning the final frame (with any streamed Events/Line
+// frames folded into it).
+func controlRoundTrip(port int, req controlRequest, timeout time.Duration) (*controlReply, error) {
+	conn, err := dialControl(port)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	_ = conn.SetReadDeadline(time.Now().Add(timeout))
+	if err := writeControlFrame(conn, req); err != nil {
+		return nil, err
+	}
+	var events []turnEvent
+	final, err := streamControlReplies(conn, func(r controlReply) {
+		if r.Event != nil {
+			events = append(events, *r.Event)
+		}
+		events = append(events, r.Events...)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if final.Error != "" {
+		return nil, fmt.Errorf("%s", final.Error)
+	}
+	final.Events = events
+	return final, nil
+}
+
+// streamControlReplies reads frames until one is marked Done (returned) or the
+// connection ends. Non-final frames are handed to onFrame as they arrive.
+func streamControlReplies(conn net.Conn, onFrame func(controlReply)) (*controlReply, error) {
+	for {
+		var reply controlReply
+		if err := readControlFrame(conn, &reply); err != nil {
+			if err == io.EOF {
+				return &controlReply{Done: true}, nil
+			}
+			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+				return nil, fmt.Errorf("timed out waiting for the session daemon to respond")
+			}
+			return nil, err
+		}
+		if reply.Done {
+			// A final frame may still carry payload (events/status/line).
+			if onFrame != nil && (reply.Event != nil || len(reply.Events) > 0 || reply.Line != "") {
+				onFrame(reply)
+			}
+			return &reply, nil
+		}
+		if onFrame != nil {
+			onFrame(reply)
+		}
+	}
+}
+
+func printJSON(v any) error {
+	enc := json.NewEncoder(out.ResultWriter())
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
+}
+
+// Control protocol: a 4-byte big-endian length prefix + a JSON payload, mirroring
+// pkg/ipc's framing but with JSON instead of protobuf (no new protobufs needed).
+type controlRequest struct {
+	Cmd        string `json:"cmd"`                  // say | listen | pending | history | status | logs | stop
+	Text       string `json:"text,omitempty"`       // say: the user's turn
+	TimeoutMs  int64  `json:"timeout_ms,omitempty"` // say: max wait for the reply; listen: max wait for activity to begin
+	Logs       bool   `json:"logs,omitempty"`       // say: stream agent log lines during the turn
+	Lines      int    `json:"lines,omitempty"`      // logs: number of trailing lines; stop: -1 dumps the whole log
+	Follow     bool   `json:"follow,omitempty"`     // logs: keep streaming after the snapshot
+	Transcript bool   `json:"transcript,omitempty"` // stop: include the conversation in the closing frame
+}
+
+type controlReply struct {
+	Event      *turnEvent     `json:"event,omitempty"`  // say: one streamed event
+	Events     []turnEvent    `json:"events,omitempty"` // history/pending: a batch
+	Status     *sessionStatus `json:"status,omitempty"`
+	Line       string         `json:"line,omitempty"` // logs: one log line
+	Done       bool           `json:"done,omitempty"`
+	Error      string         `json:"error,omitempty"`
+	Reply      string         `json:"reply,omitempty"`  // say: concatenated assistant text
+	Silent     bool           `json:"silent,omitempty"` // say: the agent produced no output
+	DurationMs int64          `json:"duration_ms,omitempty"`
+}
+
+func writeControlFrame(w io.Writer, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	var hdr [4]byte
+	binary.BigEndian.PutUint32(hdr[:], uint32(len(data)))
+	if _, err := w.Write(hdr[:]); err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
+}
+
+func readControlFrame(r io.Reader, v any) error {
+	var hdr [4]byte
+	if _, err := io.ReadFull(r, hdr[:]); err != nil {
+		return err
+	}
+	length := binary.BigEndian.Uint32(hdr[:])
+	if length > 8<<20 {
+		return fmt.Errorf("control frame too large: %d bytes", length)
+	}
+	data := make([]byte, length)
+	if _, err := io.ReadFull(r, data); err != nil {
+		return err
+	}
+	return json.Unmarshal(data, v)
+}

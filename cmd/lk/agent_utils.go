@@ -107,7 +107,7 @@ var consoleCrashSignals = []string{
 }
 
 // buildConsoleArgs builds the agent subprocess argv for console mode, shared by
-// `lk agent console` and the `lk agent daemon` daemon.
+// `lk agent console` and the `lk agent debugger` daemon.
 func buildConsoleArgs(addr string, record bool) []string {
 	args := []string{"console", "--connect-addr", addr}
 	if record {

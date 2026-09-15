@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -36,15 +37,19 @@ import (
 
 func main() {
 	app := &cli.Command{
-		Name:                   "lk",
-		Usage:                  "CLI client to LiveKit",
-		Description:            "A suite of command line utilities allowing you to access LiveKit APIs services, interact with rooms in realtime, and perform load testing simulations.",
-		Version:                livekitcli.Version,
-		EnableShellCompletion:  true,
-		Suggest:                true,
-		HideHelpCommand:        true,
-		UseShortOptionHandling: true,
-		Flags:                  globalFlags,
+		Name:  "lk",
+		Usage: "The LiveKit command line tool",
+		Description: `Build, test, and deploy LiveKit agents, and work with rooms, LiveKit Cloud,
+and telephony from the terminal.
+
+Docs: https://docs.livekit.io/intro/basics/cli/`,
+		CustomRootCommandHelpTemplate: rootHelpTemplate,
+		Version:                       livekitcli.Version,
+		EnableShellCompletion:         true,
+		Suggest:                       true,
+		HideHelpCommand:               true,
+		UseShortOptionHandling:        true,
+		Flags:                         globalFlags,
 		// --experimental-auth and --legacy-auth pick opposite auth modes; you may
 		// pass at most one. (These flags are registered via this group, not
 		// globalFlags.)
@@ -72,6 +77,18 @@ func main() {
 		Before: initLogger,
 	}
 
+	categorizeAgentCommands()
+	cli.HelpPrinter = func(w io.Writer, templ string, data any) {
+		// cli/v3 renders `lk agent --help` with its stock subcommand template
+		// regardless of CustomHelpTemplate; swap in the grouped one here.
+		if c, ok := data.(*cli.Command); ok && c.Name == "agent" && templ == cli.SubcommandHelpTemplate {
+			templ = agentHelpTemplate
+		}
+		cli.HelpPrinterCustom(w, templ, data, map[string]any{
+			"rootSections":  rootHelpSections,
+			"agentSections": agentHelpSections,
+		})
+	}
 	app.Commands = append(app.Commands, AppCommands...)
 	app.Commands = append(app.Commands, AgentCommands...)
 	app.Commands = append(app.Commands, AnalyticsCommands...)
@@ -197,4 +214,113 @@ func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return nil
+}
+
+// Root help is laid out like a product CLI (compare `modal --help`): a short
+// description, then every command grouped into named sections with a one-line
+// summary each. Agent subcommands are listed inline as "agent <name>" so the
+// agent workflow is visible from `lk --help` rather than hidden behind one row.
+const rootHelpTemplate = `NAME:
+   {{template "helpNameTemplate" .}}
+
+USAGE:
+   {{.FullName}} [global options] command [command options] [arguments...]
+
+VERSION:
+   {{.Version}}
+
+DESCRIPTION:
+   {{template "descriptionTemplate" .}}
+{{range rootSections .}}
+{{.Title}}:{{range .Rows}}
+   {{.Name}}{{"\t"}}{{.Usage}}{{end}}
+{{end}}
+Run "lk <command> --help" for details; "lk a" is short for "lk agent".
+{{if .VisibleFlagCategories}}
+GLOBAL OPTIONS:{{template "visibleFlagCategoryTemplate" .}}{{else if .VisibleFlags}}
+GLOBAL OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}
+`
+
+type helpRow struct{ Name, Usage string }
+
+type helpSection struct {
+	Title string
+	Rows  []helpRow
+}
+
+// rootHelpGroups orders the non-agent commands into sections. Anything not
+// listed lands in a trailing OTHER section, so a new command never disappears.
+var rootHelpGroups = []struct {
+	title string
+	names []string
+}{
+	{"PROJECTS", []string{"project", "cloud", "app"}},
+	{"ROOMS AND MEDIA", []string{"room", "token", "dispatch", "egress", "ingress"}},
+	{"TELEPHONY", []string{"sip", "number"}},
+	{"TOOLS", []string{"docs", "perf"}},
+}
+
+// agentHelpSections groups a command's visible subcommands by Category, in
+// first-seen order, for `lk agent --help`. cli/v3 only populates its own
+// category list once the subcommand runs, which is after help is rendered.
+func agentHelpSections(cmd *cli.Command) []helpSection {
+	var sections []helpSection
+	index := map[string]int{}
+	for _, sub := range cmd.VisibleCommands() {
+		i, ok := index[sub.Category]
+		if !ok {
+			i = len(sections)
+			index[sub.Category] = i
+			sections = append(sections, helpSection{Title: sub.Category})
+		}
+		sections[i].Rows = append(sections[i].Rows, helpRow{Name: strings.Join(sub.Names(), ", "), Usage: sub.Usage})
+	}
+	return sections
+}
+
+// rootHelpSections builds the sections rendered by rootHelpTemplate from the
+// live command tree, so summaries stay in sync with each command's Usage.
+func rootHelpSections(root *cli.Command) []helpSection {
+	remaining := map[string]*cli.Command{}
+	for _, c := range root.VisibleCommands() {
+		remaining[c.Name] = c
+	}
+
+	var sections []helpSection
+	if agentCmd, ok := remaining["agent"]; ok {
+		local := helpSection{Title: "AGENTS"}
+		cloud := helpSection{Title: "AGENT DEPLOYMENT (LIVEKIT CLOUD)"}
+		for _, sub := range agentCmd.VisibleCommands() {
+			row := helpRow{Name: "agent " + sub.Name, Usage: sub.Usage}
+			if sub.Category == agentCategoryCloud {
+				cloud.Rows = append(cloud.Rows, row)
+			} else {
+				local.Rows = append(local.Rows, row)
+			}
+		}
+		sections = append(sections, local, cloud)
+		delete(remaining, "agent")
+	}
+	for _, g := range rootHelpGroups {
+		sec := helpSection{Title: g.title}
+		for _, name := range g.names {
+			if c, ok := remaining[name]; ok {
+				sec.Rows = append(sec.Rows, helpRow{Name: strings.Join(c.Names(), ", "), Usage: c.Usage})
+				delete(remaining, name)
+			}
+		}
+		if len(sec.Rows) > 0 {
+			sections = append(sections, sec)
+		}
+	}
+	other := helpSection{Title: "OTHER"}
+	for _, c := range root.VisibleCommands() {
+		if _, ok := remaining[c.Name]; ok {
+			other.Rows = append(other.Rows, helpRow{Name: strings.Join(c.Names(), ", "), Usage: c.Usage})
+		}
+	}
+	if len(other.Rows) > 0 {
+		sections = append(sections, other)
+	}
+	return sections
 }

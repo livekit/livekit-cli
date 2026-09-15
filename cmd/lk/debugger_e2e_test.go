@@ -31,7 +31,7 @@ import (
 
 const sessionE2ETimeout = 5 * time.Second
 
-// TestSessionE2E drives the real `lk agent daemon` lifecycle end to end:
+// TestSessionE2E drives the real `lk agent debugger` lifecycle end to end:
 // build the binary, `start` the detached daemon, `say` to make the model echo
 // a token (asserting the CLI→daemon→agent→LLM round-trip), `stop`, confirm a
 // second `say` cannot still reach the agent, then confirm the daemon exited
@@ -99,7 +99,7 @@ func TestSessionE2E(t *testing.T) {
 
 	// Best-effort teardown so a mid-run failure doesn't leave the daemon alive.
 	t.Cleanup(func() {
-		_, _ = run(sessionE2ETimeout, "agent", "daemon", "stop", "--port", port)
+		_, _ = run(sessionE2ETimeout, "agent", "debugger", "stop", "--port", port)
 	})
 
 	// start: launches the detached daemon and returns once the agent is ready.
@@ -107,20 +107,33 @@ func TestSessionE2E(t *testing.T) {
 	// so give it just over that: on a cold Windows runner the chain of first
 	// execs (lk.exe, uv, python) can alone eat a tighter budget, and killing
 	// the command mid-wait loses the CLI's own error report.
-	startOut, err := run(70*time.Second, "agent", "daemon", "start", "--port", port, entrypoint)
+	startOut, err := run(70*time.Second, "agent", "debugger", "start", "--port", port, entrypoint)
 	require.NoError(t, err, "session start failed:\n%s", startOut)
 	require.Contains(t, startOut, "Session started.", "start did not report readiness:\n%s", startOut)
 
 	// say: the token appears once in the echoed prompt and again in the reply, so
 	// >=2 occurrences proves the agent answered, not just the local echo.
 	token := "PINEAPPLE7351"
-	sayOut, err := run(sessionE2ETimeout, "agent", "daemon", "say", "--port", port,
+	sayOut, err := run(sessionE2ETimeout, "agent", "debugger", "say", "--port", port,
 		"Repeat this token back to me exactly and nothing else: "+token)
 	require.NoError(t, err, "session say failed:\n%s", sayOut)
 	require.GreaterOrEqualf(t, strings.Count(sayOut, token), 2,
 		"agent did not echo the token back; say output:\n%s", sayOut)
 
-	stopOut, err := run(sessionE2ETimeout, "agent", "daemon", "stop", "--port", port)
+	// history: the agent's own record of the conversation must contain the turn.
+	histOut, err := run(sessionE2ETimeout, "agent", "debugger", "history", "--port", port)
+	require.NoError(t, err, "session history failed:\n%s", histOut)
+	require.GreaterOrEqualf(t, strings.Count(histOut, token), 2,
+		"history did not contain both the prompt and the reply:\n%s", histOut)
+
+	// status/logs: both must answer while the session is up.
+	statusOut, err := run(sessionE2ETimeout, "agent", "debugger", "status", "--port", port)
+	require.NoError(t, err, "session status failed:\n%s", statusOut)
+	require.Contains(t, statusOut, "Session running", "status did not report a running session:\n%s", statusOut)
+	logsOut, err := run(sessionE2ETimeout, "agent", "debugger", "logs", "-n", "5", "--port", port)
+	require.NoError(t, err, "session logs failed:\n%s", logsOut)
+
+	stopOut, err := run(sessionE2ETimeout, "agent", "debugger", "stop", "--port", port)
 	require.NoError(t, err, "session stop failed:\n%s", stopOut)
 	require.Contains(t, stopOut, "Session ended.", "stop did not confirm shutdown:\n%s", stopOut)
 
@@ -129,7 +142,7 @@ func TestSessionE2E(t *testing.T) {
 
 	// After a successful match and shutdown, another say must not reach a live
 	// agent or reproduce the token.
-	afterStopSay, err := runCapture(sessionE2ETimeout, "agent", "daemon", "say", "--port", port,
+	afterStopSay, err := runCapture(sessionE2ETimeout, "agent", "debugger", "say", "--port", port,
 		"Repeat this token back to me exactly and nothing else: "+token)
 	afterStopSayOut := afterStopSay.stdout + afterStopSay.stderr
 	require.Error(t, err, "session say unexpectedly succeeded after stop:\n%s", afterStopSayOut)
