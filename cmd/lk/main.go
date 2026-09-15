@@ -70,6 +70,10 @@ func main() {
 			},
 		},
 		Before: initLogger,
+		After: func(context.Context, *cli.Command) error {
+			flushBanner()
+			return nil
+		},
 	}
 
 	app.Commands = append(app.Commands, AppCommands...)
@@ -109,7 +113,8 @@ func main() {
 
 	checkForLegacyName()
 
-	if err := app.Run(ctx, os.Args); err != nil {
+	err := app.Run(ctx, os.Args)
+	if err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
 		// Outside the Printer's reach (it may not be initialized yet), so the
 		// color profile has to be applied here too — Lip Gloss v2 emits styles
@@ -170,6 +175,8 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 		}
 	}
 	util.DetectBackground()
+
+	deferBanner(ctx)
 
 	// Nudge users still on API-key auth toward the new account-based flow.
 	maybeShowUpgradeNotice(cmd, conf)
