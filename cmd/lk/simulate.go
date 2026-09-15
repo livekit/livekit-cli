@@ -89,7 +89,7 @@ var simulateCommand = &cli.Command{
 			Usage: "Max simulations running in parallel (default: server-side limit)",
 		},
 		&cli.IntFlag{
-			Name:    "repeats",
+			Name:    "samples",
 			Aliases: []string{"k"},
 			Usage:   "Run every scenario `K` times and report pass@k (passed at least once) and pass^k (passed every time). Requires --scenarios",
 		},
@@ -271,7 +271,7 @@ type simulateConfig struct {
 	pc             *config.ProjectConfig
 	numSimulations int32
 	concurrency    int32
-	repeats        int32
+	samples        int32
 	mode           simulateMode
 	simulationMode livekit.SimulationMode
 	agentName      string
@@ -378,14 +378,14 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 
 	numSimulations := int32(cmd.Int("num-simulations"))
 	concurrency := int32(cmd.Int("concurrency"))
-	repeats := int32(cmd.Int("repeats"))
+	samples := int32(cmd.Int("samples"))
 	liveAgentName := cmd.String("agent-name")
 
 	// never auto-discovered: an explicit --scenarios file is the source of
 	// truth, otherwise scenarios are generated from the agent's source
 	scenariosPath := cmd.String("scenarios")
-	if repeats > 1 && scenariosPath == "" {
-		return fmt.Errorf("--repeats requires --scenarios (generated scenarios are not repeated)")
+	if samples > 1 && scenariosPath == "" {
+		return fmt.Errorf("--samples requires --scenarios (generated scenarios are not sampled more than once)")
 	}
 
 	var (
@@ -459,7 +459,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		pc:             pc,
 		numSimulations: numSimulations,
 		concurrency:    concurrency,
-		repeats:        repeats,
+		samples:        samples,
 		mode:           mode,
 		simulationMode: simulationMode,
 		agentName:      agentName,
@@ -656,7 +656,7 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 	}
 	if c.mode == modeScenarios {
 		req.ScenarioGroup = c.scenarioGroup
-		req.Repeats = c.repeats
+		req.Samples = c.samples
 	}
 
 	resp, err := c.client.CreateSimulationRun(ctx, req)
@@ -838,7 +838,7 @@ func sortedJobs(run *livekit.SimulationRun) []*livekit.SimulationRun_Job {
 // (pass@k) and every time (pass^k). Zero scenarios when the run did not
 // repeat, so callers can skip the line.
 func scenarioPassCounts(run *livekit.SimulationRun) (scenarios, passAny, passAll int) {
-	k := int(run.GetRepeats())
+	k := int(run.GetSamples())
 	if k < 2 {
 		return
 	}
@@ -882,7 +882,7 @@ func passRateLine(run *livekit.SimulationRun) string {
 	if scenarios == 0 {
 		return ""
 	}
-	k := run.GetRepeats()
+	k := run.GetSamples()
 	return fmt.Sprintf("pass@%d %d/%d (%.2f), pass^%d %d/%d (%.2f)",
 		k, passAny, scenarios, float64(passAny)/float64(scenarios),
 		k, passAll, scenarios, float64(passAll)/float64(scenarios))
@@ -890,10 +890,10 @@ func passRateLine(run *livekit.SimulationRun) string {
 
 // attemptSuffix marks a job's attempt when the run repeated scenarios.
 func attemptSuffix(run *livekit.SimulationRun, job *livekit.SimulationRun_Job) string {
-	if run.GetRepeats() < 2 || job.GetAttempt() == 0 {
+	if run.GetSamples() < 2 || job.GetAttempt() == 0 {
 		return ""
 	}
-	return fmt.Sprintf(" (attempt %d/%d)", job.GetAttempt(), run.GetRepeats())
+	return fmt.Sprintf(" (attempt %d/%d)", job.GetAttempt(), run.GetSamples())
 }
 
 func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, failed int) {

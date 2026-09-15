@@ -31,7 +31,7 @@ func TestScenarioPassCounts(t *testing.T) {
 		failed  = livekit.SimulationRun_Job_STATUS_FAILED
 		running = livekit.SimulationRun_Job_STATUS_RUNNING
 	)
-	run := &livekit.SimulationRun{Repeats: 2, Jobs: []*livekit.SimulationRun_Job{
+	run := &livekit.SimulationRun{Samples: 2, Jobs: []*livekit.SimulationRun_Job{
 		attemptJob("SRJ_1", "SCN_a", 1, done), attemptJob("SRJ_2", "SCN_a", 2, done), // pass^k
 		attemptJob("SRJ_3", "SCN_b", 1, done), attemptJob("SRJ_4", "SCN_b", 2, failed), // pass@k only
 		attemptJob("SRJ_5", "SCN_c", 1, failed), attemptJob("SRJ_6", "SCN_c", 2, failed), // neither
@@ -44,13 +44,13 @@ func TestScenarioPassCounts(t *testing.T) {
 	require.Equal(t, 1, passAll)
 	require.Equal(t, "pass@2 2/3 (0.67), pass^2 1/3 (0.33)", passRateLine(run))
 
-	run.Repeats = 1
+	run.Samples = 1
 	require.Equal(t, "", passRateLine(run))
 }
 
 func TestSortedJobs_GroupsAttemptsInScenarioOrder(t *testing.T) {
 	run := &livekit.SimulationRun{
-		Repeats:       2,
+		Samples:       2,
 		ScenarioGroup: &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Id: "SCN_b"}, {Id: "SCN_a"}}},
 		Jobs: []*livekit.SimulationRun_Job{
 			attemptJob("SRJ_1", "SCN_a", 2, 0),
@@ -70,7 +70,7 @@ func TestSortedJobs_GroupsAttemptsInScenarioOrder(t *testing.T) {
 func repeatedFixture() *simulateModel {
 	m := runningFixture()
 	m.run = &livekit.SimulationRun{
-		Id: "SR_fixture0001", Status: livekit.SimulationRun_STATUS_RUNNING, Repeats: 2,
+		Id: "SR_fixture0001", Status: livekit.SimulationRun_STATUS_RUNNING, Samples: 2,
 		ScenarioGroup: &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Id: "SCN_a"}, {Id: "SCN_b"}}},
 		Jobs: []*livekit.SimulationRun_Job{
 			attemptJob("SRJ_a1", "SCN_a", 1, livekit.SimulationRun_Job_STATUS_COMPLETED),
