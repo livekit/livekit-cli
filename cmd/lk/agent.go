@@ -189,7 +189,7 @@ var (
 
 	regionFlag = &cli.StringFlag{
 		Name:     "region",
-		Usage:    "Region to deploy the agent to. If unset, will deploy to the nearest region.",
+		Usage:    "Region to deploy the agent to. On create, defaults to the nearest region; on deploy, to every region in livekit.toml.",
 		Required: false,
 	}
 
@@ -694,7 +694,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if configExists && lkConfig.Agent != nil {
+	if configExists && lkConfig.HasAgent() {
 		out.Statusf("Using agent configuration [%s]", util.Accented(tomlFilename))
 	} else {
 		lkConfig = config.NewLiveKitTOML(subdomainMatches[1]).WithDefaultAgent()
@@ -738,9 +738,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("unable to create agent: %w", err)
 		}
 		agentID := created.AgentId
-		lkConfig.Agent.ID = agentID
-		lkConfig.Agent.Name = created.AgentName
-		if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
+		if err := recordCreatedAgent(ctx, cmd, region, agentID, created.AgentName); err != nil {
 			return err
 		}
 		out.Statusf("Created agent with ID [%s]", util.Accented(agentID))
@@ -793,9 +791,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to create agent: %w", err)
 	}
 
-	lkConfig.Agent.ID = resp.AgentId
-	lkConfig.Agent.Name = resp.AgentName
-	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
+	if err := recordCreatedAgent(ctx, cmd, region, resp.AgentId, resp.AgentName); err != nil {
 		return err
 	}
 
@@ -817,7 +813,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			out.Status("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
+			return agentsClient.StreamLogs(ctx, "deploy", resp.AgentId, "", os.Stdout, resp.ServerRegions[0])
 		}
 	}
 	return nil
@@ -858,12 +854,12 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		if configExists && lkConfig.HasAgent() {
-			agentID = lkConfig.Agent.ID
+			agentID, err = configuredAgentID(cmd)
 		} else {
 			agentID, err = selectAgent(ctx, cmd, false)
-			if err != nil {
-				return err
-			}
+		}
+		if err != nil {
+			return err
 		}
 	}
 
@@ -888,10 +884,8 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 
 	agent := response.Agents[0]
 	lkConfig := config.NewLiveKitTOML(matches[1])
-	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
-		ID:   agent.AgentId,
-		Name: agent.AgentName,
-	}
+	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{Name: agent.AgentName}
+	lkConfig.SetAgentID("", agent.AgentId, "")
 
 	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 		return err
@@ -900,7 +894,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
-	agentId, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
+	targets, err := deployTargets(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -922,10 +916,13 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	imageRef := cmd.String("image")
 	imageTar := cmd.String("image-tar")
 	if imageRef != "" || imageTar != "" {
-		if err := deployPrebuiltImageTo(buildContext, agentId, imageRef, imageTar, secrets, attrs); err != nil {
-			return err
+		for _, t := range targets {
+			t.announce()
+			if err := deployPrebuiltImageTo(buildContext, t.id, imageRef, imageTar, secrets, attrs); err != nil {
+				return err
+			}
+			out.Status("Deployed agent")
 		}
-		out.Status("Deployed agent")
 		return nil
 	}
 
@@ -954,11 +951,124 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		out.Statusf("Using deployment [%s]", util.Accented(agentDeployment))
 	}
 
-	if err := deploySource(buildContext, agentId, secrets, attrs, agentDeployment); err != nil {
-		return err
+	for _, t := range targets {
+		t.announce()
+		if err := deploySource(buildContext, t.id, secrets, attrs, agentDeployment); err != nil {
+			return err
+		}
+		reportDeployment(ctx, t.id, agentDeployment)
 	}
-	reportDeployment(ctx, agentId, agentDeployment)
 	return nil
+}
+
+type deployTarget struct {
+	region string // "" for a single-region agent
+	id     string
+}
+
+func (t deployTarget) announce() {
+	if t.region == "" {
+		out.Statusf("Using agent [%s]", util.Accented(t.id))
+		return
+	}
+	out.Statusf("Deploying agent [%s] to [%s]", util.Accented(t.id), util.Accented(t.region))
+}
+
+// deployTargets resolves what `lk agent deploy` deploys: the one agent for
+// --region, or every region listed in livekit.toml.
+func deployTargets(ctx context.Context, cmd *cli.Command) ([]deployTarget, error) {
+	configExists, err := requireConfig(workingDir, tomlFilename)
+	if err != nil && configExists {
+		return nil, err
+	}
+	if !configExists {
+		id, err := selectAgent(ctx, cmd, false)
+		if err != nil {
+			return nil, err
+		}
+		return []deployTarget{{id: id}}, nil
+	}
+	if !lkConfig.HasAgent() {
+		return nil, fmt.Errorf("no agent config found in [%s]", tomlFilename)
+	}
+	ids := lkConfig.AgentIDs()
+	if cmd.IsSet("region") || len(ids) <= 1 {
+		id, err := lkConfig.AgentID(cmd.String("region"))
+		if err != nil {
+			return nil, err
+		}
+		return []deployTarget{{region: cmd.String("region"), id: id}}, nil
+	}
+	targets := make([]deployTarget, 0, len(ids))
+	for _, region := range slices.Sorted(maps.Keys(ids)) {
+		targets = append(targets, deployTarget{region: region, id: ids[region]})
+	}
+	return targets, nil
+}
+
+// configuredAgentID picks one agent from livekit.toml: the only one, the one
+// for --region, or an interactive choice when the file lists several regions.
+func configuredAgentID(cmd *cli.Command) (string, error) {
+	ids := lkConfig.AgentIDs()
+	if cmd.IsSet("region") || len(ids) <= 1 {
+		return lkConfig.AgentID(cmd.String("region"))
+	}
+	if SkipPrompts(cmd) {
+		return "", fmt.Errorf("non-interactive mode: %s lists %d regions, set --id", tomlFilename, len(ids))
+	}
+	var region string
+	if err := huh.NewSelect[string]().
+		Title("Select a region").
+		Options(huh.NewOptions(slices.Sorted(maps.Keys(ids))...)...).
+		Value(&region).
+		WithTheme(util.FormTheme()).
+		Run(); err != nil {
+		return "", err
+	}
+	return ids[region], nil
+}
+
+// recordCreatedAgent saves the new agent to livekit.toml. A create with
+// --region into a file that already has an agent adds (or replaces) that
+// region's entry; otherwise the new agent replaces the existing one.
+func recordCreatedAgent(ctx context.Context, cmd *cli.Command, region, agentID, agentName string) error {
+	if lkConfig.Agent == nil {
+		lkConfig.WithDefaultAgent()
+	}
+	existing := lkConfig.AgentIDs()
+	flatID, flat := existing[""]
+	if len(existing) == 0 || (flat && !cmd.IsSet("region")) {
+		lkConfig.Cloud = &config.LiveKitTOMLCloudConfig{ID: agentID}
+		lkConfig.Agent.Name = agentName
+		return lkConfig.SaveTOMLFile(workingDir, tomlFilename)
+	}
+
+	existingRegion := ""
+	if flat {
+		var err error
+		if existingRegion, err = agentRegion(ctx, flatID); err != nil {
+			return err
+		}
+	}
+	lkConfig.SetAgentID(region, agentID, existingRegion)
+	if lkConfig.Agent.Name == "" {
+		lkConfig.Agent.Name = agentName
+	} else if agentName != lkConfig.Agent.Name {
+		out.Warnf("Cloud named the [%s] agent [%s]; %s keeps [%s]", region, agentName, tomlFilename, lkConfig.Agent.Name)
+	}
+	return lkConfig.SaveTOMLFile(workingDir, tomlFilename)
+}
+
+// agentRegion returns the region agentID is deployed in.
+func agentRegion(ctx context.Context, agentID string) (string, error) {
+	resp, err := agentsClient.ListAgents(ctx, &lkproto.ListAgentsRequest{AgentId: agentID})
+	if err != nil {
+		return "", fmt.Errorf("unable to look up region of agent [%s]: %w", agentID, err)
+	}
+	if len(resp.Agents) == 0 || len(resp.Agents[0].AgentDeployments) == 0 {
+		return "", fmt.Errorf("agent [%s] has no deployment; pass its region in %s under [cloud.<region>]", agentID, tomlFilename)
+	}
+	return resp.Agents[0].AgentDeployments[0].Region, nil
 }
 
 // deployPrebuiltImageTo updates the agent's secrets, if any, then pushes the
@@ -1245,9 +1355,13 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	if !lkConfig.HasAgent() {
 		return fmt.Errorf("no agent config found in [%s]", tomlFilename)
 	}
+	agentID, err := configuredAgentID(cmd)
+	if err != nil {
+		return err
+	}
 
 	req := &lkproto.UpdateAgentRequest{
-		AgentId: lkConfig.Agent.ID,
+		AgentId: agentID,
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -1259,7 +1373,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var resp *lkproto.UpdateAgentResponse
-	err = out.Await("Updating agent ["+util.Accented(lkConfig.Agent.ID)+"]", ctx, func(ctx context.Context) error {
+	err = out.Await("Updating agent ["+util.Accented(agentID)+"]", ctx, func(ctx context.Context) error {
 		var clientErr error
 		resp, clientErr = agentsClient.UpdateAgent(ctx, req)
 		return clientErr
@@ -1272,7 +1386,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.Success {
-		out.Statusf("Updated agent [%s]", util.Accented(lkConfig.Agent.ID))
+		out.Statusf("Updated agent [%s]", util.Accented(agentID))
 		err = lkConfig.SaveTOMLFile("", tomlFilename)
 		return err
 	}
@@ -1798,7 +1912,10 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 			if !lkConfig.HasAgent() {
 				return "", fmt.Errorf("no agent config found in [%s]", tomlFilename)
 			}
-			agentID = lkConfig.Agent.ID
+			agentID, err = configuredAgentID(cmd)
+			if err != nil {
+				return "", err
+			}
 		} else {
 			agentID, err = selectAgent(ctx, cmd, excludeEmptyVersion)
 			if err != nil {
