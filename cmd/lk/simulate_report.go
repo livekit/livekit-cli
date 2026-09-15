@@ -173,7 +173,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 		return
 	}
 
-	for i, job := range run.Jobs {
+	for i, job := range sortedJobs(run) {
 		icon := "⏺"
 		switch job.Status {
 		case livekit.SimulationRun_Job_STATUS_COMPLETED:
@@ -186,6 +186,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 		if label == "" {
 			label = fmt.Sprintf("Job %d", i+1)
 		}
+		label += sampleSuffix(run, job)
 
 		fmt.Fprintf(w, "::group::%s %s (%s)\n", icon, label, job.Id)
 
@@ -251,6 +252,9 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.S
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "::group::Summary")
 	fmt.Fprintf(w, "%d total, %d passed, %d failed\n", total, passed, failed)
+	if line := passRateLine(run); line != "" {
+		fmt.Fprintln(w, line)
+	}
 
 	if summary.GoingWell != "" {
 		fmt.Fprintln(w)

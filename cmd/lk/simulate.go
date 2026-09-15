@@ -23,6 +23,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -86,6 +87,11 @@ var simulateCommand = &cli.Command{
 		&cli.IntFlag{
 			Name:  "concurrency",
 			Usage: "Max simulations running in parallel (default: server-side limit)",
+		},
+		&cli.IntFlag{
+			Name:    "samples",
+			Aliases: []string{"k"},
+			Usage:   "Run every scenario `K` times and report pass@k (passed at least once) and pass^k (passed every time). Requires --scenarios",
 		},
 		&cli.StringFlag{
 			Name:  "scenarios",
@@ -265,6 +271,7 @@ type simulateConfig struct {
 	pc             *config.ProjectConfig
 	numSimulations int32
 	concurrency    int32
+	samples        int32
 	mode           simulateMode
 	simulationMode livekit.SimulationMode
 	agentName      string
@@ -371,11 +378,15 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 
 	numSimulations := int32(cmd.Int("num-simulations"))
 	concurrency := int32(cmd.Int("concurrency"))
+	samples := int32(cmd.Int("samples"))
 	liveAgentName := cmd.String("agent-name")
 
 	// never auto-discovered: an explicit --scenarios file is the source of
 	// truth, otherwise scenarios are generated from the agent's source
 	scenariosPath := cmd.String("scenarios")
+	if samples > 1 && scenariosPath == "" {
+		return fmt.Errorf("--samples requires --scenarios (generated scenarios are not sampled more than once)")
+	}
 
 	var (
 		agentName   string
@@ -448,6 +459,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		pc:             pc,
 		numSimulations: numSimulations,
 		concurrency:    concurrency,
+		samples:        samples,
 		mode:           mode,
 		simulationMode: simulationMode,
 		agentName:      agentName,
@@ -644,6 +656,7 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 	}
 	if c.mode == modeScenarios {
 		req.ScenarioGroup = c.scenarioGroup
+		req.Samples = c.samples
 	}
 
 	resp, err := c.client.CreateSimulationRun(ctx, req)
@@ -795,6 +808,92 @@ func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
 	} else {
 		out.Status("Run cancelled")
 	}
+}
+
+// sortedJobs orders a run's jobs so every sample of a scenario sits together,
+// scenarios in scenarios.yaml order, then by job ID: the backend's ordering
+// shuffles rows as statuses change.
+func sortedJobs(run *livekit.SimulationRun) []*livekit.SimulationRun_Job {
+	order := make(map[string]int, len(run.GetScenarioGroup().GetScenarios()))
+	for i, sc := range run.GetScenarioGroup().GetScenarios() {
+		order[sc.GetId()] = i
+	}
+	jobs := make([]*livekit.SimulationRun_Job, len(run.Jobs))
+	copy(jobs, run.Jobs)
+	sort.Slice(jobs, func(i, j int) bool {
+		a, b := jobs[i], jobs[j]
+		if a.GetScenarioId() != b.GetScenarioId() {
+			return order[a.GetScenarioId()] < order[b.GetScenarioId()]
+		}
+		if a.GetSample() != b.GetSample() {
+			return a.GetSample() < b.GetSample()
+		}
+		return a.GetId() < b.GetId()
+	})
+	return jobs
+}
+
+// scenarioPassCounts folds a repeated run's jobs into scenarios: how many
+// have every sample finished, and of those how many passed at least once
+// (pass@k) and every time (pass^k). Zero scenarios when the run did not
+// repeat, so callers can skip the line.
+func scenarioPassCounts(run *livekit.SimulationRun) (scenarios, passAny, passAll int) {
+	k := int(run.GetSamples())
+	if k < 2 {
+		return
+	}
+	type tally struct{ terminal, passed int }
+	tallies := map[string]*tally{}
+	for _, j := range run.Jobs {
+		if j.GetScenarioId() == "" {
+			continue
+		}
+		t := tallies[j.GetScenarioId()]
+		if t == nil {
+			t = &tally{}
+			tallies[j.GetScenarioId()] = t
+		}
+		if isTerminalJobStatus(j.Status) {
+			t.terminal++
+		}
+		if j.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
+			t.passed++
+		}
+	}
+	for _, t := range tallies {
+		if t.terminal < k {
+			continue
+		}
+		scenarios++
+		if t.passed > 0 {
+			passAny++
+		}
+		if t.passed == k {
+			passAll++
+		}
+	}
+	return
+}
+
+// passRateLine is the pass@k / pass^k summary, or "" when the run did not
+// repeat or no scenario has finished every sample.
+func passRateLine(run *livekit.SimulationRun) string {
+	scenarios, passAny, passAll := scenarioPassCounts(run)
+	if scenarios == 0 {
+		return ""
+	}
+	k := run.GetSamples()
+	return fmt.Sprintf("pass@%d %d/%d (%.2f), pass^%d %d/%d (%.2f)",
+		k, passAny, scenarios, float64(passAny)/float64(scenarios),
+		k, passAll, scenarios, float64(passAll)/float64(scenarios))
+}
+
+// sampleSuffix marks a job's sample when the run repeated scenarios.
+func sampleSuffix(run *livekit.SimulationRun, job *livekit.SimulationRun_Job) string {
+	if run.GetSamples() < 2 || job.GetSample() == 0 {
+		return ""
+	}
+	return fmt.Sprintf(" (sample %d/%d)", job.GetSample(), run.GetSamples())
 }
 
 func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, failed int) {

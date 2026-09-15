@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -216,8 +215,8 @@ type simulateModel struct {
 
 	spinnerIdx int
 
-	cursor      int
-	detailJobID string
+	cursor   int
+	detailID string
 	// The summary's citations, in the order their numbers were rendered, so a
 	// digit key resolves to the turn its label points at. refItemID is the chat
 	// item a jump cited, marked when the job view prints because printed
@@ -286,7 +285,7 @@ func (m *simulateModel) hasDescription() bool {
 }
 
 func (m *simulateModel) descriptionExpanded() bool {
-	return m.detailJobID == "" && m.showDescription && m.hasDescription()
+	return m.detailID == "" && m.showDescription && m.hasDescription()
 }
 
 func (m *simulateModel) quotaModalActive() bool {
@@ -357,6 +356,11 @@ func (m *simulateModel) saveScenarios(name string) (string, bool) {
 // copyScenario puts the job's scenario on the clipboard as a one-entry scenarios.yaml.
 func (m *simulateModel) copyScenario(jobID string) (string, bool) {
 	job := m.findJob(jobID)
+	if job == nil {
+		if sc := m.findScenario(jobID); sc != nil {
+			job = sc.samples[0]
+		}
+	}
 	if job == nil {
 		return "Copy failed: scenario not found", false
 	}
@@ -874,7 +878,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Quit
 	case "m":
-		if m.detailJobID != "" || m.run == nil || !m.setupDone || len(m.run.Jobs) == 0 || m.width < 10 {
+		if m.detailID != "" || m.run == nil || !m.setupDone || len(m.run.Jobs) == 0 || m.width < 10 {
 			return m, nil
 		}
 		rows := m.buildMatrixRows()
@@ -917,16 +921,16 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.logScrollOff = 0
 		m.logPinned = false
 	case "t":
-		if m.detailJobID != "" {
+		if m.detailID != "" {
 			m.showToolDetail = !m.showToolDetail
 		}
 	case "d":
-		if m.detailJobID == "" && m.hasDescription() {
+		if m.detailID == "" && m.hasDescription() {
 			m.showDescription = !m.showDescription
 			m.descScrollOff = 0
 		}
 	case "s":
-		if m.canExportScenarios() && m.detailJobID == "" {
+		if m.canExportScenarios() && m.detailID == "" {
 			m.saving = true
 			m.saveErr = ""
 			m.toast = ""
@@ -935,14 +939,14 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, m.saveInput.Focus()
 		}
 	case "c":
-		if m.detailJobID != "" {
-			text, ok := m.copyScenario(m.detailJobID)
+		if m.detailID != "" {
+			text, ok := m.copyScenario(m.detailID)
 			return m, m.showToast(text, ok)
 		}
 	case "up", "down", "pgup", "pgdown":
 		// The open job's view is scrolled by the terminal, so these keys must
 		// not disturb the list underneath it.
-		if m.detailJobID != "" {
+		if m.detailID != "" {
 			return m, nil
 		}
 		switch key {
@@ -973,9 +977,9 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// A citation's number opens the turn it cites. Only live on the list view,
 	// which is where the numbered summary is on screen to read them off.
 	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
-		if m.detailJobID == "" {
+		if m.detailID == "" {
 			if ref, ok := m.summaryRef(key); ok {
-				m.detailJobID = ref.job
+				m.detailID = ref.job
 				m.refItemID = ref.item
 				return m, m.openDetailCmd()
 			}
@@ -983,15 +987,15 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// j and l sit either side of k on the home row, so they double for the
 	// left/right arrows without reaching for them.
 	case "enter", "right", "l":
-		if m.detailJobID == "" {
+		if m.detailID == "" {
 			jobs := m.filteredJobs()
 			if m.cursor >= 0 && m.cursor < len(jobs) {
-				m.detailJobID = jobs[m.cursor].job.Id
+				m.detailID = jobs[m.cursor].id()
 				return m, m.openDetailCmd()
 			}
 		}
 	case "esc", "left", "backspace", "j":
-		if m.detailJobID != "" {
+		if m.detailID != "" {
 			return m, m.closeDetailCmd()
 		} else if m.showDescription {
 			m.showDescription = false
@@ -999,7 +1003,7 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "q":
 		switch {
-		case m.detailJobID != "":
+		case m.detailID != "":
 			return m, m.closeDetailCmd()
 		case m.showDescription:
 			m.showDescription = false
@@ -1017,25 +1021,139 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// indexedJob is one row of the job list. An unrepeated run has a row per job.
+// A repeated run has a row per scenario with its samples nested under it:
+//
+//	✓  1. Book a table for two  3/3
+//	   ├─ ✓ SRJ_01 sample 1
+//	   └─ ✓ SRJ_09 sample 3
 type indexedJob struct {
-	origIdx int
-	job     *livekit.SimulationRun_Job
+	origIdx  int                        // 1-based number of the scenario or, unrepeated, the job; 0 on a sample row
+	job      *livekit.SimulationRun_Job // nil on a scenario row
+	scenario *scenarioRow               // set on a scenario row only
+	last     bool                       // sample row: the scenario's final sample (└ rather than ├)
+}
+
+type scenarioRow struct {
+	id      string
+	label   string
+	samples []*livekit.SimulationRun_Job
+}
+
+// id is what opening the row shows: a job, or a whole scenario.
+func (ij indexedJob) id() string {
+	if ij.scenario != nil {
+		return ij.scenario.id
+	}
+	return ij.job.GetId()
 }
 
 func (m *simulateModel) filteredJobs() []indexedJob {
 	if m.run == nil {
 		return nil
 	}
-	// sort by job ID: the backend's ordering shuffles rows as statuses change
-	jobs := make([]*livekit.SimulationRun_Job, len(m.run.Jobs))
-	copy(jobs, m.run.Jobs)
-	sort.Slice(jobs, func(i, j int) bool { return jobs[i].GetId() < jobs[j].GetId() })
-
+	jobs := sortedJobs(m.run)
 	result := make([]indexedJob, 0, len(jobs))
-	for i, j := range jobs {
-		result = append(result, indexedJob{origIdx: i + 1, job: j})
+	if m.run.GetSamples() < 2 {
+		for i, j := range jobs {
+			result = append(result, indexedJob{origIdx: i + 1, job: j})
+		}
+		return result
+	}
+	n := 0
+	for i := 0; i < len(jobs); {
+		j := jobs[i]
+		n++
+		if j.GetScenarioId() == "" {
+			result = append(result, indexedJob{origIdx: n, job: j})
+			i++
+			continue
+		}
+		sc := &scenarioRow{id: j.GetScenarioId(), label: jobLabel(j)}
+		for i < len(jobs) && jobs[i].GetScenarioId() == sc.id {
+			sc.samples = append(sc.samples, jobs[i])
+			i++
+		}
+		result = append(result, indexedJob{origIdx: n, scenario: sc})
+		for k, a := range sc.samples {
+			result = append(result, indexedJob{job: a, last: k == len(sc.samples)-1})
+		}
 	}
 	return result
+}
+
+func (m *simulateModel) findScenario(id string) *scenarioRow {
+	for _, ij := range m.filteredJobs() {
+		if ij.scenario != nil && ij.scenario.id == id {
+			return ij.scenario
+		}
+	}
+	return nil
+}
+
+// scenarioStatusIcon folds a scenario's samples: running while any sample
+// runs, pending while any waits, then passed only if every sample did.
+func scenarioStatusIcon(samples []*livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
+	passed := 0
+	pending := false
+	for _, a := range samples {
+		switch a.Status {
+		case livekit.SimulationRun_Job_STATUS_RUNNING:
+			s := yellowStyle()
+			return '⏺', &s
+		case livekit.SimulationRun_Job_STATUS_COMPLETED:
+			passed++
+		case livekit.SimulationRun_Job_STATUS_FAILED, livekit.SimulationRun_Job_STATUS_CANCELLED:
+		default:
+			pending = true
+		}
+	}
+	if pending {
+		return '⏺', &dimStyle
+	}
+	if passed == len(samples) {
+		s := greenStyle()
+		return '✓', &s
+	}
+	s := redStyle()
+	return '✗', &s
+}
+
+func scenarioPassed(samples []*livekit.SimulationRun_Job) int {
+	n := 0
+	for _, a := range samples {
+		if a.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
+			n++
+		}
+	}
+	return n
+}
+
+// listRowParts splits a row into the indent before its icon, the icon, and the
+// text after it, in plain and styled forms, so the cursor highlight and the
+// matrix rain can lay out the same line.
+func listRowParts(ij indexedJob) (indent string, iconCh rune, iconStyle *lipgloss.Style, text, styled string) {
+	switch {
+	case ij.scenario != nil:
+		iconCh, iconStyle = scenarioStatusIcon(ij.scenario.samples)
+		text = fmt.Sprintf(" %3d. %s  %d/%d", ij.origIdx, ij.scenario.label, scenarioPassed(ij.scenario.samples), len(ij.scenario.samples))
+		return "  ", iconCh, iconStyle, text, text
+	case ij.origIdx == 0:
+		connector := "├─ "
+		if ij.last {
+			connector = "└─ "
+		}
+		iconCh, iconStyle = jobStatusIcon(ij.job)
+		text = fmt.Sprintf(" %s sample %d", ij.job.Id, ij.job.GetSample())
+		styled = fmt.Sprintf(" %s sample %d", dimStyle.Render(ij.job.Id), ij.job.GetSample())
+		return "     " + dimStyle.Render(connector), iconCh, iconStyle, text, styled
+	default:
+		iconCh, iconStyle = jobStatusIcon(ij.job)
+		label := jobLabel(ij.job)
+		text = fmt.Sprintf(" %3d. %s %s", ij.origIdx, ij.job.Id, label)
+		styled = fmt.Sprintf(" %3d. %s %s", ij.origIdx, dimStyle.Render(ij.job.Id), label)
+		return "  ", iconCh, iconStyle, text, styled
+	}
 }
 
 func (m *simulateModel) findJob(id string) *livekit.SimulationRun_Job {
@@ -1060,7 +1178,7 @@ func (m *simulateModel) render() string {
 	if !m.setupDone || m.run == nil || m.run.Status == livekit.SimulationRun_STATUS_GENERATING {
 		return m.viewSetup()
 	}
-	if m.detailJobID != "" {
+	if m.detailID != "" {
 		return m.viewDetailLive()
 	}
 	switch m.run.Status {
@@ -1414,6 +1532,9 @@ func (m *simulateModel) renderCounts() string {
 	if running > 0 {
 		parts = append(parts, yellowStyle().Render(fmt.Sprintf("%d running", running)))
 	}
+	if line := passRateLine(m.run); line != "" {
+		parts = append(parts, boldStyle.Render(line))
+	}
 
 	elapsed := ""
 	if !m.startTime.IsZero() {
@@ -1470,37 +1591,26 @@ func (m *simulateModel) renderJobList() string {
 		b.WriteString("\n")
 	}
 
-	// Compute labels and max width for consistent hover highlight
-	type rowData struct {
-		ij    indexedJob
-		label string
-	}
-	rows := make([]rowData, 0, winEnd-winStart)
+	// The cursor highlight pads to the widest row so the reverse bar is one width.
 	maxWidth := 0
 	for i := winStart; i < winEnd; i++ {
-		ij := jobs[i]
-		row := rowData{ij: ij, label: jobLabel(ij.job)}
-		rows = append(rows, row)
-		w := lipgloss.Width(fmt.Sprintf("  ⏺ %3d. %s %s", ij.origIdx, ij.job.Id, row.label))
-		if w > maxWidth {
+		indent, iconCh, _, text, _ := listRowParts(jobs[i])
+		if w := lipgloss.Width(indent + string(iconCh) + text); w > maxWidth {
 			maxWidth = w
 		}
 	}
 
-	for i, row := range rows {
-		idx := winStart + i
-		pr, _ := jobStatusIcon(row.ij.job)
-		plainIcon := string(pr)
+	for i := winStart; i < winEnd; i++ {
+		indent, iconCh, iconStyle, text, styled := listRowParts(jobs[i])
 		var line string
-		if idx == m.cursor {
-			line = fmt.Sprintf("  %s %3d. %s %s", plainIcon, row.ij.origIdx, row.ij.job.Id, row.label)
+		if i == m.cursor {
+			line = ansi.Strip(indent) + string(iconCh) + text
 			if pad := maxWidth - lipgloss.Width(line); pad > 0 {
 				line += strings.Repeat(" ", pad)
 			}
 			line = reverseStyle.Render(line)
 		} else {
-			icon := jobIcon(row.ij.job)
-			line = fmt.Sprintf("  %s %3d. %s %s", icon, row.ij.origIdx, dimStyle.Render(row.ij.job.Id), row.label)
+			line = indent + iconStyle.Render(string(iconCh)) + styled
 		}
 		b.WriteString(line)
 		b.WriteString("\n")
@@ -1560,13 +1670,12 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 		})
 	}
 	for i := winStart; i < winEnd; i++ {
-		ij := jobs[i]
-		label := jobLabel(ij.job)
-		iconCh, iconStyle := jobStatusIcon(ij.job)
-		line := fmt.Sprintf("  %c %3d. %s %s", iconCh, ij.origIdx, ij.job.Id, label)
+		indent, iconCh, iconStyle, text, _ := listRowParts(jobs[i])
+		indent = ansi.Strip(indent)
+		line := indent + string(iconCh) + text
 		rows = append(rows, matrixRow{
 			text:         []rune(line),
-			iconCol:      2,
+			iconCol:      len([]rune(indent)),
 			iconCh:       iconCh,
 			iconStyle:    iconStyle,
 			cursorMarker: i == m.cursor,
@@ -1588,22 +1697,29 @@ func (m *simulateModel) renderDetail() string {
 	var job *livekit.SimulationRun_Job
 	origIdx := 0
 	for i, j := range m.run.Jobs {
-		if j.Id == m.detailJobID {
+		if j.Id == m.detailID {
 			job = j
 			origIdx = i + 1
 			break
 		}
 	}
 	if job == nil {
-		m.detailJobID = ""
+		if sc := m.findScenario(m.detailID); sc != nil {
+			return m.renderScenarioDetail(sc)
+		}
+		m.detailID = ""
 		return dimStyle.Render("  (job not found)\n")
 	}
 
+	title := fmt.Sprintf("Job %d", origIdx)
+	if m.run.GetSamples() >= 2 {
+		title = jobLabel(job) + sampleSuffix(m.run, job)
+	}
 	var b strings.Builder
 	b.WriteString("\n")
 	fmt.Fprintf(&b, "  %s %s %s\n",
 		jobIcon(job),
-		boldStyle.Render(fmt.Sprintf("Job %d", origIdx)),
+		boldStyle.Render(title),
 		dimStyle.Render(job.Id),
 	)
 	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
@@ -1684,6 +1800,64 @@ func (m *simulateModel) renderDetail() string {
 	return b.String()
 }
 
+// renderScenarioDetail is a repeated scenario as a whole: its brief once, then
+// every sample's verdict and transcript in sample order.
+func (m *simulateModel) renderScenarioDetail(sc *scenarioRow) string {
+	var b strings.Builder
+	iconCh, iconStyle := scenarioStatusIcon(sc.samples)
+	b.WriteString("\n")
+	fmt.Fprintf(&b, "  %s %s  %s\n",
+		iconStyle.Render(string(iconCh)),
+		boldStyle.Render(sc.label),
+		dimStyle.Render(fmt.Sprintf("%d/%d samples passed", scenarioPassed(sc.samples), len(sc.samples))),
+	)
+	b.WriteString("\n")
+
+	wrapWidth := proseWidth(m.width, 6)
+	first := sc.samples[0]
+
+	b.WriteString(boldStyle.Render("  Instructions:"))
+	b.WriteString("\n")
+	instr := first.Instructions
+	if instr == "" {
+		instr = "—"
+	}
+	for _, line := range wrapLines(instr, wrapWidth) {
+		b.WriteString("    " + line + "\n")
+	}
+	b.WriteString("\n")
+
+	b.WriteString(dimStyle.Bold(true).Render("  Expected:"))
+	b.WriteString("\n")
+	expect := first.AgentExpectations
+	if expect == "" {
+		expect = "—"
+	}
+	for _, line := range wrapLines(expect, wrapWidth) {
+		b.WriteString(dimStyle.Render("    "+line) + "\n")
+	}
+
+	for _, job := range sc.samples {
+		b.WriteString("\n")
+		fmt.Fprintf(&b, "  %s %s %s\n",
+			jobIcon(job),
+			boldStyle.Render(fmt.Sprintf("Sample %d", job.GetSample())),
+			dimStyle.Render(job.Id),
+		)
+		if job.Error != "" {
+			style := redStyle()
+			if job.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
+				style = greenStyle()
+			}
+			for _, line := range wrapLines(job.Error, wrapWidth) {
+				b.WriteString(style.Render("    "+line) + "\n")
+			}
+		}
+		b.WriteString(m.renderChatTranscript(job.Id))
+	}
+	return b.String()
+}
+
 // --- Job detail (native scrollback) ---
 //
 // The detail view is printed into the terminal below the alt screen rather than
@@ -1711,7 +1885,7 @@ func (m *simulateModel) openDetailCmd() tea.Cmd {
 // closeDetailCmd returns to the list view. The printed job stays in the
 // scrollback until the next one replaces it.
 func (m *simulateModel) closeDetailCmd() tea.Cmd {
-	m.detailJobID = ""
+	m.detailID = ""
 	m.detailPrinted = ""
 	m.refItemID = ""
 	m.altScreen = true
@@ -1740,12 +1914,12 @@ const clearScrollback = ansi.CursorHomePosition + ansi.EraseEntireScreen + ansi.
 // gained since the last call, or nil when it has gained nothing. Callers do not
 // need to know whether anything changed.
 func (m *simulateModel) flushDetail() tea.Cmd {
-	if m.detailJobID == "" {
+	if m.detailID == "" {
 		return nil
 	}
 	rendered := strings.TrimRight(m.renderDetail(), "\n")
-	// renderDetail clears detailJobID when the job is gone from the run
-	if m.detailJobID == "" || rendered == "" {
+	// renderDetail clears detailID when the job is gone from the run
+	if m.detailID == "" || rendered == "" {
 		return nil
 	}
 	if m.width != m.detailWidth {
@@ -1788,7 +1962,7 @@ func detailTail(printed, rendered string) (string, bool) {
 // the job, which is the only part of it that is still moving.
 func (m *simulateModel) viewDetailLive() string {
 	var b strings.Builder
-	if job := m.findJob(m.detailJobID); job != nil && !isTerminalJobStatus(job.Status) {
+	if job := m.findJob(m.detailID); job != nil && !isTerminalJobStatus(job.Status) {
 		fmt.Fprintf(&b, "\n  %s %s  %s\n", jobIcon(job), dimStyle.Render(jobLabel(job)), m.spinner())
 	} else {
 		b.WriteString("\n")
@@ -2183,10 +2357,10 @@ func (m *simulateModel) renderHint() string {
 	}
 	var parts []string
 	switch {
-	case m.detailJobID != "":
+	case m.detailID != "":
 		// the job view is in the terminal's scrollback, which scrolls itself
 		parts = append(parts, "c copy scenario · ←/ESC back to list")
-		if m.hasToolDetail(m.detailJobID) {
+		if m.hasToolDetail(m.detailID) {
 			if m.showToolDetail {
 				parts = append(parts, "t hide tool detail")
 			} else {
