@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func attemptJob(id, scenario string, attempt int32, status livekit.SimulationRun_Job_Status) *livekit.SimulationRun_Job {
-	return &livekit.SimulationRun_Job{Id: id, ScenarioId: scenario, Attempt: attempt, Status: status}
+func sampleJob(id, scenario string, sample int32, status livekit.SimulationRun_Job_Status) *livekit.SimulationRun_Job {
+	return &livekit.SimulationRun_Job{Id: id, ScenarioId: scenario, Sample: sample, Status: status}
 }
 
 func TestScenarioPassCounts(t *testing.T) {
@@ -32,10 +32,10 @@ func TestScenarioPassCounts(t *testing.T) {
 		running = livekit.SimulationRun_Job_STATUS_RUNNING
 	)
 	run := &livekit.SimulationRun{Samples: 2, Jobs: []*livekit.SimulationRun_Job{
-		attemptJob("SRJ_1", "SCN_a", 1, done), attemptJob("SRJ_2", "SCN_a", 2, done), // pass^k
-		attemptJob("SRJ_3", "SCN_b", 1, done), attemptJob("SRJ_4", "SCN_b", 2, failed), // pass@k only
-		attemptJob("SRJ_5", "SCN_c", 1, failed), attemptJob("SRJ_6", "SCN_c", 2, failed), // neither
-		attemptJob("SRJ_7", "SCN_d", 1, done), attemptJob("SRJ_8", "SCN_d", 2, running), // not finished
+		sampleJob("SRJ_1", "SCN_a", 1, done), sampleJob("SRJ_2", "SCN_a", 2, done), // pass^k
+		sampleJob("SRJ_3", "SCN_b", 1, done), sampleJob("SRJ_4", "SCN_b", 2, failed), // pass@k only
+		sampleJob("SRJ_5", "SCN_c", 1, failed), sampleJob("SRJ_6", "SCN_c", 2, failed), // neither
+		sampleJob("SRJ_7", "SCN_d", 1, done), sampleJob("SRJ_8", "SCN_d", 2, running), // not finished
 	}}
 
 	scenarios, passAny, passAll := scenarioPassCounts(run)
@@ -48,15 +48,15 @@ func TestScenarioPassCounts(t *testing.T) {
 	require.Equal(t, "", passRateLine(run))
 }
 
-func TestSortedJobs_GroupsAttemptsInScenarioOrder(t *testing.T) {
+func TestSortedJobs_GroupsSamplesInScenarioOrder(t *testing.T) {
 	run := &livekit.SimulationRun{
 		Samples:       2,
 		ScenarioGroup: &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Id: "SCN_b"}, {Id: "SCN_a"}}},
 		Jobs: []*livekit.SimulationRun_Job{
-			attemptJob("SRJ_1", "SCN_a", 2, 0),
-			attemptJob("SRJ_2", "SCN_b", 2, 0),
-			attemptJob("SRJ_3", "SCN_a", 1, 0),
-			attemptJob("SRJ_4", "SCN_b", 1, 0),
+			sampleJob("SRJ_1", "SCN_a", 2, 0),
+			sampleJob("SRJ_2", "SCN_b", 2, 0),
+			sampleJob("SRJ_3", "SCN_a", 1, 0),
+			sampleJob("SRJ_4", "SCN_b", 1, 0),
 		},
 	}
 	var ids []string
@@ -64,7 +64,7 @@ func TestSortedJobs_GroupsAttemptsInScenarioOrder(t *testing.T) {
 		ids = append(ids, j.Id)
 	}
 	require.Equal(t, []string{"SRJ_4", "SRJ_2", "SRJ_3", "SRJ_1"}, ids)
-	require.Equal(t, " (attempt 1/2)", attemptSuffix(run, run.Jobs[3]))
+	require.Equal(t, " (sample 1/2)", sampleSuffix(run, run.Jobs[3]))
 }
 
 func repeatedFixture() *simulateModel {
@@ -73,10 +73,10 @@ func repeatedFixture() *simulateModel {
 		Id: "SR_fixture0001", Status: livekit.SimulationRun_STATUS_RUNNING, Samples: 2,
 		ScenarioGroup: &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Id: "SCN_a"}, {Id: "SCN_b"}}},
 		Jobs: []*livekit.SimulationRun_Job{
-			attemptJob("SRJ_a1", "SCN_a", 1, livekit.SimulationRun_Job_STATUS_COMPLETED),
-			attemptJob("SRJ_a2", "SCN_a", 2, livekit.SimulationRun_Job_STATUS_FAILED),
-			attemptJob("SRJ_b1", "SCN_b", 1, livekit.SimulationRun_Job_STATUS_COMPLETED),
-			attemptJob("SRJ_b2", "SCN_b", 2, livekit.SimulationRun_Job_STATUS_RUNNING),
+			sampleJob("SRJ_a1", "SCN_a", 1, livekit.SimulationRun_Job_STATUS_COMPLETED),
+			sampleJob("SRJ_a2", "SCN_a", 2, livekit.SimulationRun_Job_STATUS_FAILED),
+			sampleJob("SRJ_b1", "SCN_b", 1, livekit.SimulationRun_Job_STATUS_COMPLETED),
+			sampleJob("SRJ_b2", "SCN_b", 2, livekit.SimulationRun_Job_STATUS_RUNNING),
 		},
 	}
 	for _, j := range m.run.Jobs {
@@ -85,7 +85,7 @@ func repeatedFixture() *simulateModel {
 	return m
 }
 
-func TestFilteredJobs_RepeatedRunNestsAttempts(t *testing.T) {
+func TestFilteredJobs_RepeatedRunNestsSamples(t *testing.T) {
 	rows := repeatedFixture().filteredJobs()
 	var ids []string
 	for _, r := range rows {
@@ -93,14 +93,14 @@ func TestFilteredJobs_RepeatedRunNestsAttempts(t *testing.T) {
 	}
 	require.Equal(t, []string{"SCN_a", "SRJ_a1", "SRJ_a2", "SCN_b", "SRJ_b1", "SRJ_b2"}, ids)
 	require.Equal(t, 1, rows[0].origIdx)
-	require.Equal(t, 0, rows[1].origIdx, "attempt rows carry no number")
+	require.Equal(t, 0, rows[1].origIdx, "sample rows carry no number")
 	require.True(t, rows[2].last)
 	require.Equal(t, 2, rows[3].origIdx)
 
-	icon, _ := scenarioStatusIcon(rows[0].scenario.attempts)
-	require.Equal(t, '✗', icon, "a scenario with a failed attempt is not passed")
-	icon, _ = scenarioStatusIcon(rows[3].scenario.attempts)
-	require.Equal(t, '⏺', icon, "a scenario still runs while any attempt does")
+	icon, _ := scenarioStatusIcon(rows[0].scenario.samples)
+	require.Equal(t, '✗', icon, "a scenario with a failed sample is not passed")
+	icon, _ = scenarioStatusIcon(rows[3].scenario.samples)
+	require.Equal(t, '⏺', icon, "a scenario still runs while any sample does")
 }
 
 func TestEnterOnScenarioRowOpensTheScenario(t *testing.T) {
@@ -109,7 +109,7 @@ func TestEnterOnScenarioRowOpensTheScenario(t *testing.T) {
 	m.Update(keyPress("enter"))
 	require.Equal(t, "SCN_a", m.detailID)
 	require.NotNil(t, m.findScenario(m.detailID))
-	require.Contains(t, m.renderDetail(), "1/2 attempts passed")
+	require.Contains(t, m.renderDetail(), "1/2 samples passed")
 
 	m.closeDetailCmd()
 	m.cursor = 2

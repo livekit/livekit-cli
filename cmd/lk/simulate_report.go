@@ -186,7 +186,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 		if label == "" {
 			label = fmt.Sprintf("Job %d", i+1)
 		}
-		label += attemptSuffix(run, job)
+		label += sampleSuffix(run, job)
 
 		fmt.Fprintf(w, "::group::%s %s (%s)\n", icon, label, job.Id)
 
