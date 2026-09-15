@@ -456,6 +456,63 @@ The above simulates 5 concurrent rooms, where each room has:
 Once the specified duration is over (or if the load test is manually stopped), the load test statistics will be displayed in the form of a table.
 
 
+## Agent console
+
+`lk agent console` runs your agent locally and connects it straight to your microphone and speakers, so you can talk to it the way a user would without joining a LiveKit room. It is the interactive, human-facing way to test an agent. The terminal shows the live transcript, tool calls with their results, handoffs, and per-turn latency metrics.
+
+Run it from the agent project directory, or name the entrypoint:
+
+```shell
+lk agent console                         # the project in the current directory, default entrypoint
+lk agent console src/my_agent.py         # an explicit entrypoint
+lk agent console agent.ts -- --env-file=.env   # arguments after -- go to node/python
+lk agent console --text                  # start typing instead of talking; STT/TTS stay off
+```
+
+Keys while it runs: `m` mutes the microphone, `ctrl+t` switches between voice and text mode, `?` lists shortcuts, and `q` quits (`ctrl+c` in text mode). In text mode you type a turn and press enter; only your LLM and tools run, so it is the cheapest way to check conversational logic by hand.
+
+Useful options:
+
+-   `--list-devices`, `--input-device`, and `--output-device` choose audio devices by index or name substring.
+-   `--no-aec` turns off acoustic echo cancellation if you are on headphones and want the raw signal.
+-   `--record` saves the audio and a session report under `console-recordings/`.
+
+Console needs a terminal. If a program rather than a person is going to hold the conversation, use the agent debugger below.
+
+## Agent debugger
+
+`lk agent debugger` is built for coding agents such as Claude Code, Codex, and Cursor. When one of them is working on your LiveKit agent, it can use this command to hold a text conversation with the agent it just edited, read the replies and tool calls, and decide what to try next, all from the shell, with no human at a microphone. It is an ad-hoc, local stand-in for [simulations](https://docs.livekit.io/agents/start/testing/simulations/) in which the coding agent plays the user and pays with its own tokens: the agent runs in console mode with STT/TTS disabled, so a turn costs only your LLM and tool calls, and nothing touches a LiveKit room.
+
+People can use it too, but the output and flags are shaped for a program driving it one command at a time: every turn prints tool calls with their arguments and results, handoffs, errors, and the reply; exit codes are non-zero when a turn fails; `--json` is available everywhere. If you want to talk to your agent yourself, `lk agent console` is the better fit.
+
+A typical session, run from the agent project directory:
+
+```shell
+lk agent debugger start                       # starts the agent, prints its opening message if it has one
+lk agent debugger say "Hi, what can you do?"  # prints tool calls (with arguments and results), handoffs, and the reply
+lk agent debugger say "Book a table for two tonight"
+lk agent debugger listen --timeout 15s        # wait for the agent to speak unprompted (a timer, a follow-up after silence)
+lk agent debugger history                     # the whole conversation so far
+lk agent debugger logs --last 40              # the agent process's logs (tracebacks, warnings)
+lk agent debugger status                      # active agent, its tools, state, log file
+lk agent debugger stop --transcript           # closing summary, plus the whole conversation
+```
+
+`start` takes an optional entrypoint (`lk agent debugger start src/my_agent.py`) when the project doesn't use the default `agent.py`/`src/agent.py` or `main.ts`/`src/main.ts`; arguments after `--` go to the interpreter.
+
+Useful options:
+
+-   `say --logs` shows the agent's log lines beneath the step they belong to, so a tool's traceback appears right under the sanitized error the user would hear.
+-   `say --timeout 30s` bounds how long to wait for the reply (default 2 minutes); the exit code is non-zero if the turn failed or timed out.
+-   `--json` on any command prints machine-readable output. Each turn is a document with `text`, `reply`, `duration_ms`, and an `events` list of `message`, `tool_call`, `handoff`, `config`, `error`, and `log` entries.
+-   `--metrics` adds per-turn latency metrics (time to first token, end-to-end).
+-   `restart` relaunches the agent with a fresh conversation after the code changes.
+-   `listen --timeout 15s` waits for the agent to speak unprompted, for example after a tool set a timer, and prints whatever it says.
+-   `--port` runs several sessions side by side (one agent per port).
+-   A session stops itself after 30 minutes without commands so a forgotten one doesn't linger; `start --idle-timeout` changes that (0 disables it).
+
+To point a coding agent at it, add a line like this to your project's `AGENTS.md` or `CLAUDE.md`: "To test the agent, use `lk agent debugger` (run `lk agent debugger --help` first); start it, converse with it as a user would, and check `logs` when something looks wrong."
+
 ## Browsing documentation
 
 The CLI includes a built-in `lk docs` command that lets you search and browse the LiveKit documentation directly from the terminal. It's powered by the [LiveKit docs MCP server](https://docs.livekit.io/mcp) using the official [MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk).

@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -48,6 +49,78 @@ const (
 	maxSecretFileSize = 1024 * 1024 // 1MB
 	buildTimeout      = 15 * time.Minute
 )
+
+// Categories for the agent subcommands. They group `lk agent --help` and are
+// expanded inline in `lk --help` (see rootHelpTemplate). Names are chosen so
+// that cli/v3's alphabetical category order puts local work first.
+const (
+	agentCategoryLocal = "Build and test agents locally"
+	agentCategoryCloud = "Deploy and manage agents on LiveKit Cloud"
+)
+
+var agentCommandCategories = map[string]string{
+	"init":     agentCategoryLocal,
+	"dev":      agentCategoryLocal,
+	"start":    agentCategoryLocal,
+	"console":  agentCategoryLocal,
+	"debugger": agentCategoryLocal,
+	"simulate": agentCategoryLocal,
+}
+
+// categorizeAgentCommands assigns every visible agent subcommand a category.
+// It runs from main() after all init()s have appended their commands, so
+// commands registered from other files (console, debugger, simulate) are
+// covered without each having to know the category names.
+func categorizeAgentCommands() {
+	for _, sub := range AgentCommands[0].Commands {
+		if sub.Hidden {
+			continue
+		}
+		if cat, ok := agentCommandCategories[sub.Name]; ok {
+			sub.Category = cat
+		} else {
+			sub.Category = agentCategoryCloud
+		}
+	}
+	// Present the local workflow in the order people meet it; everything
+	// else keeps its registration order.
+	sort.SliceStable(AgentCommands[0].Commands, func(i, j int) bool {
+		return agentCommandRank(AgentCommands[0].Commands[i]) < agentCommandRank(AgentCommands[0].Commands[j])
+	})
+}
+
+var agentLocalOrder = map[string]int{
+	"init": 1, "dev": 2, "start": 3, "console": 4, "debugger": 5, "simulate": 6,
+}
+
+func agentCommandRank(c *cli.Command) int {
+	if r, ok := agentLocalOrder[c.Name]; ok {
+		return r
+	}
+	return 100
+}
+
+// agentHelpTemplate is cli/v3's SubcommandHelpTemplate with commands grouped
+// by category (via agentSections in main.go), which the stock template does
+// not do for subcommands. main.go's HelpPrinter swaps it in for `lk agent`.
+const agentHelpTemplate = `NAME:
+   {{template "helpNameTemplate" .}}
+
+USAGE:
+   {{.FullName}} command [command options]{{if .Description}}
+
+DESCRIPTION:
+   {{template "descriptionTemplate" .}}{{end}}{{if .VisibleCommands}}
+
+COMMANDS:{{range $i, $s := agentSections .}}{{if $i}}
+{{end}}
+   {{if $s.Title}}{{$s.Title}}{{else}}Other{{end}}:{{range $s.Rows}}
+     {{.Name}}{{"\t"}}{{.Usage}}{{end}}{{end}}{{end}}{{if .VisibleFlagCategories}}
+
+OPTIONS:{{template "visibleFlagCategoryTemplate" .}}{{else if .VisibleFlags}}
+
+OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}
+`
 
 var (
 	idFlag = func(required bool) *cli.StringFlag {
@@ -145,13 +218,22 @@ var (
 
 	AgentCommands = []*cli.Command{
 		{
-			Name:    "agent",
-			Aliases: []string{"a"},
-			Usage:   "Manage LiveKit Cloud Agents",
+			Name:            "agent",
+			Aliases:         []string{"a"},
+			Usage:           "Build, test, and deploy agents",
+			HideHelpCommand: true,
+			Description: `Everything for LiveKit agents, from a new project to production.
+
+Locally: "init" scaffolds a project, "dev" runs it with hot reload, "console"
+lets you talk to it by voice or text, "debugger" lets a coding agent or script
+converse with it turn by turn, and "simulate" runs judged simulations of it.
+
+On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
+"secrets", "versions", "rollback", and the rest manage it.`,
 			Commands: []*cli.Command{
 				{
 					Name:  "init",
-					Usage: "Initialize a new LiveKit Cloud agent project",
+					Usage: "Create a new agent project from a template",
 					Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 						return createAgentClientWithOpts(ctx, cmd, confirmProject)
 					},
@@ -198,7 +280,7 @@ var (
 				},
 				{
 					Name:   "create",
-					Usage:  "Create a new LiveKit Cloud Agent",
+					Usage:  "Create and deploy a new agent on LiveKit Cloud",
 					Action: createAgent,
 					Before: createAgentClient,
 					Flags: []cli.Flag{
@@ -237,7 +319,7 @@ var (
 				},
 				{
 					Name:   "config",
-					Usage:  fmt.Sprintf("Creates a %s in the working directory for an existing agent.", config.LiveKitTOMLFile),
+					Usage:  fmt.Sprintf("Write a %s for an existing agent into the working directory", config.LiveKitTOMLFile),
 					Before: createAgentClient,
 					Action: createAgentConfig,
 					Flags: []cli.Flag{
@@ -293,7 +375,7 @@ var (
 				},
 				{
 					Name:   "update",
-					Usage:  "Update an agent metadata and secrets. This will restart the agent.",
+					Usage:  "Update an agent's metadata and secrets (restarts the agent)",
 					Before: createAgentClient,
 					Action: updateAgent,
 					Flags: []cli.Flag{
@@ -319,7 +401,7 @@ var (
 				},
 				{
 					Name:   "rollback",
-					Usage:  "Rollback an agent to a previous version",
+					Usage:  "Roll back an agent to a previous version",
 					Before: createAgentClient,
 					Action: rollbackAgent,
 					Flags: []cli.Flag{
@@ -336,7 +418,7 @@ var (
 				{
 					Name:    "logs",
 					Aliases: []string{"tail"},
-					Usage:   "Tail logs from agent",
+					Usage:   "Tail an agent's logs",
 					Before:  createAgentClient,
 					Action:  getLogs,
 					Flags: []cli.Flag{
@@ -373,7 +455,7 @@ var (
 				},
 				{
 					Name:   "list",
-					Usage:  "List all LiveKit Cloud Agents",
+					Usage:  "List the agents in the current project",
 					Action: listAgents,
 					Before: createAgentClient,
 					Flags: []cli.Flag{
@@ -383,7 +465,7 @@ var (
 				},
 				{
 					Name:   "secrets",
-					Usage:  "List secrets for an agent",
+					Usage:  "List an agent's secrets",
 					Before: createAgentClient,
 					Action: listAgentSecrets,
 					Flags: []cli.Flag{
@@ -394,7 +476,7 @@ var (
 				},
 				{
 					Name:   "update-secrets",
-					Usage:  "Update secrets for an agent, will cause a re-start of the agent.",
+					Usage:  "Update an agent's secrets (restarts the agent)",
 					Before: createAgentClient,
 					Action: updateAgentSecrets,
 					Flags: []cli.Flag{

@@ -605,3 +605,11 @@ func (ap *AgentProcess) ForceKill() {
 	}
 	ap.sendKill()
 }
+
+// Pid returns the agent process id, or 0 if it never started.
+func (ap *AgentProcess) Pid() int {
+	if ap == nil || ap.cmd == nil || ap.cmd.Process == nil {
+		return 0
+	}
+	return ap.cmd.Process.Pid
+}
