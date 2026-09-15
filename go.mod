@@ -20,7 +20,7 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.0
-	github.com/livekit/protocol v1.51.1-0.20260914194419-c7d18f5376cf
+	github.com/livekit/protocol v1.51.1-0.20260915182316-f9e48c3cf763
 	github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260904062056-1da58cd7b795
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
