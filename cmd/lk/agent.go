@@ -839,23 +839,8 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 	imageRef := cmd.String("image")
 	imageTar := cmd.String("image-tar")
 	if imageRef != "" || imageTar != "" {
-		if len(secrets) > 0 {
-			resp, err := agentsClient.UpdateAgentSecrets(buildContext, &lkproto.UpdateAgentSecretsRequest{
-				AgentId: agentId,
-				Secrets: secrets,
-			})
-			if err != nil {
-				if twerr, ok := err.(twirp.Error); ok {
-					return fmt.Errorf("unable to update agent secrets: %s", twerr.Msg())
-				}
-				return fmt.Errorf("unable to update agent secrets: %w", err)
-			}
-			if !resp.Success {
-				return fmt.Errorf("failed to update agent secrets: %s", resp.Message)
-			}
-		}
-		if err := deployPrebuiltImage(buildContext, agentId, imageRef, imageTar, attrs); err != nil {
-			return fmt.Errorf("unable to deploy prebuilt image: %w", err)
+		if err := deployPrebuiltImageTo(buildContext, agentId, imageRef, imageTar, secrets, attrs); err != nil {
+			return err
 		}
 		out.Status("Deployed agent")
 		return nil
@@ -886,8 +871,42 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		out.Statusf("Using deployment [%s]", util.Accented(agentDeployment))
 	}
 
+	if err := deploySource(buildContext, agentId, secrets, attrs, agentDeployment); err != nil {
+		return err
+	}
+	reportDeployment(ctx, agentId, agentDeployment)
+	return nil
+}
+
+// deployPrebuiltImageTo updates the agent's secrets, if any, then pushes the
+// prebuilt image to it.
+func deployPrebuiltImageTo(ctx context.Context, agentID, imageRef, imageTar string, secrets []*lkproto.AgentSecret, attrs map[string]string) error {
+	if len(secrets) > 0 {
+		resp, err := agentsClient.UpdateAgentSecrets(ctx, &lkproto.UpdateAgentSecretsRequest{
+			AgentId: agentID,
+			Secrets: secrets,
+		})
+		if err != nil {
+			if twerr, ok := err.(twirp.Error); ok {
+				return fmt.Errorf("unable to update agent secrets: %s", twerr.Msg())
+			}
+			return fmt.Errorf("unable to update agent secrets: %w", err)
+		}
+		if !resp.Success {
+			return fmt.Errorf("failed to update agent secrets: %s", resp.Message)
+		}
+	}
+	if err := deployPrebuiltImage(ctx, agentID, imageRef, imageTar, attrs); err != nil {
+		return fmt.Errorf("unable to deploy prebuilt image: %w", err)
+	}
+	return nil
+}
+
+// deploySource builds workingDir on the server and deploys it to the agent.
+// A nil error after Ctrl-C means the deploy continues server-side.
+func deploySource(ctx context.Context, agentID string, secrets []*lkproto.AgentSecret, attrs map[string]string, agentDeployment string) error {
 	excludeFiles := []string{fmt.Sprintf("**/%s", config.LiveKitTOMLFile)}
-	if err := agentsClient.DeployAgentV2(buildContext, agentId, os.DirFS(workingDir), secrets, attrs, agentDeployment, excludeFiles, os.Stderr); err != nil {
+	if err := agentsClient.DeployAgentV2(ctx, agentID, os.DirFS(workingDir), secrets, attrs, agentDeployment, excludeFiles, os.Stderr); err != nil {
 		if errors.Is(err, context.Canceled) {
 			// The client disconnected (Ctrl-C). Deploys are durable — the build runs to
 			// completion and deploys on the server regardless, so this is not a failure.
@@ -899,23 +918,9 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		}
 		return fmt.Errorf("unable to deploy agent: %w", err)
 	}
-
-	reportDeployment(ctx, agentId, agentDeployment)
 	return nil
 }
 
-// reportDeployment prints a summary of a completed deployment — the agent name,
-// the target deployment, and links to the agent details page and the agent
-// console for the deployment. It resolves the name with a single ListAgents
-// call; on any failure it falls back to the minimal status line so a successful
-// deploy is never reported as a failure.
-//
-// The version is intentionally omitted: the deploy API doesn't return the new
-// version, the agent-level version reflects the production deployment (wrong
-// for a non-production deploy), and the per-deployment version isn't populated
-// until the agent is scraped. There is no source that is both correct and ready
-// synchronously at deploy time, so reporting it would risk showing the wrong
-// version.
 func reportDeployment(ctx context.Context, agentID, deployment string) {
 	targetDeployment := deployment
 	if targetDeployment == "" {
