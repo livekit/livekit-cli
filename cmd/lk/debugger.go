@@ -42,11 +42,17 @@ const (
 	sessionHost        = "127.0.0.1"
 	defaultSessionPort = 8775
 
-	envSessionPort      = "LK_SESSION_PORT"       // fixed port
-	envSessionDir       = "LK_SESSION_DIR"        // resolved project dir
-	envSessionEntry     = "LK_SESSION_ENTRY"      // resolved entrypoint (project-relative)
-	envSessionPType     = "LK_SESSION_PTYPE"      // agentfs.ProjectType string
-	envSessionReadyFile = "LK_SESSION_READY_FILE" // path the daemon writes its status to
+	envSessionPort      = "LK_SESSION_PORT"         // fixed port
+	envSessionDir       = "LK_SESSION_DIR"          // resolved project dir
+	envSessionEntry     = "LK_SESSION_ENTRY"        // resolved entrypoint (project-relative)
+	envSessionPType     = "LK_SESSION_PTYPE"        // agentfs.ProjectType string
+	envSessionReadyFile = "LK_SESSION_READY_FILE"   // path the daemon writes its status to
+	envSessionIdle      = "LK_SESSION_IDLE_TIMEOUT" // stop after this long without commands (0 = never)
+
+	// defaultIdleTimeout is how long the daemon waits for a command before
+	// stopping itself, so a caller that never runs `stop` doesn't leave an
+	// agent process behind.
+	defaultIdleTimeout = 30 * time.Minute
 
 	// sessionDaemonSubcommand is the hidden entrypoint `start` re-execs into.
 	sessionDaemonSubcommand = "serve"
@@ -57,6 +63,12 @@ var sessionPortFlag = &cli.IntFlag{
 	Sources: cli.EnvVars(envSessionPort),
 	Value:   defaultSessionPort,
 	Usage:   "Loopback port the session listens on (one session per port)",
+}
+
+var sessionIdleFlag = &cli.DurationFlag{
+	Name:  "idle-timeout",
+	Value: defaultIdleTimeout,
+	Usage: "Stop the session after this long without any command (0 to keep it running until `stop`)",
 }
 
 var sessionVerboseFlag = &cli.BoolFlag{
@@ -136,8 +148,9 @@ main.ts, src/main.ts, or src/main.js for Node. Pass a file to override:
 
 The agent reads its own .env for credentials, exactly like "lk agent console".
 Only one session runs per port; use --port for more, or "restart" to replace
-the current one.`,
-			Flags:  []cli.Flag{sessionPortFlag, jsonFlag},
+the current one. The session stops itself after --idle-timeout (default 30m)
+without any command, so a forgotten session does not linger.`,
+			Flags:  []cli.Flag{sessionPortFlag, sessionIdleFlag, jsonFlag},
 			Action: runSessionStart,
 		},
 		{
@@ -283,13 +296,13 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 	}
 	port := int(cmd.Int("port"))
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
-	return startSessionDaemon(port, projectDir, projectType, entrypoint, cmd.Bool("json"))
+	return startSessionDaemon(port, projectDir, projectType, entrypoint, cmd.Duration("idle-timeout"), cmd.Bool("json"))
 }
 
 // startSessionDaemon launches the detached daemon, waits for it to report
 // ready, then prints the agent's opening message (if it produced one) and a
 // short status line.
-func startSessionDaemon(port int, projectDir string, projectType agentfs.ProjectType, entrypoint string, asJSON bool) error {
+func startSessionDaemon(port int, projectDir string, projectType agentfs.ProjectType, entrypoint string, idleTimeout time.Duration, asJSON bool) error {
 	exe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("could not resolve own binary: %w", err)
@@ -315,6 +328,7 @@ func startSessionDaemon(port int, projectDir string, projectType agentfs.Project
 	daemon := exec.Command(exe, "agent", "debugger", sessionDaemonSubcommand)
 	daemon.Env = append(os.Environ(),
 		envSessionPort+"="+strconv.Itoa(port),
+		envSessionIdle+"="+idleTimeout.String(),
 		envSessionDir+"="+projectDir,
 		envSessionEntry+"="+entrypoint,
 		envSessionPType+"="+string(projectType),
@@ -377,6 +391,10 @@ func startSessionDaemon(port int, projectDir string, projectType agentfs.Project
 		}
 		out.Status(summary)
 		out.Statusf("Agent logs: %s", s.LogPath)
+		if s.IdleTimeoutSeconds > 0 {
+			out.Statusf("Stops on its own after %s without commands (--idle-timeout).",
+				(time.Duration(s.IdleTimeoutSeconds) * time.Second).String())
+		}
 	} else {
 		out.Status(summary)
 	}
@@ -657,6 +675,11 @@ func runSessionStatus(ctx context.Context, cmd *cli.Command) error {
 		turns += util.Dimmed(fmt.Sprintf(" (+%d agent event(s) not yet shown; run `lk agent debugger listen` to see them)", st.UnseenEvents))
 	}
 	out.Resultf("%s%s\n", label("Turns:"), turns)
+	if st.IdleTimeoutSeconds > 0 {
+		out.Resultf("%s%s (stops after %s idle)\n", label("Idle:"),
+			(time.Duration(st.IdleSeconds) * time.Second).String(),
+			(time.Duration(st.IdleTimeoutSeconds) * time.Second).String())
+	}
 	out.Resultf("%s%s\n", label("Agent logs:"), st.LogPath)
 	if st.Error != "" {
 		out.Resultf("%s%s\n", label("Warning:"), st.Error)
@@ -803,7 +826,8 @@ func runSessionRestart(ctx context.Context, cmd *cli.Command) error {
 		time.Sleep(100 * time.Millisecond)
 	}
 	out.Statusf("Restarting %s agent (%s in %s)", agentfs.ProjectType(st.ProjectType).Lang(), st.Entrypoint, st.ProjectDir)
-	return startSessionDaemon(port, st.ProjectDir, agentfs.ProjectType(st.ProjectType), st.Entrypoint, cmd.Bool("json"))
+	return startSessionDaemon(port, st.ProjectDir, agentfs.ProjectType(st.ProjectType), st.Entrypoint,
+		time.Duration(st.IdleTimeoutSeconds)*time.Second, cmd.Bool("json"))
 }
 
 // dialControl connects to the session daemon and sends the control preamble.

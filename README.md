@@ -509,6 +509,7 @@ Useful options:
 -   `restart` relaunches the agent with a fresh conversation after the code changes.
 -   `listen --timeout 15s` waits for the agent to speak unprompted, for example after a tool set a timer, and prints whatever it says.
 -   `--port` runs several sessions side by side (one agent per port).
+-   A session stops itself after 30 minutes without commands so a forgotten one doesn't linger; `start --idle-timeout` changes that (0 disables it).
 
 To point a coding agent at it, add a line like this to your project's `AGENTS.md` or `CLAUDE.md`: "To test the agent, use `lk agent debugger` (run `lk agent debugger --help` first); start it, converse with it as a user would, and check `logs` when something looks wrong."
 

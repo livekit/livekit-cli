@@ -17,12 +17,14 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
@@ -62,6 +64,7 @@ func runSessionDaemon() {
 
 	dir := os.Getenv(envSessionDir)
 	entry := os.Getenv(envSessionEntry)
+	idleTimeout, _ := time.ParseDuration(os.Getenv(envSessionIdle))
 	ptype := agentfs.ProjectType(os.Getenv(envSessionPType))
 
 	// startAgent branches on ProjectType, so Node entrypoints run as
@@ -87,14 +90,17 @@ func runSessionDaemon() {
 		entrypoint:  entry,
 		projectType: ptype,
 		startedAt:   time.Now(),
+		idleTimeout: idleTimeout,
 		agentReady:  make(chan struct{}),
 		logSubs:     make(map[chan string]struct{}),
 		shutdown:    make(chan struct{}),
 		exited:      make(chan struct{}),
 	}
 
+	d.touch()
 	go d.fanOutLogs()
 	go d.acceptLoop()
+	go d.idleWatch()
 
 	select {
 	case <-d.agentReady:
@@ -177,6 +183,8 @@ type sessionDaemon struct {
 	entrypoint  string
 	projectType agentfs.ProjectType
 	startedAt   time.Time
+	idleTimeout time.Duration
+	lastActive  atomic.Int64 // unix nanos of the last control command
 
 	sessionMu  sync.Mutex
 	session    *textSession
@@ -189,6 +197,42 @@ type sessionDaemon struct {
 	shutdown chan struct{}
 	shutOnce sync.Once
 	exited   chan struct{}
+}
+
+// touch records that a client just talked to us, for the idle timeout.
+func (d *sessionDaemon) touch() { d.lastActive.Store(time.Now().UnixNano()) }
+
+func (d *sessionDaemon) idleFor() time.Duration {
+	return time.Since(time.Unix(0, d.lastActive.Load()))
+}
+
+// idleWatch stops the session once no command has arrived for idleTimeout,
+// so a caller that never runs `stop` does not leave an agent process behind.
+// A turn in progress counts as activity.
+func (d *sessionDaemon) idleWatch() {
+	if d.idleTimeout <= 0 {
+		return
+	}
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			if d.session != nil && d.session.TurnInProgress() {
+				d.touch()
+				continue
+			}
+			if d.idleFor() >= d.idleTimeout {
+				fmt.Fprintf(os.Stderr, "no commands for %s; stopping the session\n", d.idleTimeout)
+				d.shutOnce.Do(func() { close(d.shutdown) })
+				return
+			}
+		case <-d.shutdown:
+			return
+		case <-d.exited:
+			return
+		}
+	}
 }
 
 func (d *sessionDaemon) acceptLoop() {
@@ -301,6 +345,8 @@ func (d *sessionDaemon) handleControlConn(raw net.Conn) {
 	if err := readControlFrame(raw, &req); err != nil {
 		return
 	}
+	d.touch()
+	defer d.touch()
 	conn := &controlConn{Conn: raw, closed: make(chan struct{})}
 	go conn.watchClose()
 
@@ -494,37 +540,41 @@ func (d *sessionDaemon) handleLogs(conn *controlConn, req controlRequest) {
 
 // sessionStatus is what `lk agent debugger status` reports.
 type sessionStatus struct {
-	Port           int       `json:"port"`
-	Pid            int       `json:"pid"`
-	ProjectDir     string    `json:"project_dir"`
-	Entrypoint     string    `json:"entrypoint"`
-	ProjectType    string    `json:"project_type"`
-	StartedAt      time.Time `json:"started_at"`
-	UptimeSeconds  int64     `json:"uptime_seconds"`
-	Turns          int       `json:"turns"`
-	TurnInProgress bool      `json:"turn_in_progress"`
-	AgentState     string    `json:"agent_state"`
-	AgentID        string    `json:"agent_id,omitempty"`
-	Tools          []string  `json:"tools,omitempty"`
-	Instructions   string    `json:"instructions,omitempty"`
-	LogPath        string    `json:"log_path"`
-	UnseenEvents   int       `json:"unseen_events"`
-	Error          string    `json:"error,omitempty"`
+	Port               int       `json:"port"`
+	Pid                int       `json:"pid"`
+	ProjectDir         string    `json:"project_dir"`
+	Entrypoint         string    `json:"entrypoint"`
+	ProjectType        string    `json:"project_type"`
+	StartedAt          time.Time `json:"started_at"`
+	UptimeSeconds      int64     `json:"uptime_seconds"`
+	Turns              int       `json:"turns"`
+	TurnInProgress     bool      `json:"turn_in_progress"`
+	AgentState         string    `json:"agent_state"`
+	AgentID            string    `json:"agent_id,omitempty"`
+	Tools              []string  `json:"tools,omitempty"`
+	Instructions       string    `json:"instructions,omitempty"`
+	LogPath            string    `json:"log_path"`
+	IdleTimeoutSeconds int64     `json:"idle_timeout_seconds"`
+	IdleSeconds        int64     `json:"idle_seconds"`
+	UnseenEvents       int       `json:"unseen_events"`
+	Error              string    `json:"error,omitempty"`
 }
 
 func (d *sessionDaemon) collectStatus() *sessionStatus {
 	st := &sessionStatus{
-		Port:           d.port,
-		Pid:            d.agentProc.Pid(),
-		ProjectDir:     d.projectDir,
-		Entrypoint:     d.entrypoint,
-		ProjectType:    string(d.projectType),
-		StartedAt:      d.startedAt,
-		UptimeSeconds:  int64(time.Since(d.startedAt).Seconds()),
-		Turns:          d.session.Turns(),
-		TurnInProgress: d.session.TurnInProgress(),
-		AgentState:     agentStateName(d.session.AgentState()),
-		LogPath:        d.agentProc.LogPath,
+		Port:               d.port,
+		Pid:                d.agentProc.Pid(),
+		ProjectDir:         d.projectDir,
+		Entrypoint:         d.entrypoint,
+		ProjectType:        string(d.projectType),
+		StartedAt:          d.startedAt,
+		UptimeSeconds:      int64(time.Since(d.startedAt).Seconds()),
+		Turns:              d.session.Turns(),
+		TurnInProgress:     d.session.TurnInProgress(),
+		AgentState:         agentStateName(d.session.AgentState()),
+		LogPath:            d.agentProc.LogPath,
+		IdleTimeoutSeconds: int64(d.idleTimeout.Seconds()),
+		IdleSeconds:        int64(d.idleFor().Seconds()),
 	}
 	d.session.mu.Lock()
 	st.UnseenEvents = len(d.session.undelivered)
