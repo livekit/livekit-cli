@@ -358,7 +358,7 @@ func (m *simulateModel) copyScenario(jobID string) (string, bool) {
 	job := m.findJob(jobID)
 	if job == nil {
 		if sc := m.findScenario(jobID); sc != nil {
-			job = sc.attempts[0]
+			job = sc.samples[0]
 		}
 	}
 	if job == nil {
@@ -1022,22 +1022,22 @@ func (m *simulateModel) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 // indexedJob is one row of the job list. An unrepeated run has a row per job.
-// A repeated run has a row per scenario with its attempts nested under it:
+// A repeated run has a row per scenario with its samples nested under it:
 //
 //	✓  1. Book a table for two  3/3
-//	   ├─ ✓ SRJ_01 attempt 1
-//	   └─ ✓ SRJ_09 attempt 3
+//	   ├─ ✓ SRJ_01 sample 1
+//	   └─ ✓ SRJ_09 sample 3
 type indexedJob struct {
-	origIdx  int                        // 1-based number of the scenario or, unrepeated, the job; 0 on an attempt row
+	origIdx  int                        // 1-based number of the scenario or, unrepeated, the job; 0 on a sample row
 	job      *livekit.SimulationRun_Job // nil on a scenario row
 	scenario *scenarioRow               // set on a scenario row only
-	last     bool                       // attempt row: the scenario's final attempt (└ rather than ├)
+	last     bool                       // sample row: the scenario's final sample (└ rather than ├)
 }
 
 type scenarioRow struct {
-	id       string
-	label    string
-	attempts []*livekit.SimulationRun_Job
+	id      string
+	label   string
+	samples []*livekit.SimulationRun_Job
 }
 
 // id is what opening the row shows: a job, or a whole scenario.
@@ -1071,12 +1071,12 @@ func (m *simulateModel) filteredJobs() []indexedJob {
 		}
 		sc := &scenarioRow{id: j.GetScenarioId(), label: jobLabel(j)}
 		for i < len(jobs) && jobs[i].GetScenarioId() == sc.id {
-			sc.attempts = append(sc.attempts, jobs[i])
+			sc.samples = append(sc.samples, jobs[i])
 			i++
 		}
 		result = append(result, indexedJob{origIdx: n, scenario: sc})
-		for k, a := range sc.attempts {
-			result = append(result, indexedJob{job: a, last: k == len(sc.attempts)-1})
+		for k, a := range sc.samples {
+			result = append(result, indexedJob{job: a, last: k == len(sc.samples)-1})
 		}
 	}
 	return result
@@ -1091,12 +1091,12 @@ func (m *simulateModel) findScenario(id string) *scenarioRow {
 	return nil
 }
 
-// scenarioStatusIcon folds a scenario's attempts: running while any attempt
-// runs, pending while any waits, then passed only if every attempt did.
-func scenarioStatusIcon(attempts []*livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
+// scenarioStatusIcon folds a scenario's samples: running while any sample
+// runs, pending while any waits, then passed only if every sample did.
+func scenarioStatusIcon(samples []*livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
 	passed := 0
 	pending := false
-	for _, a := range attempts {
+	for _, a := range samples {
 		switch a.Status {
 		case livekit.SimulationRun_Job_STATUS_RUNNING:
 			s := yellowStyle()
@@ -1111,7 +1111,7 @@ func scenarioStatusIcon(attempts []*livekit.SimulationRun_Job) (rune, *lipgloss.
 	if pending {
 		return '⏺', &dimStyle
 	}
-	if passed == len(attempts) {
+	if passed == len(samples) {
 		s := greenStyle()
 		return '✓', &s
 	}
@@ -1119,9 +1119,9 @@ func scenarioStatusIcon(attempts []*livekit.SimulationRun_Job) (rune, *lipgloss.
 	return '✗', &s
 }
 
-func scenarioPassed(attempts []*livekit.SimulationRun_Job) int {
+func scenarioPassed(samples []*livekit.SimulationRun_Job) int {
 	n := 0
-	for _, a := range attempts {
+	for _, a := range samples {
 		if a.Status == livekit.SimulationRun_Job_STATUS_COMPLETED {
 			n++
 		}
@@ -1135,8 +1135,8 @@ func scenarioPassed(attempts []*livekit.SimulationRun_Job) int {
 func listRowParts(ij indexedJob) (indent string, iconCh rune, iconStyle *lipgloss.Style, text, styled string) {
 	switch {
 	case ij.scenario != nil:
-		iconCh, iconStyle = scenarioStatusIcon(ij.scenario.attempts)
-		text = fmt.Sprintf(" %3d. %s  %d/%d", ij.origIdx, ij.scenario.label, scenarioPassed(ij.scenario.attempts), len(ij.scenario.attempts))
+		iconCh, iconStyle = scenarioStatusIcon(ij.scenario.samples)
+		text = fmt.Sprintf(" %3d. %s  %d/%d", ij.origIdx, ij.scenario.label, scenarioPassed(ij.scenario.samples), len(ij.scenario.samples))
 		return "  ", iconCh, iconStyle, text, text
 	case ij.origIdx == 0:
 		connector := "├─ "
@@ -1144,8 +1144,8 @@ func listRowParts(ij indexedJob) (indent string, iconCh rune, iconStyle *lipglos
 			connector = "└─ "
 		}
 		iconCh, iconStyle = jobStatusIcon(ij.job)
-		text = fmt.Sprintf(" %s attempt %d", ij.job.Id, ij.job.GetAttempt())
-		styled = fmt.Sprintf(" %s attempt %d", dimStyle.Render(ij.job.Id), ij.job.GetAttempt())
+		text = fmt.Sprintf(" %s sample %d", ij.job.Id, ij.job.GetSample())
+		styled = fmt.Sprintf(" %s sample %d", dimStyle.Render(ij.job.Id), ij.job.GetSample())
 		return "     " + dimStyle.Render(connector), iconCh, iconStyle, text, styled
 	default:
 		iconCh, iconStyle = jobStatusIcon(ij.job)
@@ -1713,7 +1713,7 @@ func (m *simulateModel) renderDetail() string {
 
 	title := fmt.Sprintf("Job %d", origIdx)
 	if m.run.GetSamples() >= 2 {
-		title = jobLabel(job) + attemptSuffix(m.run, job)
+		title = jobLabel(job) + sampleSuffix(m.run, job)
 	}
 	var b strings.Builder
 	b.WriteString("\n")
@@ -1801,20 +1801,20 @@ func (m *simulateModel) renderDetail() string {
 }
 
 // renderScenarioDetail is a repeated scenario as a whole: its brief once, then
-// every attempt's verdict and transcript in attempt order.
+// every sample's verdict and transcript in sample order.
 func (m *simulateModel) renderScenarioDetail(sc *scenarioRow) string {
 	var b strings.Builder
-	iconCh, iconStyle := scenarioStatusIcon(sc.attempts)
+	iconCh, iconStyle := scenarioStatusIcon(sc.samples)
 	b.WriteString("\n")
 	fmt.Fprintf(&b, "  %s %s  %s\n",
 		iconStyle.Render(string(iconCh)),
 		boldStyle.Render(sc.label),
-		dimStyle.Render(fmt.Sprintf("%d/%d attempts passed", scenarioPassed(sc.attempts), len(sc.attempts))),
+		dimStyle.Render(fmt.Sprintf("%d/%d samples passed", scenarioPassed(sc.samples), len(sc.samples))),
 	)
 	b.WriteString("\n")
 
 	wrapWidth := proseWidth(m.width, 6)
-	first := sc.attempts[0]
+	first := sc.samples[0]
 
 	b.WriteString(boldStyle.Render("  Instructions:"))
 	b.WriteString("\n")
@@ -1837,11 +1837,11 @@ func (m *simulateModel) renderScenarioDetail(sc *scenarioRow) string {
 		b.WriteString(dimStyle.Render("    "+line) + "\n")
 	}
 
-	for _, job := range sc.attempts {
+	for _, job := range sc.samples {
 		b.WriteString("\n")
 		fmt.Fprintf(&b, "  %s %s %s\n",
 			jobIcon(job),
-			boldStyle.Render(fmt.Sprintf("Attempt %d", job.GetAttempt())),
+			boldStyle.Render(fmt.Sprintf("Sample %d", job.GetSample())),
 			dimStyle.Render(job.Id),
 		)
 		if job.Error != "" {
