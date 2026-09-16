@@ -22,7 +22,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -362,8 +361,6 @@ func (d *sessionDaemon) handleControlConn(raw net.Conn) {
 		d.handleSay(conn, req)
 	case "pending":
 		_ = conn.reply(controlReply{Events: d.session.takeUndelivered(), Done: true})
-	case "wait":
-		d.handleListen(conn, req)
 	case "chat-history":
 		d.handleHistory(conn)
 	case "events":
@@ -431,41 +428,6 @@ func (d *sessionDaemon) handleSay(conn *controlConn, req controlRequest) {
 		done.Error = err.Error()
 	}
 	_ = conn.reply(done)
-}
-
-// handleListen streams agent activity that no turn asked for, waiting up to
-// the client's timeout for it to begin.
-func (d *sessionDaemon) handleListen(conn *controlConn, req controlRequest) {
-	idle := 10 * time.Second
-	if req.TimeoutMs > 0 {
-		idle = time.Duration(req.TimeoutMs) * time.Millisecond
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go func() {
-		select {
-		case <-conn.closed:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-	start := time.Now()
-	var reply strings.Builder
-	delivered := d.session.Listen(ctx, idle, idle+defaultSayTimeout, func(e turnEvent) {
-		if e.Type == "message" && e.Role == "assistant" {
-			if reply.Len() > 0 {
-				reply.WriteString("\n")
-			}
-			reply.WriteString(e.Text)
-		}
-		_ = conn.reply(controlReply{Event: &e})
-	})
-	_ = conn.reply(controlReply{
-		Done:       true,
-		Silent:     !delivered,
-		Reply:      reply.String(),
-		DurationMs: time.Since(start).Milliseconds(),
-	})
 }
 
 // handleStop gathers a closing summary (and, on request, the transcript and

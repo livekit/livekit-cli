@@ -117,7 +117,6 @@ Typical flow, run from the agent project directory:
    lk agent debugger start                  # starts the agent, prints its greeting (if any)
    lk agent debugger say "Hi, what can you do?"
    lk agent debugger say "Book me a table for two tonight"
-   lk agent debugger wait-for-reply --timeout 15s   # wait for unprompted speech (timers, follow-ups)
    lk agent debugger logs --last 40         # agent process logs (tracebacks, warnings)
    lk agent debugger chat-history           # full transcript so far
    lk agent debugger events --follow        # live one-line stream of every session event
@@ -191,28 +190,6 @@ be piped on stdin:
 				},
 			},
 			Action: runSessionSay,
-		},
-		{
-			Name:  "wait-for-reply",
-			Usage: "Wait for the agent to say something on its own (a greeting, timer, or follow-up) without sending a turn",
-			Description: `Prints agent output that no turn asked for. Anything already waiting is printed
-immediately; otherwise it waits up to --timeout for the agent to start
-speaking, then keeps printing until the agent goes quiet. Use it after a turn
-that set a timer or asked the agent to follow up on its own.
-
-Exits 0 whether or not the agent spoke; --json reports "silent": true when it
-did not.`,
-			Flags: []cli.Flag{
-				sessionPortFlag,
-				jsonFlag,
-				sessionMetricsFlag,
-				&cli.DurationFlag{
-					Name:  "timeout",
-					Value: 10 * time.Second,
-					Usage: "How long to wait for the agent to start speaking before giving up",
-				},
-			},
-			Action: runSessionListen,
 		},
 		{
 			Name:    "chat-history",
@@ -582,71 +559,6 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-// listenJSON is the --json document `wait-for-reply` prints.
-type listenJSON struct {
-	Events     []turnEvent `json:"events"`
-	Reply      string      `json:"reply"`
-	Silent     bool        `json:"silent"`
-	DurationMs int64       `json:"duration_ms"`
-}
-
-func runSessionListen(ctx context.Context, cmd *cli.Command) error {
-	timeout := cmd.Duration("timeout")
-	conn, err := dialControl(int(cmd.Int("port")))
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-	// The daemon keeps collecting while the agent is mid-reply, so allow well
-	// past the idle timeout before treating the connection as wedged.
-	_ = conn.SetReadDeadline(time.Now().Add(timeout + defaultSayTimeout + 15*time.Second))
-	go func() {
-		<-ctx.Done()
-		conn.Close() // ctrl-C stops waiting cleanly
-	}()
-
-	if err := writeControlFrame(conn, controlRequest{Cmd: "wait", TimeoutMs: timeout.Milliseconds()}); err != nil {
-		return err
-	}
-
-	asJSON := cmd.Bool("json")
-	opts := renderFlags(cmd)
-	doc := listenJSON{Events: []turnEvent{}}
-	final, err := streamControlReplies(conn, func(r controlReply) {
-		if r.Event == nil {
-			return
-		}
-		e := *r.Event
-		e.Earlier = false // everything wait-for-reply reports is, by definition, unprompted
-		if asJSON {
-			doc.Events = append(doc.Events, e)
-			return
-		}
-		if line := renderTurnEvent(e, opts); line != "" {
-			out.Result(line)
-		}
-	})
-	if err != nil {
-		if ctx.Err() != nil {
-			return nil
-		}
-		return err
-	}
-	if final.Error != "" {
-		return fmt.Errorf("%s", final.Error)
-	}
-	doc.Reply, doc.Silent, doc.DurationMs = final.Reply, final.Silent, final.DurationMs
-	if asJSON {
-		return printJSON(doc)
-	}
-	if final.Silent {
-		out.Statusf("The agent said nothing for %s.", timeout)
-		return nil
-	}
-	out.Result("")
-	return nil
-}
-
 func runSessionEvents(ctx context.Context, cmd *cli.Command) error {
 	conn, err := dialControl(int(cmd.Int("port")))
 	if err != nil {
@@ -764,7 +676,7 @@ func runSessionStatus(ctx context.Context, cmd *cli.Command) error {
 	}
 	turns := strconv.Itoa(st.Turns)
 	if st.UnseenEvents > 0 {
-		turns += util.Dimmed(fmt.Sprintf(" (+%d agent event(s) not yet shown; run `lk agent debugger wait-for-reply` to see them)", st.UnseenEvents))
+		turns += util.Dimmed(fmt.Sprintf(" (+%d agent event(s) not yet shown; the next `say` reports them, or check `chat-history`)", st.UnseenEvents))
 	}
 	out.Resultf("%s%s\n", label("Turns:"), turns)
 	if st.IdleTimeoutSeconds > 0 {
