@@ -119,8 +119,8 @@ Typical flow, run from the agent project directory:
    lk agent debugger say "Book me a table for two tonight"
    lk agent debugger logs --last 40         # agent process logs (tracebacks, warnings)
    lk agent debugger chat-history           # full transcript so far
-   lk agent debugger events --follow        # live one-line stream of every session event
-   lk agent debugger stop --transcript      # closing summary, plus the conversation
+   lk agent debugger events                 # live one-line stream of every session event
+   lk agent debugger stop --chat-history    # closing summary, plus the conversation
 
 The agent is found the same way as for "lk agent console": the project in the
 current directory (or the nearest parent) with its default entrypoint, or the
@@ -203,22 +203,21 @@ instruction/tool changes. Works while a turn is in progress.`,
 		},
 		{
 			Name:  "events",
-			Usage: "Print the session's event stream, one line per event; --follow keeps streaming",
-			Description: `Shows what happened in the session as a flat, timestamped stream: user and
+			Usage: "Stream the session's events, one line each, until interrupted",
+			Description: `Streams what happens in the session as a flat, timestamped feed: user and
 agent messages, tool calls with arguments and results, handoffs, config
 changes, errors, and agent state transitions, one line each. It observes
-without taking part, so it works alongside "say" from another shell, a person
-on "lk agent console", or a script driving the session.
+without taking part, so it works alongside "say" from another shell or a
+script driving the session.
 
-By default the most recent events are printed and the command exits. With
---follow it keeps printing new events until interrupted, and --logs adds the
-agent's log lines. --json emits one JSON object per line (NDJSON), suitable
-for piping into jq or another program in real time.`,
+The most recent events are printed first (--last), then new ones as they
+happen until you interrupt it. --logs adds the agent's log lines. --json
+emits one JSON object per line (NDJSON), suitable for piping into jq or
+another program in real time.`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
 				jsonFlag,
-				&cli.IntFlag{Name: "last", Aliases: []string{"n"}, Value: 50, Usage: "How many recent events to print first (0 for all kept, up to 500)"},
-				&cli.BoolFlag{Name: "follow", Aliases: []string{"f"}, Usage: "Keep streaming new events until interrupted"},
+				&cli.IntFlag{Name: "last", Aliases: []string{"n"}, Value: 50, Usage: "How many recent events to replay before streaming (0 for all kept, up to 500)"},
 				&cli.BoolFlag{Name: "logs", Usage: "Include the agent's log lines in the stream"},
 			},
 			Action: runSessionEvents,
@@ -261,14 +260,14 @@ conversation starts fresh; the new greeting (if any) is printed like "start".`,
 			Usage: "Stop the running session and its agent, printing a closing summary",
 			Description: `Shuts the agent down and prints how many turns ran, for how long, which agent
 was active at the end, and where the agent's log file is kept. Add
---transcript to print the whole conversation and --logs to print the agent's
+--chat-history to print the whole conversation and --logs to print the agent's
 entire log before the summary; --json returns everything in one document.`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
 				jsonFlag,
 				sessionMetricsFlag,
 				&cli.BoolFlag{
-					Name:  "transcript",
+					Name:  "chat-history",
 					Usage: "Also print the full conversation",
 				},
 				&cli.BoolFlag{
@@ -565,20 +564,15 @@ func runSessionEvents(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	defer conn.Close()
-	follow := cmd.Bool("follow")
-	if !follow {
-		_ = conn.SetReadDeadline(time.Now().Add(15 * time.Second))
-	} else {
-		go func() {
-			<-ctx.Done()
-			conn.Close() // ctrl-C stops streaming cleanly
-		}()
-	}
+	go func() {
+		<-ctx.Done()
+		conn.Close() // ctrl-C stops streaming cleanly
+	}()
 	last := int(cmd.Int("last"))
 	if last == 0 {
 		last = -1 // explicit 0: everything the daemon kept
 	}
-	if err := writeControlFrame(conn, controlRequest{Cmd: "events", Lines: last, Follow: follow, Logs: cmd.Bool("logs")}); err != nil {
+	if err := writeControlFrame(conn, controlRequest{Cmd: "events", Lines: last, Follow: true, Logs: cmd.Bool("logs")}); err != nil {
 		return err
 	}
 	asJSON := cmd.Bool("json")
@@ -734,7 +728,7 @@ type stopJSON struct {
 }
 
 func runSessionStop(ctx context.Context, cmd *cli.Command) error {
-	req := controlRequest{Cmd: "stop", Transcript: cmd.Bool("transcript")}
+	req := controlRequest{Cmd: "stop", Transcript: cmd.Bool("chat-history")}
 	if cmd.Bool("logs") {
 		req.Lines = -1 // the whole log
 	}
@@ -748,7 +742,7 @@ func runSessionStop(ctx context.Context, cmd *cli.Command) error {
 		return printJSON(stopJSON{sessionStatus: st, Events: final.Events, Logs: logs})
 	}
 
-	if cmd.Bool("transcript") && len(final.Events) > 0 {
+	if cmd.Bool("chat-history") && len(final.Events) > 0 {
 		opts := renderFlags(cmd)
 		for _, e := range final.Events {
 			if line := renderTurnEvent(e, opts); line != "" {

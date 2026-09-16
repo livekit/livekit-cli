@@ -430,7 +430,7 @@ func (d *sessionDaemon) handleSay(conn *controlConn, req controlRequest) {
 	_ = conn.reply(done)
 }
 
-// handleStop gathers a closing summary (and, on request, the transcript and
+// handleStop gathers a closing summary (and, on request, the chat history and
 // the agent's full log) before tearing the session down, so `stop` can leave
 // a record of what happened.
 func (d *sessionDaemon) handleStop(conn *controlConn, req controlRequest) {
@@ -466,8 +466,9 @@ func (d *sessionDaemon) handleHistory(conn *controlConn) {
 	_ = conn.reply(controlReply{Events: events, Done: true})
 }
 
-// handleEvents replays the recent event ring and, with Follow, taps the live
-// stream (plus agent log lines when asked) until the client hangs up.
+// handleEvents replays the recent event ring and then taps the live stream
+// (plus agent log lines when asked) until the client hangs up. Follow=false is
+// still honored for older clients: replay only.
 func (d *sessionDaemon) handleEvents(conn *controlConn, req controlRequest) {
 	last := req.Lines
 	if last == 0 {

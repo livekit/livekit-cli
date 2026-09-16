@@ -92,7 +92,7 @@ type textSession struct {
 	mu          sync.Mutex
 	pending     map[string]chan *agent.SessionResponse
 	subs        map[*eventSub]struct{}
-	observers   map[*eventSub]struct{} // `events --follow` taps; never affect buffering
+	observers   map[*eventSub]struct{} // `events` taps; never affect buffering
 	recent      []turnEvent            // ring of the latest events for `events`
 	undelivered []turnEvent
 	agentState  agent.AgentState

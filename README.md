@@ -492,10 +492,10 @@ lk agent debugger start                       # starts the agent, prints its ope
 lk agent debugger say "Hi, what can you do?"  # prints tool calls (with arguments and results), handoffs, and the reply
 lk agent debugger say "Book a table for two tonight"
 lk agent debugger chat-history                # the whole conversation so far
-lk agent debugger events --follow             # live, one-line-per-event stream of everything the session does
+lk agent debugger events                      # live, one-line-per-event stream of everything the session does
 lk agent debugger logs --last 40              # the agent process's logs (tracebacks, warnings)
 lk agent debugger status                      # active agent, its tools, state, log file
-lk agent debugger stop --transcript           # closing summary, plus the whole conversation
+lk agent debugger stop --chat-history         # closing summary, plus the whole conversation
 ```
 
 `start` takes an optional entrypoint (`lk agent debugger start src/my_agent.py`) when the project doesn't use the default `agent.py`/`src/agent.py` or `main.ts`/`src/main.ts`; arguments after `--` go to the interpreter.
@@ -507,7 +507,7 @@ Useful options:
 -   `--json` on any command prints machine-readable output. Each turn is a document with `text`, `reply`, `duration_ms`, and an `events` list of `message`, `tool_call`, `handoff`, `config`, `error`, `log`, and (on the events stream) `state` entries, each with a `time`.
 -   `--metrics` adds per-turn latency metrics (time to first token, end-to-end).
 -   `restart` relaunches the agent with a fresh conversation after the code changes.
--   `events` prints the session as a flat, timestamped event stream (messages, tool calls, handoffs, state changes); `--follow` keeps streaming, `--logs` adds agent log lines, and `--json` emits NDJSON for piping into other tools.
+-   `events` streams the session as a flat, timestamped feed (messages, tool calls, handoffs, state changes) until interrupted, replaying the last few first; `--logs` adds agent log lines, and `--json` emits NDJSON for piping into other tools.
 -   `--port` runs several sessions side by side (one agent per port).
 -   A session stops itself after 30 minutes without commands so a forgotten one doesn't linger; `start --idle-timeout` changes that (0 disables it).
 
