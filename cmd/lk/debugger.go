@@ -96,8 +96,9 @@ func init() {
 }
 
 var agentDaemonCommand = &cli.Command{
-	Name:  "debugger",
-	Usage: "Drive a text conversation with a local agent from a script or coding agent",
+	Name:    "debugger",
+	Aliases: []string{"dbg"},
+	Usage:   "Drive a text conversation with a local agent from a script or coding agent",
 	Description: `Runs your agent locally in text mode as a background process, then lets
 you drive a multi-turn conversation one command at a time. Each "say" sends a
 user turn and prints everything the agent did in response: tool calls with
@@ -133,7 +134,8 @@ with a fresh conversation. Add --json to any command for machine-readable
 output: each turn is a document with "text", "reply", "duration_ms", and an
 "events" list of message, tool_call, handoff, config, error, and log entries.
 Exit codes are non-zero when a turn fails or times out, or no session is
-running. Use --port to run several agents side by side (one session per port).`,
+running. Use --port to run several agents side by side (one session per port).
+"lk agent dbg" is short for "lk agent debugger".`,
 	Commands: []*cli.Command{
 		{
 			Name:      "start",

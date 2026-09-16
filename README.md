@@ -485,7 +485,7 @@ Console needs a terminal. If a program rather than a person is going to hold the
 
 People can use it too, but the output and flags are shaped for a program driving it one command at a time: every turn prints tool calls with their arguments and results, handoffs, errors, and the reply; exit codes are non-zero when a turn fails; `--json` is available everywhere. If you want to talk to your agent yourself, `lk agent console` is the better fit.
 
-A typical session, run from the agent project directory:
+A typical session, run from the agent project directory (`lk agent dbg` is short for `lk agent debugger`):
 
 ```shell
 lk agent debugger start                       # starts the agent, prints its opening message if it has one
