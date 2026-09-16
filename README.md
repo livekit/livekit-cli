@@ -491,8 +491,9 @@ A typical session, run from the agent project directory (`lk agent dbg` is short
 lk agent debugger start                       # starts the agent, prints its opening message if it has one
 lk agent debugger say "Hi, what can you do?"  # prints tool calls (with arguments and results), handoffs, and the reply
 lk agent debugger say "Book a table for two tonight"
-lk agent debugger listen --timeout 15s        # wait for the agent to speak unprompted (a timer, a follow-up after silence)
-lk agent debugger history                     # the whole conversation so far
+lk agent debugger wait-for-reply --timeout 15s   # wait for the agent to speak unprompted (a timer, a follow-up after silence)
+lk agent debugger chat-history                # the whole conversation so far
+lk agent debugger events --follow             # live, one-line-per-event stream of everything the session does
 lk agent debugger logs --last 40              # the agent process's logs (tracebacks, warnings)
 lk agent debugger status                      # active agent, its tools, state, log file
 lk agent debugger stop --transcript           # closing summary, plus the whole conversation
@@ -504,10 +505,11 @@ Useful options:
 
 -   `say --logs` shows the agent's log lines beneath the step they belong to, so a tool's traceback appears right under the sanitized error the user would hear.
 -   `say --timeout 30s` bounds how long to wait for the reply (default 2 minutes); the exit code is non-zero if the turn failed or timed out.
--   `--json` on any command prints machine-readable output. Each turn is a document with `text`, `reply`, `duration_ms`, and an `events` list of `message`, `tool_call`, `handoff`, `config`, `error`, and `log` entries.
+-   `--json` on any command prints machine-readable output. Each turn is a document with `text`, `reply`, `duration_ms`, and an `events` list of `message`, `tool_call`, `handoff`, `config`, `error`, `log`, and (on the events stream) `state` entries, each with a `time`.
 -   `--metrics` adds per-turn latency metrics (time to first token, end-to-end).
 -   `restart` relaunches the agent with a fresh conversation after the code changes.
--   `listen --timeout 15s` waits for the agent to speak unprompted, for example after a tool set a timer, and prints whatever it says.
+-   `wait-for-reply --timeout 15s` waits for the agent to speak unprompted, for example after a tool set a timer, and prints whatever it says.
+-   `events` prints the session as a flat, timestamped event stream (messages, tool calls, handoffs, state changes); `--follow` keeps streaming, `--logs` adds agent log lines, and `--json` emits NDJSON for piping into other tools.
 -   `--port` runs several sessions side by side (one agent per port).
 -   A session stops itself after 30 minutes without commands so a forgotten one doesn't linger; `start --idle-timeout` changes that (0 disables it).
 

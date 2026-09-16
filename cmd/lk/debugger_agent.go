@@ -38,8 +38,12 @@ import (
 // emits them verbatim, so the schema doubles as the machine-readable contract
 // for coding agents driving the CLI.
 type turnEvent struct {
-	// Type is one of: message, tool_call, handoff, config, error, log.
+	// Type is one of: message, tool_call, handoff, config, error, log, state.
+	// "state" (agent state transitions, From → To) is only reported by the
+	// events stream, never inside a turn.
 	Type string `json:"type"`
+	// Time is when the event happened (RFC 3339 with milliseconds), when known.
+	Time string `json:"time,omitempty"`
 	// Role is "user" or "assistant" for message events.
 	Role string `json:"role,omitempty"`
 	// Text is the message text, error message, or log line.
@@ -88,6 +92,8 @@ type textSession struct {
 	mu          sync.Mutex
 	pending     map[string]chan *agent.SessionResponse
 	subs        map[*eventSub]struct{}
+	observers   map[*eventSub]struct{} // `events --follow` taps; never affect buffering
+	recent      []turnEvent            // ring of the latest events for `events`
 	undelivered []turnEvent
 	agentState  agent.AgentState
 	activity    chan struct{}
@@ -112,13 +118,14 @@ func newTextSession(conn net.Conn, reader io.Reader) *textSession {
 		reader = conn
 	}
 	s := &textSession{
-		conn:     conn,
-		reader:   reader,
-		pending:  make(map[string]chan *agent.SessionResponse),
-		subs:     make(map[*eventSub]struct{}),
-		activity: make(chan struct{}, 1),
-		turnSem:  make(chan struct{}, 1),
-		done:     make(chan struct{}),
+		conn:      conn,
+		reader:    reader,
+		pending:   make(map[string]chan *agent.SessionResponse),
+		subs:      make(map[*eventSub]struct{}),
+		observers: make(map[*eventSub]struct{}),
+		activity:  make(chan struct{}, 1),
+		turnSem:   make(chan struct{}, 1),
+		done:      make(chan struct{}),
 	}
 	go s.readLoop()
 	return s
@@ -196,13 +203,26 @@ func (s *textSession) notifyActivity() {
 	}
 }
 
+// recentEventsMax bounds the ring of events kept for `events`.
+const recentEventsMax = 500
+
+func eventTimestamp(t time.Time) string { return t.UTC().Format("2006-01-02T15:04:05.000Z07:00") }
+
 func (s *textSession) handleEvent(ev *agent.AgentSessionEvent) {
 	if ev == nil {
 		return
 	}
+	now := eventTimestamp(time.Now())
 	if sc, ok := ev.Event.(*agent.AgentSessionEvent_AgentStateChanged_); ok && sc.AgentStateChanged != nil {
 		s.mu.Lock()
+		old := s.agentState
 		s.agentState = sc.AgentStateChanged.NewState
+		// State transitions are noise inside a turn but useful on the event
+		// stream, so they go to observers (and the ring) only.
+		s.publishLocked([]turnEvent{{
+			Type: "state", Time: now,
+			From: agentStateName(old), To: agentStateName(sc.AgentStateChanged.NewState),
+		}}, false)
 		s.mu.Unlock()
 		s.notifyActivity()
 		return
@@ -211,21 +231,81 @@ func (s *textSession) handleEvent(ev *agent.AgentSessionEvent) {
 	if len(events) == 0 {
 		return
 	}
+	// Live events are stamped on arrival so the stream reads in order; the
+	// SDK's own created_at (kept for chat-history items) can predate the state
+	// transitions that surround it.
+	for i := range events {
+		events[i].Time = now
+	}
 	s.mu.Lock()
-	if len(s.subs) == 0 {
-		s.undelivered = append(s.undelivered, events...)
-	} else {
-		for sub := range s.subs {
-			for _, e := range events {
-				select {
-				case sub.ch <- e:
-				default:
-				}
+	s.publishLocked(events, true)
+	s.mu.Unlock()
+	s.notifyActivity()
+}
+
+// publishLocked records events in the ring and hands them to observers; when
+// toTurns is set they also go to turn subscribers, or to the undelivered
+// buffer if nobody is listening. Caller holds s.mu.
+func (s *textSession) publishLocked(events []turnEvent, toTurns bool) {
+	s.recent = append(s.recent, events...)
+	if over := len(s.recent) - recentEventsMax; over > 0 {
+		s.recent = append([]turnEvent(nil), s.recent[over:]...)
+	}
+	for obs := range s.observers {
+		for _, e := range events {
+			select {
+			case obs.ch <- e:
+			default:
 			}
 		}
 	}
+	if !toTurns {
+		return
+	}
+	if len(s.subs) == 0 {
+		s.undelivered = append(s.undelivered, events...)
+		return
+	}
+	for sub := range s.subs {
+		for _, e := range events {
+			select {
+			case sub.ch <- e:
+			default:
+			}
+		}
+	}
+}
+
+// observe taps the live event stream without affecting what turns see. It
+// returns the subscription and the most recent `last` events (all if last <= 0).
+func (s *textSession) observe(last int) (*eventSub, []turnEvent) {
+	obs := &eventSub{ch: make(chan turnEvent, 1024)}
+	s.mu.Lock()
+	recent := s.recent
+	if last > 0 && last < len(recent) {
+		recent = recent[len(recent)-last:]
+	}
+	snapshot := append([]turnEvent(nil), recent...)
+	s.observers[obs] = struct{}{}
 	s.mu.Unlock()
-	s.notifyActivity()
+	return obs, snapshot
+}
+
+func (s *textSession) unobserve(obs *eventSub) {
+	s.mu.Lock()
+	delete(s.observers, obs)
+	s.mu.Unlock()
+}
+
+// RecentEvents returns the most recent `last` events (all if last <= 0).
+func (s *textSession) RecentEvents(last int) []turnEvent {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	recent := s.recent
+	if last > 0 && last < len(recent) {
+		recent = recent[len(recent)-last:]
+	}
+	return append([]turnEvent(nil), recent...)
 }
 
 // subscribe starts receiving live events and, atomically with that, returns
@@ -629,7 +709,11 @@ func chatItemsToTurnEvents(items []*agent.ChatContext_ChatItem) []turnEvent {
 		case *agent.ChatContext_ChatItem_FunctionCall:
 			fc := i.FunctionCall
 			callIndex[fc.GetCallId()] = len(events)
-			events = append(events, turnEvent{Type: "tool_call", Name: fc.GetName(), Arguments: fc.GetArguments()})
+			e := turnEvent{Type: "tool_call", Name: fc.GetName(), Arguments: fc.GetArguments()}
+			if ts := fc.GetCreatedAt(); ts != nil {
+				e.Time = eventTimestamp(ts.AsTime())
+			}
+			events = append(events, e)
 		case *agent.ChatContext_ChatItem_FunctionCallOutput:
 			fco := i.FunctionCallOutput
 			if idx, ok := callIndex[fco.GetCallId()]; ok {
@@ -689,6 +773,9 @@ func messageToTurnEvent(msg *agent.ChatMessage) (turnEvent, bool) {
 		return turnEvent{}, false
 	}
 	e := turnEvent{Type: "message", Role: role, Text: text, Interrupted: msg.GetInterrupted()}
+	if ts := msg.GetCreatedAt(); ts != nil {
+		e.Time = eventTimestamp(ts.AsTime())
+	}
 	if m := msg.GetMetrics(); m != nil {
 		metrics := map[string]float64{}
 		if m.LlmNodeTtft != nil {

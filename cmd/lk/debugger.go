@@ -117,9 +117,10 @@ Typical flow, run from the agent project directory:
    lk agent debugger start                  # starts the agent, prints its greeting (if any)
    lk agent debugger say "Hi, what can you do?"
    lk agent debugger say "Book me a table for two tonight"
-   lk agent debugger listen --timeout 15s   # wait for the agent to speak unprompted (timers, follow-ups)
+   lk agent debugger wait-for-reply --timeout 15s   # wait for unprompted speech (timers, follow-ups)
    lk agent debugger logs --last 40         # agent process logs (tracebacks, warnings)
-   lk agent debugger history                # full transcript so far
+   lk agent debugger chat-history           # full transcript so far
+   lk agent debugger events --follow        # live one-line stream of every session event
    lk agent debugger stop --transcript      # closing summary, plus the conversation
 
 The agent is found the same way as for "lk agent console": the project in the
@@ -192,7 +193,7 @@ be piped on stdin:
 			Action: runSessionSay,
 		},
 		{
-			Name:  "listen",
+			Name:  "wait-for-reply",
 			Usage: "Wait for the agent to say something on its own (a greeting, timer, or follow-up) without sending a turn",
 			Description: `Prints agent output that no turn asked for. Anything already waiting is printed
 immediately; otherwise it waits up to --timeout for the agent to start
@@ -214,7 +215,7 @@ did not.`,
 			Action: runSessionListen,
 		},
 		{
-			Name:    "history",
+			Name:    "chat-history",
 			Aliases: []string{"transcript"},
 			Usage:   "Print the conversation so far, as the agent recorded it",
 			Description: `Fetches the agent's own chat history, so it reflects exactly what the LLM has
@@ -222,6 +223,28 @@ seen: user and agent messages, tool calls with results, handoffs, and
 instruction/tool changes. Works while a turn is in progress.`,
 			Flags:  []cli.Flag{sessionPortFlag, jsonFlag, sessionMetricsFlag},
 			Action: runSessionHistory,
+		},
+		{
+			Name:  "events",
+			Usage: "Print the session's event stream, one line per event; --follow keeps streaming",
+			Description: `Shows what happened in the session as a flat, timestamped stream: user and
+agent messages, tool calls with arguments and results, handoffs, config
+changes, errors, and agent state transitions, one line each. It observes
+without taking part, so it works alongside "say" from another shell, a person
+on "lk agent console", or a script driving the session.
+
+By default the most recent events are printed and the command exits. With
+--follow it keeps printing new events until interrupted, and --logs adds the
+agent's log lines. --json emits one JSON object per line (NDJSON), suitable
+for piping into jq or another program in real time.`,
+			Flags: []cli.Flag{
+				sessionPortFlag,
+				jsonFlag,
+				&cli.IntFlag{Name: "last", Aliases: []string{"n"}, Value: 50, Usage: "How many recent events to print first (0 for all kept, up to 500)"},
+				&cli.BoolFlag{Name: "follow", Aliases: []string{"f"}, Usage: "Keep streaming new events until interrupted"},
+				&cli.BoolFlag{Name: "logs", Usage: "Include the agent's log lines in the stream"},
+			},
+			Action: runSessionEvents,
 		},
 		{
 			Name:  "status",
@@ -559,7 +582,7 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-// listenJSON is the --json document `listen` prints.
+// listenJSON is the --json document `wait-for-reply` prints.
 type listenJSON struct {
 	Events     []turnEvent `json:"events"`
 	Reply      string      `json:"reply"`
@@ -582,7 +605,7 @@ func runSessionListen(ctx context.Context, cmd *cli.Command) error {
 		conn.Close() // ctrl-C stops waiting cleanly
 	}()
 
-	if err := writeControlFrame(conn, controlRequest{Cmd: "listen", TimeoutMs: timeout.Milliseconds()}); err != nil {
+	if err := writeControlFrame(conn, controlRequest{Cmd: "wait", TimeoutMs: timeout.Milliseconds()}); err != nil {
 		return err
 	}
 
@@ -594,7 +617,7 @@ func runSessionListen(ctx context.Context, cmd *cli.Command) error {
 			return
 		}
 		e := *r.Event
-		e.Earlier = false // everything listen reports is, by definition, unprompted
+		e.Earlier = false // everything wait-for-reply reports is, by definition, unprompted
 		if asJSON {
 			doc.Events = append(doc.Events, e)
 			return
@@ -624,8 +647,50 @@ func runSessionListen(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
+func runSessionEvents(ctx context.Context, cmd *cli.Command) error {
+	conn, err := dialControl(int(cmd.Int("port")))
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	follow := cmd.Bool("follow")
+	if !follow {
+		_ = conn.SetReadDeadline(time.Now().Add(15 * time.Second))
+	} else {
+		go func() {
+			<-ctx.Done()
+			conn.Close() // ctrl-C stops streaming cleanly
+		}()
+	}
+	last := int(cmd.Int("last"))
+	if last == 0 {
+		last = -1 // explicit 0: everything the daemon kept
+	}
+	if err := writeControlFrame(conn, controlRequest{Cmd: "events", Lines: last, Follow: follow, Logs: cmd.Bool("logs")}); err != nil {
+		return err
+	}
+	asJSON := cmd.Bool("json")
+	enc := json.NewEncoder(out.ResultWriter())
+	_, err = streamControlReplies(conn, func(r controlReply) {
+		if r.Event == nil {
+			return
+		}
+		if asJSON {
+			_ = enc.Encode(r.Event)
+			return
+		}
+		if line := renderEventLine(*r.Event); line != "" {
+			out.Result(line)
+		}
+	})
+	if err != nil && ctx.Err() != nil {
+		return nil
+	}
+	return err
+}
+
 func runSessionHistory(ctx context.Context, cmd *cli.Command) error {
-	reply, err := controlRoundTrip(int(cmd.Int("port")), controlRequest{Cmd: "history"}, 30*time.Second)
+	reply, err := controlRoundTrip(int(cmd.Int("port")), controlRequest{Cmd: "chat-history"}, 30*time.Second)
 	if err != nil {
 		return err
 	}
@@ -699,7 +764,7 @@ func runSessionStatus(ctx context.Context, cmd *cli.Command) error {
 	}
 	turns := strconv.Itoa(st.Turns)
 	if st.UnseenEvents > 0 {
-		turns += util.Dimmed(fmt.Sprintf(" (+%d agent event(s) not yet shown; run `lk agent debugger listen` to see them)", st.UnseenEvents))
+		turns += util.Dimmed(fmt.Sprintf(" (+%d agent event(s) not yet shown; run `lk agent debugger wait-for-reply` to see them)", st.UnseenEvents))
 	}
 	out.Resultf("%s%s\n", label("Turns:"), turns)
 	if st.IdleTimeoutSeconds > 0 {

@@ -465,3 +465,57 @@ func TestSayWaitsForHandoffIntroduction(t *testing.T) {
 	require.Equal(t, "handoff", got[1].Type)
 	require.Equal(t, "Hi, billing here.", got[2].Text)
 }
+
+func TestObserveStreamDoesNotAffectTurns(t *testing.T) {
+	fa, sess := newFakeAgent(t)
+
+	obs, recent := sess.observe(0)
+	defer sess.unobserve(obs)
+	require.Empty(t, recent)
+
+	// With only an observer attached, agent output must still be buffered for
+	// the next turn, and the observer must see it too, with a timestamp.
+	fa.sendState(agent.AgentState_AS_THINKING)
+	fa.sendAssistant("unprompted")
+	var seen []turnEvent
+	require.Eventually(t, func() bool {
+		for {
+			select {
+			case e := <-obs.ch:
+				seen = append(seen, e)
+			default:
+				return len(seen) == 2
+			}
+		}
+	}, time.Second, 10*time.Millisecond)
+	require.Equal(t, "state", seen[0].Type)
+	require.Equal(t, "thinking", seen[0].To)
+	require.Equal(t, "unprompted", seen[1].Text)
+	require.NotEmpty(t, seen[1].Time)
+
+	held := sess.takeUndelivered()
+	require.Len(t, held, 1, "observer must not consume events meant for turns")
+	require.Equal(t, "unprompted", held[0].Text)
+
+	// State transitions never reach turns.
+	for _, e := range held {
+		require.NotEqual(t, "state", e.Type)
+	}
+
+	// The ring keeps both for a later `events` call, most recent last.
+	all := sess.RecentEvents(0)
+	require.Len(t, all, 2)
+	require.Len(t, sess.RecentEvents(1), 1)
+	require.Equal(t, "unprompted", sess.RecentEvents(1)[0].Text)
+}
+
+func TestRenderEventLine(t *testing.T) {
+	plain := func(e turnEvent) string { return ansiEscapeRe.ReplaceAllString(renderEventLine(e), "") }
+	line := plain(turnEvent{Type: "tool_call", Time: "2026-09-16T10:00:00.123Z", Name: "lookup", Arguments: "{\"q\":\n 1}", Output: "line one\nline two"})
+	require.Contains(t, line, "tool    lookup({\"q\": 1}) ↳ line one line two")
+	require.NotContains(t, line, "\n")
+	require.Contains(t, plain(turnEvent{Type: "message", Role: "user", Text: "hi"}), "user    hi")
+	require.Contains(t, plain(turnEvent{Type: "state", From: "listening", To: "thinking"}), "state   listening → thinking")
+	require.Contains(t, plain(turnEvent{Type: "handoff", From: "a", To: "b"}), "handoff a → b")
+	require.Contains(t, plain(turnEvent{Type: "tool_call", Name: "x", Output: "boom", IsError: true}), "✗ boom")
+}

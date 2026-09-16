@@ -121,7 +121,7 @@ func TestSessionE2E(t *testing.T) {
 		"agent did not echo the token back; say output:\n%s", sayOut)
 
 	// history: the agent's own record of the conversation must contain the turn.
-	histOut, err := run(sessionE2ETimeout, "agent", "debugger", "history", "--port", port)
+	histOut, err := run(sessionE2ETimeout, "agent", "debugger", "chat-history", "--port", port)
 	require.NoError(t, err, "session history failed:\n%s", histOut)
 	require.GreaterOrEqualf(t, strings.Count(histOut, token), 2,
 		"history did not contain both the prompt and the reply:\n%s", histOut)

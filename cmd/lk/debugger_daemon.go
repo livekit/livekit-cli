@@ -362,10 +362,12 @@ func (d *sessionDaemon) handleControlConn(raw net.Conn) {
 		d.handleSay(conn, req)
 	case "pending":
 		_ = conn.reply(controlReply{Events: d.session.takeUndelivered(), Done: true})
-	case "listen":
+	case "wait":
 		d.handleListen(conn, req)
-	case "history":
+	case "chat-history":
 		d.handleHistory(conn)
+	case "events":
+		d.handleEvents(conn, req)
 	case "status":
 		_ = conn.reply(controlReply{Status: d.collectStatus(), Done: true})
 	case "logs":
@@ -500,6 +502,56 @@ func (d *sessionDaemon) handleHistory(conn *controlConn) {
 		return
 	}
 	_ = conn.reply(controlReply{Events: events, Done: true})
+}
+
+// handleEvents replays the recent event ring and, with Follow, taps the live
+// stream (plus agent log lines when asked) until the client hangs up.
+func (d *sessionDaemon) handleEvents(conn *controlConn, req controlRequest) {
+	last := req.Lines
+	if last == 0 {
+		last = 50
+	} else if last < 0 {
+		last = 0 // everything kept
+	}
+	if !req.Follow {
+		for _, e := range d.session.RecentEvents(last) {
+			e := e
+			_ = conn.reply(controlReply{Event: &e})
+		}
+		_ = conn.reply(controlReply{Done: true})
+		return
+	}
+	obs, recent := d.session.observe(last)
+	defer d.session.unobserve(obs)
+	var logCh chan string
+	if req.Logs {
+		logCh = d.subscribeLogs()
+		defer d.unsubscribeLogs(logCh)
+	}
+	for _, e := range recent {
+		e := e
+		if err := conn.reply(controlReply{Event: &e}); err != nil {
+			return
+		}
+	}
+	for {
+		select {
+		case e := <-obs.ch:
+			if err := conn.reply(controlReply{Event: &e}); err != nil {
+				return
+			}
+		case line := <-logCh:
+			e := turnEvent{Type: "log", Time: eventTimestamp(time.Now()), Text: line}
+			if err := conn.reply(controlReply{Event: &e}); err != nil {
+				return
+			}
+		case <-conn.closed:
+			return
+		case <-d.exited:
+			_ = conn.reply(controlReply{Done: true, Error: "agent exited"})
+			return
+		}
+	}
 }
 
 func (d *sessionDaemon) handleLogs(conn *controlConn, req controlRequest) {

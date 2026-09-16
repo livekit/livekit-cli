@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"charm.land/lipgloss/v2"
 )
@@ -152,4 +153,62 @@ func renderMetrics(m map[string]float64) string {
 		}
 	}
 	return "⏱ " + strings.Join(parts, " · ")
+}
+
+// renderEventLine formats one event as a single line for the `events` stream:
+// a timestamp, a kind, and the payload with newlines collapsed. Unlike the
+// transcript renderer it never spans lines, so the output greps and tails well.
+func renderEventLine(e turnEvent) string {
+	ts := "            "
+	if t, err := time.Parse(time.RFC3339Nano, e.Time); err == nil {
+		ts = t.Local().Format("15:04:05.000")
+	}
+	kind := func(label string, style lipgloss.Style) string {
+		return style.Render(fmt.Sprintf("%-8s", label))
+	}
+	var body string
+	switch e.Type {
+	case "message":
+		text := oneLine(e.Text)
+		if e.Role == "user" {
+			body = kind("user", sessionUserStyle) + text
+		} else {
+			if e.Interrupted {
+				text += " " + sessionDimStyle.Render("(interrupted)")
+			}
+			body = kind("agent", sessionAgentStyle) + text
+		}
+	case "tool_call":
+		call := e.Name + "(" + oneLine(e.Arguments) + ")"
+		switch {
+		case e.IsError:
+			body = kind("tool", sessionToolStyle) + call + " " + sessionRedStyle.Render("✗ "+oneLine(e.Output))
+		case e.Output != "":
+			body = kind("tool", sessionToolStyle) + call + " " + sessionDimStyle.Render("↳ "+oneLine(e.Output))
+		default:
+			body = kind("tool", sessionToolStyle) + call
+		}
+	case "handoff":
+		if e.From == "" {
+			body = kind("agent", lipgloss.NewStyle().Foreground(sessionPurple)) + sessionDimStyle.Render("active: ") + e.To
+		} else {
+			body = kind("handoff", lipgloss.NewStyle().Foreground(sessionPurple)) + e.From + " → " + e.To
+		}
+	case "config":
+		body = kind("config", lipgloss.NewStyle().Foreground(sessionPurple)) + sessionDimStyle.Render(strings.Join(e.Changes, "; "))
+	case "error":
+		body = kind("error", sessionRedStyle) + sessionRedStyle.Render(oneLine(e.Text))
+	case "log":
+		body = kind("log", sessionDimStyle) + sessionDimStyle.Render(oneLine(e.Text))
+	case "state":
+		body = kind("state", sessionDimStyle) + sessionDimStyle.Render(e.From+" → "+e.To)
+	default:
+		return ""
+	}
+	return sessionDimStyle.Render(ts) + "  " + body
+}
+
+// oneLine collapses whitespace runs (including newlines) into single spaces.
+func oneLine(text string) string {
+	return strings.Join(strings.Fields(text), " ")
 }
