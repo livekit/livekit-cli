@@ -89,7 +89,7 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "scenarios",
-			Usage: "Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent's source",
+			Usage: "Path to a scenarios `FILE` (yaml). Defaults to ./" + defaultScenariosFile + " when it exists; otherwise scenarios are generated from the agent's source",
 		},
 		&cli.BoolFlag{
 			Name:    "yes",
@@ -98,7 +98,7 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "agent-name",
-			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
+			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires a scenarios file.",
 		},
 	},
 }
@@ -305,6 +305,22 @@ func simulateConfigWarnings(mode simulateMode, numSimulations int32) []string {
 	return nil
 }
 
+// defaultScenariosFile is where simulate looks when --scenarios is omitted.
+const defaultScenariosFile = "scenarios.yaml"
+
+// scenariosPathOrDefault resolves --scenarios, falling back to scenarios.yaml in
+// the working directory when it exists; "" means no file, so scenarios are
+// generated from the agent's source.
+func scenariosPathOrDefault(cmd *cli.Command) string {
+	if path := cmd.String("scenarios"); path != "" {
+		return path
+	}
+	if _, err := os.Stat(defaultScenariosFile); err == nil {
+		return defaultScenariosFile
+	}
+	return ""
+}
+
 func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -373,9 +389,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	concurrency := int32(cmd.Int("concurrency"))
 	liveAgentName := cmd.String("agent-name")
 
-	// never auto-discovered: an explicit --scenarios file is the source of
-	// truth, otherwise scenarios are generated from the agent's source
-	scenariosPath := cmd.String("scenarios")
+	scenariosPath := scenariosPathOrDefault(cmd)
 
 	var (
 		agentName   string
@@ -391,7 +405,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	if cmd.IsSet("agent-name") {
 		// nothing is spawned, so there's no source to generate scenarios from.
 		if scenariosPath == "" {
-			return fmt.Errorf("--agent-name requires --scenarios (no source to generate scenarios from when running against a live agent)")
+			return fmt.Errorf("--agent-name requires a scenarios file (--scenarios or ./%s): nothing is spawned, so there is no source to generate scenarios from", defaultScenariosFile)
 		}
 		liveAgent = true
 		agentName = liveAgentName
@@ -495,7 +509,7 @@ func confirmSourceUpload(cmd *cli.Command, projectDir string) error {
 	err := huh.NewForm(huh.NewGroup(huh.NewConfirm().
 		Title("Upload source to LiveKit Cloud?").
 		Description(fmt.Sprintf(
-			"No --scenarios file was provided, so test scenarios will be generated\n"+
+			"No scenarios file was found, so test scenarios will be generated\n"+
 				"from your agent's code. This uploads %s to LiveKit Cloud.",
 			util.Accented(projectDir),
 		)).
