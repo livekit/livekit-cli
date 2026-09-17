@@ -333,6 +333,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Before: createAgentClient,
 					Action: deployAgent,
 					Flags: []cli.Flag{
+						idFlag(false),
 						attributesFlag,
 						attributeFlag,
 						noDefaultAttributesFlag,
