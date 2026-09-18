@@ -15,10 +15,13 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/livekit/protocol/livekit"
 	"github.com/stretchr/testify/require"
 )
 
@@ -87,6 +90,18 @@ func TestSimulateKeyDispatch(t *testing.T) {
 			key:   "tab",
 			setup: func() *simulateModel { m := runningFixture(); m.confirmQuit = true; return m },
 			check: func(t *testing.T, m *simulateModel) { require.Equal(t, 1, m.confirmQuitSel) },
+		},
+		{
+			name:  "esc declines the save offer",
+			key:   "esc",
+			setup: func() *simulateModel { m := runningFixture(); m.saveOffer = true; return m },
+			check: func(t *testing.T, m *simulateModel) { require.False(t, m.saveOffer) },
+		},
+		{
+			name:  "tab moves the save offer selection",
+			key:   "tab",
+			setup: func() *simulateModel { m := runningFixture(); m.saveOffer = true; return m },
+			check: func(t *testing.T, m *simulateModel) { require.Equal(t, 1, m.saveOfferSel) },
 		},
 		{
 			name:  "down moves the cursor",
@@ -174,4 +189,45 @@ func TestSimulateDetailLeavesAltScreen(t *testing.T) {
 
 	m.closeDetailCmd()
 	require.True(t, m.View().AltScreen, "closing a job returns to the alt screen")
+}
+
+// offerFixture is a run whose generated scenarios are waiting to be saved into
+// a throwaway project directory.
+func offerFixture(t *testing.T) *simulateModel {
+	t.Helper()
+	m := runningFixture()
+	m.config.projectDir = t.TempDir()
+	m.run.ScenarioGroup = &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Label: "booking a table"}}}
+	m.saveOffer = true
+	return m
+}
+
+func TestSaveOfferAcceptWrites(t *testing.T) {
+	m := offerFixture(t)
+	m.handleSaveOfferKey(keyPress("enter"))
+
+	require.False(t, m.saveOffer)
+	require.False(t, m.saving)
+	data, err := os.ReadFile(filepath.Join(m.config.projectDir, defaultScenariosFile))
+	require.NoError(t, err)
+	require.Contains(t, string(data), "booking a table")
+}
+
+// An existing scenarios.yaml is never overwritten: the offer hands off to the
+// file-name dialog instead.
+func TestSaveOfferAcceptFallsBackToNameDialog(t *testing.T) {
+	m := offerFixture(t)
+	path := filepath.Join(m.config.projectDir, defaultScenariosFile)
+	require.NoError(t, os.WriteFile(path, []byte("scenarios: []\n"), 0o644))
+
+	m.handleSaveOfferKey(keyPress("enter"))
+
+	require.False(t, m.saveOffer)
+	require.True(t, m.saving)
+	require.NotEmpty(t, m.saveErr)
+	require.Equal(t, defaultScenariosFile, m.saveInput.Value())
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, "scenarios: []\n", string(data))
 }
