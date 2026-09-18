@@ -152,14 +152,19 @@ func writeIndented(b *strings.Builder, style lipgloss.Style, marker, text string
 // --metrics output and the console's status line. An end-to-end latency of a
 // second or more is called out in the error color.
 func renderMetrics(m map[string]float64) string {
+	labels := []struct{ key, label string }{
+		{"llm_ttft", "llm_ttft"},
+		{"tts_ttfb", "tts_ttfb"},
+		{"e2e_latency", "e2e"},
+	}
 	var parts []string
-	for _, key := range []string{"llm_ttft", "tts_ttfb", "e2e_latency"} {
-		v, ok := m[key]
+	for _, l := range labels {
+		v, ok := m[l.key]
 		if !ok {
 			continue
 		}
-		part := fmt.Sprintf("%s %dms", key, int(v*1000))
-		if key == "e2e_latency" && v >= 1.0 {
+		part := l.label + " " + formatMs(v)
+		if l.key == "e2e_latency" && v >= 1.0 {
 			part = transcriptErrorStyle().Render(part)
 		}
 		parts = append(parts, part)
@@ -168,6 +173,16 @@ func renderMetrics(m map[string]float64) string {
 		return ""
 	}
 	return "⏱ " + strings.Join(parts, " · ")
+}
+
+// formatMs renders seconds as milliseconds, keeping one decimal under 100ms
+// where it still carries information.
+func formatMs(seconds float64) string {
+	ms := seconds * 1000
+	if ms >= 100 {
+		return fmt.Sprintf("%.0fms", ms)
+	}
+	return fmt.Sprintf("%.1fms", ms)
 }
 
 // renderEventLine formats one event as a single line for the `events` stream:
