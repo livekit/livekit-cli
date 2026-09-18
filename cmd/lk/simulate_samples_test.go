@@ -25,13 +25,17 @@ func sampleJob(id, scenario string, sample int32, status livekit.SimulationRun_J
 	return &livekit.SimulationRun_Job{Id: id, ScenarioId: scenario, Sample: sample, Status: status}
 }
 
+func sampling(k int32, rate float64) *livekit.SimulationRun_Sampling {
+	return &livekit.SimulationRun_Sampling{Samples: k, PassRate: rate}
+}
+
 func TestScenarioPassCounts(t *testing.T) {
 	const (
 		done    = livekit.SimulationRun_Job_STATUS_COMPLETED
 		failed  = livekit.SimulationRun_Job_STATUS_FAILED
 		running = livekit.SimulationRun_Job_STATUS_RUNNING
 	)
-	run := &livekit.SimulationRun{Samples: 2, Jobs: []*livekit.SimulationRun_Job{
+	run := &livekit.SimulationRun{Sampling: sampling(2, 1), Jobs: []*livekit.SimulationRun_Job{
 		sampleJob("SRJ_1", "SCN_a", 1, done), sampleJob("SRJ_2", "SCN_a", 2, done), // pass^k
 		sampleJob("SRJ_3", "SCN_b", 1, done), sampleJob("SRJ_4", "SCN_b", 2, failed), // pass@k only
 		sampleJob("SRJ_5", "SCN_c", 1, failed), sampleJob("SRJ_6", "SCN_c", 2, failed), // neither
@@ -44,13 +48,13 @@ func TestScenarioPassCounts(t *testing.T) {
 	require.Equal(t, 1, passAll)
 	require.Equal(t, "pass@2 2/3 (0.67), pass^2 1/3 (0.33)", passRateLine(run))
 
-	run.Samples = 1
+	run.Sampling = nil
 	require.Equal(t, "", passRateLine(run))
 }
 
 func TestSortedJobs_GroupsSamplesInScenarioOrder(t *testing.T) {
 	run := &livekit.SimulationRun{
-		Samples:       2,
+		Sampling:      sampling(2, 1),
 		ScenarioGroup: &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Id: "SCN_b"}, {Id: "SCN_a"}}},
 		Jobs: []*livekit.SimulationRun_Job{
 			sampleJob("SRJ_1", "SCN_a", 2, 0),
@@ -70,7 +74,7 @@ func TestSortedJobs_GroupsSamplesInScenarioOrder(t *testing.T) {
 func repeatedFixture() *simulateModel {
 	m := runningFixture()
 	m.run = &livekit.SimulationRun{
-		Id: "SR_fixture0001", Status: livekit.SimulationRun_STATUS_RUNNING, Samples: 2,
+		Id: "SR_fixture0001", Status: livekit.SimulationRun_STATUS_RUNNING, Sampling: sampling(2, 1),
 		ScenarioGroup: &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Id: "SCN_a"}, {Id: "SCN_b"}}},
 		Jobs: []*livekit.SimulationRun_Job{
 			sampleJob("SRJ_a1", "SCN_a", 1, livekit.SimulationRun_Job_STATUS_COMPLETED),

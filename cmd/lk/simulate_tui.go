@@ -1054,7 +1054,7 @@ func (m *simulateModel) filteredJobs() []indexedJob {
 	}
 	jobs := sortedJobs(m.run)
 	result := make([]indexedJob, 0, len(jobs))
-	if m.run.GetSamples() < 2 {
+	if runSamples(m.run) < 2 {
 		for i, j := range jobs {
 			result = append(result, indexedJob{origIdx: i + 1, job: j})
 		}
@@ -1712,7 +1712,7 @@ func (m *simulateModel) renderDetail() string {
 	}
 
 	title := fmt.Sprintf("Job %d", origIdx)
-	if m.run.GetSamples() >= 2 {
+	if runSamples(m.run) >= 2 {
 		title = jobLabel(job) + sampleSuffix(m.run, job)
 	}
 	var b strings.Builder
