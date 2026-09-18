@@ -1,5 +1,5 @@
 /**
- * Minimal one-file echo agent for the `lk agent daemon` e2e test -- the Node
+ * Minimal one-file echo agent for the `lk agent debugger` e2e test -- the Node
  * sibling of testdata/echo-agent/agent.py.
  *
  * Driven in text mode, so an LLM is the only component needed. Echoes the

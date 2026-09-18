@@ -103,7 +103,7 @@ var agentRunFlags = []cli.Flag{
 
 var startCommand = &cli.Command{
 	Name:      "start",
-	Usage:     "Run an agent in production mode",
+	Usage:     "Run an agent locally in production mode",
 	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Flags:     agentRunFlags,
 	Action:    runAgentStart,
@@ -115,7 +115,7 @@ var startCommand = &cli.Command{
 
 var devCommand = &cli.Command{
 	Name:      "dev",
-	Usage:     "Run an agent in development mode with auto-reload",
+	Usage:     "Run an agent locally with hot reload",
 	ArgsUsage: "[entrypoint] [-- node/python-args...]",
 	Flags: append(agentRunFlags, &cli.BoolFlag{
 		Name:  "no-reload",

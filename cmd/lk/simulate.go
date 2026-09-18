@@ -57,7 +57,7 @@ const (
 
 var simulateCommand = &cli.Command{
 	Name:  "simulate",
-	Usage: "Run agent simulations against LiveKit Cloud",
+	Usage: "Run judged simulations of an agent on LiveKit Cloud",
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,

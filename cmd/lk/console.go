@@ -40,9 +40,33 @@ func init() {
 
 var consoleCommand = &cli.Command{
 	Name:      "console",
-	Usage:     "Voice chat with an agent via mic/speakers",
+	Usage:     "Talk to a local agent yourself, by voice or by typing",
 	ArgsUsage: "[entrypoint] [-- node/python-args...]",
-	Category:  "Core",
+	Description: `Runs your agent locally and connects it straight to your microphone and
+speakers, so you can try it out as a user would without joining a LiveKit
+room. This is the interactive, human-facing way to test an agent; the
+terminal shows the live transcript, tool calls, handoffs, and latency metrics.
+
+Keys while it runs:
+
+   m        mute or unmute the microphone
+   ctrl+t   switch between voice and text mode (type a turn, press enter)
+   ?        show shortcuts
+   q        quit (ctrl+c in text mode)
+
+Start directly in text mode with --text: STT and TTS are turned off, so only
+your LLM and tools run. Pick audio devices with --input-device and
+--output-device (see --list-devices), and use --record to save the audio and a
+session report under console-recordings/.
+
+The agent is the project in the current directory (or nearest parent) with its
+default entrypoint, or the file you name:
+
+   lk agent console src/my_agent.py
+   lk agent console agent.ts -- --env-file=.env   # args after -- go to node/python
+
+Console needs a terminal. For scripts and coding agents that drive a
+conversation one command at a time, use "lk agent debugger" instead.`,
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,
@@ -72,7 +96,7 @@ var consoleCommand = &cli.Command{
 		&cli.BoolFlag{
 			Name:    "text",
 			Aliases: []string{"t"},
-			Usage:   "Start in text mode instead of audio mode",
+			Usage:   "Start in text mode instead of voice (no STT/TTS); ctrl+t toggles later",
 		},
 		&cli.BoolFlag{
 			Name:  "record",
