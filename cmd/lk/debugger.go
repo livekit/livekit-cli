@@ -549,7 +549,7 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 		out.Result(renderSilentTurn())
 	}
 	if opts.Metrics {
-		out.Result("    " + sessionDimStyle.Render(fmt.Sprintf("⏱ turn took %.1fs", float64(final.DurationMs)/1000)))
+		out.Result("    " + transcriptDim.Render(fmt.Sprintf("⏱ turn took %.1fs", float64(final.DurationMs)/1000)))
 	}
 	out.Result("")
 	if final.Error != "" {

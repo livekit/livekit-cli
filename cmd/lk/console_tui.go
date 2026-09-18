@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -36,11 +35,7 @@ import (
 // Console-specific styles (tagStyle, greenStyle, redStyle, dimStyle, boldStyle, cyanStyle
 // are inherited from simulate_tui.go which is always compiled). Colors are pulled from the
 // active theme palette at render time, so they follow `lk set-theme`.
-func labelStyle() lipgloss.Style    { return lipgloss.NewStyle().Foreground(util.Accent()) }
-func cyanBoldStyle() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Brand()).Bold(true) }
-func greenBoldStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
-}
+func labelStyle() lipgloss.Style   { return lipgloss.NewStyle().Foreground(util.Accent()) }
 func redBoldStyle() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Error()).Bold(true) }
 
 // Unicode block characters for frequency visualizer (matching Python console)
@@ -394,14 +389,7 @@ func (m *consoleModel) updateTextMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.textInput.SetValue("")
 			m.waitingForAgent = true
 
-			// Print user message matching the old console format:
-			//   ● You
-			//     text here
-			printCmd := tea.Println(
-				"\n  " + lipgloss.NewStyle().Foreground(util.Brand()).Render("● ") +
-					cyanBoldStyle().Render("You") +
-					"\n    " + text + "\n",
-			)
+			printCmd := tea.Println(renderTurnEvent(turnEvent{Type: "message", Role: "user", Text: text}, renderOptions{}) + "\n")
 
 			req := &agent.SessionRequest{
 				RequestId: reqID,
@@ -432,132 +420,35 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 		if e.AgentStateChanged.NewState == agent.AgentState_AS_THINKING {
 			m.metricsText = ""
 		}
+		return nil
 
 	case *agent.AgentSessionEvent_UserInputTranscribed_:
+		// Voice mode only: in text mode the typed turn is echoed when sent.
 		if m.textMode {
-			break
+			return nil
 		}
-		if e.UserInputTranscribed.IsFinal {
-			m.partialTranscript = ""
-			if text := e.UserInputTranscribed.Transcript; text != "" {
-				cmds = append(cmds, tea.Println(
-					"\n  "+lipgloss.NewStyle().Foreground(util.Brand()).Render("● ")+
-						cyanBoldStyle().Render("You")+
-						"\n    "+text+"\n",
-				))
-			}
-		} else {
+		if !e.UserInputTranscribed.IsFinal {
 			m.partialTranscript = e.UserInputTranscribed.Transcript
+			return nil
 		}
-
-	case *agent.AgentSessionEvent_ConversationItemAdded_:
-		if item := e.ConversationItemAdded.Item; item != nil {
-			// Extract metrics from ChatMessage (matching Python console pattern)
-			if msg := item.GetMessage(); msg != nil {
-				if text := formatMetrics(msg.Metrics); text != "" {
-					m.metricsText = text
-				}
-			}
-			cmds = append(cmds, tea.Println(formatChatItem(item)))
+		m.partialTranscript = ""
+		if text := e.UserInputTranscribed.Transcript; text != "" {
+			cmds = append(cmds, tea.Println(renderTurnEvent(turnEvent{Type: "message", Role: "user", Text: text}, renderOptions{})+"\n"))
 		}
-
-	case *agent.AgentSessionEvent_FunctionToolsExecuted_:
-		ft := e.FunctionToolsExecuted
-		outputsByCallID := make(map[string]*agent.FunctionCallOutput)
-		for _, fco := range ft.FunctionCallOutputs {
-			outputsByCallID[fco.CallId] = fco
-		}
-		var b strings.Builder
-		for i, fc := range ft.FunctionCalls {
-			if i > 0 {
-				b.WriteString("\n")
-			}
-			b.WriteString("\n  ")
-			b.WriteString("● ")
-			b.WriteString("function_tool: ")
-			b.WriteString(fc.Name)
-			if fco, ok := outputsByCallID[fc.CallId]; ok {
-				if fco.IsError {
-					for j, line := range wrapLines(truncateOutput(fco.Output), m.width-6) {
-						if j == 0 {
-							b.WriteString("\n    ")
-							b.WriteString(redBoldStyle().Render("✗ "))
-							b.WriteString(redStyle().Render(line))
-						} else {
-							b.WriteString("\n      ")
-							b.WriteString(redStyle().Render(line))
-						}
-					}
-				} else {
-					b.WriteString("\n    ")
-					b.WriteString(greenStyle().Render("✓ "))
-					b.WriteString(dimStyle.Render(summarizeOutput(fco.Output)))
-				}
-			}
-		}
-		b.WriteString("\n")
-		cmds = append(cmds, tea.Println(b.String()))
-
-	case *agent.AgentSessionEvent_Error_:
-		var b strings.Builder
-		for i, line := range wrapLines(e.Error.Message, m.width-4) {
-			if i > 0 {
-				b.WriteString("\n")
-			}
-			if i == 0 {
-				b.WriteString("  ")
-				b.WriteString(redBoldStyle().Render("✗ "))
-				b.WriteString(redStyle().Render(line))
-			} else {
-				b.WriteString("    ")
-				b.WriteString(redStyle().Render(line))
-			}
-		}
-		cmds = append(cmds, tea.Println(b.String()))
+		return cmds
 	}
 
+	// Everything else (messages, tool calls, handoffs, config changes, errors)
+	// goes through the transcript model shared with `lk agent debugger`.
+	for _, te := range eventToTurnEvents(ev) {
+		if te.Type == "message" && te.Role == "assistant" && len(te.Metrics) > 0 {
+			m.metricsText = renderMetrics(te.Metrics)
+		}
+		if line := renderTurnEvent(te, renderOptions{}); line != "" {
+			cmds = append(cmds, tea.Println(line+"\n"))
+		}
+	}
 	return cmds
-}
-
-func formatChatItem(item *agent.ChatContext_ChatItem) string {
-	switch i := item.Item.(type) {
-	case *agent.ChatContext_ChatItem_Message:
-		msg := i.Message
-		if msg.Role == agent.ChatRole_USER {
-			return ""
-		}
-		var textParts []string
-		for _, c := range msg.Content {
-			if t := c.GetText(); t != "" {
-				textParts = append(textParts, t)
-			}
-		}
-		text := strings.Join(textParts, "")
-		if text == "" {
-			return ""
-		}
-
-		var b strings.Builder
-		b.WriteString("\n  ")
-		b.WriteString(lipgloss.NewStyle().Foreground(util.Success()).Render("● "))
-		b.WriteString(greenBoldStyle().Render("Agent"))
-		for tl := range strings.SplitSeq(text, "\n") {
-			b.WriteString("\n    ")
-			b.WriteString(tl)
-		}
-		b.WriteString("\n")
-		return b.String()
-
-	case *agent.ChatContext_ChatItem_AgentHandoff:
-		h := i.AgentHandoff
-		old := ""
-		if h.OldAgentId != nil && *h.OldAgentId != "" {
-			old = dimStyle.Render(*h.OldAgentId) + " → "
-		}
-		return "  " + lipgloss.NewStyle().Foreground(util.Accent()).Render("● ") +
-			dimStyle.Render("handoff: ") + old + labelStyle().Render(h.NewAgentId)
-	}
-	return ""
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -695,82 +586,4 @@ func (m consoleModel) writeShortcutsInline(b *strings.Builder, shortcuts []short
 		b.WriteString(" ")
 		b.WriteString(dimStyle.Render(s.desc))
 	}
-}
-
-// formatMetrics formats a MetricsReport matching the Python console display.
-func formatMetrics(m *agent.MetricsReport) string {
-	if m == nil {
-		return ""
-	}
-
-	var parts []string
-	sep := dimStyle.Render(" · ")
-
-	if m.LlmNodeTtft != nil {
-		parts = append(parts, dimStyle.Render("llm_ttft ")+dimStyle.Render(formatMs(*m.LlmNodeTtft)))
-	}
-	if m.TtsNodeTtfb != nil {
-		parts = append(parts, dimStyle.Render("tts_ttfb ")+dimStyle.Render(formatMs(*m.TtsNodeTtfb)))
-	}
-	if m.E2ELatency != nil {
-		label := "e2e " + formatMs(*m.E2ELatency)
-		if *m.E2ELatency >= 1.0 {
-			parts = append(parts, redStyle().Render(label))
-		} else {
-			parts = append(parts, dimStyle.Render(label))
-		}
-	}
-
-	if len(parts) == 0 {
-		return ""
-	}
-	return strings.Join(parts, sep)
-}
-
-func formatMs(seconds float64) string {
-	ms := seconds * 1000
-	if ms >= 100 {
-		return fmt.Sprintf("%.0fms", ms)
-	}
-	return fmt.Sprintf("%.1fms", ms)
-}
-
-// summarizeOutput tries to parse JSON and produce a "key=value, key=value" summary
-// matching the old Python console behavior. Falls back to truncation.
-func summarizeOutput(output string) string {
-	jsonStart := strings.Index(output, "{")
-	if jsonStart < 0 {
-		return truncateOutput(output)
-	}
-
-	var data map[string]any
-	if err := json.Unmarshal([]byte(output[jsonStart:]), &data); err != nil {
-		return truncateOutput(output)
-	}
-
-	var parts []string
-	for k, v := range data {
-		if v == nil || k == "type" {
-			continue
-		}
-		parts = append(parts, fmt.Sprintf("%s=%v", k, v))
-		if len(parts) >= 3 {
-			break
-		}
-	}
-	result := strings.Join(parts, ", ")
-	if len(data) > 3 {
-		result += ", ..."
-	}
-	if result == "" {
-		return truncateOutput(output)
-	}
-	return result
-}
-
-func truncateOutput(output string) string {
-	if len(output) > 200 {
-		return output[:197] + "..."
-	}
-	return output
 }

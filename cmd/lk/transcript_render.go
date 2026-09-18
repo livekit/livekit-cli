@@ -20,22 +20,25 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
+
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
-// Styles for the headless session output. Named distinctly from the console
-// TUI styles so both can coexist in the console-tagged build.
-var (
-	sessionCyan       = lipgloss.Color("#1fd5f9")
-	sessionGreen      = lipgloss.Color("#6BCB77")
-	sessionPurple     = lipgloss.Color("#8f83ff")
-	sessionYellow     = lipgloss.Color("#f5c451")
-	sessionRed        = lipgloss.Color("#FF6B6B")
-	sessionUserStyle  = lipgloss.NewStyle().Foreground(sessionCyan).Bold(true)
-	sessionAgentStyle = lipgloss.NewStyle().Foreground(sessionGreen).Bold(true)
-	sessionToolStyle  = lipgloss.NewStyle().Foreground(sessionYellow)
-	sessionDimStyle   = lipgloss.NewStyle().Faint(true)
-	sessionRedStyle   = lipgloss.NewStyle().Foreground(sessionRed)
-)
+// Transcript styles. Colors come from the active theme palette at render time
+// (so they follow `lk set-theme`) and are shared by console and debugger.
+func transcriptUserBullet() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Brand()) }
+func transcriptUserLabel() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(util.Brand()).Bold(true)
+}
+func transcriptAgentBullet() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Success()) }
+func transcriptAgentLabel() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(util.Success()).Bold(true)
+}
+func transcriptToolStyle() lipgloss.Style  { return lipgloss.NewStyle().Foreground(util.Warning()) }
+func transcriptAccent() lipgloss.Style     { return lipgloss.NewStyle().Foreground(util.Accent()) }
+func transcriptErrorStyle() lipgloss.Style { return lipgloss.NewStyle().Foreground(util.Error()) }
+
+var transcriptDim = lipgloss.NewStyle().Faint(true)
 
 // renderOptions controls how much detail the text renderer shows.
 type renderOptions struct {
@@ -50,60 +53,60 @@ func renderTurnEvent(e turnEvent, opts renderOptions) string {
 	case "message":
 		switch e.Role {
 		case "user":
-			return renderSpeaker(lipgloss.NewStyle().Foreground(sessionCyan), sessionUserStyle, "You", e.Text, "")
+			return renderSpeaker(transcriptUserBullet(), transcriptUserLabel(), "You", e.Text, "")
 		case "assistant":
 			var suffix string
 			if e.Earlier {
-				suffix += " " + sessionDimStyle.Render("(before this turn)")
+				suffix += " " + transcriptDim.Render("(before this turn)")
 			}
 			if e.Interrupted {
-				suffix += " " + sessionDimStyle.Render("(interrupted)")
+				suffix += " " + transcriptDim.Render("(interrupted)")
 			}
-			s := renderSpeaker(lipgloss.NewStyle().Foreground(sessionGreen), sessionAgentStyle, "Agent", e.Text, suffix)
+			s := renderSpeaker(transcriptAgentBullet(), transcriptAgentLabel(), "Agent", e.Text, suffix)
 			if opts.Metrics && len(e.Metrics) > 0 {
-				s += "\n    " + sessionDimStyle.Render(renderMetrics(e.Metrics))
+				s += "\n    " + transcriptDim.Render(renderMetrics(e.Metrics))
 			}
 			return s
 		}
 	case "tool_call":
 		var b strings.Builder
 		b.WriteString("\n  ")
-		b.WriteString(sessionToolStyle.Render("● "))
-		b.WriteString(sessionDimStyle.Render("tool: "))
-		b.WriteString(sessionToolStyle.Render(e.Name))
+		b.WriteString(transcriptToolStyle().Render("● "))
+		b.WriteString(transcriptDim.Render("tool: "))
+		b.WriteString(transcriptToolStyle().Render(e.Name))
 		if args := strings.TrimSpace(e.Arguments); args != "" && args != "{}" {
-			b.WriteString(sessionDimStyle.Render("(" + args + ")"))
+			b.WriteString(transcriptDim.Render("(" + args + ")"))
 		} else {
-			b.WriteString(sessionDimStyle.Render("()"))
+			b.WriteString(transcriptDim.Render("()"))
 		}
 		if e.Earlier {
-			b.WriteString(" " + sessionDimStyle.Render("(before this turn)"))
+			b.WriteString(" " + transcriptDim.Render("(before this turn)"))
 		}
 		output := strings.TrimSpace(e.Output)
 		if e.IsError {
 			if output == "" {
 				output = "error"
 			}
-			writeIndented(&b, sessionRedStyle, "✗ ", output)
+			writeIndented(&b, transcriptErrorStyle(), "✗ ", output)
 		} else if output != "" {
-			writeIndented(&b, sessionDimStyle, "↳ ", output)
+			writeIndented(&b, transcriptDim, "↳ ", output)
 		}
 		return b.String()
 	case "handoff":
 		if e.From == "" {
 			// The session's first agent is reported as a handoff from nobody.
-			return "\n  " + lipgloss.NewStyle().Foreground(sessionPurple).Render("● ") +
-				sessionDimStyle.Render("agent: ") + e.To
+			return "\n  " + transcriptAccent().Render("● ") +
+				transcriptDim.Render("agent: ") + e.To
 		}
-		return "\n  " + lipgloss.NewStyle().Foreground(sessionPurple).Render("● ") +
-			sessionDimStyle.Render("handoff: "+e.From+" → ") + e.To
+		return "\n  " + transcriptAccent().Render("● ") +
+			transcriptDim.Render("handoff: "+e.From+" → ") + e.To
 	case "config":
-		return "\n  " + lipgloss.NewStyle().Foreground(sessionPurple).Render("● ") +
-			sessionDimStyle.Render("config: "+strings.Join(e.Changes, "; "))
+		return "\n  " + transcriptAccent().Render("● ") +
+			transcriptDim.Render("config: "+strings.Join(e.Changes, "; "))
 	case "error":
-		return "\n  " + sessionRedStyle.Render("✗ agent error: "+e.Text)
+		return "\n  " + transcriptErrorStyle().Render("✗ agent error: "+e.Text)
 	case "log":
-		return "    " + sessionDimStyle.Render("│ "+e.Text)
+		return "    " + transcriptDim.Render("│ "+e.Text)
 	}
 	return ""
 }
@@ -129,8 +132,8 @@ func renderSpeaker(bullet, label lipgloss.Style, name, text, suffix string) stri
 // renderSilentTurn is shown when the agent completed a turn without producing
 // any output (a tool asked it to stay quiet, or it chose not to answer).
 func renderSilentTurn() string {
-	return "\n  " + lipgloss.NewStyle().Foreground(sessionGreen).Render("● ") +
-		sessionAgentStyle.Render("Agent") + "\n    " + sessionDimStyle.Render("(no reply)")
+	return "\n  " + transcriptAgentBullet().Render("● ") +
+		transcriptAgentLabel().Render("Agent") + "\n    " + transcriptDim.Render("(no reply)")
 }
 
 // writeIndented appends text under a bullet, one line per output line.
@@ -145,12 +148,24 @@ func writeIndented(b *strings.Builder, style lipgloss.Style, marker, text string
 	}
 }
 
+// renderMetrics formats a message's latency metrics for both the debugger's
+// --metrics output and the console's status line. An end-to-end latency of a
+// second or more is called out in the error color.
 func renderMetrics(m map[string]float64) string {
 	var parts []string
 	for _, key := range []string{"llm_ttft", "tts_ttfb", "e2e_latency"} {
-		if v, ok := m[key]; ok {
-			parts = append(parts, fmt.Sprintf("%s %dms", key, int(v*1000)))
+		v, ok := m[key]
+		if !ok {
+			continue
 		}
+		part := fmt.Sprintf("%s %dms", key, int(v*1000))
+		if key == "e2e_latency" && v >= 1.0 {
+			part = transcriptErrorStyle().Render(part)
+		}
+		parts = append(parts, part)
+	}
+	if len(parts) == 0 {
+		return ""
 	}
 	return "⏱ " + strings.Join(parts, " · ")
 }
@@ -171,41 +186,41 @@ func renderEventLine(e turnEvent) string {
 	case "message":
 		text := oneLine(e.Text)
 		if e.Role == "user" {
-			body = kind("user", sessionUserStyle) + text
+			body = kind("user", transcriptUserLabel()) + text
 		} else {
 			if e.Interrupted {
-				text += " " + sessionDimStyle.Render("(interrupted)")
+				text += " " + transcriptDim.Render("(interrupted)")
 			}
-			body = kind("agent", sessionAgentStyle) + text
+			body = kind("agent", transcriptAgentLabel()) + text
 		}
 	case "tool_call":
 		call := e.Name + "(" + oneLine(e.Arguments) + ")"
 		switch {
 		case e.IsError:
-			body = kind("tool", sessionToolStyle) + call + " " + sessionRedStyle.Render("✗ "+oneLine(e.Output))
+			body = kind("tool", transcriptToolStyle()) + call + " " + transcriptErrorStyle().Render("✗ "+oneLine(e.Output))
 		case e.Output != "":
-			body = kind("tool", sessionToolStyle) + call + " " + sessionDimStyle.Render("↳ "+oneLine(e.Output))
+			body = kind("tool", transcriptToolStyle()) + call + " " + transcriptDim.Render("↳ "+oneLine(e.Output))
 		default:
-			body = kind("tool", sessionToolStyle) + call
+			body = kind("tool", transcriptToolStyle()) + call
 		}
 	case "handoff":
 		if e.From == "" {
-			body = kind("agent", lipgloss.NewStyle().Foreground(sessionPurple)) + sessionDimStyle.Render("active: ") + e.To
+			body = kind("agent", transcriptAccent()) + transcriptDim.Render("active: ") + e.To
 		} else {
-			body = kind("handoff", lipgloss.NewStyle().Foreground(sessionPurple)) + e.From + " → " + e.To
+			body = kind("handoff", transcriptAccent()) + e.From + " → " + e.To
 		}
 	case "config":
-		body = kind("config", lipgloss.NewStyle().Foreground(sessionPurple)) + sessionDimStyle.Render(strings.Join(e.Changes, "; "))
+		body = kind("config", transcriptAccent()) + transcriptDim.Render(strings.Join(e.Changes, "; "))
 	case "error":
-		body = kind("error", sessionRedStyle) + sessionRedStyle.Render(oneLine(e.Text))
+		body = kind("error", transcriptErrorStyle()) + transcriptErrorStyle().Render(oneLine(e.Text))
 	case "log":
-		body = kind("log", sessionDimStyle) + sessionDimStyle.Render(oneLine(e.Text))
+		body = kind("log", transcriptDim) + transcriptDim.Render(oneLine(e.Text))
 	case "state":
-		body = kind("state", sessionDimStyle) + sessionDimStyle.Render(e.From+" → "+e.To)
+		body = kind("state", transcriptDim) + transcriptDim.Render(e.From+" → "+e.To)
 	default:
 		return ""
 	}
-	return sessionDimStyle.Render(ts) + "  " + body
+	return transcriptDim.Render(ts) + "  " + body
 }
 
 // oneLine collapses whitespace runs (including newlines) into single spaces.
