@@ -656,7 +656,9 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 	}
 	if c.mode == modeScenarios {
 		req.ScenarioGroup = c.scenarioGroup
-		req.Samples = c.samples
+		if c.samples > 1 {
+			req.Sampling = &livekit.SimulationRun_Sampling{Samples: c.samples}
+		}
 	}
 
 	resp, err := c.client.CreateSimulationRun(ctx, req)
@@ -837,8 +839,16 @@ func sortedJobs(run *livekit.SimulationRun) []*livekit.SimulationRun_Job {
 // have every sample finished, and of those how many passed at least once
 // (pass@k) and every time (pass^k). Zero scenarios when the run did not
 // repeat, so callers can skip the line.
+// runSamples is the run's samples per scenario, 1 when it did not repeat.
+func runSamples(run *livekit.SimulationRun) int32 {
+	if k := run.GetSampling().GetSamples(); k > 1 {
+		return k
+	}
+	return 1
+}
+
 func scenarioPassCounts(run *livekit.SimulationRun) (scenarios, passAny, passAll int) {
-	k := int(run.GetSamples())
+	k := int(runSamples(run))
 	if k < 2 {
 		return
 	}
@@ -882,7 +892,7 @@ func passRateLine(run *livekit.SimulationRun) string {
 	if scenarios == 0 {
 		return ""
 	}
-	k := run.GetSamples()
+	k := runSamples(run)
 	return fmt.Sprintf("pass@%d %d/%d (%.2f), pass^%d %d/%d (%.2f)",
 		k, passAny, scenarios, float64(passAny)/float64(scenarios),
 		k, passAll, scenarios, float64(passAll)/float64(scenarios))
@@ -890,10 +900,10 @@ func passRateLine(run *livekit.SimulationRun) string {
 
 // sampleSuffix marks a job's sample when the run repeated scenarios.
 func sampleSuffix(run *livekit.SimulationRun, job *livekit.SimulationRun_Job) string {
-	if run.GetSamples() < 2 || job.GetSample() == 0 {
+	if runSamples(run) < 2 || job.GetSample() == 0 {
 		return ""
 	}
-	return fmt.Sprintf(" (sample %d/%d)", job.GetSample(), run.GetSamples())
+	return fmt.Sprintf(" (sample %d/%d)", job.GetSample(), runSamples(run))
 }
 
 func simulationJobCounts(run *livekit.SimulationRun) (total, done, passed, failed int) {
