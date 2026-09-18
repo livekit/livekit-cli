@@ -54,7 +54,7 @@ func TestScenarioPassCounts(t *testing.T) {
 
 func TestSortedJobs_GroupsSamplesInScenarioOrder(t *testing.T) {
 	run := &livekit.SimulationRun{
-		Sampling:      sampling(2, 1),
+		Sampling:      sampling(2, defaultPassRate),
 		ScenarioGroup: &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Id: "SCN_b"}, {Id: "SCN_a"}}},
 		Jobs: []*livekit.SimulationRun_Job{
 			sampleJob("SRJ_1", "SCN_a", 2, 0),
@@ -74,7 +74,7 @@ func TestSortedJobs_GroupsSamplesInScenarioOrder(t *testing.T) {
 func repeatedFixture() *simulateModel {
 	m := runningFixture()
 	m.run = &livekit.SimulationRun{
-		Id: "SR_fixture0001", Status: livekit.SimulationRun_STATUS_RUNNING, Sampling: sampling(2, 1),
+		Id: "SR_fixture0001", Status: livekit.SimulationRun_STATUS_RUNNING, Sampling: sampling(2, defaultPassRate),
 		ScenarioGroup: &livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{{Id: "SCN_a"}, {Id: "SCN_b"}}},
 		Jobs: []*livekit.SimulationRun_Job{
 			sampleJob("SRJ_a1", "SCN_a", 1, livekit.SimulationRun_Job_STATUS_COMPLETED),
@@ -101,9 +101,10 @@ func TestFilteredJobs_RepeatedRunNestsSamples(t *testing.T) {
 	require.True(t, rows[2].last)
 	require.Equal(t, 2, rows[3].origIdx)
 
-	icon, _ := scenarioStatusIcon(rows[0].scenario.samples)
+	required := requiredSamples(repeatedFixture().run)
+	icon, _ := scenarioStatusIcon(rows[0].scenario.samples, required)
 	require.Equal(t, '✗', icon, "a scenario with a failed sample is not passed")
-	icon, _ = scenarioStatusIcon(rows[3].scenario.samples)
+	icon, _ = scenarioStatusIcon(rows[3].scenario.samples, required)
 	require.Equal(t, '⏺', icon, "a scenario still runs while any sample does")
 }
 
@@ -119,4 +120,50 @@ func TestEnterOnScenarioRowOpensTheScenario(t *testing.T) {
 	m.cursor = 2
 	m.Update(keyPress("enter"))
 	require.Equal(t, "SRJ_a2", m.detailID)
+}
+
+func TestRequiredSamples_RoundsToWholeSamples(t *testing.T) {
+	require.Equal(t, 1, requiredSamples(nil), "an unsampled run needs its one sample")
+	require.Equal(t, 1, requiredSamples(&livekit.SimulationRun{Sampling: sampling(1, 0.5)}))
+
+	// Every rate in [0.5, 0.833] is the same gate at three samples.
+	for _, rate := range []float64{0.5, 0.67, 0.75, 0.8} {
+		require.Equal(t, 2, requiredSamples(&livekit.SimulationRun{Sampling: sampling(3, rate)}),
+			"rate %v of 3", rate)
+	}
+	require.Equal(t, 1, requiredSamples(&livekit.SimulationRun{Sampling: sampling(3, 0.34)}))
+	require.Equal(t, 3, requiredSamples(&livekit.SimulationRun{Sampling: sampling(3, 1)}))
+
+	// A rate that rounds to zero would pass a scenario that never succeeded.
+	require.Equal(t, 1, requiredSamples(&livekit.SimulationRun{Sampling: sampling(3, 0.01)}))
+}
+
+func TestScenarioFailureCounts_GatesOnThePassRate(t *testing.T) {
+	const (
+		done    = livekit.SimulationRun_Job_STATUS_COMPLETED
+		failed  = livekit.SimulationRun_Job_STATUS_FAILED
+		running = livekit.SimulationRun_Job_STATUS_RUNNING
+	)
+	// 0.75 of 3 needs 2: SCN_a flakes once and passes, SCN_b does not.
+	run := &livekit.SimulationRun{Sampling: sampling(3, defaultPassRate), Jobs: []*livekit.SimulationRun_Job{
+		sampleJob("SRJ_1", "SCN_a", 1, done), sampleJob("SRJ_2", "SCN_a", 2, failed), sampleJob("SRJ_3", "SCN_a", 3, done),
+		sampleJob("SRJ_4", "SCN_b", 1, done), sampleJob("SRJ_5", "SCN_b", 2, failed), sampleJob("SRJ_6", "SCN_b", 3, failed),
+	}}
+	scenarios, failedScenarios := scenarioFailureCounts(run)
+	require.Equal(t, 2, scenarios)
+	require.Equal(t, 1, failedScenarios)
+	require.EqualError(t, runFailureError(run), "1 of 2 scenarios failed")
+
+	// A scenario that can still reach the bar is not yet a failure.
+	run.Jobs[5].Status = running
+	_, failedScenarios = scenarioFailureCounts(run)
+	require.Equal(t, 0, failedScenarios)
+
+	// Without sampling every job is its own scenario and one failure fails it.
+	plain := &livekit.SimulationRun{Jobs: []*livekit.SimulationRun_Job{
+		{Id: "SRJ_1", Status: done}, {Id: "SRJ_2", Status: failed},
+	}}
+	scenarios, failedScenarios = scenarioFailureCounts(plain)
+	require.Equal(t, 2, scenarios)
+	require.Equal(t, 1, failedScenarios)
 }

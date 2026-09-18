@@ -1093,9 +1093,8 @@ func (m *simulateModel) findScenario(id string) *scenarioRow {
 
 // scenarioStatusIcon folds a scenario's samples: running while any sample
 // runs, pending while any waits, then passed only if every sample did.
-func scenarioStatusIcon(samples []*livekit.SimulationRun_Job) (rune, *lipgloss.Style) {
-	passed := 0
-	pending := false
+func scenarioStatusIcon(samples []*livekit.SimulationRun_Job, required int) (rune, *lipgloss.Style) {
+	passed, unfinished := 0, 0
 	for _, a := range samples {
 		switch a.Status {
 		case livekit.SimulationRun_Job_STATUS_RUNNING:
@@ -1105,15 +1104,17 @@ func scenarioStatusIcon(samples []*livekit.SimulationRun_Job) (rune, *lipgloss.S
 			passed++
 		case livekit.SimulationRun_Job_STATUS_FAILED, livekit.SimulationRun_Job_STATUS_CANCELLED:
 		default:
-			pending = true
+			unfinished++
 		}
 	}
-	if pending {
-		return '⏺', &dimStyle
-	}
-	if passed == len(samples) {
+	// The verdict is settled as soon as the remaining samples cannot change it,
+	// so a scenario needing 2 of 3 goes green on its second pass.
+	if passed >= required {
 		s := greenStyle()
 		return '✓', &s
+	}
+	if passed+unfinished >= required {
+		return '⏺', &dimStyle
 	}
 	s := redStyle()
 	return '✗', &s
@@ -1132,10 +1133,10 @@ func scenarioPassed(samples []*livekit.SimulationRun_Job) int {
 // listRowParts splits a row into the indent before its icon, the icon, and the
 // text after it, in plain and styled forms, so the cursor highlight and the
 // matrix rain can lay out the same line.
-func listRowParts(ij indexedJob) (indent string, iconCh rune, iconStyle *lipgloss.Style, text, styled string) {
+func listRowParts(ij indexedJob, required int) (indent string, iconCh rune, iconStyle *lipgloss.Style, text, styled string) {
 	switch {
 	case ij.scenario != nil:
-		iconCh, iconStyle = scenarioStatusIcon(ij.scenario.samples)
+		iconCh, iconStyle = scenarioStatusIcon(ij.scenario.samples, required)
 		text = fmt.Sprintf(" %3d. %s  %d/%d", ij.origIdx, ij.scenario.label, scenarioPassed(ij.scenario.samples), len(ij.scenario.samples))
 		return "  ", iconCh, iconStyle, text, text
 	case ij.origIdx == 0:
@@ -1532,6 +1533,13 @@ func (m *simulateModel) renderCounts() string {
 	if running > 0 {
 		parts = append(parts, yellowStyle().Render(fmt.Sprintf("%d running", running)))
 	}
+	// The counts above are samples; with a pass rate the run's verdict is the
+	// scenario one, and the two disagree whenever a scenario flakes within it.
+	if runSamples(m.run) > 1 {
+		if scenarios, failedScenarios := scenarioFailureCounts(m.run); failedScenarios > 0 {
+			parts = append(parts, redStyle().Render(fmt.Sprintf("%d/%d scenarios failed", failedScenarios, scenarios)))
+		}
+	}
 	if line := passRateLine(m.run); line != "" {
 		parts = append(parts, boldStyle.Render(line))
 	}
@@ -1594,14 +1602,14 @@ func (m *simulateModel) renderJobList() string {
 	// The cursor highlight pads to the widest row so the reverse bar is one width.
 	maxWidth := 0
 	for i := winStart; i < winEnd; i++ {
-		indent, iconCh, _, text, _ := listRowParts(jobs[i])
+		indent, iconCh, _, text, _ := listRowParts(jobs[i], requiredSamples(m.run))
 		if w := lipgloss.Width(indent + string(iconCh) + text); w > maxWidth {
 			maxWidth = w
 		}
 	}
 
 	for i := winStart; i < winEnd; i++ {
-		indent, iconCh, iconStyle, text, styled := listRowParts(jobs[i])
+		indent, iconCh, iconStyle, text, styled := listRowParts(jobs[i], requiredSamples(m.run))
 		var line string
 		if i == m.cursor {
 			line = ansi.Strip(indent) + string(iconCh) + text
@@ -1670,7 +1678,7 @@ func (m *simulateModel) buildMatrixRows() []matrixRow {
 		})
 	}
 	for i := winStart; i < winEnd; i++ {
-		indent, iconCh, iconStyle, text, _ := listRowParts(jobs[i])
+		indent, iconCh, iconStyle, text, _ := listRowParts(jobs[i], requiredSamples(m.run))
 		indent = ansi.Strip(indent)
 		line := indent + string(iconCh) + text
 		rows = append(rows, matrixRow{
@@ -1804,7 +1812,7 @@ func (m *simulateModel) renderDetail() string {
 // every sample's verdict and transcript in sample order.
 func (m *simulateModel) renderScenarioDetail(sc *scenarioRow) string {
 	var b strings.Builder
-	iconCh, iconStyle := scenarioStatusIcon(sc.samples)
+	iconCh, iconStyle := scenarioStatusIcon(sc.samples, requiredSamples(m.run))
 	b.WriteString("\n")
 	fmt.Fprintf(&b, "  %s %s  %s\n",
 		iconStyle.Render(string(iconCh)),
