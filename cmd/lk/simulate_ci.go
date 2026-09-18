@@ -228,12 +228,16 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 // full dump above already carries the detail. Returns nil when everything
 // passed.
 func runFailureError(run *livekit.SimulationRun) error {
-	_, _, _, failed := simulationJobCounts(run)
-	if failed > 0 || run.Status == livekit.SimulationRun_STATUS_FAILED {
-		if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
-			return fmt.Errorf("simulation failed: %s", run.Error)
-		}
-		return fmt.Errorf("%d of %d simulations failed", failed, len(run.Jobs))
+	if run.Status == livekit.SimulationRun_STATUS_FAILED && len(run.Jobs) == 0 {
+		return fmt.Errorf("simulation failed: %s", run.Error)
+	}
+	// A sampled scenario fails only below its pass rate, so a failed sample no
+	// longer fails the run on its own.
+	if scenarios, failed := scenarioFailureCounts(run); failed > 0 {
+		return fmt.Errorf("%d of %d scenarios failed", failed, scenarios)
+	}
+	if run.Status == livekit.SimulationRun_STATUS_FAILED {
+		return fmt.Errorf("simulation failed: %s", run.Error)
 	}
 
 	return nil
