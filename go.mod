@@ -20,7 +20,7 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.0
-	github.com/livekit/protocol v1.51.1-0.20260915182407-3c0fcdbd25df
+	github.com/livekit/protocol v1.51.1-0.20260918145636-43aaf61f0f22
 	github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260904062056-1da58cd7b795
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
@@ -263,5 +263,9 @@ require (
 	mvdan.cc/sh/v3 v3.13.2-0.20260510185049-f5c6e2779117 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
+
+// TEMP (local dev): use local protocol with the WorkerInfo dev message.
+// Drop once github.com/livekit/protocol publishes it.
+// replace github.com/livekit/protocol => ../protocol
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
