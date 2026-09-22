@@ -38,7 +38,10 @@ import (
 
 const (
 	cloudAPIServerURL = "https://cloud-api.livekit.io"
-	cloudDashboardURL = "https://cloud.livekit.io"
+	// Staging has no cloud-api.staging.livekit.io; this is the host the
+	// staging dashboard itself talks to.
+	stagingCloudAPIServerURL = "https://cloud-api-server-public.ochicago1a.staging.livekit.app"
+	cloudDashboardURL        = "https://cloud.livekit.io"
 )
 
 var (

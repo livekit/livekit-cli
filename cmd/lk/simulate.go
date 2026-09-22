@@ -71,6 +71,11 @@ var simulateCommand = &cli.Command{
 			return nil, err
 		}
 		simulateProjectConfig = pc
+		if !cmd.IsSet("server-url") {
+			if api := cloudAPIURL(pc.URL); api != "" {
+				serverURL = api
+			}
+		}
 		return nil, nil
 	},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -699,14 +704,27 @@ func isTerminalJobStatus(status livekit.SimulationRun_Job_Status) bool {
 		status == livekit.SimulationRun_Job_STATUS_FAILED
 }
 
+// cloudAPIURL returns the cloud API that serves the environment a LiveKit Cloud
+// project lives in, or "" when the project URL is not a recognized cloud host.
+// Simulation RPCs are only accepted by the API of the project's own
+// environment, so a staging project must not be sent to the production API.
+func cloudAPIURL(wsURL string) string {
+	switch host, _ := cloudProject(wsURL); host {
+	case "cloud.livekit.io":
+		return cloudAPIServerURL
+	case "cloud.staging.livekit.io":
+		return stagingCloudAPIServerURL
+	}
+	return ""
+}
+
 // dashboardBaseURL returns the cloud dashboard URL for the project whose
 // credentials the simulation runs under, so a staging project links to the
 // staging dashboard without any flag. When the project URL is not a recognized
 // cloud host, it falls back to deriving the dashboard from --server-url; the
-// cloud API and dashboard hosts differ only by "-api":
+// production cloud API and dashboard hosts differ only by "-api":
 //
-//	https://cloud-api.livekit.io          -> https://cloud.livekit.io
-//	https://cloud-api.staging.livekit.io  -> https://cloud.staging.livekit.io
+//	https://cloud-api.livekit.io -> https://cloud.livekit.io
 func dashboardBaseURL() string {
 	if simulateProjectConfig != nil {
 		if host, _ := cloudProject(simulateProjectConfig.URL); host != "" {
@@ -721,9 +739,9 @@ func dashboardBaseURL() string {
 
 // simulateCommandHint returns a `simulate` command targeting an existing run,
 // carrying over the resolved project and --server-url when the run lives
-// somewhere other than the default cloud API (e.g. staging), so the printed
-// command targets the same project and environment regardless of which project
-// is default when it is run. The project name is empty when credentials came
+// somewhere other than the project's own cloud API (e.g. a local stack), so the
+// printed command targets the same project and environment regardless of which
+// project is default when it is run. The project name is empty when credentials came
 // from flags or the environment rather than a configured project, and no
 // --project would resolve those.
 // The binary name comes from argv[0] so a renamed or path-qualified lk is
@@ -737,7 +755,14 @@ func simulateCommandHint(subcommand, runID string) string {
 	if simulateProjectConfig != nil && simulateProjectConfig.Name != "" {
 		hint += " --project " + simulateProjectConfig.Name
 	}
-	if serverURL != cloudAPIServerURL {
+	projectAPI := ""
+	if simulateProjectConfig != nil {
+		projectAPI = cloudAPIURL(simulateProjectConfig.URL)
+	}
+	if projectAPI == "" {
+		projectAPI = cloudAPIServerURL
+	}
+	if serverURL != projectAPI {
 		hint += " --server-url " + serverURL
 	}
 	return hint
