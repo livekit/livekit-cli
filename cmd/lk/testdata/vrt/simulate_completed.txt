@@ -1,5 +1,5 @@
 
- Agent Simulation   SR_fixture0001
+ Agent Simulations   SR_fixture0001
 
   Simulation · Completed
   4/4  4 passed  <dur>
