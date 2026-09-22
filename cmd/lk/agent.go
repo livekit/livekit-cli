@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -1824,7 +1825,17 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 		return "", fmt.Errorf("no agents found")
 	}
 
-	var agentNames []huh.Option[string]
+	slices.SortFunc(agents.Agents, func(a, b *lkproto.AgentInfo) int {
+		return b.DeployedAt.AsTime().Compare(a.DeployedAt.AsTime())
+	})
+
+	type agentOption struct {
+		primary   string
+		secondary string
+		id        string
+	}
+	var opts []agentOption
+	maxWidth := 0
 	for _, agent := range agents.Agents {
 		if excludeEmptyVersion && agent.Version == "--" {
 			continue
@@ -1835,8 +1846,25 @@ func selectAgent(ctx context.Context, cmd *cli.Command, excludeEmptyVersion bool
 		} else {
 			deployedStr = "deployed " + util.FormatRFC3339(deployedAt, "--")
 		}
-		name := agent.AgentId + " " + util.Dimmed(deployedStr)
-		agentNames = append(agentNames, huh.Option[string]{Key: name, Value: agent.AgentId})
+		opt := agentOption{id: agent.AgentId}
+		if agent.AgentName != "" {
+			opt.primary = agent.AgentName
+			opt.secondary = agent.AgentId + " · " + deployedStr
+		} else {
+			opt.primary = agent.AgentId
+			opt.secondary = deployedStr
+		}
+		maxWidth = max(maxWidth, lipgloss.Width(opt.primary))
+		opts = append(opts, opt)
+	}
+
+	var agentNames []huh.Option[string]
+	for _, opt := range opts {
+		pad := strings.Repeat(" ", maxWidth-lipgloss.Width(opt.primary)+2)
+		agentNames = append(agentNames, huh.Option[string]{
+			Key:   opt.primary + pad + util.Dimmed(opt.secondary),
+			Value: opt.id,
+		})
 	}
 
 	if SkipPrompts(cmd) {
