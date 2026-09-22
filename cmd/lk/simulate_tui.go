@@ -447,6 +447,7 @@ func (m *simulateModel) runSetup() tea.Cmd {
 		if err != nil {
 			m.err = err
 		}
+		m.runID = m.config.viewModeRunID
 		m.run = run
 		m.summary = decodeRunSummary(run)
 		m.setupDone = true
