@@ -42,6 +42,9 @@ func runSimulateTUI(config *simulateConfig) error {
 	// job list and spill into page scrolling at each end.
 	p := tea.NewProgram(m)
 	_, runErr := p.Run()
+	if m.browser != nil {
+		m.browser.close()
+	}
 
 	if m.launcher != nil {
 		// A second ctrl+c during cleanup would kill the CLI and leak the worker
@@ -270,6 +273,11 @@ type simulateModel struct {
 
 	matrix              matrixRain
 	matrixSavedShowLogs bool
+
+	// the run's dashboard page, drawn over the whole terminal in place of the
+	// TUI while open; opened at most once, when the run is past setup.
+	browser          *dashboardBrowser
+	browserRequested bool
 
 	width  int
 	height int
@@ -621,6 +629,22 @@ func (m *simulateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *simulateModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.browser != nil {
+		switch msg := msg.(type) {
+		case tea.KeyPressMsg:
+			if msg.String() == "ctrl+c" {
+				m.browser.close()
+				m.browser = nil
+				return m, nil
+			}
+			return m, m.browser.key(msg)
+		case tea.KeyMsg:
+			return m, nil
+		case tea.MouseMsg:
+			return m, m.browser.mouse(msg)
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -628,6 +652,9 @@ func (m *simulateModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.matrix.active {
 			m.matrix.active = false
 			m.showLogs = m.matrixSavedShowLogs
+		}
+		if m.browser != nil {
+			return m, m.browser.resize(m.width, m.height)
 		}
 
 	case agentStartedMsg:
@@ -706,7 +733,29 @@ func (m *simulateModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.runFinished = true
 			}
+			// a live run reaches this on its first RUNNING poll, a viewed run on its first poll
+			if !m.browserRequested && msg.run.Status != livekit.SimulationRun_STATUS_PENDING_UPLOAD &&
+				msg.run.Status != livekit.SimulationRun_STATUS_GENERATING {
+				m.browserRequested = true
+				return m, m.openBrowserCmd()
+			}
 		}
+
+	case browserOpenedMsg:
+		if msg.err == nil {
+			m.browser = msg.browser
+			return m, m.browser.nextFrame()
+		}
+
+	case browserFrameMsg:
+		if m.browser == nil {
+			return m, nil
+		}
+		seq, err := kittyTransmit(msg.img, m.width, m.height)
+		if err != nil {
+			return m, m.browser.nextFrame()
+		}
+		return m, tea.Batch(tea.Raw(seq), m.browser.nextFrame())
 
 	case spinnerTickMsg:
 		m.spinnerIdx++
@@ -1052,6 +1101,12 @@ func (m *simulateModel) findJob(id string) *livekit.SimulationRun_Job {
 }
 
 func (m *simulateModel) View() tea.View {
+	if m.browser != nil {
+		v := tea.NewView(kittyPlaceholder(m.width, m.height))
+		v.AltScreen = true
+		v.MouseMode = tea.MouseModeAllMotion
+		return v
+	}
 	v := tea.NewView(m.render())
 	v.AltScreen = m.altScreen
 	return v
@@ -1182,6 +1237,20 @@ func (m *simulateModel) projectID() string {
 
 func (m *simulateModel) getDashboardURL() string {
 	return simulationDashboardURL(m.projectID(), m.runID)
+}
+
+// openBrowserCmd opens the run's dashboard page when the terminal can draw it
+// and the user is signed in to the dashboard.
+func (m *simulateModel) openBrowserCmd() tea.Cmd {
+	pageURL, token := m.getDashboardURL(), dashboardSessionToken()
+	if !kittyGraphicsSupported() || pageURL == "" || token == "" {
+		return nil
+	}
+	cols, rows := m.width, m.height
+	return func() tea.Msg {
+		b, err := openDashboardBrowser(pageURL, token, cols, rows)
+		return browserOpenedMsg{browser: b, err: err}
+	}
 }
 
 func (m *simulateModel) viewFailed() string {
