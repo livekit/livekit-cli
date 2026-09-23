@@ -43,10 +43,10 @@ name = "my-agent"
 	require.NoError(t, err)
 	require.Equal(t, "my-agent", cfg.Agent.Name)
 	require.Empty(t, cfg.Agent.ID)
-	require.Equal(t, map[string]string{"": "CA_legacy"}, cfg.AgentIDs())
+	require.Equal(t, "CA_legacy", cfg.AgentID())
 }
 
-func TestLoadTOMLFile_CloudRegions(t *testing.T) {
+func TestLoadTOMLFile_CloudID(t *testing.T) {
 	dir := writeTOML(t, `
 [project]
 subdomain = "proj"
@@ -54,69 +54,19 @@ subdomain = "proj"
 [agent]
 name = "my-agent"
 
-[cloud.us-east]
+[cloud]
 id = "CA_a"
-
-[cloud.eu-central]
-id = "CA_b"
 `)
 	cfg, _, err := LoadTOMLFile(dir, LiveKitTOMLFile)
 	require.NoError(t, err)
-	require.Equal(t, map[string]string{"us-east": "CA_a", "eu-central": "CA_b"}, cfg.AgentIDs())
-
-	id, err := cfg.AgentID("eu-central")
-	require.NoError(t, err)
-	require.Equal(t, "CA_b", id)
-
-	_, err = cfg.AgentID("")
-	require.ErrorIs(t, err, ErrInvalidConfig)
-	_, err = cfg.AgentID("ap-south")
-	require.ErrorIs(t, err, ErrInvalidConfig)
-}
-
-func TestLoadTOMLFile_CloudIDAndRegionsAreExclusive(t *testing.T) {
-	dir := writeTOML(t, `
-[project]
-subdomain = "proj"
-
-[cloud]
-id = "CA_a"
-
-[cloud.us-east]
-id = "CA_b"
-`)
-	_, _, err := LoadTOMLFile(dir, LiveKitTOMLFile)
-	require.ErrorIs(t, err, ErrInvalidConfig)
+	require.Equal(t, "CA_a", cfg.AgentID())
 }
 
 func TestSaveTOMLFile_RoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	cfg := NewLiveKitTOML("proj").WithDefaultAgent()
 	cfg.Agent.Name = "my-agent"
-	cfg.SetAgentID("us-east", "CA_a", "")
-	require.Equal(t, "CA_a", cfg.Cloud.ID, "a single region stays flat")
-
-	cfg.SetAgentID("eu-central", "CA_b", "us-east")
-	require.Empty(t, cfg.Cloud.ID)
-	require.Equal(t, map[string]string{"us-east": "CA_a", "eu-central": "CA_b"}, cfg.Cloud.Regions)
-
-	require.NoError(t, cfg.SaveTOMLFile(dir, LiveKitTOMLFile))
-	raw, err := os.ReadFile(filepath.Join(dir, LiveKitTOMLFile))
-	require.NoError(t, err)
-	require.Contains(t, string(raw), "[cloud.us-east]")
-	require.NotContains(t, string(raw), "[agent]\n  id")
-
-	loaded, _, err := LoadTOMLFile(dir, LiveKitTOMLFile)
-	require.NoError(t, err)
-	require.Equal(t, cfg.Agent.Name, loaded.Agent.Name)
-	require.Equal(t, cfg.AgentIDs(), loaded.AgentIDs())
-}
-
-func TestSaveTOMLFile_FlatCloudLayout(t *testing.T) {
-	dir := t.TempDir()
-	cfg := NewLiveKitTOML("proj").WithDefaultAgent()
-	cfg.Agent.Name = "my-agent"
-	cfg.SetAgentID("", "CA_a", "")
+	cfg.Cloud = &LiveKitTOMLCloudConfig{ID: "CA_a"}
 	require.NoError(t, cfg.SaveTOMLFile(dir, LiveKitTOMLFile))
 	raw, err := os.ReadFile(filepath.Join(dir, LiveKitTOMLFile))
 	require.NoError(t, err)
@@ -129,4 +79,9 @@ func TestSaveTOMLFile_FlatCloudLayout(t *testing.T) {
 [cloud]
   id = "CA_a"
 `, string(raw))
+
+	loaded, _, err := LoadTOMLFile(dir, LiveKitTOMLFile)
+	require.NoError(t, err)
+	require.Equal(t, cfg.Agent.Name, loaded.Agent.Name)
+	require.Equal(t, cfg.AgentID(), loaded.AgentID())
 }
