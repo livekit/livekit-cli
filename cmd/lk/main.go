@@ -101,7 +101,6 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, WorkspaceCommands...)
 	app.Commands = append(app.Commands, UserCommands...)
-	app.Commands = append(app.Commands, SimulationCommands...)
 	app.Commands = append(app.Commands, ThemeCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, TokenCommands...)

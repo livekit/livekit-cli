@@ -21,6 +21,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -30,19 +31,51 @@ var simulateListCommand = &cli.Command{
 	Name:            "list",
 	Usage:           "List the project's most recent simulation runs",
 	HideHelpCommand: true,
-	Action:          listSimulationRuns,
+	Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+		if err := simulateListModeFlags.validate(cmd); err != nil {
+			return nil, err
+		}
+		if experimentalAuthEnabled(cmd) {
+			return nil, nil
+		}
+		return loadSimulateProject(ctx, cmd)
+	},
+	Action: listSimulationRuns,
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:  "limit",
 			Usage: "maximum number of runs to return. If unset, defaults to API page size",
 		},
+		// experimental-auth only: the Public API filters by status and is
+		// cursor-paginated.
+		&cli.StringFlag{
+			Name:   "status",
+			Usage:  "Filter by `STATUS` (running, completed, failed, cancelled, ...) (requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:   "cursor",
+			Usage:  "Page `CURSOR` from a prior --json listing (requires --experimental-auth)",
+			Hidden: true,
+		},
 		jsonFlag,
 	},
+}
+
+// simulateListModeFlags: --limit walks the API-key endpoint's pages; the Public
+// API list instead takes --status and a --cursor.
+var simulateListModeFlags = authModeFlags{
+	legacyOnly:       []string{"limit"},
+	experimentalOnly: []string{"status", "cursor"},
 }
 
 // listSimulationRuns prints runs newest first, without jobs. Pass/fail detail
 // lives in `view`.
 func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
+	if experimentalAuthEnabled(cmd) {
+		return cloudListSimulationRuns(ctx, cmd)
+	}
+
 	pc := simulateProjectConfig
 	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
 
@@ -94,4 +127,16 @@ func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 	out.Result(t)
 	fmt.Fprintf(out.StatusWriter(), "To open a run: %s\n", viewCommandHint("<run-id>"))
 	return nil
+}
+
+func cloudListSimulationRuns(ctx context.Context, cmd *cli.Command) error {
+	client, projectID, err := simulationProjectID(ctx, cmd)
+	if err != nil {
+		return err
+	}
+	runs, nextToken, err := client.ListSimulationRuns(ctx, projectID, cmd.String("status"), cmd.String("cursor"))
+	if err != nil {
+		return cloudAPIError(err)
+	}
+	return render.SimulationRunsPage(out, cmd.Bool("json"), runs, nextToken)
 }
