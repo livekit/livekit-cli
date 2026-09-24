@@ -234,14 +234,27 @@ func (s *skillsSession) chooseAgents(cmd *cli.Command) ([]*skills.Agent, error) 
 		out.Statusf("Detected %s", skills.AgentNames(detected))
 		return detected, nil
 	}
+	agents, err = pickAgents("Install for which coding agents?", "Detected agents are preselected", detected)
+	if err != nil {
+		return nil, err
+	}
+	if len(agents) == 0 {
+		return nil, errors.New("no agents selected")
+	}
+	return agents, nil
+}
+
+// pickAgents asks which agents to install for, with preselected checked. It
+// may return none.
+func pickAgents(title, description string, preselected []*skills.Agent) ([]*skills.Agent, error) {
 	var ids []string
 	options := make([]huh.Option[string], len(skills.Agents))
 	for i, a := range skills.Agents {
-		options[i] = huh.NewOption(a.Name, a.ID).Selected(slices.Contains(detected, a))
+		options[i] = huh.NewOption(a.Name, a.ID).Selected(slices.Contains(preselected, a))
 	}
 	if err := huh.NewForm(huh.NewGroup(huh.NewMultiSelect[string]().
-		Title("Install for which coding agents?").
-		Description("Detected agents are preselected").
+		Title(title).
+		Description(description).
 		Options(options...).
 		// Leave room for the title and description rows (see token.go).
 		Height(len(options) + 2).
@@ -250,9 +263,7 @@ func (s *skillsSession) chooseAgents(cmd *cli.Command) ([]*skills.Agent, error) 
 		Run(); err != nil {
 		return nil, err
 	}
-	if len(ids) == 0 {
-		return nil, errors.New("no agents selected")
-	}
+	var agents []*skills.Agent
 	for _, id := range ids {
 		agents = append(agents, skills.FindAgent(id))
 	}
@@ -422,15 +433,16 @@ func (s *skillsSession) printChange(o *skillsChangeOutput) error {
 	if !slices.ContainsFunc(o.Skills, func(r skillResult) bool { return r.Action != "unchanged" && r.Action != "skipped" }) {
 		out.Statusf("Skills are up to date")
 	}
-	var manual, already []string
+	// One line for all agents: paths are in --json and lk skills list.
+	var added, manual, already []string
 	for _, m := range o.MCP {
 		switch skills.MCPState(m.State) {
 		case skills.MCPConfigured:
-			if !m.Added {
+			if m.Added {
+				added = append(added, m.Agent)
+			} else {
 				already = append(already, m.Agent)
-				continue
 			}
-			out.Statusf("Added the Docs MCP server to %s %s", m.Agent, util.Dimmed("→ "+m.Path))
 		case skills.MCPCustom:
 			out.Warnf("%s already has an MCP server named %q pointing elsewhere; left it alone (%s)", m.Agent, skills.MCPServerName, m.Path)
 		case skills.MCPUnsupported:
@@ -438,6 +450,9 @@ func (s *skillsSession) printChange(o *skillsChangeOutput) error {
 		default:
 			out.Warnf("Couldn't configure the Docs MCP server for %s: %s", m.Agent, m.Error)
 		}
+	}
+	if len(added) > 0 {
+		out.Statusf("Added the Docs MCP server for %s", strings.Join(added, ", "))
 	}
 	if len(already) > 0 {
 		out.Statusf("Docs MCP server already set up for %s", strings.Join(already, ", "))
@@ -904,23 +919,22 @@ func setupProjectSkills(ctx context.Context, cmd *cli.Command, dir string) error
 	s := &skillsSession{env: env}
 
 	agents := skills.DetectAgents(env)
-	if len(agents) == 0 {
-		out.Statusf("No coding agents detected; run %s to add LiveKit skills later", util.Accented("lk skills install --agent AGENT"))
-		return nil
-	}
 	if !cmd.IsSet("skills") && !SkipPrompts(cmd) {
-		ok := true
-		if err := huh.NewForm(huh.NewGroup(util.Confirm().
-			Title("Install LiveKit skills for " + skills.AgentNames(agents) + "?").
-			Description("Teaches your coding agent to build, test, and debug LiveKit agents,\nand adds the LiveKit Docs MCP server").
-			Value(&ok).
-			WithTheme(util.FormTheme()))).
-			Run(); err != nil {
+		// Detection only means an agent's config directory exists, which a
+		// tool tried once also leaves behind; let the user trim the list.
+		if agents, err = pickAgents(
+			"Install LiveKit skills for which coding agents?",
+			"Teaches them to build, test, and debug LiveKit agents, and adds the\nLiveKit Docs MCP server. Detected agents are preselected; select none to skip.",
+			agents,
+		); err != nil {
 			return err
 		}
-		if !ok {
+		if len(agents) == 0 {
 			return nil
 		}
+	} else if len(agents) == 0 {
+		out.Statusf("No coding agents detected; run %s to add LiveKit skills later", util.Accented("lk skills install --agent AGENT"))
+		return nil
 	}
 	// A new project has no edits to lose, so skills the template shipped are
 	// replaced without asking.
