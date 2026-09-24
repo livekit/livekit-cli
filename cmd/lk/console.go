@@ -160,7 +160,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
 
 	// Show spinner while starting agent
 	stopSpinner := startSpinner("Starting agent")

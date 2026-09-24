@@ -301,7 +301,7 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	port := int(cmd.Int("port"))
-	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
 	return startSessionDaemon(port, projectDir, projectType, entrypoint, cmd.Duration("idle-timeout"), cmd.Bool("json"))
 }
 

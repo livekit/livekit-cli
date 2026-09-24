@@ -442,3 +442,49 @@ func TestCloudAgentURL(t *testing.T) {
 	// non-cloud URLs produce no link
 	assert.Empty(t, cloudAgentURL("http://localhost:7880", "CA_abc123"))
 }
+
+// --- dev deployment ------------------------------------------------------------
+
+// runResolveDevDeployment parses argv against the real `dev` command flags and
+// returns the deployment resolveDevDeployment picks inside the action.
+func runResolveDevDeployment(t *testing.T, argv []string) string {
+	t.Helper()
+	var got string
+	app := &cli.Command{
+		Name:  "dev",
+		Flags: devCommand.Flags,
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			got = resolveDevDeployment(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, app.Run(context.Background(), argv))
+	return got
+}
+
+func TestResolveDevDeployment(t *testing.T) {
+	t.Run("generates a random dev ID by default", func(t *testing.T) {
+		t.Setenv(agentDeploymentEnv, "")
+		os.Unsetenv(agentDeploymentEnv)
+		a := runResolveDevDeployment(t, []string{"dev"})
+		b := runResolveDevDeployment(t, []string{"dev"})
+		assert.Regexp(t, `^dev-[0-9a-f]{8}$`, a)
+		assert.NotEqual(t, a, b)
+	})
+	t.Run("honors a deployment already in the environment", func(t *testing.T) {
+		t.Setenv(agentDeploymentEnv, "mine")
+		assert.Equal(t, "mine", runResolveDevDeployment(t, []string{"dev"}))
+	})
+	t.Run("honors an empty deployment in the environment", func(t *testing.T) {
+		t.Setenv(agentDeploymentEnv, "")
+		assert.Equal(t, "", runResolveDevDeployment(t, []string{"dev"}))
+	})
+	t.Run("flag wins over the environment", func(t *testing.T) {
+		t.Setenv(agentDeploymentEnv, "mine")
+		assert.Equal(t, "flagged", runResolveDevDeployment(t, []string{"dev", "--deployment", "flagged"}))
+	})
+	t.Run("empty flag opts into production", func(t *testing.T) {
+		t.Setenv(agentDeploymentEnv, "mine")
+		assert.Equal(t, "", runResolveDevDeployment(t, []string{"dev", "--deployment", ""}))
+	})
+}

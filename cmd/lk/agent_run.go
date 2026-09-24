@@ -16,6 +16,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"os"
@@ -117,10 +119,16 @@ var devCommand = &cli.Command{
 	Name:      "dev",
 	Usage:     "Run an agent locally with hot reload",
 	ArgsUsage: "[entrypoint] [-- node/python-args...]",
-	Flags: append(agentRunFlags, &cli.BoolFlag{
-		Name:  "no-reload",
-		Usage: "Disable auto-reload on file changes",
-	}),
+	Flags: append(agentRunFlags,
+		&cli.BoolFlag{
+			Name:  "no-reload",
+			Usage: "Disable auto-reload on file changes",
+		},
+		&cli.StringFlag{
+			Name:  "deployment",
+			Usage: "Deployment to register the agent under (default: a random `ID` so dev traffic is isolated from production; pass \"production\" to explicitly serve production traffic)",
+		},
+	),
 	Action: runAgentDev,
 	// See startCommand: hide `help` so filenames complete for the entrypoint arg.
 	HideHelpCommand: true,
@@ -233,6 +241,33 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 	return merged.env(), nil
 }
 
+// agentDeploymentEnv is read by the agents SDKs to tag the worker's registration
+// with a deployment; an empty value registers into the production pool.
+const agentDeploymentEnv = "LIVEKIT_AGENT_DEPLOYMENT"
+
+// resolveDevDeployment picks the deployment `lk agent dev` registers under, so a
+// local worker doesn't join (and steal jobs from) the production dispatch pool.
+// An explicit --deployment wins, even if empty (opting into production traffic);
+// then a LIVEKIT_AGENT_DEPLOYMENT already in the environment, which the CLI must
+// not quietly override; otherwise a random dev-<hex> ID. A value in the agent's
+// .env is deliberately overridden: the result is set in the subprocess env, which
+// dotenv loaders (python-dotenv, dotenv, node --env-file) don't overwrite.
+func resolveDevDeployment(cmd *cli.Command) string {
+	if cmd.IsSet("deployment") {
+		return cmd.String("deployment")
+	}
+	if v, ok := os.LookupEnv(agentDeploymentEnv); ok {
+		return v
+	}
+	return newDevDeploymentID()
+}
+
+func newDevDeploymentID() string {
+	b := make([]byte, 4)
+	_, _ = rand.Read(b) // never returns an error
+	return "dev-" + hex.EncodeToString(b)
+}
+
 func buildCLIArgs(projectType agentfs.ProjectType, subcmd string, cmd *cli.Command) []string {
 	args := []string{subcmd}
 	if logLevel := cmd.String("log-level"); logLevel != "" {
@@ -246,7 +281,7 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
 
 	credsEnv, err := resolveCredentials(cmd)
 	if err != nil {
@@ -302,6 +337,8 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	deployment := resolveDevDeployment(cmd)
+	env := append(credsEnv, agentDeploymentEnv+"="+deployment)
 	if projectType.IsPython() {
 		cliArgs = append(cliArgs, "--dev")
 		if cmd.String("log-level") == "" {
@@ -315,7 +352,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		ProjectType:   projectType,
 		RuntimeArgs:   forwardedArgs(cmd),
 		CLIArgs:       cliArgs,
-		Env:           credsEnv,
+		Env:           env,
 		ForwardOutput: os.Stdout,
 	}
 
@@ -324,7 +361,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	// agent in the browser. Printed once, even across hot reloads (link stays valid).
 	var consoleLinkOnce sync.Once
 	cfg.OnServerInfo = func(agentName, wsURL string) {
-		if link := cloudConsoleURL(wsURL, agentName, ""); link != "" {
+		if link := cloudConsoleURL(wsURL, agentName, deployment); link != "" {
 			consoleLinkOnce.Do(func() {
 				// Delay briefly so the link prints after the agent's own startup
 				// logs rather than getting buried in them.
@@ -342,7 +379,12 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), entrypoint, projectDir)
+	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
+	if deployment == "" || deployment == "production" {
+		out.Statusf("Using production deployment %s", util.Warn("(agent will receive production traffic)"))
+	} else {
+		out.Statusf("Using deployment [%s]", util.Accented(deployment))
+	}
 
 	// Take over signal handling from the global NotifyContext.
 	signal.Reset(syscall.SIGINT, syscall.SIGTERM)
