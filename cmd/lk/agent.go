@@ -274,6 +274,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Flags: []cli.Flag{
 						regionFlag,
 						installFlag,
+						skillsSetupFlag,
 					},
 					ArgsUsage:                 "[AGENT-NAME]",
 					DisableSliceFlagSeparator: true,

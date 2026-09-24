@@ -65,6 +65,7 @@ var (
 						templateURLFlag,
 						sandboxFlag,
 						installFlag,
+						skillsSetupFlag,
 					},
 				},
 				{
@@ -467,6 +468,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			// printing the now-redundant install hint (guarded via `status:`).
 			os.Setenv("LIVEKIT_DEPS_INSTALLED", "1")
 		}
+	}
+	if err := setupProjectSkills(ctx, cmd, appName); err != nil {
+		// Best-effort, like dependency install: the project is still usable.
+		out.Warnf("Couldn't install coding agent skills: %v\nRun %s in ./%s to try again.", err, "lk skills install", appName)
 	}
 	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
 		return err

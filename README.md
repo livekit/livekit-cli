@@ -557,6 +557,32 @@ lk docs --server-url https://docs-staging.example.com/mcp/ search "agents"
 lk docs --server-url https://docs-abc123.vercel.app/mcp/ --vercel-header <token> overview
 ```
 
+## Coding agent skills
+
+`lk skills` installs LiveKit's [agent skills](https://github.com/livekit/agent-skills) into your coding agents (Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, OpenCode, Windsurf, Amp, Cline, Goose), and adds the [LiveKit Docs MCP server](https://docs.livekit.io/intro/mcp-server/) to their MCP config.
+
+```shell
+# Install every skill and the Docs MCP server for the agents detected on this machine
+lk skills install
+
+# Only some agents, or user-wide instead of the current project
+lk skills install --agent claude-code --agent codex
+lk skills install --global
+
+# See what's installed, whether it's current, and Docs MCP setup
+lk skills list
+
+# Pull the latest skills
+lk skills update
+
+# Uninstall
+lk skills remove
+```
+
+Skills are copied (not symlinked) into each agent's skills directory; agents that read the shared `.agents/skills` directory get one copy. Installs are recorded in `skills-lock.json` (commit it with the skills), or `~/.agents/.skill-lock.json` with `--global`. These are the same lock files [`npx skills`](https://github.com/vercel-labs/skills) and `gh skill` use, so any of the three tools can update what another installed. Skills you've edited locally are never overwritten unless you pass `--force`.
+
+`lk agent init` and `lk app create` offer to install skills into new agent projects for the coding agents on your machine; pass `--skills=false` to skip.
+
 ## Additional notes
 
 ### Parameter precedence
