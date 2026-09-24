@@ -1077,7 +1077,7 @@ func (m *simulateModel) render() string {
 func (m *simulateModel) viewSetup() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(tagStyle().Render("Agent Simulation"))
+	b.WriteString(tagStyle().Render("Agent Simulations"))
 	b.WriteString("\n\n")
 
 	if m.config.pc != nil && m.config.pc.Name != "" {
@@ -1186,7 +1186,7 @@ func (m *simulateModel) getDashboardURL() string {
 func (m *simulateModel) viewFailed() string {
 	var b strings.Builder
 	b.WriteString("\n")
-	b.WriteString(tagStyle().Render("Agent Simulation"))
+	b.WriteString(tagStyle().Render("Agent Simulations"))
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(m.runID))
 	if url := m.getDashboardURL(); url != "" {
@@ -1216,7 +1216,7 @@ func (m *simulateModel) viewRunning() string {
 	var b strings.Builder
 
 	b.WriteString("\n")
-	b.WriteString(tagStyle().Render("Agent Simulation"))
+	b.WriteString(tagStyle().Render("Agent Simulations"))
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(m.runID))
 	if url := m.getDashboardURL(); url != "" {

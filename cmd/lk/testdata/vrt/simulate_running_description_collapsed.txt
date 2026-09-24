@@ -1,5 +1,5 @@
 
- Agent Simulation   SR_fixture0001
+ Agent Simulations   SR_fixture0001
 
   Agent Description
   A restaurant booking agent. It takes reservations, moves them, and cancels them.

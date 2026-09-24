@@ -481,7 +481,7 @@ Console needs a terminal. If a program rather than a person is going to hold the
 
 ## Agent debugger
 
-`lk agent debugger` is built for coding agents such as Claude Code, Codex, and Cursor. When one of them is working on your LiveKit agent, it can use this command to hold a text conversation with the agent it just edited, read the replies and tool calls, and decide what to try next, all from the shell, with no human at a microphone. It is an ad-hoc, local stand-in for [simulations](https://docs.livekit.io/agents/start/testing/simulations/) in which the coding agent plays the user and pays with its own tokens: the agent runs in console mode with STT/TTS disabled, so a turn costs only your LLM and tool calls, and nothing touches a LiveKit room.
+`lk agent debugger` is built for coding agents such as Claude Code, Codex, and Cursor. When one of them is working on your LiveKit agent, it can use this command to hold a text conversation with the agent it just edited, read the replies and tool calls, and decide what to try next, all from the shell, with no human at a microphone. It is an ad-hoc, local stand-in for [Agent Simulations](https://docs.livekit.io/agents/start/testing/simulations/) in which the coding agent plays the user and pays with its own tokens: the agent runs in console mode with STT/TTS disabled, so a turn costs only your LLM and tool calls, and nothing touches a LiveKit room.
 
 People can use it too, but the output and flags are shaped for a program driving it one command at a time: every turn prints tool calls with their arguments and results, handoffs, errors, and the reply; exit codes are non-zero when a turn fails; `--json` is available everywhere. If you want to talk to your agent yourself, `lk agent console` is the better fit.
 
