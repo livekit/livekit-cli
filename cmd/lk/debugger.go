@@ -68,7 +68,7 @@ var sessionPortFlag = &cli.IntFlag{
 var sessionIdleFlag = &cli.DurationFlag{
 	Name:  "idle-timeout",
 	Value: defaultIdleTimeout,
-	Usage: "Stop the session after this long without any command (0 to keep it running until `stop`)",
+	Usage: "Stop the session after `DURATION` without any command, such as 30m, 2h, or 90s (0 keeps it running until stop)",
 }
 
 var sessionMetricsFlag = &cli.BoolFlag{
@@ -182,7 +182,7 @@ be piped on stdin:
 				&cli.DurationFlag{
 					Name:  "timeout",
 					Value: defaultSayTimeout,
-					Usage: "Give up waiting for the agent's reply after this long",
+					Usage: "Give up waiting for the agent's reply after `DURATION`, such as 2m or 90s",
 				},
 				&cli.BoolFlag{
 					Name:  "logs",

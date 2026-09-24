@@ -29,7 +29,7 @@ import (
 var SimulationCommands = []*cli.Command{
 	{
 		Name:   "simulation",
-		Usage:  "Manage LiveKit Cloud agent simulation runs (requires --experimental-auth)",
+		Usage:  "Manage Agent Simulations runs (requires --experimental-auth)",
 		Hidden: true,
 		Commands: []*cli.Command{
 			{

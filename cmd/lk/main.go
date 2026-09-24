@@ -207,6 +207,10 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 //
 //go:generate go run . generate-fish-completion -o ../../autocomplete/fish_autocomplete
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
+	// urfave skips a hidden command's own line but still emits its subcommands
+	// and flags, so hidden groups (e.g. `lk simulation`) would leak into
+	// completion. The process exits after this, so pruning in place is safe.
+	pruneHiddenCommands(cmd.Root())
 	fishScript, err := cmd.Root().ToFishCompletion()
 	if err != nil {
 		return err
@@ -222,6 +226,20 @@ func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return nil
+}
+
+// pruneHiddenCommands drops Hidden commands, and everything under them, from
+// the tree rooted at cmd.
+func pruneHiddenCommands(cmd *cli.Command) {
+	visible := cmd.Commands[:0]
+	for _, c := range cmd.Commands {
+		if c.Hidden {
+			continue
+		}
+		pruneHiddenCommands(c)
+		visible = append(visible, c)
+	}
+	cmd.Commands = visible
 }
 
 // Root help is laid out like a product CLI (compare `modal --help`): a short

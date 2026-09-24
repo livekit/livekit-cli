@@ -1,5 +1,5 @@
 
- Agent Simulation   SR_fixture0001
+ Agent Simulations   SR_fixture0001
 
   Simulation · Running
   2/4  1 passed  1 failed  1 running  <dur>

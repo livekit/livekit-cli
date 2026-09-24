@@ -226,7 +226,7 @@ var (
 
 Locally: "init" scaffolds a project, "dev" runs it with hot reload, "console"
 lets you talk to it by voice or text, "debugger" lets a coding agent or script
-converse with it turn by turn, and "simulate" runs judged simulations of it.
+converse with it turn by turn, and "simulate" tests it with Agent Simulations.
 
 On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 "secrets", "versions", "rollback", and the rest manage it.`,
