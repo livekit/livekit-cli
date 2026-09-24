@@ -896,8 +896,8 @@ func skillsRemove(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
-// setupProjectSkills installs skills and the Docs MCP server into a freshly
-// created agent project, for the coding agents on this machine. It asks first
+// setupProjectSkills installs skills and the Docs MCP server into a project
+// fresh from lk agent init, for the coding agents on this machine. It asks first
 // unless --skills was passed or there's no terminal; projects that aren't
 // LiveKit agents are left alone.
 func setupProjectSkills(ctx context.Context, cmd *cli.Command, dir string) error {

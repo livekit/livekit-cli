@@ -581,7 +581,7 @@ lk skills remove
 
 Skills are copied (not symlinked) into each agent's skills directory; agents that read the shared `.agents/skills` directory get one copy. Installs are recorded in `skills-lock.json` (commit it with the skills), or `~/.agents/.skill-lock.json` with `--global`. These are the same lock files [`npx skills`](https://github.com/vercel-labs/skills) and `gh skill` use, so any of the three tools can update what another installed. Skills you've edited locally are never overwritten unless you pass `--force`.
 
-`lk agent init` and `lk app create` offer to install skills into new agent projects for the coding agents on your machine; pass `--skills=false` to skip.
+`lk agent init` offers to install skills into new agent projects for the coding agents on your machine; pass `--skills=false` to skip.
 
 ## Additional notes
 

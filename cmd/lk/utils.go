@@ -110,8 +110,8 @@ var (
 		Name:  "install",
 		Usage: "Run installation after creating the application",
 	}
-	// skillsSetupFlag controls installing LiveKit's coding agent skills into
-	// a new agent project; unset, lk asks (or installs, without a terminal).
+	// skillsSetupFlag controls whether lk agent init installs LiveKit's coding
+	// agent skills; unset, lk asks (or installs, without a terminal).
 	skillsSetupFlag = &cli.BoolFlag{
 		Name:  "skills",
 		Usage: "Install LiveKit skills and the Docs MCP server for your coding agents (see lk skills)",

@@ -65,7 +65,6 @@ var (
 						templateURLFlag,
 						sandboxFlag,
 						installFlag,
-						skillsSetupFlag,
 					},
 				},
 				{
@@ -277,6 +276,12 @@ func listTemplates(ctx context.Context, cmd *cli.Command) error {
 }
 
 func setupTemplate(ctx context.Context, cmd *cli.Command) error {
+	return setupTemplateWith(ctx, cmd, nil)
+}
+
+// setupTemplateWith is setupTemplate with a step that runs after dependencies
+// are installed, before the template's post-create output.
+func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(ctx context.Context, cmd *cli.Command, dir string) error) error {
 	verbose := cmd.Bool("verbose")
 	install := cmd.Bool("install")
 	isSandbox := sandboxID != ""
@@ -469,9 +474,10 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			os.Setenv("LIVEKIT_DEPS_INSTALLED", "1")
 		}
 	}
-	if err := setupProjectSkills(ctx, cmd, appName); err != nil {
-		// Best-effort, like dependency install: the project is still usable.
-		out.Warnf("Couldn't install coding agent skills: %v\nRun %s in ./%s to try again.", err, "lk skills install", appName)
+	if afterInstall != nil {
+		if err := afterInstall(ctx, cmd, appName); err != nil {
+			return err
+		}
 	}
 	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
 		return err
