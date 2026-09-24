@@ -2,7 +2,7 @@
 
 function __fish_lk_no_subcommand --description 'Test if there has been any subcommand yet'
     for i in (commandline -opc)
-        if contains -- $i generate-fish-completion app agent a analytics cloud docs project workspace user simulation set-theme room create-room list-rooms list-room update-room-metadata list-participants get-participant remove-participant update-participant mute-track update-subscriptions send-data token create-token join-room dispatch egress start-room-composite-egress start-web-egress start-participant-egress start-track-composite-egress start-track-egress list-egress update-layout update-stream stop-egress test-egress-template ingress create-ingress update-ingress list-ingress delete-ingress sip list-sip-trunk delete-sip-trunk create-sip-dispatch-rule list-sip-dispatch-rule delete-sip-dispatch-rule create-sip-participant number replay perf load-test completion
+        if contains -- $i generate-fish-completion app agent a analytics cloud docs skills project workspace user simulation set-theme room create-room list-rooms list-room update-room-metadata list-participants get-participant remove-participant update-participant mute-track update-subscriptions send-data token create-token join-room dispatch egress start-room-composite-egress start-web-egress start-participant-egress start-track-composite-egress start-track-egress list-egress update-layout update-stream stop-egress test-egress-template ingress create-ingress update-ingress list-ingress delete-ingress sip list-sip-trunk delete-sip-trunk create-sip-dispatch-rule list-sip-dispatch-rule delete-sip-dispatch-rule create-sip-participant number replay perf load-test completion
             return 1
         end
     end
@@ -56,6 +56,7 @@ complete -c lk -n '__fish_seen_subcommand_from agent a' -f -l help -s h -d 'show
 complete -x -c lk -n '__fish_seen_subcommand_from agent a; and not __fish_seen_subcommand_from init dev start console debugger dbg simulate create dockerfile config deploy promote status update restart rollback logs tail delete destroy versions list secrets update-secrets private-link daemon dbg' -a 'init' -d 'Create a new agent project from a template'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from init' -f -l region -r -d 'Region to deploy the agent to. If unset, will deploy to the nearest region.'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from init' -f -l install -d 'Run installation after creating the application'
+complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from init' -f -l skills -d 'Install LiveKit skills and the Docs MCP server for your coding agents (see lk skills)'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from init' -f -l help -s h -d 'show help'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from init' -f -l deploy -d 'If set, automatically deploys the agent to LiveKit Cloud after initialization.'
 complete -c lk -n '__fish_seen_subcommand_from agent a; and __fish_seen_subcommand_from init' -f -l template -r -d '`TEMPLATE` to instantiate, see https://github.com/livekit-examples'
@@ -409,6 +410,34 @@ complete -c lk -n '__fish_seen_subcommand_from docs; and __fish_seen_subcommand_
 complete -c lk -n '__fish_seen_subcommand_from docs; and __fish_seen_subcommand_from submit-feedback' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from docs; and __fish_seen_subcommand_from submit-feedback; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
 complete -x -c lk -n '__fish_seen_subcommand_from docs; and not __fish_seen_subcommand_from overview search get-page get-pages code-search changelog list-sdks pricing-info submit-feedback help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -x -c lk -n '__fish_lk_no_subcommand' -a 'skills' -d 'Install LiveKit\'s skills and Docs MCP server into your coding agents'
+complete -c lk -n '__fish_seen_subcommand_from skills' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and not __fish_seen_subcommand_from install add list ls update upgrade remove rm uninstall help h' -a 'install' -d 'Install skills and the Docs MCP server'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from install add' -f -l agent -s a -r -d 'Coding `AGENT` to target; repeat for several (claude-code, codex, cursor, github-copilot, gemini-cli, opencode, windsurf, amp, cline, goose)'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from install add' -f -l global -s g -d 'Use your user-level agent directories instead of the current project'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from install add' -f -l skip-mcp -d 'Don\'t add the Docs MCP server to agent configs'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from install add' -f -l force -d 'Overwrite skills you\'ve edited locally'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from install add' -f -l json -s j -d 'Output as JSON'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from install add' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from install add; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and not __fish_seen_subcommand_from install add list ls update upgrade remove rm uninstall help h' -a 'list' -d 'Show available skills, where they\'re installed, and Docs MCP setup'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from list ls' -f -l global -s g -d 'Use your user-level agent directories instead of the current project'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from list ls' -f -l json -s j -d 'Output as JSON'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from list ls' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from list ls; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and not __fish_seen_subcommand_from install add list ls update upgrade remove rm uninstall help h' -a 'update' -d 'Update installed skills to the latest version'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from update upgrade' -f -l global -s g -d 'Use your user-level agent directories instead of the current project'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from update upgrade' -f -l force -d 'Overwrite skills you\'ve edited locally'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from update upgrade' -f -l json -s j -d 'Output as JSON'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from update upgrade' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from update upgrade; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and not __fish_seen_subcommand_from install add list ls update upgrade remove rm uninstall help h' -a 'remove' -d 'Remove LiveKit skills'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l agent -s a -r -d 'Coding `AGENT` to target; repeat for several (claude-code, codex, cursor, github-copilot, gemini-cli, opencode, windsurf, amp, cline, goose)'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l global -s g -d 'Use your user-level agent directories instead of the current project'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l json -s j -d 'Output as JSON'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l help -s h -d 'show help'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
+complete -x -c lk -n '__fish_seen_subcommand_from skills; and not __fish_seen_subcommand_from install add list ls update upgrade remove rm uninstall help h' -a 'help' -d 'Shows a list of commands or help for one command'
 complete -x -c lk -n '__fish_lk_no_subcommand' -a 'project' -d 'Add or remove projects and view existing project properties'
 complete -c lk -n '__fish_seen_subcommand_from project' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from project; and not __fish_seen_subcommand_from add list get create update delete remove set-default member invite help h' -a 'add' -d 'Add a new project (for LiveKit Cloud projects, also see `lk cloud auth`)'
