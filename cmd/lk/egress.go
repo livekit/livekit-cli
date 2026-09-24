@@ -62,7 +62,7 @@ TYPE selects a deprecated per-type request instead:
 	- "track-composite" captures an audio and a video track, as ` + reflect.TypeFor[livekit.TrackCompositeEgressRequest]().Name() + `
 	- "web" captures any website, with a lifecycle detached from LiveKit rooms, as ` + reflect.TypeFor[livekit.WebEgressRequest]().Name() + `
 
-See cmd/livekit-cli/examples`
+See cmd/lk/examples`
 )
 
 var (
@@ -130,8 +130,8 @@ var (
 					Action: testEgressTemplate,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:     "base-url (e.g. https://recorder.livekit.io/#)",
-							Usage:    "Base template `URL`",
+							Name:     "base-url",
+							Usage:    "Base template `URL` (e.g. https://recorder.livekit.io/#)",
 							Required: true,
 						},
 						&cli.StringFlag{
@@ -158,9 +158,8 @@ var (
 					Action:    updateLayout,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:     "id",
-							Usage:    "Egress ID",
-							Required: true,
+							Name:  "id",
+							Usage: "Egress `ID`, instead of the positional argument",
 						},
 						&cli.StringFlag{
 							Name:     "layout",
@@ -170,15 +169,15 @@ var (
 					},
 				},
 				{
-					Name:   "update-stream",
-					Usage:  "Adds or removes RTMP output urls from a live stream",
-					Before: createEgressClient,
-					Action: updateStream,
+					Name:      "update-stream",
+					Usage:     "Adds or removes RTMP output urls from a live stream",
+					ArgsUsage: "ID",
+					Before:    createEgressClient,
+					Action:    updateStream,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:     "id",
-							Usage:    "Egress ID",
-							Required: true,
+							Name:  "id",
+							Usage: "Egress `ID`, instead of the positional argument",
 						},
 						&cli.StringSliceFlag{
 							Name:     "add-urls",
@@ -220,7 +219,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "WebEgressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "WebEgressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -234,7 +233,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "ParticipantEgressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "ParticipantEgressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -248,7 +247,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "TrackCompositeEgressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "TrackCompositeEgressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -262,7 +261,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "TrackEgressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "TrackEgressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -352,8 +351,8 @@ var (
 			Action: testEgressTemplate,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "base-url (e.g. https://recorder.livekit.io/#)",
-					Usage:    "Base template `URL`",
+					Name:     "base-url",
+					Usage:    "Base template `URL` (e.g. https://recorder.livekit.io/#)",
 					Required: true,
 				},
 				&cli.StringFlag{
@@ -684,9 +683,9 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateLayout(ctx context.Context, cmd *cli.Command) error {
-	egressId := cmd.String("id")
-	if egressId == "" {
-		egressId = cmd.Args().First()
+	egressId, err := extractFlagOrArg(cmd, "id")
+	if err != nil {
+		return err
 	}
 	info, err := egressClient.UpdateLayout(ctx, &livekit.UpdateLayoutRequest{
 		EgressId: egressId,
@@ -701,9 +700,9 @@ func updateLayout(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateStream(ctx context.Context, cmd *cli.Command) error {
-	egressId := cmd.String("id")
-	if egressId == "" {
-		egressId = cmd.Args().First()
+	egressId, err := extractFlagOrArg(cmd, "id")
+	if err != nil {
+		return err
 	}
 	info, err := egressClient.UpdateStream(ctx, &livekit.UpdateStreamRequest{
 		EgressId:         egressId,

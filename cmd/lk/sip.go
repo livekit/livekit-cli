@@ -315,7 +315,7 @@ var (
 							Name:      "delete",
 							Usage:     "Delete SIP Dispatch Rule",
 							Action:    deleteSIPDispatchRule,
-							ArgsUsage: "SIPTrunk ID to delete",
+							ArgsUsage: "SIPDispatchRule ID to delete",
 						},
 					},
 				},
@@ -486,15 +486,15 @@ func appendSIPMediaFlags(flags []cli.Flag) []cli.Flag {
 	flags = append(flags,
 		&cli.StringFlag{
 			Name:  "media-enc",
-			Usage: "Sets media encryption for outbound call",
+			Usage: "Sets media encryption for calls",
 		},
 		&cli.BoolFlag{
 			Name:  "no-default-codecs",
-			Usage: "Disables a builtin list of default SIP codecs",
+			Usage: "Disables a builtin list of default SIP codecs, so only those in --codecs are used. Has no effect without --codecs",
 		},
 		&cli.StringSliceFlag{
 			Name:  "codecs",
-			Usage: "Sets a list of SIP codecs for outbound call",
+			Usage: "Sets a list of SIP codecs for calls",
 		},
 	)
 	return flags

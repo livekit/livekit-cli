@@ -122,9 +122,9 @@ var (
 					Before: createRoomClient,
 					Action: updateRoomMetadata,
 					Flags: []cli.Flag{
-						hidden(optional(roomFlag)),
 						&cli.StringFlag{
 							Name:     "metadata",
+							Usage:    "New room `METADATA` (required)",
 							Required: true,
 						},
 					},
@@ -136,7 +136,7 @@ var (
 					UsageText: "lk room delete [OPTIONS] ROOM_NAME",
 					Before:    createRoomClient,
 					Action:    deleteRoom,
-					ArgsUsage: "ROOM_NAME_OR_ID",
+					ArgsUsage: "ROOM_NAME",
 				},
 				{
 					Name:      "join",
@@ -212,7 +212,7 @@ var (
 					Commands: []*cli.Command{
 						{
 							Name:      "list",
-							Usage:     "List or search for active rooms by name",
+							Usage:     "List participants in a room",
 							Action:    listParticipants,
 							ArgsUsage: "ROOM_NAME",
 						},
