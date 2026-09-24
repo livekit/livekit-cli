@@ -278,10 +278,9 @@ func pickAgents(title, description string, preselected []*skills.Agent) ([]*skil
 
 // skillResult is one change (or non-change) to one copy of a skill.
 type skillResult struct {
-	Skill   string   `json:"skill"`
-	Version string   `json:"version,omitempty"`
-	Path    string   `json:"path"`
-	Agents  []string `json:"agents"`
+	Skill  string   `json:"skill"`
+	Path   string   `json:"path"`
+	Agents []string `json:"agents"`
 	// Action is installed, updated, unchanged, removed, or skipped (edited
 	// locally; see --force). Skills LiveKit no longer publishes are removed,
 	// or skipped if edited.
@@ -350,9 +349,6 @@ func (s *skillsSession) sync(in *skills.Installer, copies []skills.Copy, force, 
 	var removed []string
 	for _, c := range copies {
 		r := skillResult{Skill: c.Skill, Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents)}
-		if c.Upstream != nil {
-			r.Version = c.Upstream.Version
-		}
 		switch {
 		case c.State == skills.StateCurrent:
 			r.Action = "unchanged"
@@ -363,7 +359,7 @@ func (s *skillsSession) sync(in *skills.Installer, copies []skills.Copy, force, 
 			if err := in.Delete(c); err != nil {
 				return nil, err
 			}
-			r.Action, r.Version = "removed", c.Version
+			r.Action = "removed"
 			removed = append(removed, c.Skill)
 		case c.State == skills.StateModified && !force:
 			r.Action = "skipped"
@@ -395,8 +391,8 @@ func (s *skillsSession) sync(in *skills.Installer, copies []skills.Copy, force, 
 func (s *skillsSession) printResults(results []skillResult, skipHint string) {
 	// One line per skill and action, listing the directories it applied to.
 	type group struct {
-		skill, action, version string
-		dirs                   []string
+		skill, action string
+		dirs          []string
 	}
 	var groups []*group
 	var skipped []string
@@ -410,22 +406,18 @@ func (s *skillsSession) printResults(results []skillResult, skipHint string) {
 		}
 		i := slices.IndexFunc(groups, func(g *group) bool { return g.skill == r.Skill && g.action == r.Action })
 		if i < 0 {
-			groups = append(groups, &group{skill: r.Skill, action: r.Action, version: r.Version})
+			groups = append(groups, &group{skill: r.Skill, action: r.Action})
 			i = len(groups) - 1
 		}
 		groups[i].dirs = append(groups[i].dirs, filepath.Dir(r.Path))
 	}
 	for _, g := range groups {
-		version := ""
-		if g.version != "" {
-			version = " " + g.version
-		}
 		verb := strings.ToUpper(g.action[:1]) + g.action[1:]
 		arrow := "→ "
 		if g.action == "removed" {
 			arrow = "from "
 		}
-		out.Statusf("%s %s%s %s", verb, util.Accented(g.skill), version, util.Dimmed(arrow+strings.Join(g.dirs, ", ")))
+		out.Statusf("%s %s %s", verb, util.Accented(g.skill), util.Dimmed(arrow+strings.Join(g.dirs, ", ")))
 	}
 	if len(skipped) > 0 {
 		out.Warnf("Left skills you've edited alone (pass --force to %s them): %s", skipHint, strings.Join(skipped, ", "))
@@ -668,16 +660,14 @@ func skillsUpdate(ctx context.Context, cmd *cli.Command) error {
 }
 
 type skillsListCopy struct {
-	Path    string   `json:"path"`
-	Agents  []string `json:"agents"`
-	State   string   `json:"state"`
-	Version string   `json:"version,omitempty"`
+	Path   string   `json:"path"`
+	Agents []string `json:"agents"`
+	State  string   `json:"state"`
 }
 
 type skillsListSkill struct {
 	Name        string           `json:"name"`
 	Description string           `json:"description,omitempty"`
-	Version     string           `json:"version,omitempty"`
 	Published   bool             `json:"published"`
 	Installed   []skillsListCopy `json:"installed"`
 }
@@ -723,12 +713,12 @@ func skillsList(ctx context.Context, cmd *cli.Command) error {
 	for _, n := range names {
 		sk := skillsListSkill{Name: n, Installed: []skillsListCopy{}}
 		if up := bundle.Find(n); up != nil {
-			sk.Description, sk.Version, sk.Published = up.Description, up.Version, true
+			sk.Description, sk.Published = up.Description, true
 		}
 		for _, c := range copies {
 			if c.Skill == n && c.State != skills.StateMissing {
 				sk.Installed = append(sk.Installed, skillsListCopy{
-					Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), State: string(c.State), Version: c.Version,
+					Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), State: string(c.State),
 				})
 			}
 		}
@@ -759,7 +749,7 @@ func skillsList(ctx context.Context, cmd *cli.Command) error {
 }
 
 func printSkillsList(o *skillsListOutput) error {
-	t := util.CreateTable().Headers("Skill", "Version", "Installed")
+	t := util.CreateTable().Headers("Skill", "Installed")
 	var outdated, missing bool
 	for _, sk := range o.Skills {
 		var where []string
@@ -777,11 +767,11 @@ func printSkillsList(o *skillsListOutput) error {
 			where = []string{"-"}
 			missing = true
 		}
-		version := sk.Version
+		name := sk.Name
 		if !sk.Published {
-			version = "no longer published"
+			name += " (no longer published)"
 		}
-		t.Row(sk.Name, version, strings.Join(where, "\n"))
+		t.Row(name, strings.Join(where, "\n"))
 	}
 	out.Result(t)
 
@@ -858,7 +848,7 @@ func skillsRemove(ctx context.Context, cmd *cli.Command) error {
 		case c.State == skills.StateModified && !force:
 			// Deleting edits can't be undone; treat them as update does.
 			results = append(results, skillResult{
-				Skill: c.Skill, Version: c.Version, Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), Action: "skipped",
+				Skill: c.Skill, Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), Action: "skipped",
 			})
 		default:
 			remove = append(remove, c)
@@ -904,7 +894,7 @@ func skillsRemove(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		results = append(results, skillResult{
-			Skill: c.Skill, Version: c.Version, Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), Action: "removed",
+			Skill: c.Skill, Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), Action: "removed",
 		})
 	}
 	// Forget keeps the lock entry of a skill with an edited copy left behind.

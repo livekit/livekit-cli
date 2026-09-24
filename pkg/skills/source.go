@@ -64,7 +64,6 @@ type File struct {
 type Skill struct {
 	Name        string
 	Description string
-	Version     string // metadata.version, if set
 	Files       []File // sorted by Path
 }
 
@@ -241,7 +240,6 @@ func newSkill(dir string, files []File) (*Skill, error) {
 	return &Skill{
 		Name:        fm.Name,
 		Description: fm.Description,
-		Version:     fm.version(),
 		Files:       files,
 	}, nil
 }
@@ -255,19 +253,6 @@ type Frontmatter struct {
 	Name        string         `yaml:"name"`
 	Description string         `yaml:"description"`
 	Metadata    map[string]any `yaml:"metadata"`
-}
-
-func (fm *Frontmatter) version() string {
-	switch v := fm.Metadata["version"].(type) {
-	case string:
-		return v
-	case nil:
-		return ""
-	case map[string]any, []any:
-		return ""
-	default:
-		return fmt.Sprint(v)
-	}
 }
 
 // ParseFrontmatter reads the YAML block at the top of a SKILL.md.

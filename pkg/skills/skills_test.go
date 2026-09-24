@@ -95,7 +95,6 @@ func TestParseArchive(t *testing.T) {
 	assert.Contains(t, b.Skipped[0], "does not match its directory")
 
 	alpha := b.Find("alpha")
-	assert.Equal(t, "1.2.0", alpha.Version)
 	assert.Equal(t, "alpha skill", alpha.Description)
 	var paths []string
 	for _, f := range alpha.Files {
@@ -125,11 +124,11 @@ func TestSkillEntryRejectsTraversal(t *testing.T) {
 }
 
 func TestParseFrontmatter(t *testing.T) {
-	fm, err := ParseFrontmatter([]byte("---\r\nname: x\r\ndescription: 'a: b'\r\nmetadata:\r\n  version: 1.5\r\n---\r\nbody"))
+	fm, err := ParseFrontmatter([]byte("---\r\nname: x\r\ndescription: 'a: b'\r\nmetadata:\r\n  author: livekit\r\n  version: 1.5\r\n---\r\nbody"))
 	require.NoError(t, err)
 	assert.Equal(t, "x", fm.Name)
 	assert.Equal(t, "a: b", fm.Description)
-	assert.Equal(t, "1.5", fm.version())
+	assert.Equal(t, "livekit", fm.Metadata["author"])
 
 	for _, bad := range []string{"no frontmatter", "---\nname: x\n", "---\ndescription: d\n---\n"} {
 		_, err := ParseFrontmatter([]byte(bad))

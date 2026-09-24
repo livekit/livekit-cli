@@ -45,8 +45,6 @@ type Copy struct {
 	Dir      SkillsDir
 	State    State
 	Upstream *Skill // nil when the skill is no longer published
-	// Version is the installed copy's metadata.version.
-	Version string
 }
 
 // Path is the skill's directory.
@@ -116,7 +114,6 @@ func (in *Installer) inspect(name string, up *Skill, d SkillsDir) (Copy, error) 
 	for _, f := range files {
 		if f.Path == "SKILL.md" {
 			if fm, err := ParseFrontmatter(f.Data); err == nil {
-				c.Version = fm.version()
 				livekit = fm.Metadata["author"] == "livekit" && fm.Name == name
 			}
 		}
