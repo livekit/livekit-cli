@@ -33,6 +33,12 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/skills"
 )
 
+// setHome points os.UserHomeDir at dir: $HOME, or %USERPROFILE% on Windows.
+func setHome(t *testing.T, dir string) {
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+}
+
 // skillsArchive builds a GitHub-style tarball of the named skills.
 func skillsArchive(t *testing.T, names ...string) []byte {
 	t.Helper()
@@ -65,7 +71,7 @@ func TestSkillsCommands(t *testing.T) {
 	defer func() { skills.ArchiveURL = orig }()
 
 	root := t.TempDir()
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("PATH", t.TempDir())
 	t.Chdir(root)
 
@@ -142,7 +148,7 @@ func writeTemplateSkill(t *testing.T, dir, name string) {
 func TestSkillsUpdateReplacesTemplateCopies(t *testing.T) {
 	fakeSkillsRepo(t, skillsArchive(t, "new-skill"))
 	root := t.TempDir()
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	t.Setenv("PATH", t.TempDir())
 	t.Chdir(root)
 	writeTemplateSkill(t, root, "livekit-agents")
@@ -160,7 +166,7 @@ func TestSetupProjectSkills(t *testing.T) {
 	fakeSkillsRepo(t, skillsArchive(t, "new-skill"))
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".claude"), 0o755))
-	t.Setenv("HOME", home)
+	setHome(t, home)
 	t.Setenv("PATH", t.TempDir())
 	t.Chdir(t.TempDir())
 
