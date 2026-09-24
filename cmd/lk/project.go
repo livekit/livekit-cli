@@ -76,6 +76,7 @@ var (
 					Usage:     "Get a LiveKit Cloud project by ID (requires --experimental-auth)",
 					UsageText: "lk project get PROJECT_ID --experimental-auth",
 					ArgsUsage: "PROJECT_ID",
+					Hidden:    true,
 					Action:    getUserProject,
 					Flags:     []cli.Flag{jsonFlag},
 				},
@@ -84,6 +85,7 @@ var (
 					Usage:     "Create a new LiveKit Cloud project (requires --experimental-auth)",
 					UsageText: "lk project create PROJECT_NAME --experimental-auth",
 					ArgsUsage: "PROJECT_NAME",
+					Hidden:    true,
 					Action:    createUserProject,
 					Flags:     []cli.Flag{jsonFlag},
 				},
@@ -92,6 +94,7 @@ var (
 					Usage:     "Rename a LiveKit Cloud project (requires --experimental-auth)",
 					UsageText: "lk project update PROJECT_ID --name NEW_NAME --experimental-auth",
 					ArgsUsage: "PROJECT_ID",
+					Hidden:    true,
 					Action:    updateUserProject,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
@@ -107,6 +110,7 @@ var (
 					Usage:     "Delete a LiveKit Cloud project (requires --experimental-auth)",
 					UsageText: "lk project delete PROJECT_ID --experimental-auth",
 					ArgsUsage: "PROJECT_ID",
+					Hidden:    true,
 					Action:    deleteUserProject,
 					Flags:     []cli.Flag{jsonFlag},
 				},
