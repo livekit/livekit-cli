@@ -125,8 +125,9 @@ var devCommand = &cli.Command{
 			Usage: "Disable auto-reload on file changes",
 		},
 		&cli.StringFlag{
-			Name:  "deployment",
-			Usage: "Deployment to register the agent under (default: a random `ID` so dev traffic is isolated from production; pass \"production\" to explicitly serve production traffic)",
+			Name:    "deployment",
+			Sources: cli.EnvVars(agentDeploymentEnv),
+			Usage:   "Deployment to register the agent under (default: a random `ID` so dev traffic is isolated from production; pass \"production\" to explicitly serve production traffic)",
 		},
 	),
 	Action: runAgentDev,
@@ -247,17 +248,15 @@ const agentDeploymentEnv = "LIVEKIT_AGENT_DEPLOYMENT"
 
 // resolveDevDeployment picks the deployment `lk agent dev` registers under, so a
 // local worker doesn't join (and steal jobs from) the production dispatch pool.
-// An explicit --deployment wins, even if empty (opting into production traffic);
-// then a LIVEKIT_AGENT_DEPLOYMENT already in the environment, which the CLI must
-// not quietly override; otherwise a random dev-<hex> ID. A value in the agent's
-// .env is deliberately overridden: the result is set in the subprocess env, which
-// dotenv loaders (python-dotenv, dotenv, node --env-file) don't overwrite.
+// An explicit --deployment wins, then a LIVEKIT_AGENT_DEPLOYMENT already in the
+// environment (the flag's env source), which the CLI must not quietly override;
+// either counts even if empty. Otherwise a random dev-<hex> ID. A value in the
+// agent's .env is deliberately overridden: the result is set in the subprocess
+// env, which dotenv loaders (python-dotenv, dotenv, node --env-file) don't
+// overwrite.
 func resolveDevDeployment(cmd *cli.Command) string {
 	if cmd.IsSet("deployment") {
 		return cmd.String("deployment")
-	}
-	if v, ok := os.LookupEnv(agentDeploymentEnv); ok {
-		return v
 	}
 	return newDevDeploymentID()
 }
