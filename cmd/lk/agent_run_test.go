@@ -483,6 +483,14 @@ func TestResolveDevDeployment(t *testing.T) {
 		t.Setenv(agentDeploymentEnv, "mine")
 		assert.Equal(t, "flagged", runResolveDevDeployment(t, []string{"dev", "--deployment", "flagged"}))
 	})
+	t.Run("production flag maps to the empty production deployment", func(t *testing.T) {
+		t.Setenv(agentDeploymentEnv, "mine")
+		assert.Equal(t, "", runResolveDevDeployment(t, []string{"dev", "--deployment", "production"}))
+	})
+	t.Run("production in the environment maps to the empty production deployment", func(t *testing.T) {
+		t.Setenv(agentDeploymentEnv, "production")
+		assert.Equal(t, "", runResolveDevDeployment(t, []string{"dev"}))
+	})
 	t.Run("empty flag opts into production", func(t *testing.T) {
 		t.Setenv(agentDeploymentEnv, "mine")
 		assert.Equal(t, "", runResolveDevDeployment(t, []string{"dev", "--deployment", ""}))

@@ -246,17 +246,26 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 // with a deployment; an empty value registers into the production pool.
 const agentDeploymentEnv = "LIVEKIT_AGENT_DEPLOYMENT"
 
+// productionDeployment is the reserved name for the production deployment.
+// Production is "" everywhere on the wire (hosted workers, Console, dispatch),
+// and dispatch treats a worker registered as literal "production" as its own
+// pool, so the CLI maps this name to "" before handing it to the agent.
+const productionDeployment = "production"
+
 // resolveDevDeployment picks the deployment `lk agent dev` registers under, so a
 // local worker doesn't join (and steal jobs from) the production dispatch pool.
 // An explicit --deployment wins, then a LIVEKIT_AGENT_DEPLOYMENT already in the
 // environment (the flag's env source), which the CLI must not quietly override;
-// either counts even if empty. Otherwise a random dev-<hex> ID. A value in the
-// agent's .env is deliberately overridden: the result is set in the subprocess
-// env, which dotenv loaders (python-dotenv, dotenv, node --env-file) don't
-// overwrite.
+// either counts even if empty, and "production" means "". Otherwise a random
+// dev-<hex> ID. A value in the agent's .env is deliberately overridden: the
+// result is set in the subprocess env, which dotenv loaders (python-dotenv,
+// dotenv, node --env-file) don't overwrite.
 func resolveDevDeployment(cmd *cli.Command) string {
 	if cmd.IsSet("deployment") {
-		return cmd.String("deployment")
+		if d := cmd.String("deployment"); d != productionDeployment {
+			return d
+		}
+		return ""
 	}
 	return newDevDeploymentID()
 }
@@ -379,7 +388,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
-	if deployment == "" || deployment == "production" {
+	if deployment == "" {
 		out.Statusf("Using production deployment %s", util.Warn("(agent will receive production traffic)"))
 	} else {
 		out.Statusf("Using deployment [%s]", util.Accented(deployment))
