@@ -20,7 +20,7 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.0
-	github.com/livekit/protocol v1.51.1-0.20260915182407-3c0fcdbd25df
+	github.com/livekit/protocol v1.52.1-0.20260923151923-935e69b482ab
 	github.com/livekit/server-sdk-go/v2 v2.18.2-0.20260904062056-1da58cd7b795
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
@@ -156,7 +156,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.3.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
 	github.com/livekit/mediatransportutil v0.0.0-20260821083140-f234b534b095 // indirect
-	github.com/livekit/psrpc v0.7.6 // indirect
+	github.com/livekit/psrpc v0.8.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/magefile/mage v1.17.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
@@ -171,9 +171,6 @@ require (
 	github.com/morikuni/aec v1.1.0 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nats-io/nats.go v1.53.1 // indirect
-	github.com/nats-io/nkeys v0.4.16 // indirect
-	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.8.0 // indirect
 	github.com/oasdiff/yaml v0.1.1 // indirect
 	github.com/oasdiff/yaml3 v0.0.14 // indirect
@@ -201,7 +198,6 @@ require (
 	github.com/prometheus/common v0.71.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/puzpuzpuz/xsync/v4 v4.5.0 // indirect
-	github.com/redis/go-redis/v9 v9.22.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sajari/fuzzy v1.0.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
@@ -263,5 +259,9 @@ require (
 	mvdan.cc/sh/v3 v3.13.2-0.20260510185049-f5c6e2779117 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
+
+// TEMP (local dev): use local protocol with the WorkerInfo dev message.
+// Drop once github.com/livekit/protocol publishes it.
+// replace github.com/livekit/protocol => ../protocol
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
