@@ -151,15 +151,15 @@ var (
 					},
 				},
 				{
-					Name:      "update-layout",
-					Usage:     "Updates layout for a live room composite egress",
-					ArgsUsage: "ID",
-					Before:    createEgressClient,
-					Action:    updateLayout,
+					Name:   "update-layout",
+					Usage:  "Updates layout for a live room composite egress",
+					Before: createEgressClient,
+					Action: updateLayout,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:  "id",
-							Usage: "Egress `ID`, instead of the positional argument",
+							Name:     "id",
+							Usage:    "Egress ID",
+							Required: true,
 						},
 						&cli.StringFlag{
 							Name:     "layout",
@@ -169,15 +169,15 @@ var (
 					},
 				},
 				{
-					Name:      "update-stream",
-					Usage:     "Adds or removes RTMP output urls from a live stream",
-					ArgsUsage: "ID",
-					Before:    createEgressClient,
-					Action:    updateStream,
+					Name:   "update-stream",
+					Usage:  "Adds or removes RTMP output urls from a live stream",
+					Before: createEgressClient,
+					Action: updateStream,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:  "id",
-							Usage: "Egress `ID`, instead of the positional argument",
+							Name:     "id",
+							Usage:    "Egress ID",
+							Required: true,
 						},
 						&cli.StringSliceFlag{
 							Name:     "add-urls",
@@ -683,9 +683,9 @@ func listEgress(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateLayout(ctx context.Context, cmd *cli.Command) error {
-	egressId, err := extractFlagOrArg(cmd, "id")
-	if err != nil {
-		return err
+	egressId := cmd.String("id")
+	if egressId == "" {
+		egressId = cmd.Args().First()
 	}
 	info, err := egressClient.UpdateLayout(ctx, &livekit.UpdateLayoutRequest{
 		EgressId: egressId,
@@ -700,9 +700,9 @@ func updateLayout(ctx context.Context, cmd *cli.Command) error {
 }
 
 func updateStream(ctx context.Context, cmd *cli.Command) error {
-	egressId, err := extractFlagOrArg(cmd, "id")
-	if err != nil {
-		return err
+	egressId := cmd.String("id")
+	if egressId == "" {
+		egressId = cmd.Args().First()
 	}
 	info, err := egressClient.UpdateStream(ctx, &livekit.UpdateStreamRequest{
 		EgressId:         egressId,
