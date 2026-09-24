@@ -101,7 +101,6 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, WorkspaceCommands...)
 	app.Commands = append(app.Commands, UserCommands...)
-	app.Commands = append(app.Commands, SimulationCommands...)
 	app.Commands = append(app.Commands, ThemeCommands...)
 	app.Commands = append(app.Commands, RoomCommands...)
 	app.Commands = append(app.Commands, TokenCommands...)
@@ -207,7 +206,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 //go:generate go run . generate-fish-completion -o ../../autocomplete/fish_autocomplete
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 	// urfave skips a hidden command's own line but still emits its subcommands
-	// and flags, so hidden groups (e.g. `lk simulation`) would leak into
+	// and flags, so hidden groups (e.g. `lk workspace`) would leak into
 	// completion. The process exits after this, so pruning in place is safe.
 	pruneHiddenCommands(cmd.Root())
 	fishScript, err := cmd.Root().ToFishCompletion()
