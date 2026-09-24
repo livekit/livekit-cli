@@ -135,10 +135,16 @@ are replaced once you confirm.`,
 					Usage:     "Remove LiveKit skills",
 					ArgsUsage: "[SKILL ...]",
 					Description: `Removes every LiveKit skill, or just the ones named, from all agents'
-skills directories (or only those of --agent). MCP config is left as is.`,
+skills directories (or only those of --agent). MCP config is left as is.
+
+Skills you've edited locally are kept unless you pass --force.`,
 					Flags: []cli.Flag{
 						skillsAgentFlag,
 						skillsGlobalFlag,
+						&cli.BoolFlag{
+							Name:  "force",
+							Usage: "Also remove skills you've edited locally",
+						},
 						jsonFlag,
 					},
 					Action: skillsRemove,
@@ -384,7 +390,9 @@ func (s *skillsSession) sync(in *skills.Installer, copies []skills.Copy, force, 
 	return results, nil
 }
 
-func (s *skillsSession) printResults(results []skillResult) {
+// printResults reports changes; skipHint says what --force would do to the
+// skipped (edited) copies.
+func (s *skillsSession) printResults(results []skillResult, skipHint string) {
 	// One line per skill and action, listing the directories it applied to.
 	type group struct {
 		skill, action, version string
@@ -420,7 +428,7 @@ func (s *skillsSession) printResults(results []skillResult) {
 		out.Statusf("%s %s%s %s", verb, util.Accented(g.skill), version, util.Dimmed(arrow+strings.Join(g.dirs, ", ")))
 	}
 	if len(skipped) > 0 {
-		out.Warnf("Left skills you've edited alone (pass --force to overwrite): %s", strings.Join(skipped, ", "))
+		out.Warnf("Left skills you've edited alone (pass --force to %s them): %s", skipHint, strings.Join(skipped, ", "))
 	}
 }
 
@@ -429,7 +437,7 @@ func (s *skillsSession) printChange(o *skillsChangeOutput) error {
 		util.PrintJSON(o)
 		return nil
 	}
-	s.printResults(o.Skills)
+	s.printResults(o.Skills, "overwrite")
 	if !slices.ContainsFunc(o.Skills, func(r skillResult) bool { return r.Action != "unchanged" && r.Action != "skipped" }) {
 		out.Statusf("Skills are up to date")
 	}
@@ -841,24 +849,45 @@ func skillsRemove(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	copies = slices.DeleteFunc(copies, func(c skills.Copy) bool { return c.State == skills.StateMissing })
-	if len(copies) == 0 {
+	force := cmd.Bool("force")
+	var remove []skills.Copy
+	results := []skillResult{}
+	for _, c := range copies {
+		switch {
+		case c.State == skills.StateMissing:
+		case c.State == skills.StateModified && !force:
+			// Deleting edits can't be undone; treat them as update does.
+			results = append(results, skillResult{
+				Skill: c.Skill, Version: c.Version, Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), Action: "skipped",
+			})
+		default:
+			remove = append(remove, c)
+		}
+	}
+	if len(remove) == 0 && len(results) == 0 {
 		if s.json {
-			util.PrintJSON(&skillsChangeOutput{Scope: s.scope.String(), Skills: []skillResult{}})
+			util.PrintJSON(&skillsChangeOutput{Scope: s.scope.String(), Skills: results})
 		} else {
 			out.Statusf("No LiveKit skills installed")
 		}
 		return nil
 	}
 
-	if !SkipPrompts(cmd) {
+	if len(remove) > 0 && !SkipPrompts(cmd) {
 		var paths []string
-		for _, c := range copies {
-			paths = append(paths, s.display(c.Path()))
+		for _, c := range remove {
+			label := s.display(c.Path())
+			switch c.State {
+			case skills.StateModified:
+				label += " (edited)"
+			case skills.StateUntracked:
+				label += " (not installed by lk)"
+			}
+			paths = append(paths, label)
 		}
 		ok := false
 		if err := huh.NewForm(huh.NewGroup(util.Confirm().
-			Title(fmt.Sprintf("Remove %d skill directories?", len(copies))).
+			Title(fmt.Sprintf("Remove %d skill directories?", len(remove))).
 			Description(strings.Join(paths, "\n")).
 			Value(&ok).
 			WithTheme(util.FormTheme()))).
@@ -870,8 +899,7 @@ func skillsRemove(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	var results []skillResult
-	for _, c := range copies {
+	for _, c := range remove {
 		if err := in.Delete(c); err != nil {
 			return err
 		}
@@ -879,6 +907,7 @@ func skillsRemove(ctx context.Context, cmd *cli.Command) error {
 			Skill: c.Skill, Version: c.Version, Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), Action: "removed",
 		})
 	}
+	// Forget keeps the lock entry of a skill with an edited copy left behind.
 	for _, n := range names {
 		if err := in.Forget(n); err != nil {
 			return err
@@ -892,7 +921,7 @@ func skillsRemove(ctx context.Context, cmd *cli.Command) error {
 		util.PrintJSON(o)
 		return nil
 	}
-	s.printResults(results)
+	s.printResults(results, "remove")
 	return nil
 }
 

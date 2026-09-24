@@ -210,3 +210,32 @@ func TestSetupProjectSkills(t *testing.T) {
 		assert.NoDirExists(t, filepath.Join(dir, ".claude"))
 	})
 }
+
+func TestSkillsRemoveKeepsEditedSkills(t *testing.T) {
+	fakeSkillsRepo(t, skillsArchive(t, "alpha", "beta"))
+	root := t.TempDir()
+	setHome(t, t.TempDir())
+	t.Setenv("PATH", t.TempDir())
+	t.Chdir(root)
+	run := func(args ...string) {
+		t.Helper()
+		app := &cli.Command{Name: "lk", Flags: globalFlags, Commands: SkillsCommands, Writer: &bytes.Buffer{}, ErrWriter: &bytes.Buffer{}}
+		require.NoError(t, app.Run(context.Background(), append([]string{"lk"}, args...)))
+	}
+
+	run("skills", "install", "-y", "--skip-mcp", "--agent", "claude-code")
+	edited := filepath.Join(root, ".claude/skills/alpha/SKILL.md")
+	require.NoError(t, os.WriteFile(edited, []byte("---\nname: alpha\ndescription: mine now\nmetadata:\n  author: livekit\n---\n"), 0o644))
+
+	run("skills", "remove", "-y")
+	assert.FileExists(t, edited)
+	assert.NoDirExists(t, filepath.Join(root, ".claude/skills/beta"))
+	lock, err := os.ReadFile(filepath.Join(root, "skills-lock.json"))
+	require.NoError(t, err)
+	assert.Contains(t, string(lock), `"alpha"`)
+	assert.NotContains(t, string(lock), `"beta"`)
+
+	run("skills", "remove", "-y", "--force")
+	assert.NoDirExists(t, filepath.Join(root, ".claude/skills/alpha"))
+	assert.NoFileExists(t, filepath.Join(root, "skills-lock.json"))
+}

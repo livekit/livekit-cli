@@ -348,6 +348,7 @@ complete -x -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcom
 complete -x -c lk -n '__fish_seen_subcommand_from skills; and not __fish_seen_subcommand_from install add list ls update upgrade remove rm uninstall help h' -a 'remove' -d 'Remove LiveKit skills'
 complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l agent -s a -r -d 'Coding `AGENT` to target; repeat for several (claude-code, codex, cursor, github-copilot, gemini-cli, opencode, windsurf, amp, cline, goose)'
 complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l global -s g -d 'Use your user-level agent directories instead of the current project'
+complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l force -d 'Also remove skills you\'ve edited locally'
 complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l json -s j -d 'Output as JSON'
 complete -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall' -f -l help -s h -d 'show help'
 complete -x -c lk -n '__fish_seen_subcommand_from skills; and __fish_seen_subcommand_from remove rm uninstall; and not __fish_seen_subcommand_from help h' -a 'help' -d 'Shows a list of commands or help for one command'
