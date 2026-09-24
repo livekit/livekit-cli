@@ -557,12 +557,19 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 	return ctx, nil
 }
 
+// starterTemplateURLs maps each `lk agent init` language to the template it
+// scaffolds when no explicit template is given.
+var starterTemplateURLs = map[string]string{
+	"python": "https://github.com/livekit-examples/agent-starter-python",
+	"node":   "https://github.com/livekit-examples/agent-starter-node",
+}
+
 func initAgent(ctx context.Context, cmd *cli.Command) error {
 	// TODO: (@rektdeckard) move compatibility flag into template index,
 	// then show template picker containing only compatible templates
 	if !cmd.IsSet("lang") && !cmd.IsSet("template") && !cmd.IsSet("template-url") {
 		if SkipPrompts(cmd) {
-			templateURL = "https://github.com/livekit-examples/agent-starter-python"
+			templateURL = starterTemplateURLs["python"]
 		} else {
 			var lang string
 			// Prompt for language
@@ -578,14 +585,7 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 				return err
 			}
 
-			switch lang {
-			case "node":
-				templateURL = "https://github.com/livekit-examples/agent-starter-node"
-			case "python":
-				templateURL = "https://github.com/livekit-examples/agent-starter-python"
-			default:
-				return fmt.Errorf("unsupported language: %s", lang)
-			}
+			templateURL = starterTemplateURLs[lang]
 		}
 	}
 
