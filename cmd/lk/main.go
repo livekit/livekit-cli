@@ -206,7 +206,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 //go:generate go run . generate-fish-completion -o ../../autocomplete/fish_autocomplete
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 	// urfave skips a hidden command's own line but still emits its subcommands
-	// and flags, so hidden groups (e.g. `lk simulation`) would leak into
+	// and flags, so hidden groups (e.g. `lk workspace`) would leak into
 	// completion. The process exits after this, so pruning in place is safe.
 	pruneHiddenCommands(cmd.Root())
 	fishScript, err := cmd.Root().ToFishCompletion()

@@ -59,17 +59,17 @@ const (
 )
 
 var agentCommandCategories = map[string]string{
-	"init":       agentCategoryLocal,
-	"dev":        agentCategoryLocal,
-	"start":      agentCategoryLocal,
-	"console":    agentCategoryLocal,
-	"debugger":   agentCategoryLocal,
-	"simulation": agentCategoryLocal,
+	"init":     agentCategoryLocal,
+	"dev":      agentCategoryLocal,
+	"start":    agentCategoryLocal,
+	"console":  agentCategoryLocal,
+	"debugger": agentCategoryLocal,
+	"simulate": agentCategoryLocal,
 }
 
 // categorizeAgentCommands assigns every visible agent subcommand a category.
 // It runs from main() after all init()s have appended their commands, so
-// commands registered from other files (console, debugger, simulation) are
+// commands registered from other files (console, debugger, simulate) are
 // covered without each having to know the category names.
 func categorizeAgentCommands() {
 	for _, sub := range AgentCommands[0].Commands {
@@ -90,7 +90,7 @@ func categorizeAgentCommands() {
 }
 
 var agentLocalOrder = map[string]int{
-	"init": 1, "dev": 2, "start": 3, "console": 4, "debugger": 5, "simulation": 6,
+	"init": 1, "dev": 2, "start": 3, "console": 4, "debugger": 5, "simulate": 6,
 }
 
 func agentCommandRank(c *cli.Command) int {
@@ -226,7 +226,7 @@ var (
 
 Locally: "init" scaffolds a project, "dev" runs it with hot reload, "console"
 lets you talk to it by voice or text, "debugger" lets a coding agent or script
-converse with it turn by turn, and "simulation" tests it with Agent Simulations.
+converse with it turn by turn, and "simulate" tests it with Agent Simulations.
 
 On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 "secrets", "versions", "rollback", and the rest manage it.`,

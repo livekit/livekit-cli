@@ -58,8 +58,8 @@ const (
 )
 
 var simulateCommand = &cli.Command{
-	Name:    "simulation",
-	Aliases: []string{"simulate"},
+	Name:    "simulate",
+	Aliases: []string{"simulation"},
 	Usage:   "Run judged simulations of an agent on LiveKit Cloud",
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
@@ -99,8 +99,8 @@ var simulateCommand = &cli.Command{
 
 // loadSimulateProject resolves the API-key project for the subcommands that talk
 // to the agent simulation service directly. It is attached per subcommand, not
-// on `simulation`, so the --experimental-auth-only subcommands (get, create,
-// cancel) and the experimental `list` never hit the API-key project gate.
+// on `simulate`, so the --experimental-auth-only `get` and the experimental
+// `list` and `cancel` never hit the API-key project gate.
 //
 // TODO(DEVX-577): unify text/audio/view/export with --experimental-auth. For
 // now they stay API-key only (loadProjectDetails rejects --experimental-auth).
@@ -127,7 +127,7 @@ func loadSimulateProject(ctx context.Context, cmd *cli.Command) (context.Context
 var simulateTextCommand = &cli.Command{
 	Name:            "text",
 	Usage:           "Simulate text-only interactions",
-	Description:     "Options on lk agent simulation apply here too, e.g. --scenarios and --agent-name.",
+	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
 	ArgsUsage:       "[entrypoint]",
 	HideHelpCommand: true,
 	Before:          loadSimulateProject,
@@ -142,7 +142,7 @@ var simulateTextCommand = &cli.Command{
 var simulateAudioCommand = &cli.Command{
 	Name:            "audio",
 	Usage:           "Simulate speech-to-speech interactions using the agent's full audio pipeline",
-	Description:     "Options on lk agent simulation apply here too, e.g. --scenarios and --agent-name.",
+	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
 	ArgsUsage:       "[entrypoint]",
 	HideHelpCommand: true,
 	Before:          loadSimulateProject,
@@ -191,13 +191,14 @@ var simulateExportCommand = &cli.Command{
 	},
 }
 
-// The Public-API-only subcommands. They are Hidden and require
-// --experimental-auth (user-based auth); `list` is dual-mode (simulate_list.go).
+// simulateGetCommand is Public-API-only: Hidden, and requires
+// --experimental-auth (user-based auth). `list` (simulate_list.go) and `cancel`
+// are dual-mode.
 var (
 	simulateGetCommand = &cli.Command{
 		Name:      "get",
 		Usage:     "Get a simulation run by ID (requires --experimental-auth)",
-		UsageText: "lk agent simulation get RUN_ID --project PROJECT --experimental-auth",
+		UsageText: "lk agent simulate get RUN_ID --project PROJECT --experimental-auth",
 		ArgsUsage: "RUN_ID",
 		Hidden:    true,
 		Action:    cloudGetSimulationRun,
@@ -205,13 +206,18 @@ var (
 	}
 
 	simulateCancelCommand = &cli.Command{
-		Name:      "cancel",
-		Usage:     "Cancel an in-progress simulation run (requires --experimental-auth)",
-		UsageText: "lk agent simulation cancel RUN_ID --project PROJECT --experimental-auth",
-		ArgsUsage: "RUN_ID",
-		Hidden:    true,
-		Action:    cloudCancelSimulationRun,
-		Flags:     []cli.Flag{jsonFlag},
+		Name:            "cancel",
+		Usage:           "Cancel an in-progress simulation run",
+		ArgsUsage:       "<run-id>",
+		HideHelpCommand: true,
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			if experimentalAuthEnabled(cmd) {
+				return nil, nil
+			}
+			return loadSimulateProject(ctx, cmd)
+		},
+		Action: cancelSimulationRunCommand,
+		Flags:  []cli.Flag{jsonFlag},
 	}
 )
 
@@ -243,17 +249,30 @@ func cloudGetSimulationRun(ctx context.Context, cmd *cli.Command) error {
 	return render.SimulationRun(out, cmd.Bool("json"), *run)
 }
 
-func cloudCancelSimulationRun(ctx context.Context, cmd *cli.Command) error {
-	client, projectID, err := simulationProjectID(ctx, cmd)
-	if err != nil {
-		return err
-	}
+func cancelSimulationRunCommand(ctx context.Context, cmd *cli.Command) error {
 	runID, err := argN(cmd, 0, "run ID")
 	if err != nil {
 		return err
 	}
-	if err := client.CancelSimulationRun(ctx, projectID, runID); err != nil {
-		return cloudAPIError(err)
+	if experimentalAuthEnabled(cmd) {
+		client, projectID, err := simulationProjectID(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		if err := client.CancelSimulationRun(ctx, projectID, runID); err != nil {
+			return cloudAPIError(err)
+		}
+	} else {
+		pc := simulateProjectConfig
+		client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+		cancelCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
+		defer cancel()
+		if _, err := client.CancelSimulationRun(cancelCtx, &livekit.SimulationRun_Cancel_Request{
+			ProjectId:       pc.ProjectId,
+			SimulationRunId: runID,
+		}); err != nil {
+			return fmt.Errorf("unable to cancel simulation run: %w", err)
+		}
 	}
 	if cmd.Bool("json") {
 		util.PrintJSON(map[string]any{"id": runID, "cancelled": true})
@@ -843,7 +862,7 @@ func simulateCommandHint(subcommand, runID string) string {
 	if len(os.Args) > 0 && os.Args[0] != "" {
 		binary = os.Args[0]
 	}
-	hint := binary + " agent simulation " + subcommand + " " + runID
+	hint := binary + " agent simulate " + subcommand + " " + runID
 	if simulateProjectConfig != nil && simulateProjectConfig.Name != "" {
 		hint += " --project " + simulateProjectConfig.Name
 	}
