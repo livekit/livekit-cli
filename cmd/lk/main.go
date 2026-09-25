@@ -200,10 +200,8 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	return nil, nil
 }
 
-// Keep autocomplete/fish_autocomplete in sync with the command tree. CI (test.yaml)
-// fails if the committed file drifts; run `go generate ./...` to refresh it.
-//
-//go:generate go run . generate-fish-completion -o ../../autocomplete/fish_autocomplete
+// The release archives' autocomplete/fish_autocomplete is this command's output
+// (release.yaml), so it always matches the released command tree.
 func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 	// urfave skips a hidden command's own line but still emits its subcommands
 	// and flags, so hidden groups (e.g. `lk workspace`) would leak into

@@ -52,18 +52,6 @@ jobs:
           set -euo pipefail
           go test -race -json -v ./... 2>&1 | tee test.log
 
-      - name: Verify fish_autocomplete is up to date
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          go build -o /tmp/lk ./cmd/lk
-          /tmp/lk generate-fish-completion -o /tmp/fish_autocomplete.fresh
-          if ! diff -u autocomplete/fish_autocomplete /tmp/fish_autocomplete.fresh; then
-            echo "::error::autocomplete/fish_autocomplete is stale; regenerate with:"
-            echo "  go build -o /tmp/lk ./cmd/lk && /tmp/lk generate-fish-completion -o autocomplete/fish_autocomplete"
-            exit 1
-          fi
-
       # The Test step above already fails on a VRT mismatch, but testify's diff of
       # a full terminal frame is unreadable and says nothing about how to fix it.
       # Re-recording here turns the failure into the diff of what actually moved
