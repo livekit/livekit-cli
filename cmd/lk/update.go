@@ -16,16 +16,22 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/urfave/cli/v3"
 
+	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
+
+const latestReleaseURL = "https://api.github.com/repos/livekit/livekit-cli/releases/latest"
 
 var UpdateCommands = []*cli.Command{
 	{
@@ -35,6 +41,47 @@ var UpdateCommands = []*cli.Command{
 and runs that installer's upgrade.`,
 		Action: updateCLI,
 	},
+	{
+		Name:   "can-update",
+		Usage:  "Check whether a newer CLI version is available",
+		Action: canUpdateCLI,
+	},
+}
+
+func canUpdateCLI(ctx context.Context, cmd *cli.Command) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, latestReleaseURL, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("checking the latest release: %s", resp.Status)
+	}
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return err
+	}
+	latest, err := semver.NewVersion(release.TagName)
+	if err != nil {
+		return err
+	}
+	current, err := semver.NewVersion(livekitcli.Version)
+	if err != nil {
+		return err
+	}
+
+	if current.LessThan(latest) {
+		out.Statusf("Yes: %s is available (you have %s). Run [%s] to update.", latest, current, util.Accented("lk update"))
+	} else {
+		out.Statusf("No: %s is the latest version.", current)
+	}
+	return nil
 }
 
 func updateCLI(ctx context.Context, cmd *cli.Command) error {
