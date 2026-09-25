@@ -201,6 +201,18 @@ var (
 		Aliases:  []string{"d"},
 	}
 
+	promoteFromFlag = &cli.StringFlag{
+		Name:     "from",
+		Usage:    "Non-production deployment whose image is promoted. Alias of --deployment",
+		Required: false,
+	}
+
+	promoteToFlag = &cli.StringFlag{
+		Name:     "to",
+		Usage:    "Deployment to promote into. Defaults to `production`",
+		Required: false,
+	}
+
 	agentPrebuiltImageFlag = &cli.StringFlag{
 		Name:  "image",
 		Usage: "Pre-built image from the local Docker daemon (e.g. myimage:latest). Requires Docker.",
@@ -355,12 +367,14 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 				},
 				{
 					Name:   "promote",
-					Usage:  "Promote an agent to a new deployment",
+					Usage:  "Promote an agent's image from one deployment to another",
 					Before: createAgentClient,
 					Action: promoteAgent,
 					Flags: []cli.Flag{
 						idFlag(false),
 						deploymentFlag,
+						promoteFromFlag,
+						promoteToFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -1042,22 +1056,51 @@ func consoleLinkLabel(link string) string {
 	return label
 }
 
+// resolvePromoteSource reads the source deployment from --from, falling back to
+// --deployment so existing invocations keep working. The source must be a
+// non-production deployment: the server rejects production as a source, and an
+// empty value would mean "promote production onto itself".
+func resolvePromoteSource(cmd *cli.Command) (string, error) {
+	from := cmd.String("from")
+	deployment := cmd.String("deployment")
+
+	if from != "" && deployment != "" && from != deployment {
+		return "", fmt.Errorf("--from and --deployment both set to different values; use --from")
+	}
+	if from == "" {
+		from = deployment
+	}
+	if from == "" {
+		return "", fmt.Errorf("a source deployment is required: pass --from <name>")
+	}
+	return from, nil
+}
+
 func promoteAgent(ctx context.Context, cmd *cli.Command) error {
 	agentID, err := getAgentID(ctx, cmd, workingDir, tomlFilename, false)
 	if err != nil {
 		return err
 	}
-	agentDeployment := cmd.String("deployment")
-	if agentDeployment == "" {
-		return fmt.Errorf("cannot promote production deployment")
+	srcDeployment, err := resolvePromoteSource(cmd)
+	if err != nil {
+		return err
 	}
-	if err := agentsClient.PromoteAgent(ctx, agentID, agentDeployment, ""); err != nil {
+	// Empty destination means production, which is the historical behavior and
+	// stays the default.
+	dstDeployment := cmd.String("to")
+
+	if err := agentsClient.PromoteAgent(ctx, agentID, srcDeployment, dstDeployment); err != nil {
 		if twerr, ok := err.(twirp.Error); ok {
 			return fmt.Errorf("unable to promote agent: %s", twerr.Msg())
 		}
 		return fmt.Errorf("unable to promote agent: %w", err)
 	}
-	out.Statusf("Promoted agent from deployment [%s] to production", util.Accented(agentDeployment))
+
+	dstLabel := "production"
+	if dstDeployment != "" {
+		dstLabel = util.Accented(dstDeployment)
+	}
+	out.Statusf("Promoted agent from deployment [%s] to [%s]", util.Accented(srcDeployment), dstLabel)
 	return nil
 }
 
