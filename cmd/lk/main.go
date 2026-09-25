@@ -98,6 +98,7 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, AnalyticsCommands...)
 	app.Commands = append(app.Commands, CloudCommands...)
 	app.Commands = append(app.Commands, DocsCommands...)
+	app.Commands = append(app.Commands, SkillsCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, WorkspaceCommands...)
 	app.Commands = append(app.Commands, UserCommands...)
@@ -279,7 +280,7 @@ var rootHelpGroups = []struct {
 	{"PROJECTS", []string{"project", "cloud", "app"}},
 	{"ROOMS AND MEDIA", []string{"room", "token", "dispatch", "egress", "ingress"}},
 	{"TELEPHONY", []string{"sip", "number"}},
-	{"TOOLS", []string{"docs", "perf"}},
+	{"TOOLS", []string{"docs", "skills", "perf"}},
 }
 
 // agentHelpSections groups a command's visible subcommands by Category, in
