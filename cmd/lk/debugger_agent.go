@@ -31,11 +31,11 @@ import (
 	agent "github.com/livekit/protocol/livekit/agent"
 )
 
-// textSession drives an agent connected over the console IPC socket purely in
+// agentSession drives an agent connected over the console IPC socket purely in
 // text mode: it owns the read loop, routes responses to their requests, fans
 // events out to whoever is listening, and buffers anything nobody was listening
 // for so it can be reported later instead of silently dropped.
-type textSession struct {
+type agentSession struct {
 	conn    net.Conn
 	reader  io.Reader
 	writeMu sync.Mutex
@@ -62,13 +62,13 @@ type eventSub struct {
 	ch chan turnEvent
 }
 
-// newTextSession wraps an accepted agent connection. reader lets the caller
+// newAgentSession wraps an accepted agent connection. reader lets the caller
 // hand back bytes it already peeked from conn (see classifyConn).
-func newTextSession(conn net.Conn, reader io.Reader) *textSession {
+func newAgentSession(conn net.Conn, reader io.Reader) *agentSession {
 	if reader == nil {
 		reader = conn
 	}
-	s := &textSession{
+	s := &agentSession{
 		conn:      conn,
 		reader:    reader,
 		pending:   make(map[string]chan *agent.SessionResponse),
@@ -83,15 +83,15 @@ func newTextSession(conn net.Conn, reader io.Reader) *textSession {
 }
 
 // Done is closed when the agent connection ends.
-func (s *textSession) Done() <-chan struct{} { return s.done }
+func (s *agentSession) Done() <-chan struct{} { return s.done }
 
 // Turns reports how many RunInput turns have been sent.
-func (s *textSession) Turns() int { return int(s.turns.Load()) }
+func (s *agentSession) Turns() int { return int(s.turns.Load()) }
 
 // TurnInProgress reports whether a RunInput is currently awaiting its reply.
-func (s *textSession) TurnInProgress() bool { return len(s.turnSem) > 0 }
+func (s *agentSession) TurnInProgress() bool { return len(s.turnSem) > 0 }
 
-func (s *textSession) finish(err error) {
+func (s *agentSession) finish(err error) {
 	s.doneOnce.Do(func() {
 		s.mu.Lock()
 		s.readErr = err
@@ -104,7 +104,7 @@ func (s *textSession) finish(err error) {
 	})
 }
 
-func (s *textSession) readLoop() {
+func (s *agentSession) readLoop() {
 	for {
 		msg := &agent.AgentSessionMessage{}
 		if err := ipc.ReadProto(s.reader, msg); err != nil {
@@ -141,13 +141,13 @@ func (s *textSession) readLoop() {
 	}
 }
 
-func (s *textSession) write(msg *agent.AgentSessionMessage) error {
+func (s *agentSession) write(msg *agent.AgentSessionMessage) error {
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 	return ipc.WriteProto(s.conn, msg)
 }
 
-func (s *textSession) notifyActivity() {
+func (s *agentSession) notifyActivity() {
 	select {
 	case s.activity <- struct{}{}:
 	default:
@@ -157,7 +157,7 @@ func (s *textSession) notifyActivity() {
 // recentEventsMax bounds the ring of events kept for `events`.
 const recentEventsMax = 500
 
-func (s *textSession) handleEvent(ev *agent.AgentSessionEvent) {
+func (s *agentSession) handleEvent(ev *agent.AgentSessionEvent) {
 	if ev == nil {
 		return
 	}
@@ -195,7 +195,7 @@ func (s *textSession) handleEvent(ev *agent.AgentSessionEvent) {
 // publishLocked records events in the ring and hands them to observers; when
 // toTurns is set they also go to turn subscribers, or to the undelivered
 // buffer if nobody is listening. Caller holds s.mu.
-func (s *textSession) publishLocked(events []turnEvent, toTurns bool) {
+func (s *agentSession) publishLocked(events []turnEvent, toTurns bool) {
 	s.recent = append(s.recent, events...)
 	if over := len(s.recent) - recentEventsMax; over > 0 {
 		s.recent = append([]turnEvent(nil), s.recent[over:]...)
@@ -227,7 +227,7 @@ func (s *textSession) publishLocked(events []turnEvent, toTurns bool) {
 
 // observe taps the live event stream without affecting what turns see. It
 // returns the subscription and the most recent `last` events (all if last <= 0).
-func (s *textSession) observe(last int) (*eventSub, []turnEvent) {
+func (s *agentSession) observe(last int) (*eventSub, []turnEvent) {
 	obs := &eventSub{ch: make(chan turnEvent, 1024)}
 	s.mu.Lock()
 	recent := s.recent
@@ -240,14 +240,14 @@ func (s *textSession) observe(last int) (*eventSub, []turnEvent) {
 	return obs, snapshot
 }
 
-func (s *textSession) unobserve(obs *eventSub) {
+func (s *agentSession) unobserve(obs *eventSub) {
 	s.mu.Lock()
 	delete(s.observers, obs)
 	s.mu.Unlock()
 }
 
 // RecentEvents returns the most recent `last` events (all if last <= 0).
-func (s *textSession) RecentEvents(last int) []turnEvent {
+func (s *agentSession) RecentEvents(last int) []turnEvent {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	recent := s.recent
@@ -260,7 +260,7 @@ func (s *textSession) RecentEvents(last int) []turnEvent {
 // subscribe starts receiving live events and, atomically with that, returns
 // anything that arrived while nobody was listening (marked Earlier) so a turn
 // can report it before its own output.
-func (s *textSession) subscribe() (*eventSub, []turnEvent) {
+func (s *agentSession) subscribe() (*eventSub, []turnEvent) {
 	sub := &eventSub{ch: make(chan turnEvent, 256)}
 	s.mu.Lock()
 	earlier := s.undelivered
@@ -273,14 +273,14 @@ func (s *textSession) subscribe() (*eventSub, []turnEvent) {
 	return sub, earlier
 }
 
-func (s *textSession) unsubscribe(sub *eventSub) {
+func (s *agentSession) unsubscribe(sub *eventSub) {
 	s.mu.Lock()
 	delete(s.subs, sub)
 	s.mu.Unlock()
 }
 
 // takeUndelivered returns (and clears) events nobody has been shown yet.
-func (s *textSession) takeUndelivered() []turnEvent {
+func (s *agentSession) takeUndelivered() []turnEvent {
 	s.mu.Lock()
 	earlier := s.undelivered
 	s.undelivered = nil
@@ -292,18 +292,18 @@ func (s *textSession) takeUndelivered() []turnEvent {
 }
 
 // AgentState returns the last state the agent reported.
-func (s *textSession) AgentState() agent.AgentState {
+func (s *agentSession) AgentState() agent.AgentState {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.agentState
 }
 
-func (s *textSession) nextRequestID(prefix string) string {
+func (s *agentSession) nextRequestID(prefix string) string {
 	return prefix + "-" + strconv.FormatInt(s.reqCounter.Add(1), 10)
 }
 
 // request sends req and waits for its response, ctx, or the connection ending.
-func (s *textSession) request(ctx context.Context, req *agent.SessionRequest) (*agent.SessionResponse, error) {
+func (s *agentSession) request(ctx context.Context, req *agent.SessionRequest) (*agent.SessionResponse, error) {
 	ch := make(chan *agent.SessionResponse, 1)
 	s.mu.Lock()
 	if s.readErr != nil {
@@ -342,7 +342,7 @@ var errAgentGone = errors.New("agent exited")
 
 // SetTextMode disables the agent's audio I/O so it runs as a pure text turn
 // handler, matching what `lk agent console` does when switching to text mode.
-func (s *textSession) SetTextMode(ctx context.Context) error {
+func (s *agentSession) SetTextMode(ctx context.Context) error {
 	off := false
 	_, err := s.request(ctx, &agent.SessionRequest{
 		RequestId: s.nextRequestID("io"),
@@ -360,7 +360,7 @@ func (s *textSession) SetTextMode(ctx context.Context) error {
 // on_enter) a chance to finish before the session is reported ready, so the
 // greeting is shown instead of being lost between turns. Whatever arrives is
 // left in the undelivered buffer for `start` to print via "pending".
-func (s *textSession) WaitForGreeting(ctx context.Context, settle, maxWait time.Duration) {
+func (s *agentSession) WaitForGreeting(ctx context.Context, settle, maxWait time.Duration) {
 	s.Listen(ctx, settle, maxWait, func(e turnEvent) {
 		e.Earlier = false
 		s.mu.Lock()
@@ -380,7 +380,7 @@ const listenSettle = 300 * time.Millisecond
 // for the agent to start doing something; once it does, it keeps delivering
 // until the agent has been quiet for listenSettle, bounded by maxWait overall.
 // It returns true if any event was delivered.
-func (s *textSession) Listen(ctx context.Context, idle, maxWait time.Duration, sink func(turnEvent)) bool {
+func (s *agentSession) Listen(ctx context.Context, idle, maxWait time.Duration, sink func(turnEvent)) bool {
 	sub, earlier := s.subscribe()
 	defer s.unsubscribe(sub)
 
@@ -394,11 +394,19 @@ func (s *textSession) Listen(ctx context.Context, idle, maxWait time.Duration, s
 
 	deadline := time.NewTimer(maxWait)
 	defer deadline.Stop()
+	return s.awaitQuiet(ctx, sub, delivered, idle, listenSettle, deadline.C, sink)
+}
+
+// awaitQuiet delivers sub's events to sink until the agent goes quiet: settle
+// after its last output while it is not busy, or idle if it never produced any
+// (delivered reports output seen before the call). It also stops at deadline,
+// ctx, or the connection ending, and returns whether any output was delivered.
+func (s *agentSession) awaitQuiet(ctx context.Context, sub *eventSub, delivered bool, idle, settle time.Duration, deadline <-chan time.Time, sink func(turnEvent)) bool {
 	quiet := time.NewTimer(idle)
 	defer quiet.Stop()
 	if delivered {
 		// Something was already waiting; only linger for a burst in progress.
-		quiet.Reset(listenSettle)
+		quiet.Reset(settle)
 	}
 
 	busy := false
@@ -411,7 +419,7 @@ func (s *textSession) Listen(ctx context.Context, idle, maxWait time.Duration, s
 			}
 			delivered = true
 			if !busy {
-				quiet.Reset(listenSettle)
+				quiet.Reset(settle)
 			}
 		case <-s.activity:
 			s.mu.Lock()
@@ -424,12 +432,12 @@ func (s *textSession) Listen(ctx context.Context, idle, maxWait time.Duration, s
 			default:
 				if busy {
 					busy = false
-					quiet.Reset(listenSettle)
+					quiet.Reset(settle)
 				}
 			}
 		case <-quiet.C:
 			return delivered
-		case <-deadline.C:
+		case <-deadline:
 			return delivered
 		case <-ctx.Done():
 			return delivered
@@ -451,7 +459,7 @@ type turnResult struct {
 // happen, and returns when the agent reports the turn complete. Turns are
 // serialized; a second caller blocks until the first finishes. Cancel ctx to
 // stop waiting; any events that arrive afterwards are held for the next turn.
-func (s *textSession) Say(ctx context.Context, text string, sink func(turnEvent)) (turnResult, error) {
+func (s *agentSession) Say(ctx context.Context, text string, sink func(turnEvent)) (turnResult, error) {
 	select {
 	case s.turnSem <- struct{}{}:
 		defer func() { <-s.turnSem }()
@@ -555,7 +563,7 @@ const (
 	handoffIntroSettle = 300 * time.Millisecond
 )
 
-func (s *textSession) awaitHandoffIntro(ctx context.Context, sub *eventSub, deliver func(turnEvent), spoke func() bool) {
+func (s *agentSession) awaitHandoffIntro(ctx context.Context, sub *eventSub, deliver func(turnEvent), spoke func() bool) {
 	timer := time.NewTimer(handoffIntroWait)
 	defer timer.Stop()
 	for {
@@ -576,7 +584,7 @@ func (s *textSession) awaitHandoffIntro(ctx context.Context, sub *eventSub, deli
 }
 
 // History fetches the agent's authoritative chat history.
-func (s *textSession) History(ctx context.Context) ([]turnEvent, error) {
+func (s *agentSession) History(ctx context.Context) ([]turnEvent, error) {
 	resp, err := s.request(ctx, &agent.SessionRequest{
 		RequestId: s.nextRequestID("history"),
 		Request:   &agent.SessionRequest_GetChatHistory_{GetChatHistory: &agent.SessionRequest_GetChatHistory{}},
@@ -591,7 +599,7 @@ func (s *textSession) History(ctx context.Context) ([]turnEvent, error) {
 }
 
 // AgentInfo fetches the current agent's id, instructions, and tool names.
-func (s *textSession) AgentInfo(ctx context.Context) (*agent.SessionResponse_GetAgentInfoResponse, error) {
+func (s *agentSession) AgentInfo(ctx context.Context) (*agent.SessionResponse_GetAgentInfoResponse, error) {
 	resp, err := s.request(ctx, &agent.SessionRequest{
 		RequestId: s.nextRequestID("info"),
 		Request:   &agent.SessionRequest_GetAgentInfo_{GetAgentInfo: &agent.SessionRequest_GetAgentInfo{}},

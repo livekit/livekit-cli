@@ -186,7 +186,7 @@ type sessionDaemon struct {
 	lastActive  atomic.Int64 // unix nanos of the last control command
 
 	sessionMu  sync.Mutex
-	session    *textSession
+	session    *agentSession
 	agentReady chan struct{}
 
 	logMu   sync.Mutex
@@ -262,7 +262,7 @@ func (d *sessionDaemon) handleConn(conn net.Conn) {
 		conn.Close()
 		return
 	}
-	d.session = newTextSession(conn, reader)
+	d.session = newAgentSession(conn, reader)
 	d.sessionMu.Unlock()
 	close(d.agentReady)
 }

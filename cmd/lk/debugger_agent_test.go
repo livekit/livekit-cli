@@ -38,7 +38,7 @@ type fakeAgent struct {
 	acks chan struct{} // AudioPlaybackFinished acks from the CLI
 }
 
-func newFakeAgent(t *testing.T) (*fakeAgent, *textSession) {
+func newFakeAgent(t *testing.T) (*fakeAgent, *agentSession) {
 	t.Helper()
 	client, server := net.Pipe()
 	fa := &fakeAgent{t: t, conn: client, reqs: make(chan *agent.SessionRequest, 16), acks: make(chan struct{}, 16)}
@@ -57,7 +57,7 @@ func newFakeAgent(t *testing.T) (*fakeAgent, *textSession) {
 			}
 		}
 	}()
-	sess := newTextSession(server, nil)
+	sess := newAgentSession(server, nil)
 	t.Cleanup(func() { client.Close(); server.Close() })
 	return fa, sess
 }
@@ -110,7 +110,7 @@ func userItem(text string) *agent.ChatContext_ChatItem {
 	}}}
 }
 
-func TestTextSessionSayStreamsEventsAndEarlierItems(t *testing.T) {
+func TestAgentSessionSayStreamsEventsAndEarlierItems(t *testing.T) {
 	fa, sess := newFakeAgent(t)
 
 	// A greeting nobody was listening for must be held, not dropped.
@@ -168,7 +168,7 @@ func TestTextSessionSayStreamsEventsAndEarlierItems(t *testing.T) {
 	require.Equal(t, 1, sess.Turns())
 }
 
-func TestTextSessionSayReportsAgentErrorAndSilence(t *testing.T) {
+func TestAgentSessionSayReportsAgentErrorAndSilence(t *testing.T) {
 	fa, sess := newFakeAgent(t)
 
 	done := make(chan struct{})
@@ -186,7 +186,7 @@ func TestTextSessionSayReportsAgentErrorAndSilence(t *testing.T) {
 	require.True(t, res.Silent)
 }
 
-func TestTextSessionSayTimeoutLeavesLateEventsForNextTurn(t *testing.T) {
+func TestAgentSessionSayTimeoutLeavesLateEventsForNextTurn(t *testing.T) {
 	fa, sess := newFakeAgent(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
@@ -207,7 +207,7 @@ func TestTextSessionSayTimeoutLeavesLateEventsForNextTurn(t *testing.T) {
 	require.True(t, earlier[0].Earlier)
 }
 
-func TestTextSessionRoutesConcurrentResponses(t *testing.T) {
+func TestAgentSessionRoutesConcurrentResponses(t *testing.T) {
 	fa, sess := newFakeAgent(t)
 
 	// A history request issued while a turn is in flight must get its own
@@ -244,7 +244,7 @@ func TestTextSessionRoutesConcurrentResponses(t *testing.T) {
 	require.NoError(t, <-sayDone)
 }
 
-func TestTextSessionAcksPlaybackFlush(t *testing.T) {
+func TestAgentSessionAcksPlaybackFlush(t *testing.T) {
 	// Without this ack the agent's turn never completes in text mode.
 	fa, _ := newFakeAgent(t)
 	fa.send(&agent.AgentSessionMessage{Message: &agent.AgentSessionMessage_AudioPlaybackFlush{
