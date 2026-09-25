@@ -62,7 +62,7 @@ TYPE selects a deprecated per-type request instead:
 	- "track-composite" captures an audio and a video track, as ` + reflect.TypeFor[livekit.TrackCompositeEgressRequest]().Name() + `
 	- "web" captures any website, with a lifecycle detached from LiveKit rooms, as ` + reflect.TypeFor[livekit.WebEgressRequest]().Name() + `
 
-See cmd/livekit-cli/examples`
+See cmd/lk/examples`
 )
 
 var (
@@ -130,8 +130,8 @@ var (
 					Action: testEgressTemplate,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
-							Name:     "base-url (e.g. https://recorder.livekit.io/#)",
-							Usage:    "Base template `URL`",
+							Name:     "base-url",
+							Usage:    "Base template `URL` (e.g. https://recorder.livekit.io/#)",
 							Required: true,
 						},
 						&cli.StringFlag{
@@ -151,11 +151,10 @@ var (
 					},
 				},
 				{
-					Name:      "update-layout",
-					Usage:     "Updates layout for a live room composite egress",
-					ArgsUsage: "ID",
-					Before:    createEgressClient,
-					Action:    updateLayout,
+					Name:   "update-layout",
+					Usage:  "Updates layout for a live room composite egress",
+					Before: createEgressClient,
+					Action: updateLayout,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "id",
@@ -220,7 +219,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "WebEgressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "WebEgressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -234,7 +233,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "ParticipantEgressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "ParticipantEgressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -248,7 +247,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "TrackCompositeEgressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "TrackCompositeEgressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -262,7 +261,7 @@ var (
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "request",
-					Usage:    "TrackEgressRequest as json file (see cmd/livekit-cli/examples)",
+					Usage:    "TrackEgressRequest as json file (see cmd/lk/examples)",
 					Required: true,
 				},
 			},
@@ -352,8 +351,8 @@ var (
 			Action: testEgressTemplate,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
-					Name:     "base-url (e.g. https://recorder.livekit.io/#)",
-					Usage:    "Base template `URL`",
+					Name:     "base-url",
+					Usage:    "Base template `URL` (e.g. https://recorder.livekit.io/#)",
 					Required: true,
 				},
 				&cli.StringFlag{
