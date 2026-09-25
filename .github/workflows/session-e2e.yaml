@@ -16,8 +16,9 @@ name: Session E2E
 # Runs on manual dispatch and on pushes to any repo branch (forks can't trigger
 # `push`, so secrets are only exposed to trusted collaborators). It needs live
 # LiveKit credentials -- set these repo secrets first: LIVEKIT_API_KEY,
-# LIVEKIT_API_SECRET, LIVEKIT_URL. The echo agents drive their LLM through
-# LiveKit Inference, so no other provider keys are needed.
+# LIVEKIT_API_SECRET, LIVEKIT_URL. The echo agents drive their STT, LLM, and
+# TTS through LiveKit Inference (as does the debugger's own TTS in audio mode),
+# so no other provider keys are needed.
 #
 # Each agent's deps are resolved fresh in CI (they're gitignored): the Python
 # fixture via `uv sync` from its pyproject.toml; the Node fixture via

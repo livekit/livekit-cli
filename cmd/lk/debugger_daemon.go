@@ -89,6 +89,12 @@ func runSessionDaemon() {
 		entrypoint:  entry,
 		projectType: ptype,
 		startedAt:   time.Now(),
+		audio:       os.Getenv(envSessionAudio) != "",
+		tts: inferenceTTS{
+			livekitURL: os.Getenv(envSessionURL),
+			apiKey:     os.Getenv(envSessionAPIKey),
+			apiSecret:  os.Getenv(envSessionAPISecret),
+		},
 		idleTimeout: idleTimeout,
 		agentReady:  make(chan struct{}),
 		logSubs:     make(map[chan string]struct{}),
@@ -123,9 +129,11 @@ func runSessionDaemon() {
 		os.Exit(1)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	_ = d.session.SetTextMode(ctx)
-	cancel()
+	if !d.audio {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		_ = d.session.SetTextMode(ctx)
+		cancel()
+	}
 	// Let an agent that greets first finish, so `start` can show the greeting.
 	d.session.WaitForGreeting(context.Background(), greetingSettle, greetingMaxWait)
 	signalReady(ready, "ready")
@@ -184,9 +192,11 @@ type sessionDaemon struct {
 	startedAt   time.Time
 	idleTimeout time.Duration
 	lastActive  atomic.Int64 // unix nanos of the last control command
+	audio       bool         // turns are spoken instead of sent as text
+	tts         inferenceTTS
 
 	sessionMu  sync.Mutex
-	session    *textSession
+	session    *agentSession
 	agentReady chan struct{}
 
 	logMu   sync.Mutex
@@ -262,7 +272,11 @@ func (d *sessionDaemon) handleConn(conn net.Conn) {
 		conn.Close()
 		return
 	}
-	d.session = newTextSession(conn, reader)
+	var speak speakFunc
+	if d.audio {
+		speak = d.tts.speak
+	}
+	d.session = newAgentSession(conn, reader, speak)
 	d.sessionMu.Unlock()
 	close(d.agentReady)
 }
@@ -421,6 +435,7 @@ func (d *sessionDaemon) handleSay(conn *controlConn, req controlRequest) {
 	done := controlReply{
 		Done:       true,
 		Reply:      res.Reply,
+		Heard:      res.Heard,
 		Silent:     res.Silent,
 		DurationMs: res.Duration.Milliseconds(),
 	}
@@ -560,6 +575,7 @@ type sessionStatus struct {
 	ProjectDir         string    `json:"project_dir"`
 	Entrypoint         string    `json:"entrypoint"`
 	ProjectType        string    `json:"project_type"`
+	Audio              bool      `json:"audio"`
 	StartedAt          time.Time `json:"started_at"`
 	UptimeSeconds      int64     `json:"uptime_seconds"`
 	Turns              int       `json:"turns"`
@@ -582,6 +598,7 @@ func (d *sessionDaemon) collectStatus() *sessionStatus {
 		ProjectDir:         d.projectDir,
 		Entrypoint:         d.entrypoint,
 		ProjectType:        string(d.projectType),
+		Audio:              d.audio,
 		StartedAt:          d.startedAt,
 		UptimeSeconds:      int64(time.Since(d.startedAt).Seconds()),
 		Turns:              d.session.Turns(),
