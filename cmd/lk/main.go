@@ -277,7 +277,7 @@ var rootHelpGroups = []struct {
 	{"PROJECTS", []string{"project", "cloud", "app"}},
 	{"ROOMS AND MEDIA", []string{"room", "token", "dispatch", "egress", "ingress"}},
 	{"TELEPHONY", []string{"sip", "number"}},
-	{"TOOLS", []string{"docs", "skills", "perf", "update"}},
+	{"TOOLS", []string{"docs", "skills", "perf", "update", "can-update"}},
 }
 
 // agentHelpSections groups a command's visible subcommands by Category, in
