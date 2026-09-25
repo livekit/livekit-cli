@@ -82,7 +82,7 @@ var sessionIdleFlag = &cli.DurationFlag{
 
 var sessionAudioFlag = &cli.BoolFlag{
 	Name:  "audio",
-	Usage: "Speak each turn into the agent's microphone input instead of sending text, running its full audio pipeline",
+	Usage: "Speak each turn into the agent's microphone input instead of sending text, running its full audio pipeline (uses LiveKit Inference TTS on your connected LiveKit Cloud project)",
 }
 
 var sessionMetricsFlag = &cli.BoolFlag{
@@ -124,8 +124,9 @@ with --audio to speak each turn instead: the user's line is spoken with LiveKit
 Inference TTS into the agent's microphone input, and the agent runs its full
 audio pipeline (STT, turn detection, TTS, or a realtime model that only takes
 audio), so misheard names, spelled-out digits, and endpointing show up here.
-Audio mode uses your project's credentials for the TTS, resolved like other lk
-commands (--project, LIVEKIT_* variables, livekit.toml, or the default project).
+The TTS runs on LiveKit Inference and is billed to your connected LiveKit Cloud
+project, resolved like other lk commands (--project, LIVEKIT_* variables,
+livekit.toml, or the default project).
 
 This is built for coding agents (Claude Code, Codex, Cursor, ...) and shell
 scripts: the caller stands in for the user, decides the next line based on the
