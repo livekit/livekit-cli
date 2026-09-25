@@ -173,6 +173,29 @@ jobs:
           merge-multiple: true
           path: archives
 
+      # Generating the completion means running lk, and only the linux/amd64
+      # binary runs on this runner; the output is the same for every target.
+      - name: Add fish completion to archives
+        run: |
+          bin=$(mktemp -d)
+          tar -xzf archives/lk_*_linux_amd64.tar.gz -C "$bin" lk
+          "$bin/lk" generate-fish-completion -o "$bin/fish_autocomplete"
+          for archive in "$PWD"/archives/*; do
+            stage=$(mktemp -d)
+            case "$archive" in
+              *.zip)
+                mkdir "$stage/autocomplete"
+                cp "$bin/fish_autocomplete" "$stage/autocomplete/"
+                (cd "$stage" && zip -q "$archive" autocomplete/fish_autocomplete)
+                ;;
+              *.tar.gz)
+                tar -xzf "$archive" -C "$stage"
+                cp "$bin/fish_autocomplete" "$stage/autocomplete/"
+                tar -czf "$archive" -C "$stage" LICENSE autocomplete lk
+                ;;
+            esac
+          done
+
       - name: Create checksums
         run: cd archives && sha256sum * > checksums.txt && cat checksums.txt
 
