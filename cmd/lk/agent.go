@@ -331,7 +331,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 				{
 					Name:   "deploy",
 					Usage:  "Deploy a new version of the agent",
-					Before: createAgentClient,
+					Before: prepareAgentDeploy,
 					Action: deployAgent,
 					Flags: []cli.Flag{
 						idFlag(false),
@@ -517,6 +517,18 @@ func noAgentError() error {
 		"Make sure you are running this command from an agent project directory\n" +
 		"containing one of: pyproject.toml, requirements.txt, uv.lock, package.json, or lock files.\n\n" +
 		"To get started, see: https://docs.livekit.io/agents/quickstart")
+}
+
+func prepareAgentDeploy(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+	// The prebuilt upload client has no deployment selector. Check
+	// before client setup, secret updates, or acquiring an image push target.
+	if deployment := cmd.String("deployment"); deployment != "" &&
+		(cmd.String("image") != "" || cmd.String("image-tar") != "") {
+		return ctx, fmt.Errorf("--deployment %q is not supported with --image or --image-tar; "+
+			"prebuilt image deployments use the default production deployment. "+
+			"Deploy from source to target a named deployment; omit --deployment only if production is intended", deployment)
+	}
+	return createAgentClient(ctx, cmd)
 }
 
 func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
