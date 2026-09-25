@@ -398,6 +398,29 @@ func TestQuietFlagAlias(t *testing.T) {
 // "Skipped N empty secret(s)" breadcrumb) is suppressed when the Printer is quiet, and
 // that the --silent alias drives the same suppression as --quiet — end to end through the
 // real global flag and the Printer, with no code in requireSecrets checking the flag.
+func TestAgentDeployRegistersIDFlag(t *testing.T) {
+	var deploy *cli.Command
+	for _, cmd := range AgentCommands {
+		if cmd.Name != "agent" {
+			continue
+		}
+		for _, sub := range cmd.Commands {
+			if sub.Name == "deploy" {
+				deploy = sub
+				break
+			}
+		}
+	}
+	require.NotNil(t, deploy, "deploy command should be registered")
+
+	for _, flag := range deploy.Flags {
+		if flag.Names()[0] == "id" {
+			return
+		}
+	}
+	t.Fatalf("deploy command should register --id flag")
+}
+
 func TestRequireSecrets_QuietSuppressesStatus(t *testing.T) {
 	tests := []struct {
 		name           string
