@@ -110,6 +110,8 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, ReplayCommands...)
 	app.Commands = append(app.Commands, PerfCommands...)
 	app.Commands = append(app.Commands, UpdateCommands...)
+	app.CommandNotFound = commandNotFound
+	setCommandNotFound(app.Commands)
 
 	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
 	ctx, stop := signal.NotifyContext(
