@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v3"
@@ -48,6 +49,14 @@ const (
 	envSessionPType     = "LK_SESSION_PTYPE"        // agentfs.ProjectType string
 	envSessionReadyFile = "LK_SESSION_READY_FILE"   // path the daemon writes its status to
 	envSessionIdle      = "LK_SESSION_IDLE_TIMEOUT" // stop after this long without commands (0 = never)
+	envSessionAudio     = "LK_SESSION_AUDIO"        // set: speak turns instead of sending text
+
+	// The project credentials an audio session speaks the user's turns with.
+	// They are namespaced so the agent, which inherits the daemon's
+	// environment, still resolves its own LIVEKIT_* credentials.
+	envSessionURL       = "LK_SESSION_LIVEKIT_URL"
+	envSessionAPIKey    = "LK_SESSION_LIVEKIT_API_KEY"
+	envSessionAPISecret = "LK_SESSION_LIVEKIT_API_SECRET"
 
 	// defaultIdleTimeout is how long the daemon waits for a command before
 	// stopping itself, so a caller that never runs `stop` doesn't leave an
@@ -69,6 +78,11 @@ var sessionIdleFlag = &cli.DurationFlag{
 	Name:  "idle-timeout",
 	Value: defaultIdleTimeout,
 	Usage: "Stop the session after `DURATION` without any command, such as 30m, 2h, or 90s (0 keeps it running until stop)",
+}
+
+var sessionAudioFlag = &cli.BoolFlag{
+	Name:  "audio",
+	Usage: "Speak each turn into the agent's microphone input instead of sending text, running its full audio pipeline",
 }
 
 var sessionMetricsFlag = &cli.BoolFlag{
@@ -98,13 +112,20 @@ func init() {
 var agentDaemonCommand = &cli.Command{
 	Name:    "debugger",
 	Aliases: []string{"dbg"},
-	Usage:   "Drive a text conversation with a local agent from a script or coding agent",
-	Description: `Runs your agent locally in text mode as a background process, then lets
-you drive a multi-turn conversation one command at a time. Each "say" sends a
-user turn and prints everything the agent did in response: tool calls with
-their arguments and results, handoffs, errors, and the reply. Nothing is sent
-to a LiveKit room. The agent runs in console mode with STT/TTS disabled, so a
-turn costs only what your LLM (and tools) cost.
+	Usage:   "Drive a conversation with a local agent from a script or coding agent",
+	Description: `Runs your agent locally as a background process, then lets you drive a
+multi-turn conversation one command at a time. Each "say" sends a user turn and
+prints everything the agent did in response: tool calls with their arguments
+and results, handoffs, errors, and the reply. Nothing is sent to a LiveKit room.
+
+By default the conversation is text: the agent runs in console mode with
+STT/TTS disabled, so a turn costs only what your LLM (and tools) cost. Start
+with --audio to speak each turn instead: the user's line is spoken with LiveKit
+Inference TTS into the agent's microphone input, and the agent runs its full
+audio pipeline (STT, turn detection, TTS, or a realtime model that only takes
+audio), so misheard names, spelled-out digits, and endpointing show up here.
+Audio mode uses your project's credentials for the TTS, resolved like other lk
+commands (--project, LIVEKIT_* variables, livekit.toml, or the default project).
 
 This is built for coding agents (Claude Code, Codex, Cursor, ...) and shell
 scripts: the caller stands in for the user, decides the next line based on the
@@ -114,7 +135,7 @@ voice or typing, use "lk agent console" instead.
 
 Typical flow, run from the agent project directory:
 
-   lk agent debugger start                  # starts the agent, prints its greeting (if any)
+   lk agent debugger start                  # starts the agent, prints its greeting (if any); --audio to speak turns
    lk agent debugger say "Hi, what can you do?"
    lk agent debugger say "Book me a table for two tonight"
    lk agent debugger logs --last 40         # agent process logs (tracebacks, warnings)
@@ -142,7 +163,7 @@ running. Use --port to run several agents side by side (one session per port).
 			Usage:     "Start the agent in the background and wait until it is ready",
 			ArgsUsage: "[entrypoint] [-- node/python-args...]",
 			Description: `Launches the agent as a detached process and returns once it is connected
-and ready for text turns. If the agent speaks first (a greeting from on_enter),
+and ready for turns, spoken ones with --audio. If the agent speaks first (a greeting from on_enter),
 that is printed here. The summary line names the active agent and its tools.
 
 Without an entrypoint, the project in the current directory (or nearest parent)
@@ -156,7 +177,7 @@ The agent reads its own .env for credentials, exactly like "lk agent console".
 Only one session runs per port; use --port for more, or "restart" to replace
 the current one. The session stops itself after --idle-timeout (default 30m)
 without any command, so a forgotten session does not linger.`,
-			Flags:  []cli.Flag{sessionPortFlag, sessionIdleFlag, jsonFlag},
+			Flags:  []cli.Flag{sessionPortFlag, sessionIdleFlag, sessionAudioFlag, jsonFlag},
 			Action: runSessionStart,
 		},
 		{
@@ -167,6 +188,11 @@ without any command, so a forgotten session does not linger.`,
 turn completes: tool calls with their arguments and results, handoffs to other
 agents, errors, and the reply. Anything the agent said since the previous turn
 (for example a timer firing) is printed first, marked "(before this turn)".
+
+In an audio session (start --audio) the text is spoken, and the turn lasts until
+the agent has heard it, responded, and gone quiet. The user line is what the
+agent transcribed, with the text you sent shown alongside when the words
+differ; a turn the agent hears but never answers is reported as silent.
 
 Exit code is non-zero if the agent reported an error or the turn timed out; the
 agent keeps running either way. With --logs, the agent's log lines emitted
@@ -301,14 +327,42 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	port := int(cmd.Int("port"))
+	audioEnv, err := sessionAudioEnv(cmd, cmd.Bool("audio"))
+	if err != nil {
+		return err
+	}
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
-	return startSessionDaemon(port, projectDir, projectType, entrypoint, cmd.Duration("idle-timeout"), cmd.Bool("json"))
+	return startSessionDaemon(port, projectDir, projectType, entrypoint, cmd.Duration("idle-timeout"), audioEnv, cmd.Bool("json"))
+}
+
+func sessionMode(audio bool) string {
+	if audio {
+		return "audio"
+	}
+	return "text"
+}
+
+// sessionAudioEnv returns the daemon environment for an audio session: the
+// mode, plus the project credentials the user's turns are spoken with.
+func sessionAudioEnv(cmd *cli.Command, audio bool) ([]string, error) {
+	if !audio {
+		return nil, nil
+	}
+	creds, err := resolveCredentials(cmd)
+	if err != nil {
+		return nil, fmt.Errorf("--audio speaks your turns with LiveKit Inference, which needs project credentials: %w", err)
+	}
+	env := []string{envSessionAudio + "=1"}
+	for _, kv := range creds {
+		env = append(env, "LK_SESSION_"+kv)
+	}
+	return env, nil
 }
 
 // startSessionDaemon launches the detached daemon, waits for it to report
 // ready, then prints the agent's opening message (if it produced one) and a
 // short status line.
-func startSessionDaemon(port int, projectDir string, projectType agentfs.ProjectType, entrypoint string, idleTimeout time.Duration, asJSON bool) error {
+func startSessionDaemon(port int, projectDir string, projectType agentfs.ProjectType, entrypoint string, idleTimeout time.Duration, audioEnv []string, asJSON bool) error {
 	exe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("could not resolve own binary: %w", err)
@@ -340,6 +394,7 @@ func startSessionDaemon(port int, projectDir string, projectType agentfs.Project
 		envSessionPType+"="+string(projectType),
 		envSessionReadyFile+"="+readyPath,
 	)
+	daemon.Env = append(daemon.Env, audioEnv...)
 	daemon.Stdout = logFile
 	daemon.Stderr = logFile
 	setDetachedProcAttr(daemon)
@@ -385,7 +440,7 @@ func startSessionDaemon(port int, projectDir string, projectType agentfs.Project
 	summary := "Session started."
 	if st != nil && st.Status != nil {
 		s := st.Status
-		summary = fmt.Sprintf("Session started. Listening on %s, agent pid %d.", sessionAddr(s.Port), s.Pid)
+		summary = fmt.Sprintf("Session started in %s mode. Listening on %s, agent pid %d.", sessionMode(s.Audio), sessionAddr(s.Port), s.Pid)
 		if s.AgentID != "" {
 			summary += fmt.Sprintf(" Agent %q", s.AgentID)
 			if len(s.Tools) > 0 {
@@ -449,6 +504,7 @@ func readReadyStatus(path string) (string, bool) {
 // sayJSON is the --json document `say` prints for one turn.
 type sayJSON struct {
 	Text       string      `json:"text"`
+	Heard      string      `json:"heard"` // what the agent took the user to say: the text, or its transcript of the speech
 	Events     []turnEvent `json:"events"`
 	Reply      string      `json:"reply"`
 	Silent     bool        `json:"silent,omitempty"`
@@ -490,7 +546,6 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 	asJSON := cmd.Bool("json")
 	opts := renderFlags(cmd)
 	doc := sayJSON{Text: text, Events: []turnEvent{}}
-	sawAgentOutput := false
 
 	// Agent log lines are emitted while the agent works on what comes next
 	// (a tool executing, a reply generating), so they are held and printed
@@ -508,9 +563,6 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 			return
 		}
 		e := *r.Event
-		if e.Type != "log" && (e.Type != "message" || e.Role != "user") && !e.Earlier {
-			sawAgentOutput = true
-		}
 		if asJSON {
 			doc.Events = append(doc.Events, e)
 			return
@@ -522,6 +574,9 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 		if line := renderTurnEvent(e, opts); line != "" {
 			out.Result(line)
 		}
+		if e.Type == "message" && e.Role == "user" && !e.Earlier && !sameWords(e.Text, text) {
+			out.Result("    " + transcriptDim.Render(fmt.Sprintf("(sent: %q)", text)))
+		}
 		flushLogs()
 	})
 	if err != nil {
@@ -532,6 +587,7 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	doc.Reply = final.Reply
+	doc.Heard = final.Heard
 	doc.Silent = final.Silent
 	doc.Error = final.Error
 	doc.DurationMs = final.DurationMs
@@ -545,7 +601,10 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	if final.Error == "" && !sawAgentOutput {
+	if final.Error == "" && final.Heard == "" {
+		out.Result("    " + transcriptDim.Render("(the agent transcribed no speech this turn)"))
+	}
+	if final.Error == "" && final.Silent {
 		out.Result(renderSilentTurn())
 	}
 	if opts.Metrics {
@@ -556,6 +615,17 @@ func runSessionSay(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("%s", final.Error)
 	}
 	return nil
+}
+
+// sameWords reports whether a and b say the same words, ignoring case and
+// punctuation, so only a real transcription difference is flagged.
+func sameWords(a, b string) bool {
+	words := func(s string) string {
+		return strings.Join(strings.FieldsFunc(strings.ToLower(s), func(r rune) bool {
+			return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+		}), " ")
+	}
+	return words(a) == words(b)
 }
 
 func runSessionEvents(ctx context.Context, cmd *cli.Command) error {
@@ -644,6 +714,7 @@ func runSessionStatus(ctx context.Context, cmd *cli.Command) error {
 	label := func(s string) string { return util.Dimmed(fmt.Sprintf("  %-14s", s)) }
 	out.Resultf("Session running on %s (pid %d, up %s)\n", sessionAddr(st.Port), st.Pid, (time.Duration(st.UptimeSeconds) * time.Second).String())
 	out.Resultf("%s%s (%s, %s)\n", label("Project:"), st.ProjectDir, agentfs.ProjectType(st.ProjectType).Lang(), st.Entrypoint)
+	out.Resultf("%s%s\n", label("Mode:"), sessionMode(st.Audio))
 	agentLine := st.AgentID
 	if agentLine == "" {
 		agentLine = util.Dimmed("(unknown)")
@@ -823,9 +894,13 @@ func runSessionRestart(ctx context.Context, cmd *cli.Command) error {
 		c.Close()
 		time.Sleep(100 * time.Millisecond)
 	}
+	audioEnv, err := sessionAudioEnv(cmd, st.Audio)
+	if err != nil {
+		return err
+	}
 	out.Statusf("Restarting %s agent (%s in %s)", agentfs.ProjectType(st.ProjectType).Lang(), st.Entrypoint, st.ProjectDir)
 	return startSessionDaemon(port, st.ProjectDir, agentfs.ProjectType(st.ProjectType), st.Entrypoint,
-		time.Duration(st.IdleTimeoutSeconds)*time.Second, cmd.Bool("json"))
+		time.Duration(st.IdleTimeoutSeconds)*time.Second, audioEnv, cmd.Bool("json"))
 }
 
 // dialControl connects to the session daemon and sends the control preamble.
@@ -924,6 +999,7 @@ type controlReply struct {
 	Done       bool           `json:"done,omitempty"`
 	Error      string         `json:"error,omitempty"`
 	Reply      string         `json:"reply,omitempty"`  // say: concatenated assistant text
+	Heard      string         `json:"heard,omitempty"`  // say: what the agent took the user to say
 	Silent     bool           `json:"silent,omitempty"` // say: the agent produced no output
 	DurationMs int64          `json:"duration_ms,omitempty"`
 }

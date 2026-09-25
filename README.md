@@ -481,14 +481,16 @@ Console needs a terminal. If a program rather than a person is going to hold the
 
 ## Agent debugger
 
-`lk agent debugger` is built for coding agents such as Claude Code, Codex, and Cursor. When one of them is working on your LiveKit agent, it can use this command to hold a text conversation with the agent it just edited, read the replies and tool calls, and decide what to try next, all from the shell, with no human at a microphone. It is an ad-hoc, local stand-in for [Agent Simulations](https://docs.livekit.io/agents/start/testing/simulations/) in which the coding agent plays the user and pays with its own tokens: the agent runs in console mode with STT/TTS disabled, so a turn costs only your LLM and tool calls, and nothing touches a LiveKit room.
+`lk agent debugger` is built for coding agents such as Claude Code, Codex, and Cursor. When one of them is working on your LiveKit agent, it can use this command to hold a conversation with the agent it just edited, read the replies and tool calls, and decide what to try next, all from the shell, with no human at a microphone. It is an ad-hoc, local stand-in for [Agent Simulations](https://docs.livekit.io/agents/start/testing/simulations/) in which the coding agent plays the user and pays with its own tokens: by default the agent runs in console mode with STT/TTS disabled, so a turn costs only your LLM and tool calls, and nothing touches a LiveKit room.
+
+Start the session with `--audio` to test the audio path instead: each `say` is spoken with LiveKit Inference TTS into the agent's microphone input, and the agent runs its full audio pipeline (STT, turn detection, TTS, or a realtime model that only takes audio), so misheard names, spelled-out digits, and endpointing behave as they do on a call. Each turn then prints what the agent transcribed, with the text you sent alongside when the words differ. The TTS uses your project's credentials, resolved like other `lk` commands.
 
 People can use it too, but the output and flags are shaped for a program driving it one command at a time: every turn prints tool calls with their arguments and results, handoffs, errors, and the reply; exit codes are non-zero when a turn fails; `--json` is available everywhere. If you want to talk to your agent yourself, `lk agent console` is the better fit.
 
 A typical session, run from the agent project directory (`lk agent dbg` is short for `lk agent debugger`):
 
 ```shell
-lk agent debugger start                       # starts the agent, prints its opening message if it has one
+lk agent debugger start                       # starts the agent, prints its opening message if it has one (--audio to speak turns)
 lk agent debugger say "Hi, what can you do?"  # prints tool calls (with arguments and results), handoffs, and the reply
 lk agent debugger say "Book a table for two tonight"
 lk agent debugger chat-history                # the whole conversation so far

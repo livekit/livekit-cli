@@ -19,11 +19,13 @@ import (
 	"context"
 	"encoding/json"
 	"net"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/livekit/livekit-cli/v2/pkg/console"
 	"github.com/livekit/livekit-cli/v2/pkg/ipc"
 
 	agent "github.com/livekit/protocol/livekit/agent"
@@ -32,16 +34,40 @@ import (
 // fakeAgent stands in for the Python/Node agent on the far end of the console
 // IPC socket: it records requests and lets the test script events/responses.
 type fakeAgent struct {
-	t    *testing.T
-	conn net.Conn
-	reqs chan *agent.SessionRequest
-	acks chan struct{} // AudioPlaybackFinished acks from the CLI
+	t      *testing.T
+	conn   net.Conn
+	reqs   chan *agent.SessionRequest
+	acks   chan struct{} // AudioPlaybackFinished acks from the CLI
+	spoken chan string   // text the session asked TTS to speak
+	heard  atomic.Int64  // speech samples (non-silence) received on the mic input
 }
 
+// fakeSpeech is what the fake TTS produces for any text: 100ms of a constant,
+// non-silent sample, so the mic input can be told apart from silence.
+const fakeSpeechSamples = 4800
+
+// newFakeAgent connects a text-mode session to a fake agent.
 func newFakeAgent(t *testing.T) (*fakeAgent, *agentSession) {
 	t.Helper()
+	return newFakeAgentMode(t, false)
+}
+
+// newAudioFakeAgent connects an audio-mode session to a fake agent, with a
+// fake TTS that records what it was asked to speak.
+func newAudioFakeAgent(t *testing.T) (*fakeAgent, *agentSession) {
+	t.Helper()
+	return newFakeAgentMode(t, true)
+}
+
+func newFakeAgentMode(t *testing.T, audio bool) (*fakeAgent, *agentSession) {
+	t.Helper()
 	client, server := net.Pipe()
-	fa := &fakeAgent{t: t, conn: client, reqs: make(chan *agent.SessionRequest, 16), acks: make(chan struct{}, 16)}
+	fa := &fakeAgent{
+		t: t, conn: client,
+		reqs:   make(chan *agent.SessionRequest, 16),
+		acks:   make(chan struct{}, 16),
+		spoken: make(chan string, 16),
+	}
 	go func() {
 		for {
 			msg := &agent.AgentSessionMessage{}
@@ -54,10 +80,28 @@ func newFakeAgent(t *testing.T) (*fakeAgent, *agentSession) {
 				fa.reqs <- m.Request
 			case *agent.AgentSessionMessage_AudioPlaybackFinished:
 				fa.acks <- struct{}{}
+			case *agent.AgentSessionMessage_AudioInput:
+				for _, v := range console.BytesToSamples(m.AudioInput.Data) {
+					if v != 0 {
+						fa.heard.Add(1)
+					}
+				}
 			}
 		}
 	}()
-	sess := newAgentSession(server, nil)
+	var speak speakFunc = func(ctx context.Context, text string, onAudio func([]int16)) error {
+		fa.spoken <- text
+		speech := make([]int16, fakeSpeechSamples)
+		for i := range speech {
+			speech[i] = 1000
+		}
+		onAudio(speech)
+		return nil
+	}
+	if !audio {
+		speak = nil
+	}
+	sess := newAgentSession(server, nil, speak)
 	t.Cleanup(func() { client.Close(); server.Close() })
 	return fa, sess
 }
@@ -80,6 +124,29 @@ func (fa *fakeAgent) sendAssistant(text string) {
 	fa.sendEvent(&agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_ConversationItemAdded_{
 		ConversationItemAdded: &agent.AgentSessionEvent_ConversationItemAdded{Item: assistantItem(text)},
 	}})
+}
+
+func (fa *fakeAgent) sendUser(text string) {
+	fa.sendEvent(&agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_ConversationItemAdded_{
+		ConversationItemAdded: &agent.AgentSessionEvent_ConversationItemAdded{Item: userItem(text)},
+	}})
+}
+
+func (fa *fakeAgent) sendError(msg string) {
+	fa.sendEvent(&agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_Error_{
+		Error: &agent.AgentSessionEvent_Error{Message: msg},
+	}})
+}
+
+// nextSpoken waits for the session to speak a user turn.
+func (fa *fakeAgent) nextSpoken() string {
+	select {
+	case text := <-fa.spoken:
+		return text
+	case <-time.After(5 * time.Second):
+		fa.t.Fatal("timed out waiting for the CLI to speak a turn")
+		return ""
+	}
 }
 
 func (fa *fakeAgent) respond(resp *agent.SessionResponse) {
@@ -454,4 +521,232 @@ func TestObserveStreamDoesNotAffectTurns(t *testing.T) {
 	require.Len(t, all, 2)
 	require.Len(t, sess.RecentEvents(1), 1)
 	require.Equal(t, "unprompted", sess.RecentEvents(1)[0].Text)
+}
+
+// sayAsync runs Say in the background, collecting what it streams.
+type sayRun struct {
+	done chan struct{}
+	got  []turnEvent
+	res  turnResult
+	err  error
+}
+
+func sayAsync(ctx context.Context, sess *agentSession, text string) *sayRun {
+	r := &sayRun{done: make(chan struct{})}
+	go func() {
+		defer close(r.done)
+		r.res, r.err = sess.Say(ctx, text, func(e turnEvent) { r.got = append(r.got, e) })
+	}()
+	return r
+}
+
+func (r *sayRun) wait(t *testing.T) {
+	t.Helper()
+	select {
+	case <-r.done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("Say did not return")
+	}
+}
+
+func TestAudioSayStreamsEventsAndEarlierItems(t *testing.T) {
+	fa, sess := newAudioFakeAgent(t)
+
+	// A greeting nobody was listening for must be held, not dropped.
+	fa.sendAssistant("Welcome!")
+	require.Eventually(t, func() bool {
+		sess.mu.Lock()
+		defer sess.mu.Unlock()
+		return len(sess.undelivered) == 1
+	}, time.Second, 10*time.Millisecond)
+
+	run := sayAsync(context.Background(), sess, "My name is Sara, S A R A")
+	require.Equal(t, "My name is Sara, S A R A", fa.nextSpoken())
+	require.True(t, sess.TurnInProgress())
+
+	// The agent hears the speech (imperfectly), calls a tool, and replies.
+	fa.sendUser("My name is Sarah. S A R A.")
+	fa.sendState(agent.AgentState_AS_THINKING)
+	fa.sendEvent(&agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_FunctionToolsExecuted_{
+		FunctionToolsExecuted: &agent.AgentSessionEvent_FunctionToolsExecuted{
+			FunctionCalls:       []*agent.FunctionCall{{CallId: "c1", Name: "lookup", Arguments: `{"q":1}`}},
+			FunctionCallOutputs: []*agent.FunctionCallOutput{{CallId: "c1", Output: "42"}},
+		},
+	}})
+	fa.sendState(agent.AgentState_AS_SPEAKING)
+	fa.sendAssistant("The answer is 42.")
+	fa.sendState(agent.AgentState_AS_LISTENING)
+
+	run.wait(t)
+	require.NoError(t, run.err)
+	require.False(t, sess.TurnInProgress())
+	require.Equal(t, "The answer is 42.", run.res.Reply)
+	require.Equal(t, "My name is Sarah. S A R A.", run.res.Heard)
+	require.False(t, run.res.Silent)
+	require.EqualValues(t, fakeSpeechSamples, fa.heard.Load(), "the whole utterance must reach the agent's mic input")
+
+	types := make([]string, 0, len(run.got))
+	for _, e := range run.got {
+		types = append(types, e.Type+"/"+e.Role)
+	}
+	require.Equal(t, []string{"message/assistant", "message/user", "tool_call/", "message/assistant"}, types)
+	require.True(t, run.got[0].Earlier, "greeting should be flagged as predating the turn")
+	require.Equal(t, "Welcome!", run.got[0].Text)
+	require.Equal(t, "lookup", run.got[2].Name)
+	require.Equal(t, `{"q":1}`, run.got[2].Arguments)
+	require.Equal(t, "42", run.got[2].Output)
+	require.Equal(t, 1, sess.Turns())
+}
+
+func TestAudioSayReportsAgentError(t *testing.T) {
+	fa, sess := newAudioFakeAgent(t)
+	run := sayAsync(context.Background(), sess, "hi")
+	fa.nextSpoken()
+	fa.sendUser("hi")
+	fa.sendState(agent.AgentState_AS_THINKING)
+	fa.sendError("llm exploded")
+	fa.sendState(agent.AgentState_AS_LISTENING)
+	run.wait(t)
+	require.ErrorContains(t, run.err, "llm exploded")
+}
+
+func TestAudioSayReportsSilence(t *testing.T) {
+	fa, sess := newAudioFakeAgent(t)
+	sess.replyWait = 200 * time.Millisecond
+	run := sayAsync(context.Background(), sess, "hello?")
+	fa.nextSpoken()
+	run.wait(t)
+	require.NoError(t, run.err)
+	require.True(t, run.res.Silent)
+	require.Empty(t, run.res.Heard)
+}
+
+func TestAudioSayWaitsForTheAgentToHearTheUser(t *testing.T) {
+	fa, sess := newAudioFakeAgent(t)
+	run := sayAsync(context.Background(), sess, "My name is Sara")
+	fa.nextSpoken()
+
+	// The tail of an earlier reply lands while the user is speaking; it must
+	// not pass for the answer to this turn.
+	fa.sendState(agent.AgentState_AS_SPEAKING)
+	fa.sendAssistant("June tenth has already passed.")
+	fa.sendState(agent.AgentState_AS_LISTENING)
+	time.Sleep(turnSettle + 500*time.Millisecond)
+	select {
+	case <-run.done:
+		t.Fatal("the turn ended before the agent heard the user")
+	default:
+	}
+
+	fa.sendUser("My name is Sarah")
+	fa.sendState(agent.AgentState_AS_SPEAKING)
+	fa.sendAssistant("Thanks, Sarah.")
+	fa.sendState(agent.AgentState_AS_LISTENING)
+	run.wait(t)
+	require.NoError(t, run.err)
+	require.False(t, run.res.Silent)
+	require.Equal(t, "My name is Sarah", run.res.Heard)
+	require.Equal(t, "June tenth has already passed.\nThanks, Sarah.", run.res.Reply)
+}
+
+func TestAudioSayReportsSilenceAfterHearing(t *testing.T) {
+	// The agent hears the user but never answers: the failure to catch.
+	fa, sess := newAudioFakeAgent(t)
+	sess.replyWait = 300 * time.Millisecond
+	run := sayAsync(context.Background(), sess, "Are you there?")
+	fa.nextSpoken()
+	fa.sendUser("Are you there?")
+	run.wait(t)
+	require.NoError(t, run.err)
+	require.True(t, run.res.Silent)
+	require.Equal(t, "Are you there?", run.res.Heard)
+}
+
+func TestAudioSayTimeoutLeavesLateEventsForNextTurn(t *testing.T) {
+	fa, sess := newAudioFakeAgent(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
+	defer cancel()
+	run := sayAsync(ctx, sess, "slow")
+	fa.nextSpoken()
+	fa.sendState(agent.AgentState_AS_THINKING)
+	run.wait(t)
+	require.ErrorContains(t, run.err, "timed out")
+	require.False(t, sess.TurnInProgress())
+
+	// The agent finishes late: its output is held for the next turn.
+	fa.sendAssistant("late reply")
+	require.Eventually(t, func() bool {
+		sess.mu.Lock()
+		defer sess.mu.Unlock()
+		return len(sess.undelivered) == 1
+	}, time.Second, 10*time.Millisecond)
+	earlier := sess.takeUndelivered()
+	require.Len(t, earlier, 1)
+	require.True(t, earlier[0].Earlier)
+}
+
+// sendAgentAudio sends d of agent speech followed by a playback flush.
+func (fa *fakeAgent) sendAgentAudio(d time.Duration) {
+	fa.send(&agent.AgentSessionMessage{Message: &agent.AgentSessionMessage_AudioOutput{
+		AudioOutput: &agent.AgentSessionMessage_ConsoleIO_AudioFrame{
+			SampleRate: 48000, NumChannels: 1, SamplesPerChannel: uint32(48000 * d / time.Second),
+		},
+	}})
+	fa.send(&agent.AgentSessionMessage{Message: &agent.AgentSessionMessage_AudioPlaybackFlush{
+		AudioPlaybackFlush: &agent.AgentSessionMessage_ConsoleIO_AudioPlaybackFlush{},
+	}})
+}
+
+func TestAudioAcksPlaybackAfterPlayout(t *testing.T) {
+	fa, _ := newAudioFakeAgent(t)
+	start := time.Now()
+	fa.sendAgentAudio(400 * time.Millisecond)
+	select {
+	case <-fa.acks:
+		require.GreaterOrEqual(t, time.Since(start), 350*time.Millisecond, "flush acked before the audio could have played")
+	case <-time.After(2 * time.Second):
+		t.Fatal("no AudioPlaybackFinished ack for the flush")
+	}
+}
+
+func TestAudioClearCancelsPlaybackAck(t *testing.T) {
+	fa, _ := newAudioFakeAgent(t)
+	fa.sendAgentAudio(300 * time.Millisecond)
+	fa.send(&agent.AgentSessionMessage{Message: &agent.AgentSessionMessage_AudioPlaybackClear{
+		AudioPlaybackClear: &agent.AgentSessionMessage_ConsoleIO_AudioPlaybackClear{},
+	}})
+	select {
+	case <-fa.acks:
+		t.Fatal("an interrupted playout must not be acked as finished")
+	case <-time.After(600 * time.Millisecond):
+	}
+}
+
+func TestSameWords(t *testing.T) {
+	require.True(t, sameWords("My name is Sara, S A R A", "my name is sara. S A R A!"))
+	require.False(t, sameWords("My name is Sara", "My name is Sarah"))
+}
+
+func TestAudioSayWaitsForHandoffIntroduction(t *testing.T) {
+	fa, sess := newAudioFakeAgent(t)
+	run := sayAsync(context.Background(), sess, "billing please")
+	fa.nextSpoken()
+	fa.sendUser("billing please")
+	fa.sendState(agent.AgentState_AS_THINKING)
+	old := "assistant"
+	fa.sendEvent(&agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_ConversationItemAdded_{
+		ConversationItemAdded: &agent.AgentSessionEvent_ConversationItemAdded{Item: &agent.ChatContext_ChatItem{
+			Item: &agent.ChatContext_ChatItem_AgentHandoff{AgentHandoff: &agent.AgentHandoff{OldAgentId: &old, NewAgentId: "billing"}},
+		}},
+	}})
+	// The old agent goes quiet before the new one has introduced itself.
+	fa.sendState(agent.AgentState_AS_LISTENING)
+	time.Sleep(turnSettle + 500*time.Millisecond)
+	fa.sendAssistant("Hi, billing here.")
+
+	run.wait(t)
+	require.Len(t, run.got, 3)
+	require.Equal(t, "handoff", run.got[1].Type)
+	require.Equal(t, "Hi, billing here.", run.got[2].Text)
 }

@@ -26,15 +26,18 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/livekit/livekit-cli/v2/pkg/console"
 	"github.com/livekit/livekit-cli/v2/pkg/ipc"
 
 	agent "github.com/livekit/protocol/livekit/agent"
 )
 
-// agentSession drives an agent connected over the console IPC socket purely in
-// text mode: it owns the read loop, routes responses to their requests, fans
-// events out to whoever is listening, and buffers anything nobody was listening
-// for so it can be reported later instead of silently dropped.
+// agentSession drives an agent connected over the console IPC socket: it owns
+// the read loop, routes responses to their requests, fans events out to
+// whoever is listening, and buffers anything nobody was listening for so it can
+// be reported later instead of silently dropped. In text mode the user's turns
+// are sent as text with the agent's audio I/O off; in audio mode they are
+// spoken into its microphone input and its replies play out in real time.
 type agentSession struct {
 	conn    net.Conn
 	reader  io.Reader
@@ -49,7 +52,12 @@ type agentSession struct {
 	agentState  agent.AgentState
 	activity    chan struct{}
 
-	turnSem    chan struct{} // one RunInput in flight at a time
+	speak     speakFunc // nil in text mode
+	replyWait time.Duration
+	mic       micStream
+	speaker   playout
+
+	turnSem    chan struct{} // one turn in flight at a time
 	turns      atomic.Int64
 	reqCounter atomic.Int64
 
@@ -63,14 +71,17 @@ type eventSub struct {
 }
 
 // newAgentSession wraps an accepted agent connection. reader lets the caller
-// hand back bytes it already peeked from conn (see classifyConn).
-func newAgentSession(conn net.Conn, reader io.Reader) *agentSession {
+// hand back bytes it already peeked from conn (see classifyConn). A nil speak
+// runs the session in text mode.
+func newAgentSession(conn net.Conn, reader io.Reader, speak speakFunc) *agentSession {
 	if reader == nil {
 		reader = conn
 	}
 	s := &agentSession{
 		conn:      conn,
 		reader:    reader,
+		speak:     speak,
+		replyWait: defaultReplyWait,
 		pending:   make(map[string]chan *agent.SessionResponse),
 		subs:      make(map[*eventSub]struct{}),
 		observers: make(map[*eventSub]struct{}),
@@ -79,16 +90,31 @@ func newAgentSession(conn net.Conn, reader io.Reader) *agentSession {
 		done:      make(chan struct{}),
 	}
 	go s.readLoop()
+	if speak == nil {
+		return s
+	}
+	go s.mic.run(s.done, func(samples []int16) error {
+		return s.write(&agent.AgentSessionMessage{
+			Message: &agent.AgentSessionMessage_AudioInput{
+				AudioInput: &agent.AgentSessionMessage_ConsoleIO_AudioFrame{
+					Data:              console.SamplesToBytes(samples),
+					SampleRate:        console.SampleRate,
+					NumChannels:       console.Channels,
+					SamplesPerChannel: uint32(len(samples)),
+				},
+			},
+		})
+	})
 	return s
 }
 
 // Done is closed when the agent connection ends.
 func (s *agentSession) Done() <-chan struct{} { return s.done }
 
-// Turns reports how many RunInput turns have been sent.
+// Turns reports how many user turns have been sent.
 func (s *agentSession) Turns() int { return int(s.turns.Load()) }
 
-// TurnInProgress reports whether a RunInput is currently awaiting its reply.
+// TurnInProgress reports whether a turn is currently awaiting its reply.
 func (s *agentSession) TurnInProgress() bool { return len(s.turnSem) > 0 }
 
 func (s *agentSession) finish(err error) {
@@ -127,15 +153,19 @@ func (s *agentSession) readLoop() {
 					close(ch)
 				}
 			}
-		case *agent.AgentSessionMessage_AudioOutput, *agent.AgentSessionMessage_AudioPlaybackClear:
-			// No audio sink in text mode: drop.
+		case *agent.AgentSessionMessage_AudioOutput:
+			s.speaker.write(m.AudioOutput.GetSamplesPerChannel(), m.AudioOutput.GetSampleRate())
+		case *agent.AgentSessionMessage_AudioPlaybackClear:
+			s.speaker.clear()
 		case *agent.AgentSessionMessage_AudioPlaybackFlush:
-			// Nothing to drain, so ack immediately or the agent's turn (and the
-			// RunInputResponse we await) never completes.
-			_ = s.write(&agent.AgentSessionMessage{
-				Message: &agent.AgentSessionMessage_AudioPlaybackFinished{
-					AudioPlaybackFinished: &agent.AgentSessionMessage_ConsoleIO_AudioPlaybackFinished{},
-				},
+			// The agent's speech only completes once this is acknowledged. In
+			// text mode nothing was buffered, so it is acknowledged at once.
+			s.speaker.flush(func() {
+				_ = s.write(&agent.AgentSessionMessage{
+					Message: &agent.AgentSessionMessage_AudioPlaybackFinished{
+						AudioPlaybackFinished: &agent.AgentSessionMessage_ConsoleIO_AudioPlaybackFinished{},
+					},
+				})
 			})
 		}
 	}
@@ -387,62 +417,65 @@ func (s *agentSession) Listen(ctx context.Context, idle, maxWait time.Duration, 
 	// Markers (the initial agent handoff, config updates) are delivered but do
 	// not count as the agent speaking, so they never shorten the wait.
 	delivered := false
-	for _, e := range earlier {
+	deliver := func(e turnEvent) {
 		sink(e)
-		delivered = delivered || e.isOutput()
+		delivered = delivered || e.isAgentOutput()
+	}
+	for _, e := range earlier {
+		deliver(e)
 	}
 
 	deadline := time.NewTimer(maxWait)
 	defer deadline.Stop()
-	return s.awaitQuiet(ctx, sub, delivered, idle, listenSettle, deadline.C, sink)
+	s.awaitQuiet(ctx, sub, idle, listenSettle, deadline.C, deliver, func() bool { return delivered })
+	return delivered
 }
 
-// awaitQuiet delivers sub's events to sink until the agent goes quiet: settle
-// after its last output while it is not busy, or idle if it never produced any
-// (delivered reports output seen before the call). It also stops at deadline,
-// ctx, or the connection ending, and returns whether any output was delivered.
-func (s *agentSession) awaitQuiet(ctx context.Context, sub *eventSub, delivered bool, idle, settle time.Duration, deadline <-chan time.Time, sink func(turnEvent)) bool {
-	quiet := time.NewTimer(idle)
-	defer quiet.Stop()
-	if delivered {
-		// Something was already waiting; only linger for a burst in progress.
-		quiet.Reset(settle)
-	}
+func isBusy(state agent.AgentState) bool {
+	return state == agent.AgentState_AS_THINKING || state == agent.AgentState_AS_SPEAKING
+}
 
-	busy := false
+// awaitQuiet hands sub's events to deliver until the agent goes quiet: settle
+// after it last produced output or stopped being busy once responded reports
+// true, or idle while it has not. It also stops at deadline, ctx, or the
+// connection ending.
+func (s *agentSession) awaitQuiet(ctx context.Context, sub *eventSub, idle, settle time.Duration, deadline <-chan time.Time, deliver func(turnEvent), responded func() bool) {
+	wait := func() time.Duration {
+		if responded() {
+			return settle
+		}
+		return idle
+	}
+	quiet := time.NewTimer(wait())
+	defer quiet.Stop()
+	busy := isBusy(s.AgentState())
+	if busy {
+		quiet.Stop()
+	}
 	for {
 		select {
 		case e := <-sub.ch:
-			sink(e)
-			if !e.isOutput() {
-				continue
-			}
-			delivered = true
-			if !busy {
+			deliver(e)
+			if !busy && responded() {
 				quiet.Reset(settle)
 			}
 		case <-s.activity:
-			s.mu.Lock()
-			state := s.agentState
-			s.mu.Unlock()
-			switch state {
-			case agent.AgentState_AS_THINKING, agent.AgentState_AS_SPEAKING:
+			switch {
+			case isBusy(s.AgentState()):
 				busy = true
 				quiet.Stop()
-			default:
-				if busy {
-					busy = false
-					quiet.Reset(settle)
-				}
+			case busy:
+				busy = false
+				quiet.Reset(wait())
 			}
 		case <-quiet.C:
-			return delivered
+			return
 		case <-deadline:
-			return delivered
+			return
 		case <-ctx.Done():
-			return delivered
+			return
 		case <-s.done:
-			return delivered
+			return
 		}
 	}
 }
@@ -450,15 +483,29 @@ func (s *agentSession) awaitQuiet(ctx context.Context, sub *eventSub, delivered 
 // turnResult is what Say reports once the agent's turn completes.
 type turnResult struct {
 	Reply    string // concatenated assistant text produced during the turn
-	Silent   bool   // the turn completed without any agent output
+	Heard    string // what the agent transcribed from the user's speech
+	Silent   bool   // the agent produced no output after hearing the user
 	Duration time.Duration
 }
 
-// Say runs one user turn: it reports events nobody has seen yet, echoes the
-// user text, sends RunInput, streams the agent's events to sink as they
-// happen, and returns when the agent reports the turn complete. Turns are
-// serialized; a second caller blocks until the first finishes. Cancel ctx to
-// stop waiting; any events that arrive afterwards are held for the next turn.
+const (
+	// defaultReplyWait is how long a turn waits, once the user's speech has
+	// played and the agent is not busy, for it to transcribe and respond before
+	// calling the turn silent. It covers endpointing plus the first LLM round trip.
+	defaultReplyWait = 10 * time.Second
+	// turnSettle is how long the agent must stay quiet after responding before
+	// the turn is over. A delegating model (GPT Live) acknowledges, then speaks
+	// the delegated answer after a pause with no session event marking it, so
+	// this has to outlast that pause.
+	turnSettle = 3 * time.Second
+)
+
+// Say runs one user turn: it reports events nobody has seen yet, hands the
+// text to the agent (typed in text mode, spoken into its microphone input in
+// audio mode), streams the agent's events to sink as they happen, and returns
+// when the turn is over. Turns are serialized; a second caller blocks until the
+// first finishes. Cancel ctx to stop waiting; any events that arrive afterwards
+// are held for the next turn.
 func (s *agentSession) Say(ctx context.Context, text string, sink func(turnEvent)) (turnResult, error) {
 	select {
 	case s.turnSem <- struct{}{}:
@@ -475,6 +522,16 @@ func (s *agentSession) Say(ctx context.Context, text string, sink func(turnEvent
 	for _, e := range earlier {
 		sink(e)
 	}
+	s.turns.Add(1)
+	if s.speak == nil {
+		return s.sayText(ctx, text, start, sub, sink)
+	}
+	return s.sayAudio(ctx, text, start, sub, sink)
+}
+
+// sayText echoes the user text, sends RunInput, and returns when the agent
+// reports the turn complete.
+func (s *agentSession) sayText(ctx context.Context, text string, start time.Time, sub *eventSub, sink func(turnEvent)) (turnResult, error) {
 	sink(turnEvent{Type: "message", Role: "user", Text: text})
 
 	var (
@@ -502,7 +559,6 @@ func (s *agentSession) Say(ctx context.Context, text string, sink func(turnEvent
 		sink(e)
 	}
 
-	s.turns.Add(1)
 	respCh := make(chan struct {
 		resp *agent.SessionResponse
 		err  error
@@ -541,7 +597,7 @@ func (s *agentSession) Say(ctx context.Context, text string, sink func(turnEvent
 			if r.err == nil && sawHandoff && !spokeAfter {
 				s.awaitHandoffIntro(ctx, sub, deliver, func() bool { return spokeAfter })
 			}
-			res := turnResult{Reply: reply.String(), Silent: !sawAgent, Duration: time.Since(start)}
+			res := turnResult{Reply: reply.String(), Heard: text, Silent: !sawAgent, Duration: time.Since(start)}
 			if r.err != nil {
 				if errors.Is(r.err, context.DeadlineExceeded) {
 					return res, fmt.Errorf("timed out waiting for the agent's reply; the turn may still be running (check `lk agent debugger logs`)")
@@ -554,6 +610,100 @@ func (s *agentSession) Say(ctx context.Context, text string, sink func(turnEvent
 			return res, nil
 		}
 	}
+}
+
+// sayAudio speaks the text into the agent's microphone input and returns once
+// the agent has heard it, responded, and gone quiet, or never responded.
+func (s *agentSession) sayAudio(ctx context.Context, text string, start time.Time, sub *eventSub, sink func(turnEvent)) (turnResult, error) {
+	var (
+		reply, heard strings.Builder
+		agentErr     string
+		responded    bool // the agent produced output after hearing the user
+		sawHandoff   bool
+		spokeAfter   bool // an assistant message arrived after the last handoff
+	)
+	appendLine := func(b *strings.Builder, line string) {
+		if b.Len() > 0 {
+			b.WriteString("\n")
+		}
+		b.WriteString(line)
+	}
+	deliver := func(e turnEvent) {
+		switch {
+		case e.Type == "message" && e.Role == "user":
+			appendLine(&heard, e.Text)
+		case e.Type == "handoff":
+			sawHandoff = true
+			spokeAfter = false
+		case e.Type == "message" && e.Role == "assistant":
+			spokeAfter = true
+			appendLine(&reply, e.Text)
+		case e.Type == "error" && agentErr == "":
+			agentErr = e.Text
+		}
+		if heard.Len() > 0 && e.isAgentOutput() {
+			responded = true
+		}
+		sink(e)
+	}
+	result := func() turnResult {
+		return turnResult{Reply: reply.String(), Heard: heard.String(), Silent: !responded, Duration: time.Since(start)}
+	}
+
+	spoken := make(chan error, 1)
+	go func() {
+		if err := s.speak(ctx, text, s.mic.push); err != nil {
+			spoken <- err
+			return
+		}
+		select {
+		case <-s.mic.drained():
+		case <-ctx.Done():
+		}
+		spoken <- nil
+	}()
+speaking:
+	for {
+		select {
+		case e := <-sub.ch:
+			deliver(e)
+		case err := <-spoken:
+			if err != nil {
+				return result(), err
+			}
+			break speaking
+		case <-s.done:
+			return result(), errAgentGone
+		}
+	}
+
+	// Output while the user was still being heard (the tail of an earlier
+	// reply) does not answer this turn, so the turn waits for the agent to
+	// transcribe the speech and respond to it.
+	s.awaitQuiet(ctx, sub, s.replyWait, turnSettle, nil, deliver, func() bool { return responded })
+	// A handoff target usually introduces itself from on_enter, which can
+	// start after the previous agent went quiet. Hold the turn open briefly so
+	// that introduction reads as part of the handoff.
+	if ctx.Err() == nil && sawHandoff && !spokeAfter {
+		s.awaitHandoffIntro(ctx, sub, deliver, func() bool { return spokeAfter })
+	}
+
+	res := result()
+	select {
+	case <-s.done:
+		return res, errAgentGone
+	default:
+	}
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return res, fmt.Errorf("timed out waiting for the agent's reply; the turn may still be running (check `lk agent debugger logs`)")
+	}
+	if err := ctx.Err(); err != nil {
+		return res, err
+	}
+	if agentErr != "" {
+		return res, fmt.Errorf("agent error: %s", agentErr)
+	}
+	return res, nil
 }
 
 // handoffIntroWait bounds how long Say waits for a new agent's opening line
