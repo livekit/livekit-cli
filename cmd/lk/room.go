@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,7 +24,9 @@ import (
 	"os/signal"
 	"regexp"
 	"slices"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/pion/webrtc/v4"
 	"github.com/urfave/cli/v3"
@@ -167,6 +170,18 @@ var (
 						&cli.StringFlag{
 							Name:  "publish-dtmf",
 							Usage: "Publish DTMF digits to the room. Character 'w' adds 0.5 sec delay.",
+						},
+						&cli.StringFlag{
+							Name:  "rpc-name",
+							Usage: "Name of the RPC to call on the participant.",
+						},
+						&cli.StringFlag{
+							Name:  "rpc-data",
+							Usage: "RPC payload to send.",
+						},
+						&cli.StringFlag{
+							Name:  "rpc-target",
+							Usage: "RPC target participant identity.",
 						},
 						&cli.FloatFlag{
 							Name:  "fps",
@@ -1053,6 +1068,36 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	if dtmf := cmd.String("publish-dtmf"); dtmf != "" {
 		if err = publishPacket(&livekit.SipDTMF{Digit: dtmf}); err != nil {
 			return err
+		}
+	}
+	{
+		rpcName := cmd.String("rpc-name")
+		rpcData := cmd.String("rpc-data")
+		rpcTarget := cmd.String("rpc-target")
+		if rpcName != "" {
+			time.Sleep(time.Second * 2)
+			out, err := room.LocalParticipant.PerformRpc(lksdk.PerformRpcParams{
+				DestinationIdentity: rpcTarget,
+				Method:              rpcName,
+				Payload:             rpcData,
+			})
+			if err != nil {
+				return err
+			}
+			if out != nil {
+				str := *out
+				if strings.HasPrefix(str, "{") || strings.HasPrefix(str, "[") {
+					var buf bytes.Buffer
+					if err = json.Indent(&buf, []byte(str), "", "\t"); err == nil {
+						str = buf.String()
+					}
+				}
+				fmt.Println(str)
+			}
+			if exitAfterPublish {
+				close(done)
+			}
+			time.Sleep(time.Second * 2)
 		}
 	}
 

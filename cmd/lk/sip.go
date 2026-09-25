@@ -370,6 +370,10 @@ var (
 									Name:  "header",
 									Usage: "Custom SIP header in format 'Key:Value' (can be specified multiple times)",
 								},
+								&cli.StringSliceFlag{
+									Name:  "from-user",
+									Usage: "From header username to send",
+								},
 							}),
 						},
 						{
@@ -1248,6 +1252,11 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		if cmd.Bool("wait") {
 			req.WaitUntilAnswered = true
 		}
+		if v := cmd.String("from-user"); v != "" {
+			req.SipFromHeader = &livekit.SIPNamedDest{Uri: &livekit.SIPNamedDest_Values{
+				Values: &livekit.SIPUri{User: v},
+			}}
+		}
 		if m, err := parseSIPMediaConfig(cmd); err == nil {
 			req.Media = m
 		} else if err != nil {
@@ -1278,7 +1287,10 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 			}
 		}
 
-		return req.Validate()
+		if err := req.Validate(); err != nil {
+			return fmt.Errorf("client request validation: %w", err)
+		}
+		return nil
 	}, func(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error) {
 		// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
 		// Default deadline is too short, thus, we must set a higher deadline for it.
