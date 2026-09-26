@@ -53,7 +53,8 @@ var (
 	egressStartDescription = `Initiates a new egress.
 
 REQUEST_JSON is a ` + reflect.TypeFor[livekit.StartEgressRequest]().Name() + `, whose source is a
-layout template, a web page, or media tracks from a room.
+layout template, a web page, selected media tracks, or every room track. The room-tracks source
+currently requires a single MCAP file output.
 
 TYPE selects a deprecated per-type request instead:
 	- "room-composite" composes multiple participant tracks into a single output stream, as ` + reflect.TypeFor[livekit.RoomCompositeEgressRequest]().Name() + `
