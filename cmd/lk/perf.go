@@ -88,9 +88,10 @@ var (
 					},
 				},
 				{
-					Name:   "agent-load-test",
-					Usage:  "Run load tests for a running agent",
-					Action: agentLoadTest,
+					Name:                      "agent-load-test",
+					Usage:                     "Run load tests for a running agent",
+					Action:                    agentLoadTest,
+					DisableSliceFlagSeparator: true,
 					Flags: []cli.Flag{
 						&cli.IntFlag{
 							Name:  "rooms",

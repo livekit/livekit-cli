@@ -23,6 +23,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"charm.land/huh/v2"
@@ -66,9 +67,10 @@ var (
 			Before: loadProjectConfig,
 			Commands: []*cli.Command{
 				{
-					Name:   "create",
-					Usage:  "Creates an access token",
-					Action: createToken,
+					Name:                      "create",
+					Usage:                     "Creates an access token",
+					Action:                    createToken,
+					DisableSliceFlagSeparator: true,
 					Flags: []cli.Flag{
 						optional(roomFlag),
 						optional(identityFlag),
@@ -157,10 +159,11 @@ var (
 
 		// Deprecated commands kept for compatibility
 		{
-			Hidden: true, // deprecated: use `token create`
-			Name:   "create-token",
-			Usage:  "Creates an access token",
-			Action: createToken,
+			Hidden:                    true, // deprecated: use `token create`
+			Name:                      "create-token",
+			Usage:                     "Creates an access token",
+			Action:                    createToken,
+			DisableSliceFlagSeparator: true,
 			Flags: []cli.Flag{
 				optional(roomFlag),
 				&cli.BoolFlag{
@@ -240,6 +243,29 @@ var (
 		},
 	}
 )
+
+// parseAllowSources converts --allow-source values to track sources. The token commands disable the
+// slice flag separator so that --attribute values keep their commas, so split comma-separated sources here.
+func parseAllowSources(values []string) ([]livekit.TrackSource, error) {
+	var sources []livekit.TrackSource
+	for _, value := range values {
+		for _, s := range strings.Split(value, ",") {
+			switch s {
+			case "camera":
+				sources = append(sources, livekit.TrackSource_CAMERA)
+			case "microphone":
+				sources = append(sources, livekit.TrackSource_MICROPHONE)
+			case "screen_share":
+				sources = append(sources, livekit.TrackSource_SCREEN_SHARE)
+			case "screen_share_audio":
+				sources = append(sources, livekit.TrackSource_SCREEN_SHARE_AUDIO)
+			default:
+				return nil, fmt.Errorf("invalid source: %s", s)
+			}
+		}
+	}
+	return sources, nil
+}
 
 func createToken(ctx context.Context, c *cli.Command) error {
 	tokenOnly := c.Bool("token-only")
@@ -324,23 +350,9 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		hasPerms = true
 	}
 	if c.IsSet("allow-source") {
-		sourcesStr := c.StringSlice("allow-source")
-		sources := make([]livekit.TrackSource, 0, len(sourcesStr))
-		for _, s := range sourcesStr {
-			var source livekit.TrackSource
-			switch s {
-			case "camera":
-				source = livekit.TrackSource_CAMERA
-			case "microphone":
-				source = livekit.TrackSource_MICROPHONE
-			case "screen_share":
-				source = livekit.TrackSource_SCREEN_SHARE
-			case "screen_share_audio":
-				source = livekit.TrackSource_SCREEN_SHARE_AUDIO
-			default:
-				return fmt.Errorf("invalid source: %s", s)
-			}
-			sources = append(sources, source)
+		sources, err := parseAllowSources(c.StringSlice("allow-source"))
+		if err != nil {
+			return err
 		}
 		grant.SetCanPublishSources(sources)
 	}

@@ -139,11 +139,12 @@ var (
 					ArgsUsage: "ROOM_NAME",
 				},
 				{
-					Name:      "join",
-					Usage:     "Joins a room as a participant",
-					UsageText: "lk room join [OPTIONS] ROOM_NAME",
-					Action:    joinRoom,
-					ArgsUsage: "ROOM_NAME",
+					Name:                      "join",
+					Usage:                     "Joins a room as a participant",
+					UsageText:                 "lk room join [OPTIONS] ROOM_NAME",
+					Action:                    joinRoom,
+					ArgsUsage:                 "ROOM_NAME",
+					DisableSliceFlagSeparator: true,
 					Flags: []cli.Flag{
 						optional(identityFlag),
 						optional(roomFlag),

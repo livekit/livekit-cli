@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/livekit/protocol/auth"
+	"github.com/livekit/protocol/livekit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
@@ -104,4 +105,64 @@ func slicesContains(items []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// collectAttributeCommands returns every command in the tree that defines an "attribute" string slice flag.
+func collectAttributeCommands(commands []*cli.Command) []*cli.Command {
+	var found []*cli.Command
+	for _, cmd := range commands {
+		if cmd == nil {
+			continue
+		}
+		for _, flag := range cmd.Flags {
+			if f, ok := flag.(*cli.StringSliceFlag); ok && f.Name == "attribute" {
+				found = append(found, cmd)
+				break
+			}
+		}
+		found = append(found, collectAttributeCommands(cmd.Commands)...)
+	}
+	return found
+}
+
+func TestAttributeFlagKeepsCommasInValues(t *testing.T) {
+	var cmds []*cli.Command
+	cmds = append(cmds, collectAttributeCommands(TokenCommands)...)
+	cmds = append(cmds, collectAttributeCommands(RoomCommands)...)
+	cmds = append(cmds, collectAttributeCommands(PerfCommands)...)
+	require.NotEmpty(t, cmds)
+
+	for _, c := range cmds {
+		t.Run(c.Name, func(t *testing.T) {
+			var got map[string]string
+			var parseErr error
+			// Run the real command's flags and slice separator setting with a stand-in action.
+			cmd := &cli.Command{
+				Name:                      c.Name,
+				Flags:                     c.Flags,
+				DisableSliceFlagSeparator: c.DisableSliceFlagSeparator,
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					got, parseErr = parseKeyValuePairs(cmd, "attribute")
+					return nil
+				},
+			}
+			err := cmd.Run(context.Background(), []string{c.Name, "--attribute", "tags=a,b", "--attribute", "mode=x"})
+			require.NoError(t, err)
+			require.NoError(t, parseErr)
+			assert.Equal(t, map[string]string{"tags": "a,b", "mode": "x"}, got)
+		})
+	}
+}
+
+func TestParseAllowSources(t *testing.T) {
+	sources, err := parseAllowSources([]string{"camera,microphone", "screen_share"})
+	require.NoError(t, err)
+	assert.Equal(t, []livekit.TrackSource{
+		livekit.TrackSource_CAMERA,
+		livekit.TrackSource_MICROPHONE,
+		livekit.TrackSource_SCREEN_SHARE,
+	}, sources)
+
+	_, err = parseAllowSources([]string{"camera,video"})
+	require.Error(t, err)
 }
