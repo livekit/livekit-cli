@@ -112,6 +112,7 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, PhoneNumberCommands...)
 	app.Commands = append(app.Commands, ReplayCommands...)
 	app.Commands = append(app.Commands, PerfCommands...)
+	app.Commands = append(app.Commands, MCPCommands...)
 
 	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
 	ctx, stop := signal.NotifyContext(
@@ -279,7 +280,7 @@ var rootHelpGroups = []struct {
 	{"PROJECTS", []string{"project", "cloud", "app"}},
 	{"ROOMS AND MEDIA", []string{"room", "token", "dispatch", "egress", "ingress"}},
 	{"TELEPHONY", []string{"sip", "number"}},
-	{"TOOLS", []string{"docs", "perf"}},
+	{"TOOLS", []string{"docs", "mcp", "perf"}},
 }
 
 // agentHelpSections groups a command's visible subcommands by Category, in
