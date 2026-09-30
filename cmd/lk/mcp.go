@@ -37,13 +37,16 @@ import (
 	livekitcli "github.com/livekit/livekit-cli/v2"
 )
 
-// Participant actions: the catalog is published in the lk.actions attribute,
-// and each action is served as the RPC method "action:<name>".
+// Participant actions: names and summaries are published in the lk.actions
+// attribute, full entries are served by the describe RPC, and each action is
+// served as the RPC method "action:<name>".
 const (
-	actionsAttribute   = "lk.actions"
-	actionMethodPrefix = "action:"
-	actionDeclinedCode = 1710
-	actionConsentNone  = "none"
+	actionsAttribute      = "lk.actions"
+	actionMethodPrefix    = "action:"
+	actionsDescribeMethod = "lk.actions.describe"
+	actionDeclinedCode    = 1710
+	actionConsentNone     = "none"
+	actionSummaryMaxRunes = 120
 )
 
 var MCPCommands = []*cli.Command{
@@ -57,8 +60,9 @@ var MCPCommands = []*cli.Command{
 				UsageText: "lk mcp bridge --room ROOM [OPTIONS] -- COMMAND [ARGS...]\n" +
 					"lk mcp bridge --room ROOM [OPTIONS] --http URL",
 				Description: "Connects to the MCP server (a COMMAND over stdio, or a Streamable HTTP --http URL), " +
-					"publishes its tools in the " + actionsAttribute + " attribute and serves each one as the RPC method " +
-					actionMethodPrefix + "<tool>. By default only agent participants may call.",
+					"publishes its tool names in the " + actionsAttribute + " attribute, describes them over " +
+					actionsDescribeMethod + " and serves each one as the RPC method " + actionMethodPrefix +
+					"<tool>. By default only agent participants may call.",
 				Action: mcpBridge,
 				Flags: []cli.Flag{
 					roomFlag,
@@ -75,6 +79,11 @@ var MCPCommands = []*cli.Command{
 			},
 		},
 	},
+}
+
+type actionSummary struct {
+	Name    string `json:"name"`
+	Summary string `json:"summary,omitempty"`
 }
 
 type actionEntry struct {
@@ -118,7 +127,7 @@ func mcpBridge(ctx context.Context, cmd *cli.Command) error {
 		identity = "mcp-" + serverName
 	}
 
-	b := &mcpBridgeState{allow: map[string]bool{}, served: map[string]bool{}}
+	b := &mcpBridgeState{allow: map[string]bool{}, entries: map[string]actionEntry{}}
 	for _, id := range cmd.StringSlice("allow") {
 		b.allow[id] = true
 	}
@@ -145,6 +154,9 @@ func mcpBridge(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	defer b.room.Disconnect()
+	if err := b.room.RegisterRpcCtxMethod(actionsDescribeMethod, b.describe); err != nil {
+		return err
+	}
 
 	client := mcp.NewClient(&mcp.Implementation{Name: "lk-mcp-bridge", Version: livekitcli.Version}, &mcp.ClientOptions{
 		ToolListChangedHandler: func(ctx context.Context, req *mcp.ToolListChangedRequest) {
@@ -185,8 +197,8 @@ type mcpBridgeState struct {
 	room  *lksdk.Room
 	allow map[string]bool
 
-	mu     sync.Mutex
-	served map[string]bool
+	mu      sync.Mutex
+	entries map[string]actionEntry
 }
 
 // syncTools publishes the server's current tools and registers an RPC method for each.
@@ -194,50 +206,69 @@ func (b *mcpBridgeState) syncTools(ctx context.Context, session *mcp.ClientSessi
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	var entries []actionEntry
-	current := map[string]bool{}
+	var summaries []actionSummary
+	current := map[string]actionEntry{}
 	for tool, err := range session.Tools(ctx, nil) {
 		if err != nil {
 			return fmt.Errorf("listing MCP tools: %w", err)
 		}
-		entries = append(entries, actionEntry{
+		summaries = append(summaries, actionSummary{Name: tool.Name, Summary: summarize(tool.Description)})
+		current[tool.Name] = actionEntry{
 			Name:        tool.Name,
 			Description: tool.Description,
 			Parameters:  tool.InputSchema,
 			Consent:     actionConsentNone,
-		})
-		current[tool.Name] = true
-		if !b.served[tool.Name] {
+		}
+		if _, ok := b.entries[tool.Name]; !ok {
 			if err := b.room.RegisterRpcCtxMethod(actionMethodPrefix+tool.Name, b.handler(session, tool.Name)); err != nil {
 				return err
 			}
 		}
 	}
-	for name := range b.served {
-		if !current[name] {
+	for name := range b.entries {
+		if _, ok := current[name]; !ok {
 			b.room.UnregisterRpcMethod(actionMethodPrefix + name)
 		}
 	}
-	b.served = current
+	b.entries = current
 
-	catalog, err := json.Marshal(entries)
+	catalog, err := json.Marshal(summaries)
 	if err != nil {
 		return err
 	}
 	b.room.LocalParticipant.SetAttributes(map[string]string{actionsAttribute: string(catalog)})
-	logger.Infow("published actions", "count", len(entries), "bytes", len(catalog))
+	logger.Infow("published actions", "count", len(summaries), "bytes", len(catalog))
 	return nil
+}
+
+func (b *mcpBridgeState) describe(ctx context.Context, payload []byte) ([]byte, error) {
+	if err := b.authorize(ctx, actionsDescribeMethod); err != nil {
+		return nil, err
+	}
+	var req struct {
+		Names []string `json:"names"`
+	}
+	if err := json.Unmarshal(payload, &req); err != nil {
+		return nil, lksdk.NewRpcError(lksdk.RpcApplicationError, `payload must be {"names": [...]}`, nil)
+	}
+
+	b.mu.Lock()
+	res := struct {
+		Actions []actionEntry `json:"actions"`
+	}{Actions: []actionEntry{}}
+	for _, name := range req.Names {
+		if e, ok := b.entries[name]; ok {
+			res.Actions = append(res.Actions, e)
+		}
+	}
+	b.mu.Unlock()
+	return json.Marshal(res)
 }
 
 func (b *mcpBridgeState) handler(session *mcp.ClientSession, tool string) lksdk.RpcHandlerCtxFunc {
 	return func(ctx context.Context, payload []byte) ([]byte, error) {
-		caller := ""
-		if meta := lksdk.RPCMetadataFromContext(ctx); meta != nil {
-			caller = meta.CallerIdentity
-		}
-		if !b.allowed(caller) {
-			logger.Warnw("declining action from unauthorized participant", nil, "caller", caller, "action", tool)
-			return nil, lksdk.NewRpcError(actionDeclinedCode, "caller is not allowed to use this action", nil)
+		if err := b.authorize(ctx, actionMethodPrefix+tool); err != nil {
+			return nil, err
 		}
 
 		var args map[string]any
@@ -257,6 +288,18 @@ func (b *mcpBridgeState) handler(session *mcp.ClientSession, tool string) lksdk.
 	}
 }
 
+func (b *mcpBridgeState) authorize(ctx context.Context, method string) error {
+	caller := ""
+	if meta := lksdk.RPCMetadataFromContext(ctx); meta != nil {
+		caller = meta.CallerIdentity
+	}
+	if b.allowed(caller) {
+		return nil
+	}
+	logger.Warnw("declining call from unauthorized participant", nil, "caller", caller, "method", method)
+	return lksdk.NewRpcError(actionDeclinedCode, "caller is not allowed to use this action", nil)
+}
+
 // A caller's first call can arrive over the data channel before its join
 // reaches us over signalling, so wait briefly for an unknown identity.
 func (b *mcpBridgeState) allowed(identity string) bool {
@@ -271,6 +314,16 @@ func (b *mcpBridgeState) allowed(identity string) bool {
 			return false
 		}
 	}
+}
+
+// summarize returns the first line of an MCP tool description, capped for the catalog attribute.
+func summarize(description string) string {
+	line, _, _ := strings.Cut(strings.TrimSpace(description), "\n")
+	line = strings.TrimSpace(line)
+	if r := []rune(line); len(r) > actionSummaryMaxRunes {
+		return string(r[:actionSummaryMaxRunes-1]) + "…"
+	}
+	return line
 }
 
 // toolResultValue is the action result: structured content when the tool

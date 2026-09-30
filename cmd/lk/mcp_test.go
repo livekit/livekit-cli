@@ -15,11 +15,23 @@
 package main
 
 import (
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSummarize(t *testing.T) {
+	require.Equal(t, "", summarize(""))
+	require.Equal(t, "Read a file.", summarize("  Read a file.\n\nArgs:\n  path: the file\n"))
+
+	long := strings.Repeat("é", actionSummaryMaxRunes+5)
+	got := summarize(long)
+	require.Equal(t, actionSummaryMaxRunes, utf8.RuneCountInString(got))
+	require.True(t, strings.HasSuffix(got, "…"))
+}
 
 func TestToolResultValue(t *testing.T) {
 	text := func(s string) mcp.Content { return &mcp.TextContent{Text: s} }
