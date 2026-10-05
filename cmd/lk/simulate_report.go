@@ -277,6 +277,9 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.S
 		fmt.Fprintln(w, "Issues:")
 		for i, issue := range summary.Issues {
 			fmt.Fprintf(w, "  %d. %s\n", i+1, stripSummaryRefs(issue.Description))
+			if seen := issueRecurrence(issue); seen != "" {
+				fmt.Fprintf(w, "     %s\n", seen)
+			}
 			if issue.Suggestion != "" {
 				fmt.Fprintf(w, "     Suggestion: %s\n", stripSummaryRefs(issue.Suggestion))
 			}
@@ -284,6 +287,19 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.S
 	}
 
 	fmt.Fprintln(w, "::endgroup::")
+}
+
+// issueRecurrence says whether the project's earlier runs reported issue too.
+// Empty for runs summarized before issues were tracked.
+func issueRecurrence(issue *livekit.SimulationRunSummary_Issue) string {
+	switch {
+	case issue.Id == "":
+		return ""
+	case issue.RunCount <= 1:
+		return "New issue"
+	default:
+		return fmt.Sprintf("Seen in %d runs", issue.RunCount)
+	}
 }
 
 func writeChatHistory(w io.Writer, chatCtx *agent.ChatContext) {

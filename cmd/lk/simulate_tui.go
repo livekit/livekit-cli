@@ -2035,6 +2035,9 @@ func (m *simulateModel) renderSummary() string {
 					b.WriteString(strings.Repeat(" ", len(prefix)) + line + "\n")
 				}
 			}
+			if seen := issueRecurrence(issue); seen != "" {
+				b.WriteString(dimStyle.Render(strings.Repeat(" ", len(prefix))+seen) + "\n")
+			}
 			if issue.Suggestion != "" {
 				sugWrapped := lipgloss.NewStyle().Width(issueWrap).Render("Suggestion: " + link(issue.Suggestion))
 				for line := range strings.SplitSeq(sugWrapped, "\n") {
