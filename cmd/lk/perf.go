@@ -110,6 +110,10 @@ var (
 							Usage: "`TIME` duration to run, 1m, 1h (by default will run until canceled)",
 							Value: 0,
 						},
+						&cli.BoolFlag{
+							Name:  "parallel",
+							Usage: "start all rooms at once instead of waiting for each agent to join before starting the next room",
+						},
 						&cli.StringSliceFlag{
 							Name:  "attribute",
 							Usage: "set attributes in key=value format, can be used multiple times",
@@ -283,6 +287,7 @@ func agentLoadTest(ctx context.Context, cmd *cli.Command) error {
 		AgentName:             cmd.String("agent-name"),
 		EchoSpeechDelay:       cmd.Duration("echo-speech-delay"),
 		Duration:              cmd.Duration("duration"),
+		Parallel:              cmd.Bool("parallel"),
 		ParticipantAttributes: participantAttributes,
 	}
 

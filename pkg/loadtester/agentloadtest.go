@@ -25,6 +25,7 @@ type AgentLoadTestParams struct {
 	AgentName       string
 	EchoSpeechDelay time.Duration
 	Duration        time.Duration
+	Parallel        bool
 	URL             string
 	APIKey          string
 	APISecret       string
