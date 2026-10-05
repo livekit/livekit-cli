@@ -25,8 +25,8 @@ func sampleJob(id, scenario string, sample int32, status livekit.SimulationRun_J
 	return &livekit.SimulationRun_Job{Id: id, ScenarioId: scenario, Sample: sample, Status: status}
 }
 
-func sampling(k int32, rate float64) *livekit.SimulationRun_Sampling {
-	return &livekit.SimulationRun_Sampling{Samples: k, PassRate: rate}
+func sampling(k int32, rate float64) *livekit.SimulationRun_SamplingOptions {
+	return &livekit.SimulationRun_SamplingOptions{Samples: k, PassRate: rate}
 }
 
 func TestScenarioPassCounts(t *testing.T) {

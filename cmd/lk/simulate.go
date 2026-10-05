@@ -788,7 +788,7 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 	if c.mode == modeScenarios {
 		req.ScenarioGroup = c.scenarioGroup
 		if c.samples > 1 {
-			req.Sampling = &livekit.SimulationRun_Sampling{Samples: c.samples, PassRate: c.passRate}
+			req.Sampling = &livekit.SimulationRun_SamplingOptions{Samples: c.samples, PassRate: c.passRate}
 		}
 	}
 
