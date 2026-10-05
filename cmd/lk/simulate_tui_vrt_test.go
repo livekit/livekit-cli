@@ -194,7 +194,7 @@ func TestVRTSimulateFrames(t *testing.T) {
 		}},
 		{"simulate_detail_live", func() *simulateModel {
 			m := runningFixture()
-			m.detailJobID = "SRJ_aaaaaaaa"
+			m.detailID = "SRJ_aaaaaaaa"
 			m.detailWidth = m.width
 			return m
 		}},
