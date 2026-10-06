@@ -27,6 +27,7 @@ import (
 	"time"
 
 	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
@@ -478,7 +479,10 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	sessions, nextCursor, err := client.ListProjectSessions(ctx, projectID, limit, cmd.String("cursor"))
+	sessions, nextCursor, err := client.ListProjectSessions(ctx, projectID, public.SessionListOptions{
+		Limit:  limit,
+		Cursor: cmd.String("cursor"),
+	})
 	if err != nil {
 		return cloudAPIError(err)
 	}

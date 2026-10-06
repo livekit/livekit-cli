@@ -16,22 +16,110 @@ package public
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
-// ListProjectSessions returns one page of a project's analytics sessions. limit
-// caps the page size (0 lets the server choose its default) and cursor requests a
-// specific page (empty starts from the beginning). The operation is
-// cursor-paginated; the returned nextCursor is non-empty when more pages remain
-// (pass it back as cursor to fetch the next page).
-func (c *Client) ListProjectSessions(ctx context.Context, projectID string, limit int32, cursor string) (sessions []oapi.LivekitPublicapiAnalyticsV1Session, nextCursor string, err error) {
-	params := &oapi.AnalyticsServiceListProjectSessionsParams{}
-	if limit > 0 {
-		params.PagePageSize = ptr(limit)
+// SessionListOptions narrows and orders one page of ListProjectSessions. Zero
+// values keep the server's defaults: sessions started in the last 24 hours, any
+// status, newest first.
+type SessionListOptions struct {
+	// Limit caps the page size; 0 lets the server choose. The server caps pages
+	// at 100.
+	Limit int32
+	// Cursor requests a specific page; empty starts from the beginning.
+	Cursor string
+	// Start and End bound when a session started, as the half-open window
+	// [Start, End). A zero value leaves that side to the server.
+	Start, End time.Time
+	// Statuses keeps sessions in any of these states: "active" or "closed".
+	Statuses []string
+	// RoomPrefix keeps sessions whose room name starts with it (case-sensitive).
+	RoomPrefix string
+	// Tags keeps sessions carrying any of these tags.
+	Tags []string
+	// SortOrder orders by start time: "asc" or "desc" (the server's default).
+	SortOrder string
+}
+
+// parseSessionStatus maps a friendly status name to the wire enum.
+func parseSessionStatus(s string) (oapi.LivekitPublicapiAnalyticsV1SessionStatus, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "active":
+		return oapi.SESSIONSTATUSACTIVE, nil
+	case "closed":
+		return oapi.SESSIONSTATUSCLOSED, nil
+	default:
+		return "", fmt.Errorf("invalid session status %q (expected \"active\" or \"closed\")", s)
 	}
-	if cursor != "" {
-		params.PageCursor = ptr(cursor)
+}
+
+// parseSortOrder maps a friendly sort order name to the wire enum.
+func parseSortOrder(s string) (oapi.LivekitPublicapiCommonV1SortOrder, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "asc":
+		return oapi.SORTORDERASC, nil
+	case "desc":
+		return oapi.SORTORDERDESC, nil
+	default:
+		return "", fmt.Errorf("invalid sort order %q (expected \"asc\" or \"desc\")", s)
+	}
+}
+
+// listProjectSessionsParams translates opts into the generated query params,
+// rejecting unknown status or sort order names before any request is sent.
+func listProjectSessionsParams(opts SessionListOptions) (*oapi.AnalyticsServiceListProjectSessionsParams, error) {
+	params := &oapi.AnalyticsServiceListProjectSessionsParams{}
+	if opts.Limit > 0 {
+		params.PagePageSize = ptr(opts.Limit)
+	}
+	if opts.Cursor != "" {
+		params.PageCursor = ptr(opts.Cursor)
+	}
+	if !opts.Start.IsZero() {
+		params.FilterRangeStartTime = ptr(opts.Start)
+	}
+	if !opts.End.IsZero() {
+		params.FilterRangeEndTime = ptr(opts.End)
+	}
+	if len(opts.Statuses) > 0 {
+		statuses := make([]oapi.LivekitPublicapiAnalyticsV1SessionStatus, 0, len(opts.Statuses))
+		for _, name := range opts.Statuses {
+			status, err := parseSessionStatus(name)
+			if err != nil {
+				return nil, err
+			}
+			statuses = append(statuses, status)
+		}
+		params.FilterStatuses = &statuses
+	}
+	if opts.RoomPrefix != "" {
+		params.FilterRoomName = ptr(opts.RoomPrefix)
+	}
+	if len(opts.Tags) > 0 {
+		params.FilterTags = ptr(opts.Tags)
+	}
+	if opts.SortOrder != "" {
+		order, err := parseSortOrder(opts.SortOrder)
+		if err != nil {
+			return nil, err
+		}
+		params.SortOrder = &order
+	}
+	return params, nil
+}
+
+// ListProjectSessions returns one page of a project's analytics sessions,
+// narrowed and ordered by opts. The operation is cursor-paginated; the returned
+// nextCursor is non-empty when more pages remain (pass it back as opts.Cursor to
+// fetch the next page).
+func (c *Client) ListProjectSessions(ctx context.Context, projectID string, opts SessionListOptions) (sessions []oapi.LivekitPublicapiAnalyticsV1Session, nextCursor string, err error) {
+	params, err := listProjectSessionsParams(opts)
+	if err != nil {
+		return nil, "", err
 	}
 	resp, err := c.gen.AnalyticsServiceListProjectSessionsWithResponse(ctx, projectID, params)
 	if err != nil {
@@ -40,10 +128,7 @@ func (c *Client) ListProjectSessions(ctx context.Context, projectID string, limi
 	if resp.JSON200 == nil {
 		return nil, "", responseError(resp.StatusCode(), resp.Body)
 	}
-	if pi := resp.JSON200.PageInfo; pi != nil && pi.NextCursor != nil {
-		nextCursor = *pi.NextCursor
-	}
-	return items(resp.JSON200.Items), nextCursor, nil
+	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
 }
 
 // GetSession returns a single analytics session by id.
