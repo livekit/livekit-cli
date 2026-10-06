@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
@@ -155,4 +156,163 @@ func TestResolveAnalyticsProjectID(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "selected project [staging] is missing project_id")
 	assert.Contains(t, err.Error(), "Select a cloud project via --project or run `lk cloud auth`")
+}
+
+// sessionListCmdOptions runs sessionListOptions with the given arguments. It
+// declares its own flags: urfave/cli records parse state on the flag values, so
+// reusing the real command's flags would leak between runs.
+func sessionListCmdOptions(t *testing.T, args ...string) (public.SessionListOptions, error) {
+	t.Helper()
+	var opts public.SessionListOptions
+	var optsErr error
+	cmd := &cli.Command{
+		Name: "list",
+		Flags: []cli.Flag{
+			&cli.IntFlag{Name: "limit", Value: defaultAnalyticsLimit},
+			&cli.StringFlag{Name: "start"},
+			&cli.StringFlag{Name: "end"},
+			&cli.StringFlag{Name: "cursor"},
+			&cli.StringSliceFlag{Name: "status"},
+			&cli.StringFlag{Name: "room"},
+			&cli.StringSliceFlag{Name: "tag"},
+			&cli.StringFlag{Name: "sort-order"},
+		},
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			opts, optsErr = sessionListOptions(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"list"}, args...)))
+	return opts, optsErr
+}
+
+func TestSessionListOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    public.SessionListOptions
+		wantErr string
+	}{
+		{
+			name: "defaults",
+			want: public.SessionListOptions{Limit: defaultAnalyticsLimit, Statuses: []string{}, Tags: []string{}},
+		},
+		{
+			name: "dates are UTC midnight, end exclusive",
+			args: []string{"--start", "2026-10-01", "--end", "2026-10-03"},
+			want: public.SessionListOptions{
+				Limit:    defaultAnalyticsLimit,
+				Start:    time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC),
+				End:      time.Date(2026, 10, 3, 0, 0, 0, 0, time.UTC),
+				Statuses: []string{},
+				Tags:     []string{},
+			},
+		},
+		{
+			name: "filters and sort",
+			args: []string{
+				"--limit", "25", "--cursor", "abc",
+				"--status", "active", "--status", "closed",
+				"--room", "demo-", "--tag", "a", "--tag", "b",
+				"--sort-order", "asc",
+			},
+			want: public.SessionListOptions{
+				Limit:      25,
+				Cursor:     "abc",
+				Statuses:   []string{"active", "closed"},
+				RoomPrefix: "demo-",
+				Tags:       []string{"a", "b"},
+				SortOrder:  "asc",
+			},
+		},
+		{
+			name:    "equal dates are an empty window",
+			args:    []string{"--start", "2026-10-01", "--end", "2026-10-01"},
+			wantErr: "start date must be before end date",
+		},
+		{
+			name:    "start after end",
+			args:    []string{"--start", "2026-10-02", "--end", "2026-10-01"},
+			wantErr: "start date must be less than or equal to end date",
+		},
+		{
+			name:    "bad date",
+			args:    []string{"--start", "10/01/2026"},
+			wantErr: "invalid start date",
+		},
+		{
+			name:    "non-positive limit",
+			args:    []string{"--limit", "0"},
+			wantErr: "limit must be greater than 0",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := sessionListCmdOptions(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// validateListModeFlags runs analyticsListModeFlags.validate on a fresh command
+// carrying the list's mode-specific flags and the --experimental-auth selector.
+func validateListModeFlags(t *testing.T, args ...string) error {
+	t.Helper()
+	var validateErr error
+	cmd := &cli.Command{
+		Name: "list",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{Name: "experimental-auth"},
+			&cli.IntFlag{Name: "page"},
+			&cli.StringFlag{Name: "start"},
+			&cli.StringFlag{Name: "end"},
+			&cli.StringFlag{Name: "cursor"},
+			&cli.StringSliceFlag{Name: "status"},
+			&cli.StringFlag{Name: "room"},
+			&cli.StringSliceFlag{Name: "tag"},
+			&cli.StringFlag{Name: "sort-order"},
+		},
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			validateErr = analyticsListModeFlags.validate(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"list"}, args...)))
+	return validateErr
+}
+
+func TestAnalyticsListModeFlags(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{name: "dates in API-key mode", args: []string{"--start", "2026-10-01", "--end", "2026-10-03"}},
+		{name: "dates in user session mode", args: []string{"--experimental-auth", "--start", "2026-10-01", "--end", "2026-10-03"}},
+		{
+			name: "filters in user session mode",
+			args: []string{"--experimental-auth", "--cursor", "abc", "--status", "active", "--room", "demo-", "--tag", "a", "--sort-order", "asc"},
+		},
+		{name: "page in user session mode", args: []string{"--experimental-auth", "--page", "1"}, wantErr: "--page is not supported with --experimental-auth"},
+		{name: "cursor in API-key mode", args: []string{"--cursor", "abc"}, wantErr: "--cursor is only supported with --experimental-auth"},
+		{name: "status in API-key mode", args: []string{"--status", "active"}, wantErr: "--status is only supported with --experimental-auth"},
+		{name: "room in API-key mode", args: []string{"--room", "demo-"}, wantErr: "--room is only supported with --experimental-auth"},
+		{name: "tag in API-key mode", args: []string{"--tag", "a"}, wantErr: "--tag is only supported with --experimental-auth"},
+		{name: "sort order in API-key mode", args: []string{"--sort-order", "asc"}, wantErr: "--sort-order is only supported with --experimental-auth"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateListModeFlags(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }
