@@ -360,6 +360,9 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 			AgentExpectations: s.GetAgentExpectations(),
 			Tags:              s.GetTags(),
 		}
+		if l := s.GetLanguage(); l != nil {
+			ys.Language = yamlLanguage{Speak: l.GetSpeak(), Listen: l.GetListen()}
+		}
 		if s.GetUserdata() != "" {
 			var ud map[string]any
 			if err := json.Unmarshal([]byte(s.GetUserdata()), &ud); err != nil {
@@ -373,9 +376,11 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 }
 
 // scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
-// and JSON-encoded into the proto's string field.
+// and JSON-encoded into the proto's string field. The file-level `language` is
+// the default each scenario's own `language` overrides key by key.
 type scenariosFile struct {
 	Name      string         `yaml:"name"`
+	Language  yamlLanguage   `yaml:"language,omitempty"`
 	Scenarios []yamlScenario `yaml:"scenarios"`
 }
 
@@ -385,6 +390,53 @@ type yamlScenario struct {
 	AgentExpectations string            `yaml:"agent_expectations"`
 	Tags              map[string]string `yaml:"tags"`
 	Userdata          map[string]any    `yaml:"userdata"`
+	Language          yamlLanguage      `yaml:"language,omitempty"`
+}
+
+// yamlLanguage is Scenario.Language in scenarios.yaml: a bare tag sets both
+// speak and listen; a mapping sets only the keys it names.
+type yamlLanguage struct {
+	Speak  string `yaml:"speak,omitempty"`
+	Listen string `yaml:"listen,omitempty"`
+}
+
+func (l *yamlLanguage) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.ScalarNode {
+		var tag string
+		if err := node.Decode(&tag); err != nil {
+			return err
+		}
+		*l = yamlLanguage{Speak: tag, Listen: tag}
+		return nil
+	}
+	type plain yamlLanguage
+	return node.Decode((*plain)(l))
+}
+
+func (l yamlLanguage) MarshalYAML() (any, error) {
+	if l.Listen == "" || l.Listen == l.Speak {
+		return l.Speak, nil
+	}
+	type plain yamlLanguage
+	return plain(l), nil
+}
+
+// or fills each empty key from def.
+func (l yamlLanguage) or(def yamlLanguage) yamlLanguage {
+	if l.Speak == "" {
+		l.Speak = def.Speak
+	}
+	if l.Listen == "" {
+		l.Listen = def.Listen
+	}
+	return l
+}
+
+func (l yamlLanguage) proto() *livekit.Scenario_Language {
+	if l == (yamlLanguage{}) {
+		return nil
+	}
+	return &livekit.Scenario_Language{Speak: l.Speak, Listen: l.Listen}
 }
 
 type simulateConfig struct {
@@ -461,6 +513,7 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			AgentExpectations: s.AgentExpectations,
 			Tags:              s.Tags,
 			Userdata:          userdata,
+			Language:          s.Language.or(f.Language).proto(),
 		})
 	}
 	return group, nil
