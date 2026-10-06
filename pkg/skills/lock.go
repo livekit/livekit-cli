@@ -114,9 +114,14 @@ func (l *Lock) Get(name string) (*LockEntry, bool) {
 }
 
 // LiveKitSkills lists the names of entries installed from LiveKit's repo.
+// Names are joined into paths that get deleted, so only valid skill names are
+// returned: a lock file comes from whatever repo was cloned.
 func (l *Lock) LiveKitSkills() []string {
 	var names []string
 	for name := range l.skills {
+		if !validName.MatchString(name) {
+			continue
+		}
 		if e, ok := l.Get(name); ok && e.FromLiveKit() {
 			names = append(names, name)
 		}
