@@ -275,6 +275,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Flags: []cli.Flag{
 						regionFlag,
 						installFlag,
+						skillsSetupFlag,
 					},
 					ArgsUsage:                 "[AGENT-NAME]",
 					DisableSliceFlagSeparator: true,
@@ -634,7 +635,13 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 	if shouldDeploy {
 		cmd.Set("install", "true")
 	}
-	if err := setupTemplate(ctx, cmd); err != nil {
+	if err := setupTemplateWith(ctx, cmd, func(ctx context.Context, cmd *cli.Command, dir string) error {
+		// Best-effort, like dependency install: the project is still usable.
+		if err := setupProjectSkills(ctx, cmd, dir); err != nil {
+			out.Warnf("Couldn't install coding agent skills: %v\nRun %s in ./%s to try again.", err, "lk skills install", dir)
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 	// Deploy if requested

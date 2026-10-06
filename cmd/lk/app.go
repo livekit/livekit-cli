@@ -276,6 +276,12 @@ func listTemplates(ctx context.Context, cmd *cli.Command) error {
 }
 
 func setupTemplate(ctx context.Context, cmd *cli.Command) error {
+	return setupTemplateWith(ctx, cmd, nil)
+}
+
+// setupTemplateWith is setupTemplate with a step that runs after dependencies
+// are installed, before the template's post-create output.
+func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(ctx context.Context, cmd *cli.Command, dir string) error) error {
 	verbose := cmd.Bool("verbose")
 	install := cmd.Bool("install")
 	isSandbox := sandboxID != ""
@@ -466,6 +472,11 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 			// Signal a successful install to post_create so the template can skip
 			// printing the now-redundant install hint (guarded via `status:`).
 			os.Setenv("LIVEKIT_DEPS_INSTALLED", "1")
+		}
+	}
+	if afterInstall != nil {
+		if err := afterInstall(ctx, cmd, appName); err != nil {
+			return err
 		}
 	}
 	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
