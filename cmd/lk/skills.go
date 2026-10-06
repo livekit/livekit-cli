@@ -137,13 +137,14 @@ are replaced once you confirm.`,
 					Description: `Removes every LiveKit skill, or just the ones named, from all agents'
 skills directories (or only those of --agent). MCP config is left as is.
 
-Skills you've edited locally are kept unless you pass --force.`,
+Skills you've edited locally, and LiveKit skills lk didn't install, are kept
+unless you pass --force.`,
 					Flags: []cli.Flag{
 						skillsAgentFlag,
 						skillsGlobalFlag,
 						&cli.BoolFlag{
 							Name:  "force",
-							Usage: "Also remove skills you've edited locally",
+							Usage: "Also remove skills you've edited, and LiveKit skills lk didn't install",
 						},
 						jsonFlag,
 					},
@@ -420,7 +421,7 @@ func (s *skillsSession) printResults(results []skillResult, skipHint string) {
 		out.Statusf("%s %s %s", verb, util.Accented(g.skill), util.Dimmed(arrow+strings.Join(g.dirs, ", ")))
 	}
 	if len(skipped) > 0 {
-		out.Warnf("Left skills you've edited alone (pass --force to %s them): %s", skipHint, strings.Join(skipped, ", "))
+		out.Warnf("Left skills that may have local edits alone (pass --force to %s them): %s", skipHint, strings.Join(skipped, ", "))
 	}
 }
 
@@ -845,8 +846,10 @@ func skillsRemove(ctx context.Context, cmd *cli.Command) error {
 	for _, c := range copies {
 		switch {
 		case c.State == skills.StateMissing:
-		case c.State == skills.StateModified && !force:
-			// Deleting edits can't be undone; treat them as update does.
+		case (c.State == skills.StateModified || c.State == skills.StateUntracked) && !force:
+			// Deleting edits can't be undone. Untracked copies may be edited
+			// too (or the user's own, built from LiveKit's), so they're kept
+			// the same way.
 			results = append(results, skillResult{
 				Skill: c.Skill, Path: s.display(c.Path()), Agents: agentIDs(c.Dir.Agents), Action: "skipped",
 			})

@@ -239,3 +239,22 @@ func TestSkillsRemoveKeepsEditedSkills(t *testing.T) {
 	assert.NoDirExists(t, filepath.Join(root, ".claude/skills/alpha"))
 	assert.NoFileExists(t, filepath.Join(root, "skills-lock.json"))
 }
+
+func TestSkillsRemoveKeepsUntrackedSkills(t *testing.T) {
+	root := t.TempDir()
+	setHome(t, t.TempDir())
+	t.Setenv("PATH", t.TempDir())
+	t.Chdir(root)
+	writeTemplateSkill(t, root, "livekit-agents")
+	run := func(args ...string) {
+		t.Helper()
+		app := &cli.Command{Name: "lk", Flags: globalFlags, Commands: SkillsCommands, Writer: &bytes.Buffer{}, ErrWriter: &bytes.Buffer{}}
+		require.NoError(t, app.Run(context.Background(), append([]string{"lk"}, args...)))
+	}
+
+	run("skills", "remove", "-y")
+	assert.DirExists(t, filepath.Join(root, ".claude/skills/livekit-agents"))
+	run("skills", "remove", "-y", "--force")
+	assert.NoDirExists(t, filepath.Join(root, ".claude/skills/livekit-agents"))
+	assert.NoDirExists(t, filepath.Join(root, ".agents/skills/livekit-agents"))
+}

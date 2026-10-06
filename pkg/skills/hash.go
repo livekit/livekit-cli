@@ -114,6 +114,16 @@ func gitObject(kind string, data []byte) []byte {
 	return h.Sum(nil)
 }
 
+// osMetadataFile reports files the OS drops into folders on its own (Finder,
+// Explorer), which would otherwise make an untouched skill look edited.
+func osMetadataFile(name string) bool {
+	switch name {
+	case ".DS_Store", "Thumbs.db", "desktop.ini":
+		return true
+	}
+	return strings.HasPrefix(name, "._") // macOS AppleDouble files
+}
+
 // readDir loads an installed skill directory from disk. dir itself may be a
 // symlink (the `skills` CLI links agent directories to .agents/skills); .git
 // and node_modules are skipped, as the `skills` CLI does when hashing.
@@ -136,7 +146,7 @@ func readDir(dir string, modes []File) ([]File, error) {
 			}
 			return nil
 		}
-		if !d.Type().IsRegular() {
+		if !d.Type().IsRegular() || osMetadataFile(d.Name()) {
 			return nil
 		}
 		rel, err := filepath.Rel(root, p)

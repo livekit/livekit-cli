@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -91,6 +92,12 @@ func LoadLock(env *Env, scope Scope) (*Lock, error) {
 	}
 	if err := json.Unmarshal(data, &l.top); err != nil {
 		return nil, fmt.Errorf("%s is not valid JSON: %w", l.Path, err)
+	}
+	// A newer format may mean something different by the fields lk writes;
+	// rewriting it would corrupt it while claiming the newer version.
+	var version int
+	if raw, ok := l.top["version"]; ok && json.Unmarshal(raw, &version) == nil && version > l.version() {
+		return nil, fmt.Errorf("%s uses lock file version %d, newer than this lk supports (%d); upgrade lk", l.Path, version, l.version())
 	}
 	if raw, ok := l.top["skills"]; ok {
 		if err := json.Unmarshal(raw, &l.skills); err != nil {
@@ -165,23 +172,56 @@ func (l *Lock) Record(s *Skill, ref string, now time.Time) {
 		e.ComputedHash = ContentHash(s.Files)
 	}
 	raw, _ := json.Marshal(e)
-	l.skills[s.Name] = raw
+	l.skills[s.Name] = l.merge(s.Name, raw)
+}
+
+// lockEntryFields are the fields Record owns; any others on an existing entry
+// were added by another tool and are kept.
+var lockEntryFields = []string{
+	"source", "sourceType", "sourceUrl", "ref", "skillPath",
+	"computedHash", "skillFolderHash", "installedAt", "updatedAt",
+}
+
+// merge overlays entry onto the existing entry for name, if that one also came
+// from LiveKit's repo. Fields from another source describe something else and
+// are dropped.
+func (l *Lock) merge(name string, entry json.RawMessage) json.RawMessage {
+	prev, ok := l.Get(name)
+	if !ok || !prev.FromLiveKit() {
+		return entry
+	}
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(l.skills[name], &fields) != nil {
+		return entry
+	}
+	for _, k := range lockEntryFields {
+		delete(fields, k)
+	}
+	var ours map[string]json.RawMessage
+	_ = json.Unmarshal(entry, &ours)
+	maps.Copy(fields, ours)
+	merged, err := json.Marshal(fields)
+	if err != nil {
+		return entry
+	}
+	return merged
 }
 
 // Remove drops the entry for name.
 func (l *Lock) Remove(name string) { delete(l.skills, name) }
 
+// version is the lock format lk reads and writes for the scope.
+func (l *Lock) version() int {
+	if l.scope == ScopeGlobal {
+		return globalLockVersion
+	}
+	return projectLockVersion
+}
+
 // Save writes the lock file, or deletes a project lock that has become empty
 // and was only ever lk's.
 func (l *Lock) Save() error {
-	version := projectLockVersion
-	if l.scope == ScopeGlobal {
-		version = globalLockVersion
-	}
-	var existing int
-	if raw, ok := l.top["version"]; ok && json.Unmarshal(raw, &existing) == nil && existing > version {
-		version = existing
-	}
+	version := l.version()
 	if l.scope == ScopeProject && len(l.skills) == 0 && len(l.top) <= 2 {
 		if err := os.Remove(l.Path); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err

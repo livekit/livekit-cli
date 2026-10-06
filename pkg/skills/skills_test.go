@@ -163,6 +163,10 @@ func TestReadDirRoundTrip(t *testing.T) {
 		require.NoError(t, os.MkdirAll(filepath.Dir(p), 0o755))
 		require.NoError(t, os.WriteFile(p, f.Data, os.FileMode(f.Mode)))
 	}
+	// Files Finder and Explorer leave behind don't count as edits.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".DS_Store"), []byte("x"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "references", "._A.md"), []byte("x"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "Thumbs.db"), []byte("x"), 0o644))
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ".git", "HEAD"), []byte("x"), 0o644))
 	link := filepath.Join(t.TempDir(), "link")
@@ -441,4 +445,37 @@ func TestFetch(t *testing.T) {
 
 	_, err = Fetch(context.Background(), srv.Client(), "nope")
 	require.ErrorContains(t, err, `ref "nope" not found`)
+}
+
+func TestLoadLockRejectsNewerVersion(t *testing.T) {
+	env := testEnv(t)
+	require.NoError(t, os.WriteFile(filepath.Join(env.Root, "skills-lock.json"), []byte(`{"version":2,"skills":{}}`), 0o644))
+	_, err := LoadLock(env, ScopeProject)
+	require.ErrorContains(t, err, "lock file version 2, newer than this lk supports (1)")
+}
+
+func TestLockRecordKeepsOtherToolsFields(t *testing.T) {
+	env := testEnv(t)
+	path := filepath.Join(env.Home, ".agents", ".skill-lock.json")
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(`{"version":3,"skills":{
+		"alpha":{"source":"livekit/agent-skills","sourceType":"github","skillFolderHash":"old","installedAt":"2026-01-01T00:00:00Z","pluginName":"livekit"},
+		"beta":{"source":"acme/skills","sourceType":"github","skillFolderHash":"x","pluginName":"acme"}}}`), 0o644))
+
+	lock, err := LoadLock(env, ScopeGlobal)
+	require.NoError(t, err)
+	b := bundle(t, "c1", map[string]string{"alpha": "1.0.0", "beta": "1.0.0"})
+	lock.Record(b.Find("alpha"), DefaultRef, timeNow())
+	lock.Record(b.Find("beta"), DefaultRef, timeNow())
+
+	var alpha, beta map[string]any
+	require.NoError(t, json.Unmarshal(lock.skills["alpha"], &alpha))
+	require.NoError(t, json.Unmarshal(lock.skills["beta"], &beta))
+	// Same source: other tools' fields survive, lk's are replaced.
+	assert.Equal(t, "livekit", alpha["pluginName"])
+	assert.Equal(t, "2026-01-01T00:00:00Z", alpha["installedAt"])
+	assert.Equal(t, TreeHash(b.Find("alpha").Files), alpha["skillFolderHash"])
+	// A different source's fields don't describe LiveKit's skill.
+	assert.NotContains(t, beta, "pluginName")
+	assert.Equal(t, SourceRepo, beta["source"])
 }
