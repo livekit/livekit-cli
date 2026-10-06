@@ -15,11 +15,9 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strings"
-	"unicode/utf8"
 
 	"charm.land/huh/v2"
 	"github.com/urfave/cli/v3"
@@ -107,20 +105,7 @@ func insertScenarioIDs(data []byte) ([]byte, int, error) {
 	if len(edits) == 0 {
 		return nil, 0, nil
 	}
-	// edits are collected in document order; applying them back to front
-	// keeps every earlier offset valid
-	out := bytes.Clone(data)
-	for i := len(edits) - 1; i >= 0; i-- {
-		e := edits[i]
-		out = append(out[:e.offset:e.offset], append([]byte(e.text), out[e.offset+e.remove:]...)...)
-	}
-	return out, len(edits), nil
-}
-
-// yamlEdit replaces `remove` bytes at `offset` with `text`.
-type yamlEdit struct {
-	offset, remove int
-	text           string
+	return applyYAMLEdits(data, edits), len(edits), nil
 }
 
 // missingIDEdit returns the edit that gives mapping m an id: filling an empty
@@ -154,43 +139,4 @@ func missingIDEdit(src yamlSource, m *yaml.Node, prefix string) (yamlEdit, bool)
 	}
 	indent := strings.Repeat(" ", first.Column-1)
 	return yamlEdit{offset: off, text: "id: " + id + src.newline + indent}, true
-}
-
-// yamlSource maps yaml.v3's 1-based line and rune column positions to byte
-// offsets in the original document.
-type yamlSource struct {
-	data       []byte
-	lineStarts []int
-	newline    string
-}
-
-func newYAMLSource(data []byte) yamlSource {
-	src := yamlSource{data: data, lineStarts: []int{0}, newline: "\n"}
-	for i, b := range data {
-		if b == '\n' {
-			src.lineStarts = append(src.lineStarts, i+1)
-		}
-	}
-	if bytes.Contains(data, []byte("\r\n")) {
-		src.newline = "\r\n"
-	}
-	return src
-}
-
-func (s yamlSource) offset(line, column int) int {
-	off := s.lineStarts[line-1]
-	for range column - 1 {
-		_, size := utf8.DecodeRune(s.data[off:])
-		off += size
-	}
-	return off
-}
-
-func mappingValue(m *yaml.Node, key string) *yaml.Node {
-	for i := 0; i+1 < len(m.Content); i += 2 {
-		if m.Content[i].Value == key {
-			return m.Content[i+1]
-		}
-	}
-	return nil
 }
