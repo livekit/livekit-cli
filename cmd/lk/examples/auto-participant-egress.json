@@ -1,0 +1,14 @@
+{
+  "preset": "H264_720P_30",
+  "file_outputs": [
+    {
+      "filepath": "{room_name}/{publisher_identity}-{time}.mp4",
+      "s3": {
+        "access_key": "aws-access-key",
+        "secret": "aws-access-secret",
+        "region": "aws-region",
+        "bucket": "my-bucket"
+      }
+    }
+  ]
+}

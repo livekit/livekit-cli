@@ -68,6 +68,7 @@ var (
 							Name:  "sip-dispatch-rule-id",
 							Usage: "SIP dispatch rule ID to apply to all purchased numbers",
 						},
+						jsonFlag,
 					},
 				},
 				{
@@ -109,6 +110,7 @@ var (
 							Name:  "number",
 							Usage: "Use phone number string for lookup",
 						},
+						jsonFlag,
 					},
 					ArgsUsage: "Either --id or --number must be provided",
 				},
@@ -129,6 +131,7 @@ var (
 							Name:  "sip-dispatch-rule-id",
 							Usage: "SIP dispatch rule ID to assign to the phone number",
 						},
+						jsonFlag,
 					},
 					ArgsUsage: "Either --id or --number must be provided",
 				},

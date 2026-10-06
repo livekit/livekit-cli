@@ -250,7 +250,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	name := c.String("name")
 	metadata := c.String("metadata")
 	validFor := c.String("valid-for")
-	roomPreset := c.String("room-preset")
+	roomPreset := c.String("room-configuration")
 	participantAttributes, err := parseKeyValuePairs(c, "attribute")
 	if err != nil {
 		return fmt.Errorf("failed to parse participant attributes: %w", err)

@@ -37,6 +37,7 @@ var (
 					Usage:     "List all agent dispatches in a room",
 					Before:    createDispatchClient,
 					Action:    listAgentDispatches,
+					Flags:     []cli.Flag{jsonFlag},
 					ArgsUsage: "ROOM_NAME",
 				},
 				{
@@ -44,6 +45,7 @@ var (
 					Usage:     "Get an agent dispatch by room and ID",
 					Before:    createDispatchClient,
 					Action:    getAgentDispatch,
+					Flags:     []cli.Flag{jsonFlag},
 					ArgsUsage: "ROOM_NAME ID",
 				},
 				{
@@ -73,6 +75,7 @@ var (
 							Name:  "metadata",
 							Usage: "metadata to send to agent",
 						},
+						jsonFlag,
 					},
 				},
 				{
@@ -80,6 +83,7 @@ var (
 					Usage:     "Delete an agent dispatch",
 					Before:    createDispatchClient,
 					Action:    deleteAgentDispatch,
+					Flags:     []cli.Flag{jsonFlag},
 					ArgsUsage: "ROOM_NAME ID",
 				},
 			},
