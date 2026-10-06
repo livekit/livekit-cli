@@ -24,9 +24,25 @@
 //	go generate -tags oapigen ./pkg/public/...                                       # prod
 //	LK_PUBLIC_API_URL=http://localhost:8000 go generate -tags oapigen ./pkg/public/...
 //
+// To generate from a specific public-api-server commit, check it out and run
+// the server locally. It serves the spec without a database:
+//
+//	go run ./cmd/public-api-server --dev --http-port 8000 serve      # in public-api-server
+//	LK_PUBLIC_API_URL=http://localhost:8000 go generate -tags oapigen ./pkg/public/...
+//
+// # Provenance
+//
+// Nothing in oapi.gen.go records which spec it came from, so the commit that
+// regenerates it names the source in its message:
+//
+//	Generated from livekit/public-api-server@<full commit sha>
+//
+// Merged code should point at a public-api-server main commit, never an
+// unmerged branch.
+//
 // The generate directive is gated behind the `oapigen` build tag so a plain
 // `go generate ./...` never reaches the network; the committed ./oapi/oapi.gen.go
 // keeps ordinary build/test offline and reproducible. The spec is OpenAPI 3.1
-// (grpc-gateway); ./oapi/normalize.go collapses its union `type` arrays to
-// 3.0-style types so oapi-codegen can consume it (see ./oapi/generate.sh).
+// (protoc-gen-connect-openapi); ./oapi/normalize.go collapses its union `type`
+// arrays to 3.0-style types so oapi-codegen can consume it (see ./oapi/generate.sh).
 package public

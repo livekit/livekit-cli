@@ -21,7 +21,7 @@ trap 'rm -rf "$TMP"' EXIT
 echo "oapi-codegen: fetching spec from ${SPEC_URL}"
 curl -fsSL "${SPEC_URL}" -o "${TMP}/openapi.yaml"
 
-# The spec is OpenAPI 3.1 emitted by grpc-gateway; its union `type` arrays
+# The spec is OpenAPI 3.1 emitted by protoc-gen-connect-openapi; its union `type` arrays
 # (nullable [X,"null"] and 64-bit ints [integer,string]) can't be consumed by
 # Go generators, so collapse them to 3.0-style single types + `nullable` first.
 go run normalize.go "${TMP}/openapi.yaml" "${TMP}/normalized.yaml"

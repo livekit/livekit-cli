@@ -2,7 +2,7 @@
 
 // Command normalize rewrites an OpenAPI 3.1 spec so Go generators (oapi-codegen,
 // ogen) can consume it: it collapses JSON-Schema union `type` arrays — which
-// grpc-gateway emits for nullable fields ([X,"null"]) and 64-bit ints
+// protoc-gen-connect-openapi emits for nullable fields ([X,"null"]) and 64-bit ints
 // ([integer,string], sent as strings over protojson) — into a single 3.0-style
 // scalar type plus `nullable: true` where applicable. It also drops the
 // `duration` format, whose RFC 3339 meaning doesn't match protojson.
