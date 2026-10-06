@@ -134,9 +134,9 @@ func cloudListSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	runs, nextToken, err := client.ListSimulationRuns(ctx, projectID, cmd.String("status"), cmd.String("cursor"))
+	runs, nextCursor, err := client.ListSimulationRuns(ctx, projectID, cmd.String("status"), cmd.String("cursor"))
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	return render.SimulationRunsPage(out, cmd.Bool("json"), runs, nextToken)
+	return render.SimulationRunsPage(out, cmd.Bool("json"), runs, nextCursor)
 }
