@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
+	"unicode/utf8"
 
 	"charm.land/huh/v2"
 	"github.com/urfave/cli/v3"
@@ -74,9 +76,10 @@ func ensureScenarioIDs(cmd *cli.Command, path string) error {
 }
 
 // insertScenarioIDs adds a generated `id` as the first key of the document
-// and of every scenario that lacks one. Editing the node tree rather than
-// re-marshalling keeps the user's comments and key order intact. Returns nil
-// output when nothing was added.
+// and of every scenario that lacks one, and fills empty `id` values. Edits are
+// spliced into the original bytes, so everything else in the file (comments,
+// blank lines, indentation, scalar styles) is unchanged. Returns nil output
+// when nothing was added.
 func insertScenarioIDs(data []byte) ([]byte, int, error) {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
@@ -86,55 +89,101 @@ func insertScenarioIDs(data []byte) ([]byte, int, error) {
 		return nil, 0, nil
 	}
 	root := doc.Content[0]
-	added := 0
-	if addMissingID(root, utils.ScenarioGroupPrefix) {
-		added++
+	src := newYAMLSource(data)
+	var edits []yamlEdit
+	if e, ok := missingIDEdit(src, root, utils.ScenarioGroupPrefix); ok {
+		edits = append(edits, e)
 	}
 	if scenarios := mappingValue(root, "scenarios"); scenarios != nil && scenarios.Kind == yaml.SequenceNode {
 		for _, s := range scenarios.Content {
-			if s.Kind == yaml.MappingNode && addMissingID(s, utils.ScenarioPrefix) {
-				added++
+			if s.Kind != yaml.MappingNode {
+				continue
+			}
+			if e, ok := missingIDEdit(src, s, utils.ScenarioPrefix); ok {
+				edits = append(edits, e)
 			}
 		}
 	}
-	if added == 0 {
+	if len(edits) == 0 {
 		return nil, 0, nil
 	}
-	var out bytes.Buffer
-	enc := yaml.NewEncoder(&out)
-	enc.SetIndent(detectIndent(data))
-	if err := enc.Encode(&doc); err != nil {
-		return nil, 0, err
+	// edits are collected in document order; applying them back to front
+	// keeps every earlier offset valid
+	out := bytes.Clone(data)
+	for i := len(edits) - 1; i >= 0; i-- {
+		e := edits[i]
+		out = append(out[:e.offset:e.offset], append([]byte(e.text), out[e.offset+e.remove:]...)...)
 	}
-	return out.Bytes(), added, nil
+	return out, len(edits), nil
 }
 
-// detectIndent is the leading-space width of the first indented line, so the
-// rewrite keeps the file's own indentation.
-func detectIndent(data []byte) int {
-	for _, line := range bytes.Split(data, []byte("\n")) {
-		if n := len(line) - len(bytes.TrimLeft(line, " ")); n > 0 && n < len(line) {
-			return n
-		}
-	}
-	return 2
+// yamlEdit replaces `remove` bytes at `offset` with `text`.
+type yamlEdit struct {
+	offset, remove int
+	text           string
 }
 
-func addMissingID(m *yaml.Node, prefix string) bool {
-	if existing := mappingValue(m, "id"); existing != nil {
-		if existing.Value != "" && existing.Tag != "!!null" {
-			return false
+// missingIDEdit returns the edit that gives mapping m an id: filling an empty
+// `id` value where it stands, or else inserting `id` before the first key, at
+// that key's position, so comments above or beside the first key stay put.
+func missingIDEdit(src yamlSource, m *yaml.Node, prefix string) (yamlEdit, bool) {
+	id := utils.NewGuid(prefix)
+	if v := mappingValue(m, "id"); v != nil {
+		if v.Value != "" && v.Tag != "!!null" {
+			return yamlEdit{}, false
 		}
-		// Fill an empty value in place, retaining comments and key position.
-		existing.Tag = "!!str"
-		existing.Value = utils.NewGuid(prefix)
-		return true
+		off := src.offset(v.Line, v.Column)
+		switch {
+		case v.Style&(yaml.DoubleQuotedStyle|yaml.SingleQuotedStyle) != 0:
+			return yamlEdit{offset: off, remove: 2, text: id}, true // "" or ''
+		case v.Value != "":
+			return yamlEdit{offset: off, remove: len(v.Value), text: id}, true // ~ or null
+		case off > 0 && (src.data[off-1] == ' ' || src.data[off-1] == '\t'):
+			return yamlEdit{offset: off, text: id}, true
+		default:
+			return yamlEdit{offset: off, text: " " + id}, true // bare `id:`
+		}
 	}
-	m.Content = append([]*yaml.Node{
-		{Kind: yaml.ScalarNode, Value: "id"},
-		{Kind: yaml.ScalarNode, Value: utils.NewGuid(prefix)},
-	}, m.Content...)
-	return true
+	if len(m.Content) == 0 {
+		return yamlEdit{}, false
+	}
+	first := m.Content[0]
+	off := src.offset(first.Line, first.Column)
+	if m.Style&yaml.FlowStyle != 0 {
+		return yamlEdit{offset: off, text: "id: " + id + ", "}, true
+	}
+	indent := strings.Repeat(" ", first.Column-1)
+	return yamlEdit{offset: off, text: "id: " + id + src.newline + indent}, true
+}
+
+// yamlSource maps yaml.v3's 1-based line and rune column positions to byte
+// offsets in the original document.
+type yamlSource struct {
+	data       []byte
+	lineStarts []int
+	newline    string
+}
+
+func newYAMLSource(data []byte) yamlSource {
+	src := yamlSource{data: data, lineStarts: []int{0}, newline: "\n"}
+	for i, b := range data {
+		if b == '\n' {
+			src.lineStarts = append(src.lineStarts, i+1)
+		}
+	}
+	if bytes.Contains(data, []byte("\r\n")) {
+		src.newline = "\r\n"
+	}
+	return src
+}
+
+func (s yamlSource) offset(line, column int) int {
+	off := s.lineStarts[line-1]
+	for range column - 1 {
+		_, size := utf8.DecodeRune(s.data[off:])
+		off += size
+	}
+	return off
 }
 
 func mappingValue(m *yaml.Node, key string) *yaml.Node {

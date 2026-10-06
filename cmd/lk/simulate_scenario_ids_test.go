@@ -17,6 +17,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -69,6 +70,64 @@ scenarios:
 	require.NoError(t, err)
 	require.Equal(t, 0, added2)
 	require.Nil(t, out2)
+}
+
+func TestInsertScenarioIDsLeavesEverythingElseInPlace(t *testing.T) {
+	in := `# Scenarios for the drive-thru agent.
+name: drive-thru  # suite name
+scenarios:
+  # The happy path.
+  - label: order a burger # inline
+    instructions: >
+      order a burger
+      and fries
+
+
+  - # comment on the dash line
+    label: "refund"
+    instructions: ask for a refund
+  - {label: flow, instructions: y}
+  - id:
+    label: empty
+  - label: quoted
+    id: ""  # keep this comment
+  - label: tilde
+    id: ~
+`
+	want := `# Scenarios for the drive-thru agent.
+id: SCNG_x
+name: drive-thru  # suite name
+scenarios:
+  # The happy path.
+  - id: SCN_x
+    label: order a burger # inline
+    instructions: >
+      order a burger
+      and fries
+
+
+  - # comment on the dash line
+    id: SCN_x
+    label: "refund"
+    instructions: ask for a refund
+  - {id: SCN_x, label: flow, instructions: y}
+  - id: SCN_x
+    label: empty
+  - label: quoted
+    id: SCN_x  # keep this comment
+  - label: tilde
+    id: SCN_x
+`
+	out, added, err := insertScenarioIDs([]byte(in))
+	require.NoError(t, err)
+	require.Equal(t, 7, added)
+	ids := regexp.MustCompile(`(SCNG?)_[0-9A-Za-z]+`)
+	require.Equal(t, want, ids.ReplaceAllString(string(out), "${1}_x"))
+
+	crlf := strings.ReplaceAll(in, "\n", "\r\n")
+	out, _, err = insertScenarioIDs([]byte(crlf))
+	require.NoError(t, err)
+	require.Equal(t, strings.ReplaceAll(want, "\n", "\r\n"), ids.ReplaceAllString(string(out), "${1}_x"))
 }
 
 func TestLoadScenarioGroupRequiresUniqueIDs(t *testing.T) {
