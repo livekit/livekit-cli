@@ -28,7 +28,7 @@ import (
 // or handoff is represented is made once.
 
 // turnEvent is the normalized, transport-agnostic record of one thing that
-// happened in a text-mode agent session: a message, a tool call, a handoff, an
+// happened in an agent session: a message, a tool call, a handoff, an
 // agent error, or an agent log line. The daemon ships these to `say`/`history`
 // clients as JSON, the scripted console prints them locally, and `--json`
 // emits them verbatim, so the schema doubles as the machine-readable contract
@@ -74,6 +74,12 @@ func (e turnEvent) isOutput() bool {
 		return true
 	}
 	return false
+}
+
+// isAgentOutput reports whether the event is the agent responding, which
+// excludes what it transcribed from the user.
+func (e turnEvent) isAgentOutput() bool {
+	return e.isOutput() && (e.Type != "message" || e.Role != "user")
 }
 
 // eventTimestamp formats a time the way turnEvent.Time carries it.

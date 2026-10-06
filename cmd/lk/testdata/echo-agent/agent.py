@@ -1,7 +1,8 @@
 """Minimal one-file echo agent for the `lk agent debugger` e2e test.
 
-Driven in text mode, so an LLM is the only component needed. Echoes the user's
-text verbatim, which the test asserts on.
+Has the full voice pipeline (STT, LLM, TTS) through LiveKit Inference, so the
+test can drive it in both text and audio mode. Echoes what the user says, which
+the test asserts on.
 """
 
 from dotenv import load_dotenv
@@ -14,18 +15,20 @@ server = AgentServer()
 
 @server.rtc_session()
 async def entrypoint(ctx: JobContext):
-    session = AgentSession(llm=inference.LLM(model="openai/gpt-4o-mini"))
+    session = AgentSession(
+        stt=inference.STT(model="deepgram/nova-3"),
+        llm=inference.LLM(model="openai/gpt-4o-mini"),
+        tts=inference.TTS(model="cartesia/sonic-3"),
+    )
     await session.start(
         agent=Agent(
             instructions=(
-                "You are an echo bot. Reply with exactly the text the user "
-                "sends, verbatim, and nothing else."
+                "You are an echo bot. Reply with exactly what the user says, "
+                "verbatim, and nothing else."
             ),
         ),
         room=ctx.room,
     )
-    # No TTS, so disable audio output or the turn crashes in tts_node.
-    session.output.set_audio_enabled(False)
     await ctx.connect()
 
 
