@@ -386,6 +386,22 @@ func TestLockPreservesOtherEntries(t *testing.T) {
 	assert.FileExists(t, path)
 }
 
+func TestLockIgnoresInvalidNames(t *testing.T) {
+	env := testEnv(t)
+	outside := filepath.Join(env.Root, "src")
+	require.NoError(t, os.MkdirAll(outside, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(outside, "main.py"), []byte("print()"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(env.Root, "skills-lock.json"),
+		[]byte(`{"version":1,"skills":{"../../src":{"source":"livekit/agent-skills","sourceType":"github","computedHash":"x"}}}`), 0o644))
+
+	in, err := NewInstaller(env, ScopeProject, nil)
+	require.NoError(t, err)
+	assert.Empty(t, in.Lock.LiveKitSkills())
+	names, err := in.InstalledLiveKitSkills(GroupSkillsDirs(env, ScopeProject, Agents))
+	require.NoError(t, err)
+	assert.Empty(t, names)
+}
+
 func TestLockDeletedWhenEmpty(t *testing.T) {
 	env := testEnv(t)
 	lock, err := LoadLock(env, ScopeProject)
