@@ -4,7 +4,8 @@
 // ogen) can consume it: it collapses JSON-Schema union `type` arrays — which
 // grpc-gateway emits for nullable fields ([X,"null"]) and 64-bit ints
 // ([integer,string], sent as strings over protojson) — into a single 3.0-style
-// scalar type plus `nullable: true` where applicable.
+// scalar type plus `nullable: true` where applicable. It also drops the
+// `duration` format, whose RFC 3339 meaning doesn't match protojson.
 //
 // Usage: go run normalize.go <in.yaml> <out.yaml>
 package main
@@ -36,6 +37,13 @@ func walk(n any) {
 	case map[string]any:
 		if t, ok := v["type"].([]any); ok {
 			collapseType(v, t)
+		}
+		// google.protobuf.Duration is labelled `format: duration`, which
+		// oapi-codegen maps to openapi_types.Duration, an RFC 3339 duration
+		// ("PT3S"). protojson sends Durations as decimal seconds ("3s"), which
+		// that type can't parse, so drop the format and keep the plain string.
+		if v["format"] == "duration" {
+			delete(v, "format")
 		}
 		for _, child := range v {
 			walk(child)
