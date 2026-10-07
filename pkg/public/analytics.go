@@ -24,8 +24,8 @@ import (
 )
 
 // SessionListOptions narrows and orders one page of ListProjectSessions. Zero
-// values keep the server's defaults: sessions started in the last 24 hours, any
-// status, newest first.
+// values keep the server's defaults: any status, newest first, and the window
+// described on Start and End.
 type SessionListOptions struct {
 	// Limit caps the page size; 0 lets the server choose. The server caps pages
 	// at 100.
@@ -33,7 +33,9 @@ type SessionListOptions struct {
 	// Cursor requests a specific page; empty starts from the beginning.
 	Cursor string
 	// Start and End bound when a session started, as the half-open window
-	// [Start, End). A zero value leaves that side to the server.
+	// [Start, End). The server fills in a zero side: with neither set it lists
+	// the last 24 hours, with only Start it lists up to now, and with only End
+	// it lists the 24 hours before End.
 	Start, End time.Time
 	// Statuses keeps sessions in any of these states: "active" or "closed".
 	Statuses []string
