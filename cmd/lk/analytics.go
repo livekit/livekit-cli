@@ -57,56 +57,7 @@ var (
 							Name:   "list",
 							Usage:  "List analytics sessions",
 							Action: listAnalyticsSessions,
-							Flags: []cli.Flag{
-								jsonFlag,
-								&cli.IntFlag{
-									Name:  "limit",
-									Usage: "Maximum number of sessions to return",
-									Value: defaultAnalyticsLimit,
-								},
-								&cli.IntFlag{
-									Name:  "page",
-									Usage: "Page number (starts at 0)",
-								},
-								&cli.StringFlag{
-									Name:  "start",
-									Usage: "List sessions started on or after `YYYY-MM-DD` (UTC)",
-								},
-								&cli.StringFlag{
-									Name:  "end",
-									Usage: "List sessions started before `YYYY-MM-DD` (UTC, exclusive); requires --start",
-								},
-								// experimental-auth only: the Public API is cursor-paginated
-								// and has filters the CLI doesn't yet send to the API-key
-								// endpoint. Hidden like the rest of the experimental surface;
-								// pass the nextCursor from a prior `--json` listing to fetch the
-								// next page.
-								&cli.StringFlag{
-									Name:   "cursor",
-									Usage:  "Page `CURSOR` from a prior --json listing (requires --experimental-auth)",
-									Hidden: true,
-								},
-								&cli.StringSliceFlag{
-									Name:   "status",
-									Usage:  "List sessions in `STATUS` (active or closed); repeatable (requires --experimental-auth)",
-									Hidden: true,
-								},
-								&cli.StringFlag{
-									Name:   "room",
-									Usage:  "List sessions whose room name starts with `PREFIX` (case-sensitive; requires --experimental-auth)",
-									Hidden: true,
-								},
-								&cli.StringSliceFlag{
-									Name:   "tag",
-									Usage:  "List sessions carrying `TAG`; repeatable, matches any (requires --experimental-auth)",
-									Hidden: true,
-								},
-								&cli.StringFlag{
-									Name:   "sort-order",
-									Usage:  "Order by start time: `ORDER` asc or desc, default desc (requires --experimental-auth)",
-									Hidden: true,
-								},
-							},
+							Flags:  append([]cli.Flag{jsonFlag}, analyticsSessionListFlags()...),
 						},
 						{
 							Name:      "get",
@@ -160,6 +111,61 @@ type analyticsParticipant struct {
 	Region              string `json:"region"`
 	ConnectionType      string `json:"connectionType"`
 	SDKVersion          string `json:"sdkVersion"`
+}
+
+// analyticsSessionListFlags returns fresh instances of the session list's own
+// flags (the shared jsonFlag is added by the command). Tests build commands from
+// it too: urfave/cli caches parse state on flag values, so reusing the command
+// tree's flags across runs would leak state between cases.
+func analyticsSessionListFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.IntFlag{
+			Name:  "limit",
+			Usage: "Maximum number of sessions to return",
+			Value: defaultAnalyticsLimit,
+		},
+		&cli.IntFlag{
+			Name:  "page",
+			Usage: "Page number (starts at 0)",
+		},
+		&cli.StringFlag{
+			Name:  "start",
+			Usage: "List sessions started on or after `YYYY-MM-DD` (UTC)",
+		},
+		&cli.StringFlag{
+			Name:  "end",
+			Usage: "List sessions started before `YYYY-MM-DD` (UTC, exclusive); requires --start",
+		},
+		// experimental-auth only: the Public API is cursor-paginated and has
+		// filters the CLI doesn't yet send to the API-key endpoint. Hidden like
+		// the rest of the experimental surface; pass the nextCursor from a prior
+		// `--json` listing to fetch the next page.
+		&cli.StringFlag{
+			Name:   "cursor",
+			Usage:  "Page `CURSOR` from a prior --json listing (requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringSliceFlag{
+			Name:   "status",
+			Usage:  "List sessions in `STATUS` (active or closed); repeatable (requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:   "room",
+			Usage:  "List sessions whose room name starts with `PREFIX` (case-sensitive; requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringSliceFlag{
+			Name:   "tag",
+			Usage:  "List sessions carrying `TAG`; repeatable, matches any (requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:   "sort-order",
+			Usage:  "Order by start time: `ORDER` asc or desc, default desc (requires --experimental-auth)",
+			Hidden: true,
+		},
+	}
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics

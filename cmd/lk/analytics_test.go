@@ -171,25 +171,15 @@ func TestResolveAnalyticsProjectID(t *testing.T) {
 	assert.Contains(t, err.Error(), "Select a cloud project via --project or run `lk cloud auth`")
 }
 
-// sessionListCmdOptions runs sessionListOptions with the given arguments. It
-// declares its own flags: urfave/cli records parse state on the flag values, so
-// reusing the real command's flags would leak between runs.
+// sessionListCmdOptions runs sessionListOptions with the given arguments on a
+// command built from fresh analyticsSessionListFlags.
 func sessionListCmdOptions(t *testing.T, args ...string) (public.SessionListOptions, error) {
 	t.Helper()
 	var opts public.SessionListOptions
 	var optsErr error
 	cmd := &cli.Command{
-		Name: "list",
-		Flags: []cli.Flag{
-			&cli.IntFlag{Name: "limit", Value: defaultAnalyticsLimit},
-			&cli.StringFlag{Name: "start"},
-			&cli.StringFlag{Name: "end"},
-			&cli.StringFlag{Name: "cursor"},
-			&cli.StringSliceFlag{Name: "status"},
-			&cli.StringFlag{Name: "room"},
-			&cli.StringSliceFlag{Name: "tag"},
-			&cli.StringFlag{Name: "sort-order"},
-		},
+		Name:  "list",
+		Flags: analyticsSessionListFlags(),
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			opts, optsErr = sessionListOptions(cmd)
 			return nil
@@ -287,24 +277,15 @@ func TestSessionListOptions(t *testing.T) {
 	}
 }
 
-// validateListModeFlags runs analyticsListModeFlags.validate on a fresh command
-// carrying the list's mode-specific flags and the --experimental-auth selector.
+// validateListModeFlags runs analyticsListModeFlags.validate on a command built
+// from fresh analyticsSessionListFlags plus the --experimental-auth selector,
+// which production declares on the root.
 func validateListModeFlags(t *testing.T, args ...string) error {
 	t.Helper()
 	var validateErr error
 	cmd := &cli.Command{
-		Name: "list",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{Name: "experimental-auth"},
-			&cli.IntFlag{Name: "page"},
-			&cli.StringFlag{Name: "start"},
-			&cli.StringFlag{Name: "end"},
-			&cli.StringFlag{Name: "cursor"},
-			&cli.StringSliceFlag{Name: "status"},
-			&cli.StringFlag{Name: "room"},
-			&cli.StringSliceFlag{Name: "tag"},
-			&cli.StringFlag{Name: "sort-order"},
-		},
+		Name:  "list",
+		Flags: append([]cli.Flag{&cli.BoolFlag{Name: "experimental-auth"}}, analyticsSessionListFlags()...),
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			validateErr = analyticsListModeFlags.validate(cmd)
 			return nil
