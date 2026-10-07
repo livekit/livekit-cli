@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -386,7 +387,11 @@ func listUserProjects(ctx context.Context, cmd *cli.Command) error {
 		out.Status("No projects found for this account.")
 		return nil
 	}
-	out.Result(projectTable(entries))
+	var defaultID string
+	if p := matchDefaultProject(conf, user); p != nil {
+		defaultID = p.ProjectId
+	}
+	out.Result(projectTable(entries, defaultID))
 	return nil
 }
 
@@ -461,7 +466,15 @@ func deleteUserProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	id, err := resolveProjectRef(ctx, cmd, conf, user, cmd.Args().First())
+	// Deleting never falls back to the default project: without an explicit
+	// ref, the user always picks (and non-interactive mode errors unless the
+	// account has exactly one project).
+	var id string
+	if ref := cmp.Or(cmd.Args().First(), cmd.String("project")); ref != "" {
+		id, err = resolveProjectRef(ctx, cmd, conf, user, ref)
+	} else {
+		id, err = pickUserProject(ctx, cmd, conf, user)
+	}
 	if err != nil {
 		return err
 	}
@@ -523,10 +536,16 @@ func projectAliasBase(p oapi.LivekitPublicapiProjectsV1Project) string {
 }
 
 // projectTable renders cached projects (alias, name, id) as a table.
-func projectTable(projects []config.UserProjectConfig) *table.Table {
+// projectTable renders user projects, marking defaultID (if non-empty) with
+// "*" as the API-key project listing does.
+func projectTable(projects []config.UserProjectConfig, defaultID string) *table.Table {
 	t := util.CreateTable().Headers("Alias", "Name", "Project ID")
 	for _, p := range projects {
-		t.Row(p.Alias, p.Name, p.ProjectId)
+		alias := "  " + p.Alias
+		if defaultID != "" && p.ProjectId == defaultID {
+			alias = "* " + p.Alias
+		}
+		t.Row(alias, p.Name, p.ProjectId)
 	}
 	return t
 }
@@ -538,7 +557,7 @@ func renderProject(cmd *cli.Command, project oapi.LivekitPublicapiProjectsV1Proj
 		util.PrintJSON(entries[0])
 		return nil
 	}
-	out.Result(projectTable(entries))
+	out.Result(projectTable(entries, ""))
 	return nil
 }
 
@@ -560,7 +579,7 @@ func renderProjects(cmd *cli.Command, projects []oapi.LivekitPublicapiProjectsV1
 		out.Status("No projects found.")
 		return nil
 	}
-	out.Result(projectTable(entries))
+	out.Result(projectTable(entries, ""))
 	if nextCursor != "" {
 		out.Statusf("More results available — re-run with %s", util.Accented("--cursor "+nextCursor))
 	}
@@ -582,6 +601,9 @@ func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("project name is required")
 	}
 	name := cmd.Args().First()
+	if experimentalAuthEnabled(cmd) {
+		return setDefaultUserProject(ctx, cmd, name)
+	}
 
 	for _, p := range cliConfig.Projects {
 		if p.Name != name {
@@ -597,4 +619,37 @@ func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	return config.ProjectNotFoundError(cliConfig.Projects)
+}
+
+// setDefaultUserProject implements `lk project set-default REF` under user auth.
+// REF resolves against the user's projects. default_project stays a single
+// setting shared with API-key mode: it stores the name of a matching API-key
+// project entry when one exists (so both modes agree), and the project id
+// otherwise.
+func setDefaultUserProject(ctx context.Context, cmd *cli.Command, ref string) error {
+	conf, user, err := requireUserSession(cmd)
+	if err != nil {
+		return err
+	}
+	id, err := resolveProjectRef(ctx, cmd, conf, user, ref)
+	if err != nil {
+		return err
+	}
+	p := user.FindProject(id)
+	if p == nil {
+		return fmt.Errorf("project %q not found for %s", ref, userLabel(user))
+	}
+
+	conf.DefaultProject = p.ProjectId
+	for _, lp := range conf.Projects {
+		if lp.ProjectId == p.ProjectId {
+			conf.DefaultProject = lp.Name
+			break
+		}
+	}
+	if err := conf.PersistIfNeeded(); err != nil {
+		return err
+	}
+	out.Statusf("Default project set to [%s]", util.Accented(cmp.Or(p.Name, p.ProjectId)))
+	return nil
 }

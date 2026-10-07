@@ -67,6 +67,9 @@ func listUsers(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 	if projectID == "" && workspaceID == "" {
+		projectID = useDefaultUserProject(ctx, conf, user)
+	}
+	if projectID == "" && workspaceID == "" {
 		return errors.New("one of --project or --workspace is required")
 	}
 	users, nextCursor, err := client.ListUsers(ctx, projectID, workspaceID, int32(cmd.Int("limit")), cmd.String("cursor"))
