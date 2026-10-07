@@ -517,7 +517,8 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 
 // sessionListOptions reads the session list flags for the Public API. --start
 // and --end mean the same as on the API-key endpoint: UTC dates bounding when a
-// session started, end exclusive.
+// session started, end exclusive. Unknown status and sort order names fail here,
+// before the project lookup, like the date and limit checks.
 func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 	limit := cmd.Int("limit")
 	if limit <= 0 {
@@ -527,7 +528,7 @@ func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 	if err != nil {
 		return public.SessionListOptions{}, err
 	}
-	return public.SessionListOptions{
+	opts := public.SessionListOptions{
 		Limit:      int32(limit),
 		Cursor:     cmd.String("cursor"),
 		Start:      start,
@@ -536,7 +537,11 @@ func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 		RoomPrefix: cmd.String("room"),
 		Tags:       cmd.StringSlice("tag"),
 		SortOrder:  cmd.String("sort-order"),
-	}, nil
+	}
+	if err := opts.Validate(); err != nil {
+		return public.SessionListOptions{}, err
+	}
+	return opts, nil
 }
 
 // getUserAnalyticsSession fetches a single project session via the Public API

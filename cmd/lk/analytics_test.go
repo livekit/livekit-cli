@@ -249,6 +249,16 @@ func TestSessionListOptions(t *testing.T) {
 			wantErr: "start date must be before end date",
 		},
 		{
+			name:    "unknown status",
+			args:    []string{"--status", "open"},
+			wantErr: `invalid session status "open"`,
+		},
+		{
+			name:    "unknown sort order",
+			args:    []string{"--sort-order", "newest"},
+			wantErr: `invalid sort order "newest"`,
+		},
+		{
 			name:    "end without start",
 			args:    []string{"--end", "2026-10-01"},
 			wantErr: "--end requires --start",

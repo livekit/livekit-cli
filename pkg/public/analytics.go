@@ -114,6 +114,13 @@ func listProjectSessionsParams(opts SessionListOptions) (*oapi.AnalyticsServiceL
 	return params, nil
 }
 
+// Validate reports an unknown status or sort order name. ListProjectSessions
+// makes the same check before sending a request; callers can run it earlier.
+func (o SessionListOptions) Validate() error {
+	_, err := listProjectSessionsParams(o)
+	return err
+}
+
 // ListProjectSessions returns one page of a project's analytics sessions,
 // narrowed and ordered by opts. The operation is cursor-paginated; the returned
 // nextCursor is non-empty when more pages remain (pass it back as opts.Cursor to

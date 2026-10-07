@@ -97,7 +97,7 @@ func TestListProjectSessionsQuery(t *testing.T) {
 }
 
 // TestListProjectSessionsRejectsUnknownNames confirms a bad status or sort order
-// fails before any request is sent.
+// fails Validate, and fails ListProjectSessions before any request is sent.
 func TestListProjectSessionsRejectsUnknownNames(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -109,6 +109,8 @@ func TestListProjectSessionsRejectsUnknownNames(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			require.ErrorContains(t, tt.opts.Validate(), tt.wantErr)
+
 			called := false
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				called = true
