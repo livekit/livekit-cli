@@ -165,7 +165,7 @@ func IsPermissionDenied(err error) bool {
 }
 
 // responseError builds an APIError from a non-2xx response, preferring the
-// gRPC-gateway error envelope ({"code","message","details"}) and falling back
+// API's error envelope ({"code","message","details"}) and falling back
 // to the raw body.
 func responseError(status int, body []byte) error {
 	var env struct {

@@ -29,7 +29,7 @@ import (
 )
 
 func TestResponseError(t *testing.T) {
-	// gRPC-gateway envelope: {"code","message"} -> message.
+	// Error envelope: {"code","message"} -> message.
 	var apiErr *APIError
 	err := responseError(http.StatusForbidden, []byte(`{"code":7,"message":"forbidden"}`))
 	require.ErrorAs(t, err, &apiErr)

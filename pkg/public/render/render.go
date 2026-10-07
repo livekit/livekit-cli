@@ -162,8 +162,7 @@ func UsersPage(p *util.Printer, asJSON bool, users []oapi.LivekitPublicapiUsersV
 	return util.RenderPage(p, asJSON, users, nextCursor, "No users found.", userHeaders, userRow)
 }
 
-// SimulationRunsPage prints a token-paginated page of simulation runs (the
-// nextCursor is the run list's next page token).
+// SimulationRunsPage prints a cursor-paginated page of simulation runs.
 func SimulationRunsPage(p *util.Printer, asJSON bool, runs []oapi.LivekitSimulationRun, nextCursor string) error {
 	return util.RenderPage(p, asJSON, runs, nextCursor, "No simulation runs found.", simulationHeaders, simulationRow)
 }
