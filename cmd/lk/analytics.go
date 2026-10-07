@@ -74,7 +74,7 @@ var (
 								},
 								&cli.StringFlag{
 									Name:  "end",
-									Usage: "List sessions started before `YYYY-MM-DD` (UTC, exclusive)",
+									Usage: "List sessions started before `YYYY-MM-DD` (UTC, exclusive); requires --start",
 								},
 								// experimental-auth only: the Public API is cursor-paginated
 								// and has filters the CLI doesn't yet send to the API-key
@@ -333,6 +333,10 @@ func buildAnalyticsListQuery(cmd *cli.Command) (url.Values, error) {
 	return query, nil
 }
 
+// validateAnalyticsDateRange parses --start and --end. Both endpoints read them
+// as the half-open window [start, end), so equal dates are an empty window. A
+// lone --end is rejected: each endpoint fills in a different start (the API-key
+// endpoint from now, the Public API from end), and neither is what it suggests.
 func validateAnalyticsDateRange(startDate, endDate string) (time.Time, time.Time, error) {
 	var (
 		start time.Time
@@ -354,8 +358,11 @@ func validateAnalyticsDateRange(startDate, endDate string) (time.Time, time.Time
 		}
 	}
 
-	if !start.IsZero() && !end.IsZero() && start.After(end) {
-		return time.Time{}, time.Time{}, errors.New("start date must be less than or equal to end date")
+	if !end.IsZero() && start.IsZero() {
+		return time.Time{}, time.Time{}, errors.New("--end requires --start")
+	}
+	if !end.IsZero() && !start.Before(end) {
+		return time.Time{}, time.Time{}, errors.New("start date must be before end date")
 	}
 
 	return start, end, nil
@@ -510,8 +517,7 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 
 // sessionListOptions reads the session list flags for the Public API. --start
 // and --end mean the same as on the API-key endpoint: UTC dates bounding when a
-// session started, end exclusive. The Public API rejects an empty window, so
-// equal dates fail here with a clear message instead.
+// session started, end exclusive.
 func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 	limit := cmd.Int("limit")
 	if limit <= 0 {
@@ -520,9 +526,6 @@ func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 	start, end, err := validateAnalyticsDateRange(cmd.String("start"), cmd.String("end"))
 	if err != nil {
 		return public.SessionListOptions{}, err
-	}
-	if !start.IsZero() && start.Equal(end) {
-		return public.SessionListOptions{}, errors.New("start date must be before end date (end is exclusive)")
 	}
 	return public.SessionListOptions{
 		Limit:      int32(limit),

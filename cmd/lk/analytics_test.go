@@ -98,13 +98,26 @@ func TestValidateAnalyticsDateRange(t *testing.T) {
 
 	_, _, err = validateAnalyticsDateRange("2026-03-10", "2026-03-09")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "start date must be less than or equal to end date")
+	assert.Contains(t, err.Error(), "start date must be before end date")
+
+	_, _, err = validateAnalyticsDateRange("2026-03-09", "2026-03-09")
+	require.Error(t, err, "equal dates are an empty window")
+	assert.Contains(t, err.Error(), "start date must be before end date")
+
+	_, _, err = validateAnalyticsDateRange("", "2026-03-09")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--end requires --start")
+
+	start, end, err = validateAnalyticsDateRange("2026-03-01", "")
+	require.NoError(t, err, "--start alone leaves the end open")
+	assert.Equal(t, time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC), start)
+	assert.True(t, end.IsZero())
 
 	_, _, err = validateAnalyticsDateRange("03-01-2026", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid start date")
 
-	_, _, err = validateAnalyticsDateRange("", "03-09-2026")
+	_, _, err = validateAnalyticsDateRange("2026-03-01", "03-09-2026")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid end date")
 }
@@ -233,7 +246,12 @@ func TestSessionListOptions(t *testing.T) {
 		{
 			name:    "start after end",
 			args:    []string{"--start", "2026-10-02", "--end", "2026-10-01"},
-			wantErr: "start date must be less than or equal to end date",
+			wantErr: "start date must be before end date",
+		},
+		{
+			name:    "end without start",
+			args:    []string{"--end", "2026-10-01"},
+			wantErr: "--end requires --start",
 		},
 		{
 			name:    "bad date",
