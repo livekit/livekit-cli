@@ -16,6 +16,7 @@ package public
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -131,6 +132,115 @@ func (c *Client) ListProjectSessions(ctx context.Context, projectID string, opts
 		return nil, "", err
 	}
 	resp, err := c.gen.AnalyticsServiceListProjectSessionsWithResponse(ctx, projectID, params)
+	if err != nil {
+		return nil, "", err
+	}
+	if resp.JSON200 == nil {
+		return nil, "", responseError(resp.StatusCode(), resp.Body)
+	}
+	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
+}
+
+// PageOptions pages a read of one of a session's lists: its participants.
+// Zero values start from the first item with the server's page size.
+type PageOptions struct {
+	// Limit caps how many items a page holds; 0 lets the server choose (50).
+	// The server caps pages at 100, and a page can hold fewer items than its
+	// limit.
+	Limit int32
+	// Cursor requests a specific page, the NextCursor of the page before it;
+	// empty starts from the beginning.
+	Cursor string
+}
+
+// Validate reports a negative limit. Every read that takes PageOptions makes
+// the same check before sending a request; callers can run it earlier.
+func (o PageOptions) Validate() error {
+	if o.Limit < 0 {
+		return errors.New("limit must not be negative")
+	}
+	return nil
+}
+
+// params returns the page size and cursor query params, each nil when it
+// leaves the server's default.
+func (o PageOptions) params() (pageSize *int32, cursor *string) {
+	if o.Limit > 0 {
+		pageSize = ptr(o.Limit)
+	}
+	if o.Cursor != "" {
+		cursor = ptr(o.Cursor)
+	}
+	return pageSize, cursor
+}
+
+// ParticipantListOptions orders and pages one page of ListSessionParticipants.
+// Zero values keep the server's defaults: newest join first, with a page size
+// the server picks. To continue from a session detail's first page, pass its
+// participants page cursor with SortBy and SortOrder unset.
+type ParticipantListOptions struct {
+	PageOptions
+	// SortBy orders by "joined" (the server's default) or "left".
+	SortBy string
+	// SortOrder is "asc" or "desc" (the server's default).
+	SortOrder string
+}
+
+// parseParticipantSort maps a friendly participant sort name to the wire enum.
+func parseParticipantSort(s string) (oapi.LivekitPublicapiAnalyticsV1ParticipantSortField, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "joined":
+		return oapi.PARTICIPANTSORTFIELDJOINEDAT, nil
+	case "left":
+		return oapi.PARTICIPANTSORTFIELDLEFTAT, nil
+	default:
+		return "", fmt.Errorf("invalid participant sort %q (expected \"joined\" or \"left\")", s)
+	}
+}
+
+// listSessionParticipantsParams translates opts into the generated query
+// params, rejecting a negative limit and unknown sort names before any request
+// is sent.
+func listSessionParticipantsParams(opts ParticipantListOptions) (*oapi.AnalyticsServiceListSessionParticipantsParams, error) {
+	if err := opts.PageOptions.Validate(); err != nil {
+		return nil, err
+	}
+	params := &oapi.AnalyticsServiceListSessionParticipantsParams{}
+	params.PagePageSize, params.PageCursor = opts.params()
+	if opts.SortBy != "" {
+		field, err := parseParticipantSort(opts.SortBy)
+		if err != nil {
+			return nil, err
+		}
+		params.SortBy = &field
+	}
+	if opts.SortOrder != "" {
+		order, err := parseSortOrder(opts.SortOrder)
+		if err != nil {
+			return nil, err
+		}
+		params.SortOrder = &order
+	}
+	return params, nil
+}
+
+// Validate reports a negative limit or an unknown sort name.
+// ListSessionParticipants makes the same checks before sending a request;
+// callers can run them earlier.
+func (o ParticipantListOptions) Validate() error {
+	_, err := listSessionParticipantsParams(o)
+	return err
+}
+
+// ListSessionParticipants returns one page of a session's participants, one row
+// per identity, ordered by opts. The returned nextCursor is non-empty when more
+// pages remain (pass it back as opts.Cursor to fetch the next page).
+func (c *Client) ListSessionParticipants(ctx context.Context, projectID, sessionID string, opts ParticipantListOptions) (participants []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo, nextCursor string, err error) {
+	params, err := listSessionParticipantsParams(opts)
+	if err != nil {
+		return nil, "", err
+	}
+	resp, err := c.gen.AnalyticsServiceListSessionParticipantsWithResponse(ctx, projectID, sessionID, params)
 	if err != nil {
 		return nil, "", err
 	}

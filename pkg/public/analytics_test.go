@@ -170,6 +170,91 @@ func TestGetSessionReturnsDetail(t *testing.T) {
 	}
 }
 
+// TestListSessionParticipantsQuery checks the request ListSessionParticipants
+// sends for each option, and the page it returns.
+func TestListSessionParticipantsQuery(t *testing.T) {
+	tests := []struct {
+		name string
+		opts ParticipantListOptions
+		want url.Values
+	}{
+		{name: "zero options send nothing", want: url.Values{}},
+		{
+			name: "paging",
+			opts: ParticipantListOptions{PageOptions: PageOptions{Limit: 25, Cursor: "abc"}},
+			want: url.Values{"page.pageSize": {"25"}, "page.cursor": {"abc"}},
+		},
+		{
+			name: "sort by joined",
+			opts: ParticipantListOptions{SortBy: "joined", SortOrder: "asc"},
+			want: url.Values{"sortBy": {"PARTICIPANT_SORT_FIELD_JOINED_AT"}, "sortOrder": {"SORT_ORDER_ASC"}},
+		},
+		{
+			name: "sort by left ignores case",
+			opts: ParticipantListOptions{SortBy: "Left"},
+			want: url.Values{"sortBy": {"PARTICIPANT_SORT_FIELD_LEFT_AT"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAuth, gotPath string
+			var gotQuery url.Values
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAuth, gotPath, gotQuery = r.Header.Get("Authorization"), r.URL.Path, r.URL.Query()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"items":[{"participantIdentity":"alice"}],"pageInfo":{"nextCursor":"next","hasMore":true}}`))
+			}))
+			t.Cleanup(srv.Close)
+
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			participants, next, err := c.ListSessionParticipants(context.Background(), "p1", "RM_1", tt.opts)
+			require.NoError(t, err)
+
+			assert.Equal(t, "Bearer sekret", gotAuth)
+			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/participants", gotPath)
+			assert.Equal(t, tt.want, gotQuery)
+			require.Len(t, participants, 1)
+			assert.Equal(t, "alice", *participants[0].ParticipantIdentity)
+			assert.Equal(t, "next", next)
+		})
+	}
+}
+
+// TestListSessionParticipantsRejectsBadOptions confirms a negative limit or a
+// bad sort name fails Validate, and fails ListSessionParticipants before any
+// request is sent.
+func TestListSessionParticipantsRejectsBadOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    ParticipantListOptions
+		wantErr string
+	}{
+		{name: "negative limit", opts: ParticipantListOptions{PageOptions: PageOptions{Limit: -1}}, wantErr: "limit must not be negative"},
+		{name: "sort by", opts: ParticipantListOptions{SortBy: "name"}, wantErr: `invalid participant sort "name"`},
+		{name: "sort order", opts: ParticipantListOptions{SortOrder: "newest"}, wantErr: `invalid sort order "newest"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.ErrorContains(t, tt.opts.Validate(), tt.wantErr)
+
+			called := false
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				called = true
+			}))
+			t.Cleanup(srv.Close)
+
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			_, _, err = c.ListSessionParticipants(context.Background(), "p1", "RM_1", tt.opts)
+			require.ErrorContains(t, err, tt.wantErr)
+			assert.False(t, called, "no request should be sent")
+		})
+	}
+}
+
 // TestGetSessionMissingSession reports a 200 without a session as an error.
 func TestGetSessionMissingSession(t *testing.T) {
 	srv := jsonServer(t, http.StatusOK, `{}`, nil, nil)
