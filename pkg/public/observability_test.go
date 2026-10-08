@@ -815,3 +815,210 @@ func TestGetSessionTracesErrors(t *testing.T) {
 		})
 	}
 }
+
+// metricsPage is a GetSessionMetrics response as the server's REST transcoder
+// writes it: a gauge with no start time whose value is zero, a sum, a
+// histogram with its buckets and an exponential histogram with none.
+const metricsPage = `{
+  "points": [
+    {
+      "name": "lk.agents.active_sessions",
+      "kind": "METRIC_KIND_GAUGE",
+      "endTime": "2026-10-07T11:00:30Z",
+      "attributes": {"lk.agent_name": "triage"},
+      "value": 0
+    },
+    {
+      "name": "lk.agents.usage.llm_input_tokens",
+      "unit": "{token}",
+      "kind": "METRIC_KIND_SUM",
+      "startTime": "2026-10-07T11:00:00Z",
+      "endTime": "2026-10-07T11:00:30Z",
+      "attributes": {"model_name": "gpt-4o", "room_id": "RM_1"},
+      "value": 1520
+    },
+    {
+      "name": "lk.agents.turn.e2e_latency",
+      "unit": "s",
+      "kind": "METRIC_KIND_HISTOGRAM",
+      "startTime": "2026-10-07T11:00:00Z",
+      "endTime": "2026-10-07T11:00:30Z",
+      "histogram": {"count": "3", "sum": 2.4, "min": 0.6, "max": 1.1, "bucketBounds": [0.5, 1], "bucketCounts": ["0", "2", "1"]}
+    },
+    {
+      "name": "gen_ai.client.operation.duration",
+      "unit": "s",
+      "kind": "METRIC_KIND_EXPONENTIAL_HISTOGRAM",
+      "startTime": "2026-10-07T11:00:00Z",
+      "endTime": "2026-10-07T11:00:30Z",
+      "histogram": {"count": "2", "sum": 1.5}
+    }
+  ],
+  "pageInfo": {"nextCursor": "next", "hasMore": true}
+}`
+
+// TestGetSessionMetrics checks the request GetSessionMetrics sends for each
+// option, and that points come back with their value or histogram decoded and
+// the page's cursor.
+func TestGetSessionMetrics(t *testing.T) {
+	tests := []struct {
+		name string
+		opts MetricOptions
+		want url.Values
+	}{
+		{name: "zero options send nothing", want: url.Values{}},
+		{
+			name: "names and paging",
+			opts: MetricOptions{PageOptions: PageOptions{Limit: 100, Cursor: "abc"}, Names: []string{"lk.agents.turn.e2e_latency", " gen_ai.client.operation.duration "}},
+			want: url.Values{
+				"page.pageSize": {"100"},
+				"page.cursor":   {"abc"},
+				"names":         {"lk.agents.turn.e2e_latency", "gen_ai.client.operation.duration"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAuth, gotPath string
+			var gotQuery url.Values
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAuth, gotPath, gotQuery = r.Header.Get("Authorization"), r.URL.Path, r.URL.Query()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(metricsPage))
+			}))
+			t.Cleanup(srv.Close)
+
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			page, err := c.GetSessionMetrics(context.Background(), "p1", "RM_1", tt.opts)
+			require.NoError(t, err)
+
+			assert.Equal(t, "Bearer sekret", gotAuth)
+			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/metrics", gotPath)
+			assert.Equal(t, tt.want, gotQuery)
+
+			assert.Equal(t, "next", page.NextCursor)
+			require.Len(t, page.Points, 4)
+			gauge, sum, hist, expHist := page.Points[0], page.Points[1], page.Points[2], page.Points[3]
+
+			assert.Equal(t, "lk.agents.active_sessions", gauge.Name)
+			assert.Equal(t, oapi.METRICKINDGAUGE, gauge.Kind)
+			assert.Nil(t, gauge.StartTime, "a gauge has no start time")
+			require.NotNil(t, gauge.Value, "a zero value is still a value")
+			assert.Zero(t, *gauge.Value)
+			assert.Nil(t, gauge.Histogram)
+
+			assert.Equal(t, "{token}", sum.Unit)
+			assert.Equal(t, oapi.METRICKINDSUM, sum.Kind)
+			assert.True(t, time.Date(2026, 10, 7, 11, 0, 0, 0, time.UTC).Equal(*sum.StartTime))
+			assert.True(t, time.Date(2026, 10, 7, 11, 0, 30, 0, time.UTC).Equal(*sum.EndTime))
+			assert.Equal(t, 1520.0, *sum.Value)
+			assert.Contains(t, sum.Attributes, "model_name")
+
+			assert.Nil(t, hist.Value)
+			require.NotNil(t, hist.Histogram)
+			assert.Equal(t, "3", *hist.Histogram.Count)
+			assert.Equal(t, []float64{0.5, 1}, *hist.Histogram.BucketBounds)
+			assert.Equal(t, []string{"0", "2", "1"}, *hist.Histogram.BucketCounts)
+
+			assert.Equal(t, oapi.METRICKINDEXPONENTIALHISTOGRAM, expHist.Kind)
+			require.NotNil(t, expHist.Histogram)
+			assert.Nil(t, expHist.Histogram.BucketBounds)
+			assert.Nil(t, expHist.Histogram.Min, "unset when the agent didn't record it")
+		})
+	}
+}
+
+// TestMetricPointJSON checks a point marshals back to the API's own shape,
+// typed attributes and its value or histogram included, so --json prints what
+// the server sent.
+func TestMetricPointJSON(t *testing.T) {
+	for _, point := range []string{
+		`{"name":"lk.agents.active_sessions","kind":"METRIC_KIND_GAUGE","endTime":"2026-10-07T11:00:30Z","value":0}`,
+		`{"name":"lk.agents.turn.e2e_latency","unit":"s","kind":"METRIC_KIND_HISTOGRAM",` +
+			`"startTime":"2026-10-07T11:00:00Z","endTime":"2026-10-07T11:00:30Z",` +
+			`"attributes":{"model_name":"gpt-4o","retries":2,"tags":["a","b"],"nested":{"ok":true},"none":null},` +
+			`"histogram":{"count":"3","sum":2.4,"min":0.6,"max":1.1,"bucketBounds":[0.5,1],"bucketCounts":["0","2","1"]}}`,
+	} {
+		var p MetricPoint
+		require.NoError(t, json.Unmarshal([]byte(point), &p))
+		got, err := json.Marshal(p)
+		require.NoError(t, err)
+		assert.JSONEq(t, point, string(got))
+	}
+}
+
+// TestGetSessionMetricsRejectsBadOptions confirms a negative limit and a blank
+// metric name fail Validate, and fail GetSessionMetrics before any request is
+// sent.
+func TestGetSessionMetricsRejectsBadOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    MetricOptions
+		wantErr string
+	}{
+		{name: "negative limit", opts: MetricOptions{PageOptions: PageOptions{Limit: -1}}, wantErr: "limit must not be negative"},
+		{name: "blank name", opts: MetricOptions{Names: []string{"lk.agents.turn.e2e_latency", " "}}, wantErr: "metric name must not be empty"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.EqualError(t, tt.opts.Validate(), tt.wantErr)
+
+			called := false
+			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			_, err = c.GetSessionMetrics(context.Background(), "p1", "RM_1", tt.opts)
+			require.EqualError(t, err, tt.wantErr)
+			assert.False(t, called, "no request should be sent")
+		})
+	}
+}
+
+// TestGetSessionMetricsErrors checks an unknown session is NotFound and an
+// empty unfiltered first page with user data recording off carries
+// ObservabilityDisabled.
+func TestGetSessionMetricsErrors(t *testing.T) {
+	tests := []struct {
+		name         string
+		status       int
+		body         string
+		wantNotFound bool
+		wantDisabled bool
+	}{
+		{
+			name:         "unknown session",
+			status:       http.StatusNotFound,
+			body:         `{"code":5,"message":"session not found"}`,
+			wantNotFound: true,
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/p1"}]}`,
+			wantDisabled: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			_, err = c.GetSessionMetrics(context.Background(), "p1", "RM_1", MetricOptions{})
+			require.Error(t, err)
+			assert.Equal(t, tt.wantNotFound, IsNotFound(err))
+			_, disabled := ObservabilityDisabled(err)
+			assert.Equal(t, tt.wantDisabled, disabled)
+		})
+	}
+}
