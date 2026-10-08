@@ -3162,32 +3162,6 @@ type LivekitPublicapiAnalyticsV1ModelUsage struct {
 	TtsChars     *string  `json:"ttsChars,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantDetail ParticipantDetail is the per-connection view of one participant identity:
-//
-//	each connection window and the client it connected from.
-type LivekitPublicapiAnalyticsV1ParticipantDetail struct {
-	// Browser Client browser, from the first connection that reported one.
-	Browser *string `json:"browser,omitempty"`
-
-	// ConnectionTimeMs Milliseconds the first connection that reported it took to connect.
-	ConnectionTimeMs *int32 `json:"connectionTimeMs,omitempty"`
-
-	// ConnectionType Transport of the first connection that reported one, e.g. "UDP".
-	ConnectionType *string `json:"connectionType,omitempty"`
-
-	// DeviceModel Client device model, from the first connection that reported one.
-	DeviceModel *string `json:"deviceModel,omitempty"`
-
-	// Os Client operating system, from the first connection that reported one.
-	Os *string `json:"os,omitempty"`
-
-	// SdkVersion LiveKit SDK version, from the first connection that reported one.
-	SdkVersion *string `json:"sdkVersion,omitempty"`
-
-	// Sessions Each connection of the identity: a participant can join, leave and rejoin.
-	Sessions *[]LivekitPublicapiAnalyticsV1ParticipantSession `json:"sessions,omitempty"`
-}
-
 // LivekitPublicapiAnalyticsV1ParticipantInfo ParticipantInfo is one participant identity of a room session, as the
 //
 //	dashboard's participants table shows it.
@@ -3215,26 +3189,61 @@ type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
 	// Region LiveKit region display name; "Unknown" when the region isn't recognized.
 	Region *string `json:"region,omitempty"`
 
-	// RoomId The room session id.
-	RoomId *string `json:"roomId,omitempty"`
+	// Sessions The participant's participant sessions, oldest join first: one per
+	//  connection, so each reconnect adds one. At most 50: a participant that
+	//  reconnected more often has its oldest 50 here. Empty when they couldn't be
+	//  read; the rest of the row still returns.
+	Sessions *[]LivekitPublicapiAnalyticsV1ParticipantSession `json:"sessions,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantSession ParticipantSession is one connection window of a participant identity within a
+// LivekitPublicapiAnalyticsV1ParticipantSession ParticipantSession is one participant session of a participant: one
 //
-//	room session (a participant can join, leave, and rejoin).
+//	join-to-leave stretch, identified by its participant session id (PA_...),
+//	with the client it connected from. A participant that reconnects, from the
+//	same device or another, has several.
 type LivekitPublicapiAnalyticsV1ParticipantSession struct {
-	// JoinedAt When this connection joined.
+	// Browser Client browser, e.g. "chrome".
+	Browser *string `json:"browser,omitempty"`
+
+	// ConnectionTimeMs Milliseconds the client took to connect.
+	ConnectionTimeMs *int32 `json:"connectionTimeMs,omitempty"`
+
+	// ConnectionType Transport the client connected over: "UDP", "TCP" or "TURN"; empty when
+	//  not reported.
+	ConnectionType *string `json:"connectionType,omitempty"`
+
+	// DeviceModel Client device model, e.g. "iPhone 15".
+	DeviceModel *string `json:"deviceModel,omitempty"`
+
+	// DurationSeconds Seconds from joined_at to left_at, as the dashboard counts them. While no
+	//  leave is recorded, to the session's end once it has one, else to now.
+	DurationSeconds *string `json:"durationSeconds,omitempty"`
+
+	// JoinedAt When this participant session joined.
 	//
 	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	JoinedAt *GoogleProtobufTimestamp `json:"joinedAt,omitempty"`
 
-	// LeftAt When this connection left; unset while no leave is recorded.
+	// LeftAt When it left; unset while no leave is recorded.
 	//
 	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
-	// ParticipantId The connection's participant id (PA_...).
-	ParticipantId *string `json:"participantId,omitempty"`
+	// Location Country name, e.g. "United States"; "Unknown" when the rollup has none.
+	Location *string `json:"location,omitempty"`
+
+	// Os Client operating system: "ios", "android", "windows", "mac" or "linux";
+	//  empty when not reported.
+	Os *string `json:"os,omitempty"`
+
+	// ParticipantSessionId The participant session id (PA_...).
+	ParticipantSessionId *string `json:"participantSessionId,omitempty"`
+
+	// Region LiveKit region display name; "Unknown" when the region isn't recognized.
+	Region *string `json:"region,omitempty"`
+
+	// SdkVersion LiveKit client SDK version, e.g. "2.6.1". The SDK's name isn't recorded.
+	SdkVersion *string `json:"sdkVersion,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1ParticipantSortField ParticipantSortField is the column a participant listing is ordered by.
@@ -3292,20 +3301,10 @@ type LivekitPublicapiAnalyticsV1PublishedSources struct {
 	ScreenShareTrack *bool `json:"screenShareTrack,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1Session Session is one room-session list row.
+// LivekitPublicapiAnalyticsV1Session Session is one room-session list row. Bandwidth and connection time are on
+//
+//	GetSession's detail only.
 type LivekitPublicapiAnalyticsV1Session struct {
-	// BandwidthIn Bytes participants published. Not filled on sessions yet; GetSession
-	//  returns it as detail.bandwidth_in.
-	BandwidthIn *string `json:"bandwidthIn,omitempty"`
-
-	// BandwidthOut Bytes participants subscribed to. Not filled on sessions yet; GetSession
-	//  returns it as detail.bandwidth_out.
-	BandwidthOut *string `json:"bandwidthOut,omitempty"`
-
-	// ConnectionSeconds WebRTC connection time in seconds. Not filled on sessions yet; GetSession
-	//  returns it as detail.connection_seconds.
-	ConnectionSeconds *string `json:"connectionSeconds,omitempty"`
-
 	// EndedAt When the session ended. A session that stopped reporting is given its last
 	//  report time, even while its status is still ACTIVE; unset while it is live.
 	//
@@ -3755,25 +3754,26 @@ type LivekitPublicapiAnalyticsV1SessionDetail struct {
 	Tags *[]string `json:"tags,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1SessionEvent SessionEvent is one lifecycle event of a room session (room created,
+// LivekitPublicapiAnalyticsV1SessionEvent SessionEvent is one event of a room session, such as a participant joining
 //
-//	participant joined/left, room ended, ...). The payload is event-specific.
+//	or a track being published.
 type LivekitPublicapiAnalyticsV1SessionEvent struct {
+	// ParticipantIdentity The identity of the participant the event is about; empty for a room
+	//  event, or an API call that names no participant.
 	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
 
-	// Payload Represents a JSON object.
-	//
-	//  An unordered key-value map, intending to perfectly capture the semantics of a
-	//  JSON object. This enables parsing any arbitrary JSON payload as a message
-	//  field in ProtoJSON format.
-	//
-	//  This follows RFC 8259 guidelines for interoperable JSON: notably this type
-	//  cannot represent large Int64 values or `NaN`/`Infinity` numbers,
-	//  since the JSON format generally does not support those values in its number
-	//  type.
-	//
-	//  If you do not intend to parse arbitrary JSON into your message, a custom
-	//  typed message should be preferred instead of using this type.
+	// ParticipantSessionId The participant session (PA_...) the event is about; empty when
+	//  participant_identity is.
+	ParticipantSessionId *string `json:"participantSessionId,omitempty"`
+
+	// Payload The event's fields from an allowlist, each present only when the event
+	//  has it:
+	//    - participant events: participantKind, disconnectReason,
+	//      reconnectReason, isMigration and connectionType;
+	//    - track events: trackId, trackType, trackSource, mimeType and muted;
+	//    - ROOM_ENDED: reason;
+	//    - API_CALL: service, method, status, twirpErrorCode and durationNs.
+	//  Every other field the event recorded is left out.
 	Payload *GoogleProtobufStruct `json:"payload,omitempty"`
 
 	// Timestamp A Timestamp represents a point in time independent of any time zone or local
@@ -3868,7 +3868,9 @@ type LivekitPublicapiAnalyticsV1SessionEvent struct {
 	//
 	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
-	Type      *string                  `json:"type,omitempty"`
+
+	// Type The event's type, an AnalyticsEventType name such as PARTICIPANT_JOINED.
+	Type *string `json:"type,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1SessionEventsListResponse defines model for livekit.publicapi.analytics.v1.SessionEvents.List.Response.
@@ -3877,17 +3879,6 @@ type LivekitPublicapiAnalyticsV1SessionEventsListResponse struct {
 
 	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1SessionParticipantsGetResponse defines model for livekit.publicapi.analytics.v1.SessionParticipants.Get.Response.
-type LivekitPublicapiAnalyticsV1SessionParticipantsGetResponse struct {
-	// Detail ParticipantDetail is the per-connection view of one participant identity:
-	//  each connection window and the client it connected from.
-	Detail *LivekitPublicapiAnalyticsV1ParticipantDetail `json:"detail,omitempty"`
-
-	// Participant ParticipantInfo is one participant identity of a room session, as the
-	//  dashboard's participants table shows it.
-	Participant *LivekitPublicapiAnalyticsV1ParticipantInfo `json:"participant,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1SessionParticipantsListResponse defines model for livekit.publicapi.analytics.v1.SessionParticipants.List.Response.
@@ -3907,7 +3898,8 @@ type LivekitPublicapiAnalyticsV1SessionsGetResponse struct {
 	//  Session.has_detail_data on the list row).
 	Detail *LivekitPublicapiAnalyticsV1SessionDetail `json:"detail,omitempty"`
 
-	// Session Session is one room-session list row.
+	// Session Session is one room-session list row. Bandwidth and connection time are on
+	//  GetSession's detail only.
 	Session *LivekitPublicapiAnalyticsV1Session `json:"session,omitempty"`
 }
 
@@ -7159,6 +7151,23 @@ type AnalyticsServiceListSessionEventsParams struct {
 
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// Types Event types to return, by name, such as TRACK_PUBLISHED: the names of
+	//  LiveKit's AnalyticsEventType. Each matches exactly. Empty returns the
+	//  dashboard's seven defaults, or with participant_session_id its eleven
+	//  participant defaults, track events included (see ListSessionEvents).
+	//  An unknown name is InvalidArgument.
+	Types *[]string `form:"types,omitempty" json:"types,omitempty"`
+
+	// ParticipantSessionId Only the events of this participant session (PA_...), as the
+	//  participants list's ParticipantSession.participant_session_id names
+	//  it. Room events and API calls name no participant session, so they
+	//  are left out. Anything but a PA_ id is InvalidArgument.
+	ParticipantSessionId *string `form:"participantSessionId,omitempty" json:"participantSessionId,omitempty"`
+
+	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
+	//  first) when unset.
+	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // ObservabilityServiceGetSessionLogsParams defines parameters for ObservabilityServiceGetSessionLogs.
@@ -10322,10 +10331,31 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnalyticsServiceListSessionEvents ListSessionEvents
+	// AnalyticsServiceListSessionEvents ListSessionEvents lists one room session's events, oldest first by default,
+	//  cursor-paginated with no total. With no `types`, it returns the seven the
+	//  dashboard's events table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT,
+	//  PARTICIPANT_ACTIVE, PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and
+	//  API_CALL. `types` asks for others, such as TRACK_PUBLISHED, and
+	//  `participant_session_id` keeps one participant session's events. With
+	//  `participant_session_id` and no `types`, it returns the eleven the
+	//  dashboard's participant events table shows: that participant session's
+	//  PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_RESUMED and
+	//  PARTICIPANT_ACTIVE, and its TRACK_MUTED, TRACK_UNMUTED, TRACK_PUBLISHED,
+	//  TRACK_UNPUBLISHED, TRACK_SUBSCRIBED, TRACK_SUBSCRIBE_REQUESTED and
+	//  TRACK_SUBSCRIBE_FAILED.
 	//
-	// ListSessionEvents lists lifecycle events for one room session; each event
-	//  carries its own free-form payload.
+	// Unlike the dashboard, on purpose: an unknown type or a malformed
+	//  participant session id is InvalidArgument rather than being searched for
+	//  as typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
+	//  TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
+	//  fields, leaving out participants' attributes and metadata and API calls'
+	//  request bodies. Each event and participant row still carries the
+	//  participant's identity, as the dashboard shows it to every member, and
+	//  for a SIP caller that can be a phone number.
+	//
+	//  Events are kept for 60 days, which can be shorter than the session's other
+	//  data, so an older session can list no events. An ACTIVE session lists the
+	//  events recorded so far. An unknown session is NotFound.
 	//
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -10381,18 +10411,12 @@ type ClientInterface interface {
 	// AnalyticsServiceListSessionParticipants ListSessionParticipants
 	//
 	// ListSessionParticipants lists the participants of one room session, one row
-	//  per identity, cursor-paginated; newest join first by default.
+	//  per identity, cursor-paginated; newest join first by default. Each row
+	//  carries the participant's participant sessions (PA_...), each with the
+	//  client it connected from.
 	//
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 	AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AnalyticsServiceGetParticipant GetParticipant
-	//
-	// GetParticipant returns one participant of one room session, with the
-	//  per-connection detail the list leaves out.
-	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants/{participantId} (the `AnalyticsServiceGetParticipant` operationId).
-	AnalyticsServiceGetParticipant(ctx context.Context, projectId string, sessionId string, participantId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 	//
@@ -11336,11 +11360,33 @@ func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId strin
 	return c.Client.Do(req)
 }
 
-// AnalyticsServiceListSessionEvents ListSessionEvents
+// AnalyticsServiceListSessionEvents ListSessionEvents lists one room session's events, oldest first by default,
 //
-// ListSessionEvents lists lifecycle events for one room session; each event
+//	cursor-paginated with no total. With no `types`, it returns the seven the
+//	dashboard's events table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT,
+//	PARTICIPANT_ACTIVE, PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and
+//	API_CALL. `types` asks for others, such as TRACK_PUBLISHED, and
+//	`participant_session_id` keeps one participant session's events. With
+//	`participant_session_id` and no `types`, it returns the eleven the
+//	dashboard's participant events table shows: that participant session's
+//	PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_RESUMED and
+//	PARTICIPANT_ACTIVE, and its TRACK_MUTED, TRACK_UNMUTED, TRACK_PUBLISHED,
+//	TRACK_UNPUBLISHED, TRACK_SUBSCRIBED, TRACK_SUBSCRIBE_REQUESTED and
+//	TRACK_SUBSCRIBE_FAILED.
 //
-//	carries its own free-form payload.
+// Unlike the dashboard, on purpose: an unknown type or a malformed
+//
+//	participant session id is InvalidArgument rather than being searched for
+//	as typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
+//	TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
+//	fields, leaving out participants' attributes and metadata and API calls'
+//	request bodies. Each event and participant row still carries the
+//	participant's identity, as the dashboard shows it to every member, and
+//	for a SIP caller that can be a phone number.
+//
+//	Events are kept for 60 days, which can be shorter than the session's other
+//	data, so an older session can list no events. An ACTIVE session lists the
+//	events recorded so far. An unknown session is NotFound.
 //
 // Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -11431,30 +11477,13 @@ func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, proj
 //
 // ListSessionParticipants lists the participants of one room session, one row
 //
-//	per identity, cursor-paginated; newest join first by default.
+//	per identity, cursor-paginated; newest join first by default. Each row
+//	carries the participant's participant sessions (PA_...), each with the
+//	client it connected from.
 //
 // Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceListSessionParticipantsRequest(c.Server, projectId, sessionId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// AnalyticsServiceGetParticipant GetParticipant
-//
-// GetParticipant returns one participant of one room session, with the
-//
-//	per-connection detail the list leaves out.
-//
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants/{participantId} (the `AnalyticsServiceGetParticipant` operationId).
-func (c *Client) AnalyticsServiceGetParticipant(ctx context.Context, projectId string, sessionId string, participantId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAnalyticsServiceGetParticipantRequest(c.Server, projectId, sessionId, participantId)
 	if err != nil {
 		return nil, err
 	}
@@ -13723,6 +13752,42 @@ func NewAnalyticsServiceListSessionEventsRequest(server string, projectId string
 
 		}
 
+		if params.Types != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "types", *params.Types, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ParticipantSessionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "participantSessionId", *params.ParticipantSessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SortOrder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -14027,54 +14092,6 @@ func NewAnalyticsServiceListSessionParticipantsRequest(server string, projectId 
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAnalyticsServiceGetParticipantRequest constructs an http.Request for the AnalyticsServiceGetParticipant method
-func NewAnalyticsServiceGetParticipantRequest(server string, projectId string, sessionId string, participantId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "participantId", participantId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/participants/%s", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -16164,10 +16181,31 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSessionWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionResponse, error)
 
-	// AnalyticsServiceListSessionEventsWithResponse ListSessionEvents
+	// AnalyticsServiceListSessionEventsWithResponse ListSessionEvents lists one room session's events, oldest first by default,
+	//  cursor-paginated with no total. With no `types`, it returns the seven the
+	//  dashboard's events table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT,
+	//  PARTICIPANT_ACTIVE, PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and
+	//  API_CALL. `types` asks for others, such as TRACK_PUBLISHED, and
+	//  `participant_session_id` keeps one participant session's events. With
+	//  `participant_session_id` and no `types`, it returns the eleven the
+	//  dashboard's participant events table shows: that participant session's
+	//  PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_RESUMED and
+	//  PARTICIPANT_ACTIVE, and its TRACK_MUTED, TRACK_UNMUTED, TRACK_PUBLISHED,
+	//  TRACK_UNPUBLISHED, TRACK_SUBSCRIBED, TRACK_SUBSCRIBE_REQUESTED and
+	//  TRACK_SUBSCRIBE_FAILED.
 	//
-	// ListSessionEvents lists lifecycle events for one room session; each event
-	//  carries its own free-form payload.
+	// Unlike the dashboard, on purpose: an unknown type or a malformed
+	//  participant session id is InvalidArgument rather than being searched for
+	//  as typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
+	//  TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
+	//  fields, leaving out participants' attributes and metadata and API calls'
+	//  request bodies. Each event and participant row still carries the
+	//  participant's identity, as the dashboard shows it to every member, and
+	//  for a SIP caller that can be a phone number.
+	//
+	//  Events are kept for 60 days, which can be shorter than the session's other
+	//  data, so an older session can list no events. An ACTIVE session lists the
+	//  events recorded so far. An unknown session is NotFound.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -16229,22 +16267,14 @@ type ClientWithResponsesInterface interface {
 	// AnalyticsServiceListSessionParticipantsWithResponse ListSessionParticipants
 	//
 	// ListSessionParticipants lists the participants of one room session, one row
-	//  per identity, cursor-paginated; newest join first by default.
+	//  per identity, cursor-paginated; newest join first by default. Each row
+	//  carries the participant's participant sessions (PA_...), each with the
+	//  client it connected from.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 	AnalyticsServiceListSessionParticipantsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionParticipantsResponse, error)
-
-	// AnalyticsServiceGetParticipantWithResponse GetParticipant
-	//
-	// GetParticipant returns one participant of one room session, with the
-	//  per-connection detail the list leaves out.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants/{participantId} (the `AnalyticsServiceGetParticipant` operationId).
-	AnalyticsServiceGetParticipantWithResponse(ctx context.Context, projectId string, sessionId string, participantId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetParticipantResponse, error)
 
 	// ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 	//
@@ -17854,47 +17884,6 @@ func (r AnalyticsServiceListSessionParticipantsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AnalyticsServiceListSessionParticipantsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type AnalyticsServiceGetParticipantResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAnalyticsV1SessionParticipantsGetResponse
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r AnalyticsServiceGetParticipantResponse) GetJSON200() *LivekitPublicapiAnalyticsV1SessionParticipantsGetResponse {
-	return r.JSON200
-}
-
-// GetBody returns the raw response body bytes
-func (r AnalyticsServiceGetParticipantResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r AnalyticsServiceGetParticipantResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AnalyticsServiceGetParticipantResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AnalyticsServiceGetParticipantResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -19752,11 +19741,33 @@ func (c *ClientWithResponses) AnalyticsServiceGetSessionWithResponse(ctx context
 	return ParseAnalyticsServiceGetSessionResponse(rsp)
 }
 
-// AnalyticsServiceListSessionEventsWithResponse ListSessionEvents
+// AnalyticsServiceListSessionEventsWithResponse ListSessionEvents lists one room session's events, oldest first by default,
 //
-// ListSessionEvents lists lifecycle events for one room session; each event
+//	cursor-paginated with no total. With no `types`, it returns the seven the
+//	dashboard's events table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT,
+//	PARTICIPANT_ACTIVE, PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and
+//	API_CALL. `types` asks for others, such as TRACK_PUBLISHED, and
+//	`participant_session_id` keeps one participant session's events. With
+//	`participant_session_id` and no `types`, it returns the eleven the
+//	dashboard's participant events table shows: that participant session's
+//	PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_RESUMED and
+//	PARTICIPANT_ACTIVE, and its TRACK_MUTED, TRACK_UNMUTED, TRACK_PUBLISHED,
+//	TRACK_UNPUBLISHED, TRACK_SUBSCRIBED, TRACK_SUBSCRIBE_REQUESTED and
+//	TRACK_SUBSCRIBE_FAILED.
 //
-//	carries its own free-form payload.
+// Unlike the dashboard, on purpose: an unknown type or a malformed
+//
+//	participant session id is InvalidArgument rather than being searched for
+//	as typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
+//	TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
+//	fields, leaving out participants' attributes and metadata and API calls'
+//	request bodies. Each event and participant row still carries the
+//	participant's identity, as the dashboard shows it to every member, and
+//	for a SIP caller that can be a phone number.
+//
+//	Events are kept for 60 days, which can be shorter than the session's other
+//	data, so an older session can list no events. An ACTIVE session lists the
+//	events recorded so far. An unknown session is NotFound.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19841,7 +19852,9 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionMetricsWithResponse(
 //
 // ListSessionParticipants lists the participants of one room session, one row
 //
-//	per identity, cursor-paginated; newest join first by default.
+//	per identity, cursor-paginated; newest join first by default. Each row
+//	carries the participant's participant sessions (PA_...), each with the
+//	client it connected from.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19852,23 +19865,6 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionParticipantsWithRespons
 		return nil, err
 	}
 	return ParseAnalyticsServiceListSessionParticipantsResponse(rsp)
-}
-
-// AnalyticsServiceGetParticipantWithResponse GetParticipant
-//
-// GetParticipant returns one participant of one room session, with the
-//
-//	per-connection detail the list leaves out.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants/{participantId} (the `AnalyticsServiceGetParticipant` operationId).
-func (c *ClientWithResponses) AnalyticsServiceGetParticipantWithResponse(ctx context.Context, projectId string, sessionId string, participantId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetParticipantResponse, error) {
-	rsp, err := c.AnalyticsServiceGetParticipant(ctx, projectId, sessionId, participantId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAnalyticsServiceGetParticipantResponse(rsp)
 }
 
 // ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
@@ -21298,32 +21294,6 @@ func ParseAnalyticsServiceListSessionParticipantsResponse(rsp *http.Response) (*
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiAnalyticsV1SessionParticipantsListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAnalyticsServiceGetParticipantResponse parses an HTTP response from a AnalyticsServiceGetParticipantWithResponse call
-func ParseAnalyticsServiceGetParticipantResponse(rsp *http.Response) (*AnalyticsServiceGetParticipantResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AnalyticsServiceGetParticipantResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAnalyticsV1SessionParticipantsGetResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
