@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -101,6 +102,69 @@ func ObservabilityDisabled(err error) (dashboardURL string, ok bool) {
 		return "", false
 	}
 	return detail.DashboardURL, true
+}
+
+// TranscriptItem is one entry in a session's conversation, with the variant
+// the API sent decoded: exactly one of Message, ToolCall, ToolResult,
+// AgentHandoff and ConfigUpdate is set, or none for a kind newer than this
+// client. It marshals back to the API's own JSON.
+type TranscriptItem struct {
+	ID string `json:"id,omitempty"`
+	// Timestamp is when the item happened: for a message, when its speaker
+	// started speaking.
+	Timestamp    *time.Time                                                      `json:"timestamp,omitempty"`
+	Message      *oapi.LivekitPublicapiObservabilityV1TranscriptItemMessage      `json:"message,omitempty"`
+	ToolCall     *oapi.LivekitPublicapiObservabilityV1TranscriptItemToolCall     `json:"toolCall,omitempty"`
+	ToolResult   *oapi.LivekitPublicapiObservabilityV1TranscriptItemToolResult   `json:"toolResult,omitempty"`
+	AgentHandoff *oapi.LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff `json:"agentHandoff,omitempty"`
+	ConfigUpdate *oapi.LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate `json:"configUpdate,omitempty"`
+}
+
+// TranscriptPage is one page of a session's transcript.
+type TranscriptPage struct {
+	// Items are oldest first, in the order the agent recorded them.
+	Items []TranscriptItem
+	// NextCursor is non-empty when more pages remain (pass it back as
+	// PageOptions.Cursor).
+	NextCursor string
+	// SkippedRecords counts this page's records the server couldn't read as
+	// transcript items and left out.
+	SkippedRecords int
+}
+
+// GetSessionTranscript returns one page of a session's conversation: messages
+// with their roles and latencies, tool calls and results, agent handoffs and
+// configuration changes. The agent exports its transcript when the session
+// ends, so an active session returns what exists so far, usually nothing,
+// without an error. An unknown session is NotFound (see IsNotFound); an empty
+// first page while the project's user data recording is off is a
+// FailedPrecondition that ObservabilityDisabled recognizes.
+func (c *Client) GetSessionTranscript(ctx context.Context, projectID, sessionID string, opts PageOptions) (*TranscriptPage, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, err
+	}
+	params := &oapi.ObservabilityServiceGetSessionTranscriptParams{}
+	params.PagePageSize, params.PageCursor = opts.params()
+	resp, err := c.gen.ObservabilityServiceGetSessionTranscriptWithResponse(ctx, projectID, sessionID, params)
+	if err != nil {
+		return nil, err
+	}
+	if resp.JSON200 == nil {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	// The generated item is a union that hides which variant it holds, so
+	// decode the body again into items that say.
+	var body struct {
+		Items []TranscriptItem `json:"items"`
+	}
+	if err := json.Unmarshal(resp.Body, &body); err != nil {
+		return nil, fmt.Errorf("unexpected response from server: %w", err)
+	}
+	page := &TranscriptPage{Items: body.Items, NextCursor: pageCursor(resp.JSON200.PageInfo)}
+	if n := resp.JSON200.SkippedRecords; n != nil {
+		page.SkippedRecords = *n
+	}
+	return page, nil
 }
 
 // gzipMagic opens every gzip stream (RFC 1952).
