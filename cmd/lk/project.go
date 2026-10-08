@@ -516,6 +516,7 @@ func projectCacheEntries(projects []oapi.LivekitPublicapiProjectsV1Project) []co
 			ProjectId: util.Deref(p.Id),
 			Name:      util.Deref(p.Name),
 			Subdomain: util.Deref(p.Subdomain),
+			URL:       util.Deref(p.Url),
 			Alias:     alias,
 		}
 	}

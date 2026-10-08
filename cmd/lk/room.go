@@ -599,7 +599,7 @@ var (
 )
 
 func createRoomClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	_, err := requireProject(ctx, cmd)
+	_, err := requireProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}

@@ -571,7 +571,7 @@ func parseSIPMediaConfig(cmd *cli.Command) (*livekit.SIPMediaConfig, error) {
 }
 
 func createSIPClient(ctx context.Context, cmd *cli.Command) (*lksdk.SIPClient, error) {
-	_, err := requireProject(ctx, cmd)
+	_, err := requireProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
