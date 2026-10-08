@@ -481,14 +481,16 @@ Console needs a terminal. If a program rather than a person is going to hold the
 
 ## Agent debugger
 
-`lk agent debugger` is built for coding agents such as Claude Code, Codex, and Cursor. When one of them is working on your LiveKit agent, it can use this command to hold a text conversation with the agent it just edited, read the replies and tool calls, and decide what to try next, all from the shell, with no human at a microphone. It is an ad-hoc, local stand-in for [Agent Simulations](https://docs.livekit.io/agents/start/testing/simulations/) in which the coding agent plays the user and pays with its own tokens: the agent runs in console mode with STT/TTS disabled, so a turn costs only your LLM and tool calls, and nothing touches a LiveKit room.
+`lk agent debugger` is built for coding agents such as Claude Code, Codex, and Cursor. When one of them is working on your LiveKit agent, it can use this command to hold a conversation with the agent it just edited, read the replies and tool calls, and decide what to try next, all from the shell, with no human at a microphone. It is an ad-hoc, local stand-in for [Agent Simulations](https://docs.livekit.io/agents/start/testing/simulations/) in which the coding agent plays the user and pays with its own tokens: by default the agent runs in console mode with STT/TTS disabled, so a turn costs only your LLM and tool calls, and nothing touches a LiveKit room.
+
+Start the session with `--audio` to test the audio path instead: each `say` is spoken with LiveKit Inference TTS into the agent's microphone input, and the agent runs its full audio pipeline (STT, turn detection, TTS, or a realtime model that only takes audio), so misheard names, spelled-out digits, and endpointing behave as they do on a call. Each turn then prints what the agent transcribed, with the text you sent alongside when the words differ. The TTS runs on LiveKit Inference and is billed to your connected LiveKit Cloud project, resolved like other `lk` commands.
 
 People can use it too, but the output and flags are shaped for a program driving it one command at a time: every turn prints tool calls with their arguments and results, handoffs, errors, and the reply; exit codes are non-zero when a turn fails; `--json` is available everywhere. If you want to talk to your agent yourself, `lk agent console` is the better fit.
 
 A typical session, run from the agent project directory (`lk agent dbg` is short for `lk agent debugger`):
 
 ```shell
-lk agent debugger start                       # starts the agent, prints its opening message if it has one
+lk agent debugger start                       # starts the agent, prints its opening message if it has one (--audio to speak turns)
 lk agent debugger say "Hi, what can you do?"  # prints tool calls (with arguments and results), handoffs, and the reply
 lk agent debugger say "Book a table for two tonight"
 lk agent debugger chat-history                # the whole conversation so far
@@ -556,6 +558,32 @@ lk docs --server-url https://docs-staging.example.com/mcp/ search "agents"
 # Access a private Vercel preview deploy
 lk docs --server-url https://docs-abc123.vercel.app/mcp/ --vercel-header <token> overview
 ```
+
+## Coding agent skills
+
+`lk skills` installs LiveKit's [agent skills](https://github.com/livekit/agent-skills) into your coding agents (Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI, OpenCode, Windsurf, Amp, Cline, Goose), and adds the [LiveKit Docs MCP server](https://docs.livekit.io/intro/mcp-server/) to their MCP config.
+
+```shell
+# Install every skill and the Docs MCP server for the agents detected on this machine
+lk skills install
+
+# Only some agents, or user-wide instead of the current project
+lk skills install --agent claude-code --agent codex
+lk skills install --global
+
+# See what's installed, whether it's current, and Docs MCP setup
+lk skills list
+
+# Pull the latest skills
+lk skills update
+
+# Uninstall
+lk skills remove
+```
+
+Skills are copied (not symlinked) into each agent's skills directory; agents that read the shared `.agents/skills` directory get one copy. Installs are recorded in `skills-lock.json` (commit it with the skills), or `~/.agents/.skill-lock.json` with `--global`. These are the same lock files [`npx skills`](https://github.com/vercel-labs/skills) and `gh skill` use, so any of the three tools can update what another installed. Skills you've edited locally are never overwritten unless you pass `--force`.
+
+`lk agent init` offers to install skills into new agent projects for the coding agents on your machine; pass `--skills=false` to skip.
 
 ## Additional notes
 

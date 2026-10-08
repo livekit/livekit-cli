@@ -69,9 +69,9 @@ func parseSimulationStatus(s string) (oapi.LivekitSimulationRunStatus, error) {
 
 // ListSimulationRuns returns one page of the simulation runs for a project,
 // optionally filtered by status name (e.g. "running", "completed"). This
-// operation is token-paginated: pageToken requests a specific page and the
-// returned nextToken is non-empty when more pages remain.
-func (c *Client) ListSimulationRuns(ctx context.Context, projectID, status, pageToken string) (runs []oapi.LivekitSimulationRun, nextToken string, err error) {
+// operation is cursor-paginated: cursor requests a specific page and the
+// returned nextCursor is non-empty when more pages remain.
+func (c *Client) ListSimulationRuns(ctx context.Context, projectID, status, cursor string) (runs []oapi.LivekitSimulationRun, nextCursor string, err error) {
 	params := &oapi.SimulationServiceListSimulationRunsParams{}
 	if status != "" {
 		s, perr := parseSimulationStatus(status)
@@ -80,8 +80,8 @@ func (c *Client) ListSimulationRuns(ctx context.Context, projectID, status, page
 		}
 		params.Status = &s
 	}
-	if pageToken != "" {
-		params.PageTokenToken = ptr(pageToken)
+	if cursor != "" {
+		params.PageCursor = ptr(cursor)
 	}
 	resp, err := c.gen.SimulationServiceListSimulationRunsWithResponse(ctx, projectID, params)
 	if err != nil {
@@ -90,10 +90,7 @@ func (c *Client) ListSimulationRuns(ctx context.Context, projectID, status, page
 	if resp.JSON200 == nil {
 		return nil, "", responseError(resp.StatusCode(), resp.Body)
 	}
-	if pt := resp.JSON200.NextPageToken; pt != nil && pt.Token != nil {
-		nextToken = *pt.Token
-	}
-	return items(resp.JSON200.Runs), nextToken, nil
+	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
 }
 
 // GetSimulationRun returns a single simulation run by id.
@@ -110,7 +107,7 @@ func (c *Client) GetSimulationRun(ctx context.Context, projectID, runID string) 
 
 // CreateSimulationRun starts a new simulation run. The response carries the run
 // id plus a presigned POST target the caller must upload the agent bundle to.
-func (c *Client) CreateSimulationRun(ctx context.Context, projectID string, opts CreateSimulationOptions) (*oapi.LivekitSimulationRunCreateResponse, error) {
+func (c *Client) CreateSimulationRun(ctx context.Context, projectID string, opts CreateSimulationOptions) (*oapi.LivekitPublicapiSimulationsV1SimulationRunsCreateResponse, error) {
 	mode, err := parseSimulationMode(opts.Mode)
 	if err != nil {
 		return nil, err
