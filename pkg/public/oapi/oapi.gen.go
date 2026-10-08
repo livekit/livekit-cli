@@ -656,6 +656,57 @@ func (e LivekitPublicapiObservabilityV1Role) Valid() bool {
 	}
 }
 
+// Defines values for LivekitPublicapiObservabilityV1SpanKind.
+const (
+	SPANKINDCLIENT      LivekitPublicapiObservabilityV1SpanKind = "SPAN_KIND_CLIENT"
+	SPANKINDCONSUMER    LivekitPublicapiObservabilityV1SpanKind = "SPAN_KIND_CONSUMER"
+	SPANKINDINTERNAL    LivekitPublicapiObservabilityV1SpanKind = "SPAN_KIND_INTERNAL"
+	SPANKINDPRODUCER    LivekitPublicapiObservabilityV1SpanKind = "SPAN_KIND_PRODUCER"
+	SPANKINDSERVER      LivekitPublicapiObservabilityV1SpanKind = "SPAN_KIND_SERVER"
+	SPANKINDUNSPECIFIED LivekitPublicapiObservabilityV1SpanKind = "SPAN_KIND_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1SpanKind enum.
+func (e LivekitPublicapiObservabilityV1SpanKind) Valid() bool {
+	switch e {
+	case SPANKINDCLIENT:
+		return true
+	case SPANKINDCONSUMER:
+		return true
+	case SPANKINDINTERNAL:
+		return true
+	case SPANKINDPRODUCER:
+		return true
+	case SPANKINDSERVER:
+		return true
+	case SPANKINDUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiObservabilityV1SpanStatus.
+const (
+	SPANSTATUSERROR       LivekitPublicapiObservabilityV1SpanStatus = "SPAN_STATUS_ERROR"
+	SPANSTATUSOK          LivekitPublicapiObservabilityV1SpanStatus = "SPAN_STATUS_OK"
+	SPANSTATUSUNSPECIFIED LivekitPublicapiObservabilityV1SpanStatus = "SPAN_STATUS_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1SpanStatus enum.
+func (e LivekitPublicapiObservabilityV1SpanStatus) Valid() bool {
+	switch e {
+	case SPANSTATUSERROR:
+		return true
+	case SPANSTATUSOK:
+		return true
+	case SPANSTATUSUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
 // CloudProtocolPIIRedactionCategory PIIRedactionCategory is the canonical taxonomy of PII entity types a project
 //
 //	may select for redaction. It is the shared contract across Cloud, backend,
@@ -4386,9 +4437,15 @@ type LivekitPublicapiObservabilityV1RecordingFileType string
 // LivekitPublicapiObservabilityV1Role Role is who a transcript message is from.
 type LivekitPublicapiObservabilityV1Role string
 
-// LivekitPublicapiObservabilityV1Span Span is one unit of work in the session's trace.
+// LivekitPublicapiObservabilityV1Span Span is one unit of work in the session's trace, such as an agent turn or
+//
+//	an LLM request.
 type LivekitPublicapiObservabilityV1Span struct {
-	Attributes *map[string]string `json:"attributes,omitempty"`
+	// Attributes The span's attributes, typed and nested as the agent recorded them, with
+	//  its resource's and scope's attributes merged in, such as lk.agent_name;
+	//  the span's own value wins. An integer beyond ±2^53 is its decimal string,
+	//  and bytes are base64.
+	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
 	// EndTime A Timestamp represents a point in time independent of any time zone or local
 	//  calendar, encoded as a count of seconds and fractions of seconds at
@@ -4484,11 +4541,16 @@ type LivekitPublicapiObservabilityV1Span struct {
 	EndTime *GoogleProtobufTimestamp                    `json:"endTime,omitempty"`
 	Events  *[]LivekitPublicapiObservabilityV1SpanEvent `json:"events,omitempty"`
 
-	// Kind OTEL span kind, projected as a string (e.g. "internal", "client").
-	Kind         *string `json:"kind,omitempty"`
-	Name         *string `json:"name,omitempty"`
+	// Kind SpanKind is a span's OpenTelemetry kind.
+	Kind *LivekitPublicapiObservabilityV1SpanKind `json:"kind,omitempty"`
+	Name *string                                  `json:"name,omitempty"`
+
+	// ParentSpanId Empty for a root span. A span whose parent isn't among the session's
+	//  spans is a root too, as the dashboard shows it.
 	ParentSpanId *string `json:"parentSpanId,omitempty"`
-	SpanId       *string `json:"spanId,omitempty"`
+
+	// SpanId The span's ids, as lowercase hex.
+	SpanId *string `json:"spanId,omitempty"`
 
 	// StartTime A Timestamp represents a point in time independent of any time zone or local
 	//  calendar, encoded as a count of seconds and fractions of seconds at
@@ -4583,16 +4645,19 @@ type LivekitPublicapiObservabilityV1Span struct {
 	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
 
-	// Status "ok" | "error" | "" (unset).
-	Status        *string `json:"status,omitempty"`
-	StatusMessage *string `json:"statusMessage,omitempty"`
-	TraceId       *string `json:"traceId,omitempty"`
+	// Status SpanStatus is a span's OpenTelemetry status code.
+	Status        *LivekitPublicapiObservabilityV1SpanStatus `json:"status,omitempty"`
+	StatusMessage *string                                    `json:"statusMessage,omitempty"`
+	TraceId       *string                                    `json:"traceId,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1SpanEvent SpanEvent is a timestamped event recorded within a Span.
+// LivekitPublicapiObservabilityV1SpanEvent SpanEvent is a timestamped event recorded within a Span, such as an
+//
+//	exception.
 type LivekitPublicapiObservabilityV1SpanEvent struct {
-	Attributes *map[string]string `json:"attributes,omitempty"`
-	Name       *string            `json:"name,omitempty"`
+	// Attributes The event's own attributes, typed and nested as the agent recorded them.
+	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
+	Name       *string                          `json:"name,omitempty"`
 
 	// Timestamp A Timestamp represents a point in time independent of any time zone or local
 	//  calendar, encoded as a count of seconds and fractions of seconds at
@@ -4688,11 +4753,26 @@ type LivekitPublicapiObservabilityV1SpanEvent struct {
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 }
 
+// LivekitPublicapiObservabilityV1SpanKind SpanKind is a span's OpenTelemetry kind.
+type LivekitPublicapiObservabilityV1SpanKind string
+
+// LivekitPublicapiObservabilityV1SpanStatus SpanStatus is a span's OpenTelemetry status code.
+type LivekitPublicapiObservabilityV1SpanStatus string
+
 // LivekitPublicapiObservabilityV1TracesGetResponse defines model for livekit.publicapi.observability.v1.Traces.Get.Response.
 type LivekitPublicapiObservabilityV1TracesGetResponse struct {
 	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
-	PageInfo *LivekitPublicapiCommonV1PageInfo      `json:"pageInfo,omitempty"`
-	Spans    *[]LivekitPublicapiObservabilityV1Span `json:"spans,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+
+	// Spans By start time, oldest first. Spans that start together are ordered by
+	//  span id as the aggregator stores it: the id's 8 bytes read as a
+	//  little-endian unsigned integer, which isn't the order of its hex
+	//  string. The pages read the spans the first page found, so a span
+	//  exported later waits for a new read. On an ACTIVE session, a span
+	//  exported mid-read can still shift the later pages, which are read by
+	//  offset, so a span can repeat or be skipped: dedupe by span_id, and
+	//  read again from the first page to pick up a skipped span.
+	Spans *[]LivekitPublicapiObservabilityV1Span `json:"spans,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptGetResponse defines model for livekit.publicapi.observability.v1.Transcript.Get.Response.
@@ -10248,10 +10328,17 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTraces GetSessionTraces
+	// ObservabilityServiceGetSessionTraces GetSessionTraces returns the spans the session's agents exported, by
+	//  start time: what the dashboard's trace view shows. Each span names its
+	//  parent, so the pages rebuild the span tree, and its attributes carry the
+	//  turn and latency fields the dashboard's turn view reads, such as
+	//  lk.generation_id and lk.response.ttft.
 	//
-	// GetSessionTraces returns the session's spans. Sufficient on its own to
-	//  answer latency questions.
+	// An ACTIVE session returns what its agents have exported so far; a span
+	//  exported after the first page waits for a new read. The later pages are
+	//  read by offset, so a span exported mid-read can still shift them: a span
+	//  can repeat, or be skipped. Dedupe by span_id, and read again from the
+	//  first page to pick up a skipped span. An unknown session is NotFound.
 	//
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11298,11 +11385,19 @@ func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context,
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTraces GetSessionTraces
+// ObservabilityServiceGetSessionTraces GetSessionTraces returns the spans the session's agents exported, by
 //
-// GetSessionTraces returns the session's spans. Sufficient on its own to
+//	start time: what the dashboard's trace view shows. Each span names its
+//	parent, so the pages rebuild the span tree, and its attributes carry the
+//	turn and latency fields the dashboard's turn view reads, such as
+//	lk.generation_id and lk.response.ttft.
 //
-//	answer latency questions.
+// An ACTIVE session returns what its agents have exported so far; a span
+//
+//	exported after the first page waits for a new read. The later pages are
+//	read by offset, so a span exported mid-read can still shift them: a span
+//	can repeat, or be skipped. Dedupe by span_id, and read again from the
+//	first page to pick up a skipped span. An unknown session is NotFound.
 //
 // Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -16026,10 +16121,17 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURLWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionRecordingURLResponse, error)
 
-	// ObservabilityServiceGetSessionTracesWithResponse GetSessionTraces
+	// ObservabilityServiceGetSessionTracesWithResponse GetSessionTraces returns the spans the session's agents exported, by
+	//  start time: what the dashboard's trace view shows. Each span names its
+	//  parent, so the pages rebuild the span tree, and its attributes carry the
+	//  turn and latency fields the dashboard's turn view reads, such as
+	//  lk.generation_id and lk.response.ttft.
 	//
-	// GetSessionTraces returns the session's spans. Sufficient on its own to
-	//  answer latency questions.
+	// An ACTIVE session returns what its agents have exported so far; a span
+	//  exported after the first page waits for a new read. The later pages are
+	//  read by offset, so a span exported mid-read can still shift them: a span
+	//  can repeat, or be skipped. Dedupe by span_id, and read again from the
+	//  first page to pick up a skipped span. An unknown session is NotFound.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19626,11 +19728,19 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionRecordingURLWithResp
 	return ParseObservabilityServiceGetSessionRecordingURLResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTracesWithResponse GetSessionTraces
+// ObservabilityServiceGetSessionTracesWithResponse GetSessionTraces returns the spans the session's agents exported, by
 //
-// GetSessionTraces returns the session's spans. Sufficient on its own to
+//	start time: what the dashboard's trace view shows. Each span names its
+//	parent, so the pages rebuild the span tree, and its attributes carry the
+//	turn and latency fields the dashboard's turn view reads, such as
+//	lk.generation_id and lk.response.ttft.
 //
-//	answer latency questions.
+// An ACTIVE session returns what its agents have exported so far; a span
+//
+//	exported after the first page waits for a new read. The later pages are
+//	read by offset, so a span exported mid-read can still shift them: a span
+//	can repeat, or be skipped. Dedupe by span_id, and read again from the
+//	first page to pick up a skipped span. An unknown session is NotFound.
 //
 // Returns a wrapper object for the known response body format(s).
 //
