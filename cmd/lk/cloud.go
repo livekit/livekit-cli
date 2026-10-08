@@ -313,7 +313,16 @@ func handleAuth(ctx context.Context, cmd *cli.Command) error {
 	return tryAuthIfNeeded(ctx, cmd)
 }
 
-func requireToken(_ context.Context, cmd *cli.Command) (string, error) {
+func requireToken(ctx context.Context, cmd *cli.Command) (string, error) {
+	if experimentalAuthEnabled(cmd) {
+		if _, err := requireProjectForSDK(ctx, cmd); err != nil {
+			return "", err
+		}
+		// The identity below is derived from the secret, so this needs a real key.
+		if err := ensureProjectAPIKey(ctx, cmd, ""); err != nil {
+			return "", err
+		}
+	}
 	if project == nil {
 		var err error
 		project, err = loadProjectDetails(cmd)

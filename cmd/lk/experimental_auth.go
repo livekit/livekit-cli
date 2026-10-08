@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -326,8 +327,9 @@ func pickUserWorkspace(ctx context.Context, cmd *cli.Command, conf *config.CLICo
 // or the global --project flag — to a project id using the signed-in user's
 // cached projects (matched by id or by name/alias). On a cache miss it refreshes
 // the cache from the API and retries once; a ref that's still unknown is returned
-// as-is (assumed to be a literal project id). When no ref is given it falls back
-// to an interactive picker (see pickUserProject). Only meaningful in experimental
+// as-is (assumed to be a literal project id). When no ref is given it uses the
+// configured default project (see defaultUserProject), then falls back to an
+// interactive picker (see pickUserProject). Only meaningful in experimental
 // (user-auth) mode.
 func resolveProjectRef(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig, user *config.UserConfig, positional string) (string, error) {
 	ref := positional
@@ -335,6 +337,9 @@ func resolveProjectRef(ctx context.Context, cmd *cli.Command, conf *config.CLICo
 		ref = cmd.String("project")
 	}
 	if ref == "" {
+		if id := useDefaultUserProject(ctx, conf, user); id != "" {
+			return id, nil
+		}
 		return pickUserProject(ctx, cmd, conf, user)
 	}
 	if p := user.FindProject(ref); p != nil {
@@ -349,6 +354,64 @@ func resolveProjectRef(ctx context.Context, cmd *cli.Command, conf *config.CLICo
 		return p.ProjectId, nil
 	}
 	return ref, nil
+}
+
+// useDefaultUserProject returns the id of the user's default project (or "" if
+// none applies), announcing it via the shared "Using project" breadcrumb.
+func useDefaultUserProject(ctx context.Context, conf *config.CLIConfig, user *config.UserConfig) string {
+	p := defaultUserProject(ctx, conf, user)
+	if p == nil {
+		return ""
+	}
+	rp := &resolvedProject{project: &config.ProjectConfig{Name: cmp.Or(p.Name, p.ProjectId), ProjectId: p.ProjectId}, source: sourceDefault}
+	rp.announce()
+	return p.ProjectId
+}
+
+// defaultUserProject resolves the configured default_project to one of the
+// signed-in user's projects, refreshing the cache once on a miss. It returns nil
+// (with a warning) when a default is set but the user can't access it, so the
+// caller falls back to the picker rather than failing every command.
+func defaultUserProject(ctx context.Context, conf *config.CLIConfig, user *config.UserConfig) *config.UserProjectConfig {
+	if conf.DefaultProject == "" {
+		return nil
+	}
+	if p := matchDefaultProject(conf, user); p != nil {
+		return p
+	}
+	if _, err := refreshUserProjects(ctx, conf, user); err == nil {
+		if p := matchDefaultProject(conf, user); p != nil {
+			return p
+		}
+	}
+	out.Warnf("Default project %q is not accessible as %s; ignoring it", conf.DefaultProject, userLabel(user))
+	return nil
+}
+
+// matchDefaultProject maps default_project onto the user's cached projects.
+// default_project names an API-key project entry (set by `lk cloud auth` or
+// `lk project set-default`), which is matched by its project id, then by the
+// subdomain of its URL. With no such entry, default_project is treated as a
+// project reference (id, name, or alias) in its own right.
+func matchDefaultProject(conf *config.CLIConfig, user *config.UserConfig) *config.UserProjectConfig {
+	ref := conf.DefaultProject
+	for _, lp := range conf.Projects {
+		if lp.Name != ref {
+			continue
+		}
+		if lp.ProjectId != "" {
+			return user.FindProject(lp.ProjectId)
+		}
+		if sub := util.ExtractSubdomain(lp.URL); sub != "" {
+			for i := range user.Projects {
+				if strings.EqualFold(user.Projects[i].Subdomain, sub) {
+					return &user.Projects[i]
+				}
+			}
+		}
+		return nil
+	}
+	return user.FindProject(ref)
 }
 
 // pickUserProject resolves a project id interactively when none was supplied,

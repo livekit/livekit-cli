@@ -34,6 +34,7 @@ import (
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
+	"github.com/livekit/livekit-cli/v2/pkg/tokenauth"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -599,7 +600,7 @@ var (
 )
 
 func createRoomClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	_, err := requireProject(ctx, cmd)
+	_, err := requireProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -842,7 +843,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	_, err := requireProject(ctx, cmd)
+	_, err := requireProjectForSDK(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -968,7 +969,7 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 		maps.Copy(participantAttributes, fileAttrs)
 	}
 
-	room, err := lksdk.ConnectToRoom(project.URL, lksdk.ConnectInfo{
+	room, err := tokenauth.ConnectToRoom(ctx, sessionTokenSource(project), project.URL, lksdk.ConnectInfo{
 		APIKey:                project.APIKey,
 		APISecret:             project.APISecret,
 		RoomName:              roomName,
@@ -1059,13 +1060,10 @@ func joinRoom(ctx context.Context, cmd *cli.Command) error {
 	if cmd.IsSet("open") {
 		switch cmd.String("open") {
 		case string(util.OpenTargetMeet):
-			at := auth.NewAccessToken(project.APIKey, project.APISecret).
-				SetIdentity(participantIdentity + "_observer").
-				SetVideoGrant(&auth.VideoGrant{
-					Room:     roomName,
-					RoomJoin: true,
-				})
-			token, _ := at.ToJWT()
+			token, _ := tokenauth.Sign(ctx, sessionTokenSource(project), project.APIKey, project.APISecret, &auth.ClaimGrants{
+				Identity: participantIdentity + "_observer",
+				Video:    &auth.VideoGrant{Room: roomName, RoomJoin: true},
+			}, 0)
 			_ = util.OpenInMeet(project.URL, token)
 		case string(util.OpenTargetConsole):
 			_ = util.OpenInConsole(dashboardURL, project.ProjectId, &util.ConsoleURLParams{

@@ -265,6 +265,9 @@ func withDefaultClientOpts(c *config.ProjectConfig) []twirp.ClientOption {
 	if len(ics) != 0 {
 		opts = append(opts, twirp.WithClientInterceptors(ics...))
 	}
+	if src := sessionTokenSource(c); src != nil {
+		opts = append(opts, src.ClientOptions()...)
+	}
 	return opts
 }
 

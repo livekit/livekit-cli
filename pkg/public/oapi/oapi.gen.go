@@ -5455,6 +5455,106 @@ type LivekitPublicapiProjectsV1CreateProjectResponse struct {
 	Project *LivekitPublicapiProjectsV1Project `json:"project,omitempty"`
 }
 
+// LivekitPublicapiProjectsV1CreateTokenResponse defines model for livekit.publicapi.projects.v1.CreateTokenResponse.
+type LivekitPublicapiProjectsV1CreateTokenResponse struct {
+	// ExpiresAt A Timestamp represents a point in time independent of any time zone or local
+	//  calendar, encoded as a count of seconds and fractions of seconds at
+	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
+	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
+	//  Gregorian calendar backwards to year one.
+	//
+	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+	//  second table is needed for interpretation, using a [24-hour linear
+	//  smear](https://developers.google.com/time/smear).
+	//
+	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+	//  restricting to that range, we ensure that we can convert to and from [RFC
+	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+	//
+	//  # Examples
+	//
+	//  Example 1: Compute Timestamp from POSIX `time()`.
+	//
+	//      Timestamp timestamp;
+	//      timestamp.set_seconds(time(NULL));
+	//      timestamp.set_nanos(0);
+	//
+	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+	//
+	//      struct timeval tv;
+	//      gettimeofday(&tv, NULL);
+	//
+	//      Timestamp timestamp;
+	//      timestamp.set_seconds(tv.tv_sec);
+	//      timestamp.set_nanos(tv.tv_usec * 1000);
+	//
+	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+	//
+	//      FILETIME ft;
+	//      GetSystemTimeAsFileTime(&ft);
+	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+	//
+	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+	//      Timestamp timestamp;
+	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+	//
+	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+	//
+	//      long millis = System.currentTimeMillis();
+	//
+	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
+	//
+	//  Example 5: Compute Timestamp from Java `Instant.now()`.
+	//
+	//      Instant now = Instant.now();
+	//
+	//      Timestamp timestamp =
+	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+	//              .setNanos(now.getNano()).build();
+	//
+	//  Example 6: Compute Timestamp from current time in Python.
+	//
+	//      timestamp = Timestamp()
+	//      timestamp.GetCurrentTime()
+	//
+	//  # JSON Mapping
+	//
+	//  In JSON format, the Timestamp type is encoded as a string in the
+	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+	//  where {year} is always expressed using four digits while {month}, {day},
+	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
+	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
+	//  able to accept both UTC and other timezones (as indicated by an offset).
+	//
+	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+	//  01:30 UTC on January 15, 2017.
+	//
+	//  In JavaScript, one can convert a Date object to this format using the
+	//  standard
+	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+	//  method. In Python, a standard `datetime.datetime` object can be converted
+	//  to this format using
+	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
+	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
+	//  ) to obtain a formatter capable of generating timestamps in this format.
+	//
+	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+
+	// Token Signed JWT, sent as `Authorization: Bearer` to the project's server APIs
+	//  or used to join a room, depending on the grants.
+	Token *string `json:"token,omitempty"`
+}
+
 // LivekitPublicapiProjectsV1DeleteInviteResponse defines model for livekit.publicapi.projects.v1.DeleteInviteResponse.
 type LivekitPublicapiProjectsV1DeleteInviteResponse = map[string]interface{}
 
@@ -5661,10 +5761,13 @@ type LivekitPublicapiProjectsV1Project struct {
 	Preferences             *LivekitPublicapiProjectsV1ProjectPreferences `json:"preferences,omitempty"`
 	RequireExplicitDispatch *bool                                         `json:"requireExplicitDispatch,omitempty"`
 	Subdomain               *string                                       `json:"subdomain,omitempty"`
-	UserDataLifetimeDays    *int32                                        `json:"userDataLifetimeDays,omitempty"`
-	UserDataRegion          *string                                       `json:"userDataRegion,omitempty"`
-	Webhooks                *[]LivekitPublicapiProjectsV1Webhook          `json:"webhooks,omitempty"`
-	WorkspaceId             *string                                       `json:"workspaceId,omitempty"`
+
+	// Url The project's LiveKit server URL (wss://), derived from its subdomain.
+	Url                  *string                              `json:"url,omitempty"`
+	UserDataLifetimeDays *int32                               `json:"userDataLifetimeDays,omitempty"`
+	UserDataRegion       *string                              `json:"userDataRegion,omitempty"`
+	Webhooks             *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
+	WorkspaceId          *string                              `json:"workspaceId,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ProjectInvite ProjectInvite is a pending email invite to a project (token-based, cloud InviteMember2).
@@ -5798,6 +5901,106 @@ type LivekitPublicapiProjectsV1ProjectPreferences struct {
 
 // LivekitPublicapiProjectsV1RemoveMemberResponse defines model for livekit.publicapi.projects.v1.RemoveMemberResponse.
 type LivekitPublicapiProjectsV1RemoveMemberResponse = map[string]interface{}
+
+// LivekitPublicapiProjectsV1TokenGrants TokenGrants are the claims of a LiveKit access token. Field names match the
+//
+//	token's JSON claims (protocol auth.ClaimGrants), so a token's claims JSON is
+//	a valid TokenGrants in JSON form.
+type LivekitPublicapiProjectsV1TokenGrants struct {
+	// Agent Agent server API permissions.
+	Agent      *LivekitPublicapiProjectsV1TokenGrantsAgent `json:"agent,omitempty"`
+	Attributes *map[string]string                          `json:"attributes,omitempty"`
+
+	// Identity Participant identity (the token's subject).
+	Identity  *string                                         `json:"identity,omitempty"`
+	Inference *LivekitPublicapiProjectsV1TokenGrantsInference `json:"inference,omitempty"`
+
+	// Kind Participant kind: "standard", "ingress", "egress", "sip", or "agent".
+	Kind        *string   `json:"kind,omitempty"`
+	KindDetails *[]string `json:"kindDetails,omitempty"`
+	Metadata    *string   `json:"metadata,omitempty"`
+
+	// Name Participant display name.
+	Name          *string                                             `json:"name,omitempty"`
+	Observability *LivekitPublicapiProjectsV1TokenGrantsObservability `json:"observability,omitempty"`
+
+	// RoomConfig Configuration for a room this participant creates on join, including
+	//  agent dispatches.
+	RoomConfig *LivekitRoomConfiguration `json:"roomConfig,omitempty"`
+
+	// RoomPreset Cloud room configuration preset; fields in room_config override it.
+	RoomPreset *string `json:"roomPreset,omitempty"`
+
+	// Sip SIP server API permissions.
+	Sip *LivekitPublicapiProjectsV1TokenGrantsSip `json:"sip,omitempty"`
+
+	// Video Room and participant permissions.
+	Video *LivekitPublicapiProjectsV1TokenGrantsVideo `json:"video,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1TokenGrantsAgent Agent server API permissions.
+type LivekitPublicapiProjectsV1TokenGrantsAgent struct {
+	Admin           *bool `json:"admin,omitempty"`
+	DatabaseAdmin   *bool `json:"databaseAdmin,omitempty"`
+	DispatchAdmin   *bool `json:"dispatchAdmin,omitempty"`
+	SimulationAdmin *bool `json:"simulationAdmin,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1TokenGrantsInference defines model for livekit.publicapi.projects.v1.TokenGrants.Inference.
+type LivekitPublicapiProjectsV1TokenGrantsInference struct {
+	Perform *bool `json:"perform,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1TokenGrantsObservability defines model for livekit.publicapi.projects.v1.TokenGrants.Observability.
+type LivekitPublicapiProjectsV1TokenGrantsObservability struct {
+	Write *bool `json:"write,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1TokenGrantsSip SIP server API permissions.
+type LivekitPublicapiProjectsV1TokenGrantsSip struct {
+	Admin *bool `json:"admin,omitempty"`
+	Call  *bool `json:"call,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1TokenGrantsVideo Room and participant permissions.
+type LivekitPublicapiProjectsV1TokenGrantsVideo struct {
+	Agent                 *bool `json:"agent,omitempty"`
+	CanManageAgentSession *bool `json:"canManageAgentSession,omitempty"`
+
+	// CanPublish Unset means allowed.
+	CanPublish     *bool `json:"canPublish,omitempty"`
+	CanPublishData *bool `json:"canPublishData,omitempty"`
+
+	// CanPublishSources Restrict publishing to these sources ("camera", "microphone", …).
+	CanPublishSources    *[]string `json:"canPublishSources,omitempty"`
+	CanSubscribe         *bool     `json:"canSubscribe,omitempty"`
+	CanSubscribeMetrics  *bool     `json:"canSubscribeMetrics,omitempty"`
+	CanUpdateOwnMetadata *bool     `json:"canUpdateOwnMetadata,omitempty"`
+
+	// DestinationRoom Room to move or forward participants to.
+	DestinationRoom *string `json:"destinationRoom,omitempty"`
+	Hidden          *bool   `json:"hidden,omitempty"`
+
+	// IngressAdmin Server API: manage ingress.
+	IngressAdmin *bool   `json:"ingressAdmin,omitempty"`
+	Recorder     *bool   `json:"recorder,omitempty"`
+	Room         *string `json:"room,omitempty"`
+
+	// RoomAdmin Server API: manage `room` (or any room when unset).
+	RoomAdmin *bool `json:"roomAdmin,omitempty"`
+
+	// RoomCreate Server API: create rooms.
+	RoomCreate *bool `json:"roomCreate,omitempty"`
+
+	// RoomJoin Join `room`.
+	RoomJoin *bool `json:"roomJoin,omitempty"`
+
+	// RoomList Server API: list rooms.
+	RoomList *bool `json:"roomList,omitempty"`
+
+	// RoomRecord Server API: start and manage egress.
+	RoomRecord *bool `json:"roomRecord,omitempty"`
+}
 
 // LivekitPublicapiProjectsV1UpdateInviteResponse defines model for livekit.publicapi.projects.v1.UpdateInviteResponse.
 type LivekitPublicapiProjectsV1UpdateInviteResponse struct {
@@ -7777,6 +7980,16 @@ type SimulationServiceCountSimulationRunsParams struct {
 	Mode *LivekitSimulationMode `form:"mode,omitempty" json:"mode,omitempty"`
 }
 
+// ProjectServiceCreateTokenJSONBody defines parameters for ProjectServiceCreateToken.
+type ProjectServiceCreateTokenJSONBody struct {
+	// Grants The caller's project role must cover every grant requested.
+	Grants *LivekitPublicapiProjectsV1TokenGrants `json:"grants,omitempty"`
+
+	// TtlSeconds Requested lifetime in seconds. 0 means the default (10 minutes); at most
+	//  86400 (24 hours).
+	TtlSeconds *int `json:"ttlSeconds,omitempty"`
+}
+
 // UserServiceListUsersParams defines parameters for UserServiceListUsers.
 type UserServiceListUsersParams struct {
 	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
@@ -7879,6 +8092,9 @@ type SimulationServiceCreateSimulationRunJSONRequestBody SimulationServiceCreate
 
 // SimulationServiceConfirmSimulationSourceUploadJSONRequestBody defines body for SimulationServiceConfirmSimulationSourceUpload for application/json ContentType.
 type SimulationServiceConfirmSimulationSourceUploadJSONRequestBody SimulationServiceConfirmSimulationSourceUploadJSONBody
+
+// ProjectServiceCreateTokenJSONRequestBody defines body for ProjectServiceCreateToken for application/json ContentType.
+type ProjectServiceCreateTokenJSONRequestBody ProjectServiceCreateTokenJSONBody
 
 // WorkspaceServiceAnswerInviteJSONRequestBody defines body for WorkspaceServiceAnswerInvite for application/json ContentType.
 type WorkspaceServiceAnswerInviteJSONRequestBody WorkspaceServiceAnswerInviteJSONBody
@@ -10358,6 +10574,28 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ProjectServiceCreateTokenWithBody CreateToken
+	//
+	// CreateToken mints a short-lived LiveKit access token for the project,
+	//  signed server-side, so user-authenticated clients can call LiveKit server
+	//  APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+	ProjectServiceCreateTokenWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceCreateToken CreateToken
+	//
+	// CreateToken mints a short-lived LiveKit access token for the project,
+	//  signed server-side, so user-authenticated clients can call LiveKit server
+	//  APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+	ProjectServiceCreateToken(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UserServiceListUsers ListUsers
 	//
 	// Corresponds with GET /v1/users (the `UserServiceListUsers` operationId).
@@ -11474,6 +11712,50 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUpload(ctx context.Cont
 // Corresponds with GET /v1/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceCountSimulationRunsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceCreateTokenWithBody CreateToken
+//
+// CreateToken mints a short-lived LiveKit access token for the project,
+//
+//	signed server-side, so user-authenticated clients can call LiveKit server
+//	APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+func (c *Client) ProjectServiceCreateTokenWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceCreateTokenRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceCreateToken CreateToken
+//
+// CreateToken mints a short-lived LiveKit access token for the project,
+//
+//	signed server-side, so user-authenticated clients can call LiveKit server
+//	APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+func (c *Client) ProjectServiceCreateToken(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceCreateTokenRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -14458,6 +14740,53 @@ func NewSimulationServiceCountSimulationRunsRequest(server string, projectId str
 	return req, nil
 }
 
+// NewProjectServiceCreateTokenRequest calls the generic ProjectServiceCreateToken builder with application/json body
+func NewProjectServiceCreateTokenRequest(server string, projectId string, body ProjectServiceCreateTokenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewProjectServiceCreateTokenRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewProjectServiceCreateTokenRequestWithBody constructs an http.Request for the ProjectServiceCreateToken method, with any body, and a specified content type
+func NewProjectServiceCreateTokenRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/tokens", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewUserServiceListUsersRequest constructs an http.Request for the UserServiceListUsers method
 func NewUserServiceListUsersRequest(server string, params *UserServiceListUsersParams) (*http.Request, error) {
 	var err error
@@ -15969,6 +16298,28 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v1/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRunsWithResponse(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*SimulationServiceCountSimulationRunsResponse, error)
+
+	// ProjectServiceCreateTokenWithBodyWithResponse CreateToken
+	//
+	// CreateToken mints a short-lived LiveKit access token for the project,
+	//  signed server-side, so user-authenticated clients can call LiveKit server
+	//  APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+	ProjectServiceCreateTokenWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error)
+
+	// ProjectServiceCreateTokenWithResponse CreateToken
+	//
+	// CreateToken mints a short-lived LiveKit access token for the project,
+	//  signed server-side, so user-authenticated clients can call LiveKit server
+	//  APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+	ProjectServiceCreateTokenWithResponse(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error)
 
 	// UserServiceListUsersWithResponse ListUsers
 	//
@@ -17859,6 +18210,47 @@ func (r SimulationServiceCountSimulationRunsResponse) ContentType() string {
 	return ""
 }
 
+type ProjectServiceCreateTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiProjectsV1CreateTokenResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ProjectServiceCreateTokenResponse) GetJSON200() *LivekitPublicapiProjectsV1CreateTokenResponse {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r ProjectServiceCreateTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ProjectServiceCreateTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ProjectServiceCreateTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ProjectServiceCreateTokenResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type UserServiceListUsersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -19561,6 +19953,42 @@ func (c *ClientWithResponses) SimulationServiceCountSimulationRunsWithResponse(c
 	return ParseSimulationServiceCountSimulationRunsResponse(rsp)
 }
 
+// ProjectServiceCreateTokenWithBodyWithResponse CreateToken
+//
+// CreateToken mints a short-lived LiveKit access token for the project,
+//
+//	signed server-side, so user-authenticated clients can call LiveKit server
+//	APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+func (c *ClientWithResponses) ProjectServiceCreateTokenWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error) {
+	rsp, err := c.ProjectServiceCreateTokenWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceCreateTokenResponse(rsp)
+}
+
+// ProjectServiceCreateTokenWithResponse CreateToken
+//
+// CreateToken mints a short-lived LiveKit access token for the project,
+//
+//	signed server-side, so user-authenticated clients can call LiveKit server
+//	APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+func (c *ClientWithResponses) ProjectServiceCreateTokenWithResponse(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error) {
+	rsp, err := c.ProjectServiceCreateToken(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceCreateTokenResponse(rsp)
+}
+
 // UserServiceListUsersWithResponse ListUsers
 //
 // Returns a wrapper object for the known response body format(s).
@@ -20998,6 +21426,32 @@ func ParseSimulationServiceCountSimulationRunsResponse(rsp *http.Response) (*Sim
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiSimulationsV1SimulationRunsCountsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseProjectServiceCreateTokenResponse parses an HTTP response from a ProjectServiceCreateTokenWithResponse call
+func ParseProjectServiceCreateTokenResponse(rsp *http.Response) (*ProjectServiceCreateTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ProjectServiceCreateTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiProjectsV1CreateTokenResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

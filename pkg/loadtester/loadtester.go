@@ -15,6 +15,7 @@
 package loadtester
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"go.uber.org/atomic"
 
 	provider2 "github.com/livekit/livekit-cli/v2/pkg/provider"
+	"github.com/livekit/livekit-cli/v2/pkg/tokenauth"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -76,9 +78,12 @@ func LayoutFromString(str string) Layout {
 }
 
 type TesterParams struct {
-	URL            string
-	APIKey         string
-	APISecret      string
+	URL       string
+	APIKey    string
+	APISecret string
+	// TokenSource, when set, supplies participant tokens in place of signing
+	// them with APIKey/APISecret.
+	TokenSource    *tokenauth.CachingTokenSource
 	Room           string
 	IdentityPrefix string
 	Layout         Layout
@@ -117,7 +122,7 @@ func (t *LoadTester) Start() error {
 	var err error
 	// make up to 10 reconnect attempts
 	for range 10 {
-		err = t.room.Join(t.params.URL, lksdk.ConnectInfo{
+		err = tokenauth.JoinRoom(context.Background(), t.room, t.params.TokenSource, t.params.URL, lksdk.ConnectInfo{
 			APIKey:              t.params.APIKey,
 			APISecret:           t.params.APISecret,
 			RoomName:            t.params.Room,

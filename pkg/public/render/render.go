@@ -32,6 +32,7 @@ var (
 	workspaceHeaders  = []string{"ID", "Name", "Organization", "Created"}
 	simulationHeaders = []string{"ID", "Agent", "Status", "Mode", "Jobs", "Passed", "Failed", "Created"}
 	sessionHeaders    = []string{"Session ID", "Room", "Status", "Participants", "Started", "Ended"}
+	accessKeyHeaders  = []string{"API Key", "Description", "Owner", "Created"}
 )
 
 func workspaceRow(w oapi.LivekitPublicapiWorkspacesV1Workspace) []string {
@@ -70,6 +71,22 @@ func sessionRow(s oapi.LivekitPublicapiAnalyticsV1Session) []string {
 		util.DashString(s.SessionId), util.DashString(s.RoomName), util.DerefEnum(s.Status), util.DashInt32(s.NumParticipants),
 		util.FormatTime(s.StartedAt), util.FormatTime(s.EndedAt),
 	}
+}
+
+func accessKeyRow(k oapi.LivekitPublicapiProjectsV1AccessKey) []string {
+	owner := util.DashString(k.OwnerEmail)
+	switch {
+	case util.Deref(k.AgentId) != "":
+		owner = "(agent " + *k.AgentId + ")"
+	case util.Deref(k.OwnerEmail) == "" && util.Deref(k.OwnerId) == "":
+		owner = "(service account)"
+	}
+	return []string{util.DashString(k.ApiKey), util.DashString(k.Description), owner, util.FormatTime(k.CreatedAt)}
+}
+
+// AccessKeys prints a list of project API keys.
+func AccessKeys(p *util.Printer, asJSON bool, keys []oapi.LivekitPublicapiProjectsV1AccessKey) error {
+	return util.RenderList(p, asJSON, keys, "No API keys found.", accessKeyHeaders, accessKeyRow)
 }
 
 // Workspaces prints a list of workspaces.

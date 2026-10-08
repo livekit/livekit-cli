@@ -328,7 +328,7 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	port := int(cmd.Int("port"))
-	audioEnv, err := sessionAudioEnv(cmd, cmd.Bool("audio"))
+	audioEnv, err := sessionAudioEnv(ctx, cmd, projectDir, cmd.Bool("audio"))
 	if err != nil {
 		return err
 	}
@@ -345,11 +345,11 @@ func sessionMode(audio bool) string {
 
 // sessionAudioEnv returns the daemon environment for an audio session: the
 // mode, plus the project credentials the user's turns are spoken with.
-func sessionAudioEnv(cmd *cli.Command, audio bool) ([]string, error) {
+func sessionAudioEnv(ctx context.Context, cmd *cli.Command, dir string, audio bool) ([]string, error) {
 	if !audio {
 		return nil, nil
 	}
-	creds, err := resolveCredentials(cmd)
+	creds, err := resolveCredentials(ctx, cmd, dir)
 	if err != nil {
 		return nil, fmt.Errorf("--audio speaks your turns with LiveKit Inference, which needs project credentials: %w", err)
 	}
@@ -895,7 +895,7 @@ func runSessionRestart(ctx context.Context, cmd *cli.Command) error {
 		c.Close()
 		time.Sleep(100 * time.Millisecond)
 	}
-	audioEnv, err := sessionAudioEnv(cmd, st.Audio)
+	audioEnv, err := sessionAudioEnv(ctx, cmd, st.ProjectDir, st.Audio)
 	if err != nil {
 		return err
 	}

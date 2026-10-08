@@ -346,7 +346,7 @@ func TestResolveCredentials_FullyExplicitSkipsProjectLookup(t *testing.T) {
 		Flags: globalFlags,
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			var err error
-			env, err = resolveCredentials(cmd)
+			env, err = resolveCredentials(context.Background(), cmd, t.TempDir())
 			return err
 		},
 	}

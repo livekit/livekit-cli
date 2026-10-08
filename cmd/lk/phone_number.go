@@ -157,7 +157,7 @@ var (
 )
 
 func createPhoneNumberClient(ctx context.Context, cmd *cli.Command) (*lksdk.PhoneNumberClient, error) {
-	_, err := requireProject(ctx, cmd)
+	_, err := requireProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}

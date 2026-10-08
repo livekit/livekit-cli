@@ -165,7 +165,7 @@ var (
 )
 
 func createIngressClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := loadProjectDetails(cmd)
+	pc, err := loadProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}

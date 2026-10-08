@@ -134,7 +134,7 @@ var (
 )
 
 func createReplayClient(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := loadProjectDetails(cmd)
+	pc, err := loadProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +287,10 @@ type replayServiceClient struct {
 }
 
 func (c *replayServiceClient) withAuth(ctx context.Context) (context.Context, error) {
-	at := auth.NewAccessToken(c.apiKey, c.apiSecret)
+	// The replay service only checks the token's project. The grant is for the
+	// Public API, which won't issue a session token without one; the session
+	// hook (withDefaultClientOpts) swaps this token for that one.
+	at := auth.NewAccessToken(c.apiKey, c.apiSecret).SetVideoGrant(&auth.VideoGrant{RoomAdmin: true})
 	token, err := at.ToJWT()
 	if err != nil {
 		return nil, err

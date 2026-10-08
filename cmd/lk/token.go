@@ -414,7 +414,10 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		}
 	}
 
-	_, err = requireProjectWithOpts(ctx, c, ignoreURL)
+	// Under --experimental-auth the token is minted by the Public API; the
+	// project carries placeholder credentials and everything below still
+	// assembles the grants on an AccessToken.
+	_, err = requireProjectForSDK(ctx, c, ignoreURL)
 	if err != nil {
 		return err
 	}
@@ -454,18 +457,25 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		name = participant
 	}
 	at.SetName(name)
+	var ttl time.Duration
 	if validFor != "" {
 		if dur, err := time.ParseDuration(validFor); err == nil {
 			if !tokenOnly && !jsonOutput {
 				fmt.Fprintf(stderr, "valid for (mins): %d\n", int(dur/time.Minute))
 			}
 			at.SetValidFor(dur)
+			ttl = dur
 		} else {
 			return err
 		}
 	}
 
-	token, err := at.ToJWT()
+	var token string
+	if isSessionProject(project) {
+		token, err = fetchSessionToken(ctx, project, at.GetGrants(), ttl)
+	} else {
+		token, err = at.ToJWT()
+	}
 	if err != nil {
 		return err
 	}
