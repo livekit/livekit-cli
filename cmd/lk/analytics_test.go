@@ -1315,6 +1315,266 @@ func TestFetchSessionLogsErrors(t *testing.T) {
 	}
 }
 
+func TestSessionTracesCommand(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd)
+	sessionCmd := findCommandByName(analyticsCmd.Commands, "session")
+	require.NotNil(t, sessionCmd)
+	tracesCmd := findCommandByName(sessionCmd.Commands, "traces")
+	require.NotNil(t, tracesCmd, "'analytics session traces' command must exist")
+	require.NotNil(t, tracesCmd.Action)
+	for _, name := range []string{"limit", "cursor", "json"} {
+		assert.NotNil(t, findFlagByName(tracesCmd.Flags, name), "--%s", name)
+	}
+}
+
+// TestSessionTracesRequiresExperimentalAuth checks the trace read, which has
+// no API-key endpoint, refuses to run without --experimental-auth before
+// reading its arguments or any config.
+func TestSessionTracesRequiresExperimentalAuth(t *testing.T) {
+	for _, args := range [][]string{
+		{"--experimental", "session", "traces", "RM_1"},
+		{"--experimental", "session", "traces", "RM_1", "--limit", "0"},
+		{"--experimental", "session", "traces"},
+	} {
+		err := runAnalytics(args...)
+		require.ErrorContains(t, err, "only available under --experimental-auth")
+	}
+}
+
+// traceCmdOptions runs traceOptions with the given arguments on a command
+// built from fresh analyticsTraceFlags.
+func traceCmdOptions(t *testing.T, args ...string) (traceReadOptions, error) {
+	t.Helper()
+	var opts traceReadOptions
+	var optsErr error
+	cmd := &cli.Command{
+		Name:  "traces",
+		Flags: analyticsTraceFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			opts, optsErr = traceOptions(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"traces"}, args...)))
+	return opts, optsErr
+}
+
+func TestTraceOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    traceReadOptions
+		wantErr string
+	}{
+		{name: "defaults", want: traceReadOptions{Limit: defaultTraceLimit}},
+		{name: "limit and cursor", args: []string{"--limit", "250", "--cursor", "abc"}, want: traceReadOptions{Limit: 250, Cursor: "abc"}},
+		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := traceCmdOptions(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// tracesAPI starts a stand-in Public API that answers the trace read with
+// status and, for each cursor it is sent ("" for the first page), that page's
+// body. It records the query of every request.
+func tracesAPI(t *testing.T, status int, pages map[string]string) (*public.Client, *[]url.Values) {
+	t.Helper()
+	var queries []url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v1/projects/p1/sessions/RM_1/traces" {
+			http.NotFound(w, r)
+			return
+		}
+		queries = append(queries, r.URL.Query())
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(pages[r.URL.Query().Get("page.cursor")]))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+	return client, &queries
+}
+
+// tracePages is a session's trace across two pages, the second starting with
+// the children of a span on the first.
+var tracePages = map[string]string{
+	"": `{"spans":[` +
+		`{"spanId":"a1","name":"agent_session"},` +
+		`{"spanId":"b2","parentSpanId":"a1","name":"agent_turn"}],` +
+		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
+	"c2": `{"spans":[` +
+		`{"spanId":"c3","parentSpanId":"b2","name":"llm_request"},` +
+		`{"spanId":"d4","parentSpanId":"b2","name":"tts_request"}]}`,
+}
+
+// TestFetchSessionTraces checks the command reads every page up to its limit,
+// asking for full pages but no more spans than it has left, and prints one
+// tree across the pages; a read that stops at its limit says how to read the
+// rest.
+func TestFetchSessionTraces(t *testing.T) {
+	tests := []struct {
+		name        string
+		opts        traceReadOptions
+		wantQueries []url.Values
+		wantOut     []string
+		wantStatus  []string
+	}{
+		{
+			name: "every page",
+			opts: traceReadOptions{Limit: defaultTraceLimit},
+			wantQueries: []url.Values{
+				{"page.pageSize": {"100"}},
+				{"page.pageSize": {"100"}, "page.cursor": {"c2"}},
+			},
+			wantOut: []string{"agent_session", "└─ agent_turn", "   ├─ llm_request", "   └─ tts_request"},
+		},
+		{
+			name:        "stops at the limit",
+			opts:        traceReadOptions{Limit: 2},
+			wantQueries: []url.Values{{"page.pageSize": {"2"}}},
+			wantOut:     []string{"agent_session", "└─ agent_turn"},
+			wantStatus:  []string{"Printed 2 spans; more remain", "re-run with --cursor c2"},
+		},
+		{
+			name: "last page asks for what is left",
+			opts: traceReadOptions{Limit: 3},
+			wantQueries: []url.Values{
+				{"page.pageSize": {"3"}},
+				{"page.pageSize": {"1"}, "page.cursor": {"c2"}},
+			},
+		},
+		{
+			name:        "from a cursor",
+			opts:        traceReadOptions{Limit: defaultTraceLimit, Cursor: "c2"},
+			wantQueries: []url.Values{{"page.pageSize": {"100"}, "page.cursor": {"c2"}}},
+			wantOut:     []string{"llm_request", "tts_request"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, queries := tracesAPI(t, http.StatusOK, tracePages)
+			stdout, stderr := captureOut(t)
+
+			require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", tt.opts, false))
+
+			assert.Equal(t, tt.wantQueries, *queries)
+			for _, want := range tt.wantOut {
+				assert.Contains(t, stdout.String(), want)
+			}
+			for _, want := range tt.wantStatus {
+				assert.Contains(t, stderr.String(), want)
+			}
+			if len(tt.wantStatus) == 0 {
+				assert.Empty(t, stderr.String())
+			}
+		})
+	}
+}
+
+// TestFetchSessionTracesEmpty checks an empty read says why: the session has
+// no spans, or a cursor's read has no more.
+func TestFetchSessionTracesEmpty(t *testing.T) {
+	for _, tt := range []struct {
+		cursor     string
+		wantStatus string
+	}{
+		{wantStatus: "Session RM_1 has no trace spans"},
+		{cursor: "c9", wantStatus: "No more spans"},
+	} {
+		client, _ := tracesAPI(t, http.StatusOK, map[string]string{"": `{}`, "c9": `{"spans":[]}`})
+		stdout, stderr := captureOut(t)
+
+		require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", traceReadOptions{Limit: 10, Cursor: tt.cursor}, false))
+		assert.Empty(t, stdout.String())
+		assert.Contains(t, stderr.String(), tt.wantStatus)
+	}
+}
+
+// TestFetchSessionTracesJSON checks --json prints every span read, across
+// pages, and still explains an empty read on stderr.
+func TestFetchSessionTracesJSON(t *testing.T) {
+	client, _ := tracesAPI(t, http.StatusOK, tracePages)
+	stdout, _ := captureOut(t)
+	require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", traceReadOptions{Limit: 10}, true))
+	var got struct {
+		Items []map[string]any `json:"items"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	require.Len(t, got.Items, 4)
+	assert.Equal(t, "b2", got.Items[3]["parentSpanId"])
+
+	client, _ = tracesAPI(t, http.StatusOK, map[string]string{"": `{}`})
+	stdout, stderr := captureOut(t)
+	require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", traceReadOptions{Limit: 10}, true))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Contains(t, stderr.String(), "has no trace spans")
+}
+
+// TestFetchSessionTracesErrors checks why a session has no spans to print: it
+// doesn't exist, or user data recording is off.
+func TestFetchSessionTracesErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr []string
+	}{
+		{
+			name:    "unknown session",
+			status:  http.StatusNotFound,
+			body:    `{"code":5,"message":"session not found"}`,
+			wantErr: []string{"no session RM_1 in project p1", "session not found"},
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off for this project, so nothing was captured to read","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/projects/p1/settings/observability"}]}`,
+			wantErr: []string{
+				"session RM_1 has no trace spans",
+				"user data recording is off for this project",
+				"https://cloud.example/projects/p1/settings/observability",
+			},
+		},
+		{
+			name:    "signed out",
+			status:  http.StatusUnauthorized,
+			body:    `{"code":16,"message":"authentication required"}`,
+			wantErr: []string{"authentication required", "lk cloud auth"},
+		},
+		{
+			name:    "permission denied",
+			status:  http.StatusForbidden,
+			body:    `{"code":7,"message":"permission denied"}`,
+			wantErr: []string{"permission denied", "reading a session's trace spans requires being a project admin"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, _ := tracesAPI(t, tt.status, map[string]string{"": tt.body})
+			stdout, _ := captureOut(t)
+
+			err := fetchSessionTraces(context.Background(), client, "p1", "RM_1", traceReadOptions{Limit: 10}, false)
+			require.Error(t, err)
+			for _, want := range tt.wantErr {
+				assert.Contains(t, err.Error(), want)
+			}
+			assert.Empty(t, stdout.String())
+		})
+	}
+}
+
 // TestSessionAPIError checks a permission denial on a Public-API-only session
 // read says what the read requires, never to use API-key credentials, which
 // these reads can't use, while other errors keep cloudAPIError's hints.

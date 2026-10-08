@@ -169,9 +169,9 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 	return nil
 }
 
-// jsonPage is the --json shape of a page of a session's transcript or agent
-// logs: {items, nextCursor}, like util.RenderPage's, with each item as the
-// API sent it.
+// jsonPage is the --json shape of a page of a session's transcript, agent
+// logs or trace spans: {items, nextCursor}, like
+// util.RenderPage's, with each item as the API sent it.
 type jsonPage[T any] struct {
 	Items      []T    `json:"items"`
 	NextCursor string `json:"nextCursor,omitempty"`
@@ -466,6 +466,124 @@ func logLevelName(r oapi.LivekitPublicapiObservabilityV1LogRecord) string {
 		return strings.TrimPrefix(string(*r.Level), "LOG_LEVEL_")
 	}
 	return util.Dash(strings.ToUpper(oneLine(util.Deref(r.SeverityText))))
+}
+
+// SessionTraces prints a session's spans as a tree built from their parent
+// ids, one line per span with its start time, duration and name, and a failed
+// span's status message; --json prints the spans as the API sent them. A span
+// whose parent isn't among them prints as a root, as the dashboard shows it.
+// empty says why there are no spans, on stderr in both modes so --json output
+// stays parseable. page.NextCursor is where the read stopped short of the
+// session's last span.
+func SessionTraces(p *util.Printer, asJSON bool, page public.TracePage, empty string) error {
+	jp := jsonPage[oapi.LivekitPublicapiObservabilityV1Span]{Items: page.Spans, NextCursor: page.NextCursor}
+	if err := renderPage(p, asJSON, jp, empty, spanLines); err != nil || asJSON || page.NextCursor == "" {
+		return err
+	}
+	p.Statusf("Printed %d spans; more remain — raise --limit to read them into this tree, or re-run with %s for the next ones",
+		len(page.Spans), util.Accented("--cursor "+page.NextCursor))
+	return nil
+}
+
+// spanLines renders spans as a tree, one line per span.
+func spanLines(spans []oapi.LivekitPublicapiObservabilityV1Span) []string {
+	tree := spanTree(spans)
+	lines := make([]string, 0, len(tree))
+	for _, l := range tree {
+		lines = append(lines, spanLine(l.span, l.guide))
+	}
+	return lines
+}
+
+// spanTreeLine is a span in tree order with the guide that draws its place.
+type spanTreeLine struct {
+	span  oapi.LivekitPublicapiObservabilityV1Span
+	guide string
+}
+
+// spanTree orders spans depth-first from their roots, keeping the API's start
+// time order among siblings. A root is a span with no parent or whose parent
+// isn't among spans. Spans whose parents only name each other, which an agent
+// shouldn't export, print from the first of them, so every span prints once.
+func spanTree(spans []oapi.LivekitPublicapiObservabilityV1Span) []spanTreeLine {
+	ids := make(map[string]bool, len(spans))
+	for _, s := range spans {
+		ids[util.Deref(s.SpanId)] = true
+	}
+	children := make(map[string][]int)
+	var roots []int
+	for i, s := range spans {
+		if parent := util.Deref(s.ParentSpanId); parent != "" && ids[parent] {
+			children[parent] = append(children[parent], i)
+		} else {
+			roots = append(roots, i)
+		}
+	}
+
+	lines := make([]spanTreeLine, 0, len(spans))
+	visited := make([]bool, len(spans))
+	var walk func(i int, guide, indent string)
+	walk = func(i int, guide, indent string) {
+		visited[i] = true
+		lines = append(lines, spanTreeLine{span: spans[i], guide: guide})
+		var next []int
+		for _, c := range children[util.Deref(spans[i].SpanId)] {
+			if !visited[c] {
+				next = append(next, c)
+			}
+		}
+		for n, c := range next {
+			if n == len(next)-1 {
+				walk(c, indent+"└─ ", indent+"   ")
+			} else {
+				walk(c, indent+"├─ ", indent+"│  ")
+			}
+		}
+	}
+	for _, i := range roots {
+		walk(i, "", "")
+	}
+	for i := range spans {
+		if !visited[i] {
+			walk(i, "", "")
+		}
+	}
+	return lines
+}
+
+// spanLine renders one span as a single line: its start time, its duration,
+// its name after the tree guide, and a failed span's status message.
+func spanLine(s oapi.LivekitPublicapiObservabilityV1Span, guide string) string {
+	at := "-"
+	if s.StartTime != nil && !s.StartTime.IsZero() {
+		at = s.StartTime.Local().Format("15:04:05.000")
+	}
+	line := fmt.Sprintf("%-12s  %8s  %s%s", at, spanDuration(s), guide, util.DashString(s.Name))
+	if s.Status != nil && *s.Status == oapi.SPANSTATUSERROR {
+		if msg := oneLine(util.Deref(s.StatusMessage)); msg != "" {
+			line += "  [error: " + msg + "]"
+		} else {
+			line += "  [error]"
+		}
+	}
+	return line
+}
+
+// spanDuration renders how long a span took, or a dash for one that hasn't
+// ended.
+func spanDuration(s oapi.LivekitPublicapiObservabilityV1Span) string {
+	if s.StartTime == nil || s.EndTime == nil || s.EndTime.Before(*s.StartTime) {
+		return "-"
+	}
+	d := s.EndTime.Sub(*s.StartTime)
+	switch {
+	case d < time.Second:
+		return formatMs(float64(d) / float64(time.Millisecond))
+	case d < time.Minute:
+		return fmt.Sprintf("%.2fs", d.Seconds())
+	default:
+		return d.Round(time.Second).String()
+	}
 }
 
 // RecordingLabel names a recording ("audio" or "chat-history") for a sentence.

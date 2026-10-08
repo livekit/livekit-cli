@@ -47,6 +47,12 @@ const (
 // records or agent log records a page reads by default.
 const defaultPageLimit = 50
 
+// defaultTraceLimit caps how many spans `session traces` reads: ten of the
+// server's largest pages, enough for a long agent session's tree. The tree
+// needs a span's parent to place it, so the command reads every page up to
+// the limit rather than printing one page.
+const defaultTraceLimit = 1000
+
 var (
 	AnalyticsCommands = []*cli.Command{
 		{
@@ -110,6 +116,13 @@ var (
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(logOptions, fetchSessionLogs),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsLogFlags()...),
+						},
+						{
+							Name:      "traces",
+							Usage:     "Print a session's trace spans as a tree (requires --experimental-auth)",
+							ArgsUsage: "SESSION_ID",
+							Action:    sessionRead(traceOptions, fetchSessionTraces),
+							Flags:     append([]cli.Flag{jsonFlag}, analyticsTraceFlags()...),
 						},
 					},
 				},
@@ -288,6 +301,28 @@ func analyticsLogFlags() []cli.Flag {
 			Usage: "Order by time: `ORDER` asc or desc, default asc",
 		},
 	}, pageFlags(defaultPageLimit, "records")...)
+}
+
+// analyticsTraceFlags returns fresh instances of the trace spans' own flags
+// (the shared jsonFlag is added by the command), for the same reason as
+// analyticsSessionListFlags. They aren't pageFlags: the command reads every
+// page up to --limit, and --cursor resumes a read that stopped there.
+func analyticsTraceFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.IntFlag{
+			Name:  "limit",
+			Usage: "Maximum number of spans to read; the command reads every page up to it",
+			Value: defaultTraceLimit,
+		},
+		// Hidden like session list's: pass the cursor a read that stopped at its
+		// limit printed to read the spans after it. Their parents were read
+		// before, so they print as roots.
+		&cli.StringFlag{
+			Name:   "cursor",
+			Usage:  "Read from `CURSOR`, where a prior read stopped",
+			Hidden: true,
+		},
+	}
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
@@ -697,12 +732,12 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 }
 
 // sessionRead builds the action of a command that reads one thing about a
-// session — its participants, recordings, transcript or agent logs — which
-// only the Public API serves. The action refuses to run without
-// --experimental-auth before checking anything else, then reads the
-// SESSION_ID argument and the command's options, so a bad flag fails before
-// the project lookup, and hands fetch a client signed in as the user and the
-// selected project.
+// session — its participants, recordings, transcript, agent logs or trace
+// spans — which only the Public API serves. The
+// action refuses to run without --experimental-auth before checking anything
+// else, then reads the SESSION_ID argument and the command's options, so a
+// bad flag fails before the project lookup, and hands fetch a client signed
+// in as the user and the selected project.
 func sessionRead[O any](
 	readOptions func(*cli.Command) (O, error),
 	fetch func(ctx context.Context, client *public.Client, projectID, sessionID string, opts O, asJSON bool) error,
@@ -932,9 +967,10 @@ func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID
 		"the recording is redacted); a session without an agent has none", sessionID)
 }
 
-// sessionReadError explains why a session has no participants, transcript or
-// agent logs (what) to print, and otherwise annotates the error like the
-// other Public API commands. access is what the read requires.
+// sessionReadError explains why a session has no participants, transcript,
+// agent logs or trace spans (what) to print, and otherwise annotates the
+// error like the other Public API commands. access is what the read
+// requires.
 func sessionReadError(err error, projectID, sessionID, what string, access sessionReadAccess) error {
 	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
 		return observabilityDisabledError(sessionID, what, dashboardURL)
@@ -952,7 +988,7 @@ const (
 	// projectReadAccess reads: a session's participants.
 	projectReadAccess sessionReadAccess = iota
 	// projectAdminAccess reads, which can hold user data: a session's
-	// recordings, transcript and agent logs.
+	// recordings, transcript, agent logs and trace spans.
 	projectAdminAccess
 )
 
@@ -1015,4 +1051,62 @@ func emptyLogsReason(sessionID string, opts public.LogOptions) string {
 	}
 	return fmt.Sprintf("Session %s has no agent logs: a session without an agent has none, "+
 		"and a running agent's records appear as it exports them", sessionID)
+}
+
+// traceReadOptions bounds `session traces`' read: unlike the API's pages,
+// Limit counts spans across every page read.
+type traceReadOptions struct {
+	// Limit is the most spans to read.
+	Limit int
+	// Cursor starts the read where a prior one stopped; empty starts from the
+	// session's first span.
+	Cursor string
+}
+
+// traceOptions reads the trace flags. A bad limit fails here, before the
+// project lookup.
+func traceOptions(cmd *cli.Command) (traceReadOptions, error) {
+	page, err := pageOptions(cmd)
+	if err != nil {
+		return traceReadOptions{}, err
+	}
+	return traceReadOptions{Limit: int(page.Limit), Cursor: page.Cursor}, nil
+}
+
+// fetchSessionTraces reads a session's spans page by page, in full pages but
+// no more than opts.Limit in all, and prints them as one tree, saying why
+// when there are none. A read that stops at the limit keeps the cursor for
+// the rest.
+func fetchSessionTraces(ctx context.Context, client *public.Client, projectID, sessionID string, opts traceReadOptions, asJSON bool) error {
+	read := public.TracePage{NextCursor: opts.Cursor}
+	for {
+		page, err := client.GetSessionTraces(ctx, projectID, sessionID, public.PageOptions{
+			Limit:  int32(min(public.MaxTracePageSize, opts.Limit-len(read.Spans))),
+			Cursor: read.NextCursor,
+		})
+		if err != nil {
+			return sessionReadError(err, projectID, sessionID, "trace spans", projectAdminAccess)
+		}
+		read.Spans = append(read.Spans, page.Spans...)
+		read.NextCursor = page.NextCursor
+		if read.NextCursor == "" || len(page.Spans) == 0 || len(read.Spans) >= opts.Limit {
+			break
+		}
+	}
+	var empty string
+	if len(read.Spans) == 0 {
+		empty = emptyTracesReason(sessionID, opts.Cursor != "")
+	}
+	return render.SessionTraces(out, asJSON, read, empty)
+}
+
+// emptyTracesReason explains a read with no spans. With user data recording
+// off a first page with none is an error instead, so an empty one here means
+// the agents exported nothing.
+func emptyTracesReason(sessionID string, laterPage bool) string {
+	if laterPage {
+		return "No more spans"
+	}
+	return fmt.Sprintf("Session %s has no trace spans: a session without an agent has none, "+
+		"and a running agent's spans appear as it exports them", sessionID)
 }
