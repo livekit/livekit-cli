@@ -428,10 +428,12 @@ func participantsAPI(t *testing.T, status int, body string) (*public.Client, *ur
 }
 
 // TestFetchSessionParticipants checks a page of participants prints as a
-// table with a hint to re-run with the next cursor, sending the limit, cursor
-// and order asked for, and --json prints {items, nextCursor}.
+// table with their participant sessions and a hint to re-run with the next
+// cursor, sending the limit, cursor and order asked for, and --json prints
+// {items, nextCursor}.
 func TestFetchSessionParticipants(t *testing.T) {
-	const page = `{"items":[{"participantIdentity":"alice","region":"US East"}],` +
+	const page = `{"items":[{"participantIdentity":"alice","region":"US East",` +
+		`"sessions":[{"participantSessionId":"PA_alice1","connectionType":"UDP"}]}],` +
 		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`
 	opts := public.ParticipantListOptions{PageOptions: public.PageOptions{Limit: 50, Cursor: "c1"}, SortBy: "left", SortOrder: "asc"}
 
@@ -442,7 +444,7 @@ func TestFetchSessionParticipants(t *testing.T) {
 		"page.pageSize": {"50"}, "page.cursor": {"c1"},
 		"sortBy": {"PARTICIPANT_SORT_FIELD_LEFT_AT"}, "sortOrder": {"SORT_ORDER_ASC"},
 	}, *query)
-	for _, want := range []string{"alice", "US East"} {
+	for _, want := range []string{"alice", "US East", "PA_alice1", "UDP"} {
 		assert.Contains(t, stdout.String(), want)
 	}
 	assert.Contains(t, stderr.String(), "More participants available — re-run with --cursor c2")

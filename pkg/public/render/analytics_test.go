@@ -53,7 +53,20 @@ const sessionWithDetail = `{
       "participantName": "Alice",
       "location": "United States",
       "region": "US East",
-      "publishedSources": {"cameraTrack": true, "microphoneTrack": true}
+      "publishedSources": {"cameraTrack": true, "microphoneTrack": true},
+      "sessions": [{
+        "participantSessionId": "PA_alice1",
+        "joinedAt": "2026-10-07T11:00:00Z",
+        "leftAt": "2026-10-07T11:02:05Z",
+        "durationSeconds": "125",
+        "os": "mac",
+        "browser": "chrome",
+        "sdkVersion": "2.6.1",
+        "connectionType": "UDP",
+        "connectionTimeMs": 120,
+        "location": "Canada",
+        "region": "US East"
+      }]
     }],
     "participantsPage": {"nextCursor": "c2", "hasMore": true}
   }
@@ -73,6 +86,7 @@ func TestSessionDetailText(t *testing.T) {
 		"Quality", "80%", "90%", // average and peak skip the empty bucket
 		"Publish bitrate", "2.0 Mbps",
 		"alice", "Alice", "United States", "US East", "camera, microphone", // first page of participants
+		"PA_alice1", "2m5s", "mac, chrome, SDK 2.6.1", "UDP (120ms)", "Canada", // their participant sessions
 	} {
 		assert.Contains(t, got, want)
 	}
@@ -113,18 +127,63 @@ func TestSessionDetailTextFinalizing(t *testing.T) {
 	assert.Contains(t, stderr.String(), "still being finalized")
 }
 
+// participantsPage is a page of participants as the API sends it: alice
+// reconnected from her phone, bob's participant sessions couldn't be read, and
+// carol is still connected from a client that reported nothing.
+const participantsPage = `[
+  {"participantIdentity": "alice", "region": "US East", "sessions": [
+    {"participantSessionId": "PA_alice1", "joinedAt": "2026-10-07T11:00:00Z", "leftAt": "2026-10-07T11:01:00Z", "durationSeconds": "60",
+     "os": "mac", "browser": "chrome", "sdkVersion": "2.6.1", "connectionType": "UDP", "connectionTimeMs": 120, "location": "Canada"},
+    {"participantSessionId": "PA_alice2", "joinedAt": "2026-10-07T11:01:30Z", "durationSeconds": "3723",
+     "os": "ios", "deviceModel": "iPhone 15", "connectionType": "TURN", "location": "Canada"}
+  ]},
+  {"participantIdentity": "bob"},
+  {"participantIdentity": "carol", "sessions": [{"participantSessionId": "PA_carol1"}]}
+]`
+
+func decodeParticipants(t *testing.T) []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo {
+	t.Helper()
+	var participants []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo
+	require.NoError(t, json.Unmarshal([]byte(participantsPage), &participants))
+	return participants
+}
+
+// TestSessionParticipantsPage checks the participants print as a table, then
+// their participant sessions with the client each connected from, and --json
+// prints the API's rows, participant sessions nested.
 func TestSessionParticipantsPage(t *testing.T) {
-	participants := []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo{{ParticipantIdentity: ptr("alice"), Region: ptr("US East")}}
+	participants := decodeParticipants(t)
 
 	var stdout, stderr bytes.Buffer
 	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, &stderr, false), false, participants, "c2"))
-	assert.Contains(t, stdout.String(), "alice")
-	assert.Contains(t, stdout.String(), "US East")
+	got := stdout.String()
+	assert.Contains(t, got, "alice")
+	assert.Contains(t, got, "US East")
+	for _, row := range [][]string{
+		{"alice", "PA_alice1", "1m0s", "mac, chrome, SDK 2.6.1", "UDP (120ms)", "Canada"},
+		{"alice", "PA_alice2", "1h2m3s", "ios, iPhone 15", "TURN", "Canada"},
+		{"carol", "PA_carol1", "-", "-", "-", "-"},
+	} {
+		assert.Regexp(t, strings.Join(util.MapStrings(row, regexp.QuoteMeta), `[^\n]*`), got)
+	}
+	assert.Less(t, strings.Index(got, "PA_alice1"), strings.Index(got, "PA_alice2"), "participant sessions keep the API's order")
+	assert.Less(t, strings.Index(got, "Identity"), strings.Index(got, "Participant Session"), "participants print before their sessions")
 	assert.Contains(t, stderr.String(), "--cursor c2")
 
 	stdout.Reset()
 	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, nil, true), true, participants, "c2"))
-	assert.JSONEq(t, `{"items":[{"participantIdentity":"alice","region":"US East"}],"nextCursor":"c2"}`, stdout.String())
+	assert.JSONEq(t, `{"items":`+participantsPage+`,"nextCursor":"c2"}`, stdout.String())
+}
+
+// TestSessionParticipantsPageNoSessions prints no participant sessions table
+// when none were read.
+func TestSessionParticipantsPageNoSessions(t *testing.T) {
+	participants := []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo{{ParticipantIdentity: ptr("bob")}}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, &stderr, false), false, participants, ""))
+	assert.Contains(t, stdout.String(), "bob")
+	assert.NotContains(t, stdout.String(), "Participant Session")
+	assert.Empty(t, stderr.String())
 }
 
 // TestSessionParticipantsPageEmpty checks a page with no participants says

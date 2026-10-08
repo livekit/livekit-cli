@@ -87,10 +87,51 @@ func publishedSources(s *oapi.LivekitPublicapiAnalyticsV1PublishedSources) strin
 	return util.Dash(strings.Join(names, ", "))
 }
 
-// renderParticipants prints a page of participants as a table. Like the
-// server, it counts a page as empty only with no participants and no next
-// cursor, so it never says there are none beside a hint that there are more.
-// It leaves that hint to the caller.
+var participantSessionHeaders = []string{"Identity", "Participant Session", "Joined", "Left", "Duration", "Client", "Connection", "Location"}
+
+func participantSessionRow(identity *string, s oapi.LivekitPublicapiAnalyticsV1ParticipantSession) []string {
+	return []string{
+		util.DashString(identity), util.DashString(s.ParticipantSessionId),
+		util.FormatTime(s.JoinedAt), util.FormatTime(s.LeftAt), formatSeconds(s.DurationSeconds),
+		participantClient(s), participantConnection(s), util.DashString(s.Location),
+	}
+}
+
+// participantClient names the client a participant session connected from:
+// its OS, browser, device model and SDK version, each only when reported.
+func participantClient(s oapi.LivekitPublicapiAnalyticsV1ParticipantSession) string {
+	var parts []string
+	for _, v := range []string{util.Deref(s.Os), util.Deref(s.Browser), util.Deref(s.DeviceModel)} {
+		if v != "" {
+			parts = append(parts, v)
+		}
+	}
+	if v := util.Deref(s.SdkVersion); v != "" {
+		parts = append(parts, "SDK "+v)
+	}
+	return util.Dash(strings.Join(parts, ", "))
+}
+
+// participantConnection renders the transport a participant session connected
+// over and how long it took to connect, e.g. "UDP (120ms)".
+func participantConnection(s oapi.LivekitPublicapiAnalyticsV1ParticipantSession) string {
+	conn := util.Deref(s.ConnectionType)
+	if ms := util.Deref(s.ConnectionTimeMs); ms > 0 {
+		took := strconv.Itoa(int(ms)) + "ms"
+		if conn == "" {
+			return took
+		}
+		return conn + " (" + took + ")"
+	}
+	return util.Dash(conn)
+}
+
+// renderParticipants prints a page of participants as a table, then their
+// participant sessions, one row per connection, in a second table. A
+// participant whose participant sessions couldn't be read has no rows in the
+// second. Like the server, it counts a page as empty only with no
+// participants and no next cursor, so it never says there are none beside a
+// hint that there are more. It leaves that hint to the caller.
 func renderParticipants(p *util.Printer, participants []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo, nextCursor string) error {
 	if len(participants) == 0 {
 		if nextCursor == "" {
@@ -98,11 +139,26 @@ func renderParticipants(p *util.Printer, participants []oapi.LivekitPublicapiAna
 		}
 		return nil
 	}
-	return util.RenderList(p, false, participants, "", participantHeaders, participantRow)
+	if err := util.RenderList(p, false, participants, "", participantHeaders, participantRow); err != nil {
+		return err
+	}
+	sessions := util.CreateTable().Headers(participantSessionHeaders...)
+	rows := 0
+	for _, pi := range participants {
+		for _, s := range util.Deref(pi.Sessions) {
+			sessions.Row(participantSessionRow(pi.ParticipantIdentity, s)...)
+			rows++
+		}
+	}
+	if rows > 0 {
+		p.Result(sessions)
+	}
+	return nil
 }
 
 // SessionParticipantsPage prints a cursor-paginated page of a session's
-// participants. As JSON it emits {items, nextCursor} with the API's rows.
+// participants and their participant sessions. As JSON it emits {items,
+// nextCursor} with the API's rows, participant sessions nested.
 func SessionParticipantsPage(p *util.Printer, asJSON bool, participants []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo, nextCursor string) error {
 	if asJSON {
 		return util.RenderPage(p, true, participants, nextCursor, "No participants found", participantHeaders, participantRow)
