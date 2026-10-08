@@ -1810,6 +1810,244 @@ func TestFetchSessionMetricsErrors(t *testing.T) {
 	}
 }
 
+func TestSessionEventsCommand(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd)
+	sessionCmd := findCommandByName(analyticsCmd.Commands, "session")
+	require.NotNil(t, sessionCmd)
+	eventsCmd := findCommandByName(sessionCmd.Commands, "events")
+	require.NotNil(t, eventsCmd, "'analytics session events' command must exist")
+	require.NotNil(t, eventsCmd.Action)
+	for _, name := range []string{"type", "participant", "sort-order", "limit", "cursor", "json"} {
+		assert.NotNil(t, findFlagByName(eventsCmd.Flags, name), "--%s", name)
+	}
+	assert.True(t, findFlagByName(eventsCmd.Flags, "cursor").(*cli.StringFlag).Hidden, "--cursor must be hidden")
+}
+
+// TestSessionEventsRequiresExperimentalAuth checks the events read, which has
+// no API-key endpoint, refuses to run without --experimental-auth before
+// reading its arguments or any config.
+func TestSessionEventsRequiresExperimentalAuth(t *testing.T) {
+	for _, args := range [][]string{
+		{"--experimental", "session", "events", "RM_1"},
+		{"--experimental", "session", "events", "RM_1", "--type", "joined"},
+		{"--experimental", "session", "events"},
+	} {
+		err := runAnalytics(args...)
+		require.ErrorContains(t, err, "only available under --experimental-auth")
+	}
+}
+
+// eventCmdOptions runs eventOptions with the given arguments on a command
+// built from fresh analyticsEventFlags.
+func eventCmdOptions(t *testing.T, args ...string) (public.EventOptions, error) {
+	t.Helper()
+	var opts public.EventOptions
+	var optsErr error
+	cmd := &cli.Command{
+		Name:  "events",
+		Flags: analyticsEventFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			opts, optsErr = eventOptions(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"events"}, args...)))
+	return opts, optsErr
+}
+
+func TestEventOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    public.EventOptions
+		wantErr string
+	}{
+		{name: "defaults", want: public.EventOptions{PageOptions: public.PageOptions{Limit: defaultPageLimit}, Types: []string{}}},
+		{
+			name: "types, participant session, order and paging",
+			args: []string{"--type", "track_published", "--type", "PARTICIPANT_LEFT", "--participant", "PA_aaaaaaaaaaaa",
+				"--sort-order", "desc", "--limit", "100", "--cursor", "abc"},
+			want: public.EventOptions{
+				PageOptions: public.PageOptions{Limit: 100, Cursor: "abc"}, Types: []string{"track_published", "PARTICIPANT_LEFT"},
+				ParticipantSessionID: "PA_aaaaaaaaaaaa", SortOrder: "desc",
+			},
+		},
+		{name: "unknown type", args: []string{"--type", "participant_joined", "--type", "joined"}, wantErr: `invalid event type "joined"`},
+		{name: "identity for participant session", args: []string{"--participant", "alice"}, wantErr: `invalid participant session id "alice"`},
+		{name: "unknown sort order", args: []string{"--sort-order", "newest"}, wantErr: `invalid sort order "newest"`},
+		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := eventCmdOptions(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// eventsAPI starts a stand-in Public API that answers the events read with
+// status and body, recording the query it was sent.
+func eventsAPI(t *testing.T, status int, body string) (*public.Client, *url.Values) {
+	t.Helper()
+	var query url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v1/projects/p1/sessions/RM_1/events" {
+			http.NotFound(w, r)
+			return
+		}
+		query = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+	return client, &query
+}
+
+// TestFetchSessionEvents prints a page one line per event with the filters it
+// asked for and, when a page is empty, says why: none of those types or for
+// that participant session, none at all, or no more.
+func TestFetchSessionEvents(t *testing.T) {
+	const page = `{"items":[` +
+		`{"type":"PARTICIPANT_JOINED","participantIdentity":"alice","participantSessionId":"PA_aaaaaaaaaaaa","payload":{"connectionType":"UDP"}},` +
+		`{"type":"TRACK_PUBLISHED","participantIdentity":"alice","participantSessionId":"PA_aaaaaaaaaaaa","payload":{"trackType":"AUDIO"}}],` +
+		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`
+	tests := []struct {
+		name       string
+		body       string
+		opts       public.EventOptions
+		wantQuery  url.Values
+		wantOut    []string
+		wantStatus []string
+	}{
+		{
+			name:      "events",
+			body:      page,
+			opts:      public.EventOptions{Types: []string{"participant_joined", "track_published"}, ParticipantSessionID: "PA_aaaaaaaaaaaa"},
+			wantQuery: url.Values{"types": {"PARTICIPANT_JOINED", "TRACK_PUBLISHED"}, "participantSessionId": {"PA_aaaaaaaaaaaa"}},
+			wantOut: []string{
+				"participant_joined  alice  PA_aaaaaaaaaaaa  connectionType=UDP",
+				"track_published     alice  PA_aaaaaaaaaaaa  trackType=AUDIO",
+			},
+			wantStatus: []string{"More events available — re-run with --cursor c2"},
+		},
+		{
+			name:       "none of those types",
+			body:       `{"items":[]}`,
+			opts:       public.EventOptions{Types: []string{"track_muted"}},
+			wantQuery:  url.Values{"types": {"TRACK_MUTED"}},
+			wantStatus: []string{"Session RM_1 has no events of the types asked for (track_muted)"},
+		},
+		{
+			name:       "none for that participant session",
+			body:       `{"items":[]}`,
+			opts:       public.EventOptions{ParticipantSessionID: "PA_aaaaaaaaaaaa"},
+			wantQuery:  url.Values{"participantSessionId": {"PA_aaaaaaaaaaaa"}},
+			wantStatus: []string{"Session RM_1 has no events for participant session PA_aaaaaaaaaaaa"},
+		},
+		{
+			name:       "no events",
+			body:       `{}`,
+			wantQuery:  url.Values{},
+			wantStatus: []string{"Session RM_1 has no events", "kept for 60 days"},
+		},
+		{
+			name:       "last page",
+			body:       `{"items":[]}`,
+			opts:       public.EventOptions{PageOptions: public.PageOptions{Cursor: "c2"}},
+			wantQuery:  url.Values{"page.cursor": {"c2"}},
+			wantStatus: []string{"No more events"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, query := eventsAPI(t, http.StatusOK, tt.body)
+			stdout, stderr := captureOut(t)
+
+			require.NoError(t, fetchSessionEvents(context.Background(), client, "p1", "RM_1", tt.opts, false))
+
+			assert.Equal(t, tt.wantQuery, *query)
+			for _, want := range tt.wantOut {
+				assert.Contains(t, stdout.String(), want)
+			}
+			if len(tt.wantOut) == 0 {
+				assert.Empty(t, stdout.String())
+			}
+			for _, want := range tt.wantStatus {
+				assert.Contains(t, stderr.String(), want)
+			}
+		})
+	}
+}
+
+// TestFetchSessionEventsJSON checks --json prints the events and still
+// explains an empty page on stderr.
+func TestFetchSessionEventsJSON(t *testing.T) {
+	client, _ := eventsAPI(t, http.StatusOK, `{"items":[]}`)
+	stdout, stderr := captureOut(t)
+
+	require.NoError(t, fetchSessionEvents(context.Background(), client, "p1", "RM_1", public.EventOptions{}, true))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Contains(t, stderr.String(), "has no events")
+}
+
+// TestFetchSessionEventsErrors checks why a session's events can't be printed:
+// it doesn't exist, the filter is invalid, or the user is signed out.
+func TestFetchSessionEventsErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr []string
+	}{
+		{
+			name:    "unknown session",
+			status:  http.StatusNotFound,
+			body:    `{"code":5,"message":"session not found"}`,
+			wantErr: []string{"no session RM_1 in project p1", "session not found"},
+		},
+		{
+			name:    "type the server doesn't know",
+			status:  http.StatusBadRequest,
+			body:    `{"code":3,"message":"invalid argument: \"SIP_CALL_UPDATE\" is not an event type"}`,
+			wantErr: []string{"is not an event type"},
+		},
+		{
+			name:    "signed out",
+			status:  http.StatusUnauthorized,
+			body:    `{"code":16,"message":"authentication required"}`,
+			wantErr: []string{"authentication required", "lk cloud auth"},
+		},
+		{
+			name:    "permission denied",
+			status:  http.StatusForbidden,
+			body:    `{"code":7,"message":"permission denied"}`,
+			wantErr: []string{"permission denied", "you don't have access to this project"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, _ := eventsAPI(t, tt.status, tt.body)
+			stdout, _ := captureOut(t)
+
+			err := fetchSessionEvents(context.Background(), client, "p1", "RM_1", public.EventOptions{}, false)
+			require.Error(t, err)
+			for _, want := range tt.wantErr {
+				assert.Contains(t, err.Error(), want)
+			}
+			assert.Empty(t, stdout.String())
+		})
+	}
+}
+
 // TestSessionAPIError checks a permission denial on a Public-API-only session
 // read says what the read requires, never to use API-key credentials, which
 // these reads can't use, while other errors keep cloudAPIError's hints.

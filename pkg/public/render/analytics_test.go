@@ -805,3 +805,96 @@ func TestSessionMetricsJSON(t *testing.T) {
 		"bucketBounds": []any{0.5, 1.0}, "bucketCounts": []any{"0", "2", "1"},
 	}, got.Items[2]["histogram"])
 }
+
+// sessionEvents is one page of a session's events as the API sends them: the
+// room created, a participant joining and publishing a track, an API call
+// that names no participant, and an event with no payload.
+const sessionEvents = `[
+  {"type": "ROOM_CREATED", "timestamp": "2026-10-07T11:00:00Z"},
+  {"type": "PARTICIPANT_JOINED", "timestamp": "2026-10-07T11:00:01.250Z", "participantIdentity": "alice", "participantSessionId": "PA_aaaaaaaaaaaa",
+   "payload": {"participantKind": "STANDARD", "connectionType": "UDP", "isMigration": false}},
+  {"type": "TRACK_PUBLISHED", "timestamp": "2026-10-07T11:00:02Z", "participantIdentity": "alice", "participantSessionId": "PA_aaaaaaaaaaaa",
+   "payload": {"trackId": "TR_1", "trackType": "AUDIO", "trackSource": "MICROPHONE", "mimeType": "audio/opus", "muted": false}},
+  {"type": "API_CALL", "timestamp": "2026-10-07T11:00:03Z", "payload": {"service": "RoomService", "method": "UpdateRoomMetadata", "status": 0, "twirpErrorMessage": "", "durationNs": "1500000"}},
+  {"type": "ROOM_ENDED", "timestamp": "2026-10-07T11:05:00Z", "payload": {"reason": "departure timeout"}}
+]`
+
+func decodeSessionEvents(t *testing.T) []oapi.LivekitPublicapiAnalyticsV1SessionEvent {
+	t.Helper()
+	var events []oapi.LivekitPublicapiAnalyticsV1SessionEvent
+	require.NoError(t, json.Unmarshal([]byte(sessionEvents), &events))
+	return events
+}
+
+// TestSessionEventsText checks each event prints as one line with its time,
+// friendly type, participant identity and participant session, and its
+// payload as sorted key=value pairs, and a next page says to re-run with its
+// cursor.
+func TestSessionEventsText(t *testing.T) {
+	prevLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = prevLocal })
+
+	page := public.EventPage{Events: decodeSessionEvents(t), NextCursor: "c2"}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, &stderr, false), false, page, "unused"))
+
+	assert.Equal(t, strings.Join([]string{
+		"11:00:00.000  room_created        -      -",
+		"11:00:01.250  participant_joined  alice  PA_aaaaaaaaaaaa  connectionType=UDP isMigration=false participantKind=STANDARD",
+		"11:00:02.000  track_published     alice  PA_aaaaaaaaaaaa  mimeType=audio/opus muted=false trackId=TR_1 trackSource=MICROPHONE trackType=AUDIO",
+		`11:00:03.000  api_call            -      -                durationNs=1500000 method=UpdateRoomMetadata service=RoomService status=0 twirpErrorMessage=""`,
+		`11:05:00.000  room_ended          -      -                reason="departure timeout"`,
+		"",
+	}, "\n"), stdout.String())
+	assert.Contains(t, stderr.String(),
+		"More events available — re-run with --cursor c2")
+	assert.NotContains(t, stderr.String(), "unused")
+}
+
+// TestEventPayloadClips keeps a long payload to one short line.
+func TestEventPayloadClips(t *testing.T) {
+	ev := decodeSessionEvents(t)[0]
+	long := strings.Repeat("x", 300)
+	var payload oapi.GoogleProtobufStruct
+	require.NoError(t, json.Unmarshal([]byte(`{"reason":"`+long+`\nmore"}`), &payload))
+	ev.Payload = &payload
+	got := eventPayload(ev)
+	assert.Equal(t, eventPayloadMax, len([]rune(got)))
+	assert.True(t, strings.HasPrefix(got, "reason="+`"xxx`))
+	assert.True(t, strings.HasSuffix(got, "…"))
+}
+
+// TestSessionEventsEmpty prints the caller's reason for an empty page, on
+// stderr in both modes.
+func TestSessionEventsEmpty(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, &stderr, false), false, public.EventPage{}, "No events"))
+	assert.Empty(t, stdout.String())
+	assert.Equal(t, "No events\n", stderr.String())
+
+	stdout.Reset()
+	stderr.Reset()
+	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, &stderr, false), true, public.EventPage{}, "No events"))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Equal(t, "No events\n", stderr.String())
+}
+
+// TestSessionEventsJSON checks --json prints the events as the API sent them,
+// with the page's cursor.
+func TestSessionEventsJSON(t *testing.T) {
+	page := public.EventPage{Events: decodeSessionEvents(t), NextCursor: "c2"}
+	var stdout bytes.Buffer
+	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, nil, true), true, page, ""))
+
+	var got struct {
+		Items      []map[string]any `json:"items"`
+		NextCursor string           `json:"nextCursor"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	assert.Equal(t, "c2", got.NextCursor)
+	var want []map[string]any
+	require.NoError(t, json.Unmarshal([]byte(sessionEvents), &want))
+	want[1]["timestamp"] = "2026-10-07T11:00:01.25Z" // time.Time drops the trailing zero
+	assert.Equal(t, want, got.Items)
+}

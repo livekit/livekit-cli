@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -227,7 +228,7 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 }
 
 // jsonPage is the --json shape of a page of a session's transcript, agent
-// logs, trace spans or agent metrics: {items, nextCursor}, like
+// logs, trace spans, agent metrics or events: {items, nextCursor}, like
 // util.RenderPage's, with each item as the API sent it.
 type jsonPage[T any] struct {
 	Items      []T    `json:"items"`
@@ -523,6 +524,92 @@ func logLevelName(r oapi.LivekitPublicapiObservabilityV1LogRecord) string {
 		return strings.TrimPrefix(string(*r.Level), "LOG_LEVEL_")
 	}
 	return util.Dash(strings.ToUpper(oneLine(util.Deref(r.SeverityText))))
+}
+
+// SessionEvents prints a page of a session's events, one line per event with
+// its time, type, participant identity and participant session, and its
+// payload; --json prints the events as the API sent them. empty says why a
+// page has no events, on stderr in both modes so --json output stays
+// parseable.
+func SessionEvents(p *util.Printer, asJSON bool, page public.EventPage, empty string) error {
+	jp := jsonPage[oapi.LivekitPublicapiAnalyticsV1SessionEvent]{Items: page.Events, NextCursor: page.NextCursor}
+	if err := renderPage(p, asJSON, jp, empty, eventLines); err != nil || asJSON {
+		return err
+	}
+	moreAvailable(p, "events", page.NextCursor)
+	return nil
+}
+
+// eventLines renders events one per line, their types, identities and
+// participant sessions padded so the payloads line up.
+func eventLines(events []oapi.LivekitPublicapiAnalyticsV1SessionEvent) []string {
+	var typeWidth, identityWidth, idWidth int
+	for _, ev := range events {
+		typeWidth = max(typeWidth, len([]rune(eventTypeName(ev))))
+		identityWidth = max(identityWidth, len([]rune(util.DashString(ev.ParticipantIdentity))))
+		idWidth = max(idWidth, len([]rune(util.DashString(ev.ParticipantSessionId))))
+	}
+	lines := make([]string, 0, len(events))
+	for _, ev := range events {
+		lines = append(lines, eventLine(ev, typeWidth, identityWidth, idWidth))
+	}
+	return lines
+}
+
+// eventTypeName is an event's friendly type name, as --type takes it.
+func eventTypeName(ev oapi.LivekitPublicapiAnalyticsV1SessionEvent) string {
+	return util.Dash(public.EventTypeName(util.Deref(ev.Type)))
+}
+
+// eventLine renders one event as a single line, its type, identity and
+// participant session padded so the payloads line up.
+func eventLine(ev oapi.LivekitPublicapiAnalyticsV1SessionEvent, typeWidth, identityWidth, idWidth int) string {
+	at := "-"
+	if ev.Timestamp != nil && !ev.Timestamp.IsZero() {
+		at = ev.Timestamp.Local().Format("15:04:05.000")
+	}
+	line := fmt.Sprintf("%-12s  %-*s  %-*s  %-*s  %s", at, typeWidth, eventTypeName(ev),
+		identityWidth, util.DashString(ev.ParticipantIdentity), idWidth, util.DashString(ev.ParticipantSessionId), eventPayload(ev))
+	return strings.TrimRight(line, " ")
+}
+
+// eventPayloadMax caps an event's payload on a line; --json has it whole.
+const eventPayloadMax = 200
+
+// eventPayload renders an event's payload compactly as key=value pairs sorted
+// by key: a string bare unless it is empty or holds spaces or quotes, anything
+// else as its JSON.
+func eventPayload(ev oapi.LivekitPublicapiAnalyticsV1SessionEvent) string {
+	payload := util.Deref(ev.Payload)
+	keys := make([]string, 0, len(payload))
+	for k := range payload {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	pairs := make([]string, 0, len(keys))
+	for _, k := range keys {
+		pairs = append(pairs, k+"="+payloadValue(payload[k]))
+	}
+	return clip(strings.Join(pairs, " "), eventPayloadMax)
+}
+
+// payloadValue renders one payload value for a key=value pair.
+func payloadValue(v *oapi.GoogleProtobufValue) string {
+	if v == nil {
+		return "null"
+	}
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return "?"
+	}
+	var s string
+	if json.Unmarshal(raw, &s) != nil {
+		return string(raw)
+	}
+	if s == "" || strings.ContainsFunc(s, func(r rune) bool { return unicode.IsSpace(r) || r == '"' }) {
+		return strconv.Quote(s)
+	}
+	return s
 }
 
 // SessionTraces prints a session's spans as a tree built from their parent
