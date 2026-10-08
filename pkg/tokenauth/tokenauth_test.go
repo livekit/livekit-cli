@@ -31,6 +31,7 @@ import (
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 )
 
 const (
@@ -234,3 +235,70 @@ func TestCheckGrants(t *testing.T) {
 	assert.Contains(t, err.Error(), "sip.admin")
 	assert.Contains(t, err.Error(), "video.canPublish")
 }
+
+// TestTransportAuthorizesCloudAgents drives a real cloudagents client through
+// Transport: its twirp calls (and its plain HTTP requests, which share the same
+// http.Client) reach the server with fetched tokens.
+func TestTransportAuthorizesCloudAgents(t *testing.T) {
+	fake := &fakeServer{}
+	srv := httptest.NewServer(fake.handler(t))
+	t.Cleanup(srv.Close)
+
+	source := &countingTokenSource{keyTokenSource: keyTokenSource{APIKey: realKey, APISecret: realSecret}}
+	src := NewCachingTokenSource(source)
+	// cloudagents derives an https agents.<domain> host from the project URL;
+	// route whatever it dials to the fake server.
+	toFake := roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		r.URL.Scheme, r.URL.Host = "http", strings.TrimPrefix(srv.URL, "http://")
+		return http.DefaultTransport.RoundTrip(r)
+	})
+	client, err := cloudagents.New(
+		cloudagents.WithProject("wss://project.livekit.cloud", PlaceholderAPIKey, PlaceholderAPISecret),
+		cloudagents.WithHTTPClient(&http.Client{Transport: src.Transport(toFake)}),
+	)
+	require.NoError(t, err)
+
+	_, err = client.ListAgents(context.Background(), &livekit.ListAgentsRequest{})
+	require.NoError(t, err)
+
+	require.Len(t, fake.keys, 1)
+	assert.Equal(t, realKey, fake.keys[0])
+	require.NotNil(t, fake.grants[0].Agent)
+	assert.True(t, fake.grants[0].Agent.Admin)
+}
+
+func TestTransport(t *testing.T) {
+	fake := &fakeServer{}
+	srv := httptest.NewServer(fake.handler(t))
+	t.Cleanup(srv.Close)
+	source := &countingTokenSource{keyTokenSource: keyTokenSource{APIKey: realKey, APISecret: realSecret}}
+	client := &http.Client{Transport: NewCachingTokenSource(source).Transport(nil)}
+
+	placeholder, err := auth.NewAccessToken(PlaceholderAPIKey, PlaceholderAPISecret).
+		SetAgentGrant(&auth.AgentGrant{Admin: true}).ToJWT()
+	require.NoError(t, err)
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/logs", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+placeholder)
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "Bearer "+placeholder, req.Header.Get("Authorization"), "caller's request must not be mutated")
+	require.Len(t, fake.keys, 1)
+	assert.Equal(t, realKey, fake.keys[0])
+
+	// A real credential is refused rather than forwarded.
+	real, err := auth.NewAccessToken(realKey, realSecret).SetAgentGrant(&auth.AgentGrant{Admin: true}).ToJWT()
+	require.NoError(t, err)
+	req, err = http.NewRequest(http.MethodGet, srv.URL+"/logs", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer "+real)
+	_, err = client.Do(req)
+	assert.Error(t, err)
+	assert.Len(t, fake.keys, 1)
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }

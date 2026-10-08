@@ -29,25 +29,29 @@ import (
 
 // Session auth for server SDK calls.
 //
-// Commands that only talk to LiveKit server APIs through server-sdk-go clients
-// (room, sip, egress, ingress, dispatch, phone-number) and `token create` load
-// their project with loadProjectForSDK or requireProjectForSDK. With an API key
-// these behave like loadProjectDetails/requireProject. Under
+// Commands that talk to LiveKit only through server-sdk-go (room, sip, egress,
+// ingress, dispatch, phone-number, replay, cloud agents), join rooms (room
+// join, perf load tests, the egress layout demo) or print tokens (token create)
+// load their project with loadProjectForSDK or requireProjectForSDK. With an
+// API key these behave like loadProjectDetails/requireProject. Under
 // --experimental-auth they load a session project instead: the user's project
-// with placeholder credentials, whose SDK clients (via withDefaultClientOpts)
-// swap each request's token for one minted by the Public API
-// (ProjectService.CreateToken) with the same grants.
+// with placeholder credentials. Its SDK clients (via withDefaultClientOpts, or
+// tokenauth's Transport for cloudagents) swap each request's token for one
+// fetched from the Public API (ProjectService.CreateToken) with the same grants,
+// and tokens the CLI signs itself go through the tokenauth helpers with
+// sessionTokenSource.
 //
-// Commands that need a real secret locally (join, load-test, agent, …) keep
-// using loadProjectDetails/requireProject and stay behind experimentalAuthGate.
+// Apps and agents need a real key of their own; see app_credentials.go. The
+// rest (agent simulate's local runs) keep loadProjectDetails/requireProject
+// and stay behind experimentalAuthGate.
 
 // sessionTokenSources holds the token source for each session project, by
 // project ID, for withDefaultClientOpts to attach.
 var sessionTokenSources = map[string]*tokenauth.CachingTokenSource{}
 
 // loadProjectForSDK is loadProjectDetails for commands whose credentials go
-// solely to SDK service clients built with withDefaultClientOpts, so a session
-// project will do.
+// only to SDK clients built with withDefaultClientOpts or to the tokenauth
+// helpers, so a session project will do.
 func loadProjectForSDK(ctx context.Context, cmd *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
 	if experimentalAuthEnabled(cmd) {
 		return loadSessionProject(ctx, cmd)
@@ -56,8 +60,8 @@ func loadProjectForSDK(ctx context.Context, cmd *cli.Command, opts ...loadOption
 }
 
 // requireProjectForSDK is requireProjectWithOpts for commands whose
-// credentials go solely to SDK service clients built with withDefaultClientOpts,
-// or to fetchSessionToken, so a session project will do.
+// credentials go only to SDK clients built with withDefaultClientOpts or to the
+// tokenauth helpers, so a session project will do.
 func requireProjectForSDK(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
 	if !experimentalAuthEnabled(cmd) {
 		return requireProjectWithOpts(ctx, cmd, opts...)
@@ -129,12 +133,22 @@ func (s *publicAPITokenSource) Fetch(ctx context.Context, grants *auth.ClaimGran
 // fetchSessionToken fetches a one-off token (e.g. a participant token) for a
 // session project.
 func fetchSessionToken(ctx context.Context, pc *config.ProjectConfig, grants *auth.ClaimGrants, ttl time.Duration) (string, error) {
-	src := sessionTokenSources[pc.ProjectId]
+	src := sessionTokenSource(pc)
 	if src == nil {
 		return "", fmt.Errorf("project %s was not loaded with session auth", pc.ProjectId)
 	}
 	token, _, err := src.Fetch(ctx, grants, ttl)
 	return token, err
+}
+
+// sessionTokenSource returns the token source for a session project, or nil
+// when pc has real credentials. The tokenauth helpers (Sign, JoinRoom,
+// ConnectToRoom) take it directly: nil means sign locally with pc's key.
+func sessionTokenSource(pc *config.ProjectConfig) *tokenauth.CachingTokenSource {
+	if !isSessionProject(pc) {
+		return nil
+	}
+	return sessionTokenSources[pc.ProjectId]
 }
 
 // isSessionProject reports whether pc came from loadSessionProject, so its

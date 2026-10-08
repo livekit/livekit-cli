@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -523,7 +524,7 @@ func createAgentClient(ctx context.Context, cmd *cli.Command) (context.Context, 
 func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
 	var err error
 
-	if _, err := requireProjectWithOpts(ctx, cmd, opts...); err != nil {
+	if _, err := requireProjectForSDK(ctx, cmd, opts...); err != nil {
 		return ctx, err
 	}
 
@@ -548,7 +549,14 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		}
 	}
 
-	agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
+	// cloudagents' registry transport signs image pushes itself and sends them
+	// through http.DefaultTransport, out of reach of the session transport.
+	// Refuse up front, before create registers an agent.
+	if isSessionProject(project) && (cmd.String("image") != "" || cmd.String("image-tar") != "") {
+		return ctx, errors.New("deploying a prebuilt image (--image, --image-tar) is not yet supported under --experimental-auth")
+	}
+
+	agentsClient, err = newAgentsClient(project)
 	if err != nil {
 		return ctx, err
 	}
@@ -560,6 +568,17 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 var starterTemplateURLs = map[string]string{
 	"python": "https://github.com/livekit-examples/agent-starter-python",
 	"node":   "https://github.com/livekit-examples/agent-starter-node",
+}
+
+// newAgentsClient returns a cloud agents client for pc. For a session project
+// its requests (twirp calls and the log/build streams alike) go through an
+// HTTP client that swaps in session tokens.
+func newAgentsClient(pc *config.ProjectConfig) (*cloudagents.Client, error) {
+	opts := []cloudagents.ClientOption{cloudagents.WithProject(pc.URL, pc.APIKey, pc.APISecret)}
+	if src := sessionTokenSource(pc); src != nil {
+		opts = append(opts, cloudagents.WithHTTPClient(&http.Client{Transport: src.Transport(nil)}))
+	}
+	return cloudagents.New(opts...)
 }
 
 func initAgent(ctx context.Context, cmd *cli.Command) error {
@@ -673,13 +692,16 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			}
 		}
 		if !useProject {
+			if isSessionProject(project) {
+				return errors.New("rerun with --project to choose another project")
+			}
 			if _, err := selectProject(ctx, cmd); err != nil {
 				return err
 			}
 			(&resolvedProject{project: project, source: sourceSelected}).announce()
 			var err error
 			// Recreate the client with the new project
-			agentsClient, err = cloudagents.New(cloudagents.WithProject(project.URL, project.APIKey, project.APISecret))
+			agentsClient, err = newAgentsClient(project)
 			if err != nil {
 				return err
 			}

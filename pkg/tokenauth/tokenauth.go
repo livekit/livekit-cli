@@ -112,6 +112,18 @@ func (s *CachingTokenSource) Fetch(ctx context.Context, grants *auth.ClaimGrants
 	return token, expiresAt, nil
 }
 
+// Exchange returns a token fetched from s with the grants of placeholderToken,
+// a token that library code built and signed with the placeholder credentials
+// (e.g. protocol's egress.BuildEgressToken), valid for about ttl.
+func (s *CachingTokenSource) Exchange(ctx context.Context, placeholderToken string, ttl time.Duration) (string, error) {
+	grants, err := placeholderGrants("Bearer " + placeholderToken)
+	if err != nil {
+		return "", err
+	}
+	token, _, err := s.Fetch(ctx, grants, ttl)
+	return token, err
+}
+
 // ClientOptions returns twirp options that authorize every request through s.
 // Use them with an SDK client constructed from the Placeholder credentials.
 func (s *CachingTokenSource) ClientOptions() []twirp.ClientOption {
@@ -123,19 +135,62 @@ func (s *CachingTokenSource) ClientOptions() []twirp.ClientOption {
 // authorize is a twirp RequestPrepared hook: it runs after the SDK has set its
 // placeholder-signed Authorization header and before the request is sent.
 func (s *CachingTokenSource) authorize(ctx context.Context, req *http.Request) (context.Context, error) {
-	grants, err := placeholderGrants(req.Header.Get("Authorization"))
+	header, err := s.swapToken(ctx, req.Header)
 	if err != nil {
 		return ctx, twirp.NewError(twirp.Unauthenticated, err.Error())
+	}
+	req.Header = header
+	return ctx, nil
+}
+
+// Transport returns an http.RoundTripper for clients that sign their own HTTP
+// requests outside twirp hooks (e.g. cloudagents' log and build streams). It
+// swaps each request's placeholder-signed bearer token for a fetched one with
+// the same grants, then sends it through base (http.DefaultTransport when nil).
+// Requests without an Authorization header pass through untouched.
+func (s *CachingTokenSource) Transport(base http.RoundTripper) http.RoundTripper {
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return &transport{src: s, base: base}
+}
+
+type transport struct {
+	src  *CachingTokenSource
+	base http.RoundTripper
+}
+
+func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get("Authorization") == "" {
+		return t.base.RoundTrip(req)
+	}
+	header, err := t.src.swapToken(req.Context(), req.Header)
+	if err != nil {
+		if req.Body != nil {
+			_ = req.Body.Close()
+		}
+		return nil, err
+	}
+	req = req.Clone(req.Context())
+	req.Header = header
+	return t.base.RoundTrip(req)
+}
+
+// swapToken returns a copy of header whose placeholder-signed bearer token is
+// replaced by a fetched token with the same grants. The original header map may
+// be shared with the caller, so it is never mutated in place.
+func (s *CachingTokenSource) swapToken(ctx context.Context, header http.Header) (http.Header, error) {
+	grants, err := placeholderGrants(header.Get("Authorization"))
+	if err != nil {
+		return nil, err
 	}
 	token, _, err := s.Fetch(ctx, grants, DefaultTTL)
 	if err != nil {
-		return ctx, twirp.NewError(twirp.Unauthenticated, err.Error())
+		return nil, err
 	}
-	// The header map may be shared with the SDK's request context; don't
-	// mutate it in place.
-	req.Header = req.Header.Clone()
-	req.Header.Set("Authorization", "Bearer "+token)
-	return ctx, nil
+	header = header.Clone()
+	header.Set("Authorization", "Bearer "+token)
+	return header, nil
 }
 
 // placeholderGrants recovers the grants the SDK requested from a token it

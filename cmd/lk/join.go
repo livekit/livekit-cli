@@ -38,6 +38,7 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 
 	provider2 "github.com/livekit/livekit-cli/v2/pkg/provider"
+	"github.com/livekit/livekit-cli/v2/pkg/tokenauth"
 )
 
 var (
@@ -82,7 +83,7 @@ var (
 const mimeDelimiter = "://"
 
 func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
-	pc, err := loadProjectDetails(cmd)
+	pc, err := loadProjectForSDK(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -152,7 +153,7 @@ func _deprecatedJoinRoom(ctx context.Context, cmd *cli.Command) error {
 			close(done)
 		},
 	}
-	room, err := lksdk.ConnectToRoom(pc.URL, lksdk.ConnectInfo{
+	room, err := tokenauth.ConnectToRoom(ctx, sessionTokenSource(pc), pc.URL, lksdk.ConnectInfo{
 		APIKey:              pc.APIKey,
 		APISecret:           pc.APISecret,
 		RoomName:            cmd.String("room"),

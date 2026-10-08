@@ -193,7 +193,7 @@ var (
 )
 
 func loadTest(ctx context.Context, cmd *cli.Command) error {
-	pc, err := loadProjectDetails(cmd)
+	pc, err := loadProjectForSDK(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -214,6 +214,7 @@ func loadTest(ctx context.Context, cmd *cli.Command) error {
 			URL:            pc.URL,
 			APIKey:         pc.APIKey,
 			APISecret:      pc.APISecret,
+			TokenSource:    sessionTokenSource(pc),
 			Room:           cmd.String("room"),
 			IdentityPrefix: cmd.String("identity-prefix"),
 			Layout:         loadtester.LayoutFromString(cmd.String("layout")),
@@ -238,7 +239,7 @@ func loadTest(ctx context.Context, cmd *cli.Command) error {
 }
 
 func agentLoadTest(ctx context.Context, cmd *cli.Command) error {
-	pc, err := loadProjectDetails(cmd)
+	pc, err := loadProjectForSDK(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -279,6 +280,7 @@ func agentLoadTest(ctx context.Context, cmd *cli.Command) error {
 		URL:                   pc.URL,
 		APIKey:                pc.APIKey,
 		APISecret:             pc.APISecret,
+		TokenSource:           sessionTokenSource(pc),
 		Rooms:                 int(cmd.Int("rooms")),
 		AgentName:             cmd.String("agent-name"),
 		EchoSpeechDelay:       cmd.Duration("echo-speech-delay"),

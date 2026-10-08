@@ -754,10 +754,11 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 		roomName = fmt.Sprintf("layout-demo-%v", time.Now().Unix())
 	}
 
-	pc, err := loadProjectDetails(cmd)
+	pc, err := loadProjectForSDK(ctx, cmd)
 	if err != nil {
 		return err
 	}
+	tokens := sessionTokenSource(pc)
 
 	serverURL := pc.URL
 	apiKey := pc.APIKey
@@ -769,6 +770,7 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 			URL:            serverURL,
 			APIKey:         apiKey,
 			APISecret:      apiSecret,
+			TokenSource:    tokens,
 			Room:           roomName,
 			IdentityPrefix: "demo-publisher",
 			Sequence:       i,
@@ -786,6 +788,9 @@ func testEgressTemplate(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	token, err := egress.BuildEgressToken("template_test", apiKey, apiSecret, roomName)
+	if err == nil && tokens != nil {
+		token, err = tokens.Exchange(ctx, token, 24*time.Hour)
+	}
 	if err != nil {
 		return err
 	}

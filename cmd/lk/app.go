@@ -58,7 +58,7 @@ var (
 					Name:      "create",
 					Usage:     "Bootstrap a new application from a template or through guided creation",
 					Action:    setupTemplate,
-					Before:    requireProject,
+					Before:    requireAppProject,
 					ArgsUsage: "`APP_NAME`",
 					Flags: []cli.Flag{
 						templateFlag,
@@ -78,7 +78,7 @@ var (
 					Name:      "install",
 					Usage:     "Execute installation defined in " + bootstrap.TaskFile,
 					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
-					Before:    requireProject,
+					Before:    requireAppProject,
 					Action:    installTemplate,
 				},
 				{
@@ -120,7 +120,7 @@ var (
 						},
 					},
 					ArgsUsage: "[DIR] location of the project directory (default: current directory)",
-					Before:    requireProject,
+					Before:    requireAppProject,
 					Action:    manageEnv,
 				},
 			},
@@ -130,6 +130,13 @@ var (
 
 func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	return requireProjectWithOpts(ctx, cmd)
+}
+
+// requireAppProject is requireProject for the app commands, which also run
+// under --experimental-auth: those that need a real API key get one from
+// ensureProjectAPIKey once they know where the app lives.
+func requireAppProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+	return requireProjectForSDK(ctx, cmd)
 }
 
 func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
@@ -298,7 +305,7 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 	}
 
 	if isSandbox {
-		_, err := requireProject(ctx, cmd)
+		_, err := requireAppProject(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -563,12 +570,15 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 	if priors != nil {
 		maps.Copy(env, priors)
 	}
-	if _, err := requireProject(ctx, cmd); err != nil {
+	if _, err := requireAppProject(ctx, cmd); err != nil {
 		if !errors.Is(err, ErrNoProjectSelected) {
 			return nil, err
 		}
 		// if no project is selected, we prompt for all environment variables including LIVEKIT_ ones
 	} else {
+		if err := ensureProjectAPIKey(ctx, cmd, rootPath, appEnvFiles(destinationFile)...); err != nil {
+			return nil, err
+		}
 		env["LIVEKIT_API_KEY"] = project.APIKey
 		env["LIVEKIT_API_SECRET"] = project.APISecret
 		env["LIVEKIT_URL"] = project.URL

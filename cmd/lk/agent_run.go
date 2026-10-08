@@ -208,8 +208,9 @@ func mergeCredentials(explicit, project agentCredentials) agentCredentials {
 	return merged
 }
 
-// resolveCredentials returns LIVEKIT_* environment entries for the agent subprocess.
-func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, error) {
+// resolveCredentials returns LIVEKIT_* environment entries for the agent
+// subprocess running from dir.
+func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string, loadOpts ...loadOption) ([]string, error) {
 	explicit := explicitCredentials(cmd)
 
 	// An explicitly named project always wins, mirroring resolveProject's
@@ -221,6 +222,16 @@ func resolveCredentials(cmd *cli.Command, loadOpts ...loadOption) ([]string, err
 	}
 
 	merged := explicit
+
+	// Under --experimental-auth there is no stored API key to hand the agent;
+	// it uses the one in its own env files (see agentEnvCredentials).
+	if !explicit.complete() && experimentalAuthEnabled(cmd) {
+		creds, err := agentEnvCredentials(ctx, cmd, dir)
+		if err != nil {
+			return nil, err
+		}
+		return mergeCredentials(explicit, creds).env(), nil
+	}
 
 	// Only consult the project config when the user didn't fully specify the
 	// connection on the command line / environment.
@@ -291,7 +302,7 @@ func runAgentStart(ctx context.Context, cmd *cli.Command) error {
 	}
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
 
-	credsEnv, err := resolveCredentials(cmd)
+	credsEnv, err := resolveCredentials(ctx, cmd, projectDir)
 	if err != nil {
 		return err
 	}
@@ -341,7 +352,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		subcmd = "start"
 	}
 	cliArgs := buildCLIArgs(projectType, subcmd, cmd)
-	credsEnv, err := resolveCredentials(cmd)
+	credsEnv, err := resolveCredentials(ctx, cmd, projectDir)
 	if err != nil {
 		return err
 	}

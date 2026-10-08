@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
+	"github.com/livekit/livekit-cli/v2/pkg/tokenauth"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/livekit"
@@ -32,6 +33,7 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pion/webrtc/v4"
 	"github.com/pion/webrtc/v4/pkg/media"
+	"github.com/twitchtv/twirp"
 	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
 )
@@ -171,7 +173,7 @@ func (r *LoadTestRoom) start(roomName string) error {
 	var err error
 	// make up to 10 reconnect attempts
 	for i := range 10 {
-		err = r.room.Join(r.params.URL, lksdk.ConnectInfo{
+		err = tokenauth.JoinRoom(context.Background(), r.room, r.params.TokenSource, r.params.URL, lksdk.ConnectInfo{
 			APIKey:                r.params.APIKey,
 			APISecret:             r.params.APISecret,
 			RoomName:              roomName,
@@ -188,7 +190,11 @@ func (r *LoadTestRoom) start(roomName string) error {
 		return err
 	}
 
-	meetParticipantToken, _ := newAccessToken(r.params.APIKey, r.params.APISecret, roomName, "meet-participant")
+	meetParticipantToken, _ := tokenauth.Sign(context.Background(), r.params.TokenSource, r.params.APIKey, r.params.APISecret, &auth.ClaimGrants{
+		Identity: "meet-participant",
+		Name:     "meet-participant",
+		Video:    &auth.VideoGrant{RoomJoin: true, Room: roomName},
+	}, 0)
 	r.stats.meetLink = fmt.Sprintf("https://meet.livekit.io/custom?liveKitUrl=%s&token=%s", r.params.URL, meetParticipantToken)
 	logger.Debugw("Inspect the room in LiveKit Meet using this url", "room", roomName, "url", r.stats.meetLink)
 	r.running.Store(true)
@@ -216,7 +222,11 @@ func (r *LoadTestRoom) publishEchoTrack() (string, error) {
 }
 
 func (r *LoadTestRoom) dispatchAgent() error {
-	dispatchClient := lksdk.NewAgentDispatchServiceClient(r.params.URL, r.params.APIKey, r.params.APISecret)
+	var opts []twirp.ClientOption
+	if r.params.TokenSource != nil {
+		opts = r.params.TokenSource.ClientOptions()
+	}
+	dispatchClient := lksdk.NewAgentDispatchServiceClient(r.params.URL, r.params.APIKey, r.params.APISecret, opts...)
 	req := &livekit.CreateAgentDispatchRequest{
 		Room:      r.room.Name(),
 		AgentName: r.params.AgentName,
@@ -344,17 +354,4 @@ func (t *AgentLoadTester) printStats() {
 
 	util.Result("\nTest Statistics:")
 	util.Result(table)
-}
-
-func newAccessToken(apiKey, apiSecret, roomName, pID string) (string, error) {
-	at := auth.NewAccessToken(apiKey, apiSecret)
-	grant := &auth.VideoGrant{
-		RoomJoin: true,
-		Room:     roomName,
-	}
-	at.SetVideoGrant(grant).
-		SetIdentity(pID).
-		SetName(pID)
-
-	return at.ToJWT()
 }

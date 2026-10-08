@@ -18,6 +18,8 @@ import (
 	"context"
 	"log"
 	"time"
+
+	"github.com/livekit/livekit-cli/v2/pkg/tokenauth"
 )
 
 type AgentLoadTestParams struct {
@@ -28,6 +30,9 @@ type AgentLoadTestParams struct {
 	URL             string
 	APIKey          string
 	APISecret       string
+	// TokenSource, when set, supplies tokens in place of signing them with
+	// APIKey/APISecret.
+	TokenSource           *tokenauth.CachingTokenSource
 	ParticipantAttributes map[string]string
 }
 
