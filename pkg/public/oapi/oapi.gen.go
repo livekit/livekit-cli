@@ -608,6 +608,33 @@ func (e LivekitPublicapiObservabilityV1LogLevel) Valid() bool {
 	}
 }
 
+// Defines values for LivekitPublicapiObservabilityV1MetricKind.
+const (
+	METRICKINDEXPONENTIALHISTOGRAM LivekitPublicapiObservabilityV1MetricKind = "METRIC_KIND_EXPONENTIAL_HISTOGRAM"
+	METRICKINDGAUGE                LivekitPublicapiObservabilityV1MetricKind = "METRIC_KIND_GAUGE"
+	METRICKINDHISTOGRAM            LivekitPublicapiObservabilityV1MetricKind = "METRIC_KIND_HISTOGRAM"
+	METRICKINDSUM                  LivekitPublicapiObservabilityV1MetricKind = "METRIC_KIND_SUM"
+	METRICKINDUNSPECIFIED          LivekitPublicapiObservabilityV1MetricKind = "METRIC_KIND_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1MetricKind enum.
+func (e LivekitPublicapiObservabilityV1MetricKind) Valid() bool {
+	switch e {
+	case METRICKINDEXPONENTIALHISTOGRAM:
+		return true
+	case METRICKINDGAUGE:
+		return true
+	case METRICKINDHISTOGRAM:
+		return true
+	case METRICKINDSUM:
+		return true
+	case METRICKINDUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LivekitPublicapiObservabilityV1RecordingFileType.
 const (
 	RECORDINGFILETYPEAUDIO       LivekitPublicapiObservabilityV1RecordingFileType = "RECORDING_FILE_TYPE_AUDIO"
@@ -1020,120 +1047,6 @@ type LivekitEncodingOptions struct {
 // LivekitEncodingOptionsPreset defines model for livekit.EncodingOptionsPreset.
 type LivekitEncodingOptionsPreset string
 
-// LivekitEventMetric defines model for livekit.EventMetric.
-type LivekitEventMetric struct {
-	// EndTimestampMs end time of event based on a monotonic clock (in milliseconds), if needed
-	EndTimestampMs         *string                  `json:"endTimestampMs,omitempty"`
-	Label                  *int                     `json:"label,omitempty"`
-	Metadata               *string                  `json:"metadata,omitempty"`
-	NormalizedEndTimestamp *GoogleProtobufTimestamp `json:"normalizedEndTimestamp,omitempty"`
-
-	// NormalizedStartTimestamp A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	NormalizedStartTimestamp *GoogleProtobufTimestamp `json:"normalizedStartTimestamp,omitempty"`
-
-	// ParticipantIdentity index into `str_data`
-	ParticipantIdentity *int `json:"participantIdentity,omitempty"`
-
-	// Rid index into 'str_data'
-	Rid *int `json:"rid,omitempty"`
-
-	// StartTimestampMs start time of event based on a monotonic clock (in milliseconds)
-	StartTimestampMs *string `json:"startTimestampMs,omitempty"`
-
-	// TrackSid index into `str_data`
-	TrackSid *int `json:"trackSid,omitempty"`
-}
-
 // LivekitFilterParams defines model for livekit.FilterParams.
 type LivekitFilterParams struct {
 	ExcludeEvents *[]string `json:"excludeEvents,omitempty"`
@@ -1205,216 +1118,6 @@ type LivekitImageOutput4 = interface{}
 
 // LivekitJobRestartPolicy defines model for livekit.JobRestartPolicy.
 type LivekitJobRestartPolicy string
-
-// LivekitMetricSample defines model for livekit.MetricSample.
-type LivekitMetricSample struct {
-	// NormalizedTimestamp A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	NormalizedTimestamp *GoogleProtobufTimestamp `json:"normalizedTimestamp,omitempty"`
-
-	// TimestampMs time of metric based on a monotonic clock (in milliseconds)
-	TimestampMs *string  `json:"timestampMs,omitempty"`
-	Value       *float32 `json:"value,omitempty"`
-}
-
-// LivekitMetricsBatch defines model for livekit.MetricsBatch.
-type LivekitMetricsBatch struct {
-	Events *[]LivekitEventMetric `json:"events,omitempty"`
-
-	// NormalizedTimestamp A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	NormalizedTimestamp *GoogleProtobufTimestamp `json:"normalizedTimestamp,omitempty"`
-
-	// StrData To avoid repeating string values, we store them in a separate list and reference them by index
-	//  This is useful for storing participant identities, track names, etc.
-	//  There is also a predefined list of labels that can be used to reference common metrics.
-	//  They have reserved indices from 0 to (METRIC_LABEL_PREDEFINED_MAX_VALUE - 1).
-	//  Indexes pointing at str_data should start from METRIC_LABEL_PREDEFINED_MAX_VALUE,
-	//  such that str_data[0] == index of METRIC_LABEL_PREDEFINED_MAX_VALUE.
-	StrData    *[]string                  `json:"strData,omitempty"`
-	TimeSeries *[]LivekitTimeSeriesMetric `json:"timeSeries,omitempty"`
-
-	// TimestampMs time at which this batch is sent based on a monotonic clock (millisecond resolution)
-	TimestampMs *string `json:"timestampMs,omitempty"`
-}
 
 // LivekitPresignedPostRequest defines model for livekit.PresignedPostRequest.
 type LivekitPresignedPostRequest struct {
@@ -2492,23 +2195,6 @@ type LivekitStreamOutput struct {
 
 // LivekitStreamProtocol defines model for livekit.StreamProtocol.
 type LivekitStreamProtocol string
-
-// LivekitTimeSeriesMetric defines model for livekit.TimeSeriesMetric.
-type LivekitTimeSeriesMetric struct {
-	// Label Metric name e.g "speech_probablity". The string value is not directly stored in the message, but referenced by index
-	//  in the `str_data` field of `MetricsBatch`
-	Label *int `json:"label,omitempty"`
-
-	// ParticipantIdentity index into `str_data`
-	ParticipantIdentity *int `json:"participantIdentity,omitempty"`
-
-	// Rid index into 'str_data'
-	Rid     *int                   `json:"rid,omitempty"`
-	Samples *[]LivekitMetricSample `json:"samples,omitempty"`
-
-	// TrackSid index into `str_data`
-	TrackSid *int `json:"trackSid,omitempty"`
-}
 
 // LivekitVideoCodec defines model for livekit.VideoCodec.
 type LivekitVideoCodec string
@@ -4397,14 +4083,183 @@ type LivekitPublicapiObservabilityV1LogsGetResponse struct {
 	Records  *[]LivekitPublicapiObservabilityV1LogRecord `json:"records,omitempty"`
 }
 
+// LivekitPublicapiObservabilityV1MetricHistogram MetricHistogram summarizes the values a histogram point recorded.
+type LivekitPublicapiObservabilityV1MetricHistogram struct {
+	// BucketBounds A histogram's buckets, with one more count than bounds: bucket_counts[0]
+	//  counts the values up to bucket_bounds[0], bucket_counts[i] those in
+	//  (bucket_bounds[i-1], bucket_bounds[i]], and the last count those above
+	//  the last bound. Both are empty for an exponential histogram.
+	BucketBounds *[]float64 `json:"bucketBounds,omitempty"`
+	BucketCounts *[]string  `json:"bucketCounts,omitempty"`
+
+	// Count How many values were recorded.
+	Count *string  `json:"count,omitempty"`
+	Max   *float64 `json:"max,omitempty"`
+	Min   *float64 `json:"min,omitempty"`
+
+	// Sum Their sum, minimum and maximum; unset when the agent didn't record them.
+	Sum *float64 `json:"sum,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1MetricKind MetricKind is the OpenTelemetry data type a metric point was exported as.
+type LivekitPublicapiObservabilityV1MetricKind string
+
+// LivekitPublicapiObservabilityV1MetricPoint MetricPoint is one OpenTelemetry metric data point a session's agent
+//
+//	exported. It is the raw metric the agent emits, so it won't exactly match
+//	the dashboard's metrics panel, which derives its numbers from the transcript
+//	and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
+//	produce points; an agent whose code installs its own MeterProvider exports
+//	none to LiveKit Cloud.
+type LivekitPublicapiObservabilityV1MetricPoint struct {
+	// Attributes The point's attributes, typed and nested as the agent recorded them, with
+	//  its resource's and scope's attributes merged in, such as room_id, job_id,
+	//  lk.agent_name and the model's model_name; the point's own value wins. With
+	//  two agents in one session, the resource's can be the other agent's. An
+	//  integer beyond ±2^53 is its decimal string, and bytes are base64.
+	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
+
+	// EndTime A Timestamp represents a point in time independent of any time zone or local
+	//  calendar, encoded as a count of seconds and fractions of seconds at
+	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
+	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
+	//  Gregorian calendar backwards to year one.
+	//
+	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
+	//  second table is needed for interpretation, using a [24-hour linear
+	//  smear](https://developers.google.com/time/smear).
+	//
+	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
+	//  restricting to that range, we ensure that we can convert to and from [RFC
+	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
+	//
+	//  # Examples
+	//
+	//  Example 1: Compute Timestamp from POSIX `time()`.
+	//
+	//      Timestamp timestamp;
+	//      timestamp.set_seconds(time(NULL));
+	//      timestamp.set_nanos(0);
+	//
+	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
+	//
+	//      struct timeval tv;
+	//      gettimeofday(&tv, NULL);
+	//
+	//      Timestamp timestamp;
+	//      timestamp.set_seconds(tv.tv_sec);
+	//      timestamp.set_nanos(tv.tv_usec * 1000);
+	//
+	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
+	//
+	//      FILETIME ft;
+	//      GetSystemTimeAsFileTime(&ft);
+	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+	//
+	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+	//      Timestamp timestamp;
+	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+	//
+	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
+	//
+	//      long millis = System.currentTimeMillis();
+	//
+	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
+	//
+	//  Example 5: Compute Timestamp from Java `Instant.now()`.
+	//
+	//      Instant now = Instant.now();
+	//
+	//      Timestamp timestamp =
+	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+	//              .setNanos(now.getNano()).build();
+	//
+	//  Example 6: Compute Timestamp from current time in Python.
+	//
+	//      timestamp = Timestamp()
+	//      timestamp.GetCurrentTime()
+	//
+	//  # JSON Mapping
+	//
+	//  In JSON format, the Timestamp type is encoded as a string in the
+	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
+	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
+	//  where {year} is always expressed using four digits while {month}, {day},
+	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
+	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
+	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
+	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
+	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
+	//  able to accept both UTC and other timezones (as indicated by an offset).
+	//
+	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
+	//  01:30 UTC on January 15, 2017.
+	//
+	//  In JavaScript, one can convert a Date object to this format using the
+	//  standard
+	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
+	//  method. In Python, a standard `datetime.datetime` object can be converted
+	//  to this format using
+	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
+	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
+	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
+	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
+	//  ) to obtain a formatter capable of generating timestamps in this format.
+	//
+	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	EndTime *GoogleProtobufTimestamp `json:"endTime,omitempty"`
+
+	// Kind MetricKind is the OpenTelemetry data type a metric point was exported as.
+	Kind *LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
+
+	// Name The metric's name, such as lk.agents.turn.e2e_latency or
+	//  gen_ai.client.token.usage. The upstream aggregator can file several
+	//  metrics that share their attributes under one name (GetSessionMetrics).
+	Name *string `json:"name,omitempty"`
+
+	// StartTime The interval the point covers. An agent exports every 30 seconds, so a
+	//  sum or histogram covers the time since its previous export; a gauge has
+	//  no start_time.
+	//
+	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
+
+	// Unit The metric's unit as the agent declared it, such as "s" or "{token}";
+	//  empty when it declared none.
+	Unit  *string `json:"unit,omitempty"`
+	union json.RawMessage
+}
+
+// LivekitPublicapiObservabilityV1MetricPoint0 defines model for LivekitPublicapiObservabilityV1MetricPoint.0.
+type LivekitPublicapiObservabilityV1MetricPoint0 struct {
+	// Histogram A histogram's or exponential histogram's summary.
+	Histogram LivekitPublicapiObservabilityV1MetricHistogram `json:"histogram"`
+}
+
+// LivekitPublicapiObservabilityV1MetricPoint1 defines model for LivekitPublicapiObservabilityV1MetricPoint.1.
+type LivekitPublicapiObservabilityV1MetricPoint1 struct {
+	// Value A gauge's or sum's value.
+	Value float64 `json:"value"`
+}
+
+// LivekitPublicapiObservabilityV1MetricPoint2 defines model for LivekitPublicapiObservabilityV1MetricPoint.2.
+type LivekitPublicapiObservabilityV1MetricPoint2 = interface{}
+
 // LivekitPublicapiObservabilityV1MetricsGetResponse defines model for livekit.publicapi.observability.v1.Metrics.Get.Response.
 type LivekitPublicapiObservabilityV1MetricsGetResponse struct {
-	// Batches The session's metrics in the LiveKit metrics schema (the same batches
-	//  the agent emits).
-	Batches *[]LivekitMetricsBatch `json:"batches,omitempty"`
-
 	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+
+	// Points By end time, oldest first; points that end together are ordered by
+	//  start time, a point with none first, then by kind and a hash of what
+	//  they recorded, not by name. A page continues
+	//  after the previous page's last point, so on an ACTIVE session a point
+	//  exported mid-read with a later time comes on a later page, and one
+	//  with an earlier time is missed until a new read.
+	Points *[]LivekitPublicapiObservabilityV1MetricPoint `json:"points,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1RecordingGetURLResponse defines model for livekit.publicapi.observability.v1.Recording.GetURL.Response.
@@ -7334,6 +7189,11 @@ type ObservabilityServiceGetSessionMetricsParams struct {
 
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// Names Only the points of these metrics, matched exactly, such as
+	//  lk.agents.turn.e2e_latency. Empty returns every metric. At most 50
+	//  names, each 1 to 256 characters.
+	Names *[]string `form:"names,omitempty" json:"names,omitempty"`
 }
 
 // AnalyticsServiceListSessionParticipantsParams defines parameters for AnalyticsServiceListSessionParticipants.
@@ -9735,6 +9595,198 @@ func (t *LivekitAgentChatMessageChatContent) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsLivekitPublicapiObservabilityV1MetricPoint0 returns the union data inside the LivekitPublicapiObservabilityV1MetricPoint as a LivekitPublicapiObservabilityV1MetricPoint0
+func (t LivekitPublicapiObservabilityV1MetricPoint) AsLivekitPublicapiObservabilityV1MetricPoint0() (LivekitPublicapiObservabilityV1MetricPoint0, error) {
+	var body LivekitPublicapiObservabilityV1MetricPoint0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiObservabilityV1MetricPoint0 overwrites any union data inside the LivekitPublicapiObservabilityV1MetricPoint as the provided LivekitPublicapiObservabilityV1MetricPoint0
+func (t *LivekitPublicapiObservabilityV1MetricPoint) FromLivekitPublicapiObservabilityV1MetricPoint0(v LivekitPublicapiObservabilityV1MetricPoint0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiObservabilityV1MetricPoint0 performs a merge with any union data inside the LivekitPublicapiObservabilityV1MetricPoint, using the provided LivekitPublicapiObservabilityV1MetricPoint0
+func (t *LivekitPublicapiObservabilityV1MetricPoint) MergeLivekitPublicapiObservabilityV1MetricPoint0(v LivekitPublicapiObservabilityV1MetricPoint0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiObservabilityV1MetricPoint1 returns the union data inside the LivekitPublicapiObservabilityV1MetricPoint as a LivekitPublicapiObservabilityV1MetricPoint1
+func (t LivekitPublicapiObservabilityV1MetricPoint) AsLivekitPublicapiObservabilityV1MetricPoint1() (LivekitPublicapiObservabilityV1MetricPoint1, error) {
+	var body LivekitPublicapiObservabilityV1MetricPoint1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiObservabilityV1MetricPoint1 overwrites any union data inside the LivekitPublicapiObservabilityV1MetricPoint as the provided LivekitPublicapiObservabilityV1MetricPoint1
+func (t *LivekitPublicapiObservabilityV1MetricPoint) FromLivekitPublicapiObservabilityV1MetricPoint1(v LivekitPublicapiObservabilityV1MetricPoint1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiObservabilityV1MetricPoint1 performs a merge with any union data inside the LivekitPublicapiObservabilityV1MetricPoint, using the provided LivekitPublicapiObservabilityV1MetricPoint1
+func (t *LivekitPublicapiObservabilityV1MetricPoint) MergeLivekitPublicapiObservabilityV1MetricPoint1(v LivekitPublicapiObservabilityV1MetricPoint1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiObservabilityV1MetricPoint2 returns the union data inside the LivekitPublicapiObservabilityV1MetricPoint as a LivekitPublicapiObservabilityV1MetricPoint2
+func (t LivekitPublicapiObservabilityV1MetricPoint) AsLivekitPublicapiObservabilityV1MetricPoint2() (LivekitPublicapiObservabilityV1MetricPoint2, error) {
+	var body LivekitPublicapiObservabilityV1MetricPoint2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiObservabilityV1MetricPoint2 overwrites any union data inside the LivekitPublicapiObservabilityV1MetricPoint as the provided LivekitPublicapiObservabilityV1MetricPoint2
+func (t *LivekitPublicapiObservabilityV1MetricPoint) FromLivekitPublicapiObservabilityV1MetricPoint2(v LivekitPublicapiObservabilityV1MetricPoint2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiObservabilityV1MetricPoint2 performs a merge with any union data inside the LivekitPublicapiObservabilityV1MetricPoint, using the provided LivekitPublicapiObservabilityV1MetricPoint2
+func (t *LivekitPublicapiObservabilityV1MetricPoint) MergeLivekitPublicapiObservabilityV1MetricPoint2(v LivekitPublicapiObservabilityV1MetricPoint2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPublicapiObservabilityV1MetricPoint) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Attributes != nil {
+		object["attributes"], err = json.Marshal(t.Attributes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'attributes': %w", err)
+		}
+	}
+
+	if t.EndTime != nil {
+		object["endTime"], err = json.Marshal(t.EndTime)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'endTime': %w", err)
+		}
+	}
+
+	if t.Kind != nil {
+		object["kind"], err = json.Marshal(t.Kind)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'kind': %w", err)
+		}
+	}
+
+	if t.Name != nil {
+		object["name"], err = json.Marshal(t.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+		}
+	}
+
+	if t.StartTime != nil {
+		object["startTime"], err = json.Marshal(t.StartTime)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'startTime': %w", err)
+		}
+	}
+
+	if t.Unit != nil {
+		object["unit"], err = json.Marshal(t.Unit)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'unit': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *LivekitPublicapiObservabilityV1MetricPoint) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["attributes"]; found {
+		err = json.Unmarshal(raw, &t.Attributes)
+		if err != nil {
+			return fmt.Errorf("error reading 'attributes': %w", err)
+		}
+	}
+
+	if raw, found := object["endTime"]; found {
+		err = json.Unmarshal(raw, &t.EndTime)
+		if err != nil {
+			return fmt.Errorf("error reading 'endTime': %w", err)
+		}
+	}
+
+	if raw, found := object["kind"]; found {
+		err = json.Unmarshal(raw, &t.Kind)
+		if err != nil {
+			return fmt.Errorf("error reading 'kind': %w", err)
+		}
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &t.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+	}
+
+	if raw, found := object["startTime"]; found {
+		err = json.Unmarshal(raw, &t.StartTime)
+		if err != nil {
+			return fmt.Errorf("error reading 'startTime': %w", err)
+		}
+	}
+
+	if raw, found := object["unit"]; found {
+		err = json.Unmarshal(raw, &t.Unit)
+		if err != nil {
+			return fmt.Errorf("error reading 'unit': %w", err)
+		}
+	}
+
+	return err
+}
+
 // AsLivekitPublicapiObservabilityV1TranscriptItem0 returns the union data inside the LivekitPublicapiObservabilityV1TranscriptItem as a LivekitPublicapiObservabilityV1TranscriptItem0
 func (t LivekitPublicapiObservabilityV1TranscriptItem) AsLivekitPublicapiObservabilityV1TranscriptItem0() (LivekitPublicapiObservabilityV1TranscriptItem0, error) {
 	var body LivekitPublicapiObservabilityV1TranscriptItem0
@@ -10294,10 +10346,34 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionMetrics GetSessionMetrics
+	// ObservabilityServiceGetSessionMetrics GetSessionMetrics returns the OpenTelemetry metric points the session's
+	//  agents exported, by time, typed: turn latencies such as
+	//  lk.agents.turn.e2e_latency and lk.agents.turn.llm_ttft, token and duration
+	//  usage such as lk.agents.usage.llm_input_tokens, and the gen_ai.*
+	//  histograms, along with any metrics the agent's own code recorded.
 	//
-	// GetSessionMetrics returns the session's metrics as livekit.MetricsBatch — the
-	//  fourth of the raw per-session fetches (transcript, logs, traces, metrics).
+	// These are the raw metrics agents emit, so they won't exactly match the
+	//  dashboard's metrics panel, which derives its numbers from the transcript
+	//  and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
+	//  produce them: an agent whose code installs its own MeterProvider exports
+	//  none to LiveKit Cloud, and its sessions return no points.
+	//
+	//  Some points aren't labeled as their agent exported them. These are
+	//  limitations of the upstream aggregator, which groups a session's series
+	//  by their attributes alone and names each group after its first row:
+	//    - several metrics can come back under one name, such as an LLM's input,
+	//      output and cached token counts, all named
+	//      lk.agents.usage.llm_input_tokens;
+	//    - points of one series at the same time that recorded equal values
+	//      collapse into one point;
+	//    - with two agents in one session, a point can carry the other agent's
+	//      resource attributes.
+	//
+	//  An agent exports its metrics every 30 seconds, and its turn latencies
+	//  when the session ends, so an ACTIVE session returns what it has exported
+	//  so far. An unknown session is NotFound. A read filtered by names can come
+	//  back empty because no metric has those names, so only an unfiltered one
+	//  is ObservabilityDisabled.
 	//
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 	ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11307,11 +11383,36 @@ func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, project
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionMetrics GetSessionMetrics
+// ObservabilityServiceGetSessionMetrics GetSessionMetrics returns the OpenTelemetry metric points the session's
 //
-// GetSessionMetrics returns the session's metrics as livekit.MetricsBatch — the
+//	agents exported, by time, typed: turn latencies such as
+//	lk.agents.turn.e2e_latency and lk.agents.turn.llm_ttft, token and duration
+//	usage such as lk.agents.usage.llm_input_tokens, and the gen_ai.*
+//	histograms, along with any metrics the agent's own code recorded.
 //
-//	fourth of the raw per-session fetches (transcript, logs, traces, metrics).
+// These are the raw metrics agents emit, so they won't exactly match the
+//
+//	dashboard's metrics panel, which derives its numbers from the transcript
+//	and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
+//	produce them: an agent whose code installs its own MeterProvider exports
+//	none to LiveKit Cloud, and its sessions return no points.
+//
+//	Some points aren't labeled as their agent exported them. These are
+//	limitations of the upstream aggregator, which groups a session's series
+//	by their attributes alone and names each group after its first row:
+//	  - several metrics can come back under one name, such as an LLM's input,
+//	    output and cached token counts, all named
+//	    lk.agents.usage.llm_input_tokens;
+//	  - points of one series at the same time that recorded equal values
+//	    collapse into one point;
+//	  - with two agents in one session, a point can carry the other agent's
+//	    resource attributes.
+//
+//	An agent exports its metrics every 30 seconds, and its turn latencies
+//	when the session ends, so an ACTIVE session returns what it has exported
+//	so far. An unknown session is NotFound. A read filtered by names can come
+//	back empty because no metric has those names, so only an unfiltered one
+//	is ObservabilityDisabled.
 //
 // Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13806,6 +13907,18 @@ func NewObservabilityServiceGetSessionMetricsRequest(server string, projectId st
 
 		}
 
+		if params.Names != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "names", *params.Names, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -16079,10 +16192,34 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionLogsResponse, error)
 
-	// ObservabilityServiceGetSessionMetricsWithResponse GetSessionMetrics
+	// ObservabilityServiceGetSessionMetricsWithResponse GetSessionMetrics returns the OpenTelemetry metric points the session's
+	//  agents exported, by time, typed: turn latencies such as
+	//  lk.agents.turn.e2e_latency and lk.agents.turn.llm_ttft, token and duration
+	//  usage such as lk.agents.usage.llm_input_tokens, and the gen_ai.*
+	//  histograms, along with any metrics the agent's own code recorded.
 	//
-	// GetSessionMetrics returns the session's metrics as livekit.MetricsBatch — the
-	//  fourth of the raw per-session fetches (transcript, logs, traces, metrics).
+	// These are the raw metrics agents emit, so they won't exactly match the
+	//  dashboard's metrics panel, which derives its numbers from the transcript
+	//  and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
+	//  produce them: an agent whose code installs its own MeterProvider exports
+	//  none to LiveKit Cloud, and its sessions return no points.
+	//
+	//  Some points aren't labeled as their agent exported them. These are
+	//  limitations of the upstream aggregator, which groups a session's series
+	//  by their attributes alone and names each group after its first row:
+	//    - several metrics can come back under one name, such as an LLM's input,
+	//      output and cached token counts, all named
+	//      lk.agents.usage.llm_input_tokens;
+	//    - points of one series at the same time that recorded equal values
+	//      collapse into one point;
+	//    - with two agents in one session, a point can carry the other agent's
+	//      resource attributes.
+	//
+	//  An agent exports its metrics every 30 seconds, and its turn latencies
+	//  when the session ends, so an ACTIVE session returns what it has exported
+	//  so far. An unknown session is NotFound. A read filtered by names can come
+	//  back empty because no metric has those names, so only an unfiltered one
+	//  is ObservabilityDisabled.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19658,11 +19795,36 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionLogsWithResponse(ctx
 	return ParseObservabilityServiceGetSessionLogsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionMetricsWithResponse GetSessionMetrics
+// ObservabilityServiceGetSessionMetricsWithResponse GetSessionMetrics returns the OpenTelemetry metric points the session's
 //
-// GetSessionMetrics returns the session's metrics as livekit.MetricsBatch — the
+//	agents exported, by time, typed: turn latencies such as
+//	lk.agents.turn.e2e_latency and lk.agents.turn.llm_ttft, token and duration
+//	usage such as lk.agents.usage.llm_input_tokens, and the gen_ai.*
+//	histograms, along with any metrics the agent's own code recorded.
 //
-//	fourth of the raw per-session fetches (transcript, logs, traces, metrics).
+// These are the raw metrics agents emit, so they won't exactly match the
+//
+//	dashboard's metrics panel, which derives its numbers from the transcript
+//	and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
+//	produce them: an agent whose code installs its own MeterProvider exports
+//	none to LiveKit Cloud, and its sessions return no points.
+//
+//	Some points aren't labeled as their agent exported them. These are
+//	limitations of the upstream aggregator, which groups a session's series
+//	by their attributes alone and names each group after its first row:
+//	  - several metrics can come back under one name, such as an LLM's input,
+//	    output and cached token counts, all named
+//	    lk.agents.usage.llm_input_tokens;
+//	  - points of one series at the same time that recorded equal values
+//	    collapse into one point;
+//	  - with two agents in one session, a point can carry the other agent's
+//	    resource attributes.
+//
+//	An agent exports its metrics every 30 seconds, and its turn latencies
+//	when the session ends, so an ACTIVE session returns what it has exported
+//	so far. An unknown session is NotFound. A read filtered by names can come
+//	back empty because no metric has those names, so only an unfiltered one
+//	is ObservabilityDisabled.
 //
 // Returns a wrapper object for the known response body format(s).
 //
