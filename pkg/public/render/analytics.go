@@ -62,6 +62,19 @@ func publishedSources(s *oapi.LivekitPublicapiAnalyticsV1PublishedSources) strin
 	return util.Dash(strings.Join(names, ", "))
 }
 
+// SessionParticipantsPage prints a cursor-paginated page of a session's
+// participants. As JSON it emits {items, nextCursor} with the API's rows.
+func SessionParticipantsPage(p *util.Printer, asJSON bool, participants []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo, nextCursor string) error {
+	if asJSON {
+		return util.RenderPage(p, true, participants, nextCursor, "No participants found", participantHeaders, participantRow)
+	}
+	if err := util.RenderList(p, false, participants, "No participants found", participantHeaders, participantRow); err != nil {
+		return err
+	}
+	moreAvailable(p, "participants", nextCursor)
+	return nil
+}
+
 // SessionDetail prints a session with its detail: the list row, the totals, a
 // summary of each timeline, and the first page of participants. As JSON it
 // emits the API's own {session, detail} response. A nil detail means the server
@@ -115,6 +128,15 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 			util.Accented(listCmd+" --cursor "+next))
 	}
 	return nil
+}
+
+// moreAvailable says a page has more after it and how to read them: re-run
+// the same command, with the same flags, adding --cursor. what names the
+// page's items.
+func moreAvailable(p *util.Printer, what, nextCursor string) {
+	if nextCursor != "" {
+		p.Statusf("More %s available — re-run with %s", what, util.Accented("--cursor "+nextCursor))
+	}
 }
 
 // timelineRow summarizes one timeline. The timelines share a grid with a 0 in

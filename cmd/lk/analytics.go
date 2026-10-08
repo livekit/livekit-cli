@@ -40,6 +40,10 @@ const (
 	analyticsProjectSelectHint    = "Select a cloud project via --project or run `lk cloud auth`"
 )
 
+// defaultPageLimit is how many of a session's participants a page reads by
+// default.
+const defaultPageLimit = 50
+
 var (
 	AnalyticsCommands = []*cli.Command{
 		{
@@ -66,6 +70,19 @@ var (
 							Action:    getAnalyticsSession,
 							Flags: []cli.Flag{
 								jsonFlag,
+							},
+						},
+						{
+							Name:  "participant",
+							Usage: "List a session's participants",
+							Commands: []*cli.Command{
+								{
+									Name:      "list",
+									Usage:     "List a session's participants (requires --experimental-auth)",
+									ArgsUsage: "SESSION_ID",
+									Action:    sessionRead(participantListOptions, fetchSessionParticipants),
+									Flags:     append([]cli.Flag{jsonFlag}, analyticsParticipantListFlags()...),
+								},
 							},
 						},
 					},
@@ -166,6 +183,42 @@ func analyticsSessionListFlags() []cli.Flag {
 			Hidden: true,
 		},
 	}
+}
+
+// pageFlags returns fresh --limit and --cursor flags for a command that prints
+// one page of a session's items, for the same reason as
+// analyticsSessionListFlags. These commands exist only under
+// --experimental-auth, so no flag needs an auth-mode check.
+func pageFlags(defaultLimit int, items string) []cli.Flag {
+	return []cli.Flag{
+		&cli.IntFlag{
+			Name:  "limit",
+			Usage: "Maximum number of " + items + " to read (the server caps it at 100)",
+			Value: defaultLimit,
+		},
+		// Hidden like session list's: pass the cursor a prior page printed,
+		// with the same filters and order, to fetch the next.
+		&cli.StringFlag{
+			Name:   "cursor",
+			Usage:  "Page `CURSOR` from a prior page",
+			Hidden: true,
+		},
+	}
+}
+
+// analyticsParticipantListFlags returns fresh instances of the participant
+// list's own flags (the shared jsonFlag is added by the command).
+func analyticsParticipantListFlags() []cli.Flag {
+	return append([]cli.Flag{
+		&cli.StringFlag{
+			Name:  "sort-by",
+			Usage: "Order by `FIELD`: joined or left, default joined",
+		},
+		&cli.StringFlag{
+			Name:  "sort-order",
+			Usage: "Order direction: `ORDER` asc or desc, default desc",
+		},
+	}, pageFlags(defaultPageLimit, "participants")...)
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
@@ -572,4 +625,88 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 		return cloudAPIError(err)
 	}
 	return render.SessionDetail(out, cmd.Bool("json"), *session, detail)
+}
+
+// sessionRead builds the action of a command that reads one thing about a
+// session — its participants — which only the Public API serves. The action
+// refuses to run without --experimental-auth before checking anything else,
+// then reads the SESSION_ID argument and the command's options, so a bad flag
+// fails before the project lookup, and hands fetch a client signed in as the
+// user and the selected project.
+func sessionRead[O any](
+	readOptions func(*cli.Command) (O, error),
+	fetch func(ctx context.Context, client *public.Client, projectID, sessionID string, opts O, asJSON bool) error,
+) cli.ActionFunc {
+	return func(ctx context.Context, cmd *cli.Command) error {
+		if err := requireExperimentalAuth(cmd); err != nil {
+			return err
+		}
+		sessionID, err := extractArg(cmd)
+		if err != nil {
+			_ = cli.ShowSubcommandHelp(cmd)
+			return errors.New("session ID is required")
+		}
+		opts, err := readOptions(cmd)
+		if err != nil {
+			return err
+		}
+		client, conf, user, err := requireCloudClient(cmd)
+		if err != nil {
+			return err
+		}
+		projectID, err := resolveProjectRef(ctx, cmd, conf, user, "")
+		if err != nil {
+			return err
+		}
+		return fetch(ctx, client, projectID, sessionID, opts, cmd.Bool("json"))
+	}
+}
+
+// fetchSessionParticipants reads one page of a session's participants and
+// prints it.
+func fetchSessionParticipants(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.ParticipantListOptions, asJSON bool) error {
+	participants, nextCursor, err := client.ListSessionParticipants(ctx, projectID, sessionID, opts)
+	if err != nil {
+		return sessionAPIError(err)
+	}
+	return render.SessionParticipantsPage(out, asJSON, participants, nextCursor)
+}
+
+// participantListOptions reads the participant list flags. Bad limits and sort
+// names fail here, before the project lookup.
+func participantListOptions(cmd *cli.Command) (public.ParticipantListOptions, error) {
+	page, err := pageOptions(cmd)
+	if err != nil {
+		return public.ParticipantListOptions{}, err
+	}
+	opts := public.ParticipantListOptions{
+		PageOptions: page,
+		SortBy:      cmd.String("sort-by"),
+		SortOrder:   cmd.String("sort-order"),
+	}
+	if err := opts.Validate(); err != nil {
+		return public.ParticipantListOptions{}, err
+	}
+	return opts, nil
+}
+
+// pageOptions reads a session read's --limit and --cursor flags. A limit
+// that isn't positive fails here, before the project lookup.
+func pageOptions(cmd *cli.Command) (public.PageOptions, error) {
+	limit := cmd.Int("limit")
+	if limit <= 0 {
+		return public.PageOptions{}, errors.New("limit must be greater than 0")
+	}
+	return public.PageOptions{Limit: int32(limit), Cursor: cmd.String("cursor")}, nil
+}
+
+// sessionAPIError annotates a Public API error from a session read like
+// cloudAPIError, except a permission denial: cloudAPIError suggests API-key
+// credentials, which these Public-API-only reads can't use, so it says what
+// the read requires instead: access to the project.
+func sessionAPIError(err error) error {
+	if !public.IsPermissionDenied(err) {
+		return cloudAPIError(err)
+	}
+	return fmt.Errorf("%w — you don't have access to this project", err)
 }

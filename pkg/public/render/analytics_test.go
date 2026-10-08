@@ -108,6 +108,20 @@ func TestSessionDetailTextFinalizing(t *testing.T) {
 	assert.Contains(t, stderr.String(), "still being finalized")
 }
 
+func TestSessionParticipantsPage(t *testing.T) {
+	participants := []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo{{ParticipantIdentity: ptr("alice"), Region: ptr("US East")}}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, &stderr, false), false, participants, "c2"))
+	assert.Contains(t, stdout.String(), "alice")
+	assert.Contains(t, stdout.String(), "US East")
+	assert.Contains(t, stderr.String(), "--cursor c2")
+
+	stdout.Reset()
+	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, nil, true), true, participants, "c2"))
+	assert.JSONEq(t, `{"items":[{"participantIdentity":"alice","region":"US East"}],"nextCursor":"c2"}`, stdout.String())
+}
+
 func ptr[T any](v T) *T { return &v }
 
 // TestSessionDetailJSON checks --json emits the API's {session, detail} shape,
