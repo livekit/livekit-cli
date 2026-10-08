@@ -118,6 +118,9 @@ func (t *AgentLoadTester) Start(ctx context.Context) error {
 			loadTestRoom.stop()
 			return nil
 		})
+		if t.params.Parallel {
+			continue
+		}
 		for !loadTestRoom.stats.agentJoined {
 			select {
 			case <-groupCtx.Done():
