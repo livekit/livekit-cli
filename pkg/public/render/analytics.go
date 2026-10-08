@@ -22,6 +22,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
@@ -237,4 +238,47 @@ func formatBitrate(bps float64) string {
 		return fmt.Sprintf("%.0f %s", bps, units[i])
 	}
 	return fmt.Sprintf("%.1f %s", bps, units[i])
+}
+
+// RecordingLabel names a recording ("audio" or "chat-history") for a sentence.
+func RecordingLabel(recording string) string {
+	if recording == public.RecordingChatHistory {
+		return "chat history"
+	}
+	return recording + " recording"
+}
+
+// RecordingURL prints a signed recording URL. As text it is the bare URL on
+// stdout, so it pipes into curl, with its expiry as a status line; as JSON it
+// is the API's response, recording start included.
+func RecordingURL(p *util.Printer, asJSON bool, r oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse) error {
+	if asJSON {
+		return util.PrintJSONTo(p.ResultWriter(), r)
+	}
+	p.Result(util.Deref(r.Url))
+	p.Statusf("The URL expires %s", util.FormatTime(r.ExpiresAt))
+	return nil
+}
+
+// SavedRecording is a recording downloaded to a file, and its --json shape.
+type SavedRecording struct {
+	SessionID          string     `json:"sessionId"`
+	Recording          string     `json:"recording"`
+	File               string     `json:"file"`
+	Bytes              int64      `json:"bytes"`
+	RecordingStartedAt *time.Time `json:"recordingStartedAt,omitempty"`
+}
+
+// RecordingSaved says where a downloaded recording was saved, and when the
+// recording started (to line the audio up with the transcript).
+func RecordingSaved(p *util.Printer, asJSON bool, s SavedRecording) error {
+	if asJSON {
+		return util.PrintJSONTo(p.ResultWriter(), s)
+	}
+	p.Statusf("Saved %s of session %s to %s (%s)", RecordingLabel(s.Recording), s.SessionID,
+		util.Accented(s.File), util.FormatBytes(json.RawMessage(strconv.FormatInt(s.Bytes, 10))))
+	if s.RecordingStartedAt != nil {
+		p.Statusf("The recording started %s", util.FormatTime(s.RecordingStartedAt))
+	}
+	return nil
 }
