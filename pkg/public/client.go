@@ -140,6 +140,10 @@ func (c *Client) DeleteProject(ctx context.Context, projectID string) error {
 type APIError struct {
 	Status  int
 	Message string
+	// details are the error envelope's typed details: JSON objects naming their
+	// type in "@type" beside the fields. Read them through helpers such as
+	// ObservabilityDisabled.
+	details []json.RawMessage
 }
 
 func (e *APIError) Error() string {
@@ -176,16 +180,40 @@ func IsNotFound(err error) bool {
 // to the raw body.
 func responseError(status int, body []byte) error {
 	var env struct {
-		Message string `json:"message"`
+		Message string            `json:"message"`
+		Details []json.RawMessage `json:"details"`
 	}
 	if err := json.Unmarshal(body, &env); err == nil && env.Message != "" {
-		return &APIError{Status: status, Message: env.Message}
+		return &APIError{Status: status, Message: env.Message, details: env.Details}
 	}
 	msg := strings.TrimSpace(string(body))
 	if msg == "" {
 		msg = http.StatusText(status)
 	}
 	return &APIError{Status: status, Message: fmt.Sprintf("unexpected response (HTTP %d): %s", status, msg)}
+}
+
+// errorDetail finds the detail of the protobuf message named fullName (e.g.
+// "livekit.publicapi.observability.v1.ObservabilityDisabled") on an APIError
+// and decodes its fields into v. The API's REST errors carry each detail as
+// JSON whose "@type" is "type.googleapis.com/" plus that name.
+func errorDetail(err error, fullName string, v any) bool {
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	for _, raw := range apiErr.details {
+		var typed struct {
+			Type string `json:"@type"`
+		}
+		if json.Unmarshal(raw, &typed) != nil {
+			continue
+		}
+		if typed.Type[strings.LastIndex(typed.Type, "/")+1:] == fullName {
+			return json.Unmarshal(raw, v) == nil
+		}
+	}
+	return false
 }
 
 // okOrError returns nil for a 200 response and a classified APIError otherwise.
