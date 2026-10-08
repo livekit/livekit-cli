@@ -169,6 +169,39 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 	return nil
 }
 
+// jsonPage is the --json shape of a page of a session's transcript: {items,
+// nextCursor}, like util.RenderPage's, with each item as the API sent it.
+type jsonPage[T any] struct {
+	Items      []T    `json:"items"`
+	NextCursor string `json:"nextCursor,omitempty"`
+	// SkippedRecords counts the page's records the server couldn't read as
+	// items.
+	SkippedRecords int `json:"skippedRecords,omitempty"`
+}
+
+// renderPage prints a page of a session's items: one line each, as lines
+// renders them, or with --json the page as it is. empty says why a page has no
+// items, on stderr in both modes so --json output stays parseable. It leaves
+// the hint for a next page to the caller.
+func renderPage[T any](p *util.Printer, asJSON bool, page jsonPage[T], empty string, lines func([]T) []string) error {
+	if page.Items == nil {
+		page.Items = []T{}
+	}
+	if asJSON {
+		if err := util.PrintJSONTo(p.ResultWriter(), page); err != nil {
+			return err
+		}
+	} else {
+		for _, line := range lines(page.Items) {
+			p.Result(line)
+		}
+	}
+	if len(page.Items) == 0 && empty != "" {
+		p.Status(empty)
+	}
+	return nil
+}
+
 // moreAvailable says a page has more after it and how to read them: re-run
 // the same command, with the same flags, adding --cursor. what names the
 // page's items.
@@ -238,6 +271,150 @@ func formatBitrate(bps float64) string {
 		return fmt.Sprintf("%.0f %s", bps, units[i])
 	}
 	return fmt.Sprintf("%.1f %s", bps, units[i])
+}
+
+// SessionTranscript prints a page of a session's transcript, one line per
+// item with its time, role or kind, and latencies; --json prints the items as
+// the API sent them. empty says why a page has no items, on stderr in both
+// modes so --json output stays parseable.
+func SessionTranscript(p *util.Printer, asJSON bool, page public.TranscriptPage, empty string) error {
+	jp := jsonPage[public.TranscriptItem]{Items: page.Items, NextCursor: page.NextCursor, SkippedRecords: page.SkippedRecords}
+	if err := renderPage(p, asJSON, jp, empty, transcriptLines); err != nil || asJSON {
+		return err
+	}
+	switch n := page.SkippedRecords; {
+	case n == 1:
+		p.Status("1 record couldn't be read as a transcript item and was left out")
+	case n > 1:
+		p.Statusf("%d records couldn't be read as transcript items and were left out", n)
+	}
+	moreAvailable(p, "items", page.NextCursor)
+	return nil
+}
+
+// transcriptToolTextMax caps a tool call's arguments and a tool result's
+// output on a line; --json has them whole.
+const transcriptToolTextMax = 200
+
+// transcriptLines renders transcript items one per line.
+func transcriptLines(items []public.TranscriptItem) []string {
+	lines := make([]string, 0, len(items))
+	for _, it := range items {
+		lines = append(lines, transcriptLine(it))
+	}
+	return lines
+}
+
+// transcriptLine renders one transcript item as a single line.
+func transcriptLine(it public.TranscriptItem) string {
+	at := "-"
+	if it.Timestamp != nil && !it.Timestamp.IsZero() {
+		at = it.Timestamp.Local().Format("15:04:05")
+	}
+	kind, body := transcriptItemText(it)
+	return fmt.Sprintf("%-8s  %-11s  %s", at, kind, body)
+}
+
+// transcriptItemText names an item's role or kind and says what it holds.
+func transcriptItemText(it public.TranscriptItem) (kind, body string) {
+	switch {
+	case it.Message != nil:
+		return messageText(*it.Message)
+	case it.ToolCall != nil:
+		c := it.ToolCall
+		return "TOOL CALL", util.DashString(c.Name) + "(" + clip(oneLine(util.Deref(c.Arguments)), transcriptToolTextMax) + ")"
+	case it.ToolResult != nil:
+		r := it.ToolResult
+		body = util.DashString(r.Name) + ": " + clip(oneLine(util.Deref(r.Output)), transcriptToolTextMax)
+		if util.Deref(r.IsError) {
+			body += "  [error]"
+		}
+		return "TOOL RESULT", body
+	case it.AgentHandoff != nil:
+		h := it.AgentHandoff
+		from := util.Deref(h.FromAgentId)
+		if from != "" {
+			from += " "
+		}
+		return "HANDOFF", from + "→ " + util.DashString(h.ToAgentId)
+	case it.ConfigUpdate != nil:
+		u := it.ConfigUpdate
+		var parts []string
+		if util.Deref(u.Instructions) != "" {
+			parts = append(parts, "instructions changed")
+		}
+		if added := util.Deref(u.ToolsAdded); len(added) > 0 {
+			parts = append(parts, "tools added: "+strings.Join(added, ", "))
+		}
+		if removed := util.Deref(u.ToolsRemoved); len(removed) > 0 {
+			parts = append(parts, "tools removed: "+strings.Join(removed, ", "))
+		}
+		return "CONFIG", util.Dash(strings.Join(parts, " · "))
+	default:
+		return "UNKNOWN", util.Dash(it.ID) + " (a kind this lk doesn't know; see --json)"
+	}
+}
+
+// messageText renders a message: its role, its text on one line, its flags,
+// and the turn latencies the agent recorded (an agent message carries e2e,
+// LLM and TTS; a user message transcription, end of turn and the
+// on_user_turn_completed callback).
+func messageText(m oapi.LivekitPublicapiObservabilityV1TranscriptItemMessage) (kind, body string) {
+	kind = strings.TrimPrefix(util.DerefEnum(m.Role), "ROLE_")
+	if kind == "UNSPECIFIED" || kind == "-" {
+		kind = "MESSAGE"
+	}
+	body = util.Dash(oneLine(util.Deref(m.Text)))
+	if util.Deref(m.Interrupted) {
+		body += "  [interrupted]"
+	}
+	if util.Deref(m.Redacted) {
+		body += "  [redacted]"
+	}
+	var metrics []string
+	for _, l := range []struct {
+		name string
+		ms   *float64
+	}{
+		{"e2e", m.E2eLatencyMs},
+		{"llm_ttft", m.LlmTtftMs},
+		{"tts_ttfb", m.TtsTtfbMs},
+		{"transcription", m.TranscriptionDelayMs},
+		{"end_of_turn", m.EndOfTurnDelayMs},
+		{"on_user_turn_completed", m.OnUserTurnCompletedDelayMs},
+	} {
+		if l.ms != nil {
+			metrics = append(metrics, l.name+" "+formatMs(*l.ms))
+		}
+	}
+	if m.TranscriptConfidence != nil {
+		metrics = append(metrics, fmt.Sprintf("confidence %.2f", *m.TranscriptConfidence))
+	}
+	if len(metrics) > 0 {
+		body += "  (" + strings.Join(metrics, " · ") + ")"
+	}
+	return kind, body
+}
+
+// formatMs renders milliseconds, keeping one decimal under 100ms where it
+// still carries information.
+func formatMs(ms float64) string {
+	if ms >= 100 {
+		return fmt.Sprintf("%.0fms", ms)
+	}
+	return fmt.Sprintf("%.1fms", ms)
+}
+
+// oneLine joins text recorded across lines with spaces.
+func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
+
+// clip shortens s to max runes, marking the cut with an ellipsis.
+func clip(s string, max int) string {
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return string(r[:max-1]) + "…"
 }
 
 // RecordingLabel names a recording ("audio" or "chat-history") for a sentence.
