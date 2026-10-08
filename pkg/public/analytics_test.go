@@ -126,3 +126,56 @@ func TestListProjectSessionsRejectsUnknownNames(t *testing.T) {
 		})
 	}
 }
+
+// TestGetSessionReturnsDetail checks GetSession hands back the detail alongside
+// the list row, and a nil detail while the server is still finalizing it.
+func TestGetSessionReturnsDetail(t *testing.T) {
+	tests := []struct {
+		name       string
+		body       string
+		wantDetail bool
+	}{
+		{
+			name: "with detail",
+			body: `{"session":{"sessionId":"RM_1"},"detail":{"connectionSeconds":"90",` +
+				`"participants":[{"participantIdentity":"alice"}],"participantsPage":{"nextCursor":"next","hasMore":true}}}`,
+			wantDetail: true,
+		},
+		{name: "detail still finalizing", body: `{"session":{"sessionId":"RM_1"}}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAuth, gotPath string
+			srv := jsonServer(t, http.StatusOK, tt.body, &gotAuth, &gotPath)
+
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			session, detail, err := c.GetSession(context.Background(), "p1", "RM_1")
+			require.NoError(t, err)
+
+			assert.Equal(t, "Bearer sekret", gotAuth)
+			assert.Equal(t, "/v1/projects/p1/sessions/RM_1", gotPath)
+			assert.Equal(t, "RM_1", *session.SessionId)
+			if !tt.wantDetail {
+				assert.Nil(t, detail)
+				return
+			}
+			require.NotNil(t, detail)
+			assert.Equal(t, "90", *detail.ConnectionSeconds)
+			require.Len(t, *detail.Participants, 1)
+			assert.Equal(t, "alice", *(*detail.Participants)[0].ParticipantIdentity)
+			assert.Equal(t, "next", pageCursor(detail.ParticipantsPage))
+		})
+	}
+}
+
+// TestGetSessionMissingSession reports a 200 without a session as an error.
+func TestGetSessionMissingSession(t *testing.T) {
+	srv := jsonServer(t, http.StatusOK, `{}`, nil, nil)
+	c, err := New(srv.URL, "sekret")
+	require.NoError(t, err)
+
+	_, _, err = c.GetSession(context.Background(), "p1", "RM_1")
+	require.ErrorContains(t, err, "missing session")
+}

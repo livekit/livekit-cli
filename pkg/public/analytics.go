@@ -140,14 +140,20 @@ func (c *Client) ListProjectSessions(ctx context.Context, projectID string, opts
 	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
 }
 
-// GetSession returns a single analytics session by id.
-func (c *Client) GetSession(ctx context.Context, projectID, sessionID string) (*oapi.LivekitPublicapiAnalyticsV1Session, error) {
+// GetSession returns a single analytics session by id: its list row and its
+// detail (totals, timelines, and the first page of participants). detail is nil
+// while the server is still finalizing it; the session row is always set.
+func (c *Client) GetSession(ctx context.Context, projectID, sessionID string) (session *oapi.LivekitPublicapiAnalyticsV1Session, detail *oapi.LivekitPublicapiAnalyticsV1SessionDetail, err error) {
 	resp, err := c.gen.AnalyticsServiceGetSessionWithResponse(ctx, projectID, sessionID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
+		return nil, nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return requirePayload(resp.JSON200.Session, "session")
+	session, err = requirePayload(resp.JSON200.Session, "session")
+	if err != nil {
+		return nil, nil, err
+	}
+	return session, resp.JSON200.Detail, nil
 }

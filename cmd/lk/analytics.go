@@ -550,8 +550,9 @@ func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 	return opts, nil
 }
 
-// getUserAnalyticsSession fetches a single project session via the Public API
-// under --experimental-auth.
+// getUserAnalyticsSession fetches a single project session and its detail
+// (totals, timelines, first page of participants) via the Public API under
+// --experimental-auth.
 func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 	client, conf, user, err := requireCloudClient(cmd)
 	if err != nil {
@@ -566,9 +567,9 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	session, err := client.GetSession(ctx, projectID, sessionID)
+	session, detail, err := client.GetSession(ctx, projectID, sessionID)
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	return render.Session(out, cmd.Bool("json"), *session)
+	return render.SessionDetail(out, cmd.Bool("json"), *session, detail)
 }
