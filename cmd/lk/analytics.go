@@ -43,8 +43,8 @@ const (
 	analyticsProjectSelectHint    = "Select a cloud project via --project or run `lk cloud auth`"
 )
 
-// defaultPageLimit is how many of a session's participants or transcript
-// records a page reads by default.
+// defaultPageLimit is how many of a session's participants, transcript
+// records or agent log records a page reads by default.
 const defaultPageLimit = 50
 
 var (
@@ -102,6 +102,14 @@ var (
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(pageOptions, fetchSessionTranscript),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsTranscriptFlags()...),
+						},
+						{
+							Name:      "logs",
+							Usage:     "Print a session's agent logs (requires --experimental-auth)",
+							UsageText: "lk analytics session logs SESSION_ID [--log-level LEVEL ...] [--sort-order asc|desc]",
+							ArgsUsage: "SESSION_ID",
+							Action:    sessionRead(logOptions, fetchSessionLogs),
+							Flags:     append([]cli.Flag{jsonFlag}, analyticsLogFlags()...),
 						},
 					},
 				},
@@ -265,6 +273,21 @@ func analyticsRecordingFlags() []cli.Flag {
 // flags (the shared jsonFlag is added by the command).
 func analyticsTranscriptFlags() []cli.Flag {
 	return pageFlags(defaultPageLimit, "transcript records")
+}
+
+// analyticsLogFlags returns fresh instances of the agent logs' own flags (the
+// shared jsonFlag is added by the command).
+func analyticsLogFlags() []cli.Flag {
+	return append([]cli.Flag{
+		&cli.StringSliceFlag{
+			Name:  "log-level",
+			Usage: "Print only records at `LEVEL`: trace, debug, info, warn, error or fatal; repeatable, matches any (default every record)",
+		},
+		&cli.StringFlag{
+			Name:  "sort-order",
+			Usage: "Order by time: `ORDER` asc or desc, default asc",
+		},
+	}, pageFlags(defaultPageLimit, "records")...)
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
@@ -674,11 +697,12 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 }
 
 // sessionRead builds the action of a command that reads one thing about a
-// session — its participants, recordings or transcript — which only the
-// Public API serves. The action refuses to run without --experimental-auth
-// before checking anything else, then reads the SESSION_ID argument and the
-// command's options, so a bad flag fails before the project lookup, and hands
-// fetch a client signed in as the user and the selected project.
+// session — its participants, recordings, transcript or agent logs — which
+// only the Public API serves. The action refuses to run without
+// --experimental-auth before checking anything else, then reads the
+// SESSION_ID argument and the command's options, so a bad flag fails before
+// the project lookup, and hands fetch a client signed in as the user and the
+// selected project.
 func sessionRead[O any](
 	readOptions func(*cli.Command) (O, error),
 	fetch func(ctx context.Context, client *public.Client, projectID, sessionID string, opts O, asJSON bool) error,
@@ -908,9 +932,9 @@ func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID
 		"the recording is redacted); a session without an agent has none", sessionID)
 }
 
-// sessionReadError explains why a session has no participants or transcript
-// (what) to print, and otherwise annotates the error like the other Public
-// API commands. access is what the read requires.
+// sessionReadError explains why a session has no participants, transcript or
+// agent logs (what) to print, and otherwise annotates the error like the
+// other Public API commands. access is what the read requires.
 func sessionReadError(err error, projectID, sessionID, what string, access sessionReadAccess) error {
 	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
 		return observabilityDisabledError(sessionID, what, dashboardURL)
@@ -928,7 +952,7 @@ const (
 	// projectReadAccess reads: a session's participants.
 	projectReadAccess sessionReadAccess = iota
 	// projectAdminAccess reads, which can hold user data: a session's
-	// recordings and transcript.
+	// recordings, transcript and agent logs.
 	projectAdminAccess
 )
 
@@ -944,4 +968,51 @@ func sessionAPIError(err error, what string, access sessionReadAccess) error {
 		return fmt.Errorf("%w — reading a session's %s requires being a project admin", err, what)
 	}
 	return fmt.Errorf("%w — you don't have access to this project", err)
+}
+
+// logOptions reads the agent logs flags. A bad limit, level or sort order
+// fails here, before the project lookup.
+func logOptions(cmd *cli.Command) (public.LogOptions, error) {
+	page, err := pageOptions(cmd)
+	if err != nil {
+		return public.LogOptions{}, err
+	}
+	opts := public.LogOptions{
+		PageOptions: page,
+		Levels:      cmd.StringSlice("log-level"),
+		SortOrder:   cmd.String("sort-order"),
+	}
+	if err := opts.Validate(); err != nil {
+		return public.LogOptions{}, err
+	}
+	return opts, nil
+}
+
+// fetchSessionLogs reads one page of a session's agent logs and prints it,
+// saying why when the page is empty.
+func fetchSessionLogs(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.LogOptions, asJSON bool) error {
+	page, err := client.GetSessionLogs(ctx, projectID, sessionID, opts)
+	if err != nil {
+		return sessionReadError(err, projectID, sessionID, "agent logs", projectAdminAccess)
+	}
+	var empty string
+	if len(page.Records) == 0 {
+		empty = emptyLogsReason(sessionID, opts)
+	}
+	return render.SessionLogs(out, asJSON, *page, empty)
+}
+
+// emptyLogsReason explains a page with no records. With user data recording
+// off an unfiltered first page is an error instead, so an empty one here means
+// the agents exported nothing, or nothing at the levels asked for.
+func emptyLogsReason(sessionID string, opts public.LogOptions) string {
+	if opts.Cursor != "" {
+		return "No more log records"
+	}
+	if len(opts.Levels) > 0 {
+		return fmt.Sprintf("Session %s has no agent log records at the levels asked for (%s)",
+			sessionID, strings.ToLower(strings.Join(opts.Levels, ", ")))
+	}
+	return fmt.Sprintf("Session %s has no agent logs: a session without an agent has none, "+
+		"and a running agent's records appear as it exports them", sessionID)
 }

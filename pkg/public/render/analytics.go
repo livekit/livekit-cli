@@ -169,13 +169,14 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 	return nil
 }
 
-// jsonPage is the --json shape of a page of a session's transcript: {items,
-// nextCursor}, like util.RenderPage's, with each item as the API sent it.
+// jsonPage is the --json shape of a page of a session's transcript or agent
+// logs: {items, nextCursor}, like util.RenderPage's, with each item as the
+// API sent it.
 type jsonPage[T any] struct {
 	Items      []T    `json:"items"`
 	NextCursor string `json:"nextCursor,omitempty"`
-	// SkippedRecords counts the page's records the server couldn't read as
-	// items.
+	// SkippedRecords counts a transcript page's records the server couldn't
+	// read as items; the other reads skip none.
 	SkippedRecords int `json:"skippedRecords,omitempty"`
 }
 
@@ -418,6 +419,53 @@ func clip(s string, max int) string {
 		return s
 	}
 	return string(r[:max-1]) + "…"
+}
+
+// SessionLogs prints a page of a session's agent logs, one line per record
+// with its time, level, logger and message; --json prints the records as the
+// API sent them. empty says why a page has no records, on stderr in both modes
+// so --json output stays parseable.
+func SessionLogs(p *util.Printer, asJSON bool, page public.LogPage, empty string) error {
+	jp := jsonPage[oapi.LivekitPublicapiObservabilityV1LogRecord]{Items: page.Records, NextCursor: page.NextCursor}
+	if err := renderPage(p, asJSON, jp, empty, logLines); err != nil || asJSON {
+		return err
+	}
+	moreAvailable(p, "records", page.NextCursor)
+	return nil
+}
+
+// logLines renders log records one per line, their loggers padded so the
+// messages line up.
+func logLines(records []oapi.LivekitPublicapiObservabilityV1LogRecord) []string {
+	loggerWidth := 1
+	for _, r := range records {
+		loggerWidth = max(loggerWidth, len([]rune(util.Deref(r.Logger))))
+	}
+	lines := make([]string, 0, len(records))
+	for _, r := range records {
+		lines = append(lines, logLine(r, loggerWidth))
+	}
+	return lines
+}
+
+// logLine renders one log record as a single line, its logger padded to
+// loggerWidth so the messages line up.
+func logLine(r oapi.LivekitPublicapiObservabilityV1LogRecord, loggerWidth int) string {
+	at := "-"
+	if r.Timestamp != nil && !r.Timestamp.IsZero() {
+		at = r.Timestamp.Local().Format("15:04:05.000")
+	}
+	return fmt.Sprintf("%-12s  %-6s  %-*s  %s", at, logLevelName(r), loggerWidth, util.DashString(r.Logger), oneLine(util.Deref(r.Message)))
+}
+
+// logLevelName names a record's level: its typed level, or the name the agent
+// logged when the level isn't one the API knows, or "-" for a record with
+// neither, such as a passed evaluation.
+func logLevelName(r oapi.LivekitPublicapiObservabilityV1LogRecord) string {
+	if r.Level != nil && *r.Level != oapi.LOGLEVELUNSPECIFIED {
+		return strings.TrimPrefix(string(*r.Level), "LOG_LEVEL_")
+	}
+	return util.Dash(strings.ToUpper(util.Deref(r.SeverityText)))
 }
 
 // RecordingLabel names a recording ("audio" or "chat-history") for a sentence.
