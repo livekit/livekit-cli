@@ -270,6 +270,44 @@ func (c *Client) GetSessionLogs(ctx context.Context, projectID, sessionID string
 	return &LogPage{Records: items(resp.JSON200.Records), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
 }
 
+// MaxTracePageSize is the most spans the server returns in one page of
+// GetSessionTraces; a larger PageOptions.Limit is clamped to it.
+const MaxTracePageSize = 100
+
+// TracePage is one page of a session's trace spans.
+type TracePage struct {
+	// Spans are by start time, oldest first, ties broken by span id. Each names
+	// its parent, so the pages together rebuild the span tree.
+	Spans []oapi.LivekitPublicapiObservabilityV1Span
+	// NextCursor is non-empty when more pages remain (pass it back as
+	// PageOptions.Cursor).
+	NextCursor string
+}
+
+// GetSessionTraces returns one page of the spans a session's agents exported:
+// what the dashboard's trace view shows. A span's attributes are typed, with
+// its resource's and scope's merged in. The pages read the spans the first
+// page found, so a span exported later needs a new read; an active session
+// returns what its agents have exported so far. An unknown session is NotFound
+// (see IsNotFound); an empty first page while the project's user data
+// recording is off is a FailedPrecondition that ObservabilityDisabled
+// recognizes.
+func (c *Client) GetSessionTraces(ctx context.Context, projectID, sessionID string, opts PageOptions) (*TracePage, error) {
+	if err := opts.Validate(); err != nil {
+		return nil, err
+	}
+	params := &oapi.ObservabilityServiceGetSessionTracesParams{}
+	params.PagePageSize, params.PageCursor = opts.params()
+	resp, err := c.gen.ObservabilityServiceGetSessionTracesWithResponse(ctx, projectID, sessionID, params)
+	if err != nil {
+		return nil, err
+	}
+	if resp.JSON200 == nil {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	return &TracePage{Spans: items(resp.JSON200.Spans), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+}
+
 // gzipMagic opens every gzip stream (RFC 1952).
 var gzipMagic = []byte{0x1f, 0x8b}
 

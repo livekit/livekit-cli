@@ -142,8 +142,8 @@ func (c *Client) ListProjectSessions(ctx context.Context, projectID string, opts
 }
 
 // PageOptions pages a read of one of a session's lists: its participants,
-// transcript or agent logs. Zero values start from the first item with the
-// server's page size.
+// transcript, agent logs or trace spans. Zero values
+// start from the first item with the server's page size.
 type PageOptions struct {
 	// Limit caps how many items a page holds; 0 lets the server choose (50).
 	// The server caps pages at 100, and a page can hold fewer items than its

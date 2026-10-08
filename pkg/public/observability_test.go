@@ -653,3 +653,165 @@ func TestGetSessionLogsErrors(t *testing.T) {
 		})
 	}
 }
+
+// tracesPage is a GetSessionTraces response as the server's REST transcoder
+// writes it: a root span with typed attributes, and a child that failed with
+// an exception event.
+const tracesPage = `{
+  "spans": [
+    {
+      "traceId": "0af7651916cd43dd8448eb211c80319c",
+      "spanId": "a1a1a1a1a1a1a1a1",
+      "name": "agent_session",
+      "kind": "SPAN_KIND_INTERNAL",
+      "startTime": "2026-10-07T11:00:00Z",
+      "endTime": "2026-10-07T11:05:00Z",
+      "status": "SPAN_STATUS_OK",
+      "attributes": {"lk.agent_name": "triage", "lk.room_name": "r1", "retries": 2, "nested": {"ok": true}}
+    },
+    {
+      "traceId": "0af7651916cd43dd8448eb211c80319c",
+      "spanId": "b2b2b2b2b2b2b2b2",
+      "parentSpanId": "a1a1a1a1a1a1a1a1",
+      "name": "llm_request",
+      "kind": "SPAN_KIND_CLIENT",
+      "startTime": "2026-10-07T11:00:01Z",
+      "endTime": "2026-10-07T11:00:01.820Z",
+      "status": "SPAN_STATUS_ERROR",
+      "statusMessage": "rate limited",
+      "attributes": {"lk.response.ttft": 0.31},
+      "events": [{"name": "exception", "timestamp": "2026-10-07T11:00:01.800Z", "attributes": {"exception.type": "RateLimitError"}}]
+    }
+  ],
+  "pageInfo": {"nextCursor": "next", "hasMore": true}
+}`
+
+// TestGetSessionTraces checks the request GetSessionTraces sends for each
+// option, and that spans come back typed with the page's cursor.
+func TestGetSessionTraces(t *testing.T) {
+	tests := []struct {
+		name string
+		opts PageOptions
+		want url.Values
+	}{
+		{name: "zero options send nothing", want: url.Values{}},
+		{
+			name: "paging",
+			opts: PageOptions{Limit: 100, Cursor: "abc"},
+			want: url.Values{"page.pageSize": {"100"}, "page.cursor": {"abc"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAuth, gotPath string
+			var gotQuery url.Values
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAuth, gotPath, gotQuery = r.Header.Get("Authorization"), r.URL.Path, r.URL.Query()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(tracesPage))
+			}))
+			t.Cleanup(srv.Close)
+
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			page, err := c.GetSessionTraces(context.Background(), "p1", "RM_1", tt.opts)
+			require.NoError(t, err)
+
+			assert.Equal(t, "Bearer sekret", gotAuth)
+			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/traces", gotPath)
+			assert.Equal(t, tt.want, gotQuery)
+
+			assert.Equal(t, "next", page.NextCursor)
+			require.Len(t, page.Spans, 2)
+			root, child := page.Spans[0], page.Spans[1]
+			assert.Equal(t, "a1a1a1a1a1a1a1a1", *root.SpanId)
+			assert.Nil(t, root.ParentSpanId)
+			assert.Equal(t, oapi.SPANKINDINTERNAL, *root.Kind)
+			assert.Equal(t, oapi.SPANSTATUSOK, *root.Status)
+			assert.True(t, time.Date(2026, 10, 7, 11, 5, 0, 0, time.UTC).Equal(*root.EndTime))
+
+			assert.Equal(t, "a1a1a1a1a1a1a1a1", *child.ParentSpanId)
+			assert.Equal(t, "llm_request", *child.Name)
+			assert.Equal(t, oapi.SPANSTATUSERROR, *child.Status)
+			assert.Equal(t, "rate limited", *child.StatusMessage)
+			require.Len(t, *child.Events, 1)
+			assert.Equal(t, "exception", *(*child.Events)[0].Name)
+		})
+	}
+}
+
+// TestSpanJSON checks a span marshals back to the API's own shape, typed
+// attributes and events included, so --json prints what the server sent.
+func TestSpanJSON(t *testing.T) {
+	const span = `{"spanId":"b2","parentSpanId":"a1","name":"llm_request","kind":"SPAN_KIND_CLIENT",` +
+		`"startTime":"2026-10-07T11:00:01Z","status":"SPAN_STATUS_ERROR",` +
+		`"attributes":{"lk.response.ttft":0.31,"tags":["a","b"],"nested":{"ok":true},"none":null},` +
+		`"events":[{"name":"exception","attributes":{"exception.type":"RateLimitError"}}]}`
+	var s oapi.LivekitPublicapiObservabilityV1Span
+	require.NoError(t, json.Unmarshal([]byte(span), &s))
+	got, err := json.Marshal(s)
+	require.NoError(t, err)
+	assert.JSONEq(t, span, string(got))
+}
+
+// TestGetSessionTracesRejectsBadLimit confirms a negative limit fails
+// Validate, and fails GetSessionTraces before any request is sent.
+func TestGetSessionTracesRejectsBadLimit(t *testing.T) {
+	opts := PageOptions{Limit: -1}
+	require.EqualError(t, opts.Validate(), "limit must not be negative")
+
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, "sekret")
+	require.NoError(t, err)
+
+	_, err = c.GetSessionTraces(context.Background(), "p1", "RM_1", opts)
+	require.EqualError(t, err, "limit must not be negative")
+	assert.False(t, called, "no request should be sent")
+}
+
+// TestGetSessionTracesErrors checks an unknown session is NotFound and an
+// empty first page with user data recording off carries ObservabilityDisabled.
+func TestGetSessionTracesErrors(t *testing.T) {
+	tests := []struct {
+		name         string
+		status       int
+		body         string
+		wantNotFound bool
+		wantDisabled bool
+	}{
+		{
+			name:         "unknown session",
+			status:       http.StatusNotFound,
+			body:         `{"code":5,"message":"session not found"}`,
+			wantNotFound: true,
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/p1"}]}`,
+			wantDisabled: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			_, err = c.GetSessionTraces(context.Background(), "p1", "RM_1", PageOptions{})
+			require.Error(t, err)
+			assert.Equal(t, tt.wantNotFound, IsNotFound(err))
+			_, disabled := ObservabilityDisabled(err)
+			assert.Equal(t, tt.wantDisabled, disabled)
+		})
+	}
+}
