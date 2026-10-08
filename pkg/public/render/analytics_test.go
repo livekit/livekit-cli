@@ -642,3 +642,87 @@ func TestSessionTracesJSON(t *testing.T) {
 	assert.Equal(t, "SPAN_STATUS_ERROR", got.Items[3]["status"])
 	assert.Equal(t, "c3", got.Items[3]["parentSpanId"])
 }
+
+// metricPoints is one page of agent metrics as the API sends it: a gauge whose
+// value is zero, a sum in an annotated unit, a histogram, an exponential
+// histogram the agent recorded no min or max for, a dimensionless sum with a
+// fractional value, and a point of a kind newer than this client.
+const metricPoints = `[
+  {"name": "lk.agents.active_sessions", "kind": "METRIC_KIND_GAUGE", "endTime": "2026-10-07T11:00:30Z", "attributes": {"lk.agent_name": "triage"}, "value": 0},
+  {"name": "lk.agents.usage.llm_input_tokens", "unit": "{token}", "kind": "METRIC_KIND_SUM", "startTime": "2026-10-07T11:00:00Z", "endTime": "2026-10-07T11:00:30Z", "attributes": {"model_name": "gpt-4o"}, "value": 1520},
+  {"name": "lk.agents.turn.e2e_latency", "unit": "s", "kind": "METRIC_KIND_HISTOGRAM", "startTime": "2026-10-07T11:00:00Z", "endTime": "2026-10-07T11:00:30.250Z", "histogram": {"count": "3", "sum": 2.4, "min": 0.6, "max": 1.1, "bucketBounds": [0.5, 1], "bucketCounts": ["0", "2", "1"]}},
+  {"name": "gen_ai.client.operation.duration", "unit": "s", "kind": "METRIC_KIND_EXPONENTIAL_HISTOGRAM", "startTime": "2026-10-07T11:00:00Z", "endTime": "2026-10-07T11:01:00Z", "histogram": {"count": "2", "sum": 1.5}},
+  {"name": "lk.agents.interruptions", "unit": "1", "kind": "METRIC_KIND_SUM", "endTime": "2026-10-07T11:01:00Z", "value": 0.3333333333},
+  {"name": "lk.agents.future", "endTime": "2026-10-07T11:01:00Z"}
+]`
+
+func decodeMetricPoints(t *testing.T) []public.MetricPoint {
+	t.Helper()
+	var points []public.MetricPoint
+	require.NoError(t, json.Unmarshal([]byte(metricPoints), &points))
+	return points
+}
+
+// TestSessionMetricsText checks each point prints as one line with its time,
+// name and value or histogram summary, and a next page says to re-run with its
+// cursor.
+func TestSessionMetricsText(t *testing.T) {
+	prevLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = prevLocal })
+
+	page := public.MetricPage{Points: decodeMetricPoints(t), NextCursor: "c2"}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionMetrics(util.NewPrinter(&stdout, &stderr, false), false, page, "unused"))
+
+	assert.Equal(t, strings.Join([]string{
+		"11:00:30.000  lk.agents.active_sessions         0",
+		"11:00:30.000  lk.agents.usage.llm_input_tokens  1520 token",
+		"11:00:30.250  lk.agents.turn.e2e_latency        count 3, sum 2.4 s, min 0.6 s, max 1.1 s",
+		"11:01:00.000  gen_ai.client.operation.duration  count 2, sum 1.5 s",
+		"11:01:00.000  lk.agents.interruptions           0.333333",
+		"11:01:00.000  lk.agents.future                  -",
+		"",
+	}, "\n"), stdout.String())
+	assert.Contains(t, stderr.String(),
+		"More points available — re-run with --cursor c2")
+	assert.NotContains(t, stderr.String(), "unused")
+}
+
+// TestSessionMetricsEmpty prints the caller's reason for an empty page, on
+// stderr in both modes.
+func TestSessionMetricsEmpty(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionMetrics(util.NewPrinter(&stdout, &stderr, false), false, public.MetricPage{}, "No metrics"))
+	assert.Empty(t, stdout.String())
+	assert.Equal(t, "No metrics\n", stderr.String())
+
+	stdout.Reset()
+	stderr.Reset()
+	require.NoError(t, SessionMetrics(util.NewPrinter(&stdout, &stderr, false), true, public.MetricPage{}, "No metrics"))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Equal(t, "No metrics\n", stderr.String())
+}
+
+// TestSessionMetricsJSON checks --json prints the points as the API sent
+// them, with the page's cursor.
+func TestSessionMetricsJSON(t *testing.T) {
+	page := public.MetricPage{Points: decodeMetricPoints(t), NextCursor: "c2"}
+	var stdout bytes.Buffer
+	require.NoError(t, SessionMetrics(util.NewPrinter(&stdout, nil, true), true, page, ""))
+
+	var got struct {
+		Items      []map[string]any `json:"items"`
+		NextCursor string           `json:"nextCursor"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	assert.Equal(t, "c2", got.NextCursor)
+	require.Len(t, got.Items, 6)
+	assert.Equal(t, 0.0, got.Items[0]["value"])
+	assert.Equal(t, map[string]any{"lk.agent_name": "triage"}, got.Items[0]["attributes"])
+	assert.Equal(t, "METRIC_KIND_HISTOGRAM", got.Items[2]["kind"])
+	assert.Equal(t, map[string]any{
+		"count": "3", "sum": 2.4, "min": 0.6, "max": 1.1,
+		"bucketBounds": []any{0.5, 1.0}, "bucketCounts": []any{"0", "2", "1"},
+	}, got.Items[2]["histogram"])
+}

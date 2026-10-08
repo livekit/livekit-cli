@@ -44,7 +44,7 @@ const (
 )
 
 // defaultPageLimit is how many of a session's participants, transcript
-// records or agent log records a page reads by default.
+// records, agent log records or metric points a page reads by default.
 const defaultPageLimit = 50
 
 // defaultTraceLimit caps how many spans `session traces` reads: ten of the
@@ -123,6 +123,20 @@ var (
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(traceOptions, fetchSessionTraces),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsTraceFlags()...),
+						},
+						{
+							Name:      "metrics",
+							Usage:     "Print a session's agent metrics (requires --experimental-auth)",
+							UsageText: "lk analytics session metrics SESSION_ID [--name NAME ...]",
+							Description: "Prints the OpenTelemetry metric points the session's agents exported, " +
+								"such as lk.agents.turn.e2e_latency and lk.agents.usage.llm_input_tokens, one line per point: " +
+								"its time, its metric's name, and a gauge's or sum's value or a histogram's count, sum, min and max. " +
+								"--json prints the points with their attributes and histogram buckets.\n\n" +
+								"These are the raw metrics agents emit, so they won't exactly match the dashboard's metrics panel, " +
+								"which derives its numbers from the transcript and traces.",
+							ArgsUsage: "SESSION_ID",
+							Action:    sessionRead(metricOptions, fetchSessionMetrics),
+							Flags:     append([]cli.Flag{jsonFlag}, analyticsMetricFlags()...),
 						},
 					},
 				},
@@ -323,6 +337,17 @@ func analyticsTraceFlags() []cli.Flag {
 			Hidden: true,
 		},
 	}
+}
+
+// analyticsMetricFlags returns fresh instances of the agent metrics' own flags
+// (the shared jsonFlag is added by the command).
+func analyticsMetricFlags() []cli.Flag {
+	return append([]cli.Flag{
+		&cli.StringSliceFlag{
+			Name:  "name",
+			Usage: "Print only the points of the metric named `NAME`, matched exactly, such as lk.agents.turn.e2e_latency; repeatable (default every metric)",
+		},
+	}, pageFlags(defaultPageLimit, "points")...)
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
@@ -732,8 +757,8 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 }
 
 // sessionRead builds the action of a command that reads one thing about a
-// session — its participants, recordings, transcript, agent logs or trace
-// spans — which only the Public API serves. The
+// session — its participants, recordings, transcript, agent logs, trace
+// spans or agent metrics — which only the Public API serves. The
 // action refuses to run without --experimental-auth before checking anything
 // else, then reads the SESSION_ID argument and the command's options, so a
 // bad flag fails before the project lookup, and hands fetch a client signed
@@ -968,9 +993,9 @@ func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID
 }
 
 // sessionReadError explains why a session has no participants, transcript,
-// agent logs or trace spans (what) to print, and otherwise annotates the
-// error like the other Public API commands. access is what the read
-// requires.
+// agent logs, trace spans or agent metrics (what) to print, and otherwise
+// annotates the error like the other Public API commands. access is what the
+// read requires.
 func sessionReadError(err error, projectID, sessionID, what string, access sessionReadAccess) error {
 	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
 		return observabilityDisabledError(sessionID, what, dashboardURL)
@@ -988,7 +1013,7 @@ const (
 	// projectReadAccess reads: a session's participants.
 	projectReadAccess sessionReadAccess = iota
 	// projectAdminAccess reads, which can hold user data: a session's
-	// recordings, transcript, agent logs and trace spans.
+	// recordings, transcript, agent logs, trace spans and agent metrics.
 	projectAdminAccess
 )
 
@@ -1109,4 +1134,50 @@ func emptyTracesReason(sessionID string, laterPage bool) string {
 	}
 	return fmt.Sprintf("Session %s has no trace spans: a session without an agent has none, "+
 		"and a running agent's spans appear as it exports them", sessionID)
+}
+
+// metricOptions reads the agent metrics flags. A bad limit or a blank name
+// fails here, before the project lookup.
+func metricOptions(cmd *cli.Command) (public.MetricOptions, error) {
+	page, err := pageOptions(cmd)
+	if err != nil {
+		return public.MetricOptions{}, err
+	}
+	opts := public.MetricOptions{
+		PageOptions: page,
+		Names:       cmd.StringSlice("name"),
+	}
+	if err := opts.Validate(); err != nil {
+		return public.MetricOptions{}, err
+	}
+	return opts, nil
+}
+
+// fetchSessionMetrics reads one page of a session's agent metrics and prints
+// it, saying why when the page is empty.
+func fetchSessionMetrics(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.MetricOptions, asJSON bool) error {
+	page, err := client.GetSessionMetrics(ctx, projectID, sessionID, opts)
+	if err != nil {
+		return sessionReadError(err, projectID, sessionID, "agent metrics", projectAdminAccess)
+	}
+	var empty string
+	if len(page.Points) == 0 {
+		empty = emptyMetricsReason(sessionID, opts)
+	}
+	return render.SessionMetrics(out, asJSON, *page, empty)
+}
+
+// emptyMetricsReason explains a page with no points. With user data recording
+// off an unfiltered first page is an error instead, so an empty one here means
+// the agents exported none, or none of the metrics asked for.
+func emptyMetricsReason(sessionID string, opts public.MetricOptions) string {
+	if opts.Cursor != "" {
+		return "No more metric points"
+	}
+	if len(opts.Names) > 0 {
+		return fmt.Sprintf("Session %s has no points for the metrics asked for (%s)",
+			sessionID, strings.Join(opts.Names, ", "))
+	}
+	return fmt.Sprintf("Session %s has no agent metrics: only agents that export OpenTelemetry metrics "+
+		"to LiveKit Cloud produce them, and a running agent's points appear as it exports them", sessionID)
 }
