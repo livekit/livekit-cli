@@ -18,8 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/livekit/protocol/livekit"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
@@ -142,7 +145,7 @@ func (c *Client) ListProjectSessions(ctx context.Context, projectID string, opts
 }
 
 // PageOptions pages a read of one of a session's lists: its participants,
-// transcript, agent logs, trace spans or agent metrics. Zero values
+// transcript, agent logs, trace spans, agent metrics or events. Zero values
 // start from the first item with the server's page size.
 type PageOptions struct {
 	// Limit caps how many items a page holds; 0 lets the server choose (50).
@@ -249,6 +252,125 @@ func (c *Client) ListSessionParticipants(ctx context.Context, projectID, session
 		return nil, "", responseError(resp.StatusCode(), resp.Body)
 	}
 	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
+}
+
+// EventOptions filters, orders and pages ListSessionEvents. Zero values return
+// the server's default types, oldest first, with the server's page size. A
+// cursor pages only a request with the same Types, ParticipantSessionID and
+// SortOrder.
+type EventOptions struct {
+	PageOptions
+	// Types keeps events of any of these types, by friendly name: the API's
+	// type in lowercase, such as "participant_joined" or "track_published"
+	// (see EventTypeNames). Empty returns the seven the dashboard's events
+	// table shows: participants joining, leaving, going active and resuming,
+	// the room created and ended, and API calls.
+	Types []string
+	// ParticipantSessionID keeps one participant session's events (PA_...).
+	// Room events and API calls name no participant session, so it leaves them
+	// out.
+	ParticipantSessionID string
+	// SortOrder orders by time: "asc" (the server's default) or "desc".
+	SortOrder string
+}
+
+// EventTypeName is the friendly name of an API event type, such as
+// "participant_joined" for PARTICIPANT_JOINED.
+func EventTypeName(apiType string) string { return strings.ToLower(apiType) }
+
+// EventTypeNames lists the friendly event type names EventOptions.Types
+// accepts, sorted: LiveKit's analytics event types in lowercase.
+func EventTypeNames() []string {
+	names := make([]string, 0, len(livekit.AnalyticsEventType_value))
+	for name := range livekit.AnalyticsEventType_value {
+		names = append(names, EventTypeName(name))
+	}
+	slices.Sort(names)
+	return names
+}
+
+// parseEventType maps a friendly event type name to the API's.
+func parseEventType(s string) (string, error) {
+	name := strings.ToUpper(strings.TrimSpace(s))
+	if _, ok := livekit.AnalyticsEventType_value[name]; !ok {
+		return "", fmt.Errorf("invalid event type %q (expected one of %s)", s, strings.Join(EventTypeNames(), ", "))
+	}
+	return name, nil
+}
+
+// listSessionEventsParams translates opts into the generated query params,
+// rejecting a negative limit, unknown type or sort order names and a
+// participant session id that isn't one before any request is sent.
+func listSessionEventsParams(opts EventOptions) (*oapi.AnalyticsServiceListSessionEventsParams, error) {
+	if err := opts.PageOptions.Validate(); err != nil {
+		return nil, err
+	}
+	params := &oapi.AnalyticsServiceListSessionEventsParams{}
+	params.PagePageSize, params.PageCursor = opts.params()
+	if len(opts.Types) > 0 {
+		types := make([]string, 0, len(opts.Types))
+		for _, name := range opts.Types {
+			t, err := parseEventType(name)
+			if err != nil {
+				return nil, err
+			}
+			types = append(types, t)
+		}
+		params.Types = &types
+	}
+	if id := strings.TrimSpace(opts.ParticipantSessionID); id != "" {
+		if !strings.HasPrefix(id, "PA_") {
+			return nil, fmt.Errorf("invalid participant session id %q (expected a PA_ id, not a participant identity)", opts.ParticipantSessionID)
+		}
+		params.ParticipantSessionId = ptr(id)
+	}
+	if opts.SortOrder != "" {
+		order, err := parseSortOrder(opts.SortOrder)
+		if err != nil {
+			return nil, err
+		}
+		params.SortOrder = &order
+	}
+	return params, nil
+}
+
+// Validate reports a negative limit, an unknown type or sort order name, or a
+// participant session id that isn't one. ListSessionEvents makes the same
+// checks before sending a request; callers can run them earlier.
+func (o EventOptions) Validate() error {
+	_, err := listSessionEventsParams(o)
+	return err
+}
+
+// EventPage is one page of a session's events.
+type EventPage struct {
+	// Events are in the requested time order, oldest first by default.
+	Events []oapi.LivekitPublicapiAnalyticsV1SessionEvent
+	// NextCursor is non-empty when more pages remain (pass it back as
+	// EventOptions.Cursor).
+	NextCursor string
+}
+
+// ListSessionEvents returns one page of a session's events, such as
+// participants joining and leaving or tracks being published: what the
+// dashboard's events table shows. Each event's payload holds only the fields
+// the server allows, so it carries no participant attributes or metadata.
+// Events are kept for 60 days, so an older session can have none; an active
+// session returns those recorded so far. An unknown session is NotFound (see
+// IsNotFound).
+func (c *Client) ListSessionEvents(ctx context.Context, projectID, sessionID string, opts EventOptions) (*EventPage, error) {
+	params, err := listSessionEventsParams(opts)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.gen.AnalyticsServiceListSessionEventsWithResponse(ctx, projectID, sessionID, params)
+	if err != nil {
+		return nil, err
+	}
+	if resp.JSON200 == nil {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	return &EventPage{Events: items(resp.JSON200.Items), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
 }
 
 // GetSession returns a single analytics session by id: its list row and its
