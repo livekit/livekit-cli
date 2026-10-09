@@ -66,9 +66,11 @@ func simulationRow(r oapi.LivekitSimulationRun) []string {
 	}
 }
 
+// sessionRow is a session's list row. Whoever created the room chose its name,
+// so it is untrusted text.
 func sessionRow(s oapi.LivekitPublicapiAnalyticsV1Session) []string {
 	return []string{
-		util.DashString(s.SessionId), util.DashString(s.RoomName), util.DerefEnum(s.Status), util.DashInt32(s.NumParticipants),
+		util.DashString(s.SessionId), dashText(s.RoomName), util.DerefEnum(s.Status), util.DashInt32(s.NumParticipants),
 		util.FormatTime(s.StartedAt), util.FormatTime(s.EndedAt),
 	}
 }

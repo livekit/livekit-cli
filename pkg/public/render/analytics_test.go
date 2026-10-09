@@ -222,6 +222,40 @@ func TestParticipantsStripEscapes(t *testing.T) {
 	assert.Contains(t, stdout.String(), `alice\u001b]0;pwned\u0007`)
 }
 
+// TestSessionsStripEscapes checks a session's room name and tags, which
+// whoever created the room chose, reach a terminal with their escape sequences
+// stripped, in the session list and the session detail; --json escapes them
+// itself.
+func TestSessionsStripEscapes(t *testing.T) {
+	session := oapi.LivekitPublicapiAnalyticsV1Session{
+		SessionId: ptr("RM_1"),
+		RoomName:  ptr("demo" + escapes),
+		Tags:      &[]string{escapes + "tag"},
+	}
+	sessions := []oapi.LivekitPublicapiAnalyticsV1Session{session}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, Sessions(terminalPrinter(&stdout, &stderr), false, sessions))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), "demo]0;pwned[2J")
+
+	stdout.Reset()
+	require.NoError(t, SessionsPage(terminalPrinter(&stdout, &stderr), false, sessions, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), "demo]0;pwned[2J")
+
+	stdout.Reset()
+	require.NoError(t, SessionDetail(terminalPrinter(&stdout, &stderr), false, session, nil))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), "demo]0;pwned[2J")
+
+	stdout.Reset()
+	require.NoError(t, SessionsPage(terminalPrinter(&stdout, &stderr), true, sessions, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), `demo\u001b]0;pwned\u0007`)
+	assert.Contains(t, stdout.String(), `\u001b]0;pwned\u0007\u001b[2Jtag`)
+}
+
 // TestSessionDetailJSON checks --json emits the API's {session, detail} shape,
 // timelines and participants page included.
 func TestSessionDetailJSON(t *testing.T) {
