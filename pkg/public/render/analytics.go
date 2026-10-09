@@ -180,9 +180,11 @@ type jsonPage[T any] struct {
 }
 
 // renderPage prints a page of a session's items: one line each, as lines
-// renders them, or with --json the page as it is. empty says why a page has no
-// items, on stderr in both modes so --json output stays parseable. It leaves
-// the hint for a next page to the caller.
+// renders them, or with --json the page as it is. empty says why a page is
+// empty, on stderr in both modes so --json output stays parseable. Like the
+// server, it counts a page as empty only with no items, nothing skipped and
+// no next cursor, so it never says there's nothing beside a hint that there's
+// more. It leaves the hint for a next page to the caller.
 func renderPage[T any](p *util.Printer, asJSON bool, page jsonPage[T], empty string, lines func([]T) []string) error {
 	if page.Items == nil {
 		page.Items = []T{}
@@ -196,7 +198,7 @@ func renderPage[T any](p *util.Printer, asJSON bool, page jsonPage[T], empty str
 			p.Result(line)
 		}
 	}
-	if len(page.Items) == 0 && empty != "" {
+	if len(page.Items) == 0 && page.SkippedRecords == 0 && page.NextCursor == "" && empty != "" {
 		p.Status(empty)
 	}
 	return nil

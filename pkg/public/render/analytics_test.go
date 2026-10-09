@@ -379,6 +379,18 @@ func TestSessionTranscriptEmpty(t *testing.T) {
 	assert.Equal(t, "Session RM_1 is still active\n", stderr.String())
 }
 
+// TestSessionTranscriptNoItemsNotEmpty checks a page with no items but
+// skipped records or a next cursor isn't empty, as the server counts it, so
+// it never says there's nothing beside a hint that there's more.
+func TestSessionTranscriptNoItemsNotEmpty(t *testing.T) {
+	for _, page := range []public.TranscriptPage{{SkippedRecords: 2}, {NextCursor: "c2"}} {
+		var stdout, stderr bytes.Buffer
+		require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, page, "No more transcript items"))
+		assert.Empty(t, stdout.String())
+		assert.NotContains(t, stderr.String(), "No more transcript items")
+	}
+}
+
 // TestSessionTranscriptJSON checks --json prints the items as the API sent
 // them, with the page's cursor and skipped records.
 func TestSessionTranscriptJSON(t *testing.T) {

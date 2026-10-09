@@ -880,8 +880,11 @@ func fetchSessionTranscript(ctx context.Context, client *public.Client, projectI
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "transcript", projectAdminAccess)
 	}
+	// Only an empty page needs a reason, and only the server's empty: no items,
+	// nothing skipped and no next cursor. Anything else prints no reason, so
+	// it skips emptyTranscriptReason's GetSession too.
 	var empty string
-	if len(page.Items) == 0 {
+	if len(page.Items) == 0 && page.SkippedRecords == 0 && page.NextCursor == "" {
 		empty = emptyTranscriptReason(ctx, client, projectID, sessionID, opts.Cursor != "")
 	}
 	return render.SessionTranscript(out, asJSON, *page, empty)

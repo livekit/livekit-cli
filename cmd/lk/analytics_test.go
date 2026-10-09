@@ -936,7 +936,8 @@ func transcriptAPI(t *testing.T, transcriptStatus int, transcript, status string
 
 // TestFetchSessionTranscript prints a page one line per item and, when the
 // first page is empty, says why: the session is still active, or it ended
-// without a transcript to read yet. A later empty page needs no lookup.
+// without a transcript to read yet. A later empty page needs no lookup, and a
+// page with no items but skipped records or a next cursor isn't empty.
 func TestFetchSessionTranscript(t *testing.T) {
 	const page = `{"items":[` +
 		`{"id":"item_1","message":{"role":"ROLE_USER","text":"hi","endOfTurnDelayMs":320}},` +
@@ -949,6 +950,7 @@ func TestFetchSessionTranscript(t *testing.T) {
 		opts       public.PageOptions
 		wantOut    []string
 		wantStatus []string
+		noStatus   []string
 		wantPaths  []string
 	}{
 		{
@@ -979,6 +981,14 @@ func TestFetchSessionTranscript(t *testing.T) {
 			wantStatus: []string{"No more transcript items"},
 			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
 		},
+		{
+			name:       "no items, more to read",
+			body:       `{"items":[],"skippedRecords":2,"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
+			status:     "SESSION_STATUS_ACTIVE",
+			wantStatus: []string{"2 records couldn't be read", "More items available — re-run with --cursor c2"},
+			noStatus:   []string{"still active", "no transcript"},
+			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -995,6 +1005,9 @@ func TestFetchSessionTranscript(t *testing.T) {
 			}
 			for _, want := range tt.wantStatus {
 				assert.Contains(t, stderr.String(), want)
+			}
+			for _, unwanted := range tt.noStatus {
+				assert.NotContains(t, stderr.String(), unwanted)
 			}
 			assert.Equal(t, tt.wantPaths, *paths)
 		})
