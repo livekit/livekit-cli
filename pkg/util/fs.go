@@ -61,7 +61,8 @@ func CopyFile(src, dest string) error {
 	return nil
 }
 
-// Safely move a directory across filesystems, preserving permissions
+// Safely move a directory across filesystems, preserving permissions. dest
+// must not exist.
 func MoveDir(src, dest string) error {
 	if _, err := os.Stat(dest); err == nil {
 		return fmt.Errorf("destination directory already exists: %s", dest)
@@ -73,6 +74,38 @@ func MoveDir(src, dest string) error {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
+	return moveTree(src, dest)
+}
+
+// MoveDirInto is MoveDir for a destination directory that already exists and
+// is empty (see IsEmptyDir).
+func MoveDirInto(src, dest string) error {
+	empty, err := IsEmptyDir(dest)
+	if err != nil {
+		return err
+	}
+	if !empty {
+		return fmt.Errorf("destination directory isn't empty: %s", dest)
+	}
+	return moveTree(src, dest)
+}
+
+// IsEmptyDir reports whether dir has no entries, ignoring macOS's .DS_Store.
+func IsEmptyDir(dir string) (bool, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false, err
+	}
+	for _, e := range entries {
+		if e.Name() != ".DS_Store" {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// moveTree copies src into the existing directory dest, then removes src.
+func moveTree(src, dest string) error {
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
