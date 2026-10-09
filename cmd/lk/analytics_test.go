@@ -906,9 +906,9 @@ func TestTranscriptOptions(t *testing.T) {
 }
 
 // transcriptAPI starts a stand-in Public API that answers the transcript read
-// with transcript and GetSession with a session in status. Each path it is
-// asked for is recorded.
-func transcriptAPI(t *testing.T, transcriptStatus int, transcript, status string) (*public.Client, *[]string) {
+// with transcript and GetSession with session, the session's JSON. Each path
+// it is asked for is recorded.
+func transcriptAPI(t *testing.T, transcriptStatus int, transcript, session string) (*public.Client, *[]string) {
 	t.Helper()
 	var paths []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -923,7 +923,7 @@ func transcriptAPI(t *testing.T, transcriptStatus int, transcript, status string
 			w.WriteHeader(transcriptStatus)
 			_, _ = w.Write([]byte(transcript))
 		case "/v1/projects/p1/sessions/RM_1":
-			_, _ = fmt.Fprintf(w, `{"session":{"sessionId":"RM_1","status":%q}}`, status)
+			_, _ = fmt.Fprintf(w, `{"session":%s}`, session)
 		default:
 			http.NotFound(w, r)
 		}
@@ -946,7 +946,7 @@ func TestFetchSessionTranscript(t *testing.T) {
 	tests := []struct {
 		name       string
 		body       string
-		status     string
+		session    string
 		opts       public.PageOptions
 		wantOut    []string
 		wantStatus []string
@@ -963,15 +963,24 @@ func TestFetchSessionTranscript(t *testing.T) {
 		{
 			name:       "active session",
 			body:       `{"items":[]}`,
-			status:     "SESSION_STATUS_ACTIVE",
+			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
 			wantStatus: []string{"Session RM_1 is still active", "appears after it ends"},
 			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
 		},
 		{
 			name:       "closed session",
 			body:       `{}`,
-			status:     "SESSION_STATUS_CLOSED",
+			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_CLOSED"}`,
 			wantStatus: []string{"Session RM_1 has no transcript to read", "a minute or two after the session ends"},
+			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
+		},
+		{
+			// A session that stopped reporting stays ACTIVE but has an end time.
+			name:       "active session that stopped reporting",
+			body:       `{"items":[]}`,
+			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE","endedAt":"2026-10-07T11:05:00Z"}`,
+			wantStatus: []string{"Session RM_1 has no transcript to read"},
+			noStatus:   []string{"still active"},
 			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
 		},
 		{
@@ -984,7 +993,7 @@ func TestFetchSessionTranscript(t *testing.T) {
 		{
 			name:       "no items, more to read",
 			body:       `{"items":[],"skippedRecords":2,"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
-			status:     "SESSION_STATUS_ACTIVE",
+			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
 			wantStatus: []string{"2 records couldn't be read", "More items available — re-run with --cursor c2"},
 			noStatus:   []string{"still active", "no transcript"},
 			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
@@ -992,7 +1001,7 @@ func TestFetchSessionTranscript(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, paths := transcriptAPI(t, http.StatusOK, tt.body, tt.status)
+			client, paths := transcriptAPI(t, http.StatusOK, tt.body, tt.session)
 			stdout, stderr := captureOut(t)
 
 			require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", tt.opts, false))
@@ -1017,7 +1026,7 @@ func TestFetchSessionTranscript(t *testing.T) {
 // TestFetchSessionTranscriptJSON checks --json prints the items and still
 // explains an empty transcript on stderr.
 func TestFetchSessionTranscriptJSON(t *testing.T) {
-	client, _ := transcriptAPI(t, http.StatusOK, `{"items":[]}`, "SESSION_STATUS_ACTIVE")
+	client, _ := transcriptAPI(t, http.StatusOK, `{"items":[]}`, `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`)
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", public.PageOptions{}, true))
@@ -1066,7 +1075,7 @@ func TestFetchSessionTranscriptErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, _ := transcriptAPI(t, tt.status, tt.body, "")
+			client, _ := transcriptAPI(t, tt.status, tt.body, `{}`)
 			stdout, _ := captureOut(t)
 
 			err := fetchSessionTranscript(context.Background(), client, "p1", "RM_1", public.PageOptions{}, false)

@@ -893,13 +893,14 @@ func fetchSessionTranscript(ctx context.Context, client *public.Client, projectI
 // emptyTranscriptReason explains a page with no items. The transcript read
 // doesn't say whether the session is still going, so a first page asks
 // GetSession: an active session's agent exports its transcript only when the
-// session ends.
+// session ends. A session that stopped reporting keeps its ACTIVE status but
+// gets an end time, so only one with no end time is still active.
 func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID, sessionID string, laterPage bool) string {
 	if laterPage {
 		return "No more transcript items"
 	}
 	if session, _, err := client.GetSession(ctx, projectID, sessionID); err == nil &&
-		util.Deref(session.Status) == oapi.SESSIONSTATUSACTIVE {
+		util.Deref(session.Status) == oapi.SESSIONSTATUSACTIVE && session.EndedAt == nil {
 		return fmt.Sprintf("Session %s is still active: its transcript appears after it ends", sessionID)
 	}
 	return fmt.Sprintf("Session %s has no transcript to read. The agent exports it when the session ends, "+
