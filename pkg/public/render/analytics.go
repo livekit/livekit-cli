@@ -85,13 +85,27 @@ func publishedSources(s *oapi.LivekitPublicapiAnalyticsV1PublishedSources) strin
 	return util.Dash(strings.Join(names, ", "))
 }
 
+// renderParticipants prints a page of participants as a table. Like the
+// server, it counts a page as empty only with no participants and no next
+// cursor, so it never says there are none beside a hint that there are more.
+// It leaves that hint to the caller.
+func renderParticipants(p *util.Printer, participants []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo, nextCursor string) error {
+	if len(participants) == 0 {
+		if nextCursor == "" {
+			p.Status("No participants found")
+		}
+		return nil
+	}
+	return util.RenderList(p, false, participants, "", participantHeaders, participantRow)
+}
+
 // SessionParticipantsPage prints a cursor-paginated page of a session's
 // participants. As JSON it emits {items, nextCursor} with the API's rows.
 func SessionParticipantsPage(p *util.Printer, asJSON bool, participants []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo, nextCursor string) error {
 	if asJSON {
 		return util.RenderPage(p, true, participants, nextCursor, "No participants found", participantHeaders, participantRow)
 	}
-	if err := util.RenderList(p, false, participants, "No participants found", participantHeaders, participantRow); err != nil {
+	if err := renderParticipants(p, participants, nextCursor); err != nil {
 		return err
 	}
 	moreAvailable(p, "participants", nextCursor)
@@ -143,10 +157,11 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 			util.Accented(listCmd))
 		return nil
 	}
-	if err := util.RenderList(p, false, util.Deref(d.Participants), "No participants found", participantHeaders, participantRow); err != nil {
+	next := util.Deref(d.ParticipantsPage.NextCursor)
+	if err := renderParticipants(p, util.Deref(d.Participants), next); err != nil {
 		return err
 	}
-	if next := util.Deref(d.ParticipantsPage.NextCursor); next != "" {
+	if next != "" {
 		p.Statusf("More participants available — list them with %s, using the same flags as this command",
 			util.Accented(listCmd+" --cursor "+next))
 	}

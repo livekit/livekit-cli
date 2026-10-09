@@ -124,6 +124,33 @@ func TestSessionParticipantsPage(t *testing.T) {
 	assert.JSONEq(t, `{"items":[{"participantIdentity":"alice","region":"US East"}],"nextCursor":"c2"}`, stdout.String())
 }
 
+// TestSessionParticipantsPageEmpty checks a page with no participants says
+// there are none only when it is the last, so it never says so beside a hint
+// that there are more.
+func TestSessionParticipantsPageEmpty(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, &stderr, false), false, nil, "c2"))
+	assert.NotContains(t, stderr.String(), "No participants found")
+	assert.Contains(t, stderr.String(), "--cursor c2")
+
+	stderr.Reset()
+	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, &stderr, false), false, nil, ""))
+	assert.Contains(t, stderr.String(), "No participants found")
+	assert.NotContains(t, stderr.String(), "--cursor")
+	assert.Empty(t, stdout.String())
+}
+
+func TestSessionDetailTextEmptyParticipantsPageWithMore(t *testing.T) {
+	resp := decodeSessionResponse(t, `{"session":{"sessionId":"RM_1"},"detail":{"participants":[],"participantsPage":{"nextCursor":"c2","hasMore":true}}}`)
+	var stdout, stderr bytes.Buffer
+	p := util.NewPrinter(&stdout, &stderr, false)
+
+	require.NoError(t, SessionDetail(p, false, *resp.Session, resp.Detail))
+
+	assert.NotContains(t, stderr.String(), "No participants found")
+	assert.Contains(t, stderr.String(), "lk analytics session participant list RM_1 --cursor c2")
+}
+
 func ptr[T any](v T) *T { return &v }
 
 // escapes is untrusted text carrying terminal escape sequences: an OSC that
