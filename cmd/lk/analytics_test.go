@@ -723,7 +723,7 @@ func TestFetchSessionRecordingNothingToDownload(t *testing.T) {
 			name:    "not recorded",
 			status:  http.StatusNotFound,
 			body:    `{"code":5,"message":"recording not found"}`,
-			wantErr: []string{"session RM_1 has no chat history", "recording not found", "wasn't recorded", "less than a minute ago", "or there is no such session"},
+			wantErr: []string{"session RM_1 has no chat history", "recording not found", "wasn't recorded", "less than a minute ago", "or there is no such session in project p1"},
 		},
 		{
 			name:   "recording off",

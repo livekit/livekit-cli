@@ -767,7 +767,7 @@ func fetchSessionRecording(ctx context.Context, client *public.Client, projectID
 
 	res, err := client.GetSessionRecordingURL(ctx, projectID, sessionID, opts.RecordingURLOptions)
 	if err != nil {
-		return sessionRecordingError(err, sessionID, opts.Recording)
+		return sessionRecordingError(err, projectID, sessionID, opts.Recording)
 	}
 	if opts.URLOnly {
 		return render.RecordingURL(out, asJSON, *res)
@@ -823,16 +823,17 @@ func saveRecording(ctx context.Context, signedURL, path string) (int64, error) {
 
 // sessionRecordingError explains why a session has nothing to download, and
 // otherwise annotates the error like the other Public API commands.
-func sessionRecordingError(err error, sessionID, recording string) error {
+func sessionRecordingError(err error, projectID, sessionID, recording string) error {
 	label := render.RecordingLabel(recording)
 	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
 		return observabilityDisabledError(sessionID, label, dashboardURL)
 	}
 	if public.IsNotFound(err) {
-		// The API answers an unknown session the same way, so say so too.
+		// The API answers an unknown session, or a mistyped --project, the same
+		// way, so say so too and name the project.
 		return fmt.Errorf("session %s has no %s (%w): it wasn't recorded, has expired, "+
 			"or the session ended less than a minute ago and the recording is still being indexed; "+
-			"or there is no such session in this project", sessionID, label, err)
+			"or there is no such session in project %s", sessionID, label, err, projectID)
 	}
 	return sessionAPIError(err, label, projectAdminAccess)
 }
