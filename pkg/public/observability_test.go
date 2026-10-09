@@ -61,7 +61,7 @@ func TestGetSessionRecordingURL(t *testing.T) {
 			res, err := c.GetSessionRecordingURL(context.Background(), "p1", "RM_1", RecordingURLOptions{Recording: tt.recording})
 			require.NoError(t, err)
 
-			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/recording-url", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions/RM_1/recording-url", gotPath)
 			assert.Equal(t, url.Values{"fileType": {tt.want}}, gotQuery)
 			assert.Equal(t, "Bearer sekret", gotAuth)
 			assert.Equal(t, "https://bucket.example/rec?sig=x", *res.Url)
@@ -381,7 +381,7 @@ func TestGetSessionTranscript(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "Bearer sekret", gotAuth)
-			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/transcript", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions/RM_1/transcript", gotPath)
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
@@ -544,7 +544,7 @@ func TestGetSessionLogs(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "Bearer sekret", gotAuth)
-			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/logs", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions/RM_1/logs", gotPath)
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
@@ -719,7 +719,7 @@ func TestGetSessionTraces(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "Bearer sekret", gotAuth)
-			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/traces", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions/RM_1/traces", gotPath)
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
@@ -895,7 +895,7 @@ func TestGetSessionMetrics(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "Bearer sekret", gotAuth)
-			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/metrics", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions/RM_1/metrics", gotPath)
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
