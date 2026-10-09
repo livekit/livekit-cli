@@ -99,6 +99,7 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, CloudCommands...)
 	app.Commands = append(app.Commands, DocsCommands...)
 	app.Commands = append(app.Commands, SkillsCommands...)
+	app.Commands = append(app.Commands, AssistantCommands...)
 	app.Commands = append(app.Commands, ProjectCommands...)
 	app.Commands = append(app.Commands, WorkspaceCommands...)
 	app.Commands = append(app.Commands, UserCommands...)
