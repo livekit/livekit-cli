@@ -364,6 +364,27 @@ func TestTranscriptLineClipsToolText(t *testing.T) {
 	assert.Equal(t, "-         TOOL RESULT  dump: "+strings.Repeat("é", 199)+"…", line)
 }
 
+// TestSessionTranscriptStripsEscapes checks what an LLM, a tool or the agent
+// put in a transcript reaches a terminal with its escape sequences stripped,
+// each item still on one line.
+func TestSessionTranscriptStripsEscapes(t *testing.T) {
+	text := "hi" + escapes + "\nthere"
+	items := []public.TranscriptItem{
+		{Message: &oapi.LivekitPublicapiObservabilityV1TranscriptItemMessage{Text: &text}},
+		{ToolCall: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolCall{Name: &text, Arguments: &text}},
+		{ToolResult: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolResult{Name: &text, Output: &text}},
+		{AgentHandoff: &oapi.LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff{FromAgentId: &text, ToAgentId: &text}},
+		{ConfigUpdate: &oapi.LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate{ToolsAdded: &[]string{text}, ToolsRemoved: &[]string{text}}},
+		{ID: text},
+	}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTranscript(terminalPrinter(&stdout, &stderr), false, public.TranscriptPage{Items: items}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, 10, strings.Count(stdout.String(), "hi]0;pwned[2J there"))
+	assert.Equal(t, len(items), strings.Count(stdout.String(), "\n"))
+}
+
 // TestSessionTranscriptEmpty prints the caller's reason for an empty page.
 func TestSessionTranscriptEmpty(t *testing.T) {
 	var stdout, stderr bytes.Buffer

@@ -57,10 +57,10 @@ func stripControls(s string) string {
 	}, s)
 }
 
-// dashText renders optional untrusted text for display, its control
-// characters stripped, or a dash when it is missing or empty.
+// dashText renders optional untrusted text for display on one line, as
+// oneLine does, or a dash when it is missing or empty.
 func dashText(s *string) string {
-	return util.Dash(stripControls(util.Deref(s)))
+	return util.Dash(oneLine(util.Deref(s)))
 }
 
 // publishedSources lists the track sources a participant published, or a dash
@@ -324,21 +324,21 @@ func transcriptItemText(it public.TranscriptItem) (kind, body string) {
 		return messageText(*it.Message)
 	case it.ToolCall != nil:
 		c := it.ToolCall
-		return "TOOL CALL", util.DashString(c.Name) + "(" + clip(oneLine(util.Deref(c.Arguments)), transcriptToolTextMax) + ")"
+		return "TOOL CALL", dashText(c.Name) + "(" + clip(oneLine(util.Deref(c.Arguments)), transcriptToolTextMax) + ")"
 	case it.ToolResult != nil:
 		r := it.ToolResult
-		body = util.DashString(r.Name) + ": " + clip(oneLine(util.Deref(r.Output)), transcriptToolTextMax)
+		body = dashText(r.Name) + ": " + clip(oneLine(util.Deref(r.Output)), transcriptToolTextMax)
 		if util.Deref(r.IsError) {
 			body += "  [error]"
 		}
 		return "TOOL RESULT", body
 	case it.AgentHandoff != nil:
 		h := it.AgentHandoff
-		from := util.Deref(h.FromAgentId)
+		from := oneLine(util.Deref(h.FromAgentId))
 		if from != "" {
 			from += " "
 		}
-		return "HANDOFF", from + "→ " + util.DashString(h.ToAgentId)
+		return "HANDOFF", from + "→ " + dashText(h.ToAgentId)
 	case it.ConfigUpdate != nil:
 		u := it.ConfigUpdate
 		var parts []string
@@ -346,14 +346,14 @@ func transcriptItemText(it public.TranscriptItem) (kind, body string) {
 			parts = append(parts, "instructions changed")
 		}
 		if added := util.Deref(u.ToolsAdded); len(added) > 0 {
-			parts = append(parts, "tools added: "+strings.Join(added, ", "))
+			parts = append(parts, "tools added: "+oneLine(strings.Join(added, ", ")))
 		}
 		if removed := util.Deref(u.ToolsRemoved); len(removed) > 0 {
-			parts = append(parts, "tools removed: "+strings.Join(removed, ", "))
+			parts = append(parts, "tools removed: "+oneLine(strings.Join(removed, ", ")))
 		}
 		return "CONFIG", util.Dash(strings.Join(parts, " · "))
 	default:
-		return "UNKNOWN", util.Dash(it.ID) + " (a kind this lk doesn't know; see --json)"
+		return "UNKNOWN", util.Dash(oneLine(it.ID)) + " (a kind this lk doesn't know; see --json)"
 	}
 }
 
@@ -407,8 +407,9 @@ func formatMs(ms float64) string {
 	return fmt.Sprintf("%.1fms", ms)
 }
 
-// oneLine joins text recorded across lines with spaces.
-func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
+// oneLine joins text recorded across lines with spaces, its control
+// characters stripped: what an agent, an LLM or a tool wrote is untrusted.
+func oneLine(s string) string { return stripControls(strings.Join(strings.Fields(s), " ")) }
 
 // clip shortens s to max runes, marking the cut with an ellipsis.
 func clip(s string, max int) string {
