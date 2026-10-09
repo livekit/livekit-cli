@@ -22,6 +22,7 @@ import (
 	"io"
 	"maps"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -44,6 +45,7 @@ var (
 	templateURL     string
 	sandboxID       string
 	appName         string
+	appDir          string // where the app is created; appName unless "." was given
 	appNameRegex    = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
 	destinationFile string
 	exampleFile     string
@@ -55,8 +57,11 @@ var (
 			Usage: "Initialize and manage applications",
 			Commands: []*cli.Command{
 				{
-					Name:      "create",
-					Usage:     "Bootstrap a new application from a template or through guided creation",
+					Name:  "create",
+					Usage: "Bootstrap a new application from a template or through guided creation",
+					Description: `Creates the application in a new directory named APP_NAME. To create it in
+the current directory instead, pass "." as APP_NAME. The directory must be
+empty, and the application is named after it.`,
 					Action:    setupTemplate,
 					Before:    requireProject,
 					ArgsUsage: "`APP_NAME`",
@@ -356,9 +361,11 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 	}
 
 	if appName == "" {
-		arg := cmd.Args().First()
-		if arg != "" {
-			appName = arg
+		if arg := cmd.Args().First(); arg != "" {
+			var err error
+			if appName, appDir, err = resolveAppTarget(arg); err != nil {
+				return err
+			}
 		}
 	}
 	if appName == "" {
@@ -396,16 +403,20 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 		}
 	}
 
+	if appDir == "" {
+		appDir = appName
+	}
+
 	// Set environment variables for template instantiation
 	os.Setenv("LIVEKIT_AGENT_NAME", appName)
 	os.Setenv("LIVEKIT_PROJECT_ID", project.ProjectId)
 
 	out.Status("Cloning template...")
-	if err := cloneTemplate(ctx, cmd, templateURL, appName); err != nil {
+	if err := cloneTemplate(ctx, cmd, templateURL, appDir); err != nil {
 		return err
 	}
 
-	tf, err := bootstrap.ParseTaskfile(appName)
+	tf, err := bootstrap.ParseTaskfile(appDir)
 	if err != nil {
 		return err
 	}
@@ -429,12 +440,12 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 			}
 		}
 	}
-	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile, nil)
+	env, err := instantiateEnv(ctx, cmd, appDir, addlEnv, envExampleFile, nil)
 	if err != nil {
 		return err
 	}
 
-	bootstrap.WriteDotEnv(appName, envOutputFile, env, true)
+	bootstrap.WriteDotEnv(appDir, envOutputFile, env, true)
 
 	if !cmd.IsSet("install") && !SkipPrompts(cmd) {
 		// Default the prompt to "yes" — installing deps is the common case.
@@ -449,7 +460,7 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 	}
 	if install {
 		out.Status("Installing template...")
-		if err := doInstall(ctx, bootstrap.TaskInstall, appName, verbose); err != nil {
+		if err := doInstall(ctx, bootstrap.TaskInstall, appDir, verbose); err != nil {
 			// Installation is best-effort — the agent is still created below. But a
 			// failed install (e.g. missing Node/pnpm) is easy to miss once the
 			// template's post-create step prints "agent created", so render a
@@ -467,7 +478,7 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 				b.WriteString(line)
 				b.WriteString("\n")
 			}
-			out.Warnf("%s%sFix your toolchain, then re-run the install step manually in ./%s.", b.String(), fixPrefix, appName)
+			out.Warnf("%s%sFix your toolchain, then re-run the install step manually in ./%s.", b.String(), fixPrefix, appDir)
 		} else {
 			// Signal a successful install to post_create so the template can skip
 			// printing the now-redundant install hint (guarded via `status:`).
@@ -475,23 +486,51 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 		}
 	}
 	if afterInstall != nil {
-		if err := afterInstall(ctx, cmd, appName); err != nil {
+		if err := afterInstall(ctx, cmd, appDir); err != nil {
 			return err
 		}
 	}
-	if err := doPostCreate(ctx, cmd, appName, verbose); err != nil {
+	if err := doPostCreate(ctx, cmd, appDir, verbose); err != nil {
 		return err
 	}
 
-	return cleanupTemplate(ctx, cmd, appName)
+	return cleanupTemplate(ctx, cmd, appDir)
 }
 
-func cloneTemplate(ctx context.Context, cmd *cli.Command, url, appName string) error {
+// resolveAppTarget returns the app's name and the directory to create it in.
+// "." creates the app in the current directory, which must be empty, and
+// names it after the directory.
+func resolveAppTarget(arg string) (name, dir string, err error) {
+	if arg != "." {
+		return arg, arg, nil
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", "", err
+	}
+	if empty, err := util.IsEmptyDir("."); err != nil {
+		return "", "", err
+	} else if !empty {
+		return "", "", errors.New("the current directory isn't empty; to create the app here, run this in an empty directory, or give a name to create a new directory")
+	}
+	name = filepath.Base(wd)
+	if !appNameRegex.MatchString(name) {
+		return "", "", fmt.Errorf("the current directory's name, %q, can't be used as the app name; use letters, numbers, dashes, and underscores", name)
+	}
+	return name, ".", nil
+}
+
+// cloneTemplate clones the template at url into dir. dir must not exist,
+// except "." (the current directory), which must be empty.
+func cloneTemplate(ctx context.Context, cmd *cli.Command, url, dir string) error {
 	var stdout string
 	var stderr string
 
-	tempName, relocate, cleanup := util.UseTempPath(appName)
+	tempName, relocate, cleanup := util.UseTempPath(dir)
 	defer cleanup()
+	if dir == "." {
+		relocate = func() error { return util.MoveDirInto(tempName, dir) }
+	}
 
 	err := out.Await(
 		"Cloning template from "+url,
@@ -522,8 +561,8 @@ func cloneTemplate(ctx context.Context, cmd *cli.Command, url, appName string) e
 	return relocate()
 }
 
-func cleanupTemplate(ctx context.Context, cmd *cli.Command, appName string) error {
-	return bootstrap.CleanupTemplate(appName)
+func cleanupTemplate(ctx context.Context, cmd *cli.Command, dir string) error {
+	return bootstrap.CleanupTemplate(dir)
 }
 
 func manageEnv(ctx context.Context, cmd *cli.Command) error {
