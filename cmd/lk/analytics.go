@@ -27,6 +27,7 @@ import (
 	"time"
 
 	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
@@ -56,34 +57,7 @@ var (
 							Name:   "list",
 							Usage:  "List analytics sessions",
 							Action: listAnalyticsSessions,
-							Flags: []cli.Flag{
-								jsonFlag,
-								&cli.IntFlag{
-									Name:  "limit",
-									Usage: "Maximum number of sessions to return",
-									Value: defaultAnalyticsLimit,
-								},
-								&cli.IntFlag{
-									Name:  "page",
-									Usage: "Page number (starts at 0)",
-								},
-								&cli.StringFlag{
-									Name:  "start",
-									Usage: "Start date in `YYYY-MM-DD` format",
-								},
-								&cli.StringFlag{
-									Name:  "end",
-									Usage: "End date in `YYYY-MM-DD` format",
-								},
-								// experimental-auth only: the Public API is cursor-paginated.
-								// Hidden like the rest of the experimental surface; pass the
-								// nextCursor from a prior `--json` listing to fetch the next page.
-								&cli.StringFlag{
-									Name:   "cursor",
-									Usage:  "Page `CURSOR` from a prior --json listing (requires --experimental-auth)",
-									Hidden: true,
-								},
-							},
+							Flags:  append([]cli.Flag{jsonFlag}, analyticsSessionListFlags()...),
 						},
 						{
 							Name:      "get",
@@ -139,12 +113,67 @@ type analyticsParticipant struct {
 	SDKVersion          string `json:"sdkVersion"`
 }
 
-// analyticsListModeFlags: --page (offset) and --start/--end (date range) exist
-// only on the API-key analytics endpoint; the Public API session list is
-// cursor-paginated and offers neither, so they're rejected under --experimental-auth.
+// analyticsSessionListFlags returns fresh instances of the session list's own
+// flags (the shared jsonFlag is added by the command). Tests build commands from
+// it too: urfave/cli caches parse state on flag values, so reusing the command
+// tree's flags across runs would leak state between cases.
+func analyticsSessionListFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.IntFlag{
+			Name:  "limit",
+			Usage: "Maximum number of sessions to return",
+			Value: defaultAnalyticsLimit,
+		},
+		&cli.IntFlag{
+			Name:  "page",
+			Usage: "Page number (starts at 0)",
+		},
+		&cli.StringFlag{
+			Name:  "start",
+			Usage: "List sessions started on or after `YYYY-MM-DD` (UTC)",
+		},
+		&cli.StringFlag{
+			Name:  "end",
+			Usage: "List sessions started before `YYYY-MM-DD` (UTC, exclusive); requires --start",
+		},
+		// experimental-auth only: the Public API is cursor-paginated and has
+		// filters the CLI doesn't yet send to the API-key endpoint. Hidden like
+		// the rest of the experimental surface; pass the nextCursor from a prior
+		// `--json` listing to fetch the next page.
+		&cli.StringFlag{
+			Name:   "cursor",
+			Usage:  "Page `CURSOR` from a prior --json listing (requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringSliceFlag{
+			Name:   "status",
+			Usage:  "List sessions in `STATUS` (active or closed); repeatable (requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:   "room",
+			Usage:  "List sessions whose room name starts with `PREFIX` (case-sensitive; requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringSliceFlag{
+			Name:   "tag",
+			Usage:  "List sessions carrying `TAG`; repeatable, matches any (requires --experimental-auth)",
+			Hidden: true,
+		},
+		&cli.StringFlag{
+			Name:   "sort-order",
+			Usage:  "Order by start time: `ORDER` asc or desc, default desc (requires --experimental-auth)",
+			Hidden: true,
+		},
+	}
+}
+
+// analyticsListModeFlags: --page (offset) exists only on the API-key analytics
+// endpoint, and the Public API session list is cursor-paginated. --start/--end
+// work in both modes. The filter flags are sent only to the Public API for now.
 var analyticsListModeFlags = authModeFlags{
-	legacyOnly:       []string{"page", "start", "end"},
-	experimentalOnly: []string{"cursor"},
+	legacyOnly:       []string{"page"},
+	experimentalOnly: []string{"cursor", "status", "room", "tag", "sort-order"},
 }
 
 func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
@@ -310,6 +339,10 @@ func buildAnalyticsListQuery(cmd *cli.Command) (url.Values, error) {
 	return query, nil
 }
 
+// validateAnalyticsDateRange parses --start and --end. Both endpoints read them
+// as the half-open window [start, end), so equal dates are an empty window. A
+// lone --end is rejected: each endpoint fills in a different start (the API-key
+// endpoint from now, the Public API from end), and neither is what it suggests.
 func validateAnalyticsDateRange(startDate, endDate string) (time.Time, time.Time, error) {
 	var (
 		start time.Time
@@ -331,8 +364,11 @@ func validateAnalyticsDateRange(startDate, endDate string) (time.Time, time.Time
 		}
 	}
 
-	if !start.IsZero() && !end.IsZero() && start.After(end) {
-		return time.Time{}, time.Time{}, errors.New("start date must be less than or equal to end date")
+	if !end.IsZero() && start.IsZero() {
+		return time.Time{}, time.Time{}, errors.New("--end requires --start")
+	}
+	if !end.IsZero() && !start.Before(end) {
+		return time.Time{}, time.Time{}, errors.New("start date must be before end date")
 	}
 
 	return start, end, nil
@@ -465,9 +501,9 @@ func mapAnalyticsHTTPError(statusCode int, body string) error {
 // --experimental-auth. The project comes from the global --project selection (or
 // a cached alias).
 func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
-	limit := int32(cmd.Int("limit"))
-	if limit <= 0 {
-		return errors.New("limit must be greater than 0")
+	opts, err := sessionListOptions(cmd)
+	if err != nil {
+		return err
 	}
 
 	client, conf, user, err := requireCloudClient(cmd)
@@ -478,11 +514,40 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	sessions, nextCursor, err := client.ListProjectSessions(ctx, projectID, limit, cmd.String("cursor"))
+	sessions, nextCursor, err := client.ListProjectSessions(ctx, projectID, opts)
 	if err != nil {
 		return cloudAPIError(err)
 	}
 	return render.SessionsPage(out, cmd.Bool("json"), sessions, nextCursor)
+}
+
+// sessionListOptions reads the session list flags for the Public API. --start
+// and --end mean the same as on the API-key endpoint: UTC dates bounding when a
+// session started, end exclusive. Unknown status and sort order names fail here,
+// before the project lookup, like the date and limit checks.
+func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
+	limit := cmd.Int("limit")
+	if limit <= 0 {
+		return public.SessionListOptions{}, errors.New("limit must be greater than 0")
+	}
+	start, end, err := validateAnalyticsDateRange(cmd.String("start"), cmd.String("end"))
+	if err != nil {
+		return public.SessionListOptions{}, err
+	}
+	opts := public.SessionListOptions{
+		Limit:      int32(limit),
+		Cursor:     cmd.String("cursor"),
+		Start:      start,
+		End:        end,
+		Statuses:   cmd.StringSlice("status"),
+		RoomPrefix: cmd.String("room"),
+		Tags:       cmd.StringSlice("tag"),
+		SortOrder:  cmd.String("sort-order"),
+	}
+	if err := opts.Validate(); err != nil {
+		return public.SessionListOptions{}, err
+	}
+	return opts, nil
 }
 
 // getUserAnalyticsSession fetches a single project session via the Public API
