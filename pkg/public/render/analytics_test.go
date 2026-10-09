@@ -440,6 +440,26 @@ func decodeLogRecords(t *testing.T) []oapi.LivekitPublicapiObservabilityV1LogRec
 
 // TestSessionLogsText checks each record prints as one line with its time,
 // level, logger and message, and a next page says to re-run with its cursor.
+// TestSessionLogsStripEscapes checks what the agent logged, which can quote
+// an LLM or a participant, reaches a terminal with its escape sequences
+// stripped and its messages still lined up.
+func TestSessionLogsStripEscapes(t *testing.T) {
+	text := "hi" + escapes
+	records := []oapi.LivekitPublicapiObservabilityV1LogRecord{
+		{Logger: &text, Message: &text, SeverityText: &text},
+		{Logger: ptr("app"), Message: ptr("ok")},
+	}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionLogs(terminalPrinter(&stdout, &stderr), false, public.LogPage{Records: records}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, strings.Join([]string{
+		"-             HI]0;PWNED[2J  hi]0;pwned[2J  hi]0;pwned[2J",
+		"-             -       app            ok",
+		"",
+	}, "\n"), stdout.String())
+}
+
 func TestSessionLogsText(t *testing.T) {
 	prevLocal := time.Local
 	time.Local = time.UTC

@@ -439,7 +439,7 @@ func SessionLogs(p *util.Printer, asJSON bool, page public.LogPage, empty string
 func logLines(records []oapi.LivekitPublicapiObservabilityV1LogRecord) []string {
 	loggerWidth := 1
 	for _, r := range records {
-		loggerWidth = max(loggerWidth, len([]rune(util.Deref(r.Logger))))
+		loggerWidth = max(loggerWidth, len([]rune(dashText(r.Logger))))
 	}
 	lines := make([]string, 0, len(records))
 	for _, r := range records {
@@ -455,7 +455,7 @@ func logLine(r oapi.LivekitPublicapiObservabilityV1LogRecord, loggerWidth int) s
 	if r.Timestamp != nil && !r.Timestamp.IsZero() {
 		at = r.Timestamp.Local().Format("15:04:05.000")
 	}
-	return fmt.Sprintf("%-12s  %-6s  %-*s  %s", at, logLevelName(r), loggerWidth, util.DashString(r.Logger), oneLine(util.Deref(r.Message)))
+	return fmt.Sprintf("%-12s  %-6s  %-*s  %s", at, logLevelName(r), loggerWidth, dashText(r.Logger), oneLine(util.Deref(r.Message)))
 }
 
 // logLevelName names a record's level: its typed level, or the name the agent
@@ -465,7 +465,7 @@ func logLevelName(r oapi.LivekitPublicapiObservabilityV1LogRecord) string {
 	if r.Level != nil && *r.Level != oapi.LOGLEVELUNSPECIFIED {
 		return strings.TrimPrefix(string(*r.Level), "LOG_LEVEL_")
 	}
-	return util.Dash(strings.ToUpper(util.Deref(r.SeverityText)))
+	return util.Dash(strings.ToUpper(oneLine(util.Deref(r.SeverityText))))
 }
 
 // RecordingLabel names a recording ("audio" or "chat-history") for a sentence.
