@@ -815,7 +815,7 @@ const sessionEvents = `[
    "payload": {"participantKind": "STANDARD", "connectionType": "UDP", "isMigration": false}},
   {"type": "TRACK_PUBLISHED", "timestamp": "2026-10-07T11:00:02Z", "participantIdentity": "alice", "participantSessionId": "PA_aaaaaaaaaaaa",
    "payload": {"trackId": "TR_1", "trackType": "AUDIO", "trackSource": "MICROPHONE", "mimeType": "audio/opus", "muted": false}},
-  {"type": "API_CALL", "timestamp": "2026-10-07T11:00:03Z", "payload": {"service": "RoomService", "method": "UpdateRoomMetadata", "status": 0, "twirpErrorMessage": "", "durationNs": "1500000"}},
+  {"type": "API_CALL", "timestamp": "2026-10-07T11:00:03Z", "payload": {"service": "RoomService", "method": "UpdateRoomMetadata", "status": 0, "durationNs": "1500000"}},
   {"type": "ROOM_ENDED", "timestamp": "2026-10-07T11:05:00Z", "payload": {"reason": "departure timeout"}}
 ]`
 
@@ -843,7 +843,7 @@ func TestSessionEventsText(t *testing.T) {
 		"11:00:00.000  room_created        -      -",
 		"11:00:01.250  participant_joined  alice  PA_aaaaaaaaaaaa  connectionType=UDP isMigration=false participantKind=STANDARD",
 		"11:00:02.000  track_published     alice  PA_aaaaaaaaaaaa  mimeType=audio/opus muted=false trackId=TR_1 trackSource=MICROPHONE trackType=AUDIO",
-		`11:00:03.000  api_call            -      -                durationNs=1500000 method=UpdateRoomMetadata service=RoomService status=0 twirpErrorMessage=""`,
+		`11:00:03.000  api_call            -      -                durationNs=1500000 method=UpdateRoomMetadata service=RoomService status=0`,
 		`11:05:00.000  room_ended          -      -                reason="departure timeout"`,
 		"",
 	}, "\n"), stdout.String())
