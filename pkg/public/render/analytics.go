@@ -558,7 +558,7 @@ func spanLine(s oapi.LivekitPublicapiObservabilityV1Span, guide string) string {
 	if s.StartTime != nil && !s.StartTime.IsZero() {
 		at = s.StartTime.Local().Format("15:04:05.000")
 	}
-	line := fmt.Sprintf("%-12s  %8s  %s%s", at, spanDuration(s), guide, util.DashString(s.Name))
+	line := fmt.Sprintf("%-12s  %8s  %s%s", at, spanDuration(s), guide, dashText(s.Name))
 	if s.Status != nil && *s.Status == oapi.SPANSTATUSERROR {
 		if msg := oneLine(util.Deref(s.StatusMessage)); msg != "" {
 			line += "  [error: " + msg + "]"

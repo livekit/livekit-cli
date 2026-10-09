@@ -560,6 +560,27 @@ func TestSessionTracesText(t *testing.T) {
 
 // TestSessionTracesCycle checks spans whose parents name each other, which an
 // agent shouldn't export, still print once each instead of looping.
+// TestSessionTracesStripEscapes checks a span's name and status message,
+// which the agent's code and the libraries it calls chose, reach a terminal
+// with their escape sequences stripped.
+func TestSessionTracesStripEscapes(t *testing.T) {
+	text := "hi" + escapes
+	status := oapi.SPANSTATUSERROR
+	spans := []oapi.LivekitPublicapiObservabilityV1Span{
+		{SpanId: ptr("a"), Name: &text, Status: &status, StatusMessage: &text},
+		{SpanId: ptr("b"), ParentSpanId: ptr("a"), Name: &text},
+	}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTraces(terminalPrinter(&stdout, &stderr), false, public.TracePage{Spans: spans}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, strings.Join([]string{
+		"-                    -  hi]0;pwned[2J  [error: hi]0;pwned[2J]",
+		"-                    -  └─ hi]0;pwned[2J",
+		"",
+	}, "\n"), stdout.String())
+}
+
 func TestSessionTracesCycle(t *testing.T) {
 	spans := decodeSpans(t, `[
 	  {"spanId": "x", "parentSpanId": "y", "name": "x"},
