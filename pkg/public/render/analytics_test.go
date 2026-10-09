@@ -71,7 +71,7 @@ func TestSessionDetailText(t *testing.T) {
 	} {
 		assert.Contains(t, got, want)
 	}
-	assert.Contains(t, stderr.String(), "session participant list RM_1 --cursor c2")
+	assert.Contains(t, stderr.String(), "lk analytics session participant list RM_1 --cursor c2")
 }
 
 func TestSessionDetailTextLastParticipantsPage(t *testing.T) {
@@ -93,7 +93,7 @@ func TestSessionDetailTextParticipantsUnread(t *testing.T) {
 	require.NoError(t, SessionDetail(p, false, *resp.Session, resp.Detail))
 
 	assert.Contains(t, stderr.String(), "Participants couldn't be read")
-	assert.Contains(t, stderr.String(), "session participant list RM_1, using the same flags")
+	assert.Contains(t, stderr.String(), "lk analytics session participant list RM_1, using the same flags")
 }
 
 func TestSessionDetailTextFinalizing(t *testing.T) {
