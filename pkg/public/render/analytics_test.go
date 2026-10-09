@@ -17,7 +17,9 @@ package render
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -123,6 +125,75 @@ func TestSessionParticipantsPage(t *testing.T) {
 }
 
 func ptr[T any](v T) *T { return &v }
+
+// escapes is untrusted text carrying terminal escape sequences: an OSC that
+// sets the window title, ended by BEL, and a CSI that clears the screen.
+const escapes = "\x1b]0;pwned\x07\x1b[2J"
+
+// terminalPrinter writes straight to the buffers, as NewPrinter does to a
+// truecolor terminal. NewPrinter strips escape sequences from writers that
+// aren't terminals, so its tests can't see what a terminal would get.
+func terminalPrinter(stdout, stderr *bytes.Buffer) *util.Printer {
+	return &util.Printer{Out: stdout, Err: stderr}
+}
+
+// tableStyling matches the SGR sequences (colors and bold) a table styles its
+// borders and cells with.
+var tableStyling = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+// assertNoEscapes checks out reaches a terminal with no ESC or BEL beyond a
+// table's own styling, so no escape sequence from the input can act.
+func assertNoEscapes(t *testing.T, out string) {
+	t.Helper()
+	out = tableStyling.ReplaceAllString(out, "")
+	assert.NotContains(t, out, "\x1b")
+	assert.NotContains(t, out, "\x07")
+}
+
+func TestStripControls(t *testing.T) {
+	for in, want := range map[string]string{
+		"alice":                            "alice",
+		"\x1b]0;pwned\x07alice":            "]0;pwnedalice",
+		"\x1b[2Jalice\x1b[0m":              "[2Jalice[0m",
+		"a\tb\nc":                          "a\tb\nc", // tab and newline stay
+		"a\rb\x00c\x7fd":                   "abcd",
+		"\u009b2J\u009d0;pwned\u009cagent": "2J0;pwnedagent", // C1 CSI, OSC and ST
+		"naïve 日本 🎉":                       "naïve 日本 🎉",
+		"bad\xffbyte":                      "bad" + string(utf8.RuneError) + "byte", // so no lone C1 byte gets through
+	} {
+		assert.Equal(t, want, stripControls(in), "%q", in)
+	}
+}
+
+// TestParticipantsStripEscapes checks a participant's identity and name, which
+// the participant chose, reach a terminal with their escape sequences
+// stripped, in the session detail and the participant list; --json escapes
+// them itself.
+func TestParticipantsStripEscapes(t *testing.T) {
+	participants := []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo{{
+		ParticipantIdentity: ptr("alice" + escapes),
+		ParticipantName:     ptr(escapes + "Alice"),
+	}}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionParticipantsPage(terminalPrinter(&stdout, &stderr), false, participants, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), "alice]0;pwned[2J")
+
+	stdout.Reset()
+	detail := &oapi.LivekitPublicapiAnalyticsV1SessionDetail{
+		Participants:     &participants,
+		ParticipantsPage: &oapi.LivekitPublicapiCommonV1PageInfo{},
+	}
+	require.NoError(t, SessionDetail(terminalPrinter(&stdout, &stderr), false, oapi.LivekitPublicapiAnalyticsV1Session{SessionId: ptr("RM_1")}, detail))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), "alice]0;pwned[2J")
+
+	stdout.Reset()
+	require.NoError(t, SessionParticipantsPage(terminalPrinter(&stdout, &stderr), true, participants, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), `alice\u001b]0;pwned\u0007`)
+}
 
 // TestSessionDetailJSON checks --json emits the API's {session, detail} shape,
 // timelines and participants page included.

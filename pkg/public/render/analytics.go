@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -33,10 +34,32 @@ var (
 
 func participantRow(p oapi.LivekitPublicapiAnalyticsV1ParticipantInfo) []string {
 	return []string{
-		util.DashString(p.ParticipantIdentity), util.DashString(p.ParticipantName),
+		dashText(p.ParticipantIdentity), dashText(p.ParticipantName),
 		util.FormatTime(p.JoinedAt), util.FormatTime(p.LeftAt),
 		util.DashString(p.Location), util.DashString(p.Region), publishedSources(p.PublishedSources),
 	}
+}
+
+// stripControls removes the control characters a terminal acts on from
+// untrusted text, such as what a participant, an agent, an LLM or a tool
+// chose: C0 controls except tab and newline, DEL, and C1 controls. Without
+// their ESC (or 8-bit CSI or OSC), escape sequences can't set the window
+// title, clear the screen or restyle what follows; their printable rest stays
+// visible. Invalid UTF-8 becomes U+FFFD, so no lone C1 byte gets through
+// either. --json needs none of this: JSON escapes control characters itself.
+func stripControls(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) && r != '\t' && r != '\n' {
+			return -1
+		}
+		return r
+	}, s)
+}
+
+// dashText renders optional untrusted text for display, its control
+// characters stripped, or a dash when it is missing or empty.
+func dashText(s *string) string {
+	return util.Dash(stripControls(util.Deref(s)))
 }
 
 // publishedSources lists the track sources a participant published, or a dash
