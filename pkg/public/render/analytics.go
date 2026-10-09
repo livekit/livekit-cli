@@ -92,22 +92,23 @@ var participantSessionHeaders = []string{"Identity", "Participant Session", "Joi
 
 func participantSessionRow(identity *string, s oapi.LivekitPublicapiAnalyticsV1ParticipantSession) []string {
 	return []string{
-		util.DashString(identity), util.DashString(s.ParticipantSessionId),
+		dashText(identity), dashText(s.ParticipantSessionId),
 		util.FormatTime(s.JoinedAt), util.FormatTime(s.LeftAt), formatSeconds(s.DurationSeconds),
-		participantClient(s), participantConnection(s), util.DashString(s.Location),
+		participantClient(s), participantConnection(s), dashText(s.Location),
 	}
 }
 
 // participantClient names the client a participant session connected from:
 // its OS, browser, device model and SDK version, each only when reported.
+// The client reported them itself, so they go through oneLine.
 func participantClient(s oapi.LivekitPublicapiAnalyticsV1ParticipantSession) string {
 	var parts []string
-	for _, v := range []string{util.Deref(s.Os), util.Deref(s.Browser), util.Deref(s.DeviceModel)} {
-		if v != "" {
+	for _, v := range []*string{s.Os, s.Browser, s.DeviceModel} {
+		if v := oneLine(util.Deref(v)); v != "" {
 			parts = append(parts, v)
 		}
 	}
-	if v := util.Deref(s.SdkVersion); v != "" {
+	if v := oneLine(util.Deref(s.SdkVersion)); v != "" {
 		parts = append(parts, "SDK "+v)
 	}
 	return util.Dash(strings.Join(parts, ", "))
@@ -116,7 +117,7 @@ func participantClient(s oapi.LivekitPublicapiAnalyticsV1ParticipantSession) str
 // participantConnection renders the transport a participant session connected
 // over and how long it took to connect, e.g. "UDP (120ms)".
 func participantConnection(s oapi.LivekitPublicapiAnalyticsV1ParticipantSession) string {
-	conn := util.Deref(s.ConnectionType)
+	conn := oneLine(util.Deref(s.ConnectionType))
 	if ms := util.Deref(s.ConnectionTimeMs); ms > 0 {
 		took := strconv.Itoa(int(ms)) + "ms"
 		if conn == "" {
@@ -546,8 +547,8 @@ func eventLines(events []oapi.LivekitPublicapiAnalyticsV1SessionEvent) []string 
 	var typeWidth, identityWidth, idWidth int
 	for _, ev := range events {
 		typeWidth = max(typeWidth, len([]rune(eventTypeName(ev))))
-		identityWidth = max(identityWidth, len([]rune(util.DashString(ev.ParticipantIdentity))))
-		idWidth = max(idWidth, len([]rune(util.DashString(ev.ParticipantSessionId))))
+		identityWidth = max(identityWidth, len([]rune(dashText(ev.ParticipantIdentity))))
+		idWidth = max(idWidth, len([]rune(dashText(ev.ParticipantSessionId))))
 	}
 	lines := make([]string, 0, len(events))
 	for _, ev := range events {
@@ -569,7 +570,7 @@ func eventLine(ev oapi.LivekitPublicapiAnalyticsV1SessionEvent, typeWidth, ident
 		at = ev.Timestamp.Local().Format("15:04:05.000")
 	}
 	line := fmt.Sprintf("%-12s  %-*s  %-*s  %-*s  %s", at, typeWidth, eventTypeName(ev),
-		identityWidth, util.DashString(ev.ParticipantIdentity), idWidth, util.DashString(ev.ParticipantSessionId), eventPayload(ev))
+		identityWidth, dashText(ev.ParticipantIdentity), idWidth, dashText(ev.ParticipantSessionId), eventPayload(ev))
 	return strings.TrimRight(line, " ")
 }
 
@@ -593,7 +594,9 @@ func eventPayload(ev oapi.LivekitPublicapiAnalyticsV1SessionEvent) string {
 	return clip(strings.Join(pairs, " "), eventPayloadMax)
 }
 
-// payloadValue renders one payload value for a key=value pair.
+// payloadValue renders one payload value for a key=value pair, its control
+// characters stripped: a value can hold what a participant chose, such as
+// its name or metadata.
 func payloadValue(v *oapi.GoogleProtobufValue) string {
 	if v == nil {
 		return "null"
@@ -604,8 +607,9 @@ func payloadValue(v *oapi.GoogleProtobufValue) string {
 	}
 	var s string
 	if json.Unmarshal(raw, &s) != nil {
-		return string(raw)
+		return stripControls(string(raw))
 	}
+	s = stripControls(s)
 	if s == "" || strings.ContainsFunc(s, func(r rune) bool { return unicode.IsSpace(r) || r == '"' }) {
 		return strconv.Quote(s)
 	}

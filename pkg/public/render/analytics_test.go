@@ -852,6 +852,47 @@ func TestSessionEventsText(t *testing.T) {
 	assert.NotContains(t, stderr.String(), "unused")
 }
 
+// TestSessionEventsStripEscapes checks an event's participant identity,
+// which the participant chose, and its payload's values, such as a
+// participant's name or a room's metadata, reach a terminal with their escape
+// sequences stripped, each event still on one line.
+func TestSessionEventsStripEscapes(t *testing.T) {
+	var events []oapi.LivekitPublicapiAnalyticsV1SessionEvent
+	require.NoError(t, json.Unmarshal([]byte(`[{
+	  "participantIdentity": "alice\u001b]0;pwned\u0007\u001b[2J",
+	  "participantSessionId": "PA_1\u001b[2J",
+	  "payload": {
+	    "bare": "x\u001b]0;pwned\u0007\u001b[2J",
+	    "spaced": "two\nwords\u001b[2J",
+	    "nested": {"name": "\u001b]0;pwned\u0007"}
+	  }
+	}]`), &events))
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionEvents(terminalPrinter(&stdout, &stderr), false, public.EventPage{Events: events}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, `-             -  alice]0;pwned[2J  PA_1[2J  bare=x]0;pwned[2J nested={"name":"\u001b]0;pwned\u0007"} spaced="two\nwords[2J"`+"\n", stdout.String())
+}
+
+// TestParticipantSessionsStripEscapes checks what a participant's client
+// reported about itself, and its identity, reach a terminal with their escape
+// sequences stripped in the participant sessions table.
+func TestParticipantSessionsStripEscapes(t *testing.T) {
+	text := "hi" + escapes
+	participants := []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo{{
+		ParticipantIdentity: &text,
+		Sessions: &[]oapi.LivekitPublicapiAnalyticsV1ParticipantSession{{
+			ParticipantSessionId: &text, Os: &text, Browser: &text, DeviceModel: &text,
+			SdkVersion: &text, ConnectionType: &text, ConnectionTimeMs: ptr(int32(120)), Location: &text,
+		}},
+	}}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionParticipantsPage(terminalPrinter(&stdout, &stderr), false, participants, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), "hi]0;pwned[2J (120ms)")
+}
+
 // TestEventPayloadClips keeps a long payload to one short line.
 func TestEventPayloadClips(t *testing.T) {
 	ev := decodeSessionEvents(t)[0]
