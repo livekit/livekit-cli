@@ -264,7 +264,11 @@ type EventOptions struct {
 	// type in lowercase, such as "participant_joined" or "track_published"
 	// (see EventTypeNames). Empty returns the seven the dashboard's events
 	// table shows: participants joining, leaving, going active and resuming,
-	// the room created and ended, and API calls.
+	// the room created and ended, and API calls. With ParticipantSessionID,
+	// empty returns the eleven its participant events table shows: the
+	// participant session's joining, leaving, resuming and going active, and
+	// its tracks muted, unmuted, published, unpublished, subscribed,
+	// subscribe requested and subscribe failed.
 	Types []string
 	// ParticipantSessionID keeps one participant session's events (PA_...).
 	// Room events and API calls name no participant session, so it leaves them

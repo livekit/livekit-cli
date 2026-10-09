@@ -149,6 +149,10 @@ var (
 								"participant_left, participant_active, participant_resumed, room_created, room_ended and api_call. " +
 								"--type asks for others, such as track_published or track_muted, matched exactly. " +
 								"--participant takes a participant session id (PA_...), as `lk analytics session participant list` prints it. " +
+								"With --participant and no --type it prints the events the dashboard's participant events table shows, " +
+								"track events included: participant_joined, participant_left, participant_resumed, participant_active, " +
+								"track_muted, track_unmuted, track_published, track_unpublished, track_subscribed, " +
+								"track_subscribe_requested and track_subscribe_failed. " +
 								"Events are kept for 60 days.",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(eventOptions, fetchSessionEvents),
@@ -372,11 +376,11 @@ func analyticsEventFlags() []cli.Flag {
 	return append([]cli.Flag{
 		&cli.StringSliceFlag{
 			Name:  "type",
-			Usage: "Print only events of `TYPE`, such as participant_joined or track_published; repeatable, matches any (default the dashboard's seven)",
+			Usage: "Print only events of `TYPE`, such as participant_joined or track_published; repeatable, matches any (default the dashboard's seven, or with --participant its eleven participant types)",
 		},
 		&cli.StringFlag{
 			Name:  "participant",
-			Usage: "Print only the events of the participant session `PA_ID`, as `lk analytics session participant list` prints it",
+			Usage: "Print only the events of the participant session `PA_ID`, as `lk analytics session participant list` prints it; with no --type, the dashboard's eleven participant types, track events included",
 		},
 		&cli.StringFlag{
 			Name:  "sort-order",
