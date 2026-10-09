@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiveKit Assistant</title>
+<style>
+  /* Values from the Bytes design system (dark theme). */
+  :root {
+    --fg0: #fff;
+    --fg1: #ccc;
+    --fg2: #b2b2b2;
+    --fg3: #999;
+    --fg4: #666;
+    --separator: rgba(255, 255, 255, 0.08);
+    --accent: #1fd5f9;
+    --accent-soft: #88e5fb;
+    --purple: #c9a2f2;
+    --remove: #f5655c;
+    --sans: "Public Sans", system-ui, -apple-system, sans-serif;
+    --mono: "CommitMono", ui-monospace, "SF Mono", Menlo, monospace;
+    --radius: 6px;
+    --column: 680px;
+    --dock: 190px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    color: var(--fg1);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    cursor: default;
+  }
+  button { font: inherit; color: inherit; }
+
+  /* Darkens the native blur. In a plain browser, there is no blur, so use a solid backdrop. */
+  body { background: rgba(0, 0, 0, 0.5); transition: background 250ms; }
+  body.standalone { background: radial-gradient(ellipse at center, #111, #000); }
+  body.peek { background: rgba(0, 0, 0, 0.1); }
+  body.peek #stream, body.peek #chrome { opacity: 0.12; }
+  /* Closing: clear the content first so the mark leaves on a plain backdrop. */
+  body.closing #stream, body.closing #chrome { opacity: 0; transition-duration: 200ms; }
+
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #glow { filter: blur(10px); opacity: 0.7; mix-blend-mode: screen; }
+
+  .mono-caps { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  #chrome { transition: opacity 250ms; }
+  #brand { position: fixed; top: 32px; left: 32px; display: flex; align-items: center; gap: 10px; color: var(--fg3); }
+  #brand .dot { width: 6px; height: 6px; background: var(--accent); }
+
+  #status { position: fixed; left: 0; right: 0; bottom: 28px; text-align: center; color: var(--fg4); transition: color 200ms; }
+  #status[data-state="listening"] { color: var(--fg1); }
+  #status[data-state="thinking"], #status[data-state="speaking"], #status.notice { color: var(--accent); }
+
+  #hints { position: fixed; right: 32px; bottom: 28px; color: var(--fg4); }
+  #brand .mic { display: none; margin-left: 6px; padding: 2px 6px; border: 1px solid rgba(245, 101, 92, 0.5); border-radius: 3px; color: var(--remove); }
+  body.mic-off #brand .mic { display: inline; }
+
+  /* The user's own agent, while it runs in the overlay. */
+  #guest {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    display: none; align-items: center; gap: 12px; padding: 6px 6px 6px 12px;
+    border: 1px solid rgba(201, 162, 242, 0.4); border-radius: var(--radius); background: rgba(19, 19, 19, 0.85);
+    color: var(--fg1);
+  }
+  body.guest #guest { display: flex; }
+  #guest .dot { width: 6px; height: 6px; background: var(--purple); animation: blink 1.2s steps(2) infinite; }
+  #guest .name { color: var(--purple); }
+  #guest button {
+    padding: 5px 9px; cursor: pointer; color: var(--fg1);
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;
+  }
+  #guest button kbd { font: inherit; color: var(--fg4); margin-right: 6px; }
+  .turn.agent.guest .who { color: var(--purple); }
+
+  /* Startup and session errors, with the command that fixes them. */
+  .card.error { border-color: rgba(245, 101, 92, 0.4); }
+  .card.error .ask { padding: 12px 14px 0; font-size: 16px; color: var(--fg0); }
+  .card.error .detail { padding: 6px 14px 14px; font-size: 14px; line-height: 1.5; color: var(--fg2); }
+  .card.error .fix { display: flex; align-items: center; gap: 12px; margin: 0 14px 14px; padding: 8px 8px 8px 12px; border: 1px solid var(--separator); border-radius: 4px; }
+  .card.error .fix code { flex: 1; font: 13px/1.5 var(--mono); color: var(--fg0); user-select: text; }
+  .card.error .fix code::before { content: "$ "; color: var(--fg4); }
+
+  /* X-ray: the assistant's own pipeline at work. */
+  #xray {
+    position: fixed; right: 32px; bottom: 64px; width: 300px;
+    display: none; padding: 12px 14px; color: var(--fg3);
+    border: 1px solid var(--separator); border-radius: var(--radius); background: rgba(7, 7, 7, 0.75);
+    font: 11px/1.7 var(--mono);
+  }
+  body.xray #xray { display: block; }
+  body.guest #xray .models { display: none; }
+  #xray .head { margin-bottom: 6px; color: var(--accent); }
+  #xray .row { display: flex; gap: 10px; }
+  #xray .k { flex: none; width: 84px; color: var(--fg4); text-transform: uppercase; letter-spacing: 0.06em; }
+  #xray .v { min-width: 0; color: var(--fg1); overflow-wrap: anywhere; }
+  #xray .eot { position: relative; flex: 1; height: 8px; margin-top: 6px; background: rgba(255, 255, 255, 0.06); }
+  #xray .eot .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--fg3); transition: width 120ms; }
+  #xray .eot.done .fill { background: var(--accent); }
+  #xray .eot .threshold { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--fg0); }
+  #xray .section { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--separator); }
+
+  /* ---------- Conversation ---------- */
+  #stream {
+    position: fixed; top: 72px; bottom: var(--dock); left: 50%;
+    width: var(--column); max-width: calc(100vw - 32px);
+    transform: translateX(-50%);
+    overflow-y: auto; scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28%, #000 96%, transparent 100%);
+    transition: opacity 250ms;
+  }
+  #stream::-webkit-scrollbar { display: none; }
+  /* Turns sit at the bottom until they fill the column. margin-top: auto does
+     this instead of justify-content: flex-end, which would make overflow at the
+     top impossible to scroll to. */
+  #turns { min-height: 100%; display: flex; flex-direction: column; gap: 28px; padding: 40px 0 56px; }
+  #turns > :first-child { margin-top: auto; }
+  .turn { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 0 16px; animation: rise 300ms ease both; }
+  .turn .who { padding-top: 5px; color: var(--fg4); }
+  .turn.agent .who { color: var(--accent); }
+  .turn .body > * + * { margin-top: 14px; }
+  .turn p { margin: 0; font-size: 18px; line-height: 1.55; }
+  .turn.user p { color: var(--fg3); }
+  .turn.agent p { color: var(--fg0); }
+  /* Tool calls the agent made, such as docs searches. */
+  .tool { display: flex; align-items: baseline; gap: 10px; min-width: 0; color: var(--fg4); }
+  .tool .mark { flex: none; width: 6px; height: 6px; background: var(--fg4); transform: translateY(-1px); }
+  .tool[data-status="running"] .mark { background: var(--accent); animation: blink 0.6s steps(2) infinite; }
+  .tool[data-status="error"] .mark { background: var(--remove); }
+  .tool .label { flex: none; color: var(--fg3); }
+  .tool .detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 12px; letter-spacing: 0; text-transform: none; }
+  .cursor { display: inline-block; width: 0.55em; height: 1.05em; margin-left: 2px; vertical-align: -0.15em; background: var(--accent); animation: blink 1s steps(2) infinite; }
+
+  .card { position: relative; background: rgba(19, 19, 19, 0.8); border: 1px solid var(--separator); border-radius: var(--radius); animation: reveal 420ms steps(12) both; }
+  /* Corner registration marks, like Bytes' border-corners utility. */
+  .card::before {
+    --c: var(--fg4); --l: 9px;
+    content: ""; position: absolute; inset: -5px; pointer-events: none;
+    background:
+      linear-gradient(var(--c), var(--c)) top left / var(--l) 1px no-repeat, linear-gradient(var(--c), var(--c)) top left / 1px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) top right / var(--l) 1px no-repeat, linear-gradient(var(--c), var(--c)) top right / 1px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom left / var(--l) 1px no-repeat, linear-gradient(var(--c), var(--c)) bottom left / 1px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom right / var(--l) 1px no-repeat, linear-gradient(var(--c), var(--c)) bottom right / 1px var(--l) no-repeat;
+  }
+  .card header { display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 14px; border-bottom: 1px solid var(--separator); }
+  .card .title { font-family: var(--mono); font-size: 12px; color: var(--fg1); }
+  .card .lang { color: var(--fg4); }
+  .card .copy {
+    margin-left: auto; padding: 5px 9px; cursor: pointer;
+    color: var(--fg1); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;
+  }
+  .card .copy:hover { background: rgba(255, 255, 255, 0.1); }
+  .card[data-copied="true"] .copy { color: var(--accent); border-color: rgba(31, 213, 249, 0.35); }
+  .card .code { position: relative; max-height: 190px; overflow: hidden; }
+  .card.expanded .code { max-height: none; }
+  /* Prompts are prose, so they wrap; code scrolls sideways. */
+  .card[data-lang="prompt"] pre { white-space: pre-wrap; font: 14px/1.55 var(--sans); }
+  .card[data-lang="prompt"] code { font: inherit; }
+  .card pre { margin: 0; padding: 14px; font: 12.5px/1.6 var(--mono); color: var(--fg1); overflow-x: auto; user-select: text; cursor: text; }
+  .card .more {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;
+    background: linear-gradient(transparent, rgba(19, 19, 19, 0.98)); border: 0; color: var(--fg3); cursor: pointer;
+  }
+  .card.expanded .more { display: none; }
+  /* Confirmations before the assistant runs a command that changes something. */
+  .card.confirm { border-color: rgba(31, 213, 249, 0.3); }
+  .card.confirm .command { margin: 0; padding: 12px 14px 0; font: 13px/1.6 var(--mono); color: var(--fg0); white-space: pre-wrap; user-select: text; }
+  .card.confirm .command::before { content: "$ "; color: var(--fg4); }
+  .card.confirm .detail { padding: 6px 14px 0; font-size: 14px; line-height: 1.5; color: var(--fg3); }
+  .card.confirm .result { display: none; align-items: baseline; gap: 10px; padding: 12px 14px 14px; color: var(--fg3); }
+  .card.confirm[data-status] .result { display: flex; }
+  .card.confirm .result .mark { flex: none; width: 6px; height: 6px; background: var(--fg4); }
+  .card.confirm[data-status="running"] .result .mark { background: var(--accent); animation: blink 0.6s steps(2) infinite; }
+  .card.confirm[data-status="done"] .result { color: var(--fg1); }
+  .card.confirm[data-status="failed"] .result { color: var(--remove); }
+  .card.confirm[data-status="failed"] .result .mark { background: var(--remove); }
+  .card.confirm .result .text { text-transform: none; letter-spacing: 0; font-family: var(--mono); font-size: 12px; }
+  .card.confirm .options { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px 14px; }
+  .card.confirm .options button {
+    padding: 6px 10px; cursor: pointer; color: var(--fg1);
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;
+  }
+  .card.confirm .options button:hover { background: rgba(255, 255, 255, 0.1); }
+  .card.confirm .options kbd { font: inherit; color: var(--fg4); margin-right: 6px; }
+  .card.confirm .options .hint { align-self: center; margin-left: 4px; color: var(--fg4); }
+  .card.confirm[data-answered] .options { display: none; }
+  .card.confirm[data-answered] .options button { opacity: 0.4; cursor: default; }
+  .card.confirm[data-answered] .options button[data-chosen] { opacity: 1; color: var(--accent); border-color: rgba(31, 213, 249, 0.45); }
+
+  .tok-comment { color: var(--fg4); }
+  .tok-string { color: var(--accent-soft); }
+  .tok-keyword { color: var(--purple); }
+  .tok-deco { color: var(--accent); }
+  .tok-number { color: var(--accent-soft); }
+
+  @keyframes reveal { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card, .turn { animation: none; }
+    .cursor { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stream"><div id="turns"></div></div>
+
+<div id="chrome">
+  <div id="brand" class="mono-caps"><span class="dot"></span>LK · LiveKit Assistant<span class="mic">Mic off</span></div>
+  <div id="guest" class="mono-caps"><span class="dot"></span><span>Talking to <span class="name"></span></span><button type="button" class="mono-caps"><kbd>B</kbd>Back to LK</button></div>
+  <div id="status" class="mono-caps" data-state="idle">Ready</div>
+  <div id="hints" class="mono-caps">M mute · X x-ray · Shift peek · ⌘C copy last · Esc close</div>
+  <div id="xray">
+    <div class="head mono-caps">X-ray · LK's pipeline</div>
+    <div class="models">
+      <div class="row"><span class="k">STT</span><span class="v" data-x="stt">…</span></div>
+      <div class="row"><span class="k">LLM</span><span class="v" data-x="llm">…</span></div>
+      <div class="row"><span class="k">TTS</span><span class="v" data-x="tts">…</span></div>
+      <div class="row"><span class="k">Turns</span><span class="v" data-x="turns">…</span></div>
+    </div>
+    <div class="section">
+      <div class="row"><span class="k">End of turn</span><span class="eot"><span class="fill"></span><span class="threshold"></span></span></div>
+      <div class="row"><span class="k"></span><span class="v" data-x="eot">Speak to see the turn detector's estimate</span></div>
+    </div>
+    <div class="section">
+      <div class="row"><span class="k">Last reply</span><span class="v" data-x="latency">…</span></div>
+      <div class="row"><span class="k"></span><span class="v" data-x="breakdown"></span></div>
+    </div>
+    <div class="section">
+      <div class="row"><span class="k">Usage</span><span class="v" data-x="usage">…</span></div>
+    </div>
+  </div>
+</div>
+
+<canvas id="glow"></canvas>
+<canvas id="field"></canvas>
+
+<script>
+(() => {
+  'use strict';
+
+  const host = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lk;
+  const post = (msg) => host && host.postMessage(JSON.stringify(msg));
+  if (!host) document.body.classList.add('standalone');
+
+  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const smoothstep = (e0, e1, x) => { const t = clamp01((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ===========================================================================
+  // The LiveKit mark
+  //
+  // The reduced mark is a 5x5 grid of blocks (bytes-core lk-logo-reduced).
+  // Each block is SUB x SUB voxels. On open, the mark shows large in the
+  // center, then breaks apart and reassembles small above the status line,
+  // where each block works as a level meter.
+
+  const SUB = 4;
+  const LOGO_FG = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 4], [2, 4]];
+  const LOGO_ACCENT = [[2, 2], [3, 1], [3, 3], [4, 0], [4, 4]];
+  const blocks = [...LOGO_FG.map((b) => [...b, false]), ...LOGO_ACCENT.map((b) => [...b, true])]
+    .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cells = [];
+  blocks.forEach(([bc, br, accent], block) => {
+    for (let j = 0; j < SUB; j++) for (let i = 0; i < SUB; i++) {
+      cells.push({ x: bc * SUB + i - 10 + 0.5, y: br * SUB + j - 10 + 0.5, accent, block, j });
+    }
+  });
+  // Thinking: a light chases down the L, along its foot, then up the accents.
+  const CHASE = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 4], [2, 4], [2, 2], [3, 1], [4, 0], [3, 3], [4, 4]]
+    .map(([c, r]) => blocks.findIndex((b) => b[0] === c && b[1] === r));
+  const chaseIndex = new Map(CHASE.map((b, k) => [b, k]));
+
+  const INTRO = { pitch: 10, size: 7 };
+  const DOCK = { pitch: 5, size: 3, fromBottom: 110 };
+  const INTRO_MS = 1100;
+
+  // ===========================================================================
+  // Audio levels
+
+  const BANDS = 24;
+  const bandsTarget = new Float32Array(BANDS);
+  const bands = new Float32Array(BANDS);
+  let bandsAt = 0;
+
+  function bandAt(u) {
+    const f = clamp01(u) * (BANDS - 1), i = Math.floor(f), t = f - i;
+    return bands[i] * (1 - t) + bands[Math.min(i + 1, BANDS - 1)] * t;
+  }
+
+  // Standalone (plain browser) mode synthesizes a voice. Keys 0-3 set the state.
+  function fakeBands(t, gain) {
+    const syl = Math.pow(Math.max(0, Math.sin(2 * Math.PI * 4.3 * t + 0.8 * Math.sin(2 * Math.PI * 0.7 * t))), 0.7);
+    const gate = smoothstep(0.15, 0.35, 0.5 + 0.5 * Math.sin(2 * Math.PI * 0.45 * t + 1.3));
+    const f1 = 4 + 3 * Math.sin(2 * Math.PI * 1.1 * t), f2 = 12 + 5 * Math.sin(2 * Math.PI * 0.63 * t + 2);
+    for (let i = 0; i < BANDS; i++) {
+      const s = 0.75 * Math.exp(-i / 9) + 0.55 * Math.exp(-((i - f1) ** 2) / 9.7) + 0.35 * Math.exp(-((i - f2) ** 2) / 24.5);
+      bandsTarget[i] = clamp01(syl * gate * gain * s * 1.25 * (0.85 + 0.3 * Math.random()));
+    }
+    bandsAt = performance.now();
+  }
+
+  // ===========================================================================
+  // Earcons
+
+  let audio = null, muted = false, micOff = false;
+  try { muted = localStorage.getItem('lk-assistant-muted') === '1'; } catch {}
+
+  function tones(freqs, { dur = 0.07, gap = 0.025, vol = 0.05, type = 'sine' } = {}) {
+    if (muted) return;
+    try { audio = audio || new AudioContext(); } catch { return; }
+    let t = audio.currentTime + 0.01;
+    for (const f of freqs) {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(audio.destination);
+      o.start(t); o.stop(t + dur + 0.02);
+      t += dur + gap;
+    }
+  }
+  const EARCONS = {
+    summon: () => tones([523, 784, 1047], { dur: 0.09, vol: 0.045 }),
+    listening: () => tones([880, 1320], { dur: 0.06 }),
+    thinking: () => tones([1568], { dur: 0.04, vol: 0.025, type: 'triangle' }),
+    copied: () => tones([1760, 2093], { dur: 0.035, gap: 0.01, vol: 0.03 }),
+    dismiss: () => tones([1047, 784, 523], { dur: 0.08, vol: 0.04 }),
+  };
+
+  // ===========================================================================
+  // Voxels
+
+  const N = cells.length;
+  const mk = () => new Float32Array(N);
+  const px = mk(), py = mk(), vx = mk(), vy = mk(), size = mk(), bright = mk();
+  const pal = new Uint8Array(N);
+  const vForm = new Uint8Array(N);       // 0 = intro (large), 1 = docked meter
+  const switchAt = new Float64Array(N);
+  let form = 0;
+  let fade = 1, fadeTarget = 1;  // whole-mark opacity, for the exit
+
+  let state = 'idle';
+  let W = 0, H = 0, DPR = 1;
+  const field = document.getElementById('field'), glow = document.getElementById('glow');
+  const ctx = field.getContext('2d'), gctx = glow.getContext('2d');
+
+  function resize() {
+    DPR = window.devicePixelRatio || 1;
+    W = innerWidth; H = innerHeight;
+    field.width = Math.round(W * DPR); field.height = Math.round(H * DPR);
+    glow.width = Math.round(W / 4); glow.height = Math.round(H / 4);
+  }
+
+  function place() {
+    for (let n = 0; n < N; n++) {
+      px[n] = W / 2 + cells[n].x * INTRO.pitch; py[n] = H * 0.45 + cells[n].y * INTRO.pitch;
+      size[n] = INTRO.size; bright[n] = 0.85; pal[n] = cells[n].accent ? 0 : 1;
+    }
+  }
+
+  function setForm(next, spread = 420) {
+    form = next;
+    const now = performance.now();
+    for (let n = 0; n < N; n++) switchAt[n] = now + (reducedMotion ? 0 : Math.random() * spread);
+  }
+
+  // Palettes: 0 = cyan (agent, accent blocks), 1 = white (user, mark).
+  const LEVELS = 16, DIM = [48, 48, 47];
+  const ramp = (to) => Array.from({ length: LEVELS }, (_, l) => {
+    const t = l / (LEVELS - 1);
+    return (t < 0.85 ? mix(DIM, to, t / 0.85) : mix(to, [255, 255, 255], ((t - 0.85) / 0.15) * 0.6)).map(Math.round);
+  });
+  const PALETTES = [ramp([31, 213, 249]), ramp([235, 235, 235])];
+  const buckets = Array.from({ length: PALETTES.length * LEVELS }, () => []);
+  const bucketStyle = buckets.map((_, k) => `rgb(${PALETTES[Math.floor(k / LEVELS)][k % LEVELS].join(',')})`);
+
+  const K = 0.075, DAMP = 0.8;
+
+  // The docked meter and status line sit under the conversation column.
+  let dockX = innerWidth / 2, dockVel = 0;
+  function dockTarget() {
+    const r = streamEl.getBoundingClientRect();
+    return r.width ? r.left + r.width / 2 : W / 2;
+  }
+
+  function step(now) {
+    const sec = now / 1000;
+    if (!host && (state === 'listening' || state === 'speaking')) fakeBands(sec, state === 'listening' ? 0.7 : 1);
+    const stale = now - bandsAt > 150;
+    for (let i = 0; i < BANDS; i++) {
+      const t = stale ? 0 : bandsTarget[i];
+      bands[i] += (t - bands[i]) * (t > bands[i] ? 0.5 : 0.14);
+    }
+    fade += (fadeTarget - fade) * 0.15;
+
+    dockVel = (dockVel + (dockTarget() - dockX) * 0.06) * 0.8;
+    dockX += dockVel;
+    const dx = dockX, dy = H - DOCK.fromBottom, ix = W / 2, iy = H * 0.45;
+    const head = (sec * 9) % 12;
+
+    for (let n = 0; n < N; n++) {
+      const c = cells[n];
+      if (vForm[n] !== form && now >= switchAt[n]) {
+        vForm[n] = form;
+        if (form === 1 && !reducedMotion) {
+          const a = Math.random() * Math.PI * 2, k = 4 + Math.random() * 8;
+          vx[n] += Math.cos(a) * k; vy[n] += Math.sin(a) * k - 4;
+        }
+      }
+
+      let tx, ty, ts, tb, tp = c.accent ? 0 : 1;
+      if (vForm[n] === 0) {
+        tx = ix + c.x * INTRO.pitch; ty = iy + c.y * INTRO.pitch; ts = INTRO.size;
+        const glint = Math.exp(-(((sec * 0.5) % 1.6 - 0.3 - (c.x + c.y + 20) / 40) ** 2) / 0.004);
+        tb = 0.85 + 0.15 * glint;
+      } else {
+        tx = dx + c.x * DOCK.pitch; ty = dy + c.y * DOCK.pitch; ts = DOCK.size;
+        if (state === 'listening' || state === 'speaking') {
+          // Each block is a meter that fills from the bottom.
+          const e = bandAt((c.block / 11) * 0.65);
+          const lit = (SUB - 1 - c.j + 0.5) / SUB < e * 1.25;
+          tb = lit ? 0.85 + 0.15 * e : 0.16;
+          tp = state === 'listening' ? 1 : 0;
+        } else if (state === 'thinking' || state === 'connecting') {
+          const d = (head - chaseIndex.get(c.block) + 12) % 12;
+          tb = 0.16 + 0.8 * Math.exp(-d * 0.8);
+        } else {
+          tb = 0.85;
+        }
+      }
+
+      vx[n] = (vx[n] + (tx - px[n]) * K) * DAMP;
+      vy[n] = (vy[n] + (ty - py[n]) * K) * DAMP;
+      px[n] += vx[n]; py[n] += vy[n];
+      size[n] += (ts - size[n]) * 0.12;
+      bright[n] += (tb - bright[n]) * (tb > bright[n] ? 0.45 : 0.14);
+      pal[n] = tp;
+    }
+  }
+
+  function draw() {
+    for (const b of buckets) b.length = 0;
+    for (let n = 0; n < N; n++) {
+      buckets[pal[n] * LEVELS + Math.min(LEVELS - 1, Math.round(clamp01(bright[n]) * (LEVELS - 1)))].push(n);
+    }
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = fade;
+    for (let k = 0; k < buckets.length; k++) {
+      const list = buckets[k];
+      if (!list.length) continue;
+      ctx.fillStyle = bucketStyle[k];
+      ctx.beginPath();
+      // Snap to device pixels so small voxels stay crisp.
+      for (const n of list) {
+        const s = Math.max(1, Math.round(size[n] * DPR)) / DPR;
+        ctx.rect(Math.round((px[n] - s / 2) * DPR) / DPR, Math.round((py[n] - s / 2) * DPR) / DPR, s, s);
+      }
+      ctx.fill();
+    }
+    gctx.clearRect(0, 0, glow.width, glow.height);
+    gctx.drawImage(field, 0, 0, glow.width, glow.height);
+  }
+
+  let last = performance.now(), acc = 0;
+  function frame(now) {
+    acc += Math.min(now - last, 100); last = now;
+    while (acc >= 1000 / 60) { step(now); acc -= 1000 / 60; }
+    revealText();
+    statusEl.style.transform = `translateX(${Math.round(dockX - W / 2)}px)`;
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  // ===========================================================================
+  // Conversation
+
+  const body = document.body;
+  const streamEl = document.getElementById('stream');
+  const turnsEl = document.getElementById('turns');
+  const statusEl = document.getElementById('status');
+  const LABELS = { connecting: 'Connecting', idle: 'Ready', listening: 'Listening', thinking: 'Thinking', speaking: 'Speaking' };
+
+  const turns = new Map();     // turn id → body element
+  const segments = new Map();  // `${turn}/${segment}` → paragraph
+  const revealing = [];        // agent paragraphs still typing out
+  const snippets = new Map();  // id → card
+  let lastSnippet = null;
+
+  // label overrides the state's default text, such as a startup step.
+  let stateLabel = LABELS.idle;
+  function setState(next, label) {
+    if (!LABELS[next]) return;
+    const changed = next !== state;
+    state = next;
+    stateLabel = label || LABELS[next];
+    statusEl.dataset.state = next;
+    if (!notice) statusEl.textContent = stateLabel;
+    if (changed && EARCONS[next]) EARCONS[next]();
+  }
+
+  // Short notices replace the status label. Sticky ones (errors) stay.
+  let notice = 0;
+  function showNotice(text, sticky = false) {
+    clearTimeout(notice);
+    statusEl.textContent = text;
+    statusEl.classList.add('notice');
+    notice = sticky ? -1 : setTimeout(() => {
+      notice = 0;
+      statusEl.classList.remove('notice');
+      statusEl.textContent = stateLabel;
+    }, 1600);
+  }
+
+  // stickToBottom runs fn, which adds content, and keeps the conversation
+  // pinned to its newest content if it was already at the bottom.
+  function stickToBottom(fn) {
+    const atBottom = streamEl.scrollHeight - streamEl.scrollTop - streamEl.clientHeight < 40;
+    fn();
+    if (atBottom) streamEl.scrollTop = streamEl.scrollHeight;
+  }
+
+  // Who agent turns are from: the assistant, or the user's own agent.
+  const speaker = { name: 'LK', guest: false };
+  const guestEl = document.getElementById('guest');
+  guestEl.querySelector('button').addEventListener('click', () => post({ type: 'back' }));
+
+  function setSpeaker({ name, guest }) {
+    speaker.name = guest ? name : 'LK';
+    speaker.guest = !!guest;
+    guestEl.querySelector('.name').textContent = name;
+    body.classList.toggle('guest', speaker.guest);
+    // X-ray follows whichever agent is talking.
+    xrayEl.querySelector('.head').textContent = `X-ray · ${speaker.name}'s pipeline`;
+    for (const k of ['latency', 'breakdown', 'usage']) xv(k).textContent = k === 'breakdown' ? '' : '…';
+    lastUserMetrics = {};
+    if (notice !== -1) showNotice(guest ? `Talking to ${name}` : 'Back with LK');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Errors
+
+  function showError({ title, detail, fix }) {
+    const card = document.createElement('section');
+    card.className = 'card error';
+    card.innerHTML = '<header><span class="title">Something needs your attention</span></header><div class="ask"></div><div class="detail"></div>';
+    card.querySelector('.ask').textContent = title;
+    card.querySelector('.detail').textContent = detail;
+    if (fix) {
+      const row = document.createElement('div');
+      row.className = 'fix';
+      row.innerHTML = '<code></code><button class="copy mono-caps" type="button">Copy</button>';
+      row.querySelector('code').textContent = fix;
+      row.querySelector('button').addEventListener('click', () => {
+        const done = () => { row.querySelector('button').textContent = 'Copied'; };
+        if (host) { post({ type: 'copy_text', text: fix }); done(); }
+        else navigator.clipboard.writeText(fix).then(done, () => {});
+      });
+      card.append(row);
+    }
+    // Errors aren't part of a turn; they stand on their own.
+    const turn = document.createElement('div');
+    turn.className = 'turn agent';
+    turn.innerHTML = '<div class="who mono-caps">LK</div><div class="body"></div>';
+    turn.querySelector('.body').append(card);
+    stickToBottom(() => turnsEl.append(turn));
+  }
+
+  // ---------------------------------------------------------------------------
+  // X-ray
+
+  const xrayEl = document.getElementById('xray');
+  const xv = (key) => xrayEl.querySelector(`[data-x="${key}"]`);
+  const eotEl = xrayEl.querySelector('.eot');
+  const secs = (v) => (v == null ? null : `${v.toFixed(2)}s`);
+
+  function xrayPipeline({ stt, llm, tts, turn_detection }) {
+    xv('stt').textContent = stt;
+    xv('llm').textContent = llm;
+    xv('tts').textContent = tts;
+    xv('turns').textContent = turn_detection;
+  }
+
+  function xrayEOT({ probability, threshold }) {
+    eotEl.querySelector('.fill').style.width = `${Math.round(probability * 100)}%`;
+    eotEl.querySelector('.threshold').style.left = `${Math.round(threshold * 100)}%`;
+    const done = probability >= threshold;
+    eotEl.classList.toggle('done', done);
+    xv('eot').textContent = `${Math.round(probability * 100)}% sure you're done (waits for ${Math.round(threshold * 100)}%)` + (done ? ', replying' : ', still listening');
+  }
+
+  let lastUserMetrics = {};
+  function xrayMetrics(m) {
+    if (m.role === 'user') { lastUserMetrics = m; return; }
+    if (m.e2e_latency != null) xv('latency').textContent = `${secs(m.e2e_latency)} from when you stopped speaking`;
+    const parts = [
+      ['end of turn', lastUserMetrics.end_of_turn_delay],
+      ['LLM first token', m.llm_ttft],
+      ['TTS first audio', m.tts_ttfb],
+    ].filter(([, v]) => v != null).map(([k, v]) => `${k} ${secs(v)}`);
+    xv('breakdown').textContent = parts.join(' · ');
+  }
+
+  function xrayUsage({ models }) {
+    const parts = [];
+    for (const m of models || []) {
+      const n = (v) => (v || 0).toLocaleString('en-US');
+      if (m.kind === 'llm') parts.push(`LLM ${n(m.input_tokens)} in / ${n(m.output_tokens)} out tokens`);
+      if (m.kind === 'tts') parts.push(`TTS ${n(m.characters)} characters`);
+      if (m.kind === 'stt') parts.push(`STT ${Math.round(m.audio_duration || 0)}s of audio`);
+    }
+    if (parts.length) xv('usage').textContent = parts.join(' · ');
+  }
+
+  function turnBody(id, role) {
+    let el = turns.get(id);
+    if (el) return el;
+    const turn = document.createElement('div');
+    turn.className = `turn ${role}`;
+    const who = role === 'user' ? 'You' : speaker.name;
+    if (role !== 'user' && speaker.guest) turn.classList.add('guest');
+    turn.innerHTML = `<div class="who mono-caps">${esc(who)}</div><div class="body"></div>`;
+    stickToBottom(() => turnsEl.append(turn));
+    el = turn.querySelector('.body');
+    turns.set(id, el);
+    return el;
+  }
+
+  function setTranscript({ turn, role, segment = 0, text }) {
+    const key = `${turn}/${segment}`;
+    let p = segments.get(key);
+    if (!p) {
+      p = document.createElement('p');
+      p.target = '';
+      p.shown = 0;
+      p.node = document.createTextNode('');
+      p.append(p.node);
+      stickToBottom(() => turnBody(turn, role).append(p));
+      segments.set(key, p);
+    }
+    if (role !== 'agent' || reducedMotion) {
+      stickToBottom(() => { p.node.data = text; });
+      return;
+    }
+    // Agent text types out toward the latest transcript, catching up if behind.
+    p.target = text;
+    if (!revealing.includes(p)) revealing.push(p);
+  }
+
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+
+  function revealText() {
+    const p = revealing[0];
+    if (!p) { cursor.remove(); return; }
+    const behind = p.target.length - p.shown;
+    if (behind > 0) {
+      p.shown = Math.min(p.target.length, p.shown + Math.max(1, Math.round(behind / 12)));
+      stickToBottom(() => { p.node.data = p.target.slice(0, p.shown); });
+    }
+    if (cursor.parentNode !== p) p.append(cursor);
+    if (p.shown >= p.target.length && (revealing.length > 1 || state !== 'speaking')) revealing.shift();
+  }
+
+  function addSnippet({ turn, id, title, lang, code, copied }) {
+    const card = document.createElement('section');
+    card.className = 'card';
+    card.dataset.id = id;
+    card.dataset.lang = lang;
+    card.innerHTML =
+      '<header><span class="title"></span><span class="lang mono-caps"></span><button class="copy mono-caps" type="button">Copy</button></header>' +
+      '<div class="code"><pre><code></code></pre><button class="more mono-caps" type="button">Expand</button></div>';
+    card.querySelector('.title').textContent = title;
+    card.querySelector('.lang').textContent = lang;
+    card.querySelector('code').innerHTML = highlight(code, lang);
+    card.querySelector('.copy').addEventListener('click', () => requestCopy(id));
+    card.querySelector('.more').addEventListener('click', () => card.classList.add('expanded'));
+    card.code = code;
+    // Finish typing earlier text first, so the card lands after it.
+    for (const p of revealing) { p.shown = p.target.length; p.node.data = p.target; }
+    revealing.length = 0;
+    stickToBottom(() => turnBody(turn, 'agent').append(card));
+    if (card.querySelector('.code').scrollHeight <= 192) card.classList.add('expanded');
+    snippets.set(id, card);
+    lastSnippet = id;
+    if (copied) markCopied(id);
+  }
+
+  const tools = new Map();  // call id → line
+
+  function setTool({ turn, role = 'agent', id, label, detail, status }) {
+    let line = tools.get(id);
+    if (!line) {
+      line = document.createElement('div');
+      line.className = 'tool mono-caps';
+      line.innerHTML = '<span class="mark"></span><span class="label"></span><span class="detail"></span>';
+      stickToBottom(() => turnBody(turn, role).append(line));
+      tools.set(id, line);
+    }
+    if (label) line.querySelector('.label').textContent = label;
+    if (detail !== undefined) {
+      line.querySelector('.detail').textContent = detail;
+      line.title = detail;
+    }
+    line.dataset.status = status;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Confirmations: the assistant asks before running a command that changes
+  // something.
+
+  const confirms = new Map();  // id → card
+  let pendingConfirm = null;   // id of the newest unanswered confirmation
+
+  function askConfirm({ turn, id, heading, command, detail, options }) {
+    const card = document.createElement('section');
+    card.className = 'card confirm';
+    card.innerHTML = '<header><span class="title"></span></header><pre class="command"></pre><div class="detail"></div>' +
+      '<div class="options mono-caps"></div><div class="result mono-caps"><span class="mark"></span><span class="label"></span><span class="text"></span></div>';
+    card.querySelector('.title').textContent = heading;
+    card.querySelector('.command').textContent = command;
+    card.querySelector('.detail').textContent = detail;
+    const row = card.querySelector('.options');
+    options.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.option = o.id;
+      b.innerHTML = `<kbd>${i + 1}</kbd>`;
+      b.append(o.name);
+      b.addEventListener('click', () => answerConfirm(id, o.id));
+      row.append(b);
+    });
+    const hint = document.createElement('span');
+    hint.className = 'hint';
+    hint.textContent = 'or answer by voice';
+    row.append(hint);
+    stickToBottom(() => turnBody(turn, 'agent').append(card));
+    confirms.set(id, card);
+    pendingConfirm = id;
+    if (notice !== -1) showNotice('Waiting for you to confirm');
+    EARCONS.listening();
+  }
+
+  function answerConfirm(id, option) {
+    const card = confirms.get(id);
+    if (!card || card.dataset.answered) return;
+    markConfirm(id, option);
+    post({ type: 'confirm', id, option });
+  }
+
+  const CONFIRM_STATUS = { running: 'Running', done: 'Done', failed: 'Failed', cancelled: 'Cancelled' };
+
+  function setConfirmStatus({ id, status, text }) {
+    const card = confirms.get(id);
+    if (!card) return;
+    card.dataset.status = status;
+    card.querySelector('.result .label').textContent = CONFIRM_STATUS[status] || status;
+    card.querySelector('.result .text').textContent = text || '';
+  }
+
+  function markConfirm(id, option) {
+    const card = confirms.get(id);
+    if (!card) return;
+    card.dataset.answered = 'true';
+    for (const b of card.querySelectorAll('button')) {
+      if (b.dataset.option === option) b.dataset.chosen = 'true';
+    }
+    if (pendingConfirm === id) pendingConfirm = null;
+  }
+
+  function requestCopy(id) {
+    if (host) post({ type: 'copy', id });
+    else navigator.clipboard.writeText(snippets.get(id).code).then(() => markCopied(id), () => {});
+  }
+
+  function markCopied(id) {
+    for (const card of snippets.values()) {
+      const on = card.dataset.id === id;
+      card.dataset.copied = on;
+      card.querySelector('.copy').textContent = on ? 'Copied' : 'Copy';
+    }
+    if (notice !== -1) showNotice('Copied to clipboard');
+    EARCONS.copied();
+  }
+
+  function clearAll() {
+    turnsEl.replaceChildren();
+    turns.clear(); segments.clear(); snippets.clear(); tools.clear();
+    confirms.clear(); pendingConfirm = null;
+    revealing.length = 0;
+    lastSnippet = null;
+  }
+
+  const SYNTAX = {
+    python: /(#[^\n]*)|("""[\s\S]*?"""|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|(@[\w.]+)|\b(async|await|def|class|from|import|return|if|else|for|in|with|as|None|True|False|self|super)\b|\b(\d+(?:\.\d+)?)\b/g,
+    shell: /(#[^\n]*)|("(?:\\.|[^"\\\n])*"|'[^'\n]*')|(\s--?[\w-]+)|^(\w[\w-]*)/gm,
+    javascript: /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)|(@[\w.]+)|\b(import|from|export|default|const|let|var|function|async|await|return|new|class|extends|implements|interface|type|enum|if|else|for|of|in|while|try|catch|throw|true|false|null|undefined|this|as)\b|\b(\d+(?:\.\d+)?)\b/g,
+  };
+  SYNTAX.typescript = SYNTAX.javascript;
+  const TOKENS = [null, 'comment', 'string', 'deco', 'keyword', 'number'];
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  function highlight(code, lang) {
+    const re = SYNTAX[lang];
+    if (!re) return esc(code);
+    let out = '', last = 0, m;
+    re.lastIndex = 0;
+    while ((m = re.exec(code))) {
+      if (!m[0]) { re.lastIndex++; continue; }
+      const g = m.findIndex((v, i) => i > 0 && v !== undefined);
+      out += esc(code.slice(last, m.index)) + `<span class="tok-${TOKENS[g]}">${esc(m[0])}</span>`;
+      last = m.index + m[0].length;
+    }
+    return out + esc(code.slice(last));
+  }
+
+  // ===========================================================================
+  // Messages from Go
+
+  window.lk = {
+    receive(msg) {
+      switch (msg.type) {
+        case 'state': setState(msg.state, msg.label); break;
+        case 'notice': showNotice(msg.text, msg.sticky); break;
+        case 'bands':
+          for (let i = 0; i < BANDS; i++) bandsTarget[i] = msg.bands[i] || 0;
+          bandsAt = performance.now();
+          break;
+        case 'transcript': setTranscript(msg); break;
+        case 'snippet': addSnippet(msg); break;
+        case 'tool': setTool(msg); break;
+        case 'confirm': askConfirm(msg); break;
+        case 'confirm_done': markConfirm(msg.id, msg.option); break;
+        case 'confirm_status': setConfirmStatus(msg); break;
+        case 'dismiss': dismiss(); break;
+        case 'copied': markCopied(msg.id); break;
+        case 'clear': clearAll(); break;
+        case 'speaker': setSpeaker(msg); break;
+        case 'error': showError(msg); break;
+        case 'pipeline': xrayPipeline(msg); break;
+        case 'eot': xrayEOT(msg); break;
+        case 'metrics': xrayMetrics(msg); break;
+        case 'usage': xrayUsage(msg); break;
+      }
+    },
+  };
+
+  // ===========================================================================
+  // Open and close
+
+  let closing = false;
+  // Esc: the conversation and labels fade out, the mark reassembles large on
+  // the plain backdrop and fades, and then the window (with its blur) closes.
+  function dismiss() {
+    if (closing) return;
+    closing = true;
+    body.classList.add('closing');
+    EARCONS.dismiss();
+    setTimeout(() => setForm(0, 200), 150);
+    setTimeout(() => { fadeTarget = 0; }, reducedMotion ? 150 : 850);
+    setTimeout(() => post({ type: 'close' }), reducedMotion ? 400 : 1150);
+  }
+
+  function setPeek(on) {
+    body.classList.toggle('peek', on);
+    post({ type: 'peek', on });
+  }
+
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') return dismiss();
+    if (e.key === 'Shift' && !e.repeat) return setPeek(true);
+    if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+      if (!getSelection().toString() && lastSnippet) { e.preventDefault(); requestCopy(lastSnippet); }
+      return;
+    }
+    if (e.metaKey || e.ctrlKey) return;
+    if (pendingConfirm && e.key >= '1' && e.key <= '9') {
+      const b = confirms.get(pendingConfirm).querySelectorAll('.options button')[+e.key - 1];
+      if (b) answerConfirm(pendingConfirm, b.dataset.option);
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') return post({ type: 'replay' });
+    if (e.key === 'm' || e.key === 'M') {
+      micOff = !micOff;
+      body.classList.toggle('mic-off', micOff);
+      post({ type: 'mute', on: micOff });
+      if (notice !== -1) showNotice(micOff ? 'Microphone off' : 'Microphone on');
+      return;
+    }
+    if (e.key === 's' || e.key === 'S') {
+      muted = !muted;
+      try { localStorage.setItem('lk-assistant-muted', muted ? '1' : '0'); } catch {}
+      if (notice !== -1) showNotice(muted ? 'Sound effects off' : 'Sound effects on');
+      return;
+    }
+    if (e.key === 'x' || e.key === 'X') {
+      body.classList.toggle('xray');
+      try { localStorage.setItem('lk-assistant-xray', body.classList.contains('xray') ? '1' : '0'); } catch {}
+      return;
+    }
+    if ((e.key === 'b' || e.key === 'B') && speaker.guest) return post({ type: 'back' });
+    const states = ['idle', 'listening', 'thinking', 'speaking'];
+    if (!host && e.key >= '0' && e.key <= '3') setState(states[+e.key]);
+  });
+  addEventListener('keyup', (e) => { if (e.key === 'Shift') setPeek(false); });
+  addEventListener('blur', () => { if (body.classList.contains('peek')) setPeek(false); });
+  addEventListener('resize', resize);
+
+  try { if (localStorage.getItem('lk-assistant-xray') === '1') body.classList.add('xray'); } catch {}
+  resize();
+  place();
+  requestAnimationFrame(frame);
+  EARCONS.summon();
+  setTimeout(() => setForm(1), reducedMotion ? 0 : INTRO_MS);
+  post({ type: 'ready' });
+})();
+</script>
+</body>
+</html>
