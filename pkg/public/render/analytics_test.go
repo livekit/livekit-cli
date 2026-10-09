@@ -666,6 +666,26 @@ func decodeMetricPoints(t *testing.T) []public.MetricPoint {
 // TestSessionMetricsText checks each point prints as one line with its time,
 // name and value or histogram summary, and a next page says to re-run with its
 // cursor.
+// TestSessionMetricsStripEscapes checks a metric's name and unit, which the
+// agent's code chose, reach a terminal with their escape sequences stripped
+// and the values still lined up.
+func TestSessionMetricsStripEscapes(t *testing.T) {
+	text := "hi" + escapes
+	points := []public.MetricPoint{
+		{Name: text, Unit: text, Value: ptr(1.0)},
+		{Name: "lk.x", Value: ptr(2.0)},
+	}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionMetrics(terminalPrinter(&stdout, &stderr), false, public.MetricPage{Points: points}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, strings.Join([]string{
+		"-             hi]0;pwned[2J  1 hi]0;pwned[2J",
+		"-             lk.x           2",
+		"",
+	}, "\n"), stdout.String())
+}
+
 func TestSessionMetricsText(t *testing.T) {
 	prevLocal := time.Local
 	time.Local = time.UTC

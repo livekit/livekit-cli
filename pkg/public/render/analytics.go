@@ -606,7 +606,7 @@ func SessionMetrics(p *util.Printer, asJSON bool, page public.MetricPage, empty 
 func metricLines(points []public.MetricPoint) []string {
 	nameWidth := 1
 	for _, pt := range points {
-		nameWidth = max(nameWidth, len([]rune(pt.Name)))
+		nameWidth = max(nameWidth, len([]rune(oneLine(pt.Name))))
 	}
 	lines := make([]string, 0, len(points))
 	for _, pt := range points {
@@ -622,7 +622,7 @@ func metricLine(pt public.MetricPoint, nameWidth int) string {
 	if pt.EndTime != nil && !pt.EndTime.IsZero() {
 		at = pt.EndTime.Local().Format("15:04:05.000")
 	}
-	return fmt.Sprintf("%-12s  %-*s  %s", at, nameWidth, util.Dash(pt.Name), metricValue(pt))
+	return fmt.Sprintf("%-12s  %-*s  %s", at, nameWidth, util.Dash(oneLine(pt.Name)), metricValue(pt))
 }
 
 // metricValue renders a gauge's or sum's value, or a histogram's count, sum,
@@ -654,7 +654,7 @@ func metricValue(pt public.MetricPoint) string {
 // annotation such as {token} loses its braces, and the dimensionless "1" is
 // dropped.
 func metricUnit(unit string) string {
-	unit = strings.NewReplacer("{", "", "}", "").Replace(strings.TrimSpace(unit))
+	unit = strings.NewReplacer("{", "", "}", "").Replace(oneLine(unit))
 	if unit == "1" {
 		return ""
 	}
