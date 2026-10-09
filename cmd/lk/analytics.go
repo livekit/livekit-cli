@@ -376,7 +376,7 @@ func analyticsEventFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:  "participant",
-			Usage: "Print only the events of the participant session `PA_ID`, as `session participant list` prints it",
+			Usage: "Print only the events of the participant session `PA_ID`, as `lk analytics session participant list` prints it",
 		},
 		&cli.StringFlag{
 			Name:  "sort-order",
