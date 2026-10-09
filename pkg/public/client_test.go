@@ -81,6 +81,14 @@ func TestIsPermissionDenied(t *testing.T) {
 	assert.False(t, IsPermissionDenied(nil))
 }
 
+func TestIsNotFound(t *testing.T) {
+	assert.True(t, IsNotFound(&APIError{Status: http.StatusNotFound}))
+	assert.True(t, IsNotFound(fmt.Errorf("context: %w", &APIError{Status: http.StatusNotFound})))
+	assert.False(t, IsNotFound(&APIError{Status: http.StatusForbidden}))
+	assert.False(t, IsNotFound(errors.New("plain")))
+	assert.False(t, IsNotFound(nil))
+}
+
 func TestAPIErrorError(t *testing.T) {
 	assert.Equal(t, "boom", (&APIError{Status: http.StatusBadRequest, Message: "boom"}).Error())
 	// no message -> synthesized from the status

@@ -456,7 +456,7 @@ func TestFetchSessionParticipants(t *testing.T) {
 }
 
 // TestFetchSessionParticipantsErrors checks a failed read says why: signed
-// out, or without access to the project.
+// out, without access to the project, or no such session in the project.
 func TestFetchSessionParticipantsErrors(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -466,6 +466,7 @@ func TestFetchSessionParticipantsErrors(t *testing.T) {
 	}{
 		{name: "signed out", status: http.StatusUnauthorized, body: `{"code":16,"message":"authentication required"}`, wantErr: "lk cloud auth"},
 		{name: "permission denied", status: http.StatusForbidden, body: `{"code":7,"message":"permission denied"}`, wantErr: "permission denied — you don't have access to this project"},
+		{name: "no such session", status: http.StatusNotFound, body: `{"code":5,"message":"session not found"}`, wantErr: "no session RM_1 in project p1 (session not found)"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

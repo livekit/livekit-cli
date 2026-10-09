@@ -667,7 +667,7 @@ func sessionRead[O any](
 func fetchSessionParticipants(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.ParticipantListOptions, asJSON bool) error {
 	participants, nextCursor, err := client.ListSessionParticipants(ctx, projectID, sessionID, opts)
 	if err != nil {
-		return sessionAPIError(err)
+		return sessionReadError(err, projectID, sessionID)
 	}
 	return render.SessionParticipantsPage(out, asJSON, participants, nextCursor)
 }
@@ -698,6 +698,16 @@ func pageOptions(cmd *cli.Command) (public.PageOptions, error) {
 		return public.PageOptions{}, errors.New("limit must be greater than 0")
 	}
 	return public.PageOptions{Limit: int32(limit), Cursor: cmd.String("cursor")}, nil
+}
+
+// sessionReadError annotates a session read's error like sessionAPIError,
+// except NotFound: the API answers an unknown session and a mistyped
+// --project the same way, so it names the session and the project it asked.
+func sessionReadError(err error, projectID, sessionID string) error {
+	if public.IsNotFound(err) {
+		return fmt.Errorf("no session %s in project %s (%w)", sessionID, projectID, err)
+	}
+	return sessionAPIError(err)
 }
 
 // sessionAPIError annotates a Public API error from a session read like

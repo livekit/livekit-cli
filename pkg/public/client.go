@@ -164,6 +164,13 @@ func IsPermissionDenied(err error) bool {
 	return errors.As(err, &apiErr) && apiErr.Status == http.StatusForbidden
 }
 
+// IsNotFound reports whether err is an APIError signalling that the target
+// doesn't exist (HTTP 404).
+func IsNotFound(err error) bool {
+	var apiErr *APIError
+	return errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound
+}
+
 // responseError builds an APIError from a non-2xx response, preferring the
 // API's error envelope ({"code","message","details"}) and falling back
 // to the raw body.
