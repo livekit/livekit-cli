@@ -10086,71 +10086,71 @@ type ClientInterface interface {
 
 	// ProjectServiceGetInvite GetInvite
 	//
-	// Corresponds with GET /v1/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
+	// Corresponds with GET /v0/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
 	ProjectServiceGetInvite(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceAnswerInvitationWithBody AnswerInvitation
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
+	// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 	ProjectServiceAnswerInvitationWithBody(ctx context.Context, inviteToken string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceAnswerInvitation AnswerInvitation
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
+	// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 	ProjectServiceAnswerInvitation(ctx context.Context, inviteToken string, body ProjectServiceAnswerInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListProjects ListProjects
 	//
-	// Corresponds with GET /v1/projects (the `ProjectServiceListProjects` operationId).
+	// Corresponds with GET /v0/projects (the `ProjectServiceListProjects` operationId).
 	ProjectServiceListProjects(ctx context.Context, params *ProjectServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateProjectWithBody CreateProject
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/projects (the `ProjectServiceCreateProject` operationId).
+	// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 	ProjectServiceCreateProjectWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateProject CreateProject
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/projects (the `ProjectServiceCreateProject` operationId).
+	// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 	ProjectServiceCreateProject(ctx context.Context, body ProjectServiceCreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceDeleteProject DeleteProject
 	//
-	// Corresponds with DELETE /v1/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
+	// Corresponds with DELETE /v0/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
 	ProjectServiceDeleteProject(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceGetProject GetProject
 	//
-	// Corresponds with GET /v1/projects/{projectId} (the `ProjectServiceGetProject` operationId).
+	// Corresponds with GET /v0/projects/{projectId} (the `ProjectServiceGetProject` operationId).
 	ProjectServiceGetProject(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateProjectWithBody UpdateProject
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PATCH /v1/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProjectWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateProject UpdateProject
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PATCH /v1/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProject(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
 	//
 	// GetProjectAnalytics returns the project overview over a time range.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
 	AnalyticsServiceGetProjectAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListAgentAnalytics ListAgentAnalytics
@@ -10159,57 +10159,57 @@ type ClientInterface interface {
 	//  the project, one AgentAnalytics row per agent — so a single agent and the
 	//  whole roster share one shape.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
 	AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceGetAgentAnalytics GetAgentAnalytics
 	//
 	// GetAgentAnalytics returns the analytics for one agent over a time range.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
 	AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListInvites ListInvites
 	//
-	// Corresponds with GET /v1/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
 	ProjectServiceListInvites(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceInviteMemberWithBody InviteMember
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 	ProjectServiceInviteMemberWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceInviteMember InviteMember
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 	ProjectServiceInviteMember(ctx context.Context, projectId string, body ProjectServiceInviteMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceDeleteInvite DeleteInvite
 	//
-	// Corresponds with DELETE /v1/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
+	// Corresponds with DELETE /v0/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
 	ProjectServiceDeleteInvite(ctx context.Context, projectId string, email string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateInviteWithBody UpdateInvite
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PATCH /v1/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 	ProjectServiceUpdateInviteWithBody(ctx context.Context, projectId string, email string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateInvite UpdateInvite
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PATCH /v1/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 	ProjectServiceUpdateInvite(ctx context.Context, projectId string, email string, body ProjectServiceUpdateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListKeys ListKeys
 	//
-	// Corresponds with GET /v1/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
 	ProjectServiceListKeys(ctx context.Context, projectId string, params *ProjectServiceListKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceGenerateKeyWithBody GenerateKey
@@ -10219,7 +10219,7 @@ type ClientInterface interface {
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
 	ProjectServiceGenerateKeyWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceGenerateKey GenerateKey
@@ -10229,57 +10229,57 @@ type ClientInterface interface {
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
 	ProjectServiceGenerateKey(ctx context.Context, projectId string, body ProjectServiceGenerateKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceDeleteKey DeleteKey
 	//
-	// Corresponds with DELETE /v1/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
+	// Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 	ProjectServiceDeleteKey(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListMembers ListMembers
 	//
 	// Members & invites (token-based; mirrors cloud ProjectService current flows).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
 	ProjectServiceListMembers(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceRemoveMember RemoveMember
 	//
-	// Corresponds with DELETE /v1/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
+	// Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
 	ProjectServiceRemoveMember(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceGetMember GetMember
 	//
-	// Corresponds with GET /v1/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
 	ProjectServiceGetMember(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateMemberWithBody UpdateMember
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PATCH /v1/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 	ProjectServiceUpdateMemberWithBody(ctx context.Context, projectId string, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateMember UpdateMember
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PATCH /v1/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 	ProjectServiceUpdateMember(ctx context.Context, projectId string, userId string, body ProjectServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceAddWorkspaceMembersToProjectWithBody AddWorkspaceMembersToProject
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 	ProjectServiceAddWorkspaceMembersToProjectWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceAddWorkspaceMembersToProject AddWorkspaceMembersToProject
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 	ProjectServiceAddWorkspaceMembersToProject(ctx context.Context, projectId string, body ProjectServiceAddWorkspaceMembersToProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
@@ -10293,7 +10293,7 @@ type ClientInterface interface {
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSessionWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceGenerateScenarioFromSession GenerateScenarioFromSession
@@ -10307,12 +10307,12 @@ type ClientInterface interface {
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSession(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListScopedKeys ListScopedKeys
 	//
-	// Corresponds with GET /v1/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
 	ProjectServiceListScopedKeys(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListProjectSessions ListProjectSessions
@@ -10320,7 +10320,7 @@ type ClientInterface interface {
 	// ListProjectSessions lists room sessions for a project, newest first,
 	//  cursor-paginated. Backed upstream by the ListingService room-sessions list.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 	AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceGetSession GetSession
@@ -10328,7 +10328,7 @@ type ClientInterface interface {
 	// GetSession returns one room session. The response carries both the list-row
 	//  `session` and the richer `detail` (participants, per-metric data points).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListSessionEvents ListSessionEvents lists one room session's events, oldest first by default,
@@ -10357,7 +10357,7 @@ type ClientInterface interface {
 	//  data, so an older session can list no events. An ACTIVE session lists the
 	//  events recorded so far. An unknown session is NotFound.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionLogs GetSessionLogs returns the log records the session's agents exported, in
@@ -10373,7 +10373,7 @@ type ClientInterface interface {
 	//  empty because no record is at those levels, so only an unfiltered one is
 	//  ObservabilityDisabled.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionMetrics GetSessionMetrics returns the OpenTelemetry metric points the session's
@@ -10405,7 +10405,7 @@ type ClientInterface interface {
 	//  back empty because no metric has those names, so only an unfiltered one
 	//  is ObservabilityDisabled.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 	ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListSessionParticipants ListSessionParticipants
@@ -10415,7 +10415,7 @@ type ClientInterface interface {
 	//  carries the participant's participant sessions (PA_...), each with the
 	//  client it connected from.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 	AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
@@ -10425,7 +10425,7 @@ type ClientInterface interface {
 	//  recording of that type is NotFound. A new recording can be NotFound for
 	//  up to a minute after the session ends.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionTraces GetSessionTraces returns the spans the session's agents exported, by
@@ -10440,7 +10440,7 @@ type ClientInterface interface {
 	//  can repeat, or be skipped. Dedupe by span_id, and read again from the
 	//  first page to pick up a skipped span. An unknown session is NotFound.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionTranscript GetSessionTranscript returns the session's conversation as ordered
@@ -10454,7 +10454,7 @@ type ClientInterface interface {
 	//  ACTIVE returns what exists so far, usually nothing, without an error:
 	//  read it again after the session ends. An unknown session is NotFound.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 	ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceListSimulationRuns ListSimulationRuns
@@ -10464,7 +10464,7 @@ type ClientInterface interface {
 	//  Rows carry headline counts (job_count, passed_count, failed_count,
 	//  issue_count) but neither jobs nor the summary.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 	SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCreateSimulationRunWithBody CreateSimulationRun
@@ -10478,7 +10478,7 @@ type ClientInterface interface {
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
 	SimulationServiceCreateSimulationRunWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCreateSimulationRun CreateSimulationRun
@@ -10492,7 +10492,7 @@ type ClientInterface interface {
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
 	SimulationServiceCreateSimulationRun(ctx context.Context, projectId string, body SimulationServiceCreateSimulationRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceGetSimulationRun GetSimulationRun
@@ -10501,7 +10501,7 @@ type ClientInterface interface {
 	//  compressed summary blob (summary_zstd) is omitted; use
 	//  GetSimulationRunSummary for the decoded summary.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 	SimulationServiceGetSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceGetSimulationRunSummary GetSimulationRunSummary
@@ -10511,7 +10511,7 @@ type ClientInterface interface {
 	//  suggestions, and the per-job chat history. FailedPrecondition while the
 	//  run is still going; NotFound if the run finished without a summary.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 	SimulationServiceGetSimulationRunSummary(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCancelSimulationRun CancelSimulationRun
@@ -10519,7 +10519,7 @@ type ClientInterface interface {
 	// CancelSimulationRun stops a run that has not finished. Cancelling a run
 	//  that already finished succeeds without effect.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 	SimulationServiceCancelSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceConfirmSimulationSourceUploadWithBody ConfirmSimulationSourceUpload
@@ -10531,7 +10531,7 @@ type ClientInterface interface {
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
 	SimulationServiceConfirmSimulationSourceUploadWithBody(ctx context.Context, projectId string, simulationRunId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceConfirmSimulationSourceUpload ConfirmSimulationSourceUpload
@@ -10543,7 +10543,7 @@ type ClientInterface interface {
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
 	SimulationServiceConfirmSimulationSourceUpload(ctx context.Context, projectId string, simulationRunId string, body SimulationServiceConfirmSimulationSourceUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCountSimulationRuns CountSimulationRuns
@@ -10553,7 +10553,7 @@ type ClientInterface interface {
 	//  same window, so the bars and the rows beneath them always describe one set.
 	//  Both bounds are required and end_time must be after start_time.
 	//
-	// Corresponds with GET /v1/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateTokenWithBody CreateToken
@@ -10564,7 +10564,7 @@ type ClientInterface interface {
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 	ProjectServiceCreateTokenWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateToken CreateToken
@@ -10575,190 +10575,190 @@ type ClientInterface interface {
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 	ProjectServiceCreateToken(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UserServiceListUsers ListUsers
 	//
-	// Corresponds with GET /v1/users (the `UserServiceListUsers` operationId).
+	// Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
 	UserServiceListUsers(ctx context.Context, params *UserServiceListUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UserServiceGetCurrentUser GetCurrentUser
 	//
-	// Corresponds with GET /v1/users/me (the `UserServiceGetCurrentUser` operationId).
+	// Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 	UserServiceGetCurrentUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UserServiceGetUser GetUser
 	//
-	// Corresponds with GET /v1/users/{userId} (the `UserServiceGetUser` operationId).
+	// Corresponds with GET /v0/users/{userId} (the `UserServiceGetUser` operationId).
 	UserServiceGetUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetInvite GetInvite
 	//
-	// Corresponds with GET /v1/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
+	// Corresponds with GET /v0/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
 	WorkspaceServiceGetInvite(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceAnswerInviteWithBody AnswerInvite
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
+	// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 	WorkspaceServiceAnswerInviteWithBody(ctx context.Context, inviteToken string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceAnswerInvite AnswerInvite
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
+	// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 	WorkspaceServiceAnswerInvite(ctx context.Context, inviteToken string, body WorkspaceServiceAnswerInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceListWorkspaces ListWorkspaces
 	//
-	// Corresponds with GET /v1/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
+	// Corresponds with GET /v0/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
 	WorkspaceServiceListWorkspaces(ctx context.Context, params *WorkspaceServiceListWorkspacesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateWorkspaceWithBody CreateWorkspace
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
+	// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 	WorkspaceServiceCreateWorkspaceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateWorkspace CreateWorkspace
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
+	// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 	WorkspaceServiceCreateWorkspace(ctx context.Context, body WorkspaceServiceCreateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceDeleteWorkspace DeleteWorkspace
 	//
-	// Corresponds with DELETE /v1/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
+	// Corresponds with DELETE /v0/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
 	WorkspaceServiceDeleteWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetWorkspace GetWorkspace
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
 	WorkspaceServiceGetWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceUpdateWorkspaceWithBody UpdateWorkspace
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 	WorkspaceServiceUpdateWorkspaceWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceUpdateWorkspace UpdateWorkspace
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 	WorkspaceServiceUpdateWorkspace(ctx context.Context, workspaceId string, body WorkspaceServiceUpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceListInvites ListInvites
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
 	WorkspaceServiceListInvites(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateInviteWithBody CreateInvite
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
+	// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 	WorkspaceServiceCreateInviteWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateInvite CreateInvite
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
+	// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 	WorkspaceServiceCreateInvite(ctx context.Context, workspaceId string, body WorkspaceServiceCreateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceDeleteInvite DeleteInvite
 	//
-	// Corresponds with DELETE /v1/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
+	// Corresponds with DELETE /v0/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
 	WorkspaceServiceDeleteInvite(ctx context.Context, workspaceId string, email string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceListMembers ListMembers
 	//
 	// Members & invites (mirrors cloud WorkspaceService current flows).
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
 	WorkspaceServiceListMembers(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceDeleteMember DeleteMember
 	//
-	// Corresponds with DELETE /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
+	// Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
 	WorkspaceServiceDeleteMember(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetMember GetMember
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
 	WorkspaceServiceGetMember(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceUpdateMemberWithBody UpdateMember
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
 	WorkspaceServiceUpdateMemberWithBody(ctx context.Context, workspaceId string, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceUpdateMember UpdateMember
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
 	WorkspaceServiceUpdateMember(ctx context.Context, workspaceId string, userId string, body WorkspaceServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceListProjects ListProjects
 	//
 	// Project CRUD scoped to a workspace — responses owned by projects.v1.
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 	WorkspaceServiceListProjects(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateProjectWithBody CreateProject
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
+	// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 	WorkspaceServiceCreateProjectWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateProject CreateProject
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
+	// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 	WorkspaceServiceCreateProject(ctx context.Context, workspaceId string, body WorkspaceServiceCreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceDeleteProject DeleteProject
 	//
-	// Corresponds with DELETE /v1/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
+	// Corresponds with DELETE /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
 	WorkspaceServiceDeleteProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetProject GetProject
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 	WorkspaceServiceGetProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceUpdateProjectWithBody UpdateProject
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
 	WorkspaceServiceUpdateProjectWithBody(ctx context.Context, workspaceId string, updateProjectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceUpdateProject UpdateProject
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
 	WorkspaceServiceUpdateProject(ctx context.Context, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ProjectServiceGetInvite GetInvite
 //
-// Corresponds with GET /v1/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
+// Corresponds with GET /v0/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
 func (c *Client) ProjectServiceGetInvite(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceGetInviteRequest(c.Server, inviteToken)
 	if err != nil {
@@ -10775,7 +10775,7 @@ func (c *Client) ProjectServiceGetInvite(ctx context.Context, inviteToken string
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
+// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 func (c *Client) ProjectServiceAnswerInvitationWithBody(ctx context.Context, inviteToken string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceAnswerInvitationRequestWithBody(c.Server, inviteToken, contentType, body)
 	if err != nil {
@@ -10792,7 +10792,7 @@ func (c *Client) ProjectServiceAnswerInvitationWithBody(ctx context.Context, inv
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
+// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 func (c *Client) ProjectServiceAnswerInvitation(ctx context.Context, inviteToken string, body ProjectServiceAnswerInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceAnswerInvitationRequest(c.Server, inviteToken, body)
 	if err != nil {
@@ -10807,7 +10807,7 @@ func (c *Client) ProjectServiceAnswerInvitation(ctx context.Context, inviteToken
 
 // ProjectServiceListProjects ListProjects
 //
-// Corresponds with GET /v1/projects (the `ProjectServiceListProjects` operationId).
+// Corresponds with GET /v0/projects (the `ProjectServiceListProjects` operationId).
 func (c *Client) ProjectServiceListProjects(ctx context.Context, params *ProjectServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceListProjectsRequest(c.Server, params)
 	if err != nil {
@@ -10824,7 +10824,7 @@ func (c *Client) ProjectServiceListProjects(ctx context.Context, params *Project
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/projects (the `ProjectServiceCreateProject` operationId).
+// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 func (c *Client) ProjectServiceCreateProjectWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceCreateProjectRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -10841,7 +10841,7 @@ func (c *Client) ProjectServiceCreateProjectWithBody(ctx context.Context, conten
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/projects (the `ProjectServiceCreateProject` operationId).
+// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 func (c *Client) ProjectServiceCreateProject(ctx context.Context, body ProjectServiceCreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceCreateProjectRequest(c.Server, body)
 	if err != nil {
@@ -10856,7 +10856,7 @@ func (c *Client) ProjectServiceCreateProject(ctx context.Context, body ProjectSe
 
 // ProjectServiceDeleteProject DeleteProject
 //
-// Corresponds with DELETE /v1/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
+// Corresponds with DELETE /v0/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
 func (c *Client) ProjectServiceDeleteProject(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceDeleteProjectRequest(c.Server, projectId)
 	if err != nil {
@@ -10871,7 +10871,7 @@ func (c *Client) ProjectServiceDeleteProject(ctx context.Context, projectId stri
 
 // ProjectServiceGetProject GetProject
 //
-// Corresponds with GET /v1/projects/{projectId} (the `ProjectServiceGetProject` operationId).
+// Corresponds with GET /v0/projects/{projectId} (the `ProjectServiceGetProject` operationId).
 func (c *Client) ProjectServiceGetProject(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceGetProjectRequest(c.Server, projectId)
 	if err != nil {
@@ -10888,7 +10888,7 @@ func (c *Client) ProjectServiceGetProject(ctx context.Context, projectId string,
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PATCH /v1/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
+// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 func (c *Client) ProjectServiceUpdateProjectWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceUpdateProjectRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
@@ -10905,7 +10905,7 @@ func (c *Client) ProjectServiceUpdateProjectWithBody(ctx context.Context, projec
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PATCH /v1/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
+// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 func (c *Client) ProjectServiceUpdateProject(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceUpdateProjectRequest(c.Server, projectId, body)
 	if err != nil {
@@ -10922,7 +10922,7 @@ func (c *Client) ProjectServiceUpdateProject(ctx context.Context, projectId stri
 //
 // GetProjectAnalytics returns the project overview over a time range.
 //
-// Corresponds with GET /v1/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
+// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
 func (c *Client) AnalyticsServiceGetProjectAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceGetProjectAnalyticsRequest(c.Server, projectId, params)
 	if err != nil {
@@ -10942,7 +10942,7 @@ func (c *Client) AnalyticsServiceGetProjectAnalytics(ctx context.Context, projec
 //	the project, one AgentAnalytics row per agent — so a single agent and the
 //	whole roster share one shape.
 //
-// Corresponds with GET /v1/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
+// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
 func (c *Client) AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceListAgentAnalyticsRequest(c.Server, projectId, params)
 	if err != nil {
@@ -10959,7 +10959,7 @@ func (c *Client) AnalyticsServiceListAgentAnalytics(ctx context.Context, project
 //
 // GetAgentAnalytics returns the analytics for one agent over a time range.
 //
-// Corresponds with GET /v1/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
+// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
 func (c *Client) AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceGetAgentAnalyticsRequest(c.Server, projectId, agentId, params)
 	if err != nil {
@@ -10974,7 +10974,7 @@ func (c *Client) AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectI
 
 // ProjectServiceListInvites ListInvites
 //
-// Corresponds with GET /v1/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
+// Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
 func (c *Client) ProjectServiceListInvites(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceListInvitesRequest(c.Server, projectId)
 	if err != nil {
@@ -10991,7 +10991,7 @@ func (c *Client) ProjectServiceListInvites(ctx context.Context, projectId string
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
+// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 func (c *Client) ProjectServiceInviteMemberWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceInviteMemberRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
@@ -11008,7 +11008,7 @@ func (c *Client) ProjectServiceInviteMemberWithBody(ctx context.Context, project
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
+// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 func (c *Client) ProjectServiceInviteMember(ctx context.Context, projectId string, body ProjectServiceInviteMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceInviteMemberRequest(c.Server, projectId, body)
 	if err != nil {
@@ -11023,7 +11023,7 @@ func (c *Client) ProjectServiceInviteMember(ctx context.Context, projectId strin
 
 // ProjectServiceDeleteInvite DeleteInvite
 //
-// Corresponds with DELETE /v1/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
+// Corresponds with DELETE /v0/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
 func (c *Client) ProjectServiceDeleteInvite(ctx context.Context, projectId string, email string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceDeleteInviteRequest(c.Server, projectId, email)
 	if err != nil {
@@ -11040,7 +11040,7 @@ func (c *Client) ProjectServiceDeleteInvite(ctx context.Context, projectId strin
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PATCH /v1/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
+// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 func (c *Client) ProjectServiceUpdateInviteWithBody(ctx context.Context, projectId string, email string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceUpdateInviteRequestWithBody(c.Server, projectId, email, contentType, body)
 	if err != nil {
@@ -11057,7 +11057,7 @@ func (c *Client) ProjectServiceUpdateInviteWithBody(ctx context.Context, project
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PATCH /v1/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
+// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 func (c *Client) ProjectServiceUpdateInvite(ctx context.Context, projectId string, email string, body ProjectServiceUpdateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceUpdateInviteRequest(c.Server, projectId, email, body)
 	if err != nil {
@@ -11072,7 +11072,7 @@ func (c *Client) ProjectServiceUpdateInvite(ctx context.Context, projectId strin
 
 // ProjectServiceListKeys ListKeys
 //
-// Corresponds with GET /v1/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
+// Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
 func (c *Client) ProjectServiceListKeys(ctx context.Context, projectId string, params *ProjectServiceListKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceListKeysRequest(c.Server, projectId, params)
 	if err != nil {
@@ -11093,7 +11093,7 @@ func (c *Client) ProjectServiceListKeys(ctx context.Context, projectId string, p
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
+// Corresponds with POST /v0/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
 func (c *Client) ProjectServiceGenerateKeyWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceGenerateKeyRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
@@ -11114,7 +11114,7 @@ func (c *Client) ProjectServiceGenerateKeyWithBody(ctx context.Context, projectI
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
+// Corresponds with POST /v0/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
 func (c *Client) ProjectServiceGenerateKey(ctx context.Context, projectId string, body ProjectServiceGenerateKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceGenerateKeyRequest(c.Server, projectId, body)
 	if err != nil {
@@ -11129,7 +11129,7 @@ func (c *Client) ProjectServiceGenerateKey(ctx context.Context, projectId string
 
 // ProjectServiceDeleteKey DeleteKey
 //
-// Corresponds with DELETE /v1/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
+// Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 func (c *Client) ProjectServiceDeleteKey(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceDeleteKeyRequest(c.Server, projectId, apiKey)
 	if err != nil {
@@ -11146,7 +11146,7 @@ func (c *Client) ProjectServiceDeleteKey(ctx context.Context, projectId string, 
 //
 // Members & invites (token-based; mirrors cloud ProjectService current flows).
 //
-// Corresponds with GET /v1/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
+// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
 func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceListMembersRequest(c.Server, projectId)
 	if err != nil {
@@ -11161,7 +11161,7 @@ func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string
 
 // ProjectServiceRemoveMember RemoveMember
 //
-// Corresponds with DELETE /v1/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
+// Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
 func (c *Client) ProjectServiceRemoveMember(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceRemoveMemberRequest(c.Server, projectId, userId)
 	if err != nil {
@@ -11176,7 +11176,7 @@ func (c *Client) ProjectServiceRemoveMember(ctx context.Context, projectId strin
 
 // ProjectServiceGetMember GetMember
 //
-// Corresponds with GET /v1/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
+// Corresponds with GET /v0/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
 func (c *Client) ProjectServiceGetMember(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceGetMemberRequest(c.Server, projectId, userId)
 	if err != nil {
@@ -11193,7 +11193,7 @@ func (c *Client) ProjectServiceGetMember(ctx context.Context, projectId string, 
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PATCH /v1/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
+// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 func (c *Client) ProjectServiceUpdateMemberWithBody(ctx context.Context, projectId string, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceUpdateMemberRequestWithBody(c.Server, projectId, userId, contentType, body)
 	if err != nil {
@@ -11210,7 +11210,7 @@ func (c *Client) ProjectServiceUpdateMemberWithBody(ctx context.Context, project
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PATCH /v1/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
+// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 func (c *Client) ProjectServiceUpdateMember(ctx context.Context, projectId string, userId string, body ProjectServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceUpdateMemberRequest(c.Server, projectId, userId, body)
 	if err != nil {
@@ -11227,7 +11227,7 @@ func (c *Client) ProjectServiceUpdateMember(ctx context.Context, projectId strin
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
+// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 func (c *Client) ProjectServiceAddWorkspaceMembersToProjectWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceAddWorkspaceMembersToProjectRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
@@ -11244,7 +11244,7 @@ func (c *Client) ProjectServiceAddWorkspaceMembersToProjectWithBody(ctx context.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
+// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 func (c *Client) ProjectServiceAddWorkspaceMembersToProject(ctx context.Context, projectId string, body ProjectServiceAddWorkspaceMembersToProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceAddWorkspaceMembersToProjectRequest(c.Server, projectId, body)
 	if err != nil {
@@ -11269,7 +11269,7 @@ func (c *Client) ProjectServiceAddWorkspaceMembersToProject(ctx context.Context,
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
+// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 func (c *Client) SimulationServiceGenerateScenarioFromSessionWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceGenerateScenarioFromSessionRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
@@ -11294,7 +11294,7 @@ func (c *Client) SimulationServiceGenerateScenarioFromSessionWithBody(ctx contex
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
+// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 func (c *Client) SimulationServiceGenerateScenarioFromSession(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceGenerateScenarioFromSessionRequest(c.Server, projectId, body)
 	if err != nil {
@@ -11309,7 +11309,7 @@ func (c *Client) SimulationServiceGenerateScenarioFromSession(ctx context.Contex
 
 // ProjectServiceListScopedKeys ListScopedKeys
 //
-// Corresponds with GET /v1/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
+// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
 func (c *Client) ProjectServiceListScopedKeys(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceListScopedKeysRequest(c.Server, projectId)
 	if err != nil {
@@ -11328,7 +11328,7 @@ func (c *Client) ProjectServiceListScopedKeys(ctx context.Context, projectId str
 //
 //	cursor-paginated. Backed upstream by the ListingService room-sessions list.
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceListProjectSessionsRequest(c.Server, projectId, params)
 	if err != nil {
@@ -11347,7 +11347,7 @@ func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projec
 //
 //	`session` and the richer `detail` (participants, per-metric data points).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceGetSessionRequest(c.Server, projectId, sessionId)
 	if err != nil {
@@ -11388,7 +11388,7 @@ func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId strin
 //	data, so an older session can list no events. An ACTIVE session lists the
 //	events recorded so far. An unknown session is NotFound.
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceListSessionEventsRequest(c.Server, projectId, sessionId, params)
 	if err != nil {
@@ -11416,7 +11416,7 @@ func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectI
 //	empty because no record is at those levels, so only an unfiltered one is
 //	ObservabilityDisabled.
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewObservabilityServiceGetSessionLogsRequest(c.Server, projectId, sessionId, params)
 	if err != nil {
@@ -11460,7 +11460,7 @@ func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, project
 //	back empty because no metric has those names, so only an unfiltered one
 //	is ObservabilityDisabled.
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewObservabilityServiceGetSessionMetricsRequest(c.Server, projectId, sessionId, params)
 	if err != nil {
@@ -11481,7 +11481,7 @@ func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, proj
 //	carries the participant's participant sessions (PA_...), each with the
 //	client it connected from.
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAnalyticsServiceListSessionParticipantsRequest(c.Server, projectId, sessionId, params)
 	if err != nil {
@@ -11502,7 +11502,7 @@ func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, pr
 //	recording of that type is NotFound. A new recording can be NotFound for
 //	up to a minute after the session ends.
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewObservabilityServiceGetSessionRecordingURLRequest(c.Server, projectId, sessionId, params)
 	if err != nil {
@@ -11529,7 +11529,7 @@ func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context,
 //	can repeat, or be skipped. Dedupe by span_id, and read again from the
 //	first page to pick up a skipped span. An unknown session is NotFound.
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewObservabilityServiceGetSessionTracesRequest(c.Server, projectId, sessionId, params)
 	if err != nil {
@@ -11555,7 +11555,7 @@ func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, proje
 //	ACTIVE returns what exists so far, usually nothing, without an error:
 //	read it again after the session ends. An unknown session is NotFound.
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewObservabilityServiceGetSessionTranscriptRequest(c.Server, projectId, sessionId, params)
 	if err != nil {
@@ -11576,7 +11576,7 @@ func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, p
 //	Rows carry headline counts (job_count, passed_count, failed_count,
 //	issue_count) but neither jobs nor the summary.
 //
-// Corresponds with GET /v1/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
+// Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceListSimulationRunsRequest(c.Server, projectId, params)
 	if err != nil {
@@ -11601,7 +11601,7 @@ func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projec
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
 func (c *Client) SimulationServiceCreateSimulationRunWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceCreateSimulationRunRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
@@ -11626,7 +11626,7 @@ func (c *Client) SimulationServiceCreateSimulationRunWithBody(ctx context.Contex
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
 func (c *Client) SimulationServiceCreateSimulationRun(ctx context.Context, projectId string, body SimulationServiceCreateSimulationRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceCreateSimulationRunRequest(c.Server, projectId, body)
 	if err != nil {
@@ -11646,7 +11646,7 @@ func (c *Client) SimulationServiceCreateSimulationRun(ctx context.Context, proje
 //	compressed summary blob (summary_zstd) is omitted; use
 //	GetSimulationRunSummary for the decoded summary.
 //
-// Corresponds with GET /v1/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
+// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 func (c *Client) SimulationServiceGetSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceGetSimulationRunRequest(c.Server, projectId, simulationRunId)
 	if err != nil {
@@ -11667,7 +11667,7 @@ func (c *Client) SimulationServiceGetSimulationRun(ctx context.Context, projectI
 //	suggestions, and the per-job chat history. FailedPrecondition while the
 //	run is still going; NotFound if the run finished without a summary.
 //
-// Corresponds with GET /v1/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
+// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 func (c *Client) SimulationServiceGetSimulationRunSummary(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceGetSimulationRunSummaryRequest(c.Server, projectId, simulationRunId)
 	if err != nil {
@@ -11686,7 +11686,7 @@ func (c *Client) SimulationServiceGetSimulationRunSummary(ctx context.Context, p
 //
 //	that already finished succeeds without effect.
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceCancelSimulationRunRequest(c.Server, projectId, simulationRunId)
 	if err != nil {
@@ -11709,7 +11709,7 @@ func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, proje
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
 func (c *Client) SimulationServiceConfirmSimulationSourceUploadWithBody(ctx context.Context, projectId string, simulationRunId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceConfirmSimulationSourceUploadRequestWithBody(c.Server, projectId, simulationRunId, contentType, body)
 	if err != nil {
@@ -11732,7 +11732,7 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUploadWithBody(ctx cont
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
 func (c *Client) SimulationServiceConfirmSimulationSourceUpload(ctx context.Context, projectId string, simulationRunId string, body SimulationServiceConfirmSimulationSourceUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceConfirmSimulationSourceUploadRequest(c.Server, projectId, simulationRunId, body)
 	if err != nil {
@@ -11753,7 +11753,7 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUpload(ctx context.Cont
 //	same window, so the bars and the rows beneath them always describe one set.
 //	Both bounds are required and end_time must be after start_time.
 //
-// Corresponds with GET /v1/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
+// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceCountSimulationRunsRequest(c.Server, projectId, params)
 	if err != nil {
@@ -11775,7 +11775,7 @@ func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, proje
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 func (c *Client) ProjectServiceCreateTokenWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceCreateTokenRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
@@ -11797,7 +11797,7 @@ func (c *Client) ProjectServiceCreateTokenWithBody(ctx context.Context, projectI
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 func (c *Client) ProjectServiceCreateToken(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceCreateTokenRequest(c.Server, projectId, body)
 	if err != nil {
@@ -11812,7 +11812,7 @@ func (c *Client) ProjectServiceCreateToken(ctx context.Context, projectId string
 
 // UserServiceListUsers ListUsers
 //
-// Corresponds with GET /v1/users (the `UserServiceListUsers` operationId).
+// Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
 func (c *Client) UserServiceListUsers(ctx context.Context, params *UserServiceListUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUserServiceListUsersRequest(c.Server, params)
 	if err != nil {
@@ -11827,7 +11827,7 @@ func (c *Client) UserServiceListUsers(ctx context.Context, params *UserServiceLi
 
 // UserServiceGetCurrentUser GetCurrentUser
 //
-// Corresponds with GET /v1/users/me (the `UserServiceGetCurrentUser` operationId).
+// Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 func (c *Client) UserServiceGetCurrentUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUserServiceGetCurrentUserRequest(c.Server)
 	if err != nil {
@@ -11842,7 +11842,7 @@ func (c *Client) UserServiceGetCurrentUser(ctx context.Context, reqEditors ...Re
 
 // UserServiceGetUser GetUser
 //
-// Corresponds with GET /v1/users/{userId} (the `UserServiceGetUser` operationId).
+// Corresponds with GET /v0/users/{userId} (the `UserServiceGetUser` operationId).
 func (c *Client) UserServiceGetUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUserServiceGetUserRequest(c.Server, userId)
 	if err != nil {
@@ -11857,7 +11857,7 @@ func (c *Client) UserServiceGetUser(ctx context.Context, userId string, reqEdito
 
 // WorkspaceServiceGetInvite GetInvite
 //
-// Corresponds with GET /v1/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
+// Corresponds with GET /v0/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
 func (c *Client) WorkspaceServiceGetInvite(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceGetInviteRequest(c.Server, inviteToken)
 	if err != nil {
@@ -11874,7 +11874,7 @@ func (c *Client) WorkspaceServiceGetInvite(ctx context.Context, inviteToken stri
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
+// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 func (c *Client) WorkspaceServiceAnswerInviteWithBody(ctx context.Context, inviteToken string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceAnswerInviteRequestWithBody(c.Server, inviteToken, contentType, body)
 	if err != nil {
@@ -11891,7 +11891,7 @@ func (c *Client) WorkspaceServiceAnswerInviteWithBody(ctx context.Context, invit
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
+// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 func (c *Client) WorkspaceServiceAnswerInvite(ctx context.Context, inviteToken string, body WorkspaceServiceAnswerInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceAnswerInviteRequest(c.Server, inviteToken, body)
 	if err != nil {
@@ -11906,7 +11906,7 @@ func (c *Client) WorkspaceServiceAnswerInvite(ctx context.Context, inviteToken s
 
 // WorkspaceServiceListWorkspaces ListWorkspaces
 //
-// Corresponds with GET /v1/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
+// Corresponds with GET /v0/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
 func (c *Client) WorkspaceServiceListWorkspaces(ctx context.Context, params *WorkspaceServiceListWorkspacesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceListWorkspacesRequest(c.Server, params)
 	if err != nil {
@@ -11923,7 +11923,7 @@ func (c *Client) WorkspaceServiceListWorkspaces(ctx context.Context, params *Wor
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
+// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 func (c *Client) WorkspaceServiceCreateWorkspaceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceCreateWorkspaceRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -11940,7 +11940,7 @@ func (c *Client) WorkspaceServiceCreateWorkspaceWithBody(ctx context.Context, co
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
+// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 func (c *Client) WorkspaceServiceCreateWorkspace(ctx context.Context, body WorkspaceServiceCreateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceCreateWorkspaceRequest(c.Server, body)
 	if err != nil {
@@ -11955,7 +11955,7 @@ func (c *Client) WorkspaceServiceCreateWorkspace(ctx context.Context, body Works
 
 // WorkspaceServiceDeleteWorkspace DeleteWorkspace
 //
-// Corresponds with DELETE /v1/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
+// Corresponds with DELETE /v0/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
 func (c *Client) WorkspaceServiceDeleteWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceDeleteWorkspaceRequest(c.Server, workspaceId)
 	if err != nil {
@@ -11970,7 +11970,7 @@ func (c *Client) WorkspaceServiceDeleteWorkspace(ctx context.Context, workspaceI
 
 // WorkspaceServiceGetWorkspace GetWorkspace
 //
-// Corresponds with GET /v1/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
 func (c *Client) WorkspaceServiceGetWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceGetWorkspaceRequest(c.Server, workspaceId)
 	if err != nil {
@@ -11987,7 +11987,7 @@ func (c *Client) WorkspaceServiceGetWorkspace(ctx context.Context, workspaceId s
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 func (c *Client) WorkspaceServiceUpdateWorkspaceWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceUpdateWorkspaceRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
@@ -12004,7 +12004,7 @@ func (c *Client) WorkspaceServiceUpdateWorkspaceWithBody(ctx context.Context, wo
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 func (c *Client) WorkspaceServiceUpdateWorkspace(ctx context.Context, workspaceId string, body WorkspaceServiceUpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceUpdateWorkspaceRequest(c.Server, workspaceId, body)
 	if err != nil {
@@ -12019,7 +12019,7 @@ func (c *Client) WorkspaceServiceUpdateWorkspace(ctx context.Context, workspaceI
 
 // WorkspaceServiceListInvites ListInvites
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
 func (c *Client) WorkspaceServiceListInvites(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceListInvitesRequest(c.Server, workspaceId)
 	if err != nil {
@@ -12036,7 +12036,7 @@ func (c *Client) WorkspaceServiceListInvites(ctx context.Context, workspaceId st
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
+// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 func (c *Client) WorkspaceServiceCreateInviteWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceCreateInviteRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
@@ -12053,7 +12053,7 @@ func (c *Client) WorkspaceServiceCreateInviteWithBody(ctx context.Context, works
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
+// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 func (c *Client) WorkspaceServiceCreateInvite(ctx context.Context, workspaceId string, body WorkspaceServiceCreateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceCreateInviteRequest(c.Server, workspaceId, body)
 	if err != nil {
@@ -12068,7 +12068,7 @@ func (c *Client) WorkspaceServiceCreateInvite(ctx context.Context, workspaceId s
 
 // WorkspaceServiceDeleteInvite DeleteInvite
 //
-// Corresponds with DELETE /v1/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
+// Corresponds with DELETE /v0/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
 func (c *Client) WorkspaceServiceDeleteInvite(ctx context.Context, workspaceId string, email string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceDeleteInviteRequest(c.Server, workspaceId, email)
 	if err != nil {
@@ -12085,7 +12085,7 @@ func (c *Client) WorkspaceServiceDeleteInvite(ctx context.Context, workspaceId s
 //
 // Members & invites (mirrors cloud WorkspaceService current flows).
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
 func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceListMembersRequest(c.Server, workspaceId)
 	if err != nil {
@@ -12100,7 +12100,7 @@ func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId st
 
 // WorkspaceServiceDeleteMember DeleteMember
 //
-// Corresponds with DELETE /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
+// Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
 func (c *Client) WorkspaceServiceDeleteMember(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceDeleteMemberRequest(c.Server, workspaceId, userId)
 	if err != nil {
@@ -12115,7 +12115,7 @@ func (c *Client) WorkspaceServiceDeleteMember(ctx context.Context, workspaceId s
 
 // WorkspaceServiceGetMember GetMember
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
 func (c *Client) WorkspaceServiceGetMember(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceGetMemberRequest(c.Server, workspaceId, userId)
 	if err != nil {
@@ -12132,7 +12132,7 @@ func (c *Client) WorkspaceServiceGetMember(ctx context.Context, workspaceId stri
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
 func (c *Client) WorkspaceServiceUpdateMemberWithBody(ctx context.Context, workspaceId string, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceUpdateMemberRequestWithBody(c.Server, workspaceId, userId, contentType, body)
 	if err != nil {
@@ -12149,7 +12149,7 @@ func (c *Client) WorkspaceServiceUpdateMemberWithBody(ctx context.Context, works
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
 func (c *Client) WorkspaceServiceUpdateMember(ctx context.Context, workspaceId string, userId string, body WorkspaceServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceUpdateMemberRequest(c.Server, workspaceId, userId, body)
 	if err != nil {
@@ -12166,7 +12166,7 @@ func (c *Client) WorkspaceServiceUpdateMember(ctx context.Context, workspaceId s
 //
 // Project CRUD scoped to a workspace — responses owned by projects.v1.
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 func (c *Client) WorkspaceServiceListProjects(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceListProjectsRequest(c.Server, workspaceId, params)
 	if err != nil {
@@ -12183,7 +12183,7 @@ func (c *Client) WorkspaceServiceListProjects(ctx context.Context, workspaceId s
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
+// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 func (c *Client) WorkspaceServiceCreateProjectWithBody(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceCreateProjectRequestWithBody(c.Server, workspaceId, contentType, body)
 	if err != nil {
@@ -12200,7 +12200,7 @@ func (c *Client) WorkspaceServiceCreateProjectWithBody(ctx context.Context, work
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
+// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 func (c *Client) WorkspaceServiceCreateProject(ctx context.Context, workspaceId string, body WorkspaceServiceCreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceCreateProjectRequest(c.Server, workspaceId, body)
 	if err != nil {
@@ -12215,7 +12215,7 @@ func (c *Client) WorkspaceServiceCreateProject(ctx context.Context, workspaceId 
 
 // WorkspaceServiceDeleteProject DeleteProject
 //
-// Corresponds with DELETE /v1/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
+// Corresponds with DELETE /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
 func (c *Client) WorkspaceServiceDeleteProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceDeleteProjectRequest(c.Server, workspaceId, projectId)
 	if err != nil {
@@ -12230,7 +12230,7 @@ func (c *Client) WorkspaceServiceDeleteProject(ctx context.Context, workspaceId 
 
 // WorkspaceServiceGetProject GetProject
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 func (c *Client) WorkspaceServiceGetProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceGetProjectRequest(c.Server, workspaceId, projectId)
 	if err != nil {
@@ -12247,7 +12247,7 @@ func (c *Client) WorkspaceServiceGetProject(ctx context.Context, workspaceId str
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
 func (c *Client) WorkspaceServiceUpdateProjectWithBody(ctx context.Context, workspaceId string, updateProjectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceUpdateProjectRequestWithBody(c.Server, workspaceId, updateProjectId, contentType, body)
 	if err != nil {
@@ -12264,7 +12264,7 @@ func (c *Client) WorkspaceServiceUpdateProjectWithBody(ctx context.Context, work
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
 func (c *Client) WorkspaceServiceUpdateProject(ctx context.Context, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceUpdateProjectRequest(c.Server, workspaceId, updateProjectId, body)
 	if err != nil {
@@ -12293,7 +12293,7 @@ func NewProjectServiceGetInviteRequest(server string, inviteToken string) (*http
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/project-invites/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/project-invites/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12338,7 +12338,7 @@ func NewProjectServiceAnswerInvitationRequestWithBody(server string, inviteToken
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/project-invites/%s:answer", pathParam0)
+	operationPath := fmt.Sprintf("/v0/project-invites/%s:answer", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12367,7 +12367,7 @@ func NewProjectServiceListProjectsRequest(server string, params *ProjectServiceL
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects")
+	operationPath := fmt.Sprintf("/v0/projects")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12468,7 +12468,7 @@ func NewProjectServiceCreateProjectRequestWithBody(server string, contentType st
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects")
+	operationPath := fmt.Sprintf("/v0/projects")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12504,7 +12504,7 @@ func NewProjectServiceDeleteProjectRequest(server string, projectId string) (*ht
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12538,7 +12538,7 @@ func NewProjectServiceGetProjectRequest(server string, projectId string) (*http.
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12583,7 +12583,7 @@ func NewProjectServiceUpdateProjectRequestWithBody(server string, projectId stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12619,7 +12619,7 @@ func NewAnalyticsServiceGetProjectAnalyticsRequest(server string, projectId stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/analytics", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/analytics", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12692,7 +12692,7 @@ func NewAnalyticsServiceListAgentAnalyticsRequest(server string, projectId strin
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/analytics/agents", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/analytics/agents", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12796,7 +12796,7 @@ func NewAnalyticsServiceGetAgentAnalyticsRequest(server string, projectId string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/analytics/agents/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/analytics/agents/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12869,7 +12869,7 @@ func NewProjectServiceListInvitesRequest(server string, projectId string) (*http
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/invites", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/invites", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12914,7 +12914,7 @@ func NewProjectServiceInviteMemberRequestWithBody(server string, projectId strin
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/invites", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/invites", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -12957,7 +12957,7 @@ func NewProjectServiceDeleteInviteRequest(server string, projectId string, email
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/invites/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/invites/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13009,7 +13009,7 @@ func NewProjectServiceUpdateInviteRequestWithBody(server string, projectId strin
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/invites/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/invites/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13045,7 +13045,7 @@ func NewProjectServiceListKeysRequest(server string, projectId string, params *P
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/keys", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/keys", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13117,7 +13117,7 @@ func NewProjectServiceGenerateKeyRequestWithBody(server string, projectId string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/keys", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/keys", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13160,7 +13160,7 @@ func NewProjectServiceDeleteKeyRequest(server string, projectId string, apiKey s
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/keys/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/keys/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13194,7 +13194,7 @@ func NewProjectServiceListMembersRequest(server string, projectId string) (*http
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/members", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/members", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13235,7 +13235,7 @@ func NewProjectServiceRemoveMemberRequest(server string, projectId string, userI
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/members/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/members/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13276,7 +13276,7 @@ func NewProjectServiceGetMemberRequest(server string, projectId string, userId s
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/members/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/members/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13328,7 +13328,7 @@ func NewProjectServiceUpdateMemberRequestWithBody(server string, projectId strin
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/members/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/members/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13375,7 +13375,7 @@ func NewProjectServiceAddWorkspaceMembersToProjectRequestWithBody(server string,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/members:addWorkspaceMembers", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/members:addWorkspaceMembers", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13422,7 +13422,7 @@ func NewSimulationServiceGenerateScenarioFromSessionRequestWithBody(server strin
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/scenarios:generateFromSession", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/scenarios:generateFromSession", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13458,7 +13458,7 @@ func NewProjectServiceListScopedKeysRequest(server string, projectId string) (*h
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/scoped-keys", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/scoped-keys", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13492,7 +13492,7 @@ func NewAnalyticsServiceListProjectSessionsRequest(server string, projectId stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13668,7 +13668,7 @@ func NewAnalyticsServiceGetSessionRequest(server string, projectId string, sessi
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13709,7 +13709,7 @@ func NewAnalyticsServiceListSessionEventsRequest(server string, projectId string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/events", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s/events", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13825,7 +13825,7 @@ func NewObservabilityServiceGetSessionLogsRequest(server string, projectId strin
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/logs", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s/logs", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -13929,7 +13929,7 @@ func NewObservabilityServiceGetSessionMetricsRequest(server string, projectId st
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/metrics", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s/metrics", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14021,7 +14021,7 @@ func NewAnalyticsServiceListSessionParticipantsRequest(server string, projectId 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/participants", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s/participants", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14125,7 +14125,7 @@ func NewObservabilityServiceGetSessionRecordingURLRequest(server string, project
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/recording-url", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s/recording-url", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14205,7 +14205,7 @@ func NewObservabilityServiceGetSessionTracesRequest(server string, projectId str
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/traces", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s/traces", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14285,7 +14285,7 @@ func NewObservabilityServiceGetSessionTranscriptRequest(server string, projectId
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/transcript", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sessions/%s/transcript", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14358,7 +14358,7 @@ func NewSimulationServiceListSimulationRunsRequest(server string, projectId stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/simulation-runs", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/simulation-runs", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14502,7 +14502,7 @@ func NewSimulationServiceCreateSimulationRunRequestWithBody(server string, proje
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/simulation-runs", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/simulation-runs", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14545,7 +14545,7 @@ func NewSimulationServiceGetSimulationRunRequest(server string, projectId string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/simulation-runs/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/simulation-runs/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14586,7 +14586,7 @@ func NewSimulationServiceGetSimulationRunSummaryRequest(server string, projectId
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/simulation-runs/%s/summary", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/simulation-runs/%s/summary", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14627,7 +14627,7 @@ func NewSimulationServiceCancelSimulationRunRequest(server string, projectId str
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/simulation-runs/%s:cancel", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/simulation-runs/%s:cancel", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14679,7 +14679,7 @@ func NewSimulationServiceConfirmSimulationSourceUploadRequestWithBody(server str
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/simulation-runs/%s:confirmSourceUpload", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/simulation-runs/%s:confirmSourceUpload", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14715,7 +14715,7 @@ func NewSimulationServiceCountSimulationRunsRequest(server string, projectId str
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/simulation-runs:counts", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/simulation-runs:counts", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14835,7 +14835,7 @@ func NewProjectServiceCreateTokenRequestWithBody(server string, projectId string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/projects/%s/tokens", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/tokens", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14864,7 +14864,7 @@ func NewUserServiceListUsersRequest(server string, params *UserServiceListUsersP
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/users")
+	operationPath := fmt.Sprintf("/v0/users")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14954,7 +14954,7 @@ func NewUserServiceGetCurrentUserRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/users/me")
+	operationPath := fmt.Sprintf("/v0/users/me")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14988,7 +14988,7 @@ func NewUserServiceGetUserRequest(server string, userId string) (*http.Request, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/users/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/users/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15022,7 +15022,7 @@ func NewWorkspaceServiceGetInviteRequest(server string, inviteToken string) (*ht
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspace-invites/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspace-invites/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15067,7 +15067,7 @@ func NewWorkspaceServiceAnswerInviteRequestWithBody(server string, inviteToken s
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspace-invites/%s:answer", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspace-invites/%s:answer", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15096,7 +15096,7 @@ func NewWorkspaceServiceListWorkspacesRequest(server string, params *WorkspaceSe
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces")
+	operationPath := fmt.Sprintf("/v0/workspaces")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15173,7 +15173,7 @@ func NewWorkspaceServiceCreateWorkspaceRequestWithBody(server string, contentTyp
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces")
+	operationPath := fmt.Sprintf("/v0/workspaces")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15209,7 +15209,7 @@ func NewWorkspaceServiceDeleteWorkspaceRequest(server string, workspaceId string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15243,7 +15243,7 @@ func NewWorkspaceServiceGetWorkspaceRequest(server string, workspaceId string) (
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15288,7 +15288,7 @@ func NewWorkspaceServiceUpdateWorkspaceRequestWithBody(server string, workspaceI
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15324,7 +15324,7 @@ func NewWorkspaceServiceListInvitesRequest(server string, workspaceId string) (*
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/invites", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/invites", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15369,7 +15369,7 @@ func NewWorkspaceServiceCreateInviteRequestWithBody(server string, workspaceId s
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/invites", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/invites", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15412,7 +15412,7 @@ func NewWorkspaceServiceDeleteInviteRequest(server string, workspaceId string, e
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/invites/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/invites/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15446,7 +15446,7 @@ func NewWorkspaceServiceListMembersRequest(server string, workspaceId string) (*
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/members", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/members", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15487,7 +15487,7 @@ func NewWorkspaceServiceDeleteMemberRequest(server string, workspaceId string, u
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/members/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/members/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15528,7 +15528,7 @@ func NewWorkspaceServiceGetMemberRequest(server string, workspaceId string, user
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/members/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/members/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15580,7 +15580,7 @@ func NewWorkspaceServiceUpdateMemberRequestWithBody(server string, workspaceId s
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/members/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/members/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15616,7 +15616,7 @@ func NewWorkspaceServiceListProjectsRequest(server string, workspaceId string, p
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/projects", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/projects", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15700,7 +15700,7 @@ func NewWorkspaceServiceCreateProjectRequestWithBody(server string, workspaceId 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/projects", pathParam0)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/projects", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15743,7 +15743,7 @@ func NewWorkspaceServiceDeleteProjectRequest(server string, workspaceId string, 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/projects/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/projects/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15784,7 +15784,7 @@ func NewWorkspaceServiceGetProjectRequest(server string, workspaceId string, pro
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/projects/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/projects/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15836,7 +15836,7 @@ func NewWorkspaceServiceUpdateProjectRequestWithBody(server string, workspaceId 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/workspaces/%s/projects/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/workspaces/%s/projects/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -15904,70 +15904,70 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
+	// Corresponds with GET /v0/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
 	ProjectServiceGetInviteWithResponse(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*ProjectServiceGetInviteResponse, error)
 
 	// ProjectServiceAnswerInvitationWithBodyWithResponse AnswerInvitation
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
+	// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 	ProjectServiceAnswerInvitationWithBodyWithResponse(ctx context.Context, inviteToken string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceAnswerInvitationResponse, error)
 
 	// ProjectServiceAnswerInvitationWithResponse AnswerInvitation
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
+	// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 	ProjectServiceAnswerInvitationWithResponse(ctx context.Context, inviteToken string, body ProjectServiceAnswerInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceAnswerInvitationResponse, error)
 
 	// ProjectServiceListProjectsWithResponse ListProjects
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects (the `ProjectServiceListProjects` operationId).
+	// Corresponds with GET /v0/projects (the `ProjectServiceListProjects` operationId).
 	ProjectServiceListProjectsWithResponse(ctx context.Context, params *ProjectServiceListProjectsParams, reqEditors ...RequestEditorFn) (*ProjectServiceListProjectsResponse, error)
 
 	// ProjectServiceCreateProjectWithBodyWithResponse CreateProject
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects (the `ProjectServiceCreateProject` operationId).
+	// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 	ProjectServiceCreateProjectWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateProjectResponse, error)
 
 	// ProjectServiceCreateProjectWithResponse CreateProject
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects (the `ProjectServiceCreateProject` operationId).
+	// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 	ProjectServiceCreateProjectWithResponse(ctx context.Context, body ProjectServiceCreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateProjectResponse, error)
 
 	// ProjectServiceDeleteProjectWithResponse DeleteProject
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v1/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
+	// Corresponds with DELETE /v0/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
 	ProjectServiceDeleteProjectWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteProjectResponse, error)
 
 	// ProjectServiceGetProjectWithResponse GetProject
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId} (the `ProjectServiceGetProject` operationId).
+	// Corresponds with GET /v0/projects/{projectId} (the `ProjectServiceGetProject` operationId).
 	ProjectServiceGetProjectWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceGetProjectResponse, error)
 
 	// ProjectServiceUpdateProjectWithBodyWithResponse UpdateProject
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProjectWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateProjectResponse, error)
 
 	// ProjectServiceUpdateProjectWithResponse UpdateProject
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProjectWithResponse(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateProjectResponse, error)
 
 	// AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
@@ -15976,7 +15976,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
 	AnalyticsServiceGetProjectAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetProjectAnalyticsResponse, error)
 
 	// AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
@@ -15987,7 +15987,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
 	AnalyticsServiceListAgentAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListAgentAnalyticsResponse, error)
 
 	// AnalyticsServiceGetAgentAnalyticsWithResponse GetAgentAnalytics
@@ -15996,56 +15996,56 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
 	AnalyticsServiceGetAgentAnalyticsWithResponse(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetAgentAnalyticsResponse, error)
 
 	// ProjectServiceListInvitesWithResponse ListInvites
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
 	ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error)
 
 	// ProjectServiceInviteMemberWithBodyWithResponse InviteMember
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 	ProjectServiceInviteMemberWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceInviteMemberResponse, error)
 
 	// ProjectServiceInviteMemberWithResponse InviteMember
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 	ProjectServiceInviteMemberWithResponse(ctx context.Context, projectId string, body ProjectServiceInviteMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceInviteMemberResponse, error)
 
 	// ProjectServiceDeleteInviteWithResponse DeleteInvite
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v1/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
+	// Corresponds with DELETE /v0/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
 	ProjectServiceDeleteInviteWithResponse(ctx context.Context, projectId string, email string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteInviteResponse, error)
 
 	// ProjectServiceUpdateInviteWithBodyWithResponse UpdateInvite
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 	ProjectServiceUpdateInviteWithBodyWithResponse(ctx context.Context, projectId string, email string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateInviteResponse, error)
 
 	// ProjectServiceUpdateInviteWithResponse UpdateInvite
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 	ProjectServiceUpdateInviteWithResponse(ctx context.Context, projectId string, email string, body ProjectServiceUpdateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateInviteResponse, error)
 
 	// ProjectServiceListKeysWithResponse ListKeys
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
 	ProjectServiceListKeysWithResponse(ctx context.Context, projectId string, params *ProjectServiceListKeysParams, reqEditors ...RequestEditorFn) (*ProjectServiceListKeysResponse, error)
 
 	// ProjectServiceGenerateKeyWithBodyWithResponse GenerateKey
@@ -16055,7 +16055,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
 	ProjectServiceGenerateKeyWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceGenerateKeyResponse, error)
 
 	// ProjectServiceGenerateKeyWithResponse GenerateKey
@@ -16065,14 +16065,14 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
 	ProjectServiceGenerateKeyWithResponse(ctx context.Context, projectId string, body ProjectServiceGenerateKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceGenerateKeyResponse, error)
 
 	// ProjectServiceDeleteKeyWithResponse DeleteKey
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v1/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
+	// Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 	ProjectServiceDeleteKeyWithResponse(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteKeyResponse, error)
 
 	// ProjectServiceListMembersWithResponse ListMembers
@@ -16081,49 +16081,49 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
 	ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error)
 
 	// ProjectServiceRemoveMemberWithResponse RemoveMember
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v1/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
+	// Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
 	ProjectServiceRemoveMemberWithResponse(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*ProjectServiceRemoveMemberResponse, error)
 
 	// ProjectServiceGetMemberWithResponse GetMember
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
 	ProjectServiceGetMemberWithResponse(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*ProjectServiceGetMemberResponse, error)
 
 	// ProjectServiceUpdateMemberWithBodyWithResponse UpdateMember
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 	ProjectServiceUpdateMemberWithBodyWithResponse(ctx context.Context, projectId string, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateMemberResponse, error)
 
 	// ProjectServiceUpdateMemberWithResponse UpdateMember
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
+	// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 	ProjectServiceUpdateMemberWithResponse(ctx context.Context, projectId string, userId string, body ProjectServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateMemberResponse, error)
 
 	// ProjectServiceAddWorkspaceMembersToProjectWithBodyWithResponse AddWorkspaceMembersToProject
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 	ProjectServiceAddWorkspaceMembersToProjectWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceAddWorkspaceMembersToProjectResponse, error)
 
 	// ProjectServiceAddWorkspaceMembersToProjectWithResponse AddWorkspaceMembersToProject
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 	ProjectServiceAddWorkspaceMembersToProjectWithResponse(ctx context.Context, projectId string, body ProjectServiceAddWorkspaceMembersToProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceAddWorkspaceMembersToProjectResponse, error)
 
 	// SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
@@ -16137,7 +16137,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SimulationServiceGenerateScenarioFromSessionResponse, error)
 
 	// SimulationServiceGenerateScenarioFromSessionWithResponse GenerateScenarioFromSession
@@ -16151,14 +16151,14 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSessionWithResponse(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceGenerateScenarioFromSessionResponse, error)
 
 	// ProjectServiceListScopedKeysWithResponse ListScopedKeys
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
 	ProjectServiceListScopedKeysWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListScopedKeysResponse, error)
 
 	// AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
@@ -16168,7 +16168,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 	AnalyticsServiceListProjectSessionsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListProjectSessionsResponse, error)
 
 	// AnalyticsServiceGetSessionWithResponse GetSession
@@ -16178,7 +16178,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSessionWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionResponse, error)
 
 	// AnalyticsServiceListSessionEventsWithResponse ListSessionEvents lists one room session's events, oldest first by default,
@@ -16209,7 +16209,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEventsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionEventsResponse, error)
 
 	// ObservabilityServiceGetSessionLogsWithResponse GetSessionLogs returns the log records the session's agents exported, in
@@ -16227,7 +16227,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionLogsResponse, error)
 
 	// ObservabilityServiceGetSessionMetricsWithResponse GetSessionMetrics returns the OpenTelemetry metric points the session's
@@ -16261,7 +16261,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 	ObservabilityServiceGetSessionMetricsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionMetricsResponse, error)
 
 	// AnalyticsServiceListSessionParticipantsWithResponse ListSessionParticipants
@@ -16273,7 +16273,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 	AnalyticsServiceListSessionParticipantsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionParticipantsResponse, error)
 
 	// ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
@@ -16285,7 +16285,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURLWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionRecordingURLResponse, error)
 
 	// ObservabilityServiceGetSessionTracesWithResponse GetSessionTraces returns the spans the session's agents exported, by
@@ -16302,7 +16302,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTracesWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTracesResponse, error)
 
 	// ObservabilityServiceGetSessionTranscriptWithResponse GetSessionTranscript returns the session's conversation as ordered
@@ -16318,7 +16318,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 	ObservabilityServiceGetSessionTranscriptWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTranscriptResponse, error)
 
 	// SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
@@ -16330,7 +16330,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 	SimulationServiceListSimulationRunsWithResponse(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*SimulationServiceListSimulationRunsResponse, error)
 
 	// SimulationServiceCreateSimulationRunWithBodyWithResponse CreateSimulationRun
@@ -16344,7 +16344,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
 	SimulationServiceCreateSimulationRunWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SimulationServiceCreateSimulationRunResponse, error)
 
 	// SimulationServiceCreateSimulationRunWithResponse CreateSimulationRun
@@ -16358,7 +16358,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
 	SimulationServiceCreateSimulationRunWithResponse(ctx context.Context, projectId string, body SimulationServiceCreateSimulationRunJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceCreateSimulationRunResponse, error)
 
 	// SimulationServiceGetSimulationRunWithResponse GetSimulationRun
@@ -16369,7 +16369,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 	SimulationServiceGetSimulationRunWithResponse(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*SimulationServiceGetSimulationRunResponse, error)
 
 	// SimulationServiceGetSimulationRunSummaryWithResponse GetSimulationRunSummary
@@ -16381,7 +16381,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 	SimulationServiceGetSimulationRunSummaryWithResponse(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*SimulationServiceGetSimulationRunSummaryResponse, error)
 
 	// SimulationServiceCancelSimulationRunWithResponse CancelSimulationRun
@@ -16391,7 +16391,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 	SimulationServiceCancelSimulationRunWithResponse(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*SimulationServiceCancelSimulationRunResponse, error)
 
 	// SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse ConfirmSimulationSourceUpload
@@ -16403,7 +16403,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
 	SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse(ctx context.Context, projectId string, simulationRunId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SimulationServiceConfirmSimulationSourceUploadResponse, error)
 
 	// SimulationServiceConfirmSimulationSourceUploadWithResponse ConfirmSimulationSourceUpload
@@ -16415,7 +16415,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
 	SimulationServiceConfirmSimulationSourceUploadWithResponse(ctx context.Context, projectId string, simulationRunId string, body SimulationServiceConfirmSimulationSourceUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceConfirmSimulationSourceUploadResponse, error)
 
 	// SimulationServiceCountSimulationRunsWithResponse CountSimulationRuns
@@ -16427,7 +16427,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
+	// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRunsWithResponse(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*SimulationServiceCountSimulationRunsResponse, error)
 
 	// ProjectServiceCreateTokenWithBodyWithResponse CreateToken
@@ -16438,7 +16438,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 	ProjectServiceCreateTokenWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error)
 
 	// ProjectServiceCreateTokenWithResponse CreateToken
@@ -16449,126 +16449,126 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+	// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 	ProjectServiceCreateTokenWithResponse(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error)
 
 	// UserServiceListUsersWithResponse ListUsers
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/users (the `UserServiceListUsers` operationId).
+	// Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
 	UserServiceListUsersWithResponse(ctx context.Context, params *UserServiceListUsersParams, reqEditors ...RequestEditorFn) (*UserServiceListUsersResponse, error)
 
 	// UserServiceGetCurrentUserWithResponse GetCurrentUser
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/users/me (the `UserServiceGetCurrentUser` operationId).
+	// Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 	UserServiceGetCurrentUserWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UserServiceGetCurrentUserResponse, error)
 
 	// UserServiceGetUserWithResponse GetUser
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/users/{userId} (the `UserServiceGetUser` operationId).
+	// Corresponds with GET /v0/users/{userId} (the `UserServiceGetUser` operationId).
 	UserServiceGetUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*UserServiceGetUserResponse, error)
 
 	// WorkspaceServiceGetInviteWithResponse GetInvite
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
+	// Corresponds with GET /v0/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
 	WorkspaceServiceGetInviteWithResponse(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetInviteResponse, error)
 
 	// WorkspaceServiceAnswerInviteWithBodyWithResponse AnswerInvite
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
+	// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 	WorkspaceServiceAnswerInviteWithBodyWithResponse(ctx context.Context, inviteToken string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceAnswerInviteResponse, error)
 
 	// WorkspaceServiceAnswerInviteWithResponse AnswerInvite
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
+	// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 	WorkspaceServiceAnswerInviteWithResponse(ctx context.Context, inviteToken string, body WorkspaceServiceAnswerInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceAnswerInviteResponse, error)
 
 	// WorkspaceServiceListWorkspacesWithResponse ListWorkspaces
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
+	// Corresponds with GET /v0/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
 	WorkspaceServiceListWorkspacesWithResponse(ctx context.Context, params *WorkspaceServiceListWorkspacesParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListWorkspacesResponse, error)
 
 	// WorkspaceServiceCreateWorkspaceWithBodyWithResponse CreateWorkspace
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
+	// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 	WorkspaceServiceCreateWorkspaceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateWorkspaceResponse, error)
 
 	// WorkspaceServiceCreateWorkspaceWithResponse CreateWorkspace
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
+	// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 	WorkspaceServiceCreateWorkspaceWithResponse(ctx context.Context, body WorkspaceServiceCreateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateWorkspaceResponse, error)
 
 	// WorkspaceServiceDeleteWorkspaceWithResponse DeleteWorkspace
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v1/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
+	// Corresponds with DELETE /v0/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
 	WorkspaceServiceDeleteWorkspaceWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteWorkspaceResponse, error)
 
 	// WorkspaceServiceGetWorkspaceWithResponse GetWorkspace
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
 	WorkspaceServiceGetWorkspaceWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetWorkspaceResponse, error)
 
 	// WorkspaceServiceUpdateWorkspaceWithBodyWithResponse UpdateWorkspace
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 	WorkspaceServiceUpdateWorkspaceWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateWorkspaceResponse, error)
 
 	// WorkspaceServiceUpdateWorkspaceWithResponse UpdateWorkspace
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 	WorkspaceServiceUpdateWorkspaceWithResponse(ctx context.Context, workspaceId string, body WorkspaceServiceUpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateWorkspaceResponse, error)
 
 	// WorkspaceServiceListInvitesWithResponse ListInvites
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
 	WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error)
 
 	// WorkspaceServiceCreateInviteWithBodyWithResponse CreateInvite
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
+	// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 	WorkspaceServiceCreateInviteWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateInviteResponse, error)
 
 	// WorkspaceServiceCreateInviteWithResponse CreateInvite
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
+	// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 	WorkspaceServiceCreateInviteWithResponse(ctx context.Context, workspaceId string, body WorkspaceServiceCreateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateInviteResponse, error)
 
 	// WorkspaceServiceDeleteInviteWithResponse DeleteInvite
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v1/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
+	// Corresponds with DELETE /v0/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
 	WorkspaceServiceDeleteInviteWithResponse(ctx context.Context, workspaceId string, email string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteInviteResponse, error)
 
 	// WorkspaceServiceListMembersWithResponse ListMembers
@@ -16577,35 +16577,35 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
 	WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error)
 
 	// WorkspaceServiceDeleteMemberWithResponse DeleteMember
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
+	// Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
 	WorkspaceServiceDeleteMemberWithResponse(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteMemberResponse, error)
 
 	// WorkspaceServiceGetMemberWithResponse GetMember
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
 	WorkspaceServiceGetMemberWithResponse(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetMemberResponse, error)
 
 	// WorkspaceServiceUpdateMemberWithBodyWithResponse UpdateMember
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
 	WorkspaceServiceUpdateMemberWithBodyWithResponse(ctx context.Context, workspaceId string, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateMemberResponse, error)
 
 	// WorkspaceServiceUpdateMemberWithResponse UpdateMember
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
 	WorkspaceServiceUpdateMemberWithResponse(ctx context.Context, workspaceId string, userId string, body WorkspaceServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateMemberResponse, error)
 
 	// WorkspaceServiceListProjectsWithResponse ListProjects
@@ -16614,49 +16614,49 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 	WorkspaceServiceListProjectsWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListProjectsResponse, error)
 
 	// WorkspaceServiceCreateProjectWithBodyWithResponse CreateProject
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
+	// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 	WorkspaceServiceCreateProjectWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateProjectResponse, error)
 
 	// WorkspaceServiceCreateProjectWithResponse CreateProject
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
+	// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 	WorkspaceServiceCreateProjectWithResponse(ctx context.Context, workspaceId string, body WorkspaceServiceCreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateProjectResponse, error)
 
 	// WorkspaceServiceDeleteProjectWithResponse DeleteProject
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v1/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
+	// Corresponds with DELETE /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
 	WorkspaceServiceDeleteProjectWithResponse(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteProjectResponse, error)
 
 	// WorkspaceServiceGetProjectWithResponse GetProject
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v1/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
+	// Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 	WorkspaceServiceGetProjectWithResponse(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetProjectResponse, error)
 
 	// WorkspaceServiceUpdateProjectWithBodyWithResponse UpdateProject
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
 	WorkspaceServiceUpdateProjectWithBodyWithResponse(ctx context.Context, workspaceId string, updateProjectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateProjectResponse, error)
 
 	// WorkspaceServiceUpdateProjectWithResponse UpdateProject
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v1/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
+	// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
 	WorkspaceServiceUpdateProjectWithResponse(ctx context.Context, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateProjectResponse, error)
 }
 
@@ -19247,7 +19247,7 @@ func (r WorkspaceServiceUpdateProjectResponse) ContentType() string {
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
+// Corresponds with GET /v0/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
 func (c *ClientWithResponses) ProjectServiceGetInviteWithResponse(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*ProjectServiceGetInviteResponse, error) {
 	rsp, err := c.ProjectServiceGetInvite(ctx, inviteToken, reqEditors...)
 	if err != nil {
@@ -19260,7 +19260,7 @@ func (c *ClientWithResponses) ProjectServiceGetInviteWithResponse(ctx context.Co
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
+// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 func (c *ClientWithResponses) ProjectServiceAnswerInvitationWithBodyWithResponse(ctx context.Context, inviteToken string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceAnswerInvitationResponse, error) {
 	rsp, err := c.ProjectServiceAnswerInvitationWithBody(ctx, inviteToken, contentType, body, reqEditors...)
 	if err != nil {
@@ -19273,7 +19273,7 @@ func (c *ClientWithResponses) ProjectServiceAnswerInvitationWithBodyWithResponse
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
+// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 func (c *ClientWithResponses) ProjectServiceAnswerInvitationWithResponse(ctx context.Context, inviteToken string, body ProjectServiceAnswerInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceAnswerInvitationResponse, error) {
 	rsp, err := c.ProjectServiceAnswerInvitation(ctx, inviteToken, body, reqEditors...)
 	if err != nil {
@@ -19286,7 +19286,7 @@ func (c *ClientWithResponses) ProjectServiceAnswerInvitationWithResponse(ctx con
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects (the `ProjectServiceListProjects` operationId).
+// Corresponds with GET /v0/projects (the `ProjectServiceListProjects` operationId).
 func (c *ClientWithResponses) ProjectServiceListProjectsWithResponse(ctx context.Context, params *ProjectServiceListProjectsParams, reqEditors ...RequestEditorFn) (*ProjectServiceListProjectsResponse, error) {
 	rsp, err := c.ProjectServiceListProjects(ctx, params, reqEditors...)
 	if err != nil {
@@ -19299,7 +19299,7 @@ func (c *ClientWithResponses) ProjectServiceListProjectsWithResponse(ctx context
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects (the `ProjectServiceCreateProject` operationId).
+// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 func (c *ClientWithResponses) ProjectServiceCreateProjectWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateProjectResponse, error) {
 	rsp, err := c.ProjectServiceCreateProjectWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
@@ -19312,7 +19312,7 @@ func (c *ClientWithResponses) ProjectServiceCreateProjectWithBodyWithResponse(ct
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects (the `ProjectServiceCreateProject` operationId).
+// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 func (c *ClientWithResponses) ProjectServiceCreateProjectWithResponse(ctx context.Context, body ProjectServiceCreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateProjectResponse, error) {
 	rsp, err := c.ProjectServiceCreateProject(ctx, body, reqEditors...)
 	if err != nil {
@@ -19325,7 +19325,7 @@ func (c *ClientWithResponses) ProjectServiceCreateProjectWithResponse(ctx contex
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v1/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
+// Corresponds with DELETE /v0/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
 func (c *ClientWithResponses) ProjectServiceDeleteProjectWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteProjectResponse, error) {
 	rsp, err := c.ProjectServiceDeleteProject(ctx, projectId, reqEditors...)
 	if err != nil {
@@ -19338,7 +19338,7 @@ func (c *ClientWithResponses) ProjectServiceDeleteProjectWithResponse(ctx contex
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId} (the `ProjectServiceGetProject` operationId).
+// Corresponds with GET /v0/projects/{projectId} (the `ProjectServiceGetProject` operationId).
 func (c *ClientWithResponses) ProjectServiceGetProjectWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceGetProjectResponse, error) {
 	rsp, err := c.ProjectServiceGetProject(ctx, projectId, reqEditors...)
 	if err != nil {
@@ -19351,7 +19351,7 @@ func (c *ClientWithResponses) ProjectServiceGetProjectWithResponse(ctx context.C
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
+// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 func (c *ClientWithResponses) ProjectServiceUpdateProjectWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateProjectResponse, error) {
 	rsp, err := c.ProjectServiceUpdateProjectWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
@@ -19364,7 +19364,7 @@ func (c *ClientWithResponses) ProjectServiceUpdateProjectWithBodyWithResponse(ct
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
+// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 func (c *ClientWithResponses) ProjectServiceUpdateProjectWithResponse(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateProjectResponse, error) {
 	rsp, err := c.ProjectServiceUpdateProject(ctx, projectId, body, reqEditors...)
 	if err != nil {
@@ -19379,7 +19379,7 @@ func (c *ClientWithResponses) ProjectServiceUpdateProjectWithResponse(ctx contex
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
+// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
 func (c *ClientWithResponses) AnalyticsServiceGetProjectAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetProjectAnalyticsResponse, error) {
 	rsp, err := c.AnalyticsServiceGetProjectAnalytics(ctx, projectId, params, reqEditors...)
 	if err != nil {
@@ -19397,7 +19397,7 @@ func (c *ClientWithResponses) AnalyticsServiceGetProjectAnalyticsWithResponse(ct
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
+// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
 func (c *ClientWithResponses) AnalyticsServiceListAgentAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListAgentAnalyticsResponse, error) {
 	rsp, err := c.AnalyticsServiceListAgentAnalytics(ctx, projectId, params, reqEditors...)
 	if err != nil {
@@ -19412,7 +19412,7 @@ func (c *ClientWithResponses) AnalyticsServiceListAgentAnalyticsWithResponse(ctx
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
+// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
 func (c *ClientWithResponses) AnalyticsServiceGetAgentAnalyticsWithResponse(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetAgentAnalyticsResponse, error) {
 	rsp, err := c.AnalyticsServiceGetAgentAnalytics(ctx, projectId, agentId, params, reqEditors...)
 	if err != nil {
@@ -19425,7 +19425,7 @@ func (c *ClientWithResponses) AnalyticsServiceGetAgentAnalyticsWithResponse(ctx 
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
+// Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
 func (c *ClientWithResponses) ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error) {
 	rsp, err := c.ProjectServiceListInvites(ctx, projectId, reqEditors...)
 	if err != nil {
@@ -19438,7 +19438,7 @@ func (c *ClientWithResponses) ProjectServiceListInvitesWithResponse(ctx context.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
+// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 func (c *ClientWithResponses) ProjectServiceInviteMemberWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceInviteMemberResponse, error) {
 	rsp, err := c.ProjectServiceInviteMemberWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
@@ -19451,7 +19451,7 @@ func (c *ClientWithResponses) ProjectServiceInviteMemberWithBodyWithResponse(ctx
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
+// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 func (c *ClientWithResponses) ProjectServiceInviteMemberWithResponse(ctx context.Context, projectId string, body ProjectServiceInviteMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceInviteMemberResponse, error) {
 	rsp, err := c.ProjectServiceInviteMember(ctx, projectId, body, reqEditors...)
 	if err != nil {
@@ -19464,7 +19464,7 @@ func (c *ClientWithResponses) ProjectServiceInviteMemberWithResponse(ctx context
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v1/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
+// Corresponds with DELETE /v0/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
 func (c *ClientWithResponses) ProjectServiceDeleteInviteWithResponse(ctx context.Context, projectId string, email string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteInviteResponse, error) {
 	rsp, err := c.ProjectServiceDeleteInvite(ctx, projectId, email, reqEditors...)
 	if err != nil {
@@ -19477,7 +19477,7 @@ func (c *ClientWithResponses) ProjectServiceDeleteInviteWithResponse(ctx context
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
+// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 func (c *ClientWithResponses) ProjectServiceUpdateInviteWithBodyWithResponse(ctx context.Context, projectId string, email string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateInviteResponse, error) {
 	rsp, err := c.ProjectServiceUpdateInviteWithBody(ctx, projectId, email, contentType, body, reqEditors...)
 	if err != nil {
@@ -19490,7 +19490,7 @@ func (c *ClientWithResponses) ProjectServiceUpdateInviteWithBodyWithResponse(ctx
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
+// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 func (c *ClientWithResponses) ProjectServiceUpdateInviteWithResponse(ctx context.Context, projectId string, email string, body ProjectServiceUpdateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateInviteResponse, error) {
 	rsp, err := c.ProjectServiceUpdateInvite(ctx, projectId, email, body, reqEditors...)
 	if err != nil {
@@ -19503,7 +19503,7 @@ func (c *ClientWithResponses) ProjectServiceUpdateInviteWithResponse(ctx context
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
+// Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
 func (c *ClientWithResponses) ProjectServiceListKeysWithResponse(ctx context.Context, projectId string, params *ProjectServiceListKeysParams, reqEditors ...RequestEditorFn) (*ProjectServiceListKeysResponse, error) {
 	rsp, err := c.ProjectServiceListKeys(ctx, projectId, params, reqEditors...)
 	if err != nil {
@@ -19520,7 +19520,7 @@ func (c *ClientWithResponses) ProjectServiceListKeysWithResponse(ctx context.Con
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
+// Corresponds with POST /v0/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
 func (c *ClientWithResponses) ProjectServiceGenerateKeyWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceGenerateKeyResponse, error) {
 	rsp, err := c.ProjectServiceGenerateKeyWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
@@ -19537,7 +19537,7 @@ func (c *ClientWithResponses) ProjectServiceGenerateKeyWithBodyWithResponse(ctx 
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
+// Corresponds with POST /v0/projects/{projectId}/keys (the `ProjectServiceGenerateKey` operationId).
 func (c *ClientWithResponses) ProjectServiceGenerateKeyWithResponse(ctx context.Context, projectId string, body ProjectServiceGenerateKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceGenerateKeyResponse, error) {
 	rsp, err := c.ProjectServiceGenerateKey(ctx, projectId, body, reqEditors...)
 	if err != nil {
@@ -19550,7 +19550,7 @@ func (c *ClientWithResponses) ProjectServiceGenerateKeyWithResponse(ctx context.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v1/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
+// Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 func (c *ClientWithResponses) ProjectServiceDeleteKeyWithResponse(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteKeyResponse, error) {
 	rsp, err := c.ProjectServiceDeleteKey(ctx, projectId, apiKey, reqEditors...)
 	if err != nil {
@@ -19565,7 +19565,7 @@ func (c *ClientWithResponses) ProjectServiceDeleteKeyWithResponse(ctx context.Co
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
+// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
 func (c *ClientWithResponses) ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error) {
 	rsp, err := c.ProjectServiceListMembers(ctx, projectId, reqEditors...)
 	if err != nil {
@@ -19578,7 +19578,7 @@ func (c *ClientWithResponses) ProjectServiceListMembersWithResponse(ctx context.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v1/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
+// Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
 func (c *ClientWithResponses) ProjectServiceRemoveMemberWithResponse(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*ProjectServiceRemoveMemberResponse, error) {
 	rsp, err := c.ProjectServiceRemoveMember(ctx, projectId, userId, reqEditors...)
 	if err != nil {
@@ -19591,7 +19591,7 @@ func (c *ClientWithResponses) ProjectServiceRemoveMemberWithResponse(ctx context
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
+// Corresponds with GET /v0/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
 func (c *ClientWithResponses) ProjectServiceGetMemberWithResponse(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*ProjectServiceGetMemberResponse, error) {
 	rsp, err := c.ProjectServiceGetMember(ctx, projectId, userId, reqEditors...)
 	if err != nil {
@@ -19604,7 +19604,7 @@ func (c *ClientWithResponses) ProjectServiceGetMemberWithResponse(ctx context.Co
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
+// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 func (c *ClientWithResponses) ProjectServiceUpdateMemberWithBodyWithResponse(ctx context.Context, projectId string, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateMemberResponse, error) {
 	rsp, err := c.ProjectServiceUpdateMemberWithBody(ctx, projectId, userId, contentType, body, reqEditors...)
 	if err != nil {
@@ -19617,7 +19617,7 @@ func (c *ClientWithResponses) ProjectServiceUpdateMemberWithBodyWithResponse(ctx
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
+// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 func (c *ClientWithResponses) ProjectServiceUpdateMemberWithResponse(ctx context.Context, projectId string, userId string, body ProjectServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateMemberResponse, error) {
 	rsp, err := c.ProjectServiceUpdateMember(ctx, projectId, userId, body, reqEditors...)
 	if err != nil {
@@ -19630,7 +19630,7 @@ func (c *ClientWithResponses) ProjectServiceUpdateMemberWithResponse(ctx context
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
+// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceAddWorkspaceMembersToProjectResponse, error) {
 	rsp, err := c.ProjectServiceAddWorkspaceMembersToProjectWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
@@ -19643,7 +19643,7 @@ func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithBody
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
+// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithResponse(ctx context.Context, projectId string, body ProjectServiceAddWorkspaceMembersToProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceAddWorkspaceMembersToProjectResponse, error) {
 	rsp, err := c.ProjectServiceAddWorkspaceMembersToProject(ctx, projectId, body, reqEditors...)
 	if err != nil {
@@ -19664,7 +19664,7 @@ func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithResp
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
+// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SimulationServiceGenerateScenarioFromSessionResponse, error) {
 	rsp, err := c.SimulationServiceGenerateScenarioFromSessionWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
@@ -19685,7 +19685,7 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithBo
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
+// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithResponse(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceGenerateScenarioFromSessionResponse, error) {
 	rsp, err := c.SimulationServiceGenerateScenarioFromSession(ctx, projectId, body, reqEditors...)
 	if err != nil {
@@ -19698,7 +19698,7 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithRe
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
+// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
 func (c *ClientWithResponses) ProjectServiceListScopedKeysWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListScopedKeysResponse, error) {
 	rsp, err := c.ProjectServiceListScopedKeys(ctx, projectId, reqEditors...)
 	if err != nil {
@@ -19715,7 +19715,7 @@ func (c *ClientWithResponses) ProjectServiceListScopedKeysWithResponse(ctx conte
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 func (c *ClientWithResponses) AnalyticsServiceListProjectSessionsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListProjectSessionsResponse, error) {
 	rsp, err := c.AnalyticsServiceListProjectSessions(ctx, projectId, params, reqEditors...)
 	if err != nil {
@@ -19732,7 +19732,7 @@ func (c *ClientWithResponses) AnalyticsServiceListProjectSessionsWithResponse(ct
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 func (c *ClientWithResponses) AnalyticsServiceGetSessionWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionResponse, error) {
 	rsp, err := c.AnalyticsServiceGetSession(ctx, projectId, sessionId, reqEditors...)
 	if err != nil {
@@ -19771,7 +19771,7 @@ func (c *ClientWithResponses) AnalyticsServiceGetSessionWithResponse(ctx context
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 func (c *ClientWithResponses) AnalyticsServiceListSessionEventsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionEventsResponse, error) {
 	rsp, err := c.AnalyticsServiceListSessionEvents(ctx, projectId, sessionId, params, reqEditors...)
 	if err != nil {
@@ -19797,7 +19797,7 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionEventsWithResponse(ctx 
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 func (c *ClientWithResponses) ObservabilityServiceGetSessionLogsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionLogsResponse, error) {
 	rsp, err := c.ObservabilityServiceGetSessionLogs(ctx, projectId, sessionId, params, reqEditors...)
 	if err != nil {
@@ -19839,7 +19839,7 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionLogsWithResponse(ctx
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 func (c *ClientWithResponses) ObservabilityServiceGetSessionMetricsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionMetricsResponse, error) {
 	rsp, err := c.ObservabilityServiceGetSessionMetrics(ctx, projectId, sessionId, params, reqEditors...)
 	if err != nil {
@@ -19858,7 +19858,7 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionMetricsWithResponse(
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 func (c *ClientWithResponses) AnalyticsServiceListSessionParticipantsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionParticipantsResponse, error) {
 	rsp, err := c.AnalyticsServiceListSessionParticipants(ctx, projectId, sessionId, params, reqEditors...)
 	if err != nil {
@@ -19877,7 +19877,7 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionParticipantsWithRespons
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 func (c *ClientWithResponses) ObservabilityServiceGetSessionRecordingURLWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionRecordingURLResponse, error) {
 	rsp, err := c.ObservabilityServiceGetSessionRecordingURL(ctx, projectId, sessionId, params, reqEditors...)
 	if err != nil {
@@ -19902,7 +19902,7 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionRecordingURLWithResp
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 func (c *ClientWithResponses) ObservabilityServiceGetSessionTracesWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTracesResponse, error) {
 	rsp, err := c.ObservabilityServiceGetSessionTraces(ctx, projectId, sessionId, params, reqEditors...)
 	if err != nil {
@@ -19926,7 +19926,7 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTracesWithResponse(c
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
+// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 func (c *ClientWithResponses) ObservabilityServiceGetSessionTranscriptWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTranscriptResponse, error) {
 	rsp, err := c.ObservabilityServiceGetSessionTranscript(ctx, projectId, sessionId, params, reqEditors...)
 	if err != nil {
@@ -19945,7 +19945,7 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTranscriptWithRespon
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
+// Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 func (c *ClientWithResponses) SimulationServiceListSimulationRunsWithResponse(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*SimulationServiceListSimulationRunsResponse, error) {
 	rsp, err := c.SimulationServiceListSimulationRuns(ctx, projectId, params, reqEditors...)
 	if err != nil {
@@ -19966,7 +19966,7 @@ func (c *ClientWithResponses) SimulationServiceListSimulationRunsWithResponse(ct
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
 func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SimulationServiceCreateSimulationRunResponse, error) {
 	rsp, err := c.SimulationServiceCreateSimulationRunWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
@@ -19987,7 +19987,7 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithBodyWithRe
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs (the `SimulationServiceCreateSimulationRun` operationId).
 func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithResponse(ctx context.Context, projectId string, body SimulationServiceCreateSimulationRunJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceCreateSimulationRunResponse, error) {
 	rsp, err := c.SimulationServiceCreateSimulationRun(ctx, projectId, body, reqEditors...)
 	if err != nil {
@@ -20005,7 +20005,7 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithResponse(c
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
+// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 func (c *ClientWithResponses) SimulationServiceGetSimulationRunWithResponse(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*SimulationServiceGetSimulationRunResponse, error) {
 	rsp, err := c.SimulationServiceGetSimulationRun(ctx, projectId, simulationRunId, reqEditors...)
 	if err != nil {
@@ -20024,7 +20024,7 @@ func (c *ClientWithResponses) SimulationServiceGetSimulationRunWithResponse(ctx 
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
+// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 func (c *ClientWithResponses) SimulationServiceGetSimulationRunSummaryWithResponse(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*SimulationServiceGetSimulationRunSummaryResponse, error) {
 	rsp, err := c.SimulationServiceGetSimulationRunSummary(ctx, projectId, simulationRunId, reqEditors...)
 	if err != nil {
@@ -20041,7 +20041,7 @@ func (c *ClientWithResponses) SimulationServiceGetSimulationRunSummaryWithRespon
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 func (c *ClientWithResponses) SimulationServiceCancelSimulationRunWithResponse(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*SimulationServiceCancelSimulationRunResponse, error) {
 	rsp, err := c.SimulationServiceCancelSimulationRun(ctx, projectId, simulationRunId, reqEditors...)
 	if err != nil {
@@ -20060,7 +20060,7 @@ func (c *ClientWithResponses) SimulationServiceCancelSimulationRunWithResponse(c
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
 func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse(ctx context.Context, projectId string, simulationRunId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SimulationServiceConfirmSimulationSourceUploadResponse, error) {
 	rsp, err := c.SimulationServiceConfirmSimulationSourceUploadWithBody(ctx, projectId, simulationRunId, contentType, body, reqEditors...)
 	if err != nil {
@@ -20079,7 +20079,7 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
+// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:confirmSourceUpload (the `SimulationServiceConfirmSimulationSourceUpload` operationId).
 func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWithResponse(ctx context.Context, projectId string, simulationRunId string, body SimulationServiceConfirmSimulationSourceUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceConfirmSimulationSourceUploadResponse, error) {
 	rsp, err := c.SimulationServiceConfirmSimulationSourceUpload(ctx, projectId, simulationRunId, body, reqEditors...)
 	if err != nil {
@@ -20098,7 +20098,7 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
+// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 func (c *ClientWithResponses) SimulationServiceCountSimulationRunsWithResponse(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*SimulationServiceCountSimulationRunsResponse, error) {
 	rsp, err := c.SimulationServiceCountSimulationRuns(ctx, projectId, params, reqEditors...)
 	if err != nil {
@@ -20116,7 +20116,7 @@ func (c *ClientWithResponses) SimulationServiceCountSimulationRunsWithResponse(c
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 func (c *ClientWithResponses) ProjectServiceCreateTokenWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error) {
 	rsp, err := c.ProjectServiceCreateTokenWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
@@ -20134,7 +20134,7 @@ func (c *ClientWithResponses) ProjectServiceCreateTokenWithBodyWithResponse(ctx 
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
+// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 func (c *ClientWithResponses) ProjectServiceCreateTokenWithResponse(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error) {
 	rsp, err := c.ProjectServiceCreateToken(ctx, projectId, body, reqEditors...)
 	if err != nil {
@@ -20147,7 +20147,7 @@ func (c *ClientWithResponses) ProjectServiceCreateTokenWithResponse(ctx context.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/users (the `UserServiceListUsers` operationId).
+// Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
 func (c *ClientWithResponses) UserServiceListUsersWithResponse(ctx context.Context, params *UserServiceListUsersParams, reqEditors ...RequestEditorFn) (*UserServiceListUsersResponse, error) {
 	rsp, err := c.UserServiceListUsers(ctx, params, reqEditors...)
 	if err != nil {
@@ -20160,7 +20160,7 @@ func (c *ClientWithResponses) UserServiceListUsersWithResponse(ctx context.Conte
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/users/me (the `UserServiceGetCurrentUser` operationId).
+// Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 func (c *ClientWithResponses) UserServiceGetCurrentUserWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UserServiceGetCurrentUserResponse, error) {
 	rsp, err := c.UserServiceGetCurrentUser(ctx, reqEditors...)
 	if err != nil {
@@ -20173,7 +20173,7 @@ func (c *ClientWithResponses) UserServiceGetCurrentUserWithResponse(ctx context.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/users/{userId} (the `UserServiceGetUser` operationId).
+// Corresponds with GET /v0/users/{userId} (the `UserServiceGetUser` operationId).
 func (c *ClientWithResponses) UserServiceGetUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*UserServiceGetUserResponse, error) {
 	rsp, err := c.UserServiceGetUser(ctx, userId, reqEditors...)
 	if err != nil {
@@ -20186,7 +20186,7 @@ func (c *ClientWithResponses) UserServiceGetUserWithResponse(ctx context.Context
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
+// Corresponds with GET /v0/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
 func (c *ClientWithResponses) WorkspaceServiceGetInviteWithResponse(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetInviteResponse, error) {
 	rsp, err := c.WorkspaceServiceGetInvite(ctx, inviteToken, reqEditors...)
 	if err != nil {
@@ -20199,7 +20199,7 @@ func (c *ClientWithResponses) WorkspaceServiceGetInviteWithResponse(ctx context.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
+// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 func (c *ClientWithResponses) WorkspaceServiceAnswerInviteWithBodyWithResponse(ctx context.Context, inviteToken string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceAnswerInviteResponse, error) {
 	rsp, err := c.WorkspaceServiceAnswerInviteWithBody(ctx, inviteToken, contentType, body, reqEditors...)
 	if err != nil {
@@ -20212,7 +20212,7 @@ func (c *ClientWithResponses) WorkspaceServiceAnswerInviteWithBodyWithResponse(c
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
+// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 func (c *ClientWithResponses) WorkspaceServiceAnswerInviteWithResponse(ctx context.Context, inviteToken string, body WorkspaceServiceAnswerInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceAnswerInviteResponse, error) {
 	rsp, err := c.WorkspaceServiceAnswerInvite(ctx, inviteToken, body, reqEditors...)
 	if err != nil {
@@ -20225,7 +20225,7 @@ func (c *ClientWithResponses) WorkspaceServiceAnswerInviteWithResponse(ctx conte
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
+// Corresponds with GET /v0/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
 func (c *ClientWithResponses) WorkspaceServiceListWorkspacesWithResponse(ctx context.Context, params *WorkspaceServiceListWorkspacesParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListWorkspacesResponse, error) {
 	rsp, err := c.WorkspaceServiceListWorkspaces(ctx, params, reqEditors...)
 	if err != nil {
@@ -20238,7 +20238,7 @@ func (c *ClientWithResponses) WorkspaceServiceListWorkspacesWithResponse(ctx con
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
+// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 func (c *ClientWithResponses) WorkspaceServiceCreateWorkspaceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateWorkspaceResponse, error) {
 	rsp, err := c.WorkspaceServiceCreateWorkspaceWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
@@ -20251,7 +20251,7 @@ func (c *ClientWithResponses) WorkspaceServiceCreateWorkspaceWithBodyWithRespons
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
+// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 func (c *ClientWithResponses) WorkspaceServiceCreateWorkspaceWithResponse(ctx context.Context, body WorkspaceServiceCreateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateWorkspaceResponse, error) {
 	rsp, err := c.WorkspaceServiceCreateWorkspace(ctx, body, reqEditors...)
 	if err != nil {
@@ -20264,7 +20264,7 @@ func (c *ClientWithResponses) WorkspaceServiceCreateWorkspaceWithResponse(ctx co
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v1/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
+// Corresponds with DELETE /v0/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
 func (c *ClientWithResponses) WorkspaceServiceDeleteWorkspaceWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteWorkspaceResponse, error) {
 	rsp, err := c.WorkspaceServiceDeleteWorkspace(ctx, workspaceId, reqEditors...)
 	if err != nil {
@@ -20277,7 +20277,7 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteWorkspaceWithResponse(ctx co
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
 func (c *ClientWithResponses) WorkspaceServiceGetWorkspaceWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetWorkspaceResponse, error) {
 	rsp, err := c.WorkspaceServiceGetWorkspace(ctx, workspaceId, reqEditors...)
 	if err != nil {
@@ -20290,7 +20290,7 @@ func (c *ClientWithResponses) WorkspaceServiceGetWorkspaceWithResponse(ctx conte
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 func (c *ClientWithResponses) WorkspaceServiceUpdateWorkspaceWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateWorkspaceResponse, error) {
 	rsp, err := c.WorkspaceServiceUpdateWorkspaceWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
@@ -20303,7 +20303,7 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateWorkspaceWithBodyWithRespons
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 func (c *ClientWithResponses) WorkspaceServiceUpdateWorkspaceWithResponse(ctx context.Context, workspaceId string, body WorkspaceServiceUpdateWorkspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateWorkspaceResponse, error) {
 	rsp, err := c.WorkspaceServiceUpdateWorkspace(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
@@ -20316,7 +20316,7 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateWorkspaceWithResponse(ctx co
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
 func (c *ClientWithResponses) WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error) {
 	rsp, err := c.WorkspaceServiceListInvites(ctx, workspaceId, reqEditors...)
 	if err != nil {
@@ -20329,7 +20329,7 @@ func (c *ClientWithResponses) WorkspaceServiceListInvitesWithResponse(ctx contex
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
+// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 func (c *ClientWithResponses) WorkspaceServiceCreateInviteWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateInviteResponse, error) {
 	rsp, err := c.WorkspaceServiceCreateInviteWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
@@ -20342,7 +20342,7 @@ func (c *ClientWithResponses) WorkspaceServiceCreateInviteWithBodyWithResponse(c
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
+// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 func (c *ClientWithResponses) WorkspaceServiceCreateInviteWithResponse(ctx context.Context, workspaceId string, body WorkspaceServiceCreateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateInviteResponse, error) {
 	rsp, err := c.WorkspaceServiceCreateInvite(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
@@ -20355,7 +20355,7 @@ func (c *ClientWithResponses) WorkspaceServiceCreateInviteWithResponse(ctx conte
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v1/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
+// Corresponds with DELETE /v0/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
 func (c *ClientWithResponses) WorkspaceServiceDeleteInviteWithResponse(ctx context.Context, workspaceId string, email string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteInviteResponse, error) {
 	rsp, err := c.WorkspaceServiceDeleteInvite(ctx, workspaceId, email, reqEditors...)
 	if err != nil {
@@ -20370,7 +20370,7 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteInviteWithResponse(ctx conte
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
 func (c *ClientWithResponses) WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error) {
 	rsp, err := c.WorkspaceServiceListMembers(ctx, workspaceId, reqEditors...)
 	if err != nil {
@@ -20383,7 +20383,7 @@ func (c *ClientWithResponses) WorkspaceServiceListMembersWithResponse(ctx contex
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
+// Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
 func (c *ClientWithResponses) WorkspaceServiceDeleteMemberWithResponse(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteMemberResponse, error) {
 	rsp, err := c.WorkspaceServiceDeleteMember(ctx, workspaceId, userId, reqEditors...)
 	if err != nil {
@@ -20396,7 +20396,7 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteMemberWithResponse(ctx conte
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
 func (c *ClientWithResponses) WorkspaceServiceGetMemberWithResponse(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetMemberResponse, error) {
 	rsp, err := c.WorkspaceServiceGetMember(ctx, workspaceId, userId, reqEditors...)
 	if err != nil {
@@ -20409,7 +20409,7 @@ func (c *ClientWithResponses) WorkspaceServiceGetMemberWithResponse(ctx context.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
 func (c *ClientWithResponses) WorkspaceServiceUpdateMemberWithBodyWithResponse(ctx context.Context, workspaceId string, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateMemberResponse, error) {
 	rsp, err := c.WorkspaceServiceUpdateMemberWithBody(ctx, workspaceId, userId, contentType, body, reqEditors...)
 	if err != nil {
@@ -20422,7 +20422,7 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateMemberWithBodyWithResponse(c
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
 func (c *ClientWithResponses) WorkspaceServiceUpdateMemberWithResponse(ctx context.Context, workspaceId string, userId string, body WorkspaceServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateMemberResponse, error) {
 	rsp, err := c.WorkspaceServiceUpdateMember(ctx, workspaceId, userId, body, reqEditors...)
 	if err != nil {
@@ -20437,7 +20437,7 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateMemberWithResponse(ctx conte
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 func (c *ClientWithResponses) WorkspaceServiceListProjectsWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListProjectsResponse, error) {
 	rsp, err := c.WorkspaceServiceListProjects(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
@@ -20450,7 +20450,7 @@ func (c *ClientWithResponses) WorkspaceServiceListProjectsWithResponse(ctx conte
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
+// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 func (c *ClientWithResponses) WorkspaceServiceCreateProjectWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateProjectResponse, error) {
 	rsp, err := c.WorkspaceServiceCreateProjectWithBody(ctx, workspaceId, contentType, body, reqEditors...)
 	if err != nil {
@@ -20463,7 +20463,7 @@ func (c *ClientWithResponses) WorkspaceServiceCreateProjectWithBodyWithResponse(
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v1/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
+// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 func (c *ClientWithResponses) WorkspaceServiceCreateProjectWithResponse(ctx context.Context, workspaceId string, body WorkspaceServiceCreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateProjectResponse, error) {
 	rsp, err := c.WorkspaceServiceCreateProject(ctx, workspaceId, body, reqEditors...)
 	if err != nil {
@@ -20476,7 +20476,7 @@ func (c *ClientWithResponses) WorkspaceServiceCreateProjectWithResponse(ctx cont
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v1/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
+// Corresponds with DELETE /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
 func (c *ClientWithResponses) WorkspaceServiceDeleteProjectWithResponse(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteProjectResponse, error) {
 	rsp, err := c.WorkspaceServiceDeleteProject(ctx, workspaceId, projectId, reqEditors...)
 	if err != nil {
@@ -20489,7 +20489,7 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteProjectWithResponse(ctx cont
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v1/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
+// Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 func (c *ClientWithResponses) WorkspaceServiceGetProjectWithResponse(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetProjectResponse, error) {
 	rsp, err := c.WorkspaceServiceGetProject(ctx, workspaceId, projectId, reqEditors...)
 	if err != nil {
@@ -20502,7 +20502,7 @@ func (c *ClientWithResponses) WorkspaceServiceGetProjectWithResponse(ctx context
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
 func (c *ClientWithResponses) WorkspaceServiceUpdateProjectWithBodyWithResponse(ctx context.Context, workspaceId string, updateProjectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateProjectResponse, error) {
 	rsp, err := c.WorkspaceServiceUpdateProjectWithBody(ctx, workspaceId, updateProjectId, contentType, body, reqEditors...)
 	if err != nil {
@@ -20515,7 +20515,7 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateProjectWithBodyWithResponse(
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v1/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
+// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
 func (c *ClientWithResponses) WorkspaceServiceUpdateProjectWithResponse(ctx context.Context, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateProjectResponse, error) {
 	rsp, err := c.WorkspaceServiceUpdateProject(ctx, workspaceId, updateProjectId, body, reqEditors...)
 	if err != nil {

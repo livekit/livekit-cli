@@ -90,7 +90,7 @@ func TestListProjectSessionsQuery(t *testing.T) {
 			sessions, next, err := c.ListProjectSessions(context.Background(), "p1", tt.opts)
 			require.NoError(t, err)
 
-			assert.Equal(t, "/v1/projects/p1/sessions", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions", gotPath)
 			assert.Equal(t, tt.want, gotQuery)
 			require.Len(t, sessions, 1)
 			assert.Equal(t, "RM_1", *sessions[0].SessionId)
@@ -158,7 +158,7 @@ func TestGetSessionReturnsDetail(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "Bearer sekret", gotAuth)
-			assert.Equal(t, "/v1/projects/p1/sessions/RM_1", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions/RM_1", gotPath)
 			assert.Equal(t, "RM_1", *session.SessionId)
 			if !tt.wantDetail {
 				assert.Nil(t, detail)
@@ -216,7 +216,7 @@ func TestListSessionParticipantsQuery(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "Bearer sekret", gotAuth)
-			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/participants", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions/RM_1/participants", gotPath)
 			assert.Equal(t, tt.want, gotQuery)
 			require.Len(t, participants, 1)
 			assert.Equal(t, "alice", *participants[0].ParticipantIdentity)
@@ -324,7 +324,7 @@ func TestListSessionEvents(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, "Bearer sekret", gotAuth)
-			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/events", gotPath)
+			assert.Equal(t, "/v0/projects/p1/sessions/RM_1/events", gotPath)
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
