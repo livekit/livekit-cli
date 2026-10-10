@@ -739,7 +739,21 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	return render.SessionsPage(out, cmd.Bool("json"), sessions, nextCursor)
+	asJSON := cmd.Bool("json")
+	if err := render.SessionsPage(out, asJSON, sessions, nextCursor); err != nil {
+		return err
+	}
+	if len(sessions) == 0 && !asJSON && searchedDefaultWindow(opts) {
+		out.Statusf("Only the last 24 hours were searched — re-run with %s to look further back", util.Accented("--start YYYY-MM-DD"))
+	}
+	return nil
+}
+
+// searchedDefaultWindow reports whether a listing left its window to the
+// Public API, which then searches only the last 24 hours. A cursor carries the
+// window of the listing it came from.
+func searchedDefaultWindow(opts public.SessionListOptions) bool {
+	return opts.Start.IsZero() && opts.Cursor == ""
 }
 
 // sessionListOptions reads the session list flags for the Public API. --start

@@ -296,6 +296,16 @@ func TestSessionListOptions(t *testing.T) {
 	}
 }
 
+// TestSearchedDefaultWindow checks when an empty listing gets the hint that only
+// the last 24 hours were searched: when neither --start nor a cursor set the
+// window, so a quiet day doesn't read as a project with no sessions.
+func TestSearchedDefaultWindow(t *testing.T) {
+	assert.True(t, searchedDefaultWindow(public.SessionListOptions{}))
+	assert.False(t, searchedDefaultWindow(public.SessionListOptions{Start: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)}))
+	// A cursor carries the window of the listing it came from.
+	assert.False(t, searchedDefaultWindow(public.SessionListOptions{Cursor: "abc"}))
+}
+
 // validateListModeFlags runs analyticsListModeFlags.validate on a command built
 // from fresh analyticsSessionListFlags plus the --experimental-auth selector,
 // which production declares on the root.
