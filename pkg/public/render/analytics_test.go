@@ -513,3 +513,132 @@ func TestSessionLogsJSON(t *testing.T) {
 	assert.Equal(t, "b7ad6b7169203331", got.Items[1]["spanId"])
 	assert.Equal(t, "2026-10-07T11:00:01.25Z", got.Items[0]["timestamp"])
 }
+
+// traceSpans is a session's spans as the API sends them, by start time: a
+// root with two children, one of which has a failed child and one still
+// running, and a span whose parent wasn't exported, which the tree shows as a
+// root.
+const traceSpans = `[
+  {"spanId": "a1", "name": "agent_session", "kind": "SPAN_KIND_INTERNAL", "startTime": "2026-10-07T11:00:00Z", "endTime": "2026-10-07T11:05:00Z", "status": "SPAN_STATUS_OK", "attributes": {"lk.agent_name": "triage"}},
+  {"spanId": "b2", "parentSpanId": "a1", "name": "user_turn", "startTime": "2026-10-07T11:00:01Z", "endTime": "2026-10-07T11:00:01.320Z"},
+  {"spanId": "c3", "parentSpanId": "a1", "name": "agent_turn", "startTime": "2026-10-07T11:00:01.400Z", "endTime": "2026-10-07T11:00:03.150Z"},
+  {"spanId": "d4", "parentSpanId": "c3", "name": "llm_request", "startTime": "2026-10-07T11:00:01.500Z", "endTime": "2026-10-07T11:00:02.320Z", "status": "SPAN_STATUS_ERROR", "statusMessage": "rate\n limited", "events": [{"name": "exception"}]},
+  {"spanId": "e5", "parentSpanId": "c3", "name": "tts_request", "startTime": "2026-10-07T11:00:02.400Z"},
+  {"spanId": "f6", "parentSpanId": "ffff", "name": "on_enter", "startTime": "2026-10-07T11:00:04Z", "endTime": "2026-10-07T11:00:04.0004Z", "status": "SPAN_STATUS_ERROR"}
+]`
+
+func decodeSpans(t *testing.T, body string) []oapi.LivekitPublicapiObservabilityV1Span {
+	t.Helper()
+	var spans []oapi.LivekitPublicapiObservabilityV1Span
+	require.NoError(t, json.Unmarshal([]byte(body), &spans))
+	return spans
+}
+
+// TestSessionTracesText checks the spans print as a tree built from their
+// parent ids, each line with its start time and duration, a failed span with
+// its status message, and a span whose parent is missing as a root.
+func TestSessionTracesText(t *testing.T) {
+	prevLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = prevLocal })
+
+	page := public.TracePage{Spans: decodeSpans(t, traceSpans)}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, &stderr, false), false, page, "unused"))
+
+	assert.Equal(t, strings.Join([]string{
+		"11:00:00.000      5m0s  agent_session",
+		"11:00:01.000     320ms  ├─ user_turn",
+		"11:00:01.400     1.75s  └─ agent_turn",
+		"11:00:01.500     820ms     ├─ llm_request  [error: rate limited]",
+		"11:00:02.400         -     └─ tts_request",
+		"11:00:04.000     0.4ms  on_enter  [error]",
+		"",
+	}, "\n"), stdout.String())
+	assert.Empty(t, stderr.String())
+}
+
+// TestSessionTracesCycle checks spans whose parents name each other, which an
+// agent shouldn't export, still print once each instead of looping.
+// TestSessionTracesStripEscapes checks a span's name and status message,
+// which the agent's code and the libraries it calls chose, reach a terminal
+// with their escape sequences stripped.
+func TestSessionTracesStripEscapes(t *testing.T) {
+	text := "hi" + escapes
+	status := oapi.SPANSTATUSERROR
+	spans := []oapi.LivekitPublicapiObservabilityV1Span{
+		{SpanId: ptr("a"), Name: &text, Status: &status, StatusMessage: &text},
+		{SpanId: ptr("b"), ParentSpanId: ptr("a"), Name: &text},
+	}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTraces(terminalPrinter(&stdout, &stderr), false, public.TracePage{Spans: spans}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, strings.Join([]string{
+		"-                    -  hi]0;pwned[2J  [error: hi]0;pwned[2J]",
+		"-                    -  └─ hi]0;pwned[2J",
+		"",
+	}, "\n"), stdout.String())
+}
+
+func TestSessionTracesCycle(t *testing.T) {
+	spans := decodeSpans(t, `[
+	  {"spanId": "x", "parentSpanId": "y", "name": "x"},
+	  {"spanId": "y", "parentSpanId": "x", "name": "y"},
+	  {"spanId": "z", "parentSpanId": "z", "name": "z"}
+	]`)
+	var stdout bytes.Buffer
+	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, nil, false), false, public.TracePage{Spans: spans}, ""))
+	assert.Equal(t, strings.Join([]string{
+		"-                    -  x",
+		"-                    -  └─ y",
+		"-                    -  z",
+		"",
+	}, "\n"), stdout.String())
+}
+
+// TestSessionTracesMore checks a read that stopped at its limit says how to
+// read the rest.
+func TestSessionTracesMore(t *testing.T) {
+	page := public.TracePage{Spans: decodeSpans(t, traceSpans), NextCursor: "c2"}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, &stderr, false), false, page, ""))
+	assert.Contains(t, stderr.String(), "Printed 6 spans; more remain")
+	assert.Contains(t, stderr.String(), "--limit")
+	assert.Contains(t, stderr.String(), "or re-run with --cursor c2 for the next ones")
+}
+
+// TestSessionTracesEmpty prints the caller's reason for no spans, on stderr in
+// both modes.
+func TestSessionTracesEmpty(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, &stderr, false), false, public.TracePage{}, "No spans"))
+	assert.Empty(t, stdout.String())
+	assert.Equal(t, "No spans\n", stderr.String())
+
+	stdout.Reset()
+	stderr.Reset()
+	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, &stderr, false), true, public.TracePage{}, "No spans"))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Equal(t, "No spans\n", stderr.String())
+}
+
+// TestSessionTracesJSON checks --json prints the spans as the API sent them,
+// in its order, with the cursor where the read stopped.
+func TestSessionTracesJSON(t *testing.T) {
+	page := public.TracePage{Spans: decodeSpans(t, traceSpans), NextCursor: "c2"}
+	var stdout bytes.Buffer
+	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, nil, true), true, page, ""))
+
+	var got struct {
+		Items      []map[string]any `json:"items"`
+		NextCursor string           `json:"nextCursor"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	assert.Equal(t, "c2", got.NextCursor)
+	require.Len(t, got.Items, 6)
+	assert.Equal(t, "a1", got.Items[0]["spanId"])
+	assert.Equal(t, map[string]any{"lk.agent_name": "triage"}, got.Items[0]["attributes"])
+	assert.Equal(t, "SPAN_STATUS_ERROR", got.Items[3]["status"])
+	assert.Equal(t, "c3", got.Items[3]["parentSpanId"])
+}
