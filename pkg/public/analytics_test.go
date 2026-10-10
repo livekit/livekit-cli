@@ -16,6 +16,7 @@ package public
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -24,6 +25,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
 // TestListProjectSessionsQuery checks the query string ListProjectSessions sends
@@ -263,4 +266,151 @@ func TestGetSessionMissingSession(t *testing.T) {
 
 	_, _, err = c.GetSession(context.Background(), "p1", "RM_1")
 	require.ErrorContains(t, err, "missing session")
+}
+
+// eventsPage is a ListSessionEvents response as the server's REST transcoder
+// writes it: a participant joining, with its allowlisted payload, and a room
+// event that names no participant.
+const eventsPage = `{
+  "items": [
+    {"type": "PARTICIPANT_JOINED", "timestamp": "2026-10-07T11:00:01.250Z", "participantIdentity": "alice",
+     "participantSessionId": "PA_aaaaaaaaaaaa", "payload": {"participantKind": "STANDARD", "connectionType": "UDP"}},
+    {"type": "ROOM_ENDED", "timestamp": "2026-10-07T11:05:00Z", "payload": {"reason": "departure timeout"}}
+  ],
+  "pageInfo": {"nextCursor": "next", "hasMore": true}
+}`
+
+// TestListSessionEvents checks the request ListSessionEvents sends for each
+// option, and that events come back typed with the page's cursor.
+func TestListSessionEvents(t *testing.T) {
+	tests := []struct {
+		name string
+		opts EventOptions
+		want url.Values
+	}{
+		{name: "zero options send nothing", want: url.Values{}},
+		{
+			name: "types, participant session, order and paging",
+			opts: EventOptions{
+				PageOptions:          PageOptions{Limit: 25, Cursor: "abc"},
+				Types:                []string{"track_published", " Participant_Left "},
+				ParticipantSessionID: "PA_aaaaaaaaaaaa",
+				SortOrder:            "desc",
+			},
+			want: url.Values{
+				"page.pageSize":        {"25"},
+				"page.cursor":          {"abc"},
+				"types":                {"TRACK_PUBLISHED", "PARTICIPANT_LEFT"},
+				"participantSessionId": {"PA_aaaaaaaaaaaa"},
+				"sortOrder":            {"SORT_ORDER_DESC"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAuth, gotPath string
+			var gotQuery url.Values
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAuth, gotPath, gotQuery = r.Header.Get("Authorization"), r.URL.Path, r.URL.Query()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(eventsPage))
+			}))
+			t.Cleanup(srv.Close)
+
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			page, err := c.ListSessionEvents(context.Background(), "p1", "RM_1", tt.opts)
+			require.NoError(t, err)
+
+			assert.Equal(t, "Bearer sekret", gotAuth)
+			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/events", gotPath)
+			assert.Equal(t, tt.want, gotQuery)
+
+			assert.Equal(t, "next", page.NextCursor)
+			require.Len(t, page.Events, 2)
+			ev := page.Events[0]
+			assert.Equal(t, "PARTICIPANT_JOINED", *ev.Type)
+			assert.True(t, time.Date(2026, 10, 7, 11, 0, 1, 250e6, time.UTC).Equal(*ev.Timestamp))
+			assert.Equal(t, "alice", *ev.ParticipantIdentity)
+			assert.Equal(t, "PA_aaaaaaaaaaaa", *ev.ParticipantSessionId)
+			require.NotNil(t, ev.Payload)
+			assert.Contains(t, *ev.Payload, "participantKind")
+			assert.Nil(t, page.Events[1].ParticipantSessionId, "a room event names no participant session")
+		})
+	}
+}
+
+// TestSessionEventJSON checks an event marshals back to the API's own shape,
+// payload included, so --json prints what the server sent.
+func TestSessionEventJSON(t *testing.T) {
+	const event = `{"type":"API_CALL","timestamp":"2026-10-07T11:00:01Z",` +
+		`"payload":{"service":"RoomService","method":"CreateRoom","status":0,"durationNs":"1500000","nested":{"ok":true},"list":["a"]}}`
+	var ev oapi.LivekitPublicapiAnalyticsV1SessionEvent
+	require.NoError(t, json.Unmarshal([]byte(event), &ev))
+	got, err := json.Marshal(ev)
+	require.NoError(t, err)
+	assert.JSONEq(t, event, string(got))
+}
+
+// TestListSessionEventsRejectsBadOptions confirms unknown types and sort
+// orders, a participant session id that isn't one, and a negative limit fail
+// Validate, and fail ListSessionEvents before any request is sent.
+func TestListSessionEventsRejectsBadOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    EventOptions
+		wantErr string
+	}{
+		{name: "negative limit", opts: EventOptions{PageOptions: PageOptions{Limit: -1}}, wantErr: "limit must not be negative"},
+		{
+			name:    "unknown type",
+			opts:    EventOptions{Types: []string{"participant_joined", "joined"}},
+			wantErr: `invalid event type "joined" (expected one of `,
+		},
+		{name: "blank type", opts: EventOptions{Types: []string{" "}}, wantErr: `invalid event type " "`},
+		{
+			name:    "identity for participant session",
+			opts:    EventOptions{ParticipantSessionID: "alice"},
+			wantErr: `invalid participant session id "alice" (expected a PA_ id`,
+		},
+		{name: "sort order", opts: EventOptions{SortOrder: "newest"}, wantErr: `invalid sort order "newest"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.ErrorContains(t, tt.opts.Validate(), tt.wantErr)
+
+			called := false
+			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			_, err = c.ListSessionEvents(context.Background(), "p1", "RM_1", tt.opts)
+			require.ErrorContains(t, err, tt.wantErr)
+			assert.False(t, called, "no request should be sent")
+		})
+	}
+}
+
+// TestEventTypeNames checks the friendly names are the API's in lowercase,
+// sorted, and include the dashboard's defaults and track events.
+func TestEventTypeNames(t *testing.T) {
+	names := EventTypeNames()
+	assert.IsIncreasing(t, names)
+	for _, want := range []string{"participant_joined", "room_ended", "api_call", "track_published"} {
+		assert.Contains(t, names, want)
+	}
+	assert.Equal(t, "track_published", EventTypeName("TRACK_PUBLISHED"))
+}
+
+// TestListSessionEventsUnknownSession checks an unknown session is NotFound.
+func TestListSessionEventsUnknownSession(t *testing.T) {
+	srv := jsonServer(t, http.StatusNotFound, `{"code":5,"message":"session not found"}`, nil, nil)
+	c, err := New(srv.URL, "sekret")
+	require.NoError(t, err)
+
+	_, err = c.ListSessionEvents(context.Background(), "p1", "RM_1", EventOptions{})
+	require.Error(t, err)
+	assert.True(t, IsNotFound(err))
 }

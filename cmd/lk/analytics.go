@@ -44,7 +44,7 @@ const (
 )
 
 // defaultPageLimit is how many of a session's participants, transcript
-// records, agent log records or metric points a page reads by default.
+// records, agent log records, metric points or events a page reads by default.
 const defaultPageLimit = 50
 
 // defaultTraceLimit caps how many spans `session traces` reads: ten of the
@@ -137,6 +137,26 @@ var (
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(metricOptions, fetchSessionMetrics),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsMetricFlags()...),
+						},
+						{
+							Name:      "events",
+							Usage:     "Print a session's events (requires --experimental-auth)",
+							UsageText: "lk analytics session events SESSION_ID [--type TYPE ...] [--participant PA_ID] [--sort-order asc|desc]",
+							Description: "Prints the session's events, such as participants joining and leaving or tracks being published, " +
+								"one line per event: its time, its type, the participant identity and participant session it is about, " +
+								"and its payload. --json prints the events as the API sends them.\n\n" +
+								"With no --type it prints the events the dashboard's events table shows: participant_joined, " +
+								"participant_left, participant_active, participant_resumed, room_created, room_ended and api_call. " +
+								"--type asks for others, such as track_published or track_muted, matched exactly. " +
+								"--participant takes a participant session id (PA_...), as `lk analytics session participant list` prints it. " +
+								"With --participant and no --type it prints the events the dashboard's participant events table shows, " +
+								"track events included: participant_joined, participant_left, participant_resumed, participant_active, " +
+								"track_muted, track_unmuted, track_published, track_unpublished, track_subscribed, " +
+								"track_subscribe_requested and track_subscribe_failed. " +
+								"Events are kept for 60 days.",
+							ArgsUsage: "SESSION_ID",
+							Action:    sessionRead(eventOptions, fetchSessionEvents),
+							Flags:     append([]cli.Flag{jsonFlag}, analyticsEventFlags()...),
 						},
 					},
 				},
@@ -348,6 +368,25 @@ func analyticsMetricFlags() []cli.Flag {
 			Usage: "Print only the points of the metric named `NAME`, matched exactly, such as lk.agents.turn.e2e_latency; repeatable (default every metric)",
 		},
 	}, pageFlags(defaultPageLimit, "points")...)
+}
+
+// analyticsEventFlags returns fresh instances of the session events' own flags
+// (the shared jsonFlag is added by the command).
+func analyticsEventFlags() []cli.Flag {
+	return append([]cli.Flag{
+		&cli.StringSliceFlag{
+			Name:  "type",
+			Usage: "Print only events of `TYPE`, such as participant_joined or track_published; repeatable, matches any (default the dashboard's seven, or with --participant its eleven participant types)",
+		},
+		&cli.StringFlag{
+			Name:  "participant",
+			Usage: "Print only the events of the participant session `PA_ID`, as `lk analytics session participant list` prints it; with no --type, the dashboard's eleven participant types, track events included",
+		},
+		&cli.StringFlag{
+			Name:  "sort-order",
+			Usage: "Order by time: `ORDER` asc or desc, default asc",
+		},
+	}, pageFlags(defaultPageLimit, "events")...)
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
@@ -758,7 +797,7 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 
 // sessionRead builds the action of a command that reads one thing about a
 // session — its participants, recordings, transcript, agent logs, trace
-// spans or agent metrics — which only the Public API serves. The
+// spans, agent metrics or events — which only the Public API serves. The
 // action refuses to run without --experimental-auth before checking anything
 // else, then reads the SESSION_ID argument and the command's options, so a
 // bad flag fails before the project lookup, and hands fetch a client signed
@@ -993,9 +1032,9 @@ func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID
 }
 
 // sessionReadError explains why a session has no participants, transcript,
-// agent logs, trace spans or agent metrics (what) to print, and otherwise
-// annotates the error like the other Public API commands. access is what the
-// read requires.
+// agent logs, trace spans, agent metrics or events (what) to print, and
+// otherwise annotates the error like the other Public API commands. access
+// is what the read requires.
 func sessionReadError(err error, projectID, sessionID, what string, access sessionReadAccess) error {
 	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
 		return observabilityDisabledError(sessionID, what, dashboardURL)
@@ -1010,7 +1049,7 @@ func sessionReadError(err error, projectID, sessionID, what string, access sessi
 type sessionReadAccess int
 
 const (
-	// projectReadAccess reads: a session's participants.
+	// projectReadAccess reads: a session's participants and events.
 	projectReadAccess sessionReadAccess = iota
 	// projectAdminAccess reads, which can hold user data: a session's
 	// recordings, transcript, agent logs, trace spans and agent metrics.
@@ -1180,4 +1219,58 @@ func emptyMetricsReason(sessionID string, opts public.MetricOptions) string {
 	}
 	return fmt.Sprintf("Session %s has no agent metrics: only agents that export OpenTelemetry metrics "+
 		"to LiveKit Cloud produce them, and a running agent's points appear as it exports them", sessionID)
+}
+
+// eventOptions reads the session events flags. A bad limit, an unknown type
+// or sort order, or a participant session id that isn't one fails here,
+// before the project lookup.
+func eventOptions(cmd *cli.Command) (public.EventOptions, error) {
+	page, err := pageOptions(cmd)
+	if err != nil {
+		return public.EventOptions{}, err
+	}
+	opts := public.EventOptions{
+		PageOptions:          page,
+		Types:                cmd.StringSlice("type"),
+		ParticipantSessionID: cmd.String("participant"),
+		SortOrder:            cmd.String("sort-order"),
+	}
+	if err := opts.Validate(); err != nil {
+		return public.EventOptions{}, err
+	}
+	return opts, nil
+}
+
+// fetchSessionEvents reads one page of a session's events and prints it,
+// saying why when the page is empty.
+func fetchSessionEvents(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.EventOptions, asJSON bool) error {
+	page, err := client.ListSessionEvents(ctx, projectID, sessionID, opts)
+	if err != nil {
+		return sessionReadError(err, projectID, sessionID, "events", projectReadAccess)
+	}
+	var empty string
+	if len(page.Events) == 0 {
+		empty = emptyEventsReason(sessionID, opts)
+	}
+	return render.SessionEvents(out, asJSON, *page, empty)
+}
+
+// emptyEventsReason explains a page with no events: none of the types or for
+// the participant session asked for, or none kept at all.
+func emptyEventsReason(sessionID string, opts public.EventOptions) string {
+	if opts.Cursor != "" {
+		return "No more events"
+	}
+	var filters []string
+	if len(opts.Types) > 0 {
+		filters = append(filters, fmt.Sprintf("of the types asked for (%s)", strings.ToLower(strings.Join(opts.Types, ", "))))
+	}
+	if opts.ParticipantSessionID != "" {
+		filters = append(filters, "for participant session "+opts.ParticipantSessionID)
+	}
+	if len(filters) > 0 {
+		return fmt.Sprintf("Session %s has no events %s", sessionID, strings.Join(filters, " "))
+	}
+	return fmt.Sprintf("Session %s has no events: they are kept for 60 days, "+
+		"and an active session's appear as they are recorded", sessionID)
 }

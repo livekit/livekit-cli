@@ -53,7 +53,20 @@ const sessionWithDetail = `{
       "participantName": "Alice",
       "location": "United States",
       "region": "US East",
-      "publishedSources": {"cameraTrack": true, "microphoneTrack": true}
+      "publishedSources": {"cameraTrack": true, "microphoneTrack": true},
+      "sessions": [{
+        "participantSessionId": "PA_alice1",
+        "joinedAt": "2026-10-07T11:00:00Z",
+        "leftAt": "2026-10-07T11:02:05Z",
+        "durationSeconds": "125",
+        "os": "mac",
+        "browser": "chrome",
+        "sdkVersion": "2.6.1",
+        "connectionType": "UDP",
+        "connectionTimeMs": 120,
+        "location": "Canada",
+        "region": "US East"
+      }]
     }],
     "participantsPage": {"nextCursor": "c2", "hasMore": true}
   }
@@ -73,6 +86,7 @@ func TestSessionDetailText(t *testing.T) {
 		"Quality", "80%", "90%", // average and peak skip the empty bucket
 		"Publish bitrate", "2.0 Mbps",
 		"alice", "Alice", "United States", "US East", "camera, microphone", // first page of participants
+		"PA_alice1", "2m5s", "mac, chrome, SDK 2.6.1", "UDP (120ms)", "Canada", // their participant sessions
 	} {
 		assert.Contains(t, got, want)
 	}
@@ -113,18 +127,63 @@ func TestSessionDetailTextFinalizing(t *testing.T) {
 	assert.Contains(t, stderr.String(), "still being finalized")
 }
 
+// participantsPage is a page of participants as the API sends it: alice
+// reconnected from her phone, bob's participant sessions couldn't be read, and
+// carol is still connected from a client that reported nothing.
+const participantsPage = `[
+  {"participantIdentity": "alice", "region": "US East", "sessions": [
+    {"participantSessionId": "PA_alice1", "joinedAt": "2026-10-07T11:00:00Z", "leftAt": "2026-10-07T11:01:00Z", "durationSeconds": "60",
+     "os": "mac", "browser": "chrome", "sdkVersion": "2.6.1", "connectionType": "UDP", "connectionTimeMs": 120, "location": "Canada"},
+    {"participantSessionId": "PA_alice2", "joinedAt": "2026-10-07T11:01:30Z", "durationSeconds": "3723",
+     "os": "ios", "deviceModel": "iPhone 15", "connectionType": "TURN", "location": "Canada"}
+  ]},
+  {"participantIdentity": "bob"},
+  {"participantIdentity": "carol", "sessions": [{"participantSessionId": "PA_carol1"}]}
+]`
+
+func decodeParticipants(t *testing.T) []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo {
+	t.Helper()
+	var participants []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo
+	require.NoError(t, json.Unmarshal([]byte(participantsPage), &participants))
+	return participants
+}
+
+// TestSessionParticipantsPage checks the participants print as a table, then
+// their participant sessions with the client each connected from, and --json
+// prints the API's rows, participant sessions nested.
 func TestSessionParticipantsPage(t *testing.T) {
-	participants := []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo{{ParticipantIdentity: ptr("alice"), Region: ptr("US East")}}
+	participants := decodeParticipants(t)
 
 	var stdout, stderr bytes.Buffer
 	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, &stderr, false), false, participants, "c2"))
-	assert.Contains(t, stdout.String(), "alice")
-	assert.Contains(t, stdout.String(), "US East")
+	got := stdout.String()
+	assert.Contains(t, got, "alice")
+	assert.Contains(t, got, "US East")
+	for _, row := range [][]string{
+		{"alice", "PA_alice1", "1m0s", "mac, chrome, SDK 2.6.1", "UDP (120ms)", "Canada"},
+		{"alice", "PA_alice2", "1h2m3s", "ios, iPhone 15", "TURN", "Canada"},
+		{"carol", "PA_carol1", "-", "-", "-", "-"},
+	} {
+		assert.Regexp(t, strings.Join(util.MapStrings(row, regexp.QuoteMeta), `[^\n]*`), got)
+	}
+	assert.Less(t, strings.Index(got, "PA_alice1"), strings.Index(got, "PA_alice2"), "participant sessions keep the API's order")
+	assert.Less(t, strings.Index(got, "Identity"), strings.Index(got, "Participant Session"), "participants print before their sessions")
 	assert.Contains(t, stderr.String(), "--cursor c2")
 
 	stdout.Reset()
 	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, nil, true), true, participants, "c2"))
-	assert.JSONEq(t, `{"items":[{"participantIdentity":"alice","region":"US East"}],"nextCursor":"c2"}`, stdout.String())
+	assert.JSONEq(t, `{"items":`+participantsPage+`,"nextCursor":"c2"}`, stdout.String())
+}
+
+// TestSessionParticipantsPageNoSessions prints no participant sessions table
+// when none were read.
+func TestSessionParticipantsPageNoSessions(t *testing.T) {
+	participants := []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo{{ParticipantIdentity: ptr("bob")}}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, &stderr, false), false, participants, ""))
+	assert.Contains(t, stdout.String(), "bob")
+	assert.NotContains(t, stdout.String(), "Participant Session")
+	assert.Empty(t, stderr.String())
 }
 
 // TestSessionParticipantsPageEmpty checks a page with no participants says
@@ -745,4 +804,138 @@ func TestSessionMetricsJSON(t *testing.T) {
 		"count": "3", "sum": 2.4, "min": 0.6, "max": 1.1,
 		"bucketBounds": []any{0.5, 1.0}, "bucketCounts": []any{"0", "2", "1"},
 	}, got.Items[2]["histogram"])
+}
+
+// sessionEvents is one page of a session's events as the API sends them: the
+// room created, a participant joining and publishing a track, an API call
+// that names no participant, and an event with no payload.
+const sessionEvents = `[
+  {"type": "ROOM_CREATED", "timestamp": "2026-10-07T11:00:00Z"},
+  {"type": "PARTICIPANT_JOINED", "timestamp": "2026-10-07T11:00:01.250Z", "participantIdentity": "alice", "participantSessionId": "PA_aaaaaaaaaaaa",
+   "payload": {"participantKind": "STANDARD", "connectionType": "UDP", "isMigration": false}},
+  {"type": "TRACK_PUBLISHED", "timestamp": "2026-10-07T11:00:02Z", "participantIdentity": "alice", "participantSessionId": "PA_aaaaaaaaaaaa",
+   "payload": {"trackId": "TR_1", "trackType": "AUDIO", "trackSource": "MICROPHONE", "mimeType": "audio/opus", "muted": false}},
+  {"type": "API_CALL", "timestamp": "2026-10-07T11:00:03Z", "payload": {"service": "RoomService", "method": "UpdateRoomMetadata", "status": 0, "durationNs": "1500000"}},
+  {"type": "ROOM_ENDED", "timestamp": "2026-10-07T11:05:00Z", "payload": {"reason": "departure timeout"}}
+]`
+
+func decodeSessionEvents(t *testing.T) []oapi.LivekitPublicapiAnalyticsV1SessionEvent {
+	t.Helper()
+	var events []oapi.LivekitPublicapiAnalyticsV1SessionEvent
+	require.NoError(t, json.Unmarshal([]byte(sessionEvents), &events))
+	return events
+}
+
+// TestSessionEventsText checks each event prints as one line with its time,
+// friendly type, participant identity and participant session, and its
+// payload as sorted key=value pairs, and a next page says to re-run with its
+// cursor.
+func TestSessionEventsText(t *testing.T) {
+	prevLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = prevLocal })
+
+	page := public.EventPage{Events: decodeSessionEvents(t), NextCursor: "c2"}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, &stderr, false), false, page, "unused"))
+
+	assert.Equal(t, strings.Join([]string{
+		"11:00:00.000  room_created        -      -",
+		"11:00:01.250  participant_joined  alice  PA_aaaaaaaaaaaa  connectionType=UDP isMigration=false participantKind=STANDARD",
+		"11:00:02.000  track_published     alice  PA_aaaaaaaaaaaa  mimeType=audio/opus muted=false trackId=TR_1 trackSource=MICROPHONE trackType=AUDIO",
+		`11:00:03.000  api_call            -      -                durationNs=1500000 method=UpdateRoomMetadata service=RoomService status=0`,
+		`11:05:00.000  room_ended          -      -                reason="departure timeout"`,
+		"",
+	}, "\n"), stdout.String())
+	assert.Contains(t, stderr.String(),
+		"More events available — re-run with --cursor c2")
+	assert.NotContains(t, stderr.String(), "unused")
+}
+
+// TestSessionEventsStripEscapes checks an event's participant identity,
+// which the participant chose, and its payload's values, such as a
+// participant's name or a room's metadata, reach a terminal with their escape
+// sequences stripped, each event still on one line.
+func TestSessionEventsStripEscapes(t *testing.T) {
+	var events []oapi.LivekitPublicapiAnalyticsV1SessionEvent
+	require.NoError(t, json.Unmarshal([]byte(`[{
+	  "participantIdentity": "alice\u001b]0;pwned\u0007\u001b[2J",
+	  "participantSessionId": "PA_1\u001b[2J",
+	  "payload": {
+	    "bare": "x\u001b]0;pwned\u0007\u001b[2J",
+	    "spaced": "two\nwords\u001b[2J",
+	    "nested": {"name": "\u001b]0;pwned\u0007"}
+	  }
+	}]`), &events))
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionEvents(terminalPrinter(&stdout, &stderr), false, public.EventPage{Events: events}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, `-             -  alice]0;pwned[2J  PA_1[2J  bare=x]0;pwned[2J nested={"name":"\u001b]0;pwned\u0007"} spaced="two\nwords[2J"`+"\n", stdout.String())
+}
+
+// TestParticipantSessionsStripEscapes checks what a participant's client
+// reported about itself, and its identity, reach a terminal with their escape
+// sequences stripped in the participant sessions table.
+func TestParticipantSessionsStripEscapes(t *testing.T) {
+	text := "hi" + escapes
+	participants := []oapi.LivekitPublicapiAnalyticsV1ParticipantInfo{{
+		ParticipantIdentity: &text,
+		Sessions: &[]oapi.LivekitPublicapiAnalyticsV1ParticipantSession{{
+			ParticipantSessionId: &text, Os: &text, Browser: &text, DeviceModel: &text,
+			SdkVersion: &text, ConnectionType: &text, ConnectionTimeMs: ptr(int32(120)), Location: &text,
+		}},
+	}}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionParticipantsPage(terminalPrinter(&stdout, &stderr), false, participants, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Contains(t, stdout.String(), "hi]0;pwned[2J (120ms)")
+}
+
+// TestEventPayloadClips keeps a long payload to one short line.
+func TestEventPayloadClips(t *testing.T) {
+	ev := decodeSessionEvents(t)[0]
+	long := strings.Repeat("x", 300)
+	var payload oapi.GoogleProtobufStruct
+	require.NoError(t, json.Unmarshal([]byte(`{"reason":"`+long+`\nmore"}`), &payload))
+	ev.Payload = &payload
+	got := eventPayload(ev)
+	assert.Equal(t, eventPayloadMax, len([]rune(got)))
+	assert.True(t, strings.HasPrefix(got, "reason="+`"xxx`))
+	assert.True(t, strings.HasSuffix(got, "…"))
+}
+
+// TestSessionEventsEmpty prints the caller's reason for an empty page, on
+// stderr in both modes.
+func TestSessionEventsEmpty(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, &stderr, false), false, public.EventPage{}, "No events"))
+	assert.Empty(t, stdout.String())
+	assert.Equal(t, "No events\n", stderr.String())
+
+	stdout.Reset()
+	stderr.Reset()
+	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, &stderr, false), true, public.EventPage{}, "No events"))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Equal(t, "No events\n", stderr.String())
+}
+
+// TestSessionEventsJSON checks --json prints the events as the API sent them,
+// with the page's cursor.
+func TestSessionEventsJSON(t *testing.T) {
+	page := public.EventPage{Events: decodeSessionEvents(t), NextCursor: "c2"}
+	var stdout bytes.Buffer
+	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, nil, true), true, page, ""))
+
+	var got struct {
+		Items      []map[string]any `json:"items"`
+		NextCursor string           `json:"nextCursor"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	assert.Equal(t, "c2", got.NextCursor)
+	var want []map[string]any
+	require.NoError(t, json.Unmarshal([]byte(sessionEvents), &want))
+	want[1]["timestamp"] = "2026-10-07T11:00:01.25Z" // time.Time drops the trailing zero
+	assert.Equal(t, want, got.Items)
 }
