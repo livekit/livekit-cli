@@ -22,6 +22,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -84,6 +86,14 @@ var (
 									Flags:     append([]cli.Flag{jsonFlag}, analyticsParticipantListFlags()...),
 								},
 							},
+						},
+						{
+							Name:      "recording",
+							Usage:     "Download a session's audio or chat history (requires --experimental-auth)",
+							UsageText: "lk analytics session recording SESSION_ID --type audio|chat-history [-o FILE] [--url-only]",
+							ArgsUsage: "SESSION_ID",
+							Action:    sessionRead(sessionRecordingOptionsFrom, fetchSessionRecording),
+							Flags:     append([]cli.Flag{jsonFlag}, analyticsRecordingFlags()...),
 						},
 					},
 				},
@@ -219,6 +229,28 @@ func analyticsParticipantListFlags() []cli.Flag {
 			Usage: "Order direction: `ORDER` asc or desc, default desc",
 		},
 	}, pageFlags(defaultPageLimit, "participants")...)
+}
+
+// analyticsRecordingFlags returns fresh instances of the recording download's
+// own flags (the shared jsonFlag is added by the command), for the same reason
+// as analyticsSessionListFlags. --type isn't Required at the flag level so the
+// --experimental-auth gate speaks first.
+func analyticsRecordingFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:  "type",
+			Usage: "Recording `TYPE` to fetch: audio or chat-history (required)",
+		},
+		&cli.StringFlag{
+			Name:    "output",
+			Aliases: []string{"o"},
+			Usage:   "Save to `FILE`, replacing it if it exists (default SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, never replaced)",
+		},
+		&cli.BoolFlag{
+			Name:  "url-only",
+			Usage: "Print the signed download URL (valid for 15 minutes) instead of downloading",
+		},
+	}
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
@@ -628,11 +660,11 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 }
 
 // sessionRead builds the action of a command that reads one thing about a
-// session — its participants — which only the Public API serves. The action
-// refuses to run without --experimental-auth before checking anything else,
-// then reads the SESSION_ID argument and the command's options, so a bad flag
-// fails before the project lookup, and hands fetch a client signed in as the
-// user and the selected project.
+// session — its participants or recordings — which only the Public API
+// serves. The action refuses to run without --experimental-auth before
+// checking anything else, then reads the SESSION_ID argument and the
+// command's options, so a bad flag fails before the project lookup, and hands
+// fetch a client signed in as the user and the selected project.
 func sessionRead[O any](
 	readOptions func(*cli.Command) (O, error),
 	fetch func(ctx context.Context, client *public.Client, projectID, sessionID string, opts O, asJSON bool) error,
@@ -667,7 +699,7 @@ func sessionRead[O any](
 func fetchSessionParticipants(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.ParticipantListOptions, asJSON bool) error {
 	participants, nextCursor, err := client.ListSessionParticipants(ctx, projectID, sessionID, opts)
 	if err != nil {
-		return sessionReadError(err, projectID, sessionID)
+		return sessionReadError(err, projectID, sessionID, "participants", projectReadAccess)
 	}
 	return render.SessionParticipantsPage(out, asJSON, participants, nextCursor)
 }
@@ -690,6 +722,133 @@ func participantListOptions(cmd *cli.Command) (public.ParticipantListOptions, er
 	return opts, nil
 }
 
+// sessionRecordingOptions is what `session recording` fetches and where it
+// puts it.
+type sessionRecordingOptions struct {
+	public.RecordingURLOptions
+	// Output is the file to save to; empty picks defaultRecordingFile.
+	Output string
+	// URLOnly prints the signed URL instead of downloading.
+	URLOnly bool
+}
+
+// sessionRecordingOptionsFrom reads the recording flags. A missing or unknown
+// type fails here, before the project lookup.
+func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, error) {
+	opts := sessionRecordingOptions{
+		RecordingURLOptions: public.RecordingURLOptions{Recording: strings.ToLower(strings.TrimSpace(cmd.String("type")))},
+		Output:              cmd.String("output"),
+		URLOnly:             cmd.Bool("url-only"),
+	}
+	if err := opts.Validate(); err != nil {
+		return sessionRecordingOptions{}, err
+	}
+	if opts.URLOnly && opts.Output != "" {
+		return sessionRecordingOptions{}, errors.New("--output can't be used with --url-only")
+	}
+	return opts, nil
+}
+
+// fetchSessionRecording asks the Public API to sign a URL for the recording,
+// then prints the URL or downloads it to a file. The download goes straight to
+// the object store; nothing passes through the API.
+func fetchSessionRecording(ctx context.Context, client *public.Client, projectID, sessionID string, opts sessionRecordingOptions, asJSON bool) error {
+	// A file -o names is replaced; the default name never replaces a file, so
+	// running the command twice can't silently overwrite the first download.
+	file := opts.Output
+	if file == "" && !opts.URLOnly {
+		file = defaultRecordingFile(sessionID, opts.Recording)
+		if _, err := os.Lstat(file); err == nil {
+			return fmt.Errorf("%s already exists; pass -o %s to replace it, or -o FILE to save elsewhere", file, file)
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
+
+	res, err := client.GetSessionRecordingURL(ctx, projectID, sessionID, opts.RecordingURLOptions)
+	if err != nil {
+		return sessionRecordingError(err, projectID, sessionID, opts.Recording)
+	}
+	if opts.URLOnly {
+		return render.RecordingURL(out, asJSON, *res)
+	}
+
+	n, err := saveRecording(ctx, *res.Url, file)
+	if err != nil {
+		return err
+	}
+	return render.RecordingSaved(out, asJSON, render.SavedRecording{
+		SessionID:          sessionID,
+		Recording:          opts.Recording,
+		File:               file,
+		Bytes:              n,
+		RecordingStartedAt: res.RecordingStartedAt,
+	})
+}
+
+// defaultRecordingFile names a downloaded recording in the working directory:
+// Ogg for audio, JSON for chat history. A path separator in the session id
+// can't send the file elsewhere.
+func defaultRecordingFile(sessionID, recording string) string {
+	ext := ".ogg"
+	if recording == public.RecordingChatHistory {
+		ext = ".json"
+	}
+	name := strings.NewReplacer("/", "_", `\`, "_").Replace(sessionID)
+	return name + "-" + recording + ext
+}
+
+// saveRecording downloads a signed recording URL to path. It writes a hidden
+// temporary file beside path (readable only by the user, like the recording
+// it holds) and renames it into place once the download completes, so a
+// failed download leaves no partial file and an existing file stays intact.
+func saveRecording(ctx context.Context, signedURL, path string) (int64, error) {
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.part")
+	if err != nil {
+		return 0, err
+	}
+	n, err := public.DownloadRecording(ctx, signedURL, tmp)
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Rename(tmp.Name(), path)
+	}
+	if err != nil {
+		_ = os.Remove(tmp.Name())
+		return 0, err
+	}
+	return n, nil
+}
+
+// sessionRecordingError explains why a session has nothing to download, and
+// otherwise annotates the error like the other Public API commands.
+func sessionRecordingError(err error, projectID, sessionID, recording string) error {
+	label := render.RecordingLabel(recording)
+	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
+		return observabilityDisabledError(sessionID, label, dashboardURL)
+	}
+	if public.IsNotFound(err) {
+		// The API answers an unknown session, or a mistyped --project, the same
+		// way, so say so too and name the project.
+		return fmt.Errorf("session %s has no %s (%w): it wasn't recorded, has expired, "+
+			"or the session ended less than a minute ago and the recording is still being indexed; "+
+			"or there is no such session in project %s", sessionID, label, err, projectID)
+	}
+	return sessionAPIError(err, label, projectAdminAccess)
+}
+
+// observabilityDisabledError says a session has nothing to read because the
+// project's user data recording is off, and where an admin turns it on.
+func observabilityDisabledError(sessionID, what, dashboardURL string) error {
+	where := "in the project's settings on the LiveKit Cloud dashboard"
+	if dashboardURL != "" {
+		where = "at " + dashboardURL
+	}
+	return fmt.Errorf("session %s has no %s: user data recording is off for this project, so nothing was recorded. "+
+		"A project admin can turn it on %s; it records new sessions only", sessionID, what, where)
+}
+
 // pageOptions reads a session read's --limit and --cursor flags. A limit
 // that isn't positive fails here, before the project lookup.
 func pageOptions(cmd *cli.Command) (public.PageOptions, error) {
@@ -703,20 +862,35 @@ func pageOptions(cmd *cli.Command) (public.PageOptions, error) {
 // sessionReadError annotates a session read's error like sessionAPIError,
 // except NotFound: the API answers an unknown session and a mistyped
 // --project the same way, so it names the session and the project it asked.
-func sessionReadError(err error, projectID, sessionID string) error {
+// what names what the read returns, and access is what the read requires.
+func sessionReadError(err error, projectID, sessionID, what string, access sessionReadAccess) error {
 	if public.IsNotFound(err) {
 		return fmt.Errorf("no session %s in project %s (%w)", sessionID, projectID, err)
 	}
-	return sessionAPIError(err)
+	return sessionAPIError(err, what, access)
 }
+
+// sessionReadAccess is the project access a session read requires.
+type sessionReadAccess int
+
+const (
+	// projectReadAccess reads: a session's participants.
+	projectReadAccess sessionReadAccess = iota
+	// projectAdminAccess reads, which can hold user data: a session's
+	// recordings.
+	projectAdminAccess
+)
 
 // sessionAPIError annotates a Public API error from a session read like
 // cloudAPIError, except a permission denial: cloudAPIError suggests API-key
 // credentials, which these Public-API-only reads can't use, so it says what
-// the read requires instead: access to the project.
-func sessionAPIError(err error) error {
+// the read requires instead. what names what the read returns.
+func sessionAPIError(err error, what string, access sessionReadAccess) error {
 	if !public.IsPermissionDenied(err) {
 		return cloudAPIError(err)
+	}
+	if access == projectAdminAccess {
+		return fmt.Errorf("%w — reading a session's %s requires being a project admin", err, what)
 	}
 	return fmt.Errorf("%w — you don't have access to this project", err)
 }

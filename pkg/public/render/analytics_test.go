@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"regexp"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
@@ -270,4 +271,39 @@ func TestSessionDetailJSON(t *testing.T) {
 	var want map[string]any
 	require.NoError(t, json.Unmarshal([]byte(sessionWithDetail), &want))
 	assert.Equal(t, want, got)
+}
+
+const recordingURLResponse = `{"url":"https://bucket.example/rec?sig=x","expiresAt":"2026-10-07T12:15:00Z","recordingStartedAt":"2026-10-07T11:00:00Z"}`
+
+// TestRecordingURL checks the text form is the bare URL on stdout, so it pipes
+// into curl, and --json is the API's response.
+func TestRecordingURL(t *testing.T) {
+	var resp oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse
+	require.NoError(t, json.Unmarshal([]byte(recordingURLResponse), &resp))
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, RecordingURL(util.NewPrinter(&stdout, &stderr, false), false, resp))
+	assert.Equal(t, "https://bucket.example/rec?sig=x\n", stdout.String())
+	assert.Contains(t, stderr.String(), "expires")
+
+	stdout.Reset()
+	require.NoError(t, RecordingURL(util.NewPrinter(&stdout, nil, true), true, resp))
+	assert.JSONEq(t, recordingURLResponse, stdout.String())
+}
+
+// TestRecordingSaved checks a saved recording says where it went, and --json
+// gives a script the same facts.
+func TestRecordingSaved(t *testing.T) {
+	started := time.Date(2026, 10, 7, 11, 0, 0, 0, time.UTC)
+	saved := SavedRecording{SessionID: "RM_1", Recording: "chat-history", File: "RM_1-chat-history.json", Bytes: 2048, RecordingStartedAt: &started}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, &stderr, false), false, saved))
+	assert.Empty(t, stdout.String())
+	assert.Contains(t, stderr.String(), "Saved chat history of session RM_1 to RM_1-chat-history.json (2.0 KB)")
+	assert.Contains(t, stderr.String(), "recording started")
+
+	stdout.Reset()
+	require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, nil, true), true, saved))
+	assert.JSONEq(t, `{"sessionId":"RM_1","recording":"chat-history","file":"RM_1-chat-history.json","bytes":2048,"recordingStartedAt":"2026-10-07T11:00:00Z"}`, stdout.String())
 }

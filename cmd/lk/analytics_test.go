@@ -16,11 +16,15 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -479,6 +483,141 @@ func TestFetchSessionParticipantsErrors(t *testing.T) {
 	}
 }
 
+func TestSessionRecordingCommand(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd)
+	sessionCmd := findCommandByName(analyticsCmd.Commands, "session")
+	require.NotNil(t, sessionCmd)
+	recordingCmd := findCommandByName(sessionCmd.Commands, "recording")
+	require.NotNil(t, recordingCmd, "'analytics session recording' command must exist")
+	require.NotNil(t, recordingCmd.Action)
+	for _, name := range []string{"type", "output", "url-only", "json"} {
+		assert.NotNil(t, findFlagByName(recordingCmd.Flags, name), "--%s", name)
+	}
+}
+
+// TestSessionRecordingRequiresExperimentalAuth checks the recording download,
+// which has no API-key endpoint, refuses to run without --experimental-auth
+// before reading its arguments or any config.
+func TestSessionRecordingRequiresExperimentalAuth(t *testing.T) {
+	for _, args := range [][]string{
+		{"--experimental", "session", "recording", "RM_1", "--type", "audio"},
+		{"--experimental", "session", "recording", "RM_1", "--type", "bogus"},
+		{"--experimental", "session", "recording"},
+	} {
+		err := runAnalytics(args...)
+		require.ErrorContains(t, err, "only available under --experimental-auth")
+	}
+}
+
+// sessionRecordingCmdOptions runs sessionRecordingOptionsFrom with the given
+// arguments on a command built from fresh analyticsRecordingFlags.
+func sessionRecordingCmdOptions(t *testing.T, args ...string) (sessionRecordingOptions, error) {
+	t.Helper()
+	var opts sessionRecordingOptions
+	var optsErr error
+	cmd := &cli.Command{
+		Name:  "recording",
+		Flags: analyticsRecordingFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			opts, optsErr = sessionRecordingOptionsFrom(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"recording"}, args...)))
+	return opts, optsErr
+}
+
+func TestSessionRecordingOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    sessionRecordingOptions
+		wantErr string
+	}{
+		{
+			name: "audio",
+			args: []string{"--type", "audio"},
+			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}},
+		},
+		{
+			name: "chat history to a file",
+			args: []string{"--type", "chat-history", "-o", "chat.json"},
+			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "chat-history"}, Output: "chat.json"},
+		},
+		{
+			name: "url only",
+			args: []string{"--type", "audio", "--url-only"},
+			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, URLOnly: true},
+		},
+		{name: "type is required", wantErr: `recording type is required ("audio" or "chat-history")`},
+		{name: "unknown type", args: []string{"--type", "transcript"}, wantErr: `invalid recording type "transcript"`},
+		{
+			name:    "url only saves nothing",
+			args:    []string{"--type", "audio", "--url-only", "-o", "a.ogg"},
+			wantErr: "--output can't be used with --url-only",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := sessionRecordingCmdOptions(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// recordingServers starts a stand-in object store serving a session's audio
+// and gzip-encoded chat history at signed URLs, and a stand-in Public API that
+// signs those URLs. Requests to the object store are recorded so a test can
+// check no credentials reach it.
+func recordingServers(t *testing.T, audio []byte, chatHistory string) (api *public.Client, storeAuth *[]string) {
+	t.Helper()
+	var auth []string
+	store := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = append(auth, r.Header.Get("Authorization"))
+		switch r.URL.Path {
+		case "/recording.ogg":
+			w.Header().Set("Content-Type", "audio/ogg")
+			_, _ = w.Write(audio)
+		case "/chat_history.json":
+			var buf bytes.Buffer
+			zw := gzip.NewWriter(&buf)
+			_, _ = zw.Write([]byte(chatHistory))
+			_ = zw.Close()
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Content-Encoding", "gzip")
+			_, _ = w.Write(buf.Bytes())
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(store.Close)
+
+	apiSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/projects/p1/sessions/RM_1/recording-url" || r.Header.Get("Authorization") != "Bearer sekret" {
+			http.NotFound(w, r)
+			return
+		}
+		object := "/recording.ogg"
+		if r.URL.Query().Get("fileType") == "RECORDING_FILE_TYPE_CHAT_HISTORY" {
+			object = "/chat_history.json"
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"url":%q,"expiresAt":"2026-10-07T12:15:00Z","recordingStartedAt":"2026-10-07T11:00:00Z"}`,
+			store.URL+object+"?X-Amz-Signature=abc")
+	}))
+	t.Cleanup(apiSrv.Close)
+
+	client, err := public.New(apiSrv.URL, "sekret")
+	require.NoError(t, err)
+	return client, &auth
+}
+
 // captureOut points the command printer at buffers for one test.
 func captureOut(t *testing.T) (stdout, stderr *bytes.Buffer) {
 	t.Helper()
@@ -489,16 +628,227 @@ func captureOut(t *testing.T) (stdout, stderr *bytes.Buffer) {
 	return stdout, stderr
 }
 
+// TestFetchSessionRecording downloads each recording from a signed URL the
+// stand-in API hands out, to the default name or -o, and checks the chat
+// history lands decompressed.
+func TestFetchSessionRecording(t *testing.T) {
+	audio := []byte("OggS\x00\x02audio-bytes")
+	const chat = `{"items":[{"type":"message","role":"user","content":["hi"]}]}`
+
+	tests := []struct {
+		name     string
+		opts     sessionRecordingOptions
+		wantFile string
+		want     string
+	}{
+		{
+			name:     "audio to the default name",
+			opts:     sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}},
+			wantFile: "RM_1-audio.ogg",
+			want:     string(audio),
+		},
+		{
+			name:     "chat history to the default name, decompressed",
+			opts:     sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "chat-history"}},
+			wantFile: "RM_1-chat-history.json",
+			want:     chat,
+		},
+		{
+			name:     "chat history to -o",
+			opts:     sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "chat-history"}, Output: "out/chat.json"},
+			wantFile: "out/chat.json",
+			want:     chat,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			require.NoError(t, os.Mkdir("out", 0o755))
+			client, storeAuth := recordingServers(t, audio, chat)
+			_, stderr := captureOut(t)
+
+			require.NoError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", tt.opts, false))
+
+			got, err := os.ReadFile(tt.wantFile)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, string(got))
+			assert.Contains(t, stderr.String(), tt.wantFile)
+			assert.Equal(t, []string{""}, *storeAuth, "the object store gets the signed URL and nothing else")
+
+			leftovers, err := filepath.Glob(filepath.Join(filepath.Dir(tt.wantFile), ".*"))
+			require.NoError(t, err)
+			assert.Empty(t, leftovers, "no partial file is left behind")
+		})
+	}
+}
+
+// TestFetchSessionRecordingURLOnly checks --url-only prints the signed URL and
+// downloads nothing.
+func TestFetchSessionRecordingURLOnly(t *testing.T) {
+	t.Chdir(t.TempDir())
+	client, storeAuth := recordingServers(t, []byte("OggS"), "{}")
+	stdout, _ := captureOut(t)
+
+	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, URLOnly: true}
+	require.NoError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false))
+
+	assert.Regexp(t, `^http://127\.0\.0\.1:\d+/recording\.ogg\?X-Amz-Signature=abc\n$`, stdout.String())
+	assert.Empty(t, *storeAuth, "nothing is downloaded")
+	entries, err := os.ReadDir(".")
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+// TestFetchSessionRecordingJSON checks --json reports the saved file.
+func TestFetchSessionRecordingJSON(t *testing.T) {
+	t.Chdir(t.TempDir())
+	client, _ := recordingServers(t, []byte("OggS"), "{}")
+	stdout, _ := captureOut(t)
+
+	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
+	require.NoError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, true))
+	assert.JSONEq(t, `{"sessionId":"RM_1","recording":"audio","file":"RM_1-audio.ogg","bytes":4,"recordingStartedAt":"2026-10-07T11:00:00Z"}`, stdout.String())
+}
+
+// TestFetchSessionRecordingNothingToDownload checks the two answers that mean
+// there's no recording each say so plainly, and leave no file behind.
+func TestFetchSessionRecordingNothingToDownload(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr []string
+	}{
+		{
+			name:    "not recorded",
+			status:  http.StatusNotFound,
+			body:    `{"code":5,"message":"recording not found"}`,
+			wantErr: []string{"session RM_1 has no chat history", "recording not found", "wasn't recorded", "less than a minute ago", "or there is no such session in project p1"},
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off for this project, so nothing was captured to read","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/projects/p1/settings/observability"}]}`,
+			wantErr: []string{
+				"session RM_1 has no chat history",
+				"user data recording is off for this project",
+				"https://cloud.example/projects/p1/settings/observability",
+			},
+		},
+		{
+			name:    "signed out",
+			status:  http.StatusUnauthorized,
+			body:    `{"code":16,"message":"authentication required"}`,
+			wantErr: []string{"authentication required", "lk cloud auth"},
+		},
+		{
+			name:    "permission denied",
+			status:  http.StatusForbidden,
+			body:    `{"code":7,"message":"permission denied"}`,
+			wantErr: []string{"permission denied", "reading a session's chat history requires being a project admin"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			t.Cleanup(srv.Close)
+			client, err := public.New(srv.URL, "sekret")
+			require.NoError(t, err)
+			captureOut(t)
+
+			opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "chat-history"}}
+			err = fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false)
+			require.Error(t, err)
+			for _, want := range tt.wantErr {
+				assert.Contains(t, err.Error(), want)
+			}
+			entries, err := os.ReadDir(".")
+			require.NoError(t, err)
+			assert.Empty(t, entries)
+		})
+	}
+}
+
+// TestFetchSessionRecordingDownloadFails checks a refused signed URL leaves no
+// file, not even a partial one, and keeps an existing file intact.
+func TestFetchSessionRecordingDownloadFails(t *testing.T) {
+	t.Chdir(t.TempDir())
+	require.NoError(t, os.WriteFile("RM_1-audio.ogg", []byte("earlier"), 0o600))
+	store := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte("<Error><Message>Request has expired</Message></Error>"))
+	}))
+	t.Cleanup(store.Close)
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"url":%q}`, store.URL+"/recording.ogg")
+	}))
+	t.Cleanup(api.Close)
+	client, err := public.New(api.URL, "sekret")
+	require.NoError(t, err)
+	captureOut(t)
+
+	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, Output: "RM_1-audio.ogg"}
+	err = fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false)
+	require.ErrorContains(t, err, "Request has expired")
+
+	got, err := os.ReadFile("RM_1-audio.ogg")
+	require.NoError(t, err)
+	assert.Equal(t, "earlier", string(got))
+	entries, err := os.ReadDir(".")
+	require.NoError(t, err)
+	assert.Len(t, entries, 1)
+}
+
+// TestFetchSessionRecordingExistingFile checks a download never replaces a
+// file at the default name, failing before it asks for a URL, and replaces
+// one -o names.
+func TestFetchSessionRecordingExistingFile(t *testing.T) {
+	t.Chdir(t.TempDir())
+	require.NoError(t, os.WriteFile("RM_1-audio.ogg", []byte("earlier"), 0o600))
+	client, storeAuth := recordingServers(t, []byte("OggS"), "{}")
+	captureOut(t)
+
+	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
+	err := fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false)
+	require.EqualError(t, err, "RM_1-audio.ogg already exists; pass -o RM_1-audio.ogg to replace it, or -o FILE to save elsewhere")
+	got, err := os.ReadFile("RM_1-audio.ogg")
+	require.NoError(t, err)
+	assert.Equal(t, "earlier", string(got))
+	assert.Empty(t, *storeAuth, "nothing is downloaded")
+
+	opts.Output = "RM_1-audio.ogg"
+	require.NoError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false))
+	got, err = os.ReadFile("RM_1-audio.ogg")
+	require.NoError(t, err)
+	assert.Equal(t, "OggS", string(got))
+}
+
+func TestDefaultRecordingFile(t *testing.T) {
+	assert.Equal(t, "RM_1-audio.ogg", defaultRecordingFile("RM_1", "audio"))
+	assert.Equal(t, "RM_1-chat-history.json", defaultRecordingFile("RM_1", "chat-history"))
+	assert.Equal(t, "a_b-audio.ogg", defaultRecordingFile("a/b", "audio"), "a session id never names a directory")
+}
+
 // TestSessionAPIError checks a permission denial on a Public-API-only session
 // read says what the read requires, never to use API-key credentials, which
 // these reads can't use, while other errors keep cloudAPIError's hints.
 func TestSessionAPIError(t *testing.T) {
 	denied := &public.APIError{Status: http.StatusForbidden, Message: "permission denied"}
 
-	err := sessionAPIError(denied)
-	assert.EqualError(t, err, "permission denied — you don't have access to this project")
+	err := sessionAPIError(denied, "transcript", projectAdminAccess)
+	assert.EqualError(t, err, "permission denied — reading a session's transcript requires being a project admin")
 	assert.True(t, public.IsPermissionDenied(err))
 
+	err = sessionAPIError(denied, "participants", projectReadAccess)
+	assert.EqualError(t, err, "permission denied — you don't have access to this project")
+
 	signedOut := &public.APIError{Status: http.StatusUnauthorized, Message: "authentication required"}
-	assert.ErrorContains(t, sessionAPIError(signedOut), "lk cloud auth")
+	assert.ErrorContains(t, sessionAPIError(signedOut, "transcript", projectAdminAccess), "lk cloud auth")
 }
