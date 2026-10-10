@@ -12,6 +12,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/charmbracelet/x/ansi v0.11.8
+	github.com/creack/pty v1.1.24
 	github.com/frostbyte73/core v0.1.1
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-logr/logr v1.4.4
