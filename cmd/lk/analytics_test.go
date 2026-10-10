@@ -1088,6 +1088,233 @@ func TestFetchSessionTranscriptErrors(t *testing.T) {
 	}
 }
 
+func TestSessionLogsCommand(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd)
+	sessionCmd := findCommandByName(analyticsCmd.Commands, "session")
+	require.NotNil(t, sessionCmd)
+	logsCmd := findCommandByName(sessionCmd.Commands, "logs")
+	require.NotNil(t, logsCmd, "'analytics session logs' command must exist")
+	require.NotNil(t, logsCmd.Action)
+	for _, name := range []string{"log-level", "sort-order", "limit", "cursor", "json"} {
+		assert.NotNil(t, findFlagByName(logsCmd.Flags, name), "--%s", name)
+	}
+}
+
+// TestSessionLogsRequiresExperimentalAuth checks the logs read, which has no
+// API-key endpoint, refuses to run without --experimental-auth before reading
+// its arguments or any config.
+func TestSessionLogsRequiresExperimentalAuth(t *testing.T) {
+	for _, args := range [][]string{
+		{"--experimental", "session", "logs", "RM_1"},
+		{"--experimental", "session", "logs", "RM_1", "--log-level", "loud"},
+		{"--experimental", "session", "logs"},
+	} {
+		err := runAnalytics(args...)
+		require.ErrorContains(t, err, "only available under --experimental-auth")
+	}
+}
+
+// logCmdOptions runs logOptions with the given arguments on a command built
+// from fresh analyticsLogFlags.
+func logCmdOptions(t *testing.T, args ...string) (public.LogOptions, error) {
+	t.Helper()
+	var opts public.LogOptions
+	var optsErr error
+	cmd := &cli.Command{
+		Name:  "logs",
+		Flags: analyticsLogFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			opts, optsErr = logOptions(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"logs"}, args...)))
+	return opts, optsErr
+}
+
+func TestLogOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    public.LogOptions
+		wantErr string
+	}{
+		{name: "defaults", want: public.LogOptions{PageOptions: public.PageOptions{Limit: defaultPageLimit}, Levels: []string{}}},
+		{
+			name: "levels, order and paging",
+			args: []string{"--log-level", "warn", "--log-level", "ERROR", "--sort-order", "desc", "--limit", "100", "--cursor", "abc"},
+			want: public.LogOptions{PageOptions: public.PageOptions{Limit: 100, Cursor: "abc"}, Levels: []string{"warn", "ERROR"}, SortOrder: "desc"},
+		},
+		{name: "unknown level", args: []string{"--log-level", "info", "--log-level", "loud"}, wantErr: `invalid log level "loud"`},
+		{name: "unknown sort order", args: []string{"--sort-order", "newest"}, wantErr: `invalid sort order "newest"`},
+		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := logCmdOptions(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// logsAPI starts a stand-in Public API that answers the logs read with status
+// and body, recording the query it was sent.
+func logsAPI(t *testing.T, status int, body string) (*public.Client, *url.Values) {
+	t.Helper()
+	var query url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v1/projects/p1/sessions/RM_1/logs" {
+			http.NotFound(w, r)
+			return
+		}
+		query = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+	return client, &query
+}
+
+// TestFetchSessionLogs prints a page one line per record with the levels it
+// asked for and, when a page is empty, says why: no records at those levels,
+// none at all, or no more.
+func TestFetchSessionLogs(t *testing.T) {
+	const page = `{"records":[` +
+		`{"id":"log_1","level":"LOG_LEVEL_WARN","logger":"app","message":"slow tts"},` +
+		`{"id":"log_2","level":"LOG_LEVEL_ERROR","logger":"app","message":"tts failed"}],` +
+		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`
+	tests := []struct {
+		name       string
+		body       string
+		opts       public.LogOptions
+		wantQuery  url.Values
+		wantOut    []string
+		wantStatus []string
+	}{
+		{
+			name:       "records",
+			body:       page,
+			opts:       public.LogOptions{Levels: []string{"warn", "error"}},
+			wantQuery:  url.Values{"logLevels": {"LOG_LEVEL_WARN", "LOG_LEVEL_ERROR"}},
+			wantOut:    []string{"WARN    app  slow tts", "ERROR   app  tts failed"},
+			wantStatus: []string{"More records available — re-run with --cursor c2"},
+		},
+		{
+			name:       "no records at those levels",
+			body:       `{"records":[]}`,
+			opts:       public.LogOptions{Levels: []string{"fatal"}},
+			wantQuery:  url.Values{"logLevels": {"LOG_LEVEL_FATAL"}},
+			wantStatus: []string{"Session RM_1 has no agent log records at the levels asked for (fatal)"},
+		},
+		{
+			name:       "no records",
+			body:       `{}`,
+			wantQuery:  url.Values{},
+			wantStatus: []string{"Session RM_1 has no agent logs", "a session without an agent has none"},
+		},
+		{
+			name:       "last page",
+			body:       `{"records":[]}`,
+			opts:       public.LogOptions{PageOptions: public.PageOptions{Cursor: "c2"}},
+			wantQuery:  url.Values{"page.cursor": {"c2"}},
+			wantStatus: []string{"No more log records"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, query := logsAPI(t, http.StatusOK, tt.body)
+			stdout, stderr := captureOut(t)
+
+			require.NoError(t, fetchSessionLogs(context.Background(), client, "p1", "RM_1", tt.opts, false))
+
+			assert.Equal(t, tt.wantQuery, *query)
+			for _, want := range tt.wantOut {
+				assert.Contains(t, stdout.String(), want)
+			}
+			if len(tt.wantOut) == 0 {
+				assert.Empty(t, stdout.String())
+			}
+			for _, want := range tt.wantStatus {
+				assert.Contains(t, stderr.String(), want)
+			}
+		})
+	}
+}
+
+// TestFetchSessionLogsJSON checks --json prints the records and still
+// explains an empty page on stderr.
+func TestFetchSessionLogsJSON(t *testing.T) {
+	client, _ := logsAPI(t, http.StatusOK, `{"records":[]}`)
+	stdout, stderr := captureOut(t)
+
+	require.NoError(t, fetchSessionLogs(context.Background(), client, "p1", "RM_1", public.LogOptions{}, true))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Contains(t, stderr.String(), "has no agent logs")
+}
+
+// TestFetchSessionLogsErrors checks why a session has no logs to print: it
+// doesn't exist, or user data recording is off.
+func TestFetchSessionLogsErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr []string
+	}{
+		{
+			name:    "unknown session",
+			status:  http.StatusNotFound,
+			body:    `{"code":5,"message":"session not found"}`,
+			wantErr: []string{"no session RM_1 in project p1", "session not found"},
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off for this project, so nothing was captured to read","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/projects/p1/settings/observability"}]}`,
+			wantErr: []string{
+				"session RM_1 has no agent logs",
+				"user data recording is off for this project",
+				"https://cloud.example/projects/p1/settings/observability",
+			},
+		},
+		{
+			name:    "signed out",
+			status:  http.StatusUnauthorized,
+			body:    `{"code":16,"message":"authentication required"}`,
+			wantErr: []string{"authentication required", "lk cloud auth"},
+		},
+		{
+			name:    "permission denied",
+			status:  http.StatusForbidden,
+			body:    `{"code":7,"message":"permission denied"}`,
+			wantErr: []string{"permission denied", "reading a session's agent logs requires being a project admin"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, _ := logsAPI(t, tt.status, tt.body)
+			stdout, _ := captureOut(t)
+
+			err := fetchSessionLogs(context.Background(), client, "p1", "RM_1", public.LogOptions{}, false)
+			require.Error(t, err)
+			for _, want := range tt.wantErr {
+				assert.Contains(t, err.Error(), want)
+			}
+			assert.Empty(t, stdout.String())
+		})
+	}
+}
+
 // TestSessionAPIError checks a permission denial on a Public-API-only session
 // read says what the read requires, never to use API-key credentials, which
 // these reads can't use, while other errors keep cloudAPIError's hints.

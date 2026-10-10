@@ -575,21 +575,33 @@ func (e LivekitPublicapiCommonV1SortOrder) Valid() bool {
 	}
 }
 
-// Defines values for LivekitPublicapiObservabilityV1LogSource.
+// Defines values for LivekitPublicapiObservabilityV1LogLevel.
 const (
-	LOGSOURCEEVENTS      LivekitPublicapiObservabilityV1LogSource = "LOG_SOURCE_EVENTS"
-	LOGSOURCELOGS        LivekitPublicapiObservabilityV1LogSource = "LOG_SOURCE_LOGS"
-	LOGSOURCEUNSPECIFIED LivekitPublicapiObservabilityV1LogSource = "LOG_SOURCE_UNSPECIFIED"
+	LOGLEVELDEBUG       LivekitPublicapiObservabilityV1LogLevel = "LOG_LEVEL_DEBUG"
+	LOGLEVELERROR       LivekitPublicapiObservabilityV1LogLevel = "LOG_LEVEL_ERROR"
+	LOGLEVELFATAL       LivekitPublicapiObservabilityV1LogLevel = "LOG_LEVEL_FATAL"
+	LOGLEVELINFO        LivekitPublicapiObservabilityV1LogLevel = "LOG_LEVEL_INFO"
+	LOGLEVELTRACE       LivekitPublicapiObservabilityV1LogLevel = "LOG_LEVEL_TRACE"
+	LOGLEVELUNSPECIFIED LivekitPublicapiObservabilityV1LogLevel = "LOG_LEVEL_UNSPECIFIED"
+	LOGLEVELWARN        LivekitPublicapiObservabilityV1LogLevel = "LOG_LEVEL_WARN"
 )
 
-// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1LogSource enum.
-func (e LivekitPublicapiObservabilityV1LogSource) Valid() bool {
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1LogLevel enum.
+func (e LivekitPublicapiObservabilityV1LogLevel) Valid() bool {
 	switch e {
-	case LOGSOURCEEVENTS:
+	case LOGLEVELDEBUG:
 		return true
-	case LOGSOURCELOGS:
+	case LOGLEVELERROR:
 		return true
-	case LOGSOURCEUNSPECIFIED:
+	case LOGLEVELFATAL:
+		return true
+	case LOGLEVELINFO:
+		return true
+	case LOGLEVELTRACE:
+		return true
+	case LOGLEVELUNSPECIFIED:
+		return true
+	case LOGLEVELWARN:
 		return true
 	default:
 		return false
@@ -4186,14 +4198,47 @@ type LivekitPublicapiCommonV1PageInfo struct {
 //	its own `<X>SortField sort_by`.
 type LivekitPublicapiCommonV1SortOrder string
 
-// LivekitPublicapiObservabilityV1LogRecord LogRecord is one operational log line (or realtime event) for a session.
-type LivekitPublicapiObservabilityV1LogRecord struct {
-	Attributes *map[string]string `json:"attributes,omitempty"`
-	Logger     *string            `json:"logger,omitempty"`
-	Message    *string            `json:"message,omitempty"`
+// LivekitPublicapiObservabilityV1LogLevel LogLevel is a log record's level, as the dashboard's logs panel shows and
+//
+//	filters it. Agents name levels differently by runtime, such as Python's
+//	CRITICAL and Node's FATAL, so a record's level comes from its OpenTelemetry
+//	severity number, or from its level name when it has none; a level means the
+//	same for Python and Node agents.
+type LivekitPublicapiObservabilityV1LogLevel string
 
-	// Severity e.g. "INFO", "WARN", "ERROR".
-	Severity *string `json:"severity,omitempty"`
+// LivekitPublicapiObservabilityV1LogRecord LogRecord is one log record a session's agent exported.
+type LivekitPublicapiObservabilityV1LogRecord struct {
+	// Attributes The record's attributes, typed and nested as the agent recorded them,
+	//  with its resource's and scope's attributes merged in; the record's own
+	//  value wins. An integer beyond ±2^53 is its decimal string, and bytes are
+	//  base64.
+	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
+
+	// BodyFields A structured logger's body fields other than its message; empty for a
+	//  plain text body.
+	BodyFields *map[string]*GoogleProtobufValue `json:"bodyFields,omitempty"`
+
+	// Id The record's id, the same on every read.
+	Id *string `json:"id,omitempty"`
+
+	// Level LogLevel is a log record's level, as the dashboard's logs panel shows and
+	//  filters it. Agents name levels differently by runtime, such as Python's
+	//  CRITICAL and Node's FATAL, so a record's level comes from its OpenTelemetry
+	//  severity number, or from its level name when it has none; a level means the
+	//  same for Python and Node agents.
+	Level *LivekitPublicapiObservabilityV1LogLevel `json:"level,omitempty"`
+
+	// Logger The logger that wrote the record (its logger.name attribute).
+	Logger *string `json:"logger,omitempty"`
+
+	// Message The record's text. A structured logger's body keeps it under its event,
+	//  message or msg field; a structured body with none of them is written
+	//  here whole, as JSON.
+	Message *string `json:"message,omitempty"`
+
+	// SeverityText The level's name as the agent logged it, such as "WARN" or "CRITICAL".
+	SeverityText *string `json:"severityText,omitempty"`
+	SpanId       *string `json:"spanId,omitempty"`
 
 	// Timestamp A Timestamp represents a point in time independent of any time zone or local
 	//  calendar, encoded as a count of seconds and fractions of seconds at
@@ -4287,10 +4332,12 @@ type LivekitPublicapiObservabilityV1LogRecord struct {
 	//
 	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
-}
 
-// LivekitPublicapiObservabilityV1LogSource LogSource selects operational logs vs realtime events for GetSessionLogs.
-type LivekitPublicapiObservabilityV1LogSource string
+	// TraceId The trace and span the record was logged in, as lowercase hex; empty when
+	//  it was logged outside one. They link the record to its span in
+	//  GetSessionTraces.
+	TraceId *string `json:"traceId,omitempty"`
+}
 
 // LivekitPublicapiObservabilityV1LogsGetResponse defines model for livekit.publicapi.observability.v1.Logs.Get.Response.
 type LivekitPublicapiObservabilityV1LogsGetResponse struct {
@@ -7186,11 +7233,17 @@ type ObservabilityServiceGetSessionLogsParams struct {
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
-	PagePageSize *int32                                    `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
-	Source       *LivekitPublicapiObservabilityV1LogSource `form:"source,omitempty" json:"source,omitempty"`
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// SeverityLevels Optional severity floor (e.g. "INFO", "WARN"). Empty returns all levels.
-	SeverityLevels *[]string `form:"severityLevels,omitempty" json:"severityLevels,omitempty"`
+	// LogLevels Only records at these levels, as the dashboard's logs filter selects
+	//  them, for example only TRACE and FATAL. Empty returns every record,
+	//  including those with no level, such as a passed evaluation.
+	//  LOG_LEVEL_UNSPECIFIED is InvalidArgument.
+	LogLevels *[]LivekitPublicapiObservabilityV1LogLevel `form:"logLevels,omitempty" json:"logLevels,omitempty"`
+
+	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
+	//  first) when unset.
+	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // ObservabilityServiceGetSessionMetricsParams defines parameters for ObservabilityServiceGetSessionMetrics.
@@ -10145,9 +10198,18 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionLogs GetSessionLogs
+	// ObservabilityServiceGetSessionLogs GetSessionLogs returns the log records the session's agents exported, in
+	//  time order: what the dashboard's logs panel shows. Their chat history is
+	//  left out, since GetSessionTranscript reads it, and their evaluation
+	//  results stay in. The session's events, such as participants joining,
+	//  come from AnalyticsService's ListSessionEvents.
 	//
-	// GetSessionLogs returns the session's operational logs (or realtime events).
+	// An ACTIVE session returns what its agents have exported so far. A record
+	//  exported mid-read with a time this read has already paged past, earlier
+	//  than its cursor's when oldest first, is missed until a new read. An
+	//  unknown session is NotFound. A read filtered by log_levels can come back
+	//  empty because no record is at those levels, so only an unfiltered one is
+	//  ObservabilityDisabled.
 	//
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11130,9 +11192,20 @@ func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectI
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionLogs GetSessionLogs
+// ObservabilityServiceGetSessionLogs GetSessionLogs returns the log records the session's agents exported, in
 //
-// GetSessionLogs returns the session's operational logs (or realtime events).
+//	time order: what the dashboard's logs panel shows. Their chat history is
+//	left out, since GetSessionTranscript reads it, and their evaluation
+//	results stay in. The session's events, such as participants joining,
+//	come from AnalyticsService's ListSessionEvents.
+//
+// An ACTIVE session returns what its agents have exported so far. A record
+//
+//	exported mid-read with a time this read has already paged past, earlier
+//	than its cursor's when oldest first, is missed until a new read. An
+//	unknown session is NotFound. A read filtered by log_levels can come back
+//	empty because no record is at those levels, so only an unfiltered one is
+//	ObservabilityDisabled.
 //
 // Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13534,9 +13607,9 @@ func NewObservabilityServiceGetSessionLogsRequest(server string, projectId strin
 
 		}
 
-		if params.Source != nil {
+		if params.LogLevels != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source", *params.Source, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "logLevels", *params.LogLevels, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -13546,9 +13619,9 @@ func NewObservabilityServiceGetSessionLogsRequest(server string, projectId strin
 
 		}
 
-		if params.SeverityLevels != nil {
+		if params.SortOrder != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "severityLevels", *params.SeverityLevels, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -15893,9 +15966,18 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEventsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionEventsResponse, error)
 
-	// ObservabilityServiceGetSessionLogsWithResponse GetSessionLogs
+	// ObservabilityServiceGetSessionLogsWithResponse GetSessionLogs returns the log records the session's agents exported, in
+	//  time order: what the dashboard's logs panel shows. Their chat history is
+	//  left out, since GetSessionTranscript reads it, and their evaluation
+	//  results stay in. The session's events, such as participants joining,
+	//  come from AnalyticsService's ListSessionEvents.
 	//
-	// GetSessionLogs returns the session's operational logs (or realtime events).
+	// An ACTIVE session returns what its agents have exported so far. A record
+	//  exported mid-read with a time this read has already paged past, earlier
+	//  than its cursor's when oldest first, is missed until a new read. An
+	//  unknown session is NotFound. A read filtered by log_levels can come back
+	//  empty because no record is at those levels, so only an unfiltered one is
+	//  ObservabilityDisabled.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19448,9 +19530,20 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionEventsWithResponse(ctx 
 	return ParseAnalyticsServiceListSessionEventsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionLogsWithResponse GetSessionLogs
+// ObservabilityServiceGetSessionLogsWithResponse GetSessionLogs returns the log records the session's agents exported, in
 //
-// GetSessionLogs returns the session's operational logs (or realtime events).
+//	time order: what the dashboard's logs panel shows. Their chat history is
+//	left out, since GetSessionTranscript reads it, and their evaluation
+//	results stay in. The session's events, such as participants joining,
+//	come from AnalyticsService's ListSessionEvents.
+//
+// An ACTIVE session returns what its agents have exported so far. A record
+//
+//	exported mid-read with a time this read has already paged past, earlier
+//	than its cursor's when oldest first, is missed until a new read. An
+//	unknown session is NotFound. A read filtered by log_levels can come back
+//	empty because no record is at those levels, so only an unfiltered one is
+//	ObservabilityDisabled.
 //
 // Returns a wrapper object for the known response body format(s).
 //

@@ -420,3 +420,96 @@ func TestSessionTranscriptJSON(t *testing.T) {
 	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, nil, true), true, page, ""))
 	assert.JSONEq(t, `{"items":`+transcriptItems+`,"nextCursor":"c2","skippedRecords":1}`, stdout.String())
 }
+
+// logRecords is one page of agent logs as the API sends it: records with and
+// without a logger, one with only the level name the agent logged, one with
+// no level at all, and a message across lines.
+const logRecords = `[
+  {"id": "log_1", "timestamp": "2026-10-07T11:00:01.250Z", "level": "LOG_LEVEL_INFO", "severityText": "INFO", "logger": "livekit.agents", "message": "starting", "attributes": {"logger.name": "livekit.agents"}},
+  {"id": "log_2", "timestamp": "2026-10-07T11:00:02Z", "level": "LOG_LEVEL_WARN", "severityText": "WARNING", "logger": "app", "message": "slow tts\n  ttfb=1.5s", "bodyFields": {"ttfb": 1.5}, "traceId": "0af7651916cd43dd8448eb211c80319c", "spanId": "b7ad6b7169203331"},
+  {"id": "log_3", "timestamp": "2026-10-07T11:00:03Z", "severityText": "notice", "message": "custom level"},
+  {"id": "log_4", "message": "evaluation passed"}
+]`
+
+func decodeLogRecords(t *testing.T) []oapi.LivekitPublicapiObservabilityV1LogRecord {
+	t.Helper()
+	var records []oapi.LivekitPublicapiObservabilityV1LogRecord
+	require.NoError(t, json.Unmarshal([]byte(logRecords), &records))
+	return records
+}
+
+// TestSessionLogsText checks each record prints as one line with its time,
+// level, logger and message, and a next page says to re-run with its cursor.
+// TestSessionLogsStripEscapes checks what the agent logged, which can quote
+// an LLM or a participant, reaches a terminal with its escape sequences
+// stripped and its messages still lined up.
+func TestSessionLogsStripEscapes(t *testing.T) {
+	text := "hi" + escapes
+	records := []oapi.LivekitPublicapiObservabilityV1LogRecord{
+		{Logger: &text, Message: &text, SeverityText: &text},
+		{Logger: ptr("app"), Message: ptr("ok")},
+	}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionLogs(terminalPrinter(&stdout, &stderr), false, public.LogPage{Records: records}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, strings.Join([]string{
+		"-             HI]0;PWNED[2J  hi]0;pwned[2J  hi]0;pwned[2J",
+		"-             -       app            ok",
+		"",
+	}, "\n"), stdout.String())
+}
+
+func TestSessionLogsText(t *testing.T) {
+	prevLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = prevLocal })
+
+	page := public.LogPage{Records: decodeLogRecords(t), NextCursor: "c2"}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionLogs(util.NewPrinter(&stdout, &stderr, false), false, page, "unused"))
+
+	assert.Equal(t, strings.Join([]string{
+		"11:00:01.250  INFO    livekit.agents  starting",
+		"11:00:02.000  WARN    app             slow tts ttfb=1.5s",
+		"11:00:03.000  NOTICE  -               custom level",
+		"-             -       -               evaluation passed",
+		"",
+	}, "\n"), stdout.String())
+	assert.Contains(t, stderr.String(), "More records available — re-run with --cursor c2")
+	assert.NotContains(t, stderr.String(), "unused")
+}
+
+// TestSessionLogsEmpty prints the caller's reason for an empty page, on
+// stderr in both modes.
+func TestSessionLogsEmpty(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionLogs(util.NewPrinter(&stdout, &stderr, false), false, public.LogPage{}, "No agent logs"))
+	assert.Empty(t, stdout.String())
+	assert.Equal(t, "No agent logs\n", stderr.String())
+
+	stdout.Reset()
+	stderr.Reset()
+	require.NoError(t, SessionLogs(util.NewPrinter(&stdout, &stderr, false), true, public.LogPage{}, "No agent logs"))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Equal(t, "No agent logs\n", stderr.String())
+}
+
+// TestSessionLogsJSON checks --json prints the records as the API sent them,
+// with the page's cursor.
+func TestSessionLogsJSON(t *testing.T) {
+	page := public.LogPage{Records: decodeLogRecords(t), NextCursor: "c2"}
+	var stdout bytes.Buffer
+	require.NoError(t, SessionLogs(util.NewPrinter(&stdout, nil, true), true, page, ""))
+
+	var got struct {
+		Items      []map[string]any `json:"items"`
+		NextCursor string           `json:"nextCursor"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	assert.Equal(t, "c2", got.NextCursor)
+	require.Len(t, got.Items, 4)
+	assert.Equal(t, map[string]any{"ttfb": 1.5}, got.Items[1]["bodyFields"])
+	assert.Equal(t, "b7ad6b7169203331", got.Items[1]["spanId"])
+	assert.Equal(t, "2026-10-07T11:00:01.25Z", got.Items[0]["timestamp"])
+}

@@ -28,6 +28,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
 // TestGetSessionRecordingURL checks the path and file type GetSessionRecordingURL
@@ -474,6 +476,176 @@ func TestGetSessionTranscriptErrors(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = c.GetSessionTranscript(context.Background(), "p1", "RM_1", PageOptions{})
+			require.Error(t, err)
+			assert.Equal(t, tt.wantNotFound, IsNotFound(err))
+			_, disabled := ObservabilityDisabled(err)
+			assert.Equal(t, tt.wantDisabled, disabled)
+		})
+	}
+}
+
+// logsPage is a GetSessionLogs response as the server's REST transcoder writes
+// it: a structured record with body fields, typed attributes and its span, and
+// an evaluation result with no level.
+const logsPage = `{
+  "records": [
+    {
+      "id": "log_1",
+      "timestamp": "2026-10-07T11:00:01.250Z",
+      "level": "LOG_LEVEL_WARN",
+      "severityText": "WARNING",
+      "logger": "livekit.agents",
+      "message": "slow tts",
+      "bodyFields": {"ttfb": 1.5},
+      "attributes": {"logger.name": "livekit.agents", "retry": 2, "tags": ["a", "b"], "nested": {"ok": true}},
+      "traceId": "0af7651916cd43dd8448eb211c80319c",
+      "spanId": "b7ad6b7169203331"
+    },
+    {"id": "log_2", "timestamp": "2026-10-07T11:00:02Z", "message": "evaluation passed"}
+  ],
+  "pageInfo": {"nextCursor": "next", "hasMore": true}
+}`
+
+// TestGetSessionLogs checks the request GetSessionLogs sends for each option,
+// and that records come back typed with the page's cursor.
+func TestGetSessionLogs(t *testing.T) {
+	tests := []struct {
+		name string
+		opts LogOptions
+		want url.Values
+	}{
+		{name: "zero options send nothing", want: url.Values{}},
+		{
+			name: "levels, order and paging",
+			opts: LogOptions{PageOptions: PageOptions{Limit: 25, Cursor: "abc"}, Levels: []string{"warn", " ERROR ", "critical"}, SortOrder: "desc"},
+			want: url.Values{
+				"page.pageSize": {"25"},
+				"page.cursor":   {"abc"},
+				"logLevels":     {"LOG_LEVEL_WARN", "LOG_LEVEL_ERROR", "LOG_LEVEL_FATAL"},
+				"sortOrder":     {"SORT_ORDER_DESC"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAuth, gotPath string
+			var gotQuery url.Values
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAuth, gotPath, gotQuery = r.Header.Get("Authorization"), r.URL.Path, r.URL.Query()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(logsPage))
+			}))
+			t.Cleanup(srv.Close)
+
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			page, err := c.GetSessionLogs(context.Background(), "p1", "RM_1", tt.opts)
+			require.NoError(t, err)
+
+			assert.Equal(t, "Bearer sekret", gotAuth)
+			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/logs", gotPath)
+			assert.Equal(t, tt.want, gotQuery)
+
+			assert.Equal(t, "next", page.NextCursor)
+			require.Len(t, page.Records, 2)
+			rec := page.Records[0]
+			assert.Equal(t, "log_1", *rec.Id)
+			assert.True(t, time.Date(2026, 10, 7, 11, 0, 1, 250e6, time.UTC).Equal(*rec.Timestamp))
+			assert.Equal(t, "LOG_LEVEL_WARN", string(*rec.Level))
+			assert.Equal(t, "WARNING", *rec.SeverityText)
+			assert.Equal(t, "livekit.agents", *rec.Logger)
+			assert.Equal(t, "slow tts", *rec.Message)
+			assert.Equal(t, "b7ad6b7169203331", *rec.SpanId)
+			assert.Nil(t, page.Records[1].Level, "a record with no level")
+		})
+	}
+}
+
+// TestLogRecordJSON checks a record marshals back to the API's own shape,
+// typed attributes and body fields included, so --json prints what the server
+// sent.
+func TestLogRecordJSON(t *testing.T) {
+	const record = `{"id":"log_1","timestamp":"2026-10-07T11:00:01Z","level":"LOG_LEVEL_INFO","message":"hi",` +
+		`"bodyFields":{"ttfb":1.5},"attributes":{"retry":2,"tags":["a","b"],"nested":{"ok":true},"none":null}}`
+	var rec oapi.LivekitPublicapiObservabilityV1LogRecord
+	require.NoError(t, json.Unmarshal([]byte(record), &rec))
+	got, err := json.Marshal(rec)
+	require.NoError(t, err)
+	assert.JSONEq(t, record, string(got))
+}
+
+// TestGetSessionLogsRejectsBadOptions confirms unknown levels and sort orders
+// and a negative limit fail Validate, and fail GetSessionLogs before any
+// request is sent.
+func TestGetSessionLogsRejectsBadOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    LogOptions
+		wantErr string
+	}{
+		{name: "negative limit", opts: LogOptions{PageOptions: PageOptions{Limit: -1}}, wantErr: "limit must not be negative"},
+		{
+			name:    "unknown level",
+			opts:    LogOptions{Levels: []string{"info", "loud"}},
+			wantErr: `invalid log level "loud" (expected trace, debug, info, warn, error or fatal)`,
+		},
+		{name: "unspecified level", opts: LogOptions{Levels: []string{"unspecified"}}, wantErr: `invalid log level "unspecified"`},
+		{name: "sort order", opts: LogOptions{SortOrder: "newest"}, wantErr: `invalid sort order "newest"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.ErrorContains(t, tt.opts.Validate(), tt.wantErr)
+
+			called := false
+			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			_, err = c.GetSessionLogs(context.Background(), "p1", "RM_1", tt.opts)
+			require.ErrorContains(t, err, tt.wantErr)
+			assert.False(t, called, "no request should be sent")
+		})
+	}
+}
+
+// TestGetSessionLogsErrors checks an unknown session is NotFound and an empty
+// unfiltered read with user data recording off carries ObservabilityDisabled.
+func TestGetSessionLogsErrors(t *testing.T) {
+	tests := []struct {
+		name         string
+		status       int
+		body         string
+		wantNotFound bool
+		wantDisabled bool
+	}{
+		{
+			name:         "unknown session",
+			status:       http.StatusNotFound,
+			body:         `{"code":5,"message":"session not found"}`,
+			wantNotFound: true,
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/p1"}]}`,
+			wantDisabled: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			_, err = c.GetSessionLogs(context.Background(), "p1", "RM_1", LogOptions{})
 			require.Error(t, err)
 			assert.Equal(t, tt.wantNotFound, IsNotFound(err))
 			_, disabled := ObservabilityDisabled(err)

@@ -167,6 +167,109 @@ func (c *Client) GetSessionTranscript(ctx context.Context, projectID, sessionID 
 	return page, nil
 }
 
+// LogOptions filters, orders and pages GetSessionLogs. Zero values return every
+// record, oldest first, with the server's page size. A cursor pages only a
+// request with the same Levels and SortOrder.
+type LogOptions struct {
+	PageOptions
+	// Levels keeps records at any of these levels: "trace", "debug", "info",
+	// "warn", "error" or "fatal" ("warning" and "critical", as Python names
+	// them, also work). Empty returns every record, including those with no
+	// level, such as a passed evaluation.
+	Levels []string
+	// SortOrder orders by time: "asc" (the server's default) or "desc".
+	SortOrder string
+}
+
+// parseLogLevel maps a friendly log level name to the wire enum.
+func parseLogLevel(s string) (oapi.LivekitPublicapiObservabilityV1LogLevel, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "trace":
+		return oapi.LOGLEVELTRACE, nil
+	case "debug":
+		return oapi.LOGLEVELDEBUG, nil
+	case "info":
+		return oapi.LOGLEVELINFO, nil
+	case "warn", "warning":
+		return oapi.LOGLEVELWARN, nil
+	case "error":
+		return oapi.LOGLEVELERROR, nil
+	case "fatal", "critical":
+		return oapi.LOGLEVELFATAL, nil
+	default:
+		return "", fmt.Errorf("invalid log level %q (expected trace, debug, info, warn, error or fatal)", s)
+	}
+}
+
+// getSessionLogsParams translates opts into the generated query params,
+// rejecting a negative limit and unknown level or sort order names before any
+// request is sent.
+func getSessionLogsParams(opts LogOptions) (*oapi.ObservabilityServiceGetSessionLogsParams, error) {
+	if err := opts.PageOptions.Validate(); err != nil {
+		return nil, err
+	}
+	params := &oapi.ObservabilityServiceGetSessionLogsParams{}
+	params.PagePageSize, params.PageCursor = opts.params()
+	if len(opts.Levels) > 0 {
+		levels := make([]oapi.LivekitPublicapiObservabilityV1LogLevel, 0, len(opts.Levels))
+		for _, name := range opts.Levels {
+			level, err := parseLogLevel(name)
+			if err != nil {
+				return nil, err
+			}
+			levels = append(levels, level)
+		}
+		params.LogLevels = &levels
+	}
+	if opts.SortOrder != "" {
+		order, err := parseSortOrder(opts.SortOrder)
+		if err != nil {
+			return nil, err
+		}
+		params.SortOrder = &order
+	}
+	return params, nil
+}
+
+// Validate reports a negative limit or an unknown level or sort order name.
+// GetSessionLogs makes the same checks before sending a request; callers can
+// run them earlier.
+func (o LogOptions) Validate() error {
+	_, err := getSessionLogsParams(o)
+	return err
+}
+
+// LogPage is one page of a session's agent logs.
+type LogPage struct {
+	// Records are in the requested time order, oldest first by default.
+	Records []oapi.LivekitPublicapiObservabilityV1LogRecord
+	// NextCursor is non-empty when more pages remain (pass it back as
+	// LogOptions.Cursor).
+	NextCursor string
+}
+
+// GetSessionLogs returns one page of the log records a session's agents
+// exported: what the dashboard's logs panel shows, without the chat history
+// GetSessionTranscript reads. An active session returns what its agents have
+// exported so far. An unknown session is NotFound (see IsNotFound); an empty
+// unfiltered first page while the project's user data recording is off is a
+// FailedPrecondition that ObservabilityDisabled recognizes. A read filtered by
+// Levels can come back empty without an error.
+func (c *Client) GetSessionLogs(ctx context.Context, projectID, sessionID string, opts LogOptions) (*LogPage, error) {
+	params, err := getSessionLogsParams(opts)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.gen.ObservabilityServiceGetSessionLogsWithResponse(ctx, projectID, sessionID, params)
+	if err != nil {
+		return nil, err
+	}
+	if resp.JSON200 == nil {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	return &LogPage{Records: items(resp.JSON200.Records), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+}
+
 // gzipMagic opens every gzip stream (RFC 1952).
 var gzipMagic = []byte{0x1f, 0x8b}
 
