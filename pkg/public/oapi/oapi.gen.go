@@ -620,6 +620,8 @@ func (e LivekitPublicapiObservabilityV1RecordingFileType) Valid() bool {
 // Defines values for LivekitPublicapiObservabilityV1Role.
 const (
 	ROLEAGENT       LivekitPublicapiObservabilityV1Role = "ROLE_AGENT"
+	ROLEDEVELOPER   LivekitPublicapiObservabilityV1Role = "ROLE_DEVELOPER"
+	ROLESYSTEM      LivekitPublicapiObservabilityV1Role = "ROLE_SYSTEM"
 	ROLEUNSPECIFIED LivekitPublicapiObservabilityV1Role = "ROLE_UNSPECIFIED"
 	ROLEUSER        LivekitPublicapiObservabilityV1Role = "ROLE_USER"
 )
@@ -628,6 +630,10 @@ const (
 func (e LivekitPublicapiObservabilityV1Role) Valid() bool {
 	switch e {
 	case ROLEAGENT:
+		return true
+	case ROLEDEVELOPER:
+		return true
+	case ROLESYSTEM:
 		return true
 	case ROLEUNSPECIFIED:
 		return true
@@ -4330,7 +4336,7 @@ type LivekitPublicapiObservabilityV1RecordingGetURLResponse struct {
 //	not from a recording.
 type LivekitPublicapiObservabilityV1RecordingFileType string
 
-// LivekitPublicapiObservabilityV1Role Role is who produced a transcript message.
+// LivekitPublicapiObservabilityV1Role Role is who a transcript message is from.
 type LivekitPublicapiObservabilityV1Role string
 
 // LivekitPublicapiObservabilityV1Span Span is one unit of work in the session's trace.
@@ -4644,17 +4650,123 @@ type LivekitPublicapiObservabilityV1TracesGetResponse struct {
 
 // LivekitPublicapiObservabilityV1TranscriptGetResponse defines model for livekit.publicapi.observability.v1.Transcript.Get.Response.
 type LivekitPublicapiObservabilityV1TranscriptGetResponse struct {
+	// Items Oldest first, in the order the agent recorded them.
 	Items *[]LivekitPublicapiObservabilityV1TranscriptItem `json:"items,omitempty"`
 
 	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+
+	// SkippedRecords How many of this page's records couldn't be read as transcript items
+	//  and were left out, such as an item kind newer than this server. Zero
+	//  when the page is complete.
+	SkippedRecords *int `json:"skippedRecords,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem TranscriptItem is one ordered entry in a session's conversation. Exactly one
 //
 //	of the `item` variants is set.
 type LivekitPublicapiObservabilityV1TranscriptItem struct {
-	// Timestamp A Timestamp represents a point in time independent of any time zone or local
+	// Id The item's id, as the agent assigned it (item_...).
+	Id *string `json:"id,omitempty"`
+
+	// Timestamp When the item happened. For a message, when its speaker started speaking,
+	//  else when the agent created it; for any other item, when the agent
+	//  recorded it. Items are ordered by when the agent recorded them, so a
+	//  message's timestamp can be earlier than the item before it.
+	//
+	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
+	union     json.RawMessage
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItem0 defines model for LivekitPublicapiObservabilityV1TranscriptItem.0.
+type LivekitPublicapiObservabilityV1TranscriptItem0 struct {
+	// AgentHandoff AgentHandoff is the session passing from one agent to another.
+	AgentHandoff LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff `json:"agentHandoff"`
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItem1 defines model for LivekitPublicapiObservabilityV1TranscriptItem.1.
+type LivekitPublicapiObservabilityV1TranscriptItem1 struct {
+	// ConfigUpdate ConfigUpdate is a change to the agent's instructions or tools during the
+	//  session.
+	ConfigUpdate LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate `json:"configUpdate"`
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItem2 defines model for LivekitPublicapiObservabilityV1TranscriptItem.2.
+type LivekitPublicapiObservabilityV1TranscriptItem2 struct {
+	// Message Message is something said, or added to the conversation as text.
+	Message LivekitPublicapiObservabilityV1TranscriptItemMessage `json:"message"`
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItem3 defines model for LivekitPublicapiObservabilityV1TranscriptItem.3.
+type LivekitPublicapiObservabilityV1TranscriptItem3 struct {
+	// ToolCall ToolCall is the agent calling a tool.
+	ToolCall LivekitPublicapiObservabilityV1TranscriptItemToolCall `json:"toolCall"`
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItem4 defines model for LivekitPublicapiObservabilityV1TranscriptItem.4.
+type LivekitPublicapiObservabilityV1TranscriptItem4 struct {
+	// ToolResult ToolResult is the output a tool returned for a ToolCall.
+	ToolResult LivekitPublicapiObservabilityV1TranscriptItemToolResult `json:"toolResult"`
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItem5 defines model for LivekitPublicapiObservabilityV1TranscriptItem.5.
+type LivekitPublicapiObservabilityV1TranscriptItem5 = interface{}
+
+// LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff AgentHandoff is the session passing from one agent to another.
+type LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff struct {
+	// FromAgentId Unset for the session's first agent.
+	FromAgentId *string `json:"fromAgentId,omitempty"`
+	ToAgentId   *string `json:"toAgentId,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate ConfigUpdate is a change to the agent's instructions or tools during the
+//
+//	session.
+type LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate struct {
+	// Instructions The agent's new instructions; empty when they didn't change.
+	Instructions *string   `json:"instructions,omitempty"`
+	ToolsAdded   *[]string `json:"toolsAdded,omitempty"`
+	ToolsRemoved *[]string `json:"toolsRemoved,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItemMessage Message is something said, or added to the conversation as text.
+type LivekitPublicapiObservabilityV1TranscriptItemMessage struct {
+	// E2eLatencyMs The turn's latencies in milliseconds, converted from the seconds the
+	//  agent recorded; unset when the agent didn't record one. An agent message
+	//  carries the first three, a user message the last three.
+	//
+	//  End-to-end latency: from when the user finished speaking to when the
+	//  agent began responding (the agent's e2e_latency).
+	E2eLatencyMs *float64 `json:"e2eLatencyMs,omitempty"`
+
+	// EndOfTurnDelayMs From the end of the user's speech to the agent deciding the turn ended
+	//  (end_of_turn_delay).
+	EndOfTurnDelayMs *float64 `json:"endOfTurnDelayMs,omitempty"`
+
+	// Interrupted Set on an agent message the user talked over before it finished.
+	Interrupted *bool `json:"interrupted,omitempty"`
+
+	// LlmTtftMs LLM time to first token (llm_node_ttft).
+	LlmTtftMs *float64 `json:"llmTtftMs,omitempty"`
+
+	// OnUserTurnCompletedDelayMs Time spent in the agent's on_user_turn_completed callback
+	//  (on_user_turn_completed_delay).
+	OnUserTurnCompletedDelayMs *float64 `json:"onUserTurnCompletedDelayMs,omitempty"`
+
+	// Redacted Set when the project's PII redaction rewrote the text.
+	Redacted *bool `json:"redacted,omitempty"`
+
+	// Role Role is who a transcript message is from.
+	Role *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
+
+	// StartedSpeakingAt When the speaker started and stopped speaking; unset for a message
+	//  that wasn't spoken.
+	//
+	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	StartedSpeakingAt *GoogleProtobufTimestamp `json:"startedSpeakingAt,omitempty"`
+
+	// StoppedSpeakingAt A Timestamp represents a point in time independent of any time zone or local
 	//  calendar, encoded as a count of seconds and fractions of seconds at
 	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
 	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
@@ -4745,85 +4857,43 @@ type LivekitPublicapiObservabilityV1TranscriptItem struct {
 	//  ) to obtain a formatter capable of generating timestamps in this format.
 	//
 	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
-	union     json.RawMessage
-}
+	StoppedSpeakingAt *GoogleProtobufTimestamp `json:"stoppedSpeakingAt,omitempty"`
 
-// LivekitPublicapiObservabilityV1TranscriptItem0 defines model for LivekitPublicapiObservabilityV1TranscriptItem.0.
-type LivekitPublicapiObservabilityV1TranscriptItem0 struct {
-	// AgentHandoff AgentHandoff is control passing between agents.
-	AgentHandoff LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff `json:"agentHandoff"`
-}
+	// Text The message's text. Text the agent recorded in several parts is joined
+	//  with newlines. When redacted is set, PII in it is replaced with
+	//  <redaction type="..."/> markers.
+	Text *string `json:"text,omitempty"`
 
-// LivekitPublicapiObservabilityV1TranscriptItem1 defines model for LivekitPublicapiObservabilityV1TranscriptItem.1.
-type LivekitPublicapiObservabilityV1TranscriptItem1 struct {
-	// ConfigUpdate ConfigUpdate is a mid-session change to the agent's configuration.
-	ConfigUpdate LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate `json:"configUpdate"`
-}
-
-// LivekitPublicapiObservabilityV1TranscriptItem2 defines model for LivekitPublicapiObservabilityV1TranscriptItem.2.
-type LivekitPublicapiObservabilityV1TranscriptItem2 struct {
-	// Message Message is a spoken/typed turn.
-	Message LivekitPublicapiObservabilityV1TranscriptItemMessage `json:"message"`
-}
-
-// LivekitPublicapiObservabilityV1TranscriptItem3 defines model for LivekitPublicapiObservabilityV1TranscriptItem.3.
-type LivekitPublicapiObservabilityV1TranscriptItem3 struct {
-	// ToolCall ToolCall is the agent invoking a tool.
-	ToolCall LivekitPublicapiObservabilityV1TranscriptItemToolCall `json:"toolCall"`
-}
-
-// LivekitPublicapiObservabilityV1TranscriptItem4 defines model for LivekitPublicapiObservabilityV1TranscriptItem.4.
-type LivekitPublicapiObservabilityV1TranscriptItem4 struct {
-	// ToolResult ToolResult is the output returned for a ToolCall.
-	ToolResult LivekitPublicapiObservabilityV1TranscriptItemToolResult `json:"toolResult"`
-}
-
-// LivekitPublicapiObservabilityV1TranscriptItem5 defines model for LivekitPublicapiObservabilityV1TranscriptItem.5.
-type LivekitPublicapiObservabilityV1TranscriptItem5 = interface{}
-
-// LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff AgentHandoff is control passing between agents.
-type LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff struct {
-	FromAgentId *string `json:"fromAgentId,omitempty"`
-	ToAgentId   *string `json:"toAgentId,omitempty"`
-}
-
-// LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate ConfigUpdate is a mid-session change to the agent's configuration.
-type LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate struct {
-	Instructions *string   `json:"instructions,omitempty"`
-	ToolsAdded   *[]string `json:"toolsAdded,omitempty"`
-	ToolsRemoved *[]string `json:"toolsRemoved,omitempty"`
-}
-
-// LivekitPublicapiObservabilityV1TranscriptItemMessage Message is a spoken/typed turn.
-type LivekitPublicapiObservabilityV1TranscriptItemMessage struct {
-	LatencyMs *float64 `json:"latencyMs,omitempty"`
-
-	// Role Role is who produced a transcript message.
-	Role *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
-	Text *string                              `json:"text,omitempty"`
-
-	// TranscriptConfidence 0..1; set on user turns from speech.
+	// TranscriptConfidence The speech-to-text confidence of a spoken user message, from 0 to 1.
 	TranscriptConfidence *float64 `json:"transcriptConfidence,omitempty"`
-	TtfbMs               *float64 `json:"ttfbMs,omitempty"`
 
-	// TtftMs Per-turn latency, milliseconds. Set on agent turns.
-	TtftMs *float64 `json:"ttftMs,omitempty"`
+	// TranscriptionDelayMs From the end of the user's speech to its final transcript
+	//  (transcription_delay).
+	TranscriptionDelayMs *float64 `json:"transcriptionDelayMs,omitempty"`
+
+	// TtsTtfbMs TTS time to first byte of audio (tts_node_ttfb).
+	TtsTtfbMs *float64 `json:"ttsTtfbMs,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItemToolCall ToolCall is the agent invoking a tool.
+// LivekitPublicapiObservabilityV1TranscriptItemToolCall ToolCall is the agent calling a tool.
 type LivekitPublicapiObservabilityV1TranscriptItemToolCall struct {
-	// Arguments Call arguments as a JSON string.
+	// Arguments The call's arguments as a JSON string.
 	Arguments *string `json:"arguments,omitempty"`
-	CallId    *string `json:"callId,omitempty"`
-	Name      *string `json:"name,omitempty"`
-}
 
-// LivekitPublicapiObservabilityV1TranscriptItemToolResult ToolResult is the output returned for a ToolCall.
-type LivekitPublicapiObservabilityV1TranscriptItemToolResult struct {
+	// CallId Pairs the call with its ToolResult.
 	CallId *string `json:"callId,omitempty"`
 	Name   *string `json:"name,omitempty"`
-	Output *string `json:"output,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1TranscriptItemToolResult ToolResult is the output a tool returned for a ToolCall.
+type LivekitPublicapiObservabilityV1TranscriptItemToolResult struct {
+	// CallId The call_id of the ToolCall it answers.
+	CallId *string `json:"callId,omitempty"`
+
+	// IsError Set when the tool failed; output then describes the error.
+	IsError *bool   `json:"isError,omitempty"`
+	Name    *string `json:"name,omitempty"`
+	Output  *string `json:"output,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1AccessKey AccessKey is project API-key metadata. The secret is never included on list
@@ -9701,6 +9771,13 @@ func (t LivekitPublicapiObservabilityV1TranscriptItem) MarshalJSON() ([]byte, er
 		}
 	}
 
+	if t.Id != nil {
+		object["id"], err = json.Marshal(t.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'id': %w", err)
+		}
+	}
+
 	if t.Timestamp != nil {
 		object["timestamp"], err = json.Marshal(t.Timestamp)
 		if err != nil {
@@ -9720,6 +9797,13 @@ func (t *LivekitPublicapiObservabilityV1TranscriptItem) UnmarshalJSON(b []byte) 
 	err = json.Unmarshal(b, &object)
 	if err != nil {
 		return err
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &t.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
 	}
 
 	if raw, found := object["timestamp"]; found {
@@ -10110,10 +10194,16 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTranscript GetSessionTranscript
+	// ObservabilityServiceGetSessionTranscript GetSessionTranscript returns the session's conversation as ordered
+	//  transcript items: messages, tool calls and results, agent handoffs and
+	//  agent configuration changes. It is the conversation the dashboard's
+	//  transcript shows.
 	//
-	// GetSessionTranscript returns the session's conversation as ordered
-	//  transcript items (turns, tool calls, handoffs, config updates).
+	// The agent exports its transcript when the session ends, and it can be
+	//  read a minute or two later; on a project with PII redaction, only once
+	//  the session's recording has been redacted. So a session that is still
+	//  ACTIVE returns what exists so far, usually nothing, without an error:
+	//  read it again after the session ends. An unknown session is NotFound.
 	//
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 	ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11154,11 +11244,18 @@ func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, proje
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTranscript GetSessionTranscript
+// ObservabilityServiceGetSessionTranscript GetSessionTranscript returns the session's conversation as ordered
 //
-// GetSessionTranscript returns the session's conversation as ordered
+//	transcript items: messages, tool calls and results, agent handoffs and
+//	agent configuration changes. It is the conversation the dashboard's
+//	transcript shows.
 //
-//	transcript items (turns, tool calls, handoffs, config updates).
+// The agent exports its transcript when the session ends, and it can be
+//
+//	read a minute or two later; on a project with PII redaction, only once
+//	the session's recording has been redacted. So a session that is still
+//	ACTIVE returns what exists so far, usually nothing, without an error:
+//	read it again after the session ends. An unknown session is NotFound.
 //
 // Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -15857,10 +15954,16 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTracesWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTracesResponse, error)
 
-	// ObservabilityServiceGetSessionTranscriptWithResponse GetSessionTranscript
+	// ObservabilityServiceGetSessionTranscriptWithResponse GetSessionTranscript returns the session's conversation as ordered
+	//  transcript items: messages, tool calls and results, agent handoffs and
+	//  agent configuration changes. It is the conversation the dashboard's
+	//  transcript shows.
 	//
-	// GetSessionTranscript returns the session's conversation as ordered
-	//  transcript items (turns, tool calls, handoffs, config updates).
+	// The agent exports its transcript when the session ends, and it can be
+	//  read a minute or two later; on a project with PII redaction, only once
+	//  the session's recording has been redacted. So a session that is still
+	//  ACTIVE returns what exists so far, usually nothing, without an error:
+	//  read it again after the session ends. An unknown session is NotFound.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19447,11 +19550,18 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTracesWithResponse(c
 	return ParseObservabilityServiceGetSessionTracesResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTranscriptWithResponse GetSessionTranscript
+// ObservabilityServiceGetSessionTranscriptWithResponse GetSessionTranscript returns the session's conversation as ordered
 //
-// GetSessionTranscript returns the session's conversation as ordered
+//	transcript items: messages, tool calls and results, agent handoffs and
+//	agent configuration changes. It is the conversation the dashboard's
+//	transcript shows.
 //
-//	transcript items (turns, tool calls, handoffs, config updates).
+// The agent exports its transcript when the session ends, and it can be
+//
+//	read a minute or two later; on a project with PII redaction, only once
+//	the session's recording has been redacted. So a session that is still
+//	ACTIVE returns what exists so far, usually nothing, without an error:
+//	read it again after the session ends. An unknown session is NotFound.
 //
 // Returns a wrapper object for the known response body format(s).
 //

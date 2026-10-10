@@ -30,6 +30,7 @@ import (
 
 	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/auth"
@@ -42,8 +43,8 @@ const (
 	analyticsProjectSelectHint    = "Select a cloud project via --project or run `lk cloud auth`"
 )
 
-// defaultPageLimit is how many of a session's participants a page reads by
-// default.
+// defaultPageLimit is how many of a session's participants or transcript
+// records a page reads by default.
 const defaultPageLimit = 50
 
 var (
@@ -94,6 +95,13 @@ var (
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(sessionRecordingOptionsFrom, fetchSessionRecording),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsRecordingFlags()...),
+						},
+						{
+							Name:      "transcript",
+							Usage:     "Print a session's transcript (requires --experimental-auth)",
+							ArgsUsage: "SESSION_ID",
+							Action:    sessionRead(pageOptions, fetchSessionTranscript),
+							Flags:     append([]cli.Flag{jsonFlag}, analyticsTranscriptFlags()...),
 						},
 					},
 				},
@@ -251,6 +259,12 @@ func analyticsRecordingFlags() []cli.Flag {
 			Usage: "Print the signed download URL (valid for 15 minutes) instead of downloading",
 		},
 	}
+}
+
+// analyticsTranscriptFlags returns fresh instances of the transcript's own
+// flags (the shared jsonFlag is added by the command).
+func analyticsTranscriptFlags() []cli.Flag {
+	return pageFlags(defaultPageLimit, "transcript records")
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
@@ -660,9 +674,9 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 }
 
 // sessionRead builds the action of a command that reads one thing about a
-// session — its participants or recordings — which only the Public API
-// serves. The action refuses to run without --experimental-auth before
-// checking anything else, then reads the SESSION_ID argument and the
+// session — its participants, recordings or transcript — which only the
+// Public API serves. The action refuses to run without --experimental-auth
+// before checking anything else, then reads the SESSION_ID argument and the
 // command's options, so a bad flag fails before the project lookup, and hands
 // fetch a client signed in as the user and the selected project.
 func sessionRead[O any](
@@ -859,11 +873,48 @@ func pageOptions(cmd *cli.Command) (public.PageOptions, error) {
 	return public.PageOptions{Limit: int32(limit), Cursor: cmd.String("cursor")}, nil
 }
 
-// sessionReadError annotates a session read's error like sessionAPIError,
-// except NotFound: the API answers an unknown session and a mistyped
-// --project the same way, so it names the session and the project it asked.
-// what names what the read returns, and access is what the read requires.
+// fetchSessionTranscript reads one page of a session's transcript and prints
+// it, saying why when the first page is empty.
+func fetchSessionTranscript(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.PageOptions, asJSON bool) error {
+	page, err := client.GetSessionTranscript(ctx, projectID, sessionID, opts)
+	if err != nil {
+		return sessionReadError(err, projectID, sessionID, "transcript", projectAdminAccess)
+	}
+	// Only an empty page needs a reason, and only the server's empty: no items,
+	// nothing skipped and no next cursor. Anything else prints no reason, so
+	// it skips emptyTranscriptReason's GetSession too.
+	var empty string
+	if len(page.Items) == 0 && page.SkippedRecords == 0 && page.NextCursor == "" {
+		empty = emptyTranscriptReason(ctx, client, projectID, sessionID, opts.Cursor != "")
+	}
+	return render.SessionTranscript(out, asJSON, *page, empty)
+}
+
+// emptyTranscriptReason explains a page with no items. The transcript read
+// doesn't say whether the session is still going, so a first page asks
+// GetSession: an active session's agent exports its transcript only when the
+// session ends. A session that stopped reporting keeps its ACTIVE status but
+// gets an end time, so only one with no end time is still active.
+func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID, sessionID string, laterPage bool) string {
+	if laterPage {
+		return "No more transcript items"
+	}
+	if session, _, err := client.GetSession(ctx, projectID, sessionID); err == nil &&
+		util.Deref(session.Status) == oapi.SESSIONSTATUSACTIVE && session.EndedAt == nil {
+		return fmt.Sprintf("Session %s is still active: its transcript appears after it ends", sessionID)
+	}
+	return fmt.Sprintf("Session %s has no transcript to read. The agent exports it when the session ends, "+
+		"and it can be read a minute or two after the session ends (on a project with PII redaction, once "+
+		"the recording is redacted); a session without an agent has none", sessionID)
+}
+
+// sessionReadError explains why a session has no participants or transcript
+// (what) to print, and otherwise annotates the error like the other Public
+// API commands. access is what the read requires.
 func sessionReadError(err error, projectID, sessionID, what string, access sessionReadAccess) error {
+	if dashboardURL, ok := public.ObservabilityDisabled(err); ok {
+		return observabilityDisabledError(sessionID, what, dashboardURL)
+	}
 	if public.IsNotFound(err) {
 		return fmt.Errorf("no session %s in project %s (%w)", sessionID, projectID, err)
 	}
@@ -877,7 +928,7 @@ const (
 	// projectReadAccess reads: a session's participants.
 	projectReadAccess sessionReadAccess = iota
 	// projectAdminAccess reads, which can hold user data: a session's
-	// recordings.
+	// recordings and transcript.
 	projectAdminAccess
 )
 

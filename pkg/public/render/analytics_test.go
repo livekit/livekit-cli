@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -25,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
@@ -306,4 +308,115 @@ func TestRecordingSaved(t *testing.T) {
 	stdout.Reset()
 	require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, nil, true), true, saved))
 	assert.JSONEq(t, `{"sessionId":"RM_1","recording":"chat-history","file":"RM_1-chat-history.json","bytes":2048,"recordingStartedAt":"2026-10-07T11:00:00Z"}`, stdout.String())
+}
+
+// transcriptItems is one page of a transcript with an item of each kind, as
+// the API sends it.
+const transcriptItems = `[
+  {"id": "item_1", "timestamp": "2026-10-07T11:00:01Z", "message": {"role": "ROLE_USER", "text": "hi\nthere", "transcriptConfidence": 0.93, "transcriptionDelayMs": 150, "endOfTurnDelayMs": 320.4}},
+  {"id": "item_2", "timestamp": "2026-10-07T11:00:02Z", "message": {"role": "ROLE_AGENT", "text": "hello", "interrupted": true, "e2eLatencyMs": 820.5, "llmTtftMs": 310, "ttsTtfbMs": 95.25}},
+  {"id": "item_3", "timestamp": "2026-10-07T11:00:02Z", "message": {"role": "ROLE_SYSTEM", "text": "be nice", "redacted": true}},
+  {"id": "item_4", "timestamp": "2026-10-07T11:00:03Z", "toolCall": {"name": "lookup", "callId": "c1", "arguments": "{\"q\":1}"}},
+  {"id": "item_5", "timestamp": "2026-10-07T11:00:04Z", "toolResult": {"name": "lookup", "callId": "c1", "output": "boom", "isError": true}},
+  {"id": "item_6", "timestamp": "2026-10-07T11:00:05Z", "agentHandoff": {"fromAgentId": "greeter", "toAgentId": "triage"}},
+  {"id": "item_7", "timestamp": "2026-10-07T11:00:06Z", "configUpdate": {"instructions": "new", "toolsAdded": ["lookup", "book"], "toolsRemoved": ["old"]}},
+  {"id": "item_8", "timestamp": "2026-10-07T11:00:07Z"}
+]`
+
+func decodeTranscriptItems(t *testing.T) []public.TranscriptItem {
+	t.Helper()
+	var items []public.TranscriptItem
+	require.NoError(t, json.Unmarshal([]byte(transcriptItems), &items))
+	return items
+}
+
+// TestSessionTranscriptText checks each item prints as one line with its role
+// and latencies, and the page's skipped records and next cursor are reported.
+func TestSessionTranscriptText(t *testing.T) {
+	prevLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = prevLocal })
+
+	page := public.TranscriptPage{Items: decodeTranscriptItems(t), NextCursor: "c2", SkippedRecords: 1}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, page, "unused"))
+
+	assert.Equal(t, strings.Join([]string{
+		"11:00:01  USER         hi there  (transcription 150ms · end_of_turn 320ms · confidence 0.93)",
+		"11:00:02  AGENT        hello  [interrupted]  (e2e 820ms · llm_ttft 310ms · tts_ttfb 95.2ms)",
+		"11:00:02  SYSTEM       be nice  [redacted]",
+		`11:00:03  TOOL CALL    lookup({"q":1})`,
+		"11:00:04  TOOL RESULT  lookup: boom  [error]",
+		"11:00:05  HANDOFF      greeter → triage",
+		"11:00:06  CONFIG       instructions changed · tools added: lookup, book · tools removed: old",
+		"11:00:07  UNKNOWN      item_8 (a kind this lk doesn't know; see --json)",
+		"",
+	}, "\n"), stdout.String())
+	assert.Contains(t, stderr.String(), "1 record couldn't be read as a transcript item")
+	assert.Contains(t, stderr.String(), "More items available — re-run with --cursor c2")
+	assert.NotContains(t, stderr.String(), "unused")
+}
+
+// TestTranscriptLineClipsToolText keeps a long tool output to one short line.
+func TestTranscriptLineClipsToolText(t *testing.T) {
+	output := strings.Repeat("é", 300) + "\nmore"
+	line := transcriptLine(public.TranscriptItem{ToolResult: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolResult{Name: ptr("dump"), Output: &output}})
+	assert.Equal(t, "-         TOOL RESULT  dump: "+strings.Repeat("é", 199)+"…", line)
+}
+
+// TestSessionTranscriptStripsEscapes checks what an LLM, a tool or the agent
+// put in a transcript reaches a terminal with its escape sequences stripped,
+// each item still on one line.
+func TestSessionTranscriptStripsEscapes(t *testing.T) {
+	text := "hi" + escapes + "\nthere"
+	items := []public.TranscriptItem{
+		{Message: &oapi.LivekitPublicapiObservabilityV1TranscriptItemMessage{Text: &text}},
+		{ToolCall: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolCall{Name: &text, Arguments: &text}},
+		{ToolResult: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolResult{Name: &text, Output: &text}},
+		{AgentHandoff: &oapi.LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff{FromAgentId: &text, ToAgentId: &text}},
+		{ConfigUpdate: &oapi.LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate{ToolsAdded: &[]string{text}, ToolsRemoved: &[]string{text}}},
+		{ID: text},
+	}
+
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTranscript(terminalPrinter(&stdout, &stderr), false, public.TranscriptPage{Items: items}, ""))
+	assertNoEscapes(t, stdout.String())
+	assert.Equal(t, 10, strings.Count(stdout.String(), "hi]0;pwned[2J there"))
+	assert.Equal(t, len(items), strings.Count(stdout.String(), "\n"))
+}
+
+// TestSessionTranscriptEmpty prints the caller's reason for an empty page.
+func TestSessionTranscriptEmpty(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, public.TranscriptPage{}, "Session RM_1 is still active"))
+	assert.Empty(t, stdout.String())
+	assert.Equal(t, "Session RM_1 is still active\n", stderr.String())
+
+	// --json keeps stdout parseable and still says why on stderr.
+	stdout.Reset()
+	stderr.Reset()
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), true, public.TranscriptPage{}, "Session RM_1 is still active"))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Equal(t, "Session RM_1 is still active\n", stderr.String())
+}
+
+// TestSessionTranscriptNoItemsNotEmpty checks a page with no items but
+// skipped records or a next cursor isn't empty, as the server counts it, so
+// it never says there's nothing beside a hint that there's more.
+func TestSessionTranscriptNoItemsNotEmpty(t *testing.T) {
+	for _, page := range []public.TranscriptPage{{SkippedRecords: 2}, {NextCursor: "c2"}} {
+		var stdout, stderr bytes.Buffer
+		require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, page, "No more transcript items"))
+		assert.Empty(t, stdout.String())
+		assert.NotContains(t, stderr.String(), "No more transcript items")
+	}
+}
+
+// TestSessionTranscriptJSON checks --json prints the items as the API sent
+// them, with the page's cursor and skipped records.
+func TestSessionTranscriptJSON(t *testing.T) {
+	page := public.TranscriptPage{Items: decodeTranscriptItems(t), NextCursor: "c2", SkippedRecords: 1}
+	var stdout bytes.Buffer
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, nil, true), true, page, ""))
+	assert.JSONEq(t, `{"items":`+transcriptItems+`,"nextCursor":"c2","skippedRecords":1}`, stdout.String())
 }

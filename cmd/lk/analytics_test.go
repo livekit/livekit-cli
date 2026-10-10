@@ -836,6 +836,258 @@ func TestDefaultRecordingFile(t *testing.T) {
 	assert.Equal(t, "a_b-audio.ogg", defaultRecordingFile("a/b", "audio"), "a session id never names a directory")
 }
 
+func TestSessionTranscriptCommand(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd)
+	sessionCmd := findCommandByName(analyticsCmd.Commands, "session")
+	require.NotNil(t, sessionCmd)
+	transcriptCmd := findCommandByName(sessionCmd.Commands, "transcript")
+	require.NotNil(t, transcriptCmd, "'analytics session transcript' command must exist")
+	require.NotNil(t, transcriptCmd.Action)
+	for _, name := range []string{"limit", "cursor", "json"} {
+		assert.NotNil(t, findFlagByName(transcriptCmd.Flags, name), "--%s", name)
+	}
+}
+
+// TestSessionTranscriptRequiresExperimentalAuth checks the transcript, which
+// has no API-key endpoint, refuses to run without --experimental-auth before
+// reading its arguments or any config.
+func TestSessionTranscriptRequiresExperimentalAuth(t *testing.T) {
+	for _, args := range [][]string{
+		{"--experimental", "session", "transcript", "RM_1"},
+		{"--experimental", "session", "transcript", "RM_1", "--limit", "0"},
+		{"--experimental", "session", "transcript"},
+	} {
+		err := runAnalytics(args...)
+		require.ErrorContains(t, err, "only available under --experimental-auth")
+	}
+}
+
+// transcriptCmdOptions runs pageOptions with the given arguments on a
+// command built from fresh analyticsTranscriptFlags.
+func transcriptCmdOptions(t *testing.T, args ...string) (public.PageOptions, error) {
+	t.Helper()
+	var opts public.PageOptions
+	var optsErr error
+	cmd := &cli.Command{
+		Name:  "transcript",
+		Flags: analyticsTranscriptFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			opts, optsErr = pageOptions(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"transcript"}, args...)))
+	return opts, optsErr
+}
+
+func TestTranscriptOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    public.PageOptions
+		wantErr string
+	}{
+		{name: "defaults", want: public.PageOptions{Limit: defaultPageLimit}},
+		{name: "paging", args: []string{"--limit", "100", "--cursor", "abc"}, want: public.PageOptions{Limit: 100, Cursor: "abc"}},
+		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := transcriptCmdOptions(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// transcriptAPI starts a stand-in Public API that answers the transcript read
+// with transcript and GetSession with session, the session's JSON. Each path
+// it is asked for is recorded.
+func transcriptAPI(t *testing.T, transcriptStatus int, transcript, session string) (*public.Client, *[]string) {
+	t.Helper()
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if r.Header.Get("Authorization") != "Bearer sekret" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/v1/projects/p1/sessions/RM_1/transcript":
+			w.WriteHeader(transcriptStatus)
+			_, _ = w.Write([]byte(transcript))
+		case "/v1/projects/p1/sessions/RM_1":
+			_, _ = fmt.Fprintf(w, `{"session":%s}`, session)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+	return client, &paths
+}
+
+// TestFetchSessionTranscript prints a page one line per item and, when the
+// first page is empty, says why: the session is still active, or it ended
+// without a transcript to read yet. A later empty page needs no lookup, and a
+// page with no items but skipped records or a next cursor isn't empty.
+func TestFetchSessionTranscript(t *testing.T) {
+	const page = `{"items":[` +
+		`{"id":"item_1","message":{"role":"ROLE_USER","text":"hi","endOfTurnDelayMs":320}},` +
+		`{"id":"item_2","message":{"role":"ROLE_AGENT","text":"hello","e2eLatencyMs":820}}],` +
+		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`
+	tests := []struct {
+		name       string
+		body       string
+		session    string
+		opts       public.PageOptions
+		wantOut    []string
+		wantStatus []string
+		noStatus   []string
+		wantPaths  []string
+	}{
+		{
+			name:       "items",
+			body:       page,
+			wantOut:    []string{"USER         hi  (end_of_turn 320ms)", "AGENT        hello  (e2e 820ms)"},
+			wantStatus: []string{"More items available — re-run with --cursor c2"},
+			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
+		},
+		{
+			name:       "active session",
+			body:       `{"items":[]}`,
+			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
+			wantStatus: []string{"Session RM_1 is still active", "appears after it ends"},
+			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
+		},
+		{
+			name:       "closed session",
+			body:       `{}`,
+			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_CLOSED"}`,
+			wantStatus: []string{"Session RM_1 has no transcript to read", "a minute or two after the session ends"},
+			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
+		},
+		{
+			// A session that stopped reporting stays ACTIVE but has an end time.
+			name:       "active session that stopped reporting",
+			body:       `{"items":[]}`,
+			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE","endedAt":"2026-10-07T11:05:00Z"}`,
+			wantStatus: []string{"Session RM_1 has no transcript to read"},
+			noStatus:   []string{"still active"},
+			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
+		},
+		{
+			name:       "last page",
+			body:       `{"items":[]}`,
+			opts:       public.PageOptions{Cursor: "c2"},
+			wantStatus: []string{"No more transcript items"},
+			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
+		},
+		{
+			name:       "no items, more to read",
+			body:       `{"items":[],"skippedRecords":2,"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
+			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
+			wantStatus: []string{"2 records couldn't be read", "More items available — re-run with --cursor c2"},
+			noStatus:   []string{"still active", "no transcript"},
+			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, paths := transcriptAPI(t, http.StatusOK, tt.body, tt.session)
+			stdout, stderr := captureOut(t)
+
+			require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", tt.opts, false))
+
+			for _, want := range tt.wantOut {
+				assert.Contains(t, stdout.String(), want)
+			}
+			if len(tt.wantOut) == 0 {
+				assert.Empty(t, stdout.String())
+			}
+			for _, want := range tt.wantStatus {
+				assert.Contains(t, stderr.String(), want)
+			}
+			for _, unwanted := range tt.noStatus {
+				assert.NotContains(t, stderr.String(), unwanted)
+			}
+			assert.Equal(t, tt.wantPaths, *paths)
+		})
+	}
+}
+
+// TestFetchSessionTranscriptJSON checks --json prints the items and still
+// explains an empty transcript on stderr.
+func TestFetchSessionTranscriptJSON(t *testing.T) {
+	client, _ := transcriptAPI(t, http.StatusOK, `{"items":[]}`, `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`)
+	stdout, stderr := captureOut(t)
+
+	require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", public.PageOptions{}, true))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Contains(t, stderr.String(), "still active")
+}
+
+// TestFetchSessionTranscriptErrors checks why a session has no transcript to
+// print: it doesn't exist, or user data recording is off.
+func TestFetchSessionTranscriptErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr []string
+	}{
+		{
+			name:    "unknown session",
+			status:  http.StatusNotFound,
+			body:    `{"code":5,"message":"session not found"}`,
+			wantErr: []string{"no session RM_1 in project p1", "session not found"},
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off for this project, so nothing was captured to read","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/projects/p1/settings/observability"}]}`,
+			wantErr: []string{
+				"session RM_1 has no transcript",
+				"user data recording is off for this project",
+				"https://cloud.example/projects/p1/settings/observability",
+			},
+		},
+		{
+			name:    "signed out",
+			status:  http.StatusUnauthorized,
+			body:    `{"code":16,"message":"authentication required"}`,
+			wantErr: []string{"authentication required", "lk cloud auth"},
+		},
+		{
+			name:    "permission denied",
+			status:  http.StatusForbidden,
+			body:    `{"code":7,"message":"permission denied"}`,
+			wantErr: []string{"permission denied", "reading a session's transcript requires being a project admin"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, _ := transcriptAPI(t, tt.status, tt.body, `{}`)
+			stdout, _ := captureOut(t)
+
+			err := fetchSessionTranscript(context.Background(), client, "p1", "RM_1", public.PageOptions{}, false)
+			require.Error(t, err)
+			for _, want := range tt.wantErr {
+				assert.Contains(t, err.Error(), want)
+			}
+			assert.Empty(t, stdout.String())
+		})
+	}
+}
+
 // TestSessionAPIError checks a permission denial on a Public-API-only session
 // read says what the read requires, never to use API-key credentials, which
 // these reads can't use, while other errors keep cloudAPIError's hints.

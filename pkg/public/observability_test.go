@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -325,6 +326,158 @@ func TestDownloadRecordingErrorsHideSignature(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.wantErr)
 			assert.NotContains(t, err.Error(), sig)
 			assert.NotContains(t, err.Error(), "X-Amz-Signature")
+		})
+	}
+}
+
+// transcriptPage is a GetSessionTranscript response with one item of each
+// kind, as the server's REST transcoder writes it.
+const transcriptPage = `{
+  "items": [
+    {"id": "item_1", "timestamp": "2026-10-07T11:00:01Z", "message": {"role": "ROLE_USER", "text": "hi", "transcriptConfidence": 0.9, "endOfTurnDelayMs": 320}},
+    {"id": "item_2", "timestamp": "2026-10-07T11:00:02Z", "message": {"role": "ROLE_AGENT", "text": "hello", "interrupted": true, "e2eLatencyMs": 820.5}},
+    {"id": "item_3", "timestamp": "2026-10-07T11:00:03Z", "toolCall": {"name": "lookup", "callId": "c1", "arguments": "{\"q\":1}"}},
+    {"id": "item_4", "timestamp": "2026-10-07T11:00:04Z", "toolResult": {"name": "lookup", "callId": "c1", "output": "boom", "isError": true}},
+    {"id": "item_5", "timestamp": "2026-10-07T11:00:05Z", "agentHandoff": {"toAgentId": "triage"}},
+    {"id": "item_6", "timestamp": "2026-10-07T11:00:06Z", "configUpdate": {"toolsAdded": ["lookup"]}}
+  ],
+  "pageInfo": {"nextCursor": "next", "hasMore": true},
+  "skippedRecords": 2
+}`
+
+// TestGetSessionTranscript checks the request GetSessionTranscript sends for
+// each option, and that every item kind comes back typed with the page's
+// cursor and skipped record count.
+func TestGetSessionTranscript(t *testing.T) {
+	tests := []struct {
+		name string
+		opts PageOptions
+		want url.Values
+	}{
+		{name: "zero options send nothing", want: url.Values{}},
+		{
+			name: "paging",
+			opts: PageOptions{Limit: 25, Cursor: "abc"},
+			want: url.Values{"page.pageSize": {"25"}, "page.cursor": {"abc"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotAuth, gotPath string
+			var gotQuery url.Values
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotAuth, gotPath, gotQuery = r.Header.Get("Authorization"), r.URL.Path, r.URL.Query()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(transcriptPage))
+			}))
+			t.Cleanup(srv.Close)
+
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			page, err := c.GetSessionTranscript(context.Background(), "p1", "RM_1", tt.opts)
+			require.NoError(t, err)
+
+			assert.Equal(t, "Bearer sekret", gotAuth)
+			assert.Equal(t, "/v1/projects/p1/sessions/RM_1/transcript", gotPath)
+			assert.Equal(t, tt.want, gotQuery)
+
+			assert.Equal(t, "next", page.NextCursor)
+			assert.Equal(t, 2, page.SkippedRecords)
+			require.Len(t, page.Items, 6)
+
+			user := page.Items[0]
+			assert.Equal(t, "item_1", user.ID)
+			assert.True(t, time.Date(2026, 10, 7, 11, 0, 1, 0, time.UTC).Equal(*user.Timestamp))
+			require.NotNil(t, user.Message)
+			assert.Equal(t, "ROLE_USER", string(*user.Message.Role))
+			assert.Equal(t, 320.0, *user.Message.EndOfTurnDelayMs)
+
+			agent := page.Items[1].Message
+			require.NotNil(t, agent)
+			assert.True(t, *agent.Interrupted)
+			assert.Equal(t, 820.5, *agent.E2eLatencyMs)
+
+			require.NotNil(t, page.Items[2].ToolCall)
+			assert.Equal(t, `{"q":1}`, *page.Items[2].ToolCall.Arguments)
+			require.NotNil(t, page.Items[3].ToolResult)
+			assert.True(t, *page.Items[3].ToolResult.IsError)
+			require.NotNil(t, page.Items[4].AgentHandoff)
+			assert.Equal(t, "triage", *page.Items[4].AgentHandoff.ToAgentId)
+			require.NotNil(t, page.Items[5].ConfigUpdate)
+			assert.Equal(t, []string{"lookup"}, *page.Items[5].ConfigUpdate.ToolsAdded)
+		})
+	}
+}
+
+// TestTranscriptItemJSON checks an item marshals back to the API's own shape,
+// so --json prints what the server sent.
+func TestTranscriptItemJSON(t *testing.T) {
+	const item = `{"id":"item_5","timestamp":"2026-10-07T11:00:05Z","agentHandoff":{"toAgentId":"triage"}}`
+	var it TranscriptItem
+	require.NoError(t, json.Unmarshal([]byte(item), &it))
+	got, err := json.Marshal(it)
+	require.NoError(t, err)
+	assert.JSONEq(t, item, string(got))
+}
+
+// TestGetSessionTranscriptRejectsBadLimit confirms a negative limit fails
+// Validate, and fails GetSessionTranscript before any request is sent.
+func TestGetSessionTranscriptRejectsBadLimit(t *testing.T) {
+	opts := PageOptions{Limit: -1}
+	require.EqualError(t, opts.Validate(), "limit must not be negative")
+
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, "sekret")
+	require.NoError(t, err)
+
+	_, err = c.GetSessionTranscript(context.Background(), "p1", "RM_1", opts)
+	require.EqualError(t, err, "limit must not be negative")
+	assert.False(t, called, "no request should be sent")
+}
+
+// TestGetSessionTranscriptErrors checks an unknown session is NotFound and an
+// empty transcript with user data recording off carries ObservabilityDisabled.
+func TestGetSessionTranscriptErrors(t *testing.T) {
+	tests := []struct {
+		name         string
+		status       int
+		body         string
+		wantNotFound bool
+		wantDisabled bool
+	}{
+		{
+			name:         "unknown session",
+			status:       http.StatusNotFound,
+			body:         `{"code":5,"message":"session not found"}`,
+			wantNotFound: true,
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/p1"}]}`,
+			wantDisabled: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "sekret")
+			require.NoError(t, err)
+
+			_, err = c.GetSessionTranscript(context.Background(), "p1", "RM_1", PageOptions{})
+			require.Error(t, err)
+			assert.Equal(t, tt.wantNotFound, IsNotFound(err))
+			_, disabled := ObservabilityDisabled(err)
+			assert.Equal(t, tt.wantDisabled, disabled)
 		})
 	}
 }
