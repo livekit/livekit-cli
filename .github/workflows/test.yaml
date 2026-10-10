@@ -7,6 +7,34 @@ on:
     branches: [main]
 
 jobs:
+  # Lint results don't depend on the runner OS, so lint once, outside the matrix.
+  lint:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Type-checking the cgo packages needs the vendored PortAudio source.
+          submodules: true
+
+      - name: Install ALSA headers
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9
+        with:
+          version: v2.11.4
+
   test:
     strategy:
       matrix:
@@ -40,11 +68,6 @@ jobs:
 
       - name: Download Go modules
         run: go mod download
-
-      - name: Lint
-        uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9
-        with:
-          version: v2.11.4
 
       - name: Test
         shell: bash
