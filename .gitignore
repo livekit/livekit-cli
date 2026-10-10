@@ -41,3 +41,6 @@ cmd/lk/testdata/**/package-lock.json
 
 # generated at release time by release.yaml
 autocomplete/fish_autocomplete
+
+# Python bytecode from the assistant agent
+__pycache__/

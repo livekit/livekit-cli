@@ -236,6 +236,9 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 				{
 					Name:  "init",
 					Usage: "Create a new agent project from a template",
+					Description: `Creates the project in a new directory named AGENT-NAME. To create it in
+the current directory instead, pass "." as AGENT-NAME. The directory must be
+empty, and the agent is named after it.`,
 					Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 						return createAgentClientWithOpts(ctx, cmd, confirmProject)
 					},
@@ -608,7 +611,12 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 
 	logger.Debugw("Initializing agent project", "working-dir", workingDir)
 
-	appName = cmd.Args().First()
+	if arg := cmd.Args().First(); arg != "" {
+		var err error
+		if appName, appDir, err = resolveAppTarget(arg); err != nil {
+			return err
+		}
+	}
 	if appName == "" {
 		appName = project.Name
 	}

@@ -193,9 +193,11 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 		}
 	}
 
-	// Then cwd-relative paths (e.g. running from examples/drive-thru/)
+	// Then cwd-relative paths (e.g. running from examples/drive-thru/), only
+	// when cwd is inside the project: lk assistant runs projects in folders
+	// below cwd, and "../agent.py" would be another project's agent.
 	cwd, _ := os.Getwd()
-	if rel, err := filepath.Rel(dir, cwd); err == nil && rel != "." {
+	if rel, err := filepath.Rel(dir, cwd); err == nil && rel != "." && filepath.IsLocal(rel) {
 		for _, def := range append(append([]string{}, rootCandidates...), srcCandidates...) {
 			candidate := filepath.Join(rel, def)
 			if probe(candidate) {
