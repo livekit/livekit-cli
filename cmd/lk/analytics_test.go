@@ -1575,6 +1575,239 @@ func TestFetchSessionTracesErrors(t *testing.T) {
 	}
 }
 
+func TestSessionMetricsCommand(t *testing.T) {
+	analyticsCmd := findCommandByName(AnalyticsCommands, "analytics")
+	require.NotNil(t, analyticsCmd)
+	sessionCmd := findCommandByName(analyticsCmd.Commands, "session")
+	require.NotNil(t, sessionCmd)
+	metricsCmd := findCommandByName(sessionCmd.Commands, "metrics")
+	require.NotNil(t, metricsCmd, "'analytics session metrics' command must exist")
+	require.NotNil(t, metricsCmd.Action)
+	for _, name := range []string{"name", "limit", "cursor", "json"} {
+		assert.NotNil(t, findFlagByName(metricsCmd.Flags, name), "--%s", name)
+	}
+	cursor := findFlagByName(metricsCmd.Flags, "cursor")
+	assert.True(t, cursor.(*cli.StringFlag).Hidden, "--cursor must be hidden")
+	assert.Contains(t, metricsCmd.Description, "won't exactly match the dashboard's metrics panel")
+}
+
+// TestSessionMetricsRequiresExperimentalAuth checks the metrics read, which
+// has no API-key endpoint, refuses to run without --experimental-auth before
+// reading its arguments or any config.
+func TestSessionMetricsRequiresExperimentalAuth(t *testing.T) {
+	for _, args := range [][]string{
+		{"--experimental", "session", "metrics", "RM_1"},
+		{"--experimental", "session", "metrics", "RM_1", "--name", " "},
+		{"--experimental", "session", "metrics"},
+	} {
+		err := runAnalytics(args...)
+		require.ErrorContains(t, err, "only available under --experimental-auth")
+	}
+}
+
+// metricCmdOptions runs metricOptions with the given arguments on a command
+// built from fresh analyticsMetricFlags.
+func metricCmdOptions(t *testing.T, args ...string) (public.MetricOptions, error) {
+	t.Helper()
+	var opts public.MetricOptions
+	var optsErr error
+	cmd := &cli.Command{
+		Name:  "metrics",
+		Flags: analyticsMetricFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			opts, optsErr = metricOptions(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"metrics"}, args...)))
+	return opts, optsErr
+}
+
+func TestMetricOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    public.MetricOptions
+		wantErr string
+	}{
+		{name: "defaults", want: public.MetricOptions{PageOptions: public.PageOptions{Limit: defaultPageLimit}, Names: []string{}}},
+		{
+			name: "names and paging",
+			args: []string{"--name", "lk.agents.turn.e2e_latency", "--name", "lk.agents.usage.llm_input_tokens", "--limit", "100", "--cursor", "abc"},
+			want: public.MetricOptions{PageOptions: public.PageOptions{Limit: 100, Cursor: "abc"}, Names: []string{"lk.agents.turn.e2e_latency", "lk.agents.usage.llm_input_tokens"}},
+		},
+		{name: "blank name", args: []string{"--name", " "}, wantErr: "metric name must not be empty"},
+		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := metricCmdOptions(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// metricsAPI starts a stand-in Public API that answers the metrics read with
+// status and body, recording the query it was sent.
+func metricsAPI(t *testing.T, status int, body string) (*public.Client, *url.Values) {
+	t.Helper()
+	var query url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v1/projects/p1/sessions/RM_1/metrics" {
+			http.NotFound(w, r)
+			return
+		}
+		query = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+	return client, &query
+}
+
+// TestFetchSessionMetrics prints a page one line per point with the names it
+// asked for and, when a page is empty, says why: no points for those names,
+// none at all, or no more.
+func TestFetchSessionMetrics(t *testing.T) {
+	const page = `{"points":[` +
+		`{"name":"lk.agents.turn.e2e_latency","unit":"s","kind":"METRIC_KIND_HISTOGRAM","endTime":"2026-10-07T11:00:30Z",` +
+		`"histogram":{"count":"3","sum":2.4,"min":0.6,"max":1.1}},` +
+		`{"name":"lk.agents.usage.llm_input_tokens","unit":"{token}","kind":"METRIC_KIND_SUM","endTime":"2026-10-07T11:00:30Z","value":1520}],` +
+		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`
+	tests := []struct {
+		name       string
+		body       string
+		opts       public.MetricOptions
+		wantQuery  url.Values
+		wantOut    []string
+		wantStatus []string
+	}{
+		{
+			name:      "points",
+			body:      page,
+			opts:      public.MetricOptions{Names: []string{"lk.agents.turn.e2e_latency", "lk.agents.usage.llm_input_tokens"}},
+			wantQuery: url.Values{"names": {"lk.agents.turn.e2e_latency", "lk.agents.usage.llm_input_tokens"}},
+			wantOut: []string{
+				"lk.agents.turn.e2e_latency        count 3, sum 2.4 s, min 0.6 s, max 1.1 s",
+				"lk.agents.usage.llm_input_tokens  1520 token",
+			},
+			wantStatus: []string{"More points available — re-run with --cursor c2"},
+		},
+		{
+			name:       "no points for those names",
+			body:       `{"points":[]}`,
+			opts:       public.MetricOptions{Names: []string{"lk.agents.nope"}},
+			wantQuery:  url.Values{"names": {"lk.agents.nope"}},
+			wantStatus: []string{"Session RM_1 has no points for the metrics asked for (lk.agents.nope)"},
+		},
+		{
+			name:       "no points",
+			body:       `{}`,
+			wantQuery:  url.Values{},
+			wantStatus: []string{"Session RM_1 has no agent metrics", "only agents that export OpenTelemetry metrics"},
+		},
+		{
+			name:       "last page",
+			body:       `{"points":[]}`,
+			opts:       public.MetricOptions{PageOptions: public.PageOptions{Cursor: "c2"}},
+			wantQuery:  url.Values{"page.cursor": {"c2"}},
+			wantStatus: []string{"No more metric points"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, query := metricsAPI(t, http.StatusOK, tt.body)
+			stdout, stderr := captureOut(t)
+
+			require.NoError(t, fetchSessionMetrics(context.Background(), client, "p1", "RM_1", tt.opts, false))
+
+			assert.Equal(t, tt.wantQuery, *query)
+			for _, want := range tt.wantOut {
+				assert.Contains(t, stdout.String(), want)
+			}
+			if len(tt.wantOut) == 0 {
+				assert.Empty(t, stdout.String())
+			}
+			for _, want := range tt.wantStatus {
+				assert.Contains(t, stderr.String(), want)
+			}
+		})
+	}
+}
+
+// TestFetchSessionMetricsJSON checks --json prints the points and still
+// explains an empty page on stderr.
+func TestFetchSessionMetricsJSON(t *testing.T) {
+	client, _ := metricsAPI(t, http.StatusOK, `{"points":[]}`)
+	stdout, stderr := captureOut(t)
+
+	require.NoError(t, fetchSessionMetrics(context.Background(), client, "p1", "RM_1", public.MetricOptions{}, true))
+	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.Contains(t, stderr.String(), "has no agent metrics")
+}
+
+// TestFetchSessionMetricsErrors checks why a session has no metrics to print:
+// it doesn't exist, or user data recording is off.
+func TestFetchSessionMetricsErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr []string
+	}{
+		{
+			name:    "unknown session",
+			status:  http.StatusNotFound,
+			body:    `{"code":5,"message":"session not found"}`,
+			wantErr: []string{"no session RM_1 in project p1", "session not found"},
+		},
+		{
+			name:   "recording off",
+			status: http.StatusBadRequest,
+			body: `{"code":9,"message":"user data recording is off for this project, so nothing was captured to read","details":[` +
+				`{"@type":"type.googleapis.com/livekit.publicapi.observability.v1.ObservabilityDisabled","dashboardUrl":"https://cloud.example/projects/p1/settings/observability"}]}`,
+			wantErr: []string{
+				"session RM_1 has no agent metrics",
+				"user data recording is off for this project",
+				"https://cloud.example/projects/p1/settings/observability",
+			},
+		},
+		{
+			name:    "signed out",
+			status:  http.StatusUnauthorized,
+			body:    `{"code":16,"message":"authentication required"}`,
+			wantErr: []string{"authentication required", "lk cloud auth"},
+		},
+		{
+			name:    "permission denied",
+			status:  http.StatusForbidden,
+			body:    `{"code":7,"message":"permission denied"}`,
+			wantErr: []string{"permission denied", "reading a session's agent metrics requires being a project admin"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, _ := metricsAPI(t, tt.status, tt.body)
+			stdout, _ := captureOut(t)
+
+			err := fetchSessionMetrics(context.Background(), client, "p1", "RM_1", public.MetricOptions{}, false)
+			require.Error(t, err)
+			for _, want := range tt.wantErr {
+				assert.Contains(t, err.Error(), want)
+			}
+			assert.Empty(t, stdout.String())
+		})
+	}
+}
+
 // TestSessionAPIError checks a permission denial on a Public-API-only session
 // read says what the read requires, never to use API-key credentials, which
 // these reads can't use, while other errors keep cloudAPIError's hints.

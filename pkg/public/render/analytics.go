@@ -17,6 +17,7 @@ package render
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -170,7 +171,7 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 }
 
 // jsonPage is the --json shape of a page of a session's transcript, agent
-// logs or trace spans: {items, nextCursor}, like
+// logs, trace spans or agent metrics: {items, nextCursor}, like
 // util.RenderPage's, with each item as the API sent it.
 type jsonPage[T any] struct {
 	Items      []T    `json:"items"`
@@ -584,6 +585,93 @@ func spanDuration(s oapi.LivekitPublicapiObservabilityV1Span) string {
 	default:
 		return d.Round(time.Second).String()
 	}
+}
+
+// SessionMetrics prints a page of a session's agent metrics, one line per
+// point with its end time, its metric's name and its value or histogram
+// summary; --json prints the points as the API sent them, attributes and
+// buckets included. empty says why a page has no points, on stderr in both
+// modes so --json output stays parseable.
+func SessionMetrics(p *util.Printer, asJSON bool, page public.MetricPage, empty string) error {
+	jp := jsonPage[public.MetricPoint]{Items: page.Points, NextCursor: page.NextCursor}
+	if err := renderPage(p, asJSON, jp, empty, metricLines); err != nil || asJSON {
+		return err
+	}
+	moreAvailable(p, "points", page.NextCursor)
+	return nil
+}
+
+// metricLines renders metric points one per line, their names padded so the
+// values line up.
+func metricLines(points []public.MetricPoint) []string {
+	nameWidth := 1
+	for _, pt := range points {
+		nameWidth = max(nameWidth, len([]rune(oneLine(pt.Name))))
+	}
+	lines := make([]string, 0, len(points))
+	for _, pt := range points {
+		lines = append(lines, metricLine(pt, nameWidth))
+	}
+	return lines
+}
+
+// metricLine renders one metric point as a single line, its name padded to
+// nameWidth so the values line up.
+func metricLine(pt public.MetricPoint, nameWidth int) string {
+	at := "-"
+	if pt.EndTime != nil && !pt.EndTime.IsZero() {
+		at = pt.EndTime.Local().Format("15:04:05.000")
+	}
+	return fmt.Sprintf("%-12s  %-*s  %s", at, nameWidth, util.Dash(oneLine(pt.Name)), metricValue(pt))
+}
+
+// metricValue renders a gauge's or sum's value, or a histogram's count, sum,
+// min and max (each only when the agent recorded it), in the metric's unit;
+// a dash for a point of a kind newer than this client.
+func metricValue(pt public.MetricPoint) string {
+	unit := metricUnit(pt.Unit)
+	switch {
+	case pt.Value != nil:
+		return formatMetricNumber(*pt.Value, unit)
+	case pt.Histogram != nil:
+		h := pt.Histogram
+		parts := []string{"count " + util.Dash(util.Deref(h.Count))}
+		for _, f := range []struct {
+			label string
+			v     *float64
+		}{{"sum", h.Sum}, {"min", h.Min}, {"max", h.Max}} {
+			if f.v != nil {
+				parts = append(parts, f.label+" "+formatMetricNumber(*f.v, unit))
+			}
+		}
+		return strings.Join(parts, ", ")
+	default:
+		return "-"
+	}
+}
+
+// metricUnit makes an OpenTelemetry unit readable after a number: an
+// annotation such as {token} loses its braces, and the dimensionless "1" is
+// dropped.
+func metricUnit(unit string) string {
+	unit = strings.NewReplacer("{", "", "}", "").Replace(oneLine(unit))
+	if unit == "1" {
+		return ""
+	}
+	return unit
+}
+
+// formatMetricNumber renders a metric's number with its unit: a whole number
+// in full, anything else to six significant digits.
+func formatMetricNumber(v float64, unit string) string {
+	s := strconv.FormatFloat(v, 'g', 6, 64)
+	if v == math.Trunc(v) && math.Abs(v) < 1e15 {
+		s = strconv.FormatFloat(v, 'f', 0, 64)
+	}
+	if unit == "" {
+		return s
+	}
+	return s + " " + unit
 }
 
 // RecordingLabel names a recording ("audio" or "chat-history") for a sentence.

@@ -308,6 +308,110 @@ func (c *Client) GetSessionTraces(ctx context.Context, projectID, sessionID stri
 	return &TracePage{Spans: items(resp.JSON200.Spans), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
 }
 
+// MetricOptions filters and pages GetSessionMetrics. Zero values return every
+// metric's points, oldest first, with the server's page size. A cursor pages
+// only a request with the same Names.
+type MetricOptions struct {
+	PageOptions
+	// Names keeps only the points of these metrics, matched exactly, such as
+	// lk.agents.turn.e2e_latency. Empty returns every metric.
+	Names []string
+}
+
+// getSessionMetricsParams translates opts into the generated query params,
+// rejecting a negative limit and a blank metric name before any request is
+// sent.
+func getSessionMetricsParams(opts MetricOptions) (*oapi.ObservabilityServiceGetSessionMetricsParams, error) {
+	if err := opts.PageOptions.Validate(); err != nil {
+		return nil, err
+	}
+	params := &oapi.ObservabilityServiceGetSessionMetricsParams{}
+	params.PagePageSize, params.PageCursor = opts.params()
+	if len(opts.Names) > 0 {
+		names := make([]string, 0, len(opts.Names))
+		for _, name := range opts.Names {
+			name = strings.TrimSpace(name)
+			if name == "" {
+				return nil, errors.New("metric name must not be empty")
+			}
+			names = append(names, name)
+		}
+		params.Names = &names
+	}
+	return params, nil
+}
+
+// Validate reports a negative limit or a blank metric name. GetSessionMetrics
+// makes the same checks before sending a request; callers can run them
+// earlier.
+func (o MetricOptions) Validate() error {
+	_, err := getSessionMetricsParams(o)
+	return err
+}
+
+// MetricPoint is one OpenTelemetry metric data point a session's agent
+// exported, with the data the API sent decoded: Value for a gauge or sum,
+// Histogram for a histogram or exponential histogram, or neither for a kind
+// newer than this client. It marshals back to the API's own JSON.
+type MetricPoint struct {
+	// Name is the metric's name, such as lk.agents.turn.e2e_latency.
+	Name string `json:"name,omitempty"`
+	// Unit is the metric's unit as the agent declared it, such as "s" or
+	// "{token}"; empty when it declared none.
+	Unit string                                         `json:"unit,omitempty"`
+	Kind oapi.LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
+	// StartTime and EndTime are the interval the point covers; a gauge has no
+	// StartTime.
+	StartTime *time.Time `json:"startTime,omitempty"`
+	EndTime   *time.Time `json:"endTime,omitempty"`
+	// Attributes are typed, with the point's resource's and scope's merged in.
+	Attributes map[string]*oapi.GoogleProtobufValue                 `json:"attributes,omitempty"`
+	Value      *float64                                             `json:"value,omitempty"`
+	Histogram  *oapi.LivekitPublicapiObservabilityV1MetricHistogram `json:"histogram,omitempty"`
+}
+
+// MetricPage is one page of a session's metric points.
+type MetricPage struct {
+	// Points are by end time, oldest first.
+	Points []MetricPoint
+	// NextCursor is non-empty when more pages remain (pass it back as
+	// MetricOptions.Cursor).
+	NextCursor string
+}
+
+// GetSessionMetrics returns one page of the OpenTelemetry metric points a
+// session's agents exported, such as turn latencies and token usage. They are
+// the raw metrics agents emit, so they won't exactly match the dashboard's
+// metrics panel, which derives its numbers from the transcript and traces;
+// only agents that export OpenTelemetry metrics to LiveKit Cloud produce them.
+// An active session returns what its agents have exported so far. An unknown
+// session is NotFound (see IsNotFound); an empty unfiltered first page while
+// the project's user data recording is off is a FailedPrecondition that
+// ObservabilityDisabled recognizes. A read filtered by Names can come back
+// empty without an error.
+func (c *Client) GetSessionMetrics(ctx context.Context, projectID, sessionID string, opts MetricOptions) (*MetricPage, error) {
+	params, err := getSessionMetricsParams(opts)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.gen.ObservabilityServiceGetSessionMetricsWithResponse(ctx, projectID, sessionID, params)
+	if err != nil {
+		return nil, err
+	}
+	if resp.JSON200 == nil {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	// The generated point is a union that hides whether it holds a value or a
+	// histogram, so decode the body again into points that say.
+	var body struct {
+		Points []MetricPoint `json:"points"`
+	}
+	if err := json.Unmarshal(resp.Body, &body); err != nil {
+		return nil, fmt.Errorf("unexpected response from server: %w", err)
+	}
+	return &MetricPage{Points: body.Points, NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+}
+
 // gzipMagic opens every gzip stream (RFC 1952).
 var gzipMagic = []byte{0x1f, 0x8b}
 
