@@ -15,12 +15,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
@@ -40,6 +46,15 @@ func TestAnalyticsCommandTree(t *testing.T) {
 	getCmd := findCommandByName(sessionCmd.Commands, "get")
 	require.NotNil(t, getCmd, "'analytics session get' command must exist")
 	require.NotNil(t, getCmd.Action, "'analytics session get' must have an action")
+
+	participantCmd := findCommandByName(sessionCmd.Commands, "participant")
+	require.NotNil(t, participantCmd, "'analytics session participant' command must exist")
+	participantListCmd := findCommandByName(participantCmd.Commands, "list")
+	require.NotNil(t, participantListCmd, "'analytics session participant list' command must exist")
+	require.NotNil(t, participantListCmd.Action, "'analytics session participant list' must have an action")
+	cursor := findFlagByName(participantListCmd.Flags, "cursor")
+	require.NotNil(t, cursor, "'analytics session participant list' must declare --cursor")
+	assert.True(t, cursor.(*cli.StringFlag).Hidden, "--cursor must be hidden")
 }
 
 func TestAnalyticsCommandRequiresExperimentalFlag(t *testing.T) {
@@ -324,4 +339,166 @@ func TestAnalyticsListModeFlags(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+// participantListCmdOptions runs participantListOptions with the given
+// arguments on a command built from fresh analyticsParticipantListFlags.
+func participantListCmdOptions(t *testing.T, args ...string) (public.ParticipantListOptions, error) {
+	t.Helper()
+	var opts public.ParticipantListOptions
+	var optsErr error
+	cmd := &cli.Command{
+		Name:  "list",
+		Flags: analyticsParticipantListFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			opts, optsErr = participantListOptions(cmd)
+			return nil
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), append([]string{"list"}, args...)))
+	return opts, optsErr
+}
+
+func TestParticipantListOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		want    public.ParticipantListOptions
+		wantErr string
+	}{
+		{name: "defaults", want: public.ParticipantListOptions{PageOptions: public.PageOptions{Limit: defaultPageLimit}}},
+		{
+			name: "paging and sort",
+			args: []string{"--limit", "25", "--cursor", "abc", "--sort-by", "left", "--sort-order", "asc"},
+			want: public.ParticipantListOptions{PageOptions: public.PageOptions{Limit: 25, Cursor: "abc"}, SortBy: "left", SortOrder: "asc"},
+		},
+		{name: "unknown sort field", args: []string{"--sort-by", "name"}, wantErr: `invalid participant sort "name"`},
+		{name: "unknown sort order", args: []string{"--sort-order", "newest"}, wantErr: `invalid sort order "newest"`},
+		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts, err := participantListCmdOptions(t, tt.args...)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, opts)
+		})
+	}
+}
+
+// TestParticipantListRequiresExperimentalAuth checks the participant listing,
+// which has no API-key endpoint, refuses to run without --experimental-auth
+// before reading its arguments or any config.
+func TestParticipantListRequiresExperimentalAuth(t *testing.T) {
+	for _, args := range [][]string{
+		{"--experimental", "session", "participant", "list", "RM_1"},
+		{"--experimental", "session", "participant", "list"},
+	} {
+		err := runAnalytics(args...)
+		require.ErrorContains(t, err, "only available under --experimental-auth")
+	}
+}
+
+// participantsAPI starts a stand-in Public API that answers the participant
+// list with status and body, and records the query it was asked with.
+func participantsAPI(t *testing.T, status int, body string) (*public.Client, *url.Values) {
+	t.Helper()
+	var query url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/projects/p1/sessions/RM_1/participants" || r.Header.Get("Authorization") != "Bearer sekret" {
+			http.NotFound(w, r)
+			return
+		}
+		query = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+	return client, &query
+}
+
+// TestFetchSessionParticipants checks a page of participants prints as a
+// table with a hint to re-run with the next cursor, sending the limit, cursor
+// and order asked for, and --json prints {items, nextCursor}.
+func TestFetchSessionParticipants(t *testing.T) {
+	const page = `{"items":[{"participantIdentity":"alice","region":"US East"}],` +
+		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`
+	opts := public.ParticipantListOptions{PageOptions: public.PageOptions{Limit: 50, Cursor: "c1"}, SortBy: "left", SortOrder: "asc"}
+
+	client, query := participantsAPI(t, http.StatusOK, page)
+	stdout, stderr := captureOut(t)
+	require.NoError(t, fetchSessionParticipants(context.Background(), client, "p1", "RM_1", opts, false))
+	assert.Equal(t, url.Values{
+		"page.pageSize": {"50"}, "page.cursor": {"c1"},
+		"sortBy": {"PARTICIPANT_SORT_FIELD_LEFT_AT"}, "sortOrder": {"SORT_ORDER_ASC"},
+	}, *query)
+	for _, want := range []string{"alice", "US East"} {
+		assert.Contains(t, stdout.String(), want)
+	}
+	assert.Contains(t, stderr.String(), "More participants available — re-run with --cursor c2")
+
+	stdout, _ = captureOut(t)
+	require.NoError(t, fetchSessionParticipants(context.Background(), client, "p1", "RM_1", public.ParticipantListOptions{}, true))
+	var got struct {
+		Items      []map[string]any `json:"items"`
+		NextCursor string           `json:"nextCursor"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
+	require.Len(t, got.Items, 1)
+	assert.Equal(t, "alice", got.Items[0]["participantIdentity"])
+	assert.Equal(t, "c2", got.NextCursor)
+}
+
+// TestFetchSessionParticipantsErrors checks a failed read says why: signed
+// out, without access to the project, or no such session in the project.
+func TestFetchSessionParticipantsErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr string
+	}{
+		{name: "signed out", status: http.StatusUnauthorized, body: `{"code":16,"message":"authentication required"}`, wantErr: "lk cloud auth"},
+		{name: "permission denied", status: http.StatusForbidden, body: `{"code":7,"message":"permission denied"}`, wantErr: "permission denied — you don't have access to this project"},
+		{name: "no such session", status: http.StatusNotFound, body: `{"code":5,"message":"session not found"}`, wantErr: "no session RM_1 in project p1 (session not found)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, _ := participantsAPI(t, tt.status, tt.body)
+			stdout, _ := captureOut(t)
+			err := fetchSessionParticipants(context.Background(), client, "p1", "RM_1", public.ParticipantListOptions{}, false)
+			require.ErrorContains(t, err, tt.wantErr)
+			assert.Empty(t, stdout.String())
+		})
+	}
+}
+
+// captureOut points the command printer at buffers for one test.
+func captureOut(t *testing.T) (stdout, stderr *bytes.Buffer) {
+	t.Helper()
+	stdout, stderr = &bytes.Buffer{}, &bytes.Buffer{}
+	prev := out
+	out = util.NewPrinter(stdout, stderr, false)
+	t.Cleanup(func() { out = prev })
+	return stdout, stderr
+}
+
+// TestSessionAPIError checks a permission denial on a Public-API-only session
+// read says what the read requires, never to use API-key credentials, which
+// these reads can't use, while other errors keep cloudAPIError's hints.
+func TestSessionAPIError(t *testing.T) {
+	denied := &public.APIError{Status: http.StatusForbidden, Message: "permission denied"}
+
+	err := sessionAPIError(denied)
+	assert.EqualError(t, err, "permission denied — you don't have access to this project")
+	assert.True(t, public.IsPermissionDenied(err))
+
+	signedOut := &public.APIError{Status: http.StatusUnauthorized, Message: "authentication required"}
+	assert.ErrorContains(t, sessionAPIError(signedOut), "lk cloud auth")
 }
