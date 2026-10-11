@@ -19,11 +19,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
 	lksdk "github.com/livekit/server-sdk-go/v2"
-	"github.com/urfave/cli/v3"
 )
 
 var (
@@ -325,13 +326,21 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	return listAndPrint(ctx, cmd, func(ctx context.Context, req *livekit.ListPhoneNumbersRequest) (*livekit.ListPhoneNumbersResponse, error) {
 		return client.ListPhoneNumbers(ctx, req)
 	}, req, []string{
-		"ID", "E164", "Country", "Area Code", "Type", "Locality", "Region", "Capabilities", "Status", "SIP Dispatch Rules",
+		"ID", "E164", "Country", "Area Code", "Type", "Locality", "Region", "Capabilities", "Status", "Inbound", "Outbound", "SIP Dispatch Rules",
 	}, func(item *livekit.PhoneNumber) []string {
 		dispatchRulesStr := ""
 		if len(item.SipDispatchRuleIds) > 0 {
 			dispatchRulesStr = strings.Join(item.SipDispatchRuleIds, ", ")
 		} else {
 			dispatchRulesStr = "-"
+		}
+		statusIn := ""
+		if st := item.InboundStatus; st != livekit.PhoneNumberInboundStatus_PHONE_NUMBER_IN_STATUS_UNSPECIFIED {
+			statusIn = strings.TrimPrefix(st.String(), "PHONE_NUMBER_IN_STATUS_")
+		}
+		statusOut := ""
+		if st := item.OutboundStatus; st != livekit.PhoneNumberOutboundStatus_PHONE_NUMBER_OUT_STATUS_UNSPECIFIED {
+			statusOut = strings.TrimPrefix(st.String(), "PHONE_NUMBER_OUT_STATUS_")
 		}
 		return []string{
 			item.Id,
@@ -343,6 +352,8 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 			item.Region,
 			strings.Join(item.Capabilities, ","),
 			strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"),
+			statusIn,
+			statusOut,
 			dispatchRulesStr,
 		}
 	})
