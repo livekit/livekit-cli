@@ -22,11 +22,14 @@
 //	            {"type":"bands","bands":[0..1, ...]}
 //	            {"type":"transcript","turn":"...","role":"user|agent","segment":0,"text":"..."}
 //	            {"type":"snippet","turn":"...","id":"...","title":"...","lang":"python|shell","code":"...","copied":bool}
+//	            {"type":"link","turn":"...","id":"...","title":"...","url":"..."}
+//	            {"type":"answer","turn":"...","id":"...","title":"...","points":["..."],"source_title":"...","source_url":"..."}
 //	            {"type":"copied","id":"..."}
 //	            {"type":"tool","turn":"...","id":"...","label":"...","detail":"...","status":"running|done|error"}
 //	            {"type":"notice","text":"...","sticky":bool}
 //	            {"type":"error","title":"...","detail":"...","fix":"command"}
 //	            {"type":"speaker","name":"...","guest":bool}
+//	            {"type":"guest_status","status":"starting|failed","name":"..."}
 //	            {"type":"pipeline",...} {"type":"eot",...} {"type":"metrics",...} {"type":"usage",...} (X-ray)
 //	            {"type":"dismiss"}
 //	            {"type":"clear"}
@@ -34,7 +37,8 @@
 //	            {"type":"confirm_done","id":"...","option":"..."}
 //	page → Go   {"type":"ready"} {"type":"copy","id":"..."} {"type":"replay"} {"type":"close"}
 //	            {"type":"confirm","id":"...","option":"..."} {"type":"copy_text","text":"..."}
-//	            {"type":"back"} {"type":"mute","on":bool}
+//	            {"type":"back"} {"type":"mute","on":bool} {"type":"open","id":"..."}
+//	            {"type":"text","text":"..."} (typed input)
 //
 // A transcript message carries the full text so far of one segment (a
 // paragraph) of a turn. Snippets are added to their turn after the segments
@@ -71,7 +75,7 @@ type Event struct {
 	On   bool   `json:"on,omitempty"`
 	// Option is the chosen option of a confirm event.
 	Option string `json:"option,omitempty"`
-	// Text is the text of a copy_text event.
+	// Text is the text of a copy_text or text event.
 	Text string `json:"text,omitempty"`
 }
 

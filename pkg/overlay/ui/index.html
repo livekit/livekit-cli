@@ -60,6 +60,15 @@
   #status[data-state="thinking"], #status[data-state="speaking"], #status.notice { color: var(--accent); }
 
   #hints { position: fixed; right: 32px; bottom: 28px; color: var(--fg4); }
+  /* Typed input, for when speaking isn't an option. */
+  #compose { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(560px, calc(100vw - 32px)); display: none; }
+  body.composing #compose { display: block; }
+  body.composing #status { visibility: hidden; }
+  #compose input {
+    width: 100%; box-sizing: border-box; padding: 10px 14px; font: 15px/1.4 var(--sans); color: var(--fg0);
+    background: rgba(19, 19, 19, 0.9); border: 1px solid rgba(31, 213, 249, 0.35); border-radius: var(--radius); outline: none;
+  }
+  #compose input::placeholder { color: var(--fg4); }
   #brand .mic { display: none; margin-left: 6px; padding: 2px 6px; border: 1px solid rgba(245, 101, 92, 0.5); border-radius: 3px; color: var(--remove); }
   body.mic-off #brand .mic { display: inline; }
 
@@ -73,6 +82,11 @@
   body.guest #guest { display: flex; }
   #guest .dot { width: 6px; height: 6px; background: var(--purple); animation: blink 1.2s steps(2) infinite; }
   #guest .name { color: var(--purple); }
+  #guest .hint { color: var(--fg3); }
+  #guest .hint:empty { display: none; }
+  /* While the user's agent starts, the bar shows it, without Back. */
+  body.guest-starting #guest { display: flex; }
+  body.guest-starting #guest button { display: none; }
   #guest button {
     padding: 5px 9px; cursor: pointer; color: var(--fg1);
     background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;
@@ -127,6 +141,7 @@
   .turn.agent .who { color: var(--accent); }
   .turn .body > * + * { margin-top: 14px; }
   .turn p { margin: 0; font-size: 18px; line-height: 1.55; }
+  .turn p code { padding: 1px 5px; font: 0.82em var(--mono); color: var(--fg0); background: rgba(255, 255, 255, 0.07); border: 1px solid var(--separator); border-radius: 4px; overflow-wrap: anywhere; }
   .turn.user p { color: var(--fg3); }
   .turn.agent p { color: var(--fg0); }
   /* Tool calls the agent made, such as docs searches. */
@@ -158,6 +173,19 @@
   }
   .card .copy:hover { background: rgba(255, 255, 255, 0.1); }
   .card[data-copied="true"] .copy { color: var(--accent); border-color: rgba(31, 213, 249, 0.35); }
+  /* A docs page to read more. */
+  .card.link header { border-bottom: 0; }
+  .card.link .kind { flex: none; color: var(--accent); }
+  .card.link .page { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .card.link .title { font: 14px/1.4 var(--sans); color: var(--fg0); }
+  .card.link .url { font: 11.5px/1.4 var(--mono); color: var(--fg4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card.link .open { margin-left: 0; }
+  /* A docs answer: short points, with the page they come from. */
+  .card.answer .kind { color: var(--accent); }
+  .card.answer ul { margin: 0; padding: 12px 16px 12px 32px; display: flex; flex-direction: column; gap: 6px; font: 15px/1.5 var(--sans); color: var(--fg1); user-select: text; }
+  .card.answer ul code { padding: 1px 5px; font: 0.85em var(--mono); color: var(--fg0); background: rgba(255, 255, 255, 0.07); border: 1px solid var(--separator); border-radius: 4px; }
+  .card.answer footer { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-top: 1px solid var(--separator); }
+  .card.answer footer .source { min-width: 0; flex: 1; font: 12px/1.4 var(--mono); color: var(--fg3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .code { position: relative; max-height: 190px; overflow: hidden; }
   .card.expanded .code { max-height: none; }
   /* Prompts are prose, so they wrap; code scrolls sideways. */
@@ -215,9 +243,10 @@
 
 <div id="chrome">
   <div id="brand" class="mono-caps"><span class="dot"></span>LK · LiveKit Assistant<span class="mic">Mic off</span></div>
-  <div id="guest" class="mono-caps"><span class="dot"></span><span>Talking to <span class="name"></span></span><button type="button" class="mono-caps"><kbd>B</kbd>Back to LK</button></div>
+  <div id="guest" class="mono-caps"><span class="dot"></span><span class="what"></span><span class="hint"></span><button type="button" class="mono-caps"><kbd>B</kbd>Back to LK</button></div>
   <div id="status" class="mono-caps" data-state="idle">Ready</div>
-  <div id="hints" class="mono-caps">M mute · X x-ray · Shift peek · ⌘C copy last · Esc close</div>
+  <div id="hints" class="mono-caps">/ type · M mute · X x-ray · Shift peek · ⌘C copy last · Esc close</div>
+  <form id="compose" autocomplete="off"><input type="text" spellcheck="false" placeholder="Type to LK. Enter sends, Esc cancels." aria-label="Message to LK"></form>
   <div id="xray">
     <div class="head mono-caps">X-ray · LK's pipeline</div>
     <div class="models">
@@ -531,6 +560,24 @@
     if (atBottom) streamEl.scrollTop = streamEl.scrollHeight;
   }
 
+  // guestWhat sets the guest bar's text, such as "Talking to my-agent".
+  function guestWhat(text, name) {
+    const what = guestEl.querySelector('.what');
+    what.textContent = text + ' ';
+    const n = document.createElement('span');
+    n.className = 'name';
+    n.textContent = name;
+    what.append(n);
+  }
+
+  function setGuestStatus({ status, name }) {
+    body.classList.toggle('guest-starting', status === 'starting');
+    if (status === 'starting') {
+      guestWhat('Starting', name + '…');
+      guestEl.querySelector('.hint').textContent = '';
+    }
+  }
+
   // Who agent turns are from: the assistant, or the user's own agent.
   const speaker = { name: 'LK', guest: false };
   const guestEl = document.getElementById('guest');
@@ -539,7 +586,12 @@
   function setSpeaker({ name, guest }) {
     speaker.name = guest ? name : 'LK';
     speaker.guest = !!guest;
-    guestEl.querySelector('.name').textContent = name;
+    body.classList.remove('guest-starting');
+    if (guest) {
+      guestWhat('Talking to', name);
+      // The user's agent waits for them to speak first.
+      guestEl.querySelector('.hint').textContent = 'Say hello to start';
+    }
     body.classList.toggle('guest', speaker.guest);
     // X-ray follows whichever agent is talking.
     xrayEl.querySelector('.head').textContent = `X-ray · ${speaker.name}'s pipeline`;
@@ -638,24 +690,33 @@
   }
 
   function setTranscript({ turn, role, segment = 0, text }) {
+    if (role === 'user' && speaker.guest && text) guestEl.querySelector('.hint').textContent = '';
     const key = `${turn}/${segment}`;
     let p = segments.get(key);
     if (!p) {
       p = document.createElement('p');
       p.target = '';
       p.shown = 0;
-      p.node = document.createTextNode('');
+      p.node = document.createElement('span');
       p.append(p.node);
       stickToBottom(() => turnBody(turn, role).append(p));
       segments.set(key, p);
     }
     if (role !== 'agent' || reducedMotion) {
-      stickToBottom(() => { p.node.data = text; });
+      stickToBottom(() => setText(p, text));
       return;
     }
     // Agent text types out toward the latest transcript, catching up if behind.
     p.target = text;
     if (!revealing.includes(p)) revealing.push(p);
+  }
+
+  // setText shows a segment's text, with `backticked` commands and names in
+  // monospace. While text types out, an unclosed backtick shows as code
+  // already, so the code doesn't change style when the closing one arrives.
+  function setText(p, text) {
+    if (!text.includes('`')) { p.node.textContent = text; return; }
+    p.node.innerHTML = inlineCode(text);
   }
 
   const cursor = document.createElement('span');
@@ -667,7 +728,7 @@
     const behind = p.target.length - p.shown;
     if (behind > 0) {
       p.shown = Math.min(p.target.length, p.shown + Math.max(1, Math.round(behind / 12)));
-      stickToBottom(() => { p.node.data = p.target.slice(0, p.shown); });
+      stickToBottom(() => setText(p, p.target.slice(0, p.shown)));
     }
     if (cursor.parentNode !== p) p.append(cursor);
     if (p.shown >= p.target.length && (revealing.length > 1 || state !== 'speaking')) revealing.shift();
@@ -688,13 +749,59 @@
     card.querySelector('.more').addEventListener('click', () => card.classList.add('expanded'));
     card.code = code;
     // Finish typing earlier text first, so the card lands after it.
-    for (const p of revealing) { p.shown = p.target.length; p.node.data = p.target; }
+    for (const p of revealing) { p.shown = p.target.length; setText(p, p.target); }
     revealing.length = 0;
     stickToBottom(() => turnBody(turn, 'agent').append(card));
     if (card.querySelector('.code').scrollHeight <= 192) card.classList.add('expanded');
     snippets.set(id, card);
     lastSnippet = id;
     if (copied) markCopied(id);
+  }
+
+  // inlineCode escapes text and shows `backticked` parts in monospace.
+  const inlineCode = (text) => text.split('`').map((part, i) => (i % 2 ? `<code>${esc(part)}</code>` : esc(part))).join('');
+
+  function addAnswer({ turn, id, title, points, source_title, source_url }) {
+    const card = document.createElement('section');
+    card.className = 'card answer';
+    card.dataset.id = id;
+    card.innerHTML =
+      '<header><span class="kind mono-caps">Answer</span><span class="title"></span><button class="copy mono-caps" type="button">Copy</button></header>' +
+      '<ul></ul><footer><span class="source"></span><button class="copy open mono-caps" type="button">Open docs</button></footer>';
+    card.querySelector('.title').textContent = title;
+    card.querySelector('ul').innerHTML = points.map((p) => `<li>${inlineCode(p)}</li>`).join('');
+    card.querySelector('.source').textContent = `${source_title} · ${source_url.replace(/^https:\/\//, '')}`;
+    card.querySelector('.copy').addEventListener('click', () => requestCopy(id));
+    card.querySelector('.open').addEventListener('click', () => {
+      if (host) post({ type: 'open', id });
+      else window.open(source_url, '_blank');
+    });
+    card.code = points.map((p) => `- ${p}`).join('\n') + `\n\nSource: ${source_title} (${source_url})`;
+    for (const p of revealing) { p.shown = p.target.length; setText(p, p.target); }
+    revealing.length = 0;
+    stickToBottom(() => turnBody(turn, 'agent').append(card));
+    snippets.set(id, card);
+  }
+
+  function addLink({ turn, id, title, url }) {
+    const card = document.createElement('section');
+    card.className = 'card link';
+    card.dataset.id = id;
+    card.innerHTML =
+      '<header><span class="kind mono-caps">Read more</span><span class="page"><span class="title"></span><span class="url"></span></span>' +
+      '<button class="copy mono-caps" type="button">Copy</button><button class="copy open mono-caps" type="button">Open</button></header>';
+    card.querySelector('.title').textContent = title;
+    card.querySelector('.url').textContent = url.replace(/^https:\/\//, '');
+    card.querySelector('.copy').addEventListener('click', () => requestCopy(id));
+    card.querySelector('.open').addEventListener('click', () => {
+      if (host) post({ type: 'open', id });
+      else window.open(url, '_blank');
+    });
+    card.code = url;
+    for (const p of revealing) { p.shown = p.target.length; setText(p, p.target); }
+    revealing.length = 0;
+    stickToBottom(() => turnBody(turn, 'agent').append(card));
+    snippets.set(id, card);
   }
 
   const tools = new Map();  // call id → line
@@ -839,6 +946,9 @@
           break;
         case 'transcript': setTranscript(msg); break;
         case 'snippet': addSnippet(msg); break;
+        case 'link': addLink(msg); break;
+        case 'answer': addAnswer(msg); break;
+        case 'guest_status': setGuestStatus(msg); break;
         case 'tool': setTool(msg); break;
         case 'confirm': askConfirm(msg); break;
         case 'confirm_done': markConfirm(msg.id, msg.option); break;
@@ -877,7 +987,35 @@
     post({ type: 'peek', on });
   }
 
+  const composeEl = document.getElementById('compose');
+  const composeInput = composeEl.querySelector('input');
+  function openCompose() {
+    if (speaker.guest) { showNotice('Typing works with LK only. Press B to come back'); return; }
+    body.classList.add('composing');
+    composeInput.focus();
+  }
+  function closeCompose() {
+    body.classList.remove('composing');
+    composeInput.value = '';
+    composeInput.blur();
+  }
+  composeEl.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = composeInput.value.trim();
+    if (text) post({ type: 'text', text });
+    closeCompose();
+  });
+
   addEventListener('keydown', (e) => {
+    // While typing, keys go to the input, not to the shortcuts.
+    if (e.target === composeInput) {
+      if (e.key === 'Escape') { e.preventDefault(); closeCompose(); }
+      return;
+    }
+    if (e.key === '/' || (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && document.activeElement === document.body)) {
+      e.preventDefault();
+      return openCompose();
+    }
     if (e.key === 'Escape') return dismiss();
     if (e.key === 'Shift' && !e.repeat) return setPeek(true);
     if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
