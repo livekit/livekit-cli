@@ -77,6 +77,13 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 					},
 				},
 			},
+			{
+				Name:      "generate-docs",
+				Usage:     "Print markdown reference docs for a command",
+				ArgsUsage: "[command path...]",
+				Action:    generateDocs,
+				Hidden:    true,
+			},
 		},
 		Before: initLogger,
 	}
