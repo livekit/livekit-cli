@@ -20,9 +20,12 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/livekit/protocol/livekit"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -196,4 +199,223 @@ func TestScenarioGroupToYAMLFillsIDs(t *testing.T) {
 	require.True(t, strings.HasPrefix(loaded.GetId(), "SCNG_"))
 	require.True(t, strings.HasPrefix(loaded.GetScenarios()[0].GetId(), "SCN_"))
 	require.Equal(t, "fixed", loaded.GetScenarios()[1].GetId())
+}
+
+func TestLoadScenarioGroupSimulatorFlow(t *testing.T) {
+	const steps = `
+steps:
+  menu:
+    say: Press 1 for sales.
+    speaker: MACHINE
+    routes:
+      - match: "1"
+        to: sales
+    timeout:
+      after: 8s
+      to: livekit/hangup
+  sales:
+    instructions: You are a sales rep.
+    voicemail:
+      beep: false
+`
+	cases := []struct {
+		name    string
+		yaml    string
+		want    *livekit.ScenarioGroup
+		wantErr []string
+	}{
+		{
+			name: "steps and start",
+			yaml: `
+id: g1
+name: n` + steps + `
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+    max_duration: 60s
+`,
+			want: &livekit.ScenarioGroup{
+				Id:   "g1",
+				Name: "n",
+				Steps: map[string]*livekit.SimulatorStep{
+					"menu": {
+						Say:     "Press 1 for sales.",
+						Speaker: livekit.SimulatorStep_MACHINE,
+						Routes:  []*livekit.SimulatorStep_Route{{Match: "1", To: "sales"}},
+						Timeout: &livekit.SimulatorStep_Timeout{After: durationpb.New(8 * time.Second), To: "livekit/hangup"},
+					},
+					"sales": {
+						Instructions: "You are a sales rep.",
+						Voicemail:    &livekit.SimulatorStep_Voicemail{Beep: proto.Bool(false)},
+					},
+				},
+				Scenarios: []*livekit.Scenario{{
+					Id:          "s1",
+					Label:       "call",
+					Start:       "menu",
+					MaxDuration: durationpb.New(60 * time.Second),
+				}},
+			},
+		},
+		{
+			name: "built-in start",
+			yaml: `
+id: g1
+name: n
+scenarios:
+  - id: s1
+    label: call
+    start: livekit/unavailable
+`,
+			want: &livekit.ScenarioGroup{
+				Id:        "g1",
+				Name:      "n",
+				Scenarios: []*livekit.Scenario{{Id: "s1", Label: "call", Start: "livekit/unavailable"}},
+			},
+		},
+		{
+			name: "instructions only",
+			yaml: `
+id: g1
+name: n
+scenarios:
+  - id: s1
+    label: order
+    instructions: order a burger
+    agent_expectations: confirms the order
+`,
+			want: &livekit.ScenarioGroup{
+				Id:   "g1",
+				Name: "n",
+				Scenarios: []*livekit.Scenario{{
+					Id:                "s1",
+					Label:             "order",
+					Instructions:      "order a burger",
+					AgentExpectations: "confirms the order",
+				}},
+			},
+		},
+		{
+			name: "unknown step key",
+			yaml: `
+id: g1
+name: n
+steps:
+  menu:
+    sya: typo
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			wantErr: []string{`step "menu"`, "sya"},
+		},
+		{
+			name: "start and instructions",
+			yaml: `
+id: g1
+name: n` + steps + `
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+    instructions: hi
+`,
+			wantErr: []string{`scenario "call"`, "exactly one of `start` and `instructions`"},
+		},
+		{
+			name: "unknown start",
+			yaml: `
+id: g1
+name: n` + steps + `
+scenarios:
+  - id: s1
+    label: call
+    start: nowhere
+`,
+			wantErr: []string{`scenario "call"`, `start "nowhere"`},
+		},
+		{
+			name: "max_duration without unit",
+			yaml: `
+id: g1
+name: n` + steps + `
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+    max_duration: 60
+`,
+			wantErr: []string{`scenario "call"`, "max_duration"},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			group, err := loadScenarioGroup(writeScenariosFile(t, c.yaml))
+			if c.wantErr != nil {
+				for _, e := range c.wantErr {
+					require.ErrorContains(t, err, e)
+				}
+				return
+			}
+			require.NoError(t, err)
+			require.True(t, proto.Equal(c.want, group), "got %v", group)
+		})
+	}
+}
+
+func TestScenarioGroupToYAMLRoundTripsFlow(t *testing.T) {
+	path := writeScenariosFile(t, `
+id: g1
+name: n
+steps:
+  menu:
+    say: Press 1.
+    speaker: MACHINE
+    max_visits:
+      count: 2
+      to: livekit/hangup
+    voicemail:
+      beep: false
+      silence_timeout: 1.5s
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+    max_duration: 60s
+`)
+	group, err := loadScenarioGroup(path)
+	require.NoError(t, err)
+	out, err := scenarioGroupToYAML(group)
+	require.NoError(t, err)
+	again, err := loadScenarioGroup(writeScenariosFile(t, string(out)))
+	require.NoError(t, err)
+	require.True(t, proto.Equal(group, again), "got %v\nyaml:\n%s", again, out)
+}
+
+func TestInsertScenarioIDsKeepsSteps(t *testing.T) {
+	in := `name: n
+steps:
+  menu:
+    say: hi # greet
+scenarios:
+  - label: call
+    start: menu
+`
+	out, added, err := insertScenarioIDs([]byte(in))
+	require.NoError(t, err)
+	require.Equal(t, 2, added)
+	ids := regexp.MustCompile(`(SCNG?)_\w+`)
+	want := `id: SCNG_x
+name: n
+steps:
+  menu:
+    say: hi # greet
+scenarios:
+  - id: SCN_x
+    label: call
+    start: menu
+`
+	require.Equal(t, want, ids.ReplaceAllString(string(out), "${1}_x"))
 }
