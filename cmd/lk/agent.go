@@ -127,14 +127,14 @@ var (
 	idFlag = func(required bool) *cli.StringFlag {
 		return &cli.StringFlag{
 			Name:     "id",
-			Usage:    fmt.Sprintf("`ID` of the agent. If unset, and the %s file is present, will use the id found there.", config.LiveKitTOMLFile),
+			Usage:    fmt.Sprintf("Agent `ID`. If unset and %s is present, uses the ID found there.", config.LiveKitTOMLFile),
 			Required: required,
 		}
 	}
 
 	idSliceFlag = &cli.StringSliceFlag{
 		Name:     "id",
-		Usage:    "`IDs` of agent(s)",
+		Usage:    "Filter to one or more agent `IDs`. Repeatable.",
 		Required: false,
 	}
 
@@ -157,20 +157,20 @@ var (
 
 	secretsFileFlag = &cli.StringFlag{
 		Name:      "secrets-file",
-		Usage:     "`FILE` containing secret KEY=VALUE pairs, one per line. These will be injected as environment variables into the agent.",
+		Usage:     "`FILE` containing secret KEY=VALUE pairs, one per line. Injected as environment variables into the agent.",
 		TakesFile: true,
 		Required:  false,
 	}
 
 	secretsFlag = &cli.StringSliceFlag{
 		Name:     "secrets",
-		Usage:    "KEY=VALUE comma separated secrets. These will be injected as environment variables into the agent. These take precedence over secrets-file.",
+		Usage:    "One or more `KEY=VALUE` secrets. Repeat the flag for each secret. Injected as environment variables into the agent. Takes precedence over --secrets-file.",
 		Required: false,
 	}
 
 	secretsMountFlag = &cli.StringSliceFlag{
 		Name:     "secret-mount",
-		Usage:    "Local path to a secret file to be mounted on agent environment.",
+		Usage:    "Path to a `FILE` to load as a file-mounted secret in the agent container.",
 		Required: false,
 	}
 
@@ -183,32 +183,32 @@ var (
 
 	logTypeFlag = &cli.StringFlag{
 		Name:     "log-type",
-		Usage:    "Type of logs to retrieve. Valid values are 'deploy' and 'build'.",
+		Usage:    "Log `TYPE` to retrieve. Valid values: deploy, build.",
 		Value:    "deploy",
 		Required: false,
 	}
 
 	regionFlag = &cli.StringFlag{
 		Name:     "region",
-		Usage:    "Region to deploy the agent to. If unset, will deploy to the nearest region.",
+		Usage:    "`REGION` code to deploy the agent to. If unset, the CLI prompts you to select a region.",
 		Required: false,
 	}
 
 	deploymentFlag = &cli.StringFlag{
 		Name:     "deployment",
-		Usage:    "Agent deployment",
+		Usage:    "`NAME` of the deployment. Defaults to production.",
 		Required: false,
 		Aliases:  []string{"d"},
 	}
 
 	agentPrebuiltImageFlag = &cli.StringFlag{
 		Name:  "image",
-		Usage: "Pre-built image from the local Docker daemon (e.g. myimage:latest). Requires Docker.",
+		Usage: "Pre-built `IMAGE` from the local Docker daemon (e.g. myimage:latest). Requires Docker.",
 	}
 
 	agentPrebuiltImageTarFlag = &cli.StringFlag{
 		Name:  "image-tar",
-		Usage: "Pre-built image from an OCI tar file (e.g. ./image.tar). No Docker daemon required.",
+		Usage: "Pre-built image from an OCI tar `FILE` (e.g. ./image.tar). No Docker daemon required.",
 	}
 
 	skipSDKCheckFlag = &cli.BoolFlag{
@@ -241,7 +241,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "lang",
-							Usage: "`LANGUAGE` of the starter template, one of \"python\", \"node\".",
+							Usage: "`LANGUAGE` of the starter template. One of python, node.",
 							Action: func(ctx context.Context, cmd *cli.Command, l string) error {
 								if _, ok := starterTemplateURLs[l]; !ok {
 									return fmt.Errorf("unsupported language: %s", l)
@@ -251,7 +251,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						},
 						&cli.BoolFlag{
 							Name:  "deploy",
-							Usage: "If set, automatically deploys the agent to LiveKit Cloud after initialization.",
+							Usage: "Deploy the agent to LiveKit Cloud after initialization.",
 							Value: false,
 						},
 						templateFlag,
@@ -295,7 +295,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Flags: []cli.Flag{
 						&cli.BoolFlag{
 							Name:     "overwrite",
-							Usage:    "Overwrite existing Dockerfile and/or .dockerignore if they exist.",
+							Usage:    "Overwrite existing Dockerfile and .dockerignore files.",
 							Required: false,
 							Value:    false,
 						},
@@ -393,7 +393,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "version",
-							Usage:    "Version to rollback to, defaults to most recent previous to current.",
+							Usage:    "`VERSION` to roll back to. Defaults to the most recent version prior to the current.",
 							Value:    "latest",
 							Required: true,
 						},
@@ -473,7 +473,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						idFlag(false),
 						&cli.BoolFlag{
 							Name:     "overwrite",
-							Usage:    "If set, will overwrite existing secrets.",
+							Usage:    "Overwrite existing secrets.",
 							Required: false,
 							Value:    false,
 						},

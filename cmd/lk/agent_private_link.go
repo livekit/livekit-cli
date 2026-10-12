@@ -28,26 +28,26 @@ var privateLinkCommands = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "name",
-					Usage:    "Private link name",
+					Usage:    "`NAME` for the private link. Required.",
 					Required: true,
 				},
 				&cli.StringFlag{
 					Name:  "region",
-					Usage: "LiveKit region. If unset in interactive mode, a picker of available regions is shown.",
+					Usage: "LiveKit agent `REGION` for the link. This is the LiveKit region, not the cloud provider region. If unset in interactive mode, the CLI shows a picker of available regions.",
 				},
 				&cli.UintFlag{
 					Name:     "port",
-					Usage:    "Destination port",
+					Usage:    "TCP `PORT` to reach on the target service. Required. Must match the port your endpoint service listens on.",
 					Required: true,
 				},
 				&cli.StringFlag{
 					Name:     "endpoint",
-					Usage:    "Customer-provided endpoint identifier",
+					Usage:    "The `ENDPOINT` to connect to: the AWS endpoint service name or the Azure Resource ID. Required.",
 					Required: true,
 				},
 				&cli.StringFlag{
 					Name:  "cloud-region",
-					Usage: "Cloud provider region (e.g. eastus, us-east-2). Required when --endpoint is an Azure Resource ID",
+					Usage: "Cloud provider `REGION` that hosts the resource. Required when --endpoint is an Azure Resource ID. For AWS, LiveKit derives the region from the endpoint service name, so you can omit it.",
 				},
 				jsonFlag,
 			},
@@ -69,7 +69,7 @@ var privateLinkCommands = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
-					Usage:    "Private link ID",
+					Usage:    "Private link `ID`. Required.",
 					Required: true,
 				},
 				jsonFlag,
@@ -83,7 +83,7 @@ var privateLinkCommands = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
-					Usage:    "Private link ID",
+					Usage:    "Private link `ID`. Required.",
 					Required: true,
 				},
 				jsonFlag,
