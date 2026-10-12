@@ -43,6 +43,10 @@ const (
 	ShowCodeTool = "show_code"
 	// HandOffTaskTool shows a prompt for the user's coding agent as a card.
 	HandOffTaskTool = "hand_off_task"
+	// ShowAnswerTool shows a docs answer as a card of short points.
+	ShowAnswerTool = "show_answer"
+	// ShowLinkTool shows a link to a docs page as a card.
+	ShowLinkTool = "show_link"
 	// EndCallTool ends the conversation. lk closes the overlay after it.
 	EndCallTool = "end_call"
 )

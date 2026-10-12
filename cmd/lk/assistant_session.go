@@ -18,10 +18,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"sync"
@@ -87,7 +89,9 @@ type assistantSession struct {
 	spokeGoodbye  bool // the agent spoke after end_call
 	agentExited   bool
 	dismissed     bool
-	snippets      map[string]string
+	snippets      map[string]string // card id → code, for Copy
+	snippetOrder  []snippetRef      // cards in the order shown, for copying by voice
+	links         map[string]string // link card id → URL, for Open
 
 	// The local connection to the assistant agent, and the lk commands it
 	// runs through it.
@@ -168,6 +172,7 @@ func newAssistantSession(ov *overlay.Overlay, cmd *cli.Command) *assistantSessio
 		shownCalls: map[string]bool{},
 		toolTurns:  map[string]string{},
 		snippets:   map[string]string{},
+		links:      map[string]string{},
 	}
 }
 
@@ -197,6 +202,11 @@ func (s *assistantSession) run(ctx context.Context) (err error) {
 	if err != nil {
 		return errNoCredentials{err}
 	}
+	project := "your LiveKit Cloud project"
+	if rp, err := resolveProject(s.cmd, loadParams{requireURL: true}); err == nil && rp.project != nil && rp.project.Name != "" {
+		project = "your LiveKit Cloud project, " + rp.project.Name
+	}
+	out.Statusf("LK uses LiveKit Inference through %s. Its usage counts toward your plan.", project)
 
 	dir := s.cmd.String("agent-dir")
 	projectType := agentfs.ProjectTypePythonUV
@@ -265,6 +275,8 @@ func (s *assistantSession) run(ctx context.Context) (err error) {
 		Env: append(creds,
 			"LK_ASSISTANT_ADDR="+channelLn.Addr().String(),
 			"LK_ASSISTANT_PROJECT="+projectDir,
+			"LK_ASSISTANT_FOLDER="+assistant.DescribeFolder(projectDir).JSON(),
+			"LK_ASSISTANT_CODING_AGENTS="+checkCodingAgentSetup(projectDir).JSON(),
 		),
 		FailSignals: consoleCrashSignals,
 	})
@@ -273,7 +285,7 @@ func (s *assistantSession) run(ctx context.Context) (err error) {
 	}
 	defer agentProc.Kill()
 
-	conn, err := acceptAgent(ctx, server, agentProc)
+	conn, err := acceptAgent(ctx, server, agentProc, "the assistant agent")
 	if err != nil {
 		return err
 	}
@@ -367,6 +379,10 @@ func (s *assistantSession) run(ctx context.Context) (err error) {
 				s.handleCopy(ev)
 			case "confirm":
 				s.confirmTool(ev.ID, ev.Option)
+			case "open":
+				s.openLink(ev.ID)
+			case "text":
+				s.typed(ev.Text)
 			case "back":
 				s.returnToAssistant("")
 			case "mute":
@@ -420,7 +436,8 @@ func (s *assistantSession) serveCopies(ctx context.Context) {
 }
 
 // acceptAgent waits for the agent subprocess to connect to the console server.
-func acceptAgent(ctx context.Context, server *console.TCPServer, agentProc *AgentProcess) (net.Conn, error) {
+// who names the agent in errors, such as "the assistant agent".
+func acceptAgent(ctx context.Context, server *console.TCPServer, agentProc *AgentProcess, who string) (net.Conn, error) {
 	type result struct {
 		conn net.Conn
 		err  error
@@ -439,15 +456,15 @@ func acceptAgent(ctx context.Context, server *console.TCPServer, agentProc *Agen
 		return res.conn, nil
 	case err := <-agentProc.Done():
 		if err != nil {
-			return nil, fmt.Errorf("the assistant agent exited before connecting: %w\n\n%s", err, agentExitDetail(agentProc))
+			return nil, fmt.Errorf("%s exited before connecting: %w\n\n%s", who, err, agentExitDetail(agentProc))
 		}
-		return nil, fmt.Errorf("the assistant agent exited before connecting.\n\n%s", agentExitDetail(agentProc))
+		return nil, fmt.Errorf("%s exited before connecting.\n\n%s", who, agentExitDetail(agentProc))
 	case <-agentProc.Failed():
 		// The crash marker arrives mid-traceback; give trailing output a moment.
 		time.Sleep(500 * time.Millisecond)
-		return nil, fmt.Errorf("the assistant agent crashed before connecting.\n\n%s", agentExitDetail(agentProc))
+		return nil, fmt.Errorf("%s stopped before connecting.\n\n%s", who, agentExitDetail(agentProc))
 	case <-time.After(90 * time.Second):
-		return nil, fmt.Errorf("timed out waiting for the assistant agent to connect.\n\n%s", agentExitDetail(agentProc))
+		return nil, fmt.Errorf("timed out waiting for %s to connect.\n\n%s", who, agentExitDetail(agentProc))
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
@@ -732,6 +749,10 @@ func (s *assistantSession) toolCall(fc *agent.FunctionCall) {
 		s.showCode(fc)
 	case assistant.HandOffTaskTool:
 		s.handOffTask(fc)
+	case assistant.ShowLinkTool:
+		s.showLink(fc)
+	case assistant.ShowAnswerTool:
+		s.showAnswer(fc)
 	case assistant.EndCallTool:
 		// Only the assistant's end_call closes the overlay; the user's own
 		// agent may have one too.
@@ -801,6 +822,8 @@ func describeTool(name, arguments string) (label, detail string) {
 		return "Listed your agents", detail
 	case "list_templates":
 		return "Listed the templates", detail
+	case "copy_to_clipboard":
+		return "Copied to your clipboard", detail
 	case "create_project":
 		return "Create a project", detail
 	case "confirm_action":
@@ -864,7 +887,7 @@ func (s *assistantSession) showCode(fc *agent.FunctionCall) {
 	s.agentTurnForReply()
 
 	id := fc.GetCallId()
-	s.snippets[id] = args.Code
+	s.addSnippet(id, args.Title, args.Code)
 	s.out.Send(overlaySnippet{"snippet", s.agentTurn, id, args.Title, normalizeLang(args.Language), args.Code, false})
 }
 
@@ -884,8 +907,16 @@ func (s *assistantSession) handOffTask(fc *agent.FunctionCall) {
 	s.agentTurnForReply()
 
 	id := fc.GetCallId()
-	s.snippets[id] = args.Task
+	s.addSnippet(id, "Prompt for your coding agent", args.Task)
 	s.out.Send(overlaySnippet{"snippet", s.agentTurn, id, "Prompt for your coding agent", "prompt", args.Task, false})
+}
+
+type snippetRef struct{ id, title string }
+
+// addSnippet records a code or prompt card so it can be copied.
+func (s *assistantSession) addSnippet(id, title, code string) {
+	s.snippets[id] = code
+	s.snippetOrder = append(s.snippetOrder, snippetRef{id, title})
 }
 
 func (s *assistantSession) copy(id string) {
@@ -894,6 +925,105 @@ func (s *assistantSession) copy(id string) {
 		return
 	}
 	s.out.Send(overlayCopied{"copied", id})
+}
+
+// docsURL is where links to read more point. The agent gets these URLs from
+// its docs searches, and its show_link tool rejects any other URL.
+const docsURL = "https://docs.livekit.io/"
+
+// showLink shows a show_link call as a card that links to a docs page.
+func (s *assistantSession) showLink(fc *agent.FunctionCall) {
+	if s.shownCalls[fc.GetCallId()] {
+		return
+	}
+	var args struct {
+		Title string `json:"title"`
+		URL   string `json:"url"`
+	}
+	if err := json.Unmarshal([]byte(fc.GetArguments()), &args); err != nil || !strings.HasPrefix(args.URL, docsURL) {
+		return
+	}
+	s.shownCalls[fc.GetCallId()] = true
+	if args.Title == "" {
+		args.Title = "LiveKit docs"
+	}
+	s.agentTurnForReply()
+	id := fc.GetCallId()
+	s.links[id] = args.URL
+	s.addSnippet(id, args.Title, args.URL)
+	s.out.Send(overlayLink{Type: "link", Turn: s.agentTurn, ID: id, Title: args.Title, URL: args.URL})
+}
+
+// typed sends text the user typed to the assistant, as their next turn.
+// The user's own agent only takes speech.
+func (s *assistantSession) typed(text string) {
+	if text = strings.TrimSpace(text); text == "" || s.guestActive() {
+		return
+	}
+	s.channel.send(map[string]string{"type": "user_text", "text": text})
+}
+
+// showAnswer shows a show_answer call as a card of short points, with a link
+// to the docs page they come from. Copy copies the points and the link.
+func (s *assistantSession) showAnswer(fc *agent.FunctionCall) {
+	if s.shownCalls[fc.GetCallId()] {
+		return
+	}
+	var args struct {
+		Title       string   `json:"title"`
+		Points      []string `json:"points"`
+		SourceTitle string   `json:"source_title"`
+		SourceURL   string   `json:"source_url"`
+	}
+	if err := json.Unmarshal([]byte(fc.GetArguments()), &args); err != nil || len(args.Points) == 0 || !strings.HasPrefix(args.SourceURL, docsURL) {
+		return
+	}
+	s.shownCalls[fc.GetCallId()] = true
+	s.agentTurnForReply()
+	id := fc.GetCallId()
+	s.links[id] = args.SourceURL
+	var text strings.Builder
+	for _, p := range args.Points {
+		text.WriteString("- " + p + "\n")
+	}
+	fmt.Fprintf(&text, "\nSource: %s (%s)", args.SourceTitle, args.SourceURL)
+	s.addSnippet(id, args.Title, text.String())
+	s.out.Send(overlayAnswer{Type: "answer", Turn: s.agentTurn, ID: id, Title: args.Title, Points: args.Points, SourceTitle: args.SourceTitle, SourceURL: args.SourceURL})
+}
+
+// openLink opens a link card's page in the user's browser.
+func (s *assistantSession) openLink(id string) {
+	if url, ok := s.links[id]; ok {
+		_ = exec.Command("open", url).Start()
+	}
+}
+
+// copyByVoice copies the latest card whose title contains title, or the
+// latest card if title is empty, and replies with the title it copied.
+func (s *assistantSession) copyByVoice(requestID, title string) {
+	want := strings.ToLower(strings.TrimSpace(title))
+	for i := len(s.snippetOrder) - 1; i >= 0; i-- {
+		ref := s.snippetOrder[i]
+		if want != "" && !strings.Contains(strings.ToLower(ref.title), want) {
+			continue
+		}
+		if err := clipboard.WriteAll(s.snippets[ref.id]); err != nil {
+			s.replyTool(requestID, "", fmt.Errorf("couldn't copy to the clipboard: %w", err))
+			return
+		}
+		s.out.Send(overlayCopied{"copied", ref.id})
+		s.replyTool(requestID, fmt.Sprintf("Copied %q to the user's clipboard.", ref.title), nil)
+		return
+	}
+	if len(s.snippetOrder) == 0 {
+		s.replyTool(requestID, "", errors.New("there's nothing on screen to copy yet; show it with show_code or hand_off_task first"))
+		return
+	}
+	var titles []string
+	for _, ref := range s.snippetOrder {
+		titles = append(titles, ref.title)
+	}
+	s.replyTool(requestID, "", fmt.Errorf("no card on screen has %q in its title; the cards are: %s", title, strings.Join(titles, ", ")))
 }
 
 // normalizeLang maps language names to the ones the page highlights.

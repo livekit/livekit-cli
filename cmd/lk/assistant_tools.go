@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
+	"github.com/livekit/livekit-cli/v2/pkg/assistant"
 	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -137,22 +138,31 @@ func (s *assistantSession) runTool(requestID, name string, args map[string]any) 
 		})
 
 	case "create_project":
-		s.proposeCreateProject(requestID, str("template"), str("name"), flag("in_current_directory"))
+		s.proposeCreateProject(requestID, str("template"), str("name"), flag("in_current_directory"), flag("confirmed"))
 
 	case "set_up_coding_agent":
+		if setup := checkCodingAgentSetup(s.tools.dir); setup.Ready && !flag("reinstall") {
+			s.replyTool(requestID, "Nothing was installed: LiveKit's skills and the Docs MCP server are already set up. "+
+				"Tell the user, and that \"lk skills update\" gets the latest skills. If they still want to reinstall, "+
+				"call set_up_coding_agent again with reinstall=true. Current setup: "+setup.JSON(), nil)
+			return
+		}
 		detail := "Adds LiveKit's skills and the Docs MCP server to the coding agents it finds, for this folder only."
 		cmdArgs := []string{"skills", "install", "--json", "-y"}
 		if flag("global") {
 			detail = "Adds LiveKit's skills and the Docs MCP server to the coding agents it finds, for all your projects."
 			cmdArgs = append(cmdArgs, "--global")
 		}
-		s.proposeCommand(requestID, detail, "Install", cmdArgs)
+		s.proposeCommand(requestID, detail, "Install", cmdArgs, "", flag("confirmed"))
 
 	case "confirm_action":
 		s.confirmByVoice(requestID, str("confirmation_id"), flag("approved"))
 
+	case "copy_to_clipboard":
+		s.copyByVoice(requestID, str("title"))
+
 	case "try_project":
-		s.proposeTryProject(requestID, str("path"))
+		s.proposeTryProject(requestID, flag("confirmed"))
 
 	default:
 		s.replyTool(requestID, "", fmt.Errorf("unknown tool %q", name))
@@ -162,7 +172,7 @@ func (s *assistantSession) runTool(requestID, name string, args map[string]any) 
 // proposeCreateProject proposes creating a project from a template: agent
 // templates with lk agent init, others (frontends and apps) with lk app
 // create.
-func (s *assistantSession) proposeCreateProject(requestID, template, name string, here bool) {
+func (s *assistantSession) proposeCreateProject(requestID, template, name string, here, confirmed bool) {
 	dir := s.tools.dir
 	if here {
 		if empty, err := util.IsEmptyDir(dir); err != nil || !empty {
@@ -196,14 +206,12 @@ func (s *assistantSession) proposeCreateProject(requestID, template, name string
 				kind, cmdArgs = "an agent project", []string{"agent", "init"}
 			}
 			cmdArgs = append(cmdArgs, target, "--template", tpl.Name, "--install", "-y")
-			id := s.proposeCommand(requestID,
-				fmt.Sprintf("Creates %s from the %s template %s.", kind, tpl.Name, where),
-				"Create", cmdArgs)
-			if isAgentTemplate(tpl) {
-				p := s.tools.pending[id]
-				p.project = project
-				s.tools.pending[id] = p
+			if !isAgentTemplate(tpl) {
+				project = ""
 			}
+			s.proposeCommand(requestID,
+				fmt.Sprintf("Creates %s from the %s template %s.", kind, tpl.Name, where),
+				"Create", cmdArgs, project, confirmed)
 		}}
 	})
 }
@@ -235,12 +243,12 @@ func describeTemplates(templates []bootstrap.Template) string {
 
 // proposeCommand shows a confirmation card for a command and replies to the
 // agent right away with the confirmation ID, which it returns.
-func (s *assistantSession) proposeCommand(requestID, detail, runLabel string, args []string) string {
+func (s *assistantSession) proposeCommand(requestID, detail, runLabel string, args []string, project string, confirmed bool) {
 	t := &s.tools
 	t.confirmN++
 	id := fmt.Sprintf("confirm%d", t.confirmN)
 	command := displayCommand(args)
-	t.pending[id] = pendingTool{args: args, command: command}
+	t.pending[id] = pendingTool{args: args, command: command, project: project}
 	s.agentTurnForReply()
 	s.out.Send(overlayConfirm{
 		Type: "confirm", Turn: s.agentTurn, ID: id,
@@ -249,13 +257,17 @@ func (s *assistantSession) proposeCommand(requestID, detail, runLabel string, ar
 		Detail:  detail,
 		Options: []overlayConfirmOption{{ID: confirmRun, Name: runLabel}, {ID: confirmCancel, Name: "Cancel"}},
 	})
+	if confirmed {
+		// The user already agreed by voice: run it, and reply when it's done.
+		s.confirmByVoice(requestID, id, true)
+		return
+	}
 	s.replyTool(requestID, fmt.Sprintf(
 		"Waiting for the user to confirm. Confirmation ID: %s. Command: %s. %s "+
-			"Ask the user, in one short sentence, whether to go ahead. They can answer by voice or "+
+			"Ask the user in one short sentence whether to go ahead. They can answer by voice or "+
 			"on screen. If they agree by voice, call confirm_action with this ID and approved=true; "+
 			"if they decline, approved=false. If they answer on screen, you'll be told the result.",
 		id, command, detail), nil)
-	return id
 }
 
 // confirmByVoice handles confirm_action: the user answered by voice.
@@ -433,15 +445,15 @@ func runLK(ctx context.Context, dir string, creds, args []string) (string, error
 // projectInfo describes the user's LiveKit Cloud project and their current
 // directory, as JSON for the LLM.
 func (s *assistantSession) projectInfo() string {
-	empty, _ := util.IsEmptyDir(s.tools.dir)
-	info := map[string]any{"directory": s.tools.dir, "directory_is_empty": empty}
+	info := map[string]any{
+		"directory":     s.tools.dir,
+		"folder":        assistant.DescribeFolder(s.tools.dir),
+		"coding_agents": checkCodingAgentSetup(s.tools.dir),
+	}
 	if s.cmd != nil {
 		if rp, err := resolveProject(s.cmd, loadParams{requireURL: true}); err == nil && rp.project != nil {
 			info["livekit_project"] = map[string]string{"name": rp.project.Name, "url": rp.project.URL}
 		}
-	}
-	if app := detectApp(s.tools.dir); app != nil {
-		info["app"] = app
 	}
 	if root, projectType, err := agentfs.DetectProjectRoot(s.tools.dir); err == nil {
 		local := map[string]any{"root": root, "type": string(projectType)}
@@ -454,89 +466,4 @@ func (s *assistantSession) projectInfo() string {
 	}
 	b, _ := json.MarshalIndent(info, "", "  ")
 	return string(b)
-}
-
-// appFrameworks maps package.json dependencies to the frameworks they mean,
-// most specific first.
-var appFrameworks = []struct{ dep, name string }{
-	{"next", "Next.js"},
-	{"expo", "Expo (React Native)"},
-	{"react-native", "React Native"},
-	{"@angular/core", "Angular"},
-	{"svelte", "Svelte"},
-	{"vue", "Vue"},
-	{"react", "React"},
-}
-
-// pythonFrameworks are Python web frameworks found in project files.
-var pythonFrameworks = []struct{ dep, name string }{
-	{"fastapi", "FastAPI"},
-	{"django", "Django"},
-	{"flask", "Flask"},
-}
-
-// detectApp describes an existing app in dir: its framework and any LiveKit
-// packages it already uses. It returns nil if dir isn't an app it recognizes.
-func detectApp(dir string) map[string]any {
-	app := map[string]any{}
-	var livekit []string
-
-	if b, err := os.ReadFile(filepath.Join(dir, "package.json")); err == nil {
-		var pkg struct {
-			Dependencies    map[string]string `json:"dependencies"`
-			DevDependencies map[string]string `json:"devDependencies"`
-		}
-		if json.Unmarshal(b, &pkg) == nil {
-			deps := map[string]bool{}
-			for d := range pkg.Dependencies {
-				deps[d] = true
-			}
-			for d := range pkg.DevDependencies {
-				deps[d] = true
-			}
-			for _, f := range appFrameworks {
-				if deps[f.dep] {
-					app["framework"] = f.name
-					break
-				}
-			}
-			for d := range deps {
-				if strings.HasPrefix(d, "@livekit/") || d == "livekit-client" || d == "livekit-server-sdk" {
-					livekit = append(livekit, d)
-				}
-			}
-			app["language"] = "JavaScript or TypeScript"
-		}
-	}
-
-	var py strings.Builder
-	for _, f := range []string{"pyproject.toml", "requirements.txt"} {
-		if b, err := os.ReadFile(filepath.Join(dir, f)); err == nil {
-			py.Write(b)
-		}
-	}
-	if pyText := strings.ToLower(py.String()); pyText != "" {
-		if _, ok := app["language"]; !ok {
-			app["language"] = "Python"
-		}
-		for _, f := range pythonFrameworks {
-			if strings.Contains(pyText, f.dep) {
-				app["backend"] = f.name
-				break
-			}
-		}
-		for _, d := range []string{"livekit-agents", "livekit-api", "livekit"} {
-			if strings.Contains(pyText, d) {
-				livekit = append(livekit, d)
-				break
-			}
-		}
-	}
-
-	if len(app) == 0 {
-		return nil
-	}
-	slices.Sort(livekit)
-	app["livekit_packages"] = livekit
-	return app
 }

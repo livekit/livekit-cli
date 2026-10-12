@@ -105,7 +105,7 @@ func (s *assistantSession) showAgentCode(m agentMessage) {
 	s.agentTurnForReply()
 	s.snippetN++
 	id := fmt.Sprintf("self%d", s.snippetN)
-	s.snippets[id] = m.Code
+	s.addSnippet(id, m.Title, m.Code)
 	s.out.Send(overlaySnippet{"snippet", s.agentTurn, id, m.Title, normalizeLang(m.Language), m.Code, false})
 }
 

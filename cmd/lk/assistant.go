@@ -20,6 +20,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -33,19 +34,22 @@ import (
 var AssistantCommands = []*cli.Command{
 	{
 		Name:   "assistant",
-		Usage:  "Talk to the LiveKit voice assistant (preview)",
+		Usage:  "Get started with LiveKit by talking to LK, the LiveKit assistant (preview)",
 		Hidden: true,
-		Description: `Opens the assistant overlay over the desktop and starts a voice conversation
-with the LiveKit assistant, using your microphone and speakers. The assistant
-answers from the LiveKit docs and shows code on screen, with a button to copy
-it.
+		Description: `Opens a window and starts a voice conversation with LK, the LiveKit
+assistant, using your microphone and speakers. LK helps you get started: it
+creates a voice agent from a template, lets you talk to it, sets up your coding
+agent for LiveKit, and answers questions from the LiveKit docs. It shows code,
+commands, and docs links on screen, with buttons to copy them. Press / to type
+instead of speaking.
 
-The assistant is a LiveKit agent that runs on your machine and uses LiveKit
-Inference through your LiveKit Cloud project. The first run installs it with
-uv.
+LK is a LiveKit agent that runs on your machine. It uses LiveKit Inference
+through your LiveKit Cloud project, so its usage counts toward your plan. The
+first run installs it with uv.
 
-Press Esc to close the overlay. With --demo, the overlay plays a scripted
-conversation instead; press R to replay it.`,
+Press Esc to close. With --fullscreen, LK covers the screen and blurs the
+desktop. With --demo, it plays a scripted conversation instead; press R to
+replay it.`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "demo",
@@ -57,8 +61,8 @@ conversation instead; press R to replay it.`,
 				Hidden: true,
 			},
 			&cli.BoolFlag{
-				Name:  "windowed",
-				Usage: "Open in a window instead of covering the screen",
+				Name:  "fullscreen",
+				Usage: "Cover the screen and blur the desktop, instead of opening a window",
 			},
 			&cli.BoolFlag{
 				Name:  "inspect",
@@ -71,11 +75,11 @@ conversation instead; press R to replay it.`,
 
 func runAssistant(ctx context.Context, cmd *cli.Command) error {
 	ov := overlay.New(overlay.Options{
-		Windowed:    cmd.Bool("windowed"),
+		Windowed:    !cmd.Bool("fullscreen"),
 		Inspectable: cmd.Bool("inspect"),
 	})
 	if cmd.Bool("demo") {
-		demo := &assistantDemo{ov: ov, snippets: map[string]string{}}
+		demo := &assistantDemo{ov: ov, snippets: map[string]string{}, links: map[string]string{}}
 		go demo.run(ctx)
 		return ov.Run(ctx)
 	}
@@ -134,6 +138,24 @@ type (
 		Code   string `json:"code"`
 		Copied bool   `json:"copied"`
 	}
+	// overlayAnswer is a docs answer as short points, with its source page.
+	overlayAnswer struct {
+		Type        string   `json:"type"`
+		Turn        string   `json:"turn"`
+		ID          string   `json:"id"`
+		Title       string   `json:"title"`
+		Points      []string `json:"points"`
+		SourceTitle string   `json:"source_title"`
+		SourceURL   string   `json:"source_url"`
+	}
+	// overlayLink is a docs page to read more, with a button that opens it.
+	overlayLink struct {
+		Type  string `json:"type"`
+		Turn  string `json:"turn"`
+		ID    string `json:"id"`
+		Title string `json:"title"`
+		URL   string `json:"url"`
+	}
 	overlayCopied struct {
 		Type string `json:"type"`
 		ID   string `json:"id"`
@@ -159,8 +181,20 @@ type demoSnippet struct {
 	id, title, lang, code string
 }
 
+// demoLink is a docs link card in an agent reply.
+type demoLink struct {
+	id, title, url string
+}
+
+// demoAnswer is a docs answer card in an agent reply.
+type demoAnswer struct {
+	id, title           string
+	points              []string
+	sourceTitle, source string
+}
+
 // demoTurn is one exchange. Each agent part is a string (a paragraph of
-// speech) or a demoSnippet.
+// speech), a demoSnippet, a demoLink, or a demoAnswer.
 type demoTurn struct {
 	user  string
 	agent []any
@@ -174,13 +208,13 @@ var demoScript = []demoTurn{
 		agent: []any{
 			"Start from the Python starter template. This command creates the project and adds your LiveKit Cloud credentials to it.",
 			demoSnippet{id: "init", title: "Terminal", lang: "shell", code: "lk agent init my-agent --template agent-starter-python\ncd my-agent"},
-			"Then run lk agent dev and talk to it from the Agent Console.",
+			"Then run `lk agent dev` and talk to it from the Agent Console.",
 		},
 	},
 	{
 		user: "Where do I change the voice?",
 		agent: []any{
-			"In agent.py. The agent session sets the speech-to-text, language, and text-to-speech models. Change the TTS model or voice there.",
+			"In `agent.py`. The `AgentSession` sets the speech-to-text, language, and text-to-speech models. Change the TTS model or voice there.",
 			demoSnippet{id: "agent", title: "agent.py", lang: "python", code: `@server.rtc_session(agent_name="my-agent")
 async def my_agent(ctx: agents.JobContext):
     session = AgentSession(
@@ -202,8 +236,18 @@ async def my_agent(ctx: agents.JobContext):
 	{
 		user: "And how do I deploy it?",
 		agent: []any{
-			"Run this from the project directory. It registers the agent and deploys it to LiveKit Cloud.",
+			"Run `lk agent create` from the project directory. It registers the agent and deploys it to LiveKit Cloud.",
 			demoSnippet{id: "deploy", title: "Terminal", lang: "shell", code: "lk agent create"},
+			demoAnswer{
+				id: "deploy-docs", title: "Deploying to LiveKit Cloud",
+				points: []string{
+					"Deploy with a single LiveKit CLI command.",
+					"LiveKit Cloud scales your agent automatically, up to the limits of your plan.",
+					"Store API keys and other secrets in LiveKit Cloud. It injects them into your agent at runtime.",
+					"Runtime, build, and session logs help you monitor and debug the deployed agent.",
+				},
+				sourceTitle: "Agent deployment overview", source: "https://docs.livekit.io/deploy/agents/",
+			},
 		},
 	},
 }
@@ -216,6 +260,7 @@ type assistantDemo struct {
 	ov       *overlay.Overlay
 	voice    fakeVoice
 	snippets map[string]string
+	links    map[string]string // card id → docs URL, for Open
 }
 
 func (d *assistantDemo) run(ctx context.Context) {
@@ -241,6 +286,10 @@ func (d *assistantDemo) run(ctx context.Context) {
 					}
 				case "copy":
 					d.copy(ev.ID)
+				case "open":
+					if url, ok := d.links[ev.ID]; ok && strings.HasPrefix(url, docsURL) {
+						_ = exec.Command("open", url).Start()
+					}
 				}
 			case <-d.ov.Done():
 				return
@@ -301,6 +350,25 @@ func (d *assistantDemo) play(ctx context.Context) bool {
 				segment++
 			case demoSnippet:
 				d.snippet(agentTurn, p)
+				if !d.wait(ctx, 600*time.Millisecond, nil) {
+					return false
+				}
+			case demoAnswer:
+				var text strings.Builder
+				for _, pt := range p.points {
+					text.WriteString("- " + pt + "\n")
+				}
+				fmt.Fprintf(&text, "\nSource: %s (%s)", p.sourceTitle, p.source)
+				d.snippets[p.id] = text.String()
+				d.links[p.id] = p.source
+				d.ov.Send(overlayAnswer{Type: "answer", Turn: agentTurn, ID: p.id, Title: p.title, Points: p.points, SourceTitle: p.sourceTitle, SourceURL: p.source})
+				if !d.wait(ctx, 600*time.Millisecond, nil) {
+					return false
+				}
+			case demoLink:
+				d.snippets[p.id] = p.url
+				d.links[p.id] = p.url
+				d.ov.Send(overlayLink{Type: "link", Turn: agentTurn, ID: p.id, Title: p.title, URL: p.url})
 				if !d.wait(ctx, 600*time.Millisecond, nil) {
 					return false
 				}

@@ -114,6 +114,12 @@ func (l *sessionLog) record(msg any) {
 	case overlaySnippet:
 		t := l.turn(m.Turn, "agent")
 		t.items = append(t.items, &logItem{kind: "code", label: m.Title, lang: m.Lang, text: m.Code})
+	case overlayAnswer:
+		t := l.turn(m.Turn, "agent")
+		t.items = append(t.items, &logItem{kind: "answer", label: m.Title, text: strings.Join(m.Points, "\n- "), detail: m.SourceTitle, lang: m.SourceURL})
+	case overlayLink:
+		t := l.turn(m.Turn, "agent")
+		t.items = append(t.items, &logItem{kind: "link", label: m.Title, text: m.URL})
 	case overlayConfirm:
 		item := &logItem{kind: "command", text: m.Command, detail: m.Heading, status: "not answered"}
 		l.items[m.ID] = item
@@ -127,6 +133,17 @@ func (l *sessionLog) record(msg any) {
 			}
 		}
 	}
+}
+
+// empty reports whether t has nothing to show, such as a turn the user's
+// agent started but didn't speak in.
+func (t *logTurn) empty() bool {
+	for _, it := range t.items {
+		if it.kind != "text" || it.text != "" {
+			return false
+		}
+	}
+	return true
 }
 
 // markdown renders the conversation, or "" if the user never spoke.
@@ -147,6 +164,9 @@ func (l *sessionLog) markdown(dir string) string {
 	fmt.Fprintf(&b, "# LiveKit assistant, %s\n\nIn %s.\n", l.started.Format("January 2, 2006, 3:04 PM"), tildePath(dir))
 	for _, id := range l.order {
 		t := l.turns[id]
+		if t.empty() {
+			continue
+		}
 		who := t.speaker
 		if t.role == "user" {
 			who = "You"
@@ -181,6 +201,10 @@ func (l *sessionLog) markdown(dir string) string {
 				}
 				fence := codeFence(it.text)
 				fmt.Fprintf(&b, "\n\n%s:\n\n%s%s\n%s\n%s", it.label, fence, lang, it.text, fence)
+			case "answer":
+				fmt.Fprintf(&b, "\n\n%s:\n\n- %s\n\nSource: [%s](%s)", it.label, it.text, it.detail, it.lang)
+			case "link":
+				fmt.Fprintf(&b, "\n\nRead more: [%s](%s)", it.label, it.text)
 			case "command":
 				fmt.Fprintf(&b, "\n\n`%s` (%s): %s", it.text, strings.ToLower(it.detail), it.status)
 			}
