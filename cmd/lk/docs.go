@@ -71,7 +71,7 @@ All output is rendered as markdown.`,
 				&cli.BoolFlag{
 					Name:    "json",
 					Aliases: []string{"j"},
-					Usage:   "Output as JSON instead of markdown",
+					Usage:   "Output as JSON instead of markdown.",
 				},
 				&cli.StringFlag{
 					Name:   "server-url",
@@ -93,7 +93,7 @@ docs rather than relying wholly on search.`,
 				},
 				{
 					Name:      "search",
-					Usage:     "Search the LiveKit documentation",
+					Usage:     "Search the documentation by keyword",
 					ArgsUsage: "[QUERY]",
 					Description: `Search the docs for a given query. Returns paged results showing page
 titles, hierarchical placement, and (sometimes) a content snippet.
@@ -107,16 +107,17 @@ directly (via "lk docs overview"), not a replacement.`,
 						&cli.StringFlag{
 							Name:    "query",
 							Aliases: []string{"q"},
-							Usage:   "Search `QUERY` text",
+							Usage:   "Search `QUERY` text. Can also be passed as a positional argument.",
 						},
 						&cli.IntFlag{
 							Name:    "page",
 							Aliases: []string{"p"},
-							Usage:   "Page number (starts at 0)",
+							Usage:   "`PAGE` number for pagination, starting at 0.",
 						},
 						&cli.IntFlag{
-							Name:  "hits-per-page",
-							Usage: "Results per page (1-50, default 20)",
+							Name:        "hits-per-page",
+							Usage:       "Return `N` results per page (1-50).",
+							DefaultText: "20",
 						},
 					},
 				},
@@ -155,38 +156,38 @@ may not appear.`,
 						&cli.StringFlag{
 							Name:    "query",
 							Aliases: []string{"q"},
-							Usage:   "Search term (use code identifiers, not natural language)",
+							Usage:   "`QUERY` to search for. Use code identifiers, not natural language.",
 						},
 						&cli.StringFlag{
 							Name:    "repo",
 							Aliases: []string{"r"},
-							Usage:   "Target `REPO` (e.g. livekit/agents) or ALL",
+							Usage:   "Target `REPO` (for example, livekit/agents) or ALL to search everywhere.",
 							Value:   "ALL",
 						},
 						&cli.StringFlag{
 							Name:    "language",
 							Aliases: []string{"l"},
-							Usage:   "Language filter (e.g. Python, TypeScript)",
+							Usage:   "`LANGUAGE` filter (for example, Python, TypeScript).",
 						},
 						&cli.StringFlag{
 							Name:  "scope",
-							Usage: "Search scope: content, filename, or both",
+							Usage: "Search `SCOPE`: content, filename, or both.",
 							Value: "content",
 						},
 						&cli.IntFlag{
 							Name:  "limit",
-							Usage: "Max results to return (1-50)",
+							Usage: "Return at most `N` results (1-50).",
 							Value: 20,
 						},
 						&cli.BoolFlag{
 							Name:  "full-file",
-							Usage: "Return full file content instead of snippets",
+							Usage: "Return full file contents instead of snippets.",
 						},
 					},
 				},
 				{
 					Name:      "changelog",
-					Usage:     "Get recent releases and changelog for a LiveKit SDK or package",
+					Usage:     "Get recent releases and changelog entries for a LiveKit SDK or package",
 					ArgsUsage: "IDENTIFIER",
 					Description: `Get recent releases for a LiveKit repository or package. Supports
 repository IDs (e.g. "livekit/agents") and package identifiers
@@ -201,18 +202,18 @@ Examples:
 					Flags: []cli.Flag{
 						&cli.IntFlag{
 							Name:  "releases",
-							Usage: "Number of releases to fetch (1-20)",
+							Usage: "Fetch `N` releases (1-20).",
 							Value: 2,
 						},
 						&cli.IntFlag{
 							Name:  "skip",
-							Usage: "Number of releases to skip for pagination",
+							Usage: "Skip `N` releases, for pagination.",
 						},
 					},
 				},
 				{
 					Name:  "list-sdks",
-					Usage: "List all LiveKit SDK repositories and package names",
+					Usage: "List all LiveKit SDK repositories with their package names",
 					Description: `Returns a list of all LiveKit SDK repositories (client SDKs, server
 SDKs, and agent frameworks) with their package names for each platform.
 Useful for cross-referencing dependencies and finding the right SDK.`,
@@ -228,7 +229,7 @@ Use this when you need details about pricing, costs, plans, or billing.`,
 				},
 				{
 					Name:      "submit-feedback",
-					Usage:     "Submit feedback on the LiveKit documentation",
+					Usage:     "Submit constructive feedback on the LiveKit documentation",
 					ArgsUsage: "[FEEDBACK]",
 					Description: `Submit constructive feedback on the LiveKit docs. This feedback is
 read by the LiveKit team and used to improve the documentation.
@@ -241,20 +242,20 @@ Examples:
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "page",
-							Usage: "The docs `PAGE` the feedback is about (e.g. /agents/build/tools)",
+							Usage: "The docs `PAGE` the feedback is about (for example, /agents/build/tools).",
 						},
 						&cli.StringFlag{
 							Name:    "feedback",
 							Aliases: []string{"f"},
-							Usage:   "Feedback text (max 1024 characters)",
+							Usage:   "Feedback `TEXT` (max 1024 characters). Can also be passed as a positional argument.",
 						},
 						&cli.StringFlag{
 							Name:  "agent",
-							Usage: "Identity of the agent submitting feedback (e.g. \"Cursor\", \"Claude Code\")",
+							Usage: "Identity of the `AGENT` submitting feedback (for example, \"Cursor\", \"Claude Code\").",
 						},
 						&cli.StringFlag{
 							Name:  "model",
-							Usage: "Model `ID` used by the agent (e.g. \"gpt-5\", \"claude-4.5-sonnet\")",
+							Usage: "Model `ID` used by the agent (for example, \"gpt-5\", \"claude-4.5-sonnet\").",
 						},
 					},
 				},

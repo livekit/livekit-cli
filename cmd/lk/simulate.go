@@ -78,34 +78,34 @@ var simulateCommand = &cli.Command{
 		&cli.IntFlag{
 			Name:    "num-simulations",
 			Aliases: []string{"n"},
-			Usage:   "Number of scenarios to generate",
+			Usage:   "Number `N` of scenarios to generate from the agent's source. Has no effect when a scenario file is in use.",
 		},
 		&cli.IntFlag{
 			Name:  "concurrency",
-			Usage: "Max simulations running in parallel (default: server-side limit)",
+			Usage: "Maximum number `N` of simulations to run in parallel within a run. Defaults to 15 when unset. An explicit value can't exceed 20; a higher value is rejected. Separately, a project-wide limit of 30 running simulations applies across all runs.",
 		},
 		&cli.IntFlag{
 			Name:    "samples",
 			Aliases: []string{"k"},
-			Usage:   "Run every scenario `K` times and report pass@k (passed at least once) and pass^k (passed every time). Requires --scenarios",
+			Usage:   "Run every scenario `K` times in one run, and report pass@k (passed at least once) and pass^k (passed every time). Requires --scenarios. LiveKit Cloud accepts only 3. Each sample counts as a separate simulation, and the number of scenarios multiplied by K can't exceed the limit of 250 simulations per run.",
 		},
 		&cli.FloatFlag{
 			Name:  "pass-rate",
 			Value: defaultPassRate,
-			Usage: "Share of a scenario's samples that must pass for it to pass, as a `RATE` from 0 to 1. Rounds to whole samples, so 0.75 of 3 needs 2. Requires --samples",
+			Usage: "Share of samples that must pass for a scenario to pass, as a `RATE` greater than 0 and at most 1. Rounds to whole samples with a minimum of one; for example, 0.75 of 3 samples needs 2 passes. Requires --samples.",
 		},
 		&cli.StringFlag{
 			Name:  "scenarios",
-			Usage: "Path to a scenarios `FILE` (yaml). If omitted, scenarios are generated from the agent's source",
+			Usage: "Path to a scenario `FILE`. If you omit it, the CLI generates scenarios from the agent's source. The file and every scenario in it need an id, and the CLI offers to add any that are missing.",
 		},
 		&cli.BoolFlag{
 			Name:    "yes",
 			Aliases: []string{"y"},
-			Usage:   "Skip confirmation prompts: source upload, and adding missing ids to the --scenarios file (required for non-interactive runs)",
+			Usage:   "Skip the confirmation prompts for the source upload and for adding missing IDs to the scenario file. Required for non-interactive runs that generate scenarios from source or run a file with missing IDs.",
 		},
 		&cli.StringFlag{
 			Name:  "agent-name",
-			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or \"\" to target the project's default agent (the one that auto-joins every room). Requires --scenarios.",
+			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or an empty string (\"\") to target the project's default agent that auto-joins every room. Requires --scenarios.",
 		},
 	},
 }
@@ -139,7 +139,7 @@ func loadSimulateProject(ctx context.Context, cmd *cli.Command) (context.Context
 
 var simulateTextCommand = &cli.Command{
 	Name:            "text",
-	Usage:           "Simulate text-only interactions",
+	Usage:           "Run scenarios in text mode",
 	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
 	ArgsUsage:       "[entrypoint]",
 	HideHelpCommand: true,
@@ -154,7 +154,7 @@ var simulateTextCommand = &cli.Command{
 // side of the subcommand name.
 var simulateAudioCommand = &cli.Command{
 	Name:            "audio",
-	Usage:           "Simulate speech-to-speech interactions using the agent's full audio pipeline",
+	Usage:           "Run scenarios through the full STT-LLM-TTS pipeline",
 	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
 	ArgsUsage:       "[entrypoint]",
 	HideHelpCommand: true,
@@ -182,8 +182,8 @@ var simulateAudioCommand = &cli.Command{
 // they take a run ID instead and ignore the rest.
 var simulateViewCommand = &cli.Command{
 	Name:            "view",
-	Usage:           "Open a pre-existing simulation run",
-	ArgsUsage:       "<run-id>",
+	Usage:           "Open a previous run instead of starting a new one. No agent is started and nothing is dispatched",
+	ArgsUsage:       "RUN_ID",
 	HideHelpCommand: true,
 	Before:          loadSimulateProject,
 	Action:          runSimulateView,
@@ -191,8 +191,8 @@ var simulateViewCommand = &cli.Command{
 
 var simulateExportCommand = &cli.Command{
 	Name:            "export",
-	Usage:           "Print a finished run and its exact per-job chat contexts as JSON. Nothing is run or polled",
-	ArgsUsage:       "<run-id>",
+	Usage:           "Print a finished run and its per-job chat contexts to stdout as JSON. The run must already be complete",
+	ArgsUsage:       "RUN_ID",
 	HideHelpCommand: true,
 	Before:          loadSimulateProject,
 	Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -220,8 +220,8 @@ var (
 
 	simulateCancelCommand = &cli.Command{
 		Name:            "cancel",
-		Usage:           "Cancel an in-progress simulation run",
-		ArgsUsage:       "<run-id>",
+		Usage:           "Cancel a run that's still in progress",
+		ArgsUsage:       "RUN_ID",
 		HideHelpCommand: true,
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			if experimentalAuthEnabled(cmd) {
