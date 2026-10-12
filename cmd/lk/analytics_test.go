@@ -422,7 +422,7 @@ func participantsAPI(t *testing.T, status int, body string) (*public.Client, *ur
 	t.Helper()
 	var query url.Values
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/projects/p1/sessions/RM_1/participants" || r.Header.Get("Authorization") != "Bearer sekret" {
+		if r.URL.Path != "/v0/projects/p1/sessions/RM_1/participants" || r.Header.Get("Authorization") != "Bearer sekret" {
 			http.NotFound(w, r)
 			return
 		}
@@ -611,7 +611,7 @@ func recordingServers(t *testing.T, audio []byte, chatHistory string) (api *publ
 	t.Cleanup(store.Close)
 
 	apiSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/projects/p1/sessions/RM_1/recording-url" || r.Header.Get("Authorization") != "Bearer sekret" {
+		if r.URL.Path != "/v0/projects/p1/sessions/RM_1/recording-url" || r.Header.Get("Authorization") != "Bearer sekret" {
 			http.NotFound(w, r)
 			return
 		}
@@ -931,10 +931,10 @@ func transcriptAPI(t *testing.T, transcriptStatus int, transcript, session strin
 		}
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
-		case "/v1/projects/p1/sessions/RM_1/transcript":
+		case "/v0/projects/p1/sessions/RM_1/transcript":
 			w.WriteHeader(transcriptStatus)
 			_, _ = w.Write([]byte(transcript))
-		case "/v1/projects/p1/sessions/RM_1":
+		case "/v0/projects/p1/sessions/RM_1":
 			_, _ = fmt.Fprintf(w, `{"session":%s}`, session)
 		default:
 			http.NotFound(w, r)
@@ -970,21 +970,21 @@ func TestFetchSessionTranscript(t *testing.T) {
 			body:       page,
 			wantOut:    []string{"USER         hi  (end_of_turn 320ms)", "AGENT        hello  (e2e 820ms)"},
 			wantStatus: []string{"More items available — re-run with --cursor c2"},
-			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
 		},
 		{
 			name:       "active session",
 			body:       `{"items":[]}`,
 			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
 			wantStatus: []string{"Session RM_1 is still active", "appears after it ends"},
-			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript", "/v0/projects/p1/sessions/RM_1"},
 		},
 		{
 			name:       "closed session",
 			body:       `{}`,
 			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_CLOSED"}`,
 			wantStatus: []string{"Session RM_1 has no transcript to read", "a minute or two after the session ends"},
-			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript", "/v0/projects/p1/sessions/RM_1"},
 		},
 		{
 			// A session that stopped reporting stays ACTIVE but has an end time.
@@ -993,14 +993,14 @@ func TestFetchSessionTranscript(t *testing.T) {
 			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE","endedAt":"2026-10-07T11:05:00Z"}`,
 			wantStatus: []string{"Session RM_1 has no transcript to read"},
 			noStatus:   []string{"still active"},
-			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript", "/v1/projects/p1/sessions/RM_1"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript", "/v0/projects/p1/sessions/RM_1"},
 		},
 		{
 			name:       "last page",
 			body:       `{"items":[]}`,
 			opts:       public.PageOptions{Cursor: "c2"},
 			wantStatus: []string{"No more transcript items"},
-			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
 		},
 		{
 			name:       "no items, more to read",
@@ -1008,7 +1008,7 @@ func TestFetchSessionTranscript(t *testing.T) {
 			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
 			wantStatus: []string{"2 records couldn't be read", "More items available — re-run with --cursor c2"},
 			noStatus:   []string{"still active", "no transcript"},
-			wantPaths:  []string{"/v1/projects/p1/sessions/RM_1/transcript"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
 		},
 	}
 	for _, tt := range tests {
@@ -1181,7 +1181,7 @@ func logsAPI(t *testing.T, status int, body string) (*public.Client, *url.Values
 	t.Helper()
 	var query url.Values
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v1/projects/p1/sessions/RM_1/logs" {
+		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v0/projects/p1/sessions/RM_1/logs" {
 			http.NotFound(w, r)
 			return
 		}
@@ -1403,7 +1403,7 @@ func tracesAPI(t *testing.T, status int, pages map[string]string) (*public.Clien
 	t.Helper()
 	var queries []url.Values
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v1/projects/p1/sessions/RM_1/traces" {
+		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v0/projects/p1/sessions/RM_1/traces" {
 			http.NotFound(w, r)
 			return
 		}
@@ -1670,7 +1670,7 @@ func metricsAPI(t *testing.T, status int, body string) (*public.Client, *url.Val
 	t.Helper()
 	var query url.Values
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v1/projects/p1/sessions/RM_1/metrics" {
+		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v0/projects/p1/sessions/RM_1/metrics" {
 			http.NotFound(w, r)
 			return
 		}
@@ -1907,7 +1907,7 @@ func eventsAPI(t *testing.T, status int, body string) (*public.Client, *url.Valu
 	t.Helper()
 	var query url.Values
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v1/projects/p1/sessions/RM_1/events" {
+		if r.Header.Get("Authorization") != "Bearer sekret" || r.URL.Path != "/v0/projects/p1/sessions/RM_1/events" {
 			http.NotFound(w, r)
 			return
 		}

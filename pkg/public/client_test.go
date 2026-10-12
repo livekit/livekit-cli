@@ -167,7 +167,7 @@ func TestGetProject(t *testing.T) {
 	require.NotNil(t, p)
 
 	assert.Equal(t, "Bearer sekret", gotAuth)
-	assert.Equal(t, "/v1/projects/p1", gotPath)
+	assert.Equal(t, "/v0/projects/p1", gotPath)
 	require.NotNil(t, p.Id)
 	assert.Equal(t, "p1", *p.Id)
 	require.NotNil(t, p.Name)

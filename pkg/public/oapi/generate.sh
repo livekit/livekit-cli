@@ -1,7 +1,7 @@
 #!/bin/sh
 # Regenerates oapi.gen.go from the LiveKit Public API OpenAPI spec.
 #
-# The spec is served by the API itself at <base>/v1/openapi. The base defaults
+# The spec is served by the API itself at <base>/v0/openapi. The base defaults
 # to production; override it for a local/staging server with LK_PUBLIC_API_URL.
 # The directive is gated behind the `oapigen` build tag, so regenerate
 # deliberately with:
@@ -14,7 +14,7 @@
 set -eu
 
 BASE_URL="${LK_PUBLIC_API_URL:-https://beta-api.livekit.cloud}"
-SPEC_URL="${BASE_URL}/v1/openapi"
+SPEC_URL="${BASE_URL}/v0/openapi"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

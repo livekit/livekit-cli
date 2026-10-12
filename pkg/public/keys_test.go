@@ -36,7 +36,7 @@ func TestGenerateKey(t *testing.T) {
 
 	key, err := c.GenerateKey(context.Background(), "p_1", "ci", true)
 	require.NoError(t, err)
-	assert.Equal(t, "/v1/projects/p_1/keys", path)
+	assert.Equal(t, "/v0/projects/p_1/keys", path)
 	assert.Equal(t, "APIabc", *key.ApiKey)
 	assert.Equal(t, "s3cret", *key.Secret)
 }
@@ -49,7 +49,7 @@ func TestListScopedKeys(t *testing.T) {
 
 	personal, other, err := c.ListScopedKeys(context.Background(), "p_1")
 	require.NoError(t, err)
-	assert.Equal(t, "/v1/projects/p_1/scoped-keys", path)
+	assert.Equal(t, "/v0/projects/p_1/scoped-keys", path)
 	require.Len(t, personal, 1)
 	assert.Equal(t, "APIme", *personal[0].ApiKey)
 	assert.Len(t, other, 2)
@@ -67,7 +67,7 @@ func TestDeleteKeyError(t *testing.T) {
 func TestCreateToken(t *testing.T) {
 	var gotBody map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/v1/projects/p_1/tokens", r.URL.Path)
+		assert.Equal(t, "/v0/projects/p_1/tokens", r.URL.Path)
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&gotBody))
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"token":"jwt","expiresAt":"2030-01-01T00:00:00Z"}`))
