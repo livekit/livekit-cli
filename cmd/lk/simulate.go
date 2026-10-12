@@ -43,7 +43,9 @@ import (
 	"github.com/livekit/protocol/utils"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 func init() {
@@ -352,13 +354,31 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 	if f.ID == "" {
 		f.ID = utils.NewGuid(utils.ScenarioGroupPrefix)
 	}
+	for name, step := range group.GetSteps() {
+		v, err := protoToYAMLValue(step)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode step %q: %w", name, err)
+		}
+		if f.Steps == nil {
+			f.Steps = map[string]any{}
+		}
+		f.Steps[name] = v
+	}
 	for _, s := range group.GetScenarios() {
 		ys := yamlScenario{
 			ID:                s.GetId(),
 			Label:             s.GetLabel(),
 			Instructions:      s.GetInstructions(),
+			Start:             s.GetStart(),
 			AgentExpectations: s.GetAgentExpectations(),
 			Tags:              s.GetTags(),
+		}
+		if s.GetMaxDuration() != nil {
+			v, err := protoToYAMLValue(s.GetMaxDuration())
+			if err != nil {
+				return nil, fmt.Errorf("failed to encode max_duration for scenario %q: %w", s.GetLabel(), err)
+			}
+			ys.MaxDuration, _ = v.(string)
 		}
 		if ys.ID == "" {
 			ys.ID = utils.NewGuid(utils.ScenarioPrefix)
@@ -376,17 +396,21 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 }
 
 // scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
-// and JSON-encoded into the proto's string field.
+// and JSON-encoded into the proto's string field. Each `steps` entry is a
+// SimulatorStep in protojson form.
 type scenariosFile struct {
 	ID        string         `yaml:"id"`
 	Name      string         `yaml:"name"`
+	Steps     map[string]any `yaml:"steps,omitempty"`
 	Scenarios []yamlScenario `yaml:"scenarios"`
 }
 
 type yamlScenario struct {
 	ID                string            `yaml:"id"`
 	Label             string            `yaml:"label"`
-	Instructions      string            `yaml:"instructions"`
+	Instructions      string            `yaml:"instructions,omitempty"`
+	Start             string            `yaml:"start,omitempty"`
+	MaxDuration       string            `yaml:"max_duration,omitempty"`
 	AgentExpectations string            `yaml:"agent_expectations"`
 	Tags              map[string]string `yaml:"tags"`
 	Userdata          map[string]any    `yaml:"userdata"`
@@ -454,6 +478,21 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		return nil, fmt.Errorf("scenarios file has no id")
 	}
 	group := &livekit.ScenarioGroup{Id: f.ID, Name: f.Name}
+	names := make([]string, 0, len(f.Steps))
+	for name := range f.Steps {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		step := &livekit.SimulatorStep{}
+		if err := yamlValueToProto(f.Steps[name], step); err != nil {
+			return nil, fmt.Errorf("step %q: %w", name, err)
+		}
+		if group.Steps == nil {
+			group.Steps = map[string]*livekit.SimulatorStep{}
+		}
+		group.Steps[name] = step
+	}
 	seen := map[string]bool{}
 	for _, s := range f.Scenarios {
 		if s.ID == "" {
@@ -463,6 +502,19 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			return nil, fmt.Errorf("duplicate scenario id %q", s.ID)
 		}
 		seen[s.ID] = true
+		if (s.Start == "") == (s.Instructions == "") {
+			return nil, fmt.Errorf("scenario %q: set exactly one of `start` and `instructions`", s.Label)
+		}
+		if s.Start != "" && group.Steps[s.Start] == nil && !builtinSimulatorSteps[s.Start] {
+			return nil, fmt.Errorf("scenario %q: start %q is not a step", s.Label, s.Start)
+		}
+		var maxDuration *durationpb.Duration
+		if s.MaxDuration != "" {
+			maxDuration = &durationpb.Duration{}
+			if err := yamlValueToProto(s.MaxDuration, maxDuration); err != nil {
+				return nil, fmt.Errorf("scenario %q: max_duration: %w", s.Label, err)
+			}
+		}
 		var userdata string
 		if len(s.Userdata) > 0 {
 			b, err := json.Marshal(s.Userdata)
@@ -475,12 +527,45 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			Id:                s.ID,
 			Label:             s.Label,
 			Instructions:      s.Instructions,
+			Start:             s.Start,
+			MaxDuration:       maxDuration,
 			AgentExpectations: s.AgentExpectations,
 			Tags:              s.Tags,
 			Userdata:          userdata,
 		})
 	}
 	return group, nil
+}
+
+// builtinSimulatorSteps are the steps the server provides; a scenario may start at one.
+var builtinSimulatorSteps = map[string]bool{
+	"livekit/hangup":      true,
+	"livekit/voicemail":   true,
+	"livekit/unavailable": true,
+}
+
+// yamlValueToProto decodes a YAML value through its JSON form with protojson,
+// so field names, enum names, durations, and unknown-key errors match the
+// server's parser.
+func yamlValueToProto(v any, m proto.Message) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return protojson.Unmarshal(b, m)
+}
+
+// protoToYAMLValue is the inverse of yamlValueToProto.
+func protoToYAMLValue(m proto.Message) (any, error) {
+	b, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	var v any
+	if err := json.Unmarshal(b, &v); err != nil {
+		return nil, err
+	}
+	return v, nil
 }
 
 func generateAgentName() string {
