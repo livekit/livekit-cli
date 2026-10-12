@@ -1,0 +1,40 @@
+# Copyright 2026 LiveKit, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Notify docs
+
+# Tells livekit/internal-actions that a release went public. It forwards the
+# event to livekit/web, which regenerates the CLI reference on docs.livekit.io
+# from `lk generate-docs` at this tag and opens a PR.
+on:
+  release:
+    types: [published]
+
+# The dispatch authenticates with SYNC_DISPATCH_TOKEN; GITHUB_TOKEN isn't used.
+permissions: {}
+
+jobs:
+  dispatch:
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch to internal actions repo
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_DISPATCH_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh api -X POST repos/livekit/internal-actions/dispatches \
+            -f event_type=livekit-cli-released \
+            -f client_payload[source_repo]=livekit/livekit-cli \
+            -f client_payload[tag]="$TAG"
