@@ -149,8 +149,9 @@ func cloudAPIError(err error) error {
 	}
 }
 
-// requireUserSession loads the CLI config and resolves the default user with a
-// valid (unexpired) session, for commands running under --experimental-auth.
+// requireUserSession loads the CLI config and resolves the signed-in user with
+// a valid (unexpired) session, for commands running under --experimental-auth:
+// the --user flag if given, otherwise the default user (see resolveSessionUser).
 // The returned *CLIConfig is the same instance the user was read from, so
 // callers may cache data on it (e.g. via SetUserProjects) and persist.
 func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig, error) {
@@ -158,20 +159,15 @@ func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig
 	if err != nil {
 		return nil, nil, err
 	}
-	// Without an explicit URL, target the API the default user signed in to.
-	// This updates the global so later Public API clients (publicClientForToken)
-	// follow suit.
-	if cmd == nil || !cmd.IsSet("experimental-api-url") {
-		if u := conf.FindUser(conf.DefaultUser); u != nil && u.APIURL != "" {
-			experimentalAPIURL = u.APIURL
-		}
+	var userRef string
+	apiURLSet := false
+	if cmd != nil {
+		userRef = cmd.String("user")
+		apiURLSet = cmd.IsSet("experimental-api-url")
 	}
-	user := resolveSessionUser(conf, experimentalAPIURL)
-	if user == nil {
-		if len(conf.Users) == 0 {
-			return nil, nil, errors.New("no user is signed in (run `lk cloud auth` to sign in)")
-		}
-		return nil, nil, fmt.Errorf("no user is signed in to %s (run `lk cloud auth` to sign in)", experimentalAPIURL)
+	user, err := resolveSessionUser(conf, userRef, apiURLSet)
+	if err != nil {
+		return nil, nil, err
 	}
 	if !user.SessionValid() {
 		return nil, nil, fmt.Errorf("session for %s has expired (run `lk cloud auth` to sign in again)", userLabel(user))
@@ -199,21 +195,60 @@ func announceUser(user *config.UserConfig) {
 	}
 }
 
-// resolveSessionUser picks the user to act as against the Public API at apiURL:
-// the default user if they're signed in there, otherwise the only user signed
-// in there. A session is only valid against the API that issued it, so a
-// default user signed in to a different API (e.g. production while targeting
-// staging) is never used.
-func resolveSessionUser(conf *config.CLIConfig, apiURL string) *config.UserConfig {
-	if conf.DefaultUser != "" {
-		if u := conf.GetUser(conf.DefaultUser, apiURL); u != nil {
-			return u
+// resolveSessionUser picks the user to act as: the one named by userRef (the
+// --user flag; an id or email) if given, otherwise the default user.
+//
+// Unless apiURLSet (--experimental-api-url or LIVEKIT_API_URL was given), the
+// Public API is the one that user signed in to, and experimentalAPIURL is
+// updated so later Public API clients (publicClientForToken) follow suit. A
+// --user signed in to several APIs is ambiguous without an explicit URL.
+//
+// A session is only valid against the API that issued it, so the user must be
+// signed in to the target API. When the default user isn't, the only user
+// signed in there (if exactly one) is used instead; an explicit --user never
+// falls back.
+func resolveSessionUser(conf *config.CLIConfig, userRef string, apiURLSet bool) (*config.UserConfig, error) {
+	explicit := userRef != ""
+	if !explicit {
+		userRef = conf.DefaultUser
+	}
+	if len(conf.Users) == 0 {
+		return nil, errors.New("no user is signed in (run `lk cloud auth` to sign in)")
+	}
+
+	if userRef != "" && !apiURLSet {
+		matches := conf.FindUsers(userRef)
+		switch {
+		case len(matches) == 0 && explicit:
+			return nil, fmt.Errorf("user %q is not signed in (run `lk cloud auth` to sign in)", userRef)
+		case len(matches) > 1 && explicit:
+			apis := make([]string, len(matches))
+			for i, u := range matches {
+				apis[i] = cmp.Or(u.APIURL, public.DefaultBaseURL)
+			}
+			return nil, fmt.Errorf("user %q is signed in to multiple APIs (%s); pass --experimental-api-url to choose one",
+				userRef, strings.Join(apis, ", "))
+		case len(matches) > 0:
+			// For the default user, an id is unique across APIs; an email
+			// signed in to several resolves to the first entry.
+			if matches[0].APIURL != "" {
+				experimentalAPIURL = matches[0].APIURL
+			}
 		}
 	}
-	if users := conf.UsersForAPIURL(apiURL); len(users) == 1 {
-		return users[0]
+
+	if userRef != "" {
+		if u := conf.GetUser(userRef, experimentalAPIURL); u != nil {
+			return u, nil
+		}
+		if explicit {
+			return nil, fmt.Errorf("user %q is not signed in to %s (run `lk cloud auth` to sign in)", userRef, experimentalAPIURL)
+		}
 	}
-	return nil
+	if users := conf.UsersForAPIURL(experimentalAPIURL); len(users) == 1 {
+		return users[0], nil
+	}
+	return nil, fmt.Errorf("no user is signed in to %s (run `lk cloud auth` to sign in)", experimentalAPIURL)
 }
 
 // publicClientForToken builds a Public API client authenticated with the given

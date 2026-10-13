@@ -214,6 +214,11 @@ var (
 		},
 		quietFlag,
 		&cli.StringFlag{
+			Name:   "user",
+			Usage:  "Signed-in `USER` (id or email) to act as with --experimental-auth; defaults to the default user",
+			Hidden: true,
+		},
+		&cli.StringFlag{
 			Name:        "experimental-api-url",
 			Usage:       "Base `URL` of the LiveKit Public API used with --experimental-auth",
 			Value:       public.DefaultBaseURL,

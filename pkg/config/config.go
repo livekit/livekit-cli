@@ -155,17 +155,19 @@ func (c *CLIConfig) GetUser(idOrEmail, apiURL string) *UserConfig {
 	return nil
 }
 
-// FindUser returns the first configured user matching idOrEmail (by id, or
-// case-insensitively by email) on any Public API, or nil if none matches. Use
-// GetUser to resolve a user for a specific API.
-func (c *CLIConfig) FindUser(idOrEmail string) *UserConfig {
+// FindUsers returns the configured users matching idOrEmail (by id, or
+// case-insensitively by email) on any Public API. The same person signed in to
+// several APIs yields one entry per API. Use GetUser to resolve a user for a
+// specific API. The returned pointers alias the slice elements.
+func (c *CLIConfig) FindUsers(idOrEmail string) []*UserConfig {
+	var users []*UserConfig
 	for i := range c.Users {
 		u := &c.Users[i]
 		if u.Id == idOrEmail || (u.Email != "" && strings.EqualFold(u.Email, idOrEmail)) {
-			return u
+			users = append(users, u)
 		}
 	}
-	return nil
+	return users
 }
 
 // UsersForAPIURL returns the configured users signed in to the Public API at
