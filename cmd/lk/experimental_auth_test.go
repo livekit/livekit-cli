@@ -15,10 +15,12 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 )
@@ -67,4 +69,40 @@ func TestMatchDefaultProject(t *testing.T) {
 			assert.Equal(t, tc.wantID, got.ProjectId)
 		})
 	}
+}
+
+// TestExperimentalAuthEnabled checks that --experimental-auth alone selects
+// user-based auth: API-key credentials, from flags or the LIVEKIT_* env vars
+// most shells have set, don't push the command back onto the API-key path.
+func TestExperimentalAuthEnabled(t *testing.T) {
+	t.Setenv("LIVEKIT_URL", "wss://example.livekit.cloud")
+	t.Setenv("LIVEKIT_API_KEY", "envkey")
+	t.Setenv("LIVEKIT_API_SECRET", "envsecret")
+
+	enabled := func(t *testing.T, args ...string) bool {
+		t.Helper()
+		var got bool
+		cmd := &cli.Command{
+			Name: "lk",
+			Flags: []cli.Flag{
+				&cli.BoolFlag{Name: "experimental-auth"},
+				&cli.BoolFlag{Name: "legacy-auth"},
+				&cli.StringFlag{Name: "url", Sources: cli.EnvVars("LIVEKIT_URL")},
+				&cli.StringFlag{Name: "api-key", Sources: cli.EnvVars("LIVEKIT_API_KEY")},
+				&cli.StringFlag{Name: "api-secret", Sources: cli.EnvVars("LIVEKIT_API_SECRET")},
+			},
+			Action: func(_ context.Context, cmd *cli.Command) error {
+				got = experimentalAuthEnabled(cmd)
+				return nil
+			},
+		}
+		require.NoError(t, cmd.Run(context.Background(), append([]string{"lk"}, args...)))
+		return got
+	}
+
+	assert.True(t, enabled(t, "--experimental-auth"), "env credentials must not override --experimental-auth")
+	assert.True(t, enabled(t, "--experimental-auth", "--api-key", "k", "--api-secret", "s", "--url", "ws://x"),
+		"flag credentials must not override --experimental-auth")
+	assert.False(t, enabled(t), "API-key auth remains the default")
+	assert.False(t, enabled(t, "--legacy-auth"))
 }

@@ -87,7 +87,7 @@ var (
 	}
 	legacyAuthFlag = &cli.BoolFlag{
 		Name:   "legacy-auth",
-		Usage:  "Force API-key (SDK) authentication, ignoring any signed-in user session. Explicit --api-key/--api-secret imply this.",
+		Usage:  "Force API-key (SDK) authentication, ignoring any signed-in user session.",
 		Hidden: true,
 	}
 	templateFlag = &cli.StringFlag{
