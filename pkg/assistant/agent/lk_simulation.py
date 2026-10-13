@@ -12,6 +12,7 @@ tools stay real. Each scenario's userdata sets the folder context:
         not_calls: [set_up_coding_agent]    # tools it must not call
         any_calls: [show_link, show_answer] # it must call at least one
         show_code_contains: lk agent console
+        lk_calls: [create_project]          # lk tools that must run, from code or the model
         confirmed: [create_project]         # ran without asking again
         call_contains: {hand_off_task: voice}
 
@@ -21,10 +22,12 @@ when the simulation ends, and fails it if they don't match.
 
 from __future__ import annotations
 
+import inspect
 import json
 
+import sys
+
 from livekit.agents import AgentSession
-from livekit.agents.voice.run_result import mock_tools
 
 DIR = "/Users/dev/my-app"
 
@@ -33,8 +36,17 @@ def setup_simulation(sim, session: AgentSession, assistant_cls) -> tuple[dict, d
     userdata = sim.userdata() or {}
     folder = userdata.get("folder", {"kind": "empty"})
     coding_agents = userdata.get("coding_agents", {"ready": False})
-    mock_tools(assistant_cls, LkMocks(folder, coding_agents).tools(), session=session)
+    # The agent's tools and its tasks reach lk through run_lk_tool. Replace it
+    # in the module that defines the agent, which runs as __main__. Each
+    # simulation job runs in its own process, so this is per job.
+    global mocks
+    mocks = LkMocks(folder, coding_agents)
+    sys.modules[assistant_cls.__module__].run_lk_tool = mocks.run
     return folder, coding_agents
+
+
+# The job's mocks, so check_simulation can see which lk tools ran.
+mocks: "LkMocks | None" = None
 
 
 class LkMocks:
@@ -46,6 +58,23 @@ class LkMocks:
         self.pending: dict[str, str] = {}  # confirmation id → what it runs
         self.n = 0
         self.created = False
+        self.calls: list[str] = []  # lk tools run, in order
+
+    async def run(self, name: str, args: dict | None = None, timeout: float = 60) -> str:
+        """Stands in for agent.run_lk_tool."""
+        args = args or {}
+        self.calls.append(name)
+        if name == "show_choice":
+            self.n += 1
+            return f"choice{self.n}"
+        if name == "choice_made":
+            return "Marked."
+        tool = self.tools().get(name)
+        if tool is None:
+            return f"Error: unknown tool {name!r}"
+        # Pass only the arguments this mock takes, so older agents work too.
+        params = inspect.signature(tool).parameters
+        return await tool(None, **{k: v for k, v in args.items() if k in params})
 
     def tools(self) -> dict:
         return {
@@ -61,7 +90,7 @@ class LkMocks:
 
     def propose(self, what: str, command: str, confirmed: bool) -> str:
         if confirmed:
-            return self.run(what)
+            return self.perform(what)
         self.n += 1
         cid = f"confirm{self.n}"
         self.pending[cid] = what
@@ -72,12 +101,13 @@ class LkMocks:
             "they decline, approved=false."
         )
 
-    def run(self, what: str) -> str:
-        if what == "create":
+    def perform(self, what: str) -> str:
+        if what.startswith("create"):
+            template = what.partition(":")[2] or "agent-starter-python"
             self.created = True
             self.folder = {"kind": "livekit", "has_agents": True}
             return (
-                "Created an agent project from the agent-starter-python template in the current "
+                f"Created an agent project from the {template} template in the current "
                 "directory and installed its dependencies. It includes LiveKit's skills and Docs MCP "
                 "server for coding agents."
             )
@@ -117,8 +147,8 @@ class LkMocks:
     async def create_project(
         self, context, template: str, name: str = "", in_current_directory: bool = False, confirmed: bool = False
     ) -> str:
-        target = "." if in_current_directory else name
-        return self.propose("create", f"lk agent init {target} --template {template} --install", confirmed)
+        target = "." if in_current_directory else (name or "my-agent")
+        return self.propose(f"create:{template}", f"lk agent init {target} --template {template} --install", confirmed)
 
     async def set_up_coding_agent(
         self, context, all_projects: bool = False, reinstall: bool = False, confirmed: bool = False
@@ -137,7 +167,7 @@ class LkMocks:
             return f'Error: there\'s no pending confirmation "{confirmation_id}"'
         if not approved:
             return "Cancelled. Nothing was changed."
-        return self.run(what)
+        return self.perform(what)
 
     async def try_project(
         self, context, confirmed: bool = False) -> str:
@@ -172,6 +202,10 @@ def check_simulation(ctx) -> None:
     if any_of := expect.get("any_calls"):
         if not any(name in names for name in any_of):
             problems.append(f"didn't call any of {', '.join(any_of)}")
+    ran = mocks.calls if mocks else []
+    for name in expect.get("lk_calls", []):
+        if name not in ran:
+            problems.append(f"didn't run lk tool {name}")
     for name in expect.get("not_calls", []):
         if name in names:
             problems.append(f"called {name}")

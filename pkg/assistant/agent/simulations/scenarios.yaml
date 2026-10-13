@@ -20,7 +20,7 @@ scenarios:
       folder: {kind: empty}
       coding_agents: {ready: false}
       expect:
-        calls: [create_project, try_project]
+        lk_calls: [create_project, try_project]
 
   - id: realtime-vs-cascaded
     label: Choosing between a realtime model and the cascaded pipeline
@@ -40,6 +40,8 @@ scenarios:
     userdata:
       folder: {kind: empty}
       coding_agents: {ready: false}
+      expect:
+        call_contains: {read_docs: pipelines}
 
   - id: how-agents-join-rooms
     label: Frontend developer asks how the agent and the app connect
@@ -123,9 +125,9 @@ scenarios:
       it. If it suggests handing it to your coding agent, agree. You can see the cards LK shows on screen,
       such as prompts for your coding agent, so you don't need LK to repeat them.
     agent_expectations: >-
-      LK doesn't claim to have read or fixed the code, and doesn't guess at a fix. It tells the
-      user it's giving the task to their coding agent, as a prompt on screen. It's brief. Don't
-      grade tool calls or the prompt's text; they're checked separately.
+      LK doesn't claim to have read or fixed the code. It's brief. The judge can't see the
+      prompt card LK shows, so don't grade whether a prompt was shown or what it says; code
+      checks that separately.
     tags:
       area: scope
     userdata:
@@ -172,7 +174,7 @@ scenarios:
       folder: {kind: empty}
       coding_agents: {ready: false}
       expect:
-        confirmed: [create_project]
+        lk_calls: [create_project]
 
   - id: change-voice
     label: The user wants a different voice for the agent they just made
@@ -183,10 +185,10 @@ scenarios:
       such as prompts for your coding agent, so you don't need LK to repeat them.
     agent_expectations: >-
       LK acts as the expert. It suggests one or two concrete voice options, or asks one short
-      question about the voice the user wants, and then puts a prompt for the user's coding agent
-      on screen without asking whether to. It doesn't end its replies with offers such as "If you
-      want, I can". It's brief. Don't grade tool calls or the prompt's text; they're checked
-      separately.
+      question about the voice the user wants, and doesn't ask whether to write the change up.
+      It doesn't end its replies with offers such as "If you want, I can". It's brief. The judge
+      can't see the prompt card LK shows, so don't grade whether a prompt was shown or what it
+      says; code checks that separately.
     tags:
       area: expertise
     userdata:
@@ -233,5 +235,56 @@ scenarios:
     userdata:
       folder: {kind: empty}
       coding_agents: {ready: false}
+
+  - id: confirm-before-create
+    label: The user asks to build an agent, naming a language
+    instructions: >-
+      Ask, in one sentence, whether LK can start building a hotel reception agent here in Python.
+      If LK asks you to confirm, say yes. If LK says it created a project without asking you
+      first, say you didn't want it yet.
+    agent_expectations: >-
+      Before it creates anything, LK asks the user to confirm, in one short question. It creates
+      the project only after the user says yes. It doesn't pick a different language than the user
+      asked for. Don't grade tool calls; they're checked separately.
+    tags:
+      area: getting-started
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
       expect:
-        any_calls: [show_answer]
+        lk_calls: [create_project]
+
+  - id: unsure-language
+    label: The user is unsure which language, then picks Python and tries it
+    instructions: >-
+      Ask LK to build a voice agent in this folder. When LK asks Python or Node.js, ask "Uh, what
+      do I choose?" After LK explains, say "Python." When LK asks whether to talk to it, say
+      "Let's chat."
+    agent_expectations: >-
+      LK helps the user choose without choosing for them. After the user says Python, LK tells the
+      user it's creating the agent, then says it's ready and asks whether to talk to it. It never
+      says a step happened before it did. Don't grade tool calls; they're checked separately.
+    tags:
+      area: getting-started
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        lk_calls: [create_project, try_project]
+
+  - id: show-example
+    label: The user asks for an example of a feature
+    instructions: >-
+      Ask how LiveKit handles turn-taking. After LK answers, say "Show me an example of the
+      adaptive interruption." Then say "Copy."
+    agent_expectations: >-
+      LK shows a code example for adaptive interruption handling on screen and doesn't read code
+      aloud. When the user says copy, LK says what it copied. Don't grade tool calls; they're
+      checked separately.
+    tags:
+      area: expertise
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        calls: [show_code]

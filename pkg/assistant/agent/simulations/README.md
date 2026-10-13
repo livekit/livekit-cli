@@ -23,7 +23,9 @@ Set these environment variables to compare configurations. The defaults are what
 | Variable | Default | Values |
 |---|---|---|
 | `LK_ASSISTANT_LLM` | `openai/gpt-5.4-mini` | A LiveKit Inference LLM, such as `google/gemini-3.8-flash` |
-| `LK_ASSISTANT_PRIMER` | `1` | `1` adds `PRIMER` to the instructions, so basic questions don't need a lookup. `0` looks up everything. |
-| `LK_ASSISTANT_FILLER` | `slow` | When to say a line during a docs lookup: `always`, `slow` (only after 2.5 seconds, at most once per turn), or `off` |
+| `LK_ASSISTANT_MAX_PAGES` | `3` | How many docs pages one reply may read. Fewer is faster. |
+| `LK_ASSISTANT_DOCS_CHARS` | `12000` | How much docs text one `read_docs` call returns, split between its pages. |
+| `LK_ASSISTANT_TOC` | `1` | `1` adds the trimmed docs table of contents to the instructions, so the agent picks pages by title. |
+| `LK_ASSISTANT_REASONING` | `low` | The LLM's `reasoning_effort`, such as `low` or `medium`. Empty uses the model's default. Lower is faster. |
 
 Each run registers its own temporary agent name, so you can run two configurations at once.

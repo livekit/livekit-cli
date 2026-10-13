@@ -58,6 +58,7 @@
 
   #status { position: fixed; left: 0; right: 0; bottom: 28px; text-align: center; color: var(--fg4); transition: color 200ms; }
   #status[data-state="listening"] { color: var(--fg1); }
+  body.mic-off #status[data-state="listening"], body.mic-off #status[data-state="idle"] { color: var(--remove); }
   #status[data-state="thinking"], #status[data-state="speaking"], #status.notice { color: var(--accent); }
 
   #hints { position: fixed; right: 32px; bottom: 28px; color: var(--fg4); }
@@ -552,7 +553,9 @@
     if (!LABELS[next]) return;
     const changed = next !== state;
     state = next;
-    stateLabel = label || LABELS[next];
+    // With the microphone off, LK can't hear the user, so don't say it's listening.
+    const deaf = micOff && (next === 'listening' || next === 'idle');
+    stateLabel = label || (deaf ? 'Microphone off · Press M' : LABELS[next]);
     statusEl.dataset.state = next;
     if (!notice) statusEl.textContent = stateLabel;
     if (changed && EARCONS[next]) EARCONS[next]();
@@ -601,7 +604,7 @@
     const kind = { starting: 'Starting your agent', connected: 'Connected', failed: "Your agent didn't start" }[status];
     const text = {
       starting: 'Installing and connecting. The first run takes longer.',
-      connected: 'Say hello to start. Starter agents wait for you to speak first.',
+      connected: "Talk to it. Say hello if it doesn't greet you. Press B to come back.",
       failed: 'See the terminal for what went wrong.',
     }[status];
     takeoverEl.querySelector('.kind').textContent = kind;
@@ -633,7 +636,7 @@
       showTakeover('connected', name);
       guestWhat('Talking to', name);
       // The user's agent waits for them to speak first.
-      guestEl.querySelector('.hint').textContent = 'Say hello to start';
+      guestEl.querySelector('.hint').textContent = "Say hello if it doesn't greet you";
     }
     body.classList.toggle('guest', speaker.guest);
     // X-ray follows whichever agent is talking.
@@ -879,7 +882,9 @@
     card.innerHTML = '<header><span class="title"></span></header><pre class="command"></pre><div class="detail"></div>' +
       '<div class="options mono-caps"></div><div class="result mono-caps"><span class="mark"></span><span class="label"></span><span class="text"></span></div>';
     card.querySelector('.title').textContent = heading;
-    card.querySelector('.command').textContent = command;
+    // A choice card asks a question and has no command.
+    if (command) card.querySelector('.command').textContent = command;
+    else card.querySelector('.command').remove();
     card.querySelector('.detail').textContent = detail;
     const row = card.querySelector('.options');
     options.forEach((o, i) => {
@@ -898,7 +903,7 @@
     stickToBottom(() => turnBody(turn, 'agent').append(card));
     confirms.set(id, card);
     pendingConfirm = id;
-    if (notice !== -1) showNotice('Waiting for you to confirm');
+    if (notice !== -1) showNotice(command ? 'Waiting for you to confirm' : 'Waiting for your choice');
     EARCONS.listening();
   }
 
@@ -915,7 +920,8 @@
     const card = confirms.get(id);
     if (!card) return;
     card.dataset.status = status;
-    card.querySelector('.result .label').textContent = CONFIRM_STATUS[status] || status;
+    const choice = !card.querySelector('.command');
+    card.querySelector('.result .label').textContent = choice && status === 'done' ? 'Chose' : CONFIRM_STATUS[status] || status;
     card.querySelector('.result .text').textContent = text || '';
   }
 
@@ -1076,6 +1082,7 @@
       micOff = !micOff;
       body.classList.toggle('mic-off', micOff);
       post({ type: 'mute', on: micOff });
+      setState(state);
       if (notice !== -1) showNotice(micOff ? 'Microphone off' : 'Microphone on');
       return;
     }

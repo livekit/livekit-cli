@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -60,6 +59,7 @@ type assistantSession struct {
 	pipeline      *console.AudioPipeline
 	assistantConn net.Conn    // the assistant agent's console connection
 	guest         *guestAgent // the user's agent, while it runs here
+	guestStarting bool        // the user's agent is starting and hasn't connected yet
 
 	// Conversation state, mapped onto the overlay's turns and segments. A
 	// turn stays the target for text that finishes it (such as the rest of
@@ -88,11 +88,18 @@ type assistantSession struct {
 	ending        bool
 	endingSince   time.Time
 	spokeGoodbye  bool // the agent spoke after end_call
+	endCalled     bool // the agent called end_call, which says goodbye
 	agentExited   bool
 	dismissed     bool
 	snippets      map[string]string // card id → code, for Copy
 	snippetOrder  []snippetRef      // cards in the order shown, for copying by voice
 	links         map[string]string // link card id → URL, for Open
+	// Docs pages the agent read this reply, and whether it showed a docs
+	// card. If it read pages but showed no card, lk shows a link to the
+	// first page when the reply ends.
+	turnPages    []docsPage
+	turnCard     bool
+	pendingLinks []overlayLink // link cards to show when the reply ends
 
 	// The local connection to the assistant agent, and the lk commands it
 	// runs through it.
@@ -265,6 +272,7 @@ func (s *assistantSession) run(ctx context.Context) (err error) {
 		creds:   creds,
 		results: make(chan toolResult, 16),
 		pending: map[string]pendingTool{},
+		choices: map[string][]overlayConfirmOption{},
 	}
 
 	s.connecting("Starting the assistant agent")
@@ -369,6 +377,12 @@ func (s *assistantSession) run(ctx context.Context) (err error) {
 				s.runTool(m.ID, m.Name, m.Args)
 			case "show_code":
 				s.showAgentCode(m)
+			case "end":
+				// The agent found that the user wants to close LK. Close after
+				// its goodbye (see checkEnding).
+				if !s.guestActive() {
+					s.startEnding()
+				}
 			case "pipeline":
 				s.out.Send(overlayPipeline{Type: "pipeline", STT: m.STT, LLM: m.LLM, TTS: m.TTS, TurnDetection: m.TurnDetection})
 			}
@@ -510,6 +524,7 @@ func (s *assistantSession) handleEvent(ev *agent.AgentSessionEvent) {
 		case agent.AgentState_AS_IDLE:
 			s.out.Send(overlayState{"state", "idle"})
 		case agent.AgentState_AS_LISTENING:
+			s.showReadMore()
 			s.out.Send(overlayState{"state", "listening"})
 		case agent.AgentState_AS_THINKING:
 			s.out.Send(overlayState{"state", "thinking"})
@@ -550,9 +565,16 @@ func (s *assistantSession) handleEvent(ev *agent.AgentSessionEvent) {
 		for _, out := range e.FunctionToolsExecuted.GetFunctionCallOutputs() {
 			failed[out.GetCallId()] = out.GetIsError()
 		}
+		outputs := map[string]string{}
+		for _, out := range e.FunctionToolsExecuted.GetFunctionCallOutputs() {
+			outputs[out.GetCallId()] = out.GetOutput()
+		}
 		for _, fc := range e.FunctionToolsExecuted.GetFunctionCalls() {
 			s.toolCall(fc)
 			s.toolDone(fc.GetCallId(), failed[fc.GetCallId()])
+			if (fc.GetName() == "read_docs" || fc.GetName() == "get_pages") && !failed[fc.GetCallId()] {
+				s.turnPages = append(s.turnPages, docsPagesRead(fc.GetArguments(), outputs[fc.GetCallId()])...)
+			}
 		}
 
 	case *agent.AgentSessionEvent_Error_:
@@ -604,6 +626,8 @@ func (s *assistantSession) userTurnForSpeech() {
 		return
 	}
 	s.agentSpoke = false
+	s.turnPages = nil
+	s.turnCard = false
 	s.turnN++
 	s.userTurn = fmt.Sprintf("u%d", s.turnN)
 	s.userOpen = true
@@ -673,20 +697,6 @@ func (s *assistantSession) userCommitted(text string) {
 	s.userCommits = strings.TrimSpace(s.userCommits + " " + text)
 	s.userFinal = s.userCommits
 	s.out.Send(overlayTranscript{"transcript", s.userTurn, "user", 0, s.userCommits})
-	// The agent usually calls end_call, but it can just say goodbye. A turn
-	// that's only "exit" closes the overlay either way.
-	if isExitCommand(s.userCommits) && !s.guestActive() {
-		s.startEnding()
-	}
-}
-
-// exitCommands are whole turns that mean the user wants to close LK.
-var exitCommands = []string{"exit", "quit", "close", "stop", "bye", "goodbye", "close it", "exit please", "that's all", "i'm done"}
-
-// isExitCommand reports whether a user turn is only a request to close LK.
-func isExitCommand(text string) bool {
-	t := strings.Trim(strings.ToLower(strings.TrimSpace(text)), ".!?, ")
-	return slices.Contains(exitCommands, t)
 }
 
 // startEnding closes the overlay once the agent has said goodbye, or after
@@ -782,6 +792,8 @@ func (s *assistantSession) toolCall(fc *agent.FunctionCall) {
 		// Only the assistant's end_call closes the overlay; the user's own
 		// agent may have one too.
 		if !s.guestActive() {
+			// end_call always says goodbye (its end instructions), so wait for it.
+			s.endCalled = true
 			s.startEnding()
 		}
 	default:
@@ -836,7 +848,7 @@ func describeTool(name, arguments string) (label, detail string) {
 		return "Read the docs overview", detail
 	case "docs_search":
 		return "Searched the docs", detail
-	case "get_pages":
+	case "get_pages", "read_docs":
 		return "Read the docs", detail
 	case "code_search":
 		return "Searched LiveKit code", detail
@@ -878,12 +890,19 @@ func (s *assistantSession) checkEnding() {
 		s.spokeGoodbye = true
 	}
 	quiet := !playing && !s.agentSpeaking && time.Since(s.lastAudio) > 800*time.Millisecond
-	if ((s.spokeGoodbye || s.agentExited) && quiet) || time.Since(s.endingSince) > endingTimeout {
+	// Wait for the goodbye to play. If none starts within goodbyeWait, the
+	// agent likely said it before the ending began, so close once it's quiet.
+	noGoodbye := !s.endCalled && time.Since(s.endingSince) > goodbyeWait
+	if ((s.spokeGoodbye || s.agentExited || noGoodbye) && quiet) || time.Since(s.endingSince) > endingTimeout {
 		s.dismiss()
 	}
 }
 
 const endingTimeout = 15 * time.Second
+
+// goodbyeWait is how long the overlay waits for the agent's goodbye to start
+// before it closes without one.
+const goodbyeWait = 4 * time.Second
 
 // dismiss plays the overlay's exit animation, which then closes it.
 func (s *assistantSession) dismiss() {
@@ -911,7 +930,7 @@ func (s *assistantSession) showCode(fc *agent.FunctionCall) {
 	s.agentTurnForReply()
 
 	id := fc.GetCallId()
-	s.addSnippet(id, args.Title, args.Code)
+	s.addSnippet(id, "code", args.Title, args.Code)
 	s.out.Send(overlaySnippet{"snippet", s.agentTurn, id, args.Title, normalizeLang(args.Language), args.Code, false})
 }
 
@@ -931,16 +950,18 @@ func (s *assistantSession) handOffTask(fc *agent.FunctionCall) {
 	s.agentTurnForReply()
 
 	id := fc.GetCallId()
-	s.addSnippet(id, "Prompt for your coding agent", args.Task)
+	s.addSnippet(id, "prompt", "Prompt for your coding agent", args.Task)
 	s.out.Send(overlaySnippet{"snippet", s.agentTurn, id, "Prompt for your coding agent", "prompt", args.Task, false})
 }
 
-type snippetRef struct{ id, title string }
+// snippetRef is a card that can be copied. kind is what it is, for the
+// agent's copy reply: code, a prompt, a link, or an answer.
+type snippetRef struct{ id, kind, title string }
 
-// addSnippet records a code or prompt card so it can be copied.
-func (s *assistantSession) addSnippet(id, title, code string) {
+// addSnippet records a card so it can be copied.
+func (s *assistantSession) addSnippet(id, kind, title, code string) {
 	s.snippets[id] = code
-	s.snippetOrder = append(s.snippetOrder, snippetRef{id, title})
+	s.snippetOrder = append(s.snippetOrder, snippetRef{id, kind, title})
 }
 
 func (s *assistantSession) copy(id string) {
@@ -981,8 +1002,11 @@ func (s *assistantSession) showLink(fc *agent.FunctionCall) {
 	s.agentTurnForReply()
 	id := fc.GetCallId()
 	s.links[id] = args.URL
-	s.addSnippet(id, args.Title, args.URL)
-	s.out.Send(overlayLink{Type: "link", Turn: s.agentTurn, ID: id, Title: args.Title, URL: args.URL})
+	s.turnCard = true
+	s.addSnippet(id, "link", args.Title, args.URL)
+	// The agent can call show_link before it answers. Show the card after the
+	// answer, when the reply ends (see showReadMore).
+	s.pendingLinks = append(s.pendingLinks, overlayLink{Type: "link", Turn: s.agentTurn, ID: id, Title: args.Title, URL: args.URL})
 }
 
 // typed sends text the user typed to the assistant, as their next turn.
@@ -1014,13 +1038,78 @@ func (s *assistantSession) showAnswer(fc *agent.FunctionCall) {
 	s.agentTurnForReply()
 	id := fc.GetCallId()
 	s.links[id] = args.SourceURL
+	s.turnCard = true
 	var text strings.Builder
 	for _, p := range args.Points {
 		text.WriteString("- " + p + "\n")
 	}
 	fmt.Fprintf(&text, "\nSource: %s (%s)", args.SourceTitle, args.SourceURL)
-	s.addSnippet(id, args.Title, text.String())
+	s.addSnippet(id, "answer", args.Title, text.String())
 	s.out.Send(overlayAnswer{Type: "answer", Turn: s.agentTurn, ID: id, Title: args.Title, Points: args.Points, SourceTitle: args.SourceTitle, SourceURL: args.SourceURL})
+}
+
+// docsPage is a docs page the agent read with read_docs (or get_pages).
+type docsPage struct{ title, url string }
+
+// docsPagesRead lists the docs pages a read_docs or get_pages call read: their URLs from
+// its arguments, and titles from the "# Title" lines in its output.
+func docsPagesRead(arguments, output string) []docsPage {
+	var args struct {
+		Paths []string `json:"paths"`
+	}
+	if json.Unmarshal([]byte(arguments), &args) != nil {
+		return nil
+	}
+	var titles []string
+	for line := range strings.SplitSeq(output, "\n") {
+		if t, ok := strings.CutPrefix(line, "# "); ok {
+			titles = append(titles, strings.TrimSpace(t))
+		}
+	}
+	// The output is JSON text, so newlines can be escaped.
+	if len(titles) == 0 {
+		for part := range strings.SplitSeq(output, "\\n") {
+			if t, ok := strings.CutPrefix(part, "# "); ok {
+				titles = append(titles, strings.TrimSpace(t))
+			}
+		}
+	}
+	var pages []docsPage
+	for i, p := range args.Paths {
+		url := p
+		if strings.HasPrefix(p, "/") {
+			url = strings.TrimSuffix(docsURL, "/") + p
+		}
+		if !strings.HasPrefix(url, docsURL) {
+			continue // GitHub code, not a docs page
+		}
+		title := "LiveKit docs"
+		if i < len(titles) {
+			title = titles[i]
+		}
+		pages = append(pages, docsPage{title: title, url: docsPageURL(url)})
+	}
+	return pages
+}
+
+// showReadMore runs when a reply ends. It shows the link cards the agent asked
+// for, after the answer. If the agent answered from the docs without one, it
+// shows a link to the first page it read.
+func (s *assistantSession) showReadMore() {
+	for _, link := range s.pendingLinks {
+		s.out.Send(link)
+	}
+	s.pendingLinks = nil
+	if s.turnCard || len(s.turnPages) == 0 || s.agentTurn == "" {
+		return
+	}
+	page := s.turnPages[0]
+	s.turnCard = true
+	s.snippetN++
+	id := fmt.Sprintf("readmore%d", s.snippetN)
+	s.links[id] = page.url
+	s.addSnippet(id, "link", page.title, page.url)
+	s.out.Send(overlayLink{Type: "link", Turn: s.agentTurn, ID: id, Title: page.title, URL: page.url})
 }
 
 // openLink opens a link card's page in the user's browser.
@@ -1044,7 +1133,7 @@ func (s *assistantSession) copyByVoice(requestID, title string) {
 			return
 		}
 		s.out.Send(overlayCopied{"copied", ref.id})
-		s.replyTool(requestID, fmt.Sprintf("Copied %q to the user's clipboard.", ref.title), nil)
+		s.replyTool(requestID, fmt.Sprintf("Copied the %s card %q to the user's clipboard. Tell them what you copied.", ref.kind, ref.title), nil)
 		return
 	}
 	if len(s.snippetOrder) == 0 {

@@ -51,7 +51,8 @@ type toolState struct {
 	dir      string   // the user's project directory
 	creds    []string // LIVEKIT_* environment for subprocesses
 	results  chan toolResult
-	pending  map[string]pendingTool // confirmation id → command waiting for it
+	pending  map[string]pendingTool            // confirmation id → command waiting for it
+	choices  map[string][]overlayConfirmOption // choice card id → its options, until answered
 	confirmN int
 	// lastProject is the project created this session, for try_project.
 	lastProject string
@@ -157,6 +158,13 @@ func (s *assistantSession) runTool(requestID, name string, args map[string]any) 
 
 	case "confirm_action":
 		s.confirmByVoice(requestID, str("confirmation_id"), flag("approved"))
+
+	case "show_choice":
+		s.showChoice(requestID, str("question"), args["options"])
+
+	case "choice_made":
+		s.choiceMade(str("id"), str("option"), false)
+		s.replyTool(requestID, "Marked.", nil)
 
 	case "copy_to_clipboard":
 		s.copyByVoice(requestID, str("title"))
@@ -270,6 +278,53 @@ func (s *assistantSession) proposeCommand(requestID, detail, runLabel string, ar
 		id, command, detail), nil)
 }
 
+// showChoice shows a card that asks the user to pick one option, by voice or
+// on screen. The agent's code decides what each option does; lk only reports
+// the choice. It replies with the card's id.
+func (s *assistantSession) showChoice(requestID, question string, rawOptions any) {
+	var options []overlayConfirmOption
+	if list, ok := rawOptions.([]any); ok {
+		for _, o := range list {
+			m, _ := o.(map[string]any)
+			id, _ := m["id"].(string)
+			name, _ := m["name"].(string)
+			if id != "" && name != "" {
+				options = append(options, overlayConfirmOption{ID: id, Name: name})
+			}
+		}
+	}
+	if question == "" || len(options) == 0 {
+		s.replyTool(requestID, "", errors.New("a choice needs a question and options with an id and a name"))
+		return
+	}
+	t := &s.tools
+	t.confirmN++
+	id := fmt.Sprintf("choice%d", t.confirmN)
+	t.choices[id] = options
+	s.agentTurnForReply()
+	s.out.Send(overlayConfirm{Type: "confirm", Turn: s.agentTurn, ID: id, Heading: question, Options: options})
+	s.replyTool(requestID, id, nil)
+}
+
+// choiceMade marks a choice card answered. A click on the card (onScreen)
+// also tells the agent, which otherwise only hears choices made by voice.
+func (s *assistantSession) choiceMade(id, option string, onScreen bool) {
+	options, ok := s.tools.choices[id]
+	if !ok {
+		return
+	}
+	i := slices.IndexFunc(options, func(o overlayConfirmOption) bool { return o.ID == option })
+	if i < 0 {
+		return
+	}
+	delete(s.tools.choices, id)
+	s.out.Send(map[string]string{"type": "confirm_done", "id": id, "option": option})
+	s.out.Send(overlayConfirmStatus{Type: "confirm_status", ID: id, Status: "done", Text: options[i].Name})
+	if onScreen {
+		s.channel.send(map[string]string{"type": "choice", "id": id, "option": option})
+	}
+}
+
 // confirmByVoice handles confirm_action: the user answered by voice.
 func (s *assistantSession) confirmByVoice(requestID, id string, approved bool) {
 	p, ok := s.tools.pending[id]
@@ -294,6 +349,10 @@ func (s *assistantSession) confirmByVoice(requestID, id string, approved bool) {
 
 // confirmTool handles the user's answer on screen.
 func (s *assistantSession) confirmTool(id, option string) {
+	if _, ok := s.tools.choices[id]; ok {
+		s.choiceMade(id, option, true)
+		return
+	}
 	p, ok := s.tools.pending[id]
 	if !ok {
 		return

@@ -67,8 +67,8 @@ func (s *assistantSession) proposeTryProject(requestID string, confirmed bool) {
 		s.replyTool(requestID, existingAgentAdvice(t.dir), nil)
 		return
 	}
-	if s.guest != nil {
-		s.replyTool(requestID, "", errors.New("the user's agent is already running; they can press B to come back first"))
+	if s.guest != nil || s.guestStarting {
+		s.replyTool(requestID, "The user's agent is already starting or running, so nothing else was started. Don't start it again.", nil)
 		return
 	}
 	root, projectType, err := agentfs.DetectProjectRoot(dir)
@@ -128,8 +128,10 @@ func existingAgentAdvice(dir string) string {
 // overlay shows the switch.
 func (s *assistantSession) startGuest(requestID, confirmID, name, dir, entrypoint string, projectType agentfs.ProjectType) {
 	t := &s.tools
+	s.guestStarting = true
 	starting := fmt.Sprintf("Starting the user's agent, %s. It takes a few seconds, and the screen shows when it's connected. "+
-		"In one short sentence, tell them it's starting, and that once it's connected they should say hello, because starter agents wait for the user to speak first. "+
+		"In one or two short sentences, tell them it's starting, that once it's connected they can talk to it, saying hello if it doesn't greet them, "+
+		"and that they can press B to come back to you. "+
 		"Don't say you've handed them over: you'll hear if it fails to start. "+
 		"If the user talks to you before it connects, tell them in a few words that it's still starting.", name)
 	s.out.Send(overlayGuestStatus{Type: "guest_status", Status: "starting", Name: name})
@@ -142,6 +144,7 @@ func (s *assistantSession) startGuest(requestID, confirmID, name, dir, entrypoin
 	s.inBackground(func(ctx context.Context) toolResult {
 		failed := func(err error) toolResult {
 			return toolResult{then: func(toolResult) {
+				s.guestStarting = false
 				s.out.Send(overlayGuestStatus{Type: "guest_status", Status: "failed", Name: name})
 				s.out.Send(overlayConfirmStatus{Type: "confirm_status", ID: confirmID, Status: "failed", Text: "Your agent didn't start. See the terminal"})
 				out.Statusf("Your agent didn't start: %v", err)
@@ -174,6 +177,7 @@ func (s *assistantSession) startGuest(requestID, confirmID, name, dir, entrypoin
 			return failed(err)
 		}
 		return toolResult{then: func(toolResult) {
+			s.guestStarting = false
 			s.guest = &guestAgent{name: name, dir: dir, proc: proc, conn: conn}
 			s.pipeline.AddConn(t.ctx, conn)
 			s.pipeline.SetActive(conn)

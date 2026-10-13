@@ -61,6 +61,10 @@ EXISTING_AGENT = (
 def stub_lk(calls: list, ready: bool = False):
     async def run_lk_tool(name: str, args: dict | None = None, timeout: float = 60) -> str:
         calls.append((name, args or {}))
+        if name == "show_choice":
+            return f"choice{len(calls)}"
+        if name == "choice_made":
+            return "Marked."
         if name in ("create_project", "set_up_coding_agent", "try_project") and (args or {}).get("confirmed"):
             return "Done. The user confirmed by voice, and it ran."
         if name == "create_project":
@@ -113,11 +117,10 @@ def judge_llm() -> inference.LLM:
 
 
 async def test_creates_project_without_asking_twice(monkeypatch, lk_calls):
-    """The user agreed to an offer; LK shouldn't ask again before running it."""
+    """The user said what they want; LK creates it without asking again."""
     async with AgentSession(llm=inference.LLM(model=agent.LLM_MODEL)) as session:
         await session.start(assistant(monkeypatch, EMPTY))
-        await session.run(user_input="I want to build a voice agent in Python.")
-        result = await session.run(user_input="Yes, create it here.")
+        await session.run(user_input="I want to build a voice agent in Python, right here.")
         # Either path runs it in this turn: confirmed=true, or confirm_action right after.
         ran = any(
             (n == "create_project" and a.get("confirmed")) or (n == "confirm_action" and a.get("approved"))

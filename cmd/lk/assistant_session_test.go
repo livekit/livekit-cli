@@ -173,16 +173,13 @@ func TestIsAuthError(t *testing.T) {
 	require.False(t, isAuthError("type='tts_error' timestamp=1791565401.871234 label='livekit.agents.inference.tts.TTS' error=APIConnectionError('connection failed') recoverable=True"))
 }
 
-func TestIsExitCommand(t *testing.T) {
-	for _, text := range []string{"Exit.", "close", "Bye!", "That's all."} {
-		require.True(t, isExitCommand(text), text)
-	}
-	for _, text := range []string{"How do I exit the console?", "Close the loop on dispatch", ""} {
-		require.False(t, isExitCommand(text), text)
-	}
-}
-
 func TestDocsPageURL(t *testing.T) {
 	require.Equal(t, "https://docs.livekit.io/deploy/agents", docsPageURL("https://docs.livekit.io/deploy/agents.md"))
 	require.Equal(t, "https://docs.livekit.io/deploy/agents/", docsPageURL("https://docs.livekit.io/deploy/agents/"))
+}
+
+func TestDocsPagesRead(t *testing.T) {
+	out := `{"type":"text","text":"## /agents/build.md\n\nLiveKit docs › Build Agents\n\n---\n\n# Building voice agents\n\n> Overview"}`
+	pages := docsPagesRead(`{"paths": ["/agents/build.md", "https://github.com/livekit/agents/blob/main/README.md"]}`, out)
+	require.Equal(t, []docsPage{{title: "Building voice agents", url: "https://docs.livekit.io/agents/build"}}, pages)
 }

@@ -121,7 +121,11 @@ func (l *sessionLog) record(msg any) {
 		t := l.turn(m.Turn, "agent")
 		t.items = append(t.items, &logItem{kind: "link", label: m.Title, text: m.URL})
 	case overlayConfirm:
-		item := &logItem{kind: "command", text: m.Command, detail: m.Heading, status: "not answered"}
+		kind := "command"
+		if m.Command == "" {
+			kind = "choice"
+		}
+		item := &logItem{kind: kind, text: m.Command, detail: m.Heading, status: "not answered"}
 		l.items[m.ID] = item
 		t := l.turn(m.Turn, "agent")
 		t.items = append(t.items, item)
@@ -205,6 +209,8 @@ func (l *sessionLog) markdown(dir string) string {
 				fmt.Fprintf(&b, "\n\n%s:\n\n- %s\n\nSource: [%s](%s)", it.label, it.text, it.detail, it.lang)
 			case "link":
 				fmt.Fprintf(&b, "\n\nRead more: [%s](%s)", it.label, it.text)
+			case "choice":
+				fmt.Fprintf(&b, "\n\n- %s %s", it.detail, it.status)
 			case "command":
 				fmt.Fprintf(&b, "\n\n`%s` (%s): %s", it.text, strings.ToLower(it.detail), it.status)
 			}
