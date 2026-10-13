@@ -1,0 +1,24 @@
+cmd/lk/simulate.go
+  h_a827ab16c3c189 362-363,365,367-368,370,404-405,411,488,492-493,498-500,502-503,505,519-520,551-552
+cmd/lk/simulate_include.go
+  h_a827ab16c3c189 28,31,34-35,40,44,48,51,56,60,62,68,71,95,105-106,113,121-124,126,132,139
+cmd/lk/simulate_include_test.go
+  h_a827ab16c3c189 40-41,50,54,56,63,65,68-69,77-78,83,97-99,101,104,107-108,110,116-117,119,125,127,130,133-134,136
+cmd/lk/simulate_scenario_ids_test.go
+  h_a827ab16c3c189 205-206,218,227,230,240,243-245,249,299,303,311,317,330,342,371,378-380,396,398,411
+go.mod
+  h_a827ab16c3c189 24
+go.sum
+  h_a827ab16c3c189 369-370
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9b64687c86cbe85a98fd47d218f892f2da349e6",
+  "prompts": {},
+  "humans": {
+    "h_a827ab16c3c189": {
+      "author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
