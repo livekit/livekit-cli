@@ -202,8 +202,8 @@ func TestScenarioGroupToYAMLFillsIDs(t *testing.T) {
 }
 
 func TestLoadScenarioGroupSimulatorFlow(t *testing.T) {
-	const steps = `
-steps:
+	const nodes = `
+nodes:
   menu:
     say: Press 1 for sales.
     speaker: MACHINE
@@ -215,8 +215,7 @@ steps:
       to: livekit/hangup
   sales:
     instructions: You are a sales rep.
-    voicemail:
-      beep: false
+    expectation: Asks about the order.
 `
 	cases := []struct {
 		name    string
@@ -225,10 +224,10 @@ steps:
 		wantErr []string
 	}{
 		{
-			name: "steps and start",
+			name: "nodes and start",
 			yaml: `
 id: g1
-name: n` + steps + `
+name: n` + nodes + `
 scenarios:
   - id: s1
     label: call
@@ -238,16 +237,16 @@ scenarios:
 			want: &livekit.ScenarioGroup{
 				Id:   "g1",
 				Name: "n",
-				Steps: map[string]*livekit.SimulatorStep{
+				Nodes: map[string]*livekit.SimulatorNode{
 					"menu": {
 						Say:     "Press 1 for sales.",
-						Speaker: livekit.SimulatorStep_MACHINE,
-						Routes:  []*livekit.SimulatorStep_Route{{Match: "1", To: "sales"}},
-						Timeout: &livekit.SimulatorStep_Timeout{After: durationpb.New(8 * time.Second), To: "livekit/hangup"},
+						Speaker: livekit.SimulatorNode_MACHINE,
+						Routes:  []*livekit.SimulatorNode_Route{{Match: "1", To: "sales"}},
+						Timeout: &livekit.SimulatorNode_Timeout{After: durationpb.New(8 * time.Second), To: "livekit/hangup"},
 					},
 					"sales": {
 						Instructions: "You are a sales rep.",
-						Voicemail:    &livekit.SimulatorStep_Voicemail{Beep: proto.Bool(false)},
+						Expectation:  "Asks about the order.",
 					},
 				},
 				Scenarios: []*livekit.Scenario{{
@@ -297,11 +296,11 @@ scenarios:
 			},
 		},
 		{
-			name: "unknown step key",
+			name: "unknown node key",
 			yaml: `
 id: g1
 name: n
-steps:
+nodes:
   menu:
     sya: typo
 scenarios:
@@ -309,13 +308,13 @@ scenarios:
     label: call
     start: menu
 `,
-			wantErr: []string{`step "menu"`, "sya"},
+			wantErr: []string{`node "menu"`, "sya"},
 		},
 		{
 			name: "start and instructions",
 			yaml: `
 id: g1
-name: n` + steps + `
+name: n` + nodes + `
 scenarios:
   - id: s1
     label: call
@@ -328,7 +327,7 @@ scenarios:
 			name: "unknown start",
 			yaml: `
 id: g1
-name: n` + steps + `
+name: n` + nodes + `
 scenarios:
   - id: s1
     label: call
@@ -340,7 +339,7 @@ scenarios:
 			name: "max_duration without unit",
 			yaml: `
 id: g1
-name: n` + steps + `
+name: n` + nodes + `
 scenarios:
   - id: s1
     label: call
@@ -369,16 +368,16 @@ func TestScenarioGroupToYAMLRoundTripsFlow(t *testing.T) {
 	path := writeScenariosFile(t, `
 id: g1
 name: n
-steps:
+nodes:
   menu:
     say: Press 1.
     speaker: MACHINE
     max_visits:
       count: 2
       to: livekit/hangup
-    voicemail:
-      beep: false
-      silence_timeout: 1.5s
+    timeout:
+      after: 1.5s
+      to: livekit/voicemail
 scenarios:
   - id: s1
     label: call
@@ -394,9 +393,9 @@ scenarios:
 	require.True(t, proto.Equal(group, again), "got %v\nyaml:\n%s", again, out)
 }
 
-func TestInsertScenarioIDsKeepsSteps(t *testing.T) {
+func TestInsertScenarioIDsKeepsNodes(t *testing.T) {
 	in := `name: n
-steps:
+nodes:
   menu:
     say: hi # greet
 scenarios:
@@ -409,7 +408,7 @@ scenarios:
 	ids := regexp.MustCompile(`(SCNG?)_\w+`)
 	want := `id: SCNG_x
 name: n
-steps:
+nodes:
   menu:
     say: hi # greet
 scenarios:

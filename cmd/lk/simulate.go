@@ -354,15 +354,15 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 	if f.ID == "" {
 		f.ID = utils.NewGuid(utils.ScenarioGroupPrefix)
 	}
-	for name, step := range group.GetSteps() {
-		v, err := protoToYAMLValue(step)
+	for name, node := range group.GetNodes() {
+		v, err := protoToYAMLValue(node)
 		if err != nil {
-			return nil, fmt.Errorf("failed to encode step %q: %w", name, err)
+			return nil, fmt.Errorf("failed to encode node %q: %w", name, err)
 		}
-		if f.Steps == nil {
-			f.Steps = map[string]any{}
+		if f.Nodes == nil {
+			f.Nodes = map[string]any{}
 		}
-		f.Steps[name] = v
+		f.Nodes[name] = v
 	}
 	for _, s := range group.GetScenarios() {
 		ys := yamlScenario{
@@ -396,12 +396,12 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 }
 
 // scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
-// and JSON-encoded into the proto's string field. Each `steps` entry is a
-// SimulatorStep in protojson form.
+// and JSON-encoded into the proto's string field. Each `nodes` entry is a
+// SimulatorNode in protojson form.
 type scenariosFile struct {
 	ID        string         `yaml:"id"`
 	Name      string         `yaml:"name"`
-	Steps     map[string]any `yaml:"steps,omitempty"`
+	Nodes     map[string]any `yaml:"nodes,omitempty"`
 	Scenarios []yamlScenario `yaml:"scenarios"`
 }
 
@@ -478,20 +478,20 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		return nil, fmt.Errorf("scenarios file has no id")
 	}
 	group := &livekit.ScenarioGroup{Id: f.ID, Name: f.Name}
-	names := make([]string, 0, len(f.Steps))
-	for name := range f.Steps {
+	names := make([]string, 0, len(f.Nodes))
+	for name := range f.Nodes {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		step := &livekit.SimulatorStep{}
-		if err := yamlValueToProto(f.Steps[name], step); err != nil {
-			return nil, fmt.Errorf("step %q: %w", name, err)
+		node := &livekit.SimulatorNode{}
+		if err := yamlValueToProto(f.Nodes[name], node); err != nil {
+			return nil, fmt.Errorf("node %q: %w", name, err)
 		}
-		if group.Steps == nil {
-			group.Steps = map[string]*livekit.SimulatorStep{}
+		if group.Nodes == nil {
+			group.Nodes = map[string]*livekit.SimulatorNode{}
 		}
-		group.Steps[name] = step
+		group.Nodes[name] = node
 	}
 	seen := map[string]bool{}
 	for _, s := range f.Scenarios {
@@ -505,8 +505,8 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		if (s.Start == "") == (s.Instructions == "") {
 			return nil, fmt.Errorf("scenario %q: set exactly one of `start` and `instructions`", s.Label)
 		}
-		if s.Start != "" && group.Steps[s.Start] == nil && !builtinSimulatorSteps[s.Start] {
-			return nil, fmt.Errorf("scenario %q: start %q is not a step", s.Label, s.Start)
+		if s.Start != "" && group.Nodes[s.Start] == nil && !builtinSimulatorNodes[s.Start] {
+			return nil, fmt.Errorf("scenario %q: start %q is not a node", s.Label, s.Start)
 		}
 		var maxDuration *durationpb.Duration
 		if s.MaxDuration != "" {
@@ -537,8 +537,8 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	return group, nil
 }
 
-// builtinSimulatorSteps are the steps the server provides; a scenario may start at one.
-var builtinSimulatorSteps = map[string]bool{
+// builtinSimulatorNodes are the nodes the server provides; a scenario may start at one.
+var builtinSimulatorNodes = map[string]bool{
 	"livekit/hangup":      true,
 	"livekit/voicemail":   true,
 	"livekit/unavailable": true,
