@@ -32,16 +32,22 @@ from livekit.agents.tts._provider_format import TranscriptMarkupStripper
 DOCS_MCP_URL = "https://docs.livekit.io/mcp"
 
 STT_MODEL = "assemblyai/universal-3-6-pro"
-LLM_MODEL = "openai/gpt-5.4-mini"
 TTS_MODEL = "cartesia/sonic-3"
+
+# Settings to compare in simulations (see simulations/README.md). The defaults
+# are what lk ships.
+LLM_MODEL = os.environ.get("LK_ASSISTANT_LLM", "openai/gpt-5.4-mini")
+# Whether the instructions include PRIMER, so basic questions get an answer
+# without a docs lookup.
+USE_PRIMER = os.environ.get("LK_ASSISTANT_PRIMER", "1") == "1"
+# When to say a short line during a docs lookup: "always", "slow" (only when
+# the lookup takes a while, at most once per user turn), or "off".
+FILLER = os.environ.get("LK_ASSISTANT_FILLER", "slow")
 
 INTRO = "Hi, I'm LK, your LiveKit assistant."
 
 # The greeting for a folder lk doesn't recognize as a project.
-GREETING = (
-    f"{INTRO} I can help you build your first voice agent: create it from a template, talk to it, "
-    "and set up your coding agent for LiveKit. What would you like to build?"
-)
+GREETING = f"{INTRO} Want to build your first voice agent, or ask me about LiveKit?"
 
 
 def load_folder() -> dict:
@@ -62,36 +68,19 @@ def load_coding_agents() -> dict:
 
 
 def greeting(folder: dict, coding_agents: dict) -> str:
-    """A short, fixed greeting for what's in the user's folder. It doesn't list the
-    details; the agent knows them from its instructions. It's not generated, so it
-    starts right away."""
+    """A short, fixed greeting for what's in the user's folder. It offers what
+    fits without describing the folder; the agent knows the details from its
+    instructions. It's not generated, so it starts right away."""
     kind = folder.get("kind")
-    # Offer to set up coding agents only when it isn't done already.
-    ready = coding_agents.get("ready")
+    # One sentence that offers what fits the folder, without describing it.
     if kind == "empty":
-        return (
-            f"{INTRO} I can help you build your first voice agent. This folder is empty, so I can "
-            "create one here and you can talk to it in about a minute. Or we can talk about what "
-            "you want to build first. What would you like to do?"
-        )
+        return f"{INTRO} Want to get a voice agent up and running here, or ask me about LiveKit?"
     if kind == "livekit":
-        if ready:
-            return (
-                f"{INTRO} This folder already has a LiveKit project, and your coding agent is set up "
-                "for it, so that's the best place to work on it. I can answer quick questions from "
-                "the docs, or create a new agent in a new folder. What would you like to do?"
-            )
-        return (
-            f"{INTRO} This folder already has a LiveKit project. The most useful thing I can do "
-            "here is set up your coding agent for LiveKit, so it has current docs and skills. I can "
-            "also answer quick questions from the docs. What would you like to do?"
-        )
+        if coding_agents.get("ready"):
+            return f"{INTRO} Ask me anything about LiveKit, or we can start a new agent in another folder."
+        return f"{INTRO} Want me to set up your coding agent for LiveKit, or do you have a question?"
     if kind == "app":
-        return (
-            f"{INTRO} I see a project here that doesn't use LiveKit yet. I can create a voice agent "
-            "for it and give your coding agent the steps to connect the two. What would you like to "
-            "do?"
-        )
+        return f"{INTRO} Want to add a voice agent to this project, or ask me about LiveKit first?"
     return GREETING
 
 
@@ -139,6 +128,9 @@ LOOKUP_FILLERS = (
     "Let me look that up in the docs.",
 )
 
+# With FILLER "slow", how long a lookup runs before the agent says a line.
+SLOW_LOOKUP_SECONDS = 2.5
+
 # Docs MCP results can be whole pages. Cap them to bound the LLM context, but
 # high enough that a full docs page fits. The longest pages, such as
 # /agents/build/turns/, are over 37,000 characters.
@@ -149,10 +141,23 @@ You help developers get started with LiveKit: build their first voice agent, tal
 their coding agent for LiveKit, and understand the basics they need. You are yourself a LiveKit
 voice agent, built with the same Agents SDK and LiveKit Inference the user can build with.
 
+Be generous with what you know. Your job is to help the user build a voice agent that works well,
+so share the knowledge that makes the difference: why LiveKit works the way it does, the tradeoff
+behind a choice, and what to watch for, such as latency, turn-taking, interruptions, and testing.
+Give context where it helps the user understand, not only the answer to the literal question.
+Generous means the context that matters for this user, not every detail: for someone who isn't
+technical, skip implementation details unless they ask.
+Explain concretely. Walk through what happens, step by step, in plain words, such as what happens
+when a user starts talking to an agent, rather than abstractions such as "realtime bus" or
+"orchestration". For a big question with several parts, such as how LiveKit fits together, call
+show_answer with the parts, and speak a short version of the most important idea.
+
 Getting started is your job. Ongoing work on a project belongs in the user's coding agent, which
 can read and change their code. You can't see or change the user's files, so when the user asks you
 to fix, change, or review their code, don't suggest a fix yourself: call hand_off_task with a prompt
-for their coding agent.
+for their coding agent. Since you haven't seen their code, the prompt describes the problem, how
+to reproduce it, and how to check that it's fixed, plus anything relevant from the docs. It doesn't
+prescribe a fix; the coding agent finds the cause.
 
 Match the user's level. If they seem new, describe outcomes before LiveKit terms, and explain a
 term in a few words the first time you use it. If they seem experienced, be terse and precise, and
@@ -160,8 +165,11 @@ skip the basics. If they ask you to be briefer or to go deeper, do that for the 
 conversation. Be plain and calm: no slang, no exclamations, no flattery.
 
 Don't repeat yourself. Don't ask a question the user has already answered, and don't ask twice
-before doing something. When the user's request is clear, do it; don't offer choices they didn't
-ask for. Don't restate what's already on screen.
+before doing something. Don't announce that you're looking something up; just look it up. Don't
+end replies with an offer such as "If you want, I can" or "I can sketch that next"; the user
+knows they can ask. When the next step is clear, ask in a few
+words, such as "Want to try it?", or just do it. When the user's request is clear, do it; don't
+offer choices they didn't ask for. Don't restate what's already on screen.
 
 Say only what's true. Tell the user something worked only after a tool result says so. Name
 commands exactly as the tool result or the card on screen shows them. Don't say you can't do
@@ -170,8 +178,16 @@ something and then do it. Don't promise anything you can't show, such as a diagr
 When you talk about the STT-LLM-TTS pipeline, say once that it's a cascaded pipeline, three models
 in sequence: speech-to-text, an LLM, and text-to-speech. After that, call it the cascaded pipeline.
 
+Speak in the style of Simplified Technical English (ASD-STE100): short sentences, at most about 20
+words, with one idea each. Use active voice, simple tenses, and common words with one clear
+meaning. Don't use idioms or figures of speech. Use the exact technical term when there is one,
+such as "dispatch" or "turn detector", and explain it in a few words the first time. Deviate from
+this style only when it would make a concept less accurate.
+
 You speak out loud, so:
-- Keep replies short: one to three sentences. Offer to go deeper instead of covering everything.
+- Fit the length to the moment. When you confirm an action or answer a yes-or-no question, one
+  sentence is enough. When you explain something, take two to five sentences: the answer, why,
+  and the one thing to watch for. Don't cover everything at once; the user can ask for more.
 - Use plain sentences. No markdown, lists, emojis, or symbols, with one exception: put a short
   command, package, file, function, or class name in backticks, such as `lk agent dev` or
   `AgentSession`. On screen it shows in monospace. The backticks aren't spoken.
@@ -197,18 +213,24 @@ returned them, and never read a URL aloud.
 How you help someone get started:
 - Call get_project_info when you need to know about their LiveKit Cloud project or their current
   directory.
-- For a new voice agent, start it from a template with create_project. If the user hasn't said
-  which template, suggest agent-starter-python or agent-starter-node, or call list_templates if
-  they want something else. If the current directory is empty, create it right there. New
-  projects already include LiveKit's skills and Docs MCP server for the user's coding agents.
+- For a new voice agent, start it from a template with create_project. Before you create it, ask
+  one short question: Python or Node.js, unless the user already said. Their answer is their
+  go-ahead, so then call create_project with confirmed=true, without asking again. Use
+  agent-starter-python or agent-starter-node, or call list_templates if they want something else.
+  If the current directory is empty, create it right there. New projects already include
+  LiveKit's skills and Docs MCP server for the user's coding agents.
 - After you create a project, offer to try it right here with try_project, so the user can talk
   to the agent they just made. While their agent runs, the user talks to it, not to you, and you
   hear nothing. You are never their agent: don't speak as it, and don't say it's running until lk
   tells you. You can't stop it; the user presses B.
-- When they want to change their new agent, such as its instructions, voice, or tools, call
-  hand_off_task with a prompt for their coding agent: what to change, plus what you learned from
-  the docs, such as package names, APIs, and CLI commands. Write the prompt itself, addressed to
-  the coding agent, not a prompt about writing a prompt.
+- When they want to change their new agent, such as its instructions, voice, or tools, act as
+  the expert. Look up how in the docs, such as which TTS voices LiveKit Inference offers. If the
+  choice is the user's, such as which voice, give them one or two concrete options and ask in a
+  few words. Then call hand_off_task right away, without asking whether to. Write the prompt like
+  a senior engineer's ticket, addressed to the coding agent: the exact change, with the API,
+  model, and values from the docs, and how to check that it works. Pick one option rather than
+  listing alternatives. Keep it short. No hedges such as "if the project uses", and not a prompt
+  about writing a prompt.
 - To add LiveKit to an app they already have, explain the three parts in plain words: the app
   gets a token from a small server endpoint, joins a LiveKit room, and the agent joins that room
   through dispatch. Then create the agent with create_project in a new folder, and give the
@@ -231,8 +253,9 @@ sentence that you can't do it here, then give them the next best thing:
 For something unrelated to LiveKit, say it's outside what you help with, and offer what you can.
 
 create_project, set_up_coding_agent, and try_project show the command on screen and wait for the
-user to confirm. If the user's last message already agreed to exactly that action, pass
-confirmed=true so it runs right away, and don't ask again. Otherwise, the tool returns a
+user to confirm. If the user's last message asked for that action or agreed to it, such as "set
+up a voice agent here" in an empty folder, or "yes" to your offer, pass confirmed=true so it runs
+right away, and don't ask again. Otherwise, the tool returns a
 confirmation ID: ask the user in one short sentence whether to go ahead. They can answer by voice
 or on screen. If they agree by voice, call confirm_action with the ID and approved=true; if they
 decline, approved=false. Never confirm anything the user hasn't agreed to.
@@ -240,11 +263,80 @@ decline, approved=false. Never confirm anything the user hasn't agreed to.
 If the user asks what you cost: you run on LiveKit Inference through their LiveKit Cloud project,
 so your usage counts toward their plan.
 
-When the user says they're done or says goodbye, call end_call.
+When the user wants to stop, such as "exit", "close", "quit", "bye", or "that's all", call
+end_call. Saying goodbye without calling end_call leaves the window open.
 
 Prefer the LiveKit CLI for project tasks. "lk agent init" creates an agent from a starter
 template, "lk agent console" talks to it in the terminal, "lk agent dev" runs it with hot reload,
 and "lk agent create" deploys it to LiveKit Cloud."""
+
+# What LK knows without a lookup, checked against the docs (the Docs overview,
+# Pipeline types, Agent dispatch, Turns overview, Models overview, Voice AI
+# quickstart, Telephony introduction, Tokens & grants, and Testing pages).
+PRIMER = """What you know about LiveKit, checked against the docs:
+- LiveKit is an open-source platform for building voice, video, and physical AI agents, on
+  realtime WebRTC infrastructure. LiveKit Cloud is the hosted offering. It includes agent
+  deployment, model inference, and realtime media transport.
+- Every client, agent, and phone call joins a room as a participant, and publishes or subscribes
+  to audio, video, and data tracks. Frontends connect with an access token: a JWT, signed with the
+  project's API secret, that names the participant, the room, and what it may do.
+- An agent server runs the agent code. Dispatch assigns an agent to a room. Explicit dispatch, by
+  the agent's name, is recommended for most apps. AgentSession runs the conversation, and the Agent
+  holds the instructions and tools.
+- What happens in a conversation: the user's app joins a room with a token, and LiveKit
+  dispatches the agent to the same room. The agent's AgentSession receives the user's audio. STT
+  turns it into text, and the turn detector decides when the user has finished. The LLM writes a
+  reply and can call tools. TTS speaks the reply into the room. The user can interrupt at any time,
+  and the agent stops and listens. The agent code is mostly instructions and tools; LiveKit handles
+  the realtime audio.
+- The STT-LLM-TTS pipeline, also called the cascaded pipeline, is the right default for most
+  production agents: each model can be swapped, every stage can be inspected, tool calling is
+  mature, and say() speaks exact text. It has more end-to-end latency than a realtime model. A
+  realtime model is one speech-to-speech model: fastest, and it hears tone of voice, but its tool
+  calling is less mature and its transcripts are delayed. A half-cascade pairs a realtime model for
+  input with a separate TTS for output.
+- Turn detection decides when the user has finished speaking. LiveKit's turn detector model is the
+  default and is recommended for most agents. It predicts the end of a turn from the meaning and
+  sound of speech, on top of VAD. Endpointing delay and adaptive interruption handling tune it.
+- LiveKit Inference gives agents models from OpenAI, Google, AssemblyAI, Deepgram, Cartesia, and
+  others through LiveKit Cloud, with no extra API keys or plugins, and zero data retention by
+  default. Plugins connect directly to more providers, with the user's own API keys.
+- Agents can take and make phone calls. LiveKit Phone Numbers sells US local and toll-free numbers
+  in LiveKit Cloud, or the user can connect their own SIP provider with trunks. Dispatch rules route
+  inbound calls to rooms.
+- The starter templates, agent-starter-python and agent-starter-node, include a working agent,
+  tests, and an AGENTS.md for coding agents. Python needs 3.10 or later and uv. Node.js needs 20 or
+  later and pnpm. "lk agent init" creates a project, "lk agent console" talks to it in the terminal,
+  "lk agent dev" runs it with hot reload, and "lk agent create" deploys it to LiveKit Cloud, which
+  scales it automatically.
+- Agent Builder builds agents in the browser without code, for prototyping.
+- To test agents: Agent Console to try one yourself, unit tests on pytest or Vitest, and Agent
+  Simulations, where an LLM plays the user and a judge grades whole conversations, in text or audio
+  mode.
+
+Answer basic questions about these from what you know, without a lookup, the way an experienced
+LiveKit engineer would: give a clear recommendation and the reason for it, and mention the one
+detail that matters most. Use LiveKit's names for things, such as LiveKit's turn detector model,
+LiveKit Phone Numbers, LiveKit Inference, or Agent Simulations, so the user knows what to look
+for, and explain each in a few words. Look up anything more specific in the docs: APIs, parameters, model
+names, versions, prices, limits, and step-by-step setup."""
+
+# With the primer, basic questions skip the lookup.
+DOCS_RULE = """For every question about
+LiveKit features, APIs, SDKs, models, plugins, CLI commands, pricing, or configuration, call
+docs_search first, then answer only from what the docs say. Do this even when you think you know
+the answer."""
+PRIMER_DOCS_RULE = """For basic questions that what
+you know about LiveKit covers, answer directly. For anything more specific, such as APIs,
+parameters, model names, versions, prices, limits, or setup steps, call docs_search first, then
+answer only from what the docs say."""
+
+
+def build_instructions() -> str:
+    if not USE_PRIMER:
+        return INSTRUCTIONS
+    return INSTRUCTIONS.replace(DOCS_RULE, PRIMER_DOCS_RULE) + "\n\n" + PRIMER
+
 
 
 async def truncate_result(ctx: mcp.MCPToolResultContext) -> str:
@@ -260,19 +352,21 @@ async def truncate_result(ctx: mcp.MCPToolResultContext) -> str:
 
 
 class Assistant(Agent):
-    def __init__(self) -> None:
-        instructions = INSTRUCTIONS
+    def __init__(self, folder: dict | None = None, coding_agents: dict | None = None) -> None:
+        instructions = build_instructions()
+        folder = load_folder() if folder is None else folder
+        coding_agents = load_coding_agents() if coding_agents is None else coding_agents
         if project := os.environ.get("LK_ASSISTANT_PROJECT"):
             instructions += f"\n\nThe user's current directory is {project}."
-        if folder := load_folder():
+        if folder:
             instructions += (
                 " Before the session started, lk looked at the project files in it and its "
-                f"subfolders, and found this: {json.dumps(folder)}. Your greeting only said whether "
-                "it uses LiveKit. Use these details when they help, but don't list them unless the "
+                f"subfolders, and found this: {json.dumps(folder)}. Your greeting only offered what fits, "
+                "without describing the folder. Use these details when they help, but don't list them unless the "
                 "user asks. Versions are as the project files give them. Call get_project_info if "
                 "you need more, or if the folder may have changed."
             )
-        if coding_agents := load_coding_agents():
+        if coding_agents:
             instructions += (
                 "\n\nWhat LiveKit has already set up for the user's coding agents (LiveKit skills and "
                 f"the Docs MCP server, in this project and globally): {json.dumps(coding_agents)}. "
@@ -313,7 +407,10 @@ class Assistant(Agent):
             code: The complete code or command, exactly as the user should use it.
         """
         # `lk assistant` reads this call from the session events and shows it.
-        return "The code is on the user's screen. They can copy it with the Copy button."
+        return (
+            "The code is on the user's screen, with a Copy button. If you haven't said what it is, "
+            "say so in one sentence. Don't repeat what you already said."
+        )
 
     @function_tool()
     async def show_answer(
@@ -339,7 +436,10 @@ class Assistant(Agent):
         # `lk assistant` reads this call from the session events and shows it.
         if not source_url.startswith(DOCS_URL):
             return f"Not shown: the source must be a docs page under {DOCS_URL}, from your docs searches."
-        return "The answer is on the user's screen. Say one sentence that sums it up."
+        return (
+            "The answer is on the user's screen. Unless you already said it in this turn, say one "
+            "sentence that sums it up. Don't leave the user without a spoken answer."
+        )
 
     @function_tool()
     async def show_link(self, context: RunContext, title: str, url: str) -> str:
@@ -354,7 +454,7 @@ class Assistant(Agent):
         # `lk assistant` reads this call from the session events and shows it.
         if not url.startswith(DOCS_URL):
             return f"Not shown: links must be docs pages under {DOCS_URL}, from your docs searches."
-        return "The link is on the user's screen."
+        return "The link is on the user's screen. Don't repeat what you already said."
 
     @function_tool()
     async def copy_to_clipboard(self, context: RunContext, title: str = "") -> str:
@@ -377,7 +477,11 @@ class Assistant(Agent):
                 commands.
         """
         # `lk assistant` reads this call from the session events and shows it.
-        return "The prompt is on the user's screen. They can copy it into their coding agent."
+        return (
+            "The prompt is on the user's screen. In one sentence, tell the user what the change is, "
+            "naming any choice you made, such as the voice you picked, and that they can copy it "
+            "into their coding agent. You can't send it yourself, so don't say you handed it over."
+        )
 
     @function_tool()
     async def get_project_info(self, context: RunContext) -> str:
@@ -416,9 +520,9 @@ class Assistant(Agent):
                 with in_current_directory.
             in_current_directory: Create the project in the current directory itself, named after
                 it, instead of in a new folder. Only works if the directory is empty.
-            confirmed: True only if the user's last message already agreed to exactly this,
-                such as "yes, create it here" after you offered it. Then it runs right away,
-                without asking again. Otherwise leave it false, and ask.
+            confirmed: True if the user's last message asked for this or agreed to it, such
+                as "set up a voice agent here" or "yes" after you offered it. Then it runs
+                right away, without asking again. Otherwise leave it false, and ask.
         """
         return await run_lk_tool(
             "create_project",
@@ -447,9 +551,9 @@ class Assistant(Agent):
         Args:
             all_projects: Install for all of the user's projects instead of only the current one.
             reinstall: Install even though they're already set up. Only if the user asks for it.
-            confirmed: True only if the user's last message already agreed to exactly this,
-                such as "yes, create it here" after you offered it. Then it runs right away,
-                without asking again. Otherwise leave it false, and ask.
+            confirmed: True if the user's last message asked for this or agreed to it, such
+                as "set up a voice agent here" or "yes" after you offered it. Then it runs
+                right away, without asking again. Otherwise leave it false, and ask.
         """
         return await run_lk_tool(
             "set_up_coding_agent",
@@ -464,9 +568,9 @@ class Assistant(Agent):
         other agent, it tells you how the user can run it in their own terminal.
 
         Args:
-            confirmed: True only if the user's last message already agreed to exactly this,
-                such as "yes, create it here" after you offered it. Then it runs right away,
-                without asking again. Otherwise leave it false, and ask.
+            confirmed: True if the user's last message asked for this or agreed to it, such
+                as "set up a voice agent here" or "yes" after you offered it. Then it runs
+                right away, without asking again. Otherwise leave it false, and ask.
         """
         return await run_lk_tool("try_project", {"confirmed": confirmed})
 
@@ -669,9 +773,21 @@ async def connect_lk(session: AgentSession) -> None:
 
 
 def speak_during_lookups(session: AgentSession) -> None:
-    """Says a short line when a docs lookup starts, so the user doesn't sit in
-    silence. Skipped if the agent already spoke this turn."""
+    """Says a short line during a docs lookup, so the user doesn't sit in
+    silence. Skipped if the agent already spoke this turn. With FILLER "slow",
+    it speaks only if a lookup is still running after SLOW_LOOKUP_SECONDS, so
+    the line never comes after the lookup, right before the answer."""
+    if FILLER == "off":
+        return
     spoke = False
+    running: set[str] = set()  # call IDs of docs lookups in progress
+    pending: asyncio.Task | None = None
+
+    def cancel() -> None:
+        nonlocal pending
+        if pending is not None:
+            pending.cancel()
+            pending = None
 
     @session.on("conversation_item_added")
     def _on_item(ev) -> None:
@@ -684,21 +800,50 @@ def speak_during_lookups(session: AgentSession) -> None:
         nonlocal spoke
         if ev.new_state == "speaking":
             spoke = True
+            cancel()
+
+    async def say_if_slow() -> None:
+        await asyncio.sleep(SLOW_LOOKUP_SECONDS)
+        if running and not spoke:
+            say()
+
+    def say() -> None:
+        nonlocal spoke
+        spoke = True
+        session.say(random.choice(LOOKUP_FILLERS), add_to_chat_ctx=False)
 
     @session.on("tool_execution_updated")
     def _on_tool(ev) -> None:
-        nonlocal spoke
+        nonlocal pending
         update = ev.update
-        if update.type != "tool_call_started" or update.function_call.name not in DOCS_TOOLS or spoke:
+        if update.type == "tool_call_ended":
+            running.discard(update.call_id)
+            if not running:
+                cancel()
             return
-        spoke = True
-        session.say(random.choice(LOOKUP_FILLERS), add_to_chat_ctx=False)
+        if update.type != "tool_call_started" or update.function_call.name not in DOCS_TOOLS:
+            return
+        running.add(update.function_call.call_id)
+        if spoke:
+            return
+        if FILLER == "slow":
+            if pending is None or pending.done():
+                pending = asyncio.create_task(say_if_slow())
+            return
+        say()
 
 
 server = AgentServer()
 
 
-@server.rtc_session(agent_name="lk-assistant")
+async def simulation_end(ctx) -> None:
+    """Checks the tools a simulation called (see lk_simulation.py)."""
+    from lk_simulation import check_simulation
+
+    check_simulation(ctx)
+
+
+@server.rtc_session(agent_name="lk-assistant", on_simulation_end=simulation_end)
 async def assistant(ctx: agents.JobContext):
     # STT from the Voice AI quickstart
     # (docs.livekit.io/agents/start/voice-ai-quickstart), with two changes:
@@ -733,12 +878,21 @@ async def assistant(ctx: agents.JobContext):
         ],
     )
 
+    folder, coding_agents = load_folder(), load_coding_agents()
+    if sim := ctx.simulation_context():
+        # Agent Simulations (see simulations/README.md): the scenario sets the
+        # folder, and lk's tools are mocked. The simulation module isn't
+        # embedded in lk.
+        from lk_simulation import setup_simulation
+
+        folder, coding_agents = setup_simulation(sim, session, Assistant)
+
     speak_during_lookups(session)
-    await session.start(room=ctx.room, agent=Assistant())
+    await session.start(room=ctx.room, agent=Assistant(folder, coding_agents))
     await connect_lk(session)
 
     # A fixed greeting for what is in the folder. It starts without waiting on the LLM.
-    session.say(greeting(load_folder(), load_coding_agents()))
+    session.say(greeting(folder, coding_agents))
 
 
 if __name__ == "__main__":

@@ -90,6 +90,8 @@ void lk_overlay_run(const char *html, int windowed, int inspectable) {
 			gWindow.titlebarAppearsTransparent = YES;
 			gWindow.titleVisibility = NSWindowTitleHidden;
 			gWindow.level = NSFloatingWindowLevel;
+			// The green button takes the window to its own full-screen Space.
+			gWindow.collectionBehavior = NSWindowCollectionBehaviorFullScreenPrimary;
 		} else {
 			gWindow.hasShadow = NO;
 			// Above the menu bar and Dock.

@@ -264,7 +264,7 @@ func (s *assistantSession) proposeCommand(requestID, detail, runLabel string, ar
 	}
 	s.replyTool(requestID, fmt.Sprintf(
 		"Waiting for the user to confirm. Confirmation ID: %s. Command: %s. %s "+
-			"Ask the user in one short sentence whether to go ahead. They can answer by voice or "+
+			"The command is on screen, so don't say it. Ask the user in a few words whether to go ahead. They can answer by voice or "+
 			"on screen. If they agree by voice, call confirm_action with this ID and approved=true; "+
 			"if they decline, approved=false. If they answer on screen, you'll be told the result.",
 		id, command, detail), nil)

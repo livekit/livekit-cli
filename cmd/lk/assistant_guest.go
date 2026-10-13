@@ -105,7 +105,7 @@ func (s *assistantSession) proposeTryProject(requestID string, confirmed bool) {
 	}
 	s.replyTool(requestID, fmt.Sprintf(
 		"Waiting for the user to confirm. Confirmation ID: %s. This runs their agent, %s, here so they can talk to it. "+
-			"Ask the user in one short sentence whether to start it. They can answer by voice or on screen. "+
+			"Ask the user in a few words whether to start it. They can answer by voice or on screen. "+
 			"If they agree by voice, call confirm_action with this ID and approved=true.", id, name), nil)
 }
 

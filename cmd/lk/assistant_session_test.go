@@ -172,3 +172,17 @@ func TestIsAuthError(t *testing.T) {
 	// A timestamp that happens to contain 401 isn't an auth error.
 	require.False(t, isAuthError("type='tts_error' timestamp=1791565401.871234 label='livekit.agents.inference.tts.TTS' error=APIConnectionError('connection failed') recoverable=True"))
 }
+
+func TestIsExitCommand(t *testing.T) {
+	for _, text := range []string{"Exit.", "close", "Bye!", "That's all."} {
+		require.True(t, isExitCommand(text), text)
+	}
+	for _, text := range []string{"How do I exit the console?", "Close the loop on dispatch", ""} {
+		require.False(t, isExitCommand(text), text)
+	}
+}
+
+func TestDocsPageURL(t *testing.T) {
+	require.Equal(t, "https://docs.livekit.io/deploy/agents", docsPageURL("https://docs.livekit.io/deploy/agents.md"))
+	require.Equal(t, "https://docs.livekit.io/deploy/agents/", docsPageURL("https://docs.livekit.io/deploy/agents/"))
+}

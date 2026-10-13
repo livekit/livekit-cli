@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -672,6 +673,30 @@ func (s *assistantSession) userCommitted(text string) {
 	s.userCommits = strings.TrimSpace(s.userCommits + " " + text)
 	s.userFinal = s.userCommits
 	s.out.Send(overlayTranscript{"transcript", s.userTurn, "user", 0, s.userCommits})
+	// The agent usually calls end_call, but it can just say goodbye. A turn
+	// that's only "exit" closes the overlay either way.
+	if isExitCommand(s.userCommits) && !s.guestActive() {
+		s.startEnding()
+	}
+}
+
+// exitCommands are whole turns that mean the user wants to close LK.
+var exitCommands = []string{"exit", "quit", "close", "stop", "bye", "goodbye", "close it", "exit please", "that's all", "i'm done"}
+
+// isExitCommand reports whether a user turn is only a request to close LK.
+func isExitCommand(text string) bool {
+	t := strings.Trim(strings.ToLower(strings.TrimSpace(text)), ".!?, ")
+	return slices.Contains(exitCommands, t)
+}
+
+// startEnding closes the overlay once the agent has said goodbye, or after
+// endingTimeout.
+func (s *assistantSession) startEnding() {
+	if s.ending {
+		return
+	}
+	s.ending = true
+	s.endingSince = time.Now()
 }
 
 // beginAgentSpeech adds an empty agent paragraph so the page shows its cursor
@@ -756,9 +781,8 @@ func (s *assistantSession) toolCall(fc *agent.FunctionCall) {
 	case assistant.EndCallTool:
 		// Only the assistant's end_call closes the overlay; the user's own
 		// agent may have one too.
-		if !s.ending && !s.guestActive() {
-			s.ending = true
-			s.endingSince = time.Now()
+		if !s.guestActive() {
+			s.startEnding()
 		}
 	default:
 		id := fc.GetCallId()
@@ -931,6 +955,12 @@ func (s *assistantSession) copy(id string) {
 // its docs searches, and its show_link tool rejects any other URL.
 const docsURL = "https://docs.livekit.io/"
 
+// docsPageURL returns the page people read for a docs URL. The Docs MCP
+// server returns the Markdown version, which ends in .md.
+func docsPageURL(url string) string {
+	return strings.TrimSuffix(url, ".md")
+}
+
 // showLink shows a show_link call as a card that links to a docs page.
 func (s *assistantSession) showLink(fc *agent.FunctionCall) {
 	if s.shownCalls[fc.GetCallId()] {
@@ -944,6 +974,7 @@ func (s *assistantSession) showLink(fc *agent.FunctionCall) {
 		return
 	}
 	s.shownCalls[fc.GetCallId()] = true
+	args.URL = docsPageURL(args.URL)
 	if args.Title == "" {
 		args.Title = "LiveKit docs"
 	}
@@ -979,6 +1010,7 @@ func (s *assistantSession) showAnswer(fc *agent.FunctionCall) {
 		return
 	}
 	s.shownCalls[fc.GetCallId()] = true
+	args.SourceURL = docsPageURL(args.SourceURL)
 	s.agentTurnForReply()
 	id := fc.GetCallId()
 	s.links[id] = args.SourceURL

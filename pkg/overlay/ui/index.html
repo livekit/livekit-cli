@@ -38,8 +38,9 @@
   }
   button { font: inherit; color: inherit; }
 
-  /* Darkens the native blur. In a plain browser, there is no blur, so use a solid backdrop. */
-  body { background: rgba(0, 0, 0, 0.5); transition: background 250ms; }
+  /* Darkens the native blur, enough that text stays readable over a light desktop. In a plain
+     browser, there is no blur, so use a solid backdrop. */
+  body { background: rgba(0, 0, 0, 0.82); transition: background 250ms; }
   body.standalone { background: radial-gradient(ellipse at center, #111, #000); }
   body.peek { background: rgba(0, 0, 0, 0.1); }
   body.peek #stream, body.peek #chrome { opacity: 0.12; }
@@ -85,8 +86,24 @@
   #guest .hint { color: var(--fg3); }
   #guest .hint:empty { display: none; }
   /* While the user's agent starts, the bar shows it, without Back. */
-  body.guest-starting #guest { display: flex; }
-  body.guest-starting #guest button { display: none; }
+  /* While the user's agent starts, it takes over the screen until it connects. */
+  #takeover {
+    position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    background: rgba(0, 0, 0, 0.72); text-align: center; animation: rise 300ms ease both;
+  }
+  body.takeover #takeover { display: flex; }
+  body.takeover #stream, body.takeover #chrome { opacity: 0.08; }
+  #takeover .kind { color: var(--purple); }
+  #takeover .name { font: 600 40px/1.15 var(--sans); color: var(--fg0); max-width: calc(100vw - 64px); overflow-wrap: anywhere; }
+  #takeover .status { font-size: 16px; color: var(--fg2); }
+  #takeover .elapsed { color: var(--fg4); font-variant-numeric: tabular-nums; }
+  #takeover .bar { position: relative; width: 220px; height: 2px; overflow: hidden; background: rgba(255, 255, 255, 0.08); }
+  #takeover .bar::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; background: var(--purple); animation: sweep 1.2s ease-in-out infinite; }
+  #takeover[data-status="connected"] .bar::after { left: 0; width: 100%; animation: none; background: var(--accent); }
+  #takeover[data-status="connected"] .kind { color: var(--accent); }
+  #takeover[data-status="failed"] .bar::after { left: 0; width: 100%; animation: none; background: var(--remove); }
+  #takeover[data-status="failed"] .kind { color: var(--remove); }
+  @keyframes sweep { from { left: -40%; } to { left: 100%; } }
   #guest button {
     padding: 5px 9px; cursor: pointer; color: var(--fg1);
     background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px;
@@ -268,6 +285,8 @@
     </div>
   </div>
 </div>
+<!-- Outside #chrome, which dims while the takeover shows. -->
+<div id="takeover" aria-live="polite"><div class="kind mono-caps">Starting your agent</div><div class="name"></div><div class="bar"></div><div class="status"></div><div class="elapsed mono-caps"></div></div>
 
 <canvas id="glow"></canvas>
 <canvas id="field"></canvas>
@@ -570,12 +589,36 @@
     what.append(n);
   }
 
-  function setGuestStatus({ status, name }) {
-    body.classList.toggle('guest-starting', status === 'starting');
+  // The takeover covers the screen while the user's agent starts, then
+  // shows that it connected, or failed, before it fades.
+  const takeoverEl = document.getElementById('takeover');
+  let takeoverTimer = 0, takeoverStart = 0;
+  function showTakeover(status, name) {
+    clearInterval(takeoverTimer);
+    clearTimeout(takeoverEl.hide);
+    takeoverEl.dataset.status = status;
+    takeoverEl.querySelector('.name').textContent = name;
+    const kind = { starting: 'Starting your agent', connected: 'Connected', failed: "Your agent didn't start" }[status];
+    const text = {
+      starting: 'Installing and connecting. The first run takes longer.',
+      connected: 'Say hello to start. Starter agents wait for you to speak first.',
+      failed: 'See the terminal for what went wrong.',
+    }[status];
+    takeoverEl.querySelector('.kind').textContent = kind;
+    takeoverEl.querySelector('.status').textContent = text;
+    const elapsed = takeoverEl.querySelector('.elapsed');
+    elapsed.textContent = '';
+    body.classList.add('takeover');
     if (status === 'starting') {
-      guestWhat('Starting', name + '…');
-      guestEl.querySelector('.hint').textContent = '';
+      takeoverStart = Date.now();
+      takeoverTimer = setInterval(() => { elapsed.textContent = `${Math.floor((Date.now() - takeoverStart) / 1000)}s`; }, 250);
+    } else {
+      takeoverEl.hide = setTimeout(() => body.classList.remove('takeover'), status === 'connected' ? 2200 : 3500);
     }
+  }
+
+  function setGuestStatus({ status, name }) {
+    showTakeover(status, name);
   }
 
   // Who agent turns are from: the assistant, or the user's own agent.
@@ -586,8 +629,8 @@
   function setSpeaker({ name, guest }) {
     speaker.name = guest ? name : 'LK';
     speaker.guest = !!guest;
-    body.classList.remove('guest-starting');
     if (guest) {
+      showTakeover('connected', name);
       guestWhat('Talking to', name);
       // The user's agent waits for them to speak first.
       guestEl.querySelector('.hint').textContent = 'Say hello to start';
