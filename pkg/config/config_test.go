@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 )
 
 func TestUserConfigSessionValid(t *testing.T) {
@@ -49,17 +51,40 @@ func TestCLIConfigGetUser(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "usr_1", c.GetUser("usr_1").Id)
+	assert.Equal(t, "usr_1", c.GetUser("usr_1", "").Id)
 	// email match is case-insensitive
-	assert.Equal(t, "usr_1", c.GetUser("alice@livekit.io").Id)
-	assert.Equal(t, "usr_2", c.GetUser("bob@livekit.io").Id)
-	assert.Nil(t, c.GetUser("nobody@livekit.io"))
-	assert.Nil(t, c.GetUser(""))
+	assert.Equal(t, "usr_1", c.GetUser("alice@livekit.io", "").Id)
+	assert.Equal(t, "usr_2", c.GetUser("bob@livekit.io", "").Id)
+	assert.Nil(t, c.GetUser("nobody@livekit.io", ""))
+	assert.Nil(t, c.GetUser("", ""))
 
 	// GetUser returns an aliasing pointer: mutations are visible on the config.
-	c.GetUser("usr_1").Projects = []UserProjectConfig{{ProjectId: "p_abc"}}
+	c.GetUser("usr_1", "").Projects = []UserProjectConfig{{ProjectId: "p_abc"}}
 	assert.Len(t, c.Users[0].Projects, 1)
 	assert.Equal(t, "p_abc", c.Users[0].Projects[0].ProjectId)
+}
+
+func TestCLIConfigGetUserScopedByAPIURL(t *testing.T) {
+	const staging = "https://beta-api.staging.livekit.cloud"
+	c := &CLIConfig{
+		Users: []UserConfig{
+			// legacy entry without api_url: the default Public API
+			{Id: "usr_prod", Email: "alice@livekit.io"},
+			{Id: "usr_stg", Email: "alice@livekit.io", APIURL: staging},
+		},
+	}
+
+	assert.Equal(t, "usr_prod", c.GetUser("alice@livekit.io", "").Id)
+	assert.Equal(t, "usr_prod", c.GetUser("alice@livekit.io", public.DefaultBaseURL).Id)
+	assert.Equal(t, "usr_stg", c.GetUser("alice@livekit.io", staging).Id)
+	// trailing slash and case are ignored
+	assert.Equal(t, "usr_stg", c.GetUser("alice@livekit.io", "HTTPS://beta-api.staging.livekit.cloud/").Id)
+	// ids don't resolve across APIs
+	assert.Nil(t, c.GetUser("usr_prod", staging))
+	assert.Nil(t, c.GetUser("alice@livekit.io", "https://other.example"))
+
+	assert.Len(t, c.UsersForAPIURL(staging), 1)
+	assert.Empty(t, c.UsersForAPIURL("https://other.example"))
 }
 
 func TestUserConfigFindProject(t *testing.T) {
@@ -109,4 +134,21 @@ func TestCLIConfigUpsertUser(t *testing.T) {
 	_, replaced = c.UpsertUser(UserConfig{Id: "usr_2", Email: "bob@livekit.io"})
 	assert.False(t, replaced)
 	assert.Len(t, c.Users, 2)
+
+	// The same person on a different Public API is stored separately.
+	const staging = "https://beta-api.staging.livekit.cloud"
+	_, replaced = c.UpsertUser(UserConfig{Id: "usr_1_new", Email: "alice@livekit.io", SessionToken: "staging", APIURL: staging})
+	assert.False(t, replaced)
+	assert.Len(t, c.Users, 3)
+	assert.Equal(t, "newer", c.Users[0].SessionToken, "production session untouched")
+
+	// Re-auth on that API replaces only its entry; an explicit default URL
+	// matches a legacy entry with no api_url.
+	_, replaced = c.UpsertUser(UserConfig{Id: "usr_1_new", Email: "alice@livekit.io", SessionToken: "staging2", APIURL: staging + "/"})
+	assert.True(t, replaced)
+	_, replaced = c.UpsertUser(UserConfig{Id: "usr_1_new", Email: "alice@livekit.io", SessionToken: "prod2", APIURL: public.DefaultBaseURL})
+	assert.True(t, replaced)
+	assert.Len(t, c.Users, 3)
+	assert.Equal(t, "prod2", c.Users[0].SessionToken)
+	assert.Equal(t, "staging2", c.Users[2].SessionToken)
 }

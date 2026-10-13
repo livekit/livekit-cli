@@ -572,6 +572,7 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Email:         session.User.Email,
 		SessionToken:  session.Session.SessionToken,
 		SessionExpiry: session.Session.Expires,
+		APIURL:        experimentalAPIURL,
 	}
 
 	label := user.Email
@@ -587,7 +588,9 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// Store the session. Re-authenticating as the same person (matched by id or
-	// email) replaces the existing entry wholesale rather than adding a duplicate.
+	// email) against the same Public API replaces the existing entry wholesale
+	// rather than adding a duplicate; the same person on a different API (e.g.
+	// staging vs production) is stored separately.
 	wasFirstUser := len(cliConfig.Users) == 0
 	stored, replaced := cliConfig.UpsertUser(user)
 	if !replaced {

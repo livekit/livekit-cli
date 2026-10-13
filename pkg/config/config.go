@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"gopkg.in/yaml.v3"
 )
@@ -51,6 +52,12 @@ type UserConfig struct {
 	Email         string `yaml:"email"`
 	SessionToken  string `yaml:"session_token"`
 	SessionExpiry int64  `yaml:"session_expiry"`
+	// APIURL is the Public API base URL the session was issued by (the
+	// --experimental-api-url in effect at sign-in). A session is only valid
+	// against that API, so the same person signed in to two environments (e.g.
+	// staging and production) is stored as two entries. Empty means the default
+	// Public API (entries written before this field existed).
+	APIURL string `yaml:"api_url,omitempty"`
 	// Projects caches the projects this user can access, as last fetched from
 	// the Public API (listProjects). Caching lets project resolution avoid a
 	// network round-trip on every command; ProjectsFetchedAt records the Unix
@@ -131,11 +138,27 @@ func (u *UserConfig) SessionValid() bool {
 	return u.SessionExpiry == 0 || time.Now().Unix() < u.SessionExpiry
 }
 
-// GetUser returns the configured user matching idOrEmail (by id, or
-// case-insensitively by email), or nil if none is configured. The returned
-// pointer aliases the slice element, so mutations persist through a subsequent
-// PersistIfNeeded on the same CLIConfig.
-func (c *CLIConfig) GetUser(idOrEmail string) *UserConfig {
+// GetUser returns the configured user signed in to the Public API at apiURL
+// matching idOrEmail (by id, or case-insensitively by email), or nil if none is
+// configured. The returned pointer aliases the slice element, so mutations
+// persist through a subsequent PersistIfNeeded on the same CLIConfig.
+func (c *CLIConfig) GetUser(idOrEmail, apiURL string) *UserConfig {
+	for i := range c.Users {
+		u := &c.Users[i]
+		if !SameAPIURL(u.APIURL, apiURL) {
+			continue
+		}
+		if u.Id == idOrEmail || (u.Email != "" && strings.EqualFold(u.Email, idOrEmail)) {
+			return u
+		}
+	}
+	return nil
+}
+
+// FindUser returns the first configured user matching idOrEmail (by id, or
+// case-insensitively by email) on any Public API, or nil if none matches. Use
+// GetUser to resolve a user for a specific API.
+func (c *CLIConfig) FindUser(idOrEmail string) *UserConfig {
 	for i := range c.Users {
 		u := &c.Users[i]
 		if u.Id == idOrEmail || (u.Email != "" && strings.EqualFold(u.Email, idOrEmail)) {
@@ -145,11 +168,23 @@ func (c *CLIConfig) GetUser(idOrEmail string) *UserConfig {
 	return nil
 }
 
-// UpsertUser stores u in the config. If a user matching the same person — by
-// non-empty Id or (case-insensitively) email — already exists, that entry is
-// replaced outright rather than a duplicate being inserted; otherwise u is
-// appended. It returns the stored user and whether an existing entry was
-// replaced.
+// UsersForAPIURL returns the configured users signed in to the Public API at
+// apiURL. The returned pointers alias the slice elements.
+func (c *CLIConfig) UsersForAPIURL(apiURL string) []*UserConfig {
+	var users []*UserConfig
+	for i := range c.Users {
+		if SameAPIURL(c.Users[i].APIURL, apiURL) {
+			users = append(users, &c.Users[i])
+		}
+	}
+	return users
+}
+
+// UpsertUser stores u in the config. If a user matching the same person on the
+// same Public API — by non-empty Id or (case-insensitively) email, plus APIURL —
+// already exists, that entry is replaced outright rather than a duplicate being
+// inserted; otherwise u is appended. It returns the stored user and whether an
+// existing entry was replaced.
 func (c *CLIConfig) UpsertUser(u UserConfig) (stored *UserConfig, replaced bool) {
 	for i := range c.Users {
 		if sameUser(c.Users[i], u) {
@@ -161,18 +196,37 @@ func (c *CLIConfig) UpsertUser(u UserConfig) (stored *UserConfig, replaced bool)
 	return &c.Users[len(c.Users)-1], false
 }
 
-// sameUser reports whether two entries refer to the same person, matching by
-// non-empty Id or case-insensitive email.
+// sameUser reports whether two entries refer to the same person on the same
+// Public API, matching by non-empty Id or case-insensitive email.
 func sameUser(a, b UserConfig) bool {
+	if !SameAPIURL(a.APIURL, b.APIURL) {
+		return false
+	}
 	if a.Id != "" && a.Id == b.Id {
 		return true
 	}
 	return a.Email != "" && strings.EqualFold(a.Email, b.Email)
 }
 
-// LoadDefaultUser returns the configured default user. It mirrors
-// LoadDefaultProject and is used by user-based (experimental) auth.
-func LoadDefaultUser() (*UserConfig, error) {
+// SameAPIURL reports whether two Public API base URLs refer to the same API.
+// Empty means the default Public API, and trailing slashes and case are
+// ignored.
+func SameAPIURL(a, b string) bool {
+	return strings.EqualFold(normalizeAPIURL(a), normalizeAPIURL(b))
+}
+
+func normalizeAPIURL(u string) string {
+	u = strings.TrimRight(strings.TrimSpace(u), "/")
+	if u == "" {
+		return public.DefaultBaseURL
+	}
+	return u
+}
+
+// LoadDefaultUser returns the configured default user signed in to the Public
+// API at apiURL. It mirrors LoadDefaultProject and is used by user-based
+// (experimental) auth.
+func LoadDefaultUser(apiURL string) (*UserConfig, error) {
 	conf, err := LoadOrCreate()
 	if err != nil {
 		return nil, err
@@ -180,17 +234,17 @@ func LoadDefaultUser() (*UserConfig, error) {
 	if conf.DefaultUser == "" {
 		return nil, errors.New("no default user set. Run `lk cloud auth` to sign in")
 	}
-	if u := conf.GetUser(conf.DefaultUser); u != nil {
+	if u := conf.GetUser(conf.DefaultUser, apiURL); u != nil {
 		return u, nil
 	}
 	return nil, fmt.Errorf("default user %q not found in config", conf.DefaultUser)
 }
 
 // SetUserProjects replaces the cached project list for the user identified by
-// idOrEmail and persists the config. fetchedAt is the Unix time the list was
-// retrieved.
-func (c *CLIConfig) SetUserProjects(idOrEmail string, projects []UserProjectConfig, fetchedAt int64) error {
-	u := c.GetUser(idOrEmail)
+// idOrEmail on the Public API at apiURL and persists the config. fetchedAt is
+// the Unix time the list was retrieved.
+func (c *CLIConfig) SetUserProjects(idOrEmail, apiURL string, projects []UserProjectConfig, fetchedAt int64) error {
+	u := c.GetUser(idOrEmail, apiURL)
 	if u == nil {
 		return fmt.Errorf("user %q not found in config", idOrEmail)
 	}

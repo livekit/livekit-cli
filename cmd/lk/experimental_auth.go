@@ -158,17 +158,62 @@ func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig
 	if err != nil {
 		return nil, nil, err
 	}
-	if conf.DefaultUser == "" {
-		return nil, nil, errors.New("no user is signed in (run `lk cloud auth` to sign in)")
+	// Without an explicit URL, target the API the default user signed in to.
+	// This updates the global so later Public API clients (publicClientForToken)
+	// follow suit.
+	if cmd == nil || !cmd.IsSet("experimental-api-url") {
+		if u := conf.FindUser(conf.DefaultUser); u != nil && u.APIURL != "" {
+			experimentalAPIURL = u.APIURL
+		}
 	}
-	user := conf.GetUser(conf.DefaultUser)
+	user := resolveSessionUser(conf, experimentalAPIURL)
 	if user == nil {
-		return nil, nil, fmt.Errorf("default user %q not found in config", conf.DefaultUser)
+		if len(conf.Users) == 0 {
+			return nil, nil, errors.New("no user is signed in (run `lk cloud auth` to sign in)")
+		}
+		return nil, nil, fmt.Errorf("no user is signed in to %s (run `lk cloud auth` to sign in)", experimentalAPIURL)
 	}
 	if !user.SessionValid() {
 		return nil, nil, fmt.Errorf("session for %s has expired (run `lk cloud auth` to sign in again)", userLabel(user))
 	}
+	announceUser(user)
 	return conf, user, nil
+}
+
+// userAnnounced records that announceUser has printed, so a command that
+// resolves the session more than once still prints the breadcrumb only once.
+var userAnnounced bool
+
+// announceUser surfaces which signed-in user a command acts as — the user-auth
+// counterpart of the "Using project" breadcrumb (stderr, suppressed by --quiet).
+// The API is named when it isn't the default, e.g. for a staging sign-in.
+func announceUser(user *config.UserConfig) {
+	if userAnnounced || user == nil {
+		return
+	}
+	userAnnounced = true
+	if config.SameAPIURL(experimentalAPIURL, public.DefaultBaseURL) {
+		out.Statusf("Using user [%s]", util.Accented(userLabel(user)))
+	} else {
+		out.Statusf("Using user [%s] on [%s]", util.Accented(userLabel(user)), util.Accented(experimentalAPIURL))
+	}
+}
+
+// resolveSessionUser picks the user to act as against the Public API at apiURL:
+// the default user if they're signed in there, otherwise the only user signed
+// in there. A session is only valid against the API that issued it, so a
+// default user signed in to a different API (e.g. production while targeting
+// staging) is never used.
+func resolveSessionUser(conf *config.CLIConfig, apiURL string) *config.UserConfig {
+	if conf.DefaultUser != "" {
+		if u := conf.GetUser(conf.DefaultUser, apiURL); u != nil {
+			return u
+		}
+	}
+	if users := conf.UsersForAPIURL(apiURL); len(users) == 1 {
+		return users[0]
+	}
+	return nil
 }
 
 // publicClientForToken builds a Public API client authenticated with the given
