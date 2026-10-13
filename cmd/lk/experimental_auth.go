@@ -31,20 +31,19 @@ import (
 )
 
 // experimentalAuthEnabled reports whether the command should run in user-based
-// (session) auth mode: the global --experimental-auth flag is set AND legacy
-// auth wasn't explicitly requested. Explicit API-key credentials or --legacy-auth
-// always win — passing them is an unambiguous signal to use the SDK/key path.
+// (session) auth mode. The --experimental-auth flag alone decides: API-key
+// credentials (--api-key/--api-secret/--url, or their LIVEKIT_* env
+// equivalents) don't switch modes, since most users have those set in their
+// shell and would otherwise be silently put on the API-key path.
 func experimentalAuthEnabled(cmd *cli.Command) bool {
-	return cmd.Bool("experimental-auth") && !legacyAuthForced(cmd)
+	return cmd.Bool("experimental-auth")
 }
 
 // legacyAuthForced reports whether the user explicitly opted into legacy
-// (API-key) auth: via --legacy-auth, or by supplying --api-key/--api-secret
-// (or their LIVEKIT_API_KEY/SECRET env equivalents). This takes precedence over
-// --experimental-auth, and — once user-auth becomes the default — will be the
-// way to opt back into the key-based flow.
+// (API-key) auth via --legacy-auth. Once user-auth becomes the default, this
+// will be the way to opt back into the key-based flow.
 func legacyAuthForced(cmd *cli.Command) bool {
-	return cmd.Bool("legacy-auth") || (cmd.String("api-key") != "" && cmd.String("api-secret") != "" && cmd.String("url") != "")
+	return cmd.Bool("legacy-auth")
 }
 
 // userAuthIsDefault reports whether user-based (session) auth is the default
@@ -58,8 +57,8 @@ const userAuthIsDefault = false
 // `lk cloud auth`. It prints once per invocation to stderr (never stdout, so it
 // can't corrupt piped data), is suppressed by --quiet, and is skipped for `cloud`
 // commands (where it would be redundant), when a session already exists, and
-// when the user explicitly opted into legacy auth (--legacy-auth or explicit
-// API-key credentials) — they've made their choice, so don't nag them.
+// when the user explicitly opted into legacy auth (--legacy-auth) — they've
+// made their choice, so don't nag them.
 //
 // It is dormant while user auth is experimental: nudging every API-key user to a
 // mode that's opt-in (and that most commands don't yet support) would be noise,
@@ -135,7 +134,8 @@ func requireExperimentalAuth(cmd *cli.Command) error {
 // cloudAPIError annotates Public API failures with actionable hints. An expired
 // or missing session suggests re-auth; a permission denial explains that the
 // signed-in account/session lacks access and points at the API-key escape hatch
-// (rather than silently falling back to API-key "admin" access). Other errors
+// (rather than silently falling back to API-key "admin" access): re-running
+// without --experimental-auth. Other errors
 // pass through unchanged.
 func cloudAPIError(err error) error {
 	switch {
@@ -143,7 +143,7 @@ func cloudAPIError(err error) error {
 		return fmt.Errorf("%w (run `lk cloud auth` to sign in again)", err)
 	case public.IsPermissionDenied(err):
 		return fmt.Errorf("%w — your account doesn't have access to this project or action. "+
-			"To act with API-key credentials instead, pass `--legacy-auth` (or `--api-key`/`--api-secret`)", err)
+			"To act with API-key credentials instead, re-run without `--experimental-auth`", err)
 	default:
 		return err
 	}

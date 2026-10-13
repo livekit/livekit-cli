@@ -5806,6 +5806,12 @@ type LivekitPublicapiProjectsV1CreateTokenResponse struct {
 	Token *string `json:"token,omitempty"`
 }
 
+// LivekitPublicapiProjectsV1CreateWebhookResponse defines model for livekit.publicapi.projects.v1.CreateWebhookResponse.
+type LivekitPublicapiProjectsV1CreateWebhookResponse struct {
+	// Webhook Webhook is a project webhook destination (mirrors backend-common Webhook).
+	Webhook *LivekitPublicapiProjectsV1Webhook `json:"webhook,omitempty"`
+}
+
 // LivekitPublicapiProjectsV1DeleteInviteResponse defines model for livekit.publicapi.projects.v1.DeleteInviteResponse.
 type LivekitPublicapiProjectsV1DeleteInviteResponse = map[string]interface{}
 
@@ -5814,6 +5820,9 @@ type LivekitPublicapiProjectsV1DeleteKeyResponse = map[string]interface{}
 
 // LivekitPublicapiProjectsV1DeleteProjectResponse defines model for livekit.publicapi.projects.v1.DeleteProjectResponse.
 type LivekitPublicapiProjectsV1DeleteProjectResponse = map[string]interface{}
+
+// LivekitPublicapiProjectsV1DeleteWebhookResponse defines model for livekit.publicapi.projects.v1.DeleteWebhookResponse.
+type LivekitPublicapiProjectsV1DeleteWebhookResponse = map[string]interface{}
 
 // LivekitPublicapiProjectsV1GenerateKeyResponse defines model for livekit.publicapi.projects.v1.GenerateKeyResponse.
 type LivekitPublicapiProjectsV1GenerateKeyResponse struct {
@@ -5874,6 +5883,18 @@ type LivekitPublicapiProjectsV1ListProjectsResponse struct {
 type LivekitPublicapiProjectsV1ListScopedKeysResponse struct {
 	OtherKeys    *[]LivekitPublicapiProjectsV1AccessKey `json:"otherKeys,omitempty"`
 	PersonalKeys *[]LivekitPublicapiProjectsV1AccessKey `json:"personalKeys,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1ListWebhookEventsResponse defines model for livekit.publicapi.projects.v1.ListWebhookEventsResponse.
+type LivekitPublicapiProjectsV1ListWebhookEventsResponse struct {
+	// Events Event names the project can receive, for filter_params and
+	//  SendTestWebhook.
+	Events *[]string `json:"events,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1ListWebhooksResponse defines model for livekit.publicapi.projects.v1.ListWebhooksResponse.
+type LivekitPublicapiProjectsV1ListWebhooksResponse struct {
+	Webhooks *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1PinnedRegions PinnedRegions wraps the region pin set so an explicit empty list can clear
@@ -6153,6 +6174,19 @@ type LivekitPublicapiProjectsV1ProjectPreferences struct {
 // LivekitPublicapiProjectsV1RemoveMemberResponse defines model for livekit.publicapi.projects.v1.RemoveMemberResponse.
 type LivekitPublicapiProjectsV1RemoveMemberResponse = map[string]interface{}
 
+// LivekitPublicapiProjectsV1SendTestWebhookResponse SendTestWebhookResponse reports the receiver's answer to one delivery
+//
+//	attempt. The test is not retried and redirects are not followed; a failed
+//	delivery is reported here, not as an RPC error.
+type LivekitPublicapiProjectsV1SendTestWebhookResponse struct {
+	// Error Why no response arrived, such as a timeout or refused connection. Empty
+	//  when status_code is set.
+	Error *string `json:"error,omitempty"`
+
+	// StatusCode HTTP status the receiver answered with; 0 when no response arrived.
+	StatusCode *int32 `json:"statusCode,omitempty"`
+}
+
 // LivekitPublicapiProjectsV1TokenGrants TokenGrants are the claims of a LiveKit access token. Field names match the
 //
 //	token's JSON claims (protocol auth.ClaimGrants), so a token's claims JSON is
@@ -6361,6 +6395,12 @@ type LivekitPublicapiProjectsV1UpdateProjectResponse struct {
 	//  Field set mirrors backend-common model.Project (most config fields);
 	//  members/domains are separate list resources and are not embedded here.
 	Project *LivekitPublicapiProjectsV1Project `json:"project,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1UpdateWebhookResponse defines model for livekit.publicapi.projects.v1.UpdateWebhookResponse.
+type LivekitPublicapiProjectsV1UpdateWebhookResponse struct {
+	// Webhook Webhook is a project webhook destination (mirrors backend-common Webhook).
+	Webhook *LivekitPublicapiProjectsV1Webhook `json:"webhook,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1Webhook Webhook is a project webhook destination (mirrors backend-common Webhook).
@@ -8446,6 +8486,39 @@ type ProjectServiceCreateTokenJSONBody struct {
 	TtlSeconds *int `json:"ttlSeconds,omitempty"`
 }
 
+// ProjectServiceCreateWebhookJSONBody defines parameters for ProjectServiceCreateWebhook.
+type ProjectServiceCreateWebhookJSONBody struct {
+	// FilterParams Event names from ListWebhookEvents. Unset delivers every event.
+	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
+	Name         *string              `json:"name,omitempty"`
+
+	// SigningKey API key of this project whose secret signs deliveries. Optional: when
+	//  empty, the project's oldest key is chosen and stored on the webhook.
+	SigningKey *string `json:"signingKey,omitempty"`
+
+	// Url http(s) URL deliveries are POSTed to.
+	Url *string `json:"url,omitempty"`
+}
+
+// ProjectServiceUpdateWebhookJSONBody defines parameters for ProjectServiceUpdateWebhook.
+type ProjectServiceUpdateWebhookJSONBody struct {
+	// FilterParams Replaces the whole filter; an empty filter delivers every event.
+	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
+	Name         *string              `json:"name,omitempty"`
+
+	// SigningKey API key of this project whose secret signs deliveries. Unset or empty
+	//  leaves the signing key unchanged.
+	SigningKey *string `json:"signingKey,omitempty"`
+	Url        *string `json:"url,omitempty"`
+}
+
+// ProjectServiceSendTestWebhookJSONBody defines parameters for ProjectServiceSendTestWebhook.
+type ProjectServiceSendTestWebhookJSONBody struct {
+	// Event One of ListWebhookEvents. Sent with sample data, regardless of the
+	//  webhook's filter.
+	Event *string `json:"event,omitempty"`
+}
+
 // UserServiceListUsersParams defines parameters for UserServiceListUsers.
 type UserServiceListUsersParams struct {
 	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
@@ -8560,6 +8633,15 @@ type ThreadServiceUpdateThreadJSONRequestBody ThreadServiceUpdateThreadJSONBody
 
 // ProjectServiceCreateTokenJSONRequestBody defines body for ProjectServiceCreateToken for application/json ContentType.
 type ProjectServiceCreateTokenJSONRequestBody ProjectServiceCreateTokenJSONBody
+
+// ProjectServiceCreateWebhookJSONRequestBody defines body for ProjectServiceCreateWebhook for application/json ContentType.
+type ProjectServiceCreateWebhookJSONRequestBody ProjectServiceCreateWebhookJSONBody
+
+// ProjectServiceUpdateWebhookJSONRequestBody defines body for ProjectServiceUpdateWebhook for application/json ContentType.
+type ProjectServiceUpdateWebhookJSONRequestBody ProjectServiceUpdateWebhookJSONBody
+
+// ProjectServiceSendTestWebhookJSONRequestBody defines body for ProjectServiceSendTestWebhook for application/json ContentType.
+type ProjectServiceSendTestWebhookJSONRequestBody ProjectServiceSendTestWebhookJSONBody
 
 // WorkspaceServiceAnswerInviteJSONRequestBody defines body for WorkspaceServiceAnswerInvite for application/json ContentType.
 type WorkspaceServiceAnswerInviteJSONRequestBody WorkspaceServiceAnswerInviteJSONBody
@@ -11450,6 +11532,66 @@ type ClientInterface interface {
 	// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 	ProjectServiceCreateToken(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ProjectServiceListWebhookEvents ListWebhookEvents
+	//
+	// Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
+	ProjectServiceListWebhookEvents(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceListWebhooks ListWebhooks
+	//
+	// Webhooks (mirrors cloud ProjectService ListWebhooks / AddWebhook /
+	//  EditWebhook / DeleteWebhook / SendTestWebhook).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
+	ProjectServiceListWebhooks(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceCreateWebhookWithBody CreateWebhook
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
+	ProjectServiceCreateWebhookWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceCreateWebhook CreateWebhook
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
+	ProjectServiceCreateWebhook(ctx context.Context, projectId string, body ProjectServiceCreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceDeleteWebhook DeleteWebhook
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceDeleteWebhook` operationId).
+	ProjectServiceDeleteWebhook(ctx context.Context, projectId string, webhookId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceUpdateWebhookWithBody UpdateWebhook
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
+	ProjectServiceUpdateWebhookWithBody(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceUpdateWebhook UpdateWebhook
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
+	ProjectServiceUpdateWebhook(ctx context.Context, projectId string, webhookId string, body ProjectServiceUpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceSendTestWebhookWithBody SendTestWebhook
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
+	ProjectServiceSendTestWebhookWithBody(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ProjectServiceSendTestWebhook SendTestWebhook
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
+	ProjectServiceSendTestWebhook(ctx context.Context, projectId string, webhookId string, body ProjectServiceSendTestWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UserServiceListUsers ListUsers
 	//
 	// Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
@@ -12945,6 +13087,157 @@ func (c *Client) ProjectServiceCreateTokenWithBody(ctx context.Context, projectI
 // Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 func (c *Client) ProjectServiceCreateToken(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceCreateTokenRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceListWebhookEvents ListWebhookEvents
+//
+// Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
+func (c *Client) ProjectServiceListWebhookEvents(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListWebhookEventsRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceListWebhooks ListWebhooks
+//
+// Webhooks (mirrors cloud ProjectService ListWebhooks / AddWebhook /
+//
+//	EditWebhook / DeleteWebhook / SendTestWebhook).
+//
+// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
+func (c *Client) ProjectServiceListWebhooks(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListWebhooksRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceCreateWebhookWithBody CreateWebhook
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
+func (c *Client) ProjectServiceCreateWebhookWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceCreateWebhookRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceCreateWebhook CreateWebhook
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
+func (c *Client) ProjectServiceCreateWebhook(ctx context.Context, projectId string, body ProjectServiceCreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceCreateWebhookRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceDeleteWebhook DeleteWebhook
+//
+// Corresponds with DELETE /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceDeleteWebhook` operationId).
+func (c *Client) ProjectServiceDeleteWebhook(ctx context.Context, projectId string, webhookId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceDeleteWebhookRequest(c.Server, projectId, webhookId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceUpdateWebhookWithBody UpdateWebhook
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
+func (c *Client) ProjectServiceUpdateWebhookWithBody(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceUpdateWebhookRequestWithBody(c.Server, projectId, webhookId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceUpdateWebhook UpdateWebhook
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
+func (c *Client) ProjectServiceUpdateWebhook(ctx context.Context, projectId string, webhookId string, body ProjectServiceUpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceUpdateWebhookRequest(c.Server, projectId, webhookId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceSendTestWebhookWithBody SendTestWebhook
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
+func (c *Client) ProjectServiceSendTestWebhookWithBody(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceSendTestWebhookRequestWithBody(c.Server, projectId, webhookId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ProjectServiceSendTestWebhook SendTestWebhook
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
+func (c *Client) ProjectServiceSendTestWebhook(ctx context.Context, projectId string, webhookId string, body ProjectServiceSendTestWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceSendTestWebhookRequest(c.Server, projectId, webhookId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16707,6 +17000,270 @@ func NewProjectServiceCreateTokenRequestWithBody(server string, projectId string
 	return req, nil
 }
 
+// NewProjectServiceListWebhookEventsRequest constructs an http.Request for the ProjectServiceListWebhookEvents method
+func NewProjectServiceListWebhookEventsRequest(server string, projectId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/webhook-events", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewProjectServiceListWebhooksRequest constructs an http.Request for the ProjectServiceListWebhooks method
+func NewProjectServiceListWebhooksRequest(server string, projectId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/webhooks", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewProjectServiceCreateWebhookRequest calls the generic ProjectServiceCreateWebhook builder with application/json body
+func NewProjectServiceCreateWebhookRequest(server string, projectId string, body ProjectServiceCreateWebhookJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewProjectServiceCreateWebhookRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewProjectServiceCreateWebhookRequestWithBody constructs an http.Request for the ProjectServiceCreateWebhook method, with any body, and a specified content type
+func NewProjectServiceCreateWebhookRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/webhooks", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewProjectServiceDeleteWebhookRequest constructs an http.Request for the ProjectServiceDeleteWebhook method
+func NewProjectServiceDeleteWebhookRequest(server string, projectId string, webhookId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "webhookId", webhookId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/webhooks/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewProjectServiceUpdateWebhookRequest calls the generic ProjectServiceUpdateWebhook builder with application/json body
+func NewProjectServiceUpdateWebhookRequest(server string, projectId string, webhookId string, body ProjectServiceUpdateWebhookJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewProjectServiceUpdateWebhookRequestWithBody(server, projectId, webhookId, "application/json", bodyReader)
+}
+
+// NewProjectServiceUpdateWebhookRequestWithBody constructs an http.Request for the ProjectServiceUpdateWebhook method, with any body, and a specified content type
+func NewProjectServiceUpdateWebhookRequestWithBody(server string, projectId string, webhookId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "webhookId", webhookId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/webhooks/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewProjectServiceSendTestWebhookRequest calls the generic ProjectServiceSendTestWebhook builder with application/json body
+func NewProjectServiceSendTestWebhookRequest(server string, projectId string, webhookId string, body ProjectServiceSendTestWebhookJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewProjectServiceSendTestWebhookRequestWithBody(server, projectId, webhookId, "application/json", bodyReader)
+}
+
+// NewProjectServiceSendTestWebhookRequestWithBody constructs an http.Request for the ProjectServiceSendTestWebhook method, with any body, and a specified content type
+func NewProjectServiceSendTestWebhookRequestWithBody(server string, projectId string, webhookId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "webhookId", webhookId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/webhooks/%s:test", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewUserServiceListUsersRequest constructs an http.Request for the UserServiceListUsers method
 func NewUserServiceListUsersRequest(server string, params *UserServiceListUsersParams) (*http.Request, error) {
 	var err error
@@ -18439,6 +18996,72 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v0/projects/{projectId}/tokens (the `ProjectServiceCreateToken` operationId).
 	ProjectServiceCreateTokenWithResponse(ctx context.Context, projectId string, body ProjectServiceCreateTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateTokenResponse, error)
+
+	// ProjectServiceListWebhookEventsWithResponse ListWebhookEvents
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
+	ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error)
+
+	// ProjectServiceListWebhooksWithResponse ListWebhooks
+	//
+	// Webhooks (mirrors cloud ProjectService ListWebhooks / AddWebhook /
+	//  EditWebhook / DeleteWebhook / SendTestWebhook).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
+	ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error)
+
+	// ProjectServiceCreateWebhookWithBodyWithResponse CreateWebhook
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
+	ProjectServiceCreateWebhookWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateWebhookResponse, error)
+
+	// ProjectServiceCreateWebhookWithResponse CreateWebhook
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
+	ProjectServiceCreateWebhookWithResponse(ctx context.Context, projectId string, body ProjectServiceCreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateWebhookResponse, error)
+
+	// ProjectServiceDeleteWebhookWithResponse DeleteWebhook
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceDeleteWebhook` operationId).
+	ProjectServiceDeleteWebhookWithResponse(ctx context.Context, projectId string, webhookId string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteWebhookResponse, error)
+
+	// ProjectServiceUpdateWebhookWithBodyWithResponse UpdateWebhook
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
+	ProjectServiceUpdateWebhookWithBodyWithResponse(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateWebhookResponse, error)
+
+	// ProjectServiceUpdateWebhookWithResponse UpdateWebhook
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
+	ProjectServiceUpdateWebhookWithResponse(ctx context.Context, projectId string, webhookId string, body ProjectServiceUpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateWebhookResponse, error)
+
+	// ProjectServiceSendTestWebhookWithBodyWithResponse SendTestWebhook
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
+	ProjectServiceSendTestWebhookWithBodyWithResponse(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceSendTestWebhookResponse, error)
+
+	// ProjectServiceSendTestWebhookWithResponse SendTestWebhook
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
+	ProjectServiceSendTestWebhookWithResponse(ctx context.Context, projectId string, webhookId string, body ProjectServiceSendTestWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceSendTestWebhookResponse, error)
 
 	// UserServiceListUsersWithResponse ListUsers
 	//
@@ -20821,6 +21444,252 @@ func (r ProjectServiceCreateTokenResponse) ContentType() string {
 	return ""
 }
 
+type ProjectServiceListWebhookEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiProjectsV1ListWebhookEventsResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ProjectServiceListWebhookEventsResponse) GetJSON200() *LivekitPublicapiProjectsV1ListWebhookEventsResponse {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r ProjectServiceListWebhookEventsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ProjectServiceListWebhookEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ProjectServiceListWebhookEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ProjectServiceListWebhookEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ProjectServiceListWebhooksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiProjectsV1ListWebhooksResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ProjectServiceListWebhooksResponse) GetJSON200() *LivekitPublicapiProjectsV1ListWebhooksResponse {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r ProjectServiceListWebhooksResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ProjectServiceListWebhooksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ProjectServiceListWebhooksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ProjectServiceListWebhooksResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ProjectServiceCreateWebhookResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiProjectsV1CreateWebhookResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ProjectServiceCreateWebhookResponse) GetJSON200() *LivekitPublicapiProjectsV1CreateWebhookResponse {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r ProjectServiceCreateWebhookResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ProjectServiceCreateWebhookResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ProjectServiceCreateWebhookResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ProjectServiceCreateWebhookResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ProjectServiceDeleteWebhookResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiProjectsV1DeleteWebhookResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ProjectServiceDeleteWebhookResponse) GetJSON200() *LivekitPublicapiProjectsV1DeleteWebhookResponse {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r ProjectServiceDeleteWebhookResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ProjectServiceDeleteWebhookResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ProjectServiceDeleteWebhookResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ProjectServiceDeleteWebhookResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ProjectServiceUpdateWebhookResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiProjectsV1UpdateWebhookResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ProjectServiceUpdateWebhookResponse) GetJSON200() *LivekitPublicapiProjectsV1UpdateWebhookResponse {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r ProjectServiceUpdateWebhookResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ProjectServiceUpdateWebhookResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ProjectServiceUpdateWebhookResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ProjectServiceUpdateWebhookResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ProjectServiceSendTestWebhookResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiProjectsV1SendTestWebhookResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ProjectServiceSendTestWebhookResponse) GetJSON200() *LivekitPublicapiProjectsV1SendTestWebhookResponse {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r ProjectServiceSendTestWebhookResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ProjectServiceSendTestWebhookResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ProjectServiceSendTestWebhookResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ProjectServiceSendTestWebhookResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type UserServiceListUsersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -22854,6 +23723,127 @@ func (c *ClientWithResponses) ProjectServiceCreateTokenWithResponse(ctx context.
 	return ParseProjectServiceCreateTokenResponse(rsp)
 }
 
+// ProjectServiceListWebhookEventsWithResponse ListWebhookEvents
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
+func (c *ClientWithResponses) ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error) {
+	rsp, err := c.ProjectServiceListWebhookEvents(ctx, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceListWebhookEventsResponse(rsp)
+}
+
+// ProjectServiceListWebhooksWithResponse ListWebhooks
+//
+// Webhooks (mirrors cloud ProjectService ListWebhooks / AddWebhook /
+//
+//	EditWebhook / DeleteWebhook / SendTestWebhook).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
+func (c *ClientWithResponses) ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error) {
+	rsp, err := c.ProjectServiceListWebhooks(ctx, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceListWebhooksResponse(rsp)
+}
+
+// ProjectServiceCreateWebhookWithBodyWithResponse CreateWebhook
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
+func (c *ClientWithResponses) ProjectServiceCreateWebhookWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateWebhookResponse, error) {
+	rsp, err := c.ProjectServiceCreateWebhookWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceCreateWebhookResponse(rsp)
+}
+
+// ProjectServiceCreateWebhookWithResponse CreateWebhook
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
+func (c *ClientWithResponses) ProjectServiceCreateWebhookWithResponse(ctx context.Context, projectId string, body ProjectServiceCreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateWebhookResponse, error) {
+	rsp, err := c.ProjectServiceCreateWebhook(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceCreateWebhookResponse(rsp)
+}
+
+// ProjectServiceDeleteWebhookWithResponse DeleteWebhook
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceDeleteWebhook` operationId).
+func (c *ClientWithResponses) ProjectServiceDeleteWebhookWithResponse(ctx context.Context, projectId string, webhookId string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteWebhookResponse, error) {
+	rsp, err := c.ProjectServiceDeleteWebhook(ctx, projectId, webhookId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceDeleteWebhookResponse(rsp)
+}
+
+// ProjectServiceUpdateWebhookWithBodyWithResponse UpdateWebhook
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
+func (c *ClientWithResponses) ProjectServiceUpdateWebhookWithBodyWithResponse(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateWebhookResponse, error) {
+	rsp, err := c.ProjectServiceUpdateWebhookWithBody(ctx, projectId, webhookId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceUpdateWebhookResponse(rsp)
+}
+
+// ProjectServiceUpdateWebhookWithResponse UpdateWebhook
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
+func (c *ClientWithResponses) ProjectServiceUpdateWebhookWithResponse(ctx context.Context, projectId string, webhookId string, body ProjectServiceUpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateWebhookResponse, error) {
+	rsp, err := c.ProjectServiceUpdateWebhook(ctx, projectId, webhookId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceUpdateWebhookResponse(rsp)
+}
+
+// ProjectServiceSendTestWebhookWithBodyWithResponse SendTestWebhook
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
+func (c *ClientWithResponses) ProjectServiceSendTestWebhookWithBodyWithResponse(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceSendTestWebhookResponse, error) {
+	rsp, err := c.ProjectServiceSendTestWebhookWithBody(ctx, projectId, webhookId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceSendTestWebhookResponse(rsp)
+}
+
+// ProjectServiceSendTestWebhookWithResponse SendTestWebhook
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
+func (c *ClientWithResponses) ProjectServiceSendTestWebhookWithResponse(ctx context.Context, projectId string, webhookId string, body ProjectServiceSendTestWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceSendTestWebhookResponse, error) {
+	rsp, err := c.ProjectServiceSendTestWebhook(ctx, projectId, webhookId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseProjectServiceSendTestWebhookResponse(rsp)
+}
+
 // UserServiceListUsersWithResponse ListUsers
 //
 // Returns a wrapper object for the known response body format(s).
@@ -24603,6 +25593,162 @@ func ParseProjectServiceCreateTokenResponse(rsp *http.Response) (*ProjectService
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiProjectsV1CreateTokenResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseProjectServiceListWebhookEventsResponse parses an HTTP response from a ProjectServiceListWebhookEventsWithResponse call
+func ParseProjectServiceListWebhookEventsResponse(rsp *http.Response) (*ProjectServiceListWebhookEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ProjectServiceListWebhookEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiProjectsV1ListWebhookEventsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseProjectServiceListWebhooksResponse parses an HTTP response from a ProjectServiceListWebhooksWithResponse call
+func ParseProjectServiceListWebhooksResponse(rsp *http.Response) (*ProjectServiceListWebhooksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ProjectServiceListWebhooksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiProjectsV1ListWebhooksResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseProjectServiceCreateWebhookResponse parses an HTTP response from a ProjectServiceCreateWebhookWithResponse call
+func ParseProjectServiceCreateWebhookResponse(rsp *http.Response) (*ProjectServiceCreateWebhookResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ProjectServiceCreateWebhookResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiProjectsV1CreateWebhookResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseProjectServiceDeleteWebhookResponse parses an HTTP response from a ProjectServiceDeleteWebhookWithResponse call
+func ParseProjectServiceDeleteWebhookResponse(rsp *http.Response) (*ProjectServiceDeleteWebhookResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ProjectServiceDeleteWebhookResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiProjectsV1DeleteWebhookResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseProjectServiceUpdateWebhookResponse parses an HTTP response from a ProjectServiceUpdateWebhookWithResponse call
+func ParseProjectServiceUpdateWebhookResponse(rsp *http.Response) (*ProjectServiceUpdateWebhookResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ProjectServiceUpdateWebhookResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiProjectsV1UpdateWebhookResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseProjectServiceSendTestWebhookResponse parses an HTTP response from a ProjectServiceSendTestWebhookWithResponse call
+func ParseProjectServiceSendTestWebhookResponse(rsp *http.Response) (*ProjectServiceSendTestWebhookResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ProjectServiceSendTestWebhookResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiProjectsV1SendTestWebhookResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

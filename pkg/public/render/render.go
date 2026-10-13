@@ -20,6 +20,8 @@
 package render
 
 import (
+	"strings"
+
 	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -33,6 +35,7 @@ var (
 	simulationHeaders = []string{"ID", "Agent", "Status", "Mode", "Jobs", "Passed", "Failed", "Created"}
 	sessionHeaders    = []string{"Session ID", "Room", "Status", "Participants", "Started", "Ended"}
 	accessKeyHeaders  = []string{"API Key", "Description", "Owner", "Created"}
+	webhookHeaders    = []string{"ID", "Name", "URL", "Signing Key", "Events"}
 )
 
 func workspaceRow(w oapi.LivekitPublicapiWorkspacesV1Workspace) []string {
@@ -84,6 +87,41 @@ func accessKeyRow(k oapi.LivekitPublicapiProjectsV1AccessKey) []string {
 		owner = "(service account)"
 	}
 	return []string{util.DashString(k.ApiKey), util.DashString(k.Description), owner, util.FormatTime(k.CreatedAt)}
+}
+
+// webhookRow is a webhook's row. Any project writer chose its name and URL, so
+// they are untrusted text.
+func webhookRow(w oapi.LivekitPublicapiProjectsV1Webhook) []string {
+	return []string{util.DashString(w.Id), dashText(w.Name), dashText(w.Url), util.DashString(w.SigningKey), webhookEvents(w.FilterParams)}
+}
+
+// webhookEvents summarizes a webhook's event filter: "all" when it has none,
+// otherwise the included and/or excluded event names.
+func webhookEvents(fp *oapi.LivekitFilterParams) string {
+	var include, exclude []string
+	if fp != nil {
+		include, exclude = util.Deref(fp.IncludeEvents), util.Deref(fp.ExcludeEvents)
+	}
+	var parts []string
+	if len(include) > 0 {
+		parts = append(parts, oneLine(strings.Join(include, ", ")))
+	} else {
+		parts = append(parts, "all")
+	}
+	if len(exclude) > 0 {
+		parts = append(parts, "except "+oneLine(strings.Join(exclude, ", ")))
+	}
+	return strings.Join(parts, " ")
+}
+
+// Webhooks prints a list of project webhooks.
+func Webhooks(p *util.Printer, asJSON bool, webhooks []oapi.LivekitPublicapiProjectsV1Webhook) error {
+	return util.RenderList(p, asJSON, webhooks, "No webhooks found.", webhookHeaders, webhookRow)
+}
+
+// Webhook prints a single project webhook.
+func Webhook(p *util.Printer, asJSON bool, w oapi.LivekitPublicapiProjectsV1Webhook) error {
+	return util.RenderOne(p, asJSON, w, webhookHeaders, webhookRow)
 }
 
 // AccessKeys prints a list of project API keys.
