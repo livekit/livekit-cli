@@ -402,10 +402,12 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 
 // scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
 // and JSON-encoded into the proto's string field. Each `nodes` entry is a
-// SimulatorNode in protojson form.
+// SimulatorNode in protojson form. `include` names files whose nodes join this
+// file's (see simulate_include.go).
 type scenariosFile struct {
 	ID        string         `yaml:"id"`
 	Name      string         `yaml:"name"`
+	Include   []string       `yaml:"include,omitempty"`
 	Nodes     map[string]any `yaml:"nodes,omitempty"`
 	Scenarios []yamlScenario `yaml:"scenarios"`
 }
@@ -483,15 +485,19 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		return nil, fmt.Errorf("scenarios file has no id")
 	}
 	group := &livekit.ScenarioGroup{Id: f.ID, Name: f.Name}
-	names := make([]string, 0, len(f.Nodes))
-	for name := range f.Nodes {
+	nodes, err := resolveNodes(path, f.Nodes, f.Include)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(nodes))
+	for name := range nodes {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 	for _, name := range names {
 		node := &livekit.SimulatorNode{}
-		if err := yamlValueToProto(f.Nodes[name], node); err != nil {
-			return nil, fmt.Errorf("node %q: %w", name, err)
+		if err := yamlValueToProto(nodes[name].value, node); err != nil {
+			return nil, fmt.Errorf("node %q (%s): %w", name, filepath.Base(nodes[name].file), err)
 		}
 		if group.Nodes == nil {
 			group.Nodes = map[string]*livekit.SimulatorNode{}
