@@ -23,6 +23,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 )
 
 func TestMatchDefaultProject(t *testing.T) {
@@ -105,4 +106,90 @@ func TestExperimentalAuthEnabled(t *testing.T) {
 		"flag credentials must not override --experimental-auth")
 	assert.False(t, enabled(t), "API-key auth remains the default")
 	assert.False(t, enabled(t, "--legacy-auth"))
+}
+
+func TestRequireUserSessionAPIURL(t *testing.T) {
+	const staging = "https://beta-api.staging.livekit.cloud"
+	t.Setenv("HOME", t.TempDir())
+	conf := &config.CLIConfig{
+		DefaultUser: "usr_stg",
+		Users: []config.UserConfig{
+			{Id: "usr_prod", Email: "alice@livekit.io", SessionToken: "prod"},
+			{Id: "usr_stg", Email: "alice@livekit.io", SessionToken: "stg", APIURL: staging},
+			{Id: "usr_bob", Email: "bob@livekit.io", SessionToken: "bob", APIURL: staging},
+		},
+	}
+	require.NoError(t, conf.PersistQuietly())
+
+	resolve := func(t *testing.T, args ...string) (token, apiURL string, err error) {
+		t.Helper()
+		prev := experimentalAPIURL
+		t.Cleanup(func() { experimentalAPIURL = prev })
+		cmd := &cli.Command{
+			Name: "lk",
+			Flags: []cli.Flag{
+				&cli.StringFlag{Name: "user"},
+				&cli.StringFlag{
+					Name:        "experimental-api-url",
+					Value:       public.DefaultBaseURL,
+					Destination: &experimentalAPIURL,
+					Sources:     cli.EnvVars("LIVEKIT_API_URL"),
+				},
+			},
+			Action: func(_ context.Context, cmd *cli.Command) error {
+				_, user, err := requireUserSession(cmd)
+				if err != nil {
+					return err
+				}
+				token = user.SessionToken
+				return nil
+			},
+		}
+		err = cmd.Run(context.Background(), append([]string{"lk"}, args...))
+		return token, experimentalAPIURL, err
+	}
+
+	t.Run("default user", func(t *testing.T) {
+		token, apiURL, err := resolve(t)
+		require.NoError(t, err)
+		assert.Equal(t, "stg", token, "default user's API is used when no URL is given")
+		assert.Equal(t, staging, apiURL)
+
+		token, apiURL, err = resolve(t, "--experimental-api-url", public.DefaultBaseURL)
+		require.NoError(t, err)
+		assert.Equal(t, "prod", token, "an explicit URL overrides the default user's API")
+		assert.Equal(t, public.DefaultBaseURL, apiURL)
+	})
+
+	t.Run("--user", func(t *testing.T) {
+		token, apiURL, err := resolve(t, "--user", "bob@livekit.io")
+		require.NoError(t, err)
+		assert.Equal(t, "bob", token, "another user on the same API")
+		assert.Equal(t, staging, apiURL, "--user's API is used when no URL is given")
+
+		token, apiURL, err = resolve(t, "--user", "usr_prod")
+		require.NoError(t, err)
+		assert.Equal(t, "prod", token)
+		assert.Equal(t, public.DefaultBaseURL, apiURL)
+
+		token, _, err = resolve(t, "--user", "alice@livekit.io", "--experimental-api-url", staging)
+		require.NoError(t, err)
+		assert.Equal(t, "stg", token)
+
+		_, _, err = resolve(t, "--user", "alice@livekit.io")
+		assert.ErrorContains(t, err, "signed in to multiple APIs", "an email on several APIs needs a URL")
+
+		_, _, err = resolve(t, "--user", "bob@livekit.io", "--experimental-api-url", public.DefaultBaseURL)
+		assert.ErrorContains(t, err, "not signed in to", "an explicit --user never falls back to another user")
+
+		_, _, err = resolve(t, "--user", "nobody@livekit.io")
+		assert.ErrorContains(t, err, "not signed in")
+	})
+
+	t.Run("LIVEKIT_API_URL", func(t *testing.T) {
+		t.Setenv("LIVEKIT_API_URL", public.DefaultBaseURL)
+		token, _, err := resolve(t)
+		require.NoError(t, err)
+		assert.Equal(t, "prod", token, "LIVEKIT_API_URL overrides the default user's API")
+	})
 }
