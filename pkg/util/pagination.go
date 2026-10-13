@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-// CommandArgs is the command line lk was invoked with (os.Args); main sets
+// CommandArgs is the command line lk was invoked with (os.Args); run sets
 // it. NextPageHint repeats it with the next page's cursor, so a hint names
 // the whole command, filters and all, rather than just the flag to add.
 var CommandArgs []string

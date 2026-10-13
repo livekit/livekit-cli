@@ -36,6 +36,32 @@ import (
 )
 
 func main() {
+	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
+	)
+
+	// The first signal cancels ctx. Stopping then restores the default
+	// handling, so a second Ctrl-C kills a command that doesn't honor ctx.
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
+
+	code := run(ctx, os.Args, os.Stdout, os.Stderr)
+	stop()
+	os.Exit(code)
+}
+
+// run builds the lk command tree, runs it with args (args[0] is the program
+// name) and returns the process exit code, printing any error to stderr.
+//
+// The help printer and the agent categories are process-wide but set the same
+// way on every call. The command groups and their flags are package-level too,
+// and cli/v3 keeps parse state on them, so a flag set in one call still reports
+// IsSet in the next one in the same process.
+func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	app := &cli.Command{
 		Name:  "lk",
 		Usage: "The LiveKit command line tool",
@@ -49,6 +75,8 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 		Suggest:                       true,
 		HideHelpCommand:               true,
 		UseShortOptionHandling:        true,
+		Writer:                        stdout,
+		ErrWriter:                     stderr,
 		Flags:                         globalFlags,
 		// --user-auth and --legacy-auth pick opposite auth modes; you may
 		// pass at most one. (These flags are registered via this group, not
@@ -113,47 +141,84 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.CommandNotFound = commandNotFound
 	setCommandNotFound(app.Commands)
 
-	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
-	ctx, stop := signal.NotifyContext(
-		context.Background(),
-		syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT,
-	)
-	defer stop()
+	// cli/v3's default handler exits the process as soon as a command returns
+	// a cli.ExitCoder error (e.g. cli.Exit, an unknown help topic). Record the
+	// first such code instead, so it can be returned like any other.
+	exitCode, haveExitCode := 0, false
+	app.ExitErrHandler = func(_ context.Context, _ *cli.Command, err error) {
+		if !haveExitCode {
+			exitCode, haveExitCode = handleExitCoder(stderr, err)
+		}
+	}
 
-	// Cleanup on hooked signals, remembering to flush stdout
-	// before exit to prevent line rag in case of SIGINT
-	go func() {
-		<-ctx.Done()
-		stop()
-	}()
+	checkForLegacyName(args[0], stderr)
 
-	checkForLegacyName()
-
-	util.CommandArgs = os.Args
-	err := app.Run(ctx, os.Args)
+	util.CommandArgs = args
+	err := app.Run(ctx, args)
+	if haveExitCode {
+		return exitCode
+	}
 	if err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())
 		// Outside the Printer's reach (it may not be initialized yet), so the
 		// color profile has to be applied here too — Lip Gloss v2 emits styles
 		// regardless of whether stderr can render them.
-		errOut := colorprofile.NewWriter(os.Stderr, os.Environ())
+		errOut := colorprofile.NewWriter(stderr, os.Environ())
 		// Render line by line: a multiline Render pads every line with
 		// trailing spaces to match the widest one, which wraps into garbage
 		// on terminals narrower than the longest line.
 		for line := range strings.SplitSeq(err.Error(), "\n") {
 			fmt.Fprintln(errOut, errStyle.Render(line))
 		}
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
 
-func checkForLegacyName() {
-	if !strings.HasSuffix(os.Args[0], "lk") && !strings.HasSuffix(os.Args[0], "lk.exe") {
-		// Stays on raw os.Stderr: this runs before the cli command parses (so the
-		// Printer isn't initialized yet) and is a deprecation warning that should
-		// not be suppressed by --quiet.
+// handleExitCoder is cli.HandleExitCoder (as of urfave/cli v3.9.0) writing to w
+// and returning the exit code rather than exiting. ok is false for errors that
+// carry no exit code.
+func handleExitCoder(w io.Writer, err error) (code int, ok bool) {
+	if exitErr, isExit := err.(cli.ExitCoder); isExit {
+		if msg := err.Error(); msg != "" {
+			if _, isFormatter := exitErr.(cli.ErrorFormatter); isFormatter {
+				fmt.Fprintf(w, "%+v\n", err)
+			} else {
+				fmt.Fprintln(w, err)
+			}
+		}
+		return exitErr.ExitCode(), true
+	}
+	if multiErr, isMulti := err.(cli.MultiError); isMulti {
+		return handleMultiError(w, multiErr), true
+	}
+	return 0, false
+}
+
+// handleMultiError mirrors cli/v3's: print each error, exit with the last
+// error's exit code, or 1 if none has one.
+func handleMultiError(w io.Writer, multiErr cli.MultiError) int {
+	code := 1
+	for _, merr := range multiErr.Errors() {
+		if multiErr2, ok := merr.(cli.MultiError); ok {
+			code = handleMultiError(w, multiErr2)
+		} else if merr != nil {
+			fmt.Fprintln(w, merr)
+			if exitErr, ok := merr.(cli.ExitCoder); ok {
+				code = exitErr.ExitCode()
+			}
+		}
+	}
+	return code
+}
+
+func checkForLegacyName(name string, stderr io.Writer) {
+	if !strings.HasSuffix(name, "lk") && !strings.HasSuffix(name, "lk.exe") {
+		// Written straight to stderr: this runs before the cli command parses
+		// (so the Printer isn't initialized yet) and is a deprecation warning
+		// that should not be suppressed by --quiet.
 		fmt.Fprintf(
-			os.Stderr,
+			stderr,
 			"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DEPRECATION NOTICE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"+
 				"The `livekit-cli` binary has been renamed to `lk`, and some of the options and\n"+
 				"commands have changed. Though legacy commands my continue to work, they have\n"+

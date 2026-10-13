@@ -50,8 +50,9 @@ and runs that installer's upgrade.`,
 
 // commandNotFound keeps urfave/cli's default message and exit code 3, and adds
 // how to check for and install a newer lk, since the command may be newer than
-// this build.
-func commandNotFound(_ context.Context, cmd *cli.Command, name string) {
+// this build. The error goes to the root's ExitErrHandler, which run installs,
+// so the code is returned from run rather than exiting the process.
+func commandNotFound(ctx context.Context, cmd *cli.Command, name string) {
 	msg := fmt.Sprintf("No help topic for '%v'", name)
 	if cmd.Suggest {
 		if suggestion := cli.SuggestCommand(cmd.Commands, name); suggestion != "" {
@@ -59,7 +60,7 @@ func commandNotFound(_ context.Context, cmd *cli.Command, name string) {
 		}
 	}
 	msg += "\n\nIf this command is new, your lk may be out of date. Run `lk can-update` to check and `lk update` to update."
-	cli.HandleExitCoder(cli.Exit(msg, 3))
+	cmd.Root().ExitErrHandler(ctx, cmd, cli.Exit(msg, 3))
 }
 
 func setCommandNotFound(cmds []*cli.Command) {
