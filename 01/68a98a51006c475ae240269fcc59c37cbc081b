@@ -1,0 +1,20 @@
+cmd/lk/simulate.go
+  h_a827ab16c3c189 362-363,365,367-368,370,404-405,409,486-487,492-494,496-497,499,513-514,545-546
+cmd/lk/simulate_scenario_ids_test.go
+  h_a827ab16c3c189 205-206,218,227,230,240,243-245,249,299,303,311,317,330,342,371,378-380,396,398,411
+go.mod
+  h_a827ab16c3c189 24
+go.sum
+  h_a827ab16c3c189 369-370
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0168a98a51006c475ae240269fcc59c37cbc081b",
+  "prompts": {},
+  "humans": {
+    "h_a827ab16c3c189": {
+      "author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
