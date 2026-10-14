@@ -209,6 +209,11 @@ func sessionListCmdOptions(t *testing.T, args ...string) (public.SessionListOpti
 }
 
 func TestSessionListOptions(t *testing.T) {
+	now := time.Date(2026, 10, 14, 15, 30, 0, 0, time.UTC)
+	origNow := analyticsNow
+	analyticsNow = func() time.Time { return now }
+	t.Cleanup(func() { analyticsNow = origNow })
+
 	tests := []struct {
 		name    string
 		args    []string
@@ -246,6 +251,26 @@ func TestSessionListOptions(t *testing.T) {
 				Tags:       []string{"a", "b"},
 				SortOrder:  "asc",
 			},
+		},
+		{
+			name: "since counts back from now, to the second",
+			args: []string{"--since", "14d"},
+			want: public.SessionListOptions{
+				Limit:    defaultAnalyticsLimit,
+				Start:    now.AddDate(0, 0, -14),
+				Statuses: []string{},
+				Tags:     []string{},
+			},
+		},
+		{
+			name:    "since with start",
+			args:    []string{"--since", "14d", "--start", "2026-10-01"},
+			wantErr: "--since can't be used with --start or --end",
+		},
+		{
+			name:    "bad since",
+			args:    []string{"--since", "two weeks"},
+			wantErr: `invalid duration "two weeks"`,
 		},
 		{
 			name:    "equal dates are an empty window",
@@ -296,6 +321,51 @@ func TestSessionListOptions(t *testing.T) {
 	}
 }
 
+func TestParseLookback(t *testing.T) {
+	tests := []struct {
+		in   string
+		want time.Duration
+	}{
+		{"14d", 14 * 24 * time.Hour},
+		{"2w", 14 * 24 * time.Hour},
+		{"6h", 6 * time.Hour},
+		{"90m", 90 * time.Minute},
+		{"1h30m", 90 * time.Minute},
+		{" 1d ", 24 * time.Hour},
+	}
+	for _, tt := range tests {
+		got, err := parseLookback(tt.in)
+		require.NoError(t, err, tt.in)
+		assert.Equal(t, tt.want, got, tt.in)
+	}
+	for _, bad := range []string{"", "d", "0d", "-1d", "1.5d", "-2h", "0s", "14", "14days", "1y"} {
+		_, err := parseLookback(bad)
+		assert.Error(t, err, bad)
+	}
+}
+
+// TestBuildAnalyticsListQuerySince checks that the API-key endpoint, which
+// reads whole UTC days, gets --since as the date the window begins.
+func TestBuildAnalyticsListQuerySince(t *testing.T) {
+	origNow := analyticsNow
+	analyticsNow = func() time.Time { return time.Date(2026, 10, 14, 3, 0, 0, 0, time.UTC) }
+	t.Cleanup(func() { analyticsNow = origNow })
+
+	var query url.Values
+	cmd := &cli.Command{
+		Name:  "list",
+		Flags: analyticsSessionListFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			var err error
+			query, err = buildAnalyticsListQuery(cmd)
+			return err
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), []string{"list", "--since", "6h"}))
+	assert.Equal(t, "2026-10-13", query.Get("start"))
+	assert.Empty(t, query.Get("end"))
+}
+
 // TestSearchedDefaultWindow checks when an empty listing gets the hint that only
 // the last 24 hours were searched: when neither --start nor a cursor set the
 // window, so a quiet day doesn't read as a project with no sessions.
@@ -331,6 +401,8 @@ func TestAnalyticsListModeFlags(t *testing.T) {
 		wantErr string
 	}{
 		{name: "dates in API-key mode", args: []string{"--start", "2026-10-01", "--end", "2026-10-03"}},
+		{name: "since in API-key mode", args: []string{"--since", "14d"}},
+		{name: "since in user session mode", args: []string{"--experimental-auth", "--since", "14d"}},
 		{name: "dates in user session mode", args: []string{"--experimental-auth", "--start", "2026-10-01", "--end", "2026-10-03"}},
 		{
 			name: "filters in user session mode",

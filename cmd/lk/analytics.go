@@ -219,6 +219,10 @@ func analyticsSessionListFlags() []cli.Flag {
 			Usage: "Page number (starts at 0)",
 		},
 		&cli.StringFlag{
+			Name:  "since",
+			Usage: "List sessions started within the last `DURATION`, such as 90m, 6h, 14d or 2w; can't be used with --start or --end",
+		},
+		&cli.StringFlag{
 			Name:  "start",
 			Usage: "List sessions started on or after `YYYY-MM-DD` (UTC)",
 		},
@@ -390,8 +394,8 @@ func analyticsEventFlags() []cli.Flag {
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
-// endpoint, and the Public API session list is cursor-paginated. --start/--end
-// work in both modes. The filter flags are sent only to the Public API for now.
+// endpoint, and the Public API session list is cursor-paginated. --since,
+// --start and --end work in both modes. The filter flags are sent only to the Public API for now.
 var analyticsListModeFlags = authModeFlags{
 	legacyOnly:       []string{"page"},
 	experimentalOnly: []string{"cursor", "status", "room", "tag", "sort-order"},
@@ -543,21 +547,70 @@ func buildAnalyticsListQuery(cmd *cli.Command) (url.Values, error) {
 		query.Set("page", strconv.Itoa(page))
 	}
 
-	startDate := cmd.String("start")
-	endDate := cmd.String("end")
-	start, end, err := validateAnalyticsDateRange(startDate, endDate)
+	// The API-key endpoint reads whole UTC days, so a --since window widens to
+	// start at midnight of the day it begins.
+	start, end, err := analyticsWindow(cmd)
 	if err != nil {
 		return nil, err
 	}
 
 	if !start.IsZero() {
-		query.Set("start", startDate)
+		query.Set("start", start.UTC().Format(time.DateOnly))
 	}
 	if !end.IsZero() {
-		query.Set("end", endDate)
+		query.Set("end", end.UTC().Format(time.DateOnly))
 	}
 
 	return query, nil
+}
+
+// analyticsNow is the clock --since counts back from; tests replace it.
+var analyticsNow = time.Now
+
+// analyticsWindow reads a session listing's window from --since, or else from
+// --start and --end. --since leaves end zero: both endpoints list up to now.
+func analyticsWindow(cmd *cli.Command) (time.Time, time.Time, error) {
+	since := cmd.String("since")
+	if since == "" {
+		return validateAnalyticsDateRange(cmd.String("start"), cmd.String("end"))
+	}
+	if cmd.IsSet("start") || cmd.IsSet("end") {
+		return time.Time{}, time.Time{}, errors.New("--since can't be used with --start or --end")
+	}
+	d, err := parseLookback(since)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	return analyticsNow().Add(-d), time.Time{}, nil
+}
+
+// parseLookback parses a --since duration: a whole number of days (14d) or
+// weeks (2w), or anything time.ParseDuration reads, such as 6h or 1h30m. It
+// must be positive.
+func parseLookback(s string) (time.Duration, error) {
+	invalid := fmt.Errorf("invalid duration %q, expected a positive duration such as 90m, 6h, 14d or 2w", s)
+	s = strings.TrimSpace(s)
+	var d time.Duration
+	if n := len(s); n > 1 && (s[n-1] == 'd' || s[n-1] == 'w') {
+		count, err := strconv.Atoi(s[:n-1])
+		if err != nil {
+			return 0, invalid
+		}
+		unit := 24 * time.Hour
+		if s[n-1] == 'w' {
+			unit *= 7
+		}
+		d = time.Duration(count) * unit
+	} else {
+		var err error
+		if d, err = time.ParseDuration(s); err != nil {
+			return 0, invalid
+		}
+	}
+	if d <= 0 {
+		return 0, invalid
+	}
+	return d, nil
 }
 
 // validateAnalyticsDateRange parses --start and --end. Both endpoints read them
@@ -744,7 +797,8 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	if len(sessions) == 0 && !asJSON && searchedDefaultWindow(opts) {
-		out.Statusf("Only the last 24 hours were searched — re-run with %s to look further back", util.Accented("--start YYYY-MM-DD"))
+		out.Statusf("Only the last 24 hours were searched — re-run with %s or %s to look further back",
+			util.Accented("--since 14d"), util.Accented("--start YYYY-MM-DD"))
 	}
 	return nil
 }
@@ -758,14 +812,15 @@ func searchedDefaultWindow(opts public.SessionListOptions) bool {
 
 // sessionListOptions reads the session list flags for the Public API. --start
 // and --end mean the same as on the API-key endpoint: UTC dates bounding when a
-// session started, end exclusive. Unknown status and sort order names fail here,
+// session started, end exclusive. --since starts the window that long before
+// now, to the second. Unknown status and sort order names fail here,
 // before the project lookup, like the date and limit checks.
 func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 	limit := cmd.Int("limit")
 	if limit <= 0 {
 		return public.SessionListOptions{}, errors.New("limit must be greater than 0")
 	}
-	start, end, err := validateAnalyticsDateRange(cmd.String("start"), cmd.String("end"))
+	start, end, err := analyticsWindow(cmd)
 	if err != nil {
 		return public.SessionListOptions{}, err
 	}
