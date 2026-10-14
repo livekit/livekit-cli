@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"charm.land/lipgloss/v2"
@@ -38,10 +36,8 @@ import (
 // file is the whole release process: no build or tag involved.
 const bannerURL = "https://raw.githubusercontent.com/livekit/livekit-cli/main/banner.json"
 
-// The banner prints at the top, so output written while the fetch is in flight
-// is held back and flushed behind it: the command keeps working, only its output
-// is delayed. To keep that off most runs, the fetched file is cached and reused
-// for bannerTTL.
+// The banner prints before the command runs, so a fetch delays the command.
+// To keep that off most runs, the fetched file is cached and reused for bannerTTL.
 const (
 	bannerTimeout = time.Second
 	bannerTTL     = time.Hour
@@ -135,67 +131,15 @@ func bannerMessages(raw []byte, version string) []string {
 	return msgs
 }
 
-// flushBanner blocks until the banner has been printed and held output released.
-// deferBanner installs it; the root command's After hook calls it so a command
-// cannot exit with output still held.
-var flushBanner = func() {}
-
-// bannerGate holds writes to the Printer until release, preserving their order
-// across stdout and stderr.
-type bannerGate struct {
-	mu      sync.Mutex
-	open    bool
-	pending []pendingWrite
-}
-
-type pendingWrite struct {
-	w io.Writer
-	b []byte
-}
-
-type gatedWriter struct {
-	g *bannerGate
-	w io.Writer
-}
-
-func (gw gatedWriter) Write(b []byte) (int, error) {
-	gw.g.mu.Lock()
-	defer gw.g.mu.Unlock()
-	if gw.g.open {
-		return gw.w.Write(b)
-	}
-	gw.g.pending = append(gw.g.pending, pendingWrite{gw.w, bytes.Clone(b)})
-	return len(b), nil
-}
-
-// release prints the banner to stderr, then the held writes, and lets later
-// writes straight through.
-func (g *bannerGate) release(raw []byte, stderr io.Writer) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.open = true
-	printBanner(raw, stderr)
-	for _, p := range g.pending {
-		_, _ = p.w.Write(p.b)
-	}
-	g.pending = nil
-}
-
-// deferBanner starts the fetch and gates the Printer until it completes.
-// Non-interactive runs (scripts, pipes) skip the fetch entirely.
-func deferBanner(ctx context.Context) {
+// showBanner prints the notices before the command runs. It blocks so the
+// banner owns the terminal first: prompts and spinners write to the terminal
+// directly and cannot be held behind it. Non-interactive runs (scripts, pipes)
+// skip the fetch entirely.
+func showBanner(ctx context.Context) {
 	if !out.Interactive() {
 		return
 	}
-	g := &bannerGate{}
-	stdout, stderr := out.Out, out.Err
-	out.Out, out.Err = gatedWriter{g, stdout}, gatedWriter{g, stderr}
-	done := make(chan struct{})
-	go func() {
-		g.release(loadBanner(ctx), stderr)
-		close(done)
-	}()
-	flushBanner = func() { <-done }
+	printBanner(loadBanner(ctx), out.Err)
 }
 
 // printBanner writes the notices for this build to stderr, honoring --quiet.
