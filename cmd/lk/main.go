@@ -75,10 +75,6 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 			},
 		},
 		Before: initLogger,
-		After: func(context.Context, *cli.Command) error {
-			flushBanner()
-			return nil
-		},
 	}
 
 	categorizeAgentCommands()
@@ -193,7 +189,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	}
 	util.DetectBackground()
 
-	deferBanner(ctx)
+	showBanner(ctx)
 
 	// Nudge users still on API-key auth toward the new account-based flow.
 	maybeShowUpgradeNotice(cmd, conf)
