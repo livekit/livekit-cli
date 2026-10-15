@@ -72,7 +72,7 @@ var simulateCommand = &cli.Command{
 	},
 	Commands: []*cli.Command{
 		simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand,
-		simulateGetCommand, simulateCancelCommand,
+		simulateGetCommand, simulateCancelCommand, simulateReportIssueCommand,
 	},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
@@ -204,6 +204,23 @@ var simulateExportCommand = &cli.Command{
 	},
 }
 
+var simulateReportIssueCommand = &cli.Command{
+	Name:            "report-issue",
+	Usage:           "Report a scenario whose simulated conversation or judge verdict looks wrong to LiveKit",
+	ArgsUsage:       "<run-id> <job-id>",
+	HideHelpCommand: true,
+	Before:          loadSimulateProject,
+	Action:          reportSimulationIssueCommand,
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "description",
+			Aliases:  []string{"d"},
+			Usage:    "What looks wrong, e.g. the simulated user was unrealistic or the verdict disagrees with the conversation",
+			Required: true,
+		},
+	},
+}
+
 // simulateGetCommand is Public-API-only: Hidden, and requires
 // --experimental-auth (user-based auth). `list` (simulate_list.go) and `cancel`
 // are dual-mode.
@@ -292,6 +309,31 @@ func cancelSimulationRunCommand(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 	out.Statusf("Cancelled simulation run %s", util.Accented(runID))
+	return nil
+}
+
+func reportSimulationIssueCommand(ctx context.Context, cmd *cli.Command) error {
+	runID, err := argN(cmd, 0, "run ID")
+	if err != nil {
+		return err
+	}
+	jobID, err := argN(cmd, 1, "job ID")
+	if err != nil {
+		return err
+	}
+	pc := simulateProjectConfig
+	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+	reportCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
+	defer cancel()
+	if _, err := client.ReportSimulationIssue(reportCtx, &livekit.SimulationRun_ReportIssue_Request{
+		ProjectId:       pc.ProjectId,
+		SimulationRunId: runID,
+		SimulationJobId: jobID,
+		Description:     cmd.String("description"),
+	}); err != nil {
+		return fmt.Errorf("unable to report simulation issue: %w", err)
+	}
+	out.Statusf("Reported scenario %s to LiveKit", util.Accented(jobID))
 	return nil
 }
 
@@ -942,6 +984,10 @@ func exportCommandHint(runID string) string {
 	return simulateCommandHint("export", runID) + " > " + runID + ".json"
 }
 
+func reportIssueCommandHint(runID string) string {
+	return simulateCommandHint("report-issue", runID+" <job-id>") + ` --description "..."`
+}
+
 // In view mode the re-open hint would echo the command the user just ran, so
 // only the export hint is worth printing.
 func writeSimulationRunHints(w io.Writer, runID string, viewing bool) {
@@ -949,6 +995,7 @@ func writeSimulationRunHints(w io.Writer, runID string, viewing bool) {
 		fmt.Fprintf(w, "To re-open this simulation, run: %s\n", viewCommandHint(runID))
 	}
 	fmt.Fprintf(w, "To export replay JSON, run: %s\n", exportCommandHint(runID))
+	fmt.Fprintf(w, "To report a scenario that looks wrong, run: %s\n", reportIssueCommandHint(runID))
 }
 
 func simulationDashboardURL(projectID, runID string) string {
