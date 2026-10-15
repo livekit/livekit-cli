@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -859,7 +858,7 @@ func describeTool(name, arguments string) (label, detail string) {
 	case "list_templates":
 		return "Listed the templates", detail
 	case "copy_to_clipboard":
-		return "Copied to your clipboard", detail
+		return "Copy to clipboard", detail
 	case "create_project":
 		return "Create a project", detail
 	case "confirm_action":
@@ -927,6 +926,13 @@ func (s *assistantSession) showCode(fc *agent.FunctionCall) {
 		return
 	}
 	s.shownCalls[fc.GetCallId()] = true
+	// The same code is already on screen, such as when the user asks to walk
+	// through it: don't show it again.
+	for _, code := range s.snippets {
+		if code == args.Code {
+			return
+		}
+	}
 	s.agentTurnForReply()
 
 	id := fc.GetCallId()
@@ -999,13 +1005,16 @@ func (s *assistantSession) showLink(fc *agent.FunctionCall) {
 	if args.Title == "" {
 		args.Title = "LiveKit docs"
 	}
+	s.turnCard = true
+	// The agent can call show_link before it answers. Show the card after the
+	// answer, when the reply ends (see showReadMore), and only one per reply.
+	if len(s.pendingLinks) > 0 {
+		return
+	}
 	s.agentTurnForReply()
 	id := fc.GetCallId()
 	s.links[id] = args.URL
-	s.turnCard = true
 	s.addSnippet(id, "link", args.Title, args.URL)
-	// The agent can call show_link before it answers. Show the card after the
-	// answer, when the reply ends (see showReadMore).
 	s.pendingLinks = append(s.pendingLinks, overlayLink{Type: "link", Turn: s.agentTurn, ID: id, Title: args.Title, URL: args.URL})
 }
 
@@ -1119,32 +1128,50 @@ func (s *assistantSession) openLink(id string) {
 	}
 }
 
-// copyByVoice copies the latest card whose title contains title, or the
-// latest card if title is empty, and replies with the title it copied.
-func (s *assistantSession) copyByVoice(requestID, title string) {
-	want := strings.ToLower(strings.TrimSpace(title))
+// copyByVoice copies the latest card of kind ("code", "link", "prompt", or
+// "latest" for any kind). title, if given, picks among cards of that kind by
+// the words they share, so the agent doesn't have to know exact titles. The
+// reply says exactly what was copied, or that there was nothing to copy.
+func (s *assistantSession) copyByVoice(requestID, kind, title string) {
+	ref, ok := s.pickCard(kind, title)
+	if !ok {
+		what := "card"
+		if kind != "" && kind != "latest" {
+			what = kind + " card"
+		}
+		s.replyTool(requestID, "", fmt.Errorf("nothing was copied: there's no %s on screen. Tell the user", what))
+		return
+	}
+	if err := clipboard.WriteAll(s.snippets[ref.id]); err != nil {
+		s.replyTool(requestID, "", fmt.Errorf("nothing was copied: %w", err))
+		return
+	}
+	s.out.Send(overlayCopied{"copied", ref.id})
+	s.replyTool(requestID, fmt.Sprintf("Copied the %s card %q. Tell the user in a few words what you copied.", ref.kind, ref.title), nil)
+}
+
+// pickCard returns the card to copy: of kind, and with the most words in
+// common with title, preferring the latest.
+func (s *assistantSession) pickCard(kind, title string) (snippetRef, bool) {
+	words := strings.Fields(strings.ToLower(title))
+	best, bestScore, found := snippetRef{}, -1, false
 	for i := len(s.snippetOrder) - 1; i >= 0; i-- {
 		ref := s.snippetOrder[i]
-		if want != "" && !strings.Contains(strings.ToLower(ref.title), want) {
+		if kind != "" && kind != "latest" && ref.kind != kind {
 			continue
 		}
-		if err := clipboard.WriteAll(s.snippets[ref.id]); err != nil {
-			s.replyTool(requestID, "", fmt.Errorf("couldn't copy to the clipboard: %w", err))
-			return
+		score := 0
+		cardTitle := strings.ToLower(ref.title)
+		for _, w := range words {
+			if len(w) > 2 && strings.Contains(cardTitle, w) {
+				score++
+			}
 		}
-		s.out.Send(overlayCopied{"copied", ref.id})
-		s.replyTool(requestID, fmt.Sprintf("Copied the %s card %q to the user's clipboard. Tell them what you copied.", ref.kind, ref.title), nil)
-		return
+		if score > bestScore {
+			best, bestScore, found = ref, score, true
+		}
 	}
-	if len(s.snippetOrder) == 0 {
-		s.replyTool(requestID, "", errors.New("there's nothing on screen to copy yet; show it with show_code or hand_off_task first"))
-		return
-	}
-	var titles []string
-	for _, ref := range s.snippetOrder {
-		titles = append(titles, ref.title)
-	}
-	s.replyTool(requestID, "", fmt.Errorf("no card on screen has %q in its title; the cards are: %s", title, strings.Join(titles, ", ")))
+	return best, found
 }
 
 // normalizeLang maps language names to the ones the page highlights.

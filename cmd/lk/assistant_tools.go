@@ -167,7 +167,7 @@ func (s *assistantSession) runTool(requestID, name string, args map[string]any) 
 		s.replyTool(requestID, "Marked.", nil)
 
 	case "copy_to_clipboard":
-		s.copyByVoice(requestID, str("title"))
+		s.copyByVoice(requestID, str("kind"), str("title"))
 
 	case "try_project":
 		s.proposeTryProject(requestID, flag("confirmed"))

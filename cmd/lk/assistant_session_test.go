@@ -183,3 +183,29 @@ func TestDocsPagesRead(t *testing.T) {
 	pages := docsPagesRead(`{"paths": ["/agents/build.md", "https://github.com/livekit/agents/blob/main/README.md"]}`, out)
 	require.Equal(t, []docsPage{{title: "Building voice agents", url: "https://docs.livekit.io/agents/build"}}, pages)
 }
+
+func TestPickCard(t *testing.T) {
+	s := &assistantSession{snippets: map[string]string{}}
+	s.addSnippet("c1", "code", "Terminal", "lk agent simulate text -n 10")
+	s.addSnippet("l1", "link", "Debugging and testing overview", "https://docs.livekit.io/testing/overview")
+	s.addSnippet("l2", "link", "Agent Simulations", "https://docs.livekit.io/testing/simulations")
+	s.addSnippet("p1", "prompt", "Prompt for your coding agent", "Add tools.")
+
+	pick := func(kind, title string) string {
+		ref, ok := s.pickCard(kind, title)
+		if !ok {
+			return ""
+		}
+		return ref.id
+	}
+	require.Equal(t, "p1", pick("latest", ""))
+	require.Equal(t, "l2", pick("link", ""))
+	require.Equal(t, "l1", pick("link", "the debugging overview link"))
+	require.Equal(t, "l1", pick("link", "Agent Simulations, Debugging and testing overview")) // the most shared words
+	require.Equal(t, "l2", pick("link", "Simulations"))
+	require.Equal(t, "c1", pick("code", "Agent Console"))
+	require.Equal(t, "p1", pick("prompt", ""))
+	empty := &assistantSession{snippets: map[string]string{}}
+	_, ok := empty.pickCard("link", "")
+	require.False(t, ok)
+}

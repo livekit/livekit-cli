@@ -12,6 +12,7 @@ import os
 import re
 import time
 import urllib.request
+from typing import Literal
 from collections.abc import Awaitable, Callable
 
 from livekit import agents
@@ -230,7 +231,7 @@ do the work:
   coding agent.
 
 set_up_coding_agent and try_project don't run right away. They show the command to the user and
-return a confirmation ID. Ask the user in one short sentence whether to go ahead. They can answer
+return a confirmation ID. try_project always waits for the user's answer. Ask the user in one short sentence whether to go ahead. They can answer
 by voice or on screen. If they agree by voice, call confirm_action with the ID and approved=true;
 if they decline, approved=false. Never call confirm_action unless the user has just agreed.
 
@@ -470,15 +471,23 @@ class Assistant(Agent):
         return "The link is on the user's screen. Don't repeat what you already said."
 
     @function_tool()
-    async def copy_to_clipboard(self, context: RunContext, title: str = "") -> str:
-        """Copy a code, command, or prompt card on screen to the user's clipboard. Use it only
-        when the user asks you to copy something.
+    async def copy_to_clipboard(
+        self,
+        context: RunContext,
+        kind: Literal["latest", "code", "link", "prompt"] = "latest",
+        title: str = "",
+    ) -> str:
+        """Copy a card on screen to the user's clipboard. Use it only when the user asks you to
+        copy something. It copies the latest card of the kind they mean.
 
         Args:
-            title: Part of the card's title, such as "agent.py", "Terminal", or "Prompt". Leave it
-                empty for the most recent card.
+            kind: What the user wants copied: "link" for a Read more link, "code" for code or a
+                command, "prompt" for a prompt for their coding agent, or "latest" for the most
+                recent card of any kind.
+            title: Optional words from the card's title, only when there are several cards of
+                that kind and the user named one.
         """
-        return await run_lk_tool("copy_to_clipboard", {"title": title})
+        return await run_lk_tool("copy_to_clipboard", {"kind": kind, "title": title})
 
     @function_tool()
     async def hand_off_task(self, context: RunContext, task: str) -> str:
@@ -578,18 +587,15 @@ class Assistant(Agent):
         )
 
     @function_tool()
-    async def try_project(self, context: RunContext, confirmed: bool = False) -> str:
-        """Run the agent the user created in this session, in this window, so they can talk to
-        it. The conversation switches to their agent until they press B to come back to you.
-        Unless confirmed is true, it waits for the user to confirm (see confirm_action). For any
-        other agent, it tells you how the user can run it in their own terminal.
-
-        Args:
-            confirmed: True if the user's last message asked for this or agreed to it, such
-                as "set up a voice agent here" or "yes" after you offered it. Then it runs
-                right away, without asking again. Otherwise leave it false, and ask.
+    async def try_project(self, context: RunContext) -> str:
+        """Run the agent the user created in this session again, in this window, so they can talk
+        to it. Only call it when the user asks to talk to their agent again. "Start building" or
+        "let me get to work" means coding, not this. The conversation switches to their agent
+        until they press B to come back to you. It always waits for the user to confirm on screen
+        or by voice (see confirm_action). For any other agent, it tells you how the user can run
+        it in their own terminal.
         """
-        return await run_lk_tool("try_project", {"confirmed": confirmed})
+        return await run_lk_tool("try_project", {"confirmed": False})
 
     @function_tool()
     async def explain_yourself(self, context: RunContext) -> str:
