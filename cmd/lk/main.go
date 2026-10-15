@@ -79,6 +79,12 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 				ArgsUsage: "[command path...]",
 				Action:    generateDocs,
 				Hidden:    true,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "list",
+						Usage: "Print the path of every command below the given one that has a reference entry, instead of its docs",
+					},
+				},
 			},
 		},
 		Before: initLogger,
