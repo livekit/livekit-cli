@@ -25,12 +25,13 @@ import (
 // can cancel the run and surface the worker's error, while tolerating
 // transient "no agent joined" timeouts from connection pacing.
 
-// pythonFatalMarkers are livekit-agents (Python) log lines that only appear on
-// a fatal, non-transient worker error. The JS framework will need its own set.
-var pythonFatalMarkers = []string{
+// fatalMarkers are livekit-agents (Python) and @livekit/agents (Node) log lines
+// that only appear on a fatal, non-transient worker error.
+var fatalMarkers = []string{
 	"unhandled exception while running the job task",
 	"error initializing process",
 	"closing due to unrecoverable error",
+	"error in entry function",
 }
 
 // a single fatal log line can be an isolated job crash
@@ -101,7 +102,7 @@ func countFatalMarkers(logs []string) int {
 
 func isFatalMarker(line string) bool {
 	plain := ansiEscapeRe.ReplaceAllString(line, "")
-	for _, marker := range pythonFatalMarkers {
+	for _, marker := range fatalMarkers {
 		if strings.Contains(plain, marker) {
 			return true
 		}
