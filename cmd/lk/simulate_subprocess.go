@@ -100,6 +100,10 @@ func checkTypeStrippingSupport(dir, nodeBin string) error {
 // equivalent floor from server client settings.
 const nodeAgentMinVersion = "1.0.0"
 
+// nodeSimulateMinVersion is the first @livekit/agents release with the
+// --simulation flag and LIVEKIT_AGENT_NAME_OVERRIDE, which simulate relies on.
+const nodeSimulateMinVersion = "1.4.11"
+
 // checkNodeSDKVersion gates a Node agent on minVersion, resolving the
 // installed @livekit/agents via the project's own runtime (see
 // agentfs.ResolveInstalledSDKVersion).
