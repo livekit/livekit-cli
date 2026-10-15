@@ -43,16 +43,11 @@ func commandDocs(cmd *cli.Command, path []string) string {
 	var b strings.Builder
 	usage := cmd.UsageText
 	if usage == "" {
-		usage = strings.Join(append([]string{"lk"}, path...), " ")
-		if len(cmd.VisibleCommands()) > 0 {
-			usage += " <command>"
+		var lines []string
+		for _, name := range append([]string{cmd.Name}, cmd.Aliases...) {
+			lines = append(lines, usageLine(cmd, append(path[:len(path)-1:len(path)-1], name)))
 		}
-		if len(docFlags(cmd)) > 0 {
-			usage += " [options]"
-		}
-		if cmd.ArgsUsage != "" {
-			usage += " " + cmd.ArgsUsage
-		}
+		usage = strings.Join(lines, "\n# or\n")
 	}
 	fmt.Fprintf(&b, "```shell\n%s\n```\n", strings.TrimSpace(usage))
 
@@ -70,16 +65,35 @@ func commandDocs(cmd *cli.Command, path []string) string {
 	if flags := docFlags(cmd); len(flags) > 0 {
 		// Each docs page covers one top-level command group, so options are
 		// labelled by the path below it: "Options for `deploy`".
-		label := strings.Join(path, " ")
+		// Aliases are joined into one label: "Options for `logs`/`tail`".
+		parent := strings.Join(path[:len(path)-1], " ")
 		if len(path) > 1 {
-			label = strings.Join(path[1:], " ")
+			parent = strings.Join(path[1:len(path)-1], " ")
 		}
-		fmt.Fprintf(&b, "\nOptions for `%s`:\n\n", label)
+		var labels []string
+		for _, name := range append([]string{cmd.Name}, cmd.Aliases...) {
+			labels = append(labels, "`"+strings.TrimSpace(parent+" "+name)+"`")
+		}
+		fmt.Fprintf(&b, "\nOptions for %s:\n\n", strings.Join(labels, "/"))
 		for _, f := range flags {
 			b.WriteString(flagDocs(f))
 		}
 	}
 	return b.String()
+}
+
+func usageLine(cmd *cli.Command, path []string) string {
+	usage := strings.Join(append([]string{"lk"}, path...), " ")
+	if len(cmd.VisibleCommands()) > 0 {
+		usage += " <command>"
+	}
+	if len(docFlags(cmd)) > 0 {
+		usage += " [options]"
+	}
+	if cmd.ArgsUsage != "" {
+		usage += " " + cmd.ArgsUsage
+	}
+	return usage
 }
 
 // docFlags is the command's own visible flags, without the --help flag urfave
