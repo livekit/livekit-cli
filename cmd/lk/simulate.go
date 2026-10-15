@@ -1034,21 +1034,26 @@ func requiredSamples(run *livekit.SimulationRun) int {
 	return max(1, int(math.Round(run.GetSampling().GetPassRate()*float64(k))))
 }
 
-// scenarioFailureCounts is the run's verdict: how many scenarios it holds and
-// how many of them finished below the pass rate. An unsampled run has one job
-// per scenario, so this counts failed jobs exactly as it always did.
-func scenarioFailureCounts(run *livekit.SimulationRun) (scenarios, failed int) {
+// scenarioKey groups a job with the other samples of its scenario; a job
+// without a scenario is its own.
+func scenarioKey(j *livekit.SimulationRun_Job) string {
+	if key := j.GetScenarioId(); key != "" {
+		return key
+	}
+	return j.GetId()
+}
+
+// scenarioFailures maps each scenario of the run to whether it finished below
+// the pass rate. An unsampled run has one job per scenario.
+func scenarioFailures(run *livekit.SimulationRun) map[string]bool {
 	required := requiredSamples(run)
 	byScenario := map[string][]*livekit.SimulationRun_Job{}
 	for _, j := range run.GetJobs() {
-		key := j.GetScenarioId()
-		if key == "" {
-			key = j.GetId()
-		}
+		key := scenarioKey(j)
 		byScenario[key] = append(byScenario[key], j)
 	}
-	for _, samples := range byScenario {
-		scenarios++
+	failures := make(map[string]bool, len(byScenario))
+	for key, samples := range byScenario {
 		passed, unfinished := 0, 0
 		for _, j := range samples {
 			switch {
@@ -1058,7 +1063,18 @@ func scenarioFailureCounts(run *livekit.SimulationRun) (scenarios, failed int) {
 				unfinished++
 			}
 		}
-		if passed < required && passed+unfinished < required {
+		failures[key] = passed < required && passed+unfinished < required
+	}
+	return failures
+}
+
+// scenarioFailureCounts is the run's verdict: how many scenarios it holds and
+// how many of them finished below the pass rate. An unsampled run has one job
+// per scenario, so this counts failed jobs exactly as it always did.
+func scenarioFailureCounts(run *livekit.SimulationRun) (scenarios, failed int) {
+	for _, f := range scenarioFailures(run) {
+		scenarios++
+		if f {
 			failed++
 		}
 	}
