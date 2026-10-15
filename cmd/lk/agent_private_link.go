@@ -42,7 +42,7 @@ var privateLinkCommands = &cli.Command{
 				},
 				&cli.StringFlag{
 					Name:     "endpoint",
-					Usage:    "The `ENDPOINT` to connect to: the AWS endpoint service name or the Azure Resource ID. Required.",
+					Usage:    "The `ENDPOINT` to connect to: the AWS endpoint service name, the Azure Private Link Service alias, or the Azure Resource ID.",
 					Required: true,
 				},
 				&cli.StringFlag{

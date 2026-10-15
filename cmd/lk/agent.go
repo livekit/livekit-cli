@@ -128,7 +128,7 @@ var (
 	idFlag = func(required bool) *cli.StringFlag {
 		return &cli.StringFlag{
 			Name:     "id",
-			Usage:    fmt.Sprintf("Agent `ID`. If unset and %s is present, uses the ID found there.", config.LiveKitTOMLFile),
+			Usage:    fmt.Sprintf("Agent `ID`. If unset, uses the ID in %s; without that file, the CLI prompts you to choose an agent.", config.LiveKitTOMLFile),
 			Required: required,
 		}
 	}
@@ -147,13 +147,23 @@ var (
 
 	attributeFlag = &cli.StringSliceFlag{
 		Name:     "attribute",
-		Usage:    "`KEY=VALUE` attribute pair, may be repeated. Merged with --attributes, taking precedence on conflicting keys.",
+		Usage:    "`KEY=VALUE` attribute to record on the new version. Repeatable. Merged with --attributes, taking precedence on conflicting keys.",
 		Required: false,
+	}
+
+	// versions filters by attributes instead of recording them.
+	versionsAttributesFlag = &cli.StringFlag{
+		Name:  "attributes",
+		Usage: "Show only versions that have every attribute in this `JSON` object of string key-value pairs, given as a literal or file path. Use \"-\" to read from stdin.",
+	}
+	versionsAttributeFlag = &cli.StringSliceFlag{
+		Name:  "attribute",
+		Usage: "Show only versions that have this `KEY=VALUE` attribute. Repeatable; a version must have all of them.",
 	}
 
 	noDefaultAttributesFlag = &cli.BoolFlag{
 		Name:  "no-default-attributes",
-		Usage: `Omit default git attributes from deployment.`,
+		Usage: "Don't record the default git_commit, git_branch, and git_tree attributes, which are added when the working directory is a git repository.",
 	}
 
 	secretsFileFlag = &cli.StringFlag{
@@ -191,8 +201,13 @@ var (
 
 	regionFlag = &cli.StringFlag{
 		Name:     "region",
-		Usage:    "`REGION` code to deploy the agent to. If unset, the CLI prompts you to select a region.",
+		Usage:    "`REGION` code to deploy the agent to. If unset, the CLI prompts you to select a region; with --yes or without a terminal, it fails.",
 		Required: false,
+	}
+
+	initRegionFlag = &cli.StringFlag{
+		Name:  "region",
+		Usage: "`REGION` code to deploy the agent to. Used only with --deploy. If unset, the CLI prompts you to select a region; with --yes or without a terminal, it fails.",
 	}
 
 	deploymentFlag = &cli.StringFlag{
@@ -216,7 +231,7 @@ var (
 
 	deleteDeploymentFlag = &cli.StringFlag{
 		Name:    "deployment",
-		Usage:   "`NAME` of the deployment to delete. If unset, deletes the entire agent, including production.",
+		Usage:   "`NAME` of the non-production deployment to delete. If unset, deletes the entire agent, including production.",
 		Aliases: []string{"d"},
 	}
 
@@ -229,12 +244,12 @@ var (
 
 	agentPrebuiltImageFlag = &cli.StringFlag{
 		Name:  "image",
-		Usage: "Pre-built `IMAGE` from the local Docker daemon (e.g. myimage:latest). Requires Docker.",
+		Usage: "Pre-built `IMAGE` from the local Docker daemon (e.g. myimage:latest). Requires Docker. lk agent deploy ignores --deployment with this flag.",
 	}
 
 	agentPrebuiltImageTarFlag = &cli.StringFlag{
 		Name:  "image-tar",
-		Usage: "Pre-built image from an OCI tar `FILE` (e.g. ./image.tar). No Docker daemon required.",
+		Usage: "Pre-built image from an OCI tar `FILE` (e.g. ./image.tar). No Docker daemon required. lk agent deploy ignores --deployment with this flag.",
 	}
 
 	skipSDKCheckFlag = &cli.BoolFlag{
@@ -269,7 +284,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						Flags: [][]cli.Flag{{
 							&cli.StringFlag{
 								Name:  "lang",
-								Usage: "`LANGUAGE` of the starter template. One of python, node.",
+								Usage: "`LANGUAGE` of the starter template. One of python, node. If unset, the CLI asks, with Python preselected; with --yes or without a terminal, it uses Python. Ignored with --template or --template-url.",
 								Action: func(ctx context.Context, cmd *cli.Command, l string) error {
 									if _, ok := starterTemplateURLs[l]; !ok {
 										return fmt.Errorf("unsupported language: %s", l)
@@ -279,7 +294,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 							},
 							&cli.BoolFlag{
 								Name:  "deploy",
-								Usage: "Deploy the agent to LiveKit Cloud after initialization.",
+								Usage: "Deploy the agent to LiveKit Cloud after initialization. Implies --install.",
 								Value: false,
 							},
 							templateFlag,
@@ -295,7 +310,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						}},
 					}},
 					Flags: []cli.Flag{
-						regionFlag,
+						initRegionFlag,
 						installFlag,
 						skillsSetupFlag,
 					},
@@ -432,8 +447,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:     "version",
-							Usage:    "`VERSION` to roll back to. Defaults to the most recent version prior to the current.",
-							Value:    "latest",
+							Usage:    "`VERSION` to roll back to, as listed by lk agent versions.",
 							Required: true,
 						},
 						idFlag(false),
@@ -472,8 +486,8 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Action: listAgentVersions,
 					Flags: []cli.Flag{
 						idFlag(false),
-						attributeFlag,
-						attributesFlag,
+						versionsAttributeFlag,
+						versionsAttributesFlag,
 						jsonFlag,
 					},
 					ArgsUsage: "[working-dir]",
@@ -512,7 +526,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						idFlag(false),
 						&cli.BoolFlag{
 							Name:     "overwrite",
-							Usage:    "Overwrite existing secrets.",
+							Usage:    "Replace all of the agent's existing secrets with the ones given, instead of adding to and updating them. Asks for confirmation unless --yes.",
 							Required: false,
 							Value:    false,
 						},

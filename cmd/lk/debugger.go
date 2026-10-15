@@ -83,7 +83,7 @@ var sessionIdleFlag = &cli.DurationFlag{
 
 var sessionAudioFlag = &cli.BoolFlag{
 	Name:  "audio",
-	Usage: "Speak each turn into the agent's microphone input instead of sending text.",
+	Usage: "Speak each turn into the agent's microphone input instead of sending text, running its full audio pipeline. Uses LiveKit Inference TTS on your connected LiveKit Cloud project.",
 }
 
 var sessionMetricsFlag = &cli.BoolFlag{
@@ -153,7 +153,7 @@ file you name explicitly:
    lk agent debugger start agent.ts -- --env-file=.env   # args after -- go to node/python
 
 After editing the agent's code, run "lk agent debugger restart" to relaunch it
-with a fresh conversation. Add --json to any command for machine-readable
+with a fresh conversation. Add --json to any command but logs for machine-readable
 output: each turn is a document with "text", "reply", "duration_ms", and an
 "events" list of message, tool_call, handoff, config, error, and log entries.
 Exit codes are non-zero when a turn fails or times out, or no session is
@@ -179,7 +179,7 @@ The agent reads its own .env for credentials, exactly like "lk agent console".
 Only one session runs per port; use --port for more, or "restart" to replace
 the current one. The session stops itself after --idle-timeout (default 30m)
 without any command, so a forgotten session does not linger.`,
-			Flags:  []cli.Flag{sessionPortFlag, sessionIdleFlag, sessionAudioFlag, jsonFlag},
+			Flags:  []cli.Flag{sessionPortFlag, sessionIdleFlag, sessionAudioFlag, jsonFlagWithUsage("Print the greeting events and session status as JSON.")},
 			Action: runSessionStart,
 		},
 		{
@@ -205,7 +205,7 @@ be piped on stdin:
    echo "Book me a table for two" | lk agent debugger say`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
-				jsonFlag,
+				jsonFlagWithUsage("Print the turn as one JSON document."),
 				sessionMetricsFlag,
 				&cli.DurationFlag{
 					Name:        "timeout",
@@ -215,7 +215,7 @@ be piped on stdin:
 				},
 				&cli.BoolFlag{
 					Name:  "logs",
-					Usage: "Show the agent's log lines emitted during the turn, beneath the step they belong to.",
+					Usage: "Show the agent's log lines emitted during the turn, beneath the step they belong to. Useful for finding a tool's traceback.",
 				},
 			},
 			Action: runSessionSay,
@@ -227,7 +227,7 @@ be piped on stdin:
 			Description: `Fetches the agent's own chat history, so it reflects exactly what the LLM has
 seen: user and agent messages, tool calls with results, handoffs, and
 instruction/tool changes. Works while a turn is in progress.`,
-			Flags:  []cli.Flag{sessionPortFlag, jsonFlag, sessionMetricsFlag},
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlagWithUsage("Print the chat history as one JSON document."), sessionMetricsFlag},
 			Action: runSessionHistory,
 		},
 		{
@@ -245,7 +245,7 @@ emits one JSON object per line (NDJSON), suitable for piping into jq or
 another program in real time.`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
-				jsonFlag,
+				jsonFlagWithUsage("Print one JSON object per event, one per line (NDJSON)."),
 				&cli.IntFlag{Name: "last", Aliases: []string{"n"}, Value: 50, Usage: "Print the last `N` events before streaming new ones. Use 0 for every event kept, up to 500."},
 				&cli.BoolFlag{Name: "logs", Usage: "Include the agent's log lines in the stream."},
 			},
@@ -259,7 +259,7 @@ agent (after handoffs) with its state, tools, and the first line of its
 instructions, the number of turns so far, and the path of the agent's log
 file. Exits 1 when no session is running. With --json the full instructions
 are included, and "running": false is printed instead of an error.`,
-			Flags:  []cli.Flag{sessionPortFlag, jsonFlag},
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlagWithUsage("Print the session status as JSON, including the active agent's full instructions. With no session running, prints \"running\": false and exits 1.")},
 			Action: runSessionStatus,
 		},
 		{
@@ -281,7 +281,7 @@ stripped). The whole log is also kept in a file; "status" shows its path. Use
 			Description: `Stops the running session, then starts a new one with the same entrypoint and
 port. The agent process is relaunched, so code changes take effect and the
 conversation starts fresh; the new greeting (if any) is printed like "start".`,
-			Flags:  []cli.Flag{sessionPortFlag, jsonFlag},
+			Flags:  []cli.Flag{sessionPortFlag, jsonFlagWithUsage("Print the greeting events and session status as JSON, like start.")},
 			Action: runSessionRestart,
 		},
 		{
@@ -293,7 +293,7 @@ was active at the end, and where the agent's log file is kept. Add
 entire log before the summary; --json returns everything in one document.`,
 			Flags: []cli.Flag{
 				sessionPortFlag,
-				jsonFlag,
+				jsonFlagWithUsage("Print the summary, conversation, and logs in one JSON document."),
 				&cli.BoolFlag{
 					Name:  "metrics",
 					Usage: "Show latency metrics with the conversation.",
