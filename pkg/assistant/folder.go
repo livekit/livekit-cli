@@ -156,7 +156,7 @@ func DescribeFolder(dir string) Folder {
 	scan("", entries, 1)
 	// A workspace root, such as a pnpm or npm workspace, only ties its
 	// projects together, so it isn't a project of its own.
-	if rootFound && !(len(f.Projects) > 0 && isWorkspaceRoot(dir)) {
+	if rootFound && (len(f.Projects) == 0 || !isWorkspaceRoot(dir)) {
 		root.Path = "."
 		f.Projects = append([]Project{root}, f.Projects...)
 	}
