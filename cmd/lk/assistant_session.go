@@ -205,7 +205,13 @@ func (s *assistantSession) run(ctx context.Context) (err error) {
 
 	s.connecting("Starting")
 
-	creds, err := resolveCredentials(s.cmd)
+	// Credentials come from the user's folder (its .env files, with
+	// --experimental-auth) or their lk config, not from the agent's folder.
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	creds, err := resolveCredentials(ctx, s.cmd, cwd)
 	if err != nil {
 		return errNoCredentials{err}
 	}

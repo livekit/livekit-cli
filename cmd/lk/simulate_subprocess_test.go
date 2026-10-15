@@ -52,5 +52,7 @@ func TestFindEntrypointIgnoresParentProject(t *testing.T) {
 
 	entry, err := findEntrypoint(child, "", agentfs.ProjectTypePythonUV)
 	require.NoError(t, err)
-	require.Equal(t, filepath.Join("src", "agent.py"), entry)
+	// findEntrypoint returns its root candidates with forward slashes on
+	// every platform.
+	require.Equal(t, "src/agent.py", filepath.ToSlash(entry))
 }
