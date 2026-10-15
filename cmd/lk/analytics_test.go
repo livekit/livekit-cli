@@ -221,8 +221,13 @@ func TestSessionListOptions(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "defaults",
-			want: public.SessionListOptions{Limit: defaultAnalyticsLimit, Statuses: []string{}, Tags: []string{}},
+			name: "defaults to the last 14 days",
+			want: public.SessionListOptions{
+				Limit:    defaultAnalyticsLimit,
+				Start:    now.AddDate(0, 0, -14),
+				Statuses: []string{},
+				Tags:     []string{},
+			},
 		},
 		{
 			name: "dates are UTC midnight, end exclusive",
@@ -366,14 +371,57 @@ func TestBuildAnalyticsListQuerySince(t *testing.T) {
 	assert.Empty(t, query.Get("end"))
 }
 
-// TestSearchedDefaultWindow checks when an empty listing gets the hint that only
-// the last 24 hours were searched: when neither --start nor a cursor set the
-// window, so a quiet day doesn't read as a project with no sessions.
-func TestSearchedDefaultWindow(t *testing.T) {
-	assert.True(t, searchedDefaultWindow(public.SessionListOptions{}))
-	assert.False(t, searchedDefaultWindow(public.SessionListOptions{Start: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)}))
-	// A cursor carries the window of the listing it came from.
-	assert.False(t, searchedDefaultWindow(public.SessionListOptions{Cursor: "abc"}))
+// TestBuildAnalyticsListQueryDefaultWindow checks that the API-key endpoint
+// gets the default window as the date it begins.
+func TestBuildAnalyticsListQueryDefaultWindow(t *testing.T) {
+	origNow := analyticsNow
+	analyticsNow = func() time.Time { return time.Date(2026, 10, 14, 3, 0, 0, 0, time.UTC) }
+	t.Cleanup(func() { analyticsNow = origNow })
+
+	var query url.Values
+	cmd := &cli.Command{
+		Name:  "list",
+		Flags: analyticsSessionListFlags(),
+		Action: func(_ context.Context, cmd *cli.Command) error {
+			var err error
+			query, err = buildAnalyticsListQuery(cmd)
+			return err
+		},
+	}
+	require.NoError(t, cmd.Run(context.Background(), []string{"list"}))
+	assert.Equal(t, "2026-09-30", query.Get("start"))
+	assert.Empty(t, query.Get("end"))
+}
+
+// TestUsesDefaultWindow checks when a listing searches the default window, and
+// so when an empty one gets the hint that only the last 14 days were searched:
+// when no --since, --start, --end or cursor sets the window.
+func TestUsesDefaultWindow(t *testing.T) {
+	tests := []struct {
+		args []string
+		want bool
+	}{
+		{nil, true},
+		{[]string{"--limit", "5", "--status", "active"}, true},
+		{[]string{"--since", "2d"}, false},
+		{[]string{"--start", "2026-10-01"}, false},
+		{[]string{"--end", "2026-10-01"}, false},
+		// A cursor carries the window of the listing it came from.
+		{[]string{"--cursor", "abc"}, false},
+	}
+	for _, tt := range tests {
+		var got bool
+		cmd := &cli.Command{
+			Name:  "list",
+			Flags: analyticsSessionListFlags(),
+			Action: func(_ context.Context, cmd *cli.Command) error {
+				got = usesDefaultWindow(cmd)
+				return nil
+			},
+		}
+		require.NoError(t, cmd.Run(context.Background(), append([]string{"list"}, tt.args...)))
+		assert.Equal(t, tt.want, got, tt.args)
+	}
 }
 
 // validateListModeFlags runs analyticsListModeFlags.validate on a command built
