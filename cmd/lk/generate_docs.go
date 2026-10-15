@@ -35,8 +35,26 @@ func generateDocs(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("unknown command: lk %s", strings.Join(path, " "))
 		}
 	}
+	if cmd.Bool("list") {
+		out.Result(strings.Join(documentedPaths(target, path), "\n"))
+		return nil
+	}
 	out.Result(commandDocs(target, path))
 	return nil
+}
+
+// documentedPaths is every command in cmd's subtree that the reference documents:
+// commands that are run (no subcommands), and groups that take their own options.
+func documentedPaths(cmd *cli.Command, path []string) []string {
+	subs := cmd.VisibleCommands()
+	var paths []string
+	if len(subs) == 0 || len(docFlags(cmd)) > 0 {
+		paths = append(paths, strings.Join(path, " "))
+	}
+	for _, sub := range subs {
+		paths = append(paths, documentedPaths(sub, append(path[:len(path):len(path)], sub.Name))...)
+	}
+	return paths
 }
 
 func commandDocs(cmd *cli.Command, path []string) string {
