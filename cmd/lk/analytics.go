@@ -43,6 +43,10 @@ const (
 	analyticsProjectSelectHint    = "Select a cloud project via --project or run `lk cloud auth`"
 )
 
+// defaultAnalyticsWindow is how far back a session listing searches when no
+// --since, --start or cursor sets its window.
+const defaultAnalyticsWindow = 14 * 24 * time.Hour
+
 // defaultPageLimit is how many of a session's participants, transcript
 // records, agent log records, metric points or events a page reads by default.
 const defaultPageLimit = 50
@@ -220,7 +224,7 @@ func analyticsSessionListFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:  "since",
-			Usage: "List sessions started within the last `DURATION`, such as 90m, 6h, 14d or 2w; can't be used with --start or --end",
+			Usage: "List sessions started within the last `DURATION`, such as 90m, 6h, 14d or 2w (default 14d unless --start is set); can't be used with --start or --end",
 		},
 		&cli.StringFlag{
 			Name:  "start",
@@ -435,6 +439,9 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 
 	if len(res.Sessions) == 0 {
 		out.Result("No sessions found")
+		if usesDefaultWindow(cmd) {
+			printDefaultWindowHint()
+		}
 		return nil
 	}
 
@@ -568,8 +575,14 @@ func buildAnalyticsListQuery(cmd *cli.Command) (url.Values, error) {
 var analyticsNow = time.Now
 
 // analyticsWindow reads a session listing's window from --since, or else from
-// --start and --end. --since leaves end zero: both endpoints list up to now.
+// --start and --end, or else defaults it to the last defaultAnalyticsWindow
+// rather than leaving it to the endpoint (the Public API searches only the
+// last 24 hours). A window starting at now - d leaves end zero: both
+// endpoints list up to now.
 func analyticsWindow(cmd *cli.Command) (time.Time, time.Time, error) {
+	if usesDefaultWindow(cmd) {
+		return analyticsNow().Add(-defaultAnalyticsWindow), time.Time{}, nil
+	}
 	since := cmd.String("since")
 	if since == "" {
 		return validateAnalyticsDateRange(cmd.String("start"), cmd.String("end"))
@@ -796,18 +809,29 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if err := render.SessionsPage(out, asJSON, sessions, nextCursor); err != nil {
 		return err
 	}
-	if len(sessions) == 0 && !asJSON && searchedDefaultWindow(opts) {
-		out.Statusf("Only the last 24 hours were searched — re-run with %s or %s to look further back",
-			util.Accented("--since 14d"), util.Accented("--start YYYY-MM-DD"))
+	if len(sessions) == 0 && !asJSON && usesDefaultWindow(cmd) {
+		printDefaultWindowHint()
 	}
 	return nil
 }
 
-// searchedDefaultWindow reports whether a listing left its window to the
-// Public API, which then searches only the last 24 hours. A cursor carries the
-// window of the listing it came from.
-func searchedDefaultWindow(opts public.SessionListOptions) bool {
-	return opts.Start.IsZero() && opts.Cursor == ""
+// usesDefaultWindow reports whether a listing searches the default window:
+// no --since, --start or --end set one, and no cursor carries the window of
+// the listing it came from.
+func usesDefaultWindow(cmd *cli.Command) bool {
+	for _, name := range []string{"since", "start", "end", "cursor"} {
+		if cmd.String(name) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+// printDefaultWindowHint says an empty listing searched only the default
+// window, so a quiet fortnight doesn't read as a project with no sessions.
+func printDefaultWindowHint() {
+	out.Statusf("Only the last 14 days were searched — re-run with %s or %s to look further back",
+		util.Accented("--since DURATION"), util.Accented("--start YYYY-MM-DD"))
 }
 
 // sessionListOptions reads the session list flags for the Public API. --start
