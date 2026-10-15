@@ -201,6 +201,19 @@ var (
 		Aliases:  []string{"d"},
 	}
 
+	deleteDeploymentFlag = &cli.StringFlag{
+		Name:    "deployment",
+		Usage:   "`NAME` of the deployment to delete. If unset, deletes the entire agent, including production.",
+		Aliases: []string{"d"},
+	}
+
+	promoteDeploymentFlag = &cli.StringFlag{
+		Name:     "deployment",
+		Usage:    "`NAME` of the non-production deployment whose image is promoted to production.",
+		Required: true,
+		Aliases:  []string{"d"},
+	}
+
 	agentPrebuiltImageFlag = &cli.StringFlag{
 		Name:  "image",
 		Usage: "Pre-built `IMAGE` from the local Docker daemon (e.g. myimage:latest). Requires Docker.",
@@ -344,7 +357,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Action: promoteAgent,
 					Flags: []cli.Flag{
 						idFlag(false),
-						deploymentFlag,
+						promoteDeploymentFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
@@ -422,7 +435,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 					Aliases: []string{"destroy"},
 					Flags: []cli.Flag{
 						idFlag(false),
-						deploymentFlag,
+						deleteDeploymentFlag,
 					},
 					ArgsUsage: "[working-dir]",
 				},
