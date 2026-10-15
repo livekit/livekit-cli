@@ -43,6 +43,11 @@ func generateDocs(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
+// docsInheritsOptions marks a subcommand whose behavior depends on its parent's
+// persistent options, so its docs point to them; other subcommands parse them
+// too but ignore them.
+const docsInheritsOptions = "docsInheritsOptions"
+
 // documentedPaths is every command in cmd's subtree that the reference documents:
 // commands that are run (no subcommands), and groups that take their own options.
 func documentedPaths(cmd *cli.Command, path []string) []string {
@@ -97,6 +102,10 @@ func commandDocs(cmd *cli.Command, path []string) string {
 			b.WriteString(flagDocs(f))
 		}
 	}
+
+	if inheritsOptions(cmd) {
+		fmt.Fprintf(&b, "\nAlso takes the options for `%s`.\n", strings.Join(path[1:len(path)-1], " "))
+	}
 	return b.String()
 }
 
@@ -105,13 +114,18 @@ func usageLine(cmd *cli.Command, path []string) string {
 	if len(cmd.VisibleCommands()) > 0 {
 		usage += " <command>"
 	}
-	if len(docFlags(cmd)) > 0 {
+	if len(docFlags(cmd)) > 0 || inheritsOptions(cmd) {
 		usage += " [options]"
 	}
 	if cmd.ArgsUsage != "" {
 		usage += " " + cmd.ArgsUsage
 	}
 	return usage
+}
+
+func inheritsOptions(cmd *cli.Command) bool {
+	inherits, _ := cmd.Metadata[docsInheritsOptions].(bool)
+	return inherits
 }
 
 // docFlags is the command's own visible flags, without the --help flag urfave
@@ -150,8 +164,18 @@ func flagDocs(f cli.Flag) string {
 		line += fmt.Sprintf(" (alias %s)", strings.Join(aliases, ", "))
 	}
 	line += ": " + sentence(usage)
+	if r, ok := f.(cli.RequiredFlag); ok && r.IsRequired() && !strings.Contains(usage, "Required") {
+		line += " Required."
+	}
 	if def := defaultText(doc); def != "" && !strings.Contains(usage, "Default") {
 		line += fmt.Sprintf(" Default: `%s`.", def)
+	}
+	if envs := doc.GetEnvVars(); len(envs) > 0 {
+		var quoted []string
+		for _, e := range envs {
+			quoted = append(quoted, "`"+e+"`")
+		}
+		line += fmt.Sprintf(" Also read from %s.", strings.Join(quoted, ", "))
 	}
 	return line + "\n"
 }
