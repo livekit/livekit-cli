@@ -67,8 +67,16 @@ var simulateCommand = &cli.Command{
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,
+	ArgsUsage:       "[entrypoint]",
+	// A bare `lk agent simulate` is text mode: the dashboard, CI templates and
+	// scripts written before the text subcommand existed all invoke it this way.
+	// The project loads here rather than in a Before, which subcommands would
+	// inherit (see loadSimulateProject).
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		return cli.ShowSubcommandHelp(cmd)
+		if _, err := loadSimulateProject(ctx, cmd); err != nil {
+			return err
+		}
+		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
 	},
 	Commands: []*cli.Command{
 		simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand,
