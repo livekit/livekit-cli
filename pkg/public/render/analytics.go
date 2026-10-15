@@ -43,14 +43,14 @@ func participantRow(p oapi.LivekitPublicapiAnalyticsV1ParticipantInfo) []string 
 	}
 }
 
-// stripControls removes the control characters a terminal acts on from
+// StripControls removes the control characters a terminal acts on from
 // untrusted text, such as what a participant, an agent, an LLM or a tool
 // chose: C0 controls except tab and newline, DEL, and C1 controls. Without
 // their ESC (or 8-bit CSI or OSC), escape sequences can't set the window
 // title, clear the screen or restyle what follows; their printable rest stays
 // visible. Invalid UTF-8 becomes U+FFFD, so no lone C1 byte gets through
 // either. --json needs none of this: JSON escapes control characters itself.
-func stripControls(s string) string {
+func StripControls(s string) string {
 	return strings.Map(func(r rune) rune {
 		if unicode.IsControl(r) && r != '\t' && r != '\n' {
 			return -1
@@ -264,12 +264,12 @@ func renderPage[T any](p *util.Printer, asJSON bool, page jsonPage[T], empty str
 	return nil
 }
 
-// moreAvailable says a page has more after it and how to read them: re-run
-// the same command, with the same flags, adding --cursor. what names the
+// moreAvailable says a page has more after it and the command that reads
+// them: the same one, with the same flags, and --cursor. what names the
 // page's items.
 func moreAvailable(p *util.Printer, what, nextCursor string) {
 	if nextCursor != "" {
-		p.Statusf("More %s available — re-run with %s", what, util.Accented("--cursor "+nextCursor))
+		p.Statusf("More %s available — next page: %s", what, util.NextPageHint(nextCursor))
 	}
 }
 
@@ -335,13 +335,14 @@ func formatBitrate(bps float64) string {
 	return fmt.Sprintf("%.1f %s", bps, units[i])
 }
 
-// SessionTranscript prints a page of a session's transcript, one line per
-// item with its time, role or kind, and latencies; --json prints the items as
-// the API sent them. empty says why a page has no items, on stderr in both
-// modes so --json output stays parseable.
-func SessionTranscript(p *util.Printer, asJSON bool, page public.TranscriptPage, empty string) error {
+// SessionTranscript prints a page of a session's transcript, as lines renders
+// it; --json prints the items as the API sent them. empty says why a page has
+// no items, on stderr in both modes so --json output stays parseable. lines
+// gets the items as the API sent them, so it must strip what a terminal acts
+// on from their text (see StripControls).
+func SessionTranscript(p *util.Printer, asJSON bool, page public.TranscriptPage, empty string, lines func([]public.TranscriptItem) []string) error {
 	jp := jsonPage[public.TranscriptItem]{Items: page.Items, NextCursor: page.NextCursor, SkippedRecords: page.SkippedRecords}
-	if err := renderPage(p, asJSON, jp, empty, transcriptLines); err != nil || asJSON {
+	if err := renderPage(p, asJSON, jp, empty, lines); err != nil || asJSON {
 		return err
 	}
 	switch n := page.SkippedRecords; {
@@ -352,110 +353,6 @@ func SessionTranscript(p *util.Printer, asJSON bool, page public.TranscriptPage,
 	}
 	moreAvailable(p, "items", page.NextCursor)
 	return nil
-}
-
-// transcriptToolTextMax caps a tool call's arguments and a tool result's
-// output on a line; --json has them whole.
-const transcriptToolTextMax = 200
-
-// transcriptLines renders transcript items one per line.
-func transcriptLines(items []public.TranscriptItem) []string {
-	lines := make([]string, 0, len(items))
-	for _, it := range items {
-		lines = append(lines, transcriptLine(it))
-	}
-	return lines
-}
-
-// transcriptLine renders one transcript item as a single line.
-func transcriptLine(it public.TranscriptItem) string {
-	at := "-"
-	if it.Timestamp != nil && !it.Timestamp.IsZero() {
-		at = it.Timestamp.Local().Format("15:04:05")
-	}
-	kind, body := transcriptItemText(it)
-	return fmt.Sprintf("%-8s  %-11s  %s", at, kind, body)
-}
-
-// transcriptItemText names an item's role or kind and says what it holds.
-func transcriptItemText(it public.TranscriptItem) (kind, body string) {
-	switch {
-	case it.Message != nil:
-		return messageText(*it.Message)
-	case it.ToolCall != nil:
-		c := it.ToolCall
-		return "TOOL CALL", dashText(c.Name) + "(" + clip(oneLine(util.Deref(c.Arguments)), transcriptToolTextMax) + ")"
-	case it.ToolResult != nil:
-		r := it.ToolResult
-		body = dashText(r.Name) + ": " + clip(oneLine(util.Deref(r.Output)), transcriptToolTextMax)
-		if util.Deref(r.IsError) {
-			body += "  [error]"
-		}
-		return "TOOL RESULT", body
-	case it.AgentHandoff != nil:
-		h := it.AgentHandoff
-		from := oneLine(util.Deref(h.FromAgentId))
-		if from != "" {
-			from += " "
-		}
-		return "HANDOFF", from + "→ " + dashText(h.ToAgentId)
-	case it.ConfigUpdate != nil:
-		u := it.ConfigUpdate
-		var parts []string
-		if util.Deref(u.Instructions) != "" {
-			parts = append(parts, "instructions changed")
-		}
-		if added := util.Deref(u.ToolsAdded); len(added) > 0 {
-			parts = append(parts, "tools added: "+oneLine(strings.Join(added, ", ")))
-		}
-		if removed := util.Deref(u.ToolsRemoved); len(removed) > 0 {
-			parts = append(parts, "tools removed: "+oneLine(strings.Join(removed, ", ")))
-		}
-		return "CONFIG", util.Dash(strings.Join(parts, " · "))
-	default:
-		return "UNKNOWN", util.Dash(oneLine(it.ID)) + " (a kind this lk doesn't know; see --json)"
-	}
-}
-
-// messageText renders a message: its role, its text on one line, its flags,
-// and the turn latencies the agent recorded (an agent message carries e2e,
-// LLM and TTS; a user message transcription, end of turn and the
-// on_user_turn_completed callback).
-func messageText(m oapi.LivekitPublicapiObservabilityV1TranscriptItemMessage) (kind, body string) {
-	kind = strings.TrimPrefix(util.DerefEnum(m.Role), "ROLE_")
-	if kind == "UNSPECIFIED" || kind == "-" {
-		kind = "MESSAGE"
-	}
-	body = util.Dash(oneLine(util.Deref(m.Text)))
-	if util.Deref(m.Interrupted) {
-		body += "  [interrupted]"
-	}
-	if util.Deref(m.Redacted) {
-		body += "  [redacted]"
-	}
-	var metrics []string
-	for _, l := range []struct {
-		name string
-		ms   *float64
-	}{
-		{"e2e", m.E2eLatencyMs},
-		{"llm_ttft", m.LlmTtftMs},
-		{"tts_ttfb", m.TtsTtfbMs},
-		{"transcription", m.TranscriptionDelayMs},
-		{"end_of_turn", m.EndOfTurnDelayMs},
-		{"on_user_turn_completed", m.OnUserTurnCompletedDelayMs},
-	} {
-		if l.ms != nil {
-			metrics = append(metrics, l.name+" "+formatMs(*l.ms))
-		}
-	}
-	if m.TranscriptConfidence != nil {
-		metrics = append(metrics, fmt.Sprintf("confidence %.2f", *m.TranscriptConfidence))
-	}
-	if len(metrics) > 0 {
-		body += "  (" + strings.Join(metrics, " · ") + ")"
-	}
-	return kind, body
 }
 
 // formatMs renders milliseconds, keeping one decimal under 100ms where it
@@ -469,7 +366,7 @@ func formatMs(ms float64) string {
 
 // oneLine joins text recorded across lines with spaces, its control
 // characters stripped: what an agent, an LLM or a tool wrote is untrusted.
-func oneLine(s string) string { return stripControls(strings.Join(strings.Fields(s), " ")) }
+func oneLine(s string) string { return StripControls(strings.Join(strings.Fields(s), " ")) }
 
 // clip shortens s to max runes, marking the cut with an ellipsis.
 func clip(s string, max int) string {
@@ -607,9 +504,9 @@ func payloadValue(v *oapi.GoogleProtobufValue) string {
 	}
 	var s string
 	if json.Unmarshal(raw, &s) != nil {
-		return stripControls(string(raw))
+		return StripControls(string(raw))
 	}
-	s = stripControls(s)
+	s = StripControls(s)
 	if s == "" || strings.ContainsFunc(s, func(r rune) bool { return unicode.IsSpace(r) || r == '"' }) {
 		return strconv.Quote(s)
 	}
@@ -628,8 +525,8 @@ func SessionTraces(p *util.Printer, asJSON bool, page public.TracePage, empty st
 	if err := renderPage(p, asJSON, jp, empty, spanLines); err != nil || asJSON || page.NextCursor == "" {
 		return err
 	}
-	p.Statusf("Printed %d spans; more remain — raise --limit to read them into this tree, or re-run with %s for the next ones",
-		len(page.Spans), util.Accented("--cursor "+page.NextCursor))
+	p.Statusf("Printed %d spans; more remain — raise --limit to read them into this tree, or read the next ones with %s",
+		len(page.Spans), util.NextPageHint(page.NextCursor))
 	return nil
 }
 

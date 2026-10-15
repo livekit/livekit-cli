@@ -582,7 +582,7 @@ func renderProjects(cmd *cli.Command, projects []oapi.LivekitPublicapiProjectsV1
 	}
 	out.Result(projectTable(entries, ""))
 	if nextCursor != "" {
-		out.Statusf("More results available — re-run with %s", util.Accented("--cursor "+nextCursor))
+		out.Statusf("More results available — next page: %s", util.NextPageHint(nextCursor))
 	}
 	return nil
 }

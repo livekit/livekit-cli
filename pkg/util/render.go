@@ -53,7 +53,7 @@ type page[T any] struct {
 
 // RenderPage prints one page of a cursor-paginated listing. As JSON it emits
 // {items, nextCursor} so a caller can iterate; as a table it prints the rows
-// and, when nextCursor is non-empty, a hint to re-run with --cursor.
+// and, when nextCursor is non-empty, the command that reads the next page.
 func RenderPage[T any](p *Printer, asJSON bool, list []T, nextCursor, empty string, headers []string, row func(T) []string) error {
 	// Normalize to a non-nil slice so the JSON shape is always {"items": [...]},
 	// never {"items": null}, for consumers like jq.
@@ -67,7 +67,7 @@ func RenderPage[T any](p *Printer, asJSON bool, list []T, nextCursor, empty stri
 		return err
 	}
 	if nextCursor != "" {
-		p.Statusf("More results available — re-run with %s", Accented("--cursor "+nextCursor))
+		p.Statusf("More results available — next page: %s", NextPageHint(nextCursor))
 	}
 	return nil
 }
