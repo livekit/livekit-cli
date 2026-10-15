@@ -220,6 +220,9 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 		out.Statusf("Dashboard:  %s", url)
 	}
 
+	if brokenAgent {
+		return fmt.Errorf("the agent failed to run the simulations; the run was cancelled")
+	}
 	return runFailureError(run)
 }
 

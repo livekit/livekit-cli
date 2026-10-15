@@ -133,3 +133,14 @@ func TestAgentBroken(t *testing.T) {
 		})
 	}
 }
+
+func TestAgentBrokenOnExit(t *testing.T) {
+	run := &livekit.SimulationRun{Jobs: []*livekit.SimulationRun_Job{
+		{Status: livekit.SimulationRun_Job_STATUS_COMPLETED},
+		{Status: livekit.SimulationRun_Job_STATUS_RUNNING},
+	}}
+	ap := &AgentProcess{exitCh: make(chan struct{})}
+	require.False(t, agentBroken(run, ap))
+	close(ap.exitCh)
+	require.True(t, agentBroken(run, ap))
+}

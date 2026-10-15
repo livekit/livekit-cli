@@ -42,8 +42,12 @@ const maxAgentNotJoined = 3
 
 // agentBroken reports whether the worker is failing systemically. A completed
 // scenario proves the agent worked until that scenario ended, not after it: an
-// agent that dies or wedges mid-run fails every remaining job on join.
+// agent that dies or wedges mid-run fails every remaining job on join. A local
+// agent whose process exited can't join any remaining job.
 func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
+	if ap != nil && ap.Exited() {
+		return true
+	}
 	var lastCompleted time.Time
 	completed := false
 	for _, job := range run.GetJobs() {
