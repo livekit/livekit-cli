@@ -61,14 +61,20 @@ const (
 )
 
 var simulateCommand = &cli.Command{
-	Name:    "simulate",
-	Aliases: []string{"simulation"},
-	Usage:   "Run judged simulations of an agent on LiveKit Cloud",
+	Name:      "simulate",
+	Aliases:   []string{"simulation"},
+	Usage:     "Run judged simulations of an agent on LiveKit Cloud",
+	ArgsUsage: "[entrypoint]",
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,
+	// Bare `simulate` is `simulate text`: docs, the dashboard and published
+	// posts all tell users to run it without a subcommand.
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		return cli.ShowSubcommandHelp(cmd)
+		if _, err := loadSimulateProject(ctx, cmd); err != nil {
+			return err
+		}
+		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
 	},
 	Commands: []*cli.Command{
 		simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand,
