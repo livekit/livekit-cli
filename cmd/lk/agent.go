@@ -201,6 +201,18 @@ var (
 		Aliases:  []string{"d"},
 	}
 
+	// create always deploys to production and deploy keeps the region the agent
+	// was created in; both still accept these flags so existing scripts keep working.
+	ignoredDeploymentFlag = &cli.StringFlag{
+		Name:    "deployment",
+		Aliases: []string{"d"},
+		Hidden:  true,
+	}
+	ignoredRegionFlag = &cli.StringFlag{
+		Name:   "region",
+		Hidden: true,
+	}
+
 	deleteDeploymentFlag = &cli.StringFlag{
 		Name:    "deployment",
 		Usage:   "`NAME` of the deployment to delete. If unset, deletes the entire agent, including production.",
@@ -287,7 +299,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						secretsMountFlag,
 						ignoreEmptySecretsFlag,
 						regionFlag,
-						deploymentFlag,
+						ignoredDeploymentFlag,
 						skipSDKCheckFlag,
 						agentPrebuiltImageFlag,
 						agentPrebuiltImageTarFlag,
@@ -338,7 +350,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						secretsFlag,
 						secretsFileFlag,
 						secretsMountFlag,
-						regionFlag,
+						ignoredRegionFlag,
 						deploymentFlag,
 						ignoreEmptySecretsFlag,
 						skipSDKCheckFlag,
