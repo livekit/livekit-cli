@@ -129,6 +129,7 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 
 	checkForLegacyName()
 
+	util.CommandArgs = os.Args
 	err := app.Run(ctx, os.Args)
 	if err != nil {
 		errStyle := lipgloss.NewStyle().Foreground(util.Error())

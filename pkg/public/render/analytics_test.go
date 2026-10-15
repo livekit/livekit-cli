@@ -250,7 +250,7 @@ func TestStripControls(t *testing.T) {
 		"naïve 日本 🎉":                       "naïve 日本 🎉",
 		"bad\xffbyte":                      "bad" + string(utf8.RuneError) + "byte", // so no lone C1 byte gets through
 	} {
-		assert.Equal(t, want, stripControls(in), "%q", in)
+		assert.Equal(t, want, StripControls(in), "%q", in)
 	}
 }
 
@@ -389,72 +389,40 @@ func decodeTranscriptItems(t *testing.T) []public.TranscriptItem {
 	return items
 }
 
-// TestSessionTranscriptText checks each item prints as one line with its role
-// and latencies, and the page's skipped records and next cursor are reported.
-func TestSessionTranscriptText(t *testing.T) {
-	prevLocal := time.Local
-	time.Local = time.UTC
-	t.Cleanup(func() { time.Local = prevLocal })
+// itemIDs renders transcript items as their ids, a stand-in for the caller's
+// renderer.
+func itemIDs(items []public.TranscriptItem) []string {
+	lines := make([]string, 0, len(items))
+	for _, it := range items {
+		lines = append(lines, it.ID)
+	}
+	return lines
+}
 
+// TestSessionTranscriptText checks the items print as the caller renders
+// them, and the page's skipped records and next cursor are reported.
+func TestSessionTranscriptText(t *testing.T) {
 	page := public.TranscriptPage{Items: decodeTranscriptItems(t), NextCursor: "c2", SkippedRecords: 1}
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, page, "unused"))
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, page, "unused", itemIDs))
 
-	assert.Equal(t, strings.Join([]string{
-		"11:00:01  USER         hi there  (transcription 150ms · end_of_turn 320ms · confidence 0.93)",
-		"11:00:02  AGENT        hello  [interrupted]  (e2e 820ms · llm_ttft 310ms · tts_ttfb 95.2ms)",
-		"11:00:02  SYSTEM       be nice  [redacted]",
-		`11:00:03  TOOL CALL    lookup({"q":1})`,
-		"11:00:04  TOOL RESULT  lookup: boom  [error]",
-		"11:00:05  HANDOFF      greeter → triage",
-		"11:00:06  CONFIG       instructions changed · tools added: lookup, book · tools removed: old",
-		"11:00:07  UNKNOWN      item_8 (a kind this lk doesn't know; see --json)",
-		"",
-	}, "\n"), stdout.String())
+	assert.Equal(t, "item_1\nitem_2\nitem_3\nitem_4\nitem_5\nitem_6\nitem_7\nitem_8\n", stdout.String())
 	assert.Contains(t, stderr.String(), "1 record couldn't be read as a transcript item")
-	assert.Contains(t, stderr.String(), "More items available — re-run with --cursor c2")
+	assert.Contains(t, stderr.String(), "More items available — next page: --cursor c2")
 	assert.NotContains(t, stderr.String(), "unused")
-}
-
-// TestTranscriptLineClipsToolText keeps a long tool output to one short line.
-func TestTranscriptLineClipsToolText(t *testing.T) {
-	output := strings.Repeat("é", 300) + "\nmore"
-	line := transcriptLine(public.TranscriptItem{ToolResult: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolResult{Name: ptr("dump"), Output: &output}})
-	assert.Equal(t, "-         TOOL RESULT  dump: "+strings.Repeat("é", 199)+"…", line)
-}
-
-// TestSessionTranscriptStripsEscapes checks what an LLM, a tool or the agent
-// put in a transcript reaches a terminal with its escape sequences stripped,
-// each item still on one line.
-func TestSessionTranscriptStripsEscapes(t *testing.T) {
-	text := "hi" + escapes + "\nthere"
-	items := []public.TranscriptItem{
-		{Message: &oapi.LivekitPublicapiObservabilityV1TranscriptItemMessage{Text: &text}},
-		{ToolCall: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolCall{Name: &text, Arguments: &text}},
-		{ToolResult: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolResult{Name: &text, Output: &text}},
-		{AgentHandoff: &oapi.LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff{FromAgentId: &text, ToAgentId: &text}},
-		{ConfigUpdate: &oapi.LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate{ToolsAdded: &[]string{text}, ToolsRemoved: &[]string{text}}},
-		{ID: text},
-	}
-
-	var stdout, stderr bytes.Buffer
-	require.NoError(t, SessionTranscript(terminalPrinter(&stdout, &stderr), false, public.TranscriptPage{Items: items}, ""))
-	assertNoEscapes(t, stdout.String())
-	assert.Equal(t, 10, strings.Count(stdout.String(), "hi]0;pwned[2J there"))
-	assert.Equal(t, len(items), strings.Count(stdout.String(), "\n"))
 }
 
 // TestSessionTranscriptEmpty prints the caller's reason for an empty page.
 func TestSessionTranscriptEmpty(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, public.TranscriptPage{}, "Session RM_1 is still active"))
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, public.TranscriptPage{}, "Session RM_1 is still active", itemIDs))
 	assert.Empty(t, stdout.String())
 	assert.Equal(t, "Session RM_1 is still active\n", stderr.String())
 
 	// --json keeps stdout parseable and still says why on stderr.
 	stdout.Reset()
 	stderr.Reset()
-	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), true, public.TranscriptPage{}, "Session RM_1 is still active"))
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), true, public.TranscriptPage{}, "Session RM_1 is still active", itemIDs))
 	assert.JSONEq(t, `{"items":[]}`, stdout.String())
 	assert.Equal(t, "Session RM_1 is still active\n", stderr.String())
 }
@@ -465,7 +433,7 @@ func TestSessionTranscriptEmpty(t *testing.T) {
 func TestSessionTranscriptNoItemsNotEmpty(t *testing.T) {
 	for _, page := range []public.TranscriptPage{{SkippedRecords: 2}, {NextCursor: "c2"}} {
 		var stdout, stderr bytes.Buffer
-		require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, page, "No more transcript items"))
+		require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, page, "No more transcript items", itemIDs))
 		assert.Empty(t, stdout.String())
 		assert.NotContains(t, stderr.String(), "No more transcript items")
 	}
@@ -476,7 +444,7 @@ func TestSessionTranscriptNoItemsNotEmpty(t *testing.T) {
 func TestSessionTranscriptJSON(t *testing.T) {
 	page := public.TranscriptPage{Items: decodeTranscriptItems(t), NextCursor: "c2", SkippedRecords: 1}
 	var stdout bytes.Buffer
-	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, nil, true), true, page, ""))
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, nil, true), true, page, "", itemIDs))
 	assert.JSONEq(t, `{"items":`+transcriptItems+`,"nextCursor":"c2","skippedRecords":1}`, stdout.String())
 }
 
@@ -498,7 +466,7 @@ func decodeLogRecords(t *testing.T) []oapi.LivekitPublicapiObservabilityV1LogRec
 }
 
 // TestSessionLogsText checks each record prints as one line with its time,
-// level, logger and message, and a next page says to re-run with its cursor.
+// level, logger and message, and a next page names the command that reads it.
 // TestSessionLogsStripEscapes checks what the agent logged, which can quote
 // an LLM or a participant, reaches a terminal with its escape sequences
 // stripped and its messages still lined up.
@@ -535,7 +503,7 @@ func TestSessionLogsText(t *testing.T) {
 		"-             -       -               evaluation passed",
 		"",
 	}, "\n"), stdout.String())
-	assert.Contains(t, stderr.String(), "More records available — re-run with --cursor c2")
+	assert.Contains(t, stderr.String(), "More records available — next page: --cursor c2")
 	assert.NotContains(t, stderr.String(), "unused")
 }
 
@@ -664,7 +632,7 @@ func TestSessionTracesMore(t *testing.T) {
 	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, &stderr, false), false, page, ""))
 	assert.Contains(t, stderr.String(), "Printed 6 spans; more remain")
 	assert.Contains(t, stderr.String(), "--limit")
-	assert.Contains(t, stderr.String(), "or re-run with --cursor c2 for the next ones")
+	assert.Contains(t, stderr.String(), "or read the next ones with --cursor c2")
 }
 
 // TestSessionTracesEmpty prints the caller's reason for no spans, on stderr in
@@ -764,7 +732,7 @@ func TestSessionMetricsText(t *testing.T) {
 		"",
 	}, "\n"), stdout.String())
 	assert.Contains(t, stderr.String(),
-		"More points available — re-run with --cursor c2")
+		"More points available — next page: --cursor c2")
 	assert.NotContains(t, stderr.String(), "unused")
 }
 
@@ -848,7 +816,7 @@ func TestSessionEventsText(t *testing.T) {
 		"",
 	}, "\n"), stdout.String())
 	assert.Contains(t, stderr.String(),
-		"More events available — re-run with --cursor c2")
+		"More events available — next page: --cursor c2")
 	assert.NotContains(t, stderr.String(), "unused")
 }
 

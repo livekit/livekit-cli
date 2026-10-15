@@ -47,15 +47,16 @@ const (
 // --since, --start or cursor sets its window.
 const defaultAnalyticsWindow = 14 * 24 * time.Hour
 
-// defaultPageLimit is how many of a session's participants, transcript
-// records, agent log records, metric points or events a page reads by default.
+// defaultPageLimit is how many of a session's participants a page reads by
+// default.
 const defaultPageLimit = 50
 
-// defaultTraceLimit caps how many spans `session traces` reads: ten of the
-// server's largest pages, enough for a long agent session's tree. The tree
-// needs a span's parent to place it, so the command reads every page up to
-// the limit rather than printing one page.
-const defaultTraceLimit = 1000
+// defaultReadLimit caps how many transcript items, agent log records, trace
+// spans, metric points or events a session read takes by default: one of the
+// server's largest pages (public.MaxPageSize). A larger --limit reads every
+// page up to it rather than printing one page, so a session reads whole in
+// one run; the trace tree also needs a span's parent to place it.
+const defaultReadLimit = 1000
 
 var (
 	AnalyticsCommands = []*cli.Command{
@@ -125,7 +126,7 @@ var (
 							Name:      "traces",
 							Usage:     "Print a session's trace spans as a tree (requires --experimental-auth)",
 							ArgsUsage: "SESSION_ID",
-							Action:    sessionRead(traceOptions, fetchSessionTraces),
+							Action:    sessionRead(pageOptions, fetchSessionTraces),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsTraceFlags()...),
 						},
 						{
@@ -274,7 +275,7 @@ func pageFlags(defaultLimit int, items string) []cli.Flag {
 	return []cli.Flag{
 		&cli.IntFlag{
 			Name:  "limit",
-			Usage: "Maximum number of " + items + " to read (the server caps it at 100)",
+			Usage: "Maximum number of " + items + " to read (the server caps it at 1000)",
 			Value: defaultLimit,
 		},
 		// Hidden like session list's: pass the cursor a prior page printed,
@@ -324,10 +325,30 @@ func analyticsRecordingFlags() []cli.Flag {
 	}
 }
 
+// readFlags returns fresh --limit and --cursor flags for a command that reads
+// every page of a session's items up to --limit (see readPages), for the same
+// reason as analyticsSessionListFlags.
+func readFlags(items string) []cli.Flag {
+	return []cli.Flag{
+		&cli.IntFlag{
+			Name:  "limit",
+			Usage: "Maximum number of " + items + " to read; the command reads every page up to it",
+			Value: defaultReadLimit,
+		},
+		// Hidden like session list's: pass the cursor a read that stopped at its
+		// limit printed, with the same filters and order, to read the rest.
+		&cli.StringFlag{
+			Name:   "cursor",
+			Usage:  "Read from `CURSOR`, where a prior read stopped",
+			Hidden: true,
+		},
+	}
+}
+
 // analyticsTranscriptFlags returns fresh instances of the transcript's own
 // flags (the shared jsonFlag is added by the command).
 func analyticsTranscriptFlags() []cli.Flag {
-	return pageFlags(defaultPageLimit, "transcript records")
+	return readFlags("transcript items")
 }
 
 // analyticsLogFlags returns fresh instances of the agent logs' own flags (the
@@ -342,29 +363,14 @@ func analyticsLogFlags() []cli.Flag {
 			Name:  "sort-order",
 			Usage: "Order by time: `ORDER` asc or desc, default asc",
 		},
-	}, pageFlags(defaultPageLimit, "records")...)
+	}, readFlags("records")...)
 }
 
 // analyticsTraceFlags returns fresh instances of the trace spans' own flags
-// (the shared jsonFlag is added by the command), for the same reason as
-// analyticsSessionListFlags. They aren't pageFlags: the command reads every
-// page up to --limit, and --cursor resumes a read that stopped there.
+// (the shared jsonFlag is added by the command). Their parents were read
+// before a --cursor, so spans read from one print as roots.
 func analyticsTraceFlags() []cli.Flag {
-	return []cli.Flag{
-		&cli.IntFlag{
-			Name:  "limit",
-			Usage: "Maximum number of spans to read; the command reads every page up to it",
-			Value: defaultTraceLimit,
-		},
-		// Hidden like session list's: pass the cursor a read that stopped at its
-		// limit printed to read the spans after it. Their parents were read
-		// before, so they print as roots.
-		&cli.StringFlag{
-			Name:   "cursor",
-			Usage:  "Read from `CURSOR`, where a prior read stopped",
-			Hidden: true,
-		},
-	}
+	return readFlags("spans")
 }
 
 // analyticsMetricFlags returns fresh instances of the agent metrics' own flags
@@ -375,7 +381,7 @@ func analyticsMetricFlags() []cli.Flag {
 			Name:  "name",
 			Usage: "Print only the points of the metric named `NAME`, matched exactly, such as lk.agents.turn.e2e_latency; repeatable (default every metric)",
 		},
-	}, pageFlags(defaultPageLimit, "points")...)
+	}, readFlags("points")...)
 }
 
 // analyticsEventFlags returns fresh instances of the session events' own flags
@@ -394,7 +400,7 @@ func analyticsEventFlags() []cli.Flag {
 			Name:  "sort-order",
 			Usage: "Order by time: `ORDER` asc or desc, default asc",
 		},
-	}, pageFlags(defaultPageLimit, "events")...)
+	}, readFlags("events")...)
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
@@ -1089,10 +1095,44 @@ func pageOptions(cmd *cli.Command) (public.PageOptions, error) {
 	return public.PageOptions{Limit: int32(limit), Cursor: cmd.String("cursor")}, nil
 }
 
-// fetchSessionTranscript reads one page of a session's transcript and prints
-// it, saying why when the first page is empty.
+// readPages reads a session's items page by page from page.Cursor, in full
+// pages but no more than page.Limit in all, and returns them with the cursor
+// where it stopped: empty once it read the last page. fetch reads one page.
+func readPages[T any](page public.PageOptions, fetch func(public.PageOptions) ([]T, string, error)) ([]T, string, error) {
+	var all []T
+	next := page.Cursor
+	for {
+		items, cursor, err := fetch(public.PageOptions{
+			Limit:  min(public.MaxPageSize, page.Limit-int32(len(all))),
+			Cursor: next,
+		})
+		if err != nil {
+			return nil, "", err
+		}
+		all = append(all, items...)
+		// A cursor that didn't move would read the same page forever.
+		stuck := cursor == next
+		next = cursor
+		if next == "" || stuck || len(all) >= int(page.Limit) {
+			return all, next, nil
+		}
+	}
+}
+
+// fetchSessionTranscript reads a session's transcript, every page up to
+// opts.Limit items, and prints it like the agent debugger's history, saying
+// why when there is none.
 func fetchSessionTranscript(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.PageOptions, asJSON bool) error {
-	page, err := client.GetSessionTranscript(ctx, projectID, sessionID, opts)
+	page := &public.TranscriptPage{}
+	var err error
+	page.Items, page.NextCursor, err = readPages(opts, func(o public.PageOptions) ([]public.TranscriptItem, string, error) {
+		p, err := client.GetSessionTranscript(ctx, projectID, sessionID, o)
+		if err != nil {
+			return nil, "", err
+		}
+		page.SkippedRecords += p.SkippedRecords
+		return p.Items, p.NextCursor, nil
+	})
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "transcript", projectAdminAccess)
 	}
@@ -1103,7 +1143,24 @@ func fetchSessionTranscript(ctx context.Context, client *public.Client, projectI
 	if len(page.Items) == 0 && page.SkippedRecords == 0 && page.NextCursor == "" {
 		empty = emptyTranscriptReason(ctx, client, projectID, sessionID, opts.Cursor != "")
 	}
-	return render.SessionTranscript(out, asJSON, *page, empty)
+	return render.SessionTranscript(out, asJSON, *page, empty, transcriptLines)
+}
+
+// transcriptLines renders a recorded transcript as `lk agent debugger` and
+// `lk agent console` render a live one, adding each item's time and its
+// latencies, followed by a blank line.
+func transcriptLines(items []public.TranscriptItem) []string {
+	opts := renderOptions{Metrics: true, Times: true, UserLabel: "User"}
+	var lines []string
+	for _, e := range transcriptItemsToTurnEvents(items) {
+		if line := renderTurnEvent(e, opts); line != "" {
+			lines = append(lines, line)
+		}
+	}
+	if len(lines) > 0 {
+		lines = append(lines, "")
+	}
+	return lines
 }
 
 // emptyTranscriptReason explains a page with no items. The transcript read
@@ -1181,10 +1238,20 @@ func logOptions(cmd *cli.Command) (public.LogOptions, error) {
 	return opts, nil
 }
 
-// fetchSessionLogs reads one page of a session's agent logs and prints it,
-// saying why when the page is empty.
+// fetchSessionLogs reads a session's agent logs, every page up to opts.Limit
+// records, and prints them, saying why when there are none.
 func fetchSessionLogs(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.LogOptions, asJSON bool) error {
-	page, err := client.GetSessionLogs(ctx, projectID, sessionID, opts)
+	page := &public.LogPage{}
+	var err error
+	page.Records, page.NextCursor, err = readPages(opts.PageOptions, func(o public.PageOptions) ([]oapi.LivekitPublicapiObservabilityV1LogRecord, string, error) {
+		read := opts
+		read.PageOptions = o
+		p, err := client.GetSessionLogs(ctx, projectID, sessionID, read)
+		if err != nil {
+			return nil, "", err
+		}
+		return p.Records, p.NextCursor, nil
+	})
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "agent logs", projectAdminAccess)
 	}
@@ -1210,45 +1277,21 @@ func emptyLogsReason(sessionID string, opts public.LogOptions) string {
 		"and a running agent's records appear as it exports them", sessionID)
 }
 
-// traceReadOptions bounds `session traces`' read: unlike the API's pages,
-// Limit counts spans across every page read.
-type traceReadOptions struct {
-	// Limit is the most spans to read.
-	Limit int
-	// Cursor starts the read where a prior one stopped; empty starts from the
-	// session's first span.
-	Cursor string
-}
-
-// traceOptions reads the trace flags. A bad limit fails here, before the
-// project lookup.
-func traceOptions(cmd *cli.Command) (traceReadOptions, error) {
-	page, err := pageOptions(cmd)
-	if err != nil {
-		return traceReadOptions{}, err
-	}
-	return traceReadOptions{Limit: int(page.Limit), Cursor: page.Cursor}, nil
-}
-
-// fetchSessionTraces reads a session's spans page by page, in full pages but
-// no more than opts.Limit in all, and prints them as one tree, saying why
-// when there are none. A read that stops at the limit keeps the cursor for
-// the rest.
-func fetchSessionTraces(ctx context.Context, client *public.Client, projectID, sessionID string, opts traceReadOptions, asJSON bool) error {
-	read := public.TracePage{NextCursor: opts.Cursor}
-	for {
-		page, err := client.GetSessionTraces(ctx, projectID, sessionID, public.PageOptions{
-			Limit:  int32(min(public.MaxTracePageSize, opts.Limit-len(read.Spans))),
-			Cursor: read.NextCursor,
-		})
+// fetchSessionTraces reads a session's spans, every page up to opts.Limit,
+// and prints them as one tree, saying why when there are none. A read that
+// stops at the limit keeps the cursor for the rest.
+func fetchSessionTraces(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.PageOptions, asJSON bool) error {
+	read := public.TracePage{}
+	var err error
+	read.Spans, read.NextCursor, err = readPages(opts, func(o public.PageOptions) ([]oapi.LivekitPublicapiObservabilityV1Span, string, error) {
+		p, err := client.GetSessionTraces(ctx, projectID, sessionID, o)
 		if err != nil {
-			return sessionReadError(err, projectID, sessionID, "trace spans", projectAdminAccess)
+			return nil, "", err
 		}
-		read.Spans = append(read.Spans, page.Spans...)
-		read.NextCursor = page.NextCursor
-		if read.NextCursor == "" || len(page.Spans) == 0 || len(read.Spans) >= opts.Limit {
-			break
-		}
+		return p.Spans, p.NextCursor, nil
+	})
+	if err != nil {
+		return sessionReadError(err, projectID, sessionID, "trace spans", projectAdminAccess)
 	}
 	var empty string
 	if len(read.Spans) == 0 {
@@ -1285,10 +1328,20 @@ func metricOptions(cmd *cli.Command) (public.MetricOptions, error) {
 	return opts, nil
 }
 
-// fetchSessionMetrics reads one page of a session's agent metrics and prints
-// it, saying why when the page is empty.
+// fetchSessionMetrics reads a session's agent metrics, every page up to
+// opts.Limit points, and prints them, saying why when there are none.
 func fetchSessionMetrics(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.MetricOptions, asJSON bool) error {
-	page, err := client.GetSessionMetrics(ctx, projectID, sessionID, opts)
+	page := &public.MetricPage{}
+	var err error
+	page.Points, page.NextCursor, err = readPages(opts.PageOptions, func(o public.PageOptions) ([]public.MetricPoint, string, error) {
+		read := opts
+		read.PageOptions = o
+		p, err := client.GetSessionMetrics(ctx, projectID, sessionID, read)
+		if err != nil {
+			return nil, "", err
+		}
+		return p.Points, p.NextCursor, nil
+	})
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "agent metrics", projectAdminAccess)
 	}
@@ -1334,10 +1387,20 @@ func eventOptions(cmd *cli.Command) (public.EventOptions, error) {
 	return opts, nil
 }
 
-// fetchSessionEvents reads one page of a session's events and prints it,
-// saying why when the page is empty.
+// fetchSessionEvents reads a session's events, every page up to opts.Limit,
+// and prints them, saying why when there are none.
 func fetchSessionEvents(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.EventOptions, asJSON bool) error {
-	page, err := client.ListSessionEvents(ctx, projectID, sessionID, opts)
+	page := &public.EventPage{}
+	var err error
+	page.Events, page.NextCursor, err = readPages(opts.PageOptions, func(o public.PageOptions) ([]oapi.LivekitPublicapiAnalyticsV1SessionEvent, string, error) {
+		read := opts
+		read.PageOptions = o
+		p, err := client.ListSessionEvents(ctx, projectID, sessionID, read)
+		if err != nil {
+			return nil, "", err
+		}
+		return p.Events, p.NextCursor, nil
+	})
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "events", projectReadAccess)
 	}

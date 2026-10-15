@@ -19,6 +19,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -558,7 +559,7 @@ func participantsAPI(t *testing.T, status int, body string) (*public.Client, *ur
 }
 
 // TestFetchSessionParticipants checks a page of participants prints as a
-// table with their participant sessions and a hint to re-run with the next
+// table with their participant sessions and the command that reads the next
 // cursor, sending the limit, cursor and order asked for, and --json prints
 // {items, nextCursor}.
 func TestFetchSessionParticipants(t *testing.T) {
@@ -577,7 +578,7 @@ func TestFetchSessionParticipants(t *testing.T) {
 	for _, want := range []string{"alice", "US East", "PA_alice1", "UDP"} {
 		assert.Contains(t, stdout.String(), want)
 	}
-	assert.Contains(t, stderr.String(), "More participants available — re-run with --cursor c2")
+	assert.Contains(t, stderr.String(), "More participants available — next page: --cursor c2")
 
 	stdout, _ = captureOut(t)
 	require.NoError(t, fetchSessionParticipants(context.Background(), client, "p1", "RM_1", public.ParticipantListOptions{}, true))
@@ -1020,7 +1021,7 @@ func TestTranscriptOptions(t *testing.T) {
 		want    public.PageOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.PageOptions{Limit: defaultPageLimit}},
+		{name: "defaults", want: public.PageOptions{Limit: defaultReadLimit}},
 		{name: "paging", args: []string{"--limit", "100", "--cursor", "abc"}, want: public.PageOptions{Limit: 100, Cursor: "abc"}},
 		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
 	}
@@ -1066,6 +1067,93 @@ func transcriptAPI(t *testing.T, transcriptStatus int, transcript, session strin
 	return client, &paths
 }
 
+// TestReadPages checks a read takes full pages but no more items than it has
+// left, follows the cursor to the last page or its limit, keeps going past a
+// page with no items, and stops on a cursor that doesn't move.
+func TestReadPages(t *testing.T) {
+	type call struct {
+		limit  int32
+		cursor string
+	}
+	pages := map[string]struct {
+		items []int
+		next  string
+	}{
+		"":   {[]int{1, 2}, "c2"},
+		"c2": {nil, "c3"}, // every record skipped, say
+		"c3": {[]int{3}, ""},
+		"s1": {[]int{9}, "s1"},
+	}
+	fetch := func(calls *[]call) func(public.PageOptions) ([]int, string, error) {
+		return func(o public.PageOptions) ([]int, string, error) {
+			*calls = append(*calls, call{o.Limit, o.Cursor})
+			p := pages[o.Cursor]
+			return p.items, p.next, nil
+		}
+	}
+
+	var calls []call
+	items, next, err := readPages(public.PageOptions{Limit: 1000}, fetch(&calls))
+	require.NoError(t, err)
+	assert.Equal(t, []int{1, 2, 3}, items)
+	assert.Empty(t, next)
+	assert.Equal(t, []call{{1000, ""}, {998, "c2"}, {998, "c3"}}, calls)
+
+	calls = nil
+	items, next, err = readPages(public.PageOptions{Limit: 3}, fetch(&calls))
+	require.NoError(t, err)
+	assert.Equal(t, []int{1, 2, 3}, items)
+	assert.Empty(t, next)
+	assert.Equal(t, []call{{3, ""}, {1, "c2"}, {1, "c3"}}, calls)
+
+	calls = nil
+	items, next, err = readPages(public.PageOptions{Limit: 2}, fetch(&calls))
+	require.NoError(t, err)
+	assert.Equal(t, []int{1, 2}, items)
+	assert.Equal(t, "c2", next)
+	assert.Len(t, calls, 1)
+
+	calls = nil
+	items, next, err = readPages(public.PageOptions{Limit: 1000, Cursor: "s1"}, fetch(&calls))
+	require.NoError(t, err)
+	assert.Equal(t, []int{9}, items)
+	assert.Equal(t, "s1", next)
+	assert.Len(t, calls, 1)
+
+	_, _, err = readPages(public.PageOptions{Limit: 10}, func(public.PageOptions) ([]int, string, error) {
+		return nil, "", errors.New("boom")
+	})
+	require.EqualError(t, err, "boom")
+}
+
+// TestFetchSessionTranscriptPages checks the transcript reads every page into
+// one transcript, adding up the records each page left out.
+func TestFetchSessionTranscriptPages(t *testing.T) {
+	pages := map[string]string{
+		"": `{"items":[{"id":"item_1","message":{"role":"ROLE_USER","text":"hi"}}],` +
+			`"skippedRecords":1,"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
+		"c2": `{"items":[{"id":"item_2","message":{"role":"ROLE_AGENT","text":"hello"}}],"skippedRecords":2}`,
+	}
+	var cursors []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cursors = append(cursors, r.URL.Query().Get("page.cursor"))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(pages[r.URL.Query().Get("page.cursor")]))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+	stdout, stderr := captureOut(t)
+
+	require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: defaultReadLimit}, false))
+	assert.Equal(t, []string{"", "c2"}, cursors)
+	plain := ansiEscapeRe.ReplaceAllString(stdout.String(), "")
+	assert.Contains(t, plain, "● User")
+	assert.Contains(t, plain, "● Agent")
+	assert.Contains(t, stderr.String(), "3 records couldn't be read as transcript items")
+	assert.NotContains(t, stderr.String(), "More items available")
+}
+
 // TestFetchSessionTranscript prints a page one line per item and, when the
 // first page is empty, says why: the session is still active, or it ended
 // without a transcript to read yet. A later empty page needs no lookup, and a
@@ -1088,8 +1176,8 @@ func TestFetchSessionTranscript(t *testing.T) {
 		{
 			name:       "items",
 			body:       page,
-			wantOut:    []string{"USER         hi  (end_of_turn 320ms)", "AGENT        hello  (e2e 820ms)"},
-			wantStatus: []string{"More items available — re-run with --cursor c2"},
+			wantOut:    []string{"● User\n    hi\n    ⏱ end_of_turn 320ms", "● Agent\n    hello\n    ⏱ e2e 820ms"},
+			wantStatus: []string{"More items available — next page: --cursor c2"},
 			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
 		},
 		{
@@ -1126,7 +1214,7 @@ func TestFetchSessionTranscript(t *testing.T) {
 			name:       "no items, more to read",
 			body:       `{"items":[],"skippedRecords":2,"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
 			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
-			wantStatus: []string{"2 records couldn't be read", "More items available — re-run with --cursor c2"},
+			wantStatus: []string{"2 records couldn't be read", "More items available — next page: --cursor c2"},
 			noStatus:   []string{"still active", "no transcript"},
 			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
 		},
@@ -1138,8 +1226,9 @@ func TestFetchSessionTranscript(t *testing.T) {
 
 			require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", tt.opts, false))
 
+			plain := ansiEscapeRe.ReplaceAllString(stdout.String(), "")
 			for _, want := range tt.wantOut {
-				assert.Contains(t, stdout.String(), want)
+				assert.Contains(t, plain, want)
 			}
 			if len(tt.wantOut) == 0 {
 				assert.Empty(t, stdout.String())
@@ -1272,7 +1361,7 @@ func TestLogOptions(t *testing.T) {
 		want    public.LogOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.LogOptions{PageOptions: public.PageOptions{Limit: defaultPageLimit}, Levels: []string{}}},
+		{name: "defaults", want: public.LogOptions{PageOptions: public.PageOptions{Limit: defaultReadLimit}, Levels: []string{}}},
 		{
 			name: "levels, order and paging",
 			args: []string{"--log-level", "warn", "--log-level", "ERROR", "--sort-order", "desc", "--limit", "100", "--cursor", "abc"},
@@ -1338,7 +1427,7 @@ func TestFetchSessionLogs(t *testing.T) {
 			opts:       public.LogOptions{Levels: []string{"warn", "error"}},
 			wantQuery:  url.Values{"logLevels": {"LOG_LEVEL_WARN", "LOG_LEVEL_ERROR"}},
 			wantOut:    []string{"WARN    app  slow tts", "ERROR   app  tts failed"},
-			wantStatus: []string{"More records available — re-run with --cursor c2"},
+			wantStatus: []string{"More records available — next page: --cursor c2"},
 		},
 		{
 			name:       "no records at those levels",
@@ -1474,17 +1563,17 @@ func TestSessionTracesRequiresExperimentalAuth(t *testing.T) {
 	}
 }
 
-// traceCmdOptions runs traceOptions with the given arguments on a command
+// traceCmdOptions runs pageOptions with the given arguments on a command
 // built from fresh analyticsTraceFlags.
-func traceCmdOptions(t *testing.T, args ...string) (traceReadOptions, error) {
+func traceCmdOptions(t *testing.T, args ...string) (public.PageOptions, error) {
 	t.Helper()
-	var opts traceReadOptions
+	var opts public.PageOptions
 	var optsErr error
 	cmd := &cli.Command{
 		Name:  "traces",
 		Flags: analyticsTraceFlags(),
 		Action: func(_ context.Context, cmd *cli.Command) error {
-			opts, optsErr = traceOptions(cmd)
+			opts, optsErr = pageOptions(cmd)
 			return nil
 		},
 	}
@@ -1496,11 +1585,11 @@ func TestTraceOptions(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []string
-		want    traceReadOptions
+		want    public.PageOptions
 		wantErr string
 	}{
-		{name: "defaults", want: traceReadOptions{Limit: defaultTraceLimit}},
-		{name: "limit and cursor", args: []string{"--limit", "250", "--cursor", "abc"}, want: traceReadOptions{Limit: 250, Cursor: "abc"}},
+		{name: "defaults", want: public.PageOptions{Limit: defaultReadLimit}},
+		{name: "limit and cursor", args: []string{"--limit", "250", "--cursor", "abc"}, want: public.PageOptions{Limit: 250, Cursor: "abc"}},
 		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
 	}
 	for _, tt := range tests {
@@ -1557,30 +1646,30 @@ var tracePages = map[string]string{
 func TestFetchSessionTraces(t *testing.T) {
 	tests := []struct {
 		name        string
-		opts        traceReadOptions
+		opts        public.PageOptions
 		wantQueries []url.Values
 		wantOut     []string
 		wantStatus  []string
 	}{
 		{
 			name: "every page",
-			opts: traceReadOptions{Limit: defaultTraceLimit},
+			opts: public.PageOptions{Limit: defaultReadLimit},
 			wantQueries: []url.Values{
-				{"page.pageSize": {"100"}},
-				{"page.pageSize": {"100"}, "page.cursor": {"c2"}},
+				{"page.pageSize": {"1000"}},
+				{"page.pageSize": {"998"}, "page.cursor": {"c2"}},
 			},
 			wantOut: []string{"agent_session", "└─ agent_turn", "   ├─ llm_request", "   └─ tts_request"},
 		},
 		{
 			name:        "stops at the limit",
-			opts:        traceReadOptions{Limit: 2},
+			opts:        public.PageOptions{Limit: 2},
 			wantQueries: []url.Values{{"page.pageSize": {"2"}}},
 			wantOut:     []string{"agent_session", "└─ agent_turn"},
-			wantStatus:  []string{"Printed 2 spans; more remain", "re-run with --cursor c2"},
+			wantStatus:  []string{"Printed 2 spans; more remain", "read the next ones with --cursor c2"},
 		},
 		{
 			name: "last page asks for what is left",
-			opts: traceReadOptions{Limit: 3},
+			opts: public.PageOptions{Limit: 3},
 			wantQueries: []url.Values{
 				{"page.pageSize": {"3"}},
 				{"page.pageSize": {"1"}, "page.cursor": {"c2"}},
@@ -1588,8 +1677,8 @@ func TestFetchSessionTraces(t *testing.T) {
 		},
 		{
 			name:        "from a cursor",
-			opts:        traceReadOptions{Limit: defaultTraceLimit, Cursor: "c2"},
-			wantQueries: []url.Values{{"page.pageSize": {"100"}, "page.cursor": {"c2"}}},
+			opts:        public.PageOptions{Limit: defaultReadLimit, Cursor: "c2"},
+			wantQueries: []url.Values{{"page.pageSize": {"1000"}, "page.cursor": {"c2"}}},
 			wantOut:     []string{"llm_request", "tts_request"},
 		},
 	}
@@ -1627,7 +1716,7 @@ func TestFetchSessionTracesEmpty(t *testing.T) {
 		client, _ := tracesAPI(t, http.StatusOK, map[string]string{"": `{}`, "c9": `{"spans":[]}`})
 		stdout, stderr := captureOut(t)
 
-		require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", traceReadOptions{Limit: 10, Cursor: tt.cursor}, false))
+		require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 10, Cursor: tt.cursor}, false))
 		assert.Empty(t, stdout.String())
 		assert.Contains(t, stderr.String(), tt.wantStatus)
 	}
@@ -1638,7 +1727,7 @@ func TestFetchSessionTracesEmpty(t *testing.T) {
 func TestFetchSessionTracesJSON(t *testing.T) {
 	client, _ := tracesAPI(t, http.StatusOK, tracePages)
 	stdout, _ := captureOut(t)
-	require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", traceReadOptions{Limit: 10}, true))
+	require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 10}, true))
 	var got struct {
 		Items []map[string]any `json:"items"`
 	}
@@ -1648,7 +1737,7 @@ func TestFetchSessionTracesJSON(t *testing.T) {
 
 	client, _ = tracesAPI(t, http.StatusOK, map[string]string{"": `{}`})
 	stdout, stderr := captureOut(t)
-	require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", traceReadOptions{Limit: 10}, true))
+	require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 10}, true))
 	assert.JSONEq(t, `{"items":[]}`, stdout.String())
 	assert.Contains(t, stderr.String(), "has no trace spans")
 }
@@ -1697,7 +1786,7 @@ func TestFetchSessionTracesErrors(t *testing.T) {
 			client, _ := tracesAPI(t, tt.status, map[string]string{"": tt.body})
 			stdout, _ := captureOut(t)
 
-			err := fetchSessionTraces(context.Background(), client, "p1", "RM_1", traceReadOptions{Limit: 10}, false)
+			err := fetchSessionTraces(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 10}, false)
 			require.Error(t, err)
 			for _, want := range tt.wantErr {
 				assert.Contains(t, err.Error(), want)
@@ -1762,7 +1851,7 @@ func TestMetricOptions(t *testing.T) {
 		want    public.MetricOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.MetricOptions{PageOptions: public.PageOptions{Limit: defaultPageLimit}, Names: []string{}}},
+		{name: "defaults", want: public.MetricOptions{PageOptions: public.PageOptions{Limit: defaultReadLimit}, Names: []string{}}},
 		{
 			name: "names and paging",
 			args: []string{"--name", "lk.agents.turn.e2e_latency", "--name", "lk.agents.usage.llm_input_tokens", "--limit", "100", "--cursor", "abc"},
@@ -1831,7 +1920,7 @@ func TestFetchSessionMetrics(t *testing.T) {
 				"lk.agents.turn.e2e_latency        count 3, sum 2.4 s, min 0.6 s, max 1.1 s",
 				"lk.agents.usage.llm_input_tokens  1520 token",
 			},
-			wantStatus: []string{"More points available — re-run with --cursor c2"},
+			wantStatus: []string{"More points available — next page: --cursor c2"},
 		},
 		{
 			name:       "no points for those names",
@@ -1993,7 +2082,7 @@ func TestEventOptions(t *testing.T) {
 		want    public.EventOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.EventOptions{PageOptions: public.PageOptions{Limit: defaultPageLimit}, Types: []string{}}},
+		{name: "defaults", want: public.EventOptions{PageOptions: public.PageOptions{Limit: defaultReadLimit}, Types: []string{}}},
 		{
 			name: "types, participant session, order and paging",
 			args: []string{"--type", "track_published", "--type", "PARTICIPANT_LEFT", "--participant", "PA_aaaaaaaaaaaa",
@@ -2067,7 +2156,7 @@ func TestFetchSessionEvents(t *testing.T) {
 				"participant_joined  alice  PA_aaaaaaaaaaaa  connectionType=UDP",
 				"track_published     alice  PA_aaaaaaaaaaaa  trackType=AUDIO",
 			},
-			wantStatus: []string{"More events available — re-run with --cursor c2"},
+			wantStatus: []string{"More events available — next page: --cursor c2"},
 		},
 		{
 			name:       "none of those types",

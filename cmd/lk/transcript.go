@@ -19,13 +19,19 @@ import (
 	"time"
 
 	agent "github.com/livekit/protocol/livekit/agent"
+
+	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
+	"github.com/livekit/livekit-cli/v2/pkg/public/render"
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 // This file is the shared model of "what happened in an agent session": the
 // turnEvent schema and the conversion from the SDK's protobuf events and chat
 // items into it. Both `lk agent console` and `lk agent debugger` go through
-// it, and transcript_render.go draws from it, so a change to how a tool call
-// or handoff is represented is made once.
+// it, as does `lk analytics session transcript` for a session's recorded
+// transcript, and transcript_render.go draws from it, so a change to how a
+// tool call or handoff is represented is made once.
 
 // turnEvent is the normalized, transport-agnostic record of one thing that
 // happened in an agent session: a message, a tool call, a handoff, an
@@ -34,21 +40,30 @@ import (
 // emits them verbatim, so the schema doubles as the machine-readable contract
 // for coding agents driving the CLI.
 type turnEvent struct {
-	// Type is one of: message, tool_call, handoff, config, error, log, state.
-	// "state" (agent state transitions, From → To) is only reported by the
-	// events stream, never inside a turn.
+	// Type is one of: message, tool_call, handoff, config, error, log, state,
+	// unknown. "state" (agent state transitions, From → To) is only reported
+	// by the events stream, never inside a turn. "unknown" is a recorded
+	// transcript item of a kind this lk doesn't know; Text holds its id.
 	Type string `json:"type"`
 	// Time is when the event happened (RFC 3339 with milliseconds), when known.
 	Time string `json:"time,omitempty"`
-	// Role is "user" or "assistant" for message events.
+	// Role is "user" or "assistant" for message events; a recorded transcript
+	// can also hold "system" and "developer" messages.
 	Role string `json:"role,omitempty"`
 	// Text is the message text, error message, or log line.
 	Text string `json:"text,omitempty"`
 	// Interrupted marks an assistant message cut short by the user.
 	Interrupted bool `json:"interrupted,omitempty"`
-	// Metrics carries per-message latencies in seconds (llm_ttft, tts_ttfb,
-	// e2e_latency) when the agent reported them.
+	// Redacted marks a recorded message the project's PII redaction rewrote.
+	Redacted bool `json:"redacted,omitempty"`
+	// Metrics carries per-message latencies in seconds when the agent reported
+	// them: llm_ttft, tts_ttfb and e2e_latency on an assistant message, and in
+	// a recorded transcript transcription_delay, end_of_turn_delay and
+	// on_user_turn_completed_delay on a user message.
 	Metrics map[string]float64 `json:"metrics,omitempty"`
+	// Confidence is the speech-to-text confidence of a recorded user message,
+	// when the agent reported it.
+	Confidence *float64 `json:"confidence,omitempty"`
 	// Name and Arguments describe a tool_call; Output and IsError its result.
 	// Output is absent while a call is still running (history only).
 	Name      string `json:"name,omitempty"`
@@ -221,6 +236,116 @@ func messageToTurnEvent(msg *agent.ChatMessage) (turnEvent, bool) {
 		}
 	}
 	return e, true
+}
+
+// ── recorded transcript → turnEvent ────────────────────────────────
+
+// transcriptItemsToTurnEvents converts a page of a session's recorded
+// transcript, as the Public API returns it, into events, pairing each tool
+// call with its result so a tool shows up once, as chatItemsToTurnEvents does.
+// The text came from an agent, an LLM, a tool or a participant, so what a
+// terminal acts on is stripped from it; --json prints the items as sent.
+func transcriptItemsToTurnEvents(items []public.TranscriptItem) []turnEvent {
+	var events []turnEvent
+	callIndex := map[string]int{} // call_id → index into events
+	for _, it := range items {
+		e := turnEvent{}
+		if it.Timestamp != nil && !it.Timestamp.IsZero() {
+			e.Time = eventTimestamp(*it.Timestamp)
+		}
+		switch {
+		case it.Message != nil:
+			var ok bool
+			if e, ok = transcriptMessageToTurnEvent(*it.Message, e); !ok {
+				continue
+			}
+		case it.ToolCall != nil:
+			c := it.ToolCall
+			e.Type, e.Name, e.Arguments = "tool_call", cleanText(c.Name), cleanText(c.Arguments)
+			if id := util.Deref(c.CallId); id != "" {
+				callIndex[id] = len(events)
+			}
+		case it.ToolResult != nil:
+			r := it.ToolResult
+			if idx, ok := callIndex[util.Deref(r.CallId)]; ok && util.Deref(r.CallId) != "" {
+				events[idx].Output = cleanText(r.Output)
+				events[idx].IsError = util.Deref(r.IsError)
+				continue
+			}
+			e.Type, e.Name, e.Output, e.IsError = "tool_call", cleanText(r.Name), cleanText(r.Output), util.Deref(r.IsError)
+		case it.AgentHandoff != nil:
+			e.Type, e.From, e.To = "handoff", cleanText(it.AgentHandoff.FromAgentId), cleanText(it.AgentHandoff.ToAgentId)
+		case it.ConfigUpdate != nil:
+			u := it.ConfigUpdate
+			if util.Deref(u.Instructions) != "" {
+				e.Changes = append(e.Changes, "instructions updated")
+			}
+			if added := util.Deref(u.ToolsAdded); len(added) > 0 {
+				e.Changes = append(e.Changes, "tools added: "+render.StripControls(strings.Join(added, ", ")))
+			}
+			if removed := util.Deref(u.ToolsRemoved); len(removed) > 0 {
+				e.Changes = append(e.Changes, "tools removed: "+render.StripControls(strings.Join(removed, ", ")))
+			}
+			if len(e.Changes) == 0 {
+				continue
+			}
+			e.Type = "config"
+		default:
+			e.Type, e.Text = "unknown", render.StripControls(it.ID)
+		}
+		events = append(events, e)
+	}
+	return events
+}
+
+// transcriptMessageToTurnEvent fills e from a recorded message, reporting
+// false for one with no text. Its latencies arrive in milliseconds and are
+// kept in seconds, as the agent reported them.
+func transcriptMessageToTurnEvent(m oapi.LivekitPublicapiObservabilityV1TranscriptItemMessage, e turnEvent) (turnEvent, bool) {
+	e.Type = "message"
+	e.Text = cleanText(m.Text)
+	if e.Text == "" {
+		return e, false
+	}
+	switch util.Deref(m.Role) {
+	case oapi.ROLEUSER:
+		e.Role = "user"
+	case oapi.ROLESYSTEM:
+		e.Role = "system"
+	case oapi.ROLEDEVELOPER:
+		e.Role = "developer"
+	default:
+		e.Role = "assistant"
+	}
+	e.Interrupted = util.Deref(m.Interrupted)
+	e.Redacted = util.Deref(m.Redacted)
+	e.Confidence = m.TranscriptConfidence
+	metrics := map[string]float64{}
+	for _, l := range []struct {
+		key string
+		ms  *float64
+	}{
+		{"llm_ttft", m.LlmTtftMs},
+		{"tts_ttfb", m.TtsTtfbMs},
+		{"e2e_latency", m.E2eLatencyMs},
+		{"transcription_delay", m.TranscriptionDelayMs},
+		{"end_of_turn_delay", m.EndOfTurnDelayMs},
+		{"on_user_turn_completed_delay", m.OnUserTurnCompletedDelayMs},
+	} {
+		if l.ms != nil {
+			metrics[l.key] = *l.ms / 1000
+		}
+	}
+	if len(metrics) > 0 {
+		e.Metrics = metrics
+	}
+	return e, true
+}
+
+// cleanText is optional recorded text, trimmed, with what a terminal acts on
+// stripped.
+func cleanText(s *string) string {
+	return strings.TrimSpace(render.StripControls(util.Deref(s)))
 }
 
 // agentStateName renders the proto enum as the lowercase word the SDK uses.
