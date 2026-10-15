@@ -87,12 +87,12 @@ var simulateCommand = &cli.Command{
 		&cli.IntFlag{
 			Name:    "samples",
 			Aliases: []string{"k"},
-			Usage:   "Run every scenario `K` times in one run, and report pass@k (passed at least once) and pass^k (passed every time). Requires --scenarios. LiveKit Cloud accepts only 3. Each sample counts as a separate simulation, and the number of scenarios multiplied by K can't exceed the limit of 250 simulations per run.",
+			Usage:   "Run every scenario `K` times in one run, and report pass@k (passed at least once) and pass^k (passed every time). Requires --scenarios when K is more than 1. LiveKit Cloud accepts 1 or 3. Each sample counts as a separate simulation, and the number of scenarios multiplied by K can't exceed the limit of 250 simulations per run.",
 		},
 		&cli.FloatFlag{
 			Name:  "pass-rate",
 			Value: defaultPassRate,
-			Usage: "Share of samples that must pass for a scenario to pass, as a `RATE` greater than 0 and at most 1. Rounds to whole samples with a minimum of one; for example, 0.75 of 3 samples needs 2 passes. Requires --samples.",
+			Usage: "Share of samples that must pass for a scenario to pass, as a `RATE` greater than 0 and at most 1. Rounds to whole samples with a minimum of one; for example, 0.75 of 3 samples needs 2 passes. Requires --samples of more than 1.",
 		},
 		&cli.StringFlag{
 			Name:  "scenarios",
@@ -205,7 +205,7 @@ var simulateViewCommand = &cli.Command{
 
 var simulateExportCommand = &cli.Command{
 	Name:            "export",
-	Usage:           "Print a finished run and its per-job chat contexts to stdout as JSON. The run must already be complete",
+	Usage:           "Print a finished run and its per-job chat contexts to stdout as JSON. The run must have finished: completed, failed, or cancelled",
 	ArgsUsage:       "RUN_ID",
 	HideHelpCommand: true,
 	Before:          loadSimulateProject,

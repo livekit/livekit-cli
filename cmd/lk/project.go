@@ -70,7 +70,7 @@ var (
 					Usage:     "List all configured projects",
 					UsageText: "lk project list [options]",
 					Action:    listProjects,
-					Flags:     []cli.Flag{jsonFlag},
+					Flags:     []cli.Flag{jsonFlagWithUsage("Output as JSON, including each project's API key and secret.")},
 				},
 				{
 					Name:      "get",

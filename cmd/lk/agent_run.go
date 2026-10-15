@@ -99,7 +99,7 @@ func init() {
 var agentRunFlags = []cli.Flag{
 	&cli.StringFlag{
 		Name:  "log-level",
-		Usage: "Log `LEVEL`. One of TRACE, DEBUG, INFO, WARN, ERROR.",
+		Usage: "Log `LEVEL`. One of TRACE, DEBUG, INFO, WARN, ERROR, plus CRITICAL for Python and FATAL for Node.js.",
 	},
 }
 
@@ -127,7 +127,7 @@ var devCommand = &cli.Command{
 		&cli.StringFlag{
 			Name:    "deployment",
 			Sources: cli.EnvVars(agentDeploymentEnv),
-			Usage:   "Deployment `NAME` to register the agent under. Defaults to a random ID so dev traffic is isolated from production; pass production to explicitly serve production traffic.",
+			Usage:   "Deployment `NAME` to register the agent under. Defaults to a random dev- ID so dev traffic is isolated from production; pass production to explicitly serve production traffic. Overrides any value in the agent's .env file.",
 		},
 	),
 	Action: runAgentDev,
