@@ -1136,6 +1136,49 @@ func passRateLine(run *livekit.SimulationRun) string {
 		k, passAll, scenarios, float64(passAll)/float64(scenarios))
 }
 
+// historyNote is the job's scenario record before this run, "" unless the
+// server marked the scenario historically red. Every sample of a scenario
+// carries the same record.
+func historyNote(job *livekit.SimulationRun_Job) string {
+	if !job.GetHistoricallyRed() {
+		return ""
+	}
+	failed := 0
+	for _, passed := range job.GetPriorPassed() {
+		if !passed {
+			failed++
+		}
+	}
+	return fmt.Sprintf("historically red: failed %d of last %d runs", failed, len(job.GetPriorPassed()))
+}
+
+// historicallyRedLine names the failed scenarios that were already failing
+// before this run, or "" when there are none.
+func historicallyRedLine(run *livekit.SimulationRun) string {
+	failures := scenarioFailures(run)
+	failed := 0
+	for _, f := range failures {
+		if f {
+			failed++
+		}
+	}
+	seen := map[string]bool{}
+	var labels []string
+	for _, j := range sortedJobs(run) {
+		key := scenarioKey(j)
+		if !failures[key] || !j.GetHistoricallyRed() || seen[key] {
+			continue
+		}
+		seen[key] = true
+		labels = append(labels, jobLabel(j))
+	}
+	if len(labels) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d of %d failed scenarios were already failing before this run (historically red): %s",
+		len(labels), failed, strings.Join(labels, ", "))
+}
+
 // sampleSuffix marks a job's sample when the run repeated scenarios.
 func sampleSuffix(run *livekit.SimulationRun, job *livekit.SimulationRun_Job) string {
 	if runSamples(run) < 2 || job.GetSample() == 0 {
