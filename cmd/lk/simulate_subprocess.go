@@ -422,6 +422,16 @@ func (ap *AgentProcess) Done() <-chan error {
 	return ap.doneCh
 }
 
+// Exited reports whether the process has exited.
+func (ap *AgentProcess) Exited() bool {
+	select {
+	case <-ap.exitCh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Failed returns a channel that is closed when the agent's output matched one
 // of the configured FailSignals — a fatal failure even if the process is alive.
 func (ap *AgentProcess) Failed() <-chan struct{} {
