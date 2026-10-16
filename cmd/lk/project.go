@@ -487,12 +487,7 @@ func deleteUserProject(ctx context.Context, cmd *cli.Command) error {
 		return cloudAPIError(err)
 	}
 
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"id": id, "deleted": true})
-		return nil
-	}
-	out.Statusf("Deleted project %s", util.Accented(id))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "id", id, "deleted", fmt.Sprintf("Deleted project %s", util.Accented(id)))
 }
 
 // projectCacheEntries builds per-user cache entries for the given projects,
@@ -564,17 +559,12 @@ func renderProject(cmd *cli.Command, project oapi.LivekitPublicapiProjectsV1Proj
 
 // renderProjects outputs one page of Public API projects as JSON or a table,
 // reusing the alias-deriving cache shaping so listings match `lk project list`.
-// A non-empty nextCursor is surfaced for iteration ({items,nextCursor} in JSON;
-// a --cursor hint in table mode).
+// A non-empty nextCursor is surfaced for iteration (a util.Page in JSON; the
+// next page's command in table mode).
 func renderProjects(cmd *cli.Command, projects []oapi.LivekitPublicapiProjectsV1Project, nextCursor string) error {
 	entries := projectCacheEntries(projects)
 	if cmd.Bool("json") {
-		payload := map[string]any{"items": entries}
-		if nextCursor != "" {
-			payload["nextCursor"] = nextCursor
-		}
-		util.PrintJSON(payload)
-		return nil
+		return util.PrintJSONTo(out.ResultWriter(), util.NewPage(entries, nextCursor))
 	}
 	if len(entries) == 0 {
 		out.Status("No projects found.")
@@ -582,7 +572,7 @@ func renderProjects(cmd *cli.Command, projects []oapi.LivekitPublicapiProjectsV1
 	}
 	out.Result(projectTable(entries, ""))
 	if nextCursor != "" {
-		out.Statusf("More results available — re-run with %s", util.Accented("--cursor "+nextCursor))
+		out.Statusf("More results available — next page: %s", util.NextPageHint(nextCursor))
 	}
 	return nil
 }

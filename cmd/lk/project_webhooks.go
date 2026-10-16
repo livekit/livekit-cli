@@ -246,12 +246,7 @@ func deleteProjectWebhook(ctx context.Context, cmd *cli.Command) error {
 	if err := client.DeleteWebhook(ctx, projectID, webhookID); err != nil {
 		return cloudAPIError(err)
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"webhookId": webhookID, "deleted": true})
-		return nil
-	}
-	out.Statusf("Deleted webhook %s", util.Accented(webhookID))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "webhookId", webhookID, "deleted", fmt.Sprintf("Deleted webhook %s", util.Accented(webhookID)))
 }
 
 func testProjectWebhook(ctx context.Context, cmd *cli.Command) error {

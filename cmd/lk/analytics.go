@@ -43,15 +43,20 @@ const (
 	analyticsProjectSelectHint    = "Select a cloud project via --project or run `lk cloud auth`"
 )
 
-// defaultPageLimit is how many of a session's participants, transcript
-// records, agent log records, metric points or events a page reads by default.
+// defaultAnalyticsWindow is how far back a session listing searches when no
+// --since, --start or cursor sets its window.
+const defaultAnalyticsWindow = 14 * 24 * time.Hour
+
+// defaultPageLimit is how many of a session's participants a page reads by
+// default.
 const defaultPageLimit = 50
 
-// defaultTraceLimit caps how many spans `session traces` reads: ten of the
-// server's largest pages, enough for a long agent session's tree. The tree
-// needs a span's parent to place it, so the command reads every page up to
-// the limit rather than printing one page.
-const defaultTraceLimit = 1000
+// defaultReadLimit caps how many transcript items, agent log records, trace
+// spans, metric points or events a session read takes by default: one of the
+// server's largest pages (public.MaxPageSize). A larger --limit reads every
+// page up to it rather than printing one page, so a session reads whole in
+// one run; the trace tree also needs a span's parent to place it.
+const defaultReadLimit = 1000
 
 var (
 	AnalyticsCommands = []*cli.Command{
@@ -96,8 +101,18 @@ var (
 						},
 						{
 							Name:      "recording",
-							Usage:     "Download a session's audio or chat history (requires --experimental-auth)",
-							UsageText: "lk analytics session recording SESSION_ID --type audio|chat-history [-o FILE] [--url-only]",
+							Usage:     "Download a session's audio recording or chat history (requires --experimental-auth)",
+							UsageText: "lk analytics session recording SESSION_ID [--type audio|chat-history] [-o FILE] [--url-only]",
+							Description: "Downloads one of the recordings a session's agent uploaded to LiveKit Cloud when the session ended: " +
+								"by default its audio recording, the conversation as an Ogg audio file; with --type chat-history, " +
+								"its chat history, the conversation as the agent recorded it (messages, tool calls and handoffs), as JSON. " +
+								"The file downloads straight from the project's data region.\n\n" +
+								"It saves to SESSION_ID-audio.ogg or SESSION_ID-chat-history.json in the working directory, " +
+								"numbered (SESSION_ID-audio-1.ogg, ...) rather than replacing a file already there, " +
+								"and prints the path it saved to. -o saves elsewhere: to a file, replaced if it exists, " +
+								"or into a directory, under the default name.\n\n" +
+								"--url-only prints a signed URL for the file instead, valid for 15 minutes, to download it some other way. " +
+								"--json prints the API's response, signed URL and recording start included, and saves nothing.",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(sessionRecordingOptionsFrom, fetchSessionRecording),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsRecordingFlags()...),
@@ -121,7 +136,7 @@ var (
 							Name:      "traces",
 							Usage:     "Print a session's trace spans as a tree (requires --experimental-auth)",
 							ArgsUsage: "SESSION_ID",
-							Action:    sessionRead(traceOptions, fetchSessionTraces),
+							Action:    sessionRead(pageOptions, fetchSessionTraces),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsTraceFlags()...),
 						},
 						{
@@ -219,6 +234,10 @@ func analyticsSessionListFlags() []cli.Flag {
 			Usage: "Page number (starts at 0)",
 		},
 		&cli.StringFlag{
+			Name:  "since",
+			Usage: "List sessions started within the last `DURATION`, such as 90m, 6h, 14d or 2w (default 14d unless --start is set); can't be used with --start or --end",
+		},
+		&cli.StringFlag{
 			Name:  "start",
 			Usage: "List sessions started on or after `YYYY-MM-DD` (UTC)",
 		},
@@ -266,7 +285,7 @@ func pageFlags(defaultLimit int, items string) []cli.Flag {
 	return []cli.Flag{
 		&cli.IntFlag{
 			Name:  "limit",
-			Usage: "Maximum number of " + items + " to read (the server caps it at 100)",
+			Usage: "Maximum number of " + items + " to read (the server caps it at 1000)",
 			Value: defaultLimit,
 		},
 		// Hidden like session list's: pass the cursor a prior page printed,
@@ -296,22 +315,42 @@ func analyticsParticipantListFlags() []cli.Flag {
 
 // analyticsRecordingFlags returns fresh instances of the recording download's
 // own flags (the shared jsonFlag is added by the command), for the same reason
-// as analyticsSessionListFlags. --type isn't Required at the flag level so the
-// --experimental-auth gate speaks first.
+// as analyticsSessionListFlags.
 func analyticsRecordingFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
 			Name:  "type",
-			Usage: "Recording `TYPE` to fetch: audio or chat-history (required)",
+			Usage: "`TYPE` of recording to download: audio (the conversation's audio, Ogg) or chat-history (the agent's record of the conversation, JSON)",
+			Value: public.RecordingAudio,
 		},
 		&cli.StringFlag{
 			Name:    "output",
 			Aliases: []string{"o"},
-			Usage:   "Save to `FILE`, replacing it if it exists (default SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, never replaced)",
+			Usage:   "Save to `FILE`, replacing it if it exists, or into a directory under the default name (default SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, numbered rather than replacing a file)",
 		},
 		&cli.BoolFlag{
 			Name:  "url-only",
-			Usage: "Print the signed download URL (valid for 15 minutes) instead of downloading",
+			Usage: "Print a signed URL for the recording, valid for 15 minutes, instead of downloading it",
+		},
+	}
+}
+
+// readFlags returns fresh --limit and --cursor flags for a command that reads
+// every page of a session's items up to --limit (see readPages), for the same
+// reason as analyticsSessionListFlags.
+func readFlags(items string) []cli.Flag {
+	return []cli.Flag{
+		&cli.IntFlag{
+			Name:  "limit",
+			Usage: "Maximum number of " + items + " to read; the command reads every page up to it",
+			Value: defaultReadLimit,
+		},
+		// Hidden like session list's: pass the cursor a read that stopped at its
+		// limit printed, with the same filters and order, to read the rest.
+		&cli.StringFlag{
+			Name:   "cursor",
+			Usage:  "Read from `CURSOR`, where a prior read stopped",
+			Hidden: true,
 		},
 	}
 }
@@ -319,7 +358,7 @@ func analyticsRecordingFlags() []cli.Flag {
 // analyticsTranscriptFlags returns fresh instances of the transcript's own
 // flags (the shared jsonFlag is added by the command).
 func analyticsTranscriptFlags() []cli.Flag {
-	return pageFlags(defaultPageLimit, "transcript records")
+	return readFlags("transcript items")
 }
 
 // analyticsLogFlags returns fresh instances of the agent logs' own flags (the
@@ -334,29 +373,14 @@ func analyticsLogFlags() []cli.Flag {
 			Name:  "sort-order",
 			Usage: "Order by time: `ORDER` asc or desc, default asc",
 		},
-	}, pageFlags(defaultPageLimit, "records")...)
+	}, readFlags("records")...)
 }
 
 // analyticsTraceFlags returns fresh instances of the trace spans' own flags
-// (the shared jsonFlag is added by the command), for the same reason as
-// analyticsSessionListFlags. They aren't pageFlags: the command reads every
-// page up to --limit, and --cursor resumes a read that stopped there.
+// (the shared jsonFlag is added by the command). Their parents were read
+// before a --cursor, so spans read from one print as roots.
 func analyticsTraceFlags() []cli.Flag {
-	return []cli.Flag{
-		&cli.IntFlag{
-			Name:  "limit",
-			Usage: "Maximum number of spans to read; the command reads every page up to it",
-			Value: defaultTraceLimit,
-		},
-		// Hidden like session list's: pass the cursor a read that stopped at its
-		// limit printed to read the spans after it. Their parents were read
-		// before, so they print as roots.
-		&cli.StringFlag{
-			Name:   "cursor",
-			Usage:  "Read from `CURSOR`, where a prior read stopped",
-			Hidden: true,
-		},
-	}
+	return readFlags("spans")
 }
 
 // analyticsMetricFlags returns fresh instances of the agent metrics' own flags
@@ -367,7 +391,7 @@ func analyticsMetricFlags() []cli.Flag {
 			Name:  "name",
 			Usage: "Print only the points of the metric named `NAME`, matched exactly, such as lk.agents.turn.e2e_latency; repeatable (default every metric)",
 		},
-	}, pageFlags(defaultPageLimit, "points")...)
+	}, readFlags("points")...)
 }
 
 // analyticsEventFlags returns fresh instances of the session events' own flags
@@ -386,12 +410,12 @@ func analyticsEventFlags() []cli.Flag {
 			Name:  "sort-order",
 			Usage: "Order by time: `ORDER` asc or desc, default asc",
 		},
-	}, pageFlags(defaultPageLimit, "events")...)
+	}, readFlags("events")...)
 }
 
 // analyticsListModeFlags: --page (offset) exists only on the API-key analytics
-// endpoint, and the Public API session list is cursor-paginated. --start/--end
-// work in both modes. The filter flags are sent only to the Public API for now.
+// endpoint, and the Public API session list is cursor-paginated. --since,
+// --start and --end work in both modes. The filter flags are sent only to the Public API for now.
 var analyticsListModeFlags = authModeFlags{
 	legacyOnly:       []string{"page"},
 	experimentalOnly: []string{"cursor", "status", "room", "tag", "sort-order"},
@@ -431,6 +455,9 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 
 	if len(res.Sessions) == 0 {
 		out.Result("No sessions found")
+		if usesDefaultWindow(cmd) {
+			printDefaultWindowHint()
+		}
 		return nil
 	}
 
@@ -543,21 +570,76 @@ func buildAnalyticsListQuery(cmd *cli.Command) (url.Values, error) {
 		query.Set("page", strconv.Itoa(page))
 	}
 
-	startDate := cmd.String("start")
-	endDate := cmd.String("end")
-	start, end, err := validateAnalyticsDateRange(startDate, endDate)
+	// The API-key endpoint reads whole UTC days, so a --since window widens to
+	// start at midnight of the day it begins.
+	start, end, err := analyticsWindow(cmd)
 	if err != nil {
 		return nil, err
 	}
 
 	if !start.IsZero() {
-		query.Set("start", startDate)
+		query.Set("start", start.UTC().Format(time.DateOnly))
 	}
 	if !end.IsZero() {
-		query.Set("end", endDate)
+		query.Set("end", end.UTC().Format(time.DateOnly))
 	}
 
 	return query, nil
+}
+
+// analyticsNow is the clock --since counts back from; tests replace it.
+var analyticsNow = time.Now
+
+// analyticsWindow reads a session listing's window from --since, or else from
+// --start and --end, or else defaults it to the last defaultAnalyticsWindow
+// rather than leaving it to the endpoint (the Public API searches only the
+// last 24 hours). A window starting at now - d leaves end zero: both
+// endpoints list up to now.
+func analyticsWindow(cmd *cli.Command) (time.Time, time.Time, error) {
+	if usesDefaultWindow(cmd) {
+		return analyticsNow().Add(-defaultAnalyticsWindow), time.Time{}, nil
+	}
+	since := cmd.String("since")
+	if since == "" {
+		return validateAnalyticsDateRange(cmd.String("start"), cmd.String("end"))
+	}
+	if cmd.IsSet("start") || cmd.IsSet("end") {
+		return time.Time{}, time.Time{}, errors.New("--since can't be used with --start or --end")
+	}
+	d, err := parseLookback(since)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	return analyticsNow().Add(-d), time.Time{}, nil
+}
+
+// parseLookback parses a --since duration: a whole number of days (14d) or
+// weeks (2w), or anything time.ParseDuration reads, such as 6h or 1h30m. It
+// must be positive.
+func parseLookback(s string) (time.Duration, error) {
+	invalid := fmt.Errorf("invalid duration %q, expected a positive duration such as 90m, 6h, 14d or 2w", s)
+	s = strings.TrimSpace(s)
+	var d time.Duration
+	if n := len(s); n > 1 && (s[n-1] == 'd' || s[n-1] == 'w') {
+		count, err := strconv.Atoi(s[:n-1])
+		if err != nil {
+			return 0, invalid
+		}
+		unit := 24 * time.Hour
+		if s[n-1] == 'w' {
+			unit *= 7
+		}
+		d = time.Duration(count) * unit
+	} else {
+		var err error
+		if d, err = time.ParseDuration(s); err != nil {
+			return 0, invalid
+		}
+	}
+	if d <= 0 {
+		return 0, invalid
+	}
+	return d, nil
 }
 
 // validateAnalyticsDateRange parses --start and --end. Both endpoints read them
@@ -743,29 +825,42 @@ func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if err := render.SessionsPage(out, asJSON, sessions, nextCursor); err != nil {
 		return err
 	}
-	if len(sessions) == 0 && !asJSON && searchedDefaultWindow(opts) {
-		out.Statusf("Only the last 24 hours were searched — re-run with %s to look further back", util.Accented("--start YYYY-MM-DD"))
+	if len(sessions) == 0 && !asJSON && usesDefaultWindow(cmd) {
+		printDefaultWindowHint()
 	}
 	return nil
 }
 
-// searchedDefaultWindow reports whether a listing left its window to the
-// Public API, which then searches only the last 24 hours. A cursor carries the
-// window of the listing it came from.
-func searchedDefaultWindow(opts public.SessionListOptions) bool {
-	return opts.Start.IsZero() && opts.Cursor == ""
+// usesDefaultWindow reports whether a listing searches the default window:
+// no --since, --start or --end set one, and no cursor carries the window of
+// the listing it came from.
+func usesDefaultWindow(cmd *cli.Command) bool {
+	for _, name := range []string{"since", "start", "end", "cursor"} {
+		if cmd.String(name) != "" {
+			return false
+		}
+	}
+	return true
+}
+
+// printDefaultWindowHint says an empty listing searched only the default
+// window, so a quiet fortnight doesn't read as a project with no sessions.
+func printDefaultWindowHint() {
+	out.Statusf("Only the last 14 days were searched — re-run with %s or %s to look further back",
+		util.Accented("--since DURATION"), util.Accented("--start YYYY-MM-DD"))
 }
 
 // sessionListOptions reads the session list flags for the Public API. --start
 // and --end mean the same as on the API-key endpoint: UTC dates bounding when a
-// session started, end exclusive. Unknown status and sort order names fail here,
+// session started, end exclusive. --since starts the window that long before
+// now, to the second. Unknown status and sort order names fail here,
 // before the project lookup, like the date and limit checks.
 func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 	limit := cmd.Int("limit")
 	if limit <= 0 {
 		return public.SessionListOptions{}, errors.New("limit must be greater than 0")
 	}
-	start, end, err := validateAnalyticsDateRange(cmd.String("start"), cmd.String("end"))
+	start, end, err := analyticsWindow(cmd)
 	if err != nil {
 		return public.SessionListOptions{}, err
 	}
@@ -877,15 +972,22 @@ func participantListOptions(cmd *cli.Command) (public.ParticipantListOptions, er
 // puts it.
 type sessionRecordingOptions struct {
 	public.RecordingURLOptions
-	// Output is the file to save to; empty picks defaultRecordingFile.
+	// Output is where -o saves: a file, replaced if it exists, or a directory
+	// to save under the default name in. Empty saves under the default name in
+	// the working directory. A default name never replaces a file; see
+	// recordingDestination.
 	Output string
-	// URLOnly prints the signed URL instead of downloading.
+	// URLOnly prints the signed URL response instead of downloading; --json
+	// does too.
 	URLOnly bool
 }
 
-// sessionRecordingOptionsFrom reads the recording flags. A missing or unknown
-// type fails here, before the project lookup.
+// sessionRecordingOptionsFrom reads the recording flags. An unknown type, or
+// an --output that won't be saved to, fails here, before the project lookup.
 func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, error) {
+	if cmd.Args().Len() > 1 {
+		return sessionRecordingOptions{}, fmt.Errorf("unexpected argument %q; save elsewhere with -o FILE", cmd.Args().Get(1))
+	}
 	opts := sessionRecordingOptions{
 		RecordingURLOptions: public.RecordingURLOptions{Recording: strings.ToLower(strings.TrimSpace(cmd.String("type")))},
 		Output:              cmd.String("output"),
@@ -894,47 +996,70 @@ func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, err
 	if err := opts.Validate(); err != nil {
 		return sessionRecordingOptions{}, err
 	}
-	if opts.URLOnly && opts.Output != "" {
-		return sessionRecordingOptions{}, errors.New("--output can't be used with --url-only")
+	if opts.URLOnly && cmd.Bool("json") {
+		return sessionRecordingOptions{}, errors.New("--url-only can't be used with --json, which already prints the signed URL response and saves nothing")
+	}
+	if opts.Output != "" {
+		switch {
+		case opts.URLOnly:
+			return sessionRecordingOptions{}, errors.New("--output can't be used with --url-only, which saves nothing")
+		case cmd.Bool("json"):
+			return sessionRecordingOptions{}, errors.New("--output can't be used with --json, which prints the signed URL response and saves nothing")
+		}
 	}
 	return opts, nil
 }
 
 // fetchSessionRecording asks the Public API to sign a URL for the recording,
-// then prints the URL or downloads it to a file. The download goes straight to
-// the object store; nothing passes through the API.
+// then prints the response (--url-only, --json) or downloads the recording to
+// a file and prints the file's path. The download goes straight to the object
+// store; nothing passes through the API.
 func fetchSessionRecording(ctx context.Context, client *public.Client, projectID, sessionID string, opts sessionRecordingOptions, asJSON bool) error {
-	// A file -o names is replaced; the default name never replaces a file, so
-	// running the command twice can't silently overwrite the first download.
-	file := opts.Output
-	if file == "" && !opts.URLOnly {
-		file = defaultRecordingFile(sessionID, opts.Recording)
-		if _, err := os.Lstat(file); err == nil {
-			return fmt.Errorf("%s already exists; pass -o %s to replace it, or -o FILE to save elsewhere", file, file)
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-	}
-
 	res, err := client.GetSessionRecordingURL(ctx, projectID, sessionID, opts.RecordingURLOptions)
 	if err != nil {
 		return sessionRecordingError(err, projectID, sessionID, opts.Recording)
 	}
-	if opts.URLOnly {
+	if opts.URLOnly || asJSON {
 		return render.RecordingURL(out, asJSON, *res)
 	}
 
-	n, err := saveRecording(ctx, *res.Url, file)
+	path, replace, err := recordingDestination(sessionID, opts)
 	if err != nil {
 		return err
 	}
-	return render.RecordingSaved(out, asJSON, render.SavedRecording{
-		SessionID:          sessionID,
-		Recording:          opts.Recording,
-		File:               file,
-		Bytes:              n,
-		RecordingStartedAt: res.RecordingStartedAt,
+	path, n, err := saveRecording(ctx, *res.Url, path, replace)
+	if err != nil {
+		return err
+	}
+	return render.RecordingSaved(out, *res, render.SavedRecording{
+		SessionID: sessionID,
+		Recording: opts.Recording,
+		File:      path,
+		Bytes:     n,
 	})
+}
+
+// recordingDestination is where a download saves, and whether it replaces a
+// file already there. A file -o names is replaced, as asked; the default
+// name, in the working directory or in a directory -o names, never is:
+// saveRecording numbers it instead.
+func recordingDestination(sessionID string, opts sessionRecordingOptions) (path string, replace bool, err error) {
+	name := defaultRecordingFile(sessionID, opts.Recording)
+	if opts.Output == "" {
+		return name, false, nil
+	}
+	if strings.HasSuffix(opts.Output, string(filepath.Separator)) || strings.HasSuffix(opts.Output, "/") {
+		return filepath.Join(opts.Output, name), false, nil
+	}
+	info, err := os.Stat(opts.Output)
+	switch {
+	case err == nil && info.IsDir():
+		return filepath.Join(opts.Output, name), false, nil
+	case err == nil || errors.Is(err, os.ErrNotExist):
+		return opts.Output, true, nil
+	default:
+		return "", false, err
+	}
 }
 
 // defaultRecordingFile names a downloaded recording in the working directory:
@@ -949,14 +1074,27 @@ func defaultRecordingFile(sessionID, recording string) string {
 	return name + "-" + recording + ext
 }
 
-// saveRecording downloads a signed recording URL to path. It writes a hidden
-// temporary file beside path (readable only by the user, like the recording
-// it holds) and renames it into place once the download completes, so a
-// failed download leaves no partial file and an existing file stays intact.
-func saveRecording(ctx context.Context, signedURL, path string) (int64, error) {
+// saveRecording downloads a signed recording URL to path and returns the path
+// it saved to. Unless replace is set it never replaces a file: when path is
+// taken it saves to the first free path-1.ext, path-2.ext and so on, claiming
+// the name before downloading so a concurrent run can't take it too. It
+// writes a hidden temporary file beside the destination (readable only by the
+// user, like the recording it holds) and renames it into place once the
+// download completes, so a failed download leaves no partial file, no claimed
+// name, and an existing file intact.
+func saveRecording(ctx context.Context, signedURL, path string, replace bool) (string, int64, error) {
+	if !replace {
+		var err error
+		if path, err = claimFreeName(path); err != nil {
+			return "", 0, err
+		}
+	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.part")
 	if err != nil {
-		return 0, err
+		if !replace {
+			_ = os.Remove(path)
+		}
+		return "", 0, err
 	}
 	n, err := public.DownloadRecording(ctx, signedURL, tmp)
 	if cerr := tmp.Close(); err == nil {
@@ -967,9 +1105,37 @@ func saveRecording(ctx context.Context, signedURL, path string) (int64, error) {
 	}
 	if err != nil {
 		_ = os.Remove(tmp.Name())
-		return 0, err
+		if !replace {
+			_ = os.Remove(path)
+		}
+		return "", 0, err
 	}
-	return n, nil
+	return path, n, nil
+}
+
+// maxRecordingNameTries bounds how many numbered names claimFreeName tries.
+const maxRecordingNameTries = 1000
+
+// claimFreeName creates an empty file at path, or else at the first of
+// path-1.ext, path-2.ext and so on that doesn't exist, and returns its name.
+// Creating it exclusively claims the name: no other run picks it too.
+func claimFreeName(path string) (string, error) {
+	ext := filepath.Ext(path)
+	stem := strings.TrimSuffix(path, ext)
+	for i := 0; i < maxRecordingNameTries; i++ {
+		name := path
+		if i > 0 {
+			name = fmt.Sprintf("%s-%d%s", stem, i, ext)
+		}
+		f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if err == nil {
+			return name, f.Close()
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return "", err
+		}
+	}
+	return "", fmt.Errorf("%s and %d numbered names after it already exist; pass -o FILE to save elsewhere", path, maxRecordingNameTries-1)
 }
 
 // sessionRecordingError explains why a session has nothing to download, and
@@ -1010,10 +1176,44 @@ func pageOptions(cmd *cli.Command) (public.PageOptions, error) {
 	return public.PageOptions{Limit: int32(limit), Cursor: cmd.String("cursor")}, nil
 }
 
-// fetchSessionTranscript reads one page of a session's transcript and prints
-// it, saying why when the first page is empty.
+// readPages reads a session's items page by page from page.Cursor, in full
+// pages but no more than page.Limit in all, and returns them with the cursor
+// where it stopped: empty once it read the last page. fetch reads one page.
+func readPages[T any](page public.PageOptions, fetch func(public.PageOptions) ([]T, string, error)) ([]T, string, error) {
+	var all []T
+	next := page.Cursor
+	for {
+		items, cursor, err := fetch(public.PageOptions{
+			Limit:  min(public.MaxPageSize, page.Limit-int32(len(all))),
+			Cursor: next,
+		})
+		if err != nil {
+			return nil, "", err
+		}
+		all = append(all, items...)
+		// A cursor that didn't move would read the same page forever.
+		stuck := cursor == next
+		next = cursor
+		if next == "" || stuck || len(all) >= int(page.Limit) {
+			return all, next, nil
+		}
+	}
+}
+
+// fetchSessionTranscript reads a session's transcript, every page up to
+// opts.Limit items, and prints it like the agent debugger's history, saying
+// why when there is none.
 func fetchSessionTranscript(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.PageOptions, asJSON bool) error {
-	page, err := client.GetSessionTranscript(ctx, projectID, sessionID, opts)
+	page := &public.TranscriptPage{}
+	var err error
+	page.Items, page.NextCursor, err = readPages(opts, func(o public.PageOptions) ([]public.TranscriptItem, string, error) {
+		p, err := client.GetSessionTranscript(ctx, projectID, sessionID, o)
+		if err != nil {
+			return nil, "", err
+		}
+		page.SkippedRecords += p.SkippedRecords
+		return p.Items, p.NextCursor, nil
+	})
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "transcript", projectAdminAccess)
 	}
@@ -1024,7 +1224,24 @@ func fetchSessionTranscript(ctx context.Context, client *public.Client, projectI
 	if len(page.Items) == 0 && page.SkippedRecords == 0 && page.NextCursor == "" {
 		empty = emptyTranscriptReason(ctx, client, projectID, sessionID, opts.Cursor != "")
 	}
-	return render.SessionTranscript(out, asJSON, *page, empty)
+	return render.SessionTranscript(out, asJSON, *page, empty, transcriptLines)
+}
+
+// transcriptLines renders a recorded transcript as `lk agent debugger` and
+// `lk agent console` render a live one, adding each item's time and its
+// latencies, followed by a blank line.
+func transcriptLines(items []public.TranscriptItem) []string {
+	opts := renderOptions{Metrics: true, Times: true, UserLabel: "User"}
+	var lines []string
+	for _, e := range transcriptItemsToTurnEvents(items) {
+		if line := renderTurnEvent(e, opts); line != "" {
+			lines = append(lines, line)
+		}
+	}
+	if len(lines) > 0 {
+		lines = append(lines, "")
+	}
+	return lines
 }
 
 // emptyTranscriptReason explains a page with no items. The transcript read
@@ -1102,10 +1319,20 @@ func logOptions(cmd *cli.Command) (public.LogOptions, error) {
 	return opts, nil
 }
 
-// fetchSessionLogs reads one page of a session's agent logs and prints it,
-// saying why when the page is empty.
+// fetchSessionLogs reads a session's agent logs, every page up to opts.Limit
+// records, and prints them, saying why when there are none.
 func fetchSessionLogs(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.LogOptions, asJSON bool) error {
-	page, err := client.GetSessionLogs(ctx, projectID, sessionID, opts)
+	page := &public.LogPage{}
+	var err error
+	page.Records, page.NextCursor, err = readPages(opts.PageOptions, func(o public.PageOptions) ([]oapi.LivekitPublicapiObservabilityV1LogRecord, string, error) {
+		read := opts
+		read.PageOptions = o
+		p, err := client.GetSessionLogs(ctx, projectID, sessionID, read)
+		if err != nil {
+			return nil, "", err
+		}
+		return p.Records, p.NextCursor, nil
+	})
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "agent logs", projectAdminAccess)
 	}
@@ -1131,45 +1358,21 @@ func emptyLogsReason(sessionID string, opts public.LogOptions) string {
 		"and a running agent's records appear as it exports them", sessionID)
 }
 
-// traceReadOptions bounds `session traces`' read: unlike the API's pages,
-// Limit counts spans across every page read.
-type traceReadOptions struct {
-	// Limit is the most spans to read.
-	Limit int
-	// Cursor starts the read where a prior one stopped; empty starts from the
-	// session's first span.
-	Cursor string
-}
-
-// traceOptions reads the trace flags. A bad limit fails here, before the
-// project lookup.
-func traceOptions(cmd *cli.Command) (traceReadOptions, error) {
-	page, err := pageOptions(cmd)
-	if err != nil {
-		return traceReadOptions{}, err
-	}
-	return traceReadOptions{Limit: int(page.Limit), Cursor: page.Cursor}, nil
-}
-
-// fetchSessionTraces reads a session's spans page by page, in full pages but
-// no more than opts.Limit in all, and prints them as one tree, saying why
-// when there are none. A read that stops at the limit keeps the cursor for
-// the rest.
-func fetchSessionTraces(ctx context.Context, client *public.Client, projectID, sessionID string, opts traceReadOptions, asJSON bool) error {
-	read := public.TracePage{NextCursor: opts.Cursor}
-	for {
-		page, err := client.GetSessionTraces(ctx, projectID, sessionID, public.PageOptions{
-			Limit:  int32(min(public.MaxTracePageSize, opts.Limit-len(read.Spans))),
-			Cursor: read.NextCursor,
-		})
+// fetchSessionTraces reads a session's spans, every page up to opts.Limit,
+// and prints them as one tree, saying why when there are none. A read that
+// stops at the limit keeps the cursor for the rest.
+func fetchSessionTraces(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.PageOptions, asJSON bool) error {
+	read := public.TracePage{}
+	var err error
+	read.Spans, read.NextCursor, err = readPages(opts, func(o public.PageOptions) ([]oapi.LivekitPublicapiObservabilityV1Span, string, error) {
+		p, err := client.GetSessionTraces(ctx, projectID, sessionID, o)
 		if err != nil {
-			return sessionReadError(err, projectID, sessionID, "trace spans", projectAdminAccess)
+			return nil, "", err
 		}
-		read.Spans = append(read.Spans, page.Spans...)
-		read.NextCursor = page.NextCursor
-		if read.NextCursor == "" || len(page.Spans) == 0 || len(read.Spans) >= opts.Limit {
-			break
-		}
+		return p.Spans, p.NextCursor, nil
+	})
+	if err != nil {
+		return sessionReadError(err, projectID, sessionID, "trace spans", projectAdminAccess)
 	}
 	var empty string
 	if len(read.Spans) == 0 {
@@ -1206,10 +1409,20 @@ func metricOptions(cmd *cli.Command) (public.MetricOptions, error) {
 	return opts, nil
 }
 
-// fetchSessionMetrics reads one page of a session's agent metrics and prints
-// it, saying why when the page is empty.
+// fetchSessionMetrics reads a session's agent metrics, every page up to
+// opts.Limit points, and prints them, saying why when there are none.
 func fetchSessionMetrics(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.MetricOptions, asJSON bool) error {
-	page, err := client.GetSessionMetrics(ctx, projectID, sessionID, opts)
+	page := &public.MetricPage{}
+	var err error
+	page.Points, page.NextCursor, err = readPages(opts.PageOptions, func(o public.PageOptions) ([]public.MetricPoint, string, error) {
+		read := opts
+		read.PageOptions = o
+		p, err := client.GetSessionMetrics(ctx, projectID, sessionID, read)
+		if err != nil {
+			return nil, "", err
+		}
+		return p.Points, p.NextCursor, nil
+	})
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "agent metrics", projectAdminAccess)
 	}
@@ -1255,10 +1468,20 @@ func eventOptions(cmd *cli.Command) (public.EventOptions, error) {
 	return opts, nil
 }
 
-// fetchSessionEvents reads one page of a session's events and prints it,
-// saying why when the page is empty.
+// fetchSessionEvents reads a session's events, every page up to opts.Limit,
+// and prints them, saying why when there are none.
 func fetchSessionEvents(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.EventOptions, asJSON bool) error {
-	page, err := client.ListSessionEvents(ctx, projectID, sessionID, opts)
+	page := &public.EventPage{}
+	var err error
+	page.Events, page.NextCursor, err = readPages(opts.PageOptions, func(o public.PageOptions) ([]oapi.LivekitPublicapiAnalyticsV1SessionEvent, string, error) {
+		read := opts
+		read.PageOptions = o
+		p, err := client.ListSessionEvents(ctx, projectID, sessionID, read)
+		if err != nil {
+			return nil, "", err
+		}
+		return p.Events, p.NextCursor, nil
+	})
 	if err != nil {
 		return sessionReadError(err, projectID, sessionID, "events", projectReadAccess)
 	}
