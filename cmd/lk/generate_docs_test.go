@@ -119,6 +119,22 @@ func TestShortDuration(t *testing.T) {
 	}
 }
 
+func TestSentence(t *testing.T) {
+	for in, want := range map[string]string{
+		"Log more":                                  "Log more.",
+		"Log more.":                                 "Log more.",
+		"Requires --scenarios":                      "Requires `--scenarios`.",
+		"Requires --samples of more than 1.":        "Requires `--samples` of more than 1.",
+		"Pass --install=false to skip.":             "Pass `--install=false` to skip.",
+		"Merged with --attributes, taking priority": "Merged with `--attributes`, taking priority.",
+		"Targets a room (with --room).":             "Targets a room (with `--room`).",
+		"Already `--quoted`.":                       "Already `--quoted`.",
+		"Skipped in non-interactive mode.":          "Skipped in non-interactive mode.",
+	} {
+		assert.Equal(t, want, sentence(in), in)
+	}
+}
+
 // Every command the real CLI lists must render without panicking, and with
 // each marker the generator adds appearing once.
 func TestCommandDocsRealTree(t *testing.T) {
