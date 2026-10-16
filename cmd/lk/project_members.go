@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/urfave/cli/v3"
 
@@ -223,12 +224,7 @@ func removeProjectMember(ctx context.Context, cmd *cli.Command) error {
 	if err := client.RemoveProjectMember(ctx, projectID, userID); err != nil {
 		return cloudAPIError(err)
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"userId": userID, "removed": true})
-		return nil
-	}
-	out.Statusf("Removed member %s", util.Accented(userID))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "userId", userID, "removed", fmt.Sprintf("Removed member %s", util.Accented(userID)))
 }
 
 func addProjectMembers(ctx context.Context, cmd *cli.Command) error {
@@ -366,12 +362,7 @@ func deleteProjectInvite(ctx context.Context, cmd *cli.Command) error {
 	if err := client.DeleteProjectInvite(ctx, projectID, email); err != nil {
 		return cloudAPIError(err)
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"email": email, "deleted": true})
-		return nil
-	}
-	out.Statusf("Revoked invite for %s", util.Accented(email))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "email", email, "deleted", fmt.Sprintf("Revoked invite for %s", util.Accented(email)))
 }
 
 func answerProjectInvite(ctx context.Context, cmd *cli.Command) error {

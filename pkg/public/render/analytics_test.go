@@ -172,7 +172,7 @@ func TestSessionParticipantsPage(t *testing.T) {
 
 	stdout.Reset()
 	require.NoError(t, SessionParticipantsPage(util.NewPrinter(&stdout, nil, true), true, participants, "c2"))
-	assert.JSONEq(t, `{"items":`+participantsPage+`,"nextCursor":"c2"}`, stdout.String())
+	assert.JSONEq(t, `{"items":`+participantsPage+`,"pageInfo":{"nextCursor":"c2","hasMore":true}}`, stdout.String())
 }
 
 // TestSessionParticipantsPageNoSessions prints no participant sessions table
@@ -352,21 +352,24 @@ func TestRecordingURL(t *testing.T) {
 	assert.JSONEq(t, recordingURLResponse, stdout.String())
 }
 
-// TestRecordingSaved checks a saved recording says where it went, and --json
-// gives a script the same facts.
+// TestRecordingSaved checks a saved recording says where it went, on stderr,
+// and --json prints the signed URL response it came from.
 func TestRecordingSaved(t *testing.T) {
-	started := time.Date(2026, 10, 7, 11, 0, 0, 0, time.UTC)
-	saved := SavedRecording{SessionID: "RM_1", Recording: "chat-history", File: "RM_1-chat-history.json", Bytes: 2048, RecordingStartedAt: &started}
+	var resp oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse
+	require.NoError(t, json.Unmarshal([]byte(recordingURLResponse), &resp))
+	saved := SavedRecording{SessionID: "RM_1", Recording: "chat-history", File: "RM_1-chat-history.json", Bytes: 2048}
 
-	var stdout, stderr bytes.Buffer
-	require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, &stderr, false), false, saved))
-	assert.Empty(t, stdout.String())
-	assert.Contains(t, stderr.String(), "Saved chat history of session RM_1 to RM_1-chat-history.json (2.0 KB)")
-	assert.Contains(t, stderr.String(), "recording started")
-
-	stdout.Reset()
-	require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, nil, true), true, saved))
-	assert.JSONEq(t, `{"sessionId":"RM_1","recording":"chat-history","file":"RM_1-chat-history.json","bytes":2048,"recordingStartedAt":"2026-10-07T11:00:00Z"}`, stdout.String())
+	for _, asJSON := range []bool{false, true} {
+		var stdout, stderr bytes.Buffer
+		require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, &stderr, false), asJSON, resp, saved))
+		if asJSON {
+			assert.JSONEq(t, recordingURLResponse, stdout.String())
+		} else {
+			assert.Empty(t, stdout.String())
+		}
+		assert.Contains(t, stderr.String(), "Saved chat history of session RM_1 to RM_1-chat-history.json (2.0 KB)")
+		assert.Contains(t, stderr.String(), "recording started")
+	}
 }
 
 // transcriptItems is one page of a transcript with an item of each kind, as
@@ -423,7 +426,7 @@ func TestSessionTranscriptEmpty(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), true, public.TranscriptPage{}, "Session RM_1 is still active", itemIDs))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Equal(t, "Session RM_1 is still active\n", stderr.String())
 }
 
@@ -445,7 +448,7 @@ func TestSessionTranscriptJSON(t *testing.T) {
 	page := public.TranscriptPage{Items: decodeTranscriptItems(t), NextCursor: "c2", SkippedRecords: 1}
 	var stdout bytes.Buffer
 	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, nil, true), true, page, "", itemIDs))
-	assert.JSONEq(t, `{"items":`+transcriptItems+`,"nextCursor":"c2","skippedRecords":1}`, stdout.String())
+	assert.JSONEq(t, `{"items":`+transcriptItems+`,"pageInfo":{"nextCursor":"c2","hasMore":true},"skippedRecords":1}`, stdout.String())
 }
 
 // logRecords is one page of agent logs as the API sends it: records with and
@@ -518,7 +521,7 @@ func TestSessionLogsEmpty(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	require.NoError(t, SessionLogs(util.NewPrinter(&stdout, &stderr, false), true, public.LogPage{}, "No agent logs"))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Equal(t, "No agent logs\n", stderr.String())
 }
 
@@ -530,11 +533,11 @@ func TestSessionLogsJSON(t *testing.T) {
 	require.NoError(t, SessionLogs(util.NewPrinter(&stdout, nil, true), true, page, ""))
 
 	var got struct {
-		Items      []map[string]any `json:"items"`
-		NextCursor string           `json:"nextCursor"`
+		Items    []map[string]any `json:"items"`
+		PageInfo util.PageInfo    `json:"pageInfo"`
 	}
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
-	assert.Equal(t, "c2", got.NextCursor)
+	assert.Equal(t, "c2", got.PageInfo.NextCursor)
 	require.Len(t, got.Items, 4)
 	assert.Equal(t, map[string]any{"ttfb": 1.5}, got.Items[1]["bodyFields"])
 	assert.Equal(t, "b7ad6b7169203331", got.Items[1]["spanId"])
@@ -646,7 +649,7 @@ func TestSessionTracesEmpty(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, &stderr, false), true, public.TracePage{}, "No spans"))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Equal(t, "No spans\n", stderr.String())
 }
 
@@ -658,11 +661,11 @@ func TestSessionTracesJSON(t *testing.T) {
 	require.NoError(t, SessionTraces(util.NewPrinter(&stdout, nil, true), true, page, ""))
 
 	var got struct {
-		Items      []map[string]any `json:"items"`
-		NextCursor string           `json:"nextCursor"`
+		Items    []map[string]any `json:"items"`
+		PageInfo util.PageInfo    `json:"pageInfo"`
 	}
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
-	assert.Equal(t, "c2", got.NextCursor)
+	assert.Equal(t, "c2", got.PageInfo.NextCursor)
 	require.Len(t, got.Items, 6)
 	assert.Equal(t, "a1", got.Items[0]["spanId"])
 	assert.Equal(t, map[string]any{"lk.agent_name": "triage"}, got.Items[0]["attributes"])
@@ -747,7 +750,7 @@ func TestSessionMetricsEmpty(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	require.NoError(t, SessionMetrics(util.NewPrinter(&stdout, &stderr, false), true, public.MetricPage{}, "No metrics"))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Equal(t, "No metrics\n", stderr.String())
 }
 
@@ -759,11 +762,11 @@ func TestSessionMetricsJSON(t *testing.T) {
 	require.NoError(t, SessionMetrics(util.NewPrinter(&stdout, nil, true), true, page, ""))
 
 	var got struct {
-		Items      []map[string]any `json:"items"`
-		NextCursor string           `json:"nextCursor"`
+		Items    []map[string]any `json:"items"`
+		PageInfo util.PageInfo    `json:"pageInfo"`
 	}
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
-	assert.Equal(t, "c2", got.NextCursor)
+	assert.Equal(t, "c2", got.PageInfo.NextCursor)
 	require.Len(t, got.Items, 6)
 	assert.Equal(t, 0.0, got.Items[0]["value"])
 	assert.Equal(t, map[string]any{"lk.agent_name": "triage"}, got.Items[0]["attributes"])
@@ -885,7 +888,7 @@ func TestSessionEventsEmpty(t *testing.T) {
 	stdout.Reset()
 	stderr.Reset()
 	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, &stderr, false), true, public.EventPage{}, "No events"))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Equal(t, "No events\n", stderr.String())
 }
 
@@ -897,11 +900,11 @@ func TestSessionEventsJSON(t *testing.T) {
 	require.NoError(t, SessionEvents(util.NewPrinter(&stdout, nil, true), true, page, ""))
 
 	var got struct {
-		Items      []map[string]any `json:"items"`
-		NextCursor string           `json:"nextCursor"`
+		Items    []map[string]any `json:"items"`
+		PageInfo util.PageInfo    `json:"pageInfo"`
 	}
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
-	assert.Equal(t, "c2", got.NextCursor)
+	assert.Equal(t, "c2", got.PageInfo.NextCursor)
 	var want []map[string]any
 	require.NoError(t, json.Unmarshal([]byte(sessionEvents), &want))
 	want[1]["timestamp"] = "2026-10-07T11:00:01.25Z" // time.Time drops the trailing zero

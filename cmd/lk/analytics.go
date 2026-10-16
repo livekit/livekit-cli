@@ -1013,12 +1013,11 @@ func fetchSessionRecording(ctx context.Context, client *public.Client, projectID
 	if err != nil {
 		return err
 	}
-	return render.RecordingSaved(out, asJSON, render.SavedRecording{
-		SessionID:          sessionID,
-		Recording:          opts.Recording,
-		File:               file,
-		Bytes:              n,
-		RecordingStartedAt: res.RecordingStartedAt,
+	return render.RecordingSaved(out, asJSON, *res, render.SavedRecording{
+		SessionID: sessionID,
+		Recording: opts.Recording,
+		File:      file,
+		Bytes:     n,
 	})
 }
 

@@ -349,12 +349,7 @@ func deleteWorkspace(ctx context.Context, cmd *cli.Command) error {
 	if err := client.DeleteWorkspace(ctx, id); err != nil {
 		return cloudAPIError(err)
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"id": id, "deleted": true})
-		return nil
-	}
-	out.Statusf("Deleted workspace %s", util.Accented(id))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "id", id, "deleted", fmt.Sprintf("Deleted workspace %s", util.Accented(id)))
 }
 
 func listWorkspaceProjects(ctx context.Context, cmd *cli.Command) error {
@@ -434,12 +429,7 @@ func deleteWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 	if err := client.DeleteWorkspaceProject(ctx, wsID, projectID); err != nil {
 		return cloudAPIError(err)
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"id": projectID, "deleted": true})
-		return nil
-	}
-	out.Statusf("Deleted project %s", util.Accented(projectID))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "id", projectID, "deleted", fmt.Sprintf("Deleted project %s", util.Accented(projectID)))
 }
 
 func listWorkspaceMembers(ctx context.Context, cmd *cli.Command) error {
@@ -503,12 +493,7 @@ func deleteWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 	if err := client.DeleteWorkspaceMember(ctx, wsID, userID); err != nil {
 		return cloudAPIError(err)
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"userId": userID, "removed": true})
-		return nil
-	}
-	out.Statusf("Removed member %s", util.Accented(userID))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "userId", userID, "removed", fmt.Sprintf("Removed member %s", util.Accented(userID)))
 }
 
 func listWorkspaceInvites(ctx context.Context, cmd *cli.Command) error {
@@ -577,12 +562,7 @@ func deleteWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {
 	if err := client.DeleteWorkspaceInvite(ctx, wsID, email); err != nil {
 		return cloudAPIError(err)
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"email": email, "deleted": true})
-		return nil
-	}
-	out.Statusf("Revoked invite for %s", util.Accented(email))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "email", email, "deleted", fmt.Sprintf("Revoked invite for %s", util.Accented(email)))
 }
 
 func answerWorkspaceInvite(ctx context.Context, cmd *cli.Command) error {

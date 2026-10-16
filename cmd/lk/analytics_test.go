@@ -561,7 +561,7 @@ func participantsAPI(t *testing.T, status int, body string) (*public.Client, *ur
 // TestFetchSessionParticipants checks a page of participants prints as a
 // table with their participant sessions and the command that reads the next
 // cursor, sending the limit, cursor and order asked for, and --json prints
-// {items, nextCursor}.
+// {items, pageInfo}.
 func TestFetchSessionParticipants(t *testing.T) {
 	const page = `{"items":[{"participantIdentity":"alice","region":"US East",` +
 		`"sessions":[{"participantSessionId":"PA_alice1","connectionType":"UDP"}]}],` +
@@ -583,13 +583,13 @@ func TestFetchSessionParticipants(t *testing.T) {
 	stdout, _ = captureOut(t)
 	require.NoError(t, fetchSessionParticipants(context.Background(), client, "p1", "RM_1", public.ParticipantListOptions{}, true))
 	var got struct {
-		Items      []map[string]any `json:"items"`
-		NextCursor string           `json:"nextCursor"`
+		Items    []map[string]any `json:"items"`
+		PageInfo util.PageInfo    `json:"pageInfo"`
 	}
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &got))
 	require.Len(t, got.Items, 1)
 	assert.Equal(t, "alice", got.Items[0]["participantIdentity"])
-	assert.Equal(t, "c2", got.NextCursor)
+	assert.Equal(t, "c2", got.PageInfo.NextCursor)
 }
 
 // TestFetchSessionParticipantsErrors checks a failed read says why: signed
@@ -836,11 +836,23 @@ func TestFetchSessionRecordingURLOnly(t *testing.T) {
 func TestFetchSessionRecordingJSON(t *testing.T) {
 	t.Chdir(t.TempDir())
 	client, _ := recordingServers(t, []byte("OggS"), "{}")
-	stdout, _ := captureOut(t)
+	stdout, stderr := captureOut(t)
 
 	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
 	require.NoError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, true))
-	assert.JSONEq(t, `{"sessionId":"RM_1","recording":"audio","file":"RM_1-audio.ogg","bytes":4,"recordingStartedAt":"2026-10-07T11:00:00Z"}`, stdout.String())
+
+	// stdout is the API's response, the signed URL the download used; where it
+	// went is a status line.
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &resp))
+	assert.Contains(t, resp["url"], "/recording.ogg?X-Amz-Signature=abc")
+	assert.Equal(t, "2026-10-07T12:15:00Z", resp["expiresAt"])
+	assert.Equal(t, "2026-10-07T11:00:00Z", resp["recordingStartedAt"])
+	assert.Len(t, resp, 3)
+	assert.Contains(t, stderr.String(), "Saved audio recording of session RM_1 to RM_1-audio.ogg")
+	got, err := os.ReadFile("RM_1-audio.ogg")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("OggS"), got)
 }
 
 // TestFetchSessionRecordingNothingToDownload checks the two answers that mean
@@ -1251,7 +1263,7 @@ func TestFetchSessionTranscriptJSON(t *testing.T) {
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", public.PageOptions{}, true))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Contains(t, stderr.String(), "still active")
 }
 
@@ -1478,7 +1490,7 @@ func TestFetchSessionLogsJSON(t *testing.T) {
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionLogs(context.Background(), client, "p1", "RM_1", public.LogOptions{}, true))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Contains(t, stderr.String(), "has no agent logs")
 }
 
@@ -1735,10 +1747,20 @@ func TestFetchSessionTracesJSON(t *testing.T) {
 	require.Len(t, got.Items, 4)
 	assert.Equal(t, "b2", got.Items[3]["parentSpanId"])
 
+	// A read stopped at its limit keeps the last page's pageInfo.
+	client, _ = tracesAPI(t, http.StatusOK, tracePages)
+	stdout, _ = captureOut(t)
+	require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 2}, true))
+	var stopped struct {
+		PageInfo util.PageInfo `json:"pageInfo"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &stopped))
+	assert.Equal(t, util.PageInfo{NextCursor: "c2", HasMore: true}, stopped.PageInfo)
+
 	client, _ = tracesAPI(t, http.StatusOK, map[string]string{"": `{}`})
 	stdout, stderr := captureOut(t)
 	require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 10}, true))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Contains(t, stderr.String(), "has no trace spans")
 }
 
@@ -1971,7 +1993,7 @@ func TestFetchSessionMetricsJSON(t *testing.T) {
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionMetrics(context.Background(), client, "p1", "RM_1", public.MetricOptions{}, true))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Contains(t, stderr.String(), "has no agent metrics")
 }
 
@@ -2214,7 +2236,7 @@ func TestFetchSessionEventsJSON(t *testing.T) {
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionEvents(context.Background(), client, "p1", "RM_1", public.EventOptions{}, true))
-	assert.JSONEq(t, `{"items":[]}`, stdout.String())
+	assert.JSONEq(t, `{"items":[],"pageInfo":{}}`, stdout.String())
 	assert.Contains(t, stderr.String(), "has no events")
 }
 
