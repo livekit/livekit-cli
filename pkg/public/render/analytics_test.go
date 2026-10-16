@@ -352,24 +352,18 @@ func TestRecordingURL(t *testing.T) {
 	assert.JSONEq(t, recordingURLResponse, stdout.String())
 }
 
-// TestRecordingSaved checks a saved recording says where it went, on stderr,
-// and --json prints the signed URL response it came from.
+// TestRecordingSaved checks a saved recording prints its path on stdout, for
+// a script to capture, and what it saved on stderr.
 func TestRecordingSaved(t *testing.T) {
 	var resp oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse
 	require.NoError(t, json.Unmarshal([]byte(recordingURLResponse), &resp))
-	saved := SavedRecording{SessionID: "RM_1", Recording: "chat-history", File: "RM_1-chat-history.json", Bytes: 2048}
+	saved := SavedRecording{SessionID: "RM_1", Recording: "chat-history", File: "RM_1-chat-history-1.json", Bytes: 2048}
 
-	for _, asJSON := range []bool{false, true} {
-		var stdout, stderr bytes.Buffer
-		require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, &stderr, false), asJSON, resp, saved))
-		if asJSON {
-			assert.JSONEq(t, recordingURLResponse, stdout.String())
-		} else {
-			assert.Empty(t, stdout.String())
-		}
-		assert.Contains(t, stderr.String(), "Saved chat history of session RM_1 to RM_1-chat-history.json (2.0 KB)")
-		assert.Contains(t, stderr.String(), "recording started")
-	}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, &stderr, false), resp, saved))
+	assert.Equal(t, "RM_1-chat-history-1.json\n", stdout.String())
+	assert.Contains(t, stderr.String(), "Saved chat history of session RM_1 to RM_1-chat-history-1.json (2.0 KB)")
+	assert.Contains(t, stderr.String(), "recording started")
 }
 
 // transcriptItems is one page of a transcript with an item of each kind, as

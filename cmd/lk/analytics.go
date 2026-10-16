@@ -107,8 +107,12 @@ var (
 								"by default its audio recording, the conversation as an Ogg audio file; with --type chat-history, " +
 								"its chat history, the conversation as the agent recorded it (messages, tool calls and handoffs), as JSON. " +
 								"The file downloads straight from the project's data region.\n\n" +
+								"It saves to SESSION_ID-audio.ogg or SESSION_ID-chat-history.json in the working directory, " +
+								"numbered (SESSION_ID-audio-1.ogg, ...) rather than replacing a file already there, " +
+								"and prints the path it saved to. -o saves elsewhere: to a file, replaced if it exists, " +
+								"or into a directory, under the default name.\n\n" +
 								"--url-only prints a signed URL for the file instead, valid for 15 minutes, to download it some other way. " +
-								"--json prints the API's response, signed URL and recording start included.",
+								"--json prints the API's response, signed URL and recording start included, and saves nothing.",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(sessionRecordingOptionsFrom, fetchSessionRecording),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsRecordingFlags()...),
@@ -322,7 +326,7 @@ func analyticsRecordingFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    "output",
 			Aliases: []string{"o"},
-			Usage:   "Save to `FILE`, replacing it if it exists (default SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, never replaced)",
+			Usage:   "Save to `FILE`, replacing it if it exists, or into a directory under the default name (default SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, numbered rather than replacing a file)",
 		},
 		&cli.BoolFlag{
 			Name:  "url-only",
@@ -968,15 +972,22 @@ func participantListOptions(cmd *cli.Command) (public.ParticipantListOptions, er
 // puts it.
 type sessionRecordingOptions struct {
 	public.RecordingURLOptions
-	// Output is the file to save to; empty picks defaultRecordingFile.
+	// Output is where -o saves: a file, replaced if it exists, or a directory
+	// to save under the default name in. Empty saves under the default name in
+	// the working directory. A default name never replaces a file; see
+	// recordingDestination.
 	Output string
-	// URLOnly prints the signed URL instead of downloading.
+	// URLOnly prints the signed URL response instead of downloading; --json
+	// does too.
 	URLOnly bool
 }
 
-// sessionRecordingOptionsFrom reads the recording flags. An unknown type fails
-// here, before the project lookup.
+// sessionRecordingOptionsFrom reads the recording flags. An unknown type, or
+// an --output that won't be saved to, fails here, before the project lookup.
 func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, error) {
+	if cmd.Args().Len() > 1 {
+		return sessionRecordingOptions{}, fmt.Errorf("unexpected argument %q; save elsewhere with -o FILE", cmd.Args().Get(1))
+	}
 	opts := sessionRecordingOptions{
 		RecordingURLOptions: public.RecordingURLOptions{Recording: strings.ToLower(strings.TrimSpace(cmd.String("type")))},
 		Output:              cmd.String("output"),
@@ -985,46 +996,70 @@ func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, err
 	if err := opts.Validate(); err != nil {
 		return sessionRecordingOptions{}, err
 	}
-	if opts.URLOnly && opts.Output != "" {
-		return sessionRecordingOptions{}, errors.New("--output can't be used with --url-only")
+	if opts.URLOnly && cmd.Bool("json") {
+		return sessionRecordingOptions{}, errors.New("--url-only can't be used with --json, which already prints the signed URL response and saves nothing")
+	}
+	if opts.Output != "" {
+		switch {
+		case opts.URLOnly:
+			return sessionRecordingOptions{}, errors.New("--output can't be used with --url-only, which saves nothing")
+		case cmd.Bool("json"):
+			return sessionRecordingOptions{}, errors.New("--output can't be used with --json, which prints the signed URL response and saves nothing")
+		}
 	}
 	return opts, nil
 }
 
 // fetchSessionRecording asks the Public API to sign a URL for the recording,
-// then prints the URL or downloads it to a file. The download goes straight to
-// the object store; nothing passes through the API.
+// then prints the response (--url-only, --json) or downloads the recording to
+// a file and prints the file's path. The download goes straight to the object
+// store; nothing passes through the API.
 func fetchSessionRecording(ctx context.Context, client *public.Client, projectID, sessionID string, opts sessionRecordingOptions, asJSON bool) error {
-	// A file -o names is replaced; the default name never replaces a file, so
-	// running the command twice can't silently overwrite the first download.
-	file := opts.Output
-	if file == "" && !opts.URLOnly {
-		file = defaultRecordingFile(sessionID, opts.Recording)
-		if _, err := os.Lstat(file); err == nil {
-			return fmt.Errorf("%s already exists; pass -o %s to replace it, or -o FILE to save elsewhere", file, file)
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-	}
-
 	res, err := client.GetSessionRecordingURL(ctx, projectID, sessionID, opts.RecordingURLOptions)
 	if err != nil {
 		return sessionRecordingError(err, projectID, sessionID, opts.Recording)
 	}
-	if opts.URLOnly {
+	if opts.URLOnly || asJSON {
 		return render.RecordingURL(out, asJSON, *res)
 	}
 
-	n, err := saveRecording(ctx, *res.Url, file)
+	path, replace, err := recordingDestination(sessionID, opts)
 	if err != nil {
 		return err
 	}
-	return render.RecordingSaved(out, asJSON, *res, render.SavedRecording{
+	path, n, err := saveRecording(ctx, *res.Url, path, replace)
+	if err != nil {
+		return err
+	}
+	return render.RecordingSaved(out, *res, render.SavedRecording{
 		SessionID: sessionID,
 		Recording: opts.Recording,
-		File:      file,
+		File:      path,
 		Bytes:     n,
 	})
+}
+
+// recordingDestination is where a download saves, and whether it replaces a
+// file already there. A file -o names is replaced, as asked; the default
+// name, in the working directory or in a directory -o names, never is:
+// saveRecording numbers it instead.
+func recordingDestination(sessionID string, opts sessionRecordingOptions) (path string, replace bool, err error) {
+	name := defaultRecordingFile(sessionID, opts.Recording)
+	if opts.Output == "" {
+		return name, false, nil
+	}
+	if strings.HasSuffix(opts.Output, string(filepath.Separator)) || strings.HasSuffix(opts.Output, "/") {
+		return filepath.Join(opts.Output, name), false, nil
+	}
+	info, err := os.Stat(opts.Output)
+	switch {
+	case err == nil && info.IsDir():
+		return filepath.Join(opts.Output, name), false, nil
+	case err == nil || errors.Is(err, os.ErrNotExist):
+		return opts.Output, true, nil
+	default:
+		return "", false, err
+	}
 }
 
 // defaultRecordingFile names a downloaded recording in the working directory:
@@ -1039,14 +1074,27 @@ func defaultRecordingFile(sessionID, recording string) string {
 	return name + "-" + recording + ext
 }
 
-// saveRecording downloads a signed recording URL to path. It writes a hidden
-// temporary file beside path (readable only by the user, like the recording
-// it holds) and renames it into place once the download completes, so a
-// failed download leaves no partial file and an existing file stays intact.
-func saveRecording(ctx context.Context, signedURL, path string) (int64, error) {
+// saveRecording downloads a signed recording URL to path and returns the path
+// it saved to. Unless replace is set it never replaces a file: when path is
+// taken it saves to the first free path-1.ext, path-2.ext and so on, claiming
+// the name before downloading so a concurrent run can't take it too. It
+// writes a hidden temporary file beside the destination (readable only by the
+// user, like the recording it holds) and renames it into place once the
+// download completes, so a failed download leaves no partial file, no claimed
+// name, and an existing file intact.
+func saveRecording(ctx context.Context, signedURL, path string, replace bool) (string, int64, error) {
+	if !replace {
+		var err error
+		if path, err = claimFreeName(path); err != nil {
+			return "", 0, err
+		}
+	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".*.part")
 	if err != nil {
-		return 0, err
+		if !replace {
+			_ = os.Remove(path)
+		}
+		return "", 0, err
 	}
 	n, err := public.DownloadRecording(ctx, signedURL, tmp)
 	if cerr := tmp.Close(); err == nil {
@@ -1057,9 +1105,37 @@ func saveRecording(ctx context.Context, signedURL, path string) (int64, error) {
 	}
 	if err != nil {
 		_ = os.Remove(tmp.Name())
-		return 0, err
+		if !replace {
+			_ = os.Remove(path)
+		}
+		return "", 0, err
 	}
-	return n, nil
+	return path, n, nil
+}
+
+// maxRecordingNameTries bounds how many numbered names claimFreeName tries.
+const maxRecordingNameTries = 1000
+
+// claimFreeName creates an empty file at path, or else at the first of
+// path-1.ext, path-2.ext and so on that doesn't exist, and returns its name.
+// Creating it exclusively claims the name: no other run picks it too.
+func claimFreeName(path string) (string, error) {
+	ext := filepath.Ext(path)
+	stem := strings.TrimSuffix(path, ext)
+	for i := 0; i < maxRecordingNameTries; i++ {
+		name := path
+		if i > 0 {
+			name = fmt.Sprintf("%s-%d%s", stem, i, ext)
+		}
+		f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if err == nil {
+			return name, f.Close()
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return "", err
+		}
+	}
+	return "", fmt.Errorf("%s and %d numbered names after it already exist; pass -o FILE to save elsewhere", path, maxRecordingNameTries-1)
 }
 
 // sessionRecordingError explains why a session has nothing to download, and
