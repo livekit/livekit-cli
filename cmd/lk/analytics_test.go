@@ -683,7 +683,11 @@ func TestSessionRecordingOptions(t *testing.T) {
 			args: []string{"--type", "audio", "--url-only"},
 			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, URLOnly: true},
 		},
-		{name: "type is required", wantErr: `recording type is required ("audio" or "chat-history")`},
+		{
+			name: "audio by default",
+			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}},
+		},
+		{name: "blank type", args: []string{"--type", ""}, wantErr: `recording type is required ("audio" or "chat-history")`},
 		{name: "unknown type", args: []string{"--type", "transcript"}, wantErr: `invalid recording type "transcript"`},
 		{
 			name:    "url only saves nothing",
