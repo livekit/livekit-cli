@@ -143,3 +143,18 @@ func (c *Client) CancelSimulationRun(ctx context.Context, projectID, runID strin
 	}
 	return okOrError(resp.StatusCode(), resp.Body)
 }
+
+// GenerateScenarioFromSession derives a scenario from a recorded session. The
+// scenario is not stored server-side.
+func (c *Client) GenerateScenarioFromSession(ctx context.Context, projectID, sessionID string) (*oapi.LivekitScenario, error) {
+	resp, err := c.gen.SimulationServiceGenerateScenarioFromSessionWithResponse(ctx, projectID, oapi.SimulationServiceGenerateScenarioFromSessionJSONRequestBody{
+		RoomId: ptr(sessionID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp.JSON200 == nil {
+		return nil, responseError(resp.StatusCode(), resp.Body)
+	}
+	return requirePayload(resp.JSON200.Scenario, "scenario")
+}

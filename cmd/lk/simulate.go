@@ -72,7 +72,7 @@ var simulateCommand = &cli.Command{
 	},
 	Commands: []*cli.Command{
 		simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand,
-		simulateGetCommand, simulateCancelCommand,
+		simulateGetCommand, simulateCancelCommand, simulateScenarioCommand,
 	},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
@@ -233,6 +233,81 @@ var (
 		Flags:  []cli.Flag{jsonFlag},
 	}
 )
+
+var simulateScenarioCommand = &cli.Command{
+	Name:            "scenario",
+	Usage:           "Work with simulation scenarios",
+	HideHelpCommand: true,
+	Action: func(ctx context.Context, cmd *cli.Command) error {
+		return cli.ShowSubcommandHelp(cmd)
+	},
+	Commands: []*cli.Command{
+		{
+			Name:      "generate",
+			Usage:     "Generate a scenario from a recorded session and print it as a scenarios file",
+			UsageText: "lk agent simulate scenario generate --from-session SESSION_ID > scenarios.yaml",
+			Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+				if experimentalAuthEnabled(cmd) {
+					return nil, nil
+				}
+				return loadSimulateProject(ctx, cmd)
+			},
+			Action: generateScenarioCommand,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "from-session",
+					Usage:    "Session `ID` (RM_...) to derive the scenario from",
+					Required: true,
+				},
+				jsonFlag,
+			},
+		},
+	},
+}
+
+func generateScenarioCommand(ctx context.Context, cmd *cli.Command) error {
+	sessionID := cmd.String("from-session")
+	var scenario *livekit.Scenario
+	if experimentalAuthEnabled(cmd) {
+		client, projectID, err := simulationProjectID(ctx, cmd)
+		if err != nil {
+			return err
+		}
+		s, err := client.GenerateScenarioFromSession(ctx, projectID, sessionID)
+		if err != nil {
+			return cloudAPIError(err)
+		}
+		scenario = &livekit.Scenario{
+			Id:                util.Deref(s.Id),
+			Label:             util.Deref(s.Label),
+			Instructions:      util.Deref(s.Instructions),
+			AgentExpectations: util.Deref(s.AgentExpectations),
+			Tags:              util.Deref(s.Tags),
+			Userdata:          util.Deref(s.Userdata),
+		}
+	} else {
+		pc := simulateProjectConfig
+		client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+		resp, err := client.CreateScenarioFromSession(ctx, &livekit.Scenario_CreateFromSession_Request{
+			ProjectId: pc.ProjectId,
+			RoomId:    sessionID,
+		})
+		if err != nil {
+			return fmt.Errorf("unable to generate scenario: %w", err)
+		}
+		scenario = resp.GetScenario()
+	}
+	if cmd.Bool("json") {
+		util.PrintJSON(scenario)
+		return nil
+	}
+	doc, err := scenarioGroupToYAML(&livekit.ScenarioGroup{Scenarios: []*livekit.Scenario{scenario}})
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.Write(doc)
+	return err
+}
 
 func simulationProjectID(ctx context.Context, cmd *cli.Command) (*public.Client, string, error) {
 	client, conf, user, err := requireCloudClient(cmd)
