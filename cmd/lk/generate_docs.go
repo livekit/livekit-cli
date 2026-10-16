@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -241,8 +242,15 @@ func unquoteUsage(usage string) (string, string) {
 	return name, usage[:i] + name + usage[i+2+j:]
 }
 
+// flagMention matches a flag named in help text, such as --scenarios or
+// --install=false, that starts a word and isn't already in backticks. It stops
+// before trailing punctuation, so "Requires --scenarios." keeps its period.
+var flagMention = regexp.MustCompile(`(^|[\s(])(--[a-zA-Z0-9][a-zA-Z0-9-]*(?:=[a-zA-Z0-9_./:-]*[a-zA-Z0-9_])?)`)
+
+// sentence formats help text as a docs sentence: flag names it mentions are
+// code, and it ends with a period.
 func sentence(s string) string {
-	s = strings.TrimSpace(s)
+	s = flagMention.ReplaceAllString(strings.TrimSpace(s), "$1`$2`")
 	if s == "" || strings.HasSuffix(s, ".") || strings.HasSuffix(s, ")") && strings.HasSuffix(strings.TrimSuffix(s, ")"), ".") {
 		return s
 	}
