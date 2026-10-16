@@ -100,12 +100,6 @@ var (
 		Usage:       "`URL` to instantiate, must contain a taskfile.yaml",
 		Destination: &templateURL,
 	}
-	sandboxFlag = &cli.StringFlag{
-		Name:        "sandbox",
-		Usage:       "`NAME` of the sandbox, see your cloud dashboard",
-		Destination: &sandboxID,
-		Hidden:      true,
-	}
 	installFlag = &cli.BoolFlag{
 		Name:  "install",
 		Usage: "Run installation after creating the application",
