@@ -16,8 +16,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/urfave/cli/v3"
 )
@@ -39,6 +41,11 @@ func generateDocs(ctx context.Context, cmd *cli.Command) error {
 		out.Result(strings.Join(documentedPaths(target, path), "\n"))
 		return nil
 	}
+	// The root's options are the global options, which the reference covers
+	// on its own page.
+	if len(path) == 0 {
+		return errors.New("give a command path, such as agent deploy, or pass --list")
+	}
 	out.Result(commandDocs(target, path))
 	return nil
 }
@@ -50,10 +57,11 @@ const docsInheritsOptions = "docsInheritsOptions"
 
 // documentedPaths is every command in cmd's subtree that the reference documents:
 // commands that are run (no subcommands), and groups that take their own options.
+// The root is never listed: its options are the global ones.
 func documentedPaths(cmd *cli.Command, path []string) []string {
 	subs := cmd.VisibleCommands()
 	var paths []string
-	if len(subs) == 0 || len(docFlags(cmd)) > 0 {
+	if len(path) > 0 && (len(subs) == 0 || len(docFlags(cmd)) > 0) {
 		paths = append(paths, strings.Join(path, " "))
 	}
 	for _, sub := range subs {
@@ -164,10 +172,10 @@ func flagDocs(f cli.Flag) string {
 		line += fmt.Sprintf(" (alias %s)", strings.Join(aliases, ", "))
 	}
 	line += ": " + sentence(usage)
-	if r, ok := f.(cli.RequiredFlag); ok && r.IsRequired() && !strings.Contains(usage, "Required") {
+	if r, ok := f.(cli.RequiredFlag); ok && r.IsRequired() {
 		line += " Required."
 	}
-	if def := defaultText(doc); def != "" && !strings.Contains(usage, "Default") {
+	if def := defaultText(doc); def != "" {
 		line += fmt.Sprintf(" Default: `%s`.", def)
 	}
 	if envs := doc.GetEnvVars(); len(envs) > 0 {
@@ -181,8 +189,14 @@ func flagDocs(f cli.Flag) string {
 }
 
 func defaultText(f cli.DocGenerationFlag) string {
+	if !f.IsDefaultVisible() {
+		return ""
+	}
 	if t := f.GetDefaultText(); t != "" {
 		return t
+	}
+	if d, ok := f.(*cli.DurationFlag); ok && d.Value != 0 {
+		return shortDuration(d.Value)
 	}
 	switch v := strings.Trim(f.GetValue(), `"`); v {
 	case "", "false", "0", "[]", "0s":
@@ -190,6 +204,19 @@ func defaultText(f cli.DocGenerationFlag) string {
 	default:
 		return v
 	}
+}
+
+// shortDuration formats d the way the flag usage writes durations: 30m, not
+// the time.Duration format, 30m0s.
+func shortDuration(d time.Duration) string {
+	s := d.String()
+	if strings.HasSuffix(s, "m0s") {
+		s = strings.TrimSuffix(s, "0s")
+	}
+	if strings.HasSuffix(s, "h0m") {
+		s = strings.TrimSuffix(s, "0m")
+	}
+	return s
 }
 
 func flagPrefix(name string) string {

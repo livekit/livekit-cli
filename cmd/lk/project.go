@@ -43,21 +43,20 @@ var (
 				{
 					Name:      "add",
 					Usage:     "Add a new project (for LiveKit Cloud projects, also see `lk cloud auth`)",
-					UsageText: "lk project add PROJECT_NAME --url URL --api-key KEY --api-secret SECRET [--default]",
-					ArgsUsage: "PROJECT_NAME",
+					ArgsUsage: "[PROJECT_NAME]",
 					Action:    addProject,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "url",
-							Usage: "WebSocket `URL` of the LiveKit server.",
+							Usage: "WebSocket `URL` of the LiveKit server. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.StringFlag{
 							Name:  "api-key",
-							Usage: "Project API `KEY`.",
+							Usage: "Project API `KEY`. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.StringFlag{
 							Name:  "api-secret",
-							Usage: "Project API `SECRET`.",
+							Usage: "Project API `SECRET`. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.BoolFlag{
 							Name:  "default",

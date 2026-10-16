@@ -94,6 +94,16 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 		Before: initLogger,
 	}
 
+	// urfave's help doesn't mark required flags; mark them here, as
+	// generate-docs does, rather than in each flag's usage.
+	flagString := cli.FlagStringer
+	cli.FlagStringer = func(f cli.Flag) string {
+		s := flagString(f)
+		if r, ok := f.(cli.RequiredFlag); ok && r.IsRequired() {
+			s += " (required)"
+		}
+		return s
+	}
 	cli.HelpPrinter = func(w io.Writer, templ string, data any) {
 		// cli/v3 renders `lk agent --help` with its stock subcommand template
 		// regardless of CustomHelpTemplate; swap in the grouped one here.

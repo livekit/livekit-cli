@@ -28,7 +28,7 @@ var privateLinkCommands = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "name",
-					Usage:    "`NAME` for the private link. Required.",
+					Usage:    "`NAME` for the private link.",
 					Required: true,
 				},
 				&cli.StringFlag{
@@ -37,7 +37,7 @@ var privateLinkCommands = &cli.Command{
 				},
 				&cli.UintFlag{
 					Name:     "port",
-					Usage:    "TCP `PORT` to reach on the target service. Required. Must match the port your endpoint service listens on.",
+					Usage:    "TCP `PORT` to reach on the target service. Must match the port your endpoint service listens on.",
 					Required: true,
 				},
 				&cli.StringFlag{
@@ -69,7 +69,7 @@ var privateLinkCommands = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
-					Usage:    "Private link `ID`. Required.",
+					Usage:    "Private link `ID`.",
 					Required: true,
 				},
 				jsonFlag,
@@ -83,7 +83,7 @@ var privateLinkCommands = &cli.Command{
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "id",
-					Usage:    "Private link `ID`. Required.",
+					Usage:    "Private link `ID`.",
 					Required: true,
 				},
 				jsonFlag,

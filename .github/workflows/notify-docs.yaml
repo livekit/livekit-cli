@@ -16,17 +16,18 @@ name: Notify docs
 
 # Tells livekit/internal-actions that a release went public. It forwards the
 # event to livekit/web, which regenerates the CLI reference on docs.livekit.io
-# from `lk generate-docs` at this tag and opens a PR.
+# from `lk generate-docs` at this tag and opens a PR. `released` fires when a
+# release is published as a full release or a prerelease is later promoted to
+# one; publishing a prerelease doesn't fire it.
 on:
   release:
-    types: [published]
+    types: [released]
 
 # The dispatch authenticates with SYNC_DISPATCH_TOKEN; GITHUB_TOKEN isn't used.
 permissions: {}
 
 jobs:
   dispatch:
-    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
       - name: Dispatch to internal actions repo

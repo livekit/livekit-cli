@@ -77,7 +77,7 @@ var sessionPortFlag = &cli.IntFlag{
 var sessionIdleFlag = &cli.DurationFlag{
 	Name:        "idle-timeout",
 	Value:       defaultIdleTimeout,
-	DefaultText: "30m",
+	DefaultText: shortDuration(defaultIdleTimeout),
 	Usage:       "Stop the session after `DURATION` without any command. Takes a duration with a unit, such as 30m, 2h, or 90s. Use 0 to keep it running until stop.",
 }
 
@@ -210,7 +210,7 @@ be piped on stdin:
 				&cli.DurationFlag{
 					Name:        "timeout",
 					Value:       defaultSayTimeout,
-					DefaultText: "2m",
+					DefaultText: shortDuration(defaultSayTimeout),
 					Usage:       "Stop waiting for the agent's reply after `DURATION`. Takes a duration with a unit, such as 2m or 90s.",
 				},
 				&cli.BoolFlag{
@@ -296,7 +296,7 @@ entire log before the summary; --json returns everything in one document.`,
 				jsonFlagWithUsage("Print the summary, conversation, and logs in one JSON document."),
 				&cli.BoolFlag{
 					Name:  "metrics",
-					Usage: "Show latency metrics with the conversation.",
+					Usage: "Show latency metrics for each turn of the conversation. Requires --chat-history.",
 				},
 				&cli.BoolFlag{
 					Name:  "chat-history",
