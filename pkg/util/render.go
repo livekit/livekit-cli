@@ -44,24 +44,50 @@ func RenderList[T any](p *Printer, asJSON bool, list []T, empty string, headers 
 	return nil
 }
 
-// page is the --json shape for a cursor-paginated listing: the items plus the
-// cursor to fetch the next page (empty on the last page).
-type page[T any] struct {
-	Items      []T    `json:"items"`
+// Page is the --json shape of every cursor-paginated listing: the items, each
+// as the API sent it, and the pageInfo the Public API pages with. A listing
+// that read several pages has every page's items and the last page's
+// pageInfo.
+type Page[T any] struct {
+	Items    []T      `json:"items"`
+	PageInfo PageInfo `json:"pageInfo"`
+}
+
+// PageInfo is the Public API's pageInfo: the cursor to fetch the next page,
+// and whether there is one. Both are omitted on the last page, as the API
+// omits them.
+type PageInfo struct {
 	NextCursor string `json:"nextCursor,omitempty"`
+	HasMore    bool   `json:"hasMore,omitempty"`
+}
+
+// NewPage is the --json page of items with the cursor to the next page, empty
+// on the last page. Nil items print as [], never null, for consumers like jq.
+func NewPage[T any](items []T, nextCursor string) Page[T] {
+	if items == nil {
+		items = []T{}
+	}
+	return Page[T]{Items: items, PageInfo: PageInfo{NextCursor: nextCursor, HasMore: nextCursor != ""}}
+}
+
+// RenderAction reports an action whose API response has no body, such as a
+// delete, a removal or a cancel. As JSON it prints {key: value, done: true},
+// such as {"id": "p_1", "deleted": true}, naming what was acted on; otherwise
+// message, on stderr.
+func RenderAction(p *Printer, asJSON bool, key, value, done, message string) error {
+	if asJSON {
+		return PrintJSONTo(p.ResultWriter(), map[string]any{key: value, done: true})
+	}
+	p.Status(message)
+	return nil
 }
 
 // RenderPage prints one page of a cursor-paginated listing. As JSON it emits
-// {items, nextCursor} so a caller can iterate; as a table it prints the rows
-// and, when nextCursor is non-empty, the command that reads the next page.
+// a Page so a caller can iterate; as a table it prints the rows and, when
+// nextCursor is non-empty, the command that reads the next page.
 func RenderPage[T any](p *Printer, asJSON bool, list []T, nextCursor, empty string, headers []string, row func(T) []string) error {
-	// Normalize to a non-nil slice so the JSON shape is always {"items": [...]},
-	// never {"items": null}, for consumers like jq.
-	if list == nil {
-		list = []T{}
-	}
 	if asJSON {
-		return PrintJSONTo(p.ResultWriter(), page[T]{Items: list, NextCursor: nextCursor})
+		return PrintJSONTo(p.ResultWriter(), NewPage(list, nextCursor))
 	}
 	if err := RenderList(p, false, list, empty, headers, row); err != nil {
 		return err

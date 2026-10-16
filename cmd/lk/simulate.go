@@ -287,12 +287,7 @@ func cancelSimulationRunCommand(ctx context.Context, cmd *cli.Command) error {
 			return fmt.Errorf("unable to cancel simulation run: %w", err)
 		}
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"id": runID, "cancelled": true})
-		return nil
-	}
-	out.Statusf("Cancelled simulation run %s", util.Accented(runID))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "id", runID, "cancelled", fmt.Sprintf("Cancelled simulation run %s", util.Accented(runID)))
 }
 
 func simulateRunIDArg(cmd *cli.Command) (string, error) {
