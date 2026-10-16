@@ -101,8 +101,14 @@ var (
 						},
 						{
 							Name:      "recording",
-							Usage:     "Download a session's audio or chat history (requires --experimental-auth)",
-							UsageText: "lk analytics session recording SESSION_ID --type audio|chat-history [-o FILE] [--url-only]",
+							Usage:     "Download a session's audio recording or chat history (requires --experimental-auth)",
+							UsageText: "lk analytics session recording SESSION_ID [--type audio|chat-history] [-o FILE] [--url-only]",
+							Description: "Downloads one of the recordings a session's agent uploaded to LiveKit Cloud when the session ended: " +
+								"by default its audio recording, the conversation as an Ogg audio file; with --type chat-history, " +
+								"its chat history, the conversation as the agent recorded it (messages, tool calls and handoffs), as JSON. " +
+								"The file downloads straight from the project's data region.\n\n" +
+								"--url-only prints a signed URL for the file instead, valid for 15 minutes, to download it some other way. " +
+								"--json prints the API's response, signed URL and recording start included.",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(sessionRecordingOptionsFrom, fetchSessionRecording),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsRecordingFlags()...),
@@ -305,13 +311,13 @@ func analyticsParticipantListFlags() []cli.Flag {
 
 // analyticsRecordingFlags returns fresh instances of the recording download's
 // own flags (the shared jsonFlag is added by the command), for the same reason
-// as analyticsSessionListFlags. --type isn't Required at the flag level so the
-// --experimental-auth gate speaks first.
+// as analyticsSessionListFlags.
 func analyticsRecordingFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
 			Name:  "type",
-			Usage: "Recording `TYPE` to fetch: audio or chat-history (required)",
+			Usage: "`TYPE` of recording to download: audio (the conversation's audio, Ogg) or chat-history (the agent's record of the conversation, JSON)",
+			Value: public.RecordingAudio,
 		},
 		&cli.StringFlag{
 			Name:    "output",
@@ -320,7 +326,7 @@ func analyticsRecordingFlags() []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:  "url-only",
-			Usage: "Print the signed download URL (valid for 15 minutes) instead of downloading",
+			Usage: "Print a signed URL for the recording, valid for 15 minutes, instead of downloading it",
 		},
 	}
 }
@@ -968,8 +974,8 @@ type sessionRecordingOptions struct {
 	URLOnly bool
 }
 
-// sessionRecordingOptionsFrom reads the recording flags. A missing or unknown
-// type fails here, before the project lookup.
+// sessionRecordingOptionsFrom reads the recording flags. An unknown type fails
+// here, before the project lookup.
 func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, error) {
 	opts := sessionRecordingOptions{
 		RecordingURLOptions: public.RecordingURLOptions{Recording: strings.ToLower(strings.TrimSpace(cmd.String("type")))},
