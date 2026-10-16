@@ -13,14 +13,11 @@
 // limitations under the License.
 
 // This package defines the configuration file associated with LiveKit
-// templates, which include instructions for package setup and development in
-// both Playground mode and local dev.
+// templates, which include instructions for package setup and local dev.
 package bootstrap
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -40,18 +37,14 @@ import (
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 
-	authutil "github.com/livekit/livekit-cli/v2/pkg/auth"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 const (
-	TaskFile                = "taskfile.yaml"
-	TemplateIndexFile       = "templates.yaml"
-	TemplateIndexURL        = "https://raw.githubusercontent.com/livekit-examples/index/main"
-	TemplateBaseURL         = "https://github.com/livekit-examples"
-	SandboxDashboardURL     = "https://cloud.livekit.io/projects/p_/sandbox"
-	SandboxTemplateEndpoint = "/api/sandbox/template"
-	SandboxCreateEndpoint   = "/api/sandbox/create"
+	TaskFile          = "taskfile.yaml"
+	TemplateIndexFile = "templates.yaml"
+	TemplateIndexURL  = "https://raw.githubusercontent.com/livekit-examples/index/main"
+	TemplateBaseURL   = "https://github.com/livekit-examples"
 )
 
 type KnownTask string
@@ -75,22 +68,15 @@ var templateIgnoreFiles = []string{
 }
 
 type Template struct {
-	Name      string            `yaml:"name" json:"name"`
-	Desc      string            `yaml:"desc" json:"description,omitempty"`
-	URL       string            `yaml:"url" json:"url,omitempty"`
-	Docs      string            `yaml:"docs" json:"docs_url,omitempty"`
-	Image     string            `yaml:"image" json:"image_ref,omitempty"`
-	Tags      []string          `yaml:"tags" json:"tags,omitempty"`
-	Attrs     map[string]string `yaml:"attrs" json:"attrs,omitempty"`
-	Requires  []string          `yaml:"requires" json:"requires,omitempty"`
-	IsSandbox bool              `yaml:"is_sandbox" json:"is_sandbox,omitempty"`
-	IsHidden  bool              `yaml:"is_hidden" json:"is_hidden,omitempty"`
-}
-
-type SandboxDetails struct {
-	Name           string     `json:"name"`
-	Template       Template   `json:"template"`
-	ChildTemplates []Template `json:"childTemplates"`
+	Name     string            `yaml:"name" json:"name"`
+	Desc     string            `yaml:"desc" json:"description,omitempty"`
+	URL      string            `yaml:"url" json:"url,omitempty"`
+	Docs     string            `yaml:"docs" json:"docs_url,omitempty"`
+	Image    string            `yaml:"image" json:"image_ref,omitempty"`
+	Tags     []string          `yaml:"tags" json:"tags,omitempty"`
+	Attrs    map[string]string `yaml:"attrs" json:"attrs,omitempty"`
+	Requires []string          `yaml:"requires" json:"requires,omitempty"`
+	IsHidden bool              `yaml:"is_hidden" json:"is_hidden,omitempty"`
 }
 
 func FetchTemplates(ctx context.Context) ([]Template, error) {
@@ -104,76 +90,6 @@ func FetchTemplates(ctx context.Context) ([]Template, error) {
 		return nil, err
 	}
 	return templates, nil
-}
-
-func CreateSandbox(ctx context.Context, agentName, templateURL, token, serverURL string) (string, error) {
-	type createSandboxRequest struct {
-		TemplateURL string `json:"template_url"`
-		AgentName   string `json:"agent_name,omitempty"`
-	}
-
-	type createSandboxResponse struct {
-		SandboxID string `json:"sandbox_id"`
-	}
-
-	body := createSandboxRequest{
-		TemplateURL: templateURL,
-		AgentName:   agentName,
-	}
-
-	buf := new(bytes.Buffer)
-	if err := json.NewEncoder(buf).Encode(body); err != nil {
-		panic(err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", serverURL+SandboxCreateEndpoint, buf)
-	req.Header = authutil.NewHeaderWithToken(token)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	if resp.StatusCode != 200 {
-		return "", errors.New(resp.Status)
-	}
-
-	var response createSandboxResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return "", err
-	}
-	return response.SandboxID, nil
-}
-
-func FetchSandboxDetails(ctx context.Context, sid, token, serverURL string) (*SandboxDetails, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", serverURL+SandboxTemplateEndpoint, nil)
-	req.Header = authutil.NewHeaderWithToken(token)
-	query := req.URL.Query()
-	query.Add("id", sid)
-	req.URL.RawQuery = query.Encode()
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode == 404 {
-		return nil, fmt.Errorf("sandbox not found: %s", sid)
-	}
-	if resp.StatusCode != 200 {
-		return nil, errors.New(resp.Status)
-	}
-
-	var details SandboxDetails
-	if err := json.NewDecoder(resp.Body).Decode(&details); err != nil {
-		return nil, err
-	}
-	return &details, nil
 }
 
 func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {

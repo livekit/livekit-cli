@@ -42,7 +42,6 @@ var (
 	template        *bootstrap.Template
 	templateName    string
 	templateURL     string
-	sandboxID       string
 	appName         string
 	appNameRegex    = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_-]*$`)
 	destinationFile string
@@ -63,7 +62,6 @@ var (
 					Flags: []cli.Flag{
 						templateFlag,
 						templateURLFlag,
-						sandboxFlag,
 						installFlag,
 					},
 				},
@@ -291,10 +289,8 @@ func setupTemplate(ctx context.Context, cmd *cli.Command) error {
 func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(ctx context.Context, cmd *cli.Command, dir string) error) error {
 	verbose := cmd.Bool("verbose")
 	install := cmd.Bool("install")
-	isSandbox := sandboxID != ""
 
 	var preinstallPrompts []huh.Field
-	var templateOptions []bootstrap.Template
 
 	if templateName != "" && templateURL != "" {
 		return errors.New("only one of template or template-url can be specified")
@@ -304,31 +300,9 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 		return errors.New("non-interactive mode: set --template or --template-url")
 	}
 
-	if isSandbox {
-		_, err := requireAppProject(ctx, cmd)
-		if err != nil {
-			return err
-		}
-		token, err := requireToken(ctx, cmd)
-		if err != nil {
-			return err
-		}
-		if templateURL == "" {
-			details, err := bootstrap.FetchSandboxDetails(ctx, sandboxID, token, serverURL)
-			if err != nil {
-				return err
-			}
-			if len(details.ChildTemplates) == 0 {
-				return errors.New("no child templates found for sandbox")
-			}
-			templateOptions = details.ChildTemplates
-		}
-	} else {
-		var err error
-		templateOptions, err = bootstrap.FetchTemplates(ctx)
-		if err != nil {
-			return err
-		}
+	templateOptions, err := bootstrap.FetchTemplates(ctx)
+	if err != nil {
+		return err
 	}
 
 	// if no template name or URL is specified, prompt user to choose from available templates
@@ -418,10 +392,6 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 	}
 
 	out.Status("Instantiating environment...")
-	addlEnv := &map[string]string{
-		"LIVEKIT_SANDBOX_ID":             sandboxID,
-		"NEXT_PUBLIC_LIVEKIT_SANDBOX_ID": sandboxID,
-	}
 	envOutputFile := ".env.local"
 	envExampleFile := ".env.example"
 	if tf != nil {
@@ -436,7 +406,7 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 			}
 		}
 	}
-	env, err := instantiateEnv(ctx, cmd, appName, addlEnv, envExampleFile, nil)
+	env, err := instantiateEnv(ctx, cmd, appName, nil, envExampleFile, nil)
 	if err != nil {
 		return err
 	}
