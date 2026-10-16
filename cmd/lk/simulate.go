@@ -124,14 +124,12 @@ var simulateCommand = &cli.Command{
 // oapi run type would need converting to the livekit.SimulationRun the TUI,
 // CI report and export consume.
 func loadSimulateProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	ctx, err := requireProject(ctx, cmd)
-	if err != nil {
+	if _, err := requireProject(ctx, cmd); err != nil {
 		return nil, err
 	}
-	pc := project
-	simulateProjectConfig = pc
+	simulateProjectConfig = project
 	if !cmd.IsSet("server-url") {
-		if api := cloudAPIURL(pc.URL); api != "" {
+		if api := cloudAPIURL(project.URL); api != "" {
 			serverURL = api
 		}
 	}
