@@ -829,8 +829,8 @@ func TestFetchSessionRecording(t *testing.T) {
 			got, err := os.ReadFile(tt.wantFile)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, string(got))
-			assert.Equal(t, tt.wantFile+"\n", stdout.String(), "stdout is the path saved to")
-			assert.Contains(t, stderr.String(), tt.wantFile)
+			assert.Empty(t, stdout.String())
+			assert.Contains(t, stderr.String(), "["+tt.wantFile+"]", "stderr names the path saved to")
 			assert.Equal(t, []string{""}, *storeAuth, "the object store gets the signed URL and nothing else")
 
 			leftovers, err := filepath.Glob(filepath.Join(filepath.Dir(tt.wantFile), ".*"))
@@ -995,9 +995,9 @@ func TestFetchSessionRecordingExistingFile(t *testing.T) {
 	// The default name is numbered rather than replacing a file.
 	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
 	for _, want := range []string{"RM_1-audio-1.ogg", "RM_1-audio-2.ogg"} {
-		stdout, _ := captureOut(t)
+		_, stderr := captureOut(t)
 		require.NoError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false))
-		assert.Equal(t, want+"\n", stdout.String())
+		assert.Contains(t, stderr.String(), "["+want+"]")
 		got, err := os.ReadFile(want)
 		require.NoError(t, err)
 		assert.Equal(t, "OggS", string(got))
