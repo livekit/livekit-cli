@@ -201,13 +201,13 @@ var (
 
 	regionFlag = &cli.StringFlag{
 		Name:     "region",
-		Usage:    "`REGION` code to deploy the agent to. If unset, the CLI prompts you to select a region; with --yes or without a terminal, it fails.",
+		Usage:    "`REGION` code to deploy the agent to. If unset, the CLI prompts you to select a region. Required in non-interactive mode.",
 		Required: false,
 	}
 
 	initRegionFlag = &cli.StringFlag{
 		Name:  "region",
-		Usage: "`REGION` code to deploy the agent to. Used only with --deploy. If unset, the CLI prompts you to select a region; with --yes or without a terminal, it fails.",
+		Usage: "`REGION` code to deploy the agent to. Used only with --deploy. If unset, the CLI prompts you to select a region. Required in non-interactive mode.",
 	}
 
 	deploymentFlag = &cli.StringFlag{
@@ -284,7 +284,7 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						Flags: [][]cli.Flag{{
 							&cli.StringFlag{
 								Name:  "lang",
-								Usage: "`LANGUAGE` of the starter template. One of python, node. If unset, the CLI asks, with Python preselected; with --yes or without a terminal, it uses Python. Ignored with --template or --template-url.",
+								Usage: "`LANGUAGE` of the starter template. One of python, node. If unset, the CLI asks, with Python preselected. Defaults to Python in non-interactive mode. Ignored with --template or --template-url.",
 								Action: func(ctx context.Context, cmd *cli.Command, l string) error {
 									if _, ok := starterTemplateURLs[l]; !ok {
 										return fmt.Errorf("unsupported language: %s", l)

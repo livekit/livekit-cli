@@ -111,13 +111,13 @@ var (
 	}
 	installFlag = &cli.BoolFlag{
 		Name:  "install",
-		Usage: "Install the project's dependencies after creating it. If unset, the CLI asks; with --yes or without a terminal, it skips installation. Pass --install=false to skip.",
+		Usage: "Install the project's dependencies after creating it. If unset, the CLI asks. Skipped in non-interactive mode. Pass --install=false to skip.",
 	}
 	// skillsSetupFlag controls whether lk agent init installs LiveKit's coding
 	// agent skills; unset, lk asks (or installs, without a terminal).
 	skillsSetupFlag = &cli.BoolFlag{
 		Name:  "skills",
-		Usage: "Install LiveKit Agent Skills and the Docs MCP server for your coding agents (see lk skills). If unset, the CLI asks; with --yes or without a terminal, it installs them. Pass --skills=false to skip.",
+		Usage: "Install LiveKit Agent Skills and the Docs MCP server for your coding agents (see lk skills). If unset, the CLI asks. Automatically installed in non-interactive mode. Pass --skills=false to skip.",
 	}
 	// roleFlag selects a member/invite access level for the Public API commands.
 	roleFlag = &cli.StringFlag{
