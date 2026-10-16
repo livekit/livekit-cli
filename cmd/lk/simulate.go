@@ -384,7 +384,7 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 // and JSON-encoded into the proto's string field.
 type scenariosFile struct {
 	ID        string         `yaml:"id"`
-	Name      string         `yaml:"name"`
+	Name      string         `yaml:"name,omitempty"`
 	Scenarios []yamlScenario `yaml:"scenarios"`
 }
 
@@ -393,8 +393,8 @@ type yamlScenario struct {
 	Label             string            `yaml:"label"`
 	Instructions      string            `yaml:"instructions"`
 	AgentExpectations string            `yaml:"agent_expectations"`
-	Tags              map[string]string `yaml:"tags"`
-	Userdata          map[string]any    `yaml:"userdata"`
+	Tags              map[string]string `yaml:"tags,omitempty"`
+	Userdata          map[string]any    `yaml:"userdata,omitempty"`
 }
 
 type simulateConfig struct {
