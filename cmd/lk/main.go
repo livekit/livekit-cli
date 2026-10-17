@@ -73,11 +73,34 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 					},
 				},
 			},
+			{
+				Name:      "generate-docs",
+				Usage:     "Print markdown reference docs for a command",
+				ArgsUsage: "[command path...]",
+				Action:    generateDocs,
+				Hidden:    true,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "list",
+						Usage: "Print the path of every command below the given one that has a reference entry, instead of its docs",
+					},
+				},
+			},
 		},
 		Before: initLogger,
 	}
 
 	categorizeAgentCommands()
+	// urfave's help doesn't mark required flags; mark them here, as
+	// generate-docs does, rather than in each flag's usage.
+	flagString := cli.FlagStringer
+	cli.FlagStringer = func(f cli.Flag) string {
+		s := flagString(f)
+		if r, ok := f.(cli.RequiredFlag); ok && r.IsRequired() {
+			s += " (required)"
+		}
+		return s
+	}
 	cli.HelpPrinter = func(w io.Writer, templ string, data any) {
 		// cli/v3 renders `lk agent --help` with its stock subcommand template
 		// regardless of CustomHelpTemplate; swap in the grouped one here.
