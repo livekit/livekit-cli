@@ -16,9 +16,11 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/livekit/protocol/livekit"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Real log lines captured from a rate-limited `lk agent simulate` run.
@@ -90,4 +92,44 @@ func TestRunningJobCount(t *testing.T) {
 	}}
 	require.Equal(t, 2, runningJobCount(run))
 	require.Equal(t, 0, runningJobCount(nil))
+}
+
+func TestAgentBroken(t *testing.T) {
+	t0 := time.Date(2026, 10, 15, 20, 0, 0, 0, time.UTC)
+	completed := func(min int) *livekit.SimulationRun_Job {
+		return &livekit.SimulationRun_Job{
+			Status:  livekit.SimulationRun_Job_STATUS_COMPLETED,
+			EndedAt: timestamppb.New(t0.Add(time.Duration(min) * time.Minute)),
+		}
+	}
+	notJoined := func(min int) *livekit.SimulationRun_Job {
+		return &livekit.SimulationRun_Job{
+			Status:  livekit.SimulationRun_Job_STATUS_FAILED,
+			Error:   "No agent joined room 'sim-x' within 30s. Is the agent running?",
+			EndedAt: timestamppb.New(t0.Add(time.Duration(min) * time.Minute)),
+		}
+	}
+	run := func(jobs ...*livekit.SimulationRun_Job) *livekit.SimulationRun {
+		return &livekit.SimulationRun{Jobs: jobs}
+	}
+
+	tests := []struct {
+		name string
+		run  *livekit.SimulationRun
+		want bool
+	}{
+		{"never joined", run(notJoined(1), notJoined(1), notJoined(1), notJoined(1)), true},
+		{"a few transient timeouts", run(notJoined(1), notJoined(1), notJoined(1)), false},
+		{"cold-start timeouts before the agent warmed up",
+			run(notJoined(1), notJoined(1), notJoined(1), notJoined(1), completed(2)), false},
+		{"agent died after working",
+			run(completed(1), completed(2), notJoined(3), notJoined(4), notJoined(5), notJoined(6)), true},
+		{"one timeout between successes",
+			run(completed(1), notJoined(2), completed(3), notJoined(4)), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, agentBroken(tt.run, nil))
+		})
+	}
 }

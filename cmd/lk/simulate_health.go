@@ -17,6 +17,7 @@ package main
 import (
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/livekit/protocol/livekit"
 )
@@ -40,27 +41,31 @@ const minFatalMarkers = 2
 const maxAgentNotJoined = 3
 
 // agentBroken reports whether the worker is failing systemically. A completed
-// scenario proves the agent works.
+// scenario proves the agent worked until that scenario ended, not after it: an
+// agent that dies or wedges mid-run fails every remaining job on join.
 func agentBroken(run *livekit.SimulationRun, ap *AgentProcess) bool {
-	completed, notJoined := 0, 0
+	var lastCompleted time.Time
+	completed := false
 	for _, job := range run.GetJobs() {
-		switch job.GetStatus() {
-		case livekit.SimulationRun_Job_STATUS_COMPLETED:
-			completed++
-		case livekit.SimulationRun_Job_STATUS_FAILED:
-			if strings.Contains(job.GetError(), "No agent joined room") {
-				notJoined++
+		if job.GetStatus() == livekit.SimulationRun_Job_STATUS_COMPLETED {
+			completed = true
+			if t := job.GetEndedAt().AsTime(); t.After(lastCompleted) {
+				lastCompleted = t
 			}
 		}
 	}
-	switch {
-	case completed > 0:
-		return false
-	case ap != nil && countFatalMarkers(ap.RecentLogs(0)) >= minFatalMarkers:
-		return true
-	default:
-		return notJoined > maxAgentNotJoined
+	notJoined := 0
+	for _, job := range run.GetJobs() {
+		if job.GetStatus() == livekit.SimulationRun_Job_STATUS_FAILED &&
+			strings.Contains(job.GetError(), "No agent joined room") &&
+			job.GetEndedAt().AsTime().After(lastCompleted) {
+			notJoined++
+		}
 	}
+	if !completed && ap != nil && countFatalMarkers(ap.RecentLogs(0)) >= minFatalMarkers {
+		return true
+	}
+	return notJoined > maxAgentNotJoined
 }
 
 // agentErrorContext is the worker output to surface for a broken agent: from
