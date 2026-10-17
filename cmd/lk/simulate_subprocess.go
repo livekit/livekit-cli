@@ -100,10 +100,14 @@ func checkTypeStrippingSupport(dir, nodeBin string) error {
 // equivalent floor from server client settings.
 const nodeAgentMinVersion = "1.0.0"
 
-// checkNodeSDKVersion gates a Node agent on nodeAgentMinVersion, resolving the
+// nodeSimulateMinVersion is the first @livekit/agents release with the
+// --simulation flag and LIVEKIT_AGENT_NAME_OVERRIDE, which simulate relies on.
+const nodeSimulateMinVersion = "1.4.11"
+
+// checkNodeSDKVersion gates a Node agent on minVersion, resolving the
 // installed @livekit/agents via the project's own runtime (see
 // agentfs.ResolveInstalledSDKVersion).
-func checkNodeSDKVersion(cfg AgentStartConfig) error {
+func checkNodeSDKVersion(cfg AgentStartConfig, minVersion string) error {
 	// Surface a missing Node binary as its own error rather than folding it
 	// into "package not found".
 	if _, err := agentfs.FindNodeBinary(); err != nil {
@@ -114,8 +118,8 @@ func checkNodeSDKVersion(cfg AgentStartConfig) error {
 		return fmt.Errorf("@livekit/agents not found; install dependencies and make sure this is a LiveKit agent project")
 	}
 	// An unparseable version (e.g. a local "0.0.0-dev" tag) shouldn't block a run.
-	if ok, err := agentfs.IsVersionSatisfied(version, nodeAgentMinVersion); err == nil && !ok {
-		return fmt.Errorf("@livekit/agents version %s is too old, please upgrade to %s or newer", version, nodeAgentMinVersion)
+	if ok, err := agentfs.IsVersionSatisfied(version, minVersion); err == nil && !ok {
+		return fmt.Errorf("@livekit/agents version %s is too old, please upgrade to %s or newer", version, minVersion)
 	}
 	return nil
 }
@@ -295,7 +299,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	// Node resolves the installed package via the runtime so workspace/monorepo
 	// layouts work; Python parses project files against the thin-CLI baseline.
 	if cfg.ProjectType.IsNode() {
-		if err := checkNodeSDKVersion(cfg); err != nil {
+		if err := checkNodeSDKVersion(cfg, nodeAgentMinVersion); err != nil {
 			return nil, err
 		}
 	} else if err := checkPythonSDKVersion(cfg); err != nil {
