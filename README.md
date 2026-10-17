@@ -309,7 +309,7 @@ lk egress test-template \
   --base-url http://localhost:3000 \
   --room test-room \
   --layout speaker \
-  --video-publishers 3
+  --publishers 3
 ```
 
 This command will launch a browser pointed at `http://localhost:3000`, while simulating 3 publishers publishing to your livekit instance.
