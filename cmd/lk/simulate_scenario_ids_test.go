@@ -197,3 +197,13 @@ func TestScenarioGroupToYAMLFillsIDs(t *testing.T) {
 	require.True(t, strings.HasPrefix(loaded.GetScenarios()[0].GetId(), "SCN_"))
 	require.Equal(t, "fixed", loaded.GetScenarios()[1].GetId())
 }
+
+func TestScenarioGroupToYAMLOmitsEmptyFields(t *testing.T) {
+	out, err := scenarioGroupToYAML(&livekit.ScenarioGroup{
+		Scenarios: []*livekit.Scenario{{Label: "a", Instructions: "x"}},
+	})
+	require.NoError(t, err)
+	require.NotContains(t, string(out), "name:")
+	require.NotContains(t, string(out), "tags:")
+	require.NotContains(t, string(out), "userdata:")
+}
