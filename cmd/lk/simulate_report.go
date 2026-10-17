@@ -173,6 +173,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 		return
 	}
 
+	failures := scenarioFailures(run)
 	for i, job := range sortedJobs(run) {
 		icon := "⏺"
 		switch job.Status {
@@ -188,7 +189,14 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 		}
 		label += sampleSuffix(run, job)
 
-		fmt.Fprintf(w, "::group::%s %s (%s)\n", icon, label, job.Id)
+		history := ""
+		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && failures[scenarioKey(job)] {
+			if note := historyNote(job); note != "" {
+				history = " [" + note + "]"
+			}
+		}
+
+		fmt.Fprintf(w, "::group::%s %s%s (%s)\n", icon, label, history, job.Id)
 
 		if job.Instructions != "" {
 			fmt.Fprintln(w, "Instructions:")
@@ -230,7 +238,7 @@ func writeRunResults(w io.Writer, run *livekit.SimulationRun, ap *AgentProcess) 
 
 		if job.Status == livekit.SimulationRun_Job_STATUS_FAILED {
 			firstLine, _, _ := strings.Cut(job.Error, "\n")
-			fmt.Fprintf(w, "::error::Job %d failed: %s\n", i+1, firstLine)
+			fmt.Fprintf(w, "::error::Job %d failed: %s%s\n", i+1, firstLine, history)
 		}
 	}
 
@@ -253,6 +261,9 @@ func writeRunSummary(w io.Writer, run *livekit.SimulationRun, summary *livekit.S
 	fmt.Fprintln(w, "::group::Summary")
 	fmt.Fprintf(w, "%d total, %d passed, %d failed\n", total, passed, failed)
 	if line := passRateLine(run); line != "" {
+		fmt.Fprintln(w, line)
+	}
+	if line := historicallyRedLine(run); line != "" {
 		fmt.Fprintln(w, line)
 	}
 
