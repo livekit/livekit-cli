@@ -41,3 +41,10 @@ cmd/lk/testdata/**/package-lock.json
 
 # generated at release time by release.yaml
 autocomplete/fish_autocomplete
+
+# Python bytecode from the assistant agent
+__pycache__/
+
+# Created when running the assistant agent's simulations from the repo
+pkg/assistant/agent/.venv/
+pkg/assistant/agent/uv.lock

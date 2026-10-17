@@ -1,0 +1,290 @@
+id: lk-assistant-onboarding
+name: LK onboarding
+scenarios:
+  - id: first-agent-empty-folder
+    label: New developer builds a first agent in an empty folder
+    instructions: >-
+      You're a web developer who has never built a voice agent. You're in an empty folder and
+      want a voice agent that answers questions about your bakery's hours. Ask what you need to
+      do, agree when LK offers to create the project here, and then agree to try it. Speak
+      casually, in short sentences.
+    agent_expectations: >-
+      LK tells the user it's creating a starter project in the current folder, and offers to let
+      them try it. In this simulation the user's agent doesn't really run: when the user agrees to
+      try it, LK is told that the user talked to it and came back, and LK welcomes them back. When the user agrees to something, LK goes ahead without asking the same
+      question again. Replies are one to three short spoken sentences, with no lists. Backticks
+      around commands and names are fine. Don't grade tool calls; they're checked separately.
+    tags:
+      area: getting-started
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        lk_calls: [create_project, try_project]
+
+  - id: realtime-vs-cascaded
+    label: Choosing between a realtime model and the cascaded pipeline
+    instructions: >-
+      You're a backend engineer building a phone receptionist for a dental clinic. Ask whether you
+      should use a realtime speech-to-speech model or a separate STT, LLM, and TTS pipeline, and
+      why. Push back once: say realtime sounds faster, so why not use it? You want a clear
+      recommendation, not a list of options.
+    agent_expectations: >-
+      LK gives a clear recommendation with a reason, like an experienced LiveKit engineer.
+      It recommends the STT-LLM-TTS (cascaded) pipeline as the default for a receptionist, and
+      explains the tradeoff: realtime models are faster, but the cascaded pipeline has more mature
+      tool calling, transcripts, and control. It stays accurate when the user pushes back. It
+      doesn't hedge, ramble, or announce that it's looking things up.
+    tags:
+      area: expertise
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        call_contains: {read_docs: pipelines}
+
+  - id: how-agents-join-rooms
+    label: Frontend developer asks how the agent and the app connect
+    instructions: >-
+      You're a frontend developer with a Next.js app. Ask how a LiveKit voice agent and your web
+      app actually connect: where the agent runs and how it ends up talking to your user. Ask one
+      follow-up about where the token comes from.
+    agent_expectations: >-
+      LK explains it accurately and simply: the app gets an access token from a server endpoint
+      and joins a room, and the agent is dispatched to that room. It explains that the token is
+      made on a server with the API key and secret, not in the browser. It's confident and
+      concrete, with no hedging, in short spoken replies.
+    tags:
+      area: expertise
+    userdata:
+      folder:
+        kind: app
+        summary: a Next.js app
+        projects: [{path: ".", language: TypeScript, framework: Next.js}]
+      coding_agents: {ready: false}
+
+  - id: phone-calls
+    label: Can my agent answer phone calls?
+    instructions: >-
+      You run a small plumbing business. Ask if a LiveKit agent can answer your business phone
+      line, and what you'd need to set that up. You don't know what SIP is.
+    agent_expectations: >-
+      LK says yes, and explains the path in plain words: a phone number from LiveKit Phone Numbers
+      or the user's own SIP provider, routed to the agent. It explains SIP in a few words if it
+      mentions it. It doesn't recite setup steps or overwhelm the user. Don't grade tool calls;
+      they're checked separately.
+    tags:
+      area: expertise
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        any_calls: [show_link, show_answer]
+
+  - id: latency-expert
+    label: Experienced developer asks about turn-taking latency
+    instructions: >-
+      You're an experienced developer who has built voice agents with other frameworks. Ask, tersely,
+      how LiveKit decides when the user has finished speaking, and what you can tune if replies
+      feel slow. You dislike long explanations; say so if LK is wordy.
+    agent_expectations: >-
+      LK is terse and precise for an experienced user. It names LiveKit's turn detector model as
+      the default, says it works on top of VAD using the meaning and sound of speech, and names
+      what can be tuned, such as endpointing delay. It's accurate and doesn't pad its answers.
+    tags:
+      area: expertise
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+
+  - id: existing-project-run-agent
+    label: Existing LiveKit project, the user wants to run their agent
+    instructions: >-
+      You already have a LiveKit agent in this folder. Ask LK to start your agent so you can talk
+      to it. If LK says it can't, ask how you can.
+    agent_expectations: >-
+      LK says briefly that it can't start an existing agent here, and that the user can run it in
+      their own terminal, where a command is shown on screen. It doesn't pretend to start the agent
+      or speak as the user's agent.
+    tags:
+      area: scope
+    userdata:
+      folder:
+        kind: livekit
+        summary: a Python project that uses LiveKit Agents
+        projects: [{path: ".", language: Python, livekit_packages: [{name: livekit-agents, version: "~=1.8"}]}]
+        has_agents: true
+      coding_agents: {ready: true}
+      expect:
+        show_code_contains: lk agent console
+
+  - id: fix-my-bug
+    label: The user asks LK to fix a bug in their code
+    instructions: >-
+      You have a LiveKit agent in this folder, and it crashes when a caller hangs up. Ask LK to fix
+      it. If it suggests handing it to your coding agent, agree. You can see the cards LK shows on screen,
+      such as prompts for your coding agent, so you don't need LK to repeat them.
+    agent_expectations: >-
+      LK doesn't claim to have read or fixed the code. It's brief. The judge can't see the
+      prompt card LK shows, so don't grade whether a prompt was shown or what it says; code
+      checks that separately.
+    tags:
+      area: scope
+    userdata:
+      folder:
+        kind: livekit
+        summary: a Python project that uses LiveKit Agents
+        projects: [{path: ".", language: Python, livekit_packages: [{name: livekit-agents, version: "~=1.8"}]}]
+        has_agents: true
+      coding_agents: {ready: true}
+      expect:
+        calls: [hand_off_task]
+
+  - id: several-quick-questions
+    label: A curious user asks several quick questions in a row
+    instructions: >-
+      You're exploring whether LiveKit fits your startup. Ask three quick questions, one at a
+      time: what LiveKit Inference is, whether you can use your own OpenAI key instead, and how you
+      would test an agent before launching. Keep your questions short.
+    agent_expectations: >-
+      LK answers each question directly and accurately, in one to three sentences, and sounds like
+      an expert. It doesn't repeat the same phrases from answer to answer, such as saying it's
+      looking something up or the same opening line each time. It mentions that plugins let the
+      user bring their own provider keys, and names a testing option such as Agent Simulations or
+      unit tests.
+    tags:
+      area: naturalness
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+
+  - id: direct-request
+    label: The user asks LK to set up an agent right away
+    instructions: >-
+      You know what you want. Say, in one short sentence, to set up a voice agent here. If LK asks
+      which language, say Python. If LK asks you to confirm anything else, say yes, but note it.
+    agent_expectations: >-
+      LK asks at most one short question before it creates the project, such as Python or
+      Node.js. After the user answers, it creates the project without asking again. It doesn't
+      read the command aloud. Its replies are short. Don't grade tool calls; they're checked
+      separately.
+    tags:
+      area: naturalness
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        lk_calls: [create_project]
+
+  - id: change-voice
+    label: The user wants a different voice for the agent they just made
+    instructions: >-
+      You just created a starter voice agent here and talked to it. Say you want to change its
+      voice to something warmer. Answer LK's questions briefly, and accept the first option it
+      suggests. You can see the cards LK shows on screen,
+      such as prompts for your coding agent, so you don't need LK to repeat them.
+    agent_expectations: >-
+      LK acts as the expert. It suggests one or two concrete voice options, or asks one short
+      question about the voice the user wants, and doesn't ask whether to write the change up.
+      It doesn't end its replies with offers such as "If you want, I can". It's brief. The judge
+      can't see the prompt card LK shows, so don't grade whether a prompt was shown or what it
+      says; code checks that separately.
+    tags:
+      area: expertise
+    userdata:
+      folder:
+        kind: livekit
+        summary: a Python project that uses LiveKit Agents
+        projects: [{path: ".", language: Python, livekit_packages: [{name: livekit-agents, version: "~=1.8"}]}]
+        has_agents: true
+      coding_agents: {ready: true}
+      expect:
+        calls: [hand_off_task]
+        call_contains: {hand_off_task: voice}
+
+  - id: exit
+    label: The user asks a question, then says exit
+    instructions: >-
+      Ask LK one quick question: what LiveKit Inference is. After it answers, say only "Exit."
+    agent_expectations: >-
+      LK answers the question, then ends the conversation when the user says exit, with at most
+      a short goodbye. Don't grade tool calls; they're checked separately.
+    tags:
+      area: naturalness
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        calls: [end_call]
+
+  - id: mental-model
+    label: The user asks for a mental model of how LiveKit agents work
+    instructions: >-
+      You're new to LiveKit. Ask what the architecture of the framework is, or what mental model
+      you should have. You can see cards LK shows on screen.
+    agent_expectations: >-
+      LK gives a concrete, accurate mental model by walking through what happens: the user's app
+      joins a room, the agent is sent to that room, and the agent listens, detects the end of the
+      turn, thinks, and speaks. LiveKit terms such as room, dispatch, or turn detector are fine
+      when explained in a few words. It avoids vague abstractions such as "realtime bus" or
+      "orchestration". Its spoken reply is short, at most five sentences, and
+      doesn't end with an offer such as "If you want, I can". Don't grade tool calls; they're
+      checked separately.
+    tags:
+      area: expertise
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+
+  - id: confirm-before-create
+    label: The user asks to build an agent, naming a language
+    instructions: >-
+      Ask, in one sentence, whether LK can start building a hotel reception agent here in Python.
+      If LK asks you to confirm, say yes. If LK says it created a project without asking you
+      first, say you didn't want it yet.
+    agent_expectations: >-
+      Before it creates anything, LK asks the user to confirm, in one short question. It creates
+      the project only after the user says yes. It doesn't pick a different language than the user
+      asked for. Don't grade tool calls; they're checked separately.
+    tags:
+      area: getting-started
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        lk_calls: [create_project]
+
+  - id: unsure-language
+    label: The user is unsure which language, then picks Python and tries it
+    instructions: >-
+      Ask LK to build a voice agent in this folder. When LK asks Python or Node.js, ask "Uh, what
+      do I choose?" After LK explains, say "Python." When LK asks whether to talk to it, say
+      "Let's chat."
+    agent_expectations: >-
+      LK helps the user choose without choosing for them. After the user says Python, LK tells the
+      user it's creating the agent, then says it's ready and asks whether to talk to it. It never
+      says a step happened before it did. Don't grade tool calls; they're checked separately.
+    tags:
+      area: getting-started
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        lk_calls: [create_project, try_project]
+
+  - id: show-example
+    label: The user asks for an example of a feature
+    instructions: >-
+      Ask how LiveKit handles turn-taking. After LK answers, say "Show me an example of the
+      adaptive interruption." Then say "Copy."
+    agent_expectations: >-
+      LK shows a code example for adaptive interruption handling on screen and doesn't read code
+      aloud. When the user says copy, LK says what it copied. Don't grade tool calls; they're
+      checked separately.
+    tags:
+      area: expertise
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+      expect:
+        calls: [show_code]

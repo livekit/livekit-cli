@@ -1,0 +1,35 @@
+id: lk-assistant-audio
+name: LK naturalness (audio)
+scenarios:
+  - id: audio-several-quick-questions
+    label: Several quick questions in a row, by voice
+    instructions: >-
+      You're exploring whether LiveKit fits your startup. Ask three quick questions, one at a
+      time: what LiveKit Inference is, whether you can use your own OpenAI key instead, and how you
+      would test an agent before launching. Keep your questions short.
+    agent_expectations: >-
+      The conversation sounds natural. LK answers each question directly, in one to three
+      sentences. It doesn't keep saying it's looking something up or checking the docs; saying
+      so once in a while is fine, but not before every answer. It doesn't start answers with the
+      same phrase each time.
+    tags:
+      area: naturalness
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}
+
+  - id: audio-specific-lookups
+    label: Questions that need a docs lookup, by voice
+    instructions: >-
+      You're building a voice agent. Ask which speech-to-text models LiveKit Inference offers,
+      then ask how to deploy your agent to LiveKit Cloud, then ask how to see your deployed
+      agent's logs. Keep your questions short.
+    agent_expectations: >-
+      The conversation sounds natural. LK may say briefly that it's checking when a lookup takes a
+      while, but it doesn't say so before every answer, and it doesn't repeat the same line. It
+      answers each question in one to three sentences, with no long silences.
+    tags:
+      area: naturalness
+    userdata:
+      folder: {kind: empty}
+      coding_agents: {ready: false}

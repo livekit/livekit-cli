@@ -47,8 +47,11 @@ type AudioPipeline struct {
 	outputStream *portaudio.Stream
 	apmInst      *apm.APM
 	noAEC        bool
-	conn         net.Conn
-	connMu       sync.Mutex // protects writes to conn
+	conn         net.Conn   // the active agent: hears the mic, plays through the speakers
+	connMu       sync.Mutex // protects conn and writes to every agent's conn
+	// switchMu keeps the active agent from changing while a message from
+	// an agent is handled. SetActive holds it too.
+	switchMu sync.Mutex
 
 	captureRing  *RingBuffer
 	playbackRing *RingBuffer
@@ -63,16 +66,20 @@ type AudioPipeline struct {
 	ready     chan struct{}
 	readyOnce sync.Once
 
-	// flushCancel cancels the current waitForDrainAndAck goroutine.
-	// Only accessed from the tcpReader goroutine.
+	// flushCancel cancels the current waitForDrainAndAck goroutine, which
+	// acknowledges flushConn's playback once its queued audio has played.
+	flushMu     sync.Mutex
 	flushCancel context.CancelFunc
+	flushConn   net.Conn
 
-	mu       sync.Mutex
-	fftBands [NumFFTBands]float64
-	muted    bool
-	paused   bool    // true when audio I/O is paused (e.g. text mode); mic frames are not sent to the agent
-	level    float64 // capture level in dB
-	playing  bool    // true when outputting real audio (not silence)
+	mu          sync.Mutex
+	fftBands    [NumFFTBands]float64
+	outFFTBands [NumFFTBands]float64 // bands of the agent audio being played
+	outLevel    float64              // playback level in dB
+	muted       bool
+	paused      bool    // true when audio I/O is paused (e.g. text mode); mic frames are not sent to the agent
+	level       float64 // capture level in dB
+	playing     bool    // true when outputting real audio (not silence)
 
 	cancel   context.CancelFunc
 	audioCtx context.Context // stored so EnableAudio can start goroutines
@@ -197,7 +204,7 @@ func (p *AudioPipeline) Start(ctx context.Context) error {
 
 	// Always run the TCP reader for events/responses.
 	p.wg.Add(1)
-	go p.tcpReader(ctx)
+	go p.tcpReader(ctx, p.conn)
 
 	// Start audio loops if devices are available.
 	if p.HasAudio() {
@@ -248,6 +255,42 @@ func (p *AudioPipeline) writeMessage(msg *agent.AgentSessionMessage) error {
 	return WriteSessionMessage(p.conn, msg)
 }
 
+// AddConn connects another agent to the pipeline. It starts inactive: its
+// audio and events are dropped until SetActive makes it the active agent.
+// Its reader stops when conn closes; the caller owns conn.
+func (p *AudioPipeline) AddConn(ctx context.Context, conn net.Conn) {
+	p.wg.Add(1)
+	go p.tcpReader(ctx, conn)
+}
+
+// SetActive makes conn, from NewPipeline or AddConn, the agent that hears
+// the microphone and plays through the speakers. Audio still queued from the
+// previous agent is dropped, and a playback it waits on is acknowledged.
+func (p *AudioPipeline) SetActive(conn net.Conn) {
+	p.switchMu.Lock()
+	defer p.switchMu.Unlock()
+
+	p.connMu.Lock()
+	p.conn = conn
+	p.connMu.Unlock()
+
+	// Cancel under flushMu, so waitForDrainAndAck can't also claim the flush.
+	p.flushMu.Lock()
+	pending, flushConn := p.flushCancel != nil, p.flushConn
+	if pending {
+		p.flushCancel()
+	}
+	p.flushCancel, p.flushConn = nil, nil
+	p.flushMu.Unlock()
+	if p.playbackRing != nil {
+		p.playbackRing.Reset()
+	}
+	if pending {
+		// Its queued audio was just dropped, so its playback is over.
+		p.ackPlayback(flushConn)
+	}
+}
+
 func (p *AudioPipeline) SendRequest(req *agent.SessionRequest) error {
 	return p.writeMessage(&agent.AgentSessionMessage{
 		Message: &agent.AgentSessionMessage_Request{Request: req},
@@ -289,6 +332,21 @@ func (p *AudioPipeline) FFTBands() [NumFFTBands]float64 {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.fftBands
+}
+
+// PlaybackFFTBands returns the frequency bands of the agent audio currently
+// being played, in the same form as FFTBands.
+func (p *AudioPipeline) PlaybackFFTBands() [NumFFTBands]float64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.outFFTBands
+}
+
+// PlaybackLevel returns the level of the agent audio being played, in dB.
+func (p *AudioPipeline) PlaybackLevel() float64 {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.outLevel
 }
 
 func (p *AudioPipeline) IsPlaying() bool {
@@ -370,6 +428,7 @@ func (p *AudioPipeline) speakerLoop(ctx context.Context) {
 		p.mu.Lock()
 		p.playing = pn > 0
 		p.mu.Unlock()
+		p.computePlaybackMetrics(playbackBuf)
 
 		// ProcessRender then ProcessCapture — both in this goroutine,
 		// right next to each other, no mutex needed.
@@ -423,78 +482,108 @@ func (p *AudioPipeline) speakerLoop(ctx context.Context) {
 	}
 }
 
-// tcpReader reads messages from the agent over TCP and dispatches them.
-func (p *AudioPipeline) tcpReader(ctx context.Context) {
+// tcpReader reads messages from an agent over TCP and dispatches them.
+func (p *AudioPipeline) tcpReader(ctx context.Context, conn net.Conn) {
 	defer p.wg.Done()
 
 	for {
-		msg, err := ReadSessionMessage(p.conn)
+		msg, err := ReadSessionMessage(conn)
 		if err != nil {
 			return
 		}
 
 		p.readyOnce.Do(func() { close(p.ready) })
+		p.dispatch(ctx, conn, msg)
+	}
+}
 
-		switch m := msg.Message.(type) {
-		case *agent.AgentSessionMessage_AudioOutput:
-			// No audio sink in text mode (rings allocated lazily on Ctrl+T).
-			if p.playbackRing != nil {
-				p.playbackRing.Write(BytesToSamples(m.AudioOutput.Data))
-			}
+// dispatch handles a message from conn's agent. An inactive agent's audio
+// and events are dropped, and its playback is acknowledged at once so it
+// never waits on audio that won't play.
+func (p *AudioPipeline) dispatch(ctx context.Context, conn net.Conn, msg *agent.AgentSessionMessage) {
+	p.switchMu.Lock()
+	defer p.switchMu.Unlock()
 
-		case *agent.AgentSessionMessage_Event:
+	// SetActive changes p.conn only while it holds switchMu.
+	if conn != p.conn {
+		if _, ok := msg.Message.(*agent.AgentSessionMessage_AudioPlaybackFlush); ok {
+			p.ackPlayback(conn)
+		}
+		return
+	}
+
+	switch m := msg.Message.(type) {
+	case *agent.AgentSessionMessage_AudioOutput:
+		// No audio sink in text mode (rings allocated lazily on Ctrl+T).
+		if p.playbackRing != nil {
+			p.playbackRing.Write(BytesToSamples(m.AudioOutput.Data))
+		}
+
+	case *agent.AgentSessionMessage_Event:
+		select {
+		case p.Events <- m.Event:
+		default:
+		}
+
+	case *agent.AgentSessionMessage_AudioPlaybackClear:
+		p.flushMu.Lock()
+		if p.flushCancel != nil {
+			p.flushCancel()
+			p.flushCancel, p.flushConn = nil, nil
+		}
+		p.flushMu.Unlock()
+		if p.playbackRing != nil {
+			p.playbackRing.Reset()
+		}
+
+	case *agent.AgentSessionMessage_AudioPlaybackFlush:
+		// Without an audio sink there's nothing to drain, so ack the
+		// agent's playback turn immediately instead of dereferencing a
+		// nil playback ring in waitForDrainAndAck.
+		if p.playbackRing == nil {
+			p.ackPlayback(conn)
+			break
+		}
+		p.flushMu.Lock()
+		if p.flushCancel != nil {
+			p.flushCancel()
+		}
+		flushCtx, cancel := context.WithCancel(ctx)
+		p.flushCancel, p.flushConn = cancel, conn
+		p.flushMu.Unlock()
+		go p.waitForDrainAndAck(flushCtx, conn)
+
+	case *agent.AgentSessionMessage_Response:
+		// Forward response so the TUI knows the request completed.
+		// Don't synthesize ConversationItemAdded — those arrive via the
+		// event stream already.
+		if m.Response != nil {
 			select {
-			case p.Events <- m.Event:
+			case p.Responses <- m.Response:
 			default:
-			}
-
-		case *agent.AgentSessionMessage_AudioPlaybackClear:
-			if p.flushCancel != nil {
-				p.flushCancel()
-				p.flushCancel = nil
-			}
-			if p.playbackRing != nil {
-				p.playbackRing.Reset()
-			}
-
-		case *agent.AgentSessionMessage_AudioPlaybackFlush:
-			// Without an audio sink there's nothing to drain, so ack the
-			// agent's playback turn immediately instead of dereferencing a
-			// nil playback ring in waitForDrainAndAck.
-			if p.playbackRing == nil {
-				p.sendPlaybackFinished()
-				break
-			}
-			if p.flushCancel != nil {
-				p.flushCancel()
-			}
-			flushCtx, cancel := context.WithCancel(ctx)
-			p.flushCancel = cancel
-			go p.waitForDrainAndAck(flushCtx)
-
-		case *agent.AgentSessionMessage_Response:
-			// Forward response so the TUI knows the request completed.
-			// Don't synthesize ConversationItemAdded — those arrive via the
-			// event stream already.
-			if m.Response != nil {
-				select {
-				case p.Responses <- m.Response:
-				default:
-				}
 			}
 		}
 	}
 }
 
-func (p *AudioPipeline) sendPlaybackFinished() {
-	_ = p.writeMessage(&agent.AgentSessionMessage{
+// ackPlayback tells conn's agent that its queued audio has finished playing.
+func (p *AudioPipeline) ackPlayback(conn net.Conn) {
+	p.connMu.Lock()
+	defer p.connMu.Unlock()
+	_ = WriteSessionMessage(conn, playbackFinishedMessage())
+}
+
+func playbackFinishedMessage() *agent.AgentSessionMessage {
+	return &agent.AgentSessionMessage{
 		Message: &agent.AgentSessionMessage_AudioPlaybackFinished{
 			AudioPlaybackFinished: &agent.AgentSessionMessage_ConsoleIO_AudioPlaybackFinished{},
 		},
-	})
+	}
 }
 
-func (p *AudioPipeline) waitForDrainAndAck(ctx context.Context) {
+// waitForDrainAndAck acknowledges conn's playback once its queued audio has
+// played, unless ctx is cancelled first.
+func (p *AudioPipeline) waitForDrainAndAck(ctx context.Context, conn net.Conn) {
 	for p.playbackRing.Available() > 0 {
 		select {
 		case <-ctx.Done():
@@ -503,15 +592,49 @@ func (p *AudioPipeline) waitForDrainAndAck(ctx context.Context) {
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	select {
-	case <-ctx.Done():
+	// Claim the flush under flushMu. SetActive acks a flush that it
+	// cancels, so only one of them sends the ack.
+	p.flushMu.Lock()
+	if ctx.Err() != nil {
+		p.flushMu.Unlock()
 		return
-	default:
 	}
-	p.sendPlaybackFinished()
+	p.flushCancel()
+	p.flushCancel, p.flushConn = nil, nil
+	p.flushMu.Unlock()
+	p.ackPlayback(conn)
 }
 
 func (p *AudioPipeline) computeMetrics(samples []int16) {
+	bands, db, decay := analyzeAudio(samples)
+	p.mu.Lock()
+	smoothBands(&p.fftBands, bands, decay)
+	p.level = db
+	p.mu.Unlock()
+}
+
+func (p *AudioPipeline) computePlaybackMetrics(samples []int16) {
+	bands, db, decay := analyzeAudio(samples)
+	p.mu.Lock()
+	smoothBands(&p.outFFTBands, bands, decay)
+	p.outLevel = db
+	p.mu.Unlock()
+}
+
+// smoothBands rises to new peaks at once and decays toward lower values.
+func smoothBands(dst *[NumFFTBands]float64, bands [NumFFTBands]float64, decay float64) {
+	for b := range dst {
+		if bands[b] > dst[b]*decay {
+			dst[b] = bands[b]
+		} else {
+			dst[b] *= decay
+		}
+	}
+}
+
+// analyzeAudio returns the normalized frequency bands and RMS level (dB) of a
+// frame, and the decay factor for smoothing bands across frames.
+func analyzeAudio(samples []int16) (bands [NumFFTBands]float64, db float64, decay float64) {
 	n := len(samples)
 	sr := float64(SampleRate)
 
@@ -571,7 +694,6 @@ func (p *AudioPipeline) computeMetrics(samples []int16) {
 
 	// Mean power → dB → normalize to [0,1]
 	const floorDB, hotDB = -70.0, -20.0
-	var bands [NumFFTBands]float64
 	for b := range nb {
 		c := cnts[b]
 		if c == 0 {
@@ -599,7 +721,7 @@ func (p *AudioPipeline) computeMetrics(samples []int16) {
 	}
 
 	// Exponential decay smoothing (~100ms time constant)
-	decay := math.Exp(-float64(n) / sr / 0.1)
+	decay = math.Exp(-float64(n) / sr / 0.1)
 
 	// RMS level in dB
 	var sum float64
@@ -608,18 +730,8 @@ func (p *AudioPipeline) computeMetrics(samples []int16) {
 		sum += v * v
 	}
 	rms := math.Sqrt(sum / float64(n))
-	db := 20 * math.Log10(rms+1e-10)
-
-	p.mu.Lock()
-	for b := range nb {
-		if bands[b] > p.fftBands[b]*decay {
-			p.fftBands[b] = bands[b]
-		} else {
-			p.fftBands[b] *= decay
-		}
-	}
-	p.level = db
-	p.mu.Unlock()
+	db = 20 * math.Log10(rms+1e-10)
+	return bands, db, decay
 }
 
 func SamplesToBytes(samples []int16) []byte {
