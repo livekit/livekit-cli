@@ -39,7 +39,6 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
-	"github.com/livekit/livekit-cli/v2/pkg/bootstrap"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	lkproto "github.com/livekit/protocol/livekit"
@@ -240,36 +239,24 @@ On LiveKit Cloud: "create" and "deploy" ship it, then "status", "logs",
 						return createAgentClientWithOpts(ctx, cmd, confirmProject)
 					},
 					Action: initAgent,
-					MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{{
-						Flags: [][]cli.Flag{{
-							&cli.StringFlag{
-								Name:  "lang",
-								Usage: "`LANGUAGE` of the starter template, one of \"python\", \"node\".",
-								Action: func(ctx context.Context, cmd *cli.Command, l string) error {
-									if _, ok := starterTemplateURLs[l]; !ok {
-										return fmt.Errorf("unsupported language: %s", l)
-									}
-									return nil
-								},
-							},
-							&cli.BoolFlag{
-								Name:  "deploy",
-								Usage: "If set, automatically deploys the agent to LiveKit Cloud after initialization.",
-								Value: false,
-							},
-							templateFlag,
-							templateURLFlag,
-						}, {
-							sandboxFlag,
-							&cli.BoolFlag{
-								Name:   "no-sandbox",
-								Usage:  "If set, will not create a sandbox for the project.",
-								Value:  true,
-								Hidden: true,
-							},
-						}},
-					}},
 					Flags: []cli.Flag{
+						&cli.StringFlag{
+							Name:  "lang",
+							Usage: "`LANGUAGE` of the starter template, one of \"python\", \"node\".",
+							Action: func(ctx context.Context, cmd *cli.Command, l string) error {
+								if _, ok := starterTemplateURLs[l]; !ok {
+									return fmt.Errorf("unsupported language: %s", l)
+								}
+								return nil
+							},
+						},
+						&cli.BoolFlag{
+							Name:  "deploy",
+							Usage: "If set, automatically deploys the agent to LiveKit Cloud after initialization.",
+							Value: false,
+						},
+						templateFlag,
+						templateURLFlag,
 						regionFlag,
 						installFlag,
 						skillsSetupFlag,
@@ -611,38 +598,6 @@ func initAgent(ctx context.Context, cmd *cli.Command) error {
 	appName = cmd.Args().First()
 	if appName == "" {
 		appName = project.Name
-	}
-
-	// Create sandbox only when not disabled by flag and we don't already have one
-	if !cmd.Bool("no-sandbox") && sandboxID == "" {
-		if err := out.Await("Creating sandbox app...", ctx, func(ctx context.Context) error {
-			token, err := requireToken(ctx, cmd)
-			if err != nil {
-				return err
-			}
-
-			// TODO: (@rektdeckard) figure out why AccessKeyProvider does not immediately
-			// have access to newly-created API keys, then remove this sleep
-			time.Sleep(4 * time.Second)
-			sandboxID, err = bootstrap.CreateSandbox(
-				ctx,
-				appName,
-				// NOTE: we may want to support embed sandbox in the future
-				"https://github.com/livekit-examples/agent-starter-react",
-				token,
-				serverURL,
-			)
-
-			// We set sandbox ID in env for use in template tasks
-			os.Setenv("LIVEKIT_SANDBOX_ID", sandboxID)
-
-			return err
-		}); err != nil {
-			return fmt.Errorf("failed to create sandbox: %w", err)
-		} else {
-			out.Status("Creating sandbox app...")
-			out.Statusf("Created sandbox app [%s]", util.Accented(sandboxID))
-		}
 	}
 
 	// Run template bootstrap

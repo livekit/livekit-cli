@@ -31,9 +31,9 @@ import (
 //
 // Session tokens cover the CLI's own calls, but an app or agent runs on its own
 // and needs a real API key. Commands that write credentials into an app
-// (`lk app create`, `lk app env`, `lk agent init`) or sign with the secret
-// themselves (sandbox tokens) call ensureProjectAPIKey, which reuses a key
-// already in the app's env files or generates a service-account key.
+// (`lk app create`, `lk app env`, `lk agent init`) call ensureProjectAPIKey,
+// which reuses a key already in the app's env files or generates a
+// service-account key.
 // Commands that run an agent (`lk agent dev`, `start`, the debugger) only ever
 // read the key from the agent's env files (agentEnvCredentials): running an
 // agent never creates a key.
@@ -93,7 +93,7 @@ func agentEnvCredentials(ctx context.Context, cmd *cli.Command, dir string) (age
 }
 
 // ensureProjectAPIKey gives a session project real API credentials, for
-// commands that write them into an app in dir or sign with the secret. It
+// commands that write them into an app in dir. It
 // reuses a key for the same project already in one of dir's envFiles, and
 // otherwise generates a service-account key, which outlives the user's
 // membership in the project. A project loaded with an API key is left alone.
