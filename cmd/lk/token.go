@@ -409,6 +409,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 			if slices.Contains(permissions, pEgress) {
 				grant.RoomRecord = true
 			}
+			grant.IngressAdmin = slices.Contains(permissions, pIngress)
 			grant.SetCanUpdateOwnMetadata(slices.Contains(permissions, pMetadata))
 			inferenceGrant = slices.Contains(permissions, pInference)
 		}
