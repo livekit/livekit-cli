@@ -51,13 +51,6 @@ const defaultAnalyticsWindow = 14 * 24 * time.Hour
 // default.
 const defaultPageLimit = 50
 
-// defaultReadLimit caps how many transcript items, agent log records, trace
-// spans, metric points or events a session read takes by default: one of the
-// server's largest pages (public.MaxPageSize). A larger --limit reads every
-// page up to it rather than printing one page, so a session reads whole in
-// one run; the trace tree also needs a span's parent to place it.
-const defaultReadLimit = 1000
-
 var (
 	AnalyticsCommands = []*cli.Command{
 		{
@@ -285,7 +278,7 @@ func pageFlags(defaultLimit int, items string) []cli.Flag {
 	return []cli.Flag{
 		&cli.IntFlag{
 			Name:  "limit",
-			Usage: "Maximum number of " + items + " to read (the server caps it at 1000)",
+			Usage: "Maximum number of " + items + " to read (the server caps a page's size)",
 			Value: defaultLimit,
 		},
 		// Hidden like session list's: pass the cursor a prior page printed,
@@ -336,14 +329,16 @@ func analyticsRecordingFlags() []cli.Flag {
 }
 
 // readFlags returns fresh --limit and --cursor flags for a command that reads
-// every page of a session's items up to --limit (see readPages), for the same
-// reason as analyticsSessionListFlags.
+// a session's items (see readPages), for the same reason as
+// analyticsSessionListFlags. --limit has no default here: without it the
+// command reads one page of the server's default size, so the server alone
+// decides how much a plain read returns.
 func readFlags(items string) []cli.Flag {
 	return []cli.Flag{
 		&cli.IntFlag{
-			Name:  "limit",
-			Usage: "Maximum number of " + items + " to read; the command reads every page up to it",
-			Value: defaultReadLimit,
+			Name:        "limit",
+			Usage:       "Maximum number of " + items + " to read, reading every page up to it (default one page of the server's default size)",
+			HideDefault: true,
 		},
 		// Hidden like session list's: pass the cursor a read that stopped at its
 		// limit printed, with the same filters and order, to read the rest.
@@ -1167,24 +1162,28 @@ func observabilityDisabledError(sessionID, what, dashboardURL string) error {
 }
 
 // pageOptions reads a session read's --limit and --cursor flags. A limit
-// that isn't positive fails here, before the project lookup.
+// given that isn't positive fails here, before the project lookup; none
+// leaves the limit 0, the server's default.
 func pageOptions(cmd *cli.Command) (public.PageOptions, error) {
 	limit := cmd.Int("limit")
-	if limit <= 0 {
+	if limit < 0 || (limit == 0 && cmd.IsSet("limit")) {
 		return public.PageOptions{}, errors.New("limit must be greater than 0")
 	}
 	return public.PageOptions{Limit: int32(limit), Cursor: cmd.String("cursor")}, nil
 }
 
-// readPages reads a session's items page by page from page.Cursor, in full
-// pages but no more than page.Limit in all, and returns them with the cursor
-// where it stopped: empty once it read the last page. fetch reads one page.
+// readPages reads a session's items from page.Cursor and returns them with
+// the cursor where it stopped: empty once it read the last page. With no
+// page.Limit it reads one page, sending no page size, so the server picks it.
+// With one it reads page by page until it has page.Limit items, asking each
+// page for as many as are left; the server caps a page's size, so a large
+// limit takes several. fetch reads one page.
 func readPages[T any](page public.PageOptions, fetch func(public.PageOptions) ([]T, string, error)) ([]T, string, error) {
 	var all []T
 	next := page.Cursor
 	for {
 		items, cursor, err := fetch(public.PageOptions{
-			Limit:  min(public.MaxPageSize, page.Limit-int32(len(all))),
+			Limit:  max(0, page.Limit-int32(len(all))),
 			Cursor: next,
 		})
 		if err != nil {

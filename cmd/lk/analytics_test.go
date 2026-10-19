@@ -1073,7 +1073,7 @@ func TestTranscriptOptions(t *testing.T) {
 		want    public.PageOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.PageOptions{Limit: defaultReadLimit}},
+		{name: "defaults", want: public.PageOptions{}},
 		{name: "paging", args: []string{"--limit", "100", "--cursor", "abc"}, want: public.PageOptions{Limit: 100, Cursor: "abc"}},
 		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
 	}
@@ -1144,8 +1144,16 @@ func TestReadPages(t *testing.T) {
 		}
 	}
 
+	// No limit reads one page and sends no page size: the server picks it.
 	var calls []call
-	items, next, err := readPages(public.PageOptions{Limit: 1000}, fetch(&calls))
+	items, next, err := readPages(public.PageOptions{}, fetch(&calls))
+	require.NoError(t, err)
+	assert.Equal(t, []int{1, 2}, items)
+	assert.Equal(t, "c2", next)
+	assert.Equal(t, []call{{0, ""}}, calls)
+
+	calls = nil
+	items, next, err = readPages(public.PageOptions{Limit: 1000}, fetch(&calls))
 	require.NoError(t, err)
 	assert.Equal(t, []int{1, 2, 3}, items)
 	assert.Empty(t, next)
@@ -1197,7 +1205,7 @@ func TestFetchSessionTranscriptPages(t *testing.T) {
 	require.NoError(t, err)
 	stdout, stderr := captureOut(t)
 
-	require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: defaultReadLimit}, false))
+	require.NoError(t, fetchSessionTranscript(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 1000}, false))
 	assert.Equal(t, []string{"", "c2"}, cursors)
 	plain := ansiEscapeRe.ReplaceAllString(stdout.String(), "")
 	assert.Contains(t, plain, "● User")
@@ -1413,7 +1421,7 @@ func TestLogOptions(t *testing.T) {
 		want    public.LogOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.LogOptions{PageOptions: public.PageOptions{Limit: defaultReadLimit}, Levels: []string{}}},
+		{name: "defaults", want: public.LogOptions{Levels: []string{}}},
 		{
 			name: "levels, order and paging",
 			args: []string{"--log-level", "warn", "--log-level", "ERROR", "--sort-order", "desc", "--limit", "100", "--cursor", "abc"},
@@ -1640,7 +1648,7 @@ func TestTraceOptions(t *testing.T) {
 		want    public.PageOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.PageOptions{Limit: defaultReadLimit}},
+		{name: "defaults", want: public.PageOptions{}},
 		{name: "limit and cursor", args: []string{"--limit", "250", "--cursor", "abc"}, want: public.PageOptions{Limit: 250, Cursor: "abc"}},
 		{name: "non-positive limit", args: []string{"--limit", "0"}, wantErr: "limit must be greater than 0"},
 	}
@@ -1704,8 +1712,15 @@ func TestFetchSessionTraces(t *testing.T) {
 		wantStatus  []string
 	}{
 		{
+			name:        "no limit reads one page of the server's size",
+			opts:        public.PageOptions{},
+			wantQueries: []url.Values{{}},
+			wantOut:     []string{"agent_session", "└─ agent_turn"},
+			wantStatus:  []string{"Printed 2 spans; more remain", "read the next ones with --cursor c2"},
+		},
+		{
 			name: "every page",
-			opts: public.PageOptions{Limit: defaultReadLimit},
+			opts: public.PageOptions{Limit: 1000},
 			wantQueries: []url.Values{
 				{"page.pageSize": {"1000"}},
 				{"page.pageSize": {"998"}, "page.cursor": {"c2"}},
@@ -1729,7 +1744,7 @@ func TestFetchSessionTraces(t *testing.T) {
 		},
 		{
 			name:        "from a cursor",
-			opts:        public.PageOptions{Limit: defaultReadLimit, Cursor: "c2"},
+			opts:        public.PageOptions{Limit: 1000, Cursor: "c2"},
 			wantQueries: []url.Values{{"page.pageSize": {"1000"}, "page.cursor": {"c2"}}},
 			wantOut:     []string{"llm_request", "tts_request"},
 		},
@@ -1913,7 +1928,7 @@ func TestMetricOptions(t *testing.T) {
 		want    public.MetricOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.MetricOptions{PageOptions: public.PageOptions{Limit: defaultReadLimit}, Names: []string{}}},
+		{name: "defaults", want: public.MetricOptions{Names: []string{}}},
 		{
 			name: "names and paging",
 			args: []string{"--name", "lk.agents.turn.e2e_latency", "--name", "lk.agents.usage.llm_input_tokens", "--limit", "100", "--cursor", "abc"},
@@ -2144,7 +2159,7 @@ func TestEventOptions(t *testing.T) {
 		want    public.EventOptions
 		wantErr string
 	}{
-		{name: "defaults", want: public.EventOptions{PageOptions: public.PageOptions{Limit: defaultReadLimit}, Types: []string{}}},
+		{name: "defaults", want: public.EventOptions{Types: []string{}}},
 		{
 			name: "types, participant session, order and paging",
 			args: []string{"--type", "track_published", "--type", "PARTICIPANT_LEFT", "--participant", "PA_aaaaaaaaaaaa",
