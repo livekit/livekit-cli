@@ -29,11 +29,15 @@ This package includes command line utilities that interacts with LiveKit. It all
 brew install livekit-cli
 ```
 
-## Linux
+Or use the install script below.
+
+## Linux and Mac
 
 ```shell
 curl -sSL https://get.livekit.io/cli | bash
 ```
+
+The script installs `lk` to `/usr/local/bin` (set `LK_INSTALL_PATH` to change it), then installs LiveKit's [coding agent skills](#coding-agent-skills) and Docs MCP server for the coding agents it finds. Set `LK_INSTALL_SKILLS=0` to skip that step, or `LK_INSTALL_SKILLS=1` to run it without a terminal.
 
 Or download a precompiled binary for the [latest release](https://github.com/livekit/livekit-cli/releases/latest)
 
