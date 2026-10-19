@@ -94,18 +94,17 @@ var (
 						},
 						{
 							Name:      "recording",
-							Usage:     "Download a session's audio recording or chat history (requires --experimental-auth)",
-							UsageText: "lk analytics session recording SESSION_ID [--type audio|chat-history] [-o FILE] [--url-only]",
-							Description: "Downloads one of the recordings a session's agent uploaded to LiveKit Cloud when the session ended: " +
-								"by default its audio recording, the conversation as an Ogg audio file; with --type chat-history, " +
-								"its chat history, the conversation as the agent recorded it (messages, tool calls and handoffs), as JSON. " +
-								"The file downloads straight from the project's data region.\n\n" +
-								"It saves to SESSION_ID-audio.ogg or SESSION_ID-chat-history.json in the working directory, " +
-								"numbered (SESSION_ID-audio-1.ogg, ...) rather than replacing a file already there, " +
-								"and prints the path it saved to. -o saves elsewhere: to a file, replaced if it exists, " +
-								"or into a directory, under the default name.\n\n" +
-								"--url-only prints a signed URL for the file instead, valid for 15 minutes, to download it some other way. " +
-								"--json prints the API's response, signed URL and recording start included, and saves nothing.",
+							Usage:     "Get or download a session's audio recording or chat history (requires --experimental-auth)",
+							UsageText: "lk analytics session recording SESSION_ID [--type audio|chat-history] [-o FILE|DIR]",
+							Description: "Prints a signed URL, valid for 15 minutes, for one of the recordings a session's agent uploaded " +
+								"to LiveKit Cloud when the session ended: by default its audio recording, the conversation as an Ogg audio file; " +
+								"with --type chat-history, its chat history, the conversation as the agent recorded it " +
+								"(messages, tool calls and handoffs), as JSON. --json prints the API's response instead, " +
+								"recording start included.\n\n" +
+								"-o also downloads the recording, straight from the project's data region, and prints where it saved it: " +
+								"to a file, replaced if it exists, or into a directory, as SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, " +
+								"numbered (SESSION_ID-audio-1.ogg, ...) rather than replacing a file already there. " +
+								"Use -o . for the working directory.",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(sessionRecordingOptionsFrom, fetchSessionRecording),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsRecordingFlags()...),
@@ -313,17 +312,13 @@ func analyticsRecordingFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
 			Name:  "type",
-			Usage: "`TYPE` of recording to download: audio (the conversation's audio, Ogg) or chat-history (the agent's record of the conversation, JSON)",
+			Usage: "`TYPE` of recording: audio (the conversation's audio, Ogg) or chat-history (the agent's record of the conversation, JSON)",
 			Value: public.RecordingAudio,
 		},
 		&cli.StringFlag{
 			Name:    "output",
 			Aliases: []string{"o"},
-			Usage:   "Save to `FILE`, replacing it if it exists, or into a directory under the default name (default SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, numbered rather than replacing a file)",
-		},
-		&cli.BoolFlag{
-			Name:  "url-only",
-			Usage: "Print a signed URL for the recording, valid for 15 minutes, instead of downloading it",
+			Usage:   "Also download the recording to `FILE`, replacing it if it exists, or into a directory as SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, numbered rather than replacing a file",
 		},
 	}
 }
@@ -967,54 +962,41 @@ func participantListOptions(cmd *cli.Command) (public.ParticipantListOptions, er
 // puts it.
 type sessionRecordingOptions struct {
 	public.RecordingURLOptions
-	// Output is where -o saves: a file, replaced if it exists, or a directory
-	// to save under the default name in. Empty saves under the default name in
-	// the working directory. A default name never replaces a file; see
-	// recordingDestination.
+	// Output is where -o downloads the recording to: a file, replaced if it
+	// exists, or a directory to save under the default name in, which never
+	// replaces a file; see recordingDestination. Empty downloads nothing.
 	Output string
-	// URLOnly prints the signed URL response instead of downloading; --json
-	// does too.
-	URLOnly bool
 }
 
 // sessionRecordingOptionsFrom reads the recording flags. An unknown type, or
 // an --output that won't be saved to, fails here, before the project lookup.
 func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, error) {
 	if cmd.Args().Len() > 1 {
-		return sessionRecordingOptions{}, fmt.Errorf("unexpected argument %q; save elsewhere with -o FILE", cmd.Args().Get(1))
+		return sessionRecordingOptions{}, fmt.Errorf("unexpected argument %q; download to a file with -o FILE", cmd.Args().Get(1))
 	}
 	opts := sessionRecordingOptions{
 		RecordingURLOptions: public.RecordingURLOptions{Recording: strings.ToLower(strings.TrimSpace(cmd.String("type")))},
 		Output:              cmd.String("output"),
-		URLOnly:             cmd.Bool("url-only"),
 	}
 	if err := opts.Validate(); err != nil {
 		return sessionRecordingOptions{}, err
 	}
-	if opts.URLOnly && cmd.Bool("json") {
-		return sessionRecordingOptions{}, errors.New("--url-only can't be used with --json, which already prints the signed URL response and saves nothing")
-	}
-	if opts.Output != "" {
-		switch {
-		case opts.URLOnly:
-			return sessionRecordingOptions{}, errors.New("--output can't be used with --url-only, which saves nothing")
-		case cmd.Bool("json"):
-			return sessionRecordingOptions{}, errors.New("--output can't be used with --json, which prints the signed URL response and saves nothing")
-		}
+	if opts.Output != "" && cmd.Bool("json") {
+		return sessionRecordingOptions{}, errors.New("--output can't be used with --json, which prints the signed URL response and downloads nothing")
 	}
 	return opts, nil
 }
 
-// fetchSessionRecording asks the Public API to sign a URL for the recording,
-// then prints the response (--url-only, --json) or downloads the recording to
-// a file and prints the file's path. The download goes straight to the object
-// store; nothing passes through the API.
+// fetchSessionRecording asks the Public API to sign a URL for the recording
+// and prints it, the command's primary output. With -o it also downloads the
+// recording to a file and says where on stderr. The download goes straight to
+// the object store; nothing passes through the API.
 func fetchSessionRecording(ctx context.Context, client *public.Client, projectID, sessionID string, opts sessionRecordingOptions, asJSON bool) error {
 	res, err := client.GetSessionRecordingURL(ctx, projectID, sessionID, opts.RecordingURLOptions)
 	if err != nil {
 		return sessionRecordingError(err, projectID, sessionID, opts.Recording)
 	}
-	if opts.URLOnly || asJSON {
+	if opts.Output == "" {
 		return render.RecordingURL(out, asJSON, *res)
 	}
 
@@ -1036,13 +1018,9 @@ func fetchSessionRecording(ctx context.Context, client *public.Client, projectID
 
 // recordingDestination is where a download saves, and whether it replaces a
 // file already there. A file -o names is replaced, as asked; the default
-// name, in the working directory or in a directory -o names, never is:
-// saveRecording numbers it instead.
+// name, in a directory -o names, never is: saveRecording numbers it instead.
 func recordingDestination(sessionID string, opts sessionRecordingOptions) (path string, replace bool, err error) {
 	name := defaultRecordingFile(sessionID, opts.Recording)
-	if opts.Output == "" {
-		return name, false, nil
-	}
 	if strings.HasSuffix(opts.Output, string(filepath.Separator)) || strings.HasSuffix(opts.Output, "/") {
 		return filepath.Join(opts.Output, name), false, nil
 	}

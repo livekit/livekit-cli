@@ -746,12 +746,16 @@ type SavedRecording struct {
 	Bytes     int64
 }
 
-// RecordingSaved prints the path a downloaded recording was saved to on
-// stdout, so a script can capture it, and says on stderr what was saved and
-// when the recording started (to line the audio up with the transcript), from
-// the signed URL response r the download came from.
+// RecordingSaved prints the signed URL a recording was downloaded from on
+// stdout, as RecordingURL does, since it is the command's primary output
+// either way, and says on stderr where the recording was saved and when it
+// started (to line the audio up with the transcript).
 func RecordingSaved(p *util.Printer, r oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse, s SavedRecording) error {
-	p.Statusf("Saved %s of session to [%s] (%s)", RecordingLabel(s.Recording),
+	p.Result(util.Deref(r.Url))
+	p.Statusf("Saved %s of session %s to %s (%s)", RecordingLabel(s.Recording), s.SessionID,
 		util.Accented(s.File), util.FormatBytes(json.RawMessage(strconv.FormatInt(s.Bytes, 10))))
+	if r.RecordingStartedAt != nil {
+		p.Statusf("The recording started %s", util.FormatTime(r.RecordingStartedAt))
+	}
 	return nil
 }

@@ -352,8 +352,9 @@ func TestRecordingURL(t *testing.T) {
 	assert.JSONEq(t, recordingURLResponse, stdout.String())
 }
 
-// TestRecordingSaved checks a saved recording says on stderr what it saved and
-// where, leaving stdout empty.
+// TestRecordingSaved checks a saved recording prints the signed URL it came
+// from on stdout, the primary output, and on stderr where it was saved and
+// when the recording started.
 func TestRecordingSaved(t *testing.T) {
 	var resp oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse
 	require.NoError(t, json.Unmarshal([]byte(recordingURLResponse), &resp))
@@ -361,8 +362,9 @@ func TestRecordingSaved(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	require.NoError(t, RecordingSaved(util.NewPrinter(&stdout, &stderr, false), resp, saved))
-	assert.Empty(t, stdout.String())
-	assert.Equal(t, "Saved chat history of session to [RM_1-chat-history-1.json] (2.0 KB)\n", stderr.String())
+	assert.Equal(t, "https://bucket.example/rec?sig=x\n", stdout.String())
+	assert.Contains(t, stderr.String(), "Saved chat history of session RM_1 to RM_1-chat-history-1.json (2.0 KB)")
+	assert.Contains(t, stderr.String(), "The recording started")
 }
 
 // transcriptItems is one page of a transcript with an item of each kind, as

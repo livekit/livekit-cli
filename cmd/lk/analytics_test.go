@@ -624,7 +624,7 @@ func TestSessionRecordingCommand(t *testing.T) {
 	recordingCmd := findCommandByName(sessionCmd.Commands, "recording")
 	require.NotNil(t, recordingCmd, "'analytics session recording' command must exist")
 	require.NotNil(t, recordingCmd.Action)
-	for _, name := range []string{"type", "output", "url-only", "json"} {
+	for _, name := range []string{"type", "output", "json"} {
 		assert.NotNil(t, findFlagByName(recordingCmd.Flags, name), "--%s", name)
 	}
 }
@@ -678,8 +678,7 @@ func TestSessionRecordingOptions(t *testing.T) {
 			args: []string{"--type", "chat-history", "-o", "chat.json"},
 			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "chat-history"}, Output: "chat.json"},
 		},
-		{name: "url only and json", args: []string{"--url-only", "--json"}, wantErr: "--url-only can't be used with --json"},
-		{name: "a second argument", args: []string{"a.ogg"}, wantErr: `unexpected argument "a.ogg"; save elsewhere with -o FILE`},
+		{name: "a second argument", args: []string{"a.ogg"}, wantErr: `unexpected argument "a.ogg"; download to a file with -o FILE`},
 		{name: "json saves nothing", args: []string{"--json", "-o", "a.ogg"}, wantErr: "--output can't be used with --json"},
 		{
 			name: "json alone",
@@ -687,21 +686,11 @@ func TestSessionRecordingOptions(t *testing.T) {
 			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}},
 		},
 		{
-			name: "url only",
-			args: []string{"--type", "audio", "--url-only"},
-			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, URLOnly: true},
-		},
-		{
 			name: "audio by default",
 			want: sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}},
 		},
 		{name: "blank type", args: []string{"--type", ""}, wantErr: `recording type is required ("audio" or "chat-history")`},
 		{name: "unknown type", args: []string{"--type", "transcript"}, wantErr: `invalid recording type "transcript"`},
-		{
-			name:    "url only saves nothing",
-			args:    []string{"--type", "audio", "--url-only", "-o", "a.ogg"},
-			wantErr: "--output can't be used with --url-only",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -787,14 +776,14 @@ func TestFetchSessionRecording(t *testing.T) {
 		want     string
 	}{
 		{
-			name:     "audio to the default name",
-			opts:     sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}},
+			name:     "audio into -o ., under the default name",
+			opts:     sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, Output: "."},
 			wantFile: "RM_1-audio.ogg",
 			want:     string(audio),
 		},
 		{
-			name:     "chat history to the default name, decompressed",
-			opts:     sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "chat-history"}},
+			name:     "chat history into -o ., under the default name, decompressed",
+			opts:     sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "chat-history"}, Output: "."},
 			wantFile: "RM_1-chat-history.json",
 			want:     chat,
 		},
@@ -829,8 +818,9 @@ func TestFetchSessionRecording(t *testing.T) {
 			got, err := os.ReadFile(tt.wantFile)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, string(got))
-			assert.Empty(t, stdout.String())
-			assert.Contains(t, stderr.String(), "["+tt.wantFile+"]", "stderr names the path saved to")
+			assert.Regexp(t, `^http://127\.0\.0\.1:\d+/\S+\?X-Amz-Signature=abc\n$`, stdout.String(), "stdout is the signed URL")
+			assert.Contains(t, stderr.String(), "of session RM_1 to "+tt.wantFile, "stderr names the path saved to")
+			assert.Contains(t, stderr.String(), "The recording started")
 			assert.Equal(t, []string{""}, *storeAuth, "the object store gets the signed URL and nothing else")
 
 			leftovers, err := filepath.Glob(filepath.Join(filepath.Dir(tt.wantFile), ".*"))
@@ -840,24 +830,26 @@ func TestFetchSessionRecording(t *testing.T) {
 	}
 }
 
-// TestFetchSessionRecordingURLOnly checks --url-only prints the signed URL and
-// downloads nothing.
-func TestFetchSessionRecordingURLOnly(t *testing.T) {
+// TestFetchSessionRecordingURL checks that without -o the command prints the
+// signed URL and downloads nothing.
+func TestFetchSessionRecordingURL(t *testing.T) {
 	t.Chdir(t.TempDir())
 	client, storeAuth := recordingServers(t, []byte("OggS"), "{}")
-	stdout, _ := captureOut(t)
+	stdout, stderr := captureOut(t)
 
-	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, URLOnly: true}
+	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
 	require.NoError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false))
 
 	assert.Regexp(t, `^http://127\.0\.0\.1:\d+/recording\.ogg\?X-Amz-Signature=abc\n$`, stdout.String())
+	assert.Contains(t, stderr.String(), "The URL expires")
 	assert.Empty(t, *storeAuth, "nothing is downloaded")
 	entries, err := os.ReadDir(".")
 	require.NoError(t, err)
 	assert.Empty(t, entries)
 }
 
-// TestFetchSessionRecordingJSON checks --json reports the saved file.
+// TestFetchSessionRecordingJSON checks --json prints the API's response and
+// downloads nothing.
 func TestFetchSessionRecordingJSON(t *testing.T) {
 	t.Chdir(t.TempDir())
 	client, storeAuth := recordingServers(t, []byte("OggS"), "{}")
@@ -976,7 +968,7 @@ func TestFetchSessionRecordingDownloadFails(t *testing.T) {
 	assert.Len(t, entries, 1)
 
 	// Under the default name, the numbered name it claimed is let go.
-	opts.Output = ""
+	opts.Output = "."
 	err = fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false)
 	require.ErrorContains(t, err, "Request has expired")
 	entries, err = os.ReadDir(".")
@@ -993,11 +985,11 @@ func TestFetchSessionRecordingExistingFile(t *testing.T) {
 	client, _ := recordingServers(t, []byte("OggS"), "{}")
 
 	// The default name is numbered rather than replacing a file.
-	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
+	opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, Output: "."}
 	for _, want := range []string{"RM_1-audio-1.ogg", "RM_1-audio-2.ogg"} {
 		_, stderr := captureOut(t)
 		require.NoError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false))
-		assert.Contains(t, stderr.String(), "["+want+"]")
+		assert.Contains(t, stderr.String(), "to "+want+" (")
 		got, err := os.ReadFile(want)
 		require.NoError(t, err)
 		assert.Equal(t, "OggS", string(got))
