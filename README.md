@@ -585,6 +585,8 @@ Skills are copied (not symlinked) into each agent's skills directory; agents tha
 
 `lk agent init` offers to install skills into new agent projects for the coding agents on your machine; pass `--skills=false` to skip.
 
+If a coding agent is on your machine but no LiveKit skills are installed, `lk` offers once, in a terminal, to install them globally (`lk skills install --global`). Runs without a terminal or with `--yes`, such as a coding agent calling `lk`, print a one-line tip instead and never wait for input. Neither appears in CI, with `--quiet` or `--json`, or when `LK_NO_SKILLS_PROMPT=1` is set.
+
 ## Additional notes
 
 ### Parameter precedence
