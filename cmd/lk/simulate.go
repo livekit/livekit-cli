@@ -116,7 +116,7 @@ var simulateCommand = &cli.Command{
 // `list` and `cancel` never hit the API-key project gate.
 //
 // TODO(DEVX-577): unify text/audio/view/export with --experimental-auth. For
-// now they stay API-key only (loadProjectDetails rejects --experimental-auth).
+// now they stay API-key only (requireProject rejects --experimental-auth).
 // Blockers: a spawned agent needs API keys to register as a worker, and the
 // Public API can't issue them; it also lacks a confirm-source-upload op, and
 // its create has no audio-impairment or CI fields. Live-agent mode
@@ -124,13 +124,12 @@ var simulateCommand = &cli.Command{
 // oapi run type would need converting to the livekit.SimulationRun the TUI,
 // CI report and export consume.
 func loadSimulateProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := loadProjectDetails(cmd)
-	if err != nil {
+	if _, err := requireProject(ctx, cmd); err != nil {
 		return nil, err
 	}
-	simulateProjectConfig = pc
+	simulateProjectConfig = project
 	if !cmd.IsSet("server-url") {
-		if api := cloudAPIURL(pc.URL); api != "" {
+		if api := cloudAPIURL(project.URL); api != "" {
 			serverURL = api
 		}
 	}
