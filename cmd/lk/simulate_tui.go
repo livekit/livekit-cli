@@ -454,6 +454,7 @@ func (m *simulateModel) runSetup() tea.Cmd {
 		m.run = run
 		m.summary = decodeRunSummary(run)
 		m.setupDone = true
+		m.runFinished = isTerminalRunStatus(run.GetStatus())
 		return nil
 	}
 
@@ -585,11 +586,16 @@ func spinnerTickCmd() tea.Cmd {
 	})
 }
 
+// m.runID stays empty in view mode: the viewed run is not ours to cancel.
 func (m *simulateModel) pollSimulation() tea.Cmd {
+	runID := m.runID
+	if m.config.mode == modeView {
+		runID = m.config.viewModeRunID
+	}
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), simulationAPITimeout)
 		defer cancel()
-		run, err := getSimulationRun(ctx, m.config.client, m.runID, m.config.pc.ProjectId)
+		run, err := getSimulationRun(ctx, m.config.client, runID, m.config.pc.ProjectId)
 		return simulationRunMsg{run: run, err: err}
 	}
 }
@@ -697,7 +703,7 @@ func (m *simulateModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// the worker is failing systemically: cancel the run and surface
 			// its log on exit
-			if !m.brokenAgent && agentBroken(msg.run, m.agent) {
+			if m.config.mode != modeView && !m.brokenAgent && agentBroken(msg.run, m.agent) {
 				m.brokenAgent = true
 				m.showLogs = true
 				m.reporter.BrokenAgent()
