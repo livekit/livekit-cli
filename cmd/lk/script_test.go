@@ -35,8 +35,9 @@ package main
 //		Answer METHOD URL (any query) with STATUS and BODY. A request with
 //		no answer gets 501.
 //	requests
-//		Print every request the fake received, in order, with the bearer
-//		credential and project it carried.
+//		Print every request the fake received, in order, with the
+//		credential it carried (a session token as bearer=, or the API key an
+//		access token is signed with as apikey=) and the project it named.
 //
 // To regenerate expected output after an intended change, run
 //
@@ -46,6 +47,8 @@ package main
 // rewritten with what the run produced; regexp checks (stdout, stderr) are not.
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -151,7 +154,11 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	target := r.Method + " " + r.URL.Scheme + "://" + r.URL.Host + r.URL.Path
 	line := target
 	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
-		line += " bearer=" + token
+		if apiKey, ok := jwtIssuer(token); ok {
+			line += " apikey=" + apiKey
+		} else {
+			line += " bearer=" + token
+		}
 	}
 	if m := projectInPath.FindStringSubmatch(r.URL.Path); m != nil {
 		line += " project=" + m[1]
@@ -165,6 +172,26 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(res.status)
 	fmt.Fprint(w, res.body)
+}
+
+// jwtIssuer returns the issuer of a LiveKit access token, which is the API
+// key that signed it. The token's other claims change on every run.
+func jwtIssuer(token string) (string, bool) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return "", false
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return "", false
+	}
+	var claims struct {
+		Issuer string `json:"iss"`
+	}
+	if json.Unmarshal(payload, &claims) != nil || claims.Issuer == "" {
+		return "", false
+	}
+	return claims.Issuer, true
 }
 
 // cmdRespond implements `respond METHOD URL STATUS [BODY]`.
