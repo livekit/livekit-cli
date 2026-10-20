@@ -1213,8 +1213,8 @@ func (m *simulateModel) viewSetup() string {
 		b.WriteString(dimStyle.Render("  URL:     " + m.config.pc.URL))
 		b.WriteString("\n")
 	}
-	if m.runID != "" {
-		b.WriteString(dimStyle.Render("  Run:     " + m.runID))
+	if runID := m.shownRunID(); runID != "" {
+		b.WriteString(dimStyle.Render("  Run:     " + runID))
 		b.WriteString("\n")
 	}
 	if url := m.getDashboardURL(); url != "" {
@@ -1304,8 +1304,17 @@ func (m *simulateModel) projectID() string {
 	return ""
 }
 
+// shownRunID is the run on screen. In view mode only m.run names it: m.runID
+// stays empty there, since the viewed run is not ours to cancel.
+func (m *simulateModel) shownRunID() string {
+	if id := m.run.GetId(); id != "" {
+		return id
+	}
+	return m.runID
+}
+
 func (m *simulateModel) getDashboardURL() string {
-	return simulationDashboardURL(m.projectID(), m.runID)
+	return simulationDashboardURL(m.projectID(), m.shownRunID())
 }
 
 func (m *simulateModel) viewFailed() string {
@@ -1313,7 +1322,7 @@ func (m *simulateModel) viewFailed() string {
 	b.WriteString("\n")
 	b.WriteString(tagStyle().Render("Agent Simulations"))
 	b.WriteString("  ")
-	b.WriteString(dimStyle.Render(m.runID))
+	b.WriteString(dimStyle.Render(m.shownRunID()))
 	if url := m.getDashboardURL(); url != "" {
 		b.WriteString("  " + dimStyle.Render(url))
 	}
@@ -1343,7 +1352,7 @@ func (m *simulateModel) viewRunning() string {
 	b.WriteString("\n")
 	b.WriteString(tagStyle().Render("Agent Simulations"))
 	b.WriteString("  ")
-	b.WriteString(dimStyle.Render(m.runID))
+	b.WriteString(dimStyle.Render(m.shownRunID()))
 	if url := m.getDashboardURL(); url != "" {
 		b.WriteString("  " + dimStyle.Render(url))
 	}
@@ -1736,7 +1745,7 @@ func (m *simulateModel) renderDetail() string {
 		boldStyle.Render(title),
 		dimStyle.Render(job.Id),
 	)
-	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
+	if url := simulationJobDashboardURL(m.projectID(), m.shownRunID(), job.Id); url != "" {
 		b.WriteString("  " + dimStyle.Render(url) + "\n")
 	}
 	b.WriteString("\n")
@@ -2001,7 +2010,7 @@ func (m *simulateModel) renderSummary() string {
 	wrapWidth := proseWidth(m.width, 6)
 	var refs summaryRefIndex
 	link := func(text string) string {
-		return linkSummaryRefs(text, m.projectID(), m.runID, &refs)
+		return linkSummaryRefs(text, m.projectID(), m.shownRunID(), &refs)
 	}
 
 	if summary.GoingWell != "" {
