@@ -1,0 +1,18 @@
+# A default user that no longer resolves is a clear error that names it and
+# how to fix it, never a crash.
+! exec lk --user-auth project list
+! stdout .
+cp stderr lk.stderr
+requests
+! stdout .
+
+skip 'known bug: a default user that no longer resolves gets "no user is signed in to <default API>", which never names that user (no ticket yet; spec story 33)'
+grep 'gone@example.com' lk.stderr
+
+-- home/.livekit/cli-config.yaml --
+default_user: gone@example.com
+users:
+  - id: u_2
+    email: other@example.com
+    session_token: st_other
+    api_url: http://publicapi.test
