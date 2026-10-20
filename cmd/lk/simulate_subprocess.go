@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,7 +36,7 @@ import (
 
 // AgentProcess manages an agent subprocess.
 type AgentProcess struct {
-	cmd            *exec.Cmd
+	cmd            *exec.Cmd // argv can carry the API secret: display it only via CommandLine
 	readyCh        chan struct{}
 	failCh         chan struct{} // closed when output matches a FailSignal
 	doneCh         chan error
@@ -614,7 +615,21 @@ func (ap *AgentProcess) Pid() int {
 	return ap.cmd.Process.Pid
 }
 
-// CommandLine is the agent's command as shown to the user.
+// CommandLine is the agent's command as shown to the user. It never contains
+// the API secret, which simulate passes to the agent on argv.
 func (ap *AgentProcess) CommandLine() string {
-	return ap.cmd.String()
+	return strings.Join(redactArgs(ap.cmd.Args), " ")
+}
+
+// redactArgs returns a copy of args with every --api-secret value replaced.
+func redactArgs(args []string) []string {
+	out := slices.Clone(args)
+	for i, a := range args {
+		if a == "--api-secret" && i+1 < len(args) {
+			out[i+1] = "[redacted]"
+		} else if strings.HasPrefix(a, "--api-secret=") {
+			out[i] = "--api-secret=[redacted]"
+		}
+	}
+	return out
 }
