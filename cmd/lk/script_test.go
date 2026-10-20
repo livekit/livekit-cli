@@ -58,6 +58,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -208,10 +209,7 @@ func cmdRespond(ts *testscript.TestScript, neg bool, args []string) {
 	if len(args) == 4 {
 		res.body = args[3]
 	}
-	f := ts.Value(fakeCloudKey{}).(*fakeCloud)
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.responses[args[0]+" "+args[1]] = res
+	ts.Value(fakeCloudKey{}).(*fakeCloud).respond(args[0]+" "+args[1], res.status, res.body)
 }
 
 // cmdRequests implements `requests`.
@@ -222,10 +220,21 @@ func cmdRequests(ts *testscript.TestScript, neg bool, args []string) {
 	// Taking Stdout even with nothing to print replaces the last command's
 	// stdout, so `! stdout .` checks that no request arrived.
 	stdout := ts.Stdout()
-	f := ts.Value(fakeCloudKey{}).(*fakeCloud)
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	for _, line := range f.log {
+	for _, line := range ts.Value(fakeCloudKey{}).(*fakeCloud).requests() {
 		fmt.Fprintln(stdout, line)
 	}
+}
+
+// respond answers target ("METHOD URL") with status and body.
+func (f *fakeCloud) respond(target string, status int, body string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.responses[target] = cannedResponse{status, body}
+}
+
+// requests returns the log of every request the fake received.
+func (f *fakeCloud) requests() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return slices.Clone(f.log)
 }
