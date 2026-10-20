@@ -51,6 +51,12 @@ func findFlagByName(flags []cli.Flag, name string) cli.Flag {
 	return nil
 }
 
+// setHome points os.UserHomeDir at dir: $HOME, or %USERPROFILE% on Windows.
+func setHome(t *testing.T, dir string) {
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+}
+
 // withCapturedAnnounce swaps the package-level Printer for a buffer-backed one for the
 // duration of the test, returning the buffer that captures status output. The Printer's
 // nil-safety means we don't have to worry about state from other tests.
