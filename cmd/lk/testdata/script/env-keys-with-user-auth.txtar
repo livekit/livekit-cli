@@ -1,0 +1,24 @@
+# --user-auth wins over API keys in the environment: the command runs
+# as the signed-in user, with a one-line note that the env keys are ignored.
+env LIVEKIT_URL=ws://env.test
+env LIVEKIT_API_KEY=APIenv
+env LIVEKIT_API_SECRET=secretenv
+respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one"}]}'
+exec lk --user-auth project list
+stdout 'p_1'
+cp stderr lk.stderr
+requests
+cmp stdout want-requests
+
+skip 'known bug: --user-auth ignores LIVEKIT_API_KEY and LIVEKIT_API_SECRET without saying so (no ticket yet; spec story 34)'
+grep 'LIVEKIT_API_KEY.*ignored' lk.stderr
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+-- want-requests --
+GET http://publicapi.test/v0/projects bearer=st_1
