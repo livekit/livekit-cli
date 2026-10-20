@@ -45,6 +45,7 @@ require (
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.36.3
+	pgregory.net/rapid v1.2.0
 )
 
 require (
