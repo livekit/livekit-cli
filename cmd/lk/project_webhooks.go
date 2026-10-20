@@ -44,25 +44,25 @@ var (
 )
 
 // init appends the Public-API-only webhook subcommands to `lk project`. Like
-// key/member/invite, they are Hidden and require --experimental-auth; the
+// key/member/invite, they are Hidden and require --user-auth; the
 // project comes from the global --project flag (or a cached alias).
 func init() {
 	webhookCommand := &cli.Command{
 		Name:   "webhook",
-		Usage:  "Manage webhooks of a LiveKit Cloud project (requires --experimental-auth)",
+		Usage:  "Manage webhooks of a LiveKit Cloud project (requires --user-auth)",
 		Hidden: true,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
 				Usage:     "List project webhooks",
-				UsageText: "lk project webhook list --project PROJECT --experimental-auth",
+				UsageText: "lk project webhook list --project PROJECT --user-auth",
 				Action:    listProjectWebhooks,
 				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "create",
 				Usage:     "Add a webhook to a project",
-				UsageText: "lk project webhook create URL [--name NAME] [--signing-key API_KEY] [--include-event EVENT...] [--exclude-event EVENT...] --project PROJECT --experimental-auth",
+				UsageText: "lk project webhook create URL [--name NAME] [--signing-key API_KEY] [--include-event EVENT...] [--exclude-event EVENT...] --project PROJECT --user-auth",
 				ArgsUsage: "URL",
 				Action:    createProjectWebhook,
 				Flags:     []cli.Flag{webhookNameFlag, signingKeyFlag, includeEventFlag, excludeEventFlag, jsonFlag},
@@ -70,7 +70,7 @@ func init() {
 			{
 				Name:      "update",
 				Usage:     "Change a webhook's name, URL, signing key or event filter",
-				UsageText: "lk project webhook update WEBHOOK_ID [--name NAME] [--url URL] [--signing-key API_KEY] [--include-event EVENT...] [--exclude-event EVENT...] [--all-events] --project PROJECT --experimental-auth",
+				UsageText: "lk project webhook update WEBHOOK_ID [--name NAME] [--url URL] [--signing-key API_KEY] [--include-event EVENT...] [--exclude-event EVENT...] [--all-events] --project PROJECT --user-auth",
 				ArgsUsage: "WEBHOOK_ID",
 				Action:    updateProjectWebhook,
 				Flags: []cli.Flag{
@@ -82,7 +82,7 @@ func init() {
 			{
 				Name:      "delete",
 				Usage:     "Remove a webhook from a project",
-				UsageText: "lk project webhook delete WEBHOOK_ID --project PROJECT --experimental-auth",
+				UsageText: "lk project webhook delete WEBHOOK_ID --project PROJECT --user-auth",
 				ArgsUsage: "WEBHOOK_ID",
 				Action:    deleteProjectWebhook,
 				Flags:     []cli.Flag{jsonFlag},
@@ -90,7 +90,7 @@ func init() {
 			{
 				Name:      "test",
 				Usage:     "Send a test delivery of an event to a webhook",
-				UsageText: "lk project webhook test WEBHOOK_ID --event EVENT --project PROJECT --experimental-auth",
+				UsageText: "lk project webhook test WEBHOOK_ID --event EVENT --project PROJECT --user-auth",
 				ArgsUsage: "WEBHOOK_ID",
 				Action:    testProjectWebhook,
 				Flags: []cli.Flag{
@@ -105,7 +105,7 @@ func init() {
 			{
 				Name:      "events",
 				Usage:     "List the events a project's webhooks can deliver",
-				UsageText: "lk project webhook events --project PROJECT --experimental-auth",
+				UsageText: "lk project webhook events --project PROJECT --user-auth",
 				Action:    listProjectWebhookEvents,
 				Flags:     []cli.Flag{jsonFlag},
 			},

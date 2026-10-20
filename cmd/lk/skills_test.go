@@ -33,12 +33,6 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/skills"
 )
 
-// setHome points os.UserHomeDir at dir: $HOME, or %USERPROFILE% on Windows.
-func setHome(t *testing.T, dir string) {
-	t.Setenv("HOME", dir)
-	t.Setenv("USERPROFILE", dir)
-}
-
 // skillsArchive builds a GitHub-style tarball of the named skills.
 func skillsArchive(t *testing.T, names ...string) []byte {
 	t.Helper()

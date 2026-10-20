@@ -72,10 +72,10 @@ func TestMatchDefaultProject(t *testing.T) {
 	}
 }
 
-// TestExperimentalAuthEnabled checks that --experimental-auth alone selects
+// TestUserAuthEnabled checks that --user-auth alone selects
 // user-based auth: API-key credentials, from flags or the LIVEKIT_* env vars
 // most shells have set, don't push the command back onto the API-key path.
-func TestExperimentalAuthEnabled(t *testing.T) {
+func TestUserAuthEnabled(t *testing.T) {
 	t.Setenv("LIVEKIT_URL", "wss://example.livekit.cloud")
 	t.Setenv("LIVEKIT_API_KEY", "envkey")
 	t.Setenv("LIVEKIT_API_SECRET", "envsecret")
@@ -86,14 +86,14 @@ func TestExperimentalAuthEnabled(t *testing.T) {
 		cmd := &cli.Command{
 			Name: "lk",
 			Flags: []cli.Flag{
-				&cli.BoolFlag{Name: "experimental-auth"},
+				&cli.BoolFlag{Name: "user-auth", Aliases: []string{"experimental-auth"}},
 				&cli.BoolFlag{Name: "legacy-auth"},
 				&cli.StringFlag{Name: "url", Sources: cli.EnvVars("LIVEKIT_URL")},
 				&cli.StringFlag{Name: "api-key", Sources: cli.EnvVars("LIVEKIT_API_KEY")},
 				&cli.StringFlag{Name: "api-secret", Sources: cli.EnvVars("LIVEKIT_API_SECRET")},
 			},
 			Action: func(_ context.Context, cmd *cli.Command) error {
-				got = experimentalAuthEnabled(cmd)
+				got = userAuthEnabled(cmd)
 				return nil
 			},
 		}
@@ -101,16 +101,17 @@ func TestExperimentalAuthEnabled(t *testing.T) {
 		return got
 	}
 
-	assert.True(t, enabled(t, "--experimental-auth"), "env credentials must not override --experimental-auth")
-	assert.True(t, enabled(t, "--experimental-auth", "--api-key", "k", "--api-secret", "s", "--url", "ws://x"),
-		"flag credentials must not override --experimental-auth")
+	assert.True(t, enabled(t, "--user-auth"), "env credentials must not override --user-auth")
+	assert.True(t, enabled(t, "--user-auth", "--api-key", "k", "--api-secret", "s", "--url", "ws://x"),
+		"flag credentials must not override --user-auth")
+	assert.True(t, enabled(t, "--experimental-auth"), "the old --experimental-auth spelling still selects user auth")
 	assert.False(t, enabled(t), "API-key auth remains the default")
 	assert.False(t, enabled(t, "--legacy-auth"))
 }
 
 func TestRequireUserSessionAPIURL(t *testing.T) {
 	const staging = "https://beta-api.staging.livekit.cloud"
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	conf := &config.CLIConfig{
 		DefaultUser: "usr_stg",
 		Users: []config.UserConfig{
@@ -123,16 +124,17 @@ func TestRequireUserSessionAPIURL(t *testing.T) {
 
 	resolve := func(t *testing.T, args ...string) (token, apiURL string, err error) {
 		t.Helper()
-		prev := experimentalAPIURL
-		t.Cleanup(func() { experimentalAPIURL = prev })
+		prev := publicAPIURL
+		t.Cleanup(func() { publicAPIURL = prev })
 		cmd := &cli.Command{
 			Name: "lk",
 			Flags: []cli.Flag{
 				&cli.StringFlag{Name: "user"},
 				&cli.StringFlag{
-					Name:        "experimental-api-url",
+					Name:        "public-api-url",
+					Aliases:     []string{"experimental-api-url"},
 					Value:       public.DefaultBaseURL,
-					Destination: &experimentalAPIURL,
+					Destination: &publicAPIURL,
 					Sources:     cli.EnvVars("LIVEKIT_API_URL"),
 				},
 			},
@@ -146,7 +148,7 @@ func TestRequireUserSessionAPIURL(t *testing.T) {
 			},
 		}
 		err = cmd.Run(context.Background(), append([]string{"lk"}, args...))
-		return token, experimentalAPIURL, err
+		return token, publicAPIURL, err
 	}
 
 	t.Run("default user", func(t *testing.T) {
@@ -155,10 +157,14 @@ func TestRequireUserSessionAPIURL(t *testing.T) {
 		assert.Equal(t, "stg", token, "default user's API is used when no URL is given")
 		assert.Equal(t, staging, apiURL)
 
-		token, apiURL, err = resolve(t, "--experimental-api-url", public.DefaultBaseURL)
+		token, apiURL, err = resolve(t, "--public-api-url", public.DefaultBaseURL)
 		require.NoError(t, err)
 		assert.Equal(t, "prod", token, "an explicit URL overrides the default user's API")
 		assert.Equal(t, public.DefaultBaseURL, apiURL)
+
+		token, _, err = resolve(t, "--experimental-api-url", public.DefaultBaseURL)
+		require.NoError(t, err)
+		assert.Equal(t, "prod", token, "the old --experimental-api-url spelling still sets the URL")
 	})
 
 	t.Run("--user", func(t *testing.T) {
@@ -172,14 +178,14 @@ func TestRequireUserSessionAPIURL(t *testing.T) {
 		assert.Equal(t, "prod", token)
 		assert.Equal(t, public.DefaultBaseURL, apiURL)
 
-		token, _, err = resolve(t, "--user", "alice@livekit.io", "--experimental-api-url", staging)
+		token, _, err = resolve(t, "--user", "alice@livekit.io", "--public-api-url", staging)
 		require.NoError(t, err)
 		assert.Equal(t, "stg", token)
 
 		_, _, err = resolve(t, "--user", "alice@livekit.io")
 		assert.ErrorContains(t, err, "signed in to multiple APIs", "an email on several APIs needs a URL")
 
-		_, _, err = resolve(t, "--user", "bob@livekit.io", "--experimental-api-url", public.DefaultBaseURL)
+		_, _, err = resolve(t, "--user", "bob@livekit.io", "--public-api-url", public.DefaultBaseURL)
 		assert.ErrorContains(t, err, "not signed in to", "an explicit --user never falls back to another user")
 
 		_, _, err = resolve(t, "--user", "nobody@livekit.io")
@@ -192,4 +198,32 @@ func TestRequireUserSessionAPIURL(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "prod", token, "LIVEKIT_API_URL overrides the default user's API")
 	})
+}
+
+// TestSignInHint checks that re-auth hints name the user-auth sign-in (a bare
+// `lk cloud auth` runs the API-key flow) and carry --public-api-url when
+// the session belongs to a non-default API.
+func TestSignInHint(t *testing.T) {
+	const staging = "https://beta-api.staging.livekit.cloud"
+	prev := publicAPIURL
+	t.Cleanup(func() { publicAPIURL = prev })
+
+	publicAPIURL = public.DefaultBaseURL
+	assert.Equal(t, "`lk cloud auth --user-auth`", signInCommand())
+	publicAPIURL = staging
+	assert.Equal(t, "`lk cloud auth --user-auth --public-api-url "+staging+"`", signInCommand())
+
+	setHome(t, t.TempDir())
+	publicAPIURL = public.DefaultBaseURL
+	_, _, err := requireUserSession(nil)
+	assert.ErrorContains(t, err, "no user is signed in (run `lk cloud auth --user-auth` to sign in)")
+
+	conf := &config.CLIConfig{
+		DefaultUser: "usr_stg",
+		Users:       []config.UserConfig{{Id: "usr_stg", SessionToken: "stg", SessionExpiry: 1, APIURL: staging}},
+	}
+	require.NoError(t, conf.PersistQuietly())
+	_, _, err = requireUserSession(nil)
+	assert.ErrorContains(t, err, "has expired (run `lk cloud auth --user-auth --public-api-url "+staging+"` to sign in again)",
+		"the hint follows the API the default user signed in to")
 }

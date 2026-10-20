@@ -112,11 +112,11 @@ var simulateCommand = &cli.Command{
 
 // loadSimulateProject resolves the API-key project for the subcommands that talk
 // to the agent simulation service directly. It is attached per subcommand, not
-// on `simulate`, so the --experimental-auth-only `get` and the experimental
+// on `simulate`, so the --user-auth-only `get` and the experimental
 // `list` and `cancel` never hit the API-key project gate.
 //
-// TODO(DEVX-577): unify text/audio/view/export with --experimental-auth. For
-// now they stay API-key only (loadProjectDetails rejects --experimental-auth).
+// TODO(DEVX-577): unify text/audio/view/export with --user-auth. For
+// now they stay API-key only (loadProjectDetails rejects --user-auth).
 // Blockers: a spawned agent needs API keys to register as a worker, and the
 // Public API can't issue them; it also lacks a confirm-source-upload op, and
 // its create has no audio-impairment or CI fields. Live-agent mode
@@ -205,13 +205,13 @@ var simulateExportCommand = &cli.Command{
 }
 
 // simulateGetCommand is Public-API-only: Hidden, and requires
-// --experimental-auth (user-based auth). `list` (simulate_list.go) and `cancel`
+// --user-auth (user-based auth). `list` (simulate_list.go) and `cancel`
 // are dual-mode.
 var (
 	simulateGetCommand = &cli.Command{
 		Name:      "get",
-		Usage:     "Get a simulation run by ID (requires --experimental-auth)",
-		UsageText: "lk agent simulate get RUN_ID --project PROJECT --experimental-auth",
+		Usage:     "Get a simulation run by ID (requires --user-auth)",
+		UsageText: "lk agent simulate get RUN_ID --project PROJECT --user-auth",
 		ArgsUsage: "RUN_ID",
 		Hidden:    true,
 		Action:    cloudGetSimulationRun,
@@ -224,7 +224,7 @@ var (
 		ArgsUsage:       "<run-id>",
 		HideHelpCommand: true,
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-			if experimentalAuthEnabled(cmd) {
+			if userAuthEnabled(cmd) {
 				return nil, nil
 			}
 			return loadSimulateProject(ctx, cmd)
@@ -267,7 +267,7 @@ func cancelSimulationRunCommand(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		client, projectID, err := simulationProjectID(ctx, cmd)
 		if err != nil {
 			return err

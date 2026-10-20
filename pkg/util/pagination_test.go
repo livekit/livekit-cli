@@ -28,8 +28,8 @@ func TestNextPageCommand(t *testing.T) {
 	}{
 		{
 			name: "appends the cursor, named lk",
-			args: []string{"/usr/local/bin/lk", "--experimental-auth", "analytics", "session", "transcript", "RM_1", "--limit", "20"},
-			want: "lk --experimental-auth analytics session transcript RM_1 --limit 20 --cursor c2",
+			args: []string{"/usr/local/bin/lk", "--user-auth", "analytics", "session", "transcript", "RM_1", "--limit", "20"},
+			want: "lk --user-auth analytics session transcript RM_1 --limit 20 --cursor c2",
 		},
 		{
 			name: "replaces a prior cursor in either form",

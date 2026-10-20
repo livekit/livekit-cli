@@ -27,7 +27,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
-// App credentials under --experimental-auth.
+// App credentials under --user-auth.
 //
 // Session tokens cover the CLI's own calls, but an app or agent runs on its own
 // and needs a real API key. Commands that write credentials into an app
@@ -63,7 +63,7 @@ func envFileCredentials(dir string, files ...string) (agentCredentials, string, 
 }
 
 // agentEnvCredentials returns the credentials an agent in dir runs with under
-// --experimental-auth: the API key in its env files. A file without
+// --user-auth: the API key in its env files. A file without
 // LIVEKIT_URL gets the session project's URL. With --project, the file's key
 // must belong to that project.
 func agentEnvCredentials(ctx context.Context, cmd *cli.Command, dir string) (agentCredentials, error) {
@@ -73,7 +73,7 @@ func agentEnvCredentials(ctx context.Context, cmd *cli.Command, dir string) (age
 	}
 	if creds.apiKey == "" {
 		return agentCredentials{}, fmt.Errorf(
-			"no LiveKit API key in %s (looked in %s); run `lk app env --write --experimental-auth` there to create one",
+			"no LiveKit API key in %s (looked in %s); run `lk app env --write --user-auth` there to create one",
 			dir, strings.Join(agentEnvFiles, ", "))
 	}
 	if creds.url == "" || cmd.String("project") != "" {

@@ -53,7 +53,7 @@ type UserConfig struct {
 	SessionToken  string `yaml:"session_token"`
 	SessionExpiry int64  `yaml:"session_expiry"`
 	// APIURL is the Public API base URL the session was issued by (the
-	// --experimental-api-url in effect at sign-in). A session is only valid
+	// --public-api-url in effect at sign-in). A session is only valid
 	// against that API, so the same person signed in to two environments (e.g.
 	// staging and production) is stored as two entries. Empty means the default
 	// Public API (entries written before this field existed).
@@ -234,7 +234,7 @@ func LoadDefaultUser(apiURL string) (*UserConfig, error) {
 		return nil, err
 	}
 	if conf.DefaultUser == "" {
-		return nil, errors.New("no default user set. Run `lk cloud auth` to sign in")
+		return nil, errors.New("no default user set. Run `lk cloud auth --user-auth` to sign in")
 	}
 	if u := conf.GetUser(conf.DefaultUser, apiURL); u != nil {
 		return u, nil

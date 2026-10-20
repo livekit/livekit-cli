@@ -131,14 +131,14 @@ func requireProject(ctx context.Context, cmd *cli.Command) (context.Context, err
 }
 
 // requireAppProject is requireProject for the app commands, which also run
-// under --experimental-auth: those that need a real API key get one from
+// under --user-auth: those that need a real API key get one from
 // ensureProjectAPIKey once they know where the app lives.
 func requireAppProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	return requireProjectForSDK(ctx, cmd)
 }
 
 func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
-	if err := experimentalAuthGate(cmd); err != nil {
+	if err := userAuthGate(cmd); err != nil {
 		return ctx, err
 	}
 	if project != nil {

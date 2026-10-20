@@ -35,7 +35,7 @@ var simulateListCommand = &cli.Command{
 		if err := simulateListModeFlags.validate(cmd); err != nil {
 			return nil, err
 		}
-		if experimentalAuthEnabled(cmd) {
+		if userAuthEnabled(cmd) {
 			return nil, nil
 		}
 		return loadSimulateProject(ctx, cmd)
@@ -46,16 +46,16 @@ var simulateListCommand = &cli.Command{
 			Name:  "limit",
 			Usage: "maximum number of runs to return. If unset, defaults to API page size",
 		},
-		// experimental-auth only: the Public API filters by status and is
+		// user-auth only: the Public API filters by status and is
 		// cursor-paginated.
 		&cli.StringFlag{
 			Name:   "status",
-			Usage:  "Filter by `STATUS` (running, completed, failed, cancelled, ...) (requires --experimental-auth)",
+			Usage:  "Filter by `STATUS` (running, completed, failed, cancelled, ...) (requires --user-auth)",
 			Hidden: true,
 		},
 		&cli.StringFlag{
 			Name:   "cursor",
-			Usage:  "Page `CURSOR` from a prior --json listing (requires --experimental-auth)",
+			Usage:  "Page `CURSOR` from a prior --json listing (requires --user-auth)",
 			Hidden: true,
 		},
 		jsonFlag,
@@ -65,14 +65,14 @@ var simulateListCommand = &cli.Command{
 // simulateListModeFlags: --limit walks the API-key endpoint's pages; the Public
 // API list instead takes --status and a --cursor.
 var simulateListModeFlags = authModeFlags{
-	legacyOnly:       []string{"limit"},
-	experimentalOnly: []string{"status", "cursor"},
+	legacyOnly:   []string{"limit"},
+	userAuthOnly: []string{"status", "cursor"},
 }
 
 // listSimulationRuns prints runs newest first, without jobs. Pass/fail detail
 // lives in `view`.
 func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		return cloudListSimulationRuns(ctx, cmd)
 	}
 

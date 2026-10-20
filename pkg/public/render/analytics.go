@@ -210,7 +210,7 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 
 	// The participant list is another command, so these hints print it in full,
 	// like other lk hints, and leave the flags this command ran with
-	// (--experimental-auth, --project) to the user, like a --cursor hint does.
+	// (--user-auth, --project) to the user, like a --cursor hint does.
 	listCmd := "lk analytics session participant list " + util.Deref(s.SessionId)
 	if d.ParticipantsPage == nil {
 		p.Statusf("Participants couldn't be read — list them with %s, using the same flags as this command",
