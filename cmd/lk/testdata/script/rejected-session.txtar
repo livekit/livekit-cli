@@ -1,0 +1,21 @@
+# A session the Public API rejects (signed out, revoked) fails as
+# Unauthenticated with a hint to sign in again.
+respond GET http://publicapi.test/v0/projects 401 '{"code":"unauthenticated","message":"authentication required"}'
+! exec lk --user-auth project list
+! stdout .
+cmp stderr want-stderr
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_rejected
+    api_url: http://publicapi.test
+-- want-stderr --
+Using user [dev@example.com] on [http://publicapi.test]
+authentication required (run `lk cloud auth --user-auth --public-api-url http://publicapi.test` to sign in again)
+-- want-requests --
+GET http://publicapi.test/v0/projects bearer=st_rejected
