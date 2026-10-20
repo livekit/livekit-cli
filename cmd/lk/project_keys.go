@@ -26,18 +26,18 @@ import (
 )
 
 // init appends the Public-API-only API key subcommands to `lk project`. Like
-// member/invite, they are Hidden and require --experimental-auth; the project
+// member/invite, they are Hidden and require --user-auth; the project
 // comes from the global --project flag (or a cached alias).
 func init() {
 	keyCommand := &cli.Command{
 		Name:   "key",
-		Usage:  "Manage API keys of a LiveKit Cloud project (requires --experimental-auth)",
+		Usage:  "Manage API keys of a LiveKit Cloud project (requires --user-auth)",
 		Hidden: true,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
 				Usage:     "List project API keys",
-				UsageText: "lk project key list [--mine] [--include-agent-keys] --project PROJECT --experimental-auth",
+				UsageText: "lk project key list [--mine] [--include-agent-keys] --project PROJECT --user-auth",
 				Action:    listProjectKeys,
 				Flags: []cli.Flag{
 					&cli.BoolFlag{Name: "mine", Usage: "Only list keys owned by you"},
@@ -48,7 +48,7 @@ func init() {
 			{
 				Name:      "create",
 				Usage:     "Generate a new API key and secret",
-				UsageText: "lk project key create [--description TEXT] [--service-account] --project PROJECT --experimental-auth",
+				UsageText: "lk project key create [--description TEXT] [--service-account] --project PROJECT --user-auth",
 				Action:    createProjectKey,
 				Flags: []cli.Flag{
 					&cli.StringFlag{Name: "description", Usage: "Human-readable `DESCRIPTION` for the key"},
@@ -59,7 +59,7 @@ func init() {
 			{
 				Name:      "delete",
 				Usage:     "Revoke an API key",
-				UsageText: "lk project key delete API_KEY --project PROJECT --experimental-auth",
+				UsageText: "lk project key delete API_KEY --project PROJECT --user-auth",
 				ArgsUsage: "API_KEY",
 				Action:    deleteProjectKey,
 				Flags:     []cli.Flag{jsonFlag},

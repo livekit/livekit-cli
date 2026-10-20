@@ -74,8 +74,8 @@ var (
 				},
 				{
 					Name:      "get",
-					Usage:     "Get a LiveKit Cloud project by ID (requires --experimental-auth)",
-					UsageText: "lk project get PROJECT_ID --experimental-auth",
+					Usage:     "Get a LiveKit Cloud project by ID (requires --user-auth)",
+					UsageText: "lk project get PROJECT_ID --user-auth",
 					ArgsUsage: "PROJECT_ID",
 					Hidden:    true,
 					Action:    getUserProject,
@@ -83,8 +83,8 @@ var (
 				},
 				{
 					Name:      "create",
-					Usage:     "Create a new LiveKit Cloud project (requires --experimental-auth)",
-					UsageText: "lk project create PROJECT_NAME --experimental-auth",
+					Usage:     "Create a new LiveKit Cloud project (requires --user-auth)",
+					UsageText: "lk project create PROJECT_NAME --user-auth",
 					ArgsUsage: "PROJECT_NAME",
 					Hidden:    true,
 					Action:    createUserProject,
@@ -92,8 +92,8 @@ var (
 				},
 				{
 					Name:      "update",
-					Usage:     "Rename a LiveKit Cloud project (requires --experimental-auth)",
-					UsageText: "lk project update PROJECT_ID --name NEW_NAME --experimental-auth",
+					Usage:     "Rename a LiveKit Cloud project (requires --user-auth)",
+					UsageText: "lk project update PROJECT_ID --name NEW_NAME --user-auth",
 					ArgsUsage: "PROJECT_ID",
 					Hidden:    true,
 					Action:    updateUserProject,
@@ -108,8 +108,8 @@ var (
 				},
 				{
 					Name:      "delete",
-					Usage:     "Delete a LiveKit Cloud project (requires --experimental-auth)",
-					UsageText: "lk project delete PROJECT_ID --experimental-auth",
+					Usage:     "Delete a LiveKit Cloud project (requires --user-auth)",
+					UsageText: "lk project delete PROJECT_ID --user-auth",
 					ArgsUsage: "PROJECT_ID",
 					Hidden:    true,
 					Action:    deleteUserProject,
@@ -317,7 +317,7 @@ func addProject(ctx context.Context, cmd *cli.Command) error {
 }
 
 func listProjects(ctx context.Context, cmd *cli.Command) error {
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		return listUserProjects(ctx, cmd)
 	}
 
@@ -361,7 +361,7 @@ func listProjects(ctx context.Context, cmd *cli.Command) error {
 }
 
 // listUserProjects lists the projects accessible to the signed-in user via the
-// Public API (user-based auth). Invoked by `lk project list --experimental-auth`.
+// Public API (user-based auth). Invoked by `lk project list --user-auth`.
 //
 // NOTE: it fetches live on each call. The per-user project cache
 // (config.UserConfig.Projects) exists for project *resolution* by scoped
@@ -397,7 +397,7 @@ func listUserProjects(ctx context.Context, cmd *cli.Command) error {
 
 // getUserProject implements `lk project get PROJECT_ID` (user auth only).
 func getUserProject(ctx context.Context, cmd *cli.Command) error {
-	if err := requireExperimentalAuth(cmd); err != nil {
+	if err := requireUserAuth(cmd); err != nil {
 		return err
 	}
 	client, conf, user, err := newCloudAPIClient(cmd)
@@ -417,7 +417,7 @@ func getUserProject(ctx context.Context, cmd *cli.Command) error {
 
 // createUserProject implements `lk project create PROJECT_NAME` (user auth only).
 func createUserProject(ctx context.Context, cmd *cli.Command) error {
-	if err := requireExperimentalAuth(cmd); err != nil {
+	if err := requireUserAuth(cmd); err != nil {
 		return err
 	}
 	name := cmd.Args().First()
@@ -438,7 +438,7 @@ func createUserProject(ctx context.Context, cmd *cli.Command) error {
 
 // updateUserProject implements `lk project update PROJECT_ID --name NAME` (user auth only).
 func updateUserProject(ctx context.Context, cmd *cli.Command) error {
-	if err := requireExperimentalAuth(cmd); err != nil {
+	if err := requireUserAuth(cmd); err != nil {
 		return err
 	}
 	client, conf, user, err := newCloudAPIClient(cmd)
@@ -459,7 +459,7 @@ func updateUserProject(ctx context.Context, cmd *cli.Command) error {
 
 // deleteUserProject implements `lk project delete PROJECT_ID` (user auth only).
 func deleteUserProject(ctx context.Context, cmd *cli.Command) error {
-	if err := requireExperimentalAuth(cmd); err != nil {
+	if err := requireUserAuth(cmd); err != nil {
 		return err
 	}
 	client, conf, user, err := newCloudAPIClient(cmd)
@@ -592,7 +592,7 @@ func setDefaultProject(ctx context.Context, cmd *cli.Command) error {
 		return errors.New("project name is required")
 	}
 	name := cmd.Args().First()
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		return setDefaultUserProject(ctx, cmd, name)
 	}
 

@@ -85,7 +85,7 @@ var (
 							Commands: []*cli.Command{
 								{
 									Name:      "list",
-									Usage:     "List a session's participants (requires --experimental-auth)",
+									Usage:     "List a session's participants (requires --user-auth)",
 									ArgsUsage: "SESSION_ID",
 									Action:    sessionRead(participantListOptions, fetchSessionParticipants),
 									Flags:     append([]cli.Flag{jsonFlag}, analyticsParticipantListFlags()...),
@@ -94,7 +94,7 @@ var (
 						},
 						{
 							Name:      "recording",
-							Usage:     "Get or download a session's audio recording or chat history (requires --experimental-auth)",
+							Usage:     "Get or download a session's audio recording or chat history (requires --user-auth)",
 							UsageText: "lk analytics session recording SESSION_ID [--type audio|chat-history] [-o FILE|DIR]",
 							Description: "Prints a signed URL, valid for 15 minutes, for one of the recordings a session's agent uploaded " +
 								"to LiveKit Cloud when the session ended: by default its audio recording, the conversation as an Ogg audio file; " +
@@ -111,14 +111,14 @@ var (
 						},
 						{
 							Name:      "transcript",
-							Usage:     "Print a session's transcript (requires --experimental-auth)",
+							Usage:     "Print a session's transcript (requires --user-auth)",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(pageOptions, fetchSessionTranscript),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsTranscriptFlags()...),
 						},
 						{
 							Name:      "logs",
-							Usage:     "Print a session's agent logs (requires --experimental-auth)",
+							Usage:     "Print a session's agent logs (requires --user-auth)",
 							UsageText: "lk analytics session logs SESSION_ID [--log-level LEVEL ...] [--sort-order asc|desc]",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(logOptions, fetchSessionLogs),
@@ -126,14 +126,14 @@ var (
 						},
 						{
 							Name:      "traces",
-							Usage:     "Print a session's trace spans as a tree (requires --experimental-auth)",
+							Usage:     "Print a session's trace spans as a tree (requires --user-auth)",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(pageOptions, fetchSessionTraces),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsTraceFlags()...),
 						},
 						{
 							Name:      "metrics",
-							Usage:     "Print a session's agent metrics (requires --experimental-auth)",
+							Usage:     "Print a session's agent metrics (requires --user-auth)",
 							UsageText: "lk analytics session metrics SESSION_ID [--name NAME ...]",
 							Description: "Prints the OpenTelemetry metric points the session's agents exported, " +
 								"such as lk.agents.turn.e2e_latency and lk.agents.usage.llm_input_tokens, one line per point: " +
@@ -147,7 +147,7 @@ var (
 						},
 						{
 							Name:      "events",
-							Usage:     "Print a session's events (requires --experimental-auth)",
+							Usage:     "Print a session's events (requires --user-auth)",
 							UsageText: "lk analytics session events SESSION_ID [--type TYPE ...] [--participant PA_ID] [--sort-order asc|desc]",
 							Description: "Prints the session's events, such as participants joining and leaving or tracks being published, " +
 								"one line per event: its time, its type, the participant identity and participant session it is about, " +
@@ -237,33 +237,33 @@ func analyticsSessionListFlags() []cli.Flag {
 			Name:  "end",
 			Usage: "List sessions started before `YYYY-MM-DD` (UTC, exclusive); requires --start",
 		},
-		// experimental-auth only: the Public API is cursor-paginated and has
+		// user-auth only: the Public API is cursor-paginated and has
 		// filters the CLI doesn't yet send to the API-key endpoint. Hidden like
 		// the rest of the experimental surface; pass the nextCursor from a prior
 		// `--json` listing to fetch the next page.
 		&cli.StringFlag{
 			Name:   "cursor",
-			Usage:  "Page `CURSOR` from a prior --json listing (requires --experimental-auth)",
+			Usage:  "Page `CURSOR` from a prior --json listing (requires --user-auth)",
 			Hidden: true,
 		},
 		&cli.StringSliceFlag{
 			Name:   "status",
-			Usage:  "List sessions in `STATUS` (active or closed); repeatable (requires --experimental-auth)",
+			Usage:  "List sessions in `STATUS` (active or closed); repeatable (requires --user-auth)",
 			Hidden: true,
 		},
 		&cli.StringFlag{
 			Name:   "room",
-			Usage:  "List sessions whose room name starts with `PREFIX` (case-sensitive; requires --experimental-auth)",
+			Usage:  "List sessions whose room name starts with `PREFIX` (case-sensitive; requires --user-auth)",
 			Hidden: true,
 		},
 		&cli.StringSliceFlag{
 			Name:   "tag",
-			Usage:  "List sessions carrying `TAG`; repeatable, matches any (requires --experimental-auth)",
+			Usage:  "List sessions carrying `TAG`; repeatable, matches any (requires --user-auth)",
 			Hidden: true,
 		},
 		&cli.StringFlag{
 			Name:   "sort-order",
-			Usage:  "Order by start time: `ORDER` asc or desc, default desc (requires --experimental-auth)",
+			Usage:  "Order by start time: `ORDER` asc or desc, default desc (requires --user-auth)",
 			Hidden: true,
 		},
 	}
@@ -272,7 +272,7 @@ func analyticsSessionListFlags() []cli.Flag {
 // pageFlags returns fresh --limit and --cursor flags for a command that prints
 // one page of a session's items, for the same reason as
 // analyticsSessionListFlags. These commands exist only under
-// --experimental-auth, so no flag needs an auth-mode check.
+// --user-auth, so no flag needs an auth-mode check.
 func pageFlags(defaultLimit int, items string) []cli.Flag {
 	return []cli.Flag{
 		&cli.IntFlag{
@@ -415,7 +415,7 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if err := analyticsListModeFlags.validate(cmd); err != nil {
 		return err
 	}
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		return listUserAnalyticsSessions(ctx, cmd)
 	}
 
@@ -475,7 +475,7 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 }
 
 func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		return getUserAnalyticsSession(ctx, cmd)
 	}
 
@@ -791,7 +791,7 @@ func mapAnalyticsHTTPError(statusCode int, body string) error {
 }
 
 // listUserAnalyticsSessions lists project sessions via the Public API under
-// --experimental-auth. The project comes from the global --project selection (or
+// --user-auth. The project comes from the global --project selection (or
 // a cached alias).
 func listUserAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	opts, err := sessionListOptions(cmd)
@@ -872,7 +872,7 @@ func sessionListOptions(cmd *cli.Command) (public.SessionListOptions, error) {
 
 // getUserAnalyticsSession fetches a single project session and its detail
 // (totals, timelines, first page of participants) via the Public API under
-// --experimental-auth.
+// --user-auth.
 func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 	client, conf, user, err := requireCloudClient(cmd)
 	if err != nil {
@@ -897,7 +897,7 @@ func getUserAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 // sessionRead builds the action of a command that reads one thing about a
 // session — its participants, recordings, transcript, agent logs, trace
 // spans, agent metrics or events — which only the Public API serves. The
-// action refuses to run without --experimental-auth before checking anything
+// action refuses to run without --user-auth before checking anything
 // else, then reads the SESSION_ID argument and the command's options, so a
 // bad flag fails before the project lookup, and hands fetch a client signed
 // in as the user and the selected project.
@@ -906,7 +906,7 @@ func sessionRead[O any](
 	fetch func(ctx context.Context, client *public.Client, projectID, sessionID string, opts O, asJSON bool) error,
 ) cli.ActionFunc {
 	return func(ctx context.Context, cmd *cli.Command) error {
-		if err := requireExperimentalAuth(cmd); err != nil {
+		if err := requireUserAuth(cmd); err != nil {
 			return err
 		}
 		sessionID, err := extractArg(cmd)

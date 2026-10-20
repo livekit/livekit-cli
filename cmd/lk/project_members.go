@@ -27,25 +27,25 @@ import (
 )
 
 // init appends the Public-API-only member and invite subcommands to `lk project`.
-// They are Hidden and require --experimental-auth (user-based auth). The project
+// They are Hidden and require --user-auth (user-based auth). The project
 // they act on comes from the global --project flag (or a cached alias).
 func init() {
 	memberCommand := &cli.Command{
 		Name:   "member",
-		Usage:  "Manage members of a LiveKit Cloud project (requires --experimental-auth)",
+		Usage:  "Manage members of a LiveKit Cloud project (requires --user-auth)",
 		Hidden: true,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
 				Usage:     "List project members",
-				UsageText: "lk project member list --project PROJECT --experimental-auth",
+				UsageText: "lk project member list --project PROJECT --user-auth",
 				Action:    listProjectMembers,
 				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a project member by user ID",
-				UsageText: "lk project member get USER_ID --project PROJECT --experimental-auth",
+				UsageText: "lk project member get USER_ID --project PROJECT --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    getProjectMember,
 				Flags:     []cli.Flag{jsonFlag},
@@ -53,7 +53,7 @@ func init() {
 			{
 				Name:      "update",
 				Usage:     "Change a project member's role",
-				UsageText: "lk project member update USER_ID --role ROLE --project PROJECT --experimental-auth",
+				UsageText: "lk project member update USER_ID --role ROLE --project PROJECT --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    updateProjectMember,
 				Flags:     []cli.Flag{roleFlag, jsonFlag},
@@ -61,7 +61,7 @@ func init() {
 			{
 				Name:      "remove",
 				Usage:     "Remove a member from a project",
-				UsageText: "lk project member remove USER_ID --project PROJECT --experimental-auth",
+				UsageText: "lk project member remove USER_ID --project PROJECT --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    removeProjectMember,
 				Flags:     []cli.Flag{jsonFlag},
@@ -69,7 +69,7 @@ func init() {
 			{
 				Name:      "add",
 				Usage:     "Grant existing workspace members access to a project",
-				UsageText: "lk project member add USER_ID [USER_ID...] --role ROLE --project PROJECT --experimental-auth",
+				UsageText: "lk project member add USER_ID [USER_ID...] --role ROLE --project PROJECT --user-auth",
 				ArgsUsage: "USER_ID [USER_ID...]",
 				Action:    addProjectMembers,
 				Flags:     []cli.Flag{roleFlag, jsonFlag},
@@ -78,20 +78,20 @@ func init() {
 	}
 	inviteCommand := &cli.Command{
 		Name:   "invite",
-		Usage:  "Manage project invites (requires --experimental-auth)",
+		Usage:  "Manage project invites (requires --user-auth)",
 		Hidden: true,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
 				Usage:     "List pending project invites",
-				UsageText: "lk project invite list --project PROJECT --experimental-auth",
+				UsageText: "lk project invite list --project PROJECT --user-auth",
 				Action:    listProjectInvites,
 				Flags:     []cli.Flag{jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get an invite by its token",
-				UsageText: "lk project invite get INVITE_TOKEN --experimental-auth",
+				UsageText: "lk project invite get INVITE_TOKEN --user-auth",
 				ArgsUsage: "INVITE_TOKEN",
 				Action:    getProjectInvite,
 				Flags:     []cli.Flag{jsonFlag},
@@ -99,7 +99,7 @@ func init() {
 			{
 				Name:      "create",
 				Usage:     "Invite a member to a project by email",
-				UsageText: "lk project invite create EMAIL --role ROLE --project PROJECT --experimental-auth",
+				UsageText: "lk project invite create EMAIL --role ROLE --project PROJECT --user-auth",
 				ArgsUsage: "EMAIL",
 				Action:    createProjectInvite,
 				Flags:     []cli.Flag{roleFlag, jsonFlag},
@@ -107,7 +107,7 @@ func init() {
 			{
 				Name:      "update",
 				Usage:     "Change the role of a pending invite",
-				UsageText: "lk project invite update EMAIL --role ROLE --project PROJECT --experimental-auth",
+				UsageText: "lk project invite update EMAIL --role ROLE --project PROJECT --user-auth",
 				ArgsUsage: "EMAIL",
 				Action:    updateProjectInvite,
 				Flags:     []cli.Flag{roleFlag, jsonFlag},
@@ -115,7 +115,7 @@ func init() {
 			{
 				Name:      "delete",
 				Usage:     "Revoke a pending invite",
-				UsageText: "lk project invite delete EMAIL --project PROJECT --experimental-auth",
+				UsageText: "lk project invite delete EMAIL --project PROJECT --user-auth",
 				ArgsUsage: "EMAIL",
 				Action:    deleteProjectInvite,
 				Flags:     []cli.Flag{jsonFlag},
@@ -123,7 +123,7 @@ func init() {
 			{
 				Name:      "answer",
 				Usage:     "Accept or decline a project invite",
-				UsageText: "lk project invite answer INVITE_TOKEN [--decline] --experimental-auth",
+				UsageText: "lk project invite answer INVITE_TOKEN [--decline] --user-auth",
 				ArgsUsage: "INVITE_TOKEN",
 				Action:    answerProjectInvite,
 				Flags: []cli.Flag{

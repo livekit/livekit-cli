@@ -108,8 +108,8 @@ var (
 				},
 				{
 					Name:      "whoami",
-					Usage:     "Show the signed-in LiveKit Cloud user (requires --experimental-auth)",
-					UsageText: "lk cloud whoami --experimental-auth",
+					Usage:     "Show the signed-in LiveKit Cloud user (requires --user-auth)",
+					UsageText: "lk cloud whoami --user-auth",
 					Hidden:    true,
 					Action:    cloudWhoami,
 					Flags:     []cli.Flag{jsonFlag},
@@ -295,8 +295,8 @@ func initAuth(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 
 func handleAuth(ctx context.Context, cmd *cli.Command) error {
 	if revoke {
-		if experimentalAuthEnabled(cmd) {
-			return errors.New("revoking a user session is not yet supported under --experimental-auth")
+		if userAuthEnabled(cmd) {
+			return errors.New("revoking a user session is not yet supported under --user-auth")
 		}
 		if _, err := loadProjectConfig(ctx, cmd); err != nil {
 			return err
@@ -307,7 +307,7 @@ func handleAuth(ctx context.Context, cmd *cli.Command) error {
 		}
 		return authClient.Deauthenticate(ctx, project.Name, token)
 	}
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		return tryUserAuthIfNeeded(ctx, cmd)
 	}
 	return tryAuthIfNeeded(ctx, cmd)
@@ -504,7 +504,7 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if SkipPrompts(cmd) {
-		return errors.New("run `lk cloud auth --experimental-auth` in an interactive terminal to sign in")
+		return errors.New("run `lk cloud auth --user-auth` in an interactive terminal to sign in")
 	}
 
 	// get device name
@@ -563,7 +563,7 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 		Email:         session.User.Email,
 		SessionToken:  session.Session.SessionToken,
 		SessionExpiry: session.Session.Expires,
-		APIURL:        experimentalAPIURL,
+		APIURL:        publicAPIURL,
 	}
 
 	label := user.Email
@@ -611,7 +611,7 @@ func tryUserAuthIfNeeded(ctx context.Context, cmd *cli.Command) error {
 	// `--project` can resolve project names/ids offline. Best-effort: a failure
 	// here does not fail sign-in (the cache can be refreshed later).
 	if projects, ferr := fetchUserProjects(ctx, stored.SessionToken); ferr != nil {
-		out.Warnf("Signed in, but couldn't fetch your projects (%v); run `lk project list --experimental-auth` to retry", ferr)
+		out.Warnf("Signed in, but couldn't fetch your projects (%v); run `lk project list --user-auth` to retry", ferr)
 	} else {
 		stored.Projects = projects
 		stored.ProjectsFetchedAt = time.Now().Unix()

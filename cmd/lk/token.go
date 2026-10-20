@@ -414,7 +414,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 		}
 	}
 
-	// Under --experimental-auth the token is minted by the Public API; the
+	// Under --user-auth the token is minted by the Public API; the
 	// project carries placeholder credentials and everything below still
 	// assembles the grants on an AccessToken.
 	_, err = requireProjectForSDK(ctx, c, ignoreURL)

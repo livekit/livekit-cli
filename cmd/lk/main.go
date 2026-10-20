@@ -50,13 +50,13 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 		HideHelpCommand:               true,
 		UseShortOptionHandling:        true,
 		Flags:                         globalFlags,
-		// --experimental-auth and --legacy-auth pick opposite auth modes; you may
+		// --user-auth and --legacy-auth pick opposite auth modes; you may
 		// pass at most one. (These flags are registered via this group, not
 		// globalFlags.)
 		MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
 			{
 				Flags: [][]cli.Flag{
-					{experimentalAuthFlag},
+					{userAuthFlag},
 					{legacyAuthFlag},
 				},
 			},

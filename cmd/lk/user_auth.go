@@ -30,13 +30,13 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
-// experimentalAuthEnabled reports whether the command should run in user-based
-// (session) auth mode. The --experimental-auth flag alone decides: API-key
+// userAuthEnabled reports whether the command should run in user-based
+// (session) auth mode. The --user-auth flag alone decides: API-key
 // credentials (--api-key/--api-secret/--url, or their LIVEKIT_* env
 // equivalents) don't switch modes, since most users have those set in their
 // shell and would otherwise be silently put on the API-key path.
-func experimentalAuthEnabled(cmd *cli.Command) bool {
-	return cmd.Bool("experimental-auth")
+func userAuthEnabled(cmd *cli.Command) bool {
+	return cmd.Bool("user-auth")
 }
 
 // legacyAuthForced reports whether the user explicitly opted into legacy
@@ -48,7 +48,7 @@ func legacyAuthForced(cmd *cli.Command) bool {
 
 // userAuthIsDefault reports whether user-based (session) auth is the default
 // auth mode. It is false during the experimental phase, where user auth is
-// strictly opt-in via --experimental-auth. Flip it to true when user auth
+// strictly opt-in via --user-auth. Flip it to true when user auth
 // becomes the default (phase 2): at that point `lk cloud auth` signs a user in
 // by default and the upgrade nudge below becomes correct to show.
 const userAuthIsDefault = false
@@ -62,7 +62,7 @@ const userAuthIsDefault = false
 //
 // It is dormant while user auth is experimental: nudging every API-key user to a
 // mode that's opt-in (and that most commands don't yet support) would be noise,
-// and the message would be wrong — today it takes `lk cloud auth --experimental-auth`.
+// and the message would be wrong — today it takes `lk cloud auth --user-auth`.
 // The userAuthIsDefault gate turns it on once that command form is the default.
 func maybeShowUpgradeNotice(cmd *cli.Command, conf *config.CLIConfig) {
 	if !userAuthIsDefault {
@@ -77,15 +77,15 @@ func maybeShowUpgradeNotice(cmd *cli.Command, conf *config.CLIConfig) {
 	out.Statusf("Tip: run %s to upgrade to LiveKit's account-based API — richer access control and audit logging.", util.Accented("lk cloud auth"))
 }
 
-// experimentalAuthGate refuses a command that only supports API-key auth when
+// userAuthGate refuses a command that only supports API-key auth when
 // the user requested experimental user-based auth. User auth routes through the
 // Public API, which does not yet implement most operations; rather than
 // silently fall back to API-key auth — a different security model than the user
 // asked for — we fail clearly. Command paths that DO support user auth branch on
-// experimentalAuthEnabled before reaching this gate.
-func experimentalAuthGate(cmd *cli.Command) error {
-	if experimentalAuthEnabled(cmd) {
-		return errors.New("this command is not yet available under --experimental-auth (user-based auth); re-run without it to use API-key authentication")
+// userAuthEnabled before reaching this gate.
+func userAuthGate(cmd *cli.Command) error {
+	if userAuthEnabled(cmd) {
+		return errors.New("this command is not yet available under --user-auth (user-based auth); re-run without it to use API-key authentication")
 	}
 	return nil
 }
@@ -94,7 +94,7 @@ func experimentalAuthGate(cmd *cli.Command) error {
 // one auth mode. It lets a command reject cross-mode misuse up front with a clear
 // message instead of silently ignoring a flag the active mode can't honor:
 // legacyOnly flags need API-key (SDK) auth; experimentalOnly flags need
-// --experimental-auth. (This is validated at the command level rather than via
+// --user-auth. (This is validated at the command level rather than via
 // urfave MutuallyExclusiveFlags because the auth selector is a root flag and the
 // rule is conditional on the resolved mode, not a pairwise exclusion.)
 type authModeFlags struct {
@@ -104,53 +104,64 @@ type authModeFlags struct {
 
 // validate returns an error if any flag set on cmd belongs to the other auth mode.
 func (a authModeFlags) validate(cmd *cli.Command) error {
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		for _, name := range a.legacyOnly {
 			if cmd.IsSet(name) {
-				return fmt.Errorf("--%s is not supported with --experimental-auth", name)
+				return fmt.Errorf("--%s is not supported with --user-auth", name)
 			}
 		}
 		return nil
 	}
 	for _, name := range a.experimentalOnly {
 		if cmd.IsSet(name) {
-			return fmt.Errorf("--%s is only supported with --experimental-auth", name)
+			return fmt.Errorf("--%s is only supported with --user-auth", name)
 		}
 	}
 	return nil
 }
 
-// requireExperimentalAuth is the inverse gate: it refuses commands that only
-// exist in user-based auth mode when --experimental-auth is not set. The
+// requireUserAuth is the inverse gate: it refuses commands that only
+// exist in user-based auth mode when --user-auth is not set. The
 // Public API operations (e.g. ProjectService create/update/delete) have no
 // API-key/SDK equivalent, so they are available only in that mode.
-func requireExperimentalAuth(cmd *cli.Command) error {
-	if !experimentalAuthEnabled(cmd) {
-		return errors.New("this command is only available under --experimental-auth (user-based auth)")
+func requireUserAuth(cmd *cli.Command) error {
+	if !userAuthEnabled(cmd) {
+		return errors.New("this command is only available under --user-auth (user-based auth)")
 	}
 	return nil
+}
+
+// signInCommand is the command that signs a user in to the Public API this
+// invocation targets. A bare `lk cloud auth` runs the API-key flow, so the hint
+// must carry --user-auth, plus --public-api-url when the target isn't
+// the default API (a session is only valid against the API that issued it).
+func signInCommand() string {
+	if config.SameAPIURL(publicAPIURL, public.DefaultBaseURL) {
+		return "`lk cloud auth --user-auth`"
+	}
+	return fmt.Sprintf("`lk cloud auth --user-auth --public-api-url %s`", publicAPIURL)
 }
 
 // cloudAPIError annotates Public API failures with actionable hints. An expired
 // or missing session suggests re-auth; a permission denial explains that the
 // signed-in account/session lacks access and points at the API-key escape hatch
 // (rather than silently falling back to API-key "admin" access): re-running
-// without --experimental-auth. Other errors
+// without --user-auth. Other errors
 // pass through unchanged.
 func cloudAPIError(err error) error {
 	switch {
 	case public.IsUnauthenticated(err):
-		return fmt.Errorf("%w (run `lk cloud auth` to sign in again)", err)
+		return fmt.Errorf("%w (run %s to sign in again)", err, signInCommand())
 	case public.IsPermissionDenied(err):
 		return fmt.Errorf("%w — your account doesn't have access to this project or action. "+
-			"To act with API-key credentials instead, re-run without `--experimental-auth`", err)
+			"To act with API-key credentials instead, re-run without `--user-auth`", err)
 	default:
 		return err
 	}
 }
 
 // requireUserSession loads the CLI config and resolves the signed-in user with
-// a valid (unexpired) session, for commands running under --experimental-auth:
+// a valid (unexpired) session, for commands running under --user-auth:
 // the --user flag if given, otherwise the default user (see resolveSessionUser).
 // The returned *CLIConfig is the same instance the user was read from, so
 // callers may cache data on it (e.g. via SetUserProjects) and persist.
@@ -163,14 +174,14 @@ func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig
 	apiURLSet := false
 	if cmd != nil {
 		userRef = cmd.String("user")
-		apiURLSet = cmd.IsSet("experimental-api-url")
+		apiURLSet = cmd.IsSet("public-api-url")
 	}
 	user, err := resolveSessionUser(conf, userRef, apiURLSet)
 	if err != nil {
 		return nil, nil, err
 	}
 	if !user.SessionValid() {
-		return nil, nil, fmt.Errorf("session for %s has expired (run `lk cloud auth` to sign in again)", userLabel(user))
+		return nil, nil, fmt.Errorf("session for %s has expired (run %s to sign in again)", userLabel(user), signInCommand())
 	}
 	announceUser(user)
 	return conf, user, nil
@@ -188,18 +199,18 @@ func announceUser(user *config.UserConfig) {
 		return
 	}
 	userAnnounced = true
-	if config.SameAPIURL(experimentalAPIURL, public.DefaultBaseURL) {
+	if config.SameAPIURL(publicAPIURL, public.DefaultBaseURL) {
 		out.Statusf("Using user [%s]", util.Accented(userLabel(user)))
 	} else {
-		out.Statusf("Using user [%s] on [%s]", util.Accented(userLabel(user)), util.Accented(experimentalAPIURL))
+		out.Statusf("Using user [%s] on [%s]", util.Accented(userLabel(user)), util.Accented(publicAPIURL))
 	}
 }
 
 // resolveSessionUser picks the user to act as: the one named by userRef (the
 // --user flag; an id or email) if given, otherwise the default user.
 //
-// Unless apiURLSet (--experimental-api-url or LIVEKIT_API_URL was given), the
-// Public API is the one that user signed in to, and experimentalAPIURL is
+// Unless apiURLSet (--public-api-url or LIVEKIT_API_URL was given), the
+// Public API is the one that user signed in to, and publicAPIURL is
 // updated so later Public API clients (publicClientForToken) follow suit. A
 // --user signed in to several APIs is ambiguous without an explicit URL.
 //
@@ -213,63 +224,63 @@ func resolveSessionUser(conf *config.CLIConfig, userRef string, apiURLSet bool) 
 		userRef = conf.DefaultUser
 	}
 	if len(conf.Users) == 0 {
-		return nil, errors.New("no user is signed in (run `lk cloud auth` to sign in)")
+		return nil, fmt.Errorf("no user is signed in (run %s to sign in)", signInCommand())
 	}
 
 	if userRef != "" && !apiURLSet {
 		matches := conf.FindUsers(userRef)
 		switch {
 		case len(matches) == 0 && explicit:
-			return nil, fmt.Errorf("user %q is not signed in (run `lk cloud auth` to sign in)", userRef)
+			return nil, fmt.Errorf("user %q is not signed in (run %s to sign in)", userRef, signInCommand())
 		case len(matches) > 1 && explicit:
 			apis := make([]string, len(matches))
 			for i, u := range matches {
 				apis[i] = cmp.Or(u.APIURL, public.DefaultBaseURL)
 			}
-			return nil, fmt.Errorf("user %q is signed in to multiple APIs (%s); pass --experimental-api-url to choose one",
+			return nil, fmt.Errorf("user %q is signed in to multiple APIs (%s); pass --public-api-url to choose one",
 				userRef, strings.Join(apis, ", "))
 		case len(matches) > 0:
 			// For the default user, an id is unique across APIs; an email
 			// signed in to several resolves to the first entry.
 			if matches[0].APIURL != "" {
-				experimentalAPIURL = matches[0].APIURL
+				publicAPIURL = matches[0].APIURL
 			}
 		}
 	}
 
 	if userRef != "" {
-		if u := conf.GetUser(userRef, experimentalAPIURL); u != nil {
+		if u := conf.GetUser(userRef, publicAPIURL); u != nil {
 			return u, nil
 		}
 		if explicit {
-			return nil, fmt.Errorf("user %q is not signed in to %s (run `lk cloud auth` to sign in)", userRef, experimentalAPIURL)
+			return nil, fmt.Errorf("user %q is not signed in to %s (run %s to sign in)", userRef, publicAPIURL, signInCommand())
 		}
 	}
-	if users := conf.UsersForAPIURL(experimentalAPIURL); len(users) == 1 {
+	if users := conf.UsersForAPIURL(publicAPIURL); len(users) == 1 {
 		return users[0], nil
 	}
-	return nil, fmt.Errorf("no user is signed in to %s (run `lk cloud auth` to sign in)", experimentalAPIURL)
+	return nil, fmt.Errorf("no user is signed in to %s (run %s to sign in)", publicAPIURL, signInCommand())
 }
 
 // publicClientForToken builds a Public API client authenticated with the given
-// session token, honoring --experimental-api-url.
+// session token, honoring --public-api-url.
 func publicClientForToken(token string) (*public.Client, error) {
-	return public.New(experimentalAPIURL, token)
+	return public.New(publicAPIURL, token)
 }
 
 // requireCloudClient is the entry point for the Public-API-only commands: it
-// enforces --experimental-auth, then builds a client authenticated as the
+// enforces --user-auth, then builds a client authenticated as the
 // signed-in user. It returns the same *CLIConfig/*UserConfig the session was
 // read from, so callers can resolve project refs and persist the cache.
 func requireCloudClient(cmd *cli.Command) (*public.Client, *config.CLIConfig, *config.UserConfig, error) {
-	if err := requireExperimentalAuth(cmd); err != nil {
+	if err := requireUserAuth(cmd); err != nil {
 		return nil, nil, nil, err
 	}
 	return newCloudAPIClient(cmd)
 }
 
 // newCloudAPIClient builds a Public API client authenticated as the default
-// user, honoring --experimental-api-url.
+// user, honoring --public-api-url.
 func newCloudAPIClient(cmd *cli.Command) (*public.Client, *config.CLIConfig, *config.UserConfig, error) {
 	conf, user, err := requireUserSession(cmd)
 	if err != nil {

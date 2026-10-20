@@ -34,7 +34,7 @@ import (
 // join, perf load tests, the egress layout demo) or print tokens (token create)
 // load their project with loadProjectForSDK or requireProjectForSDK. With an
 // API key these behave like loadProjectDetails/requireProject. Under
-// --experimental-auth they load a session project instead: the user's project
+// --user-auth they load a session project instead: the user's project
 // with placeholder credentials. Its SDK clients (via withDefaultClientOpts, or
 // tokenauth's Transport for cloudagents) swap each request's token for one
 // fetched from the Public API (ProjectService.CreateToken) with the same grants,
@@ -43,7 +43,7 @@ import (
 //
 // Apps and agents need a real key of their own; see app_credentials.go. The
 // rest (agent simulate's local runs) keep loadProjectDetails/requireProject
-// and stay behind experimentalAuthGate.
+// and stay behind userAuthGate.
 
 // sessionTokenSources holds the token source for each session project, by
 // project ID, for withDefaultClientOpts to attach.
@@ -53,7 +53,7 @@ var sessionTokenSources = map[string]*tokenauth.CachingTokenSource{}
 // only to SDK clients built with withDefaultClientOpts or to the tokenauth
 // helpers, so a session project will do.
 func loadProjectForSDK(ctx context.Context, cmd *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
-	if experimentalAuthEnabled(cmd) {
+	if userAuthEnabled(cmd) {
 		return loadSessionProject(ctx, cmd)
 	}
 	return loadProjectDetails(cmd, opts...)
@@ -63,7 +63,7 @@ func loadProjectForSDK(ctx context.Context, cmd *cli.Command, opts ...loadOption
 // credentials go only to SDK clients built with withDefaultClientOpts or to the
 // tokenauth helpers, so a session project will do.
 func requireProjectForSDK(ctx context.Context, cmd *cli.Command, opts ...loadOption) (context.Context, error) {
-	if !experimentalAuthEnabled(cmd) {
+	if !userAuthEnabled(cmd) {
 		return requireProjectWithOpts(ctx, cmd, opts...)
 	}
 	if project == nil {

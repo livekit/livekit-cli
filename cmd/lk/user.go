@@ -24,24 +24,24 @@ import (
 )
 
 // UserCommands are the Public-API-only user commands. The group is Hidden and
-// requires --experimental-auth (user-based auth).
+// requires --user-auth (user-based auth).
 var UserCommands = []*cli.Command{
 	{
 		Name:   "user",
-		Usage:  "List and inspect LiveKit Cloud users (requires --experimental-auth)",
+		Usage:  "List and inspect LiveKit Cloud users (requires --user-auth)",
 		Hidden: true,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
 				Usage:     "List users in a project or workspace",
-				UsageText: "lk user list --project PROJECT | --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk user list --project PROJECT | --workspace WORKSPACE --user-auth",
 				Action:    listUsers,
 				Flags:     []cli.Flag{workspaceFlag, limitFlag, cursorFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a user by ID",
-				UsageText: "lk user get USER_ID --experimental-auth",
+				UsageText: "lk user get USER_ID --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    getUser,
 				Flags:     []cli.Flag{jsonFlag},

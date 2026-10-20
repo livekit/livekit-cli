@@ -223,9 +223,9 @@ func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string, loadO
 
 	merged := explicit
 
-	// Under --experimental-auth there is no stored API key to hand the agent;
+	// Under --user-auth there is no stored API key to hand the agent;
 	// it uses the one in its own env files (see agentEnvCredentials).
-	if !explicit.complete() && experimentalAuthEnabled(cmd) {
+	if !explicit.complete() && userAuthEnabled(cmd) {
 		creds, err := agentEnvCredentials(ctx, cmd, dir)
 		if err != nil {
 			return nil, err

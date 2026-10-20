@@ -426,14 +426,14 @@ func TestUsesDefaultWindow(t *testing.T) {
 }
 
 // validateListModeFlags runs analyticsListModeFlags.validate on a command built
-// from fresh analyticsSessionListFlags plus the --experimental-auth selector,
+// from fresh analyticsSessionListFlags plus the --user-auth selector,
 // which production declares on the root.
 func validateListModeFlags(t *testing.T, args ...string) error {
 	t.Helper()
 	var validateErr error
 	cmd := &cli.Command{
 		Name:  "list",
-		Flags: append([]cli.Flag{&cli.BoolFlag{Name: "experimental-auth"}}, analyticsSessionListFlags()...),
+		Flags: append([]cli.Flag{&cli.BoolFlag{Name: "user-auth"}}, analyticsSessionListFlags()...),
 		Action: func(_ context.Context, cmd *cli.Command) error {
 			validateErr = analyticsListModeFlags.validate(cmd)
 			return nil
@@ -451,18 +451,18 @@ func TestAnalyticsListModeFlags(t *testing.T) {
 	}{
 		{name: "dates in API-key mode", args: []string{"--start", "2026-10-01", "--end", "2026-10-03"}},
 		{name: "since in API-key mode", args: []string{"--since", "14d"}},
-		{name: "since in user session mode", args: []string{"--experimental-auth", "--since", "14d"}},
-		{name: "dates in user session mode", args: []string{"--experimental-auth", "--start", "2026-10-01", "--end", "2026-10-03"}},
+		{name: "since in user session mode", args: []string{"--user-auth", "--since", "14d"}},
+		{name: "dates in user session mode", args: []string{"--user-auth", "--start", "2026-10-01", "--end", "2026-10-03"}},
 		{
 			name: "filters in user session mode",
-			args: []string{"--experimental-auth", "--cursor", "abc", "--status", "active", "--room", "demo-", "--tag", "a", "--sort-order", "asc"},
+			args: []string{"--user-auth", "--cursor", "abc", "--status", "active", "--room", "demo-", "--tag", "a", "--sort-order", "asc"},
 		},
-		{name: "page in user session mode", args: []string{"--experimental-auth", "--page", "1"}, wantErr: "--page is not supported with --experimental-auth"},
-		{name: "cursor in API-key mode", args: []string{"--cursor", "abc"}, wantErr: "--cursor is only supported with --experimental-auth"},
-		{name: "status in API-key mode", args: []string{"--status", "active"}, wantErr: "--status is only supported with --experimental-auth"},
-		{name: "room in API-key mode", args: []string{"--room", "demo-"}, wantErr: "--room is only supported with --experimental-auth"},
-		{name: "tag in API-key mode", args: []string{"--tag", "a"}, wantErr: "--tag is only supported with --experimental-auth"},
-		{name: "sort order in API-key mode", args: []string{"--sort-order", "asc"}, wantErr: "--sort-order is only supported with --experimental-auth"},
+		{name: "page in user session mode", args: []string{"--user-auth", "--page", "1"}, wantErr: "--page is not supported with --user-auth"},
+		{name: "cursor in API-key mode", args: []string{"--cursor", "abc"}, wantErr: "--cursor is only supported with --user-auth"},
+		{name: "status in API-key mode", args: []string{"--status", "active"}, wantErr: "--status is only supported with --user-auth"},
+		{name: "room in API-key mode", args: []string{"--room", "demo-"}, wantErr: "--room is only supported with --user-auth"},
+		{name: "tag in API-key mode", args: []string{"--tag", "a"}, wantErr: "--tag is only supported with --user-auth"},
+		{name: "sort order in API-key mode", args: []string{"--sort-order", "asc"}, wantErr: "--sort-order is only supported with --user-auth"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -524,16 +524,16 @@ func TestParticipantListOptions(t *testing.T) {
 	}
 }
 
-// TestParticipantListRequiresExperimentalAuth checks the participant listing,
-// which has no API-key endpoint, refuses to run without --experimental-auth
+// TestParticipantListRequiresUserAuth checks the participant listing,
+// which has no API-key endpoint, refuses to run without --user-auth
 // before reading its arguments or any config.
-func TestParticipantListRequiresExperimentalAuth(t *testing.T) {
+func TestParticipantListRequiresUserAuth(t *testing.T) {
 	for _, args := range [][]string{
 		{"--experimental", "session", "participant", "list", "RM_1"},
 		{"--experimental", "session", "participant", "list"},
 	} {
 		err := runAnalytics(args...)
-		require.ErrorContains(t, err, "only available under --experimental-auth")
+		require.ErrorContains(t, err, "only available under --user-auth")
 	}
 }
 
@@ -629,17 +629,17 @@ func TestSessionRecordingCommand(t *testing.T) {
 	}
 }
 
-// TestSessionRecordingRequiresExperimentalAuth checks the recording download,
-// which has no API-key endpoint, refuses to run without --experimental-auth
+// TestSessionRecordingRequiresUserAuth checks the recording download,
+// which has no API-key endpoint, refuses to run without --user-auth
 // before reading its arguments or any config.
-func TestSessionRecordingRequiresExperimentalAuth(t *testing.T) {
+func TestSessionRecordingRequiresUserAuth(t *testing.T) {
 	for _, args := range [][]string{
 		{"--experimental", "session", "recording", "RM_1", "--type", "audio"},
 		{"--experimental", "session", "recording", "RM_1", "--type", "bogus"},
 		{"--experimental", "session", "recording"},
 	} {
 		err := runAnalytics(args...)
-		require.ErrorContains(t, err, "only available under --experimental-auth")
+		require.ErrorContains(t, err, "only available under --user-auth")
 	}
 }
 
@@ -1026,17 +1026,17 @@ func TestSessionTranscriptCommand(t *testing.T) {
 	}
 }
 
-// TestSessionTranscriptRequiresExperimentalAuth checks the transcript, which
-// has no API-key endpoint, refuses to run without --experimental-auth before
+// TestSessionTranscriptRequiresUserAuth checks the transcript, which
+// has no API-key endpoint, refuses to run without --user-auth before
 // reading its arguments or any config.
-func TestSessionTranscriptRequiresExperimentalAuth(t *testing.T) {
+func TestSessionTranscriptRequiresUserAuth(t *testing.T) {
 	for _, args := range [][]string{
 		{"--experimental", "session", "transcript", "RM_1"},
 		{"--experimental", "session", "transcript", "RM_1", "--limit", "0"},
 		{"--experimental", "session", "transcript"},
 	} {
 		err := runAnalytics(args...)
-		require.ErrorContains(t, err, "only available under --experimental-auth")
+		require.ErrorContains(t, err, "only available under --user-auth")
 	}
 }
 
@@ -1374,17 +1374,17 @@ func TestSessionLogsCommand(t *testing.T) {
 	}
 }
 
-// TestSessionLogsRequiresExperimentalAuth checks the logs read, which has no
-// API-key endpoint, refuses to run without --experimental-auth before reading
+// TestSessionLogsRequiresUserAuth checks the logs read, which has no
+// API-key endpoint, refuses to run without --user-auth before reading
 // its arguments or any config.
-func TestSessionLogsRequiresExperimentalAuth(t *testing.T) {
+func TestSessionLogsRequiresUserAuth(t *testing.T) {
 	for _, args := range [][]string{
 		{"--experimental", "session", "logs", "RM_1"},
 		{"--experimental", "session", "logs", "RM_1", "--log-level", "loud"},
 		{"--experimental", "session", "logs"},
 	} {
 		err := runAnalytics(args...)
-		require.ErrorContains(t, err, "only available under --experimental-auth")
+		require.ErrorContains(t, err, "only available under --user-auth")
 	}
 }
 
@@ -1601,17 +1601,17 @@ func TestSessionTracesCommand(t *testing.T) {
 	}
 }
 
-// TestSessionTracesRequiresExperimentalAuth checks the trace read, which has
-// no API-key endpoint, refuses to run without --experimental-auth before
+// TestSessionTracesRequiresUserAuth checks the trace read, which has
+// no API-key endpoint, refuses to run without --user-auth before
 // reading its arguments or any config.
-func TestSessionTracesRequiresExperimentalAuth(t *testing.T) {
+func TestSessionTracesRequiresUserAuth(t *testing.T) {
 	for _, args := range [][]string{
 		{"--experimental", "session", "traces", "RM_1"},
 		{"--experimental", "session", "traces", "RM_1", "--limit", "0"},
 		{"--experimental", "session", "traces"},
 	} {
 		err := runAnalytics(args...)
-		require.ErrorContains(t, err, "only available under --experimental-auth")
+		require.ErrorContains(t, err, "only available under --user-auth")
 	}
 }
 
@@ -1881,17 +1881,17 @@ func TestSessionMetricsCommand(t *testing.T) {
 	assert.Contains(t, metricsCmd.Description, "won't exactly match the dashboard's metrics panel")
 }
 
-// TestSessionMetricsRequiresExperimentalAuth checks the metrics read, which
-// has no API-key endpoint, refuses to run without --experimental-auth before
+// TestSessionMetricsRequiresUserAuth checks the metrics read, which
+// has no API-key endpoint, refuses to run without --user-auth before
 // reading its arguments or any config.
-func TestSessionMetricsRequiresExperimentalAuth(t *testing.T) {
+func TestSessionMetricsRequiresUserAuth(t *testing.T) {
 	for _, args := range [][]string{
 		{"--experimental", "session", "metrics", "RM_1"},
 		{"--experimental", "session", "metrics", "RM_1", "--name", " "},
 		{"--experimental", "session", "metrics"},
 	} {
 		err := runAnalytics(args...)
-		require.ErrorContains(t, err, "only available under --experimental-auth")
+		require.ErrorContains(t, err, "only available under --user-auth")
 	}
 }
 
@@ -2112,17 +2112,17 @@ func TestSessionEventsCommand(t *testing.T) {
 	assert.True(t, findFlagByName(eventsCmd.Flags, "cursor").(*cli.StringFlag).Hidden, "--cursor must be hidden")
 }
 
-// TestSessionEventsRequiresExperimentalAuth checks the events read, which has
-// no API-key endpoint, refuses to run without --experimental-auth before
+// TestSessionEventsRequiresUserAuth checks the events read, which has
+// no API-key endpoint, refuses to run without --user-auth before
 // reading its arguments or any config.
-func TestSessionEventsRequiresExperimentalAuth(t *testing.T) {
+func TestSessionEventsRequiresUserAuth(t *testing.T) {
 	for _, args := range [][]string{
 		{"--experimental", "session", "events", "RM_1"},
 		{"--experimental", "session", "events", "RM_1", "--type", "joined"},
 		{"--experimental", "session", "events"},
 	} {
 		err := runAnalytics(args...)
-		require.ErrorContains(t, err, "only available under --experimental-auth")
+		require.ErrorContains(t, err, "only available under --user-auth")
 	}
 }
 

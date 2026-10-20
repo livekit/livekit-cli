@@ -45,12 +45,12 @@ const (
 )
 
 var (
-	printCurl          bool
-	workingDir         string = "."
-	tomlFilename       string = config.LiveKitTOMLFile
-	serverURL          string = cloudAPIServerURL
-	dashboardURL       string = cloudDashboardURL
-	experimentalAPIURL string = public.DefaultBaseURL
+	printCurl    bool
+	workingDir   string = "."
+	tomlFilename string = config.LiveKitTOMLFile
+	serverURL    string = cloudAPIServerURL
+	dashboardURL string = cloudDashboardURL
+	publicAPIURL string = public.DefaultBaseURL
 
 	roomFlag = &TemplateStringFlag{
 		Name:     "room",
@@ -77,13 +77,14 @@ var (
 		Aliases: []string{"q", "silent"},
 		Usage:   "Suppress informational output to stderr (warnings and errors still print)",
 	}
-	// experimentalAuthFlag and legacyAuthFlag select the auth mode and are
+	// userAuthFlag and legacyAuthFlag select the auth mode and are
 	// mutually exclusive (enforced via the root command's MutuallyExclusiveFlags,
 	// see main.go), so they aren't listed in globalFlags directly.
-	experimentalAuthFlag = &cli.BoolFlag{
-		Name:   "experimental-auth",
-		Usage:  "EXPERIMENTAL: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
-		Hidden: true,
+	userAuthFlag = &cli.BoolFlag{
+		Name:    "user-auth",
+		Aliases: []string{"experimental-auth"},
+		Usage:   "EXPERIMENTAL: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
+		Hidden:  true,
 	}
 	legacyAuthFlag = &cli.BoolFlag{
 		Name:   "legacy-auth",
@@ -209,14 +210,15 @@ var (
 		quietFlag,
 		&cli.StringFlag{
 			Name:   "user",
-			Usage:  "Signed-in `USER` (id or email) to act as with --experimental-auth; defaults to the default user",
+			Usage:  "Signed-in `USER` (id or email) to act as with --user-auth; defaults to the default user",
 			Hidden: true,
 		},
 		&cli.StringFlag{
-			Name:        "experimental-api-url",
-			Usage:       "Base `URL` of the LiveKit Public API used with --experimental-auth",
+			Name:        "public-api-url",
+			Aliases:     []string{"experimental-api-url"},
+			Usage:       "Base `URL` of the LiveKit Public API used with --user-auth",
 			Value:       public.DefaultBaseURL,
-			Destination: &experimentalAPIURL,
+			Destination: &publicAPIURL,
 			Sources:     cli.EnvVars("LIVEKIT_API_URL"),
 			Hidden:      true,
 		},
@@ -495,7 +497,7 @@ func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 // the package-level `project` (app/agent) go through requireProject instead, which layers
 // interactive selection on top of the same resolver before announcing.
 func loadProjectDetails(c *cli.Command, opts ...loadOption) (*config.ProjectConfig, error) {
-	if err := experimentalAuthGate(c); err != nil {
+	if err := userAuthGate(c); err != nil {
 		return nil, err
 	}
 	p := loadParams{requireURL: true}

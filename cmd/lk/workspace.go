@@ -30,27 +30,27 @@ import (
 )
 
 // WorkspaceCommands are the Public-API-only workspace commands. The whole group
-// is Hidden and requires --experimental-auth (user-based auth). Top-level
+// is Hidden and requires --user-auth (user-based auth). Top-level
 // commands take the workspace as a positional (id, name, or alias, resolved
 // against the per-user cache, with a picker when omitted); nested project/member/
 // invite commands take it via --workspace so the entity id stays positional.
 var WorkspaceCommands = []*cli.Command{
 	{
 		Name:   "workspace",
-		Usage:  "Manage LiveKit Cloud workspaces (requires --experimental-auth)",
+		Usage:  "Manage LiveKit Cloud workspaces (requires --user-auth)",
 		Hidden: true,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
 				Usage:     "List accessible workspaces",
-				UsageText: "lk workspace list --experimental-auth",
+				UsageText: "lk workspace list --user-auth",
 				Action:    listWorkspaces,
 				Flags:     []cli.Flag{limitFlag, cursorFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a workspace by id, name, or alias",
-				UsageText: "lk workspace get [WORKSPACE] --experimental-auth",
+				UsageText: "lk workspace get [WORKSPACE] --user-auth",
 				ArgsUsage: "[WORKSPACE]",
 				Action:    getWorkspace,
 				Flags:     []cli.Flag{jsonFlag},
@@ -58,7 +58,7 @@ var WorkspaceCommands = []*cli.Command{
 			{
 				Name:      "create",
 				Usage:     "Create a workspace",
-				UsageText: "lk workspace create NAME [--organization ORG_ID] --experimental-auth",
+				UsageText: "lk workspace create NAME [--organization ORG_ID] --user-auth",
 				ArgsUsage: "NAME",
 				Action:    createWorkspace,
 				Flags: []cli.Flag{
@@ -69,7 +69,7 @@ var WorkspaceCommands = []*cli.Command{
 			{
 				Name:      "update",
 				Usage:     "Rename a workspace",
-				UsageText: "lk workspace update [WORKSPACE] --name NEW_NAME --experimental-auth",
+				UsageText: "lk workspace update [WORKSPACE] --name NEW_NAME --user-auth",
 				ArgsUsage: "[WORKSPACE]",
 				Action:    updateWorkspace,
 				Flags: []cli.Flag{
@@ -80,7 +80,7 @@ var WorkspaceCommands = []*cli.Command{
 			{
 				Name:      "delete",
 				Usage:     "Delete a workspace",
-				UsageText: "lk workspace delete [WORKSPACE] --experimental-auth",
+				UsageText: "lk workspace delete [WORKSPACE] --user-auth",
 				ArgsUsage: "[WORKSPACE]",
 				Action:    deleteWorkspace,
 				Flags:     []cli.Flag{jsonFlag},
@@ -100,14 +100,14 @@ func workspaceProjectCommand() *cli.Command {
 			{
 				Name:      "list",
 				Usage:     "List projects in a workspace",
-				UsageText: "lk workspace project list --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace project list --workspace WORKSPACE --user-auth",
 				Action:    listWorkspaceProjects,
 				Flags:     []cli.Flag{workspaceFlag, limitFlag, cursorFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a project in a workspace",
-				UsageText: "lk workspace project get PROJECT_ID --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace project get PROJECT_ID --workspace WORKSPACE --user-auth",
 				ArgsUsage: "PROJECT_ID",
 				Action:    getWorkspaceProject,
 				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
@@ -115,7 +115,7 @@ func workspaceProjectCommand() *cli.Command {
 			{
 				Name:      "create",
 				Usage:     "Create a project in a workspace",
-				UsageText: "lk workspace project create NAME --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace project create NAME --workspace WORKSPACE --user-auth",
 				ArgsUsage: "NAME",
 				Action:    createWorkspaceProject,
 				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
@@ -123,7 +123,7 @@ func workspaceProjectCommand() *cli.Command {
 			{
 				Name:      "update",
 				Usage:     "Rename a project in a workspace",
-				UsageText: "lk workspace project update PROJECT_ID --workspace WORKSPACE --name NAME --experimental-auth",
+				UsageText: "lk workspace project update PROJECT_ID --workspace WORKSPACE --name NAME --user-auth",
 				ArgsUsage: "PROJECT_ID",
 				Action:    updateWorkspaceProject,
 				Flags: []cli.Flag{
@@ -135,7 +135,7 @@ func workspaceProjectCommand() *cli.Command {
 			{
 				Name:      "delete",
 				Usage:     "Delete a project in a workspace",
-				UsageText: "lk workspace project delete PROJECT_ID --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace project delete PROJECT_ID --workspace WORKSPACE --user-auth",
 				ArgsUsage: "PROJECT_ID",
 				Action:    deleteWorkspaceProject,
 				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
@@ -152,14 +152,14 @@ func workspaceMemberCommand() *cli.Command {
 			{
 				Name:      "list",
 				Usage:     "List workspace members",
-				UsageText: "lk workspace member list --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace member list --workspace WORKSPACE --user-auth",
 				Action:    listWorkspaceMembers,
 				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a workspace member by user ID",
-				UsageText: "lk workspace member get USER_ID --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace member get USER_ID --workspace WORKSPACE --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    getWorkspaceMember,
 				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
@@ -167,7 +167,7 @@ func workspaceMemberCommand() *cli.Command {
 			{
 				Name:      "update",
 				Usage:     "Change a workspace member's role",
-				UsageText: "lk workspace member update USER_ID --role ROLE --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace member update USER_ID --role ROLE --workspace WORKSPACE --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    updateWorkspaceMember,
 				Flags:     []cli.Flag{workspaceFlag, roleFlag, jsonFlag},
@@ -175,7 +175,7 @@ func workspaceMemberCommand() *cli.Command {
 			{
 				Name:      "delete",
 				Usage:     "Remove a member from a workspace",
-				UsageText: "lk workspace member delete USER_ID --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace member delete USER_ID --workspace WORKSPACE --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    deleteWorkspaceMember,
 				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
@@ -192,14 +192,14 @@ func workspaceInviteCommand() *cli.Command {
 			{
 				Name:      "list",
 				Usage:     "List pending workspace invites",
-				UsageText: "lk workspace invite list --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace invite list --workspace WORKSPACE --user-auth",
 				Action:    listWorkspaceInvites,
 				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
 			},
 			{
 				Name:      "get",
 				Usage:     "Get a workspace invite by its token",
-				UsageText: "lk workspace invite get INVITE_TOKEN --experimental-auth",
+				UsageText: "lk workspace invite get INVITE_TOKEN --user-auth",
 				ArgsUsage: "INVITE_TOKEN",
 				Action:    getWorkspaceInvite,
 				Flags:     []cli.Flag{jsonFlag},
@@ -207,7 +207,7 @@ func workspaceInviteCommand() *cli.Command {
 			{
 				Name:      "create",
 				Usage:     "Invite a member to a workspace by email",
-				UsageText: "lk workspace invite create EMAIL --role ROLE --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace invite create EMAIL --role ROLE --workspace WORKSPACE --user-auth",
 				ArgsUsage: "EMAIL",
 				Action:    createWorkspaceInvite,
 				Flags:     []cli.Flag{workspaceFlag, roleFlag, jsonFlag},
@@ -215,7 +215,7 @@ func workspaceInviteCommand() *cli.Command {
 			{
 				Name:      "delete",
 				Usage:     "Revoke a pending workspace invite",
-				UsageText: "lk workspace invite delete EMAIL --workspace WORKSPACE --experimental-auth",
+				UsageText: "lk workspace invite delete EMAIL --workspace WORKSPACE --user-auth",
 				ArgsUsage: "EMAIL",
 				Action:    deleteWorkspaceInvite,
 				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
@@ -223,7 +223,7 @@ func workspaceInviteCommand() *cli.Command {
 			{
 				Name:      "answer",
 				Usage:     "Accept or decline a workspace invite",
-				UsageText: "lk workspace invite answer INVITE_TOKEN [--decline] --experimental-auth",
+				UsageText: "lk workspace invite answer INVITE_TOKEN [--decline] --user-auth",
 				ArgsUsage: "INVITE_TOKEN",
 				Action:    answerWorkspaceInvite,
 				Flags: []cli.Flag{

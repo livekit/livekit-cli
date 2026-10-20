@@ -540,7 +540,7 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 	// through http.DefaultTransport, out of reach of the session transport.
 	// Refuse up front, before create registers an agent.
 	if isSessionProject(project) && (cmd.String("image") != "" || cmd.String("image-tar") != "") {
-		return ctx, errors.New("deploying a prebuilt image (--image, --image-tar) is not yet supported under --experimental-auth")
+		return ctx, errors.New("deploying a prebuilt image (--image, --image-tar) is not yet supported under --user-auth")
 	}
 
 	agentsClient, err = newAgentsClient(project)
