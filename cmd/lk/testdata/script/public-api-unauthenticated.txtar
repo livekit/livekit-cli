@@ -1,0 +1,25 @@
+# Unauthenticated from the Public API fails with the problem and the project named.
+respond PATCH http://publicapi.test/v0/projects/p_1 401 '{"code":"unauthenticated","message":"authentication required"}'
+! exec lk --user-auth project update one --name renamed
+! stdout .
+stderr '^authentication required '
+cp stderr lk.stderr
+requests
+cmp stdout want-requests
+
+skip 'known bug: lk does not name the project when the Public API refuses a call (no ticket yet; spec story 40)'
+grep '\bp_1\b|\bone\b' lk.stderr
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+-- want-requests --
+PATCH http://publicapi.test/v0/projects/p_1 bearer=st_1 project=p_1
