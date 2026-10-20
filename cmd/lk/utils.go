@@ -83,7 +83,7 @@ var (
 	userAuthFlag = &cli.BoolFlag{
 		Name:    "user-auth",
 		Aliases: []string{"experimental-auth"},
-		Usage:   "EXPERIMENTAL: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
+		Usage:   "BETA: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
 		Hidden:  true,
 	}
 	legacyAuthFlag = &cli.BoolFlag{

@@ -407,8 +407,8 @@ func analyticsEventFlags() []cli.Flag {
 // endpoint, and the Public API session list is cursor-paginated. --since,
 // --start and --end work in both modes. The filter flags are sent only to the Public API for now.
 var analyticsListModeFlags = authModeFlags{
-	legacyOnly:       []string{"page"},
-	experimentalOnly: []string{"cursor", "status", "room", "tag", "sort-order"},
+	legacyOnly:   []string{"page"},
+	userAuthOnly: []string{"cursor", "status", "room", "tag", "sort-order"},
 }
 
 func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {

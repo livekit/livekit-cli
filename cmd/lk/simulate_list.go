@@ -65,8 +65,8 @@ var simulateListCommand = &cli.Command{
 // simulateListModeFlags: --limit walks the API-key endpoint's pages; the Public
 // API list instead takes --status and a --cursor.
 var simulateListModeFlags = authModeFlags{
-	legacyOnly:       []string{"limit"},
-	experimentalOnly: []string{"status", "cursor"},
+	legacyOnly:   []string{"limit"},
+	userAuthOnly: []string{"status", "cursor"},
 }
 
 // listSimulationRuns prints runs newest first, without jobs. Pass/fail detail

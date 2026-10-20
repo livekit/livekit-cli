@@ -93,13 +93,13 @@ func userAuthGate(cmd *cli.Command) error {
 // authModeFlags declares, for a dual-mode command, which flags are valid only in
 // one auth mode. It lets a command reject cross-mode misuse up front with a clear
 // message instead of silently ignoring a flag the active mode can't honor:
-// legacyOnly flags need API-key (SDK) auth; experimentalOnly flags need
+// legacyOnly flags need API-key (SDK) auth; userAuthOnly flags need
 // --user-auth. (This is validated at the command level rather than via
 // urfave MutuallyExclusiveFlags because the auth selector is a root flag and the
 // rule is conditional on the resolved mode, not a pairwise exclusion.)
 type authModeFlags struct {
-	legacyOnly       []string
-	experimentalOnly []string
+	legacyOnly   []string
+	userAuthOnly []string
 }
 
 // validate returns an error if any flag set on cmd belongs to the other auth mode.
@@ -112,7 +112,7 @@ func (a authModeFlags) validate(cmd *cli.Command) error {
 		}
 		return nil
 	}
-	for _, name := range a.experimentalOnly {
+	for _, name := range a.userAuthOnly {
 		if cmd.IsSet(name) {
 			return fmt.Errorf("--%s is only supported with --user-auth", name)
 		}
