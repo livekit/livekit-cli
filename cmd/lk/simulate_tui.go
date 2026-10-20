@@ -176,6 +176,9 @@ type spinnerTickMsg struct{}
 
 type toastExpireMsg struct{ id int }
 
+// detailPrintMsg wakes Update once the open job may print; see openDetailCmd.
+type detailPrintMsg struct{}
+
 type subprocessExitMsg struct {
 	err error
 }
@@ -230,7 +233,9 @@ type simulateModel struct {
 	// re-wrapped, so a resize rebaselines instead of reprinting.
 	detailPrinted string
 	detailWidth   int
-	showLogs      bool
+	// detailOpenedAt is when the open job left the alt screen; see openDetailCmd.
+	detailOpenedAt time.Time
+	showLogs       bool
 	// tool arguments and outputs are off the transcript unless asked for: they
 	// are payloads written for the model, and at full length they bury the
 	// conversation
@@ -1879,10 +1884,15 @@ func (m *simulateModel) renderScenarioDetail(sc *scenarioRow) string {
 // there at once and the terminal scrolls, selects, and searches it. The list
 // view is untouched: it keeps the alt screen and its own windowing.
 //
-// tea.Println has nothing to write into while the alt screen is active, so the
-// screen mode has to be off before any print. Bubble Tea v2 renders the view
-// returned by Update before it reads the message the returned command produces,
-// so clearing altScreen in Update is enough — no ExitAltScreen to sequence.
+// A print only reaches the scrollback once the terminal has left the alt
+// screen, and Bubble Tea v2 does not order the two: tea.Println writes at once,
+// while the view that leaves the alt screen is written on the renderer's next
+// frame (charmbracelet/bubbletea#1736). So the job prints no sooner than
+// altScreenExitDelay after leaving.
+
+// altScreenExitDelay outlasts the renderer's frame interval (1/60 s by
+// default), so the frame that leaves the alt screen is on the terminal first.
+const altScreenExitDelay = 50 * time.Millisecond
 
 // openDetailCmd leaves the alt screen, clears the scrollback, and prints the
 // job's view, so the terminal holds one job at a time instead of every job
@@ -1893,7 +1903,8 @@ func (m *simulateModel) openDetailCmd() tea.Cmd {
 	m.detailPrinted = ""
 	m.detailWidth = m.width
 	m.altScreen = false
-	return m.flushDetail()
+	m.detailOpenedAt = time.Now()
+	return tea.Tick(altScreenExitDelay, func(time.Time) tea.Msg { return detailPrintMsg{} })
 }
 
 // closeDetailCmd returns to the list view. The printed job stays in the
@@ -1928,7 +1939,7 @@ const clearScrollback = ansi.CursorHomePosition + ansi.EraseEntireScreen + ansi.
 // gained since the last call, or nil when it has gained nothing. Callers do not
 // need to know whether anything changed.
 func (m *simulateModel) flushDetail() tea.Cmd {
-	if m.detailID == "" {
+	if m.detailID == "" || time.Since(m.detailOpenedAt) < altScreenExitDelay {
 		return nil
 	}
 	rendered := strings.TrimRight(m.renderDetail(), "\n")
@@ -1951,7 +1962,9 @@ func (m *simulateModel) flushDetail() tea.Cmd {
 		return nil
 	}
 	if reprint {
-		tail = clearScrollback + tail
+		// the erase also takes the hint bar below the job, which the renderer
+		// redraws only after a ClearScreen
+		return tea.Sequence(tea.Println(clearScrollback+tail), tea.ClearScreen)
 	}
 	return tea.Println(tail)
 }
