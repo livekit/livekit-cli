@@ -9,12 +9,11 @@
   ✗   3. SRJ_cccccccc cancelling outright
   ⏺   4. SRJ_dddddddd asking for the hours
 
-  ╭─────────────────────────────────────────────────────────────────────────────╮
-  │ Save scenarios                                                              │
-  │ 0 generated scenarios → /Users/agent/src/restaurant-booking-                │
-  │ agent/simulations                                                           │
-  │                                                                             │
-  │ File: scenarios.yaml                                                        │
-  │                                                                             │
-  │ enter save · esc cancel                                                     │
-  ╰─────────────────────────────────────────────────────────────────────────────╯
+  ╭───────────────────────────────────────────────────────────────────────────────╮
+  │ Save scenarios                                                                │
+  │ 0 generated scenarios → /Users/agent/src/restaurant-booking-agent/simulations │
+  │                                                                               │
+  │ File: scenarios.yaml                                                          │
+  │                                                                               │
+  │ enter save · esc cancel                                                       │
+  ╰───────────────────────────────────────────────────────────────────────────────╯
