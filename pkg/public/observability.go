@@ -270,10 +270,6 @@ func (c *Client) GetSessionLogs(ctx context.Context, projectID, sessionID string
 	return &LogPage{Records: items(resp.JSON200.Records), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
 }
 
-// MaxTracePageSize is the most spans the server returns in one page of
-// GetSessionTraces; a larger PageOptions.Limit is clamped to it.
-const MaxTracePageSize = 100
-
 // TracePage is one page of a session's trace spans.
 type TracePage struct {
 	// Spans are by start time, oldest first, ties broken by span id. Each names

@@ -15,12 +15,17 @@
 package main
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	agent "github.com/livekit/protocol/livekit/agent"
+
+	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
 func TestChatItemsToTurnEventsPairsToolCalls(t *testing.T) {
@@ -69,10 +74,92 @@ func TestRenderTurnEvent(t *testing.T) {
 	require.Equal(t, "\n  ● agent: a", plain(turnEvent{Type: "handoff", To: "a"}, renderOptions{}))
 	require.Equal(t, "    │ 12:00 INFO hi", plain(turnEvent{Type: "log", Text: "12:00 INFO hi"}, renderOptions{}))
 	require.Equal(t, "\n  ✗ agent error: bad", plain(turnEvent{Type: "error", Text: "bad"}, renderOptions{}))
-	require.Equal(t, "", renderTurnEvent(turnEvent{Type: "message", Role: "system", Text: "hidden"}, renderOptions{}))
+	// Only a recorded transcript carries system and developer messages; the
+	// live conversions drop them.
+	require.Equal(t, "\n  ● System\n    be nice", plain(turnEvent{Type: "message", Role: "system", Text: "be nice"}, renderOptions{}))
+	require.Equal(t, "", renderTurnEvent(turnEvent{Type: "message", Role: "tool", Text: "hidden"}, renderOptions{}))
+	require.Equal(t, "\n  ● item item_9 is of a kind this lk doesn't know; see --json", plain(turnEvent{Type: "unknown", Text: "item_9"}, renderOptions{}))
 
 	metrics := plain(turnEvent{Type: "message", Role: "assistant", Text: "x", Metrics: map[string]float64{"llm_ttft": 0.45}}, renderOptions{Metrics: true})
 	require.Contains(t, metrics, "llm_ttft 450ms")
+}
+
+// TestRenderTurnEventRecorded checks the options a recorded transcript
+// renders with: times, a named user, user metrics and redaction.
+func TestRenderTurnEventRecorded(t *testing.T) {
+	prevLocal := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = prevLocal })
+
+	plain := func(e turnEvent, opts renderOptions) string {
+		return ansiEscapeRe.ReplaceAllString(renderTurnEvent(e, opts), "")
+	}
+	opts := renderOptions{Metrics: true, Times: true, UserLabel: "User"}
+	confidence := 0.93
+	require.Equal(t, "\n  ● User 11:00:01 (redacted)\n    hi\n    ⏱ end_of_turn 320ms · confidence 0.93",
+		plain(turnEvent{Type: "message", Role: "user", Text: "hi", Time: "2026-10-07T11:00:01Z", Redacted: true,
+			Metrics: map[string]float64{"end_of_turn_delay": 0.32}, Confidence: &confidence}, opts))
+	require.Equal(t, "\n  ● tool: lookup() 11:00:03\n    ↳ 42",
+		plain(turnEvent{Type: "tool_call", Name: "lookup", Output: "42", Time: "2026-10-07T11:00:03Z"}, opts))
+	require.Equal(t, "\n  ● handoff: a → b 11:00:05",
+		plain(turnEvent{Type: "handoff", From: "a", To: "b", Time: "2026-10-07T11:00:05Z"}, opts))
+	// No time, no suffix.
+	require.Equal(t, "\n  ● User\n    hi", plain(turnEvent{Type: "message", Role: "user", Text: "hi"}, opts))
+}
+
+func TestTranscriptItemsToTurnEvents(t *testing.T) {
+	const raw = `[
+	  {"id": "item_0", "timestamp": "2026-10-07T11:00:00Z", "agentHandoff": {"toAgentId": "greeter"}},
+	  {"id": "item_1", "timestamp": "2026-10-07T11:00:01Z", "message": {"role": "ROLE_USER", "text": " hi\nthere ", "transcriptConfidence": 0.93, "endOfTurnDelayMs": 320}},
+	  {"id": "item_2", "timestamp": "2026-10-07T11:00:02Z", "message": {"role": "ROLE_AGENT", "text": "hello", "interrupted": true, "e2eLatencyMs": 820}},
+	  {"id": "item_3", "message": {"role": "ROLE_SYSTEM", "text": "be nice", "redacted": true}},
+	  {"id": "item_4", "message": {"role": "ROLE_AGENT", "text": ""}},
+	  {"id": "item_5", "timestamp": "2026-10-07T11:00:03Z", "toolCall": {"name": "lookup", "callId": "c1", "arguments": "{\"q\":1}"}},
+	  {"id": "item_6", "toolResult": {"name": "lookup", "callId": "c1", "output": "boom", "isError": true}},
+	  {"id": "item_7", "toolResult": {"name": "orphan", "callId": "c9", "output": "42"}},
+	  {"id": "item_8", "configUpdate": {"instructions": "new", "toolsAdded": ["book"]}},
+	  {"id": "item_9", "configUpdate": {}},
+	  {"id": "item_10"}
+	]`
+	var items []public.TranscriptItem
+	require.NoError(t, json.Unmarshal([]byte(raw), &items))
+	confidence := 0.93
+	require.Equal(t, []turnEvent{
+		{Type: "handoff", Time: "2026-10-07T11:00:00.000Z", To: "greeter"},
+		{Type: "message", Time: "2026-10-07T11:00:01.000Z", Role: "user", Text: "hi\nthere",
+			Metrics: map[string]float64{"end_of_turn_delay": 0.32}, Confidence: &confidence},
+		{Type: "message", Time: "2026-10-07T11:00:02.000Z", Role: "assistant", Text: "hello", Interrupted: true,
+			Metrics: map[string]float64{"e2e_latency": 0.82}},
+		{Type: "message", Role: "system", Text: "be nice", Redacted: true},
+		// The result joins its call, which keeps the call's time.
+		{Type: "tool_call", Time: "2026-10-07T11:00:03.000Z", Name: "lookup", Arguments: `{"q":1}`, Output: "boom", IsError: true},
+		{Type: "tool_call", Name: "orphan", Output: "42"},
+		{Type: "config", Changes: []string{"instructions updated", "tools added: book"}},
+		{Type: "unknown", Text: "item_10"},
+	}, transcriptItemsToTurnEvents(items))
+}
+
+// TestTranscriptItemsToTurnEventsStripsEscapes checks what an LLM, a tool or
+// a participant put in a recorded transcript reaches the renderer with the
+// control characters a terminal acts on stripped, newlines kept.
+func TestTranscriptItemsToTurnEventsStripsEscapes(t *testing.T) {
+	text := "hi\x1b]0;pwned\x07\x1b[2J\nthere\u009b"
+	items := []public.TranscriptItem{
+		{Message: &oapi.LivekitPublicapiObservabilityV1TranscriptItemMessage{Text: &text}},
+		{ToolCall: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolCall{Name: &text, Arguments: &text}},
+		{ToolResult: &oapi.LivekitPublicapiObservabilityV1TranscriptItemToolResult{Name: &text, Output: &text}},
+		{AgentHandoff: &oapi.LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff{FromAgentId: &text, ToAgentId: &text}},
+		{ConfigUpdate: &oapi.LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate{ToolsAdded: &[]string{text}}},
+		{ID: text},
+	}
+	events := transcriptItemsToTurnEvents(items)
+	require.Len(t, events, len(items))
+	b, err := json.Marshal(events)
+	require.NoError(t, err)
+	for _, c := range []string{`\u001b`, `\u0007`, `\u009b`} {
+		require.NotContains(t, string(b), c)
+	}
+	require.Equal(t, "hi]0;pwned[2J\nthere", events[0].Text)
 }
 
 func TestRenderEventLine(t *testing.T) {

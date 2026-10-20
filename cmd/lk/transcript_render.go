@@ -42,8 +42,34 @@ var transcriptDim = lipgloss.NewStyle().Faint(true)
 
 // renderOptions controls how much detail the text renderer shows.
 type renderOptions struct {
-	// Metrics shows per-message latency metrics (llm_ttft, tts_ttfb, e2e).
+	// Metrics shows per-message latency metrics (llm_ttft, tts_ttfb, e2e, and
+	// a recorded user message's delays and confidence).
 	Metrics bool
+	// Times shows each event's local time of day beside it.
+	Times bool
+	// UserLabel names the user's messages; empty is "You", for a session the
+	// person running lk is in.
+	UserLabel string
+}
+
+func (o renderOptions) userLabel() string {
+	if o.UserLabel != "" {
+		return o.UserLabel
+	}
+	return "You"
+}
+
+// timeSuffix is the event's local time of day, dimmed and led by a space,
+// when opts.Times asks for it and the event has a time.
+func timeSuffix(e turnEvent, opts renderOptions) string {
+	if !opts.Times {
+		return ""
+	}
+	t, err := time.Parse(time.RFC3339Nano, e.Time)
+	if err != nil {
+		return ""
+	}
+	return " " + transcriptDim.Render(t.Local().Format("15:04:05"))
 }
 
 // renderTurnEvent turns one normalized session event into printable lines, or
@@ -51,23 +77,34 @@ type renderOptions struct {
 func renderTurnEvent(e turnEvent, opts renderOptions) string {
 	switch e.Type {
 	case "message":
+		suffix := timeSuffix(e, opts)
+		if e.Earlier {
+			suffix += " " + transcriptDim.Render("(before this turn)")
+		}
+		if e.Interrupted {
+			suffix += " " + transcriptDim.Render("(interrupted)")
+		}
+		if e.Redacted {
+			suffix += " " + transcriptDim.Render("(redacted)")
+		}
+		var s string
 		switch e.Role {
 		case "user":
-			return renderSpeaker(transcriptUserBullet(), transcriptUserLabel(), "You", e.Text, "")
+			s = renderSpeaker(transcriptUserBullet(), transcriptUserLabel(), opts.userLabel(), e.Text, suffix)
 		case "assistant":
-			var suffix string
-			if e.Earlier {
-				suffix += " " + transcriptDim.Render("(before this turn)")
-			}
-			if e.Interrupted {
-				suffix += " " + transcriptDim.Render("(interrupted)")
-			}
-			s := renderSpeaker(transcriptAgentBullet(), transcriptAgentLabel(), "Agent", e.Text, suffix)
-			if opts.Metrics && len(e.Metrics) > 0 {
-				s += "\n    " + transcriptDim.Render(renderMetrics(e.Metrics))
-			}
-			return s
+			s = renderSpeaker(transcriptAgentBullet(), transcriptAgentLabel(), "Agent", e.Text, suffix)
+		case "system", "developer":
+			label := strings.ToUpper(e.Role[:1]) + e.Role[1:]
+			s = renderSpeaker(transcriptDim, transcriptDim.Bold(true), label, e.Text, suffix)
+		default:
+			return ""
 		}
+		if opts.Metrics {
+			if m := renderMessageMetrics(e); m != "" {
+				s += "\n    " + transcriptDim.Render(m)
+			}
+		}
+		return s
 	case "tool_call":
 		var b strings.Builder
 		b.WriteString("\n  ")
@@ -79,6 +116,7 @@ func renderTurnEvent(e turnEvent, opts renderOptions) string {
 		} else {
 			b.WriteString(transcriptDim.Render("()"))
 		}
+		b.WriteString(timeSuffix(e, opts))
 		if e.Earlier {
 			b.WriteString(" " + transcriptDim.Render("(before this turn)"))
 		}
@@ -96,19 +134,35 @@ func renderTurnEvent(e turnEvent, opts renderOptions) string {
 		if e.From == "" {
 			// The session's first agent is reported as a handoff from nobody.
 			return "\n  " + transcriptAccent().Render("● ") +
-				transcriptDim.Render("agent: ") + e.To
+				transcriptDim.Render("agent: ") + e.To + timeSuffix(e, opts)
 		}
 		return "\n  " + transcriptAccent().Render("● ") +
-			transcriptDim.Render("handoff: "+e.From+" → ") + e.To
+			transcriptDim.Render("handoff: "+e.From+" → ") + e.To + timeSuffix(e, opts)
 	case "config":
 		return "\n  " + transcriptAccent().Render("● ") +
-			transcriptDim.Render("config: "+strings.Join(e.Changes, "; "))
+			transcriptDim.Render("config: "+strings.Join(e.Changes, "; ")) + timeSuffix(e, opts)
 	case "error":
 		return "\n  " + transcriptErrorStyle().Render("✗ agent error: "+e.Text)
 	case "log":
 		return "    " + transcriptDim.Render("│ "+e.Text)
+	case "unknown":
+		return "\n  " + transcriptDim.Render("● item "+e.Text+" is of a kind this lk doesn't know; see --json") + timeSuffix(e, opts)
 	}
 	return ""
+}
+
+// renderMessageMetrics formats a message's latencies and, for a recorded user
+// message, its speech-to-text confidence, or "" when it has neither.
+func renderMessageMetrics(e turnEvent) string {
+	m := renderMetrics(e.Metrics)
+	if e.Confidence == nil {
+		return m
+	}
+	c := fmt.Sprintf("confidence %.2f", *e.Confidence)
+	if m == "" {
+		return c
+	}
+	return m + " · " + c
 }
 
 // renderSpeaker prints a labelled speech block:
@@ -156,6 +210,9 @@ func renderMetrics(m map[string]float64) string {
 		{"llm_ttft", "llm_ttft"},
 		{"tts_ttfb", "tts_ttfb"},
 		{"e2e_latency", "e2e"},
+		{"transcription_delay", "transcription"},
+		{"end_of_turn_delay", "end_of_turn"},
+		{"on_user_turn_completed_delay", "on_user_turn_completed"},
 	}
 	var parts []string
 	for _, l := range labels {

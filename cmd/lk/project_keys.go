@@ -139,10 +139,5 @@ func deleteProjectKey(ctx context.Context, cmd *cli.Command) error {
 	if err := client.DeleteKey(ctx, projectID, apiKey); err != nil {
 		return cloudAPIError(err)
 	}
-	if cmd.Bool("json") {
-		util.PrintJSON(map[string]any{"apiKey": apiKey, "deleted": true})
-		return nil
-	}
-	out.Statusf("Revoked API key %s", util.Accented(apiKey))
-	return nil
+	return util.RenderAction(out, cmd.Bool("json"), "apiKey", apiKey, "deleted", fmt.Sprintf("Revoked API key %s", util.Accented(apiKey)))
 }
