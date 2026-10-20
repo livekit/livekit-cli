@@ -1,0 +1,17 @@
+# In API-key mode, a --project that names no configured project is an error
+# listing the configured ones. lk never falls back to the only project.
+! exec lk --project onee room list
+
+skip 'known bug: a --project that names no configured project falls back to the only one (no ticket yet; spec story 36)'
+stderr 'no project named "onee"'
+stderr '\bone\b'
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
