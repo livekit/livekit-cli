@@ -111,7 +111,7 @@ func TestUserAuthEnabled(t *testing.T) {
 
 func TestRequireUserSessionAPIURL(t *testing.T) {
 	const staging = "https://beta-api.staging.livekit.cloud"
-	t.Setenv("HOME", t.TempDir())
+	setHome(t, t.TempDir())
 	conf := &config.CLIConfig{
 		DefaultUser: "usr_stg",
 		Users: []config.UserConfig{
@@ -213,8 +213,7 @@ func TestSignInHint(t *testing.T) {
 	publicAPIURL = staging
 	assert.Equal(t, "`lk cloud auth --user-auth --public-api-url "+staging+"`", signInCommand())
 
-	t.Setenv("HOME", t.TempDir())
-	require.NoError(t, (&config.CLIConfig{}).PersistQuietly())
+	setHome(t, t.TempDir())
 	publicAPIURL = public.DefaultBaseURL
 	_, _, err := requireUserSession(nil)
 	assert.ErrorContains(t, err, "no user is signed in (run `lk cloud auth --user-auth` to sign in)")
