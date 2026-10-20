@@ -372,9 +372,9 @@ nodes:
   menu:
     say: Press 1.
     speaker: MACHINE
-    max_visits:
-      count: 2
-      to: livekit/hangup
+    routes:
+      - match: "1"
+        to: livekit/hangup
     timeout:
       after: 1.5s
       to: livekit/voicemail
