@@ -1432,7 +1432,8 @@ func (m *simulateModel) viewRunning() string {
 // they stay pinned at the bottom.
 func (m *simulateModel) pageWindow(content string) string {
 	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
-	reserved := 2 // hint bar + trailing newline
+	// the hint bar, or the dialog that takes its place, + trailing newline
+	reserved := lipgloss.Height(m.renderHint()) + 1
 	if m.toast != "" {
 		reserved += strings.Count(m.renderToast(), "\n")
 	}
