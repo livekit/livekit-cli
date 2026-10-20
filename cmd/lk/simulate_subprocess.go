@@ -613,3 +613,8 @@ func (ap *AgentProcess) Pid() int {
 	}
 	return ap.cmd.Process.Pid
 }
+
+// CommandLine is the agent's command as shown to the user.
+func (ap *AgentProcess) CommandLine() string {
+	return ap.cmd.String()
+}
