@@ -1,0 +1,26 @@
+# Each exec is a fresh lk process: --user-auth on one run doesn't carry
+# into the next, though cli/v3 never resets a package-level flag in-process.
+respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one","subdomain":"one","url":"wss://one.livekit.cloud"}]}'
+exec lk --user-auth project list
+stdout 'p_1'
+exec lk project list
+stdout 'APIone'
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: wss://one.livekit.cloud
+    api_key: APIone
+    api_secret: secretone
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+-- want-requests --
+GET http://publicapi.test/v0/projects bearer=st_1

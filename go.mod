@@ -33,6 +33,7 @@ require (
 	github.com/pion/rtp v1.10.5
 	github.com/pion/webrtc/v4 v4.2.23
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
+	github.com/rogpeppe/go-internal v1.15.0
 	github.com/stretchr/testify v1.12.1
 	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f
 	github.com/twitchtv/twirp v8.1.3+incompatible
