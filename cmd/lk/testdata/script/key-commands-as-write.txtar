@@ -1,0 +1,34 @@
+# A project WRITE member's key commands fail with a message that they need
+# ADMIN. The Public API refuses every key RPC below ADMIN with the same body.
+respond GET http://publicapi.test/v0/projects/p_1/keys 403 '{"code":"permission_denied","message":"permission denied: this needs ADMIN on the project"}'
+respond POST http://publicapi.test/v0/projects/p_1/keys 403 '{"code":"permission_denied","message":"permission denied: this needs ADMIN on the project"}'
+respond DELETE http://publicapi.test/v0/projects/p_1/keys/APIold 403 '{"code":"permission_denied","message":"permission denied: this needs ADMIN on the project"}'
+
+! exec lk --user-auth project key list --project one
+! stdout .
+stderr 'needs ADMIN'
+! exec lk --user-auth project key create --project one
+! stdout .
+stderr 'needs ADMIN'
+! exec lk --user-auth project key delete APIold --project one
+! stdout .
+stderr 'needs ADMIN'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_write
+users:
+  - id: u_write
+    email: write@example.com
+    session_token: st_write
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+-- want-requests --
+GET http://publicapi.test/v0/projects/p_1/keys bearer=st_write project=p_1
+POST http://publicapi.test/v0/projects/p_1/keys bearer=st_write project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/keys/APIold bearer=st_write project=p_1
