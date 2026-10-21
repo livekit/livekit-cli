@@ -317,7 +317,7 @@ scenarios:
     start: menu
     instructions: hi
 `,
-			wantErr: []string{`scenario "call"`, "exactly one of `start` and `instructions`"},
+			wantErr: []string{`scenario "call"`, "`start` or `instructions`, not both"},
 		},
 		{
 			name: "unknown start",
@@ -399,4 +399,16 @@ scenarios:
     start: menu
 `
 	require.Equal(t, want, ids.ReplaceAllString(string(out), "${1}_x"))
+}
+
+func TestScenarioWithoutStartOrInstructionsLoads(t *testing.T) {
+	group, err := loadScenarioGroup(writeScenariosFile(t, `
+id: g1
+name: n
+scenarios:
+  - id: s1
+    label: call
+`))
+	require.NoError(t, err)
+	require.Len(t, group.GetScenarios(), 1)
 }

@@ -493,8 +493,8 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			return nil, fmt.Errorf("duplicate scenario id %q", s.ID)
 		}
 		seen[s.ID] = true
-		if (s.Start == "") == (s.Instructions == "") {
-			return nil, fmt.Errorf("scenario %q: set exactly one of `start` and `instructions`", s.Label)
+		if s.Start != "" && s.Instructions != "" {
+			return nil, fmt.Errorf("scenario %q: set `start` or `instructions`, not both", s.Label)
 		}
 		if s.Start != "" && group.Nodes[s.Start] == nil && !builtinSimulatorNodes[s.Start] {
 			return nil, fmt.Errorf("scenario %q: start %q is not a node", s.Label, s.Start)
