@@ -1,0 +1,21 @@
+go.mod
+  s_aaf78334cb7322::t_6b41c7be11fe1d 24
+go.sum
+  s_aaf78334cb7322::t_f53f89d653aff6 367-368
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5957774c7164199705f1db26e652ca9640a2823",
+  "prompts": {},
+  "sessions": {
+    "s_aaf78334cb7322": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2193486-0057-4a50-bb24-44082ff248d9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
