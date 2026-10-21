@@ -1144,12 +1144,19 @@ func scenarioPassed(samples []*livekit.SimulationRun_Job) int {
 // listRowParts splits a row into the indent before its icon, the icon, and the
 // text after it, in plain and styled forms, so the cursor highlight and the
 // matrix rain can lay out the same line.
+const historicallyRedTag = "historically red"
+
 func listRowParts(ij indexedJob, required int) (indent string, iconCh rune, iconStyle *lipgloss.Style, text, styled string) {
 	switch {
 	case ij.scenario != nil:
 		iconCh, iconStyle = scenarioStatusIcon(ij.scenario.samples, required)
 		text = fmt.Sprintf(" %3d. %s  %d/%d", ij.origIdx, ij.scenario.label, scenarioPassed(ij.scenario.samples), len(ij.scenario.samples))
-		return "  ", iconCh, iconStyle, text, text
+		styled = text
+		if iconCh == '✗' && ij.scenario.samples[0].GetHistoricallyRed() {
+			text += "  " + historicallyRedTag
+			styled += "  " + dimStyle.Render(historicallyRedTag)
+		}
+		return "  ", iconCh, iconStyle, text, styled
 	case ij.origIdx == 0:
 		connector := "├─ "
 		if ij.last {
@@ -1164,6 +1171,10 @@ func listRowParts(ij indexedJob, required int) (indent string, iconCh rune, icon
 		label := jobLabel(ij.job)
 		text = fmt.Sprintf(" %3d. %s %s", ij.origIdx, ij.job.Id, label)
 		styled = fmt.Sprintf(" %3d. %s %s", ij.origIdx, dimStyle.Render(ij.job.Id), label)
+		if ij.job.Status == livekit.SimulationRun_Job_STATUS_FAILED && ij.job.GetHistoricallyRed() {
+			text += "  " + historicallyRedTag
+			styled += "  " + dimStyle.Render(historicallyRedTag)
+		}
 		return "  ", iconCh, iconStyle, text, styled
 	}
 }
@@ -1744,12 +1755,17 @@ func (m *simulateModel) renderDetail() string {
 	if runSamples(m.run) >= 2 {
 		title = jobLabel(job) + sampleSuffix(m.run, job)
 	}
+	var tag string
+	if job.Status == livekit.SimulationRun_Job_STATUS_FAILED && job.GetHistoricallyRed() && scenarioFailures(m.run)[scenarioKey(job)] {
+		tag = "  " + dimStyle.Render(historicallyRedTag)
+	}
 	var b strings.Builder
 	b.WriteString("\n")
-	fmt.Fprintf(&b, "  %s %s %s\n",
+	fmt.Fprintf(&b, "  %s %s %s%s\n",
 		jobIcon(job),
 		boldStyle.Render(title),
 		dimStyle.Render(job.Id),
+		tag,
 	)
 	if url := simulationJobDashboardURL(m.projectID(), m.shownRunID(), job.Id); url != "" {
 		b.WriteString("  " + dimStyle.Render(url) + "\n")
@@ -1835,10 +1851,15 @@ func (m *simulateModel) renderScenarioDetail(sc *scenarioRow) string {
 	var b strings.Builder
 	iconCh, iconStyle := scenarioStatusIcon(sc.samples, requiredSamples(m.run))
 	b.WriteString("\n")
-	fmt.Fprintf(&b, "  %s %s  %s\n",
+	var tag string
+	if iconCh == '✗' && sc.samples[0].GetHistoricallyRed() {
+		tag = "  " + dimStyle.Render(historicallyRedTag)
+	}
+	fmt.Fprintf(&b, "  %s %s  %s%s\n",
 		iconStyle.Render(string(iconCh)),
 		boldStyle.Render(sc.label),
 		dimStyle.Render(fmt.Sprintf("%d/%d samples passed", scenarioPassed(sc.samples), len(sc.samples))),
+		tag,
 	)
 	b.WriteString("\n")
 

@@ -1029,21 +1029,26 @@ func requiredSamples(run *livekit.SimulationRun) int {
 	return max(1, int(math.Round(run.GetSampling().GetPassRate()*float64(k))))
 }
 
-// scenarioFailureCounts is the run's verdict: how many scenarios it holds and
-// how many of them finished below the pass rate. An unsampled run has one job
-// per scenario, so this counts failed jobs exactly as it always did.
-func scenarioFailureCounts(run *livekit.SimulationRun) (scenarios, failed int) {
+// scenarioKey groups a job with the other samples of its scenario; a job
+// without a scenario is its own.
+func scenarioKey(j *livekit.SimulationRun_Job) string {
+	if key := j.GetScenarioId(); key != "" {
+		return key
+	}
+	return j.GetId()
+}
+
+// scenarioFailures maps each scenario of the run to whether it finished below
+// the pass rate. An unsampled run has one job per scenario.
+func scenarioFailures(run *livekit.SimulationRun) map[string]bool {
 	required := requiredSamples(run)
 	byScenario := map[string][]*livekit.SimulationRun_Job{}
 	for _, j := range run.GetJobs() {
-		key := j.GetScenarioId()
-		if key == "" {
-			key = j.GetId()
-		}
+		key := scenarioKey(j)
 		byScenario[key] = append(byScenario[key], j)
 	}
-	for _, samples := range byScenario {
-		scenarios++
+	failures := make(map[string]bool, len(byScenario))
+	for key, samples := range byScenario {
 		passed, unfinished := 0, 0
 		for _, j := range samples {
 			switch {
@@ -1053,7 +1058,18 @@ func scenarioFailureCounts(run *livekit.SimulationRun) (scenarios, failed int) {
 				unfinished++
 			}
 		}
-		if passed < required && passed+unfinished < required {
+		failures[key] = passed < required && passed+unfinished < required
+	}
+	return failures
+}
+
+// scenarioFailureCounts is the run's verdict: how many scenarios it holds and
+// how many of them finished below the pass rate. An unsampled run has one job
+// per scenario, so this counts failed jobs exactly as it always did.
+func scenarioFailureCounts(run *livekit.SimulationRun) (scenarios, failed int) {
+	for _, f := range scenarioFailures(run) {
+		scenarios++
+		if f {
 			failed++
 		}
 	}
@@ -1113,6 +1129,49 @@ func passRateLine(run *livekit.SimulationRun) string {
 	return fmt.Sprintf("pass@%d %d/%d (%.2f), pass^%d %d/%d (%.2f)",
 		k, passAny, scenarios, float64(passAny)/float64(scenarios),
 		k, passAll, scenarios, float64(passAll)/float64(scenarios))
+}
+
+// historyNote is the job's scenario record before this run, "" unless the
+// server marked the scenario historically red. Every sample of a scenario
+// carries the same record.
+func historyNote(job *livekit.SimulationRun_Job) string {
+	if !job.GetHistoricallyRed() {
+		return ""
+	}
+	failed := 0
+	for _, passed := range job.GetPriorPassed() {
+		if !passed {
+			failed++
+		}
+	}
+	return fmt.Sprintf("historically red: failed %d of last %d runs", failed, len(job.GetPriorPassed()))
+}
+
+// historicallyRedLine names the failed scenarios that were already failing
+// before this run, or "" when there are none.
+func historicallyRedLine(run *livekit.SimulationRun) string {
+	failures := scenarioFailures(run)
+	failed := 0
+	for _, f := range failures {
+		if f {
+			failed++
+		}
+	}
+	seen := map[string]bool{}
+	var labels []string
+	for _, j := range sortedJobs(run) {
+		key := scenarioKey(j)
+		if !failures[key] || !j.GetHistoricallyRed() || seen[key] {
+			continue
+		}
+		seen[key] = true
+		labels = append(labels, jobLabel(j))
+	}
+	if len(labels) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d of %d failed scenarios were already failing before this run (historically red): %s",
+		len(labels), failed, strings.Join(labels, ", "))
 }
 
 // sampleSuffix marks a job's sample when the run repeated scenarios.
