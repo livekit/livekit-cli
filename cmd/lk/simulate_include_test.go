@@ -59,7 +59,7 @@ nodes:
     routes: [{ match: "1", to: sam }]
     timeout: { after: 8s, to: goodbye }
 `,
-		// reached twice: from dental.yaml through people.yaml and menus.yaml
+		// includes common.yaml too, so dental.yaml reaches it twice
 		"nodes/people.yaml": `
 include: [common.yaml]
 nodes:
