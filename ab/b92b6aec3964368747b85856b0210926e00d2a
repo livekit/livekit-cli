@@ -1,0 +1,16 @@
+go.mod
+  h_a827ab16c3c189 24
+go.sum
+  h_a827ab16c3c189 367-368
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "abb92b6aec3964368747b85856b0210926e00d2a",
+  "prompts": {},
+  "humans": {
+    "h_a827ab16c3c189": {
+      "author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
