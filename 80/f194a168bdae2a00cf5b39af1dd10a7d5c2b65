@@ -1,0 +1,21 @@
+cmd/lk/simulate.go
+  s_aaf78334cb7322::t_a9393f16317a97 496-497
+cmd/lk/simulate_scenario_ids_test.go
+  s_aaf78334cb7322::t_6f4df8c79a0739 320,403-414
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "80f194a168bdae2a00cf5b39af1dd10a7d5c2b65",
+  "prompts": {},
+  "sessions": {
+    "s_aaf78334cb7322": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2193486-0057-4a50-bb24-44082ff248d9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
