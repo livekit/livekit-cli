@@ -31,6 +31,7 @@ set -o pipefail
 REPO="livekit-cli"
 BIN_NAME="lk"
 INSTALL_PATH="${LK_INSTALL_PATH:-/usr/local/bin}"
+INSTALL_PATH="${INSTALL_PATH%/}"
 
 log()   { printf "%b\n" "$*"; }
 warn()  { printf "%b\n" "$*" >&2; }
