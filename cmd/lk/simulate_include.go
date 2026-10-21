@@ -128,10 +128,11 @@ func (r *nodeResolver) add(file string, nodes map[string]any) error {
 	return nil
 }
 
-// name is how errors refer to a file: relative to the root file's directory.
+// name is how errors refer to a file: relative to the root file's directory,
+// with forward slashes as in `include`.
 func (r *nodeResolver) name(real string) string {
 	if rel, err := filepath.Rel(r.root, real); err == nil {
-		return rel
+		return filepath.ToSlash(rel)
 	}
 	return real
 }
