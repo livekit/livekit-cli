@@ -215,7 +215,6 @@ nodes:
       to: livekit/hangup
   sales:
     instructions: You are a sales rep.
-    expectation: Asks about the order.
 `
 	cases := []struct {
 		name    string
@@ -245,7 +244,6 @@ scenarios:
 					},
 					"sales": {
 						Instructions: "You are a sales rep.",
-						Expectation:  "Asks about the order.",
 					},
 				},
 				Scenarios: []*livekit.Scenario{{
