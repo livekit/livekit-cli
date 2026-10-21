@@ -1,0 +1,18 @@
+cmd/lk/simulate.go
+  h_a827ab16c3c189 397-398,402,479-484,490-491
+cmd/lk/simulate_include.go
+  h_a827ab16c3c189 1-145
+cmd/lk/simulate_include_test.go
+  h_a827ab16c3c189 1-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "35c8e8af655a99be91ff424563d6796b8cd7c1fa",
+  "prompts": {},
+  "humans": {
+    "h_a827ab16c3c189": {
+      "author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
