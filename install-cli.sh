@@ -98,6 +98,14 @@ if [ -n "$SUDO_PREFIX" ]; then
   log "sudo is required to install to $INSTALL_PATH"
 fi
 
+# Homebrew links lk into its prefix's bin, which on Intel Macs is /usr/local/bin.
+# Replacing that symlink would leave brew thinking its copy is still installed.
+# This script never makes lk itself a symlink (only livekit-cli), so one here is
+# another package manager's.
+if [ -L "$INSTALL_PATH/$BIN_NAME" ]; then
+  abort "$INSTALL_PATH/$BIN_NAME is a symlink, probably Homebrew's. Run \`brew uninstall livekit-cli\` first, or set LK_INSTALL_PATH to install elsewhere."
+fi
+
 # The latest release's tag, from where /releases/latest redirects. This needs
 # no API token or jq, which macOS before 15 doesn't ship.
 LATEST_URL=$(curl -fsSLI -o /dev/null -w '%{url_effective}' --retry "$MAX_ATTEMPTS" --retry-delay "$RETRY_DELAY" \
