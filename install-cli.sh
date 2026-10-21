@@ -174,7 +174,7 @@ if [ "$install_skills" = "1" ]; then
   else
     log "Installing LiveKit skills for your coding agents (LK_INSTALL_SKILLS=0 skips this)..."
     if ! "$INSTALL_PATH/$BIN_NAME" skills install --global --yes; then
-      warn "Couldn't install LiveKit skills. Run \`lk skills install --global\` to try again."
+      warn "Couldn't install LiveKit skills. With a coding agent (Claude Code, Codex, Cursor, ...) installed, run: lk skills install --global"
     fi
   fi
 fi
