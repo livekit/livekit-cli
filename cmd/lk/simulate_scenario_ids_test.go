@@ -232,7 +232,6 @@ scenarios:
   - id: s1
     label: call
     start: menu
-    max_duration: 60s
 `,
 			want: &livekit.ScenarioGroup{
 				Id:   "g1",
@@ -250,10 +249,9 @@ scenarios:
 					},
 				},
 				Scenarios: []*livekit.Scenario{{
-					Id:          "s1",
-					Label:       "call",
-					Start:       "menu",
-					MaxDuration: durationpb.New(60 * time.Second),
+					Id:    "s1",
+					Label: "call",
+					Start: "menu",
 				}},
 			},
 		},
@@ -335,19 +333,6 @@ scenarios:
 `,
 			wantErr: []string{`scenario "call"`, `start "nowhere"`},
 		},
-		{
-			name: "max_duration without unit",
-			yaml: `
-id: g1
-name: n` + nodes + `
-scenarios:
-  - id: s1
-    label: call
-    start: menu
-    max_duration: 60
-`,
-			wantErr: []string{`scenario "call"`, "max_duration"},
-		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -382,7 +367,6 @@ scenarios:
   - id: s1
     label: call
     start: menu
-    max_duration: 60s
 `)
 	group, err := loadScenarioGroup(path)
 	require.NoError(t, err)

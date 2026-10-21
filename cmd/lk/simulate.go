@@ -45,7 +45,6 @@ import (
 	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 func init() {
@@ -373,13 +372,6 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 			AgentExpectations: s.GetAgentExpectations(),
 			Tags:              s.GetTags(),
 		}
-		if s.GetMaxDuration() != nil {
-			v, err := protoToYAMLValue(s.GetMaxDuration())
-			if err != nil {
-				return nil, fmt.Errorf("failed to encode max_duration for scenario %q: %w", s.GetLabel(), err)
-			}
-			ys.MaxDuration, _ = v.(string)
-		}
 		if ys.ID == "" {
 			ys.ID = utils.NewGuid(utils.ScenarioPrefix)
 		}
@@ -410,7 +402,6 @@ type yamlScenario struct {
 	Label             string            `yaml:"label"`
 	Instructions      string            `yaml:"instructions,omitempty"`
 	Start             string            `yaml:"start,omitempty"`
-	MaxDuration       string            `yaml:"max_duration,omitempty"`
 	AgentExpectations string            `yaml:"agent_expectations"`
 	Tags              map[string]string `yaml:"tags"`
 	Userdata          map[string]any    `yaml:"userdata"`
@@ -508,13 +499,6 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		if s.Start != "" && group.Nodes[s.Start] == nil && !builtinSimulatorNodes[s.Start] {
 			return nil, fmt.Errorf("scenario %q: start %q is not a node", s.Label, s.Start)
 		}
-		var maxDuration *durationpb.Duration
-		if s.MaxDuration != "" {
-			maxDuration = &durationpb.Duration{}
-			if err := yamlValueToProto(s.MaxDuration, maxDuration); err != nil {
-				return nil, fmt.Errorf("scenario %q: max_duration: %w", s.Label, err)
-			}
-		}
 		var userdata string
 		if len(s.Userdata) > 0 {
 			b, err := json.Marshal(s.Userdata)
@@ -528,7 +512,6 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			Label:             s.Label,
 			Instructions:      s.Instructions,
 			Start:             s.Start,
-			MaxDuration:       maxDuration,
 			AgentExpectations: s.AgentExpectations,
 			Tags:              s.Tags,
 			Userdata:          userdata,
