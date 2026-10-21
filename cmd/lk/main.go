@@ -192,7 +192,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	}
 	util.DetectBackground()
 
-	showBanner(ctx)
+	showBanner(ctx, cmd)
 
 	// Nudge users still on API-key auth toward the new account-based flow.
 	maybeShowUpgradeNotice(cmd, conf)
