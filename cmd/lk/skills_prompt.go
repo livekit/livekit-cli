@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"slices"
 
@@ -87,12 +88,13 @@ func skillsOfferFor(in skillsOfferInput) skillsOffer {
 // maybeOfferSkills offers, on the first interactive run, to install
 // LiveKit's skills and Docs MCP server into the coding agents on this machine
 // (lk skills install --global). It runs before every command, ahead of any
-// sign-in, so API-key and self-hosted users see it too. It never fails the
-// command it runs before.
-func maybeOfferSkills(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig) {
+// sign-in, so API-key and self-hosted users see it too. Its only error is the
+// user cancelling the prompt (Ctrl+C), which stops the command it runs
+// before; any other failure is reported and the command carries on.
+func maybeOfferSkills(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig) error {
 	env, err := skills.DefaultEnv()
 	if err != nil {
-		return
+		return nil
 	}
 	agents := skills.DetectAgents(env)
 	leaf := leafCommand(cmd)
@@ -111,7 +113,7 @@ func maybeOfferSkills(ctx context.Context, cmd *cli.Command, conf *config.CLICon
 	// Reading the lock files is cheap but not free; skip it when nothing
 	// else would show the offer.
 	if skillsOfferFor(in) == skillsOfferNone {
-		return
+		return nil
 	}
 	in.installed = liveKitSkillsInstalled(env)
 
@@ -120,32 +122,62 @@ func maybeOfferSkills(ctx context.Context, cmd *cli.Command, conf *config.CLICon
 		out.Statusf("Tip: run %s to teach your coding agents (%s) to build LiveKit agents. Set %s=1 to hide this.",
 			util.Accented("lk skills install --global --yes"), skills.AgentNames(agents), skillsPromptOptOutEnv)
 	case skillsOfferPrompt:
-		promptSkillsInstall(ctx, cmd, conf, env, agents)
+		return promptSkillsInstall(ctx, cmd, conf, env, agents)
 	}
+	return nil
 }
 
-// promptSkillsInstall asks once whether to install skills globally, records
-// that it asked, and installs on yes. Any failure is reported and the command
-// carries on.
-func promptSkillsInstall(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig, env *skills.Env, agents []*skills.Agent) {
-	ok := true
+// skillsPromptAnswer is what a run does with the result of the skills prompt.
+type skillsPromptAnswer struct {
+	remember bool  // save that the prompt was answered, so it isn't asked again
+	install  bool  // install skills now
+	stop     error // cancel the command lk was running
+}
+
+// answerSkillsPrompt interprets the prompt's result. Ctrl+C cancels the
+// command, as it does at any other lk prompt, and isn't an answer: the prompt
+// comes back next time. A prompt that failed to show is retried next time
+// too. Only a real yes or no is remembered.
+func answerSkillsPrompt(err error, yes bool) skillsPromptAnswer {
+	switch {
+	case errors.Is(err, huh.ErrUserAborted):
+		return skillsPromptAnswer{stop: err}
+	case err != nil:
+		return skillsPromptAnswer{}
+	}
+	return skillsPromptAnswer{remember: true, install: yes}
+}
+
+// promptSkillsInstall asks whether to install skills globally, remembers a
+// yes or no, and installs on yes. Ctrl+C stops the command; any other failure
+// is reported and the command carries on.
+func promptSkillsInstall(ctx context.Context, cmd *cli.Command, conf *config.CLIConfig, env *skills.Env, agents []*skills.Agent) error {
+	yes := true
 	err := huh.NewForm(huh.NewGroup(util.Confirm().
 		Title("Install LiveKit skills for your coding agents?").
 		Description("Teaches " + skills.AgentNames(agents) + " to build, test, and debug LiveKit agents,\n" +
 			"and adds the LiveKit Docs MCP server. Installs to your user-level agent\n" +
 			"directories. lk asks once; run lk skills install any time.").
-		Value(&ok).
+		Value(&yes).
 		WithTheme(util.FormTheme()))).
 		Run()
-	if conf != nil {
+	answer := answerSkillsPrompt(err, yes)
+	if answer.stop != nil {
+		return answer.stop
+	}
+	if err != nil {
+		out.Warnf("Couldn't show the LiveKit skills prompt: %v", err)
+		return nil
+	}
+	if answer.remember && conf != nil {
 		conf.SkillsPrompted = true
 		if perr := conf.PersistQuietly(); perr != nil {
 			out.Warnf("Couldn't save your answer to the CLI config: %v", perr)
 		}
 	}
-	if err != nil || !ok {
+	if !answer.install {
 		out.Statusf("Skipped. Run %s any time to add them.", util.Accented("lk skills install --global"))
-		return
+		return nil
 	}
 	s := &skillsSession{env: env, scope: skills.ScopeGlobal}
 	o, err := s.install(ctx, installRequest{
@@ -155,9 +187,10 @@ func promptSkillsInstall(ctx context.Context, cmd *cli.Command, conf *config.CLI
 	})
 	if err != nil {
 		out.Warnf("Couldn't install LiveKit skills: %v. Run %s to try again.", err, util.Accented("lk skills install --global"))
-		return
+		return nil
 	}
 	_ = s.printChange(o)
+	return nil
 }
 
 // liveKitSkillsInstalled reports whether any LiveKit skill is installed for

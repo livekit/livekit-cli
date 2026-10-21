@@ -16,10 +16,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"charm.land/huh/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
@@ -60,6 +62,24 @@ func TestSkillsOfferFor(t *testing.T) {
 			assert.Equal(t, c.want, skillsOfferFor(in))
 		})
 	}
+}
+
+func TestAnswerSkillsPrompt(t *testing.T) {
+	t.Run("yes is remembered and installs", func(t *testing.T) {
+		assert.Equal(t, skillsPromptAnswer{remember: true, install: true}, answerSkillsPrompt(nil, true))
+	})
+	t.Run("no is remembered", func(t *testing.T) {
+		assert.Equal(t, skillsPromptAnswer{remember: true}, answerSkillsPrompt(nil, false))
+	})
+	t.Run("Ctrl+C cancels the command and asks again next time", func(t *testing.T) {
+		a := answerSkillsPrompt(huh.ErrUserAborted, true)
+		assert.ErrorIs(t, a.stop, huh.ErrUserAborted)
+		assert.False(t, a.remember)
+		assert.False(t, a.install)
+	})
+	t.Run("a prompt that fails to show asks again next time", func(t *testing.T) {
+		assert.Equal(t, skillsPromptAnswer{}, answerSkillsPrompt(errors.New("no tty"), true))
+	})
 }
 
 func TestLiveKitSkillsInstalled(t *testing.T) {
