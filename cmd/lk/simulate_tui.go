@@ -1446,7 +1446,8 @@ func (m *simulateModel) viewRunning() string {
 // they stay pinned at the bottom.
 func (m *simulateModel) pageWindow(content string) string {
 	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
-	reserved := 2 // hint bar + trailing newline
+	// the hint bar, or the dialog that takes its place, + trailing newline
+	reserved := lipgloss.Height(m.renderHint()) + 1
 	if m.toast != "" {
 		reserved += strings.Count(m.renderToast(), "\n")
 	}
@@ -2460,9 +2461,9 @@ func (m *simulateModel) renderQuitConfirm() string {
 	return indentLines(box, "  ")
 }
 
-// saveDialogBorder is the horizontal space the dialog's border occupies: one
-// column on each side.
-const saveDialogBorder = 2
+// saveDialogFrame is the horizontal space the dialog adds around its content:
+// a border column and a padding column on each side.
+const saveDialogFrame = 4
 
 func (m *simulateModel) renderSaveDialog() string {
 	n := len(m.run.GetScenarioGroup().GetScenarios())
@@ -2494,10 +2495,9 @@ func (m *simulateModel) renderSaveDialog() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(util.Brand()).
 		Padding(0, 1).
-		// width is the width the padded content needs. Lip Gloss v2 counts the
-		// border inside Width, where v1 drew it around — so ask for the border
-		// on top, or the destination path wraps two columns early.
-		Width(width + saveDialogBorder).
+		// width is the content's own width; Lip Gloss v2's Width also counts
+		// the border and the padding.
+		Width(width + saveDialogFrame).
 		Render(b.String())
 	return indentLines(box, "  ")
 }
