@@ -739,7 +739,7 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 		args = append(args, "--log-format", "colored")
 	}
 
-	return startAgent(AgentStartConfig{
+	cfg := AgentStartConfig{
 		Dir:         c.projectDir,
 		Entrypoint:  c.entrypoint,
 		ProjectType: c.projectType,
@@ -761,7 +761,13 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 		},
 		ReadySignal:   "registered worker",
 		ForwardOutput: forwardOutput,
-	})
+	}
+	if c.projectType.IsNode() {
+		if err := checkNodeSDKVersion(cfg, nodeSimulateMinVersion); err != nil {
+			return nil, err
+		}
+	}
+	return startAgent(cfg)
 }
 
 // ciFromEnv reports the pipeline that started this run, so the dashboard can
