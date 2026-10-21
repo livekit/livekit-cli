@@ -21,8 +21,8 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.1
-	github.com/livekit/protocol v1.52.2-0.20261008051848-8c1250755780
-	github.com/livekit/server-sdk-go/v2 v2.19.0
+	github.com/livekit/protocol v1.52.2-0.20261015161719-c0aa234be0fd
+	github.com/livekit/server-sdk-go/v2 v2.19.1-0.20261015161802-115c3d430a15
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
 	github.com/moby/patternmatcher v0.6.1
@@ -38,7 +38,7 @@ require (
 	github.com/twitchtv/twirp v8.1.3+incompatible
 	github.com/urfave/cli/v3 v3.9.0
 	go.uber.org/atomic v1.12.0
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.24.0
 	golang.org/x/text v0.42.0
 	golang.org/x/time v0.16.0
 	google.golang.org/protobuf v1.36.12

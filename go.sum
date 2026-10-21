@@ -364,12 +364,12 @@ github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 h1:9x+U2HGLrSw5AT
 github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731/go.mod h1:Rs3MhFwutWhGwmY1VQsygw28z5bWcnEYmS1OG9OxjOQ=
 github.com/livekit/mediatransportutil v0.0.0-20260821083140-f234b534b095 h1:BcliKAXoMhl/nWmzQweQ5kmh4Qqagxl4s3Z5pvM/7AY=
 github.com/livekit/mediatransportutil v0.0.0-20260821083140-f234b534b095/go.mod h1:o8CFmAdrVwzJNOCsQCLUzXRjokkufNshnQHOe4fRaqU=
-github.com/livekit/protocol v1.52.2-0.20261008051848-8c1250755780 h1:7T5JGMTDLcbI/emnTcrspygdWlVepIdHYA54um4v6Qo=
-github.com/livekit/protocol v1.52.2-0.20261008051848-8c1250755780/go.mod h1:k7v95/DNhMkslMeBxdQ+lQ6gKc8hMNGYB7t0+6sEGU4=
+github.com/livekit/protocol v1.52.2-0.20261015161719-c0aa234be0fd h1:4M/P6XEoxx4mGEzboBgZUN84nTW9IZVy+Ex60c8GGLA=
+github.com/livekit/protocol v1.52.2-0.20261015161719-c0aa234be0fd/go.mod h1:k7v95/DNhMkslMeBxdQ+lQ6gKc8hMNGYB7t0+6sEGU4=
 github.com/livekit/psrpc v0.8.2 h1:7tbkhBJoYlK5Csfkdv1XYbZjyAQeaEZgupvIXNCv7Dc=
 github.com/livekit/psrpc v0.8.2/go.mod h1:6KnU8vULoizX0Er9NNfeKJDV8ug87j3fuo19M0bhj6Q=
-github.com/livekit/server-sdk-go/v2 v2.19.0 h1:fZ0zmeC/5V+rXiI/MeC05EjwTfXmpaGkr/DXLG3EzgA=
-github.com/livekit/server-sdk-go/v2 v2.19.0/go.mod h1:xhaTFLCodyjIl6HU6DD3stEiLfxDZVZNfItFWYB0Fek=
+github.com/livekit/server-sdk-go/v2 v2.19.1-0.20261015161802-115c3d430a15 h1:7NIYWTCPgfmZfOygYbl67xVCYafWxO1nRl27VX3XdQA=
+github.com/livekit/server-sdk-go/v2 v2.19.1-0.20261015161802-115c3d430a15/go.mod h1:XS4DxxkUgpQnaZQZSNiDkZV/Dfm86dqXQc8+Q4CnMK4=
 github.com/lucasb-eyer/go-colorful v1.4.1 h1:1EO+WB73+EH8EVbzlrG3KLAfEypQWVHIBqlTf+2hNss=
 github.com/lucasb-eyer/go-colorful v1.4.1/go.mod h1:R4dSotOR9KMtayYi1e77YzuveK+i7ruzyGqttikkLy0=
 github.com/magefile/mage v1.17.2 h1:fyXVu1eadI8Ap1HCCNgEhJ5McIWiYhLR8uol64ZZc40=
@@ -674,8 +674,8 @@ golang.org/x/oauth2 v0.37.0/go.mod h1:IxwZNxUULJmpBFf9K/9NTMSIfZZuvuTy1gGxhigP/5
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
-golang.org/x/sync v0.23.0 h1:KameEIfc1IkluZyXWLn39Wd4tURc6GbCiISGiZm2bQk=
-golang.org/x/sync v0.23.0/go.mod h1:sUUOizhqBxiL6pEWpqNLUiaJn1ShEbZ6BBqskPbjZm0=
+golang.org/x/sync v0.24.0 h1:iqiDrGoDgyuvAKrhLQthUEzU/R378N78gXbBjxed7oA=
+golang.org/x/sync v0.24.0/go.mod h1:sUUOizhqBxiL6pEWpqNLUiaJn1ShEbZ6BBqskPbjZm0=
 golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
