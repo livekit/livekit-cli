@@ -21,7 +21,7 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.1
-	github.com/livekit/protocol v1.53.1-0.20261022024312-1858d29bfe5a
+	github.com/livekit/protocol v1.53.1-0.20261022025908-4b2db4d5db4a
 	github.com/livekit/server-sdk-go/v2 v2.19.0
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
