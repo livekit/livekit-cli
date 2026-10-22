@@ -368,6 +368,18 @@ var (
 									Name:  "header",
 									Usage: "Custom SIP header in format 'Key:Value' (can be specified multiple times)",
 								},
+								&cli.StringFlag{
+									Name:  "agent-name",
+									Usage: "`AGENT_NAME` to dispatch into the call's room before dialing (generates a room if --room is not set)",
+								},
+								&cli.StringFlag{
+									Name:  "agent-metadata",
+									Usage: "`METADATA` to send to the dispatched agent (requires --agent-name)",
+								},
+								&cli.StringFlag{
+									Name:  "agent-deployment",
+									Usage: "`DEPLOYMENT` of the agent to dispatch to, leave empty for production (requires --agent-name)",
+								},
 							}),
 						},
 						{
@@ -1252,6 +1264,11 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	agentName := cmd.String("agent-name")
+	var dispatchCli *lksdk.AgentDispatchClient
+	if agentName != "" {
+		dispatchCli = lksdk.NewAgentDispatchServiceClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...)
+	}
 	return createAndPrintReqs(ctx, cmd, func(req *livekit.CreateSIPParticipantRequest) error {
 		if v := cmd.String("trunk"); v != "" {
 			req.SipTrunkId = v
@@ -1264,6 +1281,13 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		}
 		if v := cmd.String("room"); v != "" {
 			req.RoomName = v
+		}
+		if agentName == "" {
+			if cmd.String("agent-metadata") != "" || cmd.String("agent-deployment") != "" {
+				return errors.New("--agent-metadata/--agent-deployment require --agent-name")
+			}
+		} else if req.RoomName == "" {
+			req.RoomName = newRoomName()
 		}
 		if v := cmd.String("identity"); v != "" {
 			req.ParticipantIdentity = v
@@ -1314,6 +1338,25 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 
 		return req.Validate()
 	}, func(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error) {
+		var dispatchID string
+		if agentName != "" {
+			dreq := &livekit.CreateAgentDispatchRequest{
+				Room:       req.RoomName,
+				AgentName:  agentName,
+				Metadata:   cmd.String("agent-metadata"),
+				Deployment: cmd.String("agent-deployment"),
+			}
+			if cmd.Bool("verbose") {
+				util.PrintJSON(dreq)
+			}
+			info, err := dispatchCli.CreateDispatch(ctx, dreq)
+			if err != nil {
+				return nil, fmt.Errorf("failed to dispatch agent %q to room %q: %w", dreq.AgentName, dreq.Room, err)
+			}
+			dispatchID = info.Id
+			out.Resultf("AgentDispatchID: %v\n", dispatchID)
+		}
+
 		// CreateSIPParticipant will wait for LiveKit Participant to be created and that can take some time.
 		// Default deadline is too short, thus, we must set a higher deadline for it.
 		timeout := 30 * time.Second
@@ -1340,6 +1383,9 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 			}
 			out.Resultf("SIPStatusCode: %d\n", e.Code)
 			out.Resultf("SIPStatus: %s\n", msg)
+		}
+		if err != nil && dispatchID != "" {
+			err = fmt.Errorf("SIP call failed (agent dispatch %s in room %q was created): %w", dispatchID, req.RoomName, err)
 		}
 		return resp, err
 	}, printSIPParticipantInfo)

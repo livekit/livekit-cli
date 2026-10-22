@@ -178,7 +178,7 @@ func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 		Metadata:   cmd.String("metadata"),
 	}
 	if cmd.Bool("new-room") {
-		req.Room = utils.NewGuid("room-")
+		req.Room = newRoomName()
 	}
 	if req.Room == "" {
 		_ = cli.ShowSubcommandHelp(cmd)
@@ -234,4 +234,8 @@ func deleteAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 		out.Resultf("Dispatch deleted: %v\n", info)
 	}
 	return nil
+}
+
+func newRoomName() string {
+	return utils.NewGuid("room-")
 }
