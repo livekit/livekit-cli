@@ -62,7 +62,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -80,14 +79,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestScripts(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		// Three things stop the scripts on Windows: Go reports mode 0666 for
-		// every file there, so config.LoadOrCreate warns on each run that the
-		// config file should be 0600; testscript sets the home directory
-		// through USERPROFILE, which setupScript doesn't; and a Windows
-		// checkout writes the .txtar files with CRLF endings.
-		t.Skip("lk warns about the config file's permissions on every Windows run, and the scripts need USERPROFILE and LF checkouts")
-	}
 	testscript.Run(t, testscript.Params{
 		Dir:   filepath.Join("testdata", "script"),
 		Setup: setupScript,
@@ -107,6 +98,7 @@ type fakeCloudKey struct{}
 func setupScript(env *testscript.Env) error {
 	home := filepath.Join(env.WorkDir, "home")
 	env.Setenv("HOME", home)
+	env.Setenv("USERPROFILE", home) // the home directory on Windows
 	// lk warns about a config file anyone else can read, and txtar files are
 	// written 0644.
 	err := os.Chmod(filepath.Join(home, ".livekit", "cli-config.yaml"), 0o600)

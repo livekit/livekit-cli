@@ -1,0 +1,14 @@
+# A config file others can read gets a warning, since it holds API secrets,
+# except on Windows, where file modes don't say who can read it.
+chmod 0644 home/.livekit/cli-config.yaml
+exec lk project list
+[!windows] stderr 'should have permissions 600'
+[windows] ! stderr 'should have permissions'
+
+-- home/.livekit/cli-config.yaml --
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone

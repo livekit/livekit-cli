@@ -15,3 +15,7 @@ pkg/portaudio/pa_src/** linguist-vendored
 # core.autocrlf — the default on Windows, including the CI runners — rewrites
 # them to CRLF and every frame mismatches.
 cmd/lk/testdata/vrt/*.txt text eol=lf
+
+# The same holds for the testscript scripts: their expected stdout and stderr
+# are compared byte for byte against lk's LF output.
+cmd/lk/testdata/script/*.txtar text eol=lf
