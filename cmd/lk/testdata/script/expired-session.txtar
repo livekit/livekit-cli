@@ -1,0 +1,18 @@
+# A stored session past its expiry is refused before any call: lk says to sign
+# in again and never sends the stale token.
+! exec lk --user-auth project list
+! stdout .
+cmp stderr want-stderr
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_expired
+    session_expiry: 1
+    api_url: http://publicapi.test
+-- want-stderr --
+session for dev@example.com has expired (run `lk cloud auth --user-auth --public-api-url http://publicapi.test` to sign in again)
