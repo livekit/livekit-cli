@@ -263,6 +263,46 @@ func TestCloudAPIError(t *testing.T) {
 	}
 }
 
+// TestAnnounceUserNamesIgnoredEnvCredentials checks the note announceUser adds
+// for LIVEKIT_* credentials in the environment that --user-auth leaves unused,
+// and that commands handing them to an agent don't get it.
+func TestAnnounceUserNamesIgnoredEnvCredentials(t *testing.T) {
+	prevAnnounced, prevUsed := userAnnounced, envCredentialsUsed
+	t.Cleanup(func() { userAnnounced, envCredentialsUsed = prevAnnounced, prevUsed })
+	user := &config.UserConfig{Id: "u_1", Email: "dev@example.com"}
+
+	for _, tc := range []struct {
+		name         string
+		url, key     string
+		secret       string
+		usedByAgent  bool
+		wantIgnoring string
+	}{
+		{name: "all three", url: "ws://env.test", key: "APIenv", secret: "secretenv",
+			wantIgnoring: "Ignoring LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET from environment (--user-auth uses your session)"},
+		{name: "only the key", key: "APIenv",
+			wantIgnoring: "Ignoring LIVEKIT_API_KEY from environment (--user-auth uses your session)"},
+		{name: "none set"},
+		{name: "handed to an agent", url: "ws://env.test", key: "APIenv", secret: "secretenv", usedByAgent: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("LIVEKIT_URL", tc.url)
+			t.Setenv("LIVEKIT_API_KEY", tc.key)
+			t.Setenv("LIVEKIT_API_SECRET", tc.secret)
+			userAnnounced, envCredentialsUsed = false, tc.usedByAgent
+			buf := withCapturedAnnounce(t)
+
+			announceUser(user)
+
+			if tc.wantIgnoring == "" {
+				assert.NotContains(t, buf.String(), "Ignoring")
+			} else {
+				assert.Contains(t, buf.String(), tc.wantIgnoring+"\n")
+			}
+		})
+	}
+}
+
 func TestSetUserAuthHidden(t *testing.T) {
 	root := &cli.Command{Flags: globalFlags}
 	for _, cmds := range [][]*cli.Command{ProjectCommands, WorkspaceCommands, UserCommands, CloudCommands, AgentCommands} {
