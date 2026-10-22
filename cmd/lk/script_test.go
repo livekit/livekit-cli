@@ -68,6 +68,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/livekit/protocol/auth"
 	"github.com/rogpeppe/go-internal/testscript"
@@ -132,6 +133,17 @@ type fakeCloud struct {
 	mu        sync.Mutex
 	responses map[string]cannedResponse // by "METHOD URL", without the query
 	log       []string
+
+	// mint makes the fake answer a Public API token request it has no canned
+	// response for as the Public API does: with an access token carrying the
+	// requested grants, signed with mintKey(project). A request without one of
+	// the sessions as its bearer gets 401.
+	mint     bool
+	sessions map[string]bool
+	// secrets are the API secrets the fake knows, by API key. A request whose
+	// access token is signed by a known key with the wrong secret is logged
+	// with badsig.
+	secrets map[string]string
 }
 
 type cannedResponse struct {
@@ -140,7 +152,7 @@ type cannedResponse struct {
 }
 
 func newFakeCloud() *fakeCloud {
-	f := &fakeCloud{responses: map[string]cannedResponse{}}
+	f := &fakeCloud{responses: map[string]cannedResponse{}, secrets: map[string]string{}, sessions: map[string]bool{}}
 	f.Server = httptest.NewServer(http.HandlerFunc(f.serve))
 	return f
 }
@@ -148,6 +160,14 @@ func newFakeCloud() *fakeCloud {
 // projectInPath finds the project id in a Public API path such as
 // /v0/projects/p_1/keys or /v0/workspaces/w_1/projects/p_1.
 var projectInPath = regexp.MustCompile(`/projects/([^/:]+)`)
+
+// tokenRequestPath matches a Public API token request, capturing the project.
+var tokenRequestPath = regexp.MustCompile(`^/v0/projects/([^/:]+)/tokens$`)
+
+// mintKey is the API key the fake signs a project's minted tokens with.
+func mintKey(projectID string) string { return "APImint_" + projectID }
+
+const mintSecret = "secretmint"
 
 func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
@@ -166,6 +186,11 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	if token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
 		if v, err := auth.ParseAPIToken(token); err == nil {
 			line += " apikey=" + v.APIKey()
+			if secret, known := f.secrets[v.APIKey()]; known {
+				if _, _, err := v.Verify(secret); err != nil {
+					line += " badsig"
+				}
+			}
 		} else {
 			line += " bearer=" + token
 		}
@@ -176,6 +201,9 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	f.log = append(f.log, line)
 
 	res, ok := f.responses[target]
+	if m := tokenRequestPath.FindStringSubmatch(r.URL.Path); !ok && f.mint && r.Method == http.MethodPost && m != nil {
+		res, ok = f.mintToken(r, m[1]), true
+	}
 	if !ok {
 		res = cannedResponse{http.StatusNotImplemented, `{"code":12,"message":"fake cloud: no response for ` + target + `"}`}
 		if strings.HasPrefix(r.URL.Path, "/twirp/") {
@@ -185,6 +213,34 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(res.status)
 	fmt.Fprint(w, res.body)
+}
+
+// mintToken answers a token request for project as the Public API's
+// CreateToken does: an access token with the requested grants, signed with
+// mintKey(project). The caller holds f.mu.
+func (f *fakeCloud) mintToken(r *http.Request, project string) cannedResponse {
+	if bearer, _ := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); !f.sessions[bearer] {
+		return cannedResponse{http.StatusUnauthorized, `{"error":{"code":"unauthenticated","message":"authentication required"}}`}
+	}
+	var req struct {
+		Grants auth.ClaimGrants `json:"grants"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return cannedResponse{http.StatusBadRequest, `{"code":3,"message":"fake cloud: bad token request"}`}
+	}
+	at := auth.NewAccessToken(mintKey(project), mintSecret).SetValidFor(time.Hour)
+	*at.GetGrants() = req.Grants
+	token, err := at.ToJWT()
+	if err != nil {
+		return cannedResponse{http.StatusInternalServerError, `{"code":13,"message":"fake cloud: ` + err.Error() + `"}`}
+	}
+	f.secrets[mintKey(project)] = mintSecret
+	expiresAt := time.Now().Add(time.Hour).UTC()
+	body, err := json.Marshal(oapi.LivekitPublicapiProjectsV1CreateTokenResponse{Token: &token, ExpiresAt: &expiresAt})
+	if err != nil {
+		return cannedResponse{http.StatusInternalServerError, `{"code":13,"message":"fake cloud: ` + err.Error() + `"}`}
+	}
+	return cannedResponse{http.StatusOK, string(body)}
 }
 
 // cmdRespond implements `respond METHOD URL STATUS [BODY]`.
