@@ -9,7 +9,6 @@ cp stderr lk.stderr
 requests
 cmp stdout want-requests
 
-skip 'known bug: lk shows the raw body of the Public API''s 401 instead of its message'
 cmp lk.stderr want-stderr
 
 -- home/.livekit/cli-config.yaml --
