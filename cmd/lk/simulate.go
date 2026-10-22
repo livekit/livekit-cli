@@ -214,6 +214,7 @@ var (
 		UsageText: "lk agent simulate get RUN_ID --project PROJECT --user-auth",
 		ArgsUsage: "RUN_ID",
 		Hidden:    true,
+		Metadata:  userAuthOnly,
 		Action:    cloudGetSimulationRun,
 		Flags:     []cli.Flag{jsonFlag},
 	}

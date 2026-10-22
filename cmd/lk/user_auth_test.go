@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -226,4 +227,54 @@ func TestSignInHint(t *testing.T) {
 	_, _, err = requireUserSession(nil)
 	assert.ErrorContains(t, err, "has expired (run `lk cloud auth --user-auth --public-api-url "+staging+"` to sign in again)",
 		"the hint follows the API the default user signed in to")
+}
+
+func TestSetUserAuthHidden(t *testing.T) {
+	root := &cli.Command{Flags: globalFlags}
+	for _, cmds := range [][]*cli.Command{ProjectCommands, WorkspaceCommands, UserCommands, CloudCommands, AgentCommands} {
+		root.Commands = append(root.Commands, cmds...)
+	}
+	t.Cleanup(func() { setUserAuthHidden(root, true) })
+
+	names := func(cmds []*cli.Command) []string {
+		var out []string
+		for _, c := range cmds {
+			out = append(out, c.Name)
+		}
+		return out
+	}
+	project := root.Command("project")
+	simulateList := root.Command("agent").Command("simulate").Command("list")
+
+	setUserAuthHidden(root, true)
+	assert.NotContains(t, names(root.VisibleCommands()), "workspace")
+	assert.NotContains(t, names(project.VisibleCommands()), "member")
+	assert.True(t, userAuthFlag.Hidden)
+	assert.True(t, simulateList.Flags[1].(*cli.StringFlag).Hidden)
+
+	setUserAuthHidden(root, false)
+	assert.Contains(t, names(root.VisibleCommands()), "workspace")
+	assert.Contains(t, names(root.VisibleCommands()), "user")
+	assert.Contains(t, names(project.VisibleCommands()), "member")
+	assert.Contains(t, names(root.Command("cloud").VisibleCommands()), "whoami")
+	assert.False(t, userAuthFlag.Hidden)
+	assert.False(t, simulateList.Flags[1].(*cli.StringFlag).Hidden)
+}
+
+// A Hidden command that requires --user-auth must carry the userAuthOnly
+// marker, or it stays invisible to signed-in beta users.
+func TestUserAuthOnlyCommandsMarked(t *testing.T) {
+	var walk func(path string, cmds []*cli.Command)
+	walk = func(path string, cmds []*cli.Command) {
+		for _, c := range cmds {
+			p := path + " " + c.Name
+			if c.Hidden && strings.Contains(c.Usage, "requires --user-auth") {
+				assert.Equal(t, true, c.Metadata[userAuthOnlyKey], "%s is not marked userAuthOnly", p)
+			}
+			walk(p, c.Commands)
+		}
+	}
+	for _, cmds := range [][]*cli.Command{ProjectCommands, WorkspaceCommands, UserCommands, CloudCommands, AgentCommands, AnalyticsCommands} {
+		walk("lk", cmds)
+	}
 }

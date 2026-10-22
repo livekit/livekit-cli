@@ -48,9 +48,10 @@ var (
 // project comes from the global --project flag (or a cached alias).
 func init() {
 	webhookCommand := &cli.Command{
-		Name:   "webhook",
-		Usage:  "Manage webhooks of a LiveKit Cloud project (requires --user-auth)",
-		Hidden: true,
+		Name:     "webhook",
+		Usage:    "Manage webhooks of a LiveKit Cloud project (requires --user-auth)",
+		Hidden:   true,
+		Metadata: userAuthOnly,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",

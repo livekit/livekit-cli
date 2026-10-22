@@ -54,9 +54,13 @@ const defaultPageLimit = 50
 var (
 	AnalyticsCommands = []*cli.Command{
 		{
-			Name:   "analytics",
-			Usage:  "List and inspect LiveKit Cloud analytics",
-			Hidden: true,
+			Name:     "analytics",
+			Usage:    "List and inspect LiveKit Cloud analytics",
+			Hidden:   true,
+			Metadata: userAuthOnly,
+			// The API-key implementation is experimental; under --user-auth
+			// it's the Public API's, so --experimental isn't needed.
+			Before: requireExperimentalUnlessUserAuth,
 			Flags: []cli.Flag{
 				experimentalFlag,
 			},
@@ -241,31 +245,31 @@ func analyticsSessionListFlags() []cli.Flag {
 		// filters the CLI doesn't yet send to the API-key endpoint. Hidden like
 		// the rest of the experimental surface; pass the nextCursor from a prior
 		// `--json` listing to fetch the next page.
-		&cli.StringFlag{
+		userAuthOnlyFlag(&cli.StringFlag{
 			Name:   "cursor",
 			Usage:  "Page `CURSOR` from a prior --json listing (requires --user-auth)",
 			Hidden: true,
-		},
-		&cli.StringSliceFlag{
+		}),
+		userAuthOnlyFlag(&cli.StringSliceFlag{
 			Name:   "status",
 			Usage:  "List sessions in `STATUS` (active or closed); repeatable (requires --user-auth)",
 			Hidden: true,
-		},
-		&cli.StringFlag{
+		}),
+		userAuthOnlyFlag(&cli.StringFlag{
 			Name:   "room",
 			Usage:  "List sessions whose room name starts with `PREFIX` (case-sensitive; requires --user-auth)",
 			Hidden: true,
-		},
-		&cli.StringSliceFlag{
+		}),
+		userAuthOnlyFlag(&cli.StringSliceFlag{
 			Name:   "tag",
 			Usage:  "List sessions carrying `TAG`; repeatable, matches any (requires --user-auth)",
 			Hidden: true,
-		},
-		&cli.StringFlag{
+		}),
+		userAuthOnlyFlag(&cli.StringFlag{
 			Name:   "sort-order",
 			Usage:  "Order by start time: `ORDER` asc or desc, default desc (requires --user-auth)",
 			Hidden: true,
-		},
+		}),
 	}
 }
 

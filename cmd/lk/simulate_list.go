@@ -48,16 +48,16 @@ var simulateListCommand = &cli.Command{
 		},
 		// user-auth only: the Public API filters by status and is
 		// cursor-paginated.
-		&cli.StringFlag{
+		userAuthOnlyFlag(&cli.StringFlag{
 			Name:   "status",
 			Usage:  "Filter by `STATUS` (running, completed, failed, cancelled, ...) (requires --user-auth)",
 			Hidden: true,
-		},
-		&cli.StringFlag{
+		}),
+		userAuthOnlyFlag(&cli.StringFlag{
 			Name:   "cursor",
 			Usage:  "Page `CURSOR` from a prior --json listing (requires --user-auth)",
 			Hidden: true,
-		},
+		}),
 		jsonFlag,
 	},
 }
