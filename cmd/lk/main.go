@@ -35,6 +35,10 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
+// startupConfig is the CLI config as loaded once at startup, before the
+// command tree is finalized (it decides whether the user-auth beta is visible).
+var startupConfig *config.CLIConfig
+
 func main() {
 	app := &cli.Command{
 		Name:  "lk",
@@ -77,7 +81,6 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 		Before: initLogger,
 	}
 
-	categorizeAgentCommands()
 	cli.HelpPrinter = func(w io.Writer, templ string, data any) {
 		// cli/v3 renders `lk agent --help` with its stock subcommand template
 		// regardless of CustomHelpTemplate; swap in the grouped one here.
@@ -112,6 +115,13 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, UpdateCommands...)
 	app.CommandNotFound = commandNotFound
 	setCommandNotFound(app.Commands)
+
+	// Before Run, so help and shell completion (which can be served before
+	// the root Before) see the same tree. Categorize after, since it skips
+	// Hidden agent subcommands.
+	startupConfig, _ = config.LoadOrCreate()
+	setUserAuthHidden(app, !hasSignedInUser(startupConfig))
+	categorizeAgentCommands()
 
 	// Register cleanup hook for SIGINT, SIGTERM, SIGQUIT
 	ctx, stop := signal.NotifyContext(
@@ -185,7 +195,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 
 	// Apply the persisted color theme before any output/forms render. An empty value
 	// resolves to the default; an invalid stored value is reported and falls back.
-	conf, _ := config.LoadOrCreate()
+	conf := startupConfig
 	if conf != nil {
 		if err := util.SetTheme(conf.Theme); err != nil {
 			out.Warnf("%v; using default theme", err)
@@ -207,6 +217,9 @@ func generateFishCompletion(ctx context.Context, cmd *cli.Command) error {
 	// urfave skips a hidden command's own line but still emits its subcommands
 	// and flags, so hidden groups (e.g. `lk workspace`) would leak into
 	// completion. The process exits after this, so pruning in place is safe.
+	// The user-auth beta stays out of the shipped script even when whoever
+	// generates it is signed in.
+	setUserAuthHidden(cmd.Root(), true)
 	pruneHiddenCommands(cmd.Root())
 	fishScript, err := cmd.Root().ToFishCompletion()
 	if err != nil {
@@ -277,10 +290,10 @@ var rootHelpGroups = []struct {
 	title string
 	names []string
 }{
-	{"PROJECTS", []string{"project", "cloud", "app"}},
+	{"PROJECTS", []string{"project", "workspace", "user", "cloud", "app"}},
 	{"ROOMS AND MEDIA", []string{"room", "token", "dispatch", "egress", "ingress"}},
 	{"TELEPHONY", []string{"sip", "number"}},
-	{"TOOLS", []string{"docs", "skills", "perf", "update", "can-update"}},
+	{"TOOLS", []string{"analytics", "docs", "skills", "perf", "update", "can-update"}},
 }
 
 // agentHelpSections groups a command's visible subcommands by Category, in

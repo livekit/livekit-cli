@@ -69,16 +69,26 @@ func TestAnalyticsCommandRequiresExperimentalFlag(t *testing.T) {
 	experimental := findFlagByName(analyticsCmd.Flags, "experimental")
 	require.NotNil(t, experimental, "'analytics' command must declare an --experimental flag")
 
-	boolFlag, ok := experimental.(*cli.BoolFlag)
+	_, ok := experimental.(*cli.BoolFlag)
 	require.True(t, ok, "--experimental must be a bool flag")
-	assert.True(t, boolFlag.Required, "--experimental flag must be required")
+	require.NotNil(t, analyticsCmd.Before, "'analytics' must check for --experimental before running")
 }
 
 // runAnalytics runs the analytics command tree in isolation (as a subcommand of
 // a bare root) so flag validation is exercised without touching global CLI state.
+// args before "analytics" (e.g. --user-auth) go to the root.
 func runAnalytics(args ...string) error {
-	app := &cli.Command{Name: "lk", Commands: AnalyticsCommands}
-	return app.Run(context.Background(), append([]string{"lk", "analytics"}, args...))
+	var rootArgs []string
+	for len(args) > 0 && args[0] == "--user-auth" {
+		rootArgs, args = append(rootArgs, args[0]), args[1:]
+	}
+	app := &cli.Command{
+		Name:     "lk",
+		Flags:    []cli.Flag{&cli.BoolFlag{Name: "user-auth"}},
+		Commands: AnalyticsCommands,
+	}
+	argv := append(append([]string{"lk"}, rootArgs...), "analytics")
+	return app.Run(context.Background(), append(argv, args...))
 }
 
 func TestAnalyticsFailsWithoutExperimentalFlag(t *testing.T) {
@@ -86,16 +96,16 @@ func TestAnalyticsFailsWithoutExperimentalFlag(t *testing.T) {
 	// any action (and its network calls) runs.
 	err := runAnalytics("session", "list")
 	require.Error(t, err, "'analytics session list' must fail without --experimental")
-	assert.Contains(t, err.Error(), `Required flag "experimental" not set`)
+	assert.Contains(t, err.Error(), "--experimental is required")
 
 	err = runAnalytics("session", "get", "sess_123")
 	require.Error(t, err, "'analytics session get' must fail without --experimental")
-	assert.Contains(t, err.Error(), `Required flag "experimental" not set`)
+	assert.Contains(t, err.Error(), "--experimental is required")
 }
 
 func TestAnalyticsFailsWithExperimentalFlagDisabled(t *testing.T) {
-	// Required only checks presence; an explicit --experimental=false must still
-	// be rejected by the flag's Validator rather than running the command.
+	// An explicit --experimental=false must be rejected by the flag's
+	// Validator rather than running the command.
 	err := runAnalytics("--experimental=false", "session", "list")
 	require.Error(t, err, "'analytics session list' must fail when --experimental is disabled")
 	assert.Contains(t, err.Error(), "--experimental must be enabled")
@@ -103,11 +113,21 @@ func TestAnalyticsFailsWithExperimentalFlagDisabled(t *testing.T) {
 
 func TestAnalyticsPassesFlagValidationWithExperimentalFlag(t *testing.T) {
 	// With --experimental set, flag validation passes; any resulting error comes
-	// from the action itself (e.g. project resolution), not the required flag.
+	// from the action itself (e.g. project resolution), not the flag check.
 	err := runAnalytics("--experimental", "session", "list")
 	if err != nil {
-		assert.NotContains(t, err.Error(), `Required flag "experimental" not set`)
+		assert.NotContains(t, err.Error(), "--experimental is required")
 	}
+}
+
+func TestAnalyticsUnderUserAuthDoesNotNeedExperimentalFlag(t *testing.T) {
+	// Under --user-auth the commands run against the Public API, which isn't
+	// experimental; any error comes from the action (no one is signed in here).
+	setHome(t, t.TempDir())
+	err := runAnalytics("--user-auth", "session", "list")
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "experimental")
+	assert.Contains(t, err.Error(), "no user is signed in")
 }
 
 func TestValidateAnalyticsDateRange(t *testing.T) {
