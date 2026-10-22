@@ -1,0 +1,30 @@
+# One email signed in to staging and to prod keeps both sessions, and each
+# command sends the session for the server it talks to: a staging token never
+# goes to prod.
+respond GET http://staging.test/v0/projects 200 '{"items":[]}'
+respond GET http://prod.test/v0/projects 200 '{"items":[]}'
+
+env LIVEKIT_API_URL=http://staging.test
+exec lk --user-auth project list
+env LIVEKIT_API_URL=http://prod.test
+exec lk --user-auth project list
+
+requests
+cmp stdout want-requests
+grep 'session_token: st_staging' home/.livekit/cli-config.yaml
+grep 'session_token: st_prod' home/.livekit/cli-config.yaml
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_staging
+    api_url: http://staging.test
+  - id: u_1
+    email: dev@example.com
+    session_token: st_prod
+    api_url: http://prod.test
+-- want-requests --
+GET http://staging.test/v0/projects bearer=st_staging
+GET http://prod.test/v0/projects bearer=st_prod
