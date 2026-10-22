@@ -392,8 +392,9 @@ func (rp *resolvedProject) announce() {
 //  5. livekit.toml in the working directory
 //  6. the configured default project
 //
-// It performs no prompting and no printing: callers print rp.notice via out.Status, and
-// handle the no-project case (a returned error) by offering interactive selection.
+// It performs no prompting and no printing: callers print rp.notice via out.Status.
+// requireProjectWithOpts handles a returned error by offering interactive
+// selection, unless --project or --subdomain named a project (see namedProject).
 func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 	// 1. explicit project
 	if c.String("project") != "" {

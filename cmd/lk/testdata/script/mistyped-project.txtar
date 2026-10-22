@@ -1,16 +1,15 @@
-# In API-key mode, a --project that names no configured project is an error
-# listing the configured ones. lk never falls back to the only project: the
-# fake would answer that project's server, so lk can only fail by refusing.
-# Today it does fall back; the checks before the skip record that.
+# In API-key mode, a --project or --subdomain that names no configured
+# project is an error listing the configured ones. lk never falls back to the
+# only project: the fake would answer that project's server, so lk can only
+# fail by refusing.
 respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
 
-exec lk --project onee room list
-stderr '^Using project \[one\]$'
-requests
-stdout '^POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone$'
-
-skip 'known bug: a --project that names no configured project falls back to the only one'
 ! exec lk --project onee room list
+stderr 'project not found\. Available projects: one'
+requests
+! stdout .
+
+! exec lk --subdomain onee room list
 stderr 'project not found\. Available projects: one'
 requests
 ! stdout .
