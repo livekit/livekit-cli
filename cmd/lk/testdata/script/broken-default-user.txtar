@@ -1,16 +1,11 @@
-# A default user that no longer resolves is a clear error with the way to fix
-# it, never a crash. Today the error says nobody is signed in to the default
-# Public API, while another user is signed in elsewhere and the real problem
-# is the default user.
+# A default user that no longer resolves is a clear error that names it and
+# says how to fix it, never a crash, even with another user signed in
+# elsewhere.
 ! exec lk --user-auth project list
 ! stdout .
-stderr 'run `lk cloud auth --user-auth` to sign in'
-cp stderr lk.stderr
+stderr '^the default user "gone@example.com" is not signed in to https://beta-api.livekit.cloud \(run `lk cloud auth --user-auth` to sign in\)$'
 requests
 ! stdout .
-
-skip 'known bug: the error doesn''t say the default user no longer resolves'
-grep 'gone@example.com' lk.stderr
 
 -- home/.livekit/cli-config.yaml --
 default_user: gone@example.com

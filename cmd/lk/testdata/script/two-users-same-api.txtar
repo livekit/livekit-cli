@@ -15,8 +15,7 @@ exec lk --user-auth --user ops@example.com project list
 requests
 cmp stdout want-requests
 
-skip 'known bug: with two users signed in, the error says no user is signed in instead of asking for --user'
-grep 'pass --user' refused.stderr
+grep '^2 users are signed in to http://publicapi.test and none is the default user; pass --user to pick one$' refused.stderr
 
 -- home/.livekit/cli-config.yaml --
 users:
