@@ -262,6 +262,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	mvdan.cc/sh/moreinterp v0.0.0-20260120230322-19def062a997 // indirect
 	mvdan.cc/sh/v3 v3.13.2-0.20260510185049-f5c6e2779117 // indirect
+	pgregory.net/rapid v1.2.0
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
 
