@@ -18,12 +18,15 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -43,17 +46,17 @@ import (
 //
 //   - no request names a project the user didn't pass, set as default, give
 //     credentials for, or hold as their only one (namedProjects);
-//   - no access token from a key the fake knows is signed with the wrong
-//     secret;
+//   - no access token is signed with the wrong secret for its key;
 //   - a configured project's key only goes to that project's server, an
-//     inline or --dev key only to the inline URL's host, and a token minted
+//     inline or --dev key only to the inline URL's host (lk's default URL,
+//     which the fake also serves, when none is given), and a token minted
 //     for one project never goes to another project's server;
-//   - under --user-auth, project servers only see minted tokens and session
-//     tokens only go to the Public API; in API-key mode, neither a session
-//     nor the Public API is used;
-//   - when no user can act (no unexpired session, an unknown --user, or a
-//     Public API nobody is signed in to), or the command can't run in this
-//     mode, lk fails without naming a project.
+//   - under --user-auth, every request to a project server carries a minted
+//     token, and session tokens only go to the Public API; in API-key mode,
+//     neither a session nor the Public API is used;
+//   - when no user can act (no unexpired session, a --user with no unexpired
+//     session, or a Public API nobody is signed in to), or the command can't
+//     run in this mode, lk fails without naming a project.
 //
 // Which project or user lk picks among those allowed is left to the scripts
 // in testdata/script, so this test doesn't restate lk's resolution order.
@@ -67,6 +70,21 @@ func TestCredentialResolution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lk is not on PATH; TestMain installs it: %v", err)
 	}
+	// lk's --url default, http://localhost:7880, never goes through
+	// HTTP_PROXY, so the current case's fake also serves it, as localhost.test.
+	// A real server on the port fails the test rather than answering lk.
+	var current atomic.Pointer[fakeCloud]
+	direct := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Scheme, r.URL.Host = "http", "localhost.test"
+		current.Load().serve(w, r)
+	}))
+	direct.Listener.Close()
+	if direct.Listener, err = net.Listen("tcp", "localhost:7880"); err != nil {
+		t.Fatalf("lk's default URL must reach the fake, not a real server: %v", err)
+	}
+	direct.Start()
+	defer direct.Close()
+
 	rapid.Check(t, func(t *rapid.T) {
 		c := drawCredentialCase(t)
 		home, err := os.MkdirTemp("", "lk-credentials")
@@ -84,6 +102,7 @@ func TestCredentialResolution(t *testing.T) {
 
 		cloud := newFakeCloud()
 		defer cloud.Close()
+		current.Store(cloud)
 		cloud.mint = true
 		for _, u := range c.users {
 			if !u.expired {
@@ -95,17 +114,22 @@ func TestCredentialResolution(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		for _, name := range []string{"one", "two", "flag", "env"} {
+		for _, name := range []string{"one", "two", "flag", "env", "localhost"} {
 			respond("POST http://"+name+".test/twirp/livekit.RoomService/ListRooms", http.StatusOK, "")
 			respond("POST http://"+name+".test/twirp/livekit.Egress/ListEgress", http.StatusOK, "")
 		}
 		for _, id := range []string{"p_1", "p_2", "two", "gone"} {
 			respond("GET "+publicAPI+"/v0/projects/"+id+"/keys", http.StatusOK, `{"keys":[]}`)
 		}
-		// Inline keys and secrets can come from different sources, so only
-		// configured projects' pairs are checked.
+		// Every key's secret is known, so every token's signature is checked:
+		// configured projects', --dev's, and the inline key paired with the
+		// inline secret, each from its flag or its env var.
 		for _, name := range []string{"one", "two"} {
 			cloud.secrets["API"+name] = "secret" + name
+		}
+		cloud.secrets["devkey"] = "secret"
+		if _, key, secret := c.inlineCredentials(); key != "" {
+			cloud.secrets[key] = secret
 		}
 		respond("GET "+publicAPI+"/v0/projects", http.StatusOK, c.userProjectList())
 
@@ -114,7 +138,7 @@ func TestCredentialResolution(t *testing.T) {
 		cmd := exec.CommandContext(ctx, lk, c.args()...)
 		cmd.Dir = home
 		cmd.Env = append(c.env(), "HOME="+home, "USERPROFILE="+home, "HTTP_PROXY="+cloud.URL, "HTTPS_PROXY="+cloud.URL,
-			"GORACE=atexit_sleep_ms=0") // under -race, lk would otherwise sleep a second before each clean exit
+			"GORACE="+strings.TrimSpace(os.Getenv("GORACE")+" atexit_sleep_ms=0")) // under -race, lk would otherwise sleep a second before each clean exit
 		if root, ok := os.LookupEnv("SYSTEMROOT"); ok {
 			cmd.Env = append(cmd.Env, "SYSTEMROOT="+root) // Windows networking needs it
 		}
@@ -160,17 +184,17 @@ func TestCredentialResolution(t *testing.T) {
 					}
 				case "APIflag", "APIenv", "devkey":
 					// Inline and --dev keys only go to the inline URL's host.
-					if url, _, _ := c.inlineCredentials(); url == "" || hostOf(url) != project {
+					if url, _, _ := c.inlineCredentials(); hostOf(url) != project {
 						t.Fatalf("inline key %s went to project %q's server: %s", key, project, line)
 					}
 				}
 			}
 			target := strings.Fields(line)[1]
 			switch {
-			case c.userAuth && strings.Contains(line, " apikey=") && !strings.Contains(line, " apikey="+mintKey("")):
-				t.Fatalf("under --user-auth, a project server got a token not minted by the Public API: %s", line)
 			case c.userAuth && strings.Contains(line, " bearer=") && !strings.HasPrefix(target, publicAPI+"/"):
 				t.Fatalf("a session token went to a server it wasn't signed in to: %s", line)
+			case c.userAuth && !strings.HasPrefix(target, publicAPI+"/") && !strings.Contains(line, " apikey="+mintKey("")):
+				t.Fatalf("under --user-auth, a project server got a request without a token minted by the Public API: %s", line)
 			case !c.userAuth && (strings.Contains(line, " bearer=") || strings.Contains(target, "publicapi.test") || strings.Contains(target, "other.test")):
 				t.Fatalf("API-key mode used a session or the Public API: %s", line)
 			}
@@ -308,6 +332,12 @@ func drawCredentialCase(t *rapid.T) credentialCase {
 	if sometimes.Draw(t, "u_3 signed in too") {
 		c.users = append(c.users, sessionUser{id: "u_3", email: "ops@example.com", token: "st_3"})
 	}
+	// --dev only takes effect when nothing ahead of it in resolveProject wins:
+	// --project, --subdomain, or an inline key or secret. The draws above
+	// rarely line that up, so some cases clear the way for it.
+	if rapid.SampledFrom([]bool{false, false, true}).Draw(t, "--dev with nothing ahead of it") {
+		c.dev, c.project, c.subdomain, c.keyFrom, c.secretFrom = true, "", "", "", ""
+	}
 	return c
 }
 
@@ -428,7 +458,8 @@ func (c credentialCase) soleProject() string {
 }
 
 // inlineCredentials are the URL, API key and API secret lk reads from flags,
-// each beating its env var.
+// each beating its env var. The URL defaults to lk's http://localhost:7880,
+// which the fake serves as localhost.test.
 func (c credentialCase) inlineCredentials() (url, key, secret string) {
 	pick := func(source, flag, env string) string {
 		switch {
@@ -439,7 +470,7 @@ func (c credentialCase) inlineCredentials() (url, key, secret string) {
 		}
 		return ""
 	}
-	return pick(c.urlFrom, "ws://flag.test", "ws://env.test"),
+	return cmp.Or(pick(c.urlFrom, "ws://flag.test", "ws://env.test"), "ws://localhost.test"),
 		pick(c.keyFrom, "APIflag", "APIenv"),
 		pick(c.secretFrom, "secretflag", "secretenv")
 }
@@ -450,8 +481,9 @@ func hostOf(url string) string {
 }
 
 // namedProjects are the projects lk may name. In API-key mode: --project,
-// --subdomain, livekit.toml's, the default project, the host given in an
-// inline URL, and the only configured project when the user named none. Under
+// --subdomain, livekit.toml's, the default project, the inline URL's host
+// (lk's default URL when none is given), and the only configured project when
+// the user named none. Under
 // user auth: --project, the default project, and the user's only project when
 // --project isn't given.
 func (c credentialCase) namedProjects() []string {
@@ -470,10 +502,8 @@ func (c credentialCase) namedProjects() []string {
 		}
 		return named
 	}
-	add(c.subdomain, c.toml)
-	if url, _, _ := c.inlineCredentials(); url != "" {
-		add(hostOf(url))
-	}
+	url, _, _ := c.inlineCredentials()
+	add(c.subdomain, c.toml, hostOf(url))
 	if c.project == "" && c.subdomain == "" && c.toml == "" {
 		add(c.soleProject())
 	}
@@ -496,7 +526,7 @@ func requestProject(line string) (string, bool) {
 		return "", false
 	}
 	host, _, _ := strings.Cut(strings.TrimPrefix(fields[1], "http://"), "/")
-	if host == "publicapi.test" {
+	if host == "publicapi.test" || host == "other.test" {
 		return "", false
 	}
 	return strings.TrimSuffix(host, ".test"), true
@@ -504,8 +534,8 @@ func requestProject(line string) (string, bool) {
 
 // mustFail is set when lk can't act: both mode flags at once, a Public API
 // command outside --user-auth, or, under --user-auth, no user who can act (no
-// unexpired session, a --user nobody signed in as, or a Public API URL nobody
-// is signed in to). Every drawn user is signed in to publicAPI.
+// unexpired session, a --user with no unexpired session, or a Public API URL
+// nobody is signed in to). Every drawn user is signed in to publicAPI.
 func (c credentialCase) mustFail() bool {
 	switch {
 	case c.userAuth && c.legacyAuth:
@@ -514,7 +544,7 @@ func (c credentialCase) mustFail() bool {
 		return c.command.publicAPI
 	case !slices.ContainsFunc(c.users, func(u sessionUser) bool { return !u.expired }):
 		return true
-	case c.user != "" && !slices.ContainsFunc(c.users, func(u sessionUser) bool { return u.id == c.user || u.email == c.user }):
+	case c.user != "" && !slices.ContainsFunc(c.users, func(u sessionUser) bool { return (u.id == c.user || u.email == c.user) && !u.expired }):
 		return true
 	}
 	api := cmp.Or(c.apiURLFlag, c.apiURLEnv)
