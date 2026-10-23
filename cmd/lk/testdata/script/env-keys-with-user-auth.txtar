@@ -1,5 +1,6 @@
 # --user-auth wins over API keys in the environment: the command runs
-# as the signed-in user, with a one-line note that the env keys are ignored.
+# as the signed-in user, with a one-line note that the env credentials are
+# ignored.
 env LIVEKIT_URL=ws://env.test
 env LIVEKIT_API_KEY=APIenv
 env LIVEKIT_API_SECRET=secretenv
@@ -10,8 +11,7 @@ cp stderr lk.stderr
 requests
 cmp stdout want-requests
 
-skip 'known bug: --user-auth ignores LIVEKIT_API_KEY and LIVEKIT_API_SECRET without saying so'
-grep 'LIVEKIT_API_KEY.*ignored' lk.stderr
+grep '^Ignoring LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET from environment \(--user-auth uses your session\)$' lk.stderr
 
 -- home/.livekit/cli-config.yaml --
 default_user: u_1

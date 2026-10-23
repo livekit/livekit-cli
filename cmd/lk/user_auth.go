@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -247,9 +248,16 @@ func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig
 // resolves the session more than once still prints the breadcrumb only once.
 var userAnnounced bool
 
+// envCredentialsUsed is set by commands that hand LIVEKIT_* credentials from
+// the environment to what they run (agent runs, see resolveCredentials), so
+// announceUser doesn't call them ignored.
+var envCredentialsUsed bool
+
 // announceUser surfaces which signed-in user a command acts as — the user-auth
 // counterpart of the "Using project" breadcrumb (stderr, suppressed by --quiet).
-// The API is named when it isn't the default, e.g. for a staging sign-in.
+// The API is named when it isn't the default, e.g. for a staging sign-in. It
+// also names the LIVEKIT_* credentials in the environment that the command
+// ignores, since they don't switch modes (see userAuthEnabled).
 func announceUser(user *config.UserConfig) {
 	if userAnnounced || user == nil {
 		return
@@ -259,6 +267,18 @@ func announceUser(user *config.UserConfig) {
 		out.Statusf("Using user [%s]", util.Accented(userLabel(user)))
 	} else {
 		out.Statusf("Using user [%s] on [%s]", util.Accented(userLabel(user)), util.Accented(publicAPIURL))
+	}
+	if envCredentialsUsed {
+		return
+	}
+	var ignored []string
+	for _, name := range []string{"LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"} {
+		if os.Getenv(name) != "" {
+			ignored = append(ignored, name)
+		}
+	}
+	if len(ignored) > 0 {
+		out.Statusf("Ignoring %s from environment (--user-auth uses your session)", strings.Join(ignored, ", "))
 	}
 }
 
