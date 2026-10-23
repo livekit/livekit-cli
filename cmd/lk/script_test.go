@@ -54,6 +54,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -119,7 +120,7 @@ func setupScript(env *testscript.Env) error {
 	env.Setenv("HTTP_PROXY", cloud.URL)
 	env.Setenv("HTTPS_PROXY", cloud.URL)
 	// Under -race, lk would otherwise sleep a second before each clean exit.
-	env.Setenv("GORACE", "atexit_sleep_ms=0")
+	env.Setenv("GORACE", strings.TrimSpace(env.Getenv("GORACE")+" atexit_sleep_ms=0"))
 	return nil
 }
 
@@ -177,6 +178,9 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	res, ok := f.responses[target]
 	if !ok {
 		res = cannedResponse{http.StatusNotImplemented, `{"code":12,"message":"fake cloud: no response for ` + target + `"}`}
+		if strings.HasPrefix(r.URL.Path, "/twirp/") {
+			res.body = `{"code":"unimplemented","msg":"fake cloud: no response for ` + target + `"}`
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(res.status)
@@ -226,7 +230,7 @@ func (f *fakeCloud) respond(target string, status int, body string) error {
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.responses[target] = cannedResponse{status, body}
+	f.responses[method+" "+u.Scheme+"://"+u.Host+u.Path] = cannedResponse{status, body}
 	return nil
 }
 
@@ -265,9 +269,12 @@ func checkPublicAPIBody(method, path string, status int, body string) error {
 	if !strings.HasPrefix(path, "/v0/") {
 		return nil
 	}
+	var probe struct {
+		Error json.RawMessage `json:"error"`
+	}
 	var v any
 	switch {
-	case (status == http.StatusUnauthorized || status == http.StatusInternalServerError) && strings.HasPrefix(body, `{"error"`):
+	case (status == http.StatusUnauthorized || status == http.StatusInternalServerError) && json.Unmarshal([]byte(body), &probe) == nil && probe.Error != nil:
 		v = new(middlewareError)
 	case status >= 400:
 		v = new(oapi.GoogleRpcStatus)
@@ -287,7 +294,7 @@ func checkPublicAPIBody(method, path string, status int, body string) error {
 	if err := dec.Decode(v); err != nil {
 		return fmt.Errorf("body doesn't match the spec's %T: %w", v, err)
 	}
-	if dec.More() {
+	if _, err := dec.Token(); err != io.EOF {
 		return fmt.Errorf("body has data after its JSON value")
 	}
 	return nil
