@@ -36,6 +36,26 @@ func TestResponseError(t *testing.T) {
 	assert.Equal(t, http.StatusForbidden, apiErr.Status)
 	assert.Equal(t, "forbidden", apiErr.Message)
 
+	// The auth layer's 401 nests its message under "error".
+	err = responseError(http.StatusUnauthorized, []byte(`{"error":{"code":"unauthenticated","message":"authentication required"}}`))
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.Status)
+	assert.Equal(t, "authentication required", apiErr.Message)
+
+	// A top-level message wins over a nested one.
+	err = responseError(http.StatusBadRequest, []byte(`{"message":"top","error":{"message":"nested"}}`))
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, "top", apiErr.Message)
+
+	// A nested error without a message, or an "error" that isn't an object,
+	// doesn't hide the top-level message or the raw body.
+	err = responseError(http.StatusBadRequest, []byte(`{"error":{"code":"x"}}`))
+	require.ErrorAs(t, err, &apiErr)
+	assert.Contains(t, apiErr.Message, "400")
+	err = responseError(http.StatusBadRequest, []byte(`{"message":"top","error":"a string"}`))
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, "top", apiErr.Message)
+
 	// Non-envelope body falls back to the raw text (with the status).
 	err = responseError(http.StatusInternalServerError, []byte("boom"))
 	require.ErrorAs(t, err, &apiErr)
