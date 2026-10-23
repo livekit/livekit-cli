@@ -168,6 +168,10 @@ func TestRequireUserSessionAPIURL(t *testing.T) {
 		token, _, err = resolve(t, "--experimental-api-url", public.DefaultBaseURL)
 		require.NoError(t, err)
 		assert.Equal(t, "prod", token, "the old --experimental-api-url spelling still sets the URL")
+
+		_, _, err = resolve(t, "--public-api-url", "https://other.example")
+		assert.ErrorContains(t, err, `the default user "usr_stg" is signed in to `+staging+`, not https://other.example`,
+			"an API nobody is signed in to names where the default user is")
 	})
 
 	t.Run("--user", func(t *testing.T) {

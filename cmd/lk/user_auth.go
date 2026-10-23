@@ -312,8 +312,22 @@ func resolveSessionUser(conf *config.CLIConfig, userRef string, apiURLSet bool) 
 			return nil, fmt.Errorf("user %q is not signed in to %s (run %s to sign in)", userRef, publicAPIURL, signInCommand())
 		}
 	}
-	if users := conf.UsersForAPIURL(publicAPIURL); len(users) == 1 {
+	users := conf.UsersForAPIURL(publicAPIURL)
+	if len(users) == 1 {
 		return users[0], nil
+	}
+	// Here userRef, if set, is the default user: an explicit --user returned
+	// above.
+	switch {
+	case len(users) > 1:
+		return nil, fmt.Errorf("%d users are signed in to %s and none is the default user; pass --user to pick one",
+			len(users), publicAPIURL)
+	case userRef != "":
+		if elsewhere := conf.FindUsers(userRef); len(elsewhere) > 0 {
+			return nil, fmt.Errorf("the default user %q is signed in to %s, not %s (run %s to sign in there)",
+				userRef, cmp.Or(elsewhere[0].APIURL, public.DefaultBaseURL), publicAPIURL, signInCommand())
+		}
+		return nil, fmt.Errorf("the default user %q is not signed in to %s (run %s to sign in)", userRef, publicAPIURL, signInCommand())
 	}
 	return nil, fmt.Errorf("no user is signed in to %s (run %s to sign in)", publicAPIURL, signInCommand())
 }
