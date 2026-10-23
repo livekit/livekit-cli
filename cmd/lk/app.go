@@ -161,6 +161,10 @@ func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadO
 	case errors.Is(err, config.ErrInvalidConfig):
 		// something is wrong with the project config file
 		return ctx, err
+	case err != nil && namedProject(cmd):
+		// the user named a project that doesn't resolve: say so rather than
+		// act on another one
+		return ctx, err
 	case err != nil:
 		// no project could be resolved automatically; choose from existing
 		// credentials or authenticate, then announce once below.
@@ -195,6 +199,12 @@ func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadO
 
 	rp.announce()
 	return ctx, nil
+}
+
+// namedProject reports whether the user named a project on the command line
+// for resolveProject to find, with --project or --subdomain.
+func namedProject(cmd *cli.Command) bool {
+	return cmd.String("project") != "" || cmd.String("subdomain") != ""
 }
 
 // selectProject resolves the package-level `project` interactively: it picks from the

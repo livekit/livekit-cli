@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -158,6 +159,49 @@ func TestResolveProjectSource(t *testing.T) {
 		rp.announce()
 		assert.Empty(t, buf.String(), "--quiet suppresses status output")
 	})
+}
+
+// TestRequireProjectNamedProjectIsAnError checks that a --project or
+// --subdomain naming no configured project fails instead of falling back to
+// the only configured one, even when prompts are skipped.
+func TestRequireProjectNamedProjectIsAnError(t *testing.T) {
+	t.Setenv("LIVEKIT_URL", "")
+	t.Setenv("LIVEKIT_API_KEY", "")
+	t.Setenv("LIVEKIT_API_SECRET", "")
+	setHome(t, t.TempDir())
+	conf := &config.CLIConfig{Projects: []config.ProjectConfig{
+		{Name: "one", URL: "https://one.livekit.cloud", APIKey: "APIone", APISecret: "secretone"},
+	}}
+	require.NoError(t, conf.PersistQuietly())
+	prevProject, prevConfig := project, cliConfig
+	t.Cleanup(func() { project, cliConfig = prevProject, prevConfig })
+
+	for _, args := range [][]string{{"--project", "onee"}, {"--subdomain", "onee"}} {
+		t.Run(args[0], func(t *testing.T) {
+			project = nil
+			var err error
+			app := &cli.Command{
+				Name: "lk",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "url", Value: "http://localhost:7880"},
+					&cli.StringFlag{Name: "api-key"},
+					&cli.StringFlag{Name: "api-secret"},
+					&cli.BoolFlag{Name: "dev"},
+					&cli.StringFlag{Name: "project"},
+					&cli.StringFlag{Name: "subdomain"},
+					&cli.BoolFlag{Name: "user-auth"},
+					&cli.BoolFlag{Name: "yes"},
+				},
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					_, err = requireProjectWithOpts(ctx, cmd)
+					return nil
+				},
+			}
+			require.NoError(t, app.Run(context.Background(), append([]string{"lk", "--yes"}, args...)))
+			assert.ErrorContains(t, err, "project not found")
+			assert.Nil(t, project, "no project is chosen for a name that doesn't resolve")
+		})
+	}
 }
 
 func TestOptionalFlag(t *testing.T) {

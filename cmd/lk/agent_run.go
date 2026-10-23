@@ -220,7 +220,7 @@ func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string, loadO
 	// priority order. Without this, ambient LIVEKIT_* shell variables (which
 	// count as explicit above) would override — or worse, mix into — the
 	// project the user asked for by name.
-	if cmd.String("project") != "" || cmd.String("subdomain") != "" {
+	if namedProject(cmd) {
 		explicit = agentCredentials{}
 	}
 
