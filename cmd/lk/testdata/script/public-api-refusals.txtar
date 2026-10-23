@@ -1,0 +1,27 @@
+# A Public API refusal fails with a non-zero exit, carries cloudAPIError's
+# hint, and names the project it was about. How each refusal reads is
+# TestCloudAPIError's job. The body is the Public API's own google.rpc.Status.
+respond PATCH http://publicapi.test/v0/projects/p_1 403 '{"code":7,"message":"permission denied: this needs ADMIN on the project"}'
+! exec lk --user-auth project update one --name renamed
+! stdout .
+stderr '^permission denied: this needs ADMIN on the project — .*re-run without `--user-auth`$'
+cp stderr lk.stderr
+requests
+cmp stdout want-requests
+
+skip 'known bug: lk does not name the project when the Public API refuses a call'
+grep 'p_1\b|\[one\]' lk.stderr
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+-- want-requests --
+PATCH http://publicapi.test/v0/projects/p_1 bearer=st_1 project=p_1

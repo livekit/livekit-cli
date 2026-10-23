@@ -16,6 +16,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -227,6 +229,38 @@ func TestSignInHint(t *testing.T) {
 	_, _, err = requireUserSession(nil)
 	assert.ErrorContains(t, err, "has expired (run `lk cloud auth --user-auth --public-api-url "+staging+"` to sign in again)",
 		"the hint follows the API the default user signed in to")
+}
+
+// TestCloudAPIError checks how a Public API refusal reads once a command
+// passes it through cloudAPIError. The scripts only check that commands do.
+func TestCloudAPIError(t *testing.T) {
+	prev := publicAPIURL
+	t.Cleanup(func() { publicAPIURL = prev })
+	publicAPIURL = public.DefaultBaseURL
+
+	plain := errors.New("connection refused")
+	for _, tc := range []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"unauthenticated says how to sign in again",
+			&public.APIError{Status: http.StatusUnauthorized, Message: "authentication required"},
+			"authentication required (run `lk cloud auth --user-auth` to sign in again)"},
+		{"permission denied says why and what to do instead",
+			&public.APIError{Status: http.StatusForbidden, Message: "permission denied: this needs ADMIN on the project"},
+			"permission denied: this needs ADMIN on the project — your account doesn't have access to this project or action. To act with API-key credentials instead, re-run without `--user-auth`"},
+		{"not found passes through",
+			&public.APIError{Status: http.StatusNotFound, Message: "project not found"},
+			"project not found"},
+		{"other errors pass through", plain, "connection refused"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := cloudAPIError(tc.err)
+			assert.EqualError(t, err, tc.want)
+			assert.ErrorIs(t, err, tc.err)
+		})
+	}
 }
 
 func TestSetUserAuthHidden(t *testing.T) {

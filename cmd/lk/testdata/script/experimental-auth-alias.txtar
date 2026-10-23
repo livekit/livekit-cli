@@ -1,0 +1,22 @@
+# --experimental-auth, the flag's old name, still selects user auth: it prints
+# and sends exactly what --user-auth does.
+respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one"}]}'
+exec lk --user-auth project list
+cp stdout user-auth.stdout
+cp stderr user-auth.stderr
+exec lk --experimental-auth project list
+cmp stdout user-auth.stdout
+cmp stderr user-auth.stderr
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+-- want-requests --
+GET http://publicapi.test/v0/projects bearer=st_1
+GET http://publicapi.test/v0/projects bearer=st_1

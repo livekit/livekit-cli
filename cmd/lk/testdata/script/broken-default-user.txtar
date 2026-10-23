@@ -1,0 +1,21 @@
+# A default user that no longer resolves is a clear error with the way to fix
+# it, never a crash. Today the error says nobody is signed in to the default
+# Public API, while another user is signed in elsewhere and the real problem
+# is the default user.
+! exec lk --user-auth project list
+! stdout .
+stderr 'run `lk cloud auth --user-auth` to sign in'
+cp stderr lk.stderr
+requests
+! stdout .
+
+skip 'known bug: the error doesn''t say the default user no longer resolves'
+grep 'gone@example.com' lk.stderr
+
+-- home/.livekit/cli-config.yaml --
+default_user: gone@example.com
+users:
+  - id: u_2
+    email: other@example.com
+    session_token: st_other
+    api_url: http://publicapi.test

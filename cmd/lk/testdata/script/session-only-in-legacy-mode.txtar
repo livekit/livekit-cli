@@ -1,0 +1,18 @@
+# A command that only exists under user auth says so in API-key mode, without
+# calling anything.
+! exec lk project update one --name renamed
+! stdout .
+cmp stderr want-stderr
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+-- want-stderr --
+this command is only available under --user-auth (user-based auth)

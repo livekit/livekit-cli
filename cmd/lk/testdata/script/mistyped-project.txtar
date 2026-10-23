@@ -1,0 +1,24 @@
+# In API-key mode, a --project that names no configured project is an error
+# listing the configured ones. lk never falls back to the only project: the
+# fake would answer that project's server, so lk can only fail by refusing.
+# Today it does fall back; the checks before the skip record that.
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
+
+exec lk --project onee room list
+stderr '^Using project \[one\]$'
+requests
+stdout '^POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone$'
+
+skip 'known bug: a --project that names no configured project falls back to the only one'
+! exec lk --project onee room list
+stderr 'project not found\. Available projects: one'
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
