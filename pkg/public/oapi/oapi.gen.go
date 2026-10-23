@@ -776,6 +776,13 @@ func (e LivekitPublicapiObservabilityV1SpanStatus) Valid() bool {
 //	PIIRedactionCategory.Class in Go.
 type CloudProtocolPIIRedactionCategory string
 
+// GoogleProtobufAny Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+type GoogleProtobufAny struct {
+	// Type A URL/resource name that uniquely identifies the type of the serialized message.
+	Type                 *string                `json:"@type,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // GoogleProtobufDuration A span of time as protobuf JSON encodes it: seconds with an "s" suffix,
 // e.g. "86400s" for a day. Responses carry 0, 3, 6 or 9 fractional
 // digits ("1.500s", "0.000000001s"); requests may use 1 to 9. At most
@@ -785,121 +792,15 @@ type CloudProtocolPIIRedactionCategory string
 // Examples: 86400s, 1.500s, 0.000000001s
 type GoogleProtobufDuration = string
 
-// GoogleProtobufStruct Represents a JSON object.
-//
-//	An unordered key-value map, intending to perfectly capture the semantics of a
-//	JSON object. This enables parsing any arbitrary JSON payload as a message
-//	field in ProtoJSON format.
-//
-//	This follows RFC 8259 guidelines for interoperable JSON: notably this type
-//	cannot represent large Int64 values or `NaN`/`Infinity` numbers,
-//	since the JSON format generally does not support those values in its number
-//	type.
-//
-//	If you do not intend to parse arbitrary JSON into your message, a custom
-//	typed message should be preferred instead of using this type.
+// GoogleProtobufStruct A JSON object whose property values may be any JSON value.
 type GoogleProtobufStruct map[string]*GoogleProtobufValue
 
-// GoogleProtobufTimestamp A Timestamp represents a point in time independent of any time zone or local
-//
-//	calendar, encoded as a count of seconds and fractions of seconds at
-//	nanosecond resolution. The count is relative to an epoch at UTC midnight on
-//	January 1, 1970, in the proleptic Gregorian calendar which extends the
-//	Gregorian calendar backwards to year one.
-//
-//	All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-//	second table is needed for interpretation, using a [24-hour linear
-//	smear](https://developers.google.com/time/smear).
-//
-//	The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-//	restricting to that range, we ensure that we can convert to and from [RFC
-//	3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-//
-//	# Examples
-//
-//	Example 1: Compute Timestamp from POSIX `time()`.
-//
-//	    Timestamp timestamp;
-//	    timestamp.set_seconds(time(NULL));
-//	    timestamp.set_nanos(0);
-//
-//	Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-//
-//	    struct timeval tv;
-//	    gettimeofday(&tv, NULL);
-//
-//	    Timestamp timestamp;
-//	    timestamp.set_seconds(tv.tv_sec);
-//	    timestamp.set_nanos(tv.tv_usec * 1000);
-//
-//	Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-//
-//	    FILETIME ft;
-//	    GetSystemTimeAsFileTime(&ft);
-//	    UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-//
-//	    // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-//	    // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-//	    Timestamp timestamp;
-//	    timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-//	    timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-//
-//	Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-//
-//	    long millis = System.currentTimeMillis();
-//
-//	    Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-//	        .setNanos((int) ((millis % 1000) * 1000000)).build();
-//
-//	Example 5: Compute Timestamp from Java `Instant.now()`.
-//
-//	    Instant now = Instant.now();
-//
-//	    Timestamp timestamp =
-//	        Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-//	            .setNanos(now.getNano()).build();
-//
-//	Example 6: Compute Timestamp from current time in Python.
-//
-//	    timestamp = Timestamp()
-//	    timestamp.GetCurrentTime()
-//
-//	# JSON Mapping
-//
-//	In JSON format, the Timestamp type is encoded as a string in the
-//	[RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-//	format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-//	where {year} is always expressed using four digits while {month}, {day},
-//	{hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-//	seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-//	are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-//	is required. A ProtoJSON serializer should always use UTC (as indicated by
-//	"Z") when printing the Timestamp type and a ProtoJSON parser should be
-//	able to accept both UTC and other timezones (as indicated by an offset).
-//
-//	For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-//	01:30 UTC on January 15, 2017.
-//
-//	In JavaScript, one can convert a Date object to this format using the
-//	standard
-//	[toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-//	method. In Python, a standard `datetime.datetime` object can be converted
-//	to this format using
-//	[`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-//	the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-//	the Joda Time's [`ISODateTimeFormat.dateTime()`](
-//	http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-//	) to obtain a formatter capable of generating timestamps in this format.
+// GoogleProtobufTimestamp A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 //
 // Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 type GoogleProtobufTimestamp = time.Time
 
-// GoogleProtobufValue Represents a JSON value.
-//
-//	`Value` represents a dynamically typed value which can be either
-//	null, a number, a string, a boolean, a recursive struct value, or a
-//	list of values. A producer of value is expected to set one of these
-//	variants. Absence of any variant is an invalid state.
+// GoogleProtobufValue Any JSON value: `null`, number, string, boolean, array, or object.
 type GoogleProtobufValue struct {
 	union json.RawMessage
 }
@@ -919,196 +820,25 @@ type GoogleProtobufValue4 = []interface{}
 // GoogleProtobufValue5 defines model for GoogleProtobufValue.5.
 type GoogleProtobufValue5 map[string]interface{}
 
+// GoogleRpcStatus The Status type defines a logical error model suitable for gRPC and REST APIs.
+type GoogleRpcStatus struct {
+	// Code The status code, which should be an enum value of google.rpc.Code.
+	Code *int32 `json:"code,omitempty"`
+
+	// Details A list of messages that carry the error details.
+	Details *[]GoogleProtobufAny `json:"details,omitempty"`
+
+	// Message A developer-facing error message.
+	Message *string `json:"message,omitempty"`
+}
+
 // LivekitAgentDBAgentDatabase One database, as get and list both report it.
 type LivekitAgentDBAgentDatabase struct {
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	CreatedAt  *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	DatabaseId *string                  `json:"databaseId,omitempty"`
-
-	// ExpiresAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	Region    *string                  `json:"region,omitempty"`
-	Tip       *string                  `json:"tip,omitempty"`
+	ExpiresAt  *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+	Region     *string                  `json:"region,omitempty"`
+	Tip        *string                  `json:"tip,omitempty"`
 }
 
 // LivekitAliOSSUpload defines model for livekit.AliOSSUpload.
@@ -1136,17 +866,14 @@ type LivekitAutoParticipantEgress struct {
 // LivekitAutoParticipantEgress0 defines model for LivekitAutoParticipantEgress.0.
 type LivekitAutoParticipantEgress0 struct {
 	// Advanced (optional)
-	Advanced LivekitEncodingOptions `json:"advanced"`
+	Advanced *LivekitEncodingOptions `json:"advanced,omitempty"`
 }
 
 // LivekitAutoParticipantEgress1 defines model for LivekitAutoParticipantEgress.1.
 type LivekitAutoParticipantEgress1 struct {
 	// Preset (default H264_720P_30)
-	Preset LivekitEncodingOptionsPreset `json:"preset"`
+	Preset *LivekitEncodingOptionsPreset `json:"preset,omitempty"`
 }
-
-// LivekitAutoParticipantEgress2 defines model for LivekitAutoParticipantEgress.2.
-type LivekitAutoParticipantEgress2 = interface{}
 
 // LivekitAutoTrackEgress defines model for livekit.AutoTrackEgress.
 type LivekitAutoTrackEgress struct {
@@ -1160,26 +887,23 @@ type LivekitAutoTrackEgress struct {
 
 // LivekitAutoTrackEgress0 defines model for LivekitAutoTrackEgress.0.
 type LivekitAutoTrackEgress0 struct {
-	AliOSS LivekitAliOSSUpload `json:"aliOSS"`
+	AliOSS *LivekitAliOSSUpload `json:"aliOSS,omitempty"`
 }
 
 // LivekitAutoTrackEgress1 defines model for LivekitAutoTrackEgress.1.
 type LivekitAutoTrackEgress1 struct {
-	Azure LivekitAzureBlobUpload `json:"azure"`
+	Azure *LivekitAzureBlobUpload `json:"azure,omitempty"`
 }
 
 // LivekitAutoTrackEgress2 defines model for LivekitAutoTrackEgress.2.
 type LivekitAutoTrackEgress2 struct {
-	Gcp LivekitGCPUpload `json:"gcp"`
+	Gcp *LivekitGCPUpload `json:"gcp,omitempty"`
 }
 
 // LivekitAutoTrackEgress3 defines model for LivekitAutoTrackEgress.3.
 type LivekitAutoTrackEgress3 struct {
-	S3 LivekitS3Upload `json:"s3"`
+	S3 *LivekitS3Upload `json:"s3,omitempty"`
 }
-
-// LivekitAutoTrackEgress4 defines model for LivekitAutoTrackEgress.4.
-type LivekitAutoTrackEgress4 = interface{}
 
 // LivekitAzureBlobUpload defines model for livekit.AzureBlobUpload.
 type LivekitAzureBlobUpload struct {
@@ -1198,26 +922,23 @@ type LivekitEncodedFileOutput struct {
 
 // LivekitEncodedFileOutput0 defines model for LivekitEncodedFileOutput.0.
 type LivekitEncodedFileOutput0 struct {
-	AliOSS LivekitAliOSSUpload `json:"aliOSS"`
+	AliOSS *LivekitAliOSSUpload `json:"aliOSS,omitempty"`
 }
 
 // LivekitEncodedFileOutput1 defines model for LivekitEncodedFileOutput.1.
 type LivekitEncodedFileOutput1 struct {
-	Azure LivekitAzureBlobUpload `json:"azure"`
+	Azure *LivekitAzureBlobUpload `json:"azure,omitempty"`
 }
 
 // LivekitEncodedFileOutput2 defines model for LivekitEncodedFileOutput.2.
 type LivekitEncodedFileOutput2 struct {
-	Gcp LivekitGCPUpload `json:"gcp"`
+	Gcp *LivekitGCPUpload `json:"gcp,omitempty"`
 }
 
 // LivekitEncodedFileOutput3 defines model for LivekitEncodedFileOutput.3.
 type LivekitEncodedFileOutput3 struct {
-	S3 LivekitS3Upload `json:"s3"`
+	S3 *LivekitS3Upload `json:"s3,omitempty"`
 }
-
-// LivekitEncodedFileOutput4 defines model for LivekitEncodedFileOutput.4.
-type LivekitEncodedFileOutput4 = interface{}
 
 // LivekitEncodedFileType defines model for livekit.EncodedFileType.
 type LivekitEncodedFileType string
@@ -1314,26 +1035,23 @@ type LivekitImageOutput struct {
 
 // LivekitImageOutput0 defines model for LivekitImageOutput.0.
 type LivekitImageOutput0 struct {
-	AliOSS LivekitAliOSSUpload `json:"aliOSS"`
+	AliOSS *LivekitAliOSSUpload `json:"aliOSS,omitempty"`
 }
 
 // LivekitImageOutput1 defines model for LivekitImageOutput.1.
 type LivekitImageOutput1 struct {
-	Azure LivekitAzureBlobUpload `json:"azure"`
+	Azure *LivekitAzureBlobUpload `json:"azure,omitempty"`
 }
 
 // LivekitImageOutput2 defines model for LivekitImageOutput.2.
 type LivekitImageOutput2 struct {
-	Gcp LivekitGCPUpload `json:"gcp"`
+	Gcp *LivekitGCPUpload `json:"gcp,omitempty"`
 }
 
 // LivekitImageOutput3 defines model for LivekitImageOutput.3.
 type LivekitImageOutput3 struct {
-	S3 LivekitS3Upload `json:"s3"`
+	S3 *LivekitS3Upload `json:"s3,omitempty"`
 }
-
-// LivekitImageOutput4 defines model for LivekitImageOutput.4.
-type LivekitImageOutput4 = interface{}
 
 // LivekitJobRestartPolicy defines model for livekit.JobRestartPolicy.
 type LivekitJobRestartPolicy string
@@ -1380,38 +1098,31 @@ type LivekitRoomCompositeEgressRequest struct {
 
 // LivekitRoomCompositeEgressRequest0 defines model for LivekitRoomCompositeEgressRequest.0.
 type LivekitRoomCompositeEgressRequest0 struct {
-	Advanced LivekitEncodingOptions `json:"advanced"`
+	Advanced *LivekitEncodingOptions `json:"advanced,omitempty"`
 }
 
 // LivekitRoomCompositeEgressRequest1 defines model for LivekitRoomCompositeEgressRequest.1.
 type LivekitRoomCompositeEgressRequest1 struct {
-	Preset LivekitEncodingOptionsPreset `json:"preset"`
+	Preset *LivekitEncodingOptionsPreset `json:"preset,omitempty"`
 }
 
 // LivekitRoomCompositeEgressRequest2 defines model for LivekitRoomCompositeEgressRequest.2.
-type LivekitRoomCompositeEgressRequest2 = interface{}
+type LivekitRoomCompositeEgressRequest2 struct {
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	File *LivekitEncodedFileOutput `json:"file,omitempty"`
+}
 
 // LivekitRoomCompositeEgressRequest3 defines model for LivekitRoomCompositeEgressRequest.3.
 type LivekitRoomCompositeEgressRequest3 struct {
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	File LivekitEncodedFileOutput `json:"file"`
+	Segments *LivekitSegmentedFileOutput `json:"segments,omitempty"`
 }
 
 // LivekitRoomCompositeEgressRequest4 defines model for LivekitRoomCompositeEgressRequest.4.
 type LivekitRoomCompositeEgressRequest4 struct {
-	// Segments Used to generate HLS segments or other kind of segmented output
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	Segments LivekitSegmentedFileOutput `json:"segments"`
+	Stream *LivekitStreamOutput `json:"stream,omitempty"`
 }
-
-// LivekitRoomCompositeEgressRequest5 defines model for LivekitRoomCompositeEgressRequest.5.
-type LivekitRoomCompositeEgressRequest5 struct {
-	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	Stream LivekitStreamOutput `json:"stream"`
-}
-
-// LivekitRoomCompositeEgressRequest6 defines model for LivekitRoomCompositeEgressRequest.6.
-type LivekitRoomCompositeEgressRequest6 = interface{}
 
 // LivekitRoomConfiguration defines model for livekit.RoomConfiguration.
 type LivekitRoomConfiguration struct {
@@ -1534,26 +1245,23 @@ type LivekitSegmentedFileOutput struct {
 
 // LivekitSegmentedFileOutput0 defines model for LivekitSegmentedFileOutput.0.
 type LivekitSegmentedFileOutput0 struct {
-	AliOSS LivekitAliOSSUpload `json:"aliOSS"`
+	AliOSS *LivekitAliOSSUpload `json:"aliOSS,omitempty"`
 }
 
 // LivekitSegmentedFileOutput1 defines model for LivekitSegmentedFileOutput.1.
 type LivekitSegmentedFileOutput1 struct {
-	Azure LivekitAzureBlobUpload `json:"azure"`
+	Azure *LivekitAzureBlobUpload `json:"azure,omitempty"`
 }
 
 // LivekitSegmentedFileOutput2 defines model for LivekitSegmentedFileOutput.2.
 type LivekitSegmentedFileOutput2 struct {
-	Gcp LivekitGCPUpload `json:"gcp"`
+	Gcp *LivekitGCPUpload `json:"gcp,omitempty"`
 }
 
 // LivekitSegmentedFileOutput3 defines model for LivekitSegmentedFileOutput.3.
 type LivekitSegmentedFileOutput3 struct {
-	S3 LivekitS3Upload `json:"s3"`
+	S3 *LivekitS3Upload `json:"s3,omitempty"`
 }
-
-// LivekitSegmentedFileOutput4 defines model for LivekitSegmentedFileOutput.4.
-type LivekitSegmentedFileOutput4 = interface{}
 
 // LivekitSegmentedFileProtocol defines model for livekit.SegmentedFileProtocol.
 type LivekitSegmentedFileProtocol string
@@ -1573,192 +1281,8 @@ type LivekitSimulationRun struct {
 	Ci *LivekitSimulationRunCI `json:"ci,omitempty"`
 
 	// Concurrency Maximum simulate jobs running in parallel for this run (0 = server default).
-	Concurrency *int32 `json:"concurrency,omitempty"`
-
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-
-	// EndedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	Concurrency *int32                   `json:"concurrency,omitempty"`
+	CreatedAt   *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	EndedAt     *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 	Error       *string                  `json:"error,omitempty"`
 	FailedCount *int32                   `json:"failedCount,omitempty"`
@@ -1781,11 +1305,9 @@ type LivekitSimulationRun struct {
 	ProjectId      *string                `json:"projectId,omitempty"`
 
 	// Sampling Absent when the run ran each scenario once and required it to pass.
-	Sampling *LivekitSimulationRunSamplingOptions `json:"sampling,omitempty"`
-
-	// ScenarioGroup A named group of scenarios, mirroring a whole scenarios.yaml file.
-	ScenarioGroup *LivekitScenarioGroup       `json:"scenarioGroup,omitempty"`
-	Status        *LivekitSimulationRunStatus `json:"status,omitempty"`
+	Sampling      *LivekitSimulationRunSamplingOptions `json:"sampling,omitempty"`
+	ScenarioGroup *LivekitScenarioGroup                `json:"scenarioGroup,omitempty"`
+	Status        *LivekitSimulationRunStatus          `json:"status,omitempty"`
 
 	// SummaryZstd zstd-compressed SimulationRunSummary: decompress, then proto.Unmarshal.
 	//  Compressed by default so the blob ships as-is on every hop.
@@ -1815,201 +1337,18 @@ type LivekitSimulationRunCI struct {
 
 // LivekitSimulationRunCountsBucket defines model for livekit.SimulationRun.Counts.Bucket.
 type LivekitSimulationRunCountsBucket struct {
-	// BucketStart A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	BucketStart *GoogleProtobufTimestamp `json:"bucketStart,omitempty"`
 	Count       *string                  `json:"count,omitempty"`
 }
 
 // LivekitSimulationRunJob defines model for livekit.SimulationRun.Job.
 type LivekitSimulationRunJob struct {
-	AgentExpectations *string `json:"agentExpectations,omitempty"`
-
-	// EndedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	EndedAt      *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
-	Error        *string                  `json:"error,omitempty"`
-	Id           *string                  `json:"id,omitempty"`
-	Instructions *string                  `json:"instructions,omitempty"`
-	Label        *string                  `json:"label,omitempty"`
+	AgentExpectations *string                  `json:"agentExpectations,omitempty"`
+	EndedAt           *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
+	Error             *string                  `json:"error,omitempty"`
+	Id                *string                  `json:"id,omitempty"`
+	Instructions      *string                  `json:"instructions,omitempty"`
+	Label             *string                  `json:"label,omitempty"`
 
 	// Metrics Quality metrics for this job's call. Unset when the job produced none.
 	Metrics  *LivekitSimulationRunJobMetrics `json:"metrics,omitempty"`
@@ -2022,103 +1361,11 @@ type LivekitSimulationRunJob struct {
 
 	// ScenarioId The Scenario.id this job ran; empty for generated runs. Every sample
 	//  of one scenario shares it, so a run's jobs group back into scenarios.
-	ScenarioId *string `json:"scenarioId,omitempty"`
-
-	// StartedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	StartedAt *GoogleProtobufTimestamp       `json:"startedAt,omitempty"`
-	Status    *LivekitSimulationRunJobStatus `json:"status,omitempty"`
-	Tags      *[]string                      `json:"tags,omitempty"`
-	Usage     *LivekitSimulationRunJobUsage  `json:"usage,omitempty"`
+	ScenarioId *string                        `json:"scenarioId,omitempty"`
+	StartedAt  *GoogleProtobufTimestamp       `json:"startedAt,omitempty"`
+	Status     *LivekitSimulationRunJobStatus `json:"status,omitempty"`
+	Tags       *[]string                      `json:"tags,omitempty"`
+	Usage      *LivekitSimulationRunJobUsage  `json:"usage,omitempty"`
 }
 
 // LivekitSimulationRunJobStatus defines model for livekit.SimulationRun.Job.Status.
@@ -2133,9 +1380,7 @@ type LivekitSimulationRunJobUsage struct {
 // LivekitSimulationRunJobMetrics defines model for livekit.SimulationRun.JobMetrics.
 type LivekitSimulationRunJobMetrics struct {
 	// Conciseness Judged over the authored dialog (text and audio); needs the text judge. judged {0, 0.5, 1} per agent turn; job = mean
-	Conciseness *float32 `json:"conciseness,omitempty"`
-
-	// Conversation Audio only.
+	Conciseness  *float32                                    `json:"conciseness,omitempty"`
 	Conversation *LivekitSimulationRunJobMetricsConversation `json:"conversation,omitempty"`
 
 	// ConversationProgression 0-1, derived from the flags above
@@ -2150,23 +1395,17 @@ type LivekitSimulationRunJobMetrics struct {
 	Llm        *LivekitSimulationRunJobMetricsLLM `json:"llm,omitempty"`
 
 	// OverallScore weighted mean of the judged and heard scores
-	OverallScore        *float32 `json:"overallScore,omitempty"`
-	PoorQuestionQuality *bool    `json:"poorQuestionQuality,omitempty"`
-	RedundantStatements *bool    `json:"redundantStatements,omitempty"`
-
-	// Stt The agent's perception of the caller. Audio only.
-	Stt *LivekitSimulationRunJobMetricsSTT `json:"stt,omitempty"`
+	OverallScore        *float32                           `json:"overallScore,omitempty"`
+	PoorQuestionQuality *bool                              `json:"poorQuestionQuality,omitempty"`
+	RedundantStatements *bool                              `json:"redundantStatements,omitempty"`
+	Stt                 *LivekitSimulationRunJobMetricsSTT `json:"stt,omitempty"`
 
 	// T0 audio only; call start (first speech edge); turn times relative to it
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	T0 *GoogleProtobufTimestamp `json:"t0,omitempty"`
 
 	// TaskCompletion the scenario verdict as 1/0
-	TaskCompletion *float32 `json:"taskCompletion,omitempty"`
-
-	// Tts The agent's voice. Audio only.
-	Tts *LivekitSimulationRunJobMetricsTTS `json:"tts,omitempty"`
+	TaskCompletion *float32                           `json:"taskCompletion,omitempty"`
+	Tts            *LivekitSimulationRunJobMetricsTTS `json:"tts,omitempty"`
 
 	// Turns One entry per turn, both speakers.
 	Turns *[]LivekitSimulationRunJobMetricsTurn `json:"turns,omitempty"`
@@ -2343,9 +1582,7 @@ type LivekitSimulationRunJobMetricsTurn struct {
 //	every job and turn. Reuses the JobMetrics group shapes.
 type LivekitSimulationRunRunMetrics struct {
 	// Conciseness Means over the jobs that report them.
-	Conciseness *float32 `json:"conciseness,omitempty"`
-
-	// Conversation Audio only.
+	Conciseness             *float32                                    `json:"conciseness,omitempty"`
 	Conversation            *LivekitSimulationRunJobMetricsConversation `json:"conversation,omitempty"`
 	ConversationProgression *float32                                    `json:"conversationProgression,omitempty"`
 	Llm                     *LivekitSimulationRunJobMetricsLLM          `json:"llm,omitempty"`
@@ -2354,13 +1591,9 @@ type LivekitSimulationRunRunMetrics struct {
 	OverallScore *float32 `json:"overallScore,omitempty"`
 
 	// ScenarioPassRate share of jobs whose scenario verdict passed
-	ScenarioPassRate *float32 `json:"scenarioPassRate,omitempty"`
-
-	// Stt The agent's perception of the caller. Audio only.
-	Stt *LivekitSimulationRunJobMetricsSTT `json:"stt,omitempty"`
-
-	// Tts The agent's voice. Audio only.
-	Tts *LivekitSimulationRunJobMetricsTTS `json:"tts,omitempty"`
+	ScenarioPassRate *float32                           `json:"scenarioPassRate,omitempty"`
+	Stt              *LivekitSimulationRunJobMetricsSTT `json:"stt,omitempty"`
+	Tts              *LivekitSimulationRunJobMetricsTTS `json:"tts,omitempty"`
 }
 
 // LivekitSimulationRunSamplingOptions Runs each scenario more than once, so a flaky sample is distinguishable
@@ -2427,97 +1660,6 @@ type LivekitWebhookConfig struct {
 
 // LivekitAgentAgentConfigUpdate defines model for livekit.agent.AgentConfigUpdate.
 type LivekitAgentAgentConfigUpdate struct {
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	CreatedAt    *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	Id           *string                  `json:"id,omitempty"`
 	Instructions *string                  `json:"instructions,omitempty"`
@@ -2527,97 +1669,6 @@ type LivekitAgentAgentConfigUpdate struct {
 
 // LivekitAgentAgentHandoff defines model for livekit.agent.AgentHandoff.
 type LivekitAgentAgentHandoff struct {
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	CreatedAt  *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	Id         *string                  `json:"id,omitempty"`
 	NewAgentId *string                  `json:"newAgentId,omitempty"`
@@ -2630,105 +1681,11 @@ type LivekitAgentAgentTaskStatus string
 // LivekitAgentAgentTaskTask defines model for livekit.agent.AgentTask.Task.
 type LivekitAgentAgentTaskTask struct {
 	// Name The task's name, as the agent defines it.
-	Name *string `json:"name,omitempty"`
-
-	// Status A task is never UNSPECIFIED.
-	Status   *LivekitAgentAgentTaskStatus `json:"status,omitempty"`
-	TaskId   *string                      `json:"taskId,omitempty"`
-	ThreadId *string                      `json:"threadId,omitempty"`
-
-	// UpdatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+	Name      *string                      `json:"name,omitempty"`
+	Status    *LivekitAgentAgentTaskStatus `json:"status,omitempty"`
+	TaskId    *string                      `json:"taskId,omitempty"`
+	ThreadId  *string                      `json:"threadId,omitempty"`
+	UpdatedAt *GoogleProtobufTimestamp     `json:"updatedAt,omitempty"`
 }
 
 // LivekitAgentAgentThreadItem One chat item of an agent. Stored as the JSON of
@@ -2747,210 +1704,16 @@ type LivekitAgentAgentThreadItem struct {
 
 // LivekitAgentAgentThreadThread defines model for livekit.agent.AgentThread.Thread.
 type LivekitAgentAgentThreadThread struct {
-	Attributes *map[string]string `json:"attributes,omitempty"`
-
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+	Attributes *map[string]string       `json:"attributes,omitempty"`
+	CreatedAt  *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 
 	// DatabaseId The thread's database ("DB_..."), created with the thread.
 	DatabaseId *string `json:"databaseId,omitempty"`
 
 	// ExpiresAt last_active + idle_ttl; every update pushes it out. The thread and its
 	//  database are deleted once it passes.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-
-	// IdleTtl A span of time as protobuf JSON encodes it: seconds with an "s" suffix,
-	// e.g. "86400s" for a day. Responses carry 0, 3, 6 or 9 fractional
-	// digits ("1.500s", "0.000000001s"); requests may use 1 to 9. At most
-	// 315576000000 seconds either way. Not an ISO 8601 duration ("P1D" is
-	// rejected).
-	//
-	// Examples: 86400s, 1.500s, 0.000000001s
-	IdleTtl *GoogleProtobufDuration `json:"idleTtl,omitempty"`
-
-	// LastActive A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	ExpiresAt  *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+	IdleTtl    *GoogleProtobufDuration  `json:"idleTtl,omitempty"`
 	LastActive *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
 	Scope      *string                  `json:"scope,omitempty"`
 	ThreadId   *string                  `json:"threadId,omitempty"`
@@ -2968,134 +1731,39 @@ type LivekitAgentChatContextChatItem struct {
 
 // LivekitAgentChatContextChatItem0 defines model for LivekitAgentChatContextChatItem.0.
 type LivekitAgentChatContextChatItem0 struct {
-	AgentConfigUpdate LivekitAgentAgentConfigUpdate `json:"agentConfigUpdate"`
+	AgentConfigUpdate *LivekitAgentAgentConfigUpdate `json:"agentConfigUpdate,omitempty"`
 }
 
 // LivekitAgentChatContextChatItem1 defines model for LivekitAgentChatContextChatItem.1.
 type LivekitAgentChatContextChatItem1 struct {
-	AgentHandoff LivekitAgentAgentHandoff `json:"agentHandoff"`
+	AgentHandoff *LivekitAgentAgentHandoff `json:"agentHandoff,omitempty"`
 }
 
 // LivekitAgentChatContextChatItem2 defines model for LivekitAgentChatContextChatItem.2.
 type LivekitAgentChatContextChatItem2 struct {
-	FunctionCall LivekitAgentFunctionCall `json:"functionCall"`
+	FunctionCall *LivekitAgentFunctionCall `json:"functionCall,omitempty"`
 }
 
 // LivekitAgentChatContextChatItem3 defines model for LivekitAgentChatContextChatItem.3.
 type LivekitAgentChatContextChatItem3 struct {
-	FunctionCallOutput LivekitAgentFunctionCallOutput `json:"functionCallOutput"`
+	FunctionCallOutput *LivekitAgentFunctionCallOutput `json:"functionCallOutput,omitempty"`
 }
 
 // LivekitAgentChatContextChatItem4 defines model for LivekitAgentChatContextChatItem.4.
 type LivekitAgentChatContextChatItem4 struct {
-	Message LivekitAgentChatMessage `json:"message"`
+	Message *LivekitAgentChatMessage `json:"message,omitempty"`
 }
-
-// LivekitAgentChatContextChatItem5 defines model for LivekitAgentChatContextChatItem.5.
-type LivekitAgentChatContextChatItem5 = interface{}
 
 // LivekitAgentChatMessage defines model for livekit.agent.ChatMessage.
 type LivekitAgentChatMessage struct {
-	Content *[]LivekitAgentChatMessageChatContent `json:"content,omitempty"`
-
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	CreatedAt            *GoogleProtobufTimestamp   `json:"createdAt,omitempty"`
-	Extra                *map[string]string         `json:"extra,omitempty"`
-	Id                   *string                    `json:"id,omitempty"`
-	Interrupted          *bool                      `json:"interrupted,omitempty"`
-	Metrics              *LivekitAgentMetricsReport `json:"metrics,omitempty"`
-	Role                 *LivekitAgentChatRole      `json:"role,omitempty"`
-	TranscriptConfidence *float64                   `json:"transcriptConfidence,omitempty"`
+	Content              *[]LivekitAgentChatMessageChatContent `json:"content,omitempty"`
+	CreatedAt            *GoogleProtobufTimestamp              `json:"createdAt,omitempty"`
+	Extra                *map[string]string                    `json:"extra,omitempty"`
+	Id                   *string                               `json:"id,omitempty"`
+	Interrupted          *bool                                 `json:"interrupted,omitempty"`
+	Metrics              *LivekitAgentMetricsReport            `json:"metrics,omitempty"`
+	Role                 *LivekitAgentChatRole                 `json:"role,omitempty"`
+	TranscriptConfidence *float64                              `json:"transcriptConfidence,omitempty"`
 }
 
 // LivekitAgentChatMessageChatContent defines model for livekit.agent.ChatMessage.ChatContent.
@@ -3105,111 +1773,16 @@ type LivekitAgentChatMessageChatContent struct {
 
 // LivekitAgentChatMessageChatContent0 defines model for LivekitAgentChatMessageChatContent.0.
 type LivekitAgentChatMessageChatContent0 struct {
-	Text string `json:"text"`
+	Text *string `json:"text,omitempty"`
 }
-
-// LivekitAgentChatMessageChatContent1 defines model for LivekitAgentChatMessageChatContent.1.
-type LivekitAgentChatMessageChatContent1 = interface{}
 
 // LivekitAgentChatRole defines model for livekit.agent.ChatRole.
 type LivekitAgentChatRole string
 
 // LivekitAgentFunctionCall defines model for livekit.agent.FunctionCall.
 type LivekitAgentFunctionCall struct {
-	Arguments *string `json:"arguments,omitempty"`
-	CallId    *string `json:"callId,omitempty"`
-
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	Arguments *string                  `json:"arguments,omitempty"`
+	CallId    *string                  `json:"callId,omitempty"`
 	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	Id        *string                  `json:"id,omitempty"`
 	Name      *string                  `json:"name,omitempty"`
@@ -3217,99 +1790,7 @@ type LivekitAgentFunctionCall struct {
 
 // LivekitAgentFunctionCallOutput defines model for livekit.agent.FunctionCallOutput.
 type LivekitAgentFunctionCallOutput struct {
-	CallId *string `json:"callId,omitempty"`
-
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	CallId    *string                  `json:"callId,omitempty"`
 	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	Id        *string                  `json:"id,omitempty"`
 	IsError   *bool                    `json:"isError,omitempty"`
@@ -3319,206 +1800,22 @@ type LivekitAgentFunctionCallOutput struct {
 
 // LivekitAgentMetricsReport defines model for livekit.agent.MetricsReport.
 type LivekitAgentMetricsReport struct {
-	E2eLatency               *float64 `json:"e2eLatency,omitempty"`
-	EndOfTurnDelay           *float64 `json:"endOfTurnDelay,omitempty"`
-	LlmNodeTps               *float64 `json:"llmNodeTps,omitempty"`
-	LlmNodeTtfs              *float64 `json:"llmNodeTtfs,omitempty"`
-	LlmNodeTtft              *float64 `json:"llmNodeTtft,omitempty"`
-	OnUserTurnCompletedDelay *float64 `json:"onUserTurnCompletedDelay,omitempty"`
-
-	// StartedSpeakingAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	StartedSpeakingAt *GoogleProtobufTimestamp `json:"startedSpeakingAt,omitempty"`
-
-	// StoppedSpeakingAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	StoppedSpeakingAt  *GoogleProtobufTimestamp `json:"stoppedSpeakingAt,omitempty"`
-	TranscriptionDelay *float64                 `json:"transcriptionDelay,omitempty"`
-	TtsNodeTtfb        *float64                 `json:"ttsNodeTtfb,omitempty"`
+	E2eLatency               *float64                 `json:"e2eLatency,omitempty"`
+	EndOfTurnDelay           *float64                 `json:"endOfTurnDelay,omitempty"`
+	LlmNodeTps               *float64                 `json:"llmNodeTps,omitempty"`
+	LlmNodeTtfs              *float64                 `json:"llmNodeTtfs,omitempty"`
+	LlmNodeTtft              *float64                 `json:"llmNodeTtft,omitempty"`
+	OnUserTurnCompletedDelay *float64                 `json:"onUserTurnCompletedDelay,omitempty"`
+	StartedSpeakingAt        *GoogleProtobufTimestamp `json:"startedSpeakingAt,omitempty"`
+	StoppedSpeakingAt        *GoogleProtobufTimestamp `json:"stoppedSpeakingAt,omitempty"`
+	TranscriptionDelay       *float64                 `json:"transcriptionDelay,omitempty"`
+	TtsNodeTtfb              *float64                 `json:"ttsNodeTtfb,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1AgentAnalytics AgentAnalytics is one agent's analytics over a time range. Common concerns are
+// LivekitPublicapiAnalyticsV1AgentAnalytics One agent's analytics over a time range. Common concerns are grouped so they
 //
-//	grouped so they read the same whether you fetch one agent or the whole roster:
-//	`sessions`, `performance`, and `usage` are always found under those names.
+//	read the same whether you fetch one agent or the whole roster: `sessions`,
+//	`performance`, and `usage` are always found under those names.
 type LivekitPublicapiAnalyticsV1AgentAnalytics struct {
 	AgentId     *string                                               `json:"agentId,omitempty"`
 	AgentName   *string                                               `json:"agentName,omitempty"`
@@ -3532,14 +1829,10 @@ type LivekitPublicapiAnalyticsV1AgentAnalytics struct {
 // LivekitPublicapiAnalyticsV1AgentAnalyticsPerformance defines model for livekit.publicapi.analytics.v1.AgentAnalytics.Performance.
 type LivekitPublicapiAnalyticsV1AgentAnalyticsPerformance struct {
 	// InterruptedRate Fraction 0..1 of turns the user interrupted the agent.
-	InterruptedRate *float64 `json:"interruptedRate,omitempty"`
-
-	// JoinLatency Percentiles is a p50/p90/p99 triple in milliseconds.
-	JoinLatency *LivekitPublicapiAnalyticsV1Percentiles `json:"joinLatency,omitempty"`
-
-	// Latency LatencyBreakdown is where an average agent reply's time goes, in milliseconds.
-	Latency *LivekitPublicapiAnalyticsV1LatencyBreakdown `json:"latency,omitempty"`
-	Turns   *string                                      `json:"turns,omitempty"`
+	InterruptedRate *float64                                     `json:"interruptedRate,omitempty"`
+	JoinLatency     *LivekitPublicapiAnalyticsV1Percentiles      `json:"joinLatency,omitempty"`
+	Latency         *LivekitPublicapiAnalyticsV1LatencyBreakdown `json:"latency,omitempty"`
+	Turns           *string                                      `json:"turns,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1AgentAnalyticsSessions defines model for livekit.publicapi.analytics.v1.AgentAnalytics.Sessions.
@@ -3560,133 +1853,37 @@ type LivekitPublicapiAnalyticsV1AgentAnalyticsUsage struct {
 
 // LivekitPublicapiAnalyticsV1AgentsGetResponse defines model for livekit.publicapi.analytics.v1.Agents.Get.Response.
 type LivekitPublicapiAnalyticsV1AgentsGetResponse struct {
-	// Analytics AgentAnalytics is one agent's analytics over a time range. Common concerns are
-	//  grouped so they read the same whether you fetch one agent or the whole roster:
-	//  `sessions`, `performance`, and `usage` are always found under those names.
 	Analytics *LivekitPublicapiAnalyticsV1AgentAnalytics `json:"analytics,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1AgentsListResponse defines model for livekit.publicapi.analytics.v1.Agents.List.Response.
 type LivekitPublicapiAnalyticsV1AgentsListResponse struct {
-	Items *[]LivekitPublicapiAnalyticsV1AgentAnalytics `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	Items    *[]LivekitPublicapiAnalyticsV1AgentAnalytics `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo            `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1CountryCount CountryCount is a per-country connection count for the top-countries breakdown.
+// LivekitPublicapiAnalyticsV1CountryCount A per-country connection count for the top-countries breakdown.
 type LivekitPublicapiAnalyticsV1CountryCount struct {
 	Count *string `json:"count,omitempty"`
 	Name  *string `json:"name,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1DataPoint DataPoint is one point of a per-session time series (quality, bandwidth, fps).
+// LivekitPublicapiAnalyticsV1DataPoint One point of a per-session time series (quality, bandwidth, fps).
 type LivekitPublicapiAnalyticsV1DataPoint struct {
-	// Timestamp A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 	Value     *float64                 `json:"value,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1Estimate Estimate flags a value that is approximate over large windows, with its
+// LivekitPublicapiAnalyticsV1Estimate Flags a value that is approximate over large windows, with its tolerance. A
 //
-//	tolerance. A consumer should not treat an estimated value as exact.
+//	consumer should not treat an estimated value as exact.
 type LivekitPublicapiAnalyticsV1Estimate struct {
 	// ErrorMargin Fractional tolerance (e.g. 0.01 for +/-1%). Zero when unknown.
 	ErrorMargin *float64 `json:"errorMargin,omitempty"`
 	IsEstimate  *bool    `json:"isEstimate,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1LatencyBreakdown LatencyBreakdown is where an average agent reply's time goes, in milliseconds.
+// LivekitPublicapiAnalyticsV1LatencyBreakdown Where an average agent reply's time goes, in milliseconds.
 type LivekitPublicapiAnalyticsV1LatencyBreakdown struct {
 	AvgReplyMs *float64 `json:"avgReplyMs,omitempty"`
 	EouMs      *float64 `json:"eouMs,omitempty"`
@@ -3695,10 +1892,10 @@ type LivekitPublicapiAnalyticsV1LatencyBreakdown struct {
 	TtsTtfbMs  *float64 `json:"ttsTtfbMs,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ModelUsage ModelUsage is per-model usage over the window. `component` is the stage the
+// LivekitPublicapiAnalyticsV1ModelUsage Per-model usage over the window. `component` is the stage the model served
 //
-//	model served (llm, tts, realtime); latency is TTFT for llm/realtime rows and
-//	TTFB for tts rows.
+//	(llm, tts, realtime); latency is TTFT for llm/realtime rows and TTFB for tts
+//	rows.
 type LivekitPublicapiAnalyticsV1ModelUsage struct {
 	CachedTokens *string  `json:"cachedTokens,omitempty"`
 	Component    *string  `json:"component,omitempty"`
@@ -3713,20 +1910,16 @@ type LivekitPublicapiAnalyticsV1ModelUsage struct {
 	TtsChars     *string  `json:"ttsChars,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantInfo ParticipantInfo is one participant identity of a room session, as the
+// LivekitPublicapiAnalyticsV1ParticipantInfo One participant identity of a room session, as the dashboard's participants
 //
-//	dashboard's participants table shows it.
+//	table shows it.
 type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
 	// JoinedAt First join across the identity's connections.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	JoinedAt *GoogleProtobufTimestamp `json:"joinedAt,omitempty"`
 
 	// LeftAt Last leave across the identity's connections; unset while no leave is
-	//  recorded, so a participant of an active session with no left_at may still
-	//  be connected.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	//  recorded, so a participant of an active session with no leftAt may still be
+	//  connected.
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
 	// Location Country name, e.g. "United States"; "Unknown" when the rollup has none.
@@ -3747,11 +1940,11 @@ type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
 	Sessions *[]LivekitPublicapiAnalyticsV1ParticipantSession `json:"sessions,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantSession ParticipantSession is one participant session of a participant: one
+// LivekitPublicapiAnalyticsV1ParticipantSession One participant session of a participant: one join-to-leave stretch,
 //
-//	join-to-leave stretch, identified by its participant session id (PA_...),
-//	with the client it connected from. A participant that reconnects, from the
-//	same device or another, has several.
+//	identified by its participant session id (PA_...), with the client it
+//	connected from. A participant that reconnects, from the same device or
+//	another, has several.
 type LivekitPublicapiAnalyticsV1ParticipantSession struct {
 	// Browser Client browser, e.g. "chrome".
 	Browser *string `json:"browser,omitempty"`
@@ -3766,18 +1959,14 @@ type LivekitPublicapiAnalyticsV1ParticipantSession struct {
 	// DeviceModel Client device model, e.g. "iPhone 15".
 	DeviceModel *string `json:"deviceModel,omitempty"`
 
-	// DurationSeconds Seconds from joined_at to left_at, as the dashboard counts them. While no
+	// DurationSeconds Seconds from joinedAt to leftAt, as the dashboard counts them. While no
 	//  leave is recorded, to the session's end once it has one, else to now.
 	DurationSeconds *string `json:"durationSeconds,omitempty"`
 
 	// JoinedAt When this participant session joined.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	JoinedAt *GoogleProtobufTimestamp `json:"joinedAt,omitempty"`
 
 	// LeftAt When it left; unset while no leave is recorded.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
 	// Location Country name, e.g. "United States"; "Unknown" when the rollup has none.
@@ -3797,25 +1986,25 @@ type LivekitPublicapiAnalyticsV1ParticipantSession struct {
 	SdkVersion *string `json:"sdkVersion,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantSortField ParticipantSortField is the column a participant listing is ordered by.
+// LivekitPublicapiAnalyticsV1ParticipantSortField The column a participant listing is ordered by.
 type LivekitPublicapiAnalyticsV1ParticipantSortField string
 
-// LivekitPublicapiAnalyticsV1Percentiles Percentiles is a p50/p90/p99 triple in milliseconds.
+// LivekitPublicapiAnalyticsV1Percentiles A p50/p90/p99 triple in milliseconds.
 type LivekitPublicapiAnalyticsV1Percentiles struct {
 	P50Ms *float64 `json:"p50Ms,omitempty"`
 	P90Ms *float64 `json:"p90Ms,omitempty"`
 	P99Ms *float64 `json:"p99Ms,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1PlatformShare PlatformShare is a per-platform share of connections (fraction 0..1).
+// LivekitPublicapiAnalyticsV1PlatformShare A per-platform share of connections (fraction 0..1).
 type LivekitPublicapiAnalyticsV1PlatformShare struct {
 	Name  *string  `json:"name,omitempty"`
 	Share *float64 `json:"share,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ProjectAnalytics ProjectAnalytics is the project overview over a time range, grouped the same
+// LivekitPublicapiAnalyticsV1ProjectAnalytics The project overview over a time range, grouped the same way: `sessions` and
 //
-//	way: `sessions` and `participants`.
+//	`participants`.
 type LivekitPublicapiAnalyticsV1ProjectAnalytics struct {
 	Participants *LivekitPublicapiAnalyticsV1ProjectAnalyticsParticipants `json:"participants,omitempty"`
 	Sessions     *LivekitPublicapiAnalyticsV1ProjectAnalyticsSessions     `json:"sessions,omitempty"`
@@ -3839,12 +2028,10 @@ type LivekitPublicapiAnalyticsV1ProjectAnalyticsSessions struct {
 
 // LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse defines model for livekit.publicapi.analytics.v1.ProjectOverview.Get.Response.
 type LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse struct {
-	// Analytics ProjectAnalytics is the project overview over a time range, grouped the same
-	//  way: `sessions` and `participants`.
 	Analytics *LivekitPublicapiAnalyticsV1ProjectAnalytics `json:"analytics,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1PublishedSources PublishedSources is which track sources a participant published.
+// LivekitPublicapiAnalyticsV1PublishedSources Which track sources a participant published.
 type LivekitPublicapiAnalyticsV1PublishedSources struct {
 	CameraTrack      *bool `json:"cameraTrack,omitempty"`
 	MicrophoneTrack  *bool `json:"microphoneTrack,omitempty"`
@@ -3852,224 +2039,38 @@ type LivekitPublicapiAnalyticsV1PublishedSources struct {
 	ScreenShareTrack *bool `json:"screenShareTrack,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1Session Session is one room-session list row. Bandwidth and connection time are on
+// LivekitPublicapiAnalyticsV1Session One room-session list row. Bandwidth and connection time are on GetSession's
 //
-//	GetSession's detail only.
+//	detail only.
 type LivekitPublicapiAnalyticsV1Session struct {
 	// EndedAt When the session ended. A session that stopped reporting is given its last
 	//  report time, even while its status is still ACTIVE; unset while it is live.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 
 	// HasDetailData False while the session's full detail (end time, participant counts,
 	//  duration) is still being finalized; the detail endpoints are complete once
 	//  it is true.
-	HasDetailData *bool `json:"hasDetailData,omitempty"`
-
-	// LastActive A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	LastActive *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
+	HasDetailData *bool                    `json:"hasDetailData,omitempty"`
+	LastActive    *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
 
 	// NumParticipants Distinct participants (by identity) connected for more than zero seconds
 	//  during the session. Not a live count: a closed session keeps its total.
-	NumParticipants *int32  `json:"numParticipants,omitempty"`
-	RoomName        *string `json:"roomName,omitempty"`
-	SessionId       *string `json:"sessionId,omitempty"`
-
-	// StartedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	StartedAt *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
+	NumParticipants *int32                   `json:"numParticipants,omitempty"`
+	RoomName        *string                  `json:"roomName,omitempty"`
+	SessionId       *string                  `json:"sessionId,omitempty"`
+	StartedAt       *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
 
 	// Status ACTIVE until the session's close is recorded, so a session that stopped
-	//  reporting can be ACTIVE with an ended_at.
+	//  reporting can be ACTIVE with an endedAt.
 	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
 	Tags   *[]string                                 `json:"tags,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1SessionDetail SessionDetail is the richer per-session view: a superset of Session with the
+// LivekitPublicapiAnalyticsV1SessionDetail The richer per-session view: a superset of Session with the room id, totals,
 //
-//	room id, totals, the first page of participants, and per-metric timelines.
-//	The timelines share one grid sized from the session's length, the
-//	dashboard's: one point per bucket, 0 where a bucket has no data.
+//	the first page of participants, and per-metric timelines. The timelines share
+//	one grid sized from the session's length, the dashboard's: one point per
+//	bucket, 0 where a bucket has no data.
 type LivekitPublicapiAnalyticsV1SessionDetail struct {
 	// BandwidthIn Bytes participants published, all track types.
 	BandwidthIn *string `json:"bandwidthIn,omitempty"`
@@ -4079,108 +2080,16 @@ type LivekitPublicapiAnalyticsV1SessionDetail struct {
 
 	// ConnectionSeconds WebRTC connection time in seconds, summed over standard participants and
 	//  self-hosted agents (cloud agents excluded), as the dashboard counts it.
-	ConnectionSeconds *string `json:"connectionSeconds,omitempty"`
+	ConnectionSeconds *string                  `json:"connectionSeconds,omitempty"`
+	EndedAt           *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 
-	// EndedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
-
-	// NumParticipants Same count as Session.num_participants.
+	// NumParticipants Same count as Session.numParticipants.
 	NumParticipants *int32 `json:"numParticipants,omitempty"`
 
 	// Participants The first page of participants, newest join first (at most 50). When
-	//  participants_page.has_more, continue with ListSessionParticipants: pass
-	//  participants_page.next_cursor as page.cursor, with sort_by and sort_order
-	//  unset (or joined_at descending, the same thing).
+	//  participantsPage.hasMore, continue with ListSessionParticipants: pass
+	//  participantsPage.nextCursor as page.cursor, with sortBy and sortOrder unset
+	//  (or joinedAt descending, the same thing).
 	Participants *[]LivekitPublicapiAnalyticsV1ParticipantInfo `json:"participants,omitempty"`
 
 	// ParticipantsPage Paging state for participants. Unset when the first page couldn't be
@@ -4195,105 +2104,11 @@ type LivekitPublicapiAnalyticsV1SessionDetail struct {
 	PublishFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"publishFps,omitempty"`
 
 	// Quality Average connection quality as a 0-1 fraction of the 0-5 track score.
-	Quality   *[]LivekitPublicapiAnalyticsV1DataPoint `json:"quality,omitempty"`
-	RoomName  *string                                 `json:"roomName,omitempty"`
-	SessionId *string                                 `json:"sessionId,omitempty"`
-
-	// StartedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	StartedAt *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
-
-	// Status SessionStatus is the lifecycle state of a session.
-	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
+	Quality   *[]LivekitPublicapiAnalyticsV1DataPoint   `json:"quality,omitempty"`
+	RoomName  *string                                   `json:"roomName,omitempty"`
+	SessionId *string                                   `json:"sessionId,omitempty"`
+	StartedAt *GoogleProtobufTimestamp                  `json:"startedAt,omitempty"`
+	Status    *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
 
 	// SubscribeBps Subscribed audio plus video bitrate, in bits per second.
 	SubscribeBps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeBps,omitempty"`
@@ -4305,16 +2120,16 @@ type LivekitPublicapiAnalyticsV1SessionDetail struct {
 	Tags *[]string `json:"tags,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1SessionEvent SessionEvent is one event of a room session, such as a participant joining
+// LivekitPublicapiAnalyticsV1SessionEvent One event of a room session, such as a participant joining or a track being
 //
-//	or a track being published.
+//	published.
 type LivekitPublicapiAnalyticsV1SessionEvent struct {
 	// ParticipantIdentity The identity of the participant the event is about; empty for a room
 	//  event, or an API call that names no participant.
 	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
 
 	// ParticipantSessionId The participant session (PA_...) the event is about; empty when
-	//  participant_identity is.
+	//  participantIdentity is.
 	ParticipantSessionId *string `json:"participantSessionId,omitempty"`
 
 	// Payload The event's fields from an allowlist, each present only when the event
@@ -4325,99 +2140,7 @@ type LivekitPublicapiAnalyticsV1SessionEvent struct {
 	//    - ROOM_ENDED: reason;
 	//    - API_CALL: service, method, status, twirpErrorCode and durationNs.
 	//  Every other field the event recorded is left out.
-	Payload *GoogleProtobufStruct `json:"payload,omitempty"`
-
-	// Timestamp A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	Payload   *GoogleProtobufStruct    `json:"payload,omitempty"`
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 
 	// Type The event's type, an AnalyticsEventType name such as PARTICIPANT_JOINED.
@@ -4426,43 +2149,34 @@ type LivekitPublicapiAnalyticsV1SessionEvent struct {
 
 // LivekitPublicapiAnalyticsV1SessionEventsListResponse defines model for livekit.publicapi.analytics.v1.SessionEvents.List.Response.
 type LivekitPublicapiAnalyticsV1SessionEventsListResponse struct {
-	Items *[]LivekitPublicapiAnalyticsV1SessionEvent `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	Items    *[]LivekitPublicapiAnalyticsV1SessionEvent `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo          `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1SessionParticipantsListResponse defines model for livekit.publicapi.analytics.v1.SessionParticipants.List.Response.
 type LivekitPublicapiAnalyticsV1SessionParticipantsListResponse struct {
-	Items *[]LivekitPublicapiAnalyticsV1ParticipantInfo `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	Items    *[]LivekitPublicapiAnalyticsV1ParticipantInfo `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo             `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1SessionStatus SessionStatus is the lifecycle state of a session.
+// LivekitPublicapiAnalyticsV1SessionStatus The lifecycle state of a session.
 type LivekitPublicapiAnalyticsV1SessionStatus string
 
 // LivekitPublicapiAnalyticsV1SessionsGetResponse defines model for livekit.publicapi.analytics.v1.Sessions.Get.Response.
 type LivekitPublicapiAnalyticsV1SessionsGetResponse struct {
 	// Detail Absent while the session's detail is still being finalized (see
-	//  Session.has_detail_data on the list row).
-	Detail *LivekitPublicapiAnalyticsV1SessionDetail `json:"detail,omitempty"`
-
-	// Session Session is one room-session list row. Bandwidth and connection time are on
-	//  GetSession's detail only.
-	Session *LivekitPublicapiAnalyticsV1Session `json:"session,omitempty"`
+	//  Session.hasDetailData on the list row).
+	Detail  *LivekitPublicapiAnalyticsV1SessionDetail `json:"detail,omitempty"`
+	Session *LivekitPublicapiAnalyticsV1Session       `json:"session,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1SessionsListResponse defines model for livekit.publicapi.analytics.v1.Sessions.List.Response.
 type LivekitPublicapiAnalyticsV1SessionsListResponse struct {
-	Items *[]LivekitPublicapiAnalyticsV1Session `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	Items    *[]LivekitPublicapiAnalyticsV1Session `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo     `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiCommonV1PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
+// LivekitPublicapiCommonV1PageInfo The cursor-pagination metadata shared by every list response.
 type LivekitPublicapiCommonV1PageInfo struct {
 	HasMore *bool `json:"hasMore,omitempty"`
 
@@ -4471,11 +2185,11 @@ type LivekitPublicapiCommonV1PageInfo struct {
 	NextCursor *string `json:"nextCursor,omitempty"`
 }
 
-// LivekitPublicapiCommonV1SortOrder SortOrder is the direction of a list request's sort. A list that lets the
+// LivekitPublicapiCommonV1SortOrder The direction of a list request's sort. A list that lets the caller pick a
 //
-//	caller pick a direction takes it as `sort_order` and documents its default
-//	column and direction; one that can also sort on more than one column adds
-//	its own `<X>SortField sort_by`.
+//	direction takes it as `sortOrder` and documents its default column and
+//	direction; one that can also sort on more than one column adds its own
+//	`<X>SortField sortBy`.
 type LivekitPublicapiCommonV1SortOrder string
 
 // LivekitPublicapiDatabasesV1DatabasesCreateResponse defines model for livekit.publicapi.databases.v1.Databases.Create.Response.
@@ -4483,8 +2197,6 @@ type LivekitPublicapiDatabasesV1DatabasesCreateResponse struct {
 	DatabaseId *string `json:"databaseId,omitempty"`
 
 	// ExpiresAt Unset when the database never expires.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 }
 
@@ -4497,8 +2209,6 @@ type LivekitPublicapiDatabasesV1DatabasesExportResponse struct {
 	DownloadUrl *string `json:"downloadUrl,omitempty"`
 
 	// ExpiresAt Of the URL, not the database.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
 	// Tip The commit sequence the export is consistent at.
@@ -4507,27 +2217,24 @@ type LivekitPublicapiDatabasesV1DatabasesExportResponse struct {
 
 // LivekitPublicapiDatabasesV1DatabasesGetResponse defines model for livekit.publicapi.databases.v1.Databases.Get.Response.
 type LivekitPublicapiDatabasesV1DatabasesGetResponse struct {
-	// Database One database, as get and list both report it.
 	Database *LivekitAgentDBAgentDatabase `json:"database,omitempty"`
 }
 
 // LivekitPublicapiDatabasesV1DatabasesListResponse defines model for livekit.publicapi.databases.v1.Databases.List.Response.
 type LivekitPublicapiDatabasesV1DatabasesListResponse struct {
-	Items *[]LivekitAgentDBAgentDatabase `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
+	Items    *[]LivekitAgentDBAgentDatabase    `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1LogLevel LogLevel is a log record's level, as the dashboard's logs panel shows and
+// LivekitPublicapiObservabilityV1LogLevel A log record's level, as the dashboard's logs panel shows and filters it.
 //
-//	filters it. Agents name levels differently by runtime, such as Python's
-//	CRITICAL and Node's FATAL, so a record's level comes from its OpenTelemetry
-//	severity number, or from its level name when it has none; a level means the
-//	same for Python and Node agents.
+//	Agents name levels differently by runtime, such as Python's CRITICAL and
+//	Node's FATAL, so a record's level comes from its OpenTelemetry severity
+//	number, or from its level name when it has none; a level means the same for
+//	Python and Node agents.
 type LivekitPublicapiObservabilityV1LogLevel string
 
-// LivekitPublicapiObservabilityV1LogRecord LogRecord is one log record a session's agent exported.
+// LivekitPublicapiObservabilityV1LogRecord One log record a session's agent exported.
 type LivekitPublicapiObservabilityV1LogRecord struct {
 	// Attributes The record's attributes, typed and nested as the agent recorded them,
 	//  with its resource's and scope's attributes merged in; the record's own
@@ -4540,13 +2247,7 @@ type LivekitPublicapiObservabilityV1LogRecord struct {
 	BodyFields *map[string]*GoogleProtobufValue `json:"bodyFields,omitempty"`
 
 	// Id The record's id, the same on every read.
-	Id *string `json:"id,omitempty"`
-
-	// Level LogLevel is a log record's level, as the dashboard's logs panel shows and
-	//  filters it. Agents name levels differently by runtime, such as Python's
-	//  CRITICAL and Node's FATAL, so a record's level comes from its OpenTelemetry
-	//  severity number, or from its level name when it has none; a level means the
-	//  same for Python and Node agents.
+	Id    *string                                  `json:"id,omitempty"`
 	Level *LivekitPublicapiObservabilityV1LogLevel `json:"level,omitempty"`
 
 	// Logger The logger that wrote the record (its logger.name attribute).
@@ -4558,101 +2259,9 @@ type LivekitPublicapiObservabilityV1LogRecord struct {
 	Message *string `json:"message,omitempty"`
 
 	// SeverityText The level's name as the agent logged it, such as "WARN" or "CRITICAL".
-	SeverityText *string `json:"severityText,omitempty"`
-	SpanId       *string `json:"spanId,omitempty"`
-
-	// Timestamp A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
+	SeverityText *string                  `json:"severityText,omitempty"`
+	SpanId       *string                  `json:"spanId,omitempty"`
+	Timestamp    *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 
 	// TraceId The trace and span the record was logged in, as lowercase hex; empty when
 	//  it was logged outside one. They link the record to its span in
@@ -4662,17 +2271,16 @@ type LivekitPublicapiObservabilityV1LogRecord struct {
 
 // LivekitPublicapiObservabilityV1LogsGetResponse defines model for livekit.publicapi.observability.v1.Logs.Get.Response.
 type LivekitPublicapiObservabilityV1LogsGetResponse struct {
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
 	PageInfo *LivekitPublicapiCommonV1PageInfo           `json:"pageInfo,omitempty"`
 	Records  *[]LivekitPublicapiObservabilityV1LogRecord `json:"records,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1MetricHistogram MetricHistogram summarizes the values a histogram point recorded.
+// LivekitPublicapiObservabilityV1MetricHistogram Summarizes the values a histogram point recorded.
 type LivekitPublicapiObservabilityV1MetricHistogram struct {
-	// BucketBounds A histogram's buckets, with one more count than bounds: bucket_counts[0]
-	//  counts the values up to bucket_bounds[0], bucket_counts[i] those in
-	//  (bucket_bounds[i-1], bucket_bounds[i]], and the last count those above
-	//  the last bound. Both are empty for an exponential histogram.
+	// BucketBounds A histogram's buckets, with one more count than bounds: bucketCounts[0]
+	//  counts the values up to bucketBounds[0], bucketCounts[i] those in
+	//  (bucketBounds[i-1], bucketBounds[i]], and the last count those above the
+	//  last bound. Both are empty for an exponential histogram.
 	BucketBounds *[]float64 `json:"bucketBounds,omitempty"`
 	BucketCounts *[]string  `json:"bucketCounts,omitempty"`
 
@@ -4685,130 +2293,33 @@ type LivekitPublicapiObservabilityV1MetricHistogram struct {
 	Sum *float64 `json:"sum,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1MetricKind MetricKind is the OpenTelemetry data type a metric point was exported as.
+// LivekitPublicapiObservabilityV1MetricKind The OpenTelemetry data type a metric point was exported as.
 type LivekitPublicapiObservabilityV1MetricKind string
 
-// LivekitPublicapiObservabilityV1MetricPoint MetricPoint is one OpenTelemetry metric data point a session's agent
+// LivekitPublicapiObservabilityV1MetricPoint One OpenTelemetry metric data point a session's agent exported. It is the raw
 //
-//	exported. It is the raw metric the agent emits, so it won't exactly match
-//	the dashboard's metrics panel, which derives its numbers from the transcript
-//	and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-//	produce points; an agent whose code installs its own MeterProvider exports
-//	none to LiveKit Cloud.
+//	metric the agent emits, so it won't exactly match the dashboard's metrics
+//	panel, which derives its numbers from the transcript and traces. Only agents
+//	that export OpenTelemetry metrics to LiveKit Cloud produce points; an agent
+//	whose code installs its own MeterProvider exports none to LiveKit Cloud.
 type LivekitPublicapiObservabilityV1MetricPoint struct {
 	// Attributes The point's attributes, typed and nested as the agent recorded them, with
 	//  its resource's and scope's attributes merged in, such as room_id, job_id,
 	//  lk.agent_name and the model's model_name; the point's own value wins. With
 	//  two agents in one session, the resource's can be the other agent's. An
 	//  integer beyond ±2^53 is its decimal string, and bytes are base64.
-	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
-
-	// EndTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	EndTime *GoogleProtobufTimestamp `json:"endTime,omitempty"`
-
-	// Kind MetricKind is the OpenTelemetry data type a metric point was exported as.
-	Kind *LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
+	Attributes *map[string]*GoogleProtobufValue           `json:"attributes,omitempty"`
+	EndTime    *GoogleProtobufTimestamp                   `json:"endTime,omitempty"`
+	Kind       *LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
 
 	// Name The metric's name, such as lk.agents.turn.e2e_latency or
-	//  gen_ai.client.token.usage. The upstream aggregator can file several
-	//  metrics that share their attributes under one name (GetSessionMetrics).
+	//  gen_ai.client.token.usage. Several metrics that share their attributes
+	//  can come back under one name; see GetSessionMetrics.
 	Name *string `json:"name,omitempty"`
 
-	// StartTime The interval the point covers. An agent exports every 30 seconds, so a
-	//  sum or histogram covers the time since its previous export; a gauge has
-	//  no start_time.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	// StartTime The interval the point covers. An agent exports every 30 seconds, so a sum
+	//  or histogram covers the time since its previous export; a gauge has no
+	//  startTime.
 	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
 
 	// Unit The metric's unit as the agent declared it, such as "s" or "{token}";
@@ -4820,21 +2331,17 @@ type LivekitPublicapiObservabilityV1MetricPoint struct {
 // LivekitPublicapiObservabilityV1MetricPoint0 defines model for LivekitPublicapiObservabilityV1MetricPoint.0.
 type LivekitPublicapiObservabilityV1MetricPoint0 struct {
 	// Histogram A histogram's or exponential histogram's summary.
-	Histogram LivekitPublicapiObservabilityV1MetricHistogram `json:"histogram"`
+	Histogram *LivekitPublicapiObservabilityV1MetricHistogram `json:"histogram,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricPoint1 defines model for LivekitPublicapiObservabilityV1MetricPoint.1.
 type LivekitPublicapiObservabilityV1MetricPoint1 struct {
 	// Value A gauge's or sum's value.
-	Value float64 `json:"value"`
+	Value *float64 `json:"value,omitempty"`
 }
-
-// LivekitPublicapiObservabilityV1MetricPoint2 defines model for LivekitPublicapiObservabilityV1MetricPoint.2.
-type LivekitPublicapiObservabilityV1MetricPoint2 = interface{}
 
 // LivekitPublicapiObservabilityV1MetricsGetResponse defines model for livekit.publicapi.observability.v1.Metrics.Get.Response.
 type LivekitPublicapiObservabilityV1MetricsGetResponse struct {
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 
 	// Points By end time, oldest first; points that end together are ordered by
@@ -4850,377 +2357,88 @@ type LivekitPublicapiObservabilityV1MetricsGetResponse struct {
 type LivekitPublicapiObservabilityV1RecordingGetURLResponse struct {
 	// ExpiresAt When the URL stops working: the request's time plus the granted
 	//  expiry, after the 15-minute clamp.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
 	// RecordingStartedAt When the recording started, as the agent reported it on upload. Line
 	//  the audio up with the transcript by it.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	RecordingStartedAt *GoogleProtobufTimestamp `json:"recordingStartedAt,omitempty"`
 
 	// Url A signed URL that downloads the recording straight from the object
 	//  store in the project's data region, without credentials, until
-	//  expires_at. Audio is Ogg; chat history is JSON served with
+	//  expiresAt. Audio is Ogg; chat history is JSON served with
 	//  Content-Encoding: gzip.
 	Url *string `json:"url,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1RecordingFileType RecordingFileType is the recording requested from GetSessionRecordingURL.
+// LivekitPublicapiObservabilityV1RecordingFileType The recording requested from GetSessionRecordingURL. The session's
 //
-//	The session's conversation as typed items comes from GetSessionTranscript,
-//	not from a recording.
+//	conversation as typed items comes from GetSessionTranscript, not from a
+//	recording.
 type LivekitPublicapiObservabilityV1RecordingFileType string
 
-// LivekitPublicapiObservabilityV1Role Role is who a transcript message is from.
+// LivekitPublicapiObservabilityV1Role Who a transcript message is from.
 type LivekitPublicapiObservabilityV1Role string
 
-// LivekitPublicapiObservabilityV1Span Span is one unit of work in the session's trace, such as an agent turn or
+// LivekitPublicapiObservabilityV1Span One unit of work in the session's trace, such as an agent turn or an LLM
 //
-//	an LLM request.
+//	request.
 type LivekitPublicapiObservabilityV1Span struct {
 	// Attributes The span's attributes, typed and nested as the agent recorded them, with
 	//  its resource's and scope's attributes merged in, such as lk.agent_name;
 	//  the span's own value wins. An integer beyond ±2^53 is its decimal string,
 	//  and bytes are base64.
-	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
-
-	// EndTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	EndTime *GoogleProtobufTimestamp                    `json:"endTime,omitempty"`
-	Events  *[]LivekitPublicapiObservabilityV1SpanEvent `json:"events,omitempty"`
-
-	// Kind SpanKind is a span's OpenTelemetry kind.
-	Kind *LivekitPublicapiObservabilityV1SpanKind `json:"kind,omitempty"`
-	Name *string                                  `json:"name,omitempty"`
+	Attributes *map[string]*GoogleProtobufValue            `json:"attributes,omitempty"`
+	EndTime    *GoogleProtobufTimestamp                    `json:"endTime,omitempty"`
+	Events     *[]LivekitPublicapiObservabilityV1SpanEvent `json:"events,omitempty"`
+	Kind       *LivekitPublicapiObservabilityV1SpanKind    `json:"kind,omitempty"`
+	Name       *string                                     `json:"name,omitempty"`
 
 	// ParentSpanId Empty for a root span. A span whose parent isn't among the session's
 	//  spans is a root too, as the dashboard shows it.
 	ParentSpanId *string `json:"parentSpanId,omitempty"`
 
 	// SpanId The span's ids, as lowercase hex.
-	SpanId *string `json:"spanId,omitempty"`
-
-	// StartTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
-
-	// Status SpanStatus is a span's OpenTelemetry status code.
+	SpanId        *string                                    `json:"spanId,omitempty"`
+	StartTime     *GoogleProtobufTimestamp                   `json:"startTime,omitempty"`
 	Status        *LivekitPublicapiObservabilityV1SpanStatus `json:"status,omitempty"`
 	StatusMessage *string                                    `json:"statusMessage,omitempty"`
 	TraceId       *string                                    `json:"traceId,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1SpanEvent SpanEvent is a timestamped event recorded within a Span, such as an
-//
-//	exception.
+// LivekitPublicapiObservabilityV1SpanEvent A timestamped event recorded within a Span, such as an exception.
 type LivekitPublicapiObservabilityV1SpanEvent struct {
 	// Attributes The event's own attributes, typed and nested as the agent recorded them.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 	Name       *string                          `json:"name,omitempty"`
-
-	// Timestamp A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
+	Timestamp  *GoogleProtobufTimestamp         `json:"timestamp,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1SpanKind SpanKind is a span's OpenTelemetry kind.
+// LivekitPublicapiObservabilityV1SpanKind A span's OpenTelemetry kind.
 type LivekitPublicapiObservabilityV1SpanKind string
 
-// LivekitPublicapiObservabilityV1SpanStatus SpanStatus is a span's OpenTelemetry status code.
+// LivekitPublicapiObservabilityV1SpanStatus A span's OpenTelemetry status code.
 type LivekitPublicapiObservabilityV1SpanStatus string
 
 // LivekitPublicapiObservabilityV1TracesGetResponse defines model for livekit.publicapi.observability.v1.Traces.Get.Response.
 type LivekitPublicapiObservabilityV1TracesGetResponse struct {
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 
 	// Spans By start time, oldest first. Spans that start together are ordered by
-	//  span id as the aggregator stores it: the id's 8 bytes read as a
-	//  little-endian unsigned integer, which isn't the order of its hex
-	//  string. The pages read the spans the first page found, so a span
-	//  exported later waits for a new read. On an ACTIVE session, a span
-	//  exported mid-read can still shift the later pages, which are read by
-	//  offset, so a span can repeat or be skipped: dedupe by span_id, and
-	//  read again from the first page to pick up a skipped span.
+	//  span id as it is stored: the id's 8 bytes read as a little-endian
+	//  unsigned integer, which isn't the order of its hex string. The pages
+	//  read the spans the first page found, so a span exported later waits for
+	//  a new read. On an ACTIVE session, a span exported mid-read can still
+	//  shift the later pages, which are read by offset, so a span can repeat
+	//  or be skipped: dedupe by spanId, and read again from the first page to
+	//  pick up a skipped span.
 	Spans *[]LivekitPublicapiObservabilityV1Span `json:"spans,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptGetResponse defines model for livekit.publicapi.observability.v1.Transcript.Get.Response.
 type LivekitPublicapiObservabilityV1TranscriptGetResponse struct {
 	// Items Oldest first, in the order the agent recorded them.
-	Items *[]LivekitPublicapiObservabilityV1TranscriptItem `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	Items    *[]LivekitPublicapiObservabilityV1TranscriptItem `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo                `json:"pageInfo,omitempty"`
 
 	// SkippedRecords How many of this page's records couldn't be read as transcript items
 	//  and were left out, such as an item kind newer than this server. Zero
@@ -5228,9 +2446,9 @@ type LivekitPublicapiObservabilityV1TranscriptGetResponse struct {
 	SkippedRecords *int `json:"skippedRecords,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItem TranscriptItem is one ordered entry in a session's conversation. Exactly one
+// LivekitPublicapiObservabilityV1TranscriptItem One ordered entry in a session's conversation. Exactly one of the `item`
 //
-//	of the `item` variants is set.
+//	variants is set.
 type LivekitPublicapiObservabilityV1TranscriptItem struct {
 	// Id The item's id, as the agent assigned it (item_...).
 	Id *string `json:"id,omitempty"`
@@ -5239,56 +2457,43 @@ type LivekitPublicapiObservabilityV1TranscriptItem struct {
 	//  else when the agent created it; for any other item, when the agent
 	//  recorded it. Items are ordered by when the agent recorded them, so a
 	//  message's timestamp can be earlier than the item before it.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 	union     json.RawMessage
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem0 defines model for LivekitPublicapiObservabilityV1TranscriptItem.0.
 type LivekitPublicapiObservabilityV1TranscriptItem0 struct {
-	// AgentHandoff AgentHandoff is the session passing from one agent to another.
-	AgentHandoff LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff `json:"agentHandoff"`
+	AgentHandoff *LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff `json:"agentHandoff,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem1 defines model for LivekitPublicapiObservabilityV1TranscriptItem.1.
 type LivekitPublicapiObservabilityV1TranscriptItem1 struct {
-	// ConfigUpdate ConfigUpdate is a change to the agent's instructions or tools during the
-	//  session.
-	ConfigUpdate LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate `json:"configUpdate"`
+	ConfigUpdate *LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate `json:"configUpdate,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem2 defines model for LivekitPublicapiObservabilityV1TranscriptItem.2.
 type LivekitPublicapiObservabilityV1TranscriptItem2 struct {
-	// Message Message is something said, or added to the conversation as text.
-	Message LivekitPublicapiObservabilityV1TranscriptItemMessage `json:"message"`
+	Message *LivekitPublicapiObservabilityV1TranscriptItemMessage `json:"message,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem3 defines model for LivekitPublicapiObservabilityV1TranscriptItem.3.
 type LivekitPublicapiObservabilityV1TranscriptItem3 struct {
-	// ToolCall ToolCall is the agent calling a tool.
-	ToolCall LivekitPublicapiObservabilityV1TranscriptItemToolCall `json:"toolCall"`
+	ToolCall *LivekitPublicapiObservabilityV1TranscriptItemToolCall `json:"toolCall,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem4 defines model for LivekitPublicapiObservabilityV1TranscriptItem.4.
 type LivekitPublicapiObservabilityV1TranscriptItem4 struct {
-	// ToolResult ToolResult is the output a tool returned for a ToolCall.
-	ToolResult LivekitPublicapiObservabilityV1TranscriptItemToolResult `json:"toolResult"`
+	ToolResult *LivekitPublicapiObservabilityV1TranscriptItemToolResult `json:"toolResult,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItem5 defines model for LivekitPublicapiObservabilityV1TranscriptItem.5.
-type LivekitPublicapiObservabilityV1TranscriptItem5 = interface{}
-
-// LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff AgentHandoff is the session passing from one agent to another.
+// LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff The session passing from one agent to another.
 type LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff struct {
 	// FromAgentId Unset for the session's first agent.
 	FromAgentId *string `json:"fromAgentId,omitempty"`
 	ToAgentId   *string `json:"toAgentId,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate ConfigUpdate is a change to the agent's instructions or tools during the
-//
-//	session.
+// LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate A change to the agent's instructions or tools during the session.
 type LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate struct {
 	// Instructions The agent's new instructions; empty when they didn't change.
 	Instructions *string   `json:"instructions,omitempty"`
@@ -5296,7 +2501,7 @@ type LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate struct {
 	ToolsRemoved *[]string `json:"toolsRemoved,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItemMessage Message is something said, or added to the conversation as text.
+// LivekitPublicapiObservabilityV1TranscriptItemMessage Something said, or added to the conversation as text.
 type LivekitPublicapiObservabilityV1TranscriptItemMessage struct {
 	// E2eLatencyMs The turn's latencies in milliseconds, converted from the seconds the
 	//  agent recorded; unset when the agent didn't record one. An agent message
@@ -5321,108 +2526,12 @@ type LivekitPublicapiObservabilityV1TranscriptItemMessage struct {
 	OnUserTurnCompletedDelayMs *float64 `json:"onUserTurnCompletedDelayMs,omitempty"`
 
 	// Redacted Set when the project's PII redaction rewrote the text.
-	Redacted *bool `json:"redacted,omitempty"`
-
-	// Role Role is who a transcript message is from.
-	Role *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
+	Redacted *bool                                `json:"redacted,omitempty"`
+	Role     *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
 
 	// StartedSpeakingAt When the speaker started and stopped speaking; unset for a message
 	//  that wasn't spoken.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	StartedSpeakingAt *GoogleProtobufTimestamp `json:"startedSpeakingAt,omitempty"`
-
-	// StoppedSpeakingAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	StoppedSpeakingAt *GoogleProtobufTimestamp `json:"stoppedSpeakingAt,omitempty"`
 
 	// Text The message's text. Text the agent recorded in several parts is joined
@@ -5441,7 +2550,7 @@ type LivekitPublicapiObservabilityV1TranscriptItemMessage struct {
 	TtsTtfbMs *float64 `json:"ttsTtfbMs,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItemToolCall ToolCall is the agent calling a tool.
+// LivekitPublicapiObservabilityV1TranscriptItemToolCall The agent calling a tool.
 type LivekitPublicapiObservabilityV1TranscriptItemToolCall struct {
 	// Arguments The call's arguments as a JSON string.
 	Arguments *string `json:"arguments,omitempty"`
@@ -5451,9 +2560,9 @@ type LivekitPublicapiObservabilityV1TranscriptItemToolCall struct {
 	Name   *string `json:"name,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItemToolResult ToolResult is the output a tool returned for a ToolCall.
+// LivekitPublicapiObservabilityV1TranscriptItemToolResult The output a tool returned for a ToolCall.
 type LivekitPublicapiObservabilityV1TranscriptItemToolResult struct {
-	// CallId The call_id of the ToolCall it answers.
+	// CallId The callId of the ToolCall it answers.
 	CallId *string `json:"callId,omitempty"`
 
 	// IsError Set when the tool failed; output then describes the error.
@@ -5462,203 +2571,19 @@ type LivekitPublicapiObservabilityV1TranscriptItemToolResult struct {
 	Output  *string `json:"output,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1AccessKey AccessKey is project API-key metadata. The secret is never included on list
+// LivekitPublicapiProjectsV1AccessKey Project API-key metadata. The secret is never included on list RPCs; it is
 //
-//	RPCs; it is returned only from GenerateKey.
+//	returned only from GenerateKey.
 type LivekitPublicapiProjectsV1AccessKey struct {
 	// AgentId Set for programmatically-created cloud agent keys.
-	AgentId *string `json:"agentId,omitempty"`
-	ApiKey  *string `json:"apiKey,omitempty"`
-
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	AgentId     *string                  `json:"agentId,omitempty"`
+	ApiKey      *string                  `json:"apiKey,omitempty"`
 	CreatedAt   *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	Description *string                  `json:"description,omitempty"`
 	OwnerEmail  *string                  `json:"ownerEmail,omitempty"`
 
 	// OwnerId Empty for service-account / legacy unowned keys.
-	OwnerId *string `json:"ownerId,omitempty"`
-
-	// UpdatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	OwnerId   *string                  `json:"ownerId,omitempty"`
 	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
 }
 
@@ -5673,23 +2598,67 @@ type LivekitPublicapiProjectsV1AnswerInvitationResponse struct {
 	Member *LivekitPublicapiProjectsV1ProjectMember `json:"member,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1CreateProjectMember TODO: Add more parts that allow for a full project creation, not just the name
+// LivekitPublicapiProjectsV1CreateProjectMember Grants a user access to a project at creation time.
 type LivekitPublicapiProjectsV1CreateProjectMember struct {
-	// Role Matches cloud_protocol.ProjectMemberRole: INVITED=0, READ=1, WRITE=2, ADMIN=3.
+	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
 	Role   *int32  `json:"role,omitempty"`
 	UserId *string `json:"userId,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1CreateProjectRequest defines model for livekit.publicapi.projects.v1.CreateProjectRequest.
 type LivekitPublicapiProjectsV1CreateProjectRequest struct {
-	IsPrivate *bool `json:"isPrivate,omitempty"`
+	// CustomDomain Project settings: everything UpdateProject can set. Unset fields keep the
+	//  new-project defaults (analytics, auto-create and a disabled token endpoint
+	//  on; the rest off), and values follow the same rules as on UpdateProject.
+	CustomDomain         *string `json:"customDomain,omitempty"`
+	DisableTokenEndpoint *bool   `json:"disableTokenEndpoint,omitempty"`
+	DiscoverableByDomain *bool   `json:"discoverableByDomain,omitempty"`
+
+	// EgressClusterId set by LiveKit staff only
+	EgressClusterId           *string `json:"egressClusterId,omitempty"`
+	EnableAnalytics           *bool   `json:"enableAnalytics,omitempty"`
+	EnableAutoCreate          *bool   `json:"enableAutoCreate,omitempty"`
+	EnableEgressAutoRetry     *bool   `json:"enableEgressAutoRetry,omitempty"`
+	EnableEgressBackupStorage *bool   `json:"enableEgressBackupStorage,omitempty"`
+
+	// EnableHostedAgents set by LiveKit staff only
+	EnableHostedAgents               *bool `json:"enableHostedAgents,omitempty"`
+	EnableInferenceRegionRestriction *bool `json:"enableInferenceRegionRestriction,omitempty"`
+	EnablePiiRedaction               *bool `json:"enablePiiRedaction,omitempty"`
+	EnableRemoteUnmute               *bool `json:"enableRemoteUnmute,omitempty"`
+
+	// EnableUserDataRecording Enables recording traces, transcripts, and audio for agent observability.
+	EnableUserDataRecording *bool              `json:"enableUserDataRecording,omitempty"`
+	EnableUserDataTraining  *bool              `json:"enableUserDataTraining,omitempty"`
+	EnabledCodecs           *[]string          `json:"enabledCodecs,omitempty"`
+	FeatureFlags            *map[string]string `json:"featureFlags,omitempty"`
+
+	// HideOnboarding Preferences (flat, as on UpdateProjectRequest). Enabling
+	//  discoverable_by_domain or joinable_by_domain adds the creator's email
+	//  domain to the project.
+	HideOnboarding       *bool `json:"hideOnboarding,omitempty"`
+	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
+	IsPrivate            *bool `json:"isPrivate,omitempty"`
+	JoinableByDomain     *bool `json:"joinableByDomain,omitempty"`
 
 	// Members private projects only
 	Members *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
 	Name    *string                                          `json:"name,omitempty"`
 
+	// PiiRedactionCategories Categories to redact. Empty with enable_pii_redaction applies the defaults.
+	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
+
+	// PinnedRegions SFU region pins. Empty leaves the project unpinned.
+	PinnedRegions           *[]string `json:"pinnedRegions,omitempty"`
+	RequireExplicitDispatch *bool     `json:"requireExplicitDispatch,omitempty"`
+
+	// RoomConfigs Room configurations stored on the project preferences.
+	RoomConfigs   *[]LivekitRoomConfiguration `json:"roomConfigs,omitempty"`
+	SfuAllowPause *bool                       `json:"sfuAllowPause,omitempty"`
+
 	// Subdomain optional; generated from name when empty
-	Subdomain *string `json:"subdomain,omitempty"`
+	Subdomain        *string `json:"subdomain,omitempty"`
+	TokenEndpointKey *string `json:"tokenEndpointKey,omitempty"`
 
 	// UserDataRegion create-only; empty keeps the deployment default
 	UserDataRegion *string `json:"userDataRegion,omitempty"`
@@ -5700,105 +2669,11 @@ type LivekitPublicapiProjectsV1CreateProjectRequest struct {
 
 // LivekitPublicapiProjectsV1CreateProjectResponse defines model for livekit.publicapi.projects.v1.CreateProjectResponse.
 type LivekitPublicapiProjectsV1CreateProjectResponse struct {
-	// Project Project is a LiveKit Cloud project (owned by cloud-api-server).
-	//  Field set mirrors backend-common model.Project (most config fields);
-	//  members/domains are separate list resources and are not embedded here.
 	Project *LivekitPublicapiProjectsV1Project `json:"project,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1CreateTokenResponse defines model for livekit.publicapi.projects.v1.CreateTokenResponse.
 type LivekitPublicapiProjectsV1CreateTokenResponse struct {
-	// ExpiresAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
 	// Token Signed JWT, sent as `Authorization: Bearer` to the project's server APIs
@@ -5808,7 +2683,6 @@ type LivekitPublicapiProjectsV1CreateTokenResponse struct {
 
 // LivekitPublicapiProjectsV1CreateWebhookResponse defines model for livekit.publicapi.projects.v1.CreateWebhookResponse.
 type LivekitPublicapiProjectsV1CreateWebhookResponse struct {
-	// Webhook Webhook is a project webhook destination (mirrors backend-common Webhook).
 	Webhook *LivekitPublicapiProjectsV1Webhook `json:"webhook,omitempty"`
 }
 
@@ -5832,21 +2706,16 @@ type LivekitPublicapiProjectsV1GenerateKeyResponse struct {
 
 // LivekitPublicapiProjectsV1GetInviteResponse defines model for livekit.publicapi.projects.v1.GetInviteResponse.
 type LivekitPublicapiProjectsV1GetInviteResponse struct {
-	// Invite ProjectInvite is a pending email invite to a project (token-based, cloud InviteMember2).
 	Invite *LivekitPublicapiProjectsV1ProjectInvite `json:"invite,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1GetMemberResponse defines model for livekit.publicapi.projects.v1.GetMemberResponse.
 type LivekitPublicapiProjectsV1GetMemberResponse struct {
-	// Member ProjectMember is a user's membership on a project.
 	Member *LivekitPublicapiProjectsV1ProjectMember `json:"member,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1GetProjectResponse defines model for livekit.publicapi.projects.v1.GetProjectResponse.
 type LivekitPublicapiProjectsV1GetProjectResponse struct {
-	// Project Project is a LiveKit Cloud project (owned by cloud-api-server).
-	//  Field set mirrors backend-common model.Project (most config fields);
-	//  members/domains are separate list resources and are not embedded here.
 	Project *LivekitPublicapiProjectsV1Project `json:"project,omitempty"`
 }
 
@@ -5873,10 +2742,8 @@ type LivekitPublicapiProjectsV1ListMembersResponse struct {
 
 // LivekitPublicapiProjectsV1ListProjectsResponse defines model for livekit.publicapi.projects.v1.ListProjectsResponse.
 type LivekitPublicapiProjectsV1ListProjectsResponse struct {
-	Items *[]LivekitPublicapiProjectsV1Project `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	Items    *[]LivekitPublicapiProjectsV1Project `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo    `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListScopedKeysResponse defines model for livekit.publicapi.projects.v1.ListScopedKeysResponse.
@@ -5887,8 +2754,7 @@ type LivekitPublicapiProjectsV1ListScopedKeysResponse struct {
 
 // LivekitPublicapiProjectsV1ListWebhookEventsResponse defines model for livekit.publicapi.projects.v1.ListWebhookEventsResponse.
 type LivekitPublicapiProjectsV1ListWebhookEventsResponse struct {
-	// Events Event names the project can receive, for filter_params and
-	//  SendTestWebhook.
+	// Events Event names the project can receive, for filterParams and SendTestWebhook.
 	Events *[]string `json:"events,omitempty"`
 }
 
@@ -5897,112 +2763,18 @@ type LivekitPublicapiProjectsV1ListWebhooksResponse struct {
 	Webhooks *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1PinnedRegions PinnedRegions wraps the region pin set so an explicit empty list can clear
+// LivekitPublicapiProjectsV1PinnedRegions Wraps the region pin set so an explicit empty list can clear the pins, which
 //
-//	the pins, which a bare repeated field cannot express (mirrors cloud
-//	AdminSetProjectSettingsRequest.pinned_regions).
+//	a bare repeated field cannot express.
 type LivekitPublicapiProjectsV1PinnedRegions struct {
 	Regions *[]string `json:"regions,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1Project Project is a LiveKit Cloud project (owned by cloud-api-server).
+// LivekitPublicapiProjectsV1Project A LiveKit Cloud project. Members and domains are separate list resources and
 //
-//	Field set mirrors backend-common model.Project (most config fields);
-//	members/domains are separate list resources and are not embedded here.
+//	are not embedded here.
 type LivekitPublicapiProjectsV1Project struct {
-	AnalyticsAccessKey *string `json:"analyticsAccessKey,omitempty"`
-
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	AnalyticsAccessKey               *string                  `json:"analyticsAccessKey,omitempty"`
 	CreatedAt                        *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	CreatorId                        *string                  `json:"creatorId,omitempty"`
 	EgressClusterId                  *string                  `json:"egressClusterId,omitempty"`
@@ -6022,14 +2794,11 @@ type LivekitPublicapiProjectsV1Project struct {
 	IsPrivate                        *bool                    `json:"isPrivate,omitempty"`
 	Name                             *string                  `json:"name,omitempty"`
 
-	// PiiRedactionCategories Categories to redact when enable_pii_redaction is on. Empty on read means
-	//  the stored set (or defaults applied at enable time) — never "redact nothing".
-	//  Same taxonomy as cloud-api UpdateProject (cloud_protocol.PIIRedactionCategory).
-	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
-	PinnedRegions          *[]string                            `json:"pinnedRegions,omitempty"`
-
-	// Preferences ProjectPreferences holds per-project UI/feature settings (mirrors
-	//  backend-common ProjectPreferences).
+	// PiiRedactionCategories Categories to redact when enablePiiRedaction is on. Empty on read means the
+	//  stored set, or the defaults applied when redaction was enabled. It never
+	//  means "redact nothing".
+	PiiRedactionCategories  *[]CloudProtocolPIIRedactionCategory          `json:"piiRedactionCategories,omitempty"`
+	PinnedRegions           *[]string                                     `json:"pinnedRegions,omitempty"`
 	Preferences             *LivekitPublicapiProjectsV1ProjectPreferences `json:"preferences,omitempty"`
 	RequireExplicitDispatch *bool                                         `json:"requireExplicitDispatch,omitempty"`
 	Subdomain               *string                                       `json:"subdomain,omitempty"`
@@ -6042,120 +2811,28 @@ type LivekitPublicapiProjectsV1Project struct {
 	WorkspaceId          *string                              `json:"workspaceId,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1ProjectInvite ProjectInvite is a pending email invite to a project (token-based, cloud InviteMember2).
+// LivekitPublicapiProjectsV1ProjectInvite A pending email invite to a project. The recipient answers it with the token
+//
+//	the invite carries.
 type LivekitPublicapiProjectsV1ProjectInvite struct {
-	Email *string `json:"email,omitempty"`
-
-	// ExpiresAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	Email       *string                  `json:"email,omitempty"`
 	ExpiresAt   *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 	InviteToken *string                  `json:"inviteToken,omitempty"`
 	ProjectId   *string                  `json:"projectId,omitempty"`
 	Role        *int32                   `json:"role,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1ProjectMember ProjectMember is a user's membership on a project.
+// LivekitPublicapiProjectsV1ProjectMember A user's membership on a project.
 type LivekitPublicapiProjectsV1ProjectMember struct {
 	Email     *string `json:"email,omitempty"`
 	ProjectId *string `json:"projectId,omitempty"`
 
-	// Role Matches cloud_protocol.ProjectMemberRole: INVITED=0, READ=1, WRITE=2, ADMIN=3.
+	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
 	Role   *int32  `json:"role,omitempty"`
 	UserId *string `json:"userId,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1ProjectPreferences ProjectPreferences holds per-project UI/feature settings (mirrors
-//
-//	backend-common ProjectPreferences).
+// LivekitPublicapiProjectsV1ProjectPreferences Per-project UI and feature settings.
 type LivekitPublicapiProjectsV1ProjectPreferences struct {
 	DisableTokenEndpoint      *bool                                `json:"disableTokenEndpoint,omitempty"`
 	DiscoverableByDomain      *bool                                `json:"discoverableByDomain,omitempty"`
@@ -6174,36 +2851,28 @@ type LivekitPublicapiProjectsV1ProjectPreferences struct {
 // LivekitPublicapiProjectsV1RemoveMemberResponse defines model for livekit.publicapi.projects.v1.RemoveMemberResponse.
 type LivekitPublicapiProjectsV1RemoveMemberResponse = map[string]interface{}
 
-// LivekitPublicapiProjectsV1SendTestWebhookResponse SendTestWebhookResponse reports the receiver's answer to one delivery
+// LivekitPublicapiProjectsV1SendTestWebhookResponse Reports the receiver's answer to one delivery attempt. The test is not
 //
-//	attempt. The test is not retried and redirects are not followed; a failed
-//	delivery is reported here, not as an RPC error.
+//	retried and redirects are not followed; a failed delivery is reported here,
+//	not as an RPC error.
 type LivekitPublicapiProjectsV1SendTestWebhookResponse struct {
 	// Error Why no response arrived, such as a timeout or refused connection. Empty
-	//  when status_code is set.
+	//  when statusCode is set.
 	Error *string `json:"error,omitempty"`
 
 	// StatusCode HTTP status the receiver answered with; 0 when no response arrived.
 	StatusCode *int32 `json:"statusCode,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrants TokenGrants are the claims of a LiveKit access token. Field names match the
+// LivekitPublicapiProjectsV1TokenGrants The claims of a LiveKit access token. Field names match the token's JSON
 //
-//	token's JSON claims (protocol auth.ClaimGrants), so a token's claims JSON is
-//	a valid TokenGrants in JSON form.
+//	claims (protocol auth.ClaimGrants), so a token's claims JSON is a valid
+//	TokenGrants in JSON form.
 type LivekitPublicapiProjectsV1TokenGrants struct {
-	// Agent Agent server API permissions.
-	Agent *LivekitPublicapiProjectsV1TokenGrantsAgent `json:"agent,omitempty"`
-
-	// AgentEndpoint Calling an agent's non-public HTTP endpoints.
+	Agent         *LivekitPublicapiProjectsV1TokenGrantsAgent         `json:"agent,omitempty"`
 	AgentEndpoint *LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint `json:"agentEndpoint,omitempty"`
-
-	// AgentThread A thread token: list and create in scope; read, write and delete the
-	//  threads in thread_ids, e.g. for a frontend rendering one conversation.
-	//  all extends it to every thread of the project; the action flags still
-	//  apply.
-	AgentThread *LivekitPublicapiProjectsV1TokenGrantsAgentThread `json:"agentThread,omitempty"`
-	Attributes  *map[string]string                                `json:"attributes,omitempty"`
+	AgentThread   *LivekitPublicapiProjectsV1TokenGrantsAgentThread   `json:"agentThread,omitempty"`
+	Attributes    *map[string]string                                  `json:"attributes,omitempty"`
 
 	// Identity Participant identity (the token's subject).
 	Identity  *string                                         `json:"identity,omitempty"`
@@ -6222,14 +2891,10 @@ type LivekitPublicapiProjectsV1TokenGrants struct {
 	//  agent dispatches.
 	RoomConfig *LivekitRoomConfiguration `json:"roomConfig,omitempty"`
 
-	// RoomPreset Cloud room configuration preset; fields in room_config override it.
-	RoomPreset *string `json:"roomPreset,omitempty"`
-
-	// Sip SIP server API permissions.
-	Sip *LivekitPublicapiProjectsV1TokenGrantsSip `json:"sip,omitempty"`
-
-	// Video Room and participant permissions.
-	Video *LivekitPublicapiProjectsV1TokenGrantsVideo `json:"video,omitempty"`
+	// RoomPreset Cloud room configuration preset; fields in roomConfig override it.
+	RoomPreset *string                                     `json:"roomPreset,omitempty"`
+	Sip        *LivekitPublicapiProjectsV1TokenGrantsSip   `json:"sip,omitempty"`
+	Video      *LivekitPublicapiProjectsV1TokenGrantsVideo `json:"video,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1TokenGrantsAgent Agent server API permissions.
@@ -6252,9 +2917,8 @@ type LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint struct {
 
 // LivekitPublicapiProjectsV1TokenGrantsAgentThread A thread token: list and create in scope; read, write and delete the
 //
-//	threads in thread_ids, e.g. for a frontend rendering one conversation.
-//	all extends it to every thread of the project; the action flags still
-//	apply.
+//	threads in threadIds, e.g. for a frontend rendering one conversation. all
+//	extends it to every thread of the project; the action flags still apply.
 type LivekitPublicapiProjectsV1TokenGrantsAgentThread struct {
 	All       *bool     `json:"all,omitempty"`
 	Create    *bool     `json:"create,omitempty"`
@@ -6324,86 +2988,25 @@ type LivekitPublicapiProjectsV1TokenGrantsVideo struct {
 
 // LivekitPublicapiProjectsV1UpdateInviteResponse defines model for livekit.publicapi.projects.v1.UpdateInviteResponse.
 type LivekitPublicapiProjectsV1UpdateInviteResponse struct {
-	// Invite ProjectInvite is a pending email invite to a project (token-based, cloud InviteMember2).
 	Invite *LivekitPublicapiProjectsV1ProjectInvite `json:"invite,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1UpdateMemberResponse defines model for livekit.publicapi.projects.v1.UpdateMemberResponse.
 type LivekitPublicapiProjectsV1UpdateMemberResponse struct {
-	// Member ProjectMember is a user's membership on a project.
 	Member *LivekitPublicapiProjectsV1ProjectMember `json:"member,omitempty"`
-}
-
-// LivekitPublicapiProjectsV1UpdateProjectRequest UpdateProjectRequest patches a project. Unset optional fields are left
-//
-//	unchanged (proto3 optional). Mirrors cloud-api UpdateProject for local mode;
-//	webhooks are separate RPCs (not included here).
-type LivekitPublicapiProjectsV1UpdateProjectRequest struct {
-	CustomDomain         *string `json:"customDomain,omitempty"`
-	DisableTokenEndpoint *bool   `json:"disableTokenEndpoint,omitempty"`
-	DiscoverableByDomain *bool   `json:"discoverableByDomain,omitempty"`
-
-	// EgressClusterId LK-admin only
-	EgressClusterId           *string `json:"egressClusterId,omitempty"`
-	EnableAnalytics           *bool   `json:"enableAnalytics,omitempty"`
-	EnableAutoCreate          *bool   `json:"enableAutoCreate,omitempty"`
-	EnableEgressAutoRetry     *bool   `json:"enableEgressAutoRetry,omitempty"`
-	EnableEgressBackupStorage *bool   `json:"enableEgressBackupStorage,omitempty"`
-
-	// EnableHostedAgents LK-admin only
-	EnableHostedAgents               *bool              `json:"enableHostedAgents,omitempty"`
-	EnableInferenceRegionRestriction *bool              `json:"enableInferenceRegionRestriction,omitempty"`
-	EnablePiiRedaction               *bool              `json:"enablePiiRedaction,omitempty"`
-	EnableRemoteUnmute               *bool              `json:"enableRemoteUnmute,omitempty"`
-	EnableUserDataRecording          *bool              `json:"enableUserDataRecording,omitempty"`
-	EnabledCodecs                    *[]string          `json:"enabledCodecs,omitempty"`
-	FeatureFlags                     *map[string]string `json:"featureFlags,omitempty"`
-
-	// HideOnboarding Preferences (flat, matching cloud-api UpdateProjectRequest).
-	HideOnboarding       *bool `json:"hideOnboarding,omitempty"`
-	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
-	IsPrivate            *bool `json:"isPrivate,omitempty"`
-	JoinableByDomain     *bool `json:"joinableByDomain,omitempty"`
-
-	// Members Used when becoming private: explicit member set (actor kept as ADMIN).
-	Members *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
-	Name    *string                                          `json:"name,omitempty"`
-
-	// PiiRedactionCategories Non-empty list replaces the stored set (validated via Canonical).
-	//  Empty is ignored (cannot clear). When enabling with nothing stored,
-	//  defaults are applied server-side — same as cloud-api UpdateProject.
-	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
-
-	// PinnedRegions SFU/datacenter region pins. Unset leaves them unchanged; a set message
-	//  replaces the stored set, so an empty regions list clears the pins (same
-	//  shape as cloud AdminPinnedRegions). Distinct from user_data_region.
-	PinnedRegions           *LivekitPublicapiProjectsV1PinnedRegions `json:"pinnedRegions,omitempty"`
-	ProjectId               *string                                  `json:"projectId,omitempty"`
-	RequireExplicitDispatch *bool                                    `json:"requireExplicitDispatch,omitempty"`
-	RoomConfigsToDelete     *[]string                                `json:"roomConfigsToDelete,omitempty"`
-
-	// RoomConfigsToUpsert RoomConfiguration management (stored on project preferences).
-	RoomConfigsToUpsert *[]LivekitRoomConfiguration `json:"roomConfigsToUpsert,omitempty"`
-	SfuAllowPause       *bool                       `json:"sfuAllowPause,omitempty"`
-	Subdomain           *string                     `json:"subdomain,omitempty"`
-	TokenEndpointKey    *string                     `json:"tokenEndpointKey,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1UpdateProjectResponse defines model for livekit.publicapi.projects.v1.UpdateProjectResponse.
 type LivekitPublicapiProjectsV1UpdateProjectResponse struct {
-	// Project Project is a LiveKit Cloud project (owned by cloud-api-server).
-	//  Field set mirrors backend-common model.Project (most config fields);
-	//  members/domains are separate list resources and are not embedded here.
 	Project *LivekitPublicapiProjectsV1Project `json:"project,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1UpdateWebhookResponse defines model for livekit.publicapi.projects.v1.UpdateWebhookResponse.
 type LivekitPublicapiProjectsV1UpdateWebhookResponse struct {
-	// Webhook Webhook is a project webhook destination (mirrors backend-common Webhook).
 	Webhook *LivekitPublicapiProjectsV1Webhook `json:"webhook,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1Webhook Webhook is a project webhook destination (mirrors backend-common Webhook).
+// LivekitPublicapiProjectsV1Webhook A project webhook destination.
 type LivekitPublicapiProjectsV1Webhook struct {
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
 	Id           *string              `json:"id,omitempty"`
@@ -6414,8 +3017,6 @@ type LivekitPublicapiProjectsV1Webhook struct {
 
 // LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse defines model for livekit.publicapi.simulations.v1.Scenarios.GenerateFromSession.Response.
 type LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse struct {
-	// Scenario A single scenario, mirroring one entry in a scenarios.yaml file. Scenarios
-	//  are no longer stored server-side; the yaml file is the source of truth.
 	Scenario *LivekitScenario `json:"scenario,omitempty"`
 }
 
@@ -6427,7 +3028,7 @@ type LivekitPublicapiSimulationsV1SimulationRunsConfirmSourceUploadResponse = ma
 
 // LivekitPublicapiSimulationsV1SimulationRunsCountsResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.Counts.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsCountsResponse struct {
-	// Buckets Buckets holding at least one run, ascending by bucket_start. Empty
+	// Buckets Buckets holding at least one run, ascending by bucketStart. Empty
 	//  buckets are omitted; each run lands in exactly one bucket, so the
 	//  counts sum to the number of runs in the window.
 	Buckets *[]LivekitSimulationRunCountsBucket `json:"buckets,omitempty"`
@@ -6435,8 +3036,6 @@ type LivekitPublicapiSimulationsV1SimulationRunsCountsResponse struct {
 	// Interval The bucket width the service chose for the window (at most 60 buckets,
 	//  never narrower than one minute), so a client zero-fills the omitted
 	//  buckets on the grid the counts were built on.
-	//
-	// Examples: 86400s, 1.500s, 0.000000001s
 	Interval *GoogleProtobufDuration `json:"interval,omitempty"`
 }
 
@@ -6444,14 +3043,14 @@ type LivekitPublicapiSimulationsV1SimulationRunsCountsResponse struct {
 type LivekitPublicapiSimulationsV1SimulationRunsCreateResponse struct {
 	// PresignedPostRequest Presigned POST for uploading the agent source archive that scenarios
 	//  are generated from; upload, then call ConfirmSimulationSourceUpload.
-	//  Unset when the run was created with a scenario_group.
+	//  Unset when the run was created with a scenarioGroup.
 	PresignedPostRequest *LivekitPresignedPostRequest `json:"presignedPostRequest,omitempty"`
 	SimulationRunId      *string                      `json:"simulationRunId,omitempty"`
 }
 
 // LivekitPublicapiSimulationsV1SimulationRunsGetResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.Get.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsGetResponse struct {
-	// Run The run. summary_zstd is always empty here; see
+	// Run The run. summaryZstd is always empty here; see
 	//  GetSimulationRunSummary.
 	Run *LivekitSimulationRun `json:"run,omitempty"`
 }
@@ -6464,9 +3063,7 @@ type LivekitPublicapiSimulationsV1SimulationRunsGetSummaryResponse struct {
 
 // LivekitPublicapiSimulationsV1SimulationRunsListResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.List.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsListResponse struct {
-	Items *[]LivekitSimulationRun `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
+	Items    *[]LivekitSimulationRun           `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
@@ -6485,25 +3082,19 @@ type LivekitPublicapiThreadsV1ThreadsGetResponse struct {
 
 // LivekitPublicapiThreadsV1ThreadsItemsResponse defines model for livekit.publicapi.threads.v1.Threads.Items.Response.
 type LivekitPublicapiThreadsV1ThreadsItemsResponse struct {
-	Items *[]LivekitAgentAgentThreadItem `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
+	Items    *[]LivekitAgentAgentThreadItem    `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiThreadsV1ThreadsListResponse defines model for livekit.publicapi.threads.v1.Threads.List.Response.
 type LivekitPublicapiThreadsV1ThreadsListResponse struct {
-	Items *[]LivekitAgentAgentThreadThread `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
+	Items    *[]LivekitAgentAgentThreadThread  `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiThreadsV1ThreadsTasksResponse defines model for livekit.publicapi.threads.v1.Threads.Tasks.Response.
 type LivekitPublicapiThreadsV1ThreadsTasksResponse struct {
-	Items *[]LivekitAgentAgentTaskTask `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
+	Items    *[]LivekitAgentAgentTaskTask      `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
@@ -6514,117 +3105,22 @@ type LivekitPublicapiThreadsV1ThreadsUpdateResponse struct {
 
 // LivekitPublicapiUsersV1GetCurrentUserResponse defines model for livekit.publicapi.users.v1.GetCurrentUserResponse.
 type LivekitPublicapiUsersV1GetCurrentUserResponse struct {
-	// User User is a LiveKit Cloud user (owned by cloud-api-server).
 	User *LivekitPublicapiUsersV1User `json:"user,omitempty"`
 }
 
 // LivekitPublicapiUsersV1GetUserResponse defines model for livekit.publicapi.users.v1.GetUserResponse.
 type LivekitPublicapiUsersV1GetUserResponse struct {
-	// User User is a LiveKit Cloud user (owned by cloud-api-server).
 	User *LivekitPublicapiUsersV1User `json:"user,omitempty"`
 }
 
 // LivekitPublicapiUsersV1ListUsersResponse defines model for livekit.publicapi.users.v1.ListUsersResponse.
 type LivekitPublicapiUsersV1ListUsersResponse struct {
-	Items *[]LivekitPublicapiUsersV1User `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
+	Items    *[]LivekitPublicapiUsersV1User    `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiUsersV1User User is a LiveKit Cloud user (owned by cloud-api-server).
+// LivekitPublicapiUsersV1User A LiveKit Cloud user.
 type LivekitPublicapiUsersV1User struct {
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
 	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 	Email     *string                  `json:"email,omitempty"`
 	Id        *string                  `json:"id,omitempty"`
@@ -6646,17 +3142,13 @@ type LivekitPublicapiWorkspacesV1CreateInviteResponse struct {
 type LivekitPublicapiWorkspacesV1CreateWorkspaceRequest struct {
 	Name *string `json:"name,omitempty"`
 
-	// OrganizationId Optional organization association. from_project_id and preferences are intentionally omitted: cloud treats
-	//  from_project_id as admin-only, and hipaa_compliant preferences cascade to
-	//  every project (AdminService.UpdateWorkspace only).
+	// OrganizationId Optional organization association. Workspace preferences are not settable here. They apply to every project in
+	//  the workspace and are set by LiveKit staff.
 	OrganizationId *string `json:"organizationId,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1CreateWorkspaceResponse defines model for livekit.publicapi.workspaces.v1.CreateWorkspaceResponse.
 type LivekitPublicapiWorkspacesV1CreateWorkspaceResponse struct {
-	// Workspace Workspace is a LiveKit Cloud workspace (owned by cloud-api-server).
-	//  Field set mirrors backend-common model.Workspace.ToProto(); members/invites
-	//  are separate list resources and are not embedded here.
 	Workspace *LivekitPublicapiWorkspacesV1Workspace `json:"workspace,omitempty"`
 }
 
@@ -6671,21 +3163,16 @@ type LivekitPublicapiWorkspacesV1DeleteWorkspaceResponse = map[string]interface{
 
 // LivekitPublicapiWorkspacesV1GetInviteResponse defines model for livekit.publicapi.workspaces.v1.GetInviteResponse.
 type LivekitPublicapiWorkspacesV1GetInviteResponse struct {
-	// Invite WorkspaceInvite is a pending email invite to a workspace.
 	Invite *LivekitPublicapiWorkspacesV1WorkspaceInvite `json:"invite,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1GetMemberResponse defines model for livekit.publicapi.workspaces.v1.GetMemberResponse.
 type LivekitPublicapiWorkspacesV1GetMemberResponse struct {
-	// Member WorkspaceMember is a user's membership on a workspace.
 	Member *LivekitPublicapiWorkspacesV1WorkspaceMember `json:"member,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1GetWorkspaceResponse defines model for livekit.publicapi.workspaces.v1.GetWorkspaceResponse.
 type LivekitPublicapiWorkspacesV1GetWorkspaceResponse struct {
-	// Workspace Workspace is a LiveKit Cloud workspace (owned by cloud-api-server).
-	//  Field set mirrors backend-common model.Workspace.ToProto(); members/invites
-	//  are separate list resources and are not embedded here.
 	Workspace *LivekitPublicapiWorkspacesV1Workspace `json:"workspace,omitempty"`
 }
 
@@ -6701,247 +3188,52 @@ type LivekitPublicapiWorkspacesV1ListMembersResponse struct {
 
 // LivekitPublicapiWorkspacesV1ListWorkspacesResponse defines model for livekit.publicapi.workspaces.v1.ListWorkspacesResponse.
 type LivekitPublicapiWorkspacesV1ListWorkspacesResponse struct {
-	Items *[]LivekitPublicapiWorkspacesV1Workspace `json:"items,omitempty"`
-
-	// PageInfo PageInfo is the cursor-pagination metadata shared by every list response.
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	Items    *[]LivekitPublicapiWorkspacesV1Workspace `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo        `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1UpdateMemberResponse defines model for livekit.publicapi.workspaces.v1.UpdateMemberResponse.
 type LivekitPublicapiWorkspacesV1UpdateMemberResponse struct {
-	// Member WorkspaceMember is a user's membership on a workspace.
 	Member *LivekitPublicapiWorkspacesV1WorkspaceMember `json:"member,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1UpdateWorkspaceResponse defines model for livekit.publicapi.workspaces.v1.UpdateWorkspaceResponse.
 type LivekitPublicapiWorkspacesV1UpdateWorkspaceResponse struct {
-	// Workspace Workspace is a LiveKit Cloud workspace (owned by cloud-api-server).
-	//  Field set mirrors backend-common model.Workspace.ToProto(); members/invites
-	//  are separate list resources and are not embedded here.
 	Workspace *LivekitPublicapiWorkspacesV1Workspace `json:"workspace,omitempty"`
 }
 
-// LivekitPublicapiWorkspacesV1Workspace Workspace is a LiveKit Cloud workspace (owned by cloud-api-server).
+// LivekitPublicapiWorkspacesV1Workspace A LiveKit Cloud workspace. Members and invites are separate list resources
 //
-//	Field set mirrors backend-common model.Workspace.ToProto(); members/invites
-//	are separate list resources and are not embedded here.
+//	and are not embedded here.
 type LivekitPublicapiWorkspacesV1Workspace struct {
-	// CreatedAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
-	CreatedAt      *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	CreatorId      *string                  `json:"creatorId,omitempty"`
-	Id             *string                  `json:"id,omitempty"`
-	Name           *string                  `json:"name,omitempty"`
-	OrganizationId *string                  `json:"organizationId,omitempty"`
-
-	// Preferences WorkspacePreferences holds per-workspace settings (mirrors backend-common
-	//  WorkspacePreferences).
-	Preferences *LivekitPublicapiWorkspacesV1WorkspacePreferences `json:"preferences,omitempty"`
+	CreatedAt      *GoogleProtobufTimestamp                          `json:"createdAt,omitempty"`
+	CreatorId      *string                                           `json:"creatorId,omitempty"`
+	Id             *string                                           `json:"id,omitempty"`
+	Name           *string                                           `json:"name,omitempty"`
+	OrganizationId *string                                           `json:"organizationId,omitempty"`
+	Preferences    *LivekitPublicapiWorkspacesV1WorkspacePreferences `json:"preferences,omitempty"`
 }
 
-// LivekitPublicapiWorkspacesV1WorkspaceInvite WorkspaceInvite is a pending email invite to a workspace.
+// LivekitPublicapiWorkspacesV1WorkspaceInvite A pending email invite to a workspace.
 type LivekitPublicapiWorkspacesV1WorkspaceInvite struct {
-	Email *string `json:"email,omitempty"`
-
-	// ExpiresAt A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
-	//
-	// Examples: 2023-01-15T01:30:15.01Z, 2024-12-25T12:00:00Z
+	Email       *string                  `json:"email,omitempty"`
 	ExpiresAt   *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 	InviteToken *string                  `json:"inviteToken,omitempty"`
 	Role        *int32                   `json:"role,omitempty"`
 	WorkspaceId *string                  `json:"workspaceId,omitempty"`
 }
 
-// LivekitPublicapiWorkspacesV1WorkspaceMember WorkspaceMember is a user's membership on a workspace.
+// LivekitPublicapiWorkspacesV1WorkspaceMember A user's membership on a workspace.
 type LivekitPublicapiWorkspacesV1WorkspaceMember struct {
 	Email *string `json:"email,omitempty"`
 
-	// Role Matches cloud_protocol.ProjectMemberRole: INVITED=0, READ=1, WRITE=2, ADMIN=3.
+	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
 	Role        *int32  `json:"role,omitempty"`
 	UserId      *string `json:"userId,omitempty"`
 	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
-// LivekitPublicapiWorkspacesV1WorkspacePreferences WorkspacePreferences holds per-workspace settings (mirrors backend-common
-//
-//	WorkspacePreferences).
+// LivekitPublicapiWorkspacesV1WorkspacePreferences Per-workspace settings.
 type LivekitPublicapiWorkspacesV1WorkspacePreferences struct {
 	HipaaCompliant *bool `json:"hipaaCompliant,omitempty"`
 }
@@ -6953,18 +3245,18 @@ type ProjectServiceAnswerInvitationJSONBody struct {
 
 // ProjectServiceListProjectsParams defines parameters for ProjectServiceListProjects.
 type ProjectServiceListProjectsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// WorkspaceId Mutually exclusive: only one of workspace_id or member_id can be set
-	//  if workspace_id is set, list projects for the workspace
+	// WorkspaceId Mutually exclusive: only one of workspaceId or memberId can be set if
+	//  workspaceId is set, list projects for the workspace
 	WorkspaceId *string `form:"workspaceId,omitempty" json:"workspaceId,omitempty"`
 
-	// MemberId if member_id is set, list projects for the member
+	// MemberId if memberId is set, list projects for the member
 	MemberId *string `form:"memberId,omitempty" json:"memberId,omitempty"`
 }
 
@@ -6974,40 +3266,42 @@ type ProjectServiceUpdateProjectJSONBody struct {
 	DisableTokenEndpoint *bool   `json:"disableTokenEndpoint,omitempty"`
 	DiscoverableByDomain *bool   `json:"discoverableByDomain,omitempty"`
 
-	// EgressClusterId LK-admin only
+	// EgressClusterId set by LiveKit staff only
 	EgressClusterId           *string `json:"egressClusterId,omitempty"`
 	EnableAnalytics           *bool   `json:"enableAnalytics,omitempty"`
 	EnableAutoCreate          *bool   `json:"enableAutoCreate,omitempty"`
 	EnableEgressAutoRetry     *bool   `json:"enableEgressAutoRetry,omitempty"`
 	EnableEgressBackupStorage *bool   `json:"enableEgressBackupStorage,omitempty"`
 
-	// EnableHostedAgents LK-admin only
+	// EnableHostedAgents set by LiveKit staff only
 	EnableHostedAgents               *bool              `json:"enableHostedAgents,omitempty"`
 	EnableInferenceRegionRestriction *bool              `json:"enableInferenceRegionRestriction,omitempty"`
 	EnablePiiRedaction               *bool              `json:"enablePiiRedaction,omitempty"`
 	EnableRemoteUnmute               *bool              `json:"enableRemoteUnmute,omitempty"`
 	EnableUserDataRecording          *bool              `json:"enableUserDataRecording,omitempty"`
+	EnableUserDataTraining           *bool              `json:"enableUserDataTraining,omitempty"`
 	EnabledCodecs                    *[]string          `json:"enabledCodecs,omitempty"`
 	FeatureFlags                     *map[string]string `json:"featureFlags,omitempty"`
 
-	// HideOnboarding Preferences (flat, matching cloud-api UpdateProjectRequest).
+	// HideOnboarding Project preferences, patched as flat fields.
 	HideOnboarding       *bool `json:"hideOnboarding,omitempty"`
 	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
 	IsPrivate            *bool `json:"isPrivate,omitempty"`
 	JoinableByDomain     *bool `json:"joinableByDomain,omitempty"`
 
-	// Members Used when becoming private: explicit member set (actor kept as ADMIN).
+	// Members The members to keep when the project becomes private. The caller keeps
+	//  the admin role.
 	Members *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
 	Name    *string                                          `json:"name,omitempty"`
 
-	// PiiRedactionCategories Non-empty list replaces the stored set (validated via Canonical).
-	//  Empty is ignored (cannot clear). When enabling with nothing stored,
-	//  defaults are applied server-side — same as cloud-api UpdateProject.
+	// PiiRedactionCategories A non-empty list replaces the stored set. An empty list is ignored, so
+	//  the set cannot be cleared this way. Turning redaction on with nothing
+	//  stored applies the default categories.
 	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
 
-	// PinnedRegions SFU/datacenter region pins. Unset leaves them unchanged; a set message
-	//  replaces the stored set, so an empty regions list clears the pins (same
-	//  shape as cloud AdminPinnedRegions). Distinct from user_data_region.
+	// PinnedRegions SFU region pins. Unset leaves them unchanged; a set message replaces the
+	//  stored set, so an empty regions list clears the pins. Distinct from
+	//  userDataRegion, which decides where session data is stored.
 	PinnedRegions           *LivekitPublicapiProjectsV1PinnedRegions `json:"pinnedRegions,omitempty"`
 	RequireExplicitDispatch *bool                                    `json:"requireExplicitDispatch,omitempty"`
 	RoomConfigsToDelete     *[]string                                `json:"roomConfigsToDelete,omitempty"`
@@ -7021,374 +3315,22 @@ type ProjectServiceUpdateProjectJSONBody struct {
 
 // AnalyticsServiceGetProjectAnalyticsParams defines parameters for AnalyticsServiceGetProjectAnalytics.
 type AnalyticsServiceGetProjectAnalyticsParams struct {
-	// RangeStartTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
 
-	// RangeEndTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
 }
 
 // AnalyticsServiceListAgentAnalyticsParams defines parameters for AnalyticsServiceListAgentAnalytics.
 type AnalyticsServiceListAgentAnalyticsParams struct {
-	// RangeStartTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
 
-	// RangeEndTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
 
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -7398,192 +3340,16 @@ type AnalyticsServiceListAgentAnalyticsParams struct {
 
 // AnalyticsServiceGetAgentAnalyticsParams defines parameters for AnalyticsServiceGetAgentAnalytics.
 type AnalyticsServiceGetAgentAnalyticsParams struct {
-	// RangeStartTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
 
-	// RangeEndTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
 }
 
 // DatabaseServiceListDatabasesParams defines parameters for DatabaseServiceListDatabases.
 type DatabaseServiceListDatabasesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -7595,8 +3361,6 @@ type DatabaseServiceListDatabasesParams struct {
 type DatabaseServiceCreateDatabaseJSONBody struct {
 	// Ttl Unset: never expires. Otherwise clamped to the server cap, and never
 	//  extended.
-	//
-	// Examples: 86400s, 1.500s, 0.000000001s
 	Ttl *GoogleProtobufDuration `json:"ttl,omitempty"`
 }
 
@@ -7613,7 +3377,7 @@ type ProjectServiceUpdateInviteJSONBody struct {
 
 // ProjectServiceListKeysParams defines parameters for ProjectServiceListKeys.
 type ProjectServiceListKeysParams struct {
-	// IncludeAgentKeys Agent keys are hidden by default, matching cloud-api-server.
+	// IncludeAgentKeys Agent keys are hidden by default.
 	IncludeAgentKeys *bool `form:"includeAgentKeys,omitempty" json:"includeAgentKeys,omitempty"`
 }
 
@@ -7648,193 +3412,17 @@ type SimulationServiceGenerateScenarioFromSessionJSONBody struct {
 
 // AnalyticsServiceListProjectSessionsParams defines parameters for AnalyticsServiceListProjectSessions.
 type AnalyticsServiceListProjectSessionsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// FilterRangeStartTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// FilterRangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	FilterRangeStartTime *time.Time `form:"filter.range.startTime,omitempty" json:"filter.range.startTime,omitempty"`
 
-	// FilterRangeEndTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// FilterRangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	FilterRangeEndTime *time.Time `form:"filter.range.endTime,omitempty" json:"filter.range.endTime,omitempty"`
 
 	// FilterStatuses OR semantics; empty matches any status.
@@ -7853,14 +3441,14 @@ type AnalyticsServiceListProjectSessionsParams struct {
 	// FilterAgentId Cloud agent id (CA_...) — return only sessions this agent served. Duration is not filterable in v1.
 	FilterAgentId *string `form:"filter.agentId,omitempty" json:"filter.agentId,omitempty"`
 
-	// SortOrder Direction of the started_at ordering, the only column sessions sort on.
+	// SortOrder Direction of the startedAt ordering, the only column sessions sort on.
 	//  Defaults to descending (newest first) when unset.
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // AnalyticsServiceListSessionEventsParams defines parameters for AnalyticsServiceListSessionEvents.
 type AnalyticsServiceListSessionEventsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -7869,15 +3457,15 @@ type AnalyticsServiceListSessionEventsParams struct {
 
 	// Types Event types to return, by name, such as TRACK_PUBLISHED: the names of
 	//  LiveKit's AnalyticsEventType. Each matches exactly. Empty returns the
-	//  dashboard's seven defaults, or with participant_session_id its eleven
-	//  participant defaults, track events included (see ListSessionEvents).
-	//  An unknown name is InvalidArgument.
+	//  dashboard's seven defaults, or with participantSessionId its eleven
+	//  participant defaults, track events included (see ListSessionEvents). An
+	//  unknown name is InvalidArgument.
 	Types *[]string `form:"types,omitempty" json:"types,omitempty"`
 
 	// ParticipantSessionId Only the events of this participant session (PA_...), as the
-	//  participants list's ParticipantSession.participant_session_id names
-	//  it. Room events and API calls name no participant session, so they
-	//  are left out. Anything but a PA_ id is InvalidArgument.
+	//  participants list's ParticipantSession.participantSessionId names it.
+	//  Room events and API calls name no participant session, so they are left
+	//  out. Anything but a PA_ id is InvalidArgument.
 	ParticipantSessionId *string `form:"participantSessionId,omitempty" json:"participantSessionId,omitempty"`
 
 	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
@@ -7887,7 +3475,7 @@ type AnalyticsServiceListSessionEventsParams struct {
 
 // ObservabilityServiceGetSessionLogsParams defines parameters for ObservabilityServiceGetSessionLogs.
 type ObservabilityServiceGetSessionLogsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -7907,7 +3495,7 @@ type ObservabilityServiceGetSessionLogsParams struct {
 
 // ObservabilityServiceGetSessionMetricsParams defines parameters for ObservabilityServiceGetSessionMetrics.
 type ObservabilityServiceGetSessionMetricsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -7922,17 +3510,17 @@ type ObservabilityServiceGetSessionMetricsParams struct {
 
 // AnalyticsServiceListSessionParticipantsParams defines parameters for AnalyticsServiceListSessionParticipants.
 type AnalyticsServiceListSessionParticipantsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// SortBy Column to order by. Defaults to joined_at when unset.
+	// SortBy Column to order by. Defaults to joinedAt when unset.
 	SortBy *LivekitPublicapiAnalyticsV1ParticipantSortField `form:"sortBy,omitempty" json:"sortBy,omitempty"`
 
-	// SortOrder Direction of sort_by. Defaults to descending (newest first) when unset.
+	// SortOrder Direction of sortBy. Defaults to descending (newest first) when unset.
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
@@ -7943,13 +3531,13 @@ type ObservabilityServiceGetSessionRecordingURLParams struct {
 
 	// ExpirySeconds How long the URL stays valid, in seconds. Unset or 0 is 900 (15
 	//  minutes), and anything longer is clamped to 900 without an error;
-	//  expires_at says what was granted.
+	//  expiresAt says what was granted.
 	ExpirySeconds *int `form:"expirySeconds,omitempty" json:"expirySeconds,omitempty"`
 }
 
 // ObservabilityServiceGetSessionTracesParams defines parameters for ObservabilityServiceGetSessionTraces.
 type ObservabilityServiceGetSessionTracesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -7959,7 +3547,7 @@ type ObservabilityServiceGetSessionTracesParams struct {
 
 // ObservabilityServiceGetSessionTranscriptParams defines parameters for ObservabilityServiceGetSessionTranscript.
 type ObservabilityServiceGetSessionTranscriptParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -7969,7 +3557,7 @@ type ObservabilityServiceGetSessionTranscriptParams struct {
 
 // SimulationServiceListSimulationRunsParams defines parameters for SimulationServiceListSimulationRuns.
 type SimulationServiceListSimulationRunsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -7982,186 +3570,11 @@ type SimulationServiceListSimulationRunsParams struct {
 	// AgentName Only runs of this agent (exact name).
 	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
 
-	// StartTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// StartTime Half-open window [startTime, endTime) on the run's creation time.
+	//  Either bound may be left unset.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
-	// EndTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// EndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	EndTime *time.Time `form:"endTime,omitempty" json:"endTime,omitempty"`
 
 	// Mode Only runs in this conversation mode.
@@ -8193,7 +3606,7 @@ type SimulationServiceCreateSimulationRunJSONBody struct {
 	Mode *LivekitSimulationMode `json:"mode,omitempty"`
 
 	// NumSimulations Number of scenarios to generate from the agent source when
-	//  scenario_group is unset.
+	//  scenarioGroup is unset.
 	NumSimulations *int32 `json:"numSimulations,omitempty"`
 	PacketLoss     *bool  `json:"packetLoss,omitempty"`
 
@@ -8201,7 +3614,7 @@ type SimulationServiceCreateSimulationRunJSONBody struct {
 	Region *string `json:"region,omitempty"`
 
 	// ScenarioGroup Run exactly these scenarios (the contents of a scenarios.yaml) instead
-	//  of generating num_simulations of them; the run then needs no source
+	//  of generating numSimulations of them; the run then needs no source
 	//  upload and starts immediately.
 	ScenarioGroup *LivekitScenarioGroup `json:"scenarioGroup,omitempty"`
 }
@@ -8214,186 +3627,11 @@ type SimulationServiceConfirmSimulationSourceUploadJSONBody struct {
 
 // SimulationServiceCountSimulationRunsParams defines parameters for SimulationServiceCountSimulationRuns.
 type SimulationServiceCountSimulationRunsParams struct {
-	// StartTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// StartTime Half-open window [startTime, endTime) on the run's creation time. Both
+	//  are required and endTime must be after startTime.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
-	// EndTime A Timestamp represents a point in time independent of any time zone or local
-	//  calendar, encoded as a count of seconds and fractions of seconds at
-	//  nanosecond resolution. The count is relative to an epoch at UTC midnight on
-	//  January 1, 1970, in the proleptic Gregorian calendar which extends the
-	//  Gregorian calendar backwards to year one.
-	//
-	//  All minutes are 60 seconds long. Leap seconds are "smeared" so that no leap
-	//  second table is needed for interpretation, using a [24-hour linear
-	//  smear](https://developers.google.com/time/smear).
-	//
-	//  The range is from 0001-01-01T00:00:00Z to 9999-12-31T23:59:59.999999999Z. By
-	//  restricting to that range, we ensure that we can convert to and from [RFC
-	//  3339](https://www.ietf.org/rfc/rfc3339.txt) date strings.
-	//
-	//  # Examples
-	//
-	//  Example 1: Compute Timestamp from POSIX `time()`.
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(time(NULL));
-	//      timestamp.set_nanos(0);
-	//
-	//  Example 2: Compute Timestamp from POSIX `gettimeofday()`.
-	//
-	//      struct timeval tv;
-	//      gettimeofday(&tv, NULL);
-	//
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds(tv.tv_sec);
-	//      timestamp.set_nanos(tv.tv_usec * 1000);
-	//
-	//  Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
-	//
-	//      FILETIME ft;
-	//      GetSystemTimeAsFileTime(&ft);
-	//      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
-	//
-	//      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-	//      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-	//      Timestamp timestamp;
-	//      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-	//      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
-	//
-	//  Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
-	//
-	//      long millis = System.currentTimeMillis();
-	//
-	//      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-	//          .setNanos((int) ((millis % 1000) * 1000000)).build();
-	//
-	//  Example 5: Compute Timestamp from Java `Instant.now()`.
-	//
-	//      Instant now = Instant.now();
-	//
-	//      Timestamp timestamp =
-	//          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-	//              .setNanos(now.getNano()).build();
-	//
-	//  Example 6: Compute Timestamp from current time in Python.
-	//
-	//      timestamp = Timestamp()
-	//      timestamp.GetCurrentTime()
-	//
-	//  # JSON Mapping
-	//
-	//  In JSON format, the Timestamp type is encoded as a string in the
-	//  [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) format. That is, the
-	//  format is "{year}-{month}-{day}T{hour}:{min}:{sec}[.{frac_sec}]Z"
-	//  where {year} is always expressed using four digits while {month}, {day},
-	//  {hour}, {min}, and {sec} are zero-padded to two digits each. The fractional
-	//  seconds, which can go up to 9 digits (i.e. up to 1 nanosecond resolution),
-	//  are optional. The "Z" suffix indicates the timezone ("UTC"); the timezone
-	//  is required. A ProtoJSON serializer should always use UTC (as indicated by
-	//  "Z") when printing the Timestamp type and a ProtoJSON parser should be
-	//  able to accept both UTC and other timezones (as indicated by an offset).
-	//
-	//  For example, "2017-01-15T01:30:15.01Z" encodes 15.01 seconds past
-	//  01:30 UTC on January 15, 2017.
-	//
-	//  In JavaScript, one can convert a Date object to this format using the
-	//  standard
-	//  [toISOString()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString)
-	//  method. In Python, a standard `datetime.datetime` object can be converted
-	//  to this format using
-	//  [`strftime`](https://docs.python.org/2/library/time.html#time.strftime) with
-	//  the time format spec '%Y-%m-%dT%H:%M:%S.%fZ'. Likewise, in Java, one can use
-	//  the Joda Time's [`ISODateTimeFormat.dateTime()`](
-	//  http://joda-time.sourceforge.net/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime()
-	//  ) to obtain a formatter capable of generating timestamps in this format.
+	// EndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
 	EndTime *time.Time `form:"endTime,omitempty" json:"endTime,omitempty"`
 
 	// Status Only runs in this status.
@@ -8408,9 +3646,10 @@ type SimulationServiceCountSimulationRunsParams struct {
 
 // ThreadServiceListThreadsParams defines parameters for ThreadServiceListThreads.
 type ThreadServiceListThreadsParams struct {
+	// Scope The scope query parameter.
 	Scope *string `form:"scope,omitempty" json:"scope,omitempty"`
 
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -8423,8 +3662,6 @@ type ThreadServiceCreateThreadJSONBody struct {
 	Attributes *map[string]string `json:"attributes,omitempty"`
 
 	// IdleTtl Unset takes the server default.
-	//
-	// Examples: 86400s, 1.500s, 0.000000001s
 	IdleTtl *GoogleProtobufDuration `json:"idleTtl,omitempty"`
 
 	// Scope Optional scope grouping the thread (typically the user's identity),
@@ -8434,16 +3671,8 @@ type ThreadServiceCreateThreadJSONBody struct {
 
 // ThreadServiceUpdateThreadJSONBody defines parameters for ThreadServiceUpdateThread.
 type ThreadServiceUpdateThreadJSONBody struct {
-	Attributes *map[string]string `json:"attributes,omitempty"`
-
-	// IdleTtl A span of time as protobuf JSON encodes it: seconds with an "s" suffix,
-	// e.g. "86400s" for a day. Responses carry 0, 3, 6 or 9 fractional
-	// digits ("1.500s", "0.000000001s"); requests may use 1 to 9. At most
-	// 315576000000 seconds either way. Not an ISO 8601 duration ("P1D" is
-	// rejected).
-	//
-	// Examples: 86400s, 1.500s, 0.000000001s
-	IdleTtl *GoogleProtobufDuration `json:"idleTtl,omitempty"`
+	Attributes *map[string]string      `json:"attributes,omitempty"`
+	IdleTtl    *GoogleProtobufDuration `json:"idleTtl,omitempty"`
 }
 
 // ThreadServiceGetThreadItemsParams defines parameters for ThreadServiceGetThreadItems.
@@ -8451,7 +3680,7 @@ type ThreadServiceGetThreadItemsParams struct {
 	// Agent One agent's items; empty for every agent's.
 	Agent *string `form:"agent,omitempty" json:"agent,omitempty"`
 
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -8468,7 +3697,7 @@ type ThreadServiceGetThreadTasksParams struct {
 	// Status Only tasks in this status; unset for every status.
 	Status *LivekitAgentAgentTaskStatus `form:"status,omitempty" json:"status,omitempty"`
 
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -8521,17 +3750,18 @@ type ProjectServiceSendTestWebhookJSONBody struct {
 
 // UserServiceListUsersParams defines parameters for UserServiceListUsers.
 type UserServiceListUsersParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// ProjectId At least one of project_id or workspace_id is required.
-	//  If both are set, project_id must belong to workspace_id; members are
-	//  the project's members.
-	ProjectId   *string `form:"projectId,omitempty" json:"projectId,omitempty"`
+	// ProjectId At least one of projectId or workspaceId is required. If both are set,
+	//  projectId must belong to workspaceId; members are the project's members.
+	ProjectId *string `form:"projectId,omitempty" json:"projectId,omitempty"`
+
+	// WorkspaceId The workspaceId query parameter.
 	WorkspaceId *string `form:"workspaceId,omitempty" json:"workspaceId,omitempty"`
 }
 
@@ -8542,7 +3772,7 @@ type WorkspaceServiceAnswerInviteJSONBody struct {
 
 // WorkspaceServiceListWorkspacesParams defines parameters for WorkspaceServiceListWorkspaces.
 type WorkspaceServiceListWorkspacesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -8568,7 +3798,7 @@ type WorkspaceServiceUpdateMemberJSONBody struct {
 
 // WorkspaceServiceListProjectsParams defines parameters for WorkspaceServiceListProjects.
 type WorkspaceServiceListProjectsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.next_cursor). Empty starts
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
 	//  from the beginning.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
@@ -8577,17 +3807,7 @@ type WorkspaceServiceListProjectsParams struct {
 }
 
 // WorkspaceServiceCreateProjectJSONBody defines parameters for WorkspaceServiceCreateProject.
-type WorkspaceServiceCreateProjectJSONBody struct {
-	IsPrivate *bool                                            `json:"isPrivate,omitempty"`
-	Members   *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
-	Name      *string                                          `json:"name,omitempty"`
-
-	// Subdomain optional; generated from name when empty
-	Subdomain *string `json:"subdomain,omitempty"`
-
-	// UserDataRegion create-only; empty keeps the deployment default
-	UserDataRegion *string `json:"userDataRegion,omitempty"`
-}
+type WorkspaceServiceCreateProjectJSONBody = LivekitPublicapiProjectsV1CreateProjectRequest
 
 // ProjectServiceAnswerInvitationJSONRequestBody defines body for ProjectServiceAnswerInvitation for application/json ContentType.
 type ProjectServiceAnswerInvitationJSONRequestBody ProjectServiceAnswerInvitationJSONBody
@@ -8659,10 +3879,75 @@ type WorkspaceServiceCreateInviteJSONRequestBody WorkspaceServiceCreateInviteJSO
 type WorkspaceServiceUpdateMemberJSONRequestBody WorkspaceServiceUpdateMemberJSONBody
 
 // WorkspaceServiceCreateProjectJSONRequestBody defines body for WorkspaceServiceCreateProject for application/json ContentType.
-type WorkspaceServiceCreateProjectJSONRequestBody WorkspaceServiceCreateProjectJSONBody
+type WorkspaceServiceCreateProjectJSONRequestBody = WorkspaceServiceCreateProjectJSONBody
 
-// WorkspaceServiceUpdateProjectJSONRequestBody defines body for WorkspaceServiceUpdateProject for application/json ContentType.
-type WorkspaceServiceUpdateProjectJSONRequestBody = LivekitPublicapiProjectsV1UpdateProjectRequest
+// Getter for additional properties for GoogleProtobufAny. Returns the specified
+// element and whether it was found
+func (a GoogleProtobufAny) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GoogleProtobufAny
+func (a *GoogleProtobufAny) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GoogleProtobufAny to handle AdditionalProperties
+func (a *GoogleProtobufAny) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["@type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading '@type': %w", err)
+		}
+		delete(object, "@type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GoogleProtobufAny to handle AdditionalProperties
+func (a GoogleProtobufAny) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Type != nil {
+		object["@type"], err = json.Marshal(a.Type)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '@type': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
 
 // AsGoogleProtobufValue1 returns the union data inside the GoogleProtobufValue as a GoogleProtobufValue1
 func (t GoogleProtobufValue) AsGoogleProtobufValue1() (GoogleProtobufValue1, error) {
@@ -8856,32 +4141,6 @@ func (t *LivekitAutoParticipantEgress) MergeLivekitAutoParticipantEgress1(v Live
 	return err
 }
 
-// AsLivekitAutoParticipantEgress2 returns the union data inside the LivekitAutoParticipantEgress as a LivekitAutoParticipantEgress2
-func (t LivekitAutoParticipantEgress) AsLivekitAutoParticipantEgress2() (LivekitAutoParticipantEgress2, error) {
-	var body LivekitAutoParticipantEgress2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitAutoParticipantEgress2 overwrites any union data inside the LivekitAutoParticipantEgress as the provided LivekitAutoParticipantEgress2
-func (t *LivekitAutoParticipantEgress) FromLivekitAutoParticipantEgress2(v LivekitAutoParticipantEgress2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitAutoParticipantEgress2 performs a merge with any union data inside the LivekitAutoParticipantEgress, using the provided LivekitAutoParticipantEgress2
-func (t *LivekitAutoParticipantEgress) MergeLivekitAutoParticipantEgress2(v LivekitAutoParticipantEgress2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
 func (t LivekitAutoParticipantEgress) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	if err != nil {
@@ -9044,32 +4303,6 @@ func (t *LivekitAutoTrackEgress) MergeLivekitAutoTrackEgress3(v LivekitAutoTrack
 	return err
 }
 
-// AsLivekitAutoTrackEgress4 returns the union data inside the LivekitAutoTrackEgress as a LivekitAutoTrackEgress4
-func (t LivekitAutoTrackEgress) AsLivekitAutoTrackEgress4() (LivekitAutoTrackEgress4, error) {
-	var body LivekitAutoTrackEgress4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitAutoTrackEgress4 overwrites any union data inside the LivekitAutoTrackEgress as the provided LivekitAutoTrackEgress4
-func (t *LivekitAutoTrackEgress) FromLivekitAutoTrackEgress4(v LivekitAutoTrackEgress4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitAutoTrackEgress4 performs a merge with any union data inside the LivekitAutoTrackEgress, using the provided LivekitAutoTrackEgress4
-func (t *LivekitAutoTrackEgress) MergeLivekitAutoTrackEgress4(v LivekitAutoTrackEgress4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
 func (t LivekitAutoTrackEgress) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	if err != nil {
@@ -9222,32 +4455,6 @@ func (t *LivekitEncodedFileOutput) FromLivekitEncodedFileOutput3(v LivekitEncode
 
 // MergeLivekitEncodedFileOutput3 performs a merge with any union data inside the LivekitEncodedFileOutput, using the provided LivekitEncodedFileOutput3
 func (t *LivekitEncodedFileOutput) MergeLivekitEncodedFileOutput3(v LivekitEncodedFileOutput3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLivekitEncodedFileOutput4 returns the union data inside the LivekitEncodedFileOutput as a LivekitEncodedFileOutput4
-func (t LivekitEncodedFileOutput) AsLivekitEncodedFileOutput4() (LivekitEncodedFileOutput4, error) {
-	var body LivekitEncodedFileOutput4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitEncodedFileOutput4 overwrites any union data inside the LivekitEncodedFileOutput as the provided LivekitEncodedFileOutput4
-func (t *LivekitEncodedFileOutput) FromLivekitEncodedFileOutput4(v LivekitEncodedFileOutput4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitEncodedFileOutput4 performs a merge with any union data inside the LivekitEncodedFileOutput, using the provided LivekitEncodedFileOutput4
-func (t *LivekitEncodedFileOutput) MergeLivekitEncodedFileOutput4(v LivekitEncodedFileOutput4) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -9424,32 +4631,6 @@ func (t *LivekitImageOutput) FromLivekitImageOutput3(v LivekitImageOutput3) erro
 
 // MergeLivekitImageOutput3 performs a merge with any union data inside the LivekitImageOutput, using the provided LivekitImageOutput3
 func (t *LivekitImageOutput) MergeLivekitImageOutput3(v LivekitImageOutput3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLivekitImageOutput4 returns the union data inside the LivekitImageOutput as a LivekitImageOutput4
-func (t LivekitImageOutput) AsLivekitImageOutput4() (LivekitImageOutput4, error) {
-	var body LivekitImageOutput4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitImageOutput4 overwrites any union data inside the LivekitImageOutput as the provided LivekitImageOutput4
-func (t *LivekitImageOutput) FromLivekitImageOutput4(v LivekitImageOutput4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitImageOutput4 performs a merge with any union data inside the LivekitImageOutput, using the provided LivekitImageOutput4
-func (t *LivekitImageOutput) MergeLivekitImageOutput4(v LivekitImageOutput4) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -9708,58 +4889,6 @@ func (t *LivekitRoomCompositeEgressRequest) FromLivekitRoomCompositeEgressReques
 
 // MergeLivekitRoomCompositeEgressRequest4 performs a merge with any union data inside the LivekitRoomCompositeEgressRequest, using the provided LivekitRoomCompositeEgressRequest4
 func (t *LivekitRoomCompositeEgressRequest) MergeLivekitRoomCompositeEgressRequest4(v LivekitRoomCompositeEgressRequest4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLivekitRoomCompositeEgressRequest5 returns the union data inside the LivekitRoomCompositeEgressRequest as a LivekitRoomCompositeEgressRequest5
-func (t LivekitRoomCompositeEgressRequest) AsLivekitRoomCompositeEgressRequest5() (LivekitRoomCompositeEgressRequest5, error) {
-	var body LivekitRoomCompositeEgressRequest5
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitRoomCompositeEgressRequest5 overwrites any union data inside the LivekitRoomCompositeEgressRequest as the provided LivekitRoomCompositeEgressRequest5
-func (t *LivekitRoomCompositeEgressRequest) FromLivekitRoomCompositeEgressRequest5(v LivekitRoomCompositeEgressRequest5) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitRoomCompositeEgressRequest5 performs a merge with any union data inside the LivekitRoomCompositeEgressRequest, using the provided LivekitRoomCompositeEgressRequest5
-func (t *LivekitRoomCompositeEgressRequest) MergeLivekitRoomCompositeEgressRequest5(v LivekitRoomCompositeEgressRequest5) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLivekitRoomCompositeEgressRequest6 returns the union data inside the LivekitRoomCompositeEgressRequest as a LivekitRoomCompositeEgressRequest6
-func (t LivekitRoomCompositeEgressRequest) AsLivekitRoomCompositeEgressRequest6() (LivekitRoomCompositeEgressRequest6, error) {
-	var body LivekitRoomCompositeEgressRequest6
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitRoomCompositeEgressRequest6 overwrites any union data inside the LivekitRoomCompositeEgressRequest as the provided LivekitRoomCompositeEgressRequest6
-func (t *LivekitRoomCompositeEgressRequest) FromLivekitRoomCompositeEgressRequest6(v LivekitRoomCompositeEgressRequest6) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitRoomCompositeEgressRequest6 performs a merge with any union data inside the LivekitRoomCompositeEgressRequest, using the provided LivekitRoomCompositeEgressRequest6
-func (t *LivekitRoomCompositeEgressRequest) MergeLivekitRoomCompositeEgressRequest6(v LivekitRoomCompositeEgressRequest6) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10058,32 +5187,6 @@ func (t *LivekitSegmentedFileOutput) MergeLivekitSegmentedFileOutput3(v LivekitS
 	return err
 }
 
-// AsLivekitSegmentedFileOutput4 returns the union data inside the LivekitSegmentedFileOutput as a LivekitSegmentedFileOutput4
-func (t LivekitSegmentedFileOutput) AsLivekitSegmentedFileOutput4() (LivekitSegmentedFileOutput4, error) {
-	var body LivekitSegmentedFileOutput4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitSegmentedFileOutput4 overwrites any union data inside the LivekitSegmentedFileOutput as the provided LivekitSegmentedFileOutput4
-func (t *LivekitSegmentedFileOutput) FromLivekitSegmentedFileOutput4(v LivekitSegmentedFileOutput4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitSegmentedFileOutput4 performs a merge with any union data inside the LivekitSegmentedFileOutput, using the provided LivekitSegmentedFileOutput4
-func (t *LivekitSegmentedFileOutput) MergeLivekitSegmentedFileOutput4(v LivekitSegmentedFileOutput4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
 func (t LivekitSegmentedFileOutput) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	if err != nil {
@@ -10342,32 +5445,6 @@ func (t *LivekitAgentChatContextChatItem) MergeLivekitAgentChatContextChatItem4(
 	return err
 }
 
-// AsLivekitAgentChatContextChatItem5 returns the union data inside the LivekitAgentChatContextChatItem as a LivekitAgentChatContextChatItem5
-func (t LivekitAgentChatContextChatItem) AsLivekitAgentChatContextChatItem5() (LivekitAgentChatContextChatItem5, error) {
-	var body LivekitAgentChatContextChatItem5
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitAgentChatContextChatItem5 overwrites any union data inside the LivekitAgentChatContextChatItem as the provided LivekitAgentChatContextChatItem5
-func (t *LivekitAgentChatContextChatItem) FromLivekitAgentChatContextChatItem5(v LivekitAgentChatContextChatItem5) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitAgentChatContextChatItem5 performs a merge with any union data inside the LivekitAgentChatContextChatItem, using the provided LivekitAgentChatContextChatItem5
-func (t *LivekitAgentChatContextChatItem) MergeLivekitAgentChatContextChatItem5(v LivekitAgentChatContextChatItem5) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
 func (t LivekitAgentChatContextChatItem) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -10394,32 +5471,6 @@ func (t *LivekitAgentChatMessageChatContent) FromLivekitAgentChatMessageChatCont
 
 // MergeLivekitAgentChatMessageChatContent0 performs a merge with any union data inside the LivekitAgentChatMessageChatContent, using the provided LivekitAgentChatMessageChatContent0
 func (t *LivekitAgentChatMessageChatContent) MergeLivekitAgentChatMessageChatContent0(v LivekitAgentChatMessageChatContent0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLivekitAgentChatMessageChatContent1 returns the union data inside the LivekitAgentChatMessageChatContent as a LivekitAgentChatMessageChatContent1
-func (t LivekitAgentChatMessageChatContent) AsLivekitAgentChatMessageChatContent1() (LivekitAgentChatMessageChatContent1, error) {
-	var body LivekitAgentChatMessageChatContent1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitAgentChatMessageChatContent1 overwrites any union data inside the LivekitAgentChatMessageChatContent as the provided LivekitAgentChatMessageChatContent1
-func (t *LivekitAgentChatMessageChatContent) FromLivekitAgentChatMessageChatContent1(v LivekitAgentChatMessageChatContent1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitAgentChatMessageChatContent1 performs a merge with any union data inside the LivekitAgentChatMessageChatContent, using the provided LivekitAgentChatMessageChatContent1
-func (t *LivekitAgentChatMessageChatContent) MergeLivekitAgentChatMessageChatContent1(v LivekitAgentChatMessageChatContent1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10482,32 +5533,6 @@ func (t *LivekitPublicapiObservabilityV1MetricPoint) FromLivekitPublicapiObserva
 
 // MergeLivekitPublicapiObservabilityV1MetricPoint1 performs a merge with any union data inside the LivekitPublicapiObservabilityV1MetricPoint, using the provided LivekitPublicapiObservabilityV1MetricPoint1
 func (t *LivekitPublicapiObservabilityV1MetricPoint) MergeLivekitPublicapiObservabilityV1MetricPoint1(v LivekitPublicapiObservabilityV1MetricPoint1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsLivekitPublicapiObservabilityV1MetricPoint2 returns the union data inside the LivekitPublicapiObservabilityV1MetricPoint as a LivekitPublicapiObservabilityV1MetricPoint2
-func (t LivekitPublicapiObservabilityV1MetricPoint) AsLivekitPublicapiObservabilityV1MetricPoint2() (LivekitPublicapiObservabilityV1MetricPoint2, error) {
-	var body LivekitPublicapiObservabilityV1MetricPoint2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitPublicapiObservabilityV1MetricPoint2 overwrites any union data inside the LivekitPublicapiObservabilityV1MetricPoint as the provided LivekitPublicapiObservabilityV1MetricPoint2
-func (t *LivekitPublicapiObservabilityV1MetricPoint) FromLivekitPublicapiObservabilityV1MetricPoint2(v LivekitPublicapiObservabilityV1MetricPoint2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitPublicapiObservabilityV1MetricPoint2 performs a merge with any union data inside the LivekitPublicapiObservabilityV1MetricPoint, using the provided LivekitPublicapiObservabilityV1MetricPoint2
-func (t *LivekitPublicapiObservabilityV1MetricPoint) MergeLivekitPublicapiObservabilityV1MetricPoint2(v LivekitPublicapiObservabilityV1MetricPoint2) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -10762,32 +5787,6 @@ func (t *LivekitPublicapiObservabilityV1TranscriptItem) MergeLivekitPublicapiObs
 	return err
 }
 
-// AsLivekitPublicapiObservabilityV1TranscriptItem5 returns the union data inside the LivekitPublicapiObservabilityV1TranscriptItem as a LivekitPublicapiObservabilityV1TranscriptItem5
-func (t LivekitPublicapiObservabilityV1TranscriptItem) AsLivekitPublicapiObservabilityV1TranscriptItem5() (LivekitPublicapiObservabilityV1TranscriptItem5, error) {
-	var body LivekitPublicapiObservabilityV1TranscriptItem5
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLivekitPublicapiObservabilityV1TranscriptItem5 overwrites any union data inside the LivekitPublicapiObservabilityV1TranscriptItem as the provided LivekitPublicapiObservabilityV1TranscriptItem5
-func (t *LivekitPublicapiObservabilityV1TranscriptItem) FromLivekitPublicapiObservabilityV1TranscriptItem5(v LivekitPublicapiObservabilityV1TranscriptItem5) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLivekitPublicapiObservabilityV1TranscriptItem5 performs a merge with any union data inside the LivekitPublicapiObservabilityV1TranscriptItem, using the provided LivekitPublicapiObservabilityV1TranscriptItem5
-func (t *LivekitPublicapiObservabilityV1TranscriptItem) MergeLivekitPublicapiObservabilityV1TranscriptItem5(v LivekitPublicapiObservabilityV1TranscriptItem5) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
 func (t LivekitPublicapiObservabilityV1TranscriptItem) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	if err != nil {
@@ -10984,38 +5983,38 @@ type ClientInterface interface {
 
 	// AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
 	//
-	// GetProjectAnalytics returns the project overview over a time range.
+	// Returns the project overview over a time range.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
 	AnalyticsServiceGetProjectAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListAgentAnalytics ListAgentAnalytics
 	//
-	// ListAgentAnalytics returns the same per-agent analytics for every agent in
-	//  the project, one AgentAnalytics row per agent — so a single agent and the
-	//  whole roster share one shape.
+	// Returns the same per-agent analytics for every agent in the project, one
+	//  AgentAnalytics row per agent — so a single agent and the whole roster share
+	//  one shape.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
 	AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceGetAgentAnalytics GetAgentAnalytics
 	//
-	// GetAgentAnalytics returns the analytics for one agent over a time range.
+	// Returns the analytics for one agent over a time range.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
 	AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DatabaseServiceListDatabases ListDatabases
 	//
-	// ListDatabases lists the project's databases, cursor-paginated.
+	// Lists the project's databases, cursor-paginated.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
 	DatabaseServiceListDatabases(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DatabaseServiceCreateDatabaseWithBody CreateDatabase
 	//
-	// CreateDatabase creates an empty database. Not idempotent: a retried
-	//  request creates a second database.
+	// Creates an empty database. Not idempotent: a retried request creates a
+	//  second database.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -11024,8 +6023,8 @@ type ClientInterface interface {
 
 	// DatabaseServiceCreateDatabase CreateDatabase
 	//
-	// CreateDatabase creates an empty database. Not idempotent: a retried
-	//  request creates a second database.
+	// Creates an empty database. Not idempotent: a retried request creates a
+	//  second database.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -11034,7 +6033,7 @@ type ClientInterface interface {
 
 	// DatabaseServiceDeleteDatabase DeleteDatabase
 	//
-	// DeleteDatabase deletes the stored data, not just the metadata.
+	// Deletes the stored data, not just the metadata.
 	//
 	// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
 	DatabaseServiceDeleteDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11046,8 +6045,7 @@ type ClientInterface interface {
 
 	// DatabaseServiceExportDatabase ExportDatabase
 	//
-	// ExportDatabase exports a consistent SQLite file as a time-limited download
-	//  URL.
+	// Exports a consistent SQLite file as a time-limited download URL.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
 	DatabaseServiceExportDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11097,8 +6095,8 @@ type ClientInterface interface {
 
 	// ProjectServiceGenerateKeyWithBody GenerateKey
 	//
-	// Access keys (mirrors cloud ProjectService GenerateKey / ListKeys /
-	//  ListScopedKeys / DeleteKey).
+	// Creates an API key and secret for the project. The secret is returned once,
+	//  in the response, and cannot be read again.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -11107,8 +6105,8 @@ type ClientInterface interface {
 
 	// ProjectServiceGenerateKey GenerateKey
 	//
-	// Access keys (mirrors cloud ProjectService GenerateKey / ListKeys /
-	//  ListScopedKeys / DeleteKey).
+	// Creates an API key and secret for the project. The secret is returned once,
+	//  in the response, and cannot be read again.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -11122,7 +6120,7 @@ type ClientInterface interface {
 
 	// ProjectServiceListMembers ListMembers
 	//
-	// Members & invites (token-based; mirrors cloud ProjectService current flows).
+	// Lists the project's members.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
 	ProjectServiceListMembers(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11167,12 +6165,11 @@ type ClientInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
 	//
-	// GenerateScenarioFromSession derives a reusable scenario (label,
-	//  instructions and expectations) from a recorded room session, for use in a
-	//  later run's scenario_group. Nothing is stored; the returned scenario is the
-	//  result. The session must have a recorded chat history. Each call runs an
-	//  LLM over it, so it counts against the project's scenario-generation quota
-	//  and can take up to about a minute.
+	// Derives a reusable scenario (label, instructions and expectations) from a
+	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
+	//  stored; the returned scenario is the result. The session must have a
+	//  recorded chat history. Each call runs an LLM over it, so it counts against
+	//  the project's scenario-generation quota and can take up to about a minute.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -11181,12 +6178,11 @@ type ClientInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSession GenerateScenarioFromSession
 	//
-	// GenerateScenarioFromSession derives a reusable scenario (label,
-	//  instructions and expectations) from a recorded room session, for use in a
-	//  later run's scenario_group. Nothing is stored; the returned scenario is the
-	//  result. The session must have a recorded chat history. Each call runs an
-	//  LLM over it, so it counts against the project's scenario-generation quota
-	//  and can take up to about a minute.
+	// Derives a reusable scenario (label, instructions and expectations) from a
+	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
+	//  stored; the returned scenario is the result. The session must have a
+	//  recorded chat history. Each call runs an LLM over it, so it counts against
+	//  the project's scenario-generation quota and can take up to about a minute.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -11200,41 +6196,39 @@ type ClientInterface interface {
 
 	// AnalyticsServiceListProjectSessions ListProjectSessions
 	//
-	// ListProjectSessions lists room sessions for a project, newest first,
-	//  cursor-paginated. Backed upstream by the ListingService room-sessions list.
+	// Lists room sessions for a project, newest first, cursor-paginated.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 	AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceGetSession GetSession
 	//
-	// GetSession returns one room session. The response carries both the list-row
-	//  `session` and the richer `detail` (participants, per-metric data points).
+	// Returns one room session. The response carries both the list-row `session`
+	//  and the richer `detail` (participants, per-metric data points).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnalyticsServiceListSessionEvents ListSessionEvents lists one room session's events, oldest first by default,
-	//  cursor-paginated with no total. With no `types`, it returns the seven the
-	//  dashboard's events table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-	//  PARTICIPANT_ACTIVE, PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and
-	//  API_CALL. `types` asks for others, such as TRACK_PUBLISHED, and
-	//  `participant_session_id` keeps one participant session's events. With
-	//  `participant_session_id` and no `types`, it returns the eleven the
-	//  dashboard's participant events table shows: that participant session's
-	//  PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_RESUMED and
-	//  PARTICIPANT_ACTIVE, and its TRACK_MUTED, TRACK_UNMUTED, TRACK_PUBLISHED,
-	//  TRACK_UNPUBLISHED, TRACK_SUBSCRIBED, TRACK_SUBSCRIBE_REQUESTED and
-	//  TRACK_SUBSCRIBE_FAILED.
+	// AnalyticsServiceListSessionEvents Lists one room session's events, oldest first by default, cursor-paginated
+	//  with no total. With no `types`, it returns the seven the dashboard's events
+	//  table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
+	//  PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
+	//  for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
+	//  participant session's events. With `participantSessionId` and no `types`,
+	//  it returns the eleven the dashboard's participant events table shows: that
+	//  participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
+	//  PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
+	//  TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
+	//  TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
 	//
 	// Unlike the dashboard, on purpose: an unknown type or a malformed
-	//  participant session id is InvalidArgument rather than being searched for
-	//  as typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
+	//  participant session id is InvalidArgument rather than being searched for as
+	//  typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
 	//  TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
 	//  fields, leaving out participants' attributes and metadata and API calls'
 	//  request bodies. Each event and participant row still carries the
-	//  participant's identity, as the dashboard shows it to every member, and
-	//  for a SIP caller that can be a phone number.
+	//  participant's identity, as the dashboard shows it to every member, and for
+	//  a SIP caller that can be a phone number.
 	//
 	//  Events are kept for 60 days, which can be shorter than the session's other
 	//  data, so an older session can list no events. An ACTIVE session lists the
@@ -11243,27 +6237,27 @@ type ClientInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionLogs GetSessionLogs returns the log records the session's agents exported, in
-	//  time order: what the dashboard's logs panel shows. Their chat history is
-	//  left out, since GetSessionTranscript reads it, and their evaluation
-	//  results stay in. The session's events, such as participants joining,
-	//  come from AnalyticsService's ListSessionEvents.
+	// ObservabilityServiceGetSessionLogs Returns the log records the session's agents exported, in time order: what
+	//  the dashboard's logs panel shows. Their chat history is left out, since
+	//  GetSessionTranscript reads it, and their evaluation results stay in. The
+	//  session's events, such as participants joining, come from
+	//  AnalyticsService's ListSessionEvents.
 	//
 	// An ACTIVE session returns what its agents have exported so far. A record
 	//  exported mid-read with a time this read has already paged past, earlier
-	//  than its cursor's when oldest first, is missed until a new read. An
-	//  unknown session is NotFound. A read filtered by log_levels can come back
-	//  empty because no record is at those levels, so only an unfiltered one is
+	//  than its cursor's when oldest first, is missed until a new read. An unknown
+	//  session is NotFound. A read filtered by logLevels can come back empty
+	//  because no record is at those levels, so only an unfiltered one is
 	//  ObservabilityDisabled.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionMetrics GetSessionMetrics returns the OpenTelemetry metric points the session's
-	//  agents exported, by time, typed: turn latencies such as
-	//  lk.agents.turn.e2e_latency and lk.agents.turn.llm_ttft, token and duration
-	//  usage such as lk.agents.usage.llm_input_tokens, and the gen_ai.*
-	//  histograms, along with any metrics the agent's own code recorded.
+	// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the session's agents exported, by
+	//  time, typed: turn latencies such as lk.agents.turn.e2e_latency and
+	//  lk.agents.turn.llm_ttft, token and duration usage such as
+	//  lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
+	//  any metrics the agent's own code recorded.
 	//
 	// These are the raw metrics agents emit, so they won't exactly match the
 	//  dashboard's metrics panel, which derives its numbers from the transcript
@@ -11271,93 +6265,89 @@ type ClientInterface interface {
 	//  produce them: an agent whose code installs its own MeterProvider exports
 	//  none to LiveKit Cloud, and its sessions return no points.
 	//
-	//  Some points aren't labeled as their agent exported them. These are
-	//  limitations of the upstream aggregator, which groups a session's series
-	//  by their attributes alone and names each group after its first row:
-	//    - several metrics can come back under one name, such as an LLM's input,
-	//      output and cached token counts, all named
-	//      lk.agents.usage.llm_input_tokens;
-	//    - points of one series at the same time that recorded equal values
-	//      collapse into one point;
-	//    - with two agents in one session, a point can carry the other agent's
-	//      resource attributes.
+	//  Some points aren't labeled as their agent exported them. LiveKit Cloud
+	//  groups a session's series by their attributes alone and names each group
+	//  after its first row, so: - several metrics can come back under one name,
+	//  such as an LLM's input, output and cached token counts, all named
+	//  lk.agents.usage.llm_input_tokens; - points of one series at the same time
+	//  that recorded equal values collapse into one point; - with two agents in
+	//  one session, a point can carry the other agent's resource attributes.
 	//
-	//  An agent exports its metrics every 30 seconds, and its turn latencies
-	//  when the session ends, so an ACTIVE session returns what it has exported
-	//  so far. An unknown session is NotFound. A read filtered by names can come
-	//  back empty because no metric has those names, so only an unfiltered one
-	//  is ObservabilityDisabled.
+	//  An agent exports its metrics every 30 seconds, and its turn latencies when
+	//  the session ends, so an ACTIVE session returns what it has exported so far.
+	//  An unknown session is NotFound. A read filtered by names can come back
+	//  empty because no metric has those names, so only an unfiltered one is
+	//  ObservabilityDisabled.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 	ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListSessionParticipants ListSessionParticipants
 	//
-	// ListSessionParticipants lists the participants of one room session, one row
-	//  per identity, cursor-paginated; newest join first by default. Each row
-	//  carries the participant's participant sessions (PA_...), each with the
-	//  client it connected from.
+	// Lists the participants of one room session, one row per identity,
+	//  cursor-paginated; newest join first by default. Each row carries the
+	//  participant's participant sessions (PA_...), each with the client it
+	//  connected from.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 	AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 	//
-	// GetSessionRecordingURL returns a short-lived signed URL for one of the
-	//  session's recordings: its audio or its chat history. A session with no
-	//  recording of that type is NotFound. A new recording can be NotFound for
-	//  up to a minute after the session ends.
+	// Returns a short-lived signed URL for one of the session's recordings: its
+	//  audio or its chat history. A session with no recording of that type is
+	//  NotFound. A new recording can be NotFound for up to a minute after the
+	//  session ends.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTraces GetSessionTraces returns the spans the session's agents exported, by
-	//  start time: what the dashboard's trace view shows. Each span names its
-	//  parent, so the pages rebuild the span tree, and its attributes carry the
-	//  turn and latency fields the dashboard's turn view reads, such as
-	//  lk.generation_id and lk.response.ttft.
+	// ObservabilityServiceGetSessionTraces Returns the spans the session's agents exported, by start time: what the
+	//  dashboard's trace view shows. Each span names its parent, so the pages
+	//  rebuild the span tree, and its attributes carry the turn and latency fields
+	//  the dashboard's turn view reads, such as lk.generation_id and
+	//  lk.response.ttft.
 	//
 	// An ACTIVE session returns what its agents have exported so far; a span
 	//  exported after the first page waits for a new read. The later pages are
 	//  read by offset, so a span exported mid-read can still shift them: a span
-	//  can repeat, or be skipped. Dedupe by span_id, and read again from the
-	//  first page to pick up a skipped span. An unknown session is NotFound.
+	//  can repeat, or be skipped. Dedupe by spanId, and read again from the first
+	//  page to pick up a skipped span. An unknown session is NotFound.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTranscript GetSessionTranscript returns the session's conversation as ordered
-	//  transcript items: messages, tool calls and results, agent handoffs and
-	//  agent configuration changes. It is the conversation the dashboard's
-	//  transcript shows.
+	// ObservabilityServiceGetSessionTranscript Returns the session's conversation as ordered transcript items: messages,
+	//  tool calls and results, agent handoffs and agent configuration changes. It
+	//  is the conversation the dashboard's transcript shows.
 	//
-	// The agent exports its transcript when the session ends, and it can be
-	//  read a minute or two later; on a project with PII redaction, only once
-	//  the session's recording has been redacted. So a session that is still
-	//  ACTIVE returns what exists so far, usually nothing, without an error:
-	//  read it again after the session ends. An unknown session is NotFound.
+	// The agent exports its transcript when the session ends, and it can be read
+	//  a minute or two later; on a project with PII redaction, only once the
+	//  session's recording has been redacted. So a session that is still ACTIVE
+	//  returns what exists so far, usually nothing, without an error: read it
+	//  again after the session ends. An unknown session is NotFound.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 	ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceListSimulationRuns ListSimulationRuns
 	//
-	// ListSimulationRuns lists a project's runs, newest first, cursor-paginated,
-	//  optionally narrowed by status, agent, conversation mode and a time window.
-	//  Rows carry headline counts (job_count, passed_count, failed_count,
-	//  issue_count) but neither jobs nor the summary.
+	// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
+	//  by status, agent, conversation mode and a time window. Rows carry headline
+	//  counts (jobCount, passedCount, failedCount, issueCount) but neither
+	//  jobs nor the summary.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 	SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCreateSimulationRunWithBody CreateSimulationRun
 	//
-	// CreateSimulationRun registers a new run. With a scenario_group it starts
-	//  right away and no upload target is returned. Without one it waits in
-	//  PENDING_UPLOAD for the agent source that scenarios are generated from:
-	//  upload it to the returned presigned POST, then call
-	//  ConfirmSimulationSourceUpload. A run left pending for an hour is failed.
-	//  Creating a run is not idempotent: a retried request starts a second run.
+	// Registers a new run. With a scenarioGroup it starts right away and no
+	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
+	//  agent source that scenarios are generated from: upload it to the returned
+	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
+	//  for an hour is failed. Creating a run is not idempotent: a retried request
+	//  starts a second run.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -11366,12 +6356,12 @@ type ClientInterface interface {
 
 	// SimulationServiceCreateSimulationRun CreateSimulationRun
 	//
-	// CreateSimulationRun registers a new run. With a scenario_group it starts
-	//  right away and no upload target is returned. Without one it waits in
-	//  PENDING_UPLOAD for the agent source that scenarios are generated from:
-	//  upload it to the returned presigned POST, then call
-	//  ConfirmSimulationSourceUpload. A run left pending for an hour is failed.
-	//  Creating a run is not idempotent: a retried request starts a second run.
+	// Registers a new run. With a scenarioGroup it starts right away and no
+	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
+	//  agent source that scenarios are generated from: upload it to the returned
+	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
+	//  for an hour is failed. Creating a run is not idempotent: a retried request
+	//  starts a second run.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -11380,37 +6370,36 @@ type ClientInterface interface {
 
 	// SimulationServiceGetSimulationRun GetSimulationRun
 	//
-	// GetSimulationRun returns one run with its jobs and aggregate metrics. The
-	//  compressed summary blob (summary_zstd) is omitted; use
-	//  GetSimulationRunSummary for the decoded summary.
+	// Returns one run with its jobs and aggregate metrics. The compressed summary
+	//  blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
+	//  summary.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 	SimulationServiceGetSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceGetSimulationRunSummary GetSimulationRunSummary
 	//
-	// GetSimulationRunSummary returns the graded outcome of a finished run:
-	//  pass/fail counts, what went well, what to improve, flagged issues with
-	//  suggestions, and the per-job chat history. FailedPrecondition while the
-	//  run is still going; NotFound if the run finished without a summary.
+	// Returns the graded outcome of a finished run: pass/fail counts, what went
+	//  well, what to improve, flagged issues with suggestions, and the per-job
+	//  chat history. FailedPrecondition while the run is still going; NotFound if
+	//  the run finished without a summary.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 	SimulationServiceGetSimulationRunSummary(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCancelSimulationRun CancelSimulationRun
 	//
-	// CancelSimulationRun stops a run that has not finished. Cancelling a run
-	//  that already finished succeeds without effect.
+	// Stops a run that has not finished. Cancelling a run that already finished
+	//  succeeds without effect.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 	SimulationServiceCancelSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceConfirmSimulationSourceUploadWithBody ConfirmSimulationSourceUpload
 	//
-	// ConfirmSimulationSourceUpload marks the agent source as uploaded and starts
-	//  scenario generation; the run moves to GENERATING, then RUNNING once the
-	//  scenarios exist. Only valid while the run is PENDING_UPLOAD, so a repeated
-	//  call fails.
+	// Marks the agent source as uploaded and starts scenario generation; the run
+	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
+	//  while the run is PENDING_UPLOAD, so a repeated call fails.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -11419,10 +6408,9 @@ type ClientInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUpload ConfirmSimulationSourceUpload
 	//
-	// ConfirmSimulationSourceUpload marks the agent source as uploaded and starts
-	//  scenario generation; the run moves to GENERATING, then RUNNING once the
-	//  scenarios exist. Only valid while the run is PENDING_UPLOAD, so a repeated
-	//  call fails.
+	// Marks the agent source as uploaded and starts scenario generation; the run
+	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
+	//  while the run is PENDING_UPLOAD, so a repeated call fails.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -11431,24 +6419,24 @@ type ClientInterface interface {
 
 	// SimulationServiceCountSimulationRuns CountSimulationRuns
 	//
-	// CountSimulationRuns buckets the runs ListSimulationRuns would return over
-	//  [start_time, end_time) into a histogram. It takes the same filters over the
-	//  same window, so the bars and the rows beneath them always describe one set.
-	//  Both bounds are required and end_time must be after start_time.
+	// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
+	//  into a histogram. It takes the same filters over the same window, so the
+	//  bars and the rows beneath them always describe one set. Both bounds are
+	//  required and endTime must be after startTime.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ThreadServiceListThreads ListThreads
 	//
-	// ListThreads lists the threads of one scope, newest first.
+	// Lists the threads of one scope, newest first.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
 	ThreadServiceListThreads(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ThreadServiceCreateThreadWithBody CreateThread
 	//
-	// CreateThread creates a thread and its database.
+	// Creates a thread and its database.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -11457,7 +6445,7 @@ type ClientInterface interface {
 
 	// ThreadServiceCreateThread CreateThread
 	//
-	// CreateThread creates a thread and its database.
+	// Creates a thread and its database.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -11466,7 +6454,7 @@ type ClientInterface interface {
 
 	// ThreadServiceDeleteThread DeleteThread
 	//
-	// DeleteThread deletes the thread and its database.
+	// Deletes the thread and its database.
 	//
 	// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
 	ThreadServiceDeleteThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11478,8 +6466,8 @@ type ClientInterface interface {
 
 	// ThreadServiceUpdateThreadWithBody UpdateThread
 	//
-	// UpdateThread merges attributes (an empty value deletes the entry) and sets
-	//  the idle TTL. Every update counts as activity and pushes expires_at out.
+	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
+	//  Every update counts as activity and pushes expiresAt out.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -11488,8 +6476,8 @@ type ClientInterface interface {
 
 	// ThreadServiceUpdateThread UpdateThread
 	//
-	// UpdateThread merges attributes (an empty value deletes the entry) and sets
-	//  the idle TTL. Every update counts as activity and pushes expires_at out.
+	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
+	//  Every update counts as activity and pushes expiresAt out.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -11498,23 +6486,23 @@ type ClientInterface interface {
 
 	// ThreadServiceGetThreadItems GetThreadItems
 	//
-	// GetThreadItems returns the thread's chat items, oldest first.
+	// Returns the thread's chat items, oldest first.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
 	ThreadServiceGetThreadItems(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ThreadServiceGetThreadTasks GetThreadTasks
 	//
-	// GetThreadTasks returns the thread's background tasks, oldest first.
+	// Returns the thread's background tasks, oldest first.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
 	ThreadServiceGetThreadTasks(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateTokenWithBody CreateToken
 	//
-	// CreateToken mints a short-lived LiveKit access token for the project,
-	//  signed server-side, so user-authenticated clients can call LiveKit server
-	//  APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Mints a short-lived LiveKit access token for the project, signed
+	//  server-side, so user-authenticated clients can call LiveKit server APIs
+	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -11523,9 +6511,9 @@ type ClientInterface interface {
 
 	// ProjectServiceCreateToken CreateToken
 	//
-	// CreateToken mints a short-lived LiveKit access token for the project,
-	//  signed server-side, so user-authenticated clients can call LiveKit server
-	//  APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Mints a short-lived LiveKit access token for the project, signed
+	//  server-side, so user-authenticated clients can call LiveKit server APIs
+	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -11539,8 +6527,7 @@ type ClientInterface interface {
 
 	// ProjectServiceListWebhooks ListWebhooks
 	//
-	// Webhooks (mirrors cloud ProjectService ListWebhooks / AddWebhook /
-	//  EditWebhook / DeleteWebhook / SendTestWebhook).
+	// Lists the project's webhook destinations.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
 	ProjectServiceListWebhooks(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11695,7 +6682,7 @@ type ClientInterface interface {
 
 	// WorkspaceServiceListMembers ListMembers
 	//
-	// Members & invites (mirrors cloud WorkspaceService current flows).
+	// Lists the workspace's members.
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
 	WorkspaceServiceListMembers(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11726,7 +6713,8 @@ type ClientInterface interface {
 
 	// WorkspaceServiceListProjects ListProjects
 	//
-	// Project CRUD scoped to a workspace — responses owned by projects.v1.
+	// The projects in a workspace. These return the same Project message as
+	//  the project endpoints.
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 	WorkspaceServiceListProjects(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -11754,20 +6742,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 	WorkspaceServiceGetProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// WorkspaceServiceUpdateProjectWithBody UpdateProject
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
-	WorkspaceServiceUpdateProjectWithBody(ctx context.Context, workspaceId string, updateProjectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// WorkspaceServiceUpdateProject UpdateProject
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
-	WorkspaceServiceUpdateProject(ctx context.Context, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ProjectServiceGetInvite GetInvite
@@ -11934,7 +6908,7 @@ func (c *Client) ProjectServiceUpdateProject(ctx context.Context, projectId stri
 
 // AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
 //
-// GetProjectAnalytics returns the project overview over a time range.
+// Returns the project overview over a time range.
 //
 // Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
 func (c *Client) AnalyticsServiceGetProjectAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -11951,10 +6925,10 @@ func (c *Client) AnalyticsServiceGetProjectAnalytics(ctx context.Context, projec
 
 // AnalyticsServiceListAgentAnalytics ListAgentAnalytics
 //
-// ListAgentAnalytics returns the same per-agent analytics for every agent in
+// Returns the same per-agent analytics for every agent in the project, one
 //
-//	the project, one AgentAnalytics row per agent — so a single agent and the
-//	whole roster share one shape.
+//	AgentAnalytics row per agent — so a single agent and the whole roster share
+//	one shape.
 //
 // Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
 func (c *Client) AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -11971,7 +6945,7 @@ func (c *Client) AnalyticsServiceListAgentAnalytics(ctx context.Context, project
 
 // AnalyticsServiceGetAgentAnalytics GetAgentAnalytics
 //
-// GetAgentAnalytics returns the analytics for one agent over a time range.
+// Returns the analytics for one agent over a time range.
 //
 // Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
 func (c *Client) AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -11988,7 +6962,7 @@ func (c *Client) AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectI
 
 // DatabaseServiceListDatabases ListDatabases
 //
-// ListDatabases lists the project's databases, cursor-paginated.
+// Lists the project's databases, cursor-paginated.
 //
 // Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
 func (c *Client) DatabaseServiceListDatabases(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12005,9 +6979,9 @@ func (c *Client) DatabaseServiceListDatabases(ctx context.Context, projectId str
 
 // DatabaseServiceCreateDatabaseWithBody CreateDatabase
 //
-// CreateDatabase creates an empty database. Not idempotent: a retried
+// Creates an empty database. Not idempotent: a retried request creates a
 //
-//	request creates a second database.
+//	second database.
 //
 // Takes any type of body and a specified content type.
 //
@@ -12026,9 +7000,9 @@ func (c *Client) DatabaseServiceCreateDatabaseWithBody(ctx context.Context, proj
 
 // DatabaseServiceCreateDatabase CreateDatabase
 //
-// CreateDatabase creates an empty database. Not idempotent: a retried
+// Creates an empty database. Not idempotent: a retried request creates a
 //
-//	request creates a second database.
+//	second database.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -12047,7 +7021,7 @@ func (c *Client) DatabaseServiceCreateDatabase(ctx context.Context, projectId st
 
 // DatabaseServiceDeleteDatabase DeleteDatabase
 //
-// DeleteDatabase deletes the stored data, not just the metadata.
+// Deletes the stored data, not just the metadata.
 //
 // Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
 func (c *Client) DatabaseServiceDeleteDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12079,9 +7053,7 @@ func (c *Client) DatabaseServiceGetDatabase(ctx context.Context, projectId strin
 
 // DatabaseServiceExportDatabase ExportDatabase
 //
-// ExportDatabase exports a consistent SQLite file as a time-limited download
-//
-//	URL.
+// Exports a consistent SQLite file as a time-limited download URL.
 //
 // Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
 func (c *Client) DatabaseServiceExportDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12211,9 +7183,9 @@ func (c *Client) ProjectServiceListKeys(ctx context.Context, projectId string, p
 
 // ProjectServiceGenerateKeyWithBody GenerateKey
 //
-// Access keys (mirrors cloud ProjectService GenerateKey / ListKeys /
+// Creates an API key and secret for the project. The secret is returned once,
 //
-//	ListScopedKeys / DeleteKey).
+//	in the response, and cannot be read again.
 //
 // Takes any type of body and a specified content type.
 //
@@ -12232,9 +7204,9 @@ func (c *Client) ProjectServiceGenerateKeyWithBody(ctx context.Context, projectI
 
 // ProjectServiceGenerateKey GenerateKey
 //
-// Access keys (mirrors cloud ProjectService GenerateKey / ListKeys /
+// Creates an API key and secret for the project. The secret is returned once,
 //
-//	ListScopedKeys / DeleteKey).
+//	in the response, and cannot be read again.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -12268,7 +7240,7 @@ func (c *Client) ProjectServiceDeleteKey(ctx context.Context, projectId string, 
 
 // ProjectServiceListMembers ListMembers
 //
-// Members & invites (token-based; mirrors cloud ProjectService current flows).
+// Lists the project's members.
 //
 // Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
 func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12383,13 +7355,12 @@ func (c *Client) ProjectServiceAddWorkspaceMembersToProject(ctx context.Context,
 
 // SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
 //
-// GenerateScenarioFromSession derives a reusable scenario (label,
+// Derives a reusable scenario (label, instructions and expectations) from a
 //
-//	instructions and expectations) from a recorded room session, for use in a
-//	later run's scenario_group. Nothing is stored; the returned scenario is the
-//	result. The session must have a recorded chat history. Each call runs an
-//	LLM over it, so it counts against the project's scenario-generation quota
-//	and can take up to about a minute.
+//	recorded room session, for use in a later run's scenarioGroup. Nothing is
+//	stored; the returned scenario is the result. The session must have a
+//	recorded chat history. Each call runs an LLM over it, so it counts against
+//	the project's scenario-generation quota and can take up to about a minute.
 //
 // Takes any type of body and a specified content type.
 //
@@ -12408,13 +7379,12 @@ func (c *Client) SimulationServiceGenerateScenarioFromSessionWithBody(ctx contex
 
 // SimulationServiceGenerateScenarioFromSession GenerateScenarioFromSession
 //
-// GenerateScenarioFromSession derives a reusable scenario (label,
+// Derives a reusable scenario (label, instructions and expectations) from a
 //
-//	instructions and expectations) from a recorded room session, for use in a
-//	later run's scenario_group. Nothing is stored; the returned scenario is the
-//	result. The session must have a recorded chat history. Each call runs an
-//	LLM over it, so it counts against the project's scenario-generation quota
-//	and can take up to about a minute.
+//	recorded room session, for use in a later run's scenarioGroup. Nothing is
+//	stored; the returned scenario is the result. The session must have a
+//	recorded chat history. Each call runs an LLM over it, so it counts against
+//	the project's scenario-generation quota and can take up to about a minute.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -12448,9 +7418,7 @@ func (c *Client) ProjectServiceListScopedKeys(ctx context.Context, projectId str
 
 // AnalyticsServiceListProjectSessions ListProjectSessions
 //
-// ListProjectSessions lists room sessions for a project, newest first,
-//
-//	cursor-paginated. Backed upstream by the ListingService room-sessions list.
+// Lists room sessions for a project, newest first, cursor-paginated.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12467,9 +7435,9 @@ func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projec
 
 // AnalyticsServiceGetSession GetSession
 //
-// GetSession returns one room session. The response carries both the list-row
+// Returns one room session. The response carries both the list-row `session`
 //
-//	`session` and the richer `detail` (participants, per-metric data points).
+//	and the richer `detail` (participants, per-metric data points).
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12484,29 +7452,28 @@ func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId strin
 	return c.Client.Do(req)
 }
 
-// AnalyticsServiceListSessionEvents ListSessionEvents lists one room session's events, oldest first by default,
+// AnalyticsServiceListSessionEvents Lists one room session's events, oldest first by default, cursor-paginated
 //
-//	cursor-paginated with no total. With no `types`, it returns the seven the
-//	dashboard's events table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-//	PARTICIPANT_ACTIVE, PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and
-//	API_CALL. `types` asks for others, such as TRACK_PUBLISHED, and
-//	`participant_session_id` keeps one participant session's events. With
-//	`participant_session_id` and no `types`, it returns the eleven the
-//	dashboard's participant events table shows: that participant session's
-//	PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_RESUMED and
-//	PARTICIPANT_ACTIVE, and its TRACK_MUTED, TRACK_UNMUTED, TRACK_PUBLISHED,
-//	TRACK_UNPUBLISHED, TRACK_SUBSCRIBED, TRACK_SUBSCRIBE_REQUESTED and
-//	TRACK_SUBSCRIBE_FAILED.
+//	with no total. With no `types`, it returns the seven the dashboard's events
+//	table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
+//	PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
+//	for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
+//	participant session's events. With `participantSessionId` and no `types`,
+//	it returns the eleven the dashboard's participant events table shows: that
+//	participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
+//	PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
+//	TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
+//	TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
 //
 // Unlike the dashboard, on purpose: an unknown type or a malformed
 //
-//	participant session id is InvalidArgument rather than being searched for
-//	as typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
+//	participant session id is InvalidArgument rather than being searched for as
+//	typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
 //	TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
 //	fields, leaving out participants' attributes and metadata and API calls'
 //	request bodies. Each event and participant row still carries the
-//	participant's identity, as the dashboard shows it to every member, and
-//	for a SIP caller that can be a phone number.
+//	participant's identity, as the dashboard shows it to every member, and for
+//	a SIP caller that can be a phone number.
 //
 //	Events are kept for 60 days, which can be shorter than the session's other
 //	data, so an older session can list no events. An ACTIVE session lists the
@@ -12525,19 +7492,19 @@ func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectI
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionLogs GetSessionLogs returns the log records the session's agents exported, in
+// ObservabilityServiceGetSessionLogs Returns the log records the session's agents exported, in time order: what
 //
-//	time order: what the dashboard's logs panel shows. Their chat history is
-//	left out, since GetSessionTranscript reads it, and their evaluation
-//	results stay in. The session's events, such as participants joining,
-//	come from AnalyticsService's ListSessionEvents.
+//	the dashboard's logs panel shows. Their chat history is left out, since
+//	GetSessionTranscript reads it, and their evaluation results stay in. The
+//	session's events, such as participants joining, come from
+//	AnalyticsService's ListSessionEvents.
 //
 // An ACTIVE session returns what its agents have exported so far. A record
 //
 //	exported mid-read with a time this read has already paged past, earlier
-//	than its cursor's when oldest first, is missed until a new read. An
-//	unknown session is NotFound. A read filtered by log_levels can come back
-//	empty because no record is at those levels, so only an unfiltered one is
+//	than its cursor's when oldest first, is missed until a new read. An unknown
+//	session is NotFound. A read filtered by logLevels can come back empty
+//	because no record is at those levels, so only an unfiltered one is
 //	ObservabilityDisabled.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
@@ -12553,12 +7520,12 @@ func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, project
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionMetrics GetSessionMetrics returns the OpenTelemetry metric points the session's
+// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the session's agents exported, by
 //
-//	agents exported, by time, typed: turn latencies such as
-//	lk.agents.turn.e2e_latency and lk.agents.turn.llm_ttft, token and duration
-//	usage such as lk.agents.usage.llm_input_tokens, and the gen_ai.*
-//	histograms, along with any metrics the agent's own code recorded.
+//	time, typed: turn latencies such as lk.agents.turn.e2e_latency and
+//	lk.agents.turn.llm_ttft, token and duration usage such as
+//	lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
+//	any metrics the agent's own code recorded.
 //
 // These are the raw metrics agents emit, so they won't exactly match the
 //
@@ -12567,22 +7534,19 @@ func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, project
 //	produce them: an agent whose code installs its own MeterProvider exports
 //	none to LiveKit Cloud, and its sessions return no points.
 //
-//	Some points aren't labeled as their agent exported them. These are
-//	limitations of the upstream aggregator, which groups a session's series
-//	by their attributes alone and names each group after its first row:
-//	  - several metrics can come back under one name, such as an LLM's input,
-//	    output and cached token counts, all named
-//	    lk.agents.usage.llm_input_tokens;
-//	  - points of one series at the same time that recorded equal values
-//	    collapse into one point;
-//	  - with two agents in one session, a point can carry the other agent's
-//	    resource attributes.
+//	Some points aren't labeled as their agent exported them. LiveKit Cloud
+//	groups a session's series by their attributes alone and names each group
+//	after its first row, so: - several metrics can come back under one name,
+//	such as an LLM's input, output and cached token counts, all named
+//	lk.agents.usage.llm_input_tokens; - points of one series at the same time
+//	that recorded equal values collapse into one point; - with two agents in
+//	one session, a point can carry the other agent's resource attributes.
 //
-//	An agent exports its metrics every 30 seconds, and its turn latencies
-//	when the session ends, so an ACTIVE session returns what it has exported
-//	so far. An unknown session is NotFound. A read filtered by names can come
-//	back empty because no metric has those names, so only an unfiltered one
-//	is ObservabilityDisabled.
+//	An agent exports its metrics every 30 seconds, and its turn latencies when
+//	the session ends, so an ACTIVE session returns what it has exported so far.
+//	An unknown session is NotFound. A read filtered by names can come back
+//	empty because no metric has those names, so only an unfiltered one is
+//	ObservabilityDisabled.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12599,11 +7563,11 @@ func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, proj
 
 // AnalyticsServiceListSessionParticipants ListSessionParticipants
 //
-// ListSessionParticipants lists the participants of one room session, one row
+// Lists the participants of one room session, one row per identity,
 //
-//	per identity, cursor-paginated; newest join first by default. Each row
-//	carries the participant's participant sessions (PA_...), each with the
-//	client it connected from.
+//	cursor-paginated; newest join first by default. Each row carries the
+//	participant's participant sessions (PA_...), each with the client it
+//	connected from.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12620,11 +7584,11 @@ func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, pr
 
 // ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 //
-// GetSessionRecordingURL returns a short-lived signed URL for one of the
+// Returns a short-lived signed URL for one of the session's recordings: its
 //
-//	session's recordings: its audio or its chat history. A session with no
-//	recording of that type is NotFound. A new recording can be NotFound for
-//	up to a minute after the session ends.
+//	audio or its chat history. A session with no recording of that type is
+//	NotFound. A new recording can be NotFound for up to a minute after the
+//	session ends.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12639,19 +7603,19 @@ func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context,
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTraces GetSessionTraces returns the spans the session's agents exported, by
+// ObservabilityServiceGetSessionTraces Returns the spans the session's agents exported, by start time: what the
 //
-//	start time: what the dashboard's trace view shows. Each span names its
-//	parent, so the pages rebuild the span tree, and its attributes carry the
-//	turn and latency fields the dashboard's turn view reads, such as
-//	lk.generation_id and lk.response.ttft.
+//	dashboard's trace view shows. Each span names its parent, so the pages
+//	rebuild the span tree, and its attributes carry the turn and latency fields
+//	the dashboard's turn view reads, such as lk.generation_id and
+//	lk.response.ttft.
 //
 // An ACTIVE session returns what its agents have exported so far; a span
 //
 //	exported after the first page waits for a new read. The later pages are
 //	read by offset, so a span exported mid-read can still shift them: a span
-//	can repeat, or be skipped. Dedupe by span_id, and read again from the
-//	first page to pick up a skipped span. An unknown session is NotFound.
+//	can repeat, or be skipped. Dedupe by spanId, and read again from the first
+//	page to pick up a skipped span. An unknown session is NotFound.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12666,18 +7630,17 @@ func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, proje
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTranscript GetSessionTranscript returns the session's conversation as ordered
+// ObservabilityServiceGetSessionTranscript Returns the session's conversation as ordered transcript items: messages,
 //
-//	transcript items: messages, tool calls and results, agent handoffs and
-//	agent configuration changes. It is the conversation the dashboard's
-//	transcript shows.
+//	tool calls and results, agent handoffs and agent configuration changes. It
+//	is the conversation the dashboard's transcript shows.
 //
-// The agent exports its transcript when the session ends, and it can be
+// The agent exports its transcript when the session ends, and it can be read
 //
-//	read a minute or two later; on a project with PII redaction, only once
-//	the session's recording has been redacted. So a session that is still
-//	ACTIVE returns what exists so far, usually nothing, without an error:
-//	read it again after the session ends. An unknown session is NotFound.
+//	a minute or two later; on a project with PII redaction, only once the
+//	session's recording has been redacted. So a session that is still ACTIVE
+//	returns what exists so far, usually nothing, without an error: read it
+//	again after the session ends. An unknown session is NotFound.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12694,11 +7657,11 @@ func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, p
 
 // SimulationServiceListSimulationRuns ListSimulationRuns
 //
-// ListSimulationRuns lists a project's runs, newest first, cursor-paginated,
+// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
 //
-//	optionally narrowed by status, agent, conversation mode and a time window.
-//	Rows carry headline counts (job_count, passed_count, failed_count,
-//	issue_count) but neither jobs nor the summary.
+//	by status, agent, conversation mode and a time window. Rows carry headline
+//	counts (jobCount, passedCount, failedCount, issueCount) but neither
+//	jobs nor the summary.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12715,13 +7678,13 @@ func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projec
 
 // SimulationServiceCreateSimulationRunWithBody CreateSimulationRun
 //
-// CreateSimulationRun registers a new run. With a scenario_group it starts
+// Registers a new run. With a scenarioGroup it starts right away and no
 //
-//	right away and no upload target is returned. Without one it waits in
-//	PENDING_UPLOAD for the agent source that scenarios are generated from:
-//	upload it to the returned presigned POST, then call
-//	ConfirmSimulationSourceUpload. A run left pending for an hour is failed.
-//	Creating a run is not idempotent: a retried request starts a second run.
+//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
+//	agent source that scenarios are generated from: upload it to the returned
+//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
+//	for an hour is failed. Creating a run is not idempotent: a retried request
+//	starts a second run.
 //
 // Takes any type of body and a specified content type.
 //
@@ -12740,13 +7703,13 @@ func (c *Client) SimulationServiceCreateSimulationRunWithBody(ctx context.Contex
 
 // SimulationServiceCreateSimulationRun CreateSimulationRun
 //
-// CreateSimulationRun registers a new run. With a scenario_group it starts
+// Registers a new run. With a scenarioGroup it starts right away and no
 //
-//	right away and no upload target is returned. Without one it waits in
-//	PENDING_UPLOAD for the agent source that scenarios are generated from:
-//	upload it to the returned presigned POST, then call
-//	ConfirmSimulationSourceUpload. A run left pending for an hour is failed.
-//	Creating a run is not idempotent: a retried request starts a second run.
+//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
+//	agent source that scenarios are generated from: upload it to the returned
+//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
+//	for an hour is failed. Creating a run is not idempotent: a retried request
+//	starts a second run.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -12765,10 +7728,10 @@ func (c *Client) SimulationServiceCreateSimulationRun(ctx context.Context, proje
 
 // SimulationServiceGetSimulationRun GetSimulationRun
 //
-// GetSimulationRun returns one run with its jobs and aggregate metrics. The
+// Returns one run with its jobs and aggregate metrics. The compressed summary
 //
-//	compressed summary blob (summary_zstd) is omitted; use
-//	GetSimulationRunSummary for the decoded summary.
+//	blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
+//	summary.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 func (c *Client) SimulationServiceGetSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12785,11 +7748,11 @@ func (c *Client) SimulationServiceGetSimulationRun(ctx context.Context, projectI
 
 // SimulationServiceGetSimulationRunSummary GetSimulationRunSummary
 //
-// GetSimulationRunSummary returns the graded outcome of a finished run:
+// Returns the graded outcome of a finished run: pass/fail counts, what went
 //
-//	pass/fail counts, what went well, what to improve, flagged issues with
-//	suggestions, and the per-job chat history. FailedPrecondition while the
-//	run is still going; NotFound if the run finished without a summary.
+//	well, what to improve, flagged issues with suggestions, and the per-job
+//	chat history. FailedPrecondition while the run is still going; NotFound if
+//	the run finished without a summary.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 func (c *Client) SimulationServiceGetSimulationRunSummary(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12806,9 +7769,9 @@ func (c *Client) SimulationServiceGetSimulationRunSummary(ctx context.Context, p
 
 // SimulationServiceCancelSimulationRun CancelSimulationRun
 //
-// CancelSimulationRun stops a run that has not finished. Cancelling a run
+// Stops a run that has not finished. Cancelling a run that already finished
 //
-//	that already finished succeeds without effect.
+//	succeeds without effect.
 //
 // Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12825,11 +7788,10 @@ func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, proje
 
 // SimulationServiceConfirmSimulationSourceUploadWithBody ConfirmSimulationSourceUpload
 //
-// ConfirmSimulationSourceUpload marks the agent source as uploaded and starts
+// Marks the agent source as uploaded and starts scenario generation; the run
 //
-//	scenario generation; the run moves to GENERATING, then RUNNING once the
-//	scenarios exist. Only valid while the run is PENDING_UPLOAD, so a repeated
-//	call fails.
+//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
+//	while the run is PENDING_UPLOAD, so a repeated call fails.
 //
 // Takes any type of body and a specified content type.
 //
@@ -12848,11 +7810,10 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUploadWithBody(ctx cont
 
 // SimulationServiceConfirmSimulationSourceUpload ConfirmSimulationSourceUpload
 //
-// ConfirmSimulationSourceUpload marks the agent source as uploaded and starts
+// Marks the agent source as uploaded and starts scenario generation; the run
 //
-//	scenario generation; the run moves to GENERATING, then RUNNING once the
-//	scenarios exist. Only valid while the run is PENDING_UPLOAD, so a repeated
-//	call fails.
+//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
+//	while the run is PENDING_UPLOAD, so a repeated call fails.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -12871,11 +7832,11 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUpload(ctx context.Cont
 
 // SimulationServiceCountSimulationRuns CountSimulationRuns
 //
-// CountSimulationRuns buckets the runs ListSimulationRuns would return over
+// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
 //
-//	[start_time, end_time) into a histogram. It takes the same filters over the
-//	same window, so the bars and the rows beneath them always describe one set.
-//	Both bounds are required and end_time must be after start_time.
+//	into a histogram. It takes the same filters over the same window, so the
+//	bars and the rows beneath them always describe one set. Both bounds are
+//	required and endTime must be after startTime.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12892,7 +7853,7 @@ func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, proje
 
 // ThreadServiceListThreads ListThreads
 //
-// ListThreads lists the threads of one scope, newest first.
+// Lists the threads of one scope, newest first.
 //
 // Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
 func (c *Client) ThreadServiceListThreads(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12909,7 +7870,7 @@ func (c *Client) ThreadServiceListThreads(ctx context.Context, projectId string,
 
 // ThreadServiceCreateThreadWithBody CreateThread
 //
-// CreateThread creates a thread and its database.
+// Creates a thread and its database.
 //
 // Takes any type of body and a specified content type.
 //
@@ -12928,7 +7889,7 @@ func (c *Client) ThreadServiceCreateThreadWithBody(ctx context.Context, projectI
 
 // ThreadServiceCreateThread CreateThread
 //
-// CreateThread creates a thread and its database.
+// Creates a thread and its database.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -12947,7 +7908,7 @@ func (c *Client) ThreadServiceCreateThread(ctx context.Context, projectId string
 
 // ThreadServiceDeleteThread DeleteThread
 //
-// DeleteThread deletes the thread and its database.
+// Deletes the thread and its database.
 //
 // Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
 func (c *Client) ThreadServiceDeleteThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12979,9 +7940,9 @@ func (c *Client) ThreadServiceGetThread(ctx context.Context, projectId string, t
 
 // ThreadServiceUpdateThreadWithBody UpdateThread
 //
-// UpdateThread merges attributes (an empty value deletes the entry) and sets
+// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
 //
-//	the idle TTL. Every update counts as activity and pushes expires_at out.
+//	Every update counts as activity and pushes expiresAt out.
 //
 // Takes any type of body and a specified content type.
 //
@@ -13000,9 +7961,9 @@ func (c *Client) ThreadServiceUpdateThreadWithBody(ctx context.Context, projectI
 
 // ThreadServiceUpdateThread UpdateThread
 //
-// UpdateThread merges attributes (an empty value deletes the entry) and sets
+// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
 //
-//	the idle TTL. Every update counts as activity and pushes expires_at out.
+//	Every update counts as activity and pushes expiresAt out.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -13021,7 +7982,7 @@ func (c *Client) ThreadServiceUpdateThread(ctx context.Context, projectId string
 
 // ThreadServiceGetThreadItems GetThreadItems
 //
-// GetThreadItems returns the thread's chat items, oldest first.
+// Returns the thread's chat items, oldest first.
 //
 // Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
 func (c *Client) ThreadServiceGetThreadItems(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13038,7 +7999,7 @@ func (c *Client) ThreadServiceGetThreadItems(ctx context.Context, projectId stri
 
 // ThreadServiceGetThreadTasks GetThreadTasks
 //
-// GetThreadTasks returns the thread's background tasks, oldest first.
+// Returns the thread's background tasks, oldest first.
 //
 // Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
 func (c *Client) ThreadServiceGetThreadTasks(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13055,10 +8016,10 @@ func (c *Client) ThreadServiceGetThreadTasks(ctx context.Context, projectId stri
 
 // ProjectServiceCreateTokenWithBody CreateToken
 //
-// CreateToken mints a short-lived LiveKit access token for the project,
+// Mints a short-lived LiveKit access token for the project, signed
 //
-//	signed server-side, so user-authenticated clients can call LiveKit server
-//	APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	server-side, so user-authenticated clients can call LiveKit server APIs
+//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
 //
 // Takes any type of body and a specified content type.
 //
@@ -13077,10 +8038,10 @@ func (c *Client) ProjectServiceCreateTokenWithBody(ctx context.Context, projectI
 
 // ProjectServiceCreateToken CreateToken
 //
-// CreateToken mints a short-lived LiveKit access token for the project,
+// Mints a short-lived LiveKit access token for the project, signed
 //
-//	signed server-side, so user-authenticated clients can call LiveKit server
-//	APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	server-side, so user-authenticated clients can call LiveKit server APIs
+//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -13114,9 +8075,7 @@ func (c *Client) ProjectServiceListWebhookEvents(ctx context.Context, projectId 
 
 // ProjectServiceListWebhooks ListWebhooks
 //
-// Webhooks (mirrors cloud ProjectService ListWebhooks / AddWebhook /
-//
-//	EditWebhook / DeleteWebhook / SendTestWebhook).
+// Lists the project's webhook destinations.
 //
 // Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
 func (c *Client) ProjectServiceListWebhooks(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13521,7 +8480,7 @@ func (c *Client) WorkspaceServiceDeleteInvite(ctx context.Context, workspaceId s
 
 // WorkspaceServiceListMembers ListMembers
 //
-// Members & invites (mirrors cloud WorkspaceService current flows).
+// Lists the workspace's members.
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
 func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13602,7 +8561,9 @@ func (c *Client) WorkspaceServiceUpdateMember(ctx context.Context, workspaceId s
 
 // WorkspaceServiceListProjects ListProjects
 //
-// Project CRUD scoped to a workspace — responses owned by projects.v1.
+// The projects in a workspace. These return the same Project message as
+//
+//	the project endpoints.
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 func (c *Client) WorkspaceServiceListProjects(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -13671,40 +8632,6 @@ func (c *Client) WorkspaceServiceDeleteProject(ctx context.Context, workspaceId 
 // Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 func (c *Client) WorkspaceServiceGetProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceGetProjectRequest(c.Server, workspaceId, projectId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// WorkspaceServiceUpdateProjectWithBody UpdateProject
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
-func (c *Client) WorkspaceServiceUpdateProjectWithBody(ctx context.Context, workspaceId string, updateProjectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWorkspaceServiceUpdateProjectRequestWithBody(c.Server, workspaceId, updateProjectId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// WorkspaceServiceUpdateProject UpdateProject
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
-func (c *Client) WorkspaceServiceUpdateProject(ctx context.Context, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWorkspaceServiceUpdateProjectRequest(c.Server, workspaceId, updateProjectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15302,7 +10229,7 @@ func NewAnalyticsServiceListProjectSessionsRequest(server string, projectId stri
 
 		if params.SortOrder != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -15459,7 +10386,7 @@ func NewAnalyticsServiceListSessionEventsRequest(server string, projectId string
 
 		if params.SortOrder != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -15563,7 +10490,7 @@ func NewObservabilityServiceGetSessionLogsRequest(server string, projectId strin
 
 		if params.SortOrder != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -15747,7 +10674,7 @@ func NewAnalyticsServiceListSessionParticipantsRequest(server string, projectId 
 
 		if params.SortBy != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortBy", *params.SortBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortBy", *params.SortBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -15759,7 +10686,7 @@ func NewAnalyticsServiceListSessionParticipantsRequest(server string, projectId 
 
 		if params.SortOrder != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -15827,7 +10754,7 @@ func NewObservabilityServiceGetSessionRecordingURLRequest(server string, project
 
 		if params.FileType != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "fileType", *params.FileType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "fileType", *params.FileType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -16837,7 +11764,7 @@ func NewThreadServiceGetThreadItemsRequest(server string, projectId string, thre
 
 		if params.SortOrder != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -18211,60 +13138,6 @@ func NewWorkspaceServiceGetProjectRequest(server string, workspaceId string, pro
 	return req, nil
 }
 
-// NewWorkspaceServiceUpdateProjectRequest calls the generic WorkspaceServiceUpdateProject builder with application/json body
-func NewWorkspaceServiceUpdateProjectRequest(server string, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewWorkspaceServiceUpdateProjectRequestWithBody(server, workspaceId, updateProjectId, "application/json", bodyReader)
-}
-
-// NewWorkspaceServiceUpdateProjectRequestWithBody constructs an http.Request for the WorkspaceServiceUpdateProject method, with any body, and a specified content type
-func NewWorkspaceServiceUpdateProjectRequestWithBody(server string, workspaceId string, updateProjectId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "workspaceId", workspaceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "update.projectId", updateProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/workspaces/%s/projects/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -18381,7 +13254,7 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
 	//
-	// GetProjectAnalytics returns the project overview over a time range.
+	// Returns the project overview over a time range.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18390,9 +13263,9 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
 	//
-	// ListAgentAnalytics returns the same per-agent analytics for every agent in
-	//  the project, one AgentAnalytics row per agent — so a single agent and the
-	//  whole roster share one shape.
+	// Returns the same per-agent analytics for every agent in the project, one
+	//  AgentAnalytics row per agent — so a single agent and the whole roster share
+	//  one shape.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18401,7 +13274,7 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceGetAgentAnalyticsWithResponse GetAgentAnalytics
 	//
-	// GetAgentAnalytics returns the analytics for one agent over a time range.
+	// Returns the analytics for one agent over a time range.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18410,7 +13283,7 @@ type ClientWithResponsesInterface interface {
 
 	// DatabaseServiceListDatabasesWithResponse ListDatabases
 	//
-	// ListDatabases lists the project's databases, cursor-paginated.
+	// Lists the project's databases, cursor-paginated.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18419,8 +13292,8 @@ type ClientWithResponsesInterface interface {
 
 	// DatabaseServiceCreateDatabaseWithBodyWithResponse CreateDatabase
 	//
-	// CreateDatabase creates an empty database. Not idempotent: a retried
-	//  request creates a second database.
+	// Creates an empty database. Not idempotent: a retried request creates a
+	//  second database.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18429,8 +13302,8 @@ type ClientWithResponsesInterface interface {
 
 	// DatabaseServiceCreateDatabaseWithResponse CreateDatabase
 	//
-	// CreateDatabase creates an empty database. Not idempotent: a retried
-	//  request creates a second database.
+	// Creates an empty database. Not idempotent: a retried request creates a
+	//  second database.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18439,7 +13312,7 @@ type ClientWithResponsesInterface interface {
 
 	// DatabaseServiceDeleteDatabaseWithResponse DeleteDatabase
 	//
-	// DeleteDatabase deletes the stored data, not just the metadata.
+	// Deletes the stored data, not just the metadata.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18455,8 +13328,7 @@ type ClientWithResponsesInterface interface {
 
 	// DatabaseServiceExportDatabaseWithResponse ExportDatabase
 	//
-	// ExportDatabase exports a consistent SQLite file as a time-limited download
-	//  URL.
+	// Exports a consistent SQLite file as a time-limited download URL.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18514,8 +13386,8 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceGenerateKeyWithBodyWithResponse GenerateKey
 	//
-	// Access keys (mirrors cloud ProjectService GenerateKey / ListKeys /
-	//  ListScopedKeys / DeleteKey).
+	// Creates an API key and secret for the project. The secret is returned once,
+	//  in the response, and cannot be read again.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18524,8 +13396,8 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceGenerateKeyWithResponse GenerateKey
 	//
-	// Access keys (mirrors cloud ProjectService GenerateKey / ListKeys /
-	//  ListScopedKeys / DeleteKey).
+	// Creates an API key and secret for the project. The secret is returned once,
+	//  in the response, and cannot be read again.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18541,7 +13413,7 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListMembersWithResponse ListMembers
 	//
-	// Members & invites (token-based; mirrors cloud ProjectService current flows).
+	// Lists the project's members.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18592,12 +13464,11 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
 	//
-	// GenerateScenarioFromSession derives a reusable scenario (label,
-	//  instructions and expectations) from a recorded room session, for use in a
-	//  later run's scenario_group. Nothing is stored; the returned scenario is the
-	//  result. The session must have a recorded chat history. Each call runs an
-	//  LLM over it, so it counts against the project's scenario-generation quota
-	//  and can take up to about a minute.
+	// Derives a reusable scenario (label, instructions and expectations) from a
+	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
+	//  stored; the returned scenario is the result. The session must have a
+	//  recorded chat history. Each call runs an LLM over it, so it counts against
+	//  the project's scenario-generation quota and can take up to about a minute.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18606,12 +13477,11 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSessionWithResponse GenerateScenarioFromSession
 	//
-	// GenerateScenarioFromSession derives a reusable scenario (label,
-	//  instructions and expectations) from a recorded room session, for use in a
-	//  later run's scenario_group. Nothing is stored; the returned scenario is the
-	//  result. The session must have a recorded chat history. Each call runs an
-	//  LLM over it, so it counts against the project's scenario-generation quota
-	//  and can take up to about a minute.
+	// Derives a reusable scenario (label, instructions and expectations) from a
+	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
+	//  stored; the returned scenario is the result. The session must have a
+	//  recorded chat history. Each call runs an LLM over it, so it counts against
+	//  the project's scenario-generation quota and can take up to about a minute.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18627,8 +13497,7 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 	//
-	// ListProjectSessions lists room sessions for a project, newest first,
-	//  cursor-paginated. Backed upstream by the ListingService room-sessions list.
+	// Lists room sessions for a project, newest first, cursor-paginated.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18637,35 +13506,34 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceGetSessionWithResponse GetSession
 	//
-	// GetSession returns one room session. The response carries both the list-row
-	//  `session` and the richer `detail` (participants, per-metric data points).
+	// Returns one room session. The response carries both the list-row `session`
+	//  and the richer `detail` (participants, per-metric data points).
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSessionWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionResponse, error)
 
-	// AnalyticsServiceListSessionEventsWithResponse ListSessionEvents lists one room session's events, oldest first by default,
-	//  cursor-paginated with no total. With no `types`, it returns the seven the
-	//  dashboard's events table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-	//  PARTICIPANT_ACTIVE, PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and
-	//  API_CALL. `types` asks for others, such as TRACK_PUBLISHED, and
-	//  `participant_session_id` keeps one participant session's events. With
-	//  `participant_session_id` and no `types`, it returns the eleven the
-	//  dashboard's participant events table shows: that participant session's
-	//  PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_RESUMED and
-	//  PARTICIPANT_ACTIVE, and its TRACK_MUTED, TRACK_UNMUTED, TRACK_PUBLISHED,
-	//  TRACK_UNPUBLISHED, TRACK_SUBSCRIBED, TRACK_SUBSCRIBE_REQUESTED and
-	//  TRACK_SUBSCRIBE_FAILED.
+	// AnalyticsServiceListSessionEventsWithResponse Lists one room session's events, oldest first by default, cursor-paginated
+	//  with no total. With no `types`, it returns the seven the dashboard's events
+	//  table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
+	//  PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
+	//  for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
+	//  participant session's events. With `participantSessionId` and no `types`,
+	//  it returns the eleven the dashboard's participant events table shows: that
+	//  participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
+	//  PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
+	//  TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
+	//  TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
 	//
 	// Unlike the dashboard, on purpose: an unknown type or a malformed
-	//  participant session id is InvalidArgument rather than being searched for
-	//  as typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
+	//  participant session id is InvalidArgument rather than being searched for as
+	//  typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
 	//  TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
 	//  fields, leaving out participants' attributes and metadata and API calls'
 	//  request bodies. Each event and participant row still carries the
-	//  participant's identity, as the dashboard shows it to every member, and
-	//  for a SIP caller that can be a phone number.
+	//  participant's identity, as the dashboard shows it to every member, and for
+	//  a SIP caller that can be a phone number.
 	//
 	//  Events are kept for 60 days, which can be shorter than the session's other
 	//  data, so an older session can list no events. An ACTIVE session lists the
@@ -18676,17 +13544,17 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEventsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionEventsResponse, error)
 
-	// ObservabilityServiceGetSessionLogsWithResponse GetSessionLogs returns the log records the session's agents exported, in
-	//  time order: what the dashboard's logs panel shows. Their chat history is
-	//  left out, since GetSessionTranscript reads it, and their evaluation
-	//  results stay in. The session's events, such as participants joining,
-	//  come from AnalyticsService's ListSessionEvents.
+	// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the session's agents exported, in time order: what
+	//  the dashboard's logs panel shows. Their chat history is left out, since
+	//  GetSessionTranscript reads it, and their evaluation results stay in. The
+	//  session's events, such as participants joining, come from
+	//  AnalyticsService's ListSessionEvents.
 	//
 	// An ACTIVE session returns what its agents have exported so far. A record
 	//  exported mid-read with a time this read has already paged past, earlier
-	//  than its cursor's when oldest first, is missed until a new read. An
-	//  unknown session is NotFound. A read filtered by log_levels can come back
-	//  empty because no record is at those levels, so only an unfiltered one is
+	//  than its cursor's when oldest first, is missed until a new read. An unknown
+	//  session is NotFound. A read filtered by logLevels can come back empty
+	//  because no record is at those levels, so only an unfiltered one is
 	//  ObservabilityDisabled.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -18694,11 +13562,11 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionLogsResponse, error)
 
-	// ObservabilityServiceGetSessionMetricsWithResponse GetSessionMetrics returns the OpenTelemetry metric points the session's
-	//  agents exported, by time, typed: turn latencies such as
-	//  lk.agents.turn.e2e_latency and lk.agents.turn.llm_ttft, token and duration
-	//  usage such as lk.agents.usage.llm_input_tokens, and the gen_ai.*
-	//  histograms, along with any metrics the agent's own code recorded.
+	// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the session's agents exported, by
+	//  time, typed: turn latencies such as lk.agents.turn.e2e_latency and
+	//  lk.agents.turn.llm_ttft, token and duration usage such as
+	//  lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
+	//  any metrics the agent's own code recorded.
 	//
 	// These are the raw metrics agents emit, so they won't exactly match the
 	//  dashboard's metrics panel, which derives its numbers from the transcript
@@ -18706,22 +13574,19 @@ type ClientWithResponsesInterface interface {
 	//  produce them: an agent whose code installs its own MeterProvider exports
 	//  none to LiveKit Cloud, and its sessions return no points.
 	//
-	//  Some points aren't labeled as their agent exported them. These are
-	//  limitations of the upstream aggregator, which groups a session's series
-	//  by their attributes alone and names each group after its first row:
-	//    - several metrics can come back under one name, such as an LLM's input,
-	//      output and cached token counts, all named
-	//      lk.agents.usage.llm_input_tokens;
-	//    - points of one series at the same time that recorded equal values
-	//      collapse into one point;
-	//    - with two agents in one session, a point can carry the other agent's
-	//      resource attributes.
+	//  Some points aren't labeled as their agent exported them. LiveKit Cloud
+	//  groups a session's series by their attributes alone and names each group
+	//  after its first row, so: - several metrics can come back under one name,
+	//  such as an LLM's input, output and cached token counts, all named
+	//  lk.agents.usage.llm_input_tokens; - points of one series at the same time
+	//  that recorded equal values collapse into one point; - with two agents in
+	//  one session, a point can carry the other agent's resource attributes.
 	//
-	//  An agent exports its metrics every 30 seconds, and its turn latencies
-	//  when the session ends, so an ACTIVE session returns what it has exported
-	//  so far. An unknown session is NotFound. A read filtered by names can come
-	//  back empty because no metric has those names, so only an unfiltered one
-	//  is ObservabilityDisabled.
+	//  An agent exports its metrics every 30 seconds, and its turn latencies when
+	//  the session ends, so an ACTIVE session returns what it has exported so far.
+	//  An unknown session is NotFound. A read filtered by names can come back
+	//  empty because no metric has those names, so only an unfiltered one is
+	//  ObservabilityDisabled.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18730,10 +13595,10 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceListSessionParticipantsWithResponse ListSessionParticipants
 	//
-	// ListSessionParticipants lists the participants of one room session, one row
-	//  per identity, cursor-paginated; newest join first by default. Each row
-	//  carries the participant's participant sessions (PA_...), each with the
-	//  client it connected from.
+	// Lists the participants of one room session, one row per identity,
+	//  cursor-paginated; newest join first by default. Each row carries the
+	//  participant's participant sessions (PA_...), each with the client it
+	//  connected from.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18742,43 +13607,42 @@ type ClientWithResponsesInterface interface {
 
 	// ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 	//
-	// GetSessionRecordingURL returns a short-lived signed URL for one of the
-	//  session's recordings: its audio or its chat history. A session with no
-	//  recording of that type is NotFound. A new recording can be NotFound for
-	//  up to a minute after the session ends.
+	// Returns a short-lived signed URL for one of the session's recordings: its
+	//  audio or its chat history. A session with no recording of that type is
+	//  NotFound. A new recording can be NotFound for up to a minute after the
+	//  session ends.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURLWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionRecordingURLResponse, error)
 
-	// ObservabilityServiceGetSessionTracesWithResponse GetSessionTraces returns the spans the session's agents exported, by
-	//  start time: what the dashboard's trace view shows. Each span names its
-	//  parent, so the pages rebuild the span tree, and its attributes carry the
-	//  turn and latency fields the dashboard's turn view reads, such as
-	//  lk.generation_id and lk.response.ttft.
+	// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the session's agents exported, by start time: what the
+	//  dashboard's trace view shows. Each span names its parent, so the pages
+	//  rebuild the span tree, and its attributes carry the turn and latency fields
+	//  the dashboard's turn view reads, such as lk.generation_id and
+	//  lk.response.ttft.
 	//
 	// An ACTIVE session returns what its agents have exported so far; a span
 	//  exported after the first page waits for a new read. The later pages are
 	//  read by offset, so a span exported mid-read can still shift them: a span
-	//  can repeat, or be skipped. Dedupe by span_id, and read again from the
-	//  first page to pick up a skipped span. An unknown session is NotFound.
+	//  can repeat, or be skipped. Dedupe by spanId, and read again from the first
+	//  page to pick up a skipped span. An unknown session is NotFound.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTracesWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTracesResponse, error)
 
-	// ObservabilityServiceGetSessionTranscriptWithResponse GetSessionTranscript returns the session's conversation as ordered
-	//  transcript items: messages, tool calls and results, agent handoffs and
-	//  agent configuration changes. It is the conversation the dashboard's
-	//  transcript shows.
+	// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session's conversation as ordered transcript items: messages,
+	//  tool calls and results, agent handoffs and agent configuration changes. It
+	//  is the conversation the dashboard's transcript shows.
 	//
-	// The agent exports its transcript when the session ends, and it can be
-	//  read a minute or two later; on a project with PII redaction, only once
-	//  the session's recording has been redacted. So a session that is still
-	//  ACTIVE returns what exists so far, usually nothing, without an error:
-	//  read it again after the session ends. An unknown session is NotFound.
+	// The agent exports its transcript when the session ends, and it can be read
+	//  a minute or two later; on a project with PII redaction, only once the
+	//  session's recording has been redacted. So a session that is still ACTIVE
+	//  returns what exists so far, usually nothing, without an error: read it
+	//  again after the session ends. An unknown session is NotFound.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18787,10 +13651,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
 	//
-	// ListSimulationRuns lists a project's runs, newest first, cursor-paginated,
-	//  optionally narrowed by status, agent, conversation mode and a time window.
-	//  Rows carry headline counts (job_count, passed_count, failed_count,
-	//  issue_count) but neither jobs nor the summary.
+	// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
+	//  by status, agent, conversation mode and a time window. Rows carry headline
+	//  counts (jobCount, passedCount, failedCount, issueCount) but neither
+	//  jobs nor the summary.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18799,12 +13663,12 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCreateSimulationRunWithBodyWithResponse CreateSimulationRun
 	//
-	// CreateSimulationRun registers a new run. With a scenario_group it starts
-	//  right away and no upload target is returned. Without one it waits in
-	//  PENDING_UPLOAD for the agent source that scenarios are generated from:
-	//  upload it to the returned presigned POST, then call
-	//  ConfirmSimulationSourceUpload. A run left pending for an hour is failed.
-	//  Creating a run is not idempotent: a retried request starts a second run.
+	// Registers a new run. With a scenarioGroup it starts right away and no
+	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
+	//  agent source that scenarios are generated from: upload it to the returned
+	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
+	//  for an hour is failed. Creating a run is not idempotent: a retried request
+	//  starts a second run.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18813,12 +13677,12 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCreateSimulationRunWithResponse CreateSimulationRun
 	//
-	// CreateSimulationRun registers a new run. With a scenario_group it starts
-	//  right away and no upload target is returned. Without one it waits in
-	//  PENDING_UPLOAD for the agent source that scenarios are generated from:
-	//  upload it to the returned presigned POST, then call
-	//  ConfirmSimulationSourceUpload. A run left pending for an hour is failed.
-	//  Creating a run is not idempotent: a retried request starts a second run.
+	// Registers a new run. With a scenarioGroup it starts right away and no
+	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
+	//  agent source that scenarios are generated from: upload it to the returned
+	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
+	//  for an hour is failed. Creating a run is not idempotent: a retried request
+	//  starts a second run.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18827,9 +13691,9 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGetSimulationRunWithResponse GetSimulationRun
 	//
-	// GetSimulationRun returns one run with its jobs and aggregate metrics. The
-	//  compressed summary blob (summary_zstd) is omitted; use
-	//  GetSimulationRunSummary for the decoded summary.
+	// Returns one run with its jobs and aggregate metrics. The compressed summary
+	//  blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
+	//  summary.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18838,10 +13702,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGetSimulationRunSummaryWithResponse GetSimulationRunSummary
 	//
-	// GetSimulationRunSummary returns the graded outcome of a finished run:
-	//  pass/fail counts, what went well, what to improve, flagged issues with
-	//  suggestions, and the per-job chat history. FailedPrecondition while the
-	//  run is still going; NotFound if the run finished without a summary.
+	// Returns the graded outcome of a finished run: pass/fail counts, what went
+	//  well, what to improve, flagged issues with suggestions, and the per-job
+	//  chat history. FailedPrecondition while the run is still going; NotFound if
+	//  the run finished without a summary.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18850,8 +13714,8 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCancelSimulationRunWithResponse CancelSimulationRun
 	//
-	// CancelSimulationRun stops a run that has not finished. Cancelling a run
-	//  that already finished succeeds without effect.
+	// Stops a run that has not finished. Cancelling a run that already finished
+	//  succeeds without effect.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18860,10 +13724,9 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse ConfirmSimulationSourceUpload
 	//
-	// ConfirmSimulationSourceUpload marks the agent source as uploaded and starts
-	//  scenario generation; the run moves to GENERATING, then RUNNING once the
-	//  scenarios exist. Only valid while the run is PENDING_UPLOAD, so a repeated
-	//  call fails.
+	// Marks the agent source as uploaded and starts scenario generation; the run
+	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
+	//  while the run is PENDING_UPLOAD, so a repeated call fails.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18872,10 +13735,9 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUploadWithResponse ConfirmSimulationSourceUpload
 	//
-	// ConfirmSimulationSourceUpload marks the agent source as uploaded and starts
-	//  scenario generation; the run moves to GENERATING, then RUNNING once the
-	//  scenarios exist. Only valid while the run is PENDING_UPLOAD, so a repeated
-	//  call fails.
+	// Marks the agent source as uploaded and starts scenario generation; the run
+	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
+	//  while the run is PENDING_UPLOAD, so a repeated call fails.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18884,10 +13746,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCountSimulationRunsWithResponse CountSimulationRuns
 	//
-	// CountSimulationRuns buckets the runs ListSimulationRuns would return over
-	//  [start_time, end_time) into a histogram. It takes the same filters over the
-	//  same window, so the bars and the rows beneath them always describe one set.
-	//  Both bounds are required and end_time must be after start_time.
+	// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
+	//  into a histogram. It takes the same filters over the same window, so the
+	//  bars and the rows beneath them always describe one set. Both bounds are
+	//  required and endTime must be after startTime.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18896,7 +13758,7 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceListThreadsWithResponse ListThreads
 	//
-	// ListThreads lists the threads of one scope, newest first.
+	// Lists the threads of one scope, newest first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18905,7 +13767,7 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceCreateThreadWithBodyWithResponse CreateThread
 	//
-	// CreateThread creates a thread and its database.
+	// Creates a thread and its database.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18914,7 +13776,7 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceCreateThreadWithResponse CreateThread
 	//
-	// CreateThread creates a thread and its database.
+	// Creates a thread and its database.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18923,7 +13785,7 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceDeleteThreadWithResponse DeleteThread
 	//
-	// DeleteThread deletes the thread and its database.
+	// Deletes the thread and its database.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18939,8 +13801,8 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceUpdateThreadWithBodyWithResponse UpdateThread
 	//
-	// UpdateThread merges attributes (an empty value deletes the entry) and sets
-	//  the idle TTL. Every update counts as activity and pushes expires_at out.
+	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
+	//  Every update counts as activity and pushes expiresAt out.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18949,8 +13811,8 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceUpdateThreadWithResponse UpdateThread
 	//
-	// UpdateThread merges attributes (an empty value deletes the entry) and sets
-	//  the idle TTL. Every update counts as activity and pushes expires_at out.
+	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
+	//  Every update counts as activity and pushes expiresAt out.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18959,7 +13821,7 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceGetThreadItemsWithResponse GetThreadItems
 	//
-	// GetThreadItems returns the thread's chat items, oldest first.
+	// Returns the thread's chat items, oldest first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18968,7 +13830,7 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceGetThreadTasksWithResponse GetThreadTasks
 	//
-	// GetThreadTasks returns the thread's background tasks, oldest first.
+	// Returns the thread's background tasks, oldest first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -18977,9 +13839,9 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceCreateTokenWithBodyWithResponse CreateToken
 	//
-	// CreateToken mints a short-lived LiveKit access token for the project,
-	//  signed server-side, so user-authenticated clients can call LiveKit server
-	//  APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Mints a short-lived LiveKit access token for the project, signed
+	//  server-side, so user-authenticated clients can call LiveKit server APIs
+	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -18988,9 +13850,9 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceCreateTokenWithResponse CreateToken
 	//
-	// CreateToken mints a short-lived LiveKit access token for the project,
-	//  signed server-side, so user-authenticated clients can call LiveKit server
-	//  APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Mints a short-lived LiveKit access token for the project, signed
+	//  server-side, so user-authenticated clients can call LiveKit server APIs
+	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -19006,8 +13868,7 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListWebhooksWithResponse ListWebhooks
 	//
-	// Webhooks (mirrors cloud ProjectService ListWebhooks / AddWebhook /
-	//  EditWebhook / DeleteWebhook / SendTestWebhook).
+	// Lists the project's webhook destinations.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19184,7 +14045,7 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceListMembersWithResponse ListMembers
 	//
-	// Members & invites (mirrors cloud WorkspaceService current flows).
+	// Lists the workspace's members.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19221,7 +14082,8 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceListProjectsWithResponse ListProjects
 	//
-	// Project CRUD scoped to a workspace — responses owned by projects.v1.
+	// The projects in a workspace. These return the same Project message as
+	//  the project endpoints.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19255,20 +14117,6 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 	WorkspaceServiceGetProjectWithResponse(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetProjectResponse, error)
-
-	// WorkspaceServiceUpdateProjectWithBodyWithResponse UpdateProject
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
-	WorkspaceServiceUpdateProjectWithBodyWithResponse(ctx context.Context, workspaceId string, updateProjectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateProjectResponse, error)
-
-	// WorkspaceServiceUpdateProjectWithResponse UpdateProject
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
-	WorkspaceServiceUpdateProjectWithResponse(ctx context.Context, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateProjectResponse, error)
 }
 
 type ProjectServiceGetInviteResponse struct {
@@ -19276,11 +14124,18 @@ type ProjectServiceGetInviteResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1GetInviteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceGetInviteResponse) GetJSON200() *LivekitPublicapiProjectsV1GetInviteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceGetInviteResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19317,11 +14172,18 @@ type ProjectServiceAnswerInvitationResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1AnswerInvitationResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceAnswerInvitationResponse) GetJSON200() *LivekitPublicapiProjectsV1AnswerInvitationResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceAnswerInvitationResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19358,11 +14220,18 @@ type ProjectServiceListProjectsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1ListProjectsResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceListProjectsResponse) GetJSON200() *LivekitPublicapiProjectsV1ListProjectsResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceListProjectsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19399,11 +14268,18 @@ type ProjectServiceCreateProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1CreateProjectResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceCreateProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1CreateProjectResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceCreateProjectResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19440,11 +14316,18 @@ type ProjectServiceDeleteProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1DeleteProjectResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceDeleteProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1DeleteProjectResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceDeleteProjectResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19481,11 +14364,18 @@ type ProjectServiceGetProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1GetProjectResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceGetProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1GetProjectResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceGetProjectResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19522,11 +14412,18 @@ type ProjectServiceUpdateProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1UpdateProjectResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceUpdateProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1UpdateProjectResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceUpdateProjectResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19563,11 +14460,18 @@ type AnalyticsServiceGetProjectAnalyticsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r AnalyticsServiceGetProjectAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceGetProjectAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19604,11 +14508,18 @@ type AnalyticsServiceListAgentAnalyticsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiAnalyticsV1AgentsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r AnalyticsServiceListAgentAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1AgentsListResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceListAgentAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19645,11 +14556,18 @@ type AnalyticsServiceGetAgentAnalyticsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiAnalyticsV1AgentsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r AnalyticsServiceGetAgentAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1AgentsGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceGetAgentAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19686,11 +14604,18 @@ type DatabaseServiceListDatabasesResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiDatabasesV1DatabasesListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r DatabaseServiceListDatabasesResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesListResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DatabaseServiceListDatabasesResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19727,11 +14652,18 @@ type DatabaseServiceCreateDatabaseResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiDatabasesV1DatabasesCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r DatabaseServiceCreateDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesCreateResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DatabaseServiceCreateDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19768,11 +14700,18 @@ type DatabaseServiceDeleteDatabaseResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiDatabasesV1DatabasesDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r DatabaseServiceDeleteDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesDeleteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DatabaseServiceDeleteDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19809,11 +14748,18 @@ type DatabaseServiceGetDatabaseResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiDatabasesV1DatabasesGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r DatabaseServiceGetDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DatabaseServiceGetDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19850,11 +14796,18 @@ type DatabaseServiceExportDatabaseResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiDatabasesV1DatabasesExportResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r DatabaseServiceExportDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesExportResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DatabaseServiceExportDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19891,11 +14844,18 @@ type ProjectServiceListInvitesResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1ListInvitesResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceListInvitesResponse) GetJSON200() *LivekitPublicapiProjectsV1ListInvitesResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceListInvitesResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19932,11 +14892,18 @@ type ProjectServiceInviteMemberResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1InviteMemberResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceInviteMemberResponse) GetJSON200() *LivekitPublicapiProjectsV1InviteMemberResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceInviteMemberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -19973,11 +14940,18 @@ type ProjectServiceDeleteInviteResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1DeleteInviteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceDeleteInviteResponse) GetJSON200() *LivekitPublicapiProjectsV1DeleteInviteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceDeleteInviteResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20014,11 +14988,18 @@ type ProjectServiceUpdateInviteResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1UpdateInviteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceUpdateInviteResponse) GetJSON200() *LivekitPublicapiProjectsV1UpdateInviteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceUpdateInviteResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20055,11 +15036,18 @@ type ProjectServiceListKeysResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1ListKeysResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceListKeysResponse) GetJSON200() *LivekitPublicapiProjectsV1ListKeysResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceListKeysResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20096,11 +15084,18 @@ type ProjectServiceGenerateKeyResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1GenerateKeyResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceGenerateKeyResponse) GetJSON200() *LivekitPublicapiProjectsV1GenerateKeyResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceGenerateKeyResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20137,11 +15132,18 @@ type ProjectServiceDeleteKeyResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1DeleteKeyResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceDeleteKeyResponse) GetJSON200() *LivekitPublicapiProjectsV1DeleteKeyResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceDeleteKeyResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20178,11 +15180,18 @@ type ProjectServiceListMembersResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1ListMembersResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceListMembersResponse) GetJSON200() *LivekitPublicapiProjectsV1ListMembersResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceListMembersResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20219,11 +15228,18 @@ type ProjectServiceRemoveMemberResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1RemoveMemberResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceRemoveMemberResponse) GetJSON200() *LivekitPublicapiProjectsV1RemoveMemberResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceRemoveMemberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20260,11 +15276,18 @@ type ProjectServiceGetMemberResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1GetMemberResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceGetMemberResponse) GetJSON200() *LivekitPublicapiProjectsV1GetMemberResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceGetMemberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20301,11 +15324,18 @@ type ProjectServiceUpdateMemberResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1UpdateMemberResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceUpdateMemberResponse) GetJSON200() *LivekitPublicapiProjectsV1UpdateMemberResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceUpdateMemberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20342,11 +15372,18 @@ type ProjectServiceAddWorkspaceMembersToProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1AddWorkspaceMembersToProjectResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceAddWorkspaceMembersToProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1AddWorkspaceMembersToProjectResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceAddWorkspaceMembersToProjectResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20383,11 +15420,18 @@ type SimulationServiceGenerateScenarioFromSessionResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SimulationServiceGenerateScenarioFromSessionResponse) GetJSON200() *LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SimulationServiceGenerateScenarioFromSessionResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20424,11 +15468,18 @@ type ProjectServiceListScopedKeysResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1ListScopedKeysResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceListScopedKeysResponse) GetJSON200() *LivekitPublicapiProjectsV1ListScopedKeysResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceListScopedKeysResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20465,11 +15516,18 @@ type AnalyticsServiceListProjectSessionsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiAnalyticsV1SessionsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r AnalyticsServiceListProjectSessionsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1SessionsListResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceListProjectSessionsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20506,11 +15564,18 @@ type AnalyticsServiceGetSessionResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiAnalyticsV1SessionsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r AnalyticsServiceGetSessionResponse) GetJSON200() *LivekitPublicapiAnalyticsV1SessionsGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceGetSessionResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20547,11 +15612,18 @@ type AnalyticsServiceListSessionEventsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiAnalyticsV1SessionEventsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r AnalyticsServiceListSessionEventsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1SessionEventsListResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceListSessionEventsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20588,11 +15660,18 @@ type ObservabilityServiceGetSessionLogsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiObservabilityV1LogsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ObservabilityServiceGetSessionLogsResponse) GetJSON200() *LivekitPublicapiObservabilityV1LogsGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceGetSessionLogsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20629,11 +15708,18 @@ type ObservabilityServiceGetSessionMetricsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiObservabilityV1MetricsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ObservabilityServiceGetSessionMetricsResponse) GetJSON200() *LivekitPublicapiObservabilityV1MetricsGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceGetSessionMetricsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20670,11 +15756,18 @@ type AnalyticsServiceListSessionParticipantsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiAnalyticsV1SessionParticipantsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r AnalyticsServiceListSessionParticipantsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1SessionParticipantsListResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AnalyticsServiceListSessionParticipantsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20711,11 +15804,18 @@ type ObservabilityServiceGetSessionRecordingURLResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiObservabilityV1RecordingGetURLResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ObservabilityServiceGetSessionRecordingURLResponse) GetJSON200() *LivekitPublicapiObservabilityV1RecordingGetURLResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceGetSessionRecordingURLResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20752,11 +15852,18 @@ type ObservabilityServiceGetSessionTracesResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiObservabilityV1TracesGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ObservabilityServiceGetSessionTracesResponse) GetJSON200() *LivekitPublicapiObservabilityV1TracesGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceGetSessionTracesResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20793,11 +15900,18 @@ type ObservabilityServiceGetSessionTranscriptResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiObservabilityV1TranscriptGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ObservabilityServiceGetSessionTranscriptResponse) GetJSON200() *LivekitPublicapiObservabilityV1TranscriptGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ObservabilityServiceGetSessionTranscriptResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20834,11 +15948,18 @@ type SimulationServiceListSimulationRunsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiSimulationsV1SimulationRunsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SimulationServiceListSimulationRunsResponse) GetJSON200() *LivekitPublicapiSimulationsV1SimulationRunsListResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SimulationServiceListSimulationRunsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20875,11 +15996,18 @@ type SimulationServiceCreateSimulationRunResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiSimulationsV1SimulationRunsCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SimulationServiceCreateSimulationRunResponse) GetJSON200() *LivekitPublicapiSimulationsV1SimulationRunsCreateResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SimulationServiceCreateSimulationRunResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20916,11 +16044,18 @@ type SimulationServiceGetSimulationRunResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiSimulationsV1SimulationRunsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SimulationServiceGetSimulationRunResponse) GetJSON200() *LivekitPublicapiSimulationsV1SimulationRunsGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SimulationServiceGetSimulationRunResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20957,11 +16092,18 @@ type SimulationServiceGetSimulationRunSummaryResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiSimulationsV1SimulationRunsGetSummaryResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SimulationServiceGetSimulationRunSummaryResponse) GetJSON200() *LivekitPublicapiSimulationsV1SimulationRunsGetSummaryResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SimulationServiceGetSimulationRunSummaryResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -20998,11 +16140,18 @@ type SimulationServiceCancelSimulationRunResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiSimulationsV1SimulationRunsCancelResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SimulationServiceCancelSimulationRunResponse) GetJSON200() *LivekitPublicapiSimulationsV1SimulationRunsCancelResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SimulationServiceCancelSimulationRunResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21039,11 +16188,18 @@ type SimulationServiceConfirmSimulationSourceUploadResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiSimulationsV1SimulationRunsConfirmSourceUploadResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SimulationServiceConfirmSimulationSourceUploadResponse) GetJSON200() *LivekitPublicapiSimulationsV1SimulationRunsConfirmSourceUploadResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SimulationServiceConfirmSimulationSourceUploadResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21080,11 +16236,18 @@ type SimulationServiceCountSimulationRunsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiSimulationsV1SimulationRunsCountsResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SimulationServiceCountSimulationRunsResponse) GetJSON200() *LivekitPublicapiSimulationsV1SimulationRunsCountsResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SimulationServiceCountSimulationRunsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21121,11 +16284,18 @@ type ThreadServiceListThreadsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiThreadsV1ThreadsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ThreadServiceListThreadsResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsListResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ThreadServiceListThreadsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21162,11 +16332,18 @@ type ThreadServiceCreateThreadResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiThreadsV1ThreadsCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ThreadServiceCreateThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsCreateResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ThreadServiceCreateThreadResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21203,11 +16380,18 @@ type ThreadServiceDeleteThreadResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiThreadsV1ThreadsDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ThreadServiceDeleteThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsDeleteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ThreadServiceDeleteThreadResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21244,11 +16428,18 @@ type ThreadServiceGetThreadResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiThreadsV1ThreadsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ThreadServiceGetThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsGetResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ThreadServiceGetThreadResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21285,11 +16476,18 @@ type ThreadServiceUpdateThreadResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiThreadsV1ThreadsUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ThreadServiceUpdateThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsUpdateResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ThreadServiceUpdateThreadResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21326,11 +16524,18 @@ type ThreadServiceGetThreadItemsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiThreadsV1ThreadsItemsResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ThreadServiceGetThreadItemsResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsItemsResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ThreadServiceGetThreadItemsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21367,11 +16572,18 @@ type ThreadServiceGetThreadTasksResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiThreadsV1ThreadsTasksResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ThreadServiceGetThreadTasksResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsTasksResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ThreadServiceGetThreadTasksResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21408,11 +16620,18 @@ type ProjectServiceCreateTokenResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1CreateTokenResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceCreateTokenResponse) GetJSON200() *LivekitPublicapiProjectsV1CreateTokenResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceCreateTokenResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21449,11 +16668,18 @@ type ProjectServiceListWebhookEventsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1ListWebhookEventsResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceListWebhookEventsResponse) GetJSON200() *LivekitPublicapiProjectsV1ListWebhookEventsResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceListWebhookEventsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21490,11 +16716,18 @@ type ProjectServiceListWebhooksResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1ListWebhooksResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceListWebhooksResponse) GetJSON200() *LivekitPublicapiProjectsV1ListWebhooksResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceListWebhooksResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21531,11 +16764,18 @@ type ProjectServiceCreateWebhookResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1CreateWebhookResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceCreateWebhookResponse) GetJSON200() *LivekitPublicapiProjectsV1CreateWebhookResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceCreateWebhookResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21572,11 +16812,18 @@ type ProjectServiceDeleteWebhookResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1DeleteWebhookResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceDeleteWebhookResponse) GetJSON200() *LivekitPublicapiProjectsV1DeleteWebhookResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceDeleteWebhookResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21613,11 +16860,18 @@ type ProjectServiceUpdateWebhookResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1UpdateWebhookResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceUpdateWebhookResponse) GetJSON200() *LivekitPublicapiProjectsV1UpdateWebhookResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceUpdateWebhookResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21654,11 +16908,18 @@ type ProjectServiceSendTestWebhookResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1SendTestWebhookResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ProjectServiceSendTestWebhookResponse) GetJSON200() *LivekitPublicapiProjectsV1SendTestWebhookResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ProjectServiceSendTestWebhookResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21695,11 +16956,18 @@ type UserServiceListUsersResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiUsersV1ListUsersResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r UserServiceListUsersResponse) GetJSON200() *LivekitPublicapiUsersV1ListUsersResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UserServiceListUsersResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21736,11 +17004,18 @@ type UserServiceGetCurrentUserResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiUsersV1GetCurrentUserResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r UserServiceGetCurrentUserResponse) GetJSON200() *LivekitPublicapiUsersV1GetCurrentUserResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UserServiceGetCurrentUserResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21777,11 +17052,18 @@ type UserServiceGetUserResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiUsersV1GetUserResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r UserServiceGetUserResponse) GetJSON200() *LivekitPublicapiUsersV1GetUserResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UserServiceGetUserResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21818,11 +17100,18 @@ type WorkspaceServiceGetInviteResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1GetInviteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceGetInviteResponse) GetJSON200() *LivekitPublicapiWorkspacesV1GetInviteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceGetInviteResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21859,11 +17148,18 @@ type WorkspaceServiceAnswerInviteResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1AnswerInviteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceAnswerInviteResponse) GetJSON200() *LivekitPublicapiWorkspacesV1AnswerInviteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceAnswerInviteResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21900,11 +17196,18 @@ type WorkspaceServiceListWorkspacesResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1ListWorkspacesResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceListWorkspacesResponse) GetJSON200() *LivekitPublicapiWorkspacesV1ListWorkspacesResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceListWorkspacesResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21941,11 +17244,18 @@ type WorkspaceServiceCreateWorkspaceResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1CreateWorkspaceResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceCreateWorkspaceResponse) GetJSON200() *LivekitPublicapiWorkspacesV1CreateWorkspaceResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceCreateWorkspaceResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -21982,11 +17292,18 @@ type WorkspaceServiceDeleteWorkspaceResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1DeleteWorkspaceResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceDeleteWorkspaceResponse) GetJSON200() *LivekitPublicapiWorkspacesV1DeleteWorkspaceResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceDeleteWorkspaceResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22023,11 +17340,18 @@ type WorkspaceServiceGetWorkspaceResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1GetWorkspaceResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceGetWorkspaceResponse) GetJSON200() *LivekitPublicapiWorkspacesV1GetWorkspaceResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceGetWorkspaceResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22064,11 +17388,18 @@ type WorkspaceServiceUpdateWorkspaceResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1UpdateWorkspaceResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceUpdateWorkspaceResponse) GetJSON200() *LivekitPublicapiWorkspacesV1UpdateWorkspaceResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceUpdateWorkspaceResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22105,11 +17436,18 @@ type WorkspaceServiceListInvitesResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1ListInvitesResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceListInvitesResponse) GetJSON200() *LivekitPublicapiWorkspacesV1ListInvitesResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceListInvitesResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22146,11 +17484,18 @@ type WorkspaceServiceCreateInviteResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1CreateInviteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceCreateInviteResponse) GetJSON200() *LivekitPublicapiWorkspacesV1CreateInviteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceCreateInviteResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22187,11 +17532,18 @@ type WorkspaceServiceDeleteInviteResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1DeleteInviteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceDeleteInviteResponse) GetJSON200() *LivekitPublicapiWorkspacesV1DeleteInviteResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceDeleteInviteResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22228,11 +17580,18 @@ type WorkspaceServiceListMembersResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1ListMembersResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceListMembersResponse) GetJSON200() *LivekitPublicapiWorkspacesV1ListMembersResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceListMembersResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22269,11 +17628,18 @@ type WorkspaceServiceDeleteMemberResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1DeleteMemberResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceDeleteMemberResponse) GetJSON200() *LivekitPublicapiWorkspacesV1DeleteMemberResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceDeleteMemberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22310,11 +17676,18 @@ type WorkspaceServiceGetMemberResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1GetMemberResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceGetMemberResponse) GetJSON200() *LivekitPublicapiWorkspacesV1GetMemberResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceGetMemberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22351,11 +17724,18 @@ type WorkspaceServiceUpdateMemberResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiWorkspacesV1UpdateMemberResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceUpdateMemberResponse) GetJSON200() *LivekitPublicapiWorkspacesV1UpdateMemberResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceUpdateMemberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22392,11 +17772,18 @@ type WorkspaceServiceListProjectsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1ListProjectsResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceListProjectsResponse) GetJSON200() *LivekitPublicapiProjectsV1ListProjectsResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceListProjectsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22433,11 +17820,18 @@ type WorkspaceServiceCreateProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1CreateProjectResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceCreateProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1CreateProjectResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceCreateProjectResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22474,11 +17868,18 @@ type WorkspaceServiceDeleteProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1DeleteProjectResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceDeleteProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1DeleteProjectResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceDeleteProjectResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22515,11 +17916,18 @@ type WorkspaceServiceGetProjectResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *LivekitPublicapiProjectsV1GetProjectResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r WorkspaceServiceGetProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1GetProjectResponse {
 	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WorkspaceServiceGetProjectResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
@@ -22545,47 +17953,6 @@ func (r WorkspaceServiceGetProjectResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r WorkspaceServiceGetProjectResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type WorkspaceServiceUpdateProjectResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiProjectsV1UpdateProjectResponse
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r WorkspaceServiceUpdateProjectResponse) GetJSON200() *LivekitPublicapiProjectsV1UpdateProjectResponse {
-	return r.JSON200
-}
-
-// GetBody returns the raw response body bytes
-func (r WorkspaceServiceUpdateProjectResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r WorkspaceServiceUpdateProjectResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r WorkspaceServiceUpdateProjectResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r WorkspaceServiceUpdateProjectResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -22724,7 +18091,7 @@ func (c *ClientWithResponses) ProjectServiceUpdateProjectWithResponse(ctx contex
 
 // AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
 //
-// GetProjectAnalytics returns the project overview over a time range.
+// Returns the project overview over a time range.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -22739,10 +18106,10 @@ func (c *ClientWithResponses) AnalyticsServiceGetProjectAnalyticsWithResponse(ct
 
 // AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
 //
-// ListAgentAnalytics returns the same per-agent analytics for every agent in
+// Returns the same per-agent analytics for every agent in the project, one
 //
-//	the project, one AgentAnalytics row per agent — so a single agent and the
-//	whole roster share one shape.
+//	AgentAnalytics row per agent — so a single agent and the whole roster share
+//	one shape.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -22757,7 +18124,7 @@ func (c *ClientWithResponses) AnalyticsServiceListAgentAnalyticsWithResponse(ctx
 
 // AnalyticsServiceGetAgentAnalyticsWithResponse GetAgentAnalytics
 //
-// GetAgentAnalytics returns the analytics for one agent over a time range.
+// Returns the analytics for one agent over a time range.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -22772,7 +18139,7 @@ func (c *ClientWithResponses) AnalyticsServiceGetAgentAnalyticsWithResponse(ctx 
 
 // DatabaseServiceListDatabasesWithResponse ListDatabases
 //
-// ListDatabases lists the project's databases, cursor-paginated.
+// Lists the project's databases, cursor-paginated.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -22787,9 +18154,9 @@ func (c *ClientWithResponses) DatabaseServiceListDatabasesWithResponse(ctx conte
 
 // DatabaseServiceCreateDatabaseWithBodyWithResponse CreateDatabase
 //
-// CreateDatabase creates an empty database. Not idempotent: a retried
+// Creates an empty database. Not idempotent: a retried request creates a
 //
-//	request creates a second database.
+//	second database.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -22804,9 +18171,9 @@ func (c *ClientWithResponses) DatabaseServiceCreateDatabaseWithBodyWithResponse(
 
 // DatabaseServiceCreateDatabaseWithResponse CreateDatabase
 //
-// CreateDatabase creates an empty database. Not idempotent: a retried
+// Creates an empty database. Not idempotent: a retried request creates a
 //
-//	request creates a second database.
+//	second database.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -22821,7 +18188,7 @@ func (c *ClientWithResponses) DatabaseServiceCreateDatabaseWithResponse(ctx cont
 
 // DatabaseServiceDeleteDatabaseWithResponse DeleteDatabase
 //
-// DeleteDatabase deletes the stored data, not just the metadata.
+// Deletes the stored data, not just the metadata.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -22849,9 +18216,7 @@ func (c *ClientWithResponses) DatabaseServiceGetDatabaseWithResponse(ctx context
 
 // DatabaseServiceExportDatabaseWithResponse ExportDatabase
 //
-// ExportDatabase exports a consistent SQLite file as a time-limited download
-//
-//	URL.
+// Exports a consistent SQLite file as a time-limited download URL.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -22957,9 +18322,9 @@ func (c *ClientWithResponses) ProjectServiceListKeysWithResponse(ctx context.Con
 
 // ProjectServiceGenerateKeyWithBodyWithResponse GenerateKey
 //
-// Access keys (mirrors cloud ProjectService GenerateKey / ListKeys /
+// Creates an API key and secret for the project. The secret is returned once,
 //
-//	ListScopedKeys / DeleteKey).
+//	in the response, and cannot be read again.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -22974,9 +18339,9 @@ func (c *ClientWithResponses) ProjectServiceGenerateKeyWithBodyWithResponse(ctx 
 
 // ProjectServiceGenerateKeyWithResponse GenerateKey
 //
-// Access keys (mirrors cloud ProjectService GenerateKey / ListKeys /
+// Creates an API key and secret for the project. The secret is returned once,
 //
-//	ListScopedKeys / DeleteKey).
+//	in the response, and cannot be read again.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23004,7 +18369,7 @@ func (c *ClientWithResponses) ProjectServiceDeleteKeyWithResponse(ctx context.Co
 
 // ProjectServiceListMembersWithResponse ListMembers
 //
-// Members & invites (token-based; mirrors cloud ProjectService current flows).
+// Lists the project's members.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23097,13 +18462,12 @@ func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithResp
 
 // SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
 //
-// GenerateScenarioFromSession derives a reusable scenario (label,
+// Derives a reusable scenario (label, instructions and expectations) from a
 //
-//	instructions and expectations) from a recorded room session, for use in a
-//	later run's scenario_group. Nothing is stored; the returned scenario is the
-//	result. The session must have a recorded chat history. Each call runs an
-//	LLM over it, so it counts against the project's scenario-generation quota
-//	and can take up to about a minute.
+//	recorded room session, for use in a later run's scenarioGroup. Nothing is
+//	stored; the returned scenario is the result. The session must have a
+//	recorded chat history. Each call runs an LLM over it, so it counts against
+//	the project's scenario-generation quota and can take up to about a minute.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23118,13 +18482,12 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithBo
 
 // SimulationServiceGenerateScenarioFromSessionWithResponse GenerateScenarioFromSession
 //
-// GenerateScenarioFromSession derives a reusable scenario (label,
+// Derives a reusable scenario (label, instructions and expectations) from a
 //
-//	instructions and expectations) from a recorded room session, for use in a
-//	later run's scenario_group. Nothing is stored; the returned scenario is the
-//	result. The session must have a recorded chat history. Each call runs an
-//	LLM over it, so it counts against the project's scenario-generation quota
-//	and can take up to about a minute.
+//	recorded room session, for use in a later run's scenarioGroup. Nothing is
+//	stored; the returned scenario is the result. The session must have a
+//	recorded chat history. Each call runs an LLM over it, so it counts against
+//	the project's scenario-generation quota and can take up to about a minute.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23152,9 +18515,7 @@ func (c *ClientWithResponses) ProjectServiceListScopedKeysWithResponse(ctx conte
 
 // AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 //
-// ListProjectSessions lists room sessions for a project, newest first,
-//
-//	cursor-paginated. Backed upstream by the ListingService room-sessions list.
+// Lists room sessions for a project, newest first, cursor-paginated.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23169,9 +18530,9 @@ func (c *ClientWithResponses) AnalyticsServiceListProjectSessionsWithResponse(ct
 
 // AnalyticsServiceGetSessionWithResponse GetSession
 //
-// GetSession returns one room session. The response carries both the list-row
+// Returns one room session. The response carries both the list-row `session`
 //
-//	`session` and the richer `detail` (participants, per-metric data points).
+//	and the richer `detail` (participants, per-metric data points).
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23184,29 +18545,28 @@ func (c *ClientWithResponses) AnalyticsServiceGetSessionWithResponse(ctx context
 	return ParseAnalyticsServiceGetSessionResponse(rsp)
 }
 
-// AnalyticsServiceListSessionEventsWithResponse ListSessionEvents lists one room session's events, oldest first by default,
+// AnalyticsServiceListSessionEventsWithResponse Lists one room session's events, oldest first by default, cursor-paginated
 //
-//	cursor-paginated with no total. With no `types`, it returns the seven the
-//	dashboard's events table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-//	PARTICIPANT_ACTIVE, PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and
-//	API_CALL. `types` asks for others, such as TRACK_PUBLISHED, and
-//	`participant_session_id` keeps one participant session's events. With
-//	`participant_session_id` and no `types`, it returns the eleven the
-//	dashboard's participant events table shows: that participant session's
-//	PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_RESUMED and
-//	PARTICIPANT_ACTIVE, and its TRACK_MUTED, TRACK_UNMUTED, TRACK_PUBLISHED,
-//	TRACK_UNPUBLISHED, TRACK_SUBSCRIBED, TRACK_SUBSCRIBE_REQUESTED and
-//	TRACK_SUBSCRIBE_FAILED.
+//	with no total. With no `types`, it returns the seven the dashboard's events
+//	table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
+//	PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
+//	for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
+//	participant session's events. With `participantSessionId` and no `types`,
+//	it returns the eleven the dashboard's participant events table shows: that
+//	participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
+//	PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
+//	TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
+//	TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
 //
 // Unlike the dashboard, on purpose: an unknown type or a malformed
 //
-//	participant session id is InvalidArgument rather than being searched for
-//	as typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
+//	participant session id is InvalidArgument rather than being searched for as
+//	typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
 //	TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
 //	fields, leaving out participants' attributes and metadata and API calls'
 //	request bodies. Each event and participant row still carries the
-//	participant's identity, as the dashboard shows it to every member, and
-//	for a SIP caller that can be a phone number.
+//	participant's identity, as the dashboard shows it to every member, and for
+//	a SIP caller that can be a phone number.
 //
 //	Events are kept for 60 days, which can be shorter than the session's other
 //	data, so an older session can list no events. An ACTIVE session lists the
@@ -23223,19 +18583,19 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionEventsWithResponse(ctx 
 	return ParseAnalyticsServiceListSessionEventsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionLogsWithResponse GetSessionLogs returns the log records the session's agents exported, in
+// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the session's agents exported, in time order: what
 //
-//	time order: what the dashboard's logs panel shows. Their chat history is
-//	left out, since GetSessionTranscript reads it, and their evaluation
-//	results stay in. The session's events, such as participants joining,
-//	come from AnalyticsService's ListSessionEvents.
+//	the dashboard's logs panel shows. Their chat history is left out, since
+//	GetSessionTranscript reads it, and their evaluation results stay in. The
+//	session's events, such as participants joining, come from
+//	AnalyticsService's ListSessionEvents.
 //
 // An ACTIVE session returns what its agents have exported so far. A record
 //
 //	exported mid-read with a time this read has already paged past, earlier
-//	than its cursor's when oldest first, is missed until a new read. An
-//	unknown session is NotFound. A read filtered by log_levels can come back
-//	empty because no record is at those levels, so only an unfiltered one is
+//	than its cursor's when oldest first, is missed until a new read. An unknown
+//	session is NotFound. A read filtered by logLevels can come back empty
+//	because no record is at those levels, so only an unfiltered one is
 //	ObservabilityDisabled.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -23249,12 +18609,12 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionLogsWithResponse(ctx
 	return ParseObservabilityServiceGetSessionLogsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionMetricsWithResponse GetSessionMetrics returns the OpenTelemetry metric points the session's
+// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the session's agents exported, by
 //
-//	agents exported, by time, typed: turn latencies such as
-//	lk.agents.turn.e2e_latency and lk.agents.turn.llm_ttft, token and duration
-//	usage such as lk.agents.usage.llm_input_tokens, and the gen_ai.*
-//	histograms, along with any metrics the agent's own code recorded.
+//	time, typed: turn latencies such as lk.agents.turn.e2e_latency and
+//	lk.agents.turn.llm_ttft, token and duration usage such as
+//	lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
+//	any metrics the agent's own code recorded.
 //
 // These are the raw metrics agents emit, so they won't exactly match the
 //
@@ -23263,22 +18623,19 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionLogsWithResponse(ctx
 //	produce them: an agent whose code installs its own MeterProvider exports
 //	none to LiveKit Cloud, and its sessions return no points.
 //
-//	Some points aren't labeled as their agent exported them. These are
-//	limitations of the upstream aggregator, which groups a session's series
-//	by their attributes alone and names each group after its first row:
-//	  - several metrics can come back under one name, such as an LLM's input,
-//	    output and cached token counts, all named
-//	    lk.agents.usage.llm_input_tokens;
-//	  - points of one series at the same time that recorded equal values
-//	    collapse into one point;
-//	  - with two agents in one session, a point can carry the other agent's
-//	    resource attributes.
+//	Some points aren't labeled as their agent exported them. LiveKit Cloud
+//	groups a session's series by their attributes alone and names each group
+//	after its first row, so: - several metrics can come back under one name,
+//	such as an LLM's input, output and cached token counts, all named
+//	lk.agents.usage.llm_input_tokens; - points of one series at the same time
+//	that recorded equal values collapse into one point; - with two agents in
+//	one session, a point can carry the other agent's resource attributes.
 //
-//	An agent exports its metrics every 30 seconds, and its turn latencies
-//	when the session ends, so an ACTIVE session returns what it has exported
-//	so far. An unknown session is NotFound. A read filtered by names can come
-//	back empty because no metric has those names, so only an unfiltered one
-//	is ObservabilityDisabled.
+//	An agent exports its metrics every 30 seconds, and its turn latencies when
+//	the session ends, so an ACTIVE session returns what it has exported so far.
+//	An unknown session is NotFound. A read filtered by names can come back
+//	empty because no metric has those names, so only an unfiltered one is
+//	ObservabilityDisabled.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23293,11 +18650,11 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionMetricsWithResponse(
 
 // AnalyticsServiceListSessionParticipantsWithResponse ListSessionParticipants
 //
-// ListSessionParticipants lists the participants of one room session, one row
+// Lists the participants of one room session, one row per identity,
 //
-//	per identity, cursor-paginated; newest join first by default. Each row
-//	carries the participant's participant sessions (PA_...), each with the
-//	client it connected from.
+//	cursor-paginated; newest join first by default. Each row carries the
+//	participant's participant sessions (PA_...), each with the client it
+//	connected from.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23312,11 +18669,11 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionParticipantsWithRespons
 
 // ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 //
-// GetSessionRecordingURL returns a short-lived signed URL for one of the
+// Returns a short-lived signed URL for one of the session's recordings: its
 //
-//	session's recordings: its audio or its chat history. A session with no
-//	recording of that type is NotFound. A new recording can be NotFound for
-//	up to a minute after the session ends.
+//	audio or its chat history. A session with no recording of that type is
+//	NotFound. A new recording can be NotFound for up to a minute after the
+//	session ends.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23329,19 +18686,19 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionRecordingURLWithResp
 	return ParseObservabilityServiceGetSessionRecordingURLResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTracesWithResponse GetSessionTraces returns the spans the session's agents exported, by
+// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the session's agents exported, by start time: what the
 //
-//	start time: what the dashboard's trace view shows. Each span names its
-//	parent, so the pages rebuild the span tree, and its attributes carry the
-//	turn and latency fields the dashboard's turn view reads, such as
-//	lk.generation_id and lk.response.ttft.
+//	dashboard's trace view shows. Each span names its parent, so the pages
+//	rebuild the span tree, and its attributes carry the turn and latency fields
+//	the dashboard's turn view reads, such as lk.generation_id and
+//	lk.response.ttft.
 //
 // An ACTIVE session returns what its agents have exported so far; a span
 //
 //	exported after the first page waits for a new read. The later pages are
 //	read by offset, so a span exported mid-read can still shift them: a span
-//	can repeat, or be skipped. Dedupe by span_id, and read again from the
-//	first page to pick up a skipped span. An unknown session is NotFound.
+//	can repeat, or be skipped. Dedupe by spanId, and read again from the first
+//	page to pick up a skipped span. An unknown session is NotFound.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23354,18 +18711,17 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTracesWithResponse(c
 	return ParseObservabilityServiceGetSessionTracesResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTranscriptWithResponse GetSessionTranscript returns the session's conversation as ordered
+// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session's conversation as ordered transcript items: messages,
 //
-//	transcript items: messages, tool calls and results, agent handoffs and
-//	agent configuration changes. It is the conversation the dashboard's
-//	transcript shows.
+//	tool calls and results, agent handoffs and agent configuration changes. It
+//	is the conversation the dashboard's transcript shows.
 //
-// The agent exports its transcript when the session ends, and it can be
+// The agent exports its transcript when the session ends, and it can be read
 //
-//	read a minute or two later; on a project with PII redaction, only once
-//	the session's recording has been redacted. So a session that is still
-//	ACTIVE returns what exists so far, usually nothing, without an error:
-//	read it again after the session ends. An unknown session is NotFound.
+//	a minute or two later; on a project with PII redaction, only once the
+//	session's recording has been redacted. So a session that is still ACTIVE
+//	returns what exists so far, usually nothing, without an error: read it
+//	again after the session ends. An unknown session is NotFound.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23380,11 +18736,11 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTranscriptWithRespon
 
 // SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
 //
-// ListSimulationRuns lists a project's runs, newest first, cursor-paginated,
+// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
 //
-//	optionally narrowed by status, agent, conversation mode and a time window.
-//	Rows carry headline counts (job_count, passed_count, failed_count,
-//	issue_count) but neither jobs nor the summary.
+//	by status, agent, conversation mode and a time window. Rows carry headline
+//	counts (jobCount, passedCount, failedCount, issueCount) but neither
+//	jobs nor the summary.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23399,13 +18755,13 @@ func (c *ClientWithResponses) SimulationServiceListSimulationRunsWithResponse(ct
 
 // SimulationServiceCreateSimulationRunWithBodyWithResponse CreateSimulationRun
 //
-// CreateSimulationRun registers a new run. With a scenario_group it starts
+// Registers a new run. With a scenarioGroup it starts right away and no
 //
-//	right away and no upload target is returned. Without one it waits in
-//	PENDING_UPLOAD for the agent source that scenarios are generated from:
-//	upload it to the returned presigned POST, then call
-//	ConfirmSimulationSourceUpload. A run left pending for an hour is failed.
-//	Creating a run is not idempotent: a retried request starts a second run.
+//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
+//	agent source that scenarios are generated from: upload it to the returned
+//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
+//	for an hour is failed. Creating a run is not idempotent: a retried request
+//	starts a second run.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23420,13 +18776,13 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithBodyWithRe
 
 // SimulationServiceCreateSimulationRunWithResponse CreateSimulationRun
 //
-// CreateSimulationRun registers a new run. With a scenario_group it starts
+// Registers a new run. With a scenarioGroup it starts right away and no
 //
-//	right away and no upload target is returned. Without one it waits in
-//	PENDING_UPLOAD for the agent source that scenarios are generated from:
-//	upload it to the returned presigned POST, then call
-//	ConfirmSimulationSourceUpload. A run left pending for an hour is failed.
-//	Creating a run is not idempotent: a retried request starts a second run.
+//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
+//	agent source that scenarios are generated from: upload it to the returned
+//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
+//	for an hour is failed. Creating a run is not idempotent: a retried request
+//	starts a second run.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23441,10 +18797,10 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithResponse(c
 
 // SimulationServiceGetSimulationRunWithResponse GetSimulationRun
 //
-// GetSimulationRun returns one run with its jobs and aggregate metrics. The
+// Returns one run with its jobs and aggregate metrics. The compressed summary
 //
-//	compressed summary blob (summary_zstd) is omitted; use
-//	GetSimulationRunSummary for the decoded summary.
+//	blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
+//	summary.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23459,11 +18815,11 @@ func (c *ClientWithResponses) SimulationServiceGetSimulationRunWithResponse(ctx 
 
 // SimulationServiceGetSimulationRunSummaryWithResponse GetSimulationRunSummary
 //
-// GetSimulationRunSummary returns the graded outcome of a finished run:
+// Returns the graded outcome of a finished run: pass/fail counts, what went
 //
-//	pass/fail counts, what went well, what to improve, flagged issues with
-//	suggestions, and the per-job chat history. FailedPrecondition while the
-//	run is still going; NotFound if the run finished without a summary.
+//	well, what to improve, flagged issues with suggestions, and the per-job
+//	chat history. FailedPrecondition while the run is still going; NotFound if
+//	the run finished without a summary.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23478,9 +18834,9 @@ func (c *ClientWithResponses) SimulationServiceGetSimulationRunSummaryWithRespon
 
 // SimulationServiceCancelSimulationRunWithResponse CancelSimulationRun
 //
-// CancelSimulationRun stops a run that has not finished. Cancelling a run
+// Stops a run that has not finished. Cancelling a run that already finished
 //
-//	that already finished succeeds without effect.
+//	succeeds without effect.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23495,11 +18851,10 @@ func (c *ClientWithResponses) SimulationServiceCancelSimulationRunWithResponse(c
 
 // SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse ConfirmSimulationSourceUpload
 //
-// ConfirmSimulationSourceUpload marks the agent source as uploaded and starts
+// Marks the agent source as uploaded and starts scenario generation; the run
 //
-//	scenario generation; the run moves to GENERATING, then RUNNING once the
-//	scenarios exist. Only valid while the run is PENDING_UPLOAD, so a repeated
-//	call fails.
+//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
+//	while the run is PENDING_UPLOAD, so a repeated call fails.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23514,11 +18869,10 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 
 // SimulationServiceConfirmSimulationSourceUploadWithResponse ConfirmSimulationSourceUpload
 //
-// ConfirmSimulationSourceUpload marks the agent source as uploaded and starts
+// Marks the agent source as uploaded and starts scenario generation; the run
 //
-//	scenario generation; the run moves to GENERATING, then RUNNING once the
-//	scenarios exist. Only valid while the run is PENDING_UPLOAD, so a repeated
-//	call fails.
+//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
+//	while the run is PENDING_UPLOAD, so a repeated call fails.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23533,11 +18887,11 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 
 // SimulationServiceCountSimulationRunsWithResponse CountSimulationRuns
 //
-// CountSimulationRuns buckets the runs ListSimulationRuns would return over
+// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
 //
-//	[start_time, end_time) into a histogram. It takes the same filters over the
-//	same window, so the bars and the rows beneath them always describe one set.
-//	Both bounds are required and end_time must be after start_time.
+//	into a histogram. It takes the same filters over the same window, so the
+//	bars and the rows beneath them always describe one set. Both bounds are
+//	required and endTime must be after startTime.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23552,7 +18906,7 @@ func (c *ClientWithResponses) SimulationServiceCountSimulationRunsWithResponse(c
 
 // ThreadServiceListThreadsWithResponse ListThreads
 //
-// ListThreads lists the threads of one scope, newest first.
+// Lists the threads of one scope, newest first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23567,7 +18921,7 @@ func (c *ClientWithResponses) ThreadServiceListThreadsWithResponse(ctx context.C
 
 // ThreadServiceCreateThreadWithBodyWithResponse CreateThread
 //
-// CreateThread creates a thread and its database.
+// Creates a thread and its database.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23582,7 +18936,7 @@ func (c *ClientWithResponses) ThreadServiceCreateThreadWithBodyWithResponse(ctx 
 
 // ThreadServiceCreateThreadWithResponse CreateThread
 //
-// CreateThread creates a thread and its database.
+// Creates a thread and its database.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23597,7 +18951,7 @@ func (c *ClientWithResponses) ThreadServiceCreateThreadWithResponse(ctx context.
 
 // ThreadServiceDeleteThreadWithResponse DeleteThread
 //
-// DeleteThread deletes the thread and its database.
+// Deletes the thread and its database.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23625,9 +18979,9 @@ func (c *ClientWithResponses) ThreadServiceGetThreadWithResponse(ctx context.Con
 
 // ThreadServiceUpdateThreadWithBodyWithResponse UpdateThread
 //
-// UpdateThread merges attributes (an empty value deletes the entry) and sets
+// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
 //
-//	the idle TTL. Every update counts as activity and pushes expires_at out.
+//	Every update counts as activity and pushes expiresAt out.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23642,9 +18996,9 @@ func (c *ClientWithResponses) ThreadServiceUpdateThreadWithBodyWithResponse(ctx 
 
 // ThreadServiceUpdateThreadWithResponse UpdateThread
 //
-// UpdateThread merges attributes (an empty value deletes the entry) and sets
+// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
 //
-//	the idle TTL. Every update counts as activity and pushes expires_at out.
+//	Every update counts as activity and pushes expiresAt out.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23659,7 +19013,7 @@ func (c *ClientWithResponses) ThreadServiceUpdateThreadWithResponse(ctx context.
 
 // ThreadServiceGetThreadItemsWithResponse GetThreadItems
 //
-// GetThreadItems returns the thread's chat items, oldest first.
+// Returns the thread's chat items, oldest first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23674,7 +19028,7 @@ func (c *ClientWithResponses) ThreadServiceGetThreadItemsWithResponse(ctx contex
 
 // ThreadServiceGetThreadTasksWithResponse GetThreadTasks
 //
-// GetThreadTasks returns the thread's background tasks, oldest first.
+// Returns the thread's background tasks, oldest first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -23689,10 +19043,10 @@ func (c *ClientWithResponses) ThreadServiceGetThreadTasksWithResponse(ctx contex
 
 // ProjectServiceCreateTokenWithBodyWithResponse CreateToken
 //
-// CreateToken mints a short-lived LiveKit access token for the project,
+// Mints a short-lived LiveKit access token for the project, signed
 //
-//	signed server-side, so user-authenticated clients can call LiveKit server
-//	APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	server-side, so user-authenticated clients can call LiveKit server APIs
+//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23707,10 +19061,10 @@ func (c *ClientWithResponses) ProjectServiceCreateTokenWithBodyWithResponse(ctx 
 
 // ProjectServiceCreateTokenWithResponse CreateToken
 //
-// CreateToken mints a short-lived LiveKit access token for the project,
+// Mints a short-lived LiveKit access token for the project, signed
 //
-//	signed server-side, so user-authenticated clients can call LiveKit server
-//	APIs (rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	server-side, so user-authenticated clients can call LiveKit server APIs
+//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -23738,9 +19092,7 @@ func (c *ClientWithResponses) ProjectServiceListWebhookEventsWithResponse(ctx co
 
 // ProjectServiceListWebhooksWithResponse ListWebhooks
 //
-// Webhooks (mirrors cloud ProjectService ListWebhooks / AddWebhook /
-//
-//	EditWebhook / DeleteWebhook / SendTestWebhook).
+// Lists the project's webhook destinations.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -24067,7 +19419,7 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteInviteWithResponse(ctx conte
 
 // WorkspaceServiceListMembersWithResponse ListMembers
 //
-// Members & invites (mirrors cloud WorkspaceService current flows).
+// Lists the workspace's members.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -24134,7 +19486,9 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateMemberWithResponse(ctx conte
 
 // WorkspaceServiceListProjectsWithResponse ListProjects
 //
-// Project CRUD scoped to a workspace — responses owned by projects.v1.
+// The projects in a workspace. These return the same Project message as
+//
+//	the project endpoints.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -24199,32 +19553,6 @@ func (c *ClientWithResponses) WorkspaceServiceGetProjectWithResponse(ctx context
 	return ParseWorkspaceServiceGetProjectResponse(rsp)
 }
 
-// WorkspaceServiceUpdateProjectWithBodyWithResponse UpdateProject
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
-func (c *ClientWithResponses) WorkspaceServiceUpdateProjectWithBodyWithResponse(ctx context.Context, workspaceId string, updateProjectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateProjectResponse, error) {
-	rsp, err := c.WorkspaceServiceUpdateProjectWithBody(ctx, workspaceId, updateProjectId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseWorkspaceServiceUpdateProjectResponse(rsp)
-}
-
-// WorkspaceServiceUpdateProjectWithResponse UpdateProject
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /v0/workspaces/{workspaceId}/projects/{update.projectId} (the `WorkspaceServiceUpdateProject` operationId).
-func (c *ClientWithResponses) WorkspaceServiceUpdateProjectWithResponse(ctx context.Context, workspaceId string, updateProjectId string, body WorkspaceServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateProjectResponse, error) {
-	rsp, err := c.WorkspaceServiceUpdateProject(ctx, workspaceId, updateProjectId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseWorkspaceServiceUpdateProjectResponse(rsp)
-}
-
 // ParseProjectServiceGetInviteResponse parses an HTTP response from a ProjectServiceGetInviteWithResponse call
 func ParseProjectServiceGetInviteResponse(rsp *http.Response) (*ProjectServiceGetInviteResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -24245,6 +19573,13 @@ func ParseProjectServiceGetInviteResponse(rsp *http.Response) (*ProjectServiceGe
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24272,6 +19607,13 @@ func ParseProjectServiceAnswerInvitationResponse(rsp *http.Response) (*ProjectSe
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24297,6 +19639,13 @@ func ParseProjectServiceListProjectsResponse(rsp *http.Response) (*ProjectServic
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24324,6 +19673,13 @@ func ParseProjectServiceCreateProjectResponse(rsp *http.Response) (*ProjectServi
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24349,6 +19705,13 @@ func ParseProjectServiceDeleteProjectResponse(rsp *http.Response) (*ProjectServi
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24376,6 +19739,13 @@ func ParseProjectServiceGetProjectResponse(rsp *http.Response) (*ProjectServiceG
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24401,6 +19771,13 @@ func ParseProjectServiceUpdateProjectResponse(rsp *http.Response) (*ProjectServi
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24428,6 +19805,13 @@ func ParseAnalyticsServiceGetProjectAnalyticsResponse(rsp *http.Response) (*Anal
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24453,6 +19837,13 @@ func ParseAnalyticsServiceListAgentAnalyticsResponse(rsp *http.Response) (*Analy
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24480,6 +19871,13 @@ func ParseAnalyticsServiceGetAgentAnalyticsResponse(rsp *http.Response) (*Analyt
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24505,6 +19903,13 @@ func ParseDatabaseServiceListDatabasesResponse(rsp *http.Response) (*DatabaseSer
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24532,6 +19937,13 @@ func ParseDatabaseServiceCreateDatabaseResponse(rsp *http.Response) (*DatabaseSe
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24557,6 +19969,13 @@ func ParseDatabaseServiceDeleteDatabaseResponse(rsp *http.Response) (*DatabaseSe
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24584,6 +20003,13 @@ func ParseDatabaseServiceGetDatabaseResponse(rsp *http.Response) (*DatabaseServi
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24609,6 +20035,13 @@ func ParseDatabaseServiceExportDatabaseResponse(rsp *http.Response) (*DatabaseSe
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24636,6 +20069,13 @@ func ParseProjectServiceListInvitesResponse(rsp *http.Response) (*ProjectService
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24661,6 +20101,13 @@ func ParseProjectServiceInviteMemberResponse(rsp *http.Response) (*ProjectServic
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24688,6 +20135,13 @@ func ParseProjectServiceDeleteInviteResponse(rsp *http.Response) (*ProjectServic
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24713,6 +20167,13 @@ func ParseProjectServiceUpdateInviteResponse(rsp *http.Response) (*ProjectServic
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24740,6 +20201,13 @@ func ParseProjectServiceListKeysResponse(rsp *http.Response) (*ProjectServiceLis
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24765,6 +20233,13 @@ func ParseProjectServiceGenerateKeyResponse(rsp *http.Response) (*ProjectService
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24792,6 +20267,13 @@ func ParseProjectServiceDeleteKeyResponse(rsp *http.Response) (*ProjectServiceDe
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24817,6 +20299,13 @@ func ParseProjectServiceListMembersResponse(rsp *http.Response) (*ProjectService
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24844,6 +20333,13 @@ func ParseProjectServiceRemoveMemberResponse(rsp *http.Response) (*ProjectServic
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24869,6 +20365,13 @@ func ParseProjectServiceGetMemberResponse(rsp *http.Response) (*ProjectServiceGe
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24896,6 +20399,13 @@ func ParseProjectServiceUpdateMemberResponse(rsp *http.Response) (*ProjectServic
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24921,6 +20431,13 @@ func ParseProjectServiceAddWorkspaceMembersToProjectResponse(rsp *http.Response)
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -24948,6 +20465,13 @@ func ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp *http.Respons
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -24973,6 +20497,13 @@ func ParseProjectServiceListScopedKeysResponse(rsp *http.Response) (*ProjectServ
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25000,6 +20531,13 @@ func ParseAnalyticsServiceListProjectSessionsResponse(rsp *http.Response) (*Anal
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25025,6 +20563,13 @@ func ParseAnalyticsServiceGetSessionResponse(rsp *http.Response) (*AnalyticsServ
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25052,6 +20597,13 @@ func ParseAnalyticsServiceListSessionEventsResponse(rsp *http.Response) (*Analyt
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25077,6 +20629,13 @@ func ParseObservabilityServiceGetSessionLogsResponse(rsp *http.Response) (*Obser
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25104,6 +20663,13 @@ func ParseObservabilityServiceGetSessionMetricsResponse(rsp *http.Response) (*Ob
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25129,6 +20695,13 @@ func ParseAnalyticsServiceListSessionParticipantsResponse(rsp *http.Response) (*
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25156,6 +20729,13 @@ func ParseObservabilityServiceGetSessionRecordingURLResponse(rsp *http.Response)
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25181,6 +20761,13 @@ func ParseObservabilityServiceGetSessionTracesResponse(rsp *http.Response) (*Obs
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25208,6 +20795,13 @@ func ParseObservabilityServiceGetSessionTranscriptResponse(rsp *http.Response) (
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25233,6 +20827,13 @@ func ParseSimulationServiceListSimulationRunsResponse(rsp *http.Response) (*Simu
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25260,6 +20861,13 @@ func ParseSimulationServiceCreateSimulationRunResponse(rsp *http.Response) (*Sim
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25285,6 +20893,13 @@ func ParseSimulationServiceGetSimulationRunResponse(rsp *http.Response) (*Simula
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25312,6 +20927,13 @@ func ParseSimulationServiceGetSimulationRunSummaryResponse(rsp *http.Response) (
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25337,6 +20959,13 @@ func ParseSimulationServiceCancelSimulationRunResponse(rsp *http.Response) (*Sim
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25364,6 +20993,13 @@ func ParseSimulationServiceConfirmSimulationSourceUploadResponse(rsp *http.Respo
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25389,6 +21025,13 @@ func ParseSimulationServiceCountSimulationRunsResponse(rsp *http.Response) (*Sim
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25416,6 +21059,13 @@ func ParseThreadServiceListThreadsResponse(rsp *http.Response) (*ThreadServiceLi
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25441,6 +21091,13 @@ func ParseThreadServiceCreateThreadResponse(rsp *http.Response) (*ThreadServiceC
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25468,6 +21125,13 @@ func ParseThreadServiceDeleteThreadResponse(rsp *http.Response) (*ThreadServiceD
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25493,6 +21157,13 @@ func ParseThreadServiceGetThreadResponse(rsp *http.Response) (*ThreadServiceGetT
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25520,6 +21191,13 @@ func ParseThreadServiceUpdateThreadResponse(rsp *http.Response) (*ThreadServiceU
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25545,6 +21223,13 @@ func ParseThreadServiceGetThreadItemsResponse(rsp *http.Response) (*ThreadServic
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25572,6 +21257,13 @@ func ParseThreadServiceGetThreadTasksResponse(rsp *http.Response) (*ThreadServic
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25597,6 +21289,13 @@ func ParseProjectServiceCreateTokenResponse(rsp *http.Response) (*ProjectService
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25624,6 +21323,13 @@ func ParseProjectServiceListWebhookEventsResponse(rsp *http.Response) (*ProjectS
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25649,6 +21355,13 @@ func ParseProjectServiceListWebhooksResponse(rsp *http.Response) (*ProjectServic
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25676,6 +21389,13 @@ func ParseProjectServiceCreateWebhookResponse(rsp *http.Response) (*ProjectServi
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25701,6 +21421,13 @@ func ParseProjectServiceDeleteWebhookResponse(rsp *http.Response) (*ProjectServi
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25728,6 +21455,13 @@ func ParseProjectServiceUpdateWebhookResponse(rsp *http.Response) (*ProjectServi
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25753,6 +21487,13 @@ func ParseProjectServiceSendTestWebhookResponse(rsp *http.Response) (*ProjectSer
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25780,6 +21521,13 @@ func ParseUserServiceListUsersResponse(rsp *http.Response) (*UserServiceListUser
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25805,6 +21553,13 @@ func ParseUserServiceGetCurrentUserResponse(rsp *http.Response) (*UserServiceGet
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25832,6 +21587,13 @@ func ParseUserServiceGetUserResponse(rsp *http.Response) (*UserServiceGetUserRes
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25857,6 +21619,13 @@ func ParseWorkspaceServiceGetInviteResponse(rsp *http.Response) (*WorkspaceServi
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25884,6 +21653,13 @@ func ParseWorkspaceServiceAnswerInviteResponse(rsp *http.Response) (*WorkspaceSe
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25909,6 +21685,13 @@ func ParseWorkspaceServiceListWorkspacesResponse(rsp *http.Response) (*Workspace
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25936,6 +21719,13 @@ func ParseWorkspaceServiceCreateWorkspaceResponse(rsp *http.Response) (*Workspac
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -25961,6 +21751,13 @@ func ParseWorkspaceServiceDeleteWorkspaceResponse(rsp *http.Response) (*Workspac
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -25988,6 +21785,13 @@ func ParseWorkspaceServiceGetWorkspaceResponse(rsp *http.Response) (*WorkspaceSe
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -26013,6 +21817,13 @@ func ParseWorkspaceServiceUpdateWorkspaceResponse(rsp *http.Response) (*Workspac
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -26040,6 +21851,13 @@ func ParseWorkspaceServiceListInvitesResponse(rsp *http.Response) (*WorkspaceSer
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -26065,6 +21883,13 @@ func ParseWorkspaceServiceCreateInviteResponse(rsp *http.Response) (*WorkspaceSe
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -26092,6 +21917,13 @@ func ParseWorkspaceServiceDeleteInviteResponse(rsp *http.Response) (*WorkspaceSe
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -26117,6 +21949,13 @@ func ParseWorkspaceServiceListMembersResponse(rsp *http.Response) (*WorkspaceSer
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -26144,6 +21983,13 @@ func ParseWorkspaceServiceDeleteMemberResponse(rsp *http.Response) (*WorkspaceSe
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -26169,6 +22015,13 @@ func ParseWorkspaceServiceGetMemberResponse(rsp *http.Response) (*WorkspaceServi
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -26196,6 +22049,13 @@ func ParseWorkspaceServiceUpdateMemberResponse(rsp *http.Response) (*WorkspaceSe
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -26221,6 +22081,13 @@ func ParseWorkspaceServiceListProjectsResponse(rsp *http.Response) (*WorkspaceSe
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -26248,6 +22115,13 @@ func ParseWorkspaceServiceCreateProjectResponse(rsp *http.Response) (*WorkspaceS
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil
@@ -26273,6 +22147,13 @@ func ParseWorkspaceServiceDeleteProjectResponse(rsp *http.Response) (*WorkspaceS
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 
@@ -26300,31 +22181,12 @@ func ParseWorkspaceServiceGetProjectResponse(rsp *http.Response) (*WorkspaceServ
 		}
 		response.JSON200 = &dest
 
-	}
-
-	return response, nil
-}
-
-// ParseWorkspaceServiceUpdateProjectResponse parses an HTTP response from a WorkspaceServiceUpdateProjectWithResponse call
-func ParseWorkspaceServiceUpdateProjectResponse(rsp *http.Response) (*WorkspaceServiceUpdateProjectResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &WorkspaceServiceUpdateProjectResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiProjectsV1UpdateProjectResponse
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSONDefault = &dest
 
 	}
 
