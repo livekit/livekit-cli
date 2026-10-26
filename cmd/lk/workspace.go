@@ -491,7 +491,7 @@ func deleteWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if err := client.DeleteWorkspaceMember(ctx, wsID, userID); err != nil {
+	if _, err := client.DeleteWorkspaceMember(ctx, wsID, userID, 0); err != nil {
 		return cloudAPIError(err)
 	}
 	return util.RenderAction(out, cmd.Bool("json"), "userId", userID, "removed", fmt.Sprintf("Removed member %s", util.Accented(userID)))

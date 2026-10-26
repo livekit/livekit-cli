@@ -58,13 +58,73 @@ func (c *Client) UpdateProjectMember(ctx context.Context, projectID, userID stri
 	return requirePayload(resp.JSON200.Member, "member")
 }
 
-// RemoveProjectMember removes a member from a project.
-func (c *Client) RemoveProjectMember(ctx context.Context, projectID, userID string) error {
-	resp, err := c.gen.ProjectServiceRemoveMemberWithResponse(ctx, projectID, userID, nil)
+// RemoveProjectMember removes a member from a project (from its whole
+// workspace when the project isn't private), deletes the API keys they own
+// there, and returns how many it deleted. confirmedNumKeys must be that count:
+// call with 0, and if the member owns keys the error carries the count (see
+// MemberRemovalNotConfirmed).
+func (c *Client) RemoveProjectMember(ctx context.Context, projectID, userID string, confirmedNumKeys uint32) (uint32, error) {
+	resp, err := c.gen.ProjectServiceRemoveMemberWithResponse(ctx, projectID, userID, &oapi.ProjectServiceRemoveMemberParams{
+		ConfirmedNumKeys: confirmedNumKeysParam(confirmedNumKeys),
+	})
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return okOrError(resp.StatusCode(), resp.Body)
+	if resp.JSON200 == nil {
+		return 0, responseError(resp.StatusCode(), resp.Body)
+	}
+	return numKeys(resp.JSON200.NumKeys), nil
+}
+
+// MemberRemoval is what removing a member would do to the API keys they own.
+type MemberRemoval struct {
+	// NumKeys is how many of the member's API keys the removal deletes. Pass
+	// it as confirmedNumKeys to go ahead.
+	NumKeys uint32 `json:"numKeys"`
+	// LastKeyProjectNames are the projects the removal would leave without an
+	// API key. Private ones the caller may not see are only counted, in
+	// NumPrivateLastKeyProjects.
+	LastKeyProjectNames       []string `json:"lastKeyProjectNames"`
+	NumPrivateLastKeyProjects uint32   `json:"numPrivateLastKeyProjects"`
+}
+
+// LeavesProjectWithoutKey reports whether the removal would take a project's
+// last API key. The Public API refuses such a removal even when the count is
+// confirmed.
+func (r *MemberRemoval) LeavesProjectWithoutKey() bool {
+	return len(r.LastKeyProjectNames) > 0 || r.NumPrivateLastKeyProjects > 0
+}
+
+// MemberRemovalNotConfirmed reports whether err is the Public API's refusal of
+// a member removal that didn't go ahead: the member owns API keys and the
+// caller didn't confirm their number, or the removal would leave a project
+// without an API key.
+func MemberRemovalNotConfirmed(err error) (*MemberRemoval, bool) {
+	var removal MemberRemoval
+	if !errorDetail(err, "livekit.publicapi.common.v1.MemberRemovalNotConfirmed", &removal) {
+		return nil, false
+	}
+	return &removal, true
+}
+
+// confirmedNumKeysParam leaves a count of 0 out of the request, which the API
+// reads as 0. A server from before confirmedNumKeys answers the parameter with
+// an unknown-field error, so leaving it out keeps removing a member who owns
+// no keys working there.
+func confirmedNumKeysParam(n uint32) *int {
+	if n == 0 {
+		return nil
+	}
+	return ptr(int(n))
+}
+
+// numKeys reads a member removal's numKeys, which the API leaves out when no
+// key was deleted.
+func numKeys(n *int) uint32 {
+	if n == nil {
+		return 0
+	}
+	return uint32(*n)
 }
 
 // AddWorkspaceMembersToProject grants a set of existing workspace members access

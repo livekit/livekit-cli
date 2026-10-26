@@ -223,7 +223,7 @@ func removeProjectMember(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if err := client.RemoveProjectMember(ctx, projectID, userID); err != nil {
+	if _, err := client.RemoveProjectMember(ctx, projectID, userID, 0); err != nil {
 		return cloudAPIError(err)
 	}
 	return util.RenderAction(out, cmd.Bool("json"), "userId", userID, "removed", fmt.Sprintf("Removed member %s", util.Accented(userID)))
