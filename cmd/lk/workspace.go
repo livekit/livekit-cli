@@ -491,7 +491,7 @@ func deleteWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	numKeys, err := removeMember(ctx, cmd, userID, func(confirmedNumKeys uint32) (uint32, error) {
+	numKeys, err := removeMember(ctx, cmd, userID, "", func(confirmedNumKeys uint32) (uint32, error) {
 		return client.DeleteWorkspaceMember(ctx, wsID, userID, confirmedNumKeys)
 	})
 	if err != nil {

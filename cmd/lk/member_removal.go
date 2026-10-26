@@ -32,13 +32,19 @@ import (
 // goes ahead.
 const maxKeyConfirmations = 2
 
+// projectRemovalScope tells the user how far a project member removal
+// reaches: a project that isn't private shares its members with its
+// workspace, so the Public API removes the member from all of it.
+const projectRemovalScope = "Unless the project is private, this removes them from its whole workspace and every project in it."
+
 // removeMember removes userID with remove, which also deletes the API keys
 // they own, and returns how many it deleted. remove is called with
 // confirmedNumKeys 0 first. If the member owns keys, the Public API refuses
 // with their number; once the user confirms it (or passed --yes), remove is
 // called again with that number. A removal that would leave a project without
-// an API key is refused without asking.
-func removeMember(ctx context.Context, cmd *cli.Command, userID string, remove func(confirmedNumKeys uint32) (uint32, error)) (uint32, error) {
+// an API key is refused without asking. scope, if set, is shown with the
+// confirmation.
+func removeMember(ctx context.Context, cmd *cli.Command, userID, scope string, remove func(confirmedNumKeys uint32) (uint32, error)) (uint32, error) {
 	var confirmed uint32
 	for asked := 0; ; asked++ {
 		numKeys, err := remove(confirmed)
@@ -52,7 +58,7 @@ func removeMember(ctx context.Context, cmd *cli.Command, userID string, remove f
 		if asked == maxKeyConfirmations {
 			return 0, fmt.Errorf("%s's API keys changed again (they now own %d); nothing was removed, run the command again", userID, removal.NumKeys)
 		}
-		if err := confirmKeyDeletion(ctx, cmd, userID, removal.NumKeys, asked > 0); err != nil {
+		if err := confirmKeyDeletion(ctx, cmd, userID, scope, removal.NumKeys, asked > 0); err != nil {
 			return 0, err
 		}
 		confirmed = removal.NumKeys
@@ -62,7 +68,7 @@ func removeMember(ctx context.Context, cmd *cli.Command, userID string, remove f
 // confirmKeyDeletion asks the user to agree to deleting the numKeys API keys
 // userID owns. --yes agrees; without it a non-interactive run fails, since the
 // deletion can't be undone.
-func confirmKeyDeletion(ctx context.Context, cmd *cli.Command, userID string, numKeys uint32, changed bool) error {
+func confirmKeyDeletion(ctx context.Context, cmd *cli.Command, userID, scope string, numKeys uint32, changed bool) error {
 	if cmd.Bool("yes") {
 		return nil
 	}
@@ -73,10 +79,14 @@ func confirmKeyDeletion(ctx context.Context, cmd *cli.Command, userID string, nu
 	if changed {
 		title = fmt.Sprintf("%s's API keys changed. Remove %s and delete the %d API key(s) they own now?", userID, userID, numKeys)
 	}
+	description := "Anything using those keys stops working."
+	if scope != "" {
+		description = scope + " " + description
+	}
 	confirmed := false
 	if err := huh.NewForm(huh.NewGroup(util.Confirm().
 		Title(title).
-		Description("Anything using those keys stops working.").
+		Description(description).
 		Value(&confirmed).
 		WithTheme(util.FormTheme()))).
 		RunWithContext(ctx); err != nil {

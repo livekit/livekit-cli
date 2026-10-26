@@ -152,7 +152,7 @@ func TestRemoveMember(t *testing.T) {
 				Name:  "lk",
 				Flags: []cli.Flag{&cli.BoolFlag{Name: "yes"}},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					numKeys, removeErr = removeMember(ctx, cmd, "u_2", func(confirmedNumKeys uint32) (uint32, error) {
+					numKeys, removeErr = removeMember(ctx, cmd, "u_2", projectRemovalScope, func(confirmedNumKeys uint32) (uint32, error) {
 						return client.RemoveProjectMember(ctx, "p_1", "u_2", confirmedNumKeys)
 					})
 					return nil
