@@ -60,7 +60,7 @@ func (c *Client) UpdateProjectMember(ctx context.Context, projectID, userID stri
 
 // RemoveProjectMember removes a member from a project.
 func (c *Client) RemoveProjectMember(ctx context.Context, projectID, userID string) error {
-	resp, err := c.gen.ProjectServiceRemoveMemberWithResponse(ctx, projectID, userID)
+	resp, err := c.gen.ProjectServiceRemoveMemberWithResponse(ctx, projectID, userID, nil)
 	if err != nil {
 		return err
 	}

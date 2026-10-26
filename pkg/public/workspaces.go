@@ -196,7 +196,7 @@ func (c *Client) UpdateWorkspaceMember(ctx context.Context, workspaceID, userID 
 
 // DeleteWorkspaceMember removes a member from a workspace.
 func (c *Client) DeleteWorkspaceMember(ctx context.Context, workspaceID, userID string) error {
-	resp, err := c.gen.WorkspaceServiceDeleteMemberWithResponse(ctx, workspaceID, userID)
+	resp, err := c.gen.WorkspaceServiceDeleteMemberWithResponse(ctx, workspaceID, userID, nil)
 	if err != nil {
 		return err
 	}

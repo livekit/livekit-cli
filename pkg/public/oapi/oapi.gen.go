@@ -2849,7 +2849,10 @@ type LivekitPublicapiProjectsV1ProjectPreferences struct {
 }
 
 // LivekitPublicapiProjectsV1RemoveMemberResponse defines model for livekit.publicapi.projects.v1.RemoveMemberResponse.
-type LivekitPublicapiProjectsV1RemoveMemberResponse = map[string]interface{}
+type LivekitPublicapiProjectsV1RemoveMemberResponse struct {
+	// NumKeys Non-agent API keys the removal deleted.
+	NumKeys *int `json:"numKeys,omitempty"`
+}
 
 // LivekitPublicapiProjectsV1SendTestWebhookResponse Reports the receiver's answer to one delivery attempt. The test is not
 //
@@ -3156,7 +3159,10 @@ type LivekitPublicapiWorkspacesV1CreateWorkspaceResponse struct {
 type LivekitPublicapiWorkspacesV1DeleteInviteResponse = map[string]interface{}
 
 // LivekitPublicapiWorkspacesV1DeleteMemberResponse defines model for livekit.publicapi.workspaces.v1.DeleteMemberResponse.
-type LivekitPublicapiWorkspacesV1DeleteMemberResponse = map[string]interface{}
+type LivekitPublicapiWorkspacesV1DeleteMemberResponse struct {
+	// NumKeys Non-agent API keys the removal deleted.
+	NumKeys *int `json:"numKeys,omitempty"`
+}
 
 // LivekitPublicapiWorkspacesV1DeleteWorkspaceResponse defines model for livekit.publicapi.workspaces.v1.DeleteWorkspaceResponse.
 type LivekitPublicapiWorkspacesV1DeleteWorkspaceResponse = map[string]interface{}
@@ -3388,6 +3394,14 @@ type ProjectServiceGenerateKeyJSONBody struct {
 	// IsServiceAccount When true, the key is created without an owner (project-owned). It is not
 	//  listed as anyone's personal key and survives the generating user leaving.
 	IsServiceAccount *bool `json:"isServiceAccount,omitempty"`
+}
+
+// ProjectServiceRemoveMemberParams defines parameters for ProjectServiceRemoveMember.
+type ProjectServiceRemoveMemberParams struct {
+	// ConfirmedNumKeys Number of the member's API keys the caller agrees to delete. Call with 0;
+	//  if the member owns keys, the call fails with a MemberRemovalNotConfirmed
+	//  detail, so show its num_keys to the user and call again with it.
+	ConfirmedNumKeys *int `form:"confirmedNumKeys,omitempty" json:"confirmedNumKeys,omitempty"`
 }
 
 // ProjectServiceUpdateMemberJSONBody defines parameters for ProjectServiceUpdateMember.
@@ -3789,6 +3803,14 @@ type WorkspaceServiceUpdateWorkspaceJSONBody struct {
 type WorkspaceServiceCreateInviteJSONBody struct {
 	Email *string `json:"email,omitempty"`
 	Role  *int32  `json:"role,omitempty"`
+}
+
+// WorkspaceServiceDeleteMemberParams defines parameters for WorkspaceServiceDeleteMember.
+type WorkspaceServiceDeleteMemberParams struct {
+	// ConfirmedNumKeys Number of the member's API keys the caller agrees to delete. Call with 0;
+	//  if the member owns keys, the call fails with a MemberRemovalNotConfirmed
+	//  detail, so show its num_keys to the user and call again with it.
+	ConfirmedNumKeys *int `form:"confirmedNumKeys,omitempty" json:"confirmedNumKeys,omitempty"`
 }
 
 // WorkspaceServiceUpdateMemberJSONBody defines parameters for WorkspaceServiceUpdateMember.
@@ -6128,7 +6150,7 @@ type ClientInterface interface {
 	// ProjectServiceRemoveMember RemoveMember
 	//
 	// Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
-	ProjectServiceRemoveMember(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceRemoveMember(ctx context.Context, projectId string, userId string, params *ProjectServiceRemoveMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceGetMember GetMember
 	//
@@ -6690,7 +6712,7 @@ type ClientInterface interface {
 	// WorkspaceServiceDeleteMember DeleteMember
 	//
 	// Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
-	WorkspaceServiceDeleteMember(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	WorkspaceServiceDeleteMember(ctx context.Context, workspaceId string, userId string, params *WorkspaceServiceDeleteMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetMember GetMember
 	//
@@ -7258,8 +7280,8 @@ func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string
 // ProjectServiceRemoveMember RemoveMember
 //
 // Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
-func (c *Client) ProjectServiceRemoveMember(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceRemoveMemberRequest(c.Server, projectId, userId)
+func (c *Client) ProjectServiceRemoveMember(ctx context.Context, projectId string, userId string, params *ProjectServiceRemoveMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceRemoveMemberRequest(c.Server, projectId, userId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8498,8 +8520,8 @@ func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId st
 // WorkspaceServiceDeleteMember DeleteMember
 //
 // Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
-func (c *Client) WorkspaceServiceDeleteMember(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWorkspaceServiceDeleteMemberRequest(c.Server, workspaceId, userId)
+func (c *Client) WorkspaceServiceDeleteMember(ctx context.Context, workspaceId string, userId string, params *WorkspaceServiceDeleteMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWorkspaceServiceDeleteMemberRequest(c.Server, workspaceId, userId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9821,7 +9843,7 @@ func NewProjectServiceListMembersRequest(server string, projectId string) (*http
 }
 
 // NewProjectServiceRemoveMemberRequest constructs an http.Request for the ProjectServiceRemoveMember method
-func NewProjectServiceRemoveMemberRequest(server string, projectId string, userId string) (*http.Request, error) {
+func NewProjectServiceRemoveMemberRequest(server string, projectId string, userId string, params *ProjectServiceRemoveMemberParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9851,6 +9873,33 @@ func NewProjectServiceRemoveMemberRequest(server string, projectId string, userI
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ConfirmedNumKeys != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "confirmedNumKeys", *params.ConfirmedNumKeys, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
@@ -12801,7 +12850,7 @@ func NewWorkspaceServiceListMembersRequest(server string, workspaceId string) (*
 }
 
 // NewWorkspaceServiceDeleteMemberRequest constructs an http.Request for the WorkspaceServiceDeleteMember method
-func NewWorkspaceServiceDeleteMemberRequest(server string, workspaceId string, userId string) (*http.Request, error) {
+func NewWorkspaceServiceDeleteMemberRequest(server string, workspaceId string, userId string, params *WorkspaceServiceDeleteMemberParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12831,6 +12880,33 @@ func NewWorkspaceServiceDeleteMemberRequest(server string, workspaceId string, u
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ConfirmedNumKeys != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "confirmedNumKeys", *params.ConfirmedNumKeys, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
@@ -13425,7 +13501,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
-	ProjectServiceRemoveMemberWithResponse(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*ProjectServiceRemoveMemberResponse, error)
+	ProjectServiceRemoveMemberWithResponse(ctx context.Context, projectId string, userId string, params *ProjectServiceRemoveMemberParams, reqEditors ...RequestEditorFn) (*ProjectServiceRemoveMemberResponse, error)
 
 	// ProjectServiceGetMemberWithResponse GetMember
 	//
@@ -14057,7 +14133,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
-	WorkspaceServiceDeleteMemberWithResponse(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteMemberResponse, error)
+	WorkspaceServiceDeleteMemberWithResponse(ctx context.Context, workspaceId string, userId string, params *WorkspaceServiceDeleteMemberParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteMemberResponse, error)
 
 	// WorkspaceServiceGetMemberWithResponse GetMember
 	//
@@ -18387,8 +18463,8 @@ func (c *ClientWithResponses) ProjectServiceListMembersWithResponse(ctx context.
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
-func (c *ClientWithResponses) ProjectServiceRemoveMemberWithResponse(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*ProjectServiceRemoveMemberResponse, error) {
-	rsp, err := c.ProjectServiceRemoveMember(ctx, projectId, userId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceRemoveMemberWithResponse(ctx context.Context, projectId string, userId string, params *ProjectServiceRemoveMemberParams, reqEditors ...RequestEditorFn) (*ProjectServiceRemoveMemberResponse, error) {
+	rsp, err := c.ProjectServiceRemoveMember(ctx, projectId, userId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19437,8 +19513,8 @@ func (c *ClientWithResponses) WorkspaceServiceListMembersWithResponse(ctx contex
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
-func (c *ClientWithResponses) WorkspaceServiceDeleteMemberWithResponse(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteMemberResponse, error) {
-	rsp, err := c.WorkspaceServiceDeleteMember(ctx, workspaceId, userId, reqEditors...)
+func (c *ClientWithResponses) WorkspaceServiceDeleteMemberWithResponse(ctx context.Context, workspaceId string, userId string, params *WorkspaceServiceDeleteMemberParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteMemberResponse, error) {
+	rsp, err := c.WorkspaceServiceDeleteMember(ctx, workspaceId, userId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
