@@ -548,6 +548,9 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	if fromTrunk != "" && phoneNumber == "" {
 		return fmt.Errorf("--from-trunk requires --to-phone-number")
 	}
+	if fromPhoneNumber != "" && phoneNumber == "" {
+		return fmt.Errorf("--from-phone-number requires --to-phone-number")
+	}
 	// every call needs a caller: the number simulations are placed from
 	if phoneNumber != "" && fromPhoneNumber == "" {
 		return fmt.Errorf("--to-phone-number requires --from-phone-number")
