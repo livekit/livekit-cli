@@ -175,6 +175,18 @@ var simulateAudioCommand = &cli.Command{
 			Name:  "packet-loss",
 			Usage: "Drop packets from the simulated user's audio track",
 		},
+		&cli.StringFlag{
+			Name:  "to-phone-number",
+			Usage: "Call this `NUMBER` over SIP and simulate against whoever answers, instead of dispatching an agent. Requires --from-phone-number and --scenarios.",
+		},
+		&cli.StringFlag{
+			Name:  "from-trunk",
+			Usage: "Outbound SIP trunk `ID` to place --to-phone-number calls through. Without it, calls go out from a LiveKit phone number.",
+		},
+		&cli.StringFlag{
+			Name:  "from-phone-number",
+			Usage: "Caller `NUMBER` for --to-phone-number calls: a LiveKit phone number the project owns, or a number on --from-trunk",
+		},
 	},
 }
 
@@ -410,13 +422,18 @@ type simulateConfig struct {
 	scenarioGroup  *livekit.ScenarioGroup
 	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
 	viewModeRunID  string   // non-empty when `view` opens a pre-existing run
-	liveAgent      bool     // --agent-name: run against an already-running agent, don't spawn one
+	liveAgent      bool     // --agent-name or --to-phone-number: run against an already-running agent, don't spawn one
 	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
 
 	// impairments on the simulated user's audio, set only in SIMULATION_MODE_AUDIO
 	backgroundNoise      bool
 	lowQualityMicrophone bool
 	packetLoss           bool
+
+	// --to-phone-number: dial this number over SIP in place of dispatching agentName
+	sipCallTo  string
+	sipTrunkID string
+	sipNumber  string
 
 	// TODO (steveyoon): add agent deployment support
 	// agentDeployment string
@@ -522,6 +539,19 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	samples := int32(cmd.Int("samples"))
 	passRate := cmd.Float("pass-rate")
 	liveAgentName := cmd.String("agent-name")
+	var phoneNumber, fromTrunk, fromPhoneNumber string
+	if simulationMode == livekit.SimulationMode_SIMULATION_MODE_AUDIO {
+		phoneNumber = cmd.String("to-phone-number")
+		fromTrunk = cmd.String("from-trunk")
+		fromPhoneNumber = cmd.String("from-phone-number")
+	}
+	if fromTrunk != "" && phoneNumber == "" {
+		return fmt.Errorf("--from-trunk requires --to-phone-number")
+	}
+	// every call needs a caller: the number simulations are placed from
+	if phoneNumber != "" && fromPhoneNumber == "" {
+		return fmt.Errorf("--to-phone-number requires --from-phone-number")
+	}
 
 	// never auto-discovered: an explicit --scenarios file is the source of
 	// truth, otherwise scenarios are generated from the agent's source
@@ -547,7 +577,13 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 
 	// --agent-name (even empty) means: run against an already-running agent,
 	// don't spawn one. https://docs.livekit.io/agents/server/agent-dispatch/#automatic
-	if cmd.IsSet("agent-name") {
+	if phoneNumber != "" {
+		// nothing is spawned, so there's no source to generate scenarios from.
+		if scenariosPath == "" {
+			return fmt.Errorf("--to-phone-number requires --scenarios (no source to generate scenarios from when calling a number)")
+		}
+		liveAgent = true
+	} else if cmd.IsSet("agent-name") {
 		// nothing is spawned, so there's no source to generate scenarios from.
 		if scenariosPath == "" {
 			return fmt.Errorf("--agent-name requires --scenarios (no source to generate scenarios from when running against a live agent)")
@@ -628,6 +664,9 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		simCfg.backgroundNoise = cmd.Bool("background-noise")
 		simCfg.lowQualityMicrophone = cmd.Bool("low-quality-microphone")
 		simCfg.packetLoss = cmd.Bool("packet-loss")
+		simCfg.sipCallTo = phoneNumber
+		simCfg.sipTrunkID = fromTrunk
+		simCfg.sipNumber = fromPhoneNumber
 	}
 
 	if !isInteractive() {
@@ -801,6 +840,9 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 		BackgroundNoise:      c.backgroundNoise,
 		LowQualityMicrophone: c.lowQualityMicrophone,
 		PacketLoss:           c.packetLoss,
+		SipCallTo:            c.sipCallTo,
+		SipTrunkId:           c.sipTrunkID,
+		SipNumber:            c.sipNumber,
 		Ci:                   ciFromEnv(),
 	}
 	if c.concurrency > 0 {
