@@ -1,0 +1,50 @@
+# Removing a member who owns API keys deletes them only once confirmed. The
+# Public API refuses the first call, which confirms 0, and says how many keys
+# the member owns. A run that can't prompt then fails and says to pass --yes;
+# with --yes, lk calls again with that count and says how many keys went.
+# lk leaves the first call's count of 0 out, so its answer has no query; the
+# retry's answer is only for the confirmedNumKeys it names, and wins.
+respond DELETE http://publicapi.test/v0/workspaces/ws_1/members/u_2 400 '{"code":9, "message":"removing this member deletes the API keys they own (3 in total), and services using them stop working; repeat the request with confirmed_num_keys=3 to remove them", "details":[{"@type":"type.googleapis.com/livekit.publicapi.common.v1.MemberRemovalNotConfirmed", "numKeys":3, "lastKeyProjectNames":[], "numPrivateLastKeyProjects":0}]}'
+respond DELETE http://publicapi.test/v0/workspaces/ws_1/members/u_2?confirmedNumKeys=3 200 '{"numKeys":3}'
+
+! exec lk --user-auth workspace member delete u_2 --workspace acme
+! stdout .
+stderr '^removing u_2 deletes the 3 API key\(s\) they own, and anything using them stops working; re-run with --yes to remove them$'
+
+exec lk --user-auth --yes workspace member delete u_2 --workspace acme
+! stdout .
+stderr '^Removed member u_2 and deleted the 3 API key\(s\) they owned$'
+
+exec lk --user-auth --yes workspace member delete u_2 --workspace acme --json
+cmp stdout want-json
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_admin
+users:
+  - id: u_admin
+    email: admin@example.com
+    session_token: st_admin
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+    workspaces:
+      - workspace_id: ws_1
+        name: acme
+        alias: acme
+-- want-json --
+{
+  "numKeys": 3,
+  "removed": true,
+  "userId": "u_2"
+}
+-- want-requests --
+DELETE http://publicapi.test/v0/workspaces/ws_1/members/u_2 bearer=st_admin
+DELETE http://publicapi.test/v0/workspaces/ws_1/members/u_2 bearer=st_admin
+DELETE http://publicapi.test/v0/workspaces/ws_1/members/u_2 bearer=st_admin
+DELETE http://publicapi.test/v0/workspaces/ws_1/members/u_2 bearer=st_admin
+DELETE http://publicapi.test/v0/workspaces/ws_1/members/u_2 bearer=st_admin

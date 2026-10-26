@@ -1,0 +1,27 @@
+# Removing a member who owns no API keys goes ahead without asking: lk
+# confirms 0 keys, which is all the member owns. It leaves a count of 0 out
+# of the request, which the API reads as 0.
+respond DELETE http://publicapi.test/v0/projects/p_1/members/u_2 200 '{"numKeys":0}'
+exec lk --user-auth project member remove u_2 --project one
+! stdout .
+stderr '^Removed member u_2$'
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_admin
+users:
+  - id: u_admin
+    email: admin@example.com
+    session_token: st_admin
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+    workspaces:
+      - workspace_id: ws_1
+        name: acme
+        alias: acme
+-- want-requests --
+DELETE http://publicapi.test/v0/projects/p_1/members/u_2 bearer=st_admin project=p_1
