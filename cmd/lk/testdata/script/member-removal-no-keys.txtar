@@ -1,7 +1,9 @@
 # Removing a member who owns no API keys goes ahead without asking: lk
 # confirms 0 keys, which is all the member owns. It leaves a count of 0 out
-# of the request, which the API reads as 0.
+# of the request, which the API reads as 0; a server from before the count
+# answers an explicit one with a 500, as the second respond stands in for.
 respond DELETE http://publicapi.test/v0/projects/p_1/members/u_2 200 '{"numKeys":0}'
+respond DELETE http://publicapi.test/v0/projects/p_1/members/u_2?confirmedNumKeys=0 500 '{"code":2, "message":"unknown field in field path confirmedNumKeys"}'
 exec lk --user-auth project member remove u_2 --project one
 ! stdout .
 stderr '^Removed member u_2$'

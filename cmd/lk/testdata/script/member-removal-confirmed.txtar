@@ -9,7 +9,7 @@ respond DELETE http://publicapi.test/v0/workspaces/ws_1/members/u_2?confirmedNum
 
 ! exec lk --user-auth workspace member delete u_2 --workspace acme
 ! stdout .
-stderr '^removing u_2 deletes the 3 API key\(s\) they own, and anything using them stops working; re-run with --yes to remove them$'
+stderr '^removing u_2 deletes the 3 API key\(s\) they own, and anything using them stops working; re-run with --yes to go ahead$'
 
 exec lk --user-auth --yes workspace member delete u_2 --workspace acme
 ! stdout .

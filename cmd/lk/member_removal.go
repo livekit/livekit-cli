@@ -58,6 +58,11 @@ func removeMember(ctx context.Context, cmd *cli.Command, userID, scope string, r
 		if asked == maxKeyConfirmations {
 			return 0, fmt.Errorf("%s's API keys changed again (they now own %d); nothing was removed, run the command again", userID, removal.NumKeys)
 		}
+		if removal.NumKeys == 0 {
+			// Their keys went before the retry, so there's nothing to confirm.
+			confirmed = 0
+			continue
+		}
 		if err := confirmKeyDeletion(ctx, cmd, userID, scope, removal.NumKeys, asked > 0); err != nil {
 			return 0, err
 		}
@@ -73,7 +78,11 @@ func confirmKeyDeletion(ctx context.Context, cmd *cli.Command, userID, scope str
 		return nil
 	}
 	if !isInteractive() {
-		return fmt.Errorf("removing %s deletes the %d API key(s) they own, and anything using them stops working; re-run with --yes to remove them", userID, numKeys)
+		msg := fmt.Sprintf("removing %s deletes the %d API key(s) they own, and anything using them stops working", userID, numKeys)
+		if scope != "" {
+			msg += "; " + strings.ToLower(scope[:1]) + strings.TrimSuffix(scope[1:], ".")
+		}
+		return errors.New(msg + "; re-run with --yes to go ahead")
 	}
 	title := fmt.Sprintf("Remove %s and delete the %d API key(s) they own?", userID, numKeys)
 	if changed {
@@ -90,6 +99,9 @@ func confirmKeyDeletion(ctx context.Context, cmd *cli.Command, userID, scope str
 		Value(&confirmed).
 		WithTheme(util.FormTheme()))).
 		RunWithContext(ctx); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return errors.New("aborted")
+		}
 		return err
 	}
 	if !confirmed {

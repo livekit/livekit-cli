@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,9 @@ func TestRemoveMember(t *testing.T) {
 		name string
 		yes  bool
 		// answers are by the confirmedNumKeys the request sent.
-		answers     map[string]cannedRemoval
+		answers map[string]cannedRemoval
+		// again answers a confirmedNumKeys the second time it is sent.
+		again       map[string]cannedRemoval
 		wantSent    []string
 		wantNumKeys uint32
 		wantErr     string
@@ -75,7 +78,18 @@ func TestRemoveMember(t *testing.T) {
 			name:     "keys without --yes",
 			answers:  map[string]cannedRemoval{"0": {http.StatusBadRequest, notConfirmed(3)}},
 			wantSent: []string{"0"},
-			wantErr:  "removing u_2 deletes the 3 API key(s) they own, and anything using them stops working; re-run with --yes to remove them",
+			wantErr: "removing u_2 deletes the 3 API key(s) they own, and anything using them stops working; " +
+				"unless the project is private, this removes them from its whole workspace and every project in it; re-run with --yes to go ahead",
+		},
+		{
+			name: "keys revoked before the retry",
+			yes:  true,
+			answers: map[string]cannedRemoval{
+				"0": {http.StatusBadRequest, notConfirmed(3)},
+				"3": {http.StatusBadRequest, notConfirmed(0)},
+			},
+			again:    map[string]cannedRemoval{"0": {http.StatusOK, `{}`}},
+			wantSent: []string{"0", "3", "0"},
 		},
 		{
 			name: "count changes once",
@@ -132,8 +146,11 @@ func TestRemoveMember(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				// lk leaves out a count of 0, which the API reads as 0.
 				confirmed := cmp.Or(r.URL.Query().Get("confirmedNumKeys"), "0")
-				sent = append(sent, confirmed)
 				answer, ok := tt.answers[confirmed]
+				if again, seen := tt.again[confirmed]; seen && slices.Contains(sent, confirmed) {
+					answer, ok = again, true
+				}
+				sent = append(sent, confirmed)
 				if !assert.True(t, ok, "no answer for confirmedNumKeys=%s", confirmed) {
 					w.WriteHeader(http.StatusNotImplemented)
 					return
