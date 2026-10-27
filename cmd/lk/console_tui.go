@@ -438,15 +438,31 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 		return cmds
 	}
 
+	// Metrics come from the message itself: one with no text (speech whose
+	// transcription was suppressed) prints nothing but still reports them.
+	if msg := ev.GetConversationItemAdded().GetItem().GetMessage(); msg.GetRole() == agent.ChatRole_ASSISTANT {
+		if metrics := messageMetrics(msg.GetMetrics()); metrics != nil {
+			m.metricsText = renderMetrics(metrics)
+		}
+	}
+
 	// Everything else (messages, tool calls, handoffs, config changes, errors)
 	// goes through the transcript model shared with `lk agent debugger`.
+	// One event prints as one block: tea.Batch runs commands concurrently, so
+	// separate prints (one per tool of a step) could land out of order.
+	var lines []string
 	for _, te := range eventToTurnEvents(ev) {
-		if te.Type == "message" && te.Role == "assistant" && len(te.Metrics) > 0 {
-			m.metricsText = renderMetrics(te.Metrics)
+		// The user's turn is already printed: the final transcript in voice
+		// mode, the typed text when sent in text mode.
+		if te.Type == "message" && te.Role == "user" {
+			continue
 		}
 		if line := renderTurnEvent(te, renderOptions{}); line != "" {
-			cmds = append(cmds, tea.Println(line+"\n"))
+			lines = append(lines, line+"\n")
 		}
+	}
+	if len(lines) > 0 {
+		cmds = append(cmds, tea.Println(strings.Join(lines, "\n")))
 	}
 	return cmds
 }
