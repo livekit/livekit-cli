@@ -212,12 +212,15 @@ func mergeCredentials(explicit, project agentCredentials) agentCredentials {
 // subprocess running from dir.
 func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string, loadOpts ...loadOption) ([]string, error) {
 	explicit := explicitCredentials(cmd)
+	// The agent gets LIVEKIT_* credentials from the environment even under
+	// --user-auth, so they aren't ignored here.
+	envCredentialsUsed = true
 
 	// An explicitly named project always wins, mirroring resolveProject's
 	// priority order. Without this, ambient LIVEKIT_* shell variables (which
 	// count as explicit above) would override — or worse, mix into — the
 	// project the user asked for by name.
-	if cmd.String("project") != "" || cmd.String("subdomain") != "" {
+	if namedProject(cmd) {
 		explicit = agentCredentials{}
 	}
 

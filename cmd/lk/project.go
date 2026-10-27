@@ -78,6 +78,7 @@ var (
 					UsageText: "lk project get PROJECT_ID --user-auth",
 					ArgsUsage: "PROJECT_ID",
 					Hidden:    true,
+					Metadata:  userAuthOnly,
 					Action:    getUserProject,
 					Flags:     []cli.Flag{jsonFlag},
 				},
@@ -87,6 +88,7 @@ var (
 					UsageText: "lk project create PROJECT_NAME --user-auth",
 					ArgsUsage: "PROJECT_NAME",
 					Hidden:    true,
+					Metadata:  userAuthOnly,
 					Action:    createUserProject,
 					Flags:     []cli.Flag{jsonFlag},
 				},
@@ -96,6 +98,7 @@ var (
 					UsageText: "lk project update PROJECT_ID --name NEW_NAME --user-auth",
 					ArgsUsage: "PROJECT_ID",
 					Hidden:    true,
+					Metadata:  userAuthOnly,
 					Action:    updateUserProject,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
@@ -112,6 +115,7 @@ var (
 					UsageText: "lk project delete PROJECT_ID --user-auth",
 					ArgsUsage: "PROJECT_ID",
 					Hidden:    true,
+					Metadata:  userAuthOnly,
 					Action:    deleteUserProject,
 					Flags:     []cli.Flag{jsonFlag},
 				},

@@ -137,18 +137,14 @@ func (c *Client) CreateWorkspaceProject(ctx context.Context, workspaceID, name s
 	return requirePayload(resp.JSON200.Project, "project")
 }
 
-// UpdateWorkspaceProject renames a project within a workspace.
+// UpdateWorkspaceProject renames a project within a workspace. The Public API
+// has no workspace-scoped update, so it checks that the project is in the
+// workspace and then renames it by id.
 func (c *Client) UpdateWorkspaceProject(ctx context.Context, workspaceID, projectID, name string) (*oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.WorkspaceServiceUpdateProjectWithResponse(ctx, workspaceID, projectID, oapi.WorkspaceServiceUpdateProjectJSONRequestBody{
-		Name: ptr(name),
-	})
-	if err != nil {
+	if _, err := c.GetWorkspaceProject(ctx, workspaceID, projectID); err != nil {
 		return nil, err
 	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return requirePayload(resp.JSON200.Project, "project")
+	return c.UpdateProject(ctx, projectID, name)
 }
 
 // DeleteWorkspaceProject deletes a project within a workspace.

@@ -1,0 +1,31 @@
+# Two users signed in to the same Public API with no default user: lk can't
+# guess which one acts, so it refuses without sending either session, and
+# says to pick one with --user. --user picks one, and only that user's
+# session is sent.
+env LIVEKIT_API_URL=http://publicapi.test
+respond GET http://publicapi.test/v0/projects 200 '{"items":[]}'
+
+! exec lk --user-auth project list
+! stdout .
+cp stderr refused.stderr
+requests
+! stdout .
+
+exec lk --user-auth --user ops@example.com project list
+requests
+cmp stdout want-requests
+
+grep '^2 users are signed in to http://publicapi.test and none is the default user; pass --user to pick one$' refused.stderr
+
+-- home/.livekit/cli-config.yaml --
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+  - id: u_3
+    email: ops@example.com
+    session_token: st_3
+    api_url: http://publicapi.test
+-- want-requests --
+GET http://publicapi.test/v0/projects bearer=st_3

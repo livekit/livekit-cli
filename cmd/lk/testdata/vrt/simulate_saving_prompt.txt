@@ -9,11 +9,11 @@
   ✗   3. SRJ_cccccccc cancelling outright
   ⏺   4. SRJ_dddddddd asking for the hours
 
-  ╭──────────────────────────────────────────────────╮
-  │ Save scenarios                                   │
-  │ 0 generated scenarios →                          │
-  │                                                  │
-  │ File: scenarios                                  │
-  │                                                  │
-  │ enter save · esc cancel                          │
-  ╰──────────────────────────────────────────────────╯
+  ╭────────────────────────────────────────────────────╮
+  │ Save scenarios                                     │
+  │ 0 generated scenarios →                            │
+  │                                                    │
+  │ File: scenarios                                    │
+  │                                                    │
+  │ enter save · esc cancel                            │
+  ╰────────────────────────────────────────────────────╯

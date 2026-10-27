@@ -80,12 +80,12 @@ var (
 	// userAuthFlag and legacyAuthFlag select the auth mode and are
 	// mutually exclusive (enforced via the root command's MutuallyExclusiveFlags,
 	// see main.go), so they aren't listed in globalFlags directly.
-	userAuthFlag = &cli.BoolFlag{
+	userAuthFlag = userAuthOnlyFlag(&cli.BoolFlag{
 		Name:    "user-auth",
 		Aliases: []string{"experimental-auth"},
 		Usage:   "BETA: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
 		Hidden:  true,
-	}
+	})
 	legacyAuthFlag = &cli.BoolFlag{
 		Name:   "legacy-auth",
 		Usage:  "Force API-key (SDK) authentication, ignoring any signed-in user session.",
@@ -136,11 +136,11 @@ var (
 		Usage: "Page `CURSOR` from a prior --json listing",
 	}
 	experimentalFlag = &cli.BoolFlag{
-		Name:     "experimental",
-		Usage:    "Enable experimental features",
-		Required: true,
-		// Required only asserts the flag was provided; the Validator rejects an
-		// explicit --experimental=false so the value must actually be true.
+		Name:  "experimental",
+		Usage: "Enable experimental features (not needed with --user-auth)",
+		// Whether it's required depends on the auth mode, so a command checks
+		// for it (see requireExperimentalUnlessUserAuth). The Validator
+		// rejects an explicit --experimental=false.
 		Validator: func(enabled bool) error {
 			if !enabled {
 				return errors.New("--experimental must be enabled to use this command")
@@ -208,12 +208,12 @@ var (
 			Usage:   "Assume yes for confirmations; fail or use default for other prompts (use in CI/non-interactive)",
 		},
 		quietFlag,
-		&cli.StringFlag{
+		userAuthOnlyFlag(&cli.StringFlag{
 			Name:   "user",
 			Usage:  "Signed-in `USER` (id or email) to act as with --user-auth; defaults to the default user",
 			Hidden: true,
-		},
-		&cli.StringFlag{
+		}),
+		userAuthOnlyFlag(&cli.StringFlag{
 			Name:        "public-api-url",
 			Aliases:     []string{"experimental-api-url"},
 			Usage:       "Base `URL` of the LiveKit Public API used with --user-auth",
@@ -221,7 +221,7 @@ var (
 			Destination: &publicAPIURL,
 			Sources:     cli.EnvVars("LIVEKIT_API_URL"),
 			Hidden:      true,
-		},
+		}),
 		&cli.StringFlag{
 			Name:        "server-url",
 			Value:       cloudAPIServerURL,
@@ -392,8 +392,9 @@ func (rp *resolvedProject) announce() {
 //  5. livekit.toml in the working directory
 //  6. the configured default project
 //
-// It performs no prompting and no printing: callers print rp.notice via out.Status, and
-// handle the no-project case (a returned error) by offering interactive selection.
+// It performs no prompting and no printing: callers print rp.notice via out.Status.
+// requireProjectWithOpts handles a returned error by offering interactive
+// selection, unless --project or --subdomain named a project (see namedProject).
 func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 	// 1. explicit project
 	if c.String("project") != "" {

@@ -1,0 +1,24 @@
+# --subdomain picks the configured project whose URL has that subdomain, over
+# the default project.
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
+respond POST http://two.test/twirp/livekit.RoomService/ListRooms 200 ''
+
+exec lk --subdomain one room list
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: two
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+  - name: two
+    project_id: p_2
+    url: ws://two.test
+    api_key: APItwo
+    api_secret: secrettwo
+-- want-requests --
+POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone

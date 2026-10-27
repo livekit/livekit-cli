@@ -111,6 +111,7 @@ var (
 					Usage:     "Show the signed-in LiveKit Cloud user (requires --user-auth)",
 					UsageText: "lk cloud whoami --user-auth",
 					Hidden:    true,
+					Metadata:  userAuthOnly,
 					Action:    cloudWhoami,
 					Flags:     []cli.Flag{jsonFlag},
 				},

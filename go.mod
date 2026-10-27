@@ -2,6 +2,8 @@ module github.com/livekit/livekit-cli/v2
 
 go 1.26.8
 
+toolchain go1.26.10
+
 require (
 	charm.land/bubbles/v2 v2.2.1
 	charm.land/bubbletea/v2 v2.1.0
@@ -21,7 +23,7 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.1
-	github.com/livekit/protocol v1.53.1-0.20261021112906-7b7ed8c98658
+	github.com/livekit/protocol v1.53.2-0.20261027152523-62abba1a3f82
 	github.com/livekit/server-sdk-go/v2 v2.19.0
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
@@ -130,7 +132,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gammazero/deque v1.2.1 // indirect
 	github.com/getkin/kin-openapi v0.144.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.5 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.23.1 // indirect
 	github.com/go-openapi/swag/jsonname v0.26.1 // indirect
@@ -201,6 +203,7 @@ require (
 	github.com/prometheus/procfs v0.22.0 // indirect
 	github.com/puzpuzpuz/xsync/v4 v4.5.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/rogpeppe/go-internal v1.15.0
 	github.com/sajari/fuzzy v1.0.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.11.0 // indirect
@@ -259,6 +262,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	mvdan.cc/sh/moreinterp v0.0.0-20260120230322-19def062a997 // indirect
 	mvdan.cc/sh/v3 v3.13.2-0.20260510185049-f5c6e2779117 // indirect
+	pgregory.net/rapid v1.2.0
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
 

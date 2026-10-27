@@ -219,10 +219,9 @@ var (
 
 	AgentCommands = []*cli.Command{
 		{
-			Name:            "agent",
-			Aliases:         []string{"a"},
-			Usage:           "Build, test, and deploy agents",
-			HideHelpCommand: true,
+			Name:    "agent",
+			Aliases: []string{"a"},
+			Usage:   "Build, test, and deploy agents",
 			Description: `Everything for LiveKit agents, from a new project to production.
 
 Locally: "init" scaffolds a project, "dev" runs it with hot reload, "console"

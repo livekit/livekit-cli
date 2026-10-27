@@ -27,9 +27,10 @@ import (
 // requires --user-auth (user-based auth).
 var UserCommands = []*cli.Command{
 	{
-		Name:   "user",
-		Usage:  "List and inspect LiveKit Cloud users (requires --user-auth)",
-		Hidden: true,
+		Name:     "user",
+		Usage:    "List and inspect LiveKit Cloud users (requires --user-auth)",
+		Hidden:   true,
+		Metadata: userAuthOnly,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",

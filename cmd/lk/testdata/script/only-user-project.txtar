@@ -1,0 +1,20 @@
+# Under --user-auth, with no --project and no default project, a user who can
+# reach only one project acts on it without being asked.
+respond GET http://publicapi.test/v0/projects/p_1/keys 200 '{}'
+
+exec lk --user-auth project key list
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+-- want-requests --
+GET http://publicapi.test/v0/projects/p_1/keys bearer=st_1 project=p_1

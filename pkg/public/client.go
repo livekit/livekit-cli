@@ -176,15 +176,28 @@ func IsNotFound(err error) bool {
 }
 
 // responseError builds an APIError from a non-2xx response, preferring the
-// API's error envelope ({"code","message","details"}) and falling back
-// to the raw body.
+// API's error envelope ({"code","message","details"}, or the
+// {"error":{"code","message"}} its auth and panic-recovery middleware answer
+// with) and falling back to the raw body.
 func responseError(status int, body []byte) error {
 	var env struct {
 		Message string            `json:"message"`
 		Details []json.RawMessage `json:"details"`
+		Error   json.RawMessage   `json:"error"`
 	}
-	if err := json.Unmarshal(body, &env); err == nil && env.Message != "" {
-		return &APIError{Status: status, Message: env.Message, details: env.Details}
+	if err := json.Unmarshal(body, &env); err == nil {
+		msg := env.Message
+		if msg == "" && len(env.Error) > 0 {
+			var nested struct {
+				Message string `json:"message"`
+			}
+			if json.Unmarshal(env.Error, &nested) == nil {
+				msg = nested.Message
+			}
+		}
+		if msg != "" {
+			return &APIError{Status: status, Message: msg, details: env.Details}
+		}
 	}
 	msg := strings.TrimSpace(string(body))
 	if msg == "" {

@@ -16,6 +16,9 @@ package main
 
 import (
 	"context"
+	"errors"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -165,6 +168,10 @@ func TestRequireUserSessionAPIURL(t *testing.T) {
 		token, _, err = resolve(t, "--experimental-api-url", public.DefaultBaseURL)
 		require.NoError(t, err)
 		assert.Equal(t, "prod", token, "the old --experimental-api-url spelling still sets the URL")
+
+		_, _, err = resolve(t, "--public-api-url", "https://other.example")
+		assert.ErrorContains(t, err, `the default user "usr_stg" is signed in to `+staging+`, not https://other.example`,
+			"an API nobody is signed in to names where the default user is")
 	})
 
 	t.Run("--user", func(t *testing.T) {
@@ -226,4 +233,126 @@ func TestSignInHint(t *testing.T) {
 	_, _, err = requireUserSession(nil)
 	assert.ErrorContains(t, err, "has expired (run `lk cloud auth --user-auth --public-api-url "+staging+"` to sign in again)",
 		"the hint follows the API the default user signed in to")
+}
+
+// TestCloudAPIError checks how a Public API refusal reads once a command
+// passes it through cloudAPIError. The scripts only check that commands do.
+func TestCloudAPIError(t *testing.T) {
+	prev := publicAPIURL
+	t.Cleanup(func() { publicAPIURL = prev })
+	publicAPIURL = public.DefaultBaseURL
+
+	plain := errors.New("connection refused")
+	for _, tc := range []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"unauthenticated says how to sign in again",
+			&public.APIError{Status: http.StatusUnauthorized, Message: "authentication required"},
+			"authentication required (run `lk cloud auth --user-auth` to sign in again)"},
+		{"permission denied says why and what to do instead",
+			&public.APIError{Status: http.StatusForbidden, Message: "permission denied: this needs ADMIN on the project"},
+			"permission denied: this needs ADMIN on the project — your account doesn't have access to this project or action. To act with API-key credentials instead, re-run without `--user-auth`"},
+		{"not found passes through",
+			&public.APIError{Status: http.StatusNotFound, Message: "project not found"},
+			"project not found"},
+		{"other errors pass through", plain, "connection refused"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := cloudAPIError(tc.err)
+			assert.EqualError(t, err, tc.want)
+			assert.ErrorIs(t, err, tc.err)
+		})
+	}
+}
+
+// TestAnnounceUserNamesIgnoredEnvCredentials checks the note announceUser adds
+// for LIVEKIT_* credentials in the environment that --user-auth leaves unused,
+// and that commands handing them to an agent don't get it.
+func TestAnnounceUserNamesIgnoredEnvCredentials(t *testing.T) {
+	prevAnnounced, prevUsed := userAnnounced, envCredentialsUsed
+	t.Cleanup(func() { userAnnounced, envCredentialsUsed = prevAnnounced, prevUsed })
+	user := &config.UserConfig{Id: "u_1", Email: "dev@example.com"}
+
+	for _, tc := range []struct {
+		name         string
+		url, key     string
+		secret       string
+		usedByAgent  bool
+		wantIgnoring string
+	}{
+		{name: "all three", url: "ws://env.test", key: "APIenv", secret: "secretenv",
+			wantIgnoring: "Ignoring LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET from environment (--user-auth uses your session)"},
+		{name: "only the key", key: "APIenv",
+			wantIgnoring: "Ignoring LIVEKIT_API_KEY from environment (--user-auth uses your session)"},
+		{name: "none set"},
+		{name: "handed to an agent", url: "ws://env.test", key: "APIenv", secret: "secretenv", usedByAgent: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("LIVEKIT_URL", tc.url)
+			t.Setenv("LIVEKIT_API_KEY", tc.key)
+			t.Setenv("LIVEKIT_API_SECRET", tc.secret)
+			userAnnounced, envCredentialsUsed = false, tc.usedByAgent
+			buf := withCapturedAnnounce(t)
+
+			announceUser(user)
+
+			if tc.wantIgnoring == "" {
+				assert.NotContains(t, buf.String(), "Ignoring")
+			} else {
+				assert.Contains(t, buf.String(), tc.wantIgnoring+"\n")
+			}
+		})
+	}
+}
+
+func TestSetUserAuthHidden(t *testing.T) {
+	root := &cli.Command{Flags: globalFlags}
+	for _, cmds := range [][]*cli.Command{ProjectCommands, WorkspaceCommands, UserCommands, CloudCommands, AgentCommands} {
+		root.Commands = append(root.Commands, cmds...)
+	}
+	t.Cleanup(func() { setUserAuthHidden(root, true) })
+
+	names := func(cmds []*cli.Command) []string {
+		var out []string
+		for _, c := range cmds {
+			out = append(out, c.Name)
+		}
+		return out
+	}
+	project := root.Command("project")
+	simulateList := root.Command("agent").Command("simulate").Command("list")
+
+	setUserAuthHidden(root, true)
+	assert.NotContains(t, names(root.VisibleCommands()), "workspace")
+	assert.NotContains(t, names(project.VisibleCommands()), "member")
+	assert.True(t, userAuthFlag.Hidden)
+	assert.True(t, simulateList.Flags[1].(*cli.StringFlag).Hidden)
+
+	setUserAuthHidden(root, false)
+	assert.Contains(t, names(root.VisibleCommands()), "workspace")
+	assert.Contains(t, names(root.VisibleCommands()), "user")
+	assert.Contains(t, names(project.VisibleCommands()), "member")
+	assert.Contains(t, names(root.Command("cloud").VisibleCommands()), "whoami")
+	assert.False(t, userAuthFlag.Hidden)
+	assert.False(t, simulateList.Flags[1].(*cli.StringFlag).Hidden)
+}
+
+// A Hidden command that requires --user-auth must carry the userAuthOnly
+// marker, or it stays invisible to signed-in beta users.
+func TestUserAuthOnlyCommandsMarked(t *testing.T) {
+	var walk func(path string, cmds []*cli.Command)
+	walk = func(path string, cmds []*cli.Command) {
+		for _, c := range cmds {
+			p := path + " " + c.Name
+			if c.Hidden && strings.Contains(c.Usage, "requires --user-auth") {
+				assert.Equal(t, true, c.Metadata[userAuthOnlyKey], "%s is not marked userAuthOnly", p)
+			}
+			walk(p, c.Commands)
+		}
+	}
+	for _, cmds := range [][]*cli.Command{ProjectCommands, WorkspaceCommands, UserCommands, CloudCommands, AgentCommands, AnalyticsCommands} {
+		walk("lk", cmds)
+	}
 }

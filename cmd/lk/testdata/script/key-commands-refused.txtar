@@ -1,0 +1,25 @@
+# A member below ADMIN (READ or WRITE: the Public API refuses every key RPC
+# below ADMIN with the same google.rpc.Status) gets the refusal with
+# cloudAPIError's hint and a non-zero exit. lk never sees the role; the
+# refusal is all it has. How the refusal reads is TestCloudAPIError's job.
+respond GET http://publicapi.test/v0/projects/p_1/keys 403 '{"code":7,"message":"permission denied: this needs ADMIN on the project"}'
+! exec lk --user-auth project key list --project one
+! stdout .
+stderr '^permission denied: this needs ADMIN on the project — .*re-run without `--user-auth`$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_member
+users:
+  - id: u_member
+    email: member@example.com
+    session_token: st_member
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+-- want-requests --
+GET http://publicapi.test/v0/projects/p_1/keys bearer=st_member project=p_1

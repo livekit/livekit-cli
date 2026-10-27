@@ -30,9 +30,10 @@ import (
 // comes from the global --project flag (or a cached alias).
 func init() {
 	keyCommand := &cli.Command{
-		Name:   "key",
-		Usage:  "Manage API keys of a LiveKit Cloud project (requires --user-auth)",
-		Hidden: true,
+		Name:     "key",
+		Usage:    "Manage API keys of a LiveKit Cloud project (requires --user-auth)",
+		Hidden:   true,
+		Metadata: userAuthOnly,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
