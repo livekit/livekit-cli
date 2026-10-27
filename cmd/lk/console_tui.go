@@ -440,6 +440,9 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 
 	// Everything else (messages, tool calls, handoffs, config changes, errors)
 	// goes through the transcript model shared with `lk agent debugger`.
+	// One event prints as one block: tea.Batch runs commands concurrently, so
+	// separate prints (one per tool of a step) could land out of order.
+	var lines []string
 	for _, te := range eventToTurnEvents(ev) {
 		// The user's turn is already printed: the final transcript in voice
 		// mode, the typed text when sent in text mode.
@@ -450,8 +453,11 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 			m.metricsText = renderMetrics(te.Metrics)
 		}
 		if line := renderTurnEvent(te, renderOptions{}); line != "" {
-			cmds = append(cmds, tea.Println(line+"\n"))
+			lines = append(lines, line+"\n")
 		}
+	}
+	if len(lines) > 0 {
+		cmds = append(cmds, tea.Println(strings.Join(lines, "\n")))
 	}
 	return cmds
 }

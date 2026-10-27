@@ -56,3 +56,13 @@ func TestHandleSessionEvent_PrintsUserTurnOnce(t *testing.T) {
 	}}
 	require.Len(t, m.handleSessionEvent(final), 1)
 }
+
+func TestHandleSessionEvent_PrintsToolStepAsOneBlock(t *testing.T) {
+	m := consoleFixture(false)
+	ev := &agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_FunctionToolsExecuted_{
+		FunctionToolsExecuted: &agent.AgentSessionEvent_FunctionToolsExecuted{
+			FunctionCalls: []*agent.FunctionCall{{CallId: "a", Name: "first"}, {CallId: "b", Name: "second"}},
+		},
+	}}
+	require.Len(t, m.handleSessionEvent(ev), 1)
+}
