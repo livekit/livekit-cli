@@ -85,29 +85,27 @@ var (
 				{
 					Name:      "create",
 					Usage:     "Create a new LiveKit Cloud project (requires --user-auth)",
-					UsageText: "lk project create PROJECT_NAME --user-auth",
+					UsageText: "lk project create PROJECT_NAME [--private] [--pinned-regions REGIONS] ... --user-auth",
 					ArgsUsage: "PROJECT_NAME",
 					Hidden:    true,
 					Metadata:  userAuthOnly,
 					Action:    createUserProject,
-					Flags:     []cli.Flag{jsonFlag},
+					Flags:     append(projectSettingsFlags(true), jsonFlag),
 				},
 				{
 					Name:      "update",
-					Usage:     "Rename a LiveKit Cloud project (requires --user-auth)",
-					UsageText: "lk project update PROJECT_ID --name NEW_NAME --user-auth",
+					Usage:     "Rename a LiveKit Cloud project or change its settings (requires --user-auth)",
+					UsageText: "lk project update PROJECT_ID [--name NEW_NAME] [--analytics=false] ... --user-auth",
 					ArgsUsage: "PROJECT_ID",
 					Hidden:    true,
 					Metadata:  userAuthOnly,
 					Action:    updateUserProject,
-					Flags: []cli.Flag{
+					Flags: append([]cli.Flag{
 						&cli.StringFlag{
-							Name:     "name",
-							Usage:    "New project `NAME`",
-							Required: true,
+							Name:  "name",
+							Usage: "New project `NAME`",
 						},
-						jsonFlag,
-					},
+					}, append(projectSettingsFlags(false), jsonFlag)...),
 				},
 				{
 					Name:      "delete",
@@ -428,11 +426,16 @@ func createUserProject(ctx context.Context, cmd *cli.Command) error {
 	if name == "" {
 		return errors.New("project name is required")
 	}
+	settings, err := projectSettingsFromFlags(cmd)
+	if err != nil {
+		return err
+	}
+	settings.Name = &name
 	client, _, _, err := newCloudAPIClient(cmd)
 	if err != nil {
 		return err
 	}
-	project, err := client.CreateProject(ctx, name)
+	project, err := client.CreateProject(ctx, settings)
 	if err != nil {
 		return cloudAPIError(err)
 	}
@@ -440,9 +443,13 @@ func createUserProject(ctx context.Context, cmd *cli.Command) error {
 	return renderProject(cmd, *project)
 }
 
-// updateUserProject implements `lk project update PROJECT_ID --name NAME` (user auth only).
+// updateUserProject implements `lk project update PROJECT_ID [settings]` (user auth only).
 func updateUserProject(ctx context.Context, cmd *cli.Command) error {
 	if err := requireUserAuth(cmd); err != nil {
+		return err
+	}
+	settings, err := projectUpdateFromFlags(cmd)
+	if err != nil {
 		return err
 	}
 	client, conf, user, err := newCloudAPIClient(cmd)
@@ -453,7 +460,7 @@ func updateUserProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	project, err := client.UpdateProject(ctx, id, cmd.String("name"))
+	project, err := client.UpdateProject(ctx, id, settings)
 	if err != nil {
 		return cloudAPIError(err)
 	}

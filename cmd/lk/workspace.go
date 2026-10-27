@@ -116,22 +116,21 @@ func workspaceProjectCommand() *cli.Command {
 			{
 				Name:      "create",
 				Usage:     "Create a project in a workspace",
-				UsageText: "lk workspace project create NAME --workspace WORKSPACE --user-auth",
+				UsageText: "lk workspace project create NAME --workspace WORKSPACE [--private] ... --user-auth",
 				ArgsUsage: "NAME",
 				Action:    createWorkspaceProject,
-				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
+				Flags:     append([]cli.Flag{workspaceFlag}, append(projectSettingsFlags(true), jsonFlag)...),
 			},
 			{
 				Name:      "update",
-				Usage:     "Rename a project in a workspace",
-				UsageText: "lk workspace project update PROJECT_ID --workspace WORKSPACE --name NAME --user-auth",
+				Usage:     "Rename a project in a workspace or change its settings",
+				UsageText: "lk workspace project update PROJECT_ID --workspace WORKSPACE [--name NAME] [--analytics=false] ... --user-auth",
 				ArgsUsage: "PROJECT_ID",
 				Action:    updateWorkspaceProject,
-				Flags: []cli.Flag{
+				Flags: append([]cli.Flag{
 					workspaceFlag,
-					&cli.StringFlag{Name: "name", Usage: "New project `NAME`", Required: true},
-					jsonFlag,
-				},
+					&cli.StringFlag{Name: "name", Usage: "New project `NAME`"},
+				}, append(projectSettingsFlags(false), jsonFlag)...),
 			},
 			{
 				Name:      "delete",
@@ -390,7 +389,12 @@ func createWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	p, err := client.CreateWorkspaceProject(ctx, wsID, name)
+	settings, err := projectSettingsFromFlags(cmd)
+	if err != nil {
+		return err
+	}
+	settings.Name = &name
+	p, err := client.CreateWorkspaceProject(ctx, wsID, settings)
 	if err != nil {
 		return cloudAPIError(err)
 	}
@@ -407,7 +411,11 @@ func updateWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	p, err := client.UpdateWorkspaceProject(ctx, wsID, projectID, cmd.String("name"))
+	settings, err := projectUpdateFromFlags(cmd)
+	if err != nil {
+		return err
+	}
+	p, err := client.UpdateWorkspaceProject(ctx, wsID, projectID, settings)
 	if err != nil {
 		return cloudAPIError(err)
 	}
