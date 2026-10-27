@@ -34,9 +34,11 @@ package main
 // Two script commands drive it:
 //
 //	respond METHOD URL STATUS [BODY]
-//		Answer METHOD URL (any query) with STATUS and BODY. A request with
-//		no answer gets 501. A Public API body (a /v0 path) must be what the
-//		spec says that route sends: see checkPublicAPIBody.
+//		Answer METHOD URL with STATUS and BODY. A URL without a query
+//		answers any query; one with a query answers only that query, and
+//		wins over one without. A request with no answer gets 501. A Public
+//		API body (a /v0 path) must be what the spec says that route sends:
+//		see checkPublicAPIBody.
 //	requests
 //		Print every request the fake received, in order, with the
 //		credential it carried (a session token as bearer=, or as apikey= the
@@ -123,7 +125,7 @@ type fakeCloud struct {
 	*httptest.Server
 
 	mu        sync.Mutex
-	responses map[string]cannedResponse // by "METHOD URL", without the query
+	responses map[string]cannedResponse // by "METHOD URL", with the query only if respond had one
 	log       []string
 
 	// mint makes the fake answer a Public API token request it has no canned
@@ -192,7 +194,10 @@ func (f *fakeCloud) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	f.log = append(f.log, line)
 
-	res, ok := f.responses[target]
+	res, ok := f.responses[target+"?"+r.URL.Query().Encode()]
+	if !ok {
+		res, ok = f.responses[target]
+	}
 	if m := tokenRequestPath.FindStringSubmatch(r.URL.Path); !ok && f.mint && r.Method == http.MethodPost && m != nil {
 		res, ok = f.mintToken(r, m[1]), true
 	}
@@ -278,7 +283,11 @@ func (f *fakeCloud) respond(target string, status int, body string) error {
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.responses[method+" "+u.Scheme+"://"+u.Host+u.Path] = cannedResponse{status, body}
+	key := method + " " + u.Scheme + "://" + u.Host + u.Path
+	if u.RawQuery != "" {
+		key += "?" + u.Query().Encode()
+	}
+	f.responses[key] = cannedResponse{status, body}
 	return nil
 }
 
@@ -295,6 +304,8 @@ var publicAPIRoutes = []struct {
 	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/keys$`), func() any { return new(oapi.LivekitPublicapiProjectsV1GenerateKeyResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/keys/[^/]+$`), func() any { return new(oapi.LivekitPublicapiProjectsV1DeleteKeyResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/members$`), func() any { return new(oapi.LivekitPublicapiProjectsV1ListMembersResponse) }},
+	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/members/[^/]+$`), func() any { return new(oapi.LivekitPublicapiProjectsV1RemoveMemberResponse) }},
+	{http.MethodDelete, regexp.MustCompile(`^/v0/workspaces/[^/]+/members/[^/]+$`), func() any { return new(oapi.LivekitPublicapiWorkspacesV1DeleteMemberResponse) }},
 }
 
 // middlewareError is the body the Public API's auth middleware and panic

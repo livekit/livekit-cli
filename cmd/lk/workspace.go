@@ -175,7 +175,7 @@ func workspaceMemberCommand() *cli.Command {
 			},
 			{
 				Name:      "delete",
-				Usage:     "Remove a member from a workspace",
+				Usage:     "Remove a member from a workspace and delete the API keys they own",
 				UsageText: "lk workspace member delete USER_ID --workspace WORKSPACE --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    deleteWorkspaceMember,
@@ -491,10 +491,13 @@ func deleteWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if err := client.DeleteWorkspaceMember(ctx, wsID, userID); err != nil {
+	numKeys, err := removeMember(ctx, cmd, userID, "", func(confirmedNumKeys uint32) (uint32, error) {
+		return client.DeleteWorkspaceMember(ctx, wsID, userID, confirmedNumKeys)
+	})
+	if err != nil {
 		return cloudAPIError(err)
 	}
-	return util.RenderAction(out, cmd.Bool("json"), "userId", userID, "removed", fmt.Sprintf("Removed member %s", util.Accented(userID)))
+	return renderMemberRemoved(cmd, userID, numKeys)
 }
 
 func listWorkspaceInvites(ctx context.Context, cmd *cli.Command) error {

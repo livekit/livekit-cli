@@ -194,13 +194,20 @@ func (c *Client) UpdateWorkspaceMember(ctx context.Context, workspaceID, userID 
 	return requirePayload(resp.JSON200.Member, "member")
 }
 
-// DeleteWorkspaceMember removes a member from a workspace.
-func (c *Client) DeleteWorkspaceMember(ctx context.Context, workspaceID, userID string) error {
-	resp, err := c.gen.WorkspaceServiceDeleteMemberWithResponse(ctx, workspaceID, userID)
+// DeleteWorkspaceMember removes a member from a workspace and its projects,
+// deletes the API keys they own there, and returns how many it deleted.
+// confirmedNumKeys must be that count, as for RemoveProjectMember.
+func (c *Client) DeleteWorkspaceMember(ctx context.Context, workspaceID, userID string, confirmedNumKeys uint32) (uint32, error) {
+	resp, err := c.gen.WorkspaceServiceDeleteMemberWithResponse(ctx, workspaceID, userID, &oapi.WorkspaceServiceDeleteMemberParams{
+		ConfirmedNumKeys: confirmedNumKeysParam(confirmedNumKeys),
+	})
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return okOrError(resp.StatusCode(), resp.Body)
+	if resp.JSON200 == nil {
+		return 0, responseError(resp.StatusCode(), resp.Body)
+	}
+	return numKeys(resp.JSON200.NumKeys), nil
 }
 
 // ListWorkspaceInvites returns the pending invites for a workspace.

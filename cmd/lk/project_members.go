@@ -61,8 +61,10 @@ func init() {
 			},
 			{
 				Name:      "remove",
-				Usage:     "Remove a member from a project",
+				Usage:     "Remove a member from a project and delete the API keys they own",
 				UsageText: "lk project member remove USER_ID --project PROJECT --user-auth",
+				Description: "Unless the project is private, it shares its members with its workspace, so this removes the member\n" +
+					"from the workspace and every project in it, and deletes the API keys they own in any of them.",
 				ArgsUsage: "USER_ID",
 				Action:    removeProjectMember,
 				Flags:     []cli.Flag{jsonFlag},
@@ -223,10 +225,13 @@ func removeProjectMember(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if err := client.RemoveProjectMember(ctx, projectID, userID); err != nil {
+	numKeys, err := removeMember(ctx, cmd, userID, projectRemovalScope, func(confirmedNumKeys uint32) (uint32, error) {
+		return client.RemoveProjectMember(ctx, projectID, userID, confirmedNumKeys)
+	})
+	if err != nil {
 		return cloudAPIError(err)
 	}
-	return util.RenderAction(out, cmd.Bool("json"), "userId", userID, "removed", fmt.Sprintf("Removed member %s", util.Accented(userID)))
+	return renderMemberRemoved(cmd, userID, numKeys)
 }
 
 func addProjectMembers(ctx context.Context, cmd *cli.Command) error {
