@@ -161,9 +161,9 @@ func requireProjectWithOpts(ctx context.Context, cmd *cli.Command, opts ...loadO
 	case errors.Is(err, config.ErrInvalidConfig):
 		// something is wrong with the project config file
 		return ctx, err
-	case err != nil && namedProject(cmd):
-		// the user named a project that doesn't resolve: say so rather than
-		// act on another one
+	case err != nil && (namedProject(cmd) || cmd.Bool("dev")):
+		// the user named a project, or asked for dev credentials, that doesn't
+		// resolve: say so rather than act on another project
 		return ctx, err
 	case err != nil:
 		// no project could be resolved automatically; choose from existing

@@ -394,7 +394,8 @@ func (rp *resolvedProject) announce() {
 //
 // It performs no prompting and no printing: callers print rp.notice via out.Status.
 // requireProjectWithOpts handles a returned error by offering interactive
-// selection, unless --project or --subdomain named a project (see namedProject).
+// selection, unless --project or --subdomain named a project (see namedProject)
+// or --dev asked for dev credentials.
 func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 	// 1. explicit project
 	if c.String("project") != "" {
@@ -421,20 +422,17 @@ func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 	}
 
 	// 3. inline credentials (flags or environment)
+	if c.Bool("dev") && (c.String("api-key") != "" || c.String("api-secret") != "") {
+		return nil, devCredentialsError(c)
+	}
 	pc := &config.ProjectConfig{}
 	if val := c.String("url"); val != "" {
 		pc.URL = val
 	}
 	if val := c.String("api-key"); val != "" {
-		if c.Bool("dev") {
-			return nil, errors.New("both api-key and dev flags are set")
-		}
 		pc.APIKey = val
 	}
 	if val := c.String("api-secret"); val != "" {
-		if c.Bool("dev") {
-			return nil, errors.New("both api-secret and dev flags are set")
-		}
 		pc.APISecret = val
 	}
 	if pc.APIKey != "" && pc.APISecret != "" && (pc.URL != "" || !p.requireURL) {
@@ -491,6 +489,33 @@ func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 
 	// cannot happen
 	return &resolvedProject{project: pc, source: sourceInlineFlags}, nil
+}
+
+// devCredentialsError is the error for --dev with an API key or secret. It
+// names each one to remove: the env var when the value is the env var's, the
+// flag otherwise.
+func devCredentialsError(c *cli.Command) error {
+	var envVars, flags []string
+	for _, cred := range []struct{ flag, env string }{
+		{"api-key", "LIVEKIT_API_KEY"},
+		{"api-secret", "LIVEKIT_API_SECRET"},
+	} {
+		switch val := c.String(cred.flag); {
+		case val == "":
+		case val == os.Getenv(cred.env):
+			envVars = append(envVars, cred.env)
+		default:
+			flags = append(flags, "--"+cred.flag)
+		}
+	}
+	var fixes []string
+	if len(envVars) > 0 {
+		fixes = append(fixes, "unset "+strings.Join(envVars, " and "))
+	}
+	if len(flags) > 0 {
+		fixes = append(fixes, "remove "+strings.Join(flags, " and "))
+	}
+	return fmt.Errorf("--dev can't be combined with API key credentials; %s or drop --dev", strings.Join(fixes, " and "))
 }
 
 // loadProjectDetails resolves project credentials for commands that consume the result
