@@ -180,12 +180,12 @@ var simulateAudioCommand = &cli.Command{
 			Usage: "Call this `NUMBER` over SIP and simulate against whoever answers, instead of dispatching an agent. Requires --from-phone-number and --scenarios.",
 		},
 		&cli.StringFlag{
-			Name:  "from-trunk",
+			Name:  "trunk",
 			Usage: "Outbound SIP trunk `ID` to place --to-phone-number calls through. Without it, calls go out from a LiveKit phone number.",
 		},
 		&cli.StringFlag{
 			Name:  "from-phone-number",
-			Usage: "Caller `NUMBER` for --to-phone-number calls: a LiveKit phone number the project owns, or a number on --from-trunk",
+			Usage: "Caller `NUMBER` for --to-phone-number calls: a LiveKit phone number the project owns, or a number on --trunk",
 		},
 	},
 }
@@ -539,14 +539,14 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	samples := int32(cmd.Int("samples"))
 	passRate := cmd.Float("pass-rate")
 	liveAgentName := cmd.String("agent-name")
-	var phoneNumber, fromTrunk, fromPhoneNumber string
+	var phoneNumber, trunkID, fromPhoneNumber string
 	if simulationMode == livekit.SimulationMode_SIMULATION_MODE_AUDIO {
 		phoneNumber = cmd.String("to-phone-number")
-		fromTrunk = cmd.String("from-trunk")
+		trunkID = cmd.String("trunk")
 		fromPhoneNumber = cmd.String("from-phone-number")
 	}
-	if fromTrunk != "" && phoneNumber == "" {
-		return fmt.Errorf("--from-trunk requires --to-phone-number")
+	if trunkID != "" && phoneNumber == "" {
+		return fmt.Errorf("--trunk requires --to-phone-number")
 	}
 	if fromPhoneNumber != "" && phoneNumber == "" {
 		return fmt.Errorf("--from-phone-number requires --to-phone-number")
@@ -668,7 +668,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		simCfg.lowQualityMicrophone = cmd.Bool("low-quality-microphone")
 		simCfg.packetLoss = cmd.Bool("packet-loss")
 		simCfg.sipCallTo = phoneNumber
-		simCfg.sipTrunkID = fromTrunk
+		simCfg.sipTrunkID = trunkID
 		simCfg.sipNumber = fromPhoneNumber
 	}
 
