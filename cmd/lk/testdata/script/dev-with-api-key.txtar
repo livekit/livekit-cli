@@ -1,0 +1,37 @@
+# --dev with an API key or secret, from its flag or its env var, is an error
+# naming what to remove. lk never falls back to the only project: the fake
+# would answer that project's server, so lk can only fail by refusing.
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
+respond POST http://dev.test/twirp/livekit.RoomService/ListRooms 200 ''
+
+env LIVEKIT_API_KEY=APIenv
+! exec lk --dev room list
+stderr '^--dev can''t be combined with API key credentials; unset LIVEKIT_API_KEY or drop --dev$'
+
+env LIVEKIT_API_SECRET=secretenv
+! exec lk --dev room list
+stderr '^--dev can''t be combined with API key credentials; unset LIVEKIT_API_KEY and LIVEKIT_API_SECRET or drop --dev$'
+
+env LIVEKIT_API_KEY=
+env LIVEKIT_API_SECRET=
+! exec lk --dev --api-key APIflag room list
+stderr '^--dev can''t be combined with API key credentials; remove --api-key or drop --dev$'
+
+requests
+! stdout .
+
+# --dev alone still uses the dev credentials, at --url.
+exec lk --dev --url ws://dev.test room list
+stderr '^Using dev credentials$'
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+-- want-requests --
+POST http://dev.test/twirp/livekit.RoomService/ListRooms apikey=devkey
