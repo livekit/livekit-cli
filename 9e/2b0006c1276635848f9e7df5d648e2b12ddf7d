@@ -1,0 +1,23 @@
+cmd/lk/console_tui.go
+  s_a20cddb8b72a42::t_91bed538414ff8 444-448
+cmd/lk/console_tui_test.go
+  s_a20cddb8b72a42::t_afdbcd5fd3aa6d 23,38-57
+  s_a20cddb8b72a42::t_166e49526c6720 24
+  s_a20cddb8b72a42::t_1c8482bf0bccb3 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9e2b0006c1276635848f9e7df5d648e2b12ddf7d",
+  "prompts": {},
+  "sessions": {
+    "s_a20cddb8b72a42": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7c4020a1-4234-48f1-a1ba-9ee42002294e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
