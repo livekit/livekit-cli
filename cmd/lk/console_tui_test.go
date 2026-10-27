@@ -56,3 +56,28 @@ func TestHandleSessionEvent_PrintsUserTurnOnce(t *testing.T) {
 	}}
 	require.Len(t, m.handleSessionEvent(final), 1)
 }
+
+func TestHandleSessionEvent_PrintsToolStepAsOneBlock(t *testing.T) {
+	m := consoleFixture(false)
+	ev := &agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_FunctionToolsExecuted_{
+		FunctionToolsExecuted: &agent.AgentSessionEvent_FunctionToolsExecuted{
+			FunctionCalls: []*agent.FunctionCall{{CallId: "a", Name: "first"}, {CallId: "b", Name: "second"}},
+		},
+	}}
+	require.Len(t, m.handleSessionEvent(ev), 1)
+}
+
+func TestHandleSessionEvent_MetricsFromTextlessReply(t *testing.T) {
+	m := consoleFixture(false)
+	ttfb := 0.25
+	ev := &agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_ConversationItemAdded_{
+		ConversationItemAdded: &agent.AgentSessionEvent_ConversationItemAdded{Item: &agent.ChatContext_ChatItem{
+			Item: &agent.ChatContext_ChatItem_Message{Message: &agent.ChatMessage{
+				Role:    agent.ChatRole_ASSISTANT,
+				Metrics: &agent.MetricsReport{TtsNodeTtfb: &ttfb},
+			}},
+		}},
+	}}
+	require.Empty(t, m.handleSessionEvent(ev))
+	require.NotEmpty(t, m.metricsText)
+}
