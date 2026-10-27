@@ -441,6 +441,11 @@ func (m *consoleModel) handleSessionEvent(ev *agent.AgentSessionEvent) []tea.Cmd
 	// Everything else (messages, tool calls, handoffs, config changes, errors)
 	// goes through the transcript model shared with `lk agent debugger`.
 	for _, te := range eventToTurnEvents(ev) {
+		// The user's turn is already printed: the final transcript in voice
+		// mode, the typed text when sent in text mode.
+		if te.Type == "message" && te.Role == "user" {
+			continue
+		}
 		if te.Type == "message" && te.Role == "assistant" && len(te.Metrics) > 0 {
 			m.metricsText = renderMetrics(te.Metrics)
 		}
