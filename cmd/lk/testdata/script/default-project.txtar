@@ -1,0 +1,48 @@
+# With several projects and no --project, the configured default is used, in
+# API-key mode and under --user-auth.
+respond POST http://two.test/twirp/livekit.RoomService/ListRooms 200 ''
+exec lk room list
+cmp stderr want-api-key-stderr
+
+respond GET http://publicapi.test/v0/projects/p_2/members 200 '{"items":[]}'
+exec lk --user-auth project member list
+cmp stderr want-user-auth-stderr
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: two
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+  - name: two
+    project_id: p_2
+    url: ws://two.test
+    api_key: APItwo
+    api_secret: secrettwo
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+      - project_id: p_2
+        name: two
+        alias: two
+-- want-api-key-stderr --
+Using project [two]
+-- want-user-auth-stderr --
+Using user [dev@example.com] on [http://publicapi.test]
+Using project [two]
+No members found.
+-- want-requests --
+POST http://two.test/twirp/livekit.RoomService/ListRooms apikey=APItwo
+GET http://publicapi.test/v0/projects/p_2/members bearer=st_1 project=p_2

@@ -26,13 +26,15 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
-// The summarization model cites the conversation turns behind a finding with
-// <ref job="..." item="...">quoted text</ref>. Attribute order is not
-// guaranteed, so the tag is matched loosely and the attributes are extracted
-// separately.
+// The summarization model cites the conversation turns behind a finding with a
+// <ref job="..." item="..."> tag in one of three spellings: wrapping quoted
+// text and closed by </ref>, as a marker after the claim with no closing tag,
+// or self-closed. Attribute order, quoting and casing are not guaranteed, so
+// the tag is matched loosely and the attributes are extracted separately.
 var (
-	summaryRefPattern     = regexp.MustCompile(`(?s)<ref\s([^>]*)>(.*?)</ref>`)
-	summaryRefAttrPattern = regexp.MustCompile(`([a-zA-Z]+)\s*=\s*"([^"]*)"`)
+	summaryRefOpenPattern  = regexp.MustCompile(`(?i)<ref\b([^>]*)>`)
+	summaryRefClosePattern = regexp.MustCompile(`(?i)</ref\s*>`)
+	summaryRefAttrPattern  = regexp.MustCompile(`([a-zA-Z]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'/>]+))`)
 )
 
 // summaryRefStyle marks cited text as a link, for terminals that render OSC 8
@@ -71,7 +73,8 @@ func (x *summaryRefIndex) add(attrs map[string]string) (int, bool) {
 // linkSummaryRefs replaces each <ref> in summary prose with its quoted text,
 // numbered so the digit keys can open the cited turn, and hyperlinked to the
 // cited item when the run has a dashboard URL. A ref naming no job cites
-// nothing openable and degrades to the quoted text alone.
+// nothing openable and degrades to the quoted text alone. A marker quotes
+// nothing, so its number alone carries the link.
 func linkSummaryRefs(text, projectID, runID string, refs *summaryRefIndex) string {
 	return replaceSummaryRefs(text, func(attrs map[string]string, label string) string {
 		if attrs["job"] == "" {
@@ -81,8 +84,16 @@ func linkSummaryRefs(text, projectID, runID string, refs *summaryRefIndex) strin
 		if !ok {
 			return label
 		}
+		url := simulationItemDashboardURL(projectID, runID, attrs["job"], attrs["item"])
+		if label == "" {
+			number := dimStyle.Render(fmt.Sprintf("[%d]", n))
+			if url != "" {
+				number = util.Hyperlink(url, number)
+			}
+			return number
+		}
 		rendered := summaryRefStyle().Render(label)
-		if url := simulationItemDashboardURL(projectID, runID, attrs["job"], attrs["item"]); url != "" {
+		if url != "" {
 			rendered = util.Hyperlink(url, rendered)
 		}
 		return rendered + dimStyle.Render(fmt.Sprintf(" [%d]", n))
@@ -97,31 +108,67 @@ func stripSummaryRefs(text string) string {
 	})
 }
 
-// replaceSummaryRefs rewrites every <ref> in text through render. Citations are
-// often appended to a sentence with no separator, either directly after the
-// full stop or back-to-back with each other, so a ref that abuts the text
-// before it gains a leading space; without one the quotes run together into a
-// single unreadable phrase.
+// replaceSummaryRefs rewrites every <ref> in text through render, which gets
+// an empty label for a marker, and drops any </ref> that closes no ref.
+// Citations are often appended to a sentence with no separator, either
+// directly after the full stop, back-to-back with each other, or right before
+// the next word, so a ref that abuts a word gains a space on that side;
+// without one the quotes run together into a single unreadable phrase. A ref
+// that renders as nothing takes the space before it along unless a word
+// follows, so the punctuation after it stays attached to the claim.
 func replaceSummaryRefs(text string, render func(attrs map[string]string, label string) string) string {
 	var b strings.Builder
 	end := 0
-	for _, m := range summaryRefPattern.FindAllStringSubmatchIndex(text, -1) {
-		b.WriteString(text[end:m[0]])
-		if m[0] > 0 && !endsWithSpace(text[:m[0]]) {
-			b.WriteString(" ")
-		}
+	for _, m := range summaryRefOpenPattern.FindAllStringSubmatchIndex(text, -1) {
 		attrs := make(map[string]string)
 		for _, attr := range summaryRefAttrPattern.FindAllStringSubmatch(text[m[2]:m[3]], -1) {
-			attrs[strings.ToLower(attr[1])] = attr[2]
+			attrs[strings.ToLower(attr[1])] = attr[2] + attr[3] + attr[4]
 		}
-		b.WriteString(render(attrs, text[m[4]:m[5]]))
-		end = m[1]
+		label, refEnd := summaryRefBody(text, text[m[2]:m[3]], m[1])
+		rendered := render(attrs, label)
+		wordFollows := startsWithWord(text[refEnd:])
+		prose := summaryRefClosePattern.ReplaceAllString(text[end:m[0]], "")
+		if rendered == "" && !wordFollows {
+			prose = strings.TrimRight(prose, " \t")
+		} else if m[0] > 0 && !endsWithSpace(text[:m[0]]) {
+			prose += " "
+		}
+		b.WriteString(prose)
+		b.WriteString(rendered)
+		if rendered != "" && wordFollows {
+			b.WriteString(" ")
+		}
+		end = refEnd
 	}
-	b.WriteString(text[end:])
+	b.WriteString(summaryRefClosePattern.ReplaceAllString(text[end:], ""))
 	return b.String()
+}
+
+// summaryRefBody returns the text wrapped by the ref whose open tag ends at
+// start, and where the ref ends. A </ref> closes it only if no other <ref>
+// opens first; otherwise, or when the tag closes itself, the ref is a marker
+// and wraps nothing.
+func summaryRefBody(text, attrs string, start int) (string, int) {
+	if strings.HasSuffix(strings.TrimSpace(attrs), "/") {
+		return "", start
+	}
+	rest := text[start:]
+	closeTag := summaryRefClosePattern.FindStringIndex(rest)
+	if closeTag == nil {
+		return "", start
+	}
+	if open := summaryRefOpenPattern.FindStringIndex(rest); open != nil && open[0] < closeTag[0] {
+		return "", start
+	}
+	return rest[:closeTag[0]], start + closeTag[1]
 }
 
 func endsWithSpace(s string) bool {
 	r, _ := utf8.DecodeLastRuneInString(s)
 	return unicode.IsSpace(r)
+}
+
+func startsWithWord(s string) bool {
+	r, _ := utf8.DecodeRuneInString(s)
+	return unicode.IsLetter(r) || unicode.IsDigit(r)
 }

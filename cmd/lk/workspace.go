@@ -36,9 +36,10 @@ import (
 // invite commands take it via --workspace so the entity id stays positional.
 var WorkspaceCommands = []*cli.Command{
 	{
-		Name:   "workspace",
-		Usage:  "Manage LiveKit Cloud workspaces (requires --user-auth)",
-		Hidden: true,
+		Name:     "workspace",
+		Usage:    "Manage LiveKit Cloud workspaces (requires --user-auth)",
+		Hidden:   true,
+		Metadata: userAuthOnly,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",

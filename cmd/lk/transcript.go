@@ -220,22 +220,30 @@ func messageToTurnEvent(msg *agent.ChatMessage) (turnEvent, bool) {
 	if ts := msg.GetCreatedAt(); ts != nil {
 		e.Time = eventTimestamp(ts.AsTime())
 	}
-	if m := msg.GetMetrics(); m != nil {
-		metrics := map[string]float64{}
-		if m.LlmNodeTtft != nil {
-			metrics["llm_ttft"] = *m.LlmNodeTtft
-		}
-		if m.TtsNodeTtfb != nil {
-			metrics["tts_ttfb"] = *m.TtsNodeTtfb
-		}
-		if m.E2ELatency != nil {
-			metrics["e2e_latency"] = *m.E2ELatency
-		}
-		if len(metrics) > 0 {
-			e.Metrics = metrics
-		}
-	}
+	e.Metrics = messageMetrics(msg.GetMetrics())
 	return e, true
+}
+
+// messageMetrics is a live message's latencies in seconds, or nil when it
+// reported none.
+func messageMetrics(m *agent.MetricsReport) map[string]float64 {
+	if m == nil {
+		return nil
+	}
+	metrics := map[string]float64{}
+	if m.LlmNodeTtft != nil {
+		metrics["llm_ttft"] = *m.LlmNodeTtft
+	}
+	if m.TtsNodeTtfb != nil {
+		metrics["tts_ttfb"] = *m.TtsNodeTtfb
+	}
+	if m.E2ELatency != nil {
+		metrics["e2e_latency"] = *m.E2ELatency
+	}
+	if len(metrics) == 0 {
+		return nil
+	}
+	return metrics
 }
 
 // ── recorded transcript → turnEvent ────────────────────────────────

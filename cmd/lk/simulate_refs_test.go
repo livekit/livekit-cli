@@ -93,3 +93,39 @@ func TestSummaryRefIndexStopsAtTheLastDigit(t *testing.T) {
 	require.Contains(t, linked, "[9]")
 	require.NotContains(t, linked, "[10]")
 }
+
+// Besides wrapping its quote, a citation can follow the claim as a marker with
+// no closing tag, or close itself. None of the markup may reach the reader.
+func TestStripSummaryRefMarkers(t *testing.T) {
+	for _, tc := range []struct{ name, in, want string }{
+		{"marker", `ended with a cancelled task <ref job="J" item="I">, so the caller hung up`, "ended with a cancelled task, so the caller hung up"},
+		{"self-closing", `yields a full refund <ref job="J" item="I" />.`, "yields a full refund."},
+		{"self-closing, no space", `yields a full refund <ref job="J" item="I"/>.`, "yields a full refund."},
+		{"markers back to back", `refusal-like text <ref job="A" item="1"><ref job="B" item="2">; correct the inputs`, "refusal-like text; correct the inputs"},
+		{"marker before a word", `when pressed <ref job="A" item="1">and gave summaries <ref job="B" item="2">.`, "when pressed and gave summaries."},
+		{"marker before a wrapping ref", `refused <ref job="A" item="1"> and later said <ref job="B" item="2">"no"</ref>.`, `refused and later said "no".`},
+		{"orphan close", `fine</ref> after`, "fine after"},
+		{"marker naming no job", `a claim <ref item="I">.`, "a claim."},
+		{"tag casing", `said <REF job="J" item="I">"no"</REF >.`, `said "no".`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, stripSummaryRefs(tc.in))
+		})
+	}
+}
+
+func TestLinkSummaryRefMarkers(t *testing.T) {
+	var refs summaryRefIndex
+	linked := linkSummaryRefs(`refused <ref job="A" item="1">and later said <ref job="B" item="2">"no"</ref>, then <ref JOB='C' item=3/>.`, "proj", "run", &refs)
+
+	require.NotContains(t, linked, "<ref")
+	require.NotContains(t, linked, "ref>")
+	// a marker quotes nothing, so its number alone carries the link
+	require.Equal(t, `refused [1] and later said "no" [2], then [3].`, ansi.Strip(linked))
+	require.Equal(t, 3, strings.Count(linked, "\x1b]8;;"+dashboardBaseURL()))
+	require.Equal(t, []summaryRefTarget{
+		{job: "A", item: "1"},
+		{job: "B", item: "2"},
+		{job: "C", item: "3"},
+	}, refs.targets)
+}

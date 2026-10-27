@@ -176,6 +176,9 @@ type spinnerTickMsg struct{}
 
 type toastExpireMsg struct{ id int }
 
+// detailPrintMsg wakes Update once the open job may print; see openDetailCmd.
+type detailPrintMsg struct{}
+
 type subprocessExitMsg struct {
 	err error
 }
@@ -230,7 +233,9 @@ type simulateModel struct {
 	// re-wrapped, so a resize rebaselines instead of reprinting.
 	detailPrinted string
 	detailWidth   int
-	showLogs      bool
+	// detailOpenedAt is when the open job left the alt screen; see openDetailCmd.
+	detailOpenedAt time.Time
+	showLogs       bool
 	// tool arguments and outputs are off the transcript unless asked for: they
 	// are payloads written for the model, and at full length they bury the
 	// conversation
@@ -1213,8 +1218,8 @@ func (m *simulateModel) viewSetup() string {
 		b.WriteString(dimStyle.Render("  URL:     " + m.config.pc.URL))
 		b.WriteString("\n")
 	}
-	if m.runID != "" {
-		b.WriteString(dimStyle.Render("  Run:     " + m.runID))
+	if runID := m.shownRunID(); runID != "" {
+		b.WriteString(dimStyle.Render("  Run:     " + runID))
 		b.WriteString("\n")
 	}
 	if url := m.getDashboardURL(); url != "" {
@@ -1304,8 +1309,17 @@ func (m *simulateModel) projectID() string {
 	return ""
 }
 
+// shownRunID is the run on screen. In view mode only m.run names it: m.runID
+// stays empty there, since the viewed run is not ours to cancel.
+func (m *simulateModel) shownRunID() string {
+	if id := m.run.GetId(); id != "" {
+		return id
+	}
+	return m.runID
+}
+
 func (m *simulateModel) getDashboardURL() string {
-	return simulationDashboardURL(m.projectID(), m.runID)
+	return simulationDashboardURL(m.projectID(), m.shownRunID())
 }
 
 func (m *simulateModel) viewFailed() string {
@@ -1313,7 +1327,7 @@ func (m *simulateModel) viewFailed() string {
 	b.WriteString("\n")
 	b.WriteString(tagStyle().Render("Agent Simulations"))
 	b.WriteString("  ")
-	b.WriteString(dimStyle.Render(m.runID))
+	b.WriteString(dimStyle.Render(m.shownRunID()))
 	if url := m.getDashboardURL(); url != "" {
 		b.WriteString("  " + dimStyle.Render(url))
 	}
@@ -1343,7 +1357,7 @@ func (m *simulateModel) viewRunning() string {
 	b.WriteString("\n")
 	b.WriteString(tagStyle().Render("Agent Simulations"))
 	b.WriteString("  ")
-	b.WriteString(dimStyle.Render(m.runID))
+	b.WriteString(dimStyle.Render(m.shownRunID()))
 	if url := m.getDashboardURL(); url != "" {
 		b.WriteString("  " + dimStyle.Render(url))
 	}
@@ -1432,7 +1446,8 @@ func (m *simulateModel) viewRunning() string {
 // they stay pinned at the bottom.
 func (m *simulateModel) pageWindow(content string) string {
 	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
-	reserved := 2 // hint bar + trailing newline
+	// the hint bar, or the dialog that takes its place, + trailing newline
+	reserved := lipgloss.Height(m.renderHint()) + 1
 	if m.toast != "" {
 		reserved += strings.Count(m.renderToast(), "\n")
 	}
@@ -1736,7 +1751,7 @@ func (m *simulateModel) renderDetail() string {
 		boldStyle.Render(title),
 		dimStyle.Render(job.Id),
 	)
-	if url := simulationJobDashboardURL(m.projectID(), m.runID, job.Id); url != "" {
+	if url := simulationJobDashboardURL(m.projectID(), m.shownRunID(), job.Id); url != "" {
 		b.WriteString("  " + dimStyle.Render(url) + "\n")
 	}
 	b.WriteString("\n")
@@ -1879,10 +1894,15 @@ func (m *simulateModel) renderScenarioDetail(sc *scenarioRow) string {
 // there at once and the terminal scrolls, selects, and searches it. The list
 // view is untouched: it keeps the alt screen and its own windowing.
 //
-// tea.Println has nothing to write into while the alt screen is active, so the
-// screen mode has to be off before any print. Bubble Tea v2 renders the view
-// returned by Update before it reads the message the returned command produces,
-// so clearing altScreen in Update is enough — no ExitAltScreen to sequence.
+// A print only reaches the scrollback once the terminal has left the alt
+// screen, and Bubble Tea v2 does not order the two: tea.Println writes at once,
+// while the view that leaves the alt screen is written on the renderer's next
+// frame (charmbracelet/bubbletea#1736). So the job prints no sooner than
+// altScreenExitDelay after leaving.
+
+// altScreenExitDelay outlasts the renderer's frame interval (1/60 s by
+// default), so the frame that leaves the alt screen is on the terminal first.
+const altScreenExitDelay = 50 * time.Millisecond
 
 // openDetailCmd leaves the alt screen, clears the scrollback, and prints the
 // job's view, so the terminal holds one job at a time instead of every job
@@ -1893,7 +1913,8 @@ func (m *simulateModel) openDetailCmd() tea.Cmd {
 	m.detailPrinted = ""
 	m.detailWidth = m.width
 	m.altScreen = false
-	return m.flushDetail()
+	m.detailOpenedAt = time.Now()
+	return tea.Tick(altScreenExitDelay, func(time.Time) tea.Msg { return detailPrintMsg{} })
 }
 
 // closeDetailCmd returns to the list view. The printed job stays in the
@@ -1928,7 +1949,7 @@ const clearScrollback = ansi.CursorHomePosition + ansi.EraseEntireScreen + ansi.
 // gained since the last call, or nil when it has gained nothing. Callers do not
 // need to know whether anything changed.
 func (m *simulateModel) flushDetail() tea.Cmd {
-	if m.detailID == "" {
+	if m.detailID == "" || time.Since(m.detailOpenedAt) < altScreenExitDelay {
 		return nil
 	}
 	rendered := strings.TrimRight(m.renderDetail(), "\n")
@@ -1951,7 +1972,9 @@ func (m *simulateModel) flushDetail() tea.Cmd {
 		return nil
 	}
 	if reprint {
-		tail = clearScrollback + tail
+		// the erase also takes the hint bar below the job, which the renderer
+		// redraws only after a ClearScreen
+		return tea.Sequence(tea.Println(clearScrollback+tail), tea.ClearScreen)
 	}
 	return tea.Println(tail)
 }
@@ -2001,7 +2024,7 @@ func (m *simulateModel) renderSummary() string {
 	wrapWidth := proseWidth(m.width, 6)
 	var refs summaryRefIndex
 	link := func(text string) string {
-		return linkSummaryRefs(text, m.projectID(), m.runID, &refs)
+		return linkSummaryRefs(text, m.projectID(), m.shownRunID(), &refs)
 	}
 
 	if summary.GoingWell != "" {
@@ -2438,9 +2461,9 @@ func (m *simulateModel) renderQuitConfirm() string {
 	return indentLines(box, "  ")
 }
 
-// saveDialogBorder is the horizontal space the dialog's border occupies: one
-// column on each side.
-const saveDialogBorder = 2
+// saveDialogFrame is the horizontal space the dialog adds around its content:
+// a border column and a padding column on each side.
+const saveDialogFrame = 4
 
 func (m *simulateModel) renderSaveDialog() string {
 	n := len(m.run.GetScenarioGroup().GetScenarios())
@@ -2472,10 +2495,9 @@ func (m *simulateModel) renderSaveDialog() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(util.Brand()).
 		Padding(0, 1).
-		// width is the width the padded content needs. Lip Gloss v2 counts the
-		// border inside Width, where v1 drew it around — so ask for the border
-		// on top, or the destination path wraps two columns early.
-		Width(width + saveDialogBorder).
+		// width is the content's own width; Lip Gloss v2's Width also counts
+		// the border and the padding.
+		Width(width + saveDialogFrame).
 		Render(b.String())
 	return indentLines(box, "  ")
 }

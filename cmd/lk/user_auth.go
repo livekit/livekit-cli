@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -131,6 +132,62 @@ func requireUserAuth(cmd *cli.Command) error {
 	return nil
 }
 
+// requireExperimentalUnlessUserAuth is the Before of a command whose API-key
+// implementation is experimental but whose user-auth one is not: it requires
+// --experimental unless the command runs under --user-auth.
+func requireExperimentalUnlessUserAuth(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+	if !userAuthEnabled(cmd) && !cmd.Bool("experimental") {
+		return ctx, errors.New("--experimental is required for this command (or use --user-auth)")
+	}
+	return ctx, nil
+}
+
+// userAuthOnly is the Metadata of a command that exists only under
+// --user-auth. Such commands are also declared Hidden; setUserAuthHidden
+// reveals them in help and completion once a user has signed in.
+var userAuthOnly = map[string]any{userAuthOnlyKey: true}
+
+const userAuthOnlyKey = "userAuthOnly"
+
+// userAuthOnlyFlags holds the Hidden fields of the flags registered with
+// userAuthOnlyFlag (flags have no Metadata to mark them with).
+var userAuthOnlyFlags []*bool
+
+// userAuthOnlyFlag registers f, a Hidden flag that only applies under
+// --user-auth, to be revealed along with the userAuthOnly commands.
+func userAuthOnlyFlag[T, C any, VC cli.ValueCreator[T, C]](f *cli.FlagBase[T, C, VC]) *cli.FlagBase[T, C, VC] {
+	userAuthOnlyFlags = append(userAuthOnlyFlags, &f.Hidden)
+	return f
+}
+
+// hasSignedInUser reports whether any user has signed in with
+// `lk cloud auth --user-auth`. An expired session still counts: the user is in
+// the beta, and the commands themselves say how to sign in again.
+func hasSignedInUser(conf *config.CLIConfig) bool {
+	return conf != nil && len(conf.Users) > 0
+}
+
+// setUserAuthHidden hides or reveals the userAuthOnly commands under root and
+// every userAuthOnlyFlag. Hidden only affects help and completion (hidden
+// commands still run), so this is purely about discoverability: closed-beta
+// users and their agents can find these commands without exposing them to
+// everyone else.
+func setUserAuthHidden(root *cli.Command, hidden bool) {
+	var walk func(*cli.Command)
+	walk = func(cmd *cli.Command) {
+		for _, c := range cmd.Commands {
+			if c.Metadata[userAuthOnlyKey] == true {
+				c.Hidden = hidden
+			}
+			walk(c)
+		}
+	}
+	walk(root)
+	for _, h := range userAuthOnlyFlags {
+		*h = hidden
+	}
+}
+
 // signInCommand is the command that signs a user in to the Public API this
 // invocation targets. A bare `lk cloud auth` runs the API-key flow, so the hint
 // must carry --user-auth, plus --public-api-url when the target isn't
@@ -191,9 +248,16 @@ func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig
 // resolves the session more than once still prints the breadcrumb only once.
 var userAnnounced bool
 
+// envCredentialsUsed is set by commands that hand LIVEKIT_* credentials from
+// the environment to what they run (agent runs, see resolveCredentials), so
+// announceUser doesn't call them ignored.
+var envCredentialsUsed bool
+
 // announceUser surfaces which signed-in user a command acts as — the user-auth
 // counterpart of the "Using project" breadcrumb (stderr, suppressed by --quiet).
-// The API is named when it isn't the default, e.g. for a staging sign-in.
+// The API is named when it isn't the default, e.g. for a staging sign-in. It
+// also names the LIVEKIT_* credentials in the environment that the command
+// ignores, since they don't switch modes (see userAuthEnabled).
 func announceUser(user *config.UserConfig) {
 	if userAnnounced || user == nil {
 		return
@@ -203,6 +267,18 @@ func announceUser(user *config.UserConfig) {
 		out.Statusf("Using user [%s]", util.Accented(userLabel(user)))
 	} else {
 		out.Statusf("Using user [%s] on [%s]", util.Accented(userLabel(user)), util.Accented(publicAPIURL))
+	}
+	if envCredentialsUsed {
+		return
+	}
+	var ignored []string
+	for _, name := range []string{"LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET"} {
+		if os.Getenv(name) != "" {
+			ignored = append(ignored, name)
+		}
+	}
+	if len(ignored) > 0 {
+		out.Statusf("Ignoring %s from environment (--user-auth uses your session)", strings.Join(ignored, ", "))
 	}
 }
 
@@ -256,8 +332,22 @@ func resolveSessionUser(conf *config.CLIConfig, userRef string, apiURLSet bool) 
 			return nil, fmt.Errorf("user %q is not signed in to %s (run %s to sign in)", userRef, publicAPIURL, signInCommand())
 		}
 	}
-	if users := conf.UsersForAPIURL(publicAPIURL); len(users) == 1 {
+	users := conf.UsersForAPIURL(publicAPIURL)
+	if len(users) == 1 {
 		return users[0], nil
+	}
+	// Here userRef, if set, is the default user: an explicit --user returned
+	// above.
+	switch {
+	case len(users) > 1:
+		return nil, fmt.Errorf("%d users are signed in to %s and none is the default user; pass --user to pick one",
+			len(users), publicAPIURL)
+	case userRef != "":
+		if elsewhere := conf.FindUsers(userRef); len(elsewhere) > 0 {
+			return nil, fmt.Errorf("the default user %q is signed in to %s, not %s (run %s to sign in there)",
+				userRef, cmp.Or(elsewhere[0].APIURL, public.DefaultBaseURL), publicAPIURL, signInCommand())
+		}
+		return nil, fmt.Errorf("the default user %q is not signed in to %s (run %s to sign in)", userRef, publicAPIURL, signInCommand())
 	}
 	return nil, fmt.Errorf("no user is signed in to %s (run %s to sign in)", publicAPIURL, signInCommand())
 }

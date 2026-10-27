@@ -31,9 +31,10 @@ import (
 // they act on comes from the global --project flag (or a cached alias).
 func init() {
 	memberCommand := &cli.Command{
-		Name:   "member",
-		Usage:  "Manage members of a LiveKit Cloud project (requires --user-auth)",
-		Hidden: true,
+		Name:     "member",
+		Usage:    "Manage members of a LiveKit Cloud project (requires --user-auth)",
+		Hidden:   true,
+		Metadata: userAuthOnly,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
@@ -77,9 +78,10 @@ func init() {
 		},
 	}
 	inviteCommand := &cli.Command{
-		Name:   "invite",
-		Usage:  "Manage project invites (requires --user-auth)",
-		Hidden: true,
+		Name:     "invite",
+		Usage:    "Manage project invites (requires --user-auth)",
+		Hidden:   true,
+		Metadata: userAuthOnly,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",

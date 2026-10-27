@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -56,7 +57,20 @@ type banner struct {
 	// Versions is a semver constraint (e.g. "< 3.0.0") selecting which CLI versions
 	// see the message. Empty matches every version.
 	Versions string `json:"versions"`
+	// Audiences selects who sees the message: a user in any of them, or
+	// everyone when empty. An audience this CLI doesn't know matches no one.
+	// CLIs older than bannerAudiencesSince ignore the field and would show the
+	// message to everyone, so an entry with audiences needs a Versions
+	// constraint that excludes them, such as ">= 2.19.2"
+	// (TestBannerFileAudiencesExcludeOldCLIs checks banner.json).
+	Audiences []string `json:"audiences"`
 }
+
+// bannerAudienceUserAuth is the audience of users signed in with --user-auth.
+const bannerAudienceUserAuth = "user-auth"
+
+// bannerAudiencesSince is the first CLI version that understands Audiences.
+const bannerAudiencesSince = "2.19.2"
 
 // loadBanner returns banner.json from the cache when it is fresh, otherwise from
 // the network, falling back to a stale cache when the fetch fails.
@@ -105,8 +119,8 @@ func fetchBanner(ctx context.Context) []byte {
 }
 
 // bannerMessages returns the message of every entry whose constraint matches
-// version, in file order.
-func bannerMessages(raw []byte, version string) []string {
+// version and whose audiences include one of the user's, in file order.
+func bannerMessages(raw []byte, version string, audiences []string) []string {
 	var banners []banner
 	if json.Unmarshal(raw, &banners) != nil {
 		return nil
@@ -118,6 +132,11 @@ func bannerMessages(raw []byte, version string) []string {
 	var msgs []string
 	for _, b := range banners {
 		if b.Message == "" {
+			continue
+		}
+		if len(b.Audiences) > 0 && !slices.ContainsFunc(b.Audiences, func(a string) bool {
+			return slices.Contains(audiences, a)
+		}) {
 			continue
 		}
 		if b.Versions != "" {
@@ -139,12 +158,22 @@ func showBanner(ctx context.Context) {
 	if !out.Interactive() {
 		return
 	}
-	printBanner(loadBanner(ctx), out.Err)
+	printBanner(loadBanner(ctx), out.Err, userBannerAudiences())
 }
 
-// printBanner writes the notices for this build to stderr, honoring --quiet.
-func printBanner(raw []byte, stderr io.Writer) {
-	msgs := bannerMessages(raw, livekitcli.Version)
+// userBannerAudiences returns the banner audiences this user belongs to.
+func userBannerAudiences() []string {
+	var audiences []string
+	if hasSignedInUser(startupConfig) {
+		audiences = append(audiences, bannerAudienceUserAuth)
+	}
+	return audiences
+}
+
+// printBanner writes the notices for this build and user to stderr, honoring
+// --quiet.
+func printBanner(raw []byte, stderr io.Writer, audiences []string) {
+	msgs := bannerMessages(raw, livekitcli.Version, audiences)
 	if len(msgs) == 0 || out.Quiet {
 		return
 	}
@@ -159,5 +188,5 @@ func printBanner(raw []byte, stderr io.Writer) {
 		Width(width)
 	// A rule between notices keeps two messages from reading as one paragraph.
 	rule := "\n" + util.Dimmed(strings.Repeat("─", inner)) + "\n"
-	fmt.Fprintf(stderr, "%s\n", fence.Render(strings.Join(msgs, rule)))
+	fmt.Fprintf(stderr, "%s\n\n", fence.Render(strings.Join(msgs, rule)))
 }

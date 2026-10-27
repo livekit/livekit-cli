@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"time"
 
@@ -332,9 +333,11 @@ func LoadOrCreate() (*CLIConfig, error) {
 		return c, nil
 	} else if err != nil {
 		return nil, err
-	} else if s.Mode().Perm()&0077 != 0 {
+	} else if runtime.GOOS != "windows" && s.Mode().Perm()&0077 != 0 {
 		// because this file contains private keys, warn that
-		// only the owner should have permission to access it
+		// only the owner should have permission to access it. Go reports
+		// 0666 for every writable file on Windows (0444 if read-only), so
+		// the mode says nothing there.
 		util.Warnf("WARNING: config file %s should have permissions %o", configPath, 0600)
 	}
 

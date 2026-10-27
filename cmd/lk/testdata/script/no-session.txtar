@@ -1,0 +1,9 @@
+# With no signed-in user, a session-only command says to sign in and fails
+# before it calls the Public API.
+! exec lk --user-auth project list
+! stdout .
+cmp stderr want-stderr
+requests
+! stdout .
+-- want-stderr --
+no user is signed in (run `lk cloud auth --user-auth` to sign in)

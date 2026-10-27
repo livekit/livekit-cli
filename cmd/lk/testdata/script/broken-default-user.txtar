@@ -1,0 +1,16 @@
+# A default user that no longer resolves is a clear error that names it and
+# says how to fix it, never a crash, even with another user signed in
+# elsewhere.
+! exec lk --user-auth project list
+! stdout .
+stderr '^the default user "gone@example.com" is not signed in to https://beta-api.livekit.cloud \(run `lk cloud auth --user-auth` to sign in\)$'
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+default_user: gone@example.com
+users:
+  - id: u_2
+    email: other@example.com
+    session_token: st_other
+    api_url: http://publicapi.test

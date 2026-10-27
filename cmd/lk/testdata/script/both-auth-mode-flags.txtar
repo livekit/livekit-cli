@@ -1,0 +1,23 @@
+# --user-auth and --legacy-auth together are an error; lk doesn't
+# guess which mode was meant.
+! exec lk --user-auth --legacy-auth project list
+cmp stderr want-stderr
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+-- want-stderr --
+option user-auth cannot be set along with option legacy-auth
