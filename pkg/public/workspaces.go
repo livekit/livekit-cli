@@ -123,11 +123,10 @@ func (c *Client) GetWorkspaceProject(ctx context.Context, workspaceID, projectID
 	return requirePayload(resp.JSON200.Project, "project")
 }
 
-// CreateWorkspaceProject creates a project within a workspace.
-func (c *Client) CreateWorkspaceProject(ctx context.Context, workspaceID, name string) (*oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.WorkspaceServiceCreateProjectWithResponse(ctx, workspaceID, oapi.WorkspaceServiceCreateProjectJSONRequestBody{
-		Name: ptr(name),
-	})
+// CreateWorkspaceProject creates a project with the given settings within a
+// workspace.
+func (c *Client) CreateWorkspaceProject(ctx context.Context, workspaceID string, settings ProjectSettings) (*oapi.LivekitPublicapiProjectsV1Project, error) {
+	resp, err := c.gen.WorkspaceServiceCreateProjectWithResponse(ctx, workspaceID, settings.createRequest())
 	if err != nil {
 		return nil, err
 	}
@@ -137,14 +136,14 @@ func (c *Client) CreateWorkspaceProject(ctx context.Context, workspaceID, name s
 	return requirePayload(resp.JSON200.Project, "project")
 }
 
-// UpdateWorkspaceProject renames a project within a workspace. The Public API
+// UpdateWorkspaceProject updates a project within a workspace. The Public API
 // has no workspace-scoped update, so it checks that the project is in the
-// workspace and then renames it by id.
-func (c *Client) UpdateWorkspaceProject(ctx context.Context, workspaceID, projectID, name string) (*oapi.LivekitPublicapiProjectsV1Project, error) {
+// workspace and then updates it by id.
+func (c *Client) UpdateWorkspaceProject(ctx context.Context, workspaceID, projectID string, settings ProjectSettings) (*oapi.LivekitPublicapiProjectsV1Project, error) {
 	if _, err := c.GetWorkspaceProject(ctx, workspaceID, projectID); err != nil {
 		return nil, err
 	}
-	return c.UpdateProject(ctx, projectID, name)
+	return c.UpdateProject(ctx, projectID, settings)
 }
 
 // DeleteWorkspaceProject deletes a project within a workspace.
