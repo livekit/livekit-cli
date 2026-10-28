@@ -106,14 +106,25 @@ func projectSettingsFromFlags(cmd *cli.Command) (public.ProjectSettings, error) 
 	if cmd.IsSet("token-endpoint") {
 		s.DisableTokenEndpoint = ptrTo(!cmd.Bool("token-endpoint"))
 	}
+	// The server ignores an empty codec or PII category list, so passing ""
+	// would look like it worked while changing nothing. Only the pinned
+	// regions can be cleared.
 	if cmd.IsSet("codecs") {
-		s.EnabledCodecs = ptrTo(nonEmpty(cmd.StringSlice("codecs")))
+		codecs := nonEmpty(cmd.StringSlice("codecs"))
+		if len(codecs) == 0 {
+			return s, errors.New("--codecs needs at least one codec")
+		}
+		s.EnabledCodecs = &codecs
 	}
 	if cmd.IsSet("pinned-regions") {
 		s.PinnedRegions = ptrTo(nonEmpty(cmd.StringSlice("pinned-regions")))
 	}
 	if cmd.IsSet("pii-redaction-categories") {
-		categories, err := parsePIICategories(nonEmpty(cmd.StringSlice("pii-redaction-categories")))
+		values := nonEmpty(cmd.StringSlice("pii-redaction-categories"))
+		if len(values) == 0 {
+			return s, errors.New("--pii-redaction-categories needs at least one category; to stop redacting, pass --pii-redaction=false")
+		}
+		categories, err := parsePIICategories(values)
 		if err != nil {
 			return s, err
 		}

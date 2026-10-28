@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -80,6 +81,44 @@ func TestProjectSettingsClearPinnedRegions(t *testing.T) {
 	s, err := parseProjectSettings(t, false, "--pinned-regions", "")
 	require.NoError(t, err)
 	assert.Equal(t, ptrTo([]string{}), s.PinnedRegions)
+}
+
+// The server ignores empty codec and PII category lists, so they are refused
+// rather than silently changing nothing.
+func TestProjectSettingsRefuseEmptyLists(t *testing.T) {
+	for _, create := range []bool{true, false} {
+		_, err := parseProjectSettings(t, create, "--codecs", "")
+		assert.ErrorContains(t, err, "--codecs needs at least one codec")
+		_, err = parseProjectSettings(t, create, "--pii-redaction-categories", "")
+		assert.ErrorContains(t, err, "--pii-redaction-categories needs at least one category")
+	}
+}
+
+// Every project setting must be settable by a flag, so a field added to
+// public.ProjectSettings without one fails here.
+func TestProjectSettingsFlagsCoverEverySetting(t *testing.T) {
+	args := []string{"--name", "demo"}
+	for _, f := range projectSettingsFlags(true) {
+		name := f.Names()[0]
+		switch f.(type) {
+		case *cli.BoolFlag:
+			args = append(args, "--"+name)
+		case *cli.StringSliceFlag:
+			value := "x"
+			if name == "pii-redaction-categories" {
+				value = "ssn"
+			}
+			args = append(args, "--"+name, value)
+		default:
+			args = append(args, "--"+name, "x")
+		}
+	}
+	s, err := parseProjectSettings(t, true, args...)
+	require.NoError(t, err)
+	v := reflect.ValueOf(s)
+	for i := range v.NumField() {
+		assert.False(t, v.Field(i).IsNil(), "no flag sets ProjectSettings.%s", v.Type().Field(i).Name)
+	}
 }
 
 func TestProjectSettingsUnknownPIICategory(t *testing.T) {

@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,6 +93,54 @@ func TestUpdateProjectSendsSettings(t *testing.T) {
 		"enableAutoCreate": false,
 		"pinnedRegions":    map[string]any{"regions": []any{}},
 	}, *body)
+}
+
+// settingsWithOnly returns ProjectSettings with only the i'th field set, to a
+// non-nil value.
+func settingsWithOnly(i int) ProjectSettings {
+	var s ProjectSettings
+	field := reflect.ValueOf(&s).Elem().Field(i)
+	value := reflect.New(field.Type().Elem())
+	if value.Elem().Kind() == reflect.Slice {
+		value.Elem().Set(reflect.MakeSlice(value.Elem().Type(), 1, 1))
+	}
+	field.Set(value)
+	return s
+}
+
+// requestKeys returns the JSON keys a request body sends.
+func requestKeys(t *testing.T, req any) []string {
+	t.Helper()
+	data, err := json.Marshal(req)
+	require.NoError(t, err)
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(data, &body))
+	keys := make([]string, 0, len(body))
+	for k := range body {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// Every ProjectSettings field must reach both request bodies under its own
+// name, so a field added without its mapping fails here.
+func TestProjectSettingsMapEveryField(t *testing.T) {
+	typ := reflect.TypeOf(ProjectSettings{})
+	for i := range typ.NumField() {
+		name := typ.Field(i).Name
+		key := strings.ToLower(name[:1]) + name[1:]
+		s := settingsWithOnly(i)
+
+		assert.Equal(t, []string{key}, requestKeys(t, s.createRequest()), "create request for ProjectSettings.%s", name)
+
+		update, err := s.updateRequest()
+		if name == "UserDataRegion" {
+			assert.Error(t, err, "update request for ProjectSettings.%s", name)
+			continue
+		}
+		require.NoError(t, err)
+		assert.Equal(t, []string{key}, requestKeys(t, update), "update request for ProjectSettings.%s", name)
+	}
 }
 
 func TestUpdateProjectRefusesUserDataRegion(t *testing.T) {
