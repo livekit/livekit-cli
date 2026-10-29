@@ -155,9 +155,14 @@ func TestCredentialResolution(t *testing.T) {
 			strings.Join(c.env(), " "), strings.Join(c.args(), " "), conf, strings.Join(requests, "\n"), output)
 
 		allowed := c.namedProjects()
-		if sole := c.soleProject(); !c.userAuth && c.command.fallback && sole != "" {
-			// Known bug: when resolving what the user named fails, room list
-			// falls back to the only configured project (mistyped-project.txtar).
+		_, key, secret := c.inlineCredentials()
+		tomlUnresolved := !c.dev && (key == "" || secret == "") && c.toml != "" && !c.configured(c.toml)
+		if sole := c.soleProject(); !c.userAuth && c.command.fallback && sole != "" &&
+			c.project == "" && c.subdomain == "" && tomlUnresolved {
+			// With no project named on the command line, room list falls back
+			// to the only configured project when resolving fails. lk keeps
+			// that on purpose for a livekit.toml naming a project that isn't
+			// configured, so an agent repo still gets a project to choose.
 			allowed = append(allowed, sole)
 		}
 		named := false
@@ -266,8 +271,9 @@ type credentialCase struct {
 type credentialCommand struct {
 	args []string
 	// fallback is set when, in API-key mode, a failure to resolve a project
-	// falls back to the only configured one (requireProjectWithOpts);
-	// loadProjectDetails fails instead.
+	// that --project, --subdomain or --dev didn't ask for falls back to the
+	// only configured one (requireProjectWithOpts); loadProjectDetails fails
+	// instead.
 	fallback bool
 	// publicAPI is set for a command that calls the Public API directly with
 	// the session (and only runs under --user-auth), instead of using a
