@@ -231,6 +231,12 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	// Nudge users still on API-key auth toward the new account-based flow.
 	maybeShowUpgradeNotice(cmd, conf)
 
+	// Offer LiveKit's coding agent skills once, before any sign-in, so API-key
+	// and self-hosted users get it too. Cancelling the prompt cancels the command.
+	if err := maybeOfferSkills(ctx, cmd, conf); err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 
