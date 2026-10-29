@@ -88,19 +88,20 @@ var (
 						&cli.BoolFlag{
 							Name:        "revoke",
 							Aliases:     []string{"R"},
+							Usage:       "Revoke an authorization for an existing project, selected with --project or the default project. This revokes the API keys that were issued with lk cloud auth, and then removes the project from the CLI.",
 							Destination: &revoke,
 						},
 						&cli.IntFlag{
 							Name:        "timeout",
 							Aliases:     []string{"t"},
-							Usage:       "Number of `SECONDS` to attempt authentication before giving up",
+							Usage:       "Number of `SECONDS` to attempt authentication before giving up.",
 							Destination: &timeout,
 							Value:       60 * 15,
 						},
 						&cli.IntFlag{
 							Name:        "poll-interval",
 							Aliases:     []string{"i"},
-							Usage:       "Number of `SECONDS` between poll requests to verify authentication",
+							Usage:       "Number of `SECONDS` between poll requests while waiting.",
 							Destination: &interval,
 							Value:       4,
 						},

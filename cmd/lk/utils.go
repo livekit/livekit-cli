@@ -64,10 +64,13 @@ var (
 		Usage:    "`ID` of participant (supports templates)",
 		Required: true,
 	}
-	jsonFlag = &cli.BoolFlag{
-		Name:    "json",
-		Aliases: []string{"j"},
-		Usage:   "Output as JSON",
+	jsonFlag          = jsonFlagWithUsage("Output as JSON.")
+	jsonFlagWithUsage = func(usage string) *cli.BoolFlag {
+		return &cli.BoolFlag{
+			Name:    "json",
+			Aliases: []string{"j"},
+			Usage:   usage,
+		}
 	}
 	// quietFlag is global. "silent" is kept as an alias for backwards compatibility with
 	// the former per-command --silent flag; both resolve to the same value and feed the
@@ -93,23 +96,23 @@ var (
 	}
 	templateFlag = &cli.StringFlag{
 		Name:        "template",
-		Usage:       "`TEMPLATE` to instantiate, see " + bootstrap.TemplateBaseURL,
+		Usage:       "`TEMPLATE` to instantiate. For example, agent-starter-python or agent-starter-node. See " + bootstrap.TemplateBaseURL + " for the full list.",
 		Destination: &templateName,
 	}
 	templateURLFlag = &cli.StringFlag{
 		Name:        "template-url",
-		Usage:       "`URL` to instantiate, must contain a taskfile.yaml",
+		Usage:       "Custom `URL` to a repository or archive to instantiate (for example, a Git repo URL). The project at that URL must include a taskfile.yaml file at its root.",
 		Destination: &templateURL,
 	}
 	installFlag = &cli.BoolFlag{
 		Name:  "install",
-		Usage: "Run installation after creating the application",
+		Usage: "Install the project's dependencies after creating it. If unset, the CLI asks. Skipped in non-interactive mode. Pass --install=false to skip.",
 	}
 	// skillsSetupFlag controls whether lk agent init installs LiveKit's coding
 	// agent skills; unset, lk asks (or installs, without a terminal).
 	skillsSetupFlag = &cli.BoolFlag{
 		Name:  "skills",
-		Usage: "Install LiveKit skills and the Docs MCP server for your coding agents (see lk skills)",
+		Usage: "Install LiveKit Agent Skills and the Docs MCP server for your coding agents (see lk skills). If unset, the CLI asks. Automatically installed in non-interactive mode. Pass --skills=false to skip.",
 	}
 	// roleFlag selects a member/invite access level for the Public API commands.
 	roleFlag = &cli.StringFlag{

@@ -43,34 +43,33 @@ var (
 				{
 					Name:      "add",
 					Usage:     "Add a new project (for LiveKit Cloud projects, also see `lk cloud auth`)",
-					UsageText: "lk project add PROJECT_NAME",
-					ArgsUsage: "PROJECT_NAME",
+					ArgsUsage: "[PROJECT_NAME]",
 					Action:    addProject,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "url",
-							Usage: "`URL` of the LiveKit server",
+							Usage: "WebSocket `URL` of the LiveKit server. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.StringFlag{
 							Name:  "api-key",
-							Usage: "Project `KEY`",
+							Usage: "Project API `KEY`. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.StringFlag{
 							Name:  "api-secret",
-							Usage: "Project `SECRET`",
+							Usage: "Project API `SECRET`. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.BoolFlag{
 							Name:  "default",
-							Usage: "Set this project as the default",
+							Usage: "Set this project as the default.",
 						},
 					},
 				},
 				{
 					Name:      "list",
 					Usage:     "List all configured projects",
-					UsageText: "lk project list",
+					UsageText: "lk project list [options]",
 					Action:    listProjects,
-					Flags:     []cli.Flag{jsonFlag},
+					Flags:     []cli.Flag{jsonFlagWithUsage("Output as JSON, including each project's API key and secret.")},
 				},
 				{
 					Name:      "get",
@@ -103,7 +102,7 @@ var (
 					Flags: append([]cli.Flag{
 						&cli.StringFlag{
 							Name:  "name",
-							Usage: "New project `NAME`",
+							Usage: "New project `NAME`.",
 						},
 					}, append(projectSettingsFlags(false), jsonFlag)...),
 				},
