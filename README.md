@@ -35,6 +35,8 @@ brew install livekit-cli
 curl -sSL https://get.livekit.io/cli | bash
 ```
 
+The script installs `lk` to `/usr/local/bin`. Set `LK_INSTALL_PATH` to install somewhere else.
+
 Or download a precompiled binary for the [latest release](https://github.com/livekit/livekit-cli/releases/latest)
 
 ## Windows

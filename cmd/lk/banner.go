@@ -28,6 +28,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/Masterminds/semver/v3"
+	"github.com/urfave/cli/v3"
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -152,10 +153,12 @@ func bannerMessages(raw []byte, version string, audiences []string) []string {
 
 // showBanner prints the notices before the command runs. It blocks so the
 // banner owns the terminal first: prompts and spinners write to the terminal
-// directly and cannot be held behind it. Non-interactive runs (scripts, pipes)
-// skip the fetch entirely.
-func showBanner(ctx context.Context) {
-	if !out.Interactive() {
+// directly and cannot be held behind it. Runs that a script or tool drives
+// (stderr or stdin isn't a terminal, or --yes) skip the fetch entirely: the
+// install script and coding agents invoke lk that way, and a notice there is
+// noise. A person at a terminal sees it on their next command.
+func showBanner(ctx context.Context, cmd *cli.Command) {
+	if !out.Interactive() || SkipPrompts(cmd) {
 		return
 	}
 	printBanner(loadBanner(ctx), out.Err, userBannerAudiences())
