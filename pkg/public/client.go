@@ -257,6 +257,30 @@ func pageCursor(pi *oapi.LivekitPublicapiCommonV1PageInfo) string {
 	return *pi.NextCursor
 }
 
+// allPages reads a whole list, one page at a time from the first: it passes
+// fetch a nil cursor, then each page's nextCursor, until a page says it is
+// the last. fetch reads the page at cursor.
+func allPages[T any](fetch func(cursor *string) ([]T, *oapi.LivekitPublicapiCommonV1PageInfo, error)) ([]T, error) {
+	var all []T
+	var cursor *string
+	for {
+		page, info, err := fetch(cursor)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, page...)
+		next := pageCursor(info)
+		if info == nil || info.HasMore == nil || !*info.HasMore || next == "" {
+			return all, nil
+		}
+		// A cursor that didn't move would read the same page forever.
+		if cursor != nil && *cursor == next {
+			return nil, fmt.Errorf("unexpected response from server: page cursor %q repeats", next)
+		}
+		cursor = &next
+	}
+}
+
 // requirePayload guards a nested payload pointer from an otherwise-successful
 // (200) response: the outer JSON200 can be non-nil while a nested field is nil,
 // because a 200 with a missing/blank body still decodes (Go leaves absent fields

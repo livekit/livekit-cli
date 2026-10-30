@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -125,6 +126,138 @@ func TestPageCursor(t *testing.T) {
 	assert.Equal(t, "", pageCursor(nil))
 	assert.Equal(t, "", pageCursor(&oapi.LivekitPublicapiCommonV1PageInfo{}))
 	assert.Equal(t, "next-123", pageCursor(&oapi.LivekitPublicapiCommonV1PageInfo{NextCursor: ptr("next-123")}))
+}
+
+// TestAllPages checks that allPages passes each page's cursor to the next
+// read and stops at the page that says it is the last.
+func TestAllPages(t *testing.T) {
+	pageInfo := func(next string, hasMore bool) *oapi.LivekitPublicapiCommonV1PageInfo {
+		return &oapi.LivekitPublicapiCommonV1PageInfo{NextCursor: ptr(next), HasMore: ptr(hasMore)}
+	}
+	pages := map[string]struct {
+		items []int
+		info  *oapi.LivekitPublicapiCommonV1PageInfo
+	}{
+		"":   {[]int{1, 2}, pageInfo("c1", true)},
+		"c1": {[]int{3}, pageInfo("c2", true)},
+		"c2": {[]int{4}, pageInfo("", false)},
+	}
+	var cursors []string
+	all, err := allPages(func(cursor *string) ([]int, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		c := ""
+		if cursor != nil {
+			c = *cursor
+		}
+		cursors = append(cursors, c)
+		return pages[c].items, pages[c].info, nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, []int{1, 2, 3, 4}, all)
+	assert.Equal(t, []string{"", "c1", "c2"}, cursors)
+
+	// A page with no pageInfo, or one that says there is no more, is the last.
+	for _, info := range []*oapi.LivekitPublicapiCommonV1PageInfo{nil, {}, pageInfo("c1", false), pageInfo("", true)} {
+		calls := 0
+		all, err = allPages(func(*string) ([]int, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+			calls++
+			return []int{1}, info, nil
+		})
+		require.NoError(t, err)
+		assert.Equal(t, []int{1}, all)
+		assert.Equal(t, 1, calls)
+	}
+
+	// A cursor that doesn't move fails rather than reading forever.
+	_, err = allPages(func(*string) ([]int, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		return []int{1}, pageInfo("c1", true), nil
+	})
+	assert.ErrorContains(t, err, `page cursor "c1" repeats`)
+
+	// An error on a later page fails the whole read.
+	_, err = allPages(func(cursor *string) ([]int, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		if cursor != nil {
+			return nil, nil, errors.New("boom")
+		}
+		return []int{1}, pageInfo("c1", true), nil
+	})
+	assert.EqualError(t, err, "boom")
+}
+
+// TestListsReadEveryPage checks that each list lk shows whole reads past the
+// first page: the fake answers page 1 with more to come and page 2 as the
+// last.
+func TestListsReadEveryPage(t *testing.T) {
+	tests := []struct {
+		name     string
+		list     func(c *Client) (int, error)
+		wantPath string
+		// filter is a query parameter every page must keep.
+		filter string
+	}{
+		{"project members", func(c *Client) (int, error) {
+			l, err := c.ListProjectMembers(context.Background(), "p_1")
+			return len(l), err
+		}, "/v0/projects/p_1/members", ""},
+		{"project invites", func(c *Client) (int, error) {
+			l, err := c.ListProjectInvites(context.Background(), "p_1")
+			return len(l), err
+		}, "/v0/projects/p_1/invites", ""},
+		{"workspace members", func(c *Client) (int, error) {
+			l, err := c.ListWorkspaceMembers(context.Background(), "ws_1")
+			return len(l), err
+		}, "/v0/workspaces/ws_1/members", ""},
+		{"workspace invites", func(c *Client) (int, error) {
+			l, err := c.ListWorkspaceInvites(context.Background(), "ws_1")
+			return len(l), err
+		}, "/v0/workspaces/ws_1/invites", ""},
+		{"webhooks", func(c *Client) (int, error) {
+			l, err := c.ListWebhooks(context.Background(), "p_1")
+			return len(l), err
+		}, "/v0/projects/p_1/webhooks", ""},
+		{"webhook events", func(c *Client) (int, error) {
+			l, err := c.ListWebhookEvents(context.Background(), "p_1")
+			return len(l), err
+		}, "/v0/projects/p_1/webhook-events", ""},
+		{"keys", func(c *Client) (int, error) {
+			l, err := c.ListKeys(context.Background(), "p_1", KeyFilter{OwnerID: "u_me"})
+			return len(l), err
+		}, "/v0/projects/p_1/keys", "ownerId=u_me"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var requests []string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requests = append(requests, r.URL.RequestURI())
+				// Webhook events are names; every other list holds objects.
+				item := `{}`
+				if strings.HasSuffix(r.URL.Path, "/webhook-events") {
+					item = `"room_started"`
+				}
+				w.Header().Set("Content-Type", "application/json")
+				if r.URL.Query().Get("page.cursor") == "" {
+					_, _ = w.Write([]byte(`{"items":[` + item + `,` + item + `],"pageInfo":{"nextCursor":"c1","hasMore":true}}`))
+					return
+				}
+				_, _ = w.Write([]byte(`{"items":[` + item + `],"pageInfo":{"nextCursor":"","hasMore":false}}`))
+			}))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "tok")
+			require.NoError(t, err)
+
+			n, err := tt.list(c)
+			require.NoError(t, err)
+			assert.Equal(t, 3, n)
+			require.Len(t, requests, 2)
+			assert.NotContains(t, requests[0], "page.cursor")
+			assert.Contains(t, requests[1], "page.cursor=c1")
+			for _, req := range requests {
+				assert.Equal(t, tt.wantPath, strings.SplitN(req, "?", 2)[0])
+			}
+			for _, req := range requests {
+				assert.Contains(t, req, tt.filter, "every page keeps the filter")
+			}
+		})
+	}
 }
 
 func TestRequirePayload(t *testing.T) {

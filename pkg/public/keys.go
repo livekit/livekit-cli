@@ -28,21 +28,24 @@ type KeyFilter struct {
 	OwnerID string
 }
 
-// ListKeys returns the API keys of a project that match filter, oldest first.
-// Secrets are never returned.
+// ListKeys returns every API key of a project that matches filter, oldest
+// first, reading each page. Secrets are never returned.
 func (c *Client) ListKeys(ctx context.Context, projectID string, filter KeyFilter) ([]oapi.LivekitPublicapiProjectsV1AccessKey, error) {
 	params := &oapi.ProjectServiceListKeysParams{IncludeAgentKeys: ptr(filter.IncludeAgentKeys)}
 	if filter.OwnerID != "" {
 		params.OwnerId = ptr(filter.OwnerID)
 	}
-	resp, err := c.gen.ProjectServiceListKeysWithResponse(ctx, projectID, params)
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiProjectsV1AccessKey, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		params.PageCursor = cursor
+		resp, err := c.gen.ProjectServiceListKeysWithResponse(ctx, projectID, params)
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
 }
 
 // GenerateKey creates a new API key on a project. A service-account key has no

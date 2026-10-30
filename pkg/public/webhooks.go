@@ -20,16 +20,19 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
-// ListWebhooks returns the webhook destinations of a project.
+// ListWebhooks returns every webhook destination of a project, reading each
+// page.
 func (c *Client) ListWebhooks(ctx context.Context, projectID string) ([]oapi.LivekitPublicapiProjectsV1Webhook, error) {
-	resp, err := c.gen.ProjectServiceListWebhooksWithResponse(ctx, projectID, nil)
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiProjectsV1Webhook, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.ProjectServiceListWebhooksWithResponse(ctx, projectID, &oapi.ProjectServiceListWebhooksParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
 }
 
 // CreateWebhook adds a webhook destination to a project. An unset filter
@@ -84,15 +87,17 @@ func (c *Client) SendTestWebhook(ctx context.Context, projectID, webhookID, even
 	return resp.JSON200, nil
 }
 
-// ListWebhookEvents returns the event names a project's webhooks can filter on
-// and send test deliveries of.
+// ListWebhookEvents returns every event name a project's webhooks can filter
+// on and send test deliveries of, reading each page.
 func (c *Client) ListWebhookEvents(ctx context.Context, projectID string) ([]string, error) {
-	resp, err := c.gen.ProjectServiceListWebhookEventsWithResponse(ctx, projectID, nil)
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
+	return allPages(func(cursor *string) ([]string, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.ProjectServiceListWebhookEventsWithResponse(ctx, projectID, &oapi.ProjectServiceListWebhookEventsParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
 }
