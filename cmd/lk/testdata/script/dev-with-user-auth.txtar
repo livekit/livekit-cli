@@ -1,0 +1,35 @@
+# --dev under --user-auth is an error naming what to remove. lk never acts
+# on the session's project instead of the dev server: the fake would answer
+# that project's server, so lk can only fail by refusing.
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
+respond POST http://dev.test/twirp/livekit.RoomService/ListRooms 200 ''
+respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one"}]}'
+
+! exec lk --user-auth --dev --url ws://dev.test room list
+stderr '^--dev can''t be combined with --user-auth; remove --user-auth or drop --dev$'
+
+! exec lk --user-auth project list --dev
+stderr '^--dev can''t be combined with --user-auth; remove --user-auth or drop --dev$'
+
+requests
+! stdout .
+
+# --dev alone still uses the dev credentials, at --url, with a user signed in.
+exec lk --dev --url ws://dev.test room list
+stderr '^Using dev credentials$'
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        url: ws://one.test
+-- want-requests --
+POST http://dev.test/twirp/livekit.RoomService/ListRooms apikey=devkey

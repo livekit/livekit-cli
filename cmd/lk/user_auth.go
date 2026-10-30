@@ -91,6 +91,16 @@ func userAuthGate(cmd *cli.Command) error {
 	return nil
 }
 
+// devUnderUserAuthGate refuses --dev under --user-auth. --dev asks for the
+// local dev server's API key, which no user-auth path reads, so lk would
+// otherwise act on the session's cloud project instead of the dev server.
+func devUnderUserAuthGate(cmd *cli.Command) error {
+	if userAuthEnabled(cmd) && cmd.Bool("dev") {
+		return errors.New("--dev can't be combined with --user-auth; remove --user-auth or drop --dev")
+	}
+	return nil
+}
+
 // authModeFlags declares, for a dual-mode command, which flags are valid only in
 // one auth mode. It lets a command reject cross-mode misuse up front with a clear
 // message instead of silently ignoring a flag the active mode can't honor:

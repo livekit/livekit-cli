@@ -226,6 +226,10 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	}
 	util.DetectBackground()
 
+	if err := devUnderUserAuthGate(cmd); err != nil {
+		return nil, err
+	}
+
 	showBanner(ctx, cmd)
 
 	// Nudge users still on API-key auth toward the new account-based flow.

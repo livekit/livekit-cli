@@ -112,6 +112,34 @@ func TestUserAuthEnabled(t *testing.T) {
 	assert.False(t, enabled(t, "--legacy-auth"))
 }
 
+// TestDevUnderUserAuthGate checks that --dev under --user-auth, in either
+// spelling, is an error, and that each flag alone is not.
+func TestDevUnderUserAuthGate(t *testing.T) {
+	gate := func(t *testing.T, args ...string) error {
+		t.Helper()
+		var err error
+		cmd := &cli.Command{
+			Name: "lk",
+			Flags: []cli.Flag{
+				&cli.BoolFlag{Name: "user-auth", Aliases: []string{"experimental-auth"}},
+				&cli.BoolFlag{Name: "dev"},
+			},
+			Action: func(_ context.Context, cmd *cli.Command) error {
+				err = devUnderUserAuthGate(cmd)
+				return nil
+			},
+		}
+		require.NoError(t, cmd.Run(context.Background(), append([]string{"lk"}, args...)))
+		return err
+	}
+
+	const want = "--dev can't be combined with --user-auth; remove --user-auth or drop --dev"
+	assert.EqualError(t, gate(t, "--user-auth", "--dev"), want)
+	assert.EqualError(t, gate(t, "--experimental-auth", "--dev"), want)
+	assert.NoError(t, gate(t, "--dev"))
+	assert.NoError(t, gate(t, "--user-auth"))
+}
+
 func TestRequireUserSessionAPIURL(t *testing.T) {
 	const staging = "https://beta-api.staging.livekit.cloud"
 	setHome(t, t.TempDir())
