@@ -713,7 +713,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	if configExists && lkConfig.Agent != nil {
+	if configExists && lkConfig.HasAgent() {
 		out.Statusf("Using agent configuration [%s]", util.Accented(tomlFilename))
 	} else {
 		lkConfig = config.NewLiveKitTOML(subdomainMatches[1]).WithDefaultAgent()
@@ -746,15 +746,18 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		buildContext, cancel := context.WithTimeout(ctx, buildTimeout)
 		defer cancel()
 		regions := []string{region}
-		agentID, err := agentsClient.RegisterAgent(buildContext, secrets, regions)
+		created, err := agentsClient.AgentClient.CreateAgent(buildContext, &lkproto.CreateAgentRequest{
+			Secrets: secrets,
+			Regions: regions,
+		})
 		if err != nil {
 			if twerr, ok := err.(twirp.Error); ok {
 				return fmt.Errorf("unable to create agent: %s", twerr.Msg())
 			}
 			return fmt.Errorf("unable to create agent: %w", err)
 		}
-		lkConfig.Agent.ID = agentID
-		if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
+		agentID := created.AgentId
+		if err := recordCreatedAgent(agentID, created.AgentName); err != nil {
 			return err
 		}
 		out.Statusf("Created agent with ID [%s]", util.Accented(agentID))
@@ -807,8 +810,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to create agent: %w", err)
 	}
 
-	lkConfig.Agent.ID = resp.AgentId
-	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
+	if err := recordCreatedAgent(resp.AgentId, resp.AgentName); err != nil {
 		return err
 	}
 
@@ -830,7 +832,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 			return err
 		} else if viewLogs {
 			out.Status("Tailing runtime logs...safe to exit at any time")
-			return agentsClient.StreamLogs(ctx, "deploy", lkConfig.Agent.ID, "", os.Stdout, resp.ServerRegions[0])
+			return agentsClient.StreamLogs(ctx, "deploy", resp.AgentId, "", os.Stdout, resp.ServerRegions[0])
 		}
 	}
 	return nil
@@ -871,7 +873,7 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		if configExists && lkConfig.HasAgent() {
-			agentID = lkConfig.Agent.ID
+			agentID = lkConfig.AgentID()
 		} else {
 			agentID, err = selectAgent(ctx, cmd, false)
 			if err != nil {
@@ -901,14 +903,24 @@ func createAgentConfig(ctx context.Context, cmd *cli.Command) error {
 
 	agent := response.Agents[0]
 	lkConfig := config.NewLiveKitTOML(matches[1])
-	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{
-		ID: agent.AgentId,
-	}
+	lkConfig.Agent = &config.LiveKitTOMLAgentConfig{Name: agent.AgentName}
+	lkConfig.Cloud = &config.LiveKitTOMLCloudConfig{ID: agent.AgentId}
 
 	if err := lkConfig.SaveTOMLFile(workingDir, tomlFilename); err != nil {
 		return err
 	}
 	return nil
+}
+
+// recordCreatedAgent saves the new agent's id and Cloud-assigned name to
+// livekit.toml, replacing any agent already there.
+func recordCreatedAgent(agentID, agentName string) error {
+	if lkConfig.Agent == nil {
+		lkConfig.WithDefaultAgent()
+	}
+	lkConfig.Agent.Name = agentName
+	lkConfig.Cloud = &config.LiveKitTOMLCloudConfig{ID: agentID}
+	return lkConfig.SaveTOMLFile(workingDir, tomlFilename)
 }
 
 func deployAgent(ctx context.Context, cmd *cli.Command) error {
@@ -1252,9 +1264,10 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	if !lkConfig.HasAgent() {
 		return fmt.Errorf("no agent config found in [%s]", tomlFilename)
 	}
+	agentID := lkConfig.AgentID()
 
 	req := &lkproto.UpdateAgentRequest{
-		AgentId: lkConfig.Agent.ID,
+		AgentId: agentID,
 	}
 
 	secrets, err := requireSecrets(ctx, cmd, false, true)
@@ -1266,7 +1279,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	var resp *lkproto.UpdateAgentResponse
-	err = out.Await("Updating agent ["+util.Accented(lkConfig.Agent.ID)+"]", ctx, func(ctx context.Context) error {
+	err = out.Await("Updating agent ["+util.Accented(agentID)+"]", ctx, func(ctx context.Context) error {
 		var clientErr error
 		resp, clientErr = agentsClient.UpdateAgent(ctx, req)
 		return clientErr
@@ -1279,7 +1292,7 @@ func updateAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if resp.Success {
-		out.Statusf("Updated agent [%s]", util.Accented(lkConfig.Agent.ID))
+		out.Statusf("Updated agent [%s]", util.Accented(agentID))
 		err = lkConfig.SaveTOMLFile("", tomlFilename)
 		return err
 	}
@@ -1805,7 +1818,7 @@ func getAgentID(ctx context.Context, cmd *cli.Command, agentDir string, tomlFile
 			if !lkConfig.HasAgent() {
 				return "", fmt.Errorf("no agent config found in [%s]", tomlFilename)
 			}
-			agentID = lkConfig.Agent.ID
+			agentID = lkConfig.AgentID()
 		} else {
 			agentID, err = selectAgent(ctx, cmd, excludeEmptyVersion)
 			if err != nil {

@@ -44,6 +44,7 @@ type AgentTOML struct {
 type LiveKitTOML struct {
 	Project *LiveKitTOMLProjectConfig `toml:"project"` // Required
 	Agent   *LiveKitTOMLAgentConfig   `toml:"agent"`
+	Cloud   *LiveKitTOMLCloudConfig   `toml:"cloud,omitempty"`
 }
 
 type LiveKitTOMLProjectConfig struct {
@@ -51,6 +52,15 @@ type LiveKitTOMLProjectConfig struct {
 }
 
 type LiveKitTOMLAgentConfig struct {
+	// Deprecated: the id lives in [cloud]; a legacy value is moved there on load.
+	ID string `toml:"id,omitempty"`
+	// Identity of the agent under test in simulation runs; self-hosted agents
+	// set it by hand.
+	Name string `toml:"name"`
+}
+
+// LiveKitTOMLCloudConfig identifies the agent on LiveKit Cloud.
+type LiveKitTOMLCloudConfig struct {
 	ID string `toml:"id"`
 }
 
@@ -68,7 +78,15 @@ func (c *LiveKitTOML) WithDefaultAgent() *LiveKitTOML {
 }
 
 func (c *LiveKitTOML) HasAgent() bool {
-	return c.Agent != nil
+	return c.Agent != nil || c.Cloud != nil
+}
+
+// AgentID returns the Cloud Agents id, or "" for an agent not on Cloud.
+func (c *LiveKitTOML) AgentID() string {
+	if c.Cloud == nil {
+		return ""
+	}
+	return c.Cloud.ID
 }
 
 func (c *LiveKitTOML) SaveTOMLFile(dir string, tomlFileName string) error {
@@ -87,31 +105,32 @@ func (c *LiveKitTOML) SaveTOMLFile(dir string, tomlFileName string) error {
 
 func LoadTOMLFile(dir string, tomlFileName string) (*LiveKitTOML, bool, error) {
 	logger.Debugw(fmt.Sprintf("loading %s file", tomlFileName))
-	var config *LiveKitTOML = nil
-	var err error
-	configExists := false
+	path := filepath.Join(dir, tomlFileName)
 
-	tomlFile := filepath.Join(dir, tomlFileName)
-
-	if _, err = os.Stat(tomlFile); err == nil {
-		configExists = true
-
-		_, err = toml.DecodeFile(tomlFile, &config)
-		if config.Project == nil {
-			// Attempt to decode old agent config
-			var oldConfig AgentTOML
-			_, err = toml.DecodeFile(tomlFile, &oldConfig)
-			if err != nil {
-				return nil, configExists, err
-			}
-			config.Project = &LiveKitTOMLProjectConfig{
-				Subdomain: oldConfig.ProjectSubdomain,
-			}
-			config.Agent = &LiveKitTOMLAgentConfig{}
-		}
-	} else {
-		configExists = !errors.Is(err, fs.ErrNotExist)
+	if _, err := os.Stat(path); err != nil {
+		return nil, !errors.Is(err, fs.ErrNotExist), err
 	}
 
-	return config, configExists, err
+	var config LiveKitTOML
+	if _, err := toml.DecodeFile(path, &config); err != nil {
+		return nil, true, err
+	}
+	if config.Project == nil {
+		// Attempt to decode old agent config
+		var oldConfig AgentTOML
+		if _, err := toml.DecodeFile(path, &oldConfig); err != nil {
+			return nil, true, err
+		}
+		config.Project = &LiveKitTOMLProjectConfig{
+			Subdomain: oldConfig.ProjectSubdomain,
+		}
+		config.Agent = &LiveKitTOMLAgentConfig{}
+	}
+	if config.Agent != nil && config.Agent.ID != "" {
+		if config.Cloud == nil {
+			config.Cloud = &LiveKitTOMLCloudConfig{ID: config.Agent.ID}
+		}
+		config.Agent.ID = ""
+	}
+	return &config, true, nil
 }
