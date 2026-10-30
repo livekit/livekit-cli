@@ -68,21 +68,19 @@ func bearerAuth(token string) oapi.RequestEditorFn {
 	}
 }
 
-// ListProjects returns the projects the authenticated user can access.
-//
-// NOTE: this returns only the first page; wire up PageInfo/cursor paging when a
-// command needs the full set.
+// ListProjects returns every project the authenticated user can access,
+// reading each page.
 func (c *Client) ListProjects(ctx context.Context) ([]oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.ProjectServiceListProjectsWithResponse(ctx, &oapi.ProjectServiceListProjectsParams{
-		PagePageSize: ptr(int32(100)),
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiProjectsV1Project, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.ProjectServiceListProjectsWithResponse(ctx, &oapi.ProjectServiceListProjectsParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
 }
 
 // GetProject returns a single project by id.

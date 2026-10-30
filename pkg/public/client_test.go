@@ -222,6 +222,14 @@ func TestListsReadEveryPage(t *testing.T) {
 			l, err := c.ListKeys(context.Background(), "p_1", KeyFilter{OwnerID: "u_me"})
 			return len(l), err
 		}, "/v0/projects/p_1/keys", "ownerId=u_me"},
+		{"projects", func(c *Client) (int, error) {
+			l, err := c.ListProjects(context.Background())
+			return len(l), err
+		}, "/v0/projects", ""},
+		{"workspaces", func(c *Client) (int, error) {
+			l, err := c.ListAllWorkspaces(context.Background())
+			return len(l), err
+		}, "/v0/workspaces", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

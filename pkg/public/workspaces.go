@@ -41,6 +41,21 @@ func (c *Client) ListWorkspaces(ctx context.Context, limit int32, cursor string)
 	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
 }
 
+// ListAllWorkspaces returns every workspace the authenticated user can access,
+// reading each page.
+func (c *Client) ListAllWorkspaces(ctx context.Context) ([]oapi.LivekitPublicapiWorkspacesV1Workspace, error) {
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiWorkspacesV1Workspace, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.WorkspaceServiceListWorkspacesWithResponse(ctx, &oapi.WorkspaceServiceListWorkspacesParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
+}
+
 // GetWorkspace returns a single workspace by id.
 func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*oapi.LivekitPublicapiWorkspacesV1Workspace, error) {
 	resp, err := c.gen.WorkspaceServiceGetWorkspaceWithResponse(ctx, workspaceID)
