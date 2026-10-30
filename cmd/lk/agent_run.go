@@ -224,6 +224,12 @@ func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string, loadO
 		explicit = agentCredentials{}
 	}
 
+	// --dev with an API key or secret is an error, as in resolveProject. A
+	// complete set skips the project lookup below, so check it here.
+	if cmd.Bool("dev") && (explicit.apiKey != "" || explicit.apiSecret != "") {
+		return nil, devCredentialsError(cmd)
+	}
+
 	merged := explicit
 
 	// Under --user-auth there is no stored API key to hand the agent;
