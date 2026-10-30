@@ -22,7 +22,7 @@ import (
 
 // ListProjectMembers returns the members of a project.
 func (c *Client) ListProjectMembers(ctx context.Context, projectID string) ([]oapi.LivekitPublicapiProjectsV1ProjectMember, error) {
-	resp, err := c.gen.ProjectServiceListMembersWithResponse(ctx, projectID)
+	resp, err := c.gen.ProjectServiceListMembersWithResponse(ctx, projectID, nil)
 	if err != nil {
 		return nil, err
 	}

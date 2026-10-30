@@ -22,7 +22,7 @@ import (
 
 // ListProjectInvites returns the pending invites for a project.
 func (c *Client) ListProjectInvites(ctx context.Context, projectID string) ([]oapi.LivekitPublicapiProjectsV1ProjectInvite, error) {
-	resp, err := c.gen.ProjectServiceListInvitesWithResponse(ctx, projectID)
+	resp, err := c.gen.ProjectServiceListInvitesWithResponse(ctx, projectID, nil)
 	if err != nil {
 		return nil, err
 	}

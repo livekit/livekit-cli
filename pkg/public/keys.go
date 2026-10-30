@@ -20,32 +20,29 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
-// ListKeys returns the API keys of a project. Agent keys (created for cloud
-// agents) are hidden unless includeAgentKeys is set. Secrets are never returned.
-func (c *Client) ListKeys(ctx context.Context, projectID string, includeAgentKeys bool) ([]oapi.LivekitPublicapiProjectsV1AccessKey, error) {
-	resp, err := c.gen.ProjectServiceListKeysWithResponse(ctx, projectID, &oapi.ProjectServiceListKeysParams{
-		IncludeAgentKeys: ptr(includeAgentKeys),
-	})
+// KeyFilter narrows ListKeys. The zero value lists every key except agent keys.
+type KeyFilter struct {
+	// IncludeAgentKeys also lists the keys created for cloud agents.
+	IncludeAgentKeys bool
+	// OwnerID, when set, lists only the keys this user owns.
+	OwnerID string
+}
+
+// ListKeys returns the API keys of a project that match filter, oldest first.
+// Secrets are never returned.
+func (c *Client) ListKeys(ctx context.Context, projectID string, filter KeyFilter) ([]oapi.LivekitPublicapiProjectsV1AccessKey, error) {
+	params := &oapi.ProjectServiceListKeysParams{IncludeAgentKeys: ptr(filter.IncludeAgentKeys)}
+	if filter.OwnerID != "" {
+		params.OwnerId = ptr(filter.OwnerID)
+	}
+	resp, err := c.gen.ProjectServiceListKeysWithResponse(ctx, projectID, params)
 	if err != nil {
 		return nil, err
 	}
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return items(resp.JSON200.Keys), nil
-}
-
-// ListScopedKeys returns a project's API keys split into those owned by the
-// authenticated user (personal) and the rest (other).
-func (c *Client) ListScopedKeys(ctx context.Context, projectID string) (personal, other []oapi.LivekitPublicapiProjectsV1AccessKey, err error) {
-	resp, err := c.gen.ProjectServiceListScopedKeysWithResponse(ctx, projectID)
-	if err != nil {
-		return nil, nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.PersonalKeys), items(resp.JSON200.OtherKeys), nil
+	return items(resp.JSON200.Items), nil
 }
 
 // GenerateKey creates a new API key on a project. A service-account key has no

@@ -157,7 +157,7 @@ func (c *Client) DeleteWorkspaceProject(ctx context.Context, workspaceID, projec
 
 // ListWorkspaceMembers returns the members of a workspace.
 func (c *Client) ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]oapi.LivekitPublicapiWorkspacesV1WorkspaceMember, error) {
-	resp, err := c.gen.WorkspaceServiceListMembersWithResponse(ctx, workspaceID)
+	resp, err := c.gen.WorkspaceServiceListMembersWithResponse(ctx, workspaceID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (c *Client) DeleteWorkspaceMember(ctx context.Context, workspaceID, userID 
 
 // ListWorkspaceInvites returns the pending invites for a workspace.
 func (c *Client) ListWorkspaceInvites(ctx context.Context, workspaceID string) ([]oapi.LivekitPublicapiWorkspacesV1WorkspaceInvite, error) {
-	resp, err := c.gen.WorkspaceServiceListInvitesWithResponse(ctx, workspaceID)
+	resp, err := c.gen.WorkspaceServiceListInvitesWithResponse(ctx, workspaceID, nil)
 	if err != nil {
 		return nil, err
 	}

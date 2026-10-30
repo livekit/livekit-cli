@@ -22,14 +22,14 @@ import (
 
 // ListWebhooks returns the webhook destinations of a project.
 func (c *Client) ListWebhooks(ctx context.Context, projectID string) ([]oapi.LivekitPublicapiProjectsV1Webhook, error) {
-	resp, err := c.gen.ProjectServiceListWebhooksWithResponse(ctx, projectID)
+	resp, err := c.gen.ProjectServiceListWebhooksWithResponse(ctx, projectID, nil)
 	if err != nil {
 		return nil, err
 	}
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return items(resp.JSON200.Webhooks), nil
+	return items(resp.JSON200.Items), nil
 }
 
 // CreateWebhook adds a webhook destination to a project. An unset filter
@@ -87,12 +87,12 @@ func (c *Client) SendTestWebhook(ctx context.Context, projectID, webhookID, even
 // ListWebhookEvents returns the event names a project's webhooks can filter on
 // and send test deliveries of.
 func (c *Client) ListWebhookEvents(ctx context.Context, projectID string) ([]string, error) {
-	resp, err := c.gen.ProjectServiceListWebhookEventsWithResponse(ctx, projectID)
+	resp, err := c.gen.ProjectServiceListWebhookEventsWithResponse(ctx, projectID, nil)
 	if err != nil {
 		return nil, err
 	}
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return items(resp.JSON200.Events), nil
+	return items(resp.JSON200.Items), nil
 }
