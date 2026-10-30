@@ -72,7 +72,7 @@ var simulateCommand = &cli.Command{
 	},
 	Commands: []*cli.Command{
 		simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand,
-		simulateGetCommand, simulateCancelCommand,
+		simulateGetCommand, simulateCancelCommand, simulateReplayCommand,
 	},
 	Flags: []cli.Flag{
 		&cli.IntFlag{
