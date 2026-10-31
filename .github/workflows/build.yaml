@@ -79,7 +79,7 @@ jobs:
           key: cross-${{ runner.os }}-${{ matrix.id }}-zig0.14.1-alsa1.2.12-${{ hashFiles('scripts/setup-cross.sh') }}
 
       - name: GoReleaser snapshot build
-        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7
+        uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7
         with:
           distribution: goreleaser
           version: latest
