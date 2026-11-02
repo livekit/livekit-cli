@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"os/signal"
@@ -229,6 +230,19 @@ func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string, loadO
 	// Under --user-auth there is no stored API key to hand the agent;
 	// it uses the one in its own env files (see agentEnvCredentials).
 	if !explicit.complete() && userAuthEnabled(cmd) {
+		p := loadParams{}
+		for _, opt := range loadOpts {
+			opt(&p)
+		}
+		if p.allowMissingCredentials && !namedProject(cmd) {
+			creds, _, err := envFileCredentials(dir, agentEnvFiles...)
+			if err != nil {
+				return nil, err
+			}
+			if creds.apiKey == "" {
+				return explicit.env(), nil
+			}
+		}
 		creds, err := agentEnvCredentials(ctx, cmd, dir)
 		if err != nil {
 			return nil, err
@@ -368,6 +382,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	agentOutput := &quietWriter{w: os.Stdout, last: time.Now()}
 	cfg := AgentStartConfig{
 		Dir:           projectDir,
 		Entrypoint:    entrypoint,
@@ -375,7 +390,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		RuntimeArgs:   forwardedArgs(cmd),
 		CLIArgs:       cliArgs,
 		Env:           env,
-		ForwardOutput: os.Stdout,
+		ForwardOutput: agentOutput,
 	}
 
 	// When the agent reports its ServerInfo over the dev channel, print a console
@@ -385,9 +400,10 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	cfg.OnServerInfo = func(agentName, wsURL string) {
 		if link := cloudConsoleURL(wsURL, agentName, deployment); link != "" {
 			consoleLinkOnce.Do(func() {
-				// Delay briefly so the link prints after the agent's own startup
-				// logs rather than getting buried in them.
-				time.AfterFunc(time.Second, func() {
+				// Print once the agent's startup logs settle, so the link is not
+				// buried in them.
+				go func() {
+					agentOutput.waitQuiet(150*time.Millisecond, time.Second)
 					// Accent-colored, and a clickable OSC 8 hyperlink on terminals
 					// that support it (gated so the escape never leaks into pipes).
 					label := util.Accented(link)
@@ -396,7 +412,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 					}
 					out.Status("")
 					out.Statusf("Agent console: %s", label)
-				})
+				}()
 			})
 		}
 	}
@@ -453,4 +469,33 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	err = watcher.Run(done)
 	signal.Stop(sigCh)
 	return err
+}
+
+// quietWriter forwards agent output and remembers when it last wrote, so status
+// lines can wait for the agent's logs to settle instead of a fixed delay.
+type quietWriter struct {
+	w    io.Writer
+	mu   sync.Mutex
+	last time.Time
+}
+
+func (q *quietWriter) Write(p []byte) (int, error) {
+	q.mu.Lock()
+	q.last = time.Now()
+	q.mu.Unlock()
+	return q.w.Write(p)
+}
+
+// waitQuiet returns once nothing was written for quiet, or after max.
+func (q *quietWriter) waitQuiet(quiet, max time.Duration) {
+	deadline := time.Now().Add(max)
+	for {
+		q.mu.Lock()
+		idle := time.Since(q.last)
+		q.mu.Unlock()
+		if idle >= quiet || !time.Now().Before(deadline) {
+			return
+		}
+		time.Sleep(min(quiet-idle, time.Until(deadline)))
+	}
 }

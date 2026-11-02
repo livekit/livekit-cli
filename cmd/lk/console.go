@@ -161,6 +161,12 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
+	// Console itself needs no project, but inference/storage in application
+	// imports need any configured credentials before Python or Node starts.
+	credsEnv, err := resolveCredentials(ctx, cmd, projectDir, optionalCredentials)
+	if err != nil {
+		return err
+	}
 
 	// Show spinner while starting agent
 	stopSpinner := startSpinner("Starting agent")
@@ -170,6 +176,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		ProjectType: projectType,
 		RuntimeArgs: forwardedArgs(cmd),
 		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
+		Env:         credsEnv,
 		FailSignals: consoleCrashSignals,
 	})
 	if err != nil {

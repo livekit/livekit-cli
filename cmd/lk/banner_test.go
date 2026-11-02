@@ -1,13 +1,52 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
 )
+
+func TestLocalAgentStartupNeverFetchesAnUncachedOrExpiredBanner(t *testing.T) {
+	setHome(t, t.TempDir())
+	previous := http.DefaultClient
+	http.DefaultClient = &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+		t.Fatal("local agent startup tried to fetch the promotional banner")
+		return nil, nil
+	})}
+	t.Cleanup(func() { http.DefaultClient = previous })
+	path, err := bannerCachePath()
+	require.NoError(t, err)
+	for _, command := range []string{"dev", "start", "console", "debugger"} {
+		for _, stale := range []bool{false, true} {
+			if stale {
+				require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o700))
+				require.NoError(t, os.WriteFile(path, []byte(`[{"message":"expired offer"}]`), 0o600))
+				old := time.Now().Add(-2 * bannerTTL)
+				require.NoError(t, os.Chtimes(path, old, old))
+			} else {
+				_ = os.Remove(path)
+			}
+			app := &cli.Command{
+				Name: "lk",
+				Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+					require.Nil(t, loadBanner(ctx, cmd))
+					return ctx, nil
+				},
+				Commands: []*cli.Command{{Name: "agent", Commands: []*cli.Command{{Name: command, Action: func(context.Context, *cli.Command) error { return nil }}}}},
+			}
+			require.NoError(t, app.Run(context.Background(), []string{"lk", "agent", command}))
+		}
+	}
+}
 
 func TestBannerMessages(t *testing.T) {
 	cases := []struct {
