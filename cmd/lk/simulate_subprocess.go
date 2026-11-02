@@ -259,43 +259,14 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	return pythonBin, args, nil
 }
 
-// checkPythonAgentImport uses the same interpreter, runtime arguments, and
-// environment as launch. Distribution names and metadata do not determine
-// whether the livekit.agents module can actually run in this project.
-func checkPythonAgentImport(cfg AgentStartConfig) error {
-	bin, prefix, err := agentfs.FindPythonBinary(cfg.Dir, cfg.ProjectType)
-	if err != nil {
-		return err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	args := append(prefix, cfg.RuntimeArgs...)
-	args = append(args, "-c", "import livekit.agents")
-	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Dir = cfg.Dir
-	if len(cfg.Env) > 0 {
-		cmd.Env = append(os.Environ(), cfg.Env...)
-	}
-	output, err := cmd.CombinedOutput()
-	if ctx.Err() != nil {
-		return fmt.Errorf("checking the livekit.agents import timed out after 15 seconds; check the project's Python environment")
-	}
-	if err != nil {
-		return fmt.Errorf("cannot import livekit.agents in the project's Python environment; sync or install the project's dependencies and check its Python path:\n%s", strings.TrimSpace(string(output)))
-	}
-	return nil
-}
-
 // startAgent launches a Python or Node agent subprocess and monitors its output.
 func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
-	// Check the module Python will import, rather than a distribution name.
-	// Node still checks its SDK baseline before launching.
+	// Python validates imports in the worker itself; do not import the SDK
+	// in a throwaway preflight process. Node still checks its SDK baseline.
 	if cfg.ProjectType.IsNode() {
 		if err := checkNodeSDKVersion(cfg); err != nil {
 			return nil, err
 		}
-	} else if err := checkPythonAgentImport(cfg); err != nil {
-		return nil, err
 	}
 
 	bin, args, err := buildAgentCommand(cfg)
@@ -343,6 +314,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 
 	// Capture output from both stdout and stderr
 	readyOnce := sync.Once{}
+	importHintOnce := sync.Once{}
 	failOnce := sync.Once{}
 	scanOutput := func(r io.Reader) {
 		scanner := bufio.NewScanner(r)
@@ -354,6 +326,15 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 			ap.appendLog(line)
 			if cfg.ForwardOutput != nil {
 				fmt.Fprintln(cfg.ForwardOutput, line)
+			}
+			if cfg.ProjectType.IsPython() && (strings.Contains(line, "ModuleNotFoundError:") || strings.Contains(line, "ImportError:") || strings.Contains(line, ": No module named livekit.agents")) {
+				importHintOnce.Do(func() {
+					hint := "Python could not import the agent or one of its dependencies; sync or install the project's dependencies and check its Python path."
+					ap.appendLog(hint)
+					if cfg.ForwardOutput != nil {
+						fmt.Fprintln(cfg.ForwardOutput, hint)
+					}
+				})
 			}
 			if cfg.ReadySignal != "" && strings.Contains(line, cfg.ReadySignal) {
 				readyOnce.Do(func() { close(ap.readyCh) })
@@ -377,9 +358,10 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	go func() { defer scanWg.Done(); scanOutput(stdout) }()
 	go func() { defer scanWg.Done(); scanOutput(stderr) }()
 	go func() {
-		ap.doneCh <- cmd.Wait()
+		processErr := cmd.Wait()
 		close(ap.exitCh)
 		scanWg.Wait()
+		ap.doneCh <- processErr
 		if ap.LogStream != nil {
 			close(ap.LogStream)
 		}
