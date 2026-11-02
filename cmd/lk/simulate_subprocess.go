@@ -94,9 +94,7 @@ func checkTypeStrippingSupport(dir, nodeBin string) error {
 }
 
 // nodeAgentMinVersion is the minimum @livekit/agents (agents-js) release the
-// CLI supports. Unlike the Python thin CLI (gated on thinCLIMinVersion), the
-// Node entrypoint exposes the start/console/simulate subcommands directly, so
-// the baseline differs. Local placeholder — the deploy path sources the
+// CLI supports. Local placeholder — the deploy path sources the
 // equivalent floor from server client settings.
 const nodeAgentMinVersion = "1.0.0"
 
@@ -118,30 +116,6 @@ func checkNodeSDKVersion(cfg AgentStartConfig) error {
 		return fmt.Errorf("@livekit/agents version %s is too old, please upgrade to %s or newer", version, nodeAgentMinVersion)
 	}
 	return nil
-}
-
-// checkPythonSDKVersion gates a Python agent on thinCLIMinVersion. It prefers
-// the installed version (resolved via the interpreter, accurate regardless of
-// the package manager and not fooled by a loose version constraint); when
-// dependencies aren't installed it falls back to static project-file parsing.
-func checkPythonSDKVersion(cfg AgentStartConfig) error {
-	version, notInstalled := agentfs.ResolvePythonAgentVersion(cfg.Dir, cfg.ProjectType)
-	if notInstalled && cfg.ProjectType == agentfs.ProjectTypePythonUV {
-		// The launch runs `uv run --no-sync`, so a missing package won't be
-		// installed on the way up — fail fast with the fix instead.
-		return fmt.Errorf("livekit-agents is not installed in the project environment; run `uv sync` and try again")
-	}
-	if version != "" {
-		// An unparseable version (e.g. a local "0.0.0.dev" tag) shouldn't block a run.
-		if ok, err := agentfs.IsVersionSatisfied(version, thinCLIMinVersion); err == nil && !ok {
-			return fmt.Errorf("livekit-agents version %s is too old, please upgrade to %s or newer", version, thinCLIMinVersion)
-		}
-		return nil
-	}
-	return agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
-		"python-min-sdk-version": thinCLIMinVersion,
-		"node-min-sdk-version":   thinCLIMinVersion,
-	})
 }
 
 // defaultEntrypoints returns candidate entrypoint paths (relative to the
@@ -240,10 +214,6 @@ type AgentStartConfig struct {
 	OnServerInfo func(agentName, wsURL string)
 }
 
-// thinCLIMinVersion is the first livekit-agents release that exposes the
-// start/dev/console/simulate subcommands under `python -m livekit.agents`.
-const thinCLIMinVersion = "1.6.0"
-
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
 // branching on project type. Python uses the thin CLI:
 // `<python> <runtime-args> -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS`
@@ -295,15 +265,13 @@ const agentOutputDrainTimeout = 2 * time.Second
 
 // startAgent launches a Python or Node agent subprocess and monitors its output.
 func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
-	// fail fast when the agent SDK is older than the baseline the CLI supports.
-	// Node resolves the installed package via the runtime so workspace/monorepo
-	// layouts work; Python parses project files against the thin-CLI baseline.
+	// Python runs the module in the project environment directly: distribution
+	// names and metadata need not match the importable livekit.agents module.
+	// Node still checks its SDK baseline before launching.
 	if cfg.ProjectType.IsNode() {
 		if err := checkNodeSDKVersion(cfg); err != nil {
 			return nil, err
 		}
-	} else if err := checkPythonSDKVersion(cfg); err != nil {
-		return nil, err
 	}
 
 	bin, args, err := buildAgentCommand(cfg)

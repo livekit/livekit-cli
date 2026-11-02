@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +32,7 @@ var skipDirs = map[string]bool{
 	"__pycache__": true, ".mypy_cache": true, ".pytest_cache": true, ".ruff_cache": true,
 	".venv": true, "venv": true, "env": true,
 	"node_modules": true, ".next": true, "dist": true, "build": true,
+	"target": true, // Cargo output can contain millions of files in mixed Python/Rust workspaces.
 }
 
 // watchExtensions returns file extensions to watch for a project type.
@@ -101,14 +103,14 @@ type agentWatcher struct {
 	session *devSession
 }
 
-func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
+func newAgentFileWatcher(dir string) (*fsnotify.Watcher, error) {
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
 	}
 
-	// Walk directory tree and add all non-skip directories
-	err = filepath.Walk(config.Dir, func(path string, info os.FileInfo, err error) error {
+	// WalkDir avoids statting every file; prune build trees before reading their contents.
+	err = filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -124,6 +126,15 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 	if err != nil {
 		w.Close()
 		return nil, fmt.Errorf("failed to setup file watcher: %w", err)
+	}
+
+	return w, nil
+}
+
+func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
+	w, err := newAgentFileWatcher(config.Dir)
+	if err != nil {
+		return nil, err
 	}
 
 	// The dev server backs two things over one channel: the ServerInfo the agent
