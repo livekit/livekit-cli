@@ -198,8 +198,6 @@ func findEntrypoint(dir, explicit string, projectType agentfs.ProjectType) (stri
 
 // AgentStartConfig configures how to launch an agent subprocess.
 type AgentStartConfig struct {
-	// Additional development source trees, relative to the caller's working directory.
-	WatchDirs     []string
 	Dir           string
 	Entrypoint    string
 	ProjectType   agentfs.ProjectType

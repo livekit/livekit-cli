@@ -141,10 +141,6 @@ var devCommand = &cli.Command{
 	Description: agentCredentialsHelp,
 	ArgsUsage:   "[entrypoint] [-- node/python-args...]",
 	Flags: append(agentRunFlags,
-		&cli.StringSliceFlag{
-			Name:  "watch",
-			Usage: "Additional source directory to watch alongside the entrypoint directory (repeatable).",
-		},
 		&cli.BoolFlag{
 			Name:  "no-reload",
 			Usage: "Disable auto-reload on file changes.",
@@ -374,7 +370,6 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		CLIArgs:       cliArgs,
 		Env:           env,
 		ForwardOutput: os.Stdout,
-		WatchDirs:     cmd.StringSlice("watch"),
 	}
 
 	// When the agent reports its ServerInfo over the dev channel, print a console
