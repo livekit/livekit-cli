@@ -131,40 +131,34 @@ func ignoredWatchDirs(dir string) map[string]bool {
 	return ignored
 }
 
-func newAgentFileWatcher(dirs ...string) (*fsnotify.Watcher, error) {
+func newAgentFileWatcher(dir string) (*fsnotify.Watcher, error) {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, fmt.Errorf("invalid watch directory: %w", err)
+	}
+	info, err := os.Stat(dir)
+	if err != nil || !info.IsDir() {
+		return nil, fmt.Errorf("watch path must be an existing directory: %s", dir)
+	}
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
 	}
-	seen := make(map[string]bool)
-	for _, dir := range dirs {
-		dir, err = filepath.Abs(dir)
-		if err != nil {
-			w.Close()
-			return nil, fmt.Errorf("invalid watch directory: %w", err)
-		}
-		info, err := os.Stat(dir)
+	ignored := ignoredWatchDirs(dir)
+	// Prune artifacts before registration: kqueue also inspects each directory's files.
+	err = filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil || !info.IsDir() {
-			w.Close()
-			return nil, fmt.Errorf("watch path must be an existing directory: %s", dir)
+			return nil
 		}
-		ignored := ignoredWatchDirs(dir)
-		// Prune artifacts before registration: kqueue also inspects each directory's files.
-		err = filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
-			if err != nil || !info.IsDir() {
-				return nil
-			}
-			name := info.Name()
-			if seen[path] || skipDirs[name] || ignored[path] || (strings.HasPrefix(name, ".") && name != ".") {
-				return filepath.SkipDir
-			}
-			seen[path] = true
-			return w.Add(path)
-		})
-		if err != nil {
-			w.Close()
-			return nil, fmt.Errorf("failed to setup file watcher: %w", err)
+		name := info.Name()
+		if path != dir && (skipDirs[name] || ignored[path] || strings.HasPrefix(name, ".")) {
+			return filepath.SkipDir
 		}
+		return w.Add(path)
+	})
+	if err != nil {
+		w.Close()
+		return nil, fmt.Errorf("failed to setup file watcher: %w", err)
 	}
 	return w, nil
 }
@@ -279,14 +273,9 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 	if err := aw.start(); err != nil {
 		return err
 	}
-	// The package-manager root may be an enormous monorepo. Watch the agent's
-	// own tree, with explicit additions for shared code or editable SDKs.
-	entrypoint := aw.config.Entrypoint
-	if !filepath.IsAbs(entrypoint) {
-		entrypoint = filepath.Join(aw.config.Dir, entrypoint)
-	}
-	roots := append([]string{filepath.Dir(entrypoint)}, aw.config.WatchDirs...)
-	watcher, err := newAgentFileWatcher(roots...)
+	// Watch the user's project, including shared modules outside the entrypoint's
+	// directory. Dependency, cache and build trees are pruned during registration.
+	watcher, err := newAgentFileWatcher(aw.config.Dir)
 	if err != nil {
 		return err
 	}
