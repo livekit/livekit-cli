@@ -15,9 +15,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -26,13 +28,18 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 )
 
-// skipDirs are directories to never watch.
+// skipDirs are generated output, installed dependencies, and caches. Hidden
+// directories are also pruned by the walk, covering .git, .venv, .next, .cache,
+// .tox, .nox, .mypy_cache, .pytest_cache, .ruff_cache, .turbo, and similar trees.
 var skipDirs = map[string]bool{
-	".git": true, ".hg": true, ".svn": true,
-	"__pycache__": true, ".mypy_cache": true, ".pytest_cache": true, ".ruff_cache": true,
-	".venv": true, "venv": true, "env": true,
-	"node_modules": true, ".next": true, "dist": true, "build": true,
-	"target": true, // Cargo output can contain millions of files in mixed Python/Rust workspaces.
+	// Python environments and generated documentation.
+	"__pycache__": true, "__pypackages__": true, "site-packages": true,
+	"venv": true, "env": true, "htmlcov": true, "_build": true,
+	// JavaScript, Go, Swift, and other installed dependency trees.
+	"node_modules": true, "bower_components": true, "vendor": true,
+	"Pods": true, "Carthage": true, "elm-stuff": true,
+	// Build output and coverage reports, including Cargo's default target dir.
+	"target": true, "dist": true, "build": true, "out": true, "coverage": true,
 }
 
 // watchExtensions returns file extensions to watch for a project type.
@@ -103,12 +110,34 @@ type agentWatcher struct {
 	session *devSession
 }
 
+// ignoredWatchDirs asks Git for whole ignored directories, without expanding
+// their contents. This covers project-specific output such as a custom Cargo
+// target directory. Watching still works outside Git repositories.
+func ignoredWatchDirs(dir string) map[string]bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "-z")
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	ignored := make(map[string]bool)
+	if err != nil {
+		return ignored
+	}
+	for _, path := range strings.Split(string(output), "\x00") {
+		if strings.HasSuffix(path, "/") {
+			ignored[filepath.Join(dir, filepath.FromSlash(strings.TrimSuffix(path, "/")))] = true
+		}
+	}
+	return ignored
+}
+
 func newAgentFileWatcher(dir string) (*fsnotify.Watcher, error) {
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
 	}
 
+	ignored := ignoredWatchDirs(dir)
 	// WalkDir avoids statting every file; prune build trees before reading their contents.
 	err = filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
@@ -118,7 +147,7 @@ func newAgentFileWatcher(dir string) (*fsnotify.Watcher, error) {
 			return nil
 		}
 		name := info.Name()
-		if skipDirs[name] || (strings.HasPrefix(name, ".") && name != ".") {
+		if skipDirs[name] || ignored[path] || (strings.HasPrefix(name, ".") && name != ".") {
 			return filepath.SkipDir
 		}
 		return w.Add(path)
