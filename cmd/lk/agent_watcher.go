@@ -131,32 +131,41 @@ func ignoredWatchDirs(dir string) map[string]bool {
 	return ignored
 }
 
-func newAgentFileWatcher(dir string) (*fsnotify.Watcher, error) {
+func newAgentFileWatcher(dirs ...string) (*fsnotify.Watcher, error) {
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
 	}
-
-	ignored := ignoredWatchDirs(dir)
-	// WalkDir avoids statting every file; prune build trees before reading their contents.
-	err = filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
+	seen := make(map[string]bool)
+	for _, dir := range dirs {
+		dir, err = filepath.Abs(dir)
 		if err != nil {
-			return nil
+			w.Close()
+			return nil, fmt.Errorf("invalid watch directory: %w", err)
 		}
-		if !info.IsDir() {
-			return nil
+		info, err := os.Stat(dir)
+		if err != nil || !info.IsDir() {
+			w.Close()
+			return nil, fmt.Errorf("watch path must be an existing directory: %s", dir)
 		}
-		name := info.Name()
-		if skipDirs[name] || ignored[path] || (strings.HasPrefix(name, ".") && name != ".") {
-			return filepath.SkipDir
+		ignored := ignoredWatchDirs(dir)
+		// Prune artifacts before registration: kqueue also inspects each directory's files.
+		err = filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
+			if err != nil || !info.IsDir() {
+				return nil
+			}
+			name := info.Name()
+			if seen[path] || skipDirs[name] || ignored[path] || (strings.HasPrefix(name, ".") && name != ".") {
+				return filepath.SkipDir
+			}
+			seen[path] = true
+			return w.Add(path)
+		})
+		if err != nil {
+			w.Close()
+			return nil, fmt.Errorf("failed to setup file watcher: %w", err)
 		}
-		return w.Add(path)
-	})
-	if err != nil {
-		w.Close()
-		return nil, fmt.Errorf("failed to setup file watcher: %w", err)
 	}
-
 	return w, nil
 }
 
@@ -270,7 +279,14 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 	if err := aw.start(); err != nil {
 		return err
 	}
-	watcher, err := newAgentFileWatcher(aw.config.Dir)
+	// The package-manager root may be an enormous monorepo. Watch the agent's
+	// own tree, with explicit additions for shared code or editable SDKs.
+	entrypoint := aw.config.Entrypoint
+	if !filepath.IsAbs(entrypoint) {
+		entrypoint = filepath.Join(aw.config.Dir, entrypoint)
+	}
+	roots := append([]string{filepath.Dir(entrypoint)}, aw.config.WatchDirs...)
+	watcher, err := newAgentFileWatcher(roots...)
 	if err != nil {
 		return err
 	}
