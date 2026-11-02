@@ -80,7 +80,7 @@ func TestResolvePythonAgentVersion_ReadsInstalledVersion(t *testing.T) {
 
 // A missing module gets an actionable error; an importable module from an
 // arbitrary source directory launches without distribution metadata.
-func TestStartPythonAgentChecksImportInsteadOfDistribution(t *testing.T) {
+func TestStartPythonAgentImportsOnceAndReportsMissingDependencies(t *testing.T) {
 	if _, err := exec.LookPath("uv"); err != nil {
 		t.Skip("uv not on PATH")
 	}
@@ -97,13 +97,18 @@ func TestStartPythonAgentChecksImportInsteadOfDistribution(t *testing.T) {
 		CLIArgs: []string{"start", "--dev"}, ReadySignal: "module launched",
 		Env: []string{"PYTHONPATH=" + source},
 	}
-	_, err = startAgent(cfg)
-	require.ErrorContains(t, err, "cannot import livekit.agents")
-	require.ErrorContains(t, err, "sync or install the project's dependencies")
+	missing, err := startAgent(cfg)
+	require.NoError(t, err)
+	t.Cleanup(func() { missing.Kill() })
+	require.Error(t, <-missing.Done())
+	require.Contains(t, strings.Join(missing.RecentLogs(0), "\n"), "sync or install the project's dependencies")
 
 	module := filepath.Join(source, "livekit", "agents")
 	require.NoError(t, os.MkdirAll(module, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(module, "__init__.py"), nil, 0o644))
+	count := filepath.Join(dir, "imports.txt")
+	cfg.Env = append(cfg.Env, "IMPORT_COUNT="+count)
+	require.NoError(t, os.WriteFile(filepath.Join(module, "__init__.py"),
+		[]byte("import os\nwith open(os.environ['IMPORT_COUNT'], 'a') as f: f.write('import\\n')\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(module, "__main__.py"),
 		[]byte("print('module launched', flush=True)\n"), 0o644))
 	ap, err := startAgent(cfg)
@@ -115,6 +120,9 @@ func TestStartPythonAgentChecksImportInsteadOfDistribution(t *testing.T) {
 		t.Fatal("Python module did not launch")
 	}
 	require.NoError(t, <-ap.doneCh)
+	imports, err := os.ReadFile(count)
+	require.NoError(t, err)
+	require.Equal(t, "import\n", string(imports))
 }
 
 func TestFindPythonBinary_UVRunDoesNotSyncEnvironment(t *testing.T) {

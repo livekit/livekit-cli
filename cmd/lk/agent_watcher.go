@@ -161,11 +161,6 @@ func newAgentFileWatcher(dir string) (*fsnotify.Watcher, error) {
 }
 
 func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
-	w, err := newAgentFileWatcher(config.Dir)
-	if err != nil {
-		return nil, err
-	}
-
 	// The dev server backs two things over one channel: the ServerInfo the agent
 	// reports on connect (e.g. for the Cloud console link) and the reload protocol
 	// (capture running jobs from the old process, restore them in the new one). It
@@ -173,7 +168,6 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 	// is Python-only and gated in restart() (Node reloads are a plain kill+respawn).
 	rs, err := newDevServer()
 	if err != nil {
-		w.Close()
 		return nil, err
 	}
 	rs.onServerInfo = config.OnServerInfo
@@ -186,7 +180,6 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		config:    config,
 		exts:      watchExtensions(config.ProjectType),
 		debounce:  500 * time.Millisecond,
-		watcher:   w,
 		restartCh: make(chan struct{}, 1),
 		devSrv:    rs,
 	}, nil
@@ -251,9 +244,6 @@ func (aw *agentWatcher) restart() error {
 
 // Run watches for file changes and restarts the agent. Blocks until done is closed.
 func (aw *agentWatcher) Run(done <-chan struct{}) error {
-	if err := aw.start(); err != nil {
-		return err
-	}
 	defer func() {
 		if aw.agent != nil {
 			// If Shutdown() was already called by the signal forwarder,
@@ -271,8 +261,20 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 			aw.session.close()
 		}
 		aw.devSrv.close()
-		aw.watcher.Close()
+		if aw.watcher != nil {
+			aw.watcher.Close()
+		}
 	}()
+
+	// Start Python before scanning the tree so watcher setup overlaps imports.
+	if err := aw.start(); err != nil {
+		return err
+	}
+	watcher, err := newAgentFileWatcher(aw.config.Dir)
+	if err != nil {
+		return err
+	}
+	aw.watcher = watcher
 
 	var debounceTimer *time.Timer
 	var debounceCh <-chan time.Time
