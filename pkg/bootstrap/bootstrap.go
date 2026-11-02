@@ -117,6 +117,12 @@ func ParseTaskfile(rootPath string) (*ast.Taskfile, error) {
 }
 
 func NewTaskExecutor(dir string, verbose bool) *task.Executor {
+	// On Windows, task runs core utils like mktemp in-process via u-root,
+	// which falls back to a hardcoded /tmp when TMPDIR is unset.
+	if os.Getenv("TMPDIR") == "" {
+		os.Setenv("TMPDIR", os.TempDir())
+	}
+
 	var o io.Writer = os.Stdout
 	var e io.Writer = os.Stderr
 	return &task.Executor{
