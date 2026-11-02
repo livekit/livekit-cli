@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -14,11 +15,21 @@ func TestAgentFileWatcherSkipsBuildAndDependencyTrees(t *testing.T) {
 	ignored := []string{
 		"rust/target/debug/deps", "target/release", ".venv/lib/python",
 		"node_modules/dependency", "build/generated", ".git/objects",
+		".cache/pip", "__pypackages__/3.12", "site-packages/livekit",
+		"vendor/dependency", "out/generated", "coverage/report", "_build/html",
+		"bower_components/dependency", "Pods/dependency", "Carthage/Build", "elm-stuff/packages",
 	}
 	for _, dir := range append(ignored, "examples/frontdesk", "src/livekit") {
 		path := filepath.Join(root, filepath.FromSlash(dir))
 		require.NoError(t, os.MkdirAll(path, 0o755))
 		require.NoError(t, os.WriteFile(filepath.Join(path, "agent.py"), nil, 0o644))
+	}
+	if _, err := exec.LookPath("git"); err == nil {
+		require.NoError(t, exec.Command("git", "init", "--quiet", root).Run())
+		require.NoError(t, os.WriteFile(filepath.Join(root, ".gitignore"), []byte("cargo-output/\n"), 0o644))
+		output := filepath.Join(root, "cargo-output", "debug")
+		require.NoError(t, os.MkdirAll(output, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(output, "generated.py"), nil, 0o644))
 	}
 	watcher, err := newAgentFileWatcher(root)
 	require.NoError(t, err)

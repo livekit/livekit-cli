@@ -78,54 +78,43 @@ func TestResolvePythonAgentVersion_ReadsInstalledVersion(t *testing.T) {
 	require.False(t, notInstalled)
 }
 
-// Local startup depends on an importable module, not an installed distribution
-// name or version. Exercise the production subprocess path with real Python.
-func TestStartPythonAgentWithoutSDKPackageGate(t *testing.T) {
+// A missing module gets an actionable error; an importable module from an
+// arbitrary source directory launches without distribution metadata.
+func TestStartPythonAgentChecksImportInsteadOfDistribution(t *testing.T) {
 	if _, err := exec.LookPath("uv"); err != nil {
 		t.Skip("uv not on PATH")
 	}
-	for _, metadata := range []string{"none", "livekit-agents", "livekit-agents-next"} {
-		t.Run(metadata, func(t *testing.T) {
-			dir := t.TempDir()
-			require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(
-				"[project]\nname = \"test-agent\"\nversion = \"0.0.0\"\n"), 0o644))
-			venv := exec.Command("uv", "venv", "--offline", ".venv")
-			venv.Dir = dir
-			out, err := venv.CombinedOutput()
-			require.NoError(t, err, "%s", out)
-			bin, prefix, err := agentfs.FindPythonBinary(dir, agentfs.ProjectTypePythonUV)
-			require.NoError(t, err)
-			// Install just a module and optional metadata, without a build backend,
-			// package index, or dependency sync. The canonical package is deliberately
-			// older than the retired preflight's floor.
-			install := exec.Command(bin, append(prefix, "-c", `
-import pathlib, sys, sysconfig
-site = pathlib.Path(sysconfig.get_path("purelib"))
-module = site / "livekit" / "agents"
-module.mkdir(parents=True)
-(module / "__main__.py").write_text("print('module launched', flush=True)\n")
-if sys.argv[1] != "none":
-    info = site / (sys.argv[1].replace("-", "_") + "-1.0.0.dist-info")
-    info.mkdir()
-    (info / "METADATA").write_text("Metadata-Version: 2.1\nName: " + sys.argv[1] + "\nVersion: 1.0.0\n")
-`, metadata)...)
-			install.Dir = dir
-			out, err = install.CombinedOutput()
-			require.NoError(t, err, "%s", out)
-			ap, err := startAgent(AgentStartConfig{
-				Dir: dir, Entrypoint: "agent.py", ProjectType: agentfs.ProjectTypePythonUV,
-				CLIArgs: []string{"start", "--dev"}, ReadySignal: "module launched",
-			})
-			require.NoError(t, err)
-			t.Cleanup(func() { ap.Kill() })
-			select {
-			case <-ap.readyCh:
-			case <-time.After(10 * time.Second):
-				t.Fatal("Python module did not launch")
-			}
-			require.NoError(t, <-ap.doneCh)
-		})
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(
+		"[project]\nname = \"test-agent\"\nversion = \"0.0.0\"\n"), 0o644))
+	venv := exec.Command("uv", "venv", "--offline", ".venv")
+	venv.Dir = dir
+	out, err := venv.CombinedOutput()
+	require.NoError(t, err, "%s", out)
+	source := filepath.Join(dir, "custom-sdk-source")
+	cfg := AgentStartConfig{
+		Dir: dir, Entrypoint: "agent.py", ProjectType: agentfs.ProjectTypePythonUV,
+		CLIArgs: []string{"start", "--dev"}, ReadySignal: "module launched",
+		Env: []string{"PYTHONPATH=" + source},
 	}
+	_, err = startAgent(cfg)
+	require.ErrorContains(t, err, "cannot import livekit.agents")
+	require.ErrorContains(t, err, "sync or install the project's dependencies")
+
+	module := filepath.Join(source, "livekit", "agents")
+	require.NoError(t, os.MkdirAll(module, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(module, "__init__.py"), nil, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(module, "__main__.py"),
+		[]byte("print('module launched', flush=True)\n"), 0o644))
+	ap, err := startAgent(cfg)
+	require.NoError(t, err)
+	t.Cleanup(func() { ap.Kill() })
+	select {
+	case <-ap.readyCh:
+	case <-time.After(10 * time.Second):
+		t.Fatal("Python module did not launch")
+	}
+	require.NoError(t, <-ap.doneCh)
 }
 
 func TestFindPythonBinary_UVRunDoesNotSyncEnvironment(t *testing.T) {
