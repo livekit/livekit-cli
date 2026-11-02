@@ -84,7 +84,7 @@ const bannerAudiencesSince = "2.19.2"
 
 // loadBanner returns banner.json from the cache when it is fresh, otherwise from
 // the network, falling back to a stale cache when the fetch fails.
-func loadBanner(ctx context.Context) []byte {
+func loadBanner(ctx context.Context, cmd *cli.Command) []byte {
 	path, err := bannerCachePath()
 	if err != nil {
 		return nil
@@ -92,6 +92,15 @@ func loadBanner(ctx context.Context) []byte {
 	if st, err := os.Stat(path); err == nil && time.Since(st.ModTime()) < bannerTTL {
 		raw, _ := os.ReadFile(path)
 		return raw
+	}
+	// Local agents are frequently restarted. Never make their process startup
+	// wait for an optional promotional fetch, or display a stale cached offer.
+	leaf := leafCommand(cmd)
+	if lineage := leaf.Lineage(); len(lineage) > 1 && lineage[1].Name == "agent" {
+		switch leaf.Name {
+		case "dev", "start", "console", "debugger":
+			return nil
+		}
 	}
 	raw := fetchBanner(ctx)
 	if raw == nil {
@@ -170,7 +179,7 @@ func showBanner(ctx context.Context, cmd *cli.Command) {
 	if !out.Interactive() || SkipPrompts(cmd) {
 		return
 	}
-	printBanner(loadBanner(ctx), out.Err, userBannerAudiences())
+	printBanner(loadBanner(ctx, cmd), out.Err, userBannerAudiences())
 }
 
 // userBannerAudiences returns the banner audiences this user belongs to.
