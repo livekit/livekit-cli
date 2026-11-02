@@ -50,30 +50,25 @@ func watchExtensions(pt agentfs.ProjectType) map[string]bool {
 	return map[string]bool{".js": true, ".ts": true, ".mjs": true, ".mts": true}
 }
 
-// firstPythonCLIAddrVersion is the first Python livekit-agents release that
-// accepts --cli-addr; releases up to and including 1.6.5 only accept the legacy
-// --reload-addr.
-const firstPythonCLIAddrVersion = "1.6.6"
-
 // firstNodeCLIAddrVersion is the first @livekit/agents release that accepts
 // --cli-addr; releases up to and including 1.5.0 reject unknown options, so
 // older SDKs must not be passed any dev-channel flag.
 const firstNodeCLIAddrVersion = "1.5.1"
 
 // devChannelAddrFlag picks the CLI flag used to hand the agent the dev-channel
-// address, or "" when the installed SDK predates any flag it would accept. The
-// installed version is resolved via the project's interpreter so symlinked/
-// workspace deps and loose constraints report what will actually run.
+// address, or "" when the Node SDK predates any flag it would accept. Python
+// uses its backwards-compatible alias without a separate interpreter probe.
 func devChannelAddrFlag(config AgentStartConfig) string {
+	// Python keeps --reload-addr as an alias of --cli-addr. Use the shared flag
+	// directly instead of starting a second interpreter just to inspect metadata.
+	if config.ProjectType.IsPython() {
+		return "--reload-addr"
+	}
 	return devChannelAddrFlagFor(config.ProjectType, agentfs.ResolveInstalledSDKVersion(config.Dir, config.Entrypoint, config.ProjectType))
 }
 
-// devChannelAddrFlagFor implements the flag choice. The flag was renamed
-// --reload-addr -> --cli-addr (it now carries more than reloads), but an SDK
-// must not be handed a flag it predates, so anything not positively new
-// enough — including an undetermined version — falls back to what released
-// SDKs accept: the legacy --reload-addr for Python, no flag at all for Node
-// (whose CLI hard-fails on unknown options).
+// devChannelAddrFlagFor keeps Node SDKs that predate the dev channel from
+// receiving an unknown flag. Python's shared alias needs no version probe.
 func devChannelAddrFlagFor(projectType agentfs.ProjectType, installedVersion string) string {
 	newEnough := func(minVersion string) bool {
 		if installedVersion == "" {
@@ -84,9 +79,6 @@ func devChannelAddrFlagFor(projectType agentfs.ProjectType, installedVersion str
 	}
 	switch {
 	case projectType.IsPython():
-		if newEnough(firstPythonCLIAddrVersion) {
-			return "--cli-addr"
-		}
 		return "--reload-addr"
 	case projectType.IsNode():
 		if newEnough(firstNodeCLIAddrVersion) {
