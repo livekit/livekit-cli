@@ -108,7 +108,7 @@ func TestStartPythonAgentImportsOnceAndReportsMissingDependencies(t *testing.T) 
 	count := filepath.Join(dir, "imports.txt")
 	cfg.Env = append(cfg.Env, "IMPORT_COUNT="+count)
 	require.NoError(t, os.WriteFile(filepath.Join(module, "__init__.py"),
-		[]byte("import os\nwith open(os.environ['IMPORT_COUNT'], 'a') as f: f.write('import\\n')\n"), 0o644))
+		[]byte("import os\nwith open(os.environ['IMPORT_COUNT'], 'a', newline='') as f: f.write('import\\n')\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(module, "__main__.py"),
 		[]byte("print('module launched', flush=True)\n"), 0o644))
 	ap, err := startAgent(cfg)
