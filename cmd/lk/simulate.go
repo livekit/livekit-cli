@@ -107,6 +107,10 @@ var simulateCommand = &cli.Command{
 			Name:  "agent-name",
 			Usage: "Run against an already-running agent instead of spawning one locally. Pass the registered `NAME`, or an empty string (\"\") to target the project's default agent that auto-joins every room. Requires --scenarios.",
 		},
+		&cli.StringFlag{
+			Name:  "deployment",
+			Usage: "`NAME` of the agent deployment to run against, such as a non-production deployment. Defaults to production. Requires --agent-name.",
+		},
 	},
 }
 
@@ -437,8 +441,8 @@ type simulateConfig struct {
 	sipTrunkID string
 	sipNumber  string
 
-	// TODO (steveyoon): add agent deployment support
-	// agentDeployment string
+	// named deployment of agentName to dispatch to; empty is production
+	deployment string
 }
 
 type simulateMode int
@@ -541,6 +545,10 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 	samples := int32(cmd.Int("samples"))
 	passRate := cmd.Float("pass-rate")
 	liveAgentName := cmd.String("agent-name")
+	deployment := cmd.String("deployment")
+	if deployment != "" && !cmd.IsSet("agent-name") {
+		return fmt.Errorf("--deployment requires --agent-name")
+	}
 	var callTo, trunkID, callFrom string
 	if simulationMode == livekit.SimulationMode_SIMULATION_MODE_AUDIO {
 		callTo = cmd.String("to")
@@ -656,6 +664,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		mode:           mode,
 		simulationMode: simulationMode,
 		agentName:      agentName,
+		deployment:     deployment,
 		projectDir:     projectDir,
 		projectType:    projectType,
 		entrypoint:     entrypoint,
@@ -840,6 +849,7 @@ func ciFromEnv() *livekit.SimulationRun_CI {
 func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livekit.PresignedPostRequest, error) {
 	req := &livekit.SimulationRun_Create_Request{
 		AgentName:            c.agentName,
+		Deployment:           c.deployment,
 		NumSimulations:       c.numSimulations,
 		Mode:                 c.simulationMode,
 		BackgroundNoise:      c.backgroundNoise,
