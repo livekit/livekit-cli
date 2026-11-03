@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -23,12 +24,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
+
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 func testDocsTree() *cli.Command {
 	return &cli.Command{
 		Name:  "lk",
-		Flags: []cli.Flag{&cli.BoolFlag{Name: "quiet"}},
+		Flags: []cli.Flag{&cli.BoolFlag{Name: "quiet"}, &cli.BoolFlag{Name: "user-auth"}},
 		Commands: []*cli.Command{
 			{
 				Name:      "generate-docs",
@@ -54,6 +57,7 @@ func testDocsTree() *cli.Command {
 					},
 					{Name: "logs", Aliases: []string{"tail"}, Usage: "Stream logs"},
 					{Name: "secret", Hidden: true},
+					{Name: "user-auth-only", Usage: "Only exists under --user-auth", Hidden: true, Metadata: userAuthOnly},
 				},
 			},
 		},
@@ -102,6 +106,27 @@ func TestGenerateDocsArgs(t *testing.T) {
 
 	require.NoError(t, testDocsTree().Run(context.Background(), []string{"lk", "generate-docs", "--list"}))
 	require.NoError(t, testDocsTree().Run(context.Background(), []string{"lk", "generate-docs", "agent", "deploy"}))
+}
+
+func TestGenerateDocsUserAuth(t *testing.T) {
+	list := func(args ...string) string {
+		var buf strings.Builder
+		prev := out
+		out = util.NewPrinter(&buf, io.Discard, false)
+		t.Cleanup(func() { out = prev })
+		root := testDocsTree()
+		t.Cleanup(func() { setUserAuthHidden(root, true) })
+		require.NoError(t, root.Run(context.Background(), append([]string{"lk"}, args...)))
+		return buf.String()
+	}
+	assert.NotContains(t, list("generate-docs", "--list"), "agent user-auth-only")
+	assert.Contains(t, list("--user-auth", "generate-docs", "--list"), "agent user-auth-only")
+
+	// A signed-in user, whose session revealed it at startup, needs no flag.
+	root := testDocsTree()
+	setUserAuthHidden(root, false)
+	t.Cleanup(func() { setUserAuthHidden(root, true) })
+	require.NoError(t, root.Run(context.Background(), []string{"lk", "generate-docs", "agent", "user-auth-only"}))
 }
 
 func TestShortDuration(t *testing.T) {
