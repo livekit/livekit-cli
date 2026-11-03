@@ -539,6 +539,258 @@ func (e LivekitAgentChatRole) Valid() bool {
 	}
 }
 
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCityAmbienceOgg   LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "city-ambience.ogg"
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCrowdedRoomOgg    LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "crowded-room.ogg"
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioForestAmbienceOgg LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "forest-ambience.ogg"
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioNone              LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "none"
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioOfficeAmbienceOgg LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "office-ambience.ogg"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCityAmbienceOgg:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCrowdedRoomOgg:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioForestAmbienceOgg:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioNone:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioOfficeAmbienceOgg:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode.
+const (
+	DataCollection     LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode = "data_collection"
+	PromptInstructions LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode = "prompt_instructions"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode) Valid() bool {
+	switch e {
+	case DataCollection:
+		return true
+	case PromptInstructions:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigModelMode.
+const (
+	Pipeline LivekitPublicapiAgentsV1BuilderAgentConfigModelMode = "pipeline"
+	Realtime LivekitPublicapiAgentsV1BuilderAgentConfigModelMode = "realtime"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigModelMode enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigModelMode) Valid() bool {
+	switch e {
+	case Pipeline:
+		return true
+	case Realtime:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvc          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-bvc"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvcTelephony LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-bvc-telephony"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispNc           LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-nc"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationNone              LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "none"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailL            LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-l"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfL          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-vf-l"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfS          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-vf-s"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvc:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvcTelephony:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispNc:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationNone:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailL:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfL:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType.
+const (
+	Custom  LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType = "custom"
+	Default LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType = "default"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType) Valid() bool {
+	switch e {
+	case Custom:
+		return true
+	case Default:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeBoolean LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "boolean"
+	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeNumber  LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "number"
+	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeString  LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "string"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeBoolean:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeNumber:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeString:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod.
+const (
+	DELETE LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "DELETE"
+	GET    LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "GET"
+	PATCH  LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "PATCH"
+	POST   LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "POST"
+	PUT    LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "PUT"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod) Valid() bool {
+	switch e {
+	case DELETE:
+		return true
+	case GET:
+		return true
+	case PATCH:
+		return true
+	case POST:
+		return true
+	case PUT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortHigh   LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "high"
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortLow    LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "low"
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortMedium LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "medium"
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortNone   LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "none"
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortXhigh  LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "xhigh"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortHigh:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortLow:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortMedium:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortNone:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortXhigh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeBoolean LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "boolean"
+	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeInteger LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "integer"
+	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeNumber  LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "number"
+	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeString  LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "string"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeBoolean:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeInteger:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeNumber:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeString:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1DeploymentStatus.
+const (
+	DEPLOYMENTSTATUSBUILDFAILED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_BUILD_FAILED"
+	DEPLOYMENTSTATUSBUILDING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_BUILDING"
+	DEPLOYMENTSTATUSDELETING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_DELETING"
+	DEPLOYMENTSTATUSFAILED      LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_FAILED"
+	DEPLOYMENTSTATUSNOTDEPLOYED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_NOT_DEPLOYED"
+	DEPLOYMENTSTATUSRUNNING     LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_RUNNING"
+	DEPLOYMENTSTATUSSLEEPING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_SLEEPING"
+	DEPLOYMENTSTATUSSTARTING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_STARTING"
+	DEPLOYMENTSTATUSUNSPECIFIED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1DeploymentStatus enum.
+func (e LivekitPublicapiAgentsV1DeploymentStatus) Valid() bool {
+	switch e {
+	case DEPLOYMENTSTATUSBUILDFAILED:
+		return true
+	case DEPLOYMENTSTATUSBUILDING:
+		return true
+	case DEPLOYMENTSTATUSDELETING:
+		return true
+	case DEPLOYMENTSTATUSFAILED:
+		return true
+	case DEPLOYMENTSTATUSNOTDEPLOYED:
+		return true
+	case DEPLOYMENTSTATUSRUNNING:
+		return true
+	case DEPLOYMENTSTATUSSLEEPING:
+		return true
+	case DEPLOYMENTSTATUSSTARTING:
+		return true
+	case DEPLOYMENTSTATUSUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LivekitPublicapiAnalyticsV1ParticipantSortField.
 const (
 	PARTICIPANTSORTFIELDJOINEDAT    LivekitPublicapiAnalyticsV1ParticipantSortField = "PARTICIPANT_SORT_FIELD_JOINED_AT"
@@ -761,19 +1013,14 @@ func (e LivekitPublicapiObservabilityV1SpanStatus) Valid() bool {
 	}
 }
 
-// CloudProtocolPIIRedactionCategory PIIRedactionCategory is the canonical taxonomy of PII entity types a project
+// CloudProtocolPIIRedactionCategory The types of personally identifiable information (PII) a project can redact.
 //
-//	may select for redaction. It is the shared contract across Cloud, backend,
-//	and the dashboard so none of them need to import the redaction library.
+//	Choose the categories with `piiRedactionCategories` on a project. When that
+//	list is empty and `enablePiiRedaction` is true, the project redacts a default
+//	set.
 //
-//	Each value's name maps 1:1 to the snake_case identifier the redaction model
-//	emits: strip the PII_REDACTION_CATEGORY_ prefix and lowercase (see
-//	PIIRedactionCategory.Canonical in Go). A guard test in cloud-observability
-//	asserts this set stays in sync with redact.KnownCategories.
-//
-//	Numbers are permanent and assigned in append order; never renumber or reuse
-//	one. Add a new category with the next free number, then classify it via
-//	PIIRedactionCategory.Class in Go.
+//	Each name maps to the identifier the redaction model emits: strip the
+//	`PII_REDACTION_CATEGORY_` prefix and lowercase the rest.
 type CloudProtocolPIIRedactionCategory string
 
 // GoogleProtobufAny Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
@@ -784,7 +1031,7 @@ type GoogleProtobufAny struct {
 }
 
 // GoogleProtobufDuration A span of time as protobuf JSON encodes it: seconds with an "s" suffix,
-// e.g. "86400s" for a day. Responses carry 0, 3, 6 or 9 fractional
+// for example "86400s" for a day. Responses carry 0, 3, 6 or 9 fractional
 // digits ("1.500s", "0.000000001s"); requests may use 1 to 9. At most
 // 315576000000 seconds either way. Not an ISO 8601 duration ("P1D" is
 // rejected).
@@ -1812,6 +2059,394 @@ type LivekitAgentMetricsReport struct {
 	TtsNodeTtfb              *float64                 `json:"ttsNodeTtfb,omitempty"`
 }
 
+// LivekitPublicapiAgentsV1BuilderAgent An agent made from a configuration.
+type LivekitPublicapiAgentsV1BuilderAgent struct {
+	// AgentId The ID of the agent on LiveKit Cloud, as other agent APIs and the `lk`
+	//  CLI show it.
+	AgentId *string `json:"agentId,omitempty"`
+
+	// Config The current configuration. ListBuilderAgents does not set it.
+	Config    *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+	CreatedAt *GoogleProtobufTimestamp                    `json:"createdAt,omitempty"`
+
+	// Deployment The deployment of the agent. Unset when the status cannot be read now.
+	Deployment *LivekitPublicapiAgentsV1Deployment `json:"deployment,omitempty"`
+	Id         *string                             `json:"id,omitempty"`
+
+	// Name The name the agent registers under. Dispatch this name to send the agent
+	//  to a room.
+	Name      *string                  `json:"name,omitempty"`
+	ProjectId *string                  `json:"projectId,omitempty"`
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+
+	// VersionId The version that holds the current configuration.
+	VersionId *string `json:"versionId,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfig The configuration of a builder agent. LiveKit generates the agent's code
+// from it when you deploy the agent. Unset properties take their default.
+//
+// In instructions, greetingInstructions and header values, a
+// {{metadata.<name>}} placeholder takes its value from the JSON metadata
+// of the agent dispatch. The server ignores unknown properties, and does
+// not store them.
+type LivekitPublicapiAgentsV1BuilderAgentConfig struct {
+	// AllowGreetingInterrupt If true, the user can interrupt the greeting.
+	AllowGreetingInterrupt *bool `json:"allowGreetingInterrupt,omitempty"`
+
+	// BackgroundAudio A sound that plays behind the agent's voice.
+	BackgroundAudio *LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio `json:"backgroundAudio,omitempty"`
+
+	// BuilderAgentMode prompt_instructions makes an agent that follows instructions in an
+	// open conversation. data_collection makes an agent that collects the
+	// data in dataCollectionFields, one task at a time.
+	BuilderAgentMode *LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode `json:"builderAgentMode,omitempty"`
+
+	// ClientTools Functions the agent can call on the user's frontend, through an RPC
+	// to the user's participant.
+	ClientTools *[]LivekitPublicapiAgentsV1BuilderAgentConfigClientTool `json:"clientTools,omitempty"`
+
+	// DataCollectionFields The data to collect, one task for each item, in order. Used only
+	// when builderAgentMode is data_collection.
+	DataCollectionFields *[]LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField `json:"dataCollectionFields,omitempty"`
+
+	// EndCallTool A tool the agent can use to end the call.
+	EndCallTool *LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool `json:"endCallTool,omitempty"`
+
+	// EndOfCall A report that the agent sends to your URL when a call ends. It
+	// contains a summary of the conversation, and for a data_collection
+	// agent, the collected data.
+	EndOfCall *LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall `json:"endOfCall,omitempty"`
+
+	// Expressive If true, the agent speaks with more expression, where the tts model supports it.
+	Expressive *bool `json:"expressive,omitempty"`
+
+	// GreetUser If true, the agent speaks first when a user joins.
+	GreetUser *bool `json:"greetUser,omitempty"`
+
+	// GreetingInstructions Instructions for the first thing the agent says. Used only when
+	// greetUser is true. Can contain {{metadata.<name>}} placeholders.
+	GreetingInstructions *string `json:"greetingInstructions,omitempty"`
+
+	// HttpTools HTTP requests the agent can make during the conversation.
+	HttpTools *[]LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool `json:"httpTools,omitempty"`
+
+	// Instructions The system prompt of the agent. Can contain {{metadata.<name>}}
+	// placeholders. Unset uses a general voice-assistant prompt.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// KeytermDetection If true, speech-to-text detects key terms in the speech.
+	KeytermDetection *bool `json:"keytermDetection,omitempty"`
+
+	// Keyterms A comma-separated list of words and phrases that speech-to-text
+	// must recognize, such as product names.
+	Keyterms *string `json:"keyterms,omitempty"`
+
+	// Llm The language model. Pipeline mode only.
+	Llm *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"llm,omitempty"`
+
+	// LlmReasoningEffort The reasoning effort of llm, for a model that supports it.
+	LlmReasoningEffort *LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort `json:"llmReasoningEffort,omitempty"`
+
+	// McpServers MCP servers whose tools the agent can use.
+	McpServers *[]LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer `json:"mcpServers,omitempty"`
+
+	// Metadata The placeholders that instructions, greetingInstructions and header
+	// values can use, by name. A default applies when the dispatch
+	// metadata does not set the value.
+	Metadata *map[string]LivekitPublicapiAgentsV1BuilderAgentConfigVariable `json:"metadata,omitempty"`
+
+	// ModelMode pipeline uses separate speech-to-text (stt), language (llm) and
+	// text-to-speech (tts) models. realtime uses one speech-to-speech
+	// model, set in tts.
+	ModelMode *LivekitPublicapiAgentsV1BuilderAgentConfigModelMode `json:"modelMode,omitempty"`
+
+	// NoiseCancellation The noise cancellation applied to the user's audio. Use
+	// krisp-bvc-telephony for phone calls. none turns it off.
+	NoiseCancellation *LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation `json:"noiseCancellation,omitempty"`
+
+	// Stt The speech-to-text model. Pipeline mode only.
+	Stt *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"stt,omitempty"`
+
+	// SttLanguage The language the user speaks. Pipeline mode only.
+	SttLanguage *LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode `json:"sttLanguage,omitempty"`
+
+	// Tts In pipeline mode, the text-to-speech model. In realtime mode, the
+	// speech-to-speech model, for example "openai/gpt-realtime-2.1".
+	Tts *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"tts,omitempty"`
+
+	// TtsLanguage The language the agent speaks.
+	TtsLanguage *LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode `json:"ttsLanguage,omitempty"`
+
+	// TtsVoice The voice of the tts model. Each model has its own voice IDs.
+	TtsVoice *string `json:"ttsVoice,omitempty"`
+
+	// TtsVoiceType custom if ttsVoice is a voice that you made with the tts provider.
+	TtsVoiceType *LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType `json:"ttsVoiceType,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio A sound that plays behind the agent's voice.
+type LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode prompt_instructions makes an agent that follows instructions in an
+// open conversation. data_collection makes an agent that collects the
+// data in dataCollectionFields, one task at a time.
+type LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigModelMode pipeline uses separate speech-to-text (stt), language (llm) and
+// text-to-speech (tts) models. realtime uses one speech-to-speech
+// model, set in tts.
+type LivekitPublicapiAgentsV1BuilderAgentConfigModelMode string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation The noise cancellation applied to the user's audio. Use
+// krisp-bvc-telephony for phone calls. none turns it off.
+type LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType custom if ttsVoice is a voice that you made with the tts provider.
+type LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigClientTool defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ClientTool.
+type LivekitPublicapiAgentsV1BuilderAgentConfigClientTool struct {
+	// Description Tells the model when to use the tool.
+	Description string `json:"description"`
+
+	// Name The tool name the model sees, and the RPC method the agent calls
+	// on the frontend. Unique in the agent.
+	Name       LivekitPublicapiAgentsV1BuilderAgentConfigName             `json:"name"`
+	Parameters *[]LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter `json:"parameters,omitempty"`
+
+	// PreviewResponse A sample response, used when you preview the agent in the dashboard.
+	PreviewResponse *string `json:"previewResponse,omitempty"`
+
+	// Silent If true, the agent does not tell the user that it uses the tool.
+	Silent *bool `json:"silent,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.DataCollectionField.
+type LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField struct {
+	// HasManyResults If true, the agent collects a list of results, until the user says the list is complete.
+	HasManyResults *bool `json:"hasManyResults,omitempty"`
+
+	// Name The task name. Unique in the agent.
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigFieldName `json:"name"`
+
+	// ResultFields The values that one result contains.
+	ResultFields []struct {
+		Description string `json:"description"`
+
+		// Name Unique in the field.
+		Name     LivekitPublicapiAgentsV1BuilderAgentConfigFieldName                            `json:"name"`
+		Optional *bool                                                                          `json:"optional,omitempty"`
+		Type     *LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType `json:"type,omitempty"`
+	} `json:"resultFields"`
+
+	// TaskInstructions How the agent collects this data.
+	TaskInstructions string `json:"taskInstructions"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType defines model for LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField.ResultFields.Type.
+type LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool A tool the agent can use to end the call.
+type LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool struct {
+	// DeleteRoom If true, ending the call also closes the room for all participants.
+	DeleteRoom *bool `json:"deleteRoom,omitempty"`
+
+	// Description Tells the model when to end the call.
+	Description *string `json:"description,omitempty"`
+	Enabled     bool    `json:"enabled"`
+
+	// Instructions What the agent says before it ends the call.
+	Instructions *string `json:"instructions,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall A report that the agent sends to your URL when a call ends. It
+// contains a summary of the conversation, and for a data_collection
+// agent, the collected data.
+type LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall struct {
+	// Enabled If true, the agent writes a summary and sends the report. A
+	// data_collection agent sends the collected data to url even when
+	// this is false.
+	Enabled bool                                               `json:"enabled"`
+	Headers *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders `json:"headers,omitempty"`
+
+	// Llm The model that writes the summary.
+	Llm *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"llm,omitempty"`
+
+	// ReasoningEffort The reasoning effort of llm. Unset is low when enabled is true, and none when it is false.
+	ReasoningEffort *LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort `json:"reasoningEffort,omitempty"`
+
+	// SummaryInstructions Instructions for the summary, added to the default ones.
+	SummaryInstructions *string `json:"summaryInstructions,omitempty"`
+
+	// Url The URL that receives the report as an HTTP POST. Required when enabled is true.
+	Url *string `json:"url,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigFieldName Lowercase snake_case, for example customer_name. Not a Python keyword.
+type LivekitPublicapiAgentsV1BuilderAgentConfigFieldName = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigHeader defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.Header.
+type LivekitPublicapiAgentsV1BuilderAgentConfigHeader struct {
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+
+	// Value Can contain {{metadata.<name>}} placeholders.
+	Value string `json:"value"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigHeaders defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.Headers.
+type LivekitPublicapiAgentsV1BuilderAgentConfigHeaders = []LivekitPublicapiAgentsV1BuilderAgentConfigHeader
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.HttpTool.
+type LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool struct {
+	// Description Tells the model when to use the tool.
+	Description string                                                    `json:"description"`
+	Headers     *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders        `json:"headers,omitempty"`
+	Method      *LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod `json:"method,omitempty"`
+
+	// Name The tool name the model sees. Unique in the agent.
+	Name       LivekitPublicapiAgentsV1BuilderAgentConfigName             `json:"name"`
+	Parameters *[]LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter `json:"parameters,omitempty"`
+
+	// Silent If true, the agent does not tell the user that it uses the tool.
+	Silent *bool `json:"silent,omitempty"`
+
+	// Url The request URL. A path segment that starts with a colon
+	// (/users/:userId) takes the value of the parameter with that name.
+	Url LivekitPublicapiAgentsV1BuilderAgentConfigUrl `json:"url"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod defines model for LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool.Method.
+type LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode A language code, for example "en".
+type LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.McpServer.
+type LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer struct {
+	Headers *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders `json:"headers,omitempty"`
+
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+
+	// Url The URL of the MCP server.
+	Url LivekitPublicapiAgentsV1BuilderAgentConfigUrl `json:"url"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigModelId A LiveKit Inference model ID, as "<provider>/<model>".
+type LivekitPublicapiAgentsV1BuilderAgentConfigModelId = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigName Starts with a letter, then letters, digits, "_" and "-".
+type LivekitPublicapiAgentsV1BuilderAgentConfigName = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ReasoningEffort.
+type LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ToolParameter.
+type LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter struct {
+	// Description Tells the model what value to give.
+	Description string `json:"description"`
+
+	// Name The parameter name. An HTTP tool sends a parameter that its url
+	// names as a path segment (":name") in the path, and all others in
+	// the query (GET) or the JSON body.
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+
+	// Required If false, the model can omit the parameter.
+	Required *bool                                                        `json:"required,omitempty"`
+	Type     *LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType `json:"type,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType defines model for LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter.Type.
+type LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigUrl An http or https URL.
+type LivekitPublicapiAgentsV1BuilderAgentConfigUrl = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigVariable A placeholder. type is string, number or boolean; with no type, the
+// type of default decides.
+type LivekitPublicapiAgentsV1BuilderAgentConfigVariable struct {
+	union json.RawMessage
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigVariable0 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.0.
+type LivekitPublicapiAgentsV1BuilderAgentConfigVariable0 struct {
+	Default *string `json:"default,omitempty"`
+
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Type interface{}                                    `json:"type"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigVariable1 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.1.
+type LivekitPublicapiAgentsV1BuilderAgentConfigVariable1 struct {
+	Default *float32 `json:"default,omitempty"`
+
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Type interface{}                                    `json:"type,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigVariable2 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.2.
+type LivekitPublicapiAgentsV1BuilderAgentConfigVariable2 struct {
+	Default *bool `json:"default,omitempty"`
+
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Type interface{}                                    `json:"type,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsCreateResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Create.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsCreateResponse struct {
+	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Delete.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiAgentsV1BuilderAgentsDeployResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Deploy.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsDeployResponse struct {
+	// Status DEPLOYMENT_STATUS_BUILDING. Call GetBuilderAgent to follow the
+	//  deployment.
+	Status *LivekitPublicapiAgentsV1DeploymentStatus `json:"status,omitempty"`
+
+	// VersionId The version that the deployment builds.
+	VersionId *string `json:"versionId,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsGetResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Get.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsGetResponse struct {
+	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsListResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.List.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsListResponse struct {
+	Items    *[]LivekitPublicapiAgentsV1BuilderAgent `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo       `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Update.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse struct {
+	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1Deployment What runs on LiveKit Cloud for a builder agent.
+type LivekitPublicapiAgentsV1Deployment struct {
+	// DeployedAt When the running agent was deployed.
+	DeployedAt *GoogleProtobufTimestamp                  `json:"deployedAt,omitempty"`
+	Status     *LivekitPublicapiAgentsV1DeploymentStatus `json:"status,omitempty"`
+
+	// VersionId The version that the running agent was built from. Empty when it is not
+	//  known, or when the agent is not deployed.
+	VersionId *string `json:"versionId,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1DeploymentStatus The state of a builder agent's deployment. When the agent runs in more than
+//
+//	one region, the status is the one that needs attention first.
+type LivekitPublicapiAgentsV1DeploymentStatus string
+
 // LivekitPublicapiAnalyticsV1AgentAnalytics One agent's analytics over a time range. Common concerns are grouped so they
 //
 //	read the same whether you fetch one agent or the whole roster: `sessions`,
@@ -1870,20 +2505,27 @@ type LivekitPublicapiAnalyticsV1CountryCount struct {
 
 // LivekitPublicapiAnalyticsV1DataPoint One point of a per-session time series (quality, bandwidth, fps).
 type LivekitPublicapiAnalyticsV1DataPoint struct {
+	// Timestamp The start of the sample interval.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
-	Value     *float64                 `json:"value,omitempty"`
+
+	// Value The value over that interval.
+	Value *float64 `json:"value,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1Estimate Flags a value that is approximate over large windows, with its tolerance. A
 //
 //	consumer should not treat an estimated value as exact.
 type LivekitPublicapiAnalyticsV1Estimate struct {
-	// ErrorMargin Fractional tolerance (e.g. 0.01 for +/-1%). Zero when unknown.
+	// ErrorMargin Fractional tolerance, such as 0.01 for +/-1%. Zero when unknown.
 	ErrorMargin *float64 `json:"errorMargin,omitempty"`
-	IsEstimate  *bool    `json:"isEstimate,omitempty"`
+
+	// IsEstimate True when the value is approximate rather than exact.
+	IsEstimate *bool `json:"isEstimate,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1LatencyBreakdown Where an average agent reply's time goes, in milliseconds.
+// LivekitPublicapiAnalyticsV1LatencyBreakdown Where the time in an average agent reply goes, in
+//
+//	milliseconds.
 type LivekitPublicapiAnalyticsV1LatencyBreakdown struct {
 	AvgReplyMs *float64 `json:"avgReplyMs,omitempty"`
 	EouMs      *float64 `json:"eouMs,omitempty"`
@@ -1910,22 +2552,26 @@ type LivekitPublicapiAnalyticsV1ModelUsage struct {
 	TtsChars     *string  `json:"ttsChars,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantInfo One participant identity of a room session, as the dashboard's participants
+// LivekitPublicapiAnalyticsV1ParticipantInfo One participant identity of a room session, as the participants table on
 //
-//	table shows it.
+//	the dashboard shows it.
 type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
-	// JoinedAt First join across the identity's connections.
+	// JoinedAt First join across the connections for the identity.
 	JoinedAt *GoogleProtobufTimestamp `json:"joinedAt,omitempty"`
 
-	// LeftAt Last leave across the identity's connections; unset while no leave is
+	// LeftAt Last leave across the connections for the identity; unset while no leave is
 	//  recorded, so a participant of an active session with no leftAt may still be
 	//  connected.
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
-	// Location Country name, e.g. "United States"; "Unknown" when the rollup has none.
-	Location            *string `json:"location,omitempty"`
+	// Location Country name, such as "United States"; "Unknown" when no country is recorded.
+	Location *string `json:"location,omitempty"`
+
+	// ParticipantIdentity The identity the participant connected with.
 	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
-	ParticipantName     *string `json:"participantName,omitempty"`
+
+	// ParticipantName The display name of the participant.
+	ParticipantName *string `json:"participantName,omitempty"`
 
 	// PublishedSources Which track sources the participant published during the session.
 	PublishedSources *LivekitPublicapiAnalyticsV1PublishedSources `json:"publishedSources,omitempty"`
@@ -1946,7 +2592,7 @@ type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
 //	connected from. A participant that reconnects, from the same device or
 //	another, has several.
 type LivekitPublicapiAnalyticsV1ParticipantSession struct {
-	// Browser Client browser, e.g. "chrome".
+	// Browser Client browser, such as "chrome".
 	Browser *string `json:"browser,omitempty"`
 
 	// ConnectionTimeMs Milliseconds the client took to connect.
@@ -1956,11 +2602,11 @@ type LivekitPublicapiAnalyticsV1ParticipantSession struct {
 	//  not reported.
 	ConnectionType *string `json:"connectionType,omitempty"`
 
-	// DeviceModel Client device model, e.g. "iPhone 15".
+	// DeviceModel Client device model, such as "iPhone 15".
 	DeviceModel *string `json:"deviceModel,omitempty"`
 
 	// DurationSeconds Seconds from joinedAt to leftAt, as the dashboard counts them. While no
-	//  leave is recorded, to the session's end once it has one, else to now.
+	//  leave is recorded, to the session end once it has one, else to now.
 	DurationSeconds *string `json:"durationSeconds,omitempty"`
 
 	// JoinedAt When this participant session joined.
@@ -1969,7 +2615,7 @@ type LivekitPublicapiAnalyticsV1ParticipantSession struct {
 	// LeftAt When it left; unset while no leave is recorded.
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
-	// Location Country name, e.g. "United States"; "Unknown" when the rollup has none.
+	// Location Country name, such as "United States"; "Unknown" when no country is recorded.
 	Location *string `json:"location,omitempty"`
 
 	// Os Client operating system: "ios", "android", "windows", "mac" or "linux";
@@ -1982,7 +2628,7 @@ type LivekitPublicapiAnalyticsV1ParticipantSession struct {
 	// Region LiveKit region display name; "Unknown" when the region isn't recognized.
 	Region *string `json:"region,omitempty"`
 
-	// SdkVersion LiveKit client SDK version, e.g. "2.6.1". The SDK's name isn't recorded.
+	// SdkVersion LiveKit client SDK version, such as "2.6.1". The SDK name isn't recorded.
 	SdkVersion *string `json:"sdkVersion,omitempty"`
 }
 
@@ -2033,43 +2679,60 @@ type LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse struct {
 
 // LivekitPublicapiAnalyticsV1PublishedSources Which track sources a participant published.
 type LivekitPublicapiAnalyticsV1PublishedSources struct {
-	CameraTrack      *bool `json:"cameraTrack,omitempty"`
-	MicrophoneTrack  *bool `json:"microphoneTrack,omitempty"`
+	// CameraTrack True when the participant published a camera track.
+	CameraTrack *bool `json:"cameraTrack,omitempty"`
+
+	// MicrophoneTrack True when the participant published a microphone track.
+	MicrophoneTrack *bool `json:"microphoneTrack,omitempty"`
+
+	// ScreenShareAudio True when the participant published screen share audio.
 	ScreenShareAudio *bool `json:"screenShareAudio,omitempty"`
+
+	// ScreenShareTrack True when the participant published a screen share track.
 	ScreenShareTrack *bool `json:"screenShareTrack,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1Session One room-session list row. Bandwidth and connection time are on GetSession's
+// LivekitPublicapiAnalyticsV1Session One room-session list row. Bandwidth and connection time are on the
 //
-//	detail only.
+//	GetSession detail only.
 type LivekitPublicapiAnalyticsV1Session struct {
 	// EndedAt When the session ended. A session that stopped reporting is given its last
 	//  report time, even while its status is still ACTIVE; unset while it is live.
 	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 
-	// HasDetailData False while the session's full detail (end time, participant counts,
+	// HasDetailData False while the full session detail (end time, participant counts,
 	//  duration) is still being finalized; the detail endpoints are complete once
 	//  it is true.
-	HasDetailData *bool                    `json:"hasDetailData,omitempty"`
-	LastActive    *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
+	HasDetailData *bool `json:"hasDetailData,omitempty"`
+
+	// LastActive When the session last reported activity.
+	LastActive *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
 
 	// NumParticipants Distinct participants (by identity) connected for more than zero seconds
 	//  during the session. Not a live count: a closed session keeps its total.
-	NumParticipants *int32                   `json:"numParticipants,omitempty"`
-	RoomName        *string                  `json:"roomName,omitempty"`
-	SessionId       *string                  `json:"sessionId,omitempty"`
-	StartedAt       *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
+	NumParticipants *int32 `json:"numParticipants,omitempty"`
 
-	// Status ACTIVE until the session's close is recorded, so a session that stopped
+	// RoomName The name of the room the session ran in.
+	RoomName *string `json:"roomName,omitempty"`
+
+	// SessionId The room session ID (`RM_...`).
+	SessionId *string `json:"sessionId,omitempty"`
+
+	// StartedAt When the session started.
+	StartedAt *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
+
+	// Status ACTIVE until the session close is recorded, so a session that stopped
 	//  reporting can be ACTIVE with an endedAt.
 	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
-	Tags   *[]string                                 `json:"tags,omitempty"`
+
+	// Tags The tags recorded on the session.
+	Tags *[]string `json:"tags,omitempty"`
 }
 
 // LivekitPublicapiAnalyticsV1SessionDetail The richer per-session view: a superset of Session with the room id, totals,
 //
 //	the first page of participants, and per-metric timelines. The timelines share
-//	one grid sized from the session's length, the dashboard's: one point per
+//	one grid sized from the session length, as on the dashboard: one point per
 //	bucket, 0 where a bucket has no data.
 type LivekitPublicapiAnalyticsV1SessionDetail struct {
 	// BandwidthIn Bytes participants published, all track types.
@@ -2080,8 +2743,10 @@ type LivekitPublicapiAnalyticsV1SessionDetail struct {
 
 	// ConnectionSeconds WebRTC connection time in seconds, summed over standard participants and
 	//  self-hosted agents (cloud agents excluded), as the dashboard counts it.
-	ConnectionSeconds *string                  `json:"connectionSeconds,omitempty"`
-	EndedAt           *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
+	ConnectionSeconds *string `json:"connectionSeconds,omitempty"`
+
+	// EndedAt When the session ended, as on Session.
+	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 
 	// NumParticipants Same count as Session.numParticipants.
 	NumParticipants *int32 `json:"numParticipants,omitempty"`
@@ -2104,11 +2769,19 @@ type LivekitPublicapiAnalyticsV1SessionDetail struct {
 	PublishFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"publishFps,omitempty"`
 
 	// Quality Average connection quality as a 0-1 fraction of the 0-5 track score.
-	Quality   *[]LivekitPublicapiAnalyticsV1DataPoint   `json:"quality,omitempty"`
-	RoomName  *string                                   `json:"roomName,omitempty"`
-	SessionId *string                                   `json:"sessionId,omitempty"`
-	StartedAt *GoogleProtobufTimestamp                  `json:"startedAt,omitempty"`
-	Status    *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
+	Quality *[]LivekitPublicapiAnalyticsV1DataPoint `json:"quality,omitempty"`
+
+	// RoomName The name of the room the session ran in.
+	RoomName *string `json:"roomName,omitempty"`
+
+	// SessionId The room session ID (`RM_...`).
+	SessionId *string `json:"sessionId,omitempty"`
+
+	// StartedAt When the session started.
+	StartedAt *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
+
+	// Status The session status, as on Session.
+	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
 
 	// SubscribeBps Subscribed audio plus video bitrate, in bits per second.
 	SubscribeBps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeBps,omitempty"`
@@ -2116,7 +2789,7 @@ type LivekitPublicapiAnalyticsV1SessionDetail struct {
 	// SubscribeFps Subscribed video frame rate.
 	SubscribeFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeFps,omitempty"`
 
-	// Tags The session's tags, as on Session.
+	// Tags The session tags, as on Session.
 	Tags *[]string `json:"tags,omitempty"`
 }
 
@@ -2128,22 +2801,25 @@ type LivekitPublicapiAnalyticsV1SessionEvent struct {
 	//  event, or an API call that names no participant.
 	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
 
-	// ParticipantSessionId The participant session (PA_...) the event is about; empty when
-	//  participantIdentity is.
+	// ParticipantSessionId The participant session (`PA_...`) the event is about; empty when
+	//  `participantIdentity` is.
 	ParticipantSessionId *string `json:"participantSessionId,omitempty"`
 
-	// Payload The event's fields from an allowlist, each present only when the event
+	// Payload The event fields from an allowlist, each present only when the event
 	//  has it:
 	//    - participant events: participantKind, disconnectReason,
 	//      reconnectReason, isMigration and connectionType;
 	//    - track events: trackId, trackType, trackSource, mimeType and muted;
-	//    - ROOM_ENDED: reason;
-	//    - API_CALL: service, method, status, twirpErrorCode and durationNs.
-	//  Every other field the event recorded is left out.
-	Payload   *GoogleProtobufStruct    `json:"payload,omitempty"`
+	//    - `ROOM_ENDED`: reason;
+	//    - `API_CALL`: service, method, status, twirpErrorCode and durationNs.
+	//
+	//  Every other field that the event recorded is left out.
+	Payload *GoogleProtobufStruct `json:"payload,omitempty"`
+
+	// Timestamp When the event was recorded.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 
-	// Type The event's type, an AnalyticsEventType name such as PARTICIPANT_JOINED.
+	// Type The event type, an `AnalyticsEventType` name such as `PARTICIPANT_JOINED`.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -2164,7 +2840,7 @@ type LivekitPublicapiAnalyticsV1SessionStatus string
 
 // LivekitPublicapiAnalyticsV1SessionsGetResponse defines model for livekit.publicapi.analytics.v1.Sessions.Get.Response.
 type LivekitPublicapiAnalyticsV1SessionsGetResponse struct {
-	// Detail Absent while the session's detail is still being finalized (see
+	// Detail Absent while the session detail is still being finalized (see
 	//  Session.hasDetailData on the list row).
 	Detail  *LivekitPublicapiAnalyticsV1SessionDetail `json:"detail,omitempty"`
 	Session *LivekitPublicapiAnalyticsV1Session       `json:"session,omitempty"`
@@ -2178,6 +2854,7 @@ type LivekitPublicapiAnalyticsV1SessionsListResponse struct {
 
 // LivekitPublicapiCommonV1PageInfo The cursor-pagination metadata shared by every list response.
 type LivekitPublicapiCommonV1PageInfo struct {
+	// HasMore True when another page follows this one.
 	HasMore *bool `json:"hasMore,omitempty"`
 
 	// NextCursor Pass as `cursor` on the next request to fetch the following page. Empty on
@@ -2185,7 +2862,7 @@ type LivekitPublicapiCommonV1PageInfo struct {
 	NextCursor *string `json:"nextCursor,omitempty"`
 }
 
-// LivekitPublicapiCommonV1SortOrder The direction of a list request's sort. A list that lets the caller pick a
+// LivekitPublicapiCommonV1SortOrder The sort direction of a list request. A list that lets the caller pick a
 //
 //	direction takes it as `sortOrder` and documents its default column and
 //	direction; one that can also sort on more than one column adds its own
@@ -2226,42 +2903,48 @@ type LivekitPublicapiDatabasesV1DatabasesListResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1LogLevel A log record's level, as the dashboard's logs panel shows and filters it.
+// LivekitPublicapiObservabilityV1LogLevel A log record level, as the logs panel on the dashboard shows and filters
 //
-//	Agents name levels differently by runtime, such as Python's CRITICAL and
-//	Node's FATAL, so a record's level comes from its OpenTelemetry severity
+//	it. Agents name levels differently by runtime, such as CRITICAL in Python
+//	and FATAL in Node, so a record level comes from its OpenTelemetry severity
 //	number, or from its level name when it has none; a level means the same for
 //	Python and Node agents.
 type LivekitPublicapiObservabilityV1LogLevel string
 
-// LivekitPublicapiObservabilityV1LogRecord One log record a session's agent exported.
+// LivekitPublicapiObservabilityV1LogRecord One log record an agent in the session exported.
 type LivekitPublicapiObservabilityV1LogRecord struct {
-	// Attributes The record's attributes, typed and nested as the agent recorded them,
-	//  with its resource's and scope's attributes merged in; the record's own
-	//  value wins. An integer beyond ±2^53 is its decimal string, and bytes are
+	// Attributes The record attributes, typed and nested as the agent recorded them, with
+	//  the resource and scope attributes merged in; the value on the record
+	//  wins. An integer beyond ±2^53 is its decimal string, and bytes are
 	//  base64.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
-	// BodyFields A structured logger's body fields other than its message; empty for a
-	//  plain text body.
+	// BodyFields The body fields of a structured logger other than its message; empty
+	//  for a plain text body.
 	BodyFields *map[string]*GoogleProtobufValue `json:"bodyFields,omitempty"`
 
-	// Id The record's id, the same on every read.
-	Id    *string                                  `json:"id,omitempty"`
+	// Id The record ID, the same on every read.
+	Id *string `json:"id,omitempty"`
+
+	// Level The level, mapped onto the LogLevel values.
 	Level *LivekitPublicapiObservabilityV1LogLevel `json:"level,omitempty"`
 
 	// Logger The logger that wrote the record (its logger.name attribute).
 	Logger *string `json:"logger,omitempty"`
 
-	// Message The record's text. A structured logger's body keeps it under its event,
+	// Message The record text. A structured logger body keeps it under its event,
 	//  message or msg field; a structured body with none of them is written
 	//  here whole, as JSON.
 	Message *string `json:"message,omitempty"`
 
-	// SeverityText The level's name as the agent logged it, such as "WARN" or "CRITICAL".
-	SeverityText *string                  `json:"severityText,omitempty"`
-	SpanId       *string                  `json:"spanId,omitempty"`
-	Timestamp    *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
+	// SeverityText The level name as the agent logged it, such as "WARN" or "CRITICAL".
+	SeverityText *string `json:"severityText,omitempty"`
+
+	// SpanId The span the record was logged in. See `traceId`.
+	SpanId *string `json:"spanId,omitempty"`
+
+	// Timestamp When the record was logged.
+	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 
 	// TraceId The trace and span the record was logged in, as lowercase hex; empty when
 	//  it was logged outside one. They link the record to its span in
@@ -2271,48 +2954,61 @@ type LivekitPublicapiObservabilityV1LogRecord struct {
 
 // LivekitPublicapiObservabilityV1LogsGetResponse defines model for livekit.publicapi.observability.v1.Logs.Get.Response.
 type LivekitPublicapiObservabilityV1LogsGetResponse struct {
+	Items    *[]LivekitPublicapiObservabilityV1LogRecord `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo           `json:"pageInfo,omitempty"`
-	Records  *[]LivekitPublicapiObservabilityV1LogRecord `json:"records,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricHistogram Summarizes the values a histogram point recorded.
 type LivekitPublicapiObservabilityV1MetricHistogram struct {
-	// BucketBounds A histogram's buckets, with one more count than bounds: bucketCounts[0]
-	//  counts the values up to bucketBounds[0], bucketCounts[i] those in
-	//  (bucketBounds[i-1], bucketBounds[i]], and the last count those above the
-	//  last bound. Both are empty for an exponential histogram.
+	// BucketBounds The buckets of a histogram, with one more count than bounds:
+	//  bucketCounts[0] counts the values up to bucketBounds[0], bucketCounts[i]
+	//  those in (bucketBounds[i-1], bucketBounds[i]], and the last count those
+	//  above the last bound. Both are empty for an exponential histogram.
 	BucketBounds *[]float64 `json:"bucketBounds,omitempty"`
-	BucketCounts *[]string  `json:"bucketCounts,omitempty"`
+
+	// BucketCounts The count in each bucket. See `bucketBounds`.
+	BucketCounts *[]string `json:"bucketCounts,omitempty"`
 
 	// Count How many values were recorded.
-	Count *string  `json:"count,omitempty"`
-	Max   *float64 `json:"max,omitempty"`
-	Min   *float64 `json:"min,omitempty"`
+	Count *string `json:"count,omitempty"`
 
-	// Sum Their sum, minimum and maximum; unset when the agent didn't record them.
+	// Max Their maximum; unset when the agent didn't record it.
+	Max *float64 `json:"max,omitempty"`
+
+	// Min Their minimum; unset when the agent didn't record it.
+	Min *float64 `json:"min,omitempty"`
+
+	// Sum Their sum; unset when the agent didn't record it.
 	Sum *float64 `json:"sum,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricKind The OpenTelemetry data type a metric point was exported as.
 type LivekitPublicapiObservabilityV1MetricKind string
 
-// LivekitPublicapiObservabilityV1MetricPoint One OpenTelemetry metric data point a session's agent exported. It is the raw
+// LivekitPublicapiObservabilityV1MetricPoint One OpenTelemetry metric data point an agent in the session exported. It is
 //
-//	metric the agent emits, so it won't exactly match the dashboard's metrics
-//	panel, which derives its numbers from the transcript and traces. Only agents
-//	that export OpenTelemetry metrics to LiveKit Cloud produce points; an agent
-//	whose code installs its own MeterProvider exports none to LiveKit Cloud.
+//	the raw metric the agent emits, so it won't exactly match the metrics panel
+//	on the dashboard, which derives its numbers from the transcript and traces.
+//	Only agents that export OpenTelemetry metrics to LiveKit Cloud produce
+//	points; an agent whose code installs its own MeterProvider exports none to
+//	LiveKit Cloud.
 type LivekitPublicapiObservabilityV1MetricPoint struct {
-	// Attributes The point's attributes, typed and nested as the agent recorded them, with
-	//  its resource's and scope's attributes merged in, such as room_id, job_id,
-	//  lk.agent_name and the model's model_name; the point's own value wins. With
-	//  two agents in one session, the resource's can be the other agent's. An
-	//  integer beyond ±2^53 is its decimal string, and bytes are base64.
-	Attributes *map[string]*GoogleProtobufValue           `json:"attributes,omitempty"`
-	EndTime    *GoogleProtobufTimestamp                   `json:"endTime,omitempty"`
-	Kind       *LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
+	// Attributes The point attributes, typed and nested as the agent recorded them, with
+	//  the resource and scope attributes merged in, such as room_id, job_id,
+	//  lk.agent_name and model_name for the model; the value on the point wins.
+	//  With two agents in one session, the resource attributes can be the other
+	//  agent's. An integer beyond ±2^53 is its decimal string, and bytes are
+	//  base64.
+	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
-	// Name The metric's name, such as lk.agents.turn.e2e_latency or
+	// EndTime The end of the interval, and the moment a gauge was measured.
+	EndTime *GoogleProtobufTimestamp `json:"endTime,omitempty"`
+
+	// Kind Which kind of metric the point carries, and so which field of `data` is
+	//  set.
+	Kind *LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
+
+	// Name The metric name, such as lk.agents.turn.e2e_latency or
 	//  gen_ai.client.token.usage. Several metrics that share their attributes
 	//  can come back under one name; see GetSessionMetrics.
 	Name *string `json:"name,omitempty"`
@@ -2322,7 +3018,7 @@ type LivekitPublicapiObservabilityV1MetricPoint struct {
 	//  startTime.
 	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
 
-	// Unit The metric's unit as the agent declared it, such as "s" or "{token}";
+	// Unit The metric unit as the agent declared it, such as "s" or "{token}";
 	//  empty when it declared none.
 	Unit  *string `json:"unit,omitempty"`
 	union json.RawMessage
@@ -2330,32 +3026,31 @@ type LivekitPublicapiObservabilityV1MetricPoint struct {
 
 // LivekitPublicapiObservabilityV1MetricPoint0 defines model for LivekitPublicapiObservabilityV1MetricPoint.0.
 type LivekitPublicapiObservabilityV1MetricPoint0 struct {
-	// Histogram A histogram's or exponential histogram's summary.
+	// Histogram The summary of a histogram or exponential histogram.
 	Histogram *LivekitPublicapiObservabilityV1MetricHistogram `json:"histogram,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricPoint1 defines model for LivekitPublicapiObservabilityV1MetricPoint.1.
 type LivekitPublicapiObservabilityV1MetricPoint1 struct {
-	// Value A gauge's or sum's value.
+	// Value The value of a gauge or sum.
 	Value *float64 `json:"value,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricsGetResponse defines model for livekit.publicapi.observability.v1.Metrics.Get.Response.
 type LivekitPublicapiObservabilityV1MetricsGetResponse struct {
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-
-	// Points By end time, oldest first; points that end together are ordered by
+	// Items By end time, oldest first; points that end together are ordered by
 	//  start time, a point with none first, then by kind and a hash of what
-	//  they recorded, not by name. A page continues
-	//  after the previous page's last point, so on an ACTIVE session a point
-	//  exported mid-read with a later time comes on a later page, and one
-	//  with an earlier time is missed until a new read.
-	Points *[]LivekitPublicapiObservabilityV1MetricPoint `json:"points,omitempty"`
+	//  they recorded, not by name. A page continues after the last point on
+	//  the previous page, so on an ACTIVE session a point exported mid-read
+	//  with a later time comes on a later page, and one with an earlier time
+	//  is missed until a new read.
+	Items    *[]LivekitPublicapiObservabilityV1MetricPoint `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo             `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1RecordingGetURLResponse defines model for livekit.publicapi.observability.v1.Recording.GetURL.Response.
 type LivekitPublicapiObservabilityV1RecordingGetURLResponse struct {
-	// ExpiresAt When the URL stops working: the request's time plus the granted
+	// ExpiresAt When the URL stops working: the request time plus the granted
 	//  expiry, after the 15-minute clamp.
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
@@ -2364,13 +3059,13 @@ type LivekitPublicapiObservabilityV1RecordingGetURLResponse struct {
 	RecordingStartedAt *GoogleProtobufTimestamp `json:"recordingStartedAt,omitempty"`
 
 	// Url A signed URL that downloads the recording straight from the object
-	//  store in the project's data region, without credentials, until
+	//  store in the project data region, without credentials, until
 	//  expiresAt. Audio is Ogg; chat history is JSON served with
 	//  Content-Encoding: gzip.
 	Url *string `json:"url,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1RecordingFileType The recording requested from GetSessionRecordingURL. The session's
+// LivekitPublicapiObservabilityV1RecordingFileType The recording requested from GetSessionRecordingURL. The session
 //
 //	conversation as typed items comes from GetSessionTranscript, not from a
 //	recording.
@@ -2379,59 +3074,80 @@ type LivekitPublicapiObservabilityV1RecordingFileType string
 // LivekitPublicapiObservabilityV1Role Who a transcript message is from.
 type LivekitPublicapiObservabilityV1Role string
 
-// LivekitPublicapiObservabilityV1Span One unit of work in the session's trace, such as an agent turn or an LLM
+// LivekitPublicapiObservabilityV1Span One unit of work in the session trace, such as an agent turn or an LLM
 //
 //	request.
 type LivekitPublicapiObservabilityV1Span struct {
-	// Attributes The span's attributes, typed and nested as the agent recorded them, with
-	//  its resource's and scope's attributes merged in, such as lk.agent_name;
-	//  the span's own value wins. An integer beyond ±2^53 is its decimal string,
+	// Attributes The span attributes, typed and nested as the agent recorded them, with
+	//  the resource and scope attributes merged in, such as lk.agent_name; the
+	//  value on the span wins. An integer beyond ±2^53 is its decimal string,
 	//  and bytes are base64.
-	Attributes *map[string]*GoogleProtobufValue            `json:"attributes,omitempty"`
-	EndTime    *GoogleProtobufTimestamp                    `json:"endTime,omitempty"`
-	Events     *[]LivekitPublicapiObservabilityV1SpanEvent `json:"events,omitempty"`
-	Kind       *LivekitPublicapiObservabilityV1SpanKind    `json:"kind,omitempty"`
-	Name       *string                                     `json:"name,omitempty"`
+	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
-	// ParentSpanId Empty for a root span. A span whose parent isn't among the session's
+	// EndTime When the span ended.
+	EndTime *GoogleProtobufTimestamp `json:"endTime,omitempty"`
+
+	// Events The events the agent recorded on the span.
+	Events *[]LivekitPublicapiObservabilityV1SpanEvent `json:"events,omitempty"`
+
+	// Kind Where the span sits in the call: internal, server, client, producer, or
+	//  consumer.
+	Kind *LivekitPublicapiObservabilityV1SpanKind `json:"kind,omitempty"`
+
+	// Name The span name, as the agent recorded it.
+	Name *string `json:"name,omitempty"`
+
+	// ParentSpanId Empty for a root span. A span whose parent isn't among the session
 	//  spans is a root too, as the dashboard shows it.
 	ParentSpanId *string `json:"parentSpanId,omitempty"`
 
-	// SpanId The span's ids, as lowercase hex.
-	SpanId        *string                                    `json:"spanId,omitempty"`
-	StartTime     *GoogleProtobufTimestamp                   `json:"startTime,omitempty"`
-	Status        *LivekitPublicapiObservabilityV1SpanStatus `json:"status,omitempty"`
-	StatusMessage *string                                    `json:"statusMessage,omitempty"`
-	TraceId       *string                                    `json:"traceId,omitempty"`
+	// SpanId The span ID, as lowercase hex.
+	SpanId *string `json:"spanId,omitempty"`
+
+	// StartTime When the span started.
+	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
+
+	// Status Whether the span succeeded.
+	Status *LivekitPublicapiObservabilityV1SpanStatus `json:"status,omitempty"`
+
+	// StatusMessage Why the span failed; set when `status` is error.
+	StatusMessage *string `json:"statusMessage,omitempty"`
+
+	// TraceId The trace ID, as lowercase hex.
+	TraceId *string `json:"traceId,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1SpanEvent A timestamped event recorded within a Span, such as an exception.
 type LivekitPublicapiObservabilityV1SpanEvent struct {
-	// Attributes The event's own attributes, typed and nested as the agent recorded them.
+	// Attributes The attributes on the event, typed and nested as the agent recorded
+	//  them.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
-	Name       *string                          `json:"name,omitempty"`
-	Timestamp  *GoogleProtobufTimestamp         `json:"timestamp,omitempty"`
+
+	// Name The event name, as the agent recorded it.
+	Name *string `json:"name,omitempty"`
+
+	// Timestamp When the event happened.
+	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1SpanKind A span's OpenTelemetry kind.
+// LivekitPublicapiObservabilityV1SpanKind The OpenTelemetry kind of the span.
 type LivekitPublicapiObservabilityV1SpanKind string
 
-// LivekitPublicapiObservabilityV1SpanStatus A span's OpenTelemetry status code.
+// LivekitPublicapiObservabilityV1SpanStatus The OpenTelemetry status code of the span.
 type LivekitPublicapiObservabilityV1SpanStatus string
 
 // LivekitPublicapiObservabilityV1TracesGetResponse defines model for livekit.publicapi.observability.v1.Traces.Get.Response.
 type LivekitPublicapiObservabilityV1TracesGetResponse struct {
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-
-	// Spans By start time, oldest first. Spans that start together are ordered by
-	//  span id as it is stored: the id's 8 bytes read as a little-endian
+	// Items By start time, oldest first. Spans that start together are ordered by
+	//  span id as it is stored: the 8 bytes of the id read as a little-endian
 	//  unsigned integer, which isn't the order of its hex string. The pages
 	//  read the spans the first page found, so a span exported later waits for
 	//  a new read. On an ACTIVE session, a span exported mid-read can still
 	//  shift the later pages, which are read by offset, so a span can repeat
 	//  or be skipped: dedupe by spanId, and read again from the first page to
 	//  pick up a skipped span.
-	Spans *[]LivekitPublicapiObservabilityV1Span `json:"spans,omitempty"`
+	Items    *[]LivekitPublicapiObservabilityV1Span `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo      `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptGetResponse defines model for livekit.publicapi.observability.v1.Transcript.Get.Response.
@@ -2440,124 +3156,144 @@ type LivekitPublicapiObservabilityV1TranscriptGetResponse struct {
 	Items    *[]LivekitPublicapiObservabilityV1TranscriptItem `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo                `json:"pageInfo,omitempty"`
 
-	// SkippedRecords How many of this page's records couldn't be read as transcript items
-	//  and were left out, such as an item kind newer than this server. Zero
-	//  when the page is complete.
+	// SkippedRecords How many of the records on this page couldn't be read as transcript
+	//  items and were left out, such as an item kind newer than this
+	//  server. Zero when the page is complete.
 	SkippedRecords *int `json:"skippedRecords,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItem One ordered entry in a session's conversation. Exactly one of the `item`
+// LivekitPublicapiObservabilityV1TranscriptItem One ordered entry in a session conversation. Exactly one of the `item`
 //
 //	variants is set.
 type LivekitPublicapiObservabilityV1TranscriptItem struct {
-	// Id The item's id, as the agent assigned it (item_...).
+	// Id The item ID, as the agent assigned it (item_...).
 	Id *string `json:"id,omitempty"`
 
 	// Timestamp When the item happened. For a message, when its speaker started speaking,
 	//  else when the agent created it; for any other item, when the agent
 	//  recorded it. Items are ordered by when the agent recorded them, so a
-	//  message's timestamp can be earlier than the item before it.
+	//  message timestamp can be earlier than the item before it.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 	union     json.RawMessage
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem0 defines model for LivekitPublicapiObservabilityV1TranscriptItem.0.
 type LivekitPublicapiObservabilityV1TranscriptItem0 struct {
+	// AgentHandoff The session passing from one agent to another.
 	AgentHandoff *LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff `json:"agentHandoff,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem1 defines model for LivekitPublicapiObservabilityV1TranscriptItem.1.
 type LivekitPublicapiObservabilityV1TranscriptItem1 struct {
+	// ConfigUpdate A change to the agent's instructions or tools.
 	ConfigUpdate *LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate `json:"configUpdate,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem2 defines model for LivekitPublicapiObservabilityV1TranscriptItem.2.
 type LivekitPublicapiObservabilityV1TranscriptItem2 struct {
+	// Message Something said, or added to the conversation as text.
 	Message *LivekitPublicapiObservabilityV1TranscriptItemMessage `json:"message,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem3 defines model for LivekitPublicapiObservabilityV1TranscriptItem.3.
 type LivekitPublicapiObservabilityV1TranscriptItem3 struct {
+	// ToolCall The agent calling a tool.
 	ToolCall *LivekitPublicapiObservabilityV1TranscriptItemToolCall `json:"toolCall,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem4 defines model for LivekitPublicapiObservabilityV1TranscriptItem.4.
 type LivekitPublicapiObservabilityV1TranscriptItem4 struct {
+	// ToolResult The output a tool returned.
 	ToolResult *LivekitPublicapiObservabilityV1TranscriptItemToolResult `json:"toolResult,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff The session passing from one agent to another.
 type LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff struct {
-	// FromAgentId Unset for the session's first agent.
+	// FromAgentId Unset for the first agent in the session.
 	FromAgentId *string `json:"fromAgentId,omitempty"`
-	ToAgentId   *string `json:"toAgentId,omitempty"`
+
+	// ToAgentId The agent taking over.
+	ToAgentId *string `json:"toAgentId,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate A change to the agent's instructions or tools during the session.
 type LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate struct {
 	// Instructions The agent's new instructions; empty when they didn't change.
-	Instructions *string   `json:"instructions,omitempty"`
-	ToolsAdded   *[]string `json:"toolsAdded,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+
+	// ToolsAdded The tools the agent gained.
+	ToolsAdded *[]string `json:"toolsAdded,omitempty"`
+
+	// ToolsRemoved The tools the agent lost.
 	ToolsRemoved *[]string `json:"toolsRemoved,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemMessage Something said, or added to the conversation as text.
 type LivekitPublicapiObservabilityV1TranscriptItemMessage struct {
-	// E2eLatencyMs The turn's latencies in milliseconds, converted from the seconds the
-	//  agent recorded; unset when the agent didn't record one. An agent message
-	//  carries the first three, a user message the last three.
-	//
-	//  End-to-end latency: from when the user finished speaking to when the
-	//  agent began responding (the agent's e2e_latency).
+	// E2eLatencyMs The end-to-end latency in milliseconds, from when the user finished
+	//  speaking to when the agent began responding (`e2e_latency`). Set only on
+	//  an agent message, when the agent recorded it.
 	E2eLatencyMs *float64 `json:"e2eLatencyMs,omitempty"`
 
-	// EndOfTurnDelayMs From the end of the user's speech to the agent deciding the turn ended
-	//  (end_of_turn_delay).
+	// EndOfTurnDelayMs The time in milliseconds from the end of the user speech to when the
+	//  agent decided that the turn ended (`end_of_turn_delay`). Set only on a
+	//  user message, when the agent recorded it.
 	EndOfTurnDelayMs *float64 `json:"endOfTurnDelayMs,omitempty"`
 
 	// Interrupted Set on an agent message the user talked over before it finished.
 	Interrupted *bool `json:"interrupted,omitempty"`
 
-	// LlmTtftMs LLM time to first token (llm_node_ttft).
+	// LlmTtftMs The LLM time to first token in milliseconds (`llm_node_ttft`). Set only
+	//  on an agent message, when the agent recorded it.
 	LlmTtftMs *float64 `json:"llmTtftMs,omitempty"`
 
-	// OnUserTurnCompletedDelayMs Time spent in the agent's on_user_turn_completed callback
-	//  (on_user_turn_completed_delay).
+	// OnUserTurnCompletedDelayMs The time in milliseconds that the agent spent in its
+	//  `on_user_turn_completed` callback (`on_user_turn_completed_delay`). Set
+	//  only on a user message, when the agent recorded it.
 	OnUserTurnCompletedDelayMs *float64 `json:"onUserTurnCompletedDelayMs,omitempty"`
 
-	// Redacted Set when the project's PII redaction rewrote the text.
-	Redacted *bool                                `json:"redacted,omitempty"`
-	Role     *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
+	// Redacted Set when PII redaction for the project rewrote the text.
+	Redacted *bool `json:"redacted,omitempty"`
 
-	// StartedSpeakingAt When the speaker started and stopped speaking; unset for a message
-	//  that wasn't spoken.
+	// Role Who the message came from.
+	Role *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
+
+	// StartedSpeakingAt When the speaker started speaking; unset for a message that wasn't
+	//  spoken.
 	StartedSpeakingAt *GoogleProtobufTimestamp `json:"startedSpeakingAt,omitempty"`
+
+	// StoppedSpeakingAt When the speaker stopped speaking; unset for a message that wasn't
+	//  spoken.
 	StoppedSpeakingAt *GoogleProtobufTimestamp `json:"stoppedSpeakingAt,omitempty"`
 
-	// Text The message's text. Text the agent recorded in several parts is joined
-	//  with newlines. When redacted is set, PII in it is replaced with
-	//  <redaction type="..."/> markers.
+	// Text The message text. Text the agent recorded in several parts is joined
+	//  with newlines. When `redacted` is true, PII in it is replaced with
+	//  `<redaction type="..."/>` markers.
 	Text *string `json:"text,omitempty"`
 
 	// TranscriptConfidence The speech-to-text confidence of a spoken user message, from 0 to 1.
 	TranscriptConfidence *float64 `json:"transcriptConfidence,omitempty"`
 
-	// TranscriptionDelayMs From the end of the user's speech to its final transcript
-	//  (transcription_delay).
+	// TranscriptionDelayMs The time in milliseconds from the end of the user speech to its final
+	//  transcript (`transcription_delay`). Set only on a user message, when the
+	//  agent recorded it.
 	TranscriptionDelayMs *float64 `json:"transcriptionDelayMs,omitempty"`
 
-	// TtsTtfbMs TTS time to first byte of audio (tts_node_ttfb).
+	// TtsTtfbMs The TTS time to first byte of audio in milliseconds (`tts_node_ttfb`).
+	//  Set only on an agent message, when the agent recorded it.
 	TtsTtfbMs *float64 `json:"ttsTtfbMs,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemToolCall The agent calling a tool.
 type LivekitPublicapiObservabilityV1TranscriptItemToolCall struct {
-	// Arguments The call's arguments as a JSON string.
+	// Arguments The call arguments as a JSON string.
 	Arguments *string `json:"arguments,omitempty"`
 
 	// CallId Pairs the call with its ToolResult.
 	CallId *string `json:"callId,omitempty"`
-	Name   *string `json:"name,omitempty"`
+
+	// Name The tool the agent called.
+	Name *string `json:"name,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemToolResult The output a tool returned for a ToolCall.
@@ -2566,24 +3302,40 @@ type LivekitPublicapiObservabilityV1TranscriptItemToolResult struct {
 	CallId *string `json:"callId,omitempty"`
 
 	// IsError Set when the tool failed; output then describes the error.
-	IsError *bool   `json:"isError,omitempty"`
-	Name    *string `json:"name,omitempty"`
-	Output  *string `json:"output,omitempty"`
+	IsError *bool `json:"isError,omitempty"`
+
+	// Name The tool that returned the output.
+	Name *string `json:"name,omitempty"`
+
+	// Output What the tool returned.
+	Output *string `json:"output,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1AccessKey Project API-key metadata. The secret is never included on list RPCs; it is
 //
 //	returned only from GenerateKey.
 type LivekitPublicapiProjectsV1AccessKey struct {
-	// AgentId Set for programmatically-created cloud agent keys.
-	AgentId     *string                  `json:"agentId,omitempty"`
-	ApiKey      *string                  `json:"apiKey,omitempty"`
-	CreatedAt   *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	Description *string                  `json:"description,omitempty"`
-	OwnerEmail  *string                  `json:"ownerEmail,omitempty"`
+	// AgentId The cloud agent that the key belongs to. Set only for agent keys.
+	AgentId *string `json:"agentId,omitempty"`
 
-	// OwnerId Empty for service-account / legacy unowned keys.
-	OwnerId   *string                  `json:"ownerId,omitempty"`
+	// ApiKey The API key ID (`API...`). The secret is returned only when the key is
+	//  generated.
+	ApiKey *string `json:"apiKey,omitempty"`
+
+	// CreatedAt When the key was generated.
+	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// Description A label for the key.
+	Description *string `json:"description,omitempty"`
+
+	// OwnerEmail The email address of the owner. Empty for a key with no owner.
+	OwnerEmail *string `json:"ownerEmail,omitempty"`
+
+	// OwnerId The user who owns the key. Empty for a key with no owner, such as a
+	//  service account key.
+	OwnerId *string `json:"ownerId,omitempty"`
+
+	// UpdatedAt When the key was last changed.
 	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
 }
 
@@ -2594,76 +3346,128 @@ type LivekitPublicapiProjectsV1AddWorkspaceMembersToProjectResponse struct {
 
 // LivekitPublicapiProjectsV1AnswerInvitationResponse defines model for livekit.publicapi.projects.v1.AnswerInvitationResponse.
 type LivekitPublicapiProjectsV1AnswerInvitationResponse struct {
-	// Member set when accept=true
+	// Member The new membership. Set only when `accept` is true.
 	Member *LivekitPublicapiProjectsV1ProjectMember `json:"member,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1CreateProjectMember Grants a user access to a project at creation time.
 type LivekitPublicapiProjectsV1CreateProjectMember struct {
 	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
-	Role   *int32  `json:"role,omitempty"`
+	Role *int32 `json:"role,omitempty"`
+
+	// UserId The user to add. They must already be a member of the workspace.
 	UserId *string `json:"userId,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1CreateProjectRequest defines model for livekit.publicapi.projects.v1.CreateProjectRequest.
+// LivekitPublicapiProjectsV1CreateProjectRequest The project to create. An unset field keeps its default:
+//
+//	`enableAnalytics`, `enableAutoCreate`, and `disableTokenEndpoint` are true,
+//	and the other boolean fields are false.
 type LivekitPublicapiProjectsV1CreateProjectRequest struct {
-	// CustomDomain Project settings: everything UpdateProject can set. Unset fields keep the
-	//  new-project defaults (analytics, auto-create and a disabled token endpoint
-	//  on; the rest off), and values follow the same rules as on UpdateProject.
-	CustomDomain         *string `json:"customDomain,omitempty"`
-	DisableTokenEndpoint *bool   `json:"disableTokenEndpoint,omitempty"`
-	DiscoverableByDomain *bool   `json:"discoverableByDomain,omitempty"`
+	// CustomDomain A custom domain to add to the project.
+	CustomDomain *string `json:"customDomain,omitempty"`
 
-	// EgressClusterId set by LiveKit staff only
-	EgressClusterId           *string `json:"egressClusterId,omitempty"`
-	EnableAnalytics           *bool   `json:"enableAnalytics,omitempty"`
-	EnableAutoCreate          *bool   `json:"enableAutoCreate,omitempty"`
-	EnableEgressAutoRetry     *bool   `json:"enableEgressAutoRetry,omitempty"`
-	EnableEgressBackupStorage *bool   `json:"enableEgressBackupStorage,omitempty"`
+	// DisableTokenEndpoint True turns off the sandbox token endpoint for the project.
+	DisableTokenEndpoint *bool `json:"disableTokenEndpoint,omitempty"`
 
-	// EnableHostedAgents set by LiveKit staff only
-	EnableHostedAgents               *bool `json:"enableHostedAgents,omitempty"`
+	// DiscoverableByDomain When true, adds your email domain to the project.
+	DiscoverableByDomain *bool `json:"discoverableByDomain,omitempty"`
+
+	// EgressClusterId The egress cluster for the project. Only LiveKit staff can set it. For any
+	//  other caller, a non-default value returns `PermissionDenied`.
+	EgressClusterId *string `json:"egressClusterId,omitempty"`
+	EnableAnalytics *bool   `json:"enableAnalytics,omitempty"`
+
+	// EnableAutoCreate True lets the first participant to join a room that does not yet exist
+	//  create it.
+	EnableAutoCreate      *bool `json:"enableAutoCreate,omitempty"`
+	EnableEgressAutoRetry *bool `json:"enableEgressAutoRetry,omitempty"`
+
+	// EnableEgressBackupStorage True keeps an egress that fails to upload in LiveKit backup storage for 7
+	//  days.
+	EnableEgressBackupStorage *bool `json:"enableEgressBackupStorage,omitempty"`
+
+	// EnableHostedAgents True when hosted agents are enabled for the project. Only LiveKit staff can
+	//  set it. For any other caller, a non-default value returns
+	//  `PermissionDenied`.
+	EnableHostedAgents *bool `json:"enableHostedAgents,omitempty"`
+
+	// EnableInferenceRegionRestriction True restricts inference to the models in the same data region as the
+	//  project.
 	EnableInferenceRegionRestriction *bool `json:"enableInferenceRegionRestriction,omitempty"`
-	EnablePiiRedaction               *bool `json:"enablePiiRedaction,omitempty"`
-	EnableRemoteUnmute               *bool `json:"enableRemoteUnmute,omitempty"`
 
-	// EnableUserDataRecording Enables recording traces, transcripts, and audio for agent observability.
-	EnableUserDataRecording *bool              `json:"enableUserDataRecording,omitempty"`
-	EnableUserDataTraining  *bool              `json:"enableUserDataTraining,omitempty"`
-	EnabledCodecs           *[]string          `json:"enabledCodecs,omitempty"`
-	FeatureFlags            *map[string]string `json:"featureFlags,omitempty"`
+	// EnablePiiRedaction True redacts PII from the recorded session data.
+	EnablePiiRedaction *bool `json:"enablePiiRedaction,omitempty"`
 
-	// HideOnboarding Preferences (flat, as on UpdateProjectRequest). Enabling
-	//  discoverable_by_domain or joinable_by_domain adds the creator's email
-	//  domain to the project.
-	HideOnboarding       *bool `json:"hideOnboarding,omitempty"`
+	// EnableRemoteUnmute True lets an admin unmute the tracks of another participant.
+	EnableRemoteUnmute *bool `json:"enableRemoteUnmute,omitempty"`
+
+	// EnableUserDataRecording When true, the project records traces, transcripts, and audio from agent
+	//  sessions for agent observability. Defaults to false. While it is off, a
+	//  session read that finds no data returns `FailedPrecondition` with an
+	//  `ObservabilityDisabled` detail. This applies to a recording, and to the
+	//  first unfiltered page of a transcript, traces, logs, or metrics.
+	EnableUserDataRecording *bool `json:"enableUserDataRecording,omitempty"`
+
+	// EnableUserDataTraining True lets LiveKit use the observability data from this project to improve
+	//  models and services.
+	EnableUserDataTraining *bool `json:"enableUserDataTraining,omitempty"`
+
+	// EnabledCodecs The media codecs the project allows, by MIME type, such as `video/VP9`.
+	EnabledCodecs *[]string          `json:"enabledCodecs,omitempty"`
+	FeatureFlags  *map[string]string `json:"featureFlags,omitempty"`
+
+	// HideOnboarding True hides the onboarding instructions on the project dashboard.
+	HideOnboarding *bool `json:"hideOnboarding,omitempty"`
+
+	// HideSampleAppGallery True hides the sample app gallery on the project dashboard.
 	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
-	IsPrivate            *bool `json:"isPrivate,omitempty"`
-	JoinableByDomain     *bool `json:"joinableByDomain,omitempty"`
 
-	// Members private projects only
+	// IsPrivate True gives the project its own member list instead of the members of its
+	//  workspace.
+	IsPrivate *bool `json:"isPrivate,omitempty"`
+
+	// JoinableByDomain When true, adds your email domain to the project.
+	JoinableByDomain *bool `json:"joinableByDomain,omitempty"`
+
+	// Members The members of a private project. Ignored when `isPrivate` is false. Each
+	//  user must be a member of the workspace, or the request fails with
+	//  `NotFound`. A new workspace has only you as a member.
 	Members *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
-	Name    *string                                          `json:"name,omitempty"`
 
-	// PiiRedactionCategories Categories to redact. Empty with enable_pii_redaction applies the defaults.
+	// Name The project name.
+	Name *string `json:"name,omitempty"`
+
+	// PiiRedactionCategories The categories to redact. When empty and `enablePiiRedaction` is true, the
+	//  default categories apply.
 	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
 
 	// PinnedRegions SFU region pins. Empty leaves the project unpinned.
-	PinnedRegions           *[]string `json:"pinnedRegions,omitempty"`
-	RequireExplicitDispatch *bool     `json:"requireExplicitDispatch,omitempty"`
+	PinnedRegions *[]string `json:"pinnedRegions,omitempty"`
+
+	// RequireExplicitDispatch True rejects an agent server that registers without an explicit agent
+	//  name.
+	RequireExplicitDispatch *bool `json:"requireExplicitDispatch,omitempty"`
 
 	// RoomConfigs Room configurations stored on the project preferences.
-	RoomConfigs   *[]LivekitRoomConfiguration `json:"roomConfigs,omitempty"`
-	SfuAllowPause *bool                       `json:"sfuAllowPause,omitempty"`
+	RoomConfigs *[]LivekitRoomConfiguration `json:"roomConfigs,omitempty"`
 
-	// Subdomain optional; generated from name when empty
+	// SfuAllowPause True lets the SFU pause video tracks when subscribers are congested.
+	SfuAllowPause *bool `json:"sfuAllowPause,omitempty"`
+
+	// Subdomain The project subdomain. When empty, one is generated from `name`.
 	Subdomain        *string `json:"subdomain,omitempty"`
 	TokenEndpointKey *string `json:"tokenEndpointKey,omitempty"`
 
-	// UserDataRegion create-only; empty keeps the deployment default
+	// UserDataRegion The region where the project stores session data. You can set it only
+	//  when you create the project. When empty, the project uses the default
+	//  region.
 	UserDataRegion *string `json:"userDataRegion,omitempty"`
 
-	// WorkspaceId optional; when empty a new workspace is created
+	// WorkspaceId The workspace to create the project in. When empty, a new workspace is
+	//  created for the project. On `POST /v0/workspaces/{workspaceId}/projects`,
+	//  the project goes in the workspace in the path, and this field must be
+	//  empty or match it.
 	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
@@ -2676,8 +3480,8 @@ type LivekitPublicapiProjectsV1CreateProjectResponse struct {
 type LivekitPublicapiProjectsV1CreateTokenResponse struct {
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
-	// Token Signed JWT, sent as `Authorization: Bearer` to the project's server APIs
-	//  or used to join a room, depending on the grants.
+	// Token Signed JWT, sent as `Authorization: Bearer` to the server APIs for the
+	//  project or used to join a room, depending on the grants.
 	Token *string `json:"token,omitempty"`
 }
 
@@ -2727,17 +3531,20 @@ type LivekitPublicapiProjectsV1InviteMemberResponse struct {
 
 // LivekitPublicapiProjectsV1ListInvitesResponse defines model for livekit.publicapi.projects.v1.ListInvitesResponse.
 type LivekitPublicapiProjectsV1ListInvitesResponse struct {
-	Items *[]LivekitPublicapiProjectsV1ProjectInvite `json:"items,omitempty"`
+	Items    *[]LivekitPublicapiProjectsV1ProjectInvite `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo          `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListKeysResponse defines model for livekit.publicapi.projects.v1.ListKeysResponse.
 type LivekitPublicapiProjectsV1ListKeysResponse struct {
-	Keys *[]LivekitPublicapiProjectsV1AccessKey `json:"keys,omitempty"`
+	Items    *[]LivekitPublicapiProjectsV1AccessKey `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo      `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListMembersResponse defines model for livekit.publicapi.projects.v1.ListMembersResponse.
 type LivekitPublicapiProjectsV1ListMembersResponse struct {
-	Items *[]LivekitPublicapiProjectsV1ProjectMember `json:"items,omitempty"`
+	Items    *[]LivekitPublicapiProjectsV1ProjectMember `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo          `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListProjectsResponse defines model for livekit.publicapi.projects.v1.ListProjectsResponse.
@@ -2746,27 +3553,28 @@ type LivekitPublicapiProjectsV1ListProjectsResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo    `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1ListScopedKeysResponse defines model for livekit.publicapi.projects.v1.ListScopedKeysResponse.
-type LivekitPublicapiProjectsV1ListScopedKeysResponse struct {
-	OtherKeys    *[]LivekitPublicapiProjectsV1AccessKey `json:"otherKeys,omitempty"`
-	PersonalKeys *[]LivekitPublicapiProjectsV1AccessKey `json:"personalKeys,omitempty"`
-}
-
 // LivekitPublicapiProjectsV1ListWebhookEventsResponse defines model for livekit.publicapi.projects.v1.ListWebhookEventsResponse.
 type LivekitPublicapiProjectsV1ListWebhookEventsResponse struct {
-	// Events Event names the project can receive, for filterParams and SendTestWebhook.
-	Events *[]string `json:"events,omitempty"`
+	// Items Event names the project can receive, for filterParams and SendTestWebhook.
+	Items *[]string `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListWebhooksResponse defines model for livekit.publicapi.projects.v1.ListWebhooksResponse.
 type LivekitPublicapiProjectsV1ListWebhooksResponse struct {
-	Webhooks *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
+	Items *[]LivekitPublicapiProjectsV1Webhook `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1PinnedRegions Wraps the region pin set so an explicit empty list can clear the pins, which
 //
 //	a bare repeated field cannot express.
 type LivekitPublicapiProjectsV1PinnedRegions struct {
+	// Regions The regions to pin the project traffic to. An empty list clears the pins.
 	Regions *[]string `json:"regions,omitempty"`
 }
 
@@ -2774,78 +3582,163 @@ type LivekitPublicapiProjectsV1PinnedRegions struct {
 //
 //	are not embedded here.
 type LivekitPublicapiProjectsV1Project struct {
-	AnalyticsAccessKey               *string                  `json:"analyticsAccessKey,omitempty"`
-	CreatedAt                        *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	CreatorId                        *string                  `json:"creatorId,omitempty"`
-	EgressClusterId                  *string                  `json:"egressClusterId,omitempty"`
-	EnableAnalytics                  *bool                    `json:"enableAnalytics,omitempty"`
-	EnableAutoCreate                 *bool                    `json:"enableAutoCreate,omitempty"`
-	EnableEnhancedNoiseCancellation  *bool                    `json:"enableEnhancedNoiseCancellation,omitempty"`
-	EnableHostedAgents               *bool                    `json:"enableHostedAgents,omitempty"`
-	EnableInferenceRegionRestriction *bool                    `json:"enableInferenceRegionRestriction,omitempty"`
-	EnablePiiRedaction               *bool                    `json:"enablePiiRedaction,omitempty"`
-	EnableRemoteUnmute               *bool                    `json:"enableRemoteUnmute,omitempty"`
-	EnableSafeMode                   *bool                    `json:"enableSafeMode,omitempty"`
-	EnableSipCustomDomain            *bool                    `json:"enableSipCustomDomain,omitempty"`
-	EnableUserDataRecording          *bool                    `json:"enableUserDataRecording,omitempty"`
-	EnableUserDataTraining           *bool                    `json:"enableUserDataTraining,omitempty"`
-	EnabledCodecs                    *[]string                `json:"enabledCodecs,omitempty"`
-	Id                               *string                  `json:"id,omitempty"`
-	IsPrivate                        *bool                    `json:"isPrivate,omitempty"`
-	Name                             *string                  `json:"name,omitempty"`
+	AnalyticsAccessKey *string `json:"analyticsAccessKey,omitempty"`
+
+	// CreatedAt When the project was created.
+	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// CreatorId The user who created the project.
+	CreatorId *string `json:"creatorId,omitempty"`
+
+	// EgressClusterId The egress cluster the project runs egress on.
+	EgressClusterId *string `json:"egressClusterId,omitempty"`
+	EnableAnalytics *bool   `json:"enableAnalytics,omitempty"`
+
+	// EnableAutoCreate True lets the first participant to join a room that does not yet exist
+	//  create it.
+	EnableAutoCreate *bool `json:"enableAutoCreate,omitempty"`
+
+	// EnableEnhancedNoiseCancellation True applies enhanced noise cancellation to inbound audio.
+	EnableEnhancedNoiseCancellation *bool `json:"enableEnhancedNoiseCancellation,omitempty"`
+
+	// EnableHostedAgents True lets the project run agents on LiveKit Cloud.
+	EnableHostedAgents *bool `json:"enableHostedAgents,omitempty"`
+
+	// EnableInferenceRegionRestriction True restricts inference to the models in the same data region as the
+	//  project.
+	EnableInferenceRegionRestriction *bool `json:"enableInferenceRegionRestriction,omitempty"`
+
+	// EnablePiiRedaction True redacts PII from the recorded session data.
+	EnablePiiRedaction *bool `json:"enablePiiRedaction,omitempty"`
+
+	// EnableRemoteUnmute True lets an admin unmute the tracks of another participant.
+	EnableRemoteUnmute    *bool `json:"enableRemoteUnmute,omitempty"`
+	EnableSafeMode        *bool `json:"enableSafeMode,omitempty"`
+	EnableSipCustomDomain *bool `json:"enableSipCustomDomain,omitempty"`
+
+	// EnableUserDataRecording True when the project records traces, transcripts, and audio from agent
+	//  sessions for agent observability.
+	EnableUserDataRecording *bool `json:"enableUserDataRecording,omitempty"`
+
+	// EnableUserDataTraining True lets LiveKit use the observability data from this project to improve
+	//  models and services.
+	EnableUserDataTraining *bool `json:"enableUserDataTraining,omitempty"`
+
+	// EnabledCodecs The media codecs the project allows, by MIME type, such as `video/VP9`.
+	EnabledCodecs *[]string `json:"enabledCodecs,omitempty"`
+
+	// Id The project ID (`p_...`).
+	Id *string `json:"id,omitempty"`
+
+	// IsPrivate True when the project keeps its own member list instead of taking the
+	//  members of its workspace.
+	IsPrivate *bool `json:"isPrivate,omitempty"`
+
+	// Name The project name.
+	Name *string `json:"name,omitempty"`
 
 	// PiiRedactionCategories Categories to redact when enablePiiRedaction is on. Empty on read means the
 	//  stored set, or the defaults applied when redaction was enabled. It never
 	//  means "redact nothing".
-	PiiRedactionCategories  *[]CloudProtocolPIIRedactionCategory          `json:"piiRedactionCategories,omitempty"`
-	PinnedRegions           *[]string                                     `json:"pinnedRegions,omitempty"`
-	Preferences             *LivekitPublicapiProjectsV1ProjectPreferences `json:"preferences,omitempty"`
-	RequireExplicitDispatch *bool                                         `json:"requireExplicitDispatch,omitempty"`
-	Subdomain               *string                                       `json:"subdomain,omitempty"`
+	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
 
-	// Url The project's LiveKit server URL (wss://), derived from its subdomain.
-	Url                  *string                              `json:"url,omitempty"`
-	UserDataLifetimeDays *int32                               `json:"userDataLifetimeDays,omitempty"`
-	UserDataRegion       *string                              `json:"userDataRegion,omitempty"`
-	Webhooks             *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
-	WorkspaceId          *string                              `json:"workspaceId,omitempty"`
+	// PinnedRegions The regions the project pins its traffic to. Empty leaves it unpinned.
+	PinnedRegions *[]string `json:"pinnedRegions,omitempty"`
+
+	// Preferences The UI and feature settings for the project.
+	Preferences *LivekitPublicapiProjectsV1ProjectPreferences `json:"preferences,omitempty"`
+
+	// RequireExplicitDispatch True rejects an agent server that registers without an explicit agent
+	//  name, which keeps an accidental auto-dispatch server from connecting.
+	RequireExplicitDispatch *bool `json:"requireExplicitDispatch,omitempty"`
+
+	// Subdomain The project subdomain, which forms `url`.
+	Subdomain *string `json:"subdomain,omitempty"`
+
+	// Url The LiveKit server URL for the project (wss://), derived from its
+	//  subdomain.
+	Url                  *string `json:"url,omitempty"`
+	UserDataLifetimeDays *int32  `json:"userDataLifetimeDays,omitempty"`
+
+	// UserDataRegion The region where the project stores and processes session analytics and
+	//  agent observability data. It is set when the project is created and cannot
+	//  be changed.
+	UserDataRegion *string `json:"userDataRegion,omitempty"`
+
+	// Webhooks The webhook destinations for the project.
+	Webhooks *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
+
+	// WorkspaceId The workspace that holds the project (`wo_...`).
+	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ProjectInvite A pending email invite to a project. The recipient answers it with the token
 //
 //	the invite carries.
 type LivekitPublicapiProjectsV1ProjectInvite struct {
-	Email       *string                  `json:"email,omitempty"`
-	ExpiresAt   *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	InviteToken *string                  `json:"inviteToken,omitempty"`
-	ProjectId   *string                  `json:"projectId,omitempty"`
-	Role        *int32                   `json:"role,omitempty"`
+	// Email The email address the invite was sent to.
+	Email *string `json:"email,omitempty"`
+
+	// ExpiresAt When the invite stops working.
+	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+
+	// InviteToken The token that identifies the invite. The invitee answers with it.
+	InviteToken *string `json:"inviteToken,omitempty"`
+
+	// ProjectId The project the invite is to (`p_...`).
+	ProjectId *string `json:"projectId,omitempty"`
+
+	// Role Access level the invitee takes on the project: 0 invited, 1 read,
+	//  2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ProjectMember A user's membership on a project.
 type LivekitPublicapiProjectsV1ProjectMember struct {
-	Email     *string `json:"email,omitempty"`
+	// Email The email address on the user account.
+	Email *string `json:"email,omitempty"`
+
+	// ProjectId The project the membership is on (`p_...`).
 	ProjectId *string `json:"projectId,omitempty"`
 
 	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
-	Role   *int32  `json:"role,omitempty"`
+	Role *int32 `json:"role,omitempty"`
+
+	// UserId The user who holds the membership.
 	UserId *string `json:"userId,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ProjectPreferences Per-project UI and feature settings.
 type LivekitPublicapiProjectsV1ProjectPreferences struct {
-	DisableTokenEndpoint      *bool                                `json:"disableTokenEndpoint,omitempty"`
-	DiscoverableByDomain      *bool                                `json:"discoverableByDomain,omitempty"`
-	EnableEgressAutoRetry     *bool                                `json:"enableEgressAutoRetry,omitempty"`
-	EnableEgressBackupStorage *bool                                `json:"enableEgressBackupStorage,omitempty"`
-	FeatureFlags              *map[string]string                   `json:"featureFlags,omitempty"`
-	HideOnboarding            *bool                                `json:"hideOnboarding,omitempty"`
-	HideSampleAppGallery      *bool                                `json:"hideSampleAppGallery,omitempty"`
-	HipaaCompliant            *bool                                `json:"hipaaCompliant,omitempty"`
-	JoinableByDomain          *bool                                `json:"joinableByDomain,omitempty"`
-	RoomConfigurations        *map[string]LivekitRoomConfiguration `json:"roomConfigurations,omitempty"`
-	SfuAllowPause             *bool                                `json:"sfuAllowPause,omitempty"`
-	TokenEndpointKey          *string                              `json:"tokenEndpointKey,omitempty"`
+	// DisableTokenEndpoint True turns off the sandbox token endpoint for the project.
+	DisableTokenEndpoint *bool `json:"disableTokenEndpoint,omitempty"`
+
+	// DiscoverableByDomain True lets people with the same email domain as the project owner find the
+	//  project when they sign up.
+	DiscoverableByDomain  *bool `json:"discoverableByDomain,omitempty"`
+	EnableEgressAutoRetry *bool `json:"enableEgressAutoRetry,omitempty"`
+
+	// EnableEgressBackupStorage True keeps an egress that fails to upload in LiveKit backup storage for 7
+	//  days. The `egress_ended` webhook event carries the file location.
+	EnableEgressBackupStorage *bool              `json:"enableEgressBackupStorage,omitempty"`
+	FeatureFlags              *map[string]string `json:"featureFlags,omitempty"`
+
+	// HideOnboarding True hides the onboarding instructions on the project dashboard.
+	HideOnboarding *bool `json:"hideOnboarding,omitempty"`
+
+	// HideSampleAppGallery True hides the sample app gallery on the project dashboard.
+	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
+	HipaaCompliant       *bool `json:"hipaaCompliant,omitempty"`
+
+	// JoinableByDomain True lets people with the same email domain join the project.
+	JoinableByDomain *bool `json:"joinableByDomain,omitempty"`
+
+	// RoomConfigurations Room configurations saved on the project, by name.
+	RoomConfigurations *map[string]LivekitRoomConfiguration `json:"roomConfigurations,omitempty"`
+
+	// SfuAllowPause True lets the SFU pause video tracks when subscribers are congested.
+	SfuAllowPause    *bool   `json:"sfuAllowPause,omitempty"`
+	TokenEndpointKey *string `json:"tokenEndpointKey,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1RemoveMemberResponse defines model for livekit.publicapi.projects.v1.RemoveMemberResponse.
@@ -2854,10 +3747,10 @@ type LivekitPublicapiProjectsV1RemoveMemberResponse struct {
 	NumKeys *int `json:"numKeys,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1SendTestWebhookResponse Reports the receiver's answer to one delivery attempt. The test is not
+// LivekitPublicapiProjectsV1SendTestWebhookResponse Reports the answer from the receiver to one delivery attempt. The test is
 //
-//	retried and redirects are not followed; a failed delivery is reported here,
-//	not as an RPC error.
+//	not retried and redirects are not followed; a failed delivery is reported
+//	here, not as an RPC error.
 type LivekitPublicapiProjectsV1SendTestWebhookResponse struct {
 	// Error Why no response arrived, such as a timeout or refused connection. Empty
 	//  when statusCode is set.
@@ -2867,27 +3760,40 @@ type LivekitPublicapiProjectsV1SendTestWebhookResponse struct {
 	StatusCode *int32 `json:"statusCode,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrants The claims of a LiveKit access token. Field names match the token's JSON
+// LivekitPublicapiProjectsV1TokenGrants The claims of a LiveKit access token. Field names match the JSON claims
 //
-//	claims (protocol auth.ClaimGrants), so a token's claims JSON is a valid
-//	TokenGrants in JSON form.
+//	in the token, so the claims JSON from a token is a valid TokenGrants in
+//	JSON form.
 type LivekitPublicapiProjectsV1TokenGrants struct {
-	Agent         *LivekitPublicapiProjectsV1TokenGrantsAgent         `json:"agent,omitempty"`
-	AgentEndpoint *LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint `json:"agentEndpoint,omitempty"`
-	AgentThread   *LivekitPublicapiProjectsV1TokenGrantsAgentThread   `json:"agentThread,omitempty"`
-	Attributes    *map[string]string                                  `json:"attributes,omitempty"`
+	// Agent Agent server API permissions.
+	Agent *LivekitPublicapiProjectsV1TokenGrantsAgent `json:"agent,omitempty"`
 
-	// Identity Participant identity (the token's subject).
-	Identity  *string                                         `json:"identity,omitempty"`
+	// AgentEndpoint Permission to call an agent's non-public HTTP endpoints.
+	AgentEndpoint *LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint `json:"agentEndpoint,omitempty"`
+
+	// AgentThread Agent thread permissions.
+	AgentThread *LivekitPublicapiProjectsV1TokenGrantsAgentThread `json:"agentThread,omitempty"`
+
+	// Attributes Attributes carried on the participant.
+	Attributes *map[string]string `json:"attributes,omitempty"`
+
+	// Identity Participant identity (the token subject).
+	Identity *string `json:"identity,omitempty"`
+
+	// Inference Inference permissions.
 	Inference *LivekitPublicapiProjectsV1TokenGrantsInference `json:"inference,omitempty"`
 
 	// Kind Participant kind: "standard", "ingress", "egress", "sip", or "agent".
 	Kind        *string   `json:"kind,omitempty"`
 	KindDetails *[]string `json:"kindDetails,omitempty"`
-	Metadata    *string   `json:"metadata,omitempty"`
+
+	// Metadata Metadata carried on the participant.
+	Metadata *string `json:"metadata,omitempty"`
 
 	// Name Participant display name.
-	Name          *string                                             `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
+
+	// Observability Observability permissions.
 	Observability *LivekitPublicapiProjectsV1TokenGrantsObservability `json:"observability,omitempty"`
 
 	// RoomConfig Configuration for a room this participant creates on join, including
@@ -2895,16 +3801,27 @@ type LivekitPublicapiProjectsV1TokenGrants struct {
 	RoomConfig *LivekitRoomConfiguration `json:"roomConfig,omitempty"`
 
 	// RoomPreset Cloud room configuration preset; fields in roomConfig override it.
-	RoomPreset *string                                     `json:"roomPreset,omitempty"`
-	Sip        *LivekitPublicapiProjectsV1TokenGrantsSip   `json:"sip,omitempty"`
-	Video      *LivekitPublicapiProjectsV1TokenGrantsVideo `json:"video,omitempty"`
+	RoomPreset *string `json:"roomPreset,omitempty"`
+
+	// Sip SIP server API permissions.
+	Sip *LivekitPublicapiProjectsV1TokenGrantsSip `json:"sip,omitempty"`
+
+	// Video Room and participant permissions.
+	Video *LivekitPublicapiProjectsV1TokenGrantsVideo `json:"video,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1TokenGrantsAgent Agent server API permissions.
 type LivekitPublicapiProjectsV1TokenGrantsAgent struct {
-	Admin           *bool `json:"admin,omitempty"`
-	DatabaseAdmin   *bool `json:"databaseAdmin,omitempty"`
-	DispatchAdmin   *bool `json:"dispatchAdmin,omitempty"`
+	// Admin Create, update, and delete cloud agents.
+	Admin *bool `json:"admin,omitempty"`
+
+	// DatabaseAdmin Reach the agent databases of the project.
+	DatabaseAdmin *bool `json:"databaseAdmin,omitempty"`
+
+	// DispatchAdmin Manage the agent dispatch queue of the project.
+	DispatchAdmin *bool `json:"dispatchAdmin,omitempty"`
+
+	// SimulationAdmin Manage the simulations and scenarios that evaluate an agent.
 	SimulationAdmin *bool `json:"simulationAdmin,omitempty"`
 }
 
@@ -2912,7 +3829,9 @@ type LivekitPublicapiProjectsV1TokenGrantsAgent struct {
 type LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint struct {
 	// AgentName One agent; empty for every agent of the project.
 	AgentName *string `json:"agentName,omitempty"`
-	Call      *bool   `json:"call,omitempty"`
+
+	// Call Call the endpoints.
+	Call *bool `json:"call,omitempty"`
 
 	// Deployment One deployment; empty for every deployment.
 	Deployment *string `json:"deployment,omitempty"`
@@ -2920,58 +3839,98 @@ type LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint struct {
 
 // LivekitPublicapiProjectsV1TokenGrantsAgentThread A thread token: list and create in scope; read, write and delete the
 //
-//	threads in threadIds, e.g. for a frontend rendering one conversation. all
-//	extends it to every thread of the project; the action flags still apply.
+//	threads in `threadIds`, such as for a frontend that shows one
+//	conversation. `all` extends it to every thread of the project; the action
+//	flags still apply.
 type LivekitPublicapiProjectsV1TokenGrantsAgentThread struct {
-	All       *bool     `json:"all,omitempty"`
-	Create    *bool     `json:"create,omitempty"`
-	Delete    *bool     `json:"delete,omitempty"`
-	List      *bool     `json:"list,omitempty"`
-	Read      *bool     `json:"read,omitempty"`
-	Scope     *string   `json:"scope,omitempty"`
+	// All Extend the read, write, and delete permissions to every thread of the
+	//  project.
+	All *bool `json:"all,omitempty"`
+
+	// Create Create a thread in `scope`.
+	Create *bool `json:"create,omitempty"`
+
+	// Delete Delete the threads in `threadIds`.
+	Delete *bool `json:"delete,omitempty"`
+
+	// List List the threads in `scope`.
+	List *bool `json:"list,omitempty"`
+
+	// Read Read the threads in `threadIds`.
+	Read *bool `json:"read,omitempty"`
+
+	// Scope The scope the list and create permissions apply to.
+	Scope *string `json:"scope,omitempty"`
+
+	// ThreadIds The threads the read, write, and delete permissions apply to.
 	ThreadIds *[]string `json:"threadIds,omitempty"`
-	Write     *bool     `json:"write,omitempty"`
+
+	// Write Write the threads in `threadIds`.
+	Write *bool `json:"write,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1TokenGrantsInference defines model for livekit.publicapi.projects.v1.TokenGrants.Inference.
 type LivekitPublicapiProjectsV1TokenGrantsInference struct {
+	// Perform Every inference feature: LLM, STT, and TTS.
 	Perform *bool `json:"perform,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1TokenGrantsObservability defines model for livekit.publicapi.projects.v1.TokenGrants.Observability.
 type LivekitPublicapiProjectsV1TokenGrantsObservability struct {
+	// Write Publish observability data.
 	Write *bool `json:"write,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1TokenGrantsSip SIP server API permissions.
 type LivekitPublicapiProjectsV1TokenGrantsSip struct {
+	// Admin Every SIP feature.
 	Admin *bool `json:"admin,omitempty"`
-	Call  *bool `json:"call,omitempty"`
+
+	// Call Make outbound SIP calls.
+	Call *bool `json:"call,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1TokenGrantsVideo Room and participant permissions.
 type LivekitPublicapiProjectsV1TokenGrantsVideo struct {
-	Agent                 *bool `json:"agent,omitempty"`
+	// Agent Register as an Agents framework worker.
+	Agent *bool `json:"agent,omitempty"`
+
+	// CanManageAgentSession Manage an agent session through RemoteSession.
 	CanManageAgentSession *bool `json:"canManageAgentSession,omitempty"`
 
-	// CanPublish Unset means allowed.
-	CanPublish     *bool `json:"canPublish,omitempty"`
+	// CanPublish Publish tracks. Unset means allowed.
+	CanPublish *bool `json:"canPublish,omitempty"`
+
+	// CanPublishData Publish data to the room. Unset means allowed.
 	CanPublishData *bool `json:"canPublishData,omitempty"`
 
 	// CanPublishSources Restrict publishing to these sources ("camera", "microphone", …).
-	CanPublishSources    *[]string `json:"canPublishSources,omitempty"`
-	CanSubscribe         *bool     `json:"canSubscribe,omitempty"`
-	CanSubscribeMetrics  *bool     `json:"canSubscribeMetrics,omitempty"`
-	CanUpdateOwnMetadata *bool     `json:"canUpdateOwnMetadata,omitempty"`
+	CanPublishSources *[]string `json:"canPublishSources,omitempty"`
+
+	// CanSubscribe Subscribe to tracks. Unset means allowed.
+	CanSubscribe *bool `json:"canSubscribe,omitempty"`
+
+	// CanSubscribeMetrics Subscribe to metrics.
+	CanSubscribeMetrics *bool `json:"canSubscribeMetrics,omitempty"`
+
+	// CanUpdateOwnMetadata Update the participant's own metadata. Unset means allowed.
+	CanUpdateOwnMetadata *bool `json:"canUpdateOwnMetadata,omitempty"`
 
 	// DestinationRoom Room to move or forward participants to.
 	DestinationRoom *string `json:"destinationRoom,omitempty"`
-	Hidden          *bool   `json:"hidden,omitempty"`
+
+	// Hidden Hide the participant from the others in the room.
+	Hidden *bool `json:"hidden,omitempty"`
 
 	// IngressAdmin Server API: manage ingress.
-	IngressAdmin *bool   `json:"ingressAdmin,omitempty"`
-	Recorder     *bool   `json:"recorder,omitempty"`
-	Room         *string `json:"room,omitempty"`
+	IngressAdmin *bool `json:"ingressAdmin,omitempty"`
+
+	// Recorder Tell the room the participant is a recorder.
+	Recorder *bool `json:"recorder,omitempty"`
+
+	// Room The room the join and admin permissions apply to. Required when either
+	//  is set.
+	Room *string `json:"room,omitempty"`
 
 	// RoomAdmin Server API: manage `room` (or any room when unset).
 	RoomAdmin *bool `json:"roomAdmin,omitempty"`
@@ -3011,11 +3970,22 @@ type LivekitPublicapiProjectsV1UpdateWebhookResponse struct {
 
 // LivekitPublicapiProjectsV1Webhook A project webhook destination.
 type LivekitPublicapiProjectsV1Webhook struct {
+	// FilterParams The events to send, named by `includeEvents` or `excludeEvents`. Read the
+	//  names from List webhook events.
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
-	Id           *string              `json:"id,omitempty"`
-	Name         *string              `json:"name,omitempty"`
-	SigningKey   *string              `json:"signingKey,omitempty"`
-	Url          *string              `json:"url,omitempty"`
+
+	// Id The webhook ID.
+	Id *string `json:"id,omitempty"`
+
+	// Name A label for the destination.
+	Name *string `json:"name,omitempty"`
+
+	// SigningKey The API key of this project whose secret signs each delivery. It is a key
+	//  ID, not a secret. Empty signs with the oldest key in the project.
+	SigningKey *string `json:"signingKey,omitempty"`
+
+	// Url The URL that receives the events.
+	Url *string `json:"url,omitempty"`
 }
 
 // LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse defines model for livekit.publicapi.simulations.v1.Scenarios.GenerateFromSession.Response.
@@ -3124,29 +4094,39 @@ type LivekitPublicapiUsersV1ListUsersResponse struct {
 
 // LivekitPublicapiUsersV1User A LiveKit Cloud user.
 type LivekitPublicapiUsersV1User struct {
+	// CreatedAt When the account was created.
 	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	Email     *string                  `json:"email,omitempty"`
-	Id        *string                  `json:"id,omitempty"`
+
+	// Email The email address on the account.
+	Email *string `json:"email,omitempty"`
+
+	// Id The user ID, also the `userId` on project and workspace members.
+	Id *string `json:"id,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1AnswerInviteResponse defines model for livekit.publicapi.workspaces.v1.AnswerInviteResponse.
 type LivekitPublicapiWorkspacesV1AnswerInviteResponse struct {
-	// Member set when accept=true
+	// Member The new membership. Set only when `accept` is true.
 	Member *LivekitPublicapiWorkspacesV1WorkspaceMember `json:"member,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1CreateInviteResponse defines model for livekit.publicapi.workspaces.v1.CreateInviteResponse.
 type LivekitPublicapiWorkspacesV1CreateInviteResponse struct {
+	// InviteToken The token that identifies the invite. The invitee answers with it.
 	InviteToken *string `json:"inviteToken,omitempty"`
+
+	// WorkspaceId The workspace the invite is to (`wo_...`).
 	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
-// LivekitPublicapiWorkspacesV1CreateWorkspaceRequest defines model for livekit.publicapi.workspaces.v1.CreateWorkspaceRequest.
+// LivekitPublicapiWorkspacesV1CreateWorkspaceRequest The workspace to create. You cannot set workspace preferences here. LiveKit
+//
+//	staff set them, and they apply to every project in the workspace.
 type LivekitPublicapiWorkspacesV1CreateWorkspaceRequest struct {
+	// Name The workspace name.
 	Name *string `json:"name,omitempty"`
 
-	// OrganizationId Optional organization association. Workspace preferences are not settable here. They apply to every project in
-	//  the workspace and are set by LiveKit staff.
+	// OrganizationId Optional organization association.
 	OrganizationId *string `json:"organizationId,omitempty"`
 }
 
@@ -3184,12 +4164,14 @@ type LivekitPublicapiWorkspacesV1GetWorkspaceResponse struct {
 
 // LivekitPublicapiWorkspacesV1ListInvitesResponse defines model for livekit.publicapi.workspaces.v1.ListInvitesResponse.
 type LivekitPublicapiWorkspacesV1ListInvitesResponse struct {
-	Items *[]LivekitPublicapiWorkspacesV1WorkspaceInvite `json:"items,omitempty"`
+	Items    *[]LivekitPublicapiWorkspacesV1WorkspaceInvite `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo              `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1ListMembersResponse defines model for livekit.publicapi.workspaces.v1.ListMembersResponse.
 type LivekitPublicapiWorkspacesV1ListMembersResponse struct {
-	Items *[]LivekitPublicapiWorkspacesV1WorkspaceMember `json:"items,omitempty"`
+	Items    *[]LivekitPublicapiWorkspacesV1WorkspaceMember `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo              `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1ListWorkspacesResponse defines model for livekit.publicapi.workspaces.v1.ListWorkspacesResponse.
@@ -3212,30 +4194,56 @@ type LivekitPublicapiWorkspacesV1UpdateWorkspaceResponse struct {
 //
 //	and are not embedded here.
 type LivekitPublicapiWorkspacesV1Workspace struct {
-	CreatedAt      *GoogleProtobufTimestamp                          `json:"createdAt,omitempty"`
-	CreatorId      *string                                           `json:"creatorId,omitempty"`
-	Id             *string                                           `json:"id,omitempty"`
-	Name           *string                                           `json:"name,omitempty"`
-	OrganizationId *string                                           `json:"organizationId,omitempty"`
-	Preferences    *LivekitPublicapiWorkspacesV1WorkspacePreferences `json:"preferences,omitempty"`
+	// CreatedAt When the workspace was created.
+	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// CreatorId The user who created the workspace.
+	CreatorId *string `json:"creatorId,omitempty"`
+
+	// Id The workspace ID (`wo_...`).
+	Id *string `json:"id,omitempty"`
+
+	// Name The workspace name.
+	Name *string `json:"name,omitempty"`
+
+	// OrganizationId The organization the workspace belongs to.
+	OrganizationId *string `json:"organizationId,omitempty"`
+
+	// Preferences The settings for the workspace.
+	Preferences *LivekitPublicapiWorkspacesV1WorkspacePreferences `json:"preferences,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1WorkspaceInvite A pending email invite to a workspace.
 type LivekitPublicapiWorkspacesV1WorkspaceInvite struct {
-	Email       *string                  `json:"email,omitempty"`
-	ExpiresAt   *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	InviteToken *string                  `json:"inviteToken,omitempty"`
-	Role        *int32                   `json:"role,omitempty"`
-	WorkspaceId *string                  `json:"workspaceId,omitempty"`
+	// Email The email address the invite was sent to.
+	Email *string `json:"email,omitempty"`
+
+	// ExpiresAt When the invite stops working.
+	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+
+	// InviteToken The token that identifies the invite. The invitee answers with it.
+	InviteToken *string `json:"inviteToken,omitempty"`
+
+	// Role Access level the invitee takes on the workspace: 0 invited, 1 read,
+	//  2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
+
+	// WorkspaceId The workspace the invite is to (`wo_...`).
+	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1WorkspaceMember A user's membership on a workspace.
 type LivekitPublicapiWorkspacesV1WorkspaceMember struct {
+	// Email The email address on the user account.
 	Email *string `json:"email,omitempty"`
 
 	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
-	Role        *int32  `json:"role,omitempty"`
-	UserId      *string `json:"userId,omitempty"`
+	Role *int32 `json:"role,omitempty"`
+
+	// UserId The user who holds the membership.
+	UserId *string `json:"userId,omitempty"`
+
+	// WorkspaceId The workspace the membership is on (`wo_...`).
 	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
@@ -3246,6 +4254,7 @@ type LivekitPublicapiWorkspacesV1WorkspacePreferences struct {
 
 // ProjectServiceAnswerInvitationJSONBody defines parameters for ProjectServiceAnswerInvitation.
 type ProjectServiceAnswerInvitationJSONBody struct {
+	// Accept True accepts the invite; false declines it.
 	Accept *bool `json:"accept,omitempty"`
 }
 
@@ -3258,47 +4267,89 @@ type ProjectServiceListProjectsParams struct {
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// WorkspaceId Mutually exclusive: only one of workspaceId or memberId can be set if
-	//  workspaceId is set, list projects for the workspace
+	// WorkspaceId The workspace to list projects from. Private projects that you are not a
+	//  member of are left out. When `workspaceId` and `memberId` are both empty,
+	//  the response lists the projects that you are a member of. If you set both,
+	//  the request fails with `InvalidArgument`.
 	WorkspaceId *string `form:"workspaceId,omitempty" json:"workspaceId,omitempty"`
 
-	// MemberId if memberId is set, list projects for the member
+	// MemberId The member to list projects for. It must be your own user ID. Another user
+	//  ID returns `PermissionDenied`.
 	MemberId *string `form:"memberId,omitempty" json:"memberId,omitempty"`
 }
 
 // ProjectServiceUpdateProjectJSONBody defines parameters for ProjectServiceUpdateProject.
 type ProjectServiceUpdateProjectJSONBody struct {
-	CustomDomain         *string `json:"customDomain,omitempty"`
-	DisableTokenEndpoint *bool   `json:"disableTokenEndpoint,omitempty"`
-	DiscoverableByDomain *bool   `json:"discoverableByDomain,omitempty"`
+	// CustomDomain A custom domain to add to the project.
+	CustomDomain *string `json:"customDomain,omitempty"`
 
-	// EgressClusterId set by LiveKit staff only
-	EgressClusterId           *string `json:"egressClusterId,omitempty"`
-	EnableAnalytics           *bool   `json:"enableAnalytics,omitempty"`
-	EnableAutoCreate          *bool   `json:"enableAutoCreate,omitempty"`
-	EnableEgressAutoRetry     *bool   `json:"enableEgressAutoRetry,omitempty"`
-	EnableEgressBackupStorage *bool   `json:"enableEgressBackupStorage,omitempty"`
+	// DisableTokenEndpoint True turns off the sandbox token endpoint for the project.
+	DisableTokenEndpoint *bool `json:"disableTokenEndpoint,omitempty"`
 
-	// EnableHostedAgents set by LiveKit staff only
-	EnableHostedAgents               *bool              `json:"enableHostedAgents,omitempty"`
-	EnableInferenceRegionRestriction *bool              `json:"enableInferenceRegionRestriction,omitempty"`
-	EnablePiiRedaction               *bool              `json:"enablePiiRedaction,omitempty"`
-	EnableRemoteUnmute               *bool              `json:"enableRemoteUnmute,omitempty"`
-	EnableUserDataRecording          *bool              `json:"enableUserDataRecording,omitempty"`
-	EnableUserDataTraining           *bool              `json:"enableUserDataTraining,omitempty"`
-	EnabledCodecs                    *[]string          `json:"enabledCodecs,omitempty"`
-	FeatureFlags                     *map[string]string `json:"featureFlags,omitempty"`
+	// DiscoverableByDomain When true, adds your email domain to the project.
+	DiscoverableByDomain *bool `json:"discoverableByDomain,omitempty"`
 
-	// HideOnboarding Project preferences, patched as flat fields.
-	HideOnboarding       *bool `json:"hideOnboarding,omitempty"`
+	// EgressClusterId The egress cluster for the project. Only LiveKit staff can change it. For
+	//  any other caller, a value that differs from the current one returns
+	//  `PermissionDenied`.
+	EgressClusterId *string `json:"egressClusterId,omitempty"`
+	EnableAnalytics *bool   `json:"enableAnalytics,omitempty"`
+
+	// EnableAutoCreate True lets the first participant to join a room that does not yet exist
+	//  create it.
+	EnableAutoCreate      *bool `json:"enableAutoCreate,omitempty"`
+	EnableEgressAutoRetry *bool `json:"enableEgressAutoRetry,omitempty"`
+
+	// EnableEgressBackupStorage True keeps an egress that fails to upload in LiveKit backup storage for 7
+	//  days.
+	EnableEgressBackupStorage *bool `json:"enableEgressBackupStorage,omitempty"`
+
+	// EnableHostedAgents True when hosted agents are enabled for the project. Only LiveKit staff can
+	//  change it. For any other caller, a value that differs from the current one
+	//  returns `PermissionDenied`.
+	EnableHostedAgents *bool `json:"enableHostedAgents,omitempty"`
+
+	// EnableInferenceRegionRestriction True restricts inference to the models in the same data region as the
+	//  project.
+	EnableInferenceRegionRestriction *bool `json:"enableInferenceRegionRestriction,omitempty"`
+
+	// EnablePiiRedaction True redacts PII from the recorded session data.
+	EnablePiiRedaction *bool `json:"enablePiiRedaction,omitempty"`
+
+	// EnableRemoteUnmute True lets an admin unmute the tracks of another participant.
+	EnableRemoteUnmute *bool `json:"enableRemoteUnmute,omitempty"`
+
+	// EnableUserDataRecording When true, the project records traces, transcripts, and audio from agent
+	//  sessions for agent observability. Data recorded earlier stays readable.
+	EnableUserDataRecording *bool `json:"enableUserDataRecording,omitempty"`
+
+	// EnableUserDataTraining True lets LiveKit use the observability data from this project to improve
+	//  models and services.
+	EnableUserDataTraining *bool `json:"enableUserDataTraining,omitempty"`
+
+	// EnabledCodecs The media codecs the project allows, by MIME type, such as `video/VP9`.
+	EnabledCodecs *[]string          `json:"enabledCodecs,omitempty"`
+	FeatureFlags  *map[string]string `json:"featureFlags,omitempty"`
+
+	// HideOnboarding True hides the onboarding instructions on the project dashboard.
+	HideOnboarding *bool `json:"hideOnboarding,omitempty"`
+
+	// HideSampleAppGallery True hides the sample app gallery on the project dashboard.
 	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
-	IsPrivate            *bool `json:"isPrivate,omitempty"`
-	JoinableByDomain     *bool `json:"joinableByDomain,omitempty"`
+
+	// IsPrivate True gives the project its own member list instead of the members of its
+	//  workspace.
+	IsPrivate *bool `json:"isPrivate,omitempty"`
+
+	// JoinableByDomain When true, adds your email domain to the project.
+	JoinableByDomain *bool `json:"joinableByDomain,omitempty"`
 
 	// Members The members to keep when the project becomes private. The caller keeps
 	//  the admin role.
 	Members *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
-	Name    *string                                          `json:"name,omitempty"`
+
+	// Name The project name.
+	Name *string `json:"name,omitempty"`
 
 	// PiiRedactionCategories A non-empty list replaces the stored set. An empty list is ignored, so
 	//  the set cannot be cleared this way. Turning redaction on with nothing
@@ -3308,32 +4359,77 @@ type ProjectServiceUpdateProjectJSONBody struct {
 	// PinnedRegions SFU region pins. Unset leaves them unchanged; a set message replaces the
 	//  stored set, so an empty regions list clears the pins. Distinct from
 	//  userDataRegion, which decides where session data is stored.
-	PinnedRegions           *LivekitPublicapiProjectsV1PinnedRegions `json:"pinnedRegions,omitempty"`
-	RequireExplicitDispatch *bool                                    `json:"requireExplicitDispatch,omitempty"`
-	RoomConfigsToDelete     *[]string                                `json:"roomConfigsToDelete,omitempty"`
+	PinnedRegions *LivekitPublicapiProjectsV1PinnedRegions `json:"pinnedRegions,omitempty"`
 
-	// RoomConfigsToUpsert RoomConfiguration management (stored on project preferences).
+	// RequireExplicitDispatch True rejects an agent server that registers without an explicit agent
+	//  name.
+	RequireExplicitDispatch *bool `json:"requireExplicitDispatch,omitempty"`
+
+	// RoomConfigsToDelete The names of the room configurations to remove from the project.
+	RoomConfigsToDelete *[]string `json:"roomConfigsToDelete,omitempty"`
+
+	// RoomConfigsToUpsert Room configurations to add to the project. A configuration replaces the
+	//  one with the same name. A configuration without a name is ignored.
 	RoomConfigsToUpsert *[]LivekitRoomConfiguration `json:"roomConfigsToUpsert,omitempty"`
-	SfuAllowPause       *bool                       `json:"sfuAllowPause,omitempty"`
-	Subdomain           *string                     `json:"subdomain,omitempty"`
-	TokenEndpointKey    *string                     `json:"tokenEndpointKey,omitempty"`
+
+	// SfuAllowPause True lets the SFU pause video tracks when subscribers are congested.
+	SfuAllowPause *bool `json:"sfuAllowPause,omitempty"`
+
+	// Subdomain The project subdomain, which forms the server URL.
+	Subdomain        *string `json:"subdomain,omitempty"`
+	TokenEndpointKey *string `json:"tokenEndpointKey,omitempty"`
+}
+
+// BuilderAgentServiceListBuilderAgentsParams defines parameters for BuilderAgentServiceListBuilderAgents.
+type BuilderAgentServiceListBuilderAgentsParams struct {
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
+	//  from the beginning.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// BuilderAgentServiceCreateBuilderAgentJSONBody defines parameters for BuilderAgentServiceCreateBuilderAgent.
+type BuilderAgentServiceCreateBuilderAgentJSONBody struct {
+	// Config The configuration. Unset uses the default configuration.
+	Config *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+
+	// Name The name the agent registers under: a letter, then letters, digits, "_"
+	//  and "-", at most 128 characters. Unique in the project.
+	Name *string `json:"name,omitempty"`
+}
+
+// BuilderAgentServiceUpdateBuilderAgentJSONBody defines parameters for BuilderAgentServiceUpdateBuilderAgent.
+type BuilderAgentServiceUpdateBuilderAgentJSONBody struct {
+	// Config The new configuration. It replaces the current one: unset properties
+	//  take their default, not their current value.
+	Config *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+}
+
+// BuilderAgentServiceDeployBuilderAgentJSONBody defines parameters for BuilderAgentServiceDeployBuilderAgent.
+type BuilderAgentServiceDeployBuilderAgentJSONBody struct {
+	// VersionId The version to deploy. Empty deploys the current configuration.
+	VersionId *string `json:"versionId,omitempty"`
 }
 
 // AnalyticsServiceGetProjectAnalyticsParams defines parameters for AnalyticsServiceGetProjectAnalytics.
 type AnalyticsServiceGetProjectAnalyticsParams struct {
-	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// RangeStartTime The start of the window, included. Unset means the end minus the service
+	//  default.
 	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
 
-	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// RangeEndTime The end of the window, excluded. Unset means now.
 	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
 }
 
 // AnalyticsServiceListAgentAnalyticsParams defines parameters for AnalyticsServiceListAgentAnalytics.
 type AnalyticsServiceListAgentAnalyticsParams struct {
-	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// RangeStartTime The start of the window, included. Unset means the end minus the service
+	//  default.
 	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
 
-	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// RangeEndTime The end of the window, excluded. Unset means now.
 	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
 
 	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
@@ -3346,10 +4442,11 @@ type AnalyticsServiceListAgentAnalyticsParams struct {
 
 // AnalyticsServiceGetAgentAnalyticsParams defines parameters for AnalyticsServiceGetAgentAnalytics.
 type AnalyticsServiceGetAgentAnalyticsParams struct {
-	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// RangeStartTime The start of the window, included. Unset means the end minus the service
+	//  default.
 	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
 
-	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// RangeEndTime The end of the window, excluded. Unset means now.
 	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
 }
 
@@ -3370,14 +4467,28 @@ type DatabaseServiceCreateDatabaseJSONBody struct {
 	Ttl *GoogleProtobufDuration `json:"ttl,omitempty"`
 }
 
+// ProjectServiceListInvitesParams defines parameters for ProjectServiceListInvites.
+type ProjectServiceListInvitesParams struct {
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
+	//  from the beginning.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
 // ProjectServiceInviteMemberJSONBody defines parameters for ProjectServiceInviteMember.
 type ProjectServiceInviteMemberJSONBody struct {
+	// Email The email address to invite.
 	Email *string `json:"email,omitempty"`
-	Role  *int32  `json:"role,omitempty"`
+
+	// Role Access level to grant on the project: 1 read, 2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
 }
 
 // ProjectServiceUpdateInviteJSONBody defines parameters for ProjectServiceUpdateInvite.
 type ProjectServiceUpdateInviteJSONBody struct {
+	// Role Access level to set on the invite: 1 read, 2 write, 3 admin.
 	Role *int32 `json:"role,omitempty"`
 }
 
@@ -3385,15 +4496,38 @@ type ProjectServiceUpdateInviteJSONBody struct {
 type ProjectServiceListKeysParams struct {
 	// IncludeAgentKeys Agent keys are hidden by default.
 	IncludeAgentKeys *bool `form:"includeAgentKeys,omitempty" json:"includeAgentKeys,omitempty"`
+
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
+	//  from the beginning.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// OwnerId The ID of a user. Returns only the keys that this user owns. When empty,
+	//  returns the keys of every owner and the keys with no owner.
+	OwnerId *string `form:"ownerId,omitempty" json:"ownerId,omitempty"`
 }
 
 // ProjectServiceGenerateKeyJSONBody defines parameters for ProjectServiceGenerateKey.
 type ProjectServiceGenerateKeyJSONBody struct {
+	// Description A label for the key.
 	Description *string `json:"description,omitempty"`
 
-	// IsServiceAccount When true, the key is created without an owner (project-owned). It is not
-	//  listed as anyone's personal key and survives the generating user leaving.
+	// IsServiceAccount When true, the key is created without an owner (project-owned). `ListKeys`
+	//  with an `ownerId` does not return it, and it survives the generating user
+	//  leaving.
 	IsServiceAccount *bool `json:"isServiceAccount,omitempty"`
+}
+
+// ProjectServiceListMembersParams defines parameters for ProjectServiceListMembers.
+type ProjectServiceListMembersParams struct {
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
+	//  from the beginning.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ProjectServiceRemoveMemberParams defines parameters for ProjectServiceRemoveMember.
@@ -3406,18 +4540,23 @@ type ProjectServiceRemoveMemberParams struct {
 
 // ProjectServiceUpdateMemberJSONBody defines parameters for ProjectServiceUpdateMember.
 type ProjectServiceUpdateMemberJSONBody struct {
+	// Role Access level to set: 1 read, 2 write, 3 admin.
 	Role *int32 `json:"role,omitempty"`
 }
 
 // ProjectServiceAddWorkspaceMembersToProjectJSONBody defines parameters for ProjectServiceAddWorkspaceMembersToProject.
 type ProjectServiceAddWorkspaceMembersToProjectJSONBody struct {
-	Role    *int32    `json:"role,omitempty"`
+	// Role Access level to grant each of them: 1 read, 2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
+
+	// UserIds The workspace members to add to the project.
 	UserIds *[]string `json:"userIds,omitempty"`
 }
 
 // SimulationServiceGenerateScenarioFromSessionJSONBody defines parameters for SimulationServiceGenerateScenarioFromSession.
 type SimulationServiceGenerateScenarioFromSessionJSONBody struct {
-	// Region Unused today: the session's recording is found by project and room.
+	// Region Not used. The server finds the session recording from the project and
+	//  `roomId`.
 	Region *string `json:"region,omitempty"`
 
 	// RoomId Room session (RM_...) to derive the scenario from.
@@ -3433,17 +4572,19 @@ type AnalyticsServiceListProjectSessionsParams struct {
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// FilterRangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// FilterRangeStartTime The start of the window, included. Unset means the end minus the service
+	//  default.
 	FilterRangeStartTime *time.Time `form:"filter.range.startTime,omitempty" json:"filter.range.startTime,omitempty"`
 
-	// FilterRangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// FilterRangeEndTime The end of the window, excluded. Unset means now.
 	FilterRangeEndTime *time.Time `form:"filter.range.endTime,omitempty" json:"filter.range.endTime,omitempty"`
 
 	// FilterStatuses OR semantics; empty matches any status.
 	FilterStatuses *[]LivekitPublicapiAnalyticsV1SessionStatus `form:"filter.statuses,omitempty" json:"filter.statuses,omitempty"`
 
 	// FilterRoomName Room-name prefix match (case-sensitive): returns sessions whose room name
-	//  starts with this value, e.g. `demo-` matches `demo-1` and `demo-lobby`.
+	//  starts with this value. For example, `demo-` matches `demo-1` and
+	//  `demo-lobby`.
 	FilterRoomName *string `form:"filter.roomName,omitempty" json:"filter.roomName,omitempty"`
 
 	// FilterSessionId Exact room-session id match (RM_...).
@@ -3452,7 +4593,8 @@ type AnalyticsServiceListProjectSessionsParams struct {
 	// FilterTags OR semantics.
 	FilterTags *[]string `form:"filter.tags,omitempty" json:"filter.tags,omitempty"`
 
-	// FilterAgentId Cloud agent id (CA_...) — return only sessions this agent served. Duration is not filterable in v1.
+	// FilterAgentId The ID of a cloud agent (`CA_...`). Returns only the sessions that this
+	//  agent served.
 	FilterAgentId *string `form:"filter.agentId,omitempty" json:"filter.agentId,omitempty"`
 
 	// SortOrder Direction of the startedAt ordering, the only column sessions sort on.
@@ -3469,17 +4611,17 @@ type AnalyticsServiceListSessionEventsParams struct {
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// Types Event types to return, by name, such as TRACK_PUBLISHED: the names of
-	//  LiveKit's AnalyticsEventType. Each matches exactly. Empty returns the
-	//  dashboard's seven defaults, or with participantSessionId its eleven
-	//  participant defaults, track events included (see ListSessionEvents). An
-	//  unknown name is InvalidArgument.
+	// Types Event types to return, by name, such as `TRACK_PUBLISHED`: the names of
+	//  the LiveKit `AnalyticsEventType`. Each matches exactly. Empty returns the
+	//  seven defaults on the dashboard, or with `participantSessionId` its
+	//  eleven participant defaults, track events included (see
+	//  `ListSessionEvents`). An unknown name is `InvalidArgument`.
 	Types *[]string `form:"types,omitempty" json:"types,omitempty"`
 
-	// ParticipantSessionId Only the events of this participant session (PA_...), as the
-	//  participants list's ParticipantSession.participantSessionId names it.
-	//  Room events and API calls name no participant session, so they are left
-	//  out. Anything but a PA_ id is InvalidArgument.
+	// ParticipantSessionId Only the events of this participant session (PA_...), as
+	//  ParticipantSession.participantSessionId in the participants list names
+	//  it. Room events and API calls name no participant session, so they are
+	//  left out. Anything but a PA_ id is InvalidArgument.
 	ParticipantSessionId *string `form:"participantSessionId,omitempty" json:"participantSessionId,omitempty"`
 
 	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
@@ -3496,10 +4638,10 @@ type ObservabilityServiceGetSessionLogsParams struct {
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// LogLevels Only records at these levels, as the dashboard's logs filter selects
-	//  them, for example only TRACE and FATAL. Empty returns every record,
-	//  including those with no level, such as a passed evaluation.
-	//  LOG_LEVEL_UNSPECIFIED is InvalidArgument.
+	// LogLevels Only records at these levels, as the logs filter on the dashboard
+	//  selects them, for example only TRACE and FATAL. Empty returns every
+	//  record, including those with no level, such as a passed evaluation.
+	//  `LOG_LEVEL_UNSPECIFIED` is `InvalidArgument`.
 	LogLevels *[]LivekitPublicapiObservabilityV1LogLevel `form:"logLevels,omitempty" json:"logLevels,omitempty"`
 
 	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
@@ -3584,7 +4726,7 @@ type SimulationServiceListSimulationRunsParams struct {
 	// AgentName Only runs of this agent (exact name).
 	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
 
-	// StartTime Half-open window [startTime, endTime) on the run's creation time.
+	// StartTime Half-open window [startTime, endTime) on the run creation time.
 	//  Either bound may be left unset.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
@@ -3599,8 +4741,8 @@ type SimulationServiceListSimulationRunsParams struct {
 type SimulationServiceCreateSimulationRunJSONBody struct {
 	// AgentName Name the agent under test is registered under; every job dispatches it
 	//  into the simulation room, so it must already be deployed or running as
-	//  a worker. Empty uses the project's default agent. Recorded on the run
-	//  and usable as a ListSimulationRuns filter.
+	//  a worker. Empty uses the default agent for the project. Recorded on
+	//  the run and usable as a ListSimulationRuns filter.
 	AgentName *string `json:"agentName,omitempty"`
 
 	// BackgroundNoise Audio impairments applied to the simulated user; AUDIO mode only.
@@ -3611,8 +4753,8 @@ type SimulationServiceCreateSimulationRunJSONBody struct {
 	Ci *LivekitSimulationRunCI `json:"ci,omitempty"`
 
 	// Concurrency Maximum jobs running in parallel, at most 20; above that the request is
-	//  InvalidArgument. The project's concurrency quota can run fewer at once.
-	//  Unset uses the server default.
+	//  InvalidArgument. The concurrency quota for the project can run fewer at
+	//  once. Unset uses the server default.
 	Concurrency          *int32 `json:"concurrency,omitempty"`
 	LowQualityMicrophone *bool  `json:"lowQualityMicrophone,omitempty"`
 
@@ -3641,7 +4783,7 @@ type SimulationServiceConfirmSimulationSourceUploadJSONBody struct {
 
 // SimulationServiceCountSimulationRunsParams defines parameters for SimulationServiceCountSimulationRuns.
 type SimulationServiceCountSimulationRunsParams struct {
-	// StartTime Half-open window [startTime, endTime) on the run's creation time. Both
+	// StartTime Half-open window [startTime, endTime) on the run creation time. Both
 	//  are required and endTime must be after startTime.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
@@ -3729,14 +4871,37 @@ type ProjectServiceCreateTokenJSONBody struct {
 	TtlSeconds *int `json:"ttlSeconds,omitempty"`
 }
 
+// ProjectServiceListWebhookEventsParams defines parameters for ProjectServiceListWebhookEvents.
+type ProjectServiceListWebhookEventsParams struct {
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
+	//  from the beginning.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// ProjectServiceListWebhooksParams defines parameters for ProjectServiceListWebhooks.
+type ProjectServiceListWebhooksParams struct {
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
+	//  from the beginning.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
 // ProjectServiceCreateWebhookJSONBody defines parameters for ProjectServiceCreateWebhook.
 type ProjectServiceCreateWebhookJSONBody struct {
 	// FilterParams Event names from ListWebhookEvents. Unset delivers every event.
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
-	Name         *string              `json:"name,omitempty"`
+
+	// Name A label for the destination.
+	Name *string `json:"name,omitempty"`
 
 	// SigningKey API key of this project whose secret signs deliveries. Optional: when
-	//  empty, the project's oldest key is chosen and stored on the webhook.
+	//  empty, the oldest key in the project is chosen and stored on the
+	//  webhook.
 	SigningKey *string `json:"signingKey,omitempty"`
 
 	// Url http(s) URL deliveries are POSTed to.
@@ -3747,18 +4912,22 @@ type ProjectServiceCreateWebhookJSONBody struct {
 type ProjectServiceUpdateWebhookJSONBody struct {
 	// FilterParams Replaces the whole filter; an empty filter delivers every event.
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
-	Name         *string              `json:"name,omitempty"`
+
+	// Name The project name.
+	Name *string `json:"name,omitempty"`
 
 	// SigningKey API key of this project whose secret signs deliveries. Unset or empty
 	//  leaves the signing key unchanged.
 	SigningKey *string `json:"signingKey,omitempty"`
-	Url        *string `json:"url,omitempty"`
+
+	// Url The URL that receives the events.
+	Url *string `json:"url,omitempty"`
 }
 
 // ProjectServiceSendTestWebhookJSONBody defines parameters for ProjectServiceSendTestWebhook.
 type ProjectServiceSendTestWebhookJSONBody struct {
 	// Event One of ListWebhookEvents. Sent with sample data, regardless of the
-	//  webhook's filter.
+	//  webhook filter.
 	Event *string `json:"event,omitempty"`
 }
 
@@ -3771,16 +4940,19 @@ type UserServiceListUsersParams struct {
 	// PagePageSize Maximum items to return; 0 lets the server pick a default.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// ProjectId At least one of projectId or workspaceId is required. If both are set,
-	//  projectId must belong to workspaceId; members are the project's members.
+	// ProjectId The project ID (`p_...`). Returns only the members of this project. Set
+	//  `projectId`, `workspaceId`, or both. When you set both, the project must
+	//  belong to the workspace.
 	ProjectId *string `form:"projectId,omitempty" json:"projectId,omitempty"`
 
-	// WorkspaceId The workspaceId query parameter.
+	// WorkspaceId The workspace ID (`wo_...`). Returns only the members of this workspace,
+	//  unless you also set `projectId`.
 	WorkspaceId *string `form:"workspaceId,omitempty" json:"workspaceId,omitempty"`
 }
 
 // WorkspaceServiceAnswerInviteJSONBody defines parameters for WorkspaceServiceAnswerInvite.
 type WorkspaceServiceAnswerInviteJSONBody struct {
+	// Accept True accepts the invite; false declines it.
 	Accept *bool `json:"accept,omitempty"`
 }
 
@@ -3796,13 +4968,37 @@ type WorkspaceServiceListWorkspacesParams struct {
 
 // WorkspaceServiceUpdateWorkspaceJSONBody defines parameters for WorkspaceServiceUpdateWorkspace.
 type WorkspaceServiceUpdateWorkspaceJSONBody struct {
+	// Name The workspace name.
 	Name *string `json:"name,omitempty"`
+}
+
+// WorkspaceServiceListInvitesParams defines parameters for WorkspaceServiceListInvites.
+type WorkspaceServiceListInvitesParams struct {
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
+	//  from the beginning.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // WorkspaceServiceCreateInviteJSONBody defines parameters for WorkspaceServiceCreateInvite.
 type WorkspaceServiceCreateInviteJSONBody struct {
+	// Email The email address to invite.
 	Email *string `json:"email,omitempty"`
-	Role  *int32  `json:"role,omitempty"`
+
+	// Role Access level to grant: 1 read, 2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
+}
+
+// WorkspaceServiceListMembersParams defines parameters for WorkspaceServiceListMembers.
+type WorkspaceServiceListMembersParams struct {
+	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
+	//  from the beginning.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // WorkspaceServiceDeleteMemberParams defines parameters for WorkspaceServiceDeleteMember.
@@ -3815,6 +5011,7 @@ type WorkspaceServiceDeleteMemberParams struct {
 
 // WorkspaceServiceUpdateMemberJSONBody defines parameters for WorkspaceServiceUpdateMember.
 type WorkspaceServiceUpdateMemberJSONBody struct {
+	// Role Access level to grant: 1 read, 2 write, 3 admin.
 	Role *int32 `json:"role,omitempty"`
 }
 
@@ -3839,6 +5036,15 @@ type ProjectServiceCreateProjectJSONRequestBody = LivekitPublicapiProjectsV1Crea
 
 // ProjectServiceUpdateProjectJSONRequestBody defines body for ProjectServiceUpdateProject for application/json ContentType.
 type ProjectServiceUpdateProjectJSONRequestBody ProjectServiceUpdateProjectJSONBody
+
+// BuilderAgentServiceCreateBuilderAgentJSONRequestBody defines body for BuilderAgentServiceCreateBuilderAgent for application/json ContentType.
+type BuilderAgentServiceCreateBuilderAgentJSONRequestBody BuilderAgentServiceCreateBuilderAgentJSONBody
+
+// BuilderAgentServiceUpdateBuilderAgentJSONRequestBody defines body for BuilderAgentServiceUpdateBuilderAgent for application/json ContentType.
+type BuilderAgentServiceUpdateBuilderAgentJSONRequestBody BuilderAgentServiceUpdateBuilderAgentJSONBody
+
+// BuilderAgentServiceDeployBuilderAgentJSONRequestBody defines body for BuilderAgentServiceDeployBuilderAgent for application/json ContentType.
+type BuilderAgentServiceDeployBuilderAgentJSONRequestBody BuilderAgentServiceDeployBuilderAgentJSONBody
 
 // DatabaseServiceCreateDatabaseJSONRequestBody defines body for DatabaseServiceCreateDatabase for application/json ContentType.
 type DatabaseServiceCreateDatabaseJSONRequestBody DatabaseServiceCreateDatabaseJSONBody
@@ -5513,6 +6719,94 @@ func (t *LivekitAgentChatMessageChatContent) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable0() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable0, error) {
+	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable0(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable0(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable1() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable1, error) {
+	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable1(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable1(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable2() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable2, error) {
+	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable2(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable2(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsLivekitPublicapiObservabilityV1MetricPoint0 returns the union data inside the LivekitPublicapiObservabilityV1MetricPoint as a LivekitPublicapiObservabilityV1MetricPoint0
 func (t LivekitPublicapiObservabilityV1MetricPoint) AsLivekitPublicapiObservabilityV1MetricPoint0() (LivekitPublicapiObservabilityV1MetricPoint0, error) {
 	var body LivekitPublicapiObservabilityV1MetricPoint0
@@ -6003,6 +7297,98 @@ type ClientInterface interface {
 	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProject(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// BuilderAgentServiceListBuilderAgents ListBuilderAgents
+	//
+	// Lists a project's builder agents by name, one page at a time, with the
+	//  status of each deployment. The list does not include configurations: use
+	//  GetBuilderAgent for one.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
+	BuilderAgentServiceListBuilderAgents(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceCreateBuilderAgentWithBody CreateBuilderAgent
+	//
+	// Makes a builder agent from a name and a configuration. The agent is not
+	//  deployed: call DeployBuilderAgent to run it. Unset configuration
+	//  properties take their default, and unknown properties are ignored.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+	BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceCreateBuilderAgent CreateBuilderAgent
+	//
+	// Makes a builder agent from a name and a configuration. The agent is not
+	//  deployed: call DeployBuilderAgent to run it. Unset configuration
+	//  properties take their default, and unknown properties are ignored.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+	BuilderAgentServiceCreateBuilderAgent(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceDeleteBuilderAgent DeleteBuilderAgent
+	//
+	// Deletes a builder agent, its versions, and its deployment.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
+	BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceGetBuilderAgent GetBuilderAgent
+	//
+	// Returns a builder agent with its current configuration and the status of
+	//  its deployment.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
+	BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
+	//
+	// Replaces a builder agent's configuration. Each update makes a new
+	//  version. The running agent does not change until you deploy again.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+	BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
+	//
+	// Replaces a builder agent's configuration. Each update makes a new
+	//  version. The running agent does not change until you deploy again.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+	BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
+	//
+	// Starts a deployment of a builder agent's current configuration, or of
+	//  an earlier version. The call returns when the build starts, with status
+	//  DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
+	//  Call GetBuilderAgent to follow the deployment until its status is
+	//  DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+	BuilderAgentServiceDeployBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceDeployBuilderAgent DeployBuilderAgent
+	//
+	// Starts a deployment of a builder agent's current configuration, or of
+	//  an earlier version. The call returns when the build starts, with status
+	//  DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
+	//  Call GetBuilderAgent to follow the deployment until its status is
+	//  DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+	BuilderAgentServiceDeployBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
 	//
 	// Returns the project overview over a time range.
@@ -6012,9 +7398,9 @@ type ClientInterface interface {
 
 	// AnalyticsServiceListAgentAnalytics ListAgentAnalytics
 	//
-	// Returns the same per-agent analytics for every agent in the project, one
-	//  AgentAnalytics row per agent — so a single agent and the whole roster share
-	//  one shape.
+	// Lists the analytics of each agent in the project over a time range. Each
+	//  item is an `AgentAnalytics`, the same message that `GetAgentAnalytics`
+	//  returns for one agent.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
 	AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6028,7 +7414,7 @@ type ClientInterface interface {
 
 	// DatabaseServiceListDatabases ListDatabases
 	//
-	// Lists the project's databases, cursor-paginated.
+	// Lists the project databases, cursor-paginated.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
 	DatabaseServiceListDatabases(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6074,8 +7460,10 @@ type ClientInterface interface {
 
 	// ProjectServiceListInvites ListInvites
 	//
+	// Lists the unexpired invites of a project, ordered by email.
+	//
 	// Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
-	ProjectServiceListInvites(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceListInvites(ctx context.Context, projectId string, params *ProjectServiceListInvitesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceInviteMemberWithBody InviteMember
 	//
@@ -6112,6 +7500,9 @@ type ClientInterface interface {
 
 	// ProjectServiceListKeys ListKeys
 	//
+	// Lists the API keys of a project, oldest first. The list does not include
+	//  the secrets.
+	//
 	// Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
 	ProjectServiceListKeys(ctx context.Context, projectId string, params *ProjectServiceListKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6142,10 +7533,10 @@ type ClientInterface interface {
 
 	// ProjectServiceListMembers ListMembers
 	//
-	// Lists the project's members.
+	// Lists the project members, ordered by user ID.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
-	ProjectServiceListMembers(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceListMembers(ctx context.Context, projectId string, params *ProjectServiceListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceRemoveMember RemoveMember
 	//
@@ -6188,10 +7579,11 @@ type ClientInterface interface {
 	// SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
 	//
 	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
-	//  stored; the returned scenario is the result. The session must have a
-	//  recorded chat history. Each call runs an LLM over it, so it counts against
-	//  the project's scenario-generation quota and can take up to about a minute.
+	//  recorded room session, for use in the scenarioGroup of a later run.
+	//  Nothing is stored; the returned scenario is the result. The session must
+	//  have a recorded chat history. Each call runs an LLM over it, so it counts
+	//  against the scenario-generation quota for the project and can take up to
+	//  about a minute.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6201,20 +7593,16 @@ type ClientInterface interface {
 	// SimulationServiceGenerateScenarioFromSession GenerateScenarioFromSession
 	//
 	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
-	//  stored; the returned scenario is the result. The session must have a
-	//  recorded chat history. Each call runs an LLM over it, so it counts against
-	//  the project's scenario-generation quota and can take up to about a minute.
+	//  recorded room session, for use in the scenarioGroup of a later run.
+	//  Nothing is stored; the returned scenario is the result. The session must
+	//  have a recorded chat history. Each call runs an LLM over it, so it counts
+	//  against the scenario-generation quota for the project and can take up to
+	//  about a minute.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSession(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ProjectServiceListScopedKeys ListScopedKeys
-	//
-	// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
-	ProjectServiceListScopedKeys(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListProjectSessions ListProjectSessions
 	//
@@ -6231,69 +7619,77 @@ type ClientInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnalyticsServiceListSessionEvents Lists one room session's events, oldest first by default, cursor-paginated
-	//  with no total. With no `types`, it returns the seven the dashboard's events
-	//  table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
-	//  PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
-	//  for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
-	//  participant session's events. With `participantSessionId` and no `types`,
-	//  it returns the eleven the dashboard's participant events table shows: that
-	//  participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-	//  PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
-	//  TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
-	//  TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
+	// AnalyticsServiceListSessionEvents Lists the events in one room session, oldest first by default,
+	//  cursor-paginated with no total. With no `types`, it returns the seven the
+	//  events table on the dashboard shows: `PARTICIPANT_JOINED`,
+	//  `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`, `PARTICIPANT_RESUMED`,
+	//  `ROOM_CREATED`, `ROOM_ENDED` and `API_CALL`. `types` asks for others, such
+	//  as `TRACK_PUBLISHED`, and `participantSessionId` keeps the events for one
+	//  participant session. With `participantSessionId` and no `types`, it returns
+	//  the eleven the participant events table on the dashboard shows for that
+	//  participant session: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`,
+	//  `PARTICIPANT_RESUMED` and `PARTICIPANT_ACTIVE`, and its `TRACK_MUTED`,
+	//  `TRACK_UNMUTED`, `TRACK_PUBLISHED`, `TRACK_UNPUBLISHED`,
+	//  `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED` and
+	//  `TRACK_SUBSCRIBE_FAILED`.
 	//
 	// Unlike the dashboard, on purpose: an unknown type or a malformed
-	//  participant session id is InvalidArgument rather than being searched for as
-	//  typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
-	//  TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
+	//  participant session ID is `InvalidArgument` rather than being searched for
+	//  as typed, and types match exactly, so `TRACK_PUBLISHED` doesn't also return
+	//  `TRACK_PUBLISHED_UPDATE`. Each event payload keeps only an allowlist of
 	//  fields, leaving out participants' attributes and metadata and API calls'
 	//  request bodies. Each event and participant row still carries the
 	//  participant's identity, as the dashboard shows it to every member, and for
 	//  a SIP caller that can be a phone number.
 	//
-	//  Events are kept for 60 days, which can be shorter than the session's other
-	//  data, so an older session can list no events. An ACTIVE session lists the
-	//  events recorded so far. An unknown session is NotFound.
+	//  Events are kept for 60 days, which can be shorter than the retention of
+	//  other data for the session, so an older session can list no events. An
+	//  `ACTIVE` session lists the events recorded so far. An unknown session is
+	//  `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionLogs Returns the log records the session's agents exported, in time order: what
-	//  the dashboard's logs panel shows. Their chat history is left out, since
-	//  GetSessionTranscript reads it, and their evaluation results stay in. The
-	//  session's events, such as participants joining, come from
-	//  AnalyticsService's ListSessionEvents.
+	// ObservabilityServiceGetSessionLogs Returns the log records the agents in the session exported, in time order:
+	//  what the logs panel on the dashboard shows. Their chat history is left out,
+	//  since `GetSessionTranscript` reads it, and their evaluation results stay
+	//  in. The session events, such as participants joining, come from
+	//  `ListSessionEvents` on `AnalyticsService`.
 	//
-	// An ACTIVE session returns what its agents have exported so far. A record
+	// An `ACTIVE` session returns what its agents have exported so far. A record
 	//  exported mid-read with a time this read has already paged past, earlier
-	//  than its cursor's when oldest first, is missed until a new read. An unknown
-	//  session is NotFound. A read filtered by logLevels can come back empty
-	//  because no record is at those levels, so only an unfiltered one is
+	//  than its cursor position when oldest first, is missed until a new read. An
+	//  unknown session is NotFound. A read filtered by logLevels can come back
+	//  empty because no record is at those levels, so only an unfiltered one is
 	//  ObservabilityDisabled.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the session's agents exported, by
-	//  time, typed: turn latencies such as lk.agents.turn.e2e_latency and
+	// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the agents in the session exported,
+	//  by time, typed: turn latencies such as lk.agents.turn.e2e_latency and
 	//  lk.agents.turn.llm_ttft, token and duration usage such as
 	//  lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
 	//  any metrics the agent's own code recorded.
 	//
 	// These are the raw metrics agents emit, so they won't exactly match the
-	//  dashboard's metrics panel, which derives its numbers from the transcript
-	//  and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-	//  produce them: an agent whose code installs its own MeterProvider exports
-	//  none to LiveKit Cloud, and its sessions return no points.
+	//  metrics panel on the dashboard, which derives its numbers from the
+	//  transcript and traces. Only agents that export OpenTelemetry metrics to
+	//  LiveKit Cloud produce them: an agent whose code installs its own
+	//  MeterProvider exports none to LiveKit Cloud, and its sessions return no
+	//  points.
 	//
 	//  Some points aren't labeled as their agent exported them. LiveKit Cloud
-	//  groups a session's series by their attributes alone and names each group
-	//  after its first row, so: - several metrics can come back under one name,
-	//  such as an LLM's input, output and cached token counts, all named
-	//  lk.agents.usage.llm_input_tokens; - points of one series at the same time
-	//  that recorded equal values collapse into one point; - with two agents in
-	//  one session, a point can carry the other agent's resource attributes.
+	//  groups the series for a session by their attributes alone and names each
+	//  group after its first row. As a result:
+	//
+	//  - Several metrics can come back under one name. For example, the input,
+	//    output, and cached token counts for an LLM all have the name
+	//    `lk.agents.usage.llm_input_tokens`.
+	//  - Points of one series at the same time that recorded equal values
+	//    collapse into one point.
+	//  - When a session has two agents, a point can carry the resource attributes
+	//    of the other agent.
 	//
 	//  An agent exports its metrics every 30 seconds, and its turn latencies when
 	//  the session ends, so an ACTIVE session returns what it has exported so far.
@@ -6316,7 +7712,7 @@ type ClientInterface interface {
 
 	// ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 	//
-	// Returns a short-lived signed URL for one of the session's recordings: its
+	// Returns a short-lived signed URL for one of the session recordings: its
 	//  audio or its chat history. A session with no recording of that type is
 	//  NotFound. A new recording can be NotFound for up to a minute after the
 	//  session ends.
@@ -6324,10 +7720,10 @@ type ClientInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTraces Returns the spans the session's agents exported, by start time: what the
-	//  dashboard's trace view shows. Each span names its parent, so the pages
-	//  rebuild the span tree, and its attributes carry the turn and latency fields
-	//  the dashboard's turn view reads, such as lk.generation_id and
+	// ObservabilityServiceGetSessionTraces Returns the spans the agents in the session exported, by start time: what
+	//  the trace view on the dashboard shows. Each span names its parent, so the
+	//  pages rebuild the span tree, and its attributes carry the turn and latency
+	//  fields the turn view on the dashboard reads, such as lk.generation_id and
 	//  lk.response.ttft.
 	//
 	// An ACTIVE session returns what its agents have exported so far; a span
@@ -6339,13 +7735,13 @@ type ClientInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTranscript Returns the session's conversation as ordered transcript items: messages,
+	// ObservabilityServiceGetSessionTranscript Returns the session conversation as ordered transcript items: messages,
 	//  tool calls and results, agent handoffs and agent configuration changes. It
-	//  is the conversation the dashboard's transcript shows.
+	//  is the conversation the transcript on the dashboard shows.
 	//
 	// The agent exports its transcript when the session ends, and it can be read
 	//  a minute or two later; on a project with PII redaction, only once the
-	//  session's recording has been redacted. So a session that is still ACTIVE
+	//  session recording has been redacted. So a session that is still ACTIVE
 	//  returns what exists so far, usually nothing, without an error: read it
 	//  again after the session ends. An unknown session is NotFound.
 	//
@@ -6354,10 +7750,10 @@ type ClientInterface interface {
 
 	// SimulationServiceListSimulationRuns ListSimulationRuns
 	//
-	// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
-	//  by status, agent, conversation mode and a time window. Rows carry headline
-	//  counts (jobCount, passedCount, failedCount, issueCount) but neither
-	//  jobs nor the summary.
+	// Lists the runs for a project, newest first, cursor-paginated, optionally
+	//  narrowed by status, agent, conversation mode and a time window. Rows carry
+	//  headline counts (`jobCount`, `passedCount`, `failedCount`, `issueCount`) but
+	//  neither jobs nor the summary.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 	SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6365,7 +7761,7 @@ type ClientInterface interface {
 	// SimulationServiceCreateSimulationRunWithBody CreateSimulationRun
 	//
 	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
+	//  upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
 	//  agent source that scenarios are generated from: upload it to the returned
 	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
 	//  for an hour is failed. Creating a run is not idempotent: a retried request
@@ -6379,7 +7775,7 @@ type ClientInterface interface {
 	// SimulationServiceCreateSimulationRun CreateSimulationRun
 	//
 	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
+	//  upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
 	//  agent source that scenarios are generated from: upload it to the returned
 	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
 	//  for an hour is failed. Creating a run is not idempotent: a retried request
@@ -6421,7 +7817,7 @@ type ClientInterface interface {
 	//
 	// Marks the agent source as uploaded and starts scenario generation; the run
 	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is PENDING_UPLOAD, so a repeated call fails.
+	//  while the run is `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6432,7 +7828,7 @@ type ClientInterface interface {
 	//
 	// Marks the agent source as uploaded and starts scenario generation; the run
 	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is PENDING_UPLOAD, so a repeated call fails.
+	//  while the run is `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6508,14 +7904,14 @@ type ClientInterface interface {
 
 	// ThreadServiceGetThreadItems GetThreadItems
 	//
-	// Returns the thread's chat items, oldest first.
+	// Returns the chat items in the thread, oldest first.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
 	ThreadServiceGetThreadItems(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ThreadServiceGetThreadTasks GetThreadTasks
 	//
-	// Returns the thread's background tasks, oldest first.
+	// Returns the background tasks in the thread, oldest first.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
 	ThreadServiceGetThreadTasks(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6544,15 +7940,19 @@ type ClientInterface interface {
 
 	// ProjectServiceListWebhookEvents ListWebhookEvents
 	//
+	// Lists the event names that the webhooks of a project can receive. The list
+	//  is always one page.
+	//
 	// Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
-	ProjectServiceListWebhookEvents(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceListWebhookEvents(ctx context.Context, projectId string, params *ProjectServiceListWebhookEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListWebhooks ListWebhooks
 	//
-	// Lists the project's webhook destinations.
+	// Lists the webhook destinations for the project, in the order that they
+	//  were added. The list is always one page.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
-	ProjectServiceListWebhooks(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceListWebhooks(ctx context.Context, projectId string, params *ProjectServiceListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateWebhookWithBody CreateWebhook
 	//
@@ -6680,8 +8080,10 @@ type ClientInterface interface {
 
 	// WorkspaceServiceListInvites ListInvites
 	//
+	// Lists the unexpired invites of a workspace, ordered by email.
+	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
-	WorkspaceServiceListInvites(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	WorkspaceServiceListInvites(ctx context.Context, workspaceId string, params *WorkspaceServiceListInvitesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateInviteWithBody CreateInvite
 	//
@@ -6704,10 +8106,10 @@ type ClientInterface interface {
 
 	// WorkspaceServiceListMembers ListMembers
 	//
-	// Lists the workspace's members.
+	// Lists the workspace members, ordered by user ID.
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
-	WorkspaceServiceListMembers(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	WorkspaceServiceListMembers(ctx context.Context, workspaceId string, params *WorkspaceServiceListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceDeleteMember DeleteMember
 	//
@@ -6928,6 +8330,196 @@ func (c *Client) ProjectServiceUpdateProject(ctx context.Context, projectId stri
 	return c.Client.Do(req)
 }
 
+// BuilderAgentServiceListBuilderAgents ListBuilderAgents
+//
+// Lists a project's builder agents by name, one page at a time, with the
+//
+//	status of each deployment. The list does not include configurations: use
+//	GetBuilderAgent for one.
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
+func (c *Client) BuilderAgentServiceListBuilderAgents(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceListBuilderAgentsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceCreateBuilderAgentWithBody CreateBuilderAgent
+//
+// Makes a builder agent from a name and a configuration. The agent is not
+//
+//	deployed: call DeployBuilderAgent to run it. Unset configuration
+//	properties take their default, and unknown properties are ignored.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceCreateBuilderAgent CreateBuilderAgent
+//
+// Makes a builder agent from a name and a configuration. The agent is not
+//
+//	deployed: call DeployBuilderAgent to run it. Unset configuration
+//	properties take their default, and unknown properties are ignored.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceCreateBuilderAgent(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceCreateBuilderAgentRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceDeleteBuilderAgent DeleteBuilderAgent
+//
+// Deletes a builder agent, its versions, and its deployment.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceDeleteBuilderAgentRequest(c.Server, projectId, builderAgentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceGetBuilderAgent GetBuilderAgent
+//
+// Returns a builder agent with its current configuration and the status of
+//
+//	its deployment.
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceGetBuilderAgentRequest(c.Server, projectId, builderAgentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
+//
+// Replaces a builder agent's configuration. Each update makes a new
+//
+//	version. The running agent does not change until you deploy again.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(c.Server, projectId, builderAgentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
+//
+// Replaces a builder agent's configuration. Each update makes a new
+//
+//	version. The running agent does not change until you deploy again.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceUpdateBuilderAgentRequest(c.Server, projectId, builderAgentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
+//
+// Starts a deployment of a builder agent's current configuration, or of
+//
+//	an earlier version. The call returns when the build starts, with status
+//	DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
+//	Call GetBuilderAgent to follow the deployment until its status is
+//	DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceDeployBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(c.Server, projectId, builderAgentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceDeployBuilderAgent DeployBuilderAgent
+//
+// Starts a deployment of a builder agent's current configuration, or of
+//
+//	an earlier version. The call returns when the build starts, with status
+//	DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
+//	Call GetBuilderAgent to follow the deployment until its status is
+//	DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceDeployBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceDeployBuilderAgentRequest(c.Server, projectId, builderAgentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
 //
 // Returns the project overview over a time range.
@@ -6947,10 +8539,10 @@ func (c *Client) AnalyticsServiceGetProjectAnalytics(ctx context.Context, projec
 
 // AnalyticsServiceListAgentAnalytics ListAgentAnalytics
 //
-// Returns the same per-agent analytics for every agent in the project, one
+// Lists the analytics of each agent in the project over a time range. Each
 //
-//	AgentAnalytics row per agent — so a single agent and the whole roster share
-//	one shape.
+//	item is an `AgentAnalytics`, the same message that `GetAgentAnalytics`
+//	returns for one agent.
 //
 // Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
 func (c *Client) AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6984,7 +8576,7 @@ func (c *Client) AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectI
 
 // DatabaseServiceListDatabases ListDatabases
 //
-// Lists the project's databases, cursor-paginated.
+// Lists the project databases, cursor-paginated.
 //
 // Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
 func (c *Client) DatabaseServiceListDatabases(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7092,9 +8684,11 @@ func (c *Client) DatabaseServiceExportDatabase(ctx context.Context, projectId st
 
 // ProjectServiceListInvites ListInvites
 //
+// Lists the unexpired invites of a project, ordered by email.
+//
 // Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
-func (c *Client) ProjectServiceListInvites(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListInvitesRequest(c.Server, projectId)
+func (c *Client) ProjectServiceListInvites(ctx context.Context, projectId string, params *ProjectServiceListInvitesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListInvitesRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7190,6 +8784,10 @@ func (c *Client) ProjectServiceUpdateInvite(ctx context.Context, projectId strin
 
 // ProjectServiceListKeys ListKeys
 //
+// Lists the API keys of a project, oldest first. The list does not include
+//
+//	the secrets.
+//
 // Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
 func (c *Client) ProjectServiceListKeys(ctx context.Context, projectId string, params *ProjectServiceListKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceListKeysRequest(c.Server, projectId, params)
@@ -7262,11 +8860,11 @@ func (c *Client) ProjectServiceDeleteKey(ctx context.Context, projectId string, 
 
 // ProjectServiceListMembers ListMembers
 //
-// Lists the project's members.
+// Lists the project members, ordered by user ID.
 //
 // Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
-func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListMembersRequest(c.Server, projectId)
+func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string, params *ProjectServiceListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListMembersRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7379,10 +8977,11 @@ func (c *Client) ProjectServiceAddWorkspaceMembersToProject(ctx context.Context,
 //
 // Derives a reusable scenario (label, instructions and expectations) from a
 //
-//	recorded room session, for use in a later run's scenarioGroup. Nothing is
-//	stored; the returned scenario is the result. The session must have a
-//	recorded chat history. Each call runs an LLM over it, so it counts against
-//	the project's scenario-generation quota and can take up to about a minute.
+//	recorded room session, for use in the scenarioGroup of a later run.
+//	Nothing is stored; the returned scenario is the result. The session must
+//	have a recorded chat history. Each call runs an LLM over it, so it counts
+//	against the scenario-generation quota for the project and can take up to
+//	about a minute.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7403,31 +9002,17 @@ func (c *Client) SimulationServiceGenerateScenarioFromSessionWithBody(ctx contex
 //
 // Derives a reusable scenario (label, instructions and expectations) from a
 //
-//	recorded room session, for use in a later run's scenarioGroup. Nothing is
-//	stored; the returned scenario is the result. The session must have a
-//	recorded chat history. Each call runs an LLM over it, so it counts against
-//	the project's scenario-generation quota and can take up to about a minute.
+//	recorded room session, for use in the scenarioGroup of a later run.
+//	Nothing is stored; the returned scenario is the result. The session must
+//	have a recorded chat history. Each call runs an LLM over it, so it counts
+//	against the scenario-generation quota for the project and can take up to
+//	about a minute.
 //
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 func (c *Client) SimulationServiceGenerateScenarioFromSession(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSimulationServiceGenerateScenarioFromSessionRequest(c.Server, projectId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ProjectServiceListScopedKeys ListScopedKeys
-//
-// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
-func (c *Client) ProjectServiceListScopedKeys(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListScopedKeysRequest(c.Server, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -7474,32 +9059,35 @@ func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId strin
 	return c.Client.Do(req)
 }
 
-// AnalyticsServiceListSessionEvents Lists one room session's events, oldest first by default, cursor-paginated
+// AnalyticsServiceListSessionEvents Lists the events in one room session, oldest first by default,
 //
-//	with no total. With no `types`, it returns the seven the dashboard's events
-//	table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
-//	PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
-//	for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
-//	participant session's events. With `participantSessionId` and no `types`,
-//	it returns the eleven the dashboard's participant events table shows: that
-//	participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-//	PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
-//	TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
-//	TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
+//	cursor-paginated with no total. With no `types`, it returns the seven the
+//	events table on the dashboard shows: `PARTICIPANT_JOINED`,
+//	`PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`, `PARTICIPANT_RESUMED`,
+//	`ROOM_CREATED`, `ROOM_ENDED` and `API_CALL`. `types` asks for others, such
+//	as `TRACK_PUBLISHED`, and `participantSessionId` keeps the events for one
+//	participant session. With `participantSessionId` and no `types`, it returns
+//	the eleven the participant events table on the dashboard shows for that
+//	participant session: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`,
+//	`PARTICIPANT_RESUMED` and `PARTICIPANT_ACTIVE`, and its `TRACK_MUTED`,
+//	`TRACK_UNMUTED`, `TRACK_PUBLISHED`, `TRACK_UNPUBLISHED`,
+//	`TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED` and
+//	`TRACK_SUBSCRIBE_FAILED`.
 //
 // Unlike the dashboard, on purpose: an unknown type or a malformed
 //
-//	participant session id is InvalidArgument rather than being searched for as
-//	typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
-//	TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
+//	participant session ID is `InvalidArgument` rather than being searched for
+//	as typed, and types match exactly, so `TRACK_PUBLISHED` doesn't also return
+//	`TRACK_PUBLISHED_UPDATE`. Each event payload keeps only an allowlist of
 //	fields, leaving out participants' attributes and metadata and API calls'
 //	request bodies. Each event and participant row still carries the
 //	participant's identity, as the dashboard shows it to every member, and for
 //	a SIP caller that can be a phone number.
 //
-//	Events are kept for 60 days, which can be shorter than the session's other
-//	data, so an older session can list no events. An ACTIVE session lists the
-//	events recorded so far. An unknown session is NotFound.
+//	Events are kept for 60 days, which can be shorter than the retention of
+//	other data for the session, so an older session can list no events. An
+//	`ACTIVE` session lists the events recorded so far. An unknown session is
+//	`NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7514,19 +9102,19 @@ func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectI
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionLogs Returns the log records the session's agents exported, in time order: what
+// ObservabilityServiceGetSessionLogs Returns the log records the agents in the session exported, in time order:
 //
-//	the dashboard's logs panel shows. Their chat history is left out, since
-//	GetSessionTranscript reads it, and their evaluation results stay in. The
-//	session's events, such as participants joining, come from
-//	AnalyticsService's ListSessionEvents.
+//	what the logs panel on the dashboard shows. Their chat history is left out,
+//	since `GetSessionTranscript` reads it, and their evaluation results stay
+//	in. The session events, such as participants joining, come from
+//	`ListSessionEvents` on `AnalyticsService`.
 //
-// An ACTIVE session returns what its agents have exported so far. A record
+// An `ACTIVE` session returns what its agents have exported so far. A record
 //
 //	exported mid-read with a time this read has already paged past, earlier
-//	than its cursor's when oldest first, is missed until a new read. An unknown
-//	session is NotFound. A read filtered by logLevels can come back empty
-//	because no record is at those levels, so only an unfiltered one is
+//	than its cursor position when oldest first, is missed until a new read. An
+//	unknown session is NotFound. A read filtered by logLevels can come back
+//	empty because no record is at those levels, so only an unfiltered one is
 //	ObservabilityDisabled.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
@@ -7542,27 +9130,32 @@ func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, project
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the session's agents exported, by
+// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the agents in the session exported,
 //
-//	time, typed: turn latencies such as lk.agents.turn.e2e_latency and
+//	by time, typed: turn latencies such as lk.agents.turn.e2e_latency and
 //	lk.agents.turn.llm_ttft, token and duration usage such as
 //	lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
 //	any metrics the agent's own code recorded.
 //
 // These are the raw metrics agents emit, so they won't exactly match the
 //
-//	dashboard's metrics panel, which derives its numbers from the transcript
-//	and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-//	produce them: an agent whose code installs its own MeterProvider exports
-//	none to LiveKit Cloud, and its sessions return no points.
+//	metrics panel on the dashboard, which derives its numbers from the
+//	transcript and traces. Only agents that export OpenTelemetry metrics to
+//	LiveKit Cloud produce them: an agent whose code installs its own
+//	MeterProvider exports none to LiveKit Cloud, and its sessions return no
+//	points.
 //
 //	Some points aren't labeled as their agent exported them. LiveKit Cloud
-//	groups a session's series by their attributes alone and names each group
-//	after its first row, so: - several metrics can come back under one name,
-//	such as an LLM's input, output and cached token counts, all named
-//	lk.agents.usage.llm_input_tokens; - points of one series at the same time
-//	that recorded equal values collapse into one point; - with two agents in
-//	one session, a point can carry the other agent's resource attributes.
+//	groups the series for a session by their attributes alone and names each
+//	group after its first row. As a result:
+//
+//	- Several metrics can come back under one name. For example, the input,
+//	  output, and cached token counts for an LLM all have the name
+//	  `lk.agents.usage.llm_input_tokens`.
+//	- Points of one series at the same time that recorded equal values
+//	  collapse into one point.
+//	- When a session has two agents, a point can carry the resource attributes
+//	  of the other agent.
 //
 //	An agent exports its metrics every 30 seconds, and its turn latencies when
 //	the session ends, so an ACTIVE session returns what it has exported so far.
@@ -7606,7 +9199,7 @@ func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, pr
 
 // ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 //
-// Returns a short-lived signed URL for one of the session's recordings: its
+// Returns a short-lived signed URL for one of the session recordings: its
 //
 //	audio or its chat history. A session with no recording of that type is
 //	NotFound. A new recording can be NotFound for up to a minute after the
@@ -7625,11 +9218,11 @@ func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context,
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTraces Returns the spans the session's agents exported, by start time: what the
+// ObservabilityServiceGetSessionTraces Returns the spans the agents in the session exported, by start time: what
 //
-//	dashboard's trace view shows. Each span names its parent, so the pages
-//	rebuild the span tree, and its attributes carry the turn and latency fields
-//	the dashboard's turn view reads, such as lk.generation_id and
+//	the trace view on the dashboard shows. Each span names its parent, so the
+//	pages rebuild the span tree, and its attributes carry the turn and latency
+//	fields the turn view on the dashboard reads, such as lk.generation_id and
 //	lk.response.ttft.
 //
 // An ACTIVE session returns what its agents have exported so far; a span
@@ -7652,15 +9245,15 @@ func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, proje
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTranscript Returns the session's conversation as ordered transcript items: messages,
+// ObservabilityServiceGetSessionTranscript Returns the session conversation as ordered transcript items: messages,
 //
 //	tool calls and results, agent handoffs and agent configuration changes. It
-//	is the conversation the dashboard's transcript shows.
+//	is the conversation the transcript on the dashboard shows.
 //
 // The agent exports its transcript when the session ends, and it can be read
 //
 //	a minute or two later; on a project with PII redaction, only once the
-//	session's recording has been redacted. So a session that is still ACTIVE
+//	session recording has been redacted. So a session that is still ACTIVE
 //	returns what exists so far, usually nothing, without an error: read it
 //	again after the session ends. An unknown session is NotFound.
 //
@@ -7679,11 +9272,11 @@ func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, p
 
 // SimulationServiceListSimulationRuns ListSimulationRuns
 //
-// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
+// Lists the runs for a project, newest first, cursor-paginated, optionally
 //
-//	by status, agent, conversation mode and a time window. Rows carry headline
-//	counts (jobCount, passedCount, failedCount, issueCount) but neither
-//	jobs nor the summary.
+//	narrowed by status, agent, conversation mode and a time window. Rows carry
+//	headline counts (`jobCount`, `passedCount`, `failedCount`, `issueCount`) but
+//	neither jobs nor the summary.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7702,7 +9295,7 @@ func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projec
 //
 // Registers a new run. With a scenarioGroup it starts right away and no
 //
-//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
+//	upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
 //	agent source that scenarios are generated from: upload it to the returned
 //	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
 //	for an hour is failed. Creating a run is not idempotent: a retried request
@@ -7727,7 +9320,7 @@ func (c *Client) SimulationServiceCreateSimulationRunWithBody(ctx context.Contex
 //
 // Registers a new run. With a scenarioGroup it starts right away and no
 //
-//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
+//	upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
 //	agent source that scenarios are generated from: upload it to the returned
 //	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
 //	for an hour is failed. Creating a run is not idempotent: a retried request
@@ -7813,7 +9406,7 @@ func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, proje
 // Marks the agent source as uploaded and starts scenario generation; the run
 //
 //	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is PENDING_UPLOAD, so a repeated call fails.
+//	while the run is `PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7835,7 +9428,7 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUploadWithBody(ctx cont
 // Marks the agent source as uploaded and starts scenario generation; the run
 //
 //	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is PENDING_UPLOAD, so a repeated call fails.
+//	while the run is `PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8004,7 +9597,7 @@ func (c *Client) ThreadServiceUpdateThread(ctx context.Context, projectId string
 
 // ThreadServiceGetThreadItems GetThreadItems
 //
-// Returns the thread's chat items, oldest first.
+// Returns the chat items in the thread, oldest first.
 //
 // Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
 func (c *Client) ThreadServiceGetThreadItems(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8021,7 +9614,7 @@ func (c *Client) ThreadServiceGetThreadItems(ctx context.Context, projectId stri
 
 // ThreadServiceGetThreadTasks GetThreadTasks
 //
-// Returns the thread's background tasks, oldest first.
+// Returns the background tasks in the thread, oldest first.
 //
 // Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
 func (c *Client) ThreadServiceGetThreadTasks(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8082,9 +9675,13 @@ func (c *Client) ProjectServiceCreateToken(ctx context.Context, projectId string
 
 // ProjectServiceListWebhookEvents ListWebhookEvents
 //
+// Lists the event names that the webhooks of a project can receive. The list
+//
+//	is always one page.
+//
 // Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
-func (c *Client) ProjectServiceListWebhookEvents(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListWebhookEventsRequest(c.Server, projectId)
+func (c *Client) ProjectServiceListWebhookEvents(ctx context.Context, projectId string, params *ProjectServiceListWebhookEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListWebhookEventsRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8097,11 +9694,13 @@ func (c *Client) ProjectServiceListWebhookEvents(ctx context.Context, projectId 
 
 // ProjectServiceListWebhooks ListWebhooks
 //
-// Lists the project's webhook destinations.
+// Lists the webhook destinations for the project, in the order that they
+//
+//	were added. The list is always one page.
 //
 // Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
-func (c *Client) ProjectServiceListWebhooks(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListWebhooksRequest(c.Server, projectId)
+func (c *Client) ProjectServiceListWebhooks(ctx context.Context, projectId string, params *ProjectServiceListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListWebhooksRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8438,9 +10037,11 @@ func (c *Client) WorkspaceServiceUpdateWorkspace(ctx context.Context, workspaceI
 
 // WorkspaceServiceListInvites ListInvites
 //
+// Lists the unexpired invites of a workspace, ordered by email.
+//
 // Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
-func (c *Client) WorkspaceServiceListInvites(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWorkspaceServiceListInvitesRequest(c.Server, workspaceId)
+func (c *Client) WorkspaceServiceListInvites(ctx context.Context, workspaceId string, params *WorkspaceServiceListInvitesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWorkspaceServiceListInvitesRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8502,11 +10103,11 @@ func (c *Client) WorkspaceServiceDeleteInvite(ctx context.Context, workspaceId s
 
 // WorkspaceServiceListMembers ListMembers
 //
-// Lists the workspace's members.
+// Lists the workspace members, ordered by user ID.
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
-func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWorkspaceServiceListMembersRequest(c.Server, workspaceId)
+func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId string, params *WorkspaceServiceListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWorkspaceServiceListMembersRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8981,6 +10582,316 @@ func NewProjectServiceUpdateProjectRequestWithBody(server string, projectId stri
 	}
 
 	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceListBuilderAgentsRequest constructs an http.Request for the BuilderAgentServiceListBuilderAgents method
+func NewBuilderAgentServiceListBuilderAgentsRequest(server string, projectId string, params *BuilderAgentServiceListBuilderAgentsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceCreateBuilderAgentRequest calls the generic BuilderAgentServiceCreateBuilderAgent builder with application/json body
+func NewBuilderAgentServiceCreateBuilderAgentRequest(server string, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewBuilderAgentServiceCreateBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceCreateBuilderAgent method, with any body, and a specified content type
+func NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceDeleteBuilderAgentRequest constructs an http.Request for the BuilderAgentServiceDeleteBuilderAgent method
+func NewBuilderAgentServiceDeleteBuilderAgentRequest(server string, projectId string, builderAgentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceGetBuilderAgentRequest constructs an http.Request for the BuilderAgentServiceGetBuilderAgent method
+func NewBuilderAgentServiceGetBuilderAgentRequest(server string, projectId string, builderAgentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceUpdateBuilderAgentRequest calls the generic BuilderAgentServiceUpdateBuilderAgent builder with application/json body
+func NewBuilderAgentServiceUpdateBuilderAgentRequest(server string, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server, projectId, builderAgentId, "application/json", bodyReader)
+}
+
+// NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceUpdateBuilderAgent method, with any body, and a specified content type
+func NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server string, projectId string, builderAgentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceDeployBuilderAgentRequest calls the generic BuilderAgentServiceDeployBuilderAgent builder with application/json body
+func NewBuilderAgentServiceDeployBuilderAgentRequest(server string, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server, projectId, builderAgentId, "application/json", bodyReader)
+}
+
+// NewBuilderAgentServiceDeployBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceDeployBuilderAgent method, with any body, and a specified content type
+func NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server string, projectId string, builderAgentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s:deploy", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -9484,7 +11395,7 @@ func NewDatabaseServiceExportDatabaseRequest(server string, projectId string, da
 }
 
 // NewProjectServiceListInvitesRequest constructs an http.Request for the ProjectServiceListInvites method
-func NewProjectServiceListInvitesRequest(server string, projectId string) (*http.Request, error) {
+func NewProjectServiceListInvitesRequest(server string, projectId string, params *ProjectServiceListInvitesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9507,6 +11418,45 @@ func NewProjectServiceListInvitesRequest(server string, projectId string) (*http
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -9706,6 +11656,42 @@ func NewProjectServiceListKeysRequest(server string, projectId string, params *P
 
 		}
 
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OwnerId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "ownerId", *params.OwnerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -9809,7 +11795,7 @@ func NewProjectServiceDeleteKeyRequest(server string, projectId string, apiKey s
 }
 
 // NewProjectServiceListMembersRequest constructs an http.Request for the ProjectServiceListMembers method
-func NewProjectServiceListMembersRequest(server string, projectId string) (*http.Request, error) {
+func NewProjectServiceListMembersRequest(server string, projectId string, params *ProjectServiceListMembersParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9832,6 +11818,45 @@ func NewProjectServiceListMembersRequest(server string, projectId string) (*http
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -10095,40 +12120,6 @@ func NewSimulationServiceGenerateScenarioFromSessionRequestWithBody(server strin
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewProjectServiceListScopedKeysRequest constructs an http.Request for the ProjectServiceListScopedKeys method
-func NewProjectServiceListScopedKeysRequest(server string, projectId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/scoped-keys", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -11977,7 +13968,7 @@ func NewProjectServiceCreateTokenRequestWithBody(server string, projectId string
 }
 
 // NewProjectServiceListWebhookEventsRequest constructs an http.Request for the ProjectServiceListWebhookEvents method
-func NewProjectServiceListWebhookEventsRequest(server string, projectId string) (*http.Request, error) {
+func NewProjectServiceListWebhookEventsRequest(server string, projectId string, params *ProjectServiceListWebhookEventsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12002,6 +13993,45 @@ func NewProjectServiceListWebhookEventsRequest(server string, projectId string) 
 		return nil, err
 	}
 
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -12011,7 +14041,7 @@ func NewProjectServiceListWebhookEventsRequest(server string, projectId string) 
 }
 
 // NewProjectServiceListWebhooksRequest constructs an http.Request for the ProjectServiceListWebhooks method
-func NewProjectServiceListWebhooksRequest(server string, projectId string) (*http.Request, error) {
+func NewProjectServiceListWebhooksRequest(server string, projectId string, params *ProjectServiceListWebhooksParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12034,6 +14064,45 @@ func NewProjectServiceListWebhooksRequest(server string, projectId string) (*htt
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -12694,7 +14763,7 @@ func NewWorkspaceServiceUpdateWorkspaceRequestWithBody(server string, workspaceI
 }
 
 // NewWorkspaceServiceListInvitesRequest constructs an http.Request for the WorkspaceServiceListInvites method
-func NewWorkspaceServiceListInvitesRequest(server string, workspaceId string) (*http.Request, error) {
+func NewWorkspaceServiceListInvitesRequest(server string, workspaceId string, params *WorkspaceServiceListInvitesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12717,6 +14786,45 @@ func NewWorkspaceServiceListInvitesRequest(server string, workspaceId string) (*
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -12816,7 +14924,7 @@ func NewWorkspaceServiceDeleteInviteRequest(server string, workspaceId string, e
 }
 
 // NewWorkspaceServiceListMembersRequest constructs an http.Request for the WorkspaceServiceListMembers method
-func NewWorkspaceServiceListMembersRequest(server string, workspaceId string) (*http.Request, error) {
+func NewWorkspaceServiceListMembersRequest(server string, workspaceId string, params *WorkspaceServiceListMembersParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12839,6 +14947,45 @@ func NewWorkspaceServiceListMembersRequest(server string, workspaceId string) (*
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -13328,6 +15475,104 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProjectWithResponse(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateProjectResponse, error)
 
+	// BuilderAgentServiceListBuilderAgentsWithResponse ListBuilderAgents
+	//
+	// Lists a project's builder agents by name, one page at a time, with the
+	//  status of each deployment. The list does not include configurations: use
+	//  GetBuilderAgent for one.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
+	BuilderAgentServiceListBuilderAgentsWithResponse(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceListBuilderAgentsResponse, error)
+
+	// BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse CreateBuilderAgent
+	//
+	// Makes a builder agent from a name and a configuration. The agent is not
+	//  deployed: call DeployBuilderAgent to run it. Unset configuration
+	//  properties take their default, and unknown properties are ignored.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+	BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error)
+
+	// BuilderAgentServiceCreateBuilderAgentWithResponse CreateBuilderAgent
+	//
+	// Makes a builder agent from a name and a configuration. The agent is not
+	//  deployed: call DeployBuilderAgent to run it. Unset configuration
+	//  properties take their default, and unknown properties are ignored.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+	BuilderAgentServiceCreateBuilderAgentWithResponse(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error)
+
+	// BuilderAgentServiceDeleteBuilderAgentWithResponse DeleteBuilderAgent
+	//
+	// Deletes a builder agent, its versions, and its deployment.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
+	BuilderAgentServiceDeleteBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeleteBuilderAgentResponse, error)
+
+	// BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
+	//
+	// Returns a builder agent with its current configuration and the status of
+	//  its deployment.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
+	BuilderAgentServiceGetBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceGetBuilderAgentResponse, error)
+
+	// BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
+	//
+	// Replaces a builder agent's configuration. Each update makes a new
+	//  version. The running agent does not change until you deploy again.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+	BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error)
+
+	// BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
+	//
+	// Replaces a builder agent's configuration. Each update makes a new
+	//  version. The running agent does not change until you deploy again.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+	BuilderAgentServiceUpdateBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error)
+
+	// BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
+	//
+	// Starts a deployment of a builder agent's current configuration, or of
+	//  an earlier version. The call returns when the build starts, with status
+	//  DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
+	//  Call GetBuilderAgent to follow the deployment until its status is
+	//  DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+	BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error)
+
+	// BuilderAgentServiceDeployBuilderAgentWithResponse DeployBuilderAgent
+	//
+	// Starts a deployment of a builder agent's current configuration, or of
+	//  an earlier version. The call returns when the build starts, with status
+	//  DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
+	//  Call GetBuilderAgent to follow the deployment until its status is
+	//  DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+	BuilderAgentServiceDeployBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error)
+
 	// AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
 	//
 	// Returns the project overview over a time range.
@@ -13339,9 +15584,9 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
 	//
-	// Returns the same per-agent analytics for every agent in the project, one
-	//  AgentAnalytics row per agent — so a single agent and the whole roster share
-	//  one shape.
+	// Lists the analytics of each agent in the project over a time range. Each
+	//  item is an `AgentAnalytics`, the same message that `GetAgentAnalytics`
+	//  returns for one agent.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13359,7 +15604,7 @@ type ClientWithResponsesInterface interface {
 
 	// DatabaseServiceListDatabasesWithResponse ListDatabases
 	//
-	// Lists the project's databases, cursor-paginated.
+	// Lists the project databases, cursor-paginated.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13413,10 +15658,12 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListInvitesWithResponse ListInvites
 	//
+	// Lists the unexpired invites of a project, ordered by email.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
-	ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error)
+	ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, params *ProjectServiceListInvitesParams, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error)
 
 	// ProjectServiceInviteMemberWithBodyWithResponse InviteMember
 	//
@@ -13455,6 +15702,9 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListKeysWithResponse ListKeys
 	//
+	// Lists the API keys of a project, oldest first. The list does not include
+	//  the secrets.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
@@ -13489,12 +15739,12 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListMembersWithResponse ListMembers
 	//
-	// Lists the project's members.
+	// Lists the project members, ordered by user ID.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
-	ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error)
+	ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, params *ProjectServiceListMembersParams, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error)
 
 	// ProjectServiceRemoveMemberWithResponse RemoveMember
 	//
@@ -13541,10 +15791,11 @@ type ClientWithResponsesInterface interface {
 	// SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
 	//
 	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
-	//  stored; the returned scenario is the result. The session must have a
-	//  recorded chat history. Each call runs an LLM over it, so it counts against
-	//  the project's scenario-generation quota and can take up to about a minute.
+	//  recorded room session, for use in the scenarioGroup of a later run.
+	//  Nothing is stored; the returned scenario is the result. The session must
+	//  have a recorded chat history. Each call runs an LLM over it, so it counts
+	//  against the scenario-generation quota for the project and can take up to
+	//  about a minute.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13554,22 +15805,16 @@ type ClientWithResponsesInterface interface {
 	// SimulationServiceGenerateScenarioFromSessionWithResponse GenerateScenarioFromSession
 	//
 	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
-	//  stored; the returned scenario is the result. The session must have a
-	//  recorded chat history. Each call runs an LLM over it, so it counts against
-	//  the project's scenario-generation quota and can take up to about a minute.
+	//  recorded room session, for use in the scenarioGroup of a later run.
+	//  Nothing is stored; the returned scenario is the result. The session must
+	//  have a recorded chat history. Each call runs an LLM over it, so it counts
+	//  against the scenario-generation quota for the project and can take up to
+	//  about a minute.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSessionWithResponse(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceGenerateScenarioFromSessionResponse, error)
-
-	// ProjectServiceListScopedKeysWithResponse ListScopedKeys
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
-	ProjectServiceListScopedKeysWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListScopedKeysResponse, error)
 
 	// AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 	//
@@ -13590,47 +15835,50 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSessionWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionResponse, error)
 
-	// AnalyticsServiceListSessionEventsWithResponse Lists one room session's events, oldest first by default, cursor-paginated
-	//  with no total. With no `types`, it returns the seven the dashboard's events
-	//  table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
-	//  PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
-	//  for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
-	//  participant session's events. With `participantSessionId` and no `types`,
-	//  it returns the eleven the dashboard's participant events table shows: that
-	//  participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-	//  PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
-	//  TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
-	//  TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
+	// AnalyticsServiceListSessionEventsWithResponse Lists the events in one room session, oldest first by default,
+	//  cursor-paginated with no total. With no `types`, it returns the seven the
+	//  events table on the dashboard shows: `PARTICIPANT_JOINED`,
+	//  `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`, `PARTICIPANT_RESUMED`,
+	//  `ROOM_CREATED`, `ROOM_ENDED` and `API_CALL`. `types` asks for others, such
+	//  as `TRACK_PUBLISHED`, and `participantSessionId` keeps the events for one
+	//  participant session. With `participantSessionId` and no `types`, it returns
+	//  the eleven the participant events table on the dashboard shows for that
+	//  participant session: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`,
+	//  `PARTICIPANT_RESUMED` and `PARTICIPANT_ACTIVE`, and its `TRACK_MUTED`,
+	//  `TRACK_UNMUTED`, `TRACK_PUBLISHED`, `TRACK_UNPUBLISHED`,
+	//  `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED` and
+	//  `TRACK_SUBSCRIBE_FAILED`.
 	//
 	// Unlike the dashboard, on purpose: an unknown type or a malformed
-	//  participant session id is InvalidArgument rather than being searched for as
-	//  typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
-	//  TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
+	//  participant session ID is `InvalidArgument` rather than being searched for
+	//  as typed, and types match exactly, so `TRACK_PUBLISHED` doesn't also return
+	//  `TRACK_PUBLISHED_UPDATE`. Each event payload keeps only an allowlist of
 	//  fields, leaving out participants' attributes and metadata and API calls'
 	//  request bodies. Each event and participant row still carries the
 	//  participant's identity, as the dashboard shows it to every member, and for
 	//  a SIP caller that can be a phone number.
 	//
-	//  Events are kept for 60 days, which can be shorter than the session's other
-	//  data, so an older session can list no events. An ACTIVE session lists the
-	//  events recorded so far. An unknown session is NotFound.
+	//  Events are kept for 60 days, which can be shorter than the retention of
+	//  other data for the session, so an older session can list no events. An
+	//  `ACTIVE` session lists the events recorded so far. An unknown session is
+	//  `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEventsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionEventsResponse, error)
 
-	// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the session's agents exported, in time order: what
-	//  the dashboard's logs panel shows. Their chat history is left out, since
-	//  GetSessionTranscript reads it, and their evaluation results stay in. The
-	//  session's events, such as participants joining, come from
-	//  AnalyticsService's ListSessionEvents.
+	// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the agents in the session exported, in time order:
+	//  what the logs panel on the dashboard shows. Their chat history is left out,
+	//  since `GetSessionTranscript` reads it, and their evaluation results stay
+	//  in. The session events, such as participants joining, come from
+	//  `ListSessionEvents` on `AnalyticsService`.
 	//
-	// An ACTIVE session returns what its agents have exported so far. A record
+	// An `ACTIVE` session returns what its agents have exported so far. A record
 	//  exported mid-read with a time this read has already paged past, earlier
-	//  than its cursor's when oldest first, is missed until a new read. An unknown
-	//  session is NotFound. A read filtered by logLevels can come back empty
-	//  because no record is at those levels, so only an unfiltered one is
+	//  than its cursor position when oldest first, is missed until a new read. An
+	//  unknown session is NotFound. A read filtered by logLevels can come back
+	//  empty because no record is at those levels, so only an unfiltered one is
 	//  ObservabilityDisabled.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -13638,25 +15886,30 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionLogsResponse, error)
 
-	// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the session's agents exported, by
-	//  time, typed: turn latencies such as lk.agents.turn.e2e_latency and
+	// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the agents in the session exported,
+	//  by time, typed: turn latencies such as lk.agents.turn.e2e_latency and
 	//  lk.agents.turn.llm_ttft, token and duration usage such as
 	//  lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
 	//  any metrics the agent's own code recorded.
 	//
 	// These are the raw metrics agents emit, so they won't exactly match the
-	//  dashboard's metrics panel, which derives its numbers from the transcript
-	//  and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-	//  produce them: an agent whose code installs its own MeterProvider exports
-	//  none to LiveKit Cloud, and its sessions return no points.
+	//  metrics panel on the dashboard, which derives its numbers from the
+	//  transcript and traces. Only agents that export OpenTelemetry metrics to
+	//  LiveKit Cloud produce them: an agent whose code installs its own
+	//  MeterProvider exports none to LiveKit Cloud, and its sessions return no
+	//  points.
 	//
 	//  Some points aren't labeled as their agent exported them. LiveKit Cloud
-	//  groups a session's series by their attributes alone and names each group
-	//  after its first row, so: - several metrics can come back under one name,
-	//  such as an LLM's input, output and cached token counts, all named
-	//  lk.agents.usage.llm_input_tokens; - points of one series at the same time
-	//  that recorded equal values collapse into one point; - with two agents in
-	//  one session, a point can carry the other agent's resource attributes.
+	//  groups the series for a session by their attributes alone and names each
+	//  group after its first row. As a result:
+	//
+	//  - Several metrics can come back under one name. For example, the input,
+	//    output, and cached token counts for an LLM all have the name
+	//    `lk.agents.usage.llm_input_tokens`.
+	//  - Points of one series at the same time that recorded equal values
+	//    collapse into one point.
+	//  - When a session has two agents, a point can carry the resource attributes
+	//    of the other agent.
 	//
 	//  An agent exports its metrics every 30 seconds, and its turn latencies when
 	//  the session ends, so an ACTIVE session returns what it has exported so far.
@@ -13683,7 +15936,7 @@ type ClientWithResponsesInterface interface {
 
 	// ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 	//
-	// Returns a short-lived signed URL for one of the session's recordings: its
+	// Returns a short-lived signed URL for one of the session recordings: its
 	//  audio or its chat history. A session with no recording of that type is
 	//  NotFound. A new recording can be NotFound for up to a minute after the
 	//  session ends.
@@ -13693,10 +15946,10 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURLWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionRecordingURLResponse, error)
 
-	// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the session's agents exported, by start time: what the
-	//  dashboard's trace view shows. Each span names its parent, so the pages
-	//  rebuild the span tree, and its attributes carry the turn and latency fields
-	//  the dashboard's turn view reads, such as lk.generation_id and
+	// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the agents in the session exported, by start time: what
+	//  the trace view on the dashboard shows. Each span names its parent, so the
+	//  pages rebuild the span tree, and its attributes carry the turn and latency
+	//  fields the turn view on the dashboard reads, such as lk.generation_id and
 	//  lk.response.ttft.
 	//
 	// An ACTIVE session returns what its agents have exported so far; a span
@@ -13710,13 +15963,13 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTracesWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTracesResponse, error)
 
-	// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session's conversation as ordered transcript items: messages,
+	// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session conversation as ordered transcript items: messages,
 	//  tool calls and results, agent handoffs and agent configuration changes. It
-	//  is the conversation the dashboard's transcript shows.
+	//  is the conversation the transcript on the dashboard shows.
 	//
 	// The agent exports its transcript when the session ends, and it can be read
 	//  a minute or two later; on a project with PII redaction, only once the
-	//  session's recording has been redacted. So a session that is still ACTIVE
+	//  session recording has been redacted. So a session that is still ACTIVE
 	//  returns what exists so far, usually nothing, without an error: read it
 	//  again after the session ends. An unknown session is NotFound.
 	//
@@ -13727,10 +15980,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
 	//
-	// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
-	//  by status, agent, conversation mode and a time window. Rows carry headline
-	//  counts (jobCount, passedCount, failedCount, issueCount) but neither
-	//  jobs nor the summary.
+	// Lists the runs for a project, newest first, cursor-paginated, optionally
+	//  narrowed by status, agent, conversation mode and a time window. Rows carry
+	//  headline counts (`jobCount`, `passedCount`, `failedCount`, `issueCount`) but
+	//  neither jobs nor the summary.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13740,7 +15993,7 @@ type ClientWithResponsesInterface interface {
 	// SimulationServiceCreateSimulationRunWithBodyWithResponse CreateSimulationRun
 	//
 	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
+	//  upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
 	//  agent source that scenarios are generated from: upload it to the returned
 	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
 	//  for an hour is failed. Creating a run is not idempotent: a retried request
@@ -13754,7 +16007,7 @@ type ClientWithResponsesInterface interface {
 	// SimulationServiceCreateSimulationRunWithResponse CreateSimulationRun
 	//
 	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
+	//  upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
 	//  agent source that scenarios are generated from: upload it to the returned
 	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
 	//  for an hour is failed. Creating a run is not idempotent: a retried request
@@ -13802,7 +16055,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Marks the agent source as uploaded and starts scenario generation; the run
 	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is PENDING_UPLOAD, so a repeated call fails.
+	//  while the run is `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13813,7 +16066,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Marks the agent source as uploaded and starts scenario generation; the run
 	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is PENDING_UPLOAD, so a repeated call fails.
+	//  while the run is `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13897,7 +16150,7 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceGetThreadItemsWithResponse GetThreadItems
 	//
-	// Returns the thread's chat items, oldest first.
+	// Returns the chat items in the thread, oldest first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13906,7 +16159,7 @@ type ClientWithResponsesInterface interface {
 
 	// ThreadServiceGetThreadTasksWithResponse GetThreadTasks
 	//
-	// Returns the thread's background tasks, oldest first.
+	// Returns the background tasks in the thread, oldest first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13937,19 +16190,23 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListWebhookEventsWithResponse ListWebhookEvents
 	//
+	// Lists the event names that the webhooks of a project can receive. The list
+	//  is always one page.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
-	ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error)
+	ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, params *ProjectServiceListWebhookEventsParams, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error)
 
 	// ProjectServiceListWebhooksWithResponse ListWebhooks
 	//
-	// Lists the project's webhook destinations.
+	// Lists the webhook destinations for the project, in the order that they
+	//  were added. The list is always one page.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
-	ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error)
+	ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, params *ProjectServiceListWebhooksParams, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error)
 
 	// ProjectServiceCreateWebhookWithBodyWithResponse CreateWebhook
 	//
@@ -14093,10 +16350,12 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceListInvitesWithResponse ListInvites
 	//
+	// Lists the unexpired invites of a workspace, ordered by email.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
-	WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error)
+	WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListInvitesParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error)
 
 	// WorkspaceServiceCreateInviteWithBodyWithResponse CreateInvite
 	//
@@ -14121,12 +16380,12 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceListMembersWithResponse ListMembers
 	//
-	// Lists the workspace's members.
+	// Lists the workspace members, ordered by user ID.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
-	WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error)
+	WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListMembersParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error)
 
 	// WorkspaceServiceDeleteMemberWithResponse DeleteMember
 	//
@@ -14525,6 +16784,294 @@ func (r ProjectServiceUpdateProjectResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ProjectServiceUpdateProjectResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BuilderAgentServiceListBuilderAgentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BuilderAgentServiceListBuilderAgentsResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BuilderAgentServiceListBuilderAgentsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BuilderAgentServiceListBuilderAgentsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BuilderAgentServiceListBuilderAgentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BuilderAgentServiceListBuilderAgentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BuilderAgentServiceListBuilderAgentsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BuilderAgentServiceCreateBuilderAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BuilderAgentServiceCreateBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BuilderAgentServiceCreateBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BuilderAgentServiceCreateBuilderAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BuilderAgentServiceCreateBuilderAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BuilderAgentServiceCreateBuilderAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BuilderAgentServiceCreateBuilderAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BuilderAgentServiceDeleteBuilderAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BuilderAgentServiceGetBuilderAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BuilderAgentServiceGetBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BuilderAgentServiceGetBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BuilderAgentServiceGetBuilderAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BuilderAgentServiceGetBuilderAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BuilderAgentServiceGetBuilderAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BuilderAgentServiceGetBuilderAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BuilderAgentServiceUpdateBuilderAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BuilderAgentServiceDeployBuilderAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsDeployResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BuilderAgentServiceDeployBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsDeployResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BuilderAgentServiceDeployBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BuilderAgentServiceDeployBuilderAgentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BuilderAgentServiceDeployBuilderAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BuilderAgentServiceDeployBuilderAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BuilderAgentServiceDeployBuilderAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -15533,54 +18080,6 @@ func (r SimulationServiceGenerateScenarioFromSessionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SimulationServiceGenerateScenarioFromSessionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ProjectServiceListScopedKeysResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiProjectsV1ListScopedKeysResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ProjectServiceListScopedKeysResponse) GetJSON200() *LivekitPublicapiProjectsV1ListScopedKeysResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ProjectServiceListScopedKeysResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ProjectServiceListScopedKeysResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ProjectServiceListScopedKeysResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ProjectServiceListScopedKeysResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ProjectServiceListScopedKeysResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18165,6 +20664,166 @@ func (c *ClientWithResponses) ProjectServiceUpdateProjectWithResponse(ctx contex
 	return ParseProjectServiceUpdateProjectResponse(rsp)
 }
 
+// BuilderAgentServiceListBuilderAgentsWithResponse ListBuilderAgents
+//
+// Lists a project's builder agents by name, one page at a time, with the
+//
+//	status of each deployment. The list does not include configurations: use
+//	GetBuilderAgent for one.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceListBuilderAgentsWithResponse(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceListBuilderAgentsResponse, error) {
+	rsp, err := c.BuilderAgentServiceListBuilderAgents(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceListBuilderAgentsResponse(rsp)
+}
+
+// BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse CreateBuilderAgent
+//
+// Makes a builder agent from a name and a configuration. The agent is not
+//
+//	deployed: call DeployBuilderAgent to run it. Unset configuration
+//	properties take their default, and unknown properties are ignored.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceCreateBuilderAgentWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceCreateBuilderAgentWithResponse CreateBuilderAgent
+//
+// Makes a builder agent from a name and a configuration. The agent is not
+//
+//	deployed: call DeployBuilderAgent to run it. Unset configuration
+//	properties take their default, and unknown properties are ignored.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceCreateBuilderAgentWithResponse(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceCreateBuilderAgent(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceDeleteBuilderAgentWithResponse DeleteBuilderAgent
+//
+// Deletes a builder agent, its versions, and its deployment.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceDeleteBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeleteBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceDeleteBuilderAgent(ctx, projectId, builderAgentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceDeleteBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
+//
+// Returns a builder agent with its current configuration and the status of
+//
+//	its deployment.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceGetBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceGetBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceGetBuilderAgent(ctx, projectId, builderAgentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceGetBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
+//
+// Replaces a builder agent's configuration. Each update makes a new
+//
+//	version. The running agent does not change until you deploy again.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceUpdateBuilderAgentWithBody(ctx, projectId, builderAgentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
+//
+// Replaces a builder agent's configuration. Each update makes a new
+//
+//	version. The running agent does not change until you deploy again.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceUpdateBuilderAgent(ctx, projectId, builderAgentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
+//
+// Starts a deployment of a builder agent's current configuration, or of
+//
+//	an earlier version. The call returns when the build starts, with status
+//	DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
+//	Call GetBuilderAgent to follow the deployment until its status is
+//	DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceDeployBuilderAgentWithBody(ctx, projectId, builderAgentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceDeployBuilderAgentWithResponse DeployBuilderAgent
+//
+// Starts a deployment of a builder agent's current configuration, or of
+//
+//	an earlier version. The call returns when the build starts, with status
+//	DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
+//	Call GetBuilderAgent to follow the deployment until its status is
+//	DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceDeployBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceDeployBuilderAgent(ctx, projectId, builderAgentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp)
+}
+
 // AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
 //
 // Returns the project overview over a time range.
@@ -18182,10 +20841,10 @@ func (c *ClientWithResponses) AnalyticsServiceGetProjectAnalyticsWithResponse(ct
 
 // AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
 //
-// Returns the same per-agent analytics for every agent in the project, one
+// Lists the analytics of each agent in the project over a time range. Each
 //
-//	AgentAnalytics row per agent — so a single agent and the whole roster share
-//	one shape.
+//	item is an `AgentAnalytics`, the same message that `GetAgentAnalytics`
+//	returns for one agent.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18215,7 +20874,7 @@ func (c *ClientWithResponses) AnalyticsServiceGetAgentAnalyticsWithResponse(ctx 
 
 // DatabaseServiceListDatabasesWithResponse ListDatabases
 //
-// Lists the project's databases, cursor-paginated.
+// Lists the project databases, cursor-paginated.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18307,11 +20966,13 @@ func (c *ClientWithResponses) DatabaseServiceExportDatabaseWithResponse(ctx cont
 
 // ProjectServiceListInvitesWithResponse ListInvites
 //
+// Lists the unexpired invites of a project, ordered by email.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
-func (c *ClientWithResponses) ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error) {
-	rsp, err := c.ProjectServiceListInvites(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, params *ProjectServiceListInvitesParams, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error) {
+	rsp, err := c.ProjectServiceListInvites(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18385,6 +21046,10 @@ func (c *ClientWithResponses) ProjectServiceUpdateInviteWithResponse(ctx context
 
 // ProjectServiceListKeysWithResponse ListKeys
 //
+// Lists the API keys of a project, oldest first. The list does not include
+//
+//	the secrets.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
@@ -18445,13 +21110,13 @@ func (c *ClientWithResponses) ProjectServiceDeleteKeyWithResponse(ctx context.Co
 
 // ProjectServiceListMembersWithResponse ListMembers
 //
-// Lists the project's members.
+// Lists the project members, ordered by user ID.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
-func (c *ClientWithResponses) ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error) {
-	rsp, err := c.ProjectServiceListMembers(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, params *ProjectServiceListMembersParams, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error) {
+	rsp, err := c.ProjectServiceListMembers(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18540,10 +21205,11 @@ func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithResp
 //
 // Derives a reusable scenario (label, instructions and expectations) from a
 //
-//	recorded room session, for use in a later run's scenarioGroup. Nothing is
-//	stored; the returned scenario is the result. The session must have a
-//	recorded chat history. Each call runs an LLM over it, so it counts against
-//	the project's scenario-generation quota and can take up to about a minute.
+//	recorded room session, for use in the scenarioGroup of a later run.
+//	Nothing is stored; the returned scenario is the result. The session must
+//	have a recorded chat history. Each call runs an LLM over it, so it counts
+//	against the scenario-generation quota for the project and can take up to
+//	about a minute.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18560,10 +21226,11 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithBo
 //
 // Derives a reusable scenario (label, instructions and expectations) from a
 //
-//	recorded room session, for use in a later run's scenarioGroup. Nothing is
-//	stored; the returned scenario is the result. The session must have a
-//	recorded chat history. Each call runs an LLM over it, so it counts against
-//	the project's scenario-generation quota and can take up to about a minute.
+//	recorded room session, for use in the scenarioGroup of a later run.
+//	Nothing is stored; the returned scenario is the result. The session must
+//	have a recorded chat history. Each call runs an LLM over it, so it counts
+//	against the scenario-generation quota for the project and can take up to
+//	about a minute.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18574,19 +21241,6 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithRe
 		return nil, err
 	}
 	return ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp)
-}
-
-// ProjectServiceListScopedKeysWithResponse ListScopedKeys
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
-func (c *ClientWithResponses) ProjectServiceListScopedKeysWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListScopedKeysResponse, error) {
-	rsp, err := c.ProjectServiceListScopedKeys(ctx, projectId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseProjectServiceListScopedKeysResponse(rsp)
 }
 
 // AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
@@ -18621,32 +21275,35 @@ func (c *ClientWithResponses) AnalyticsServiceGetSessionWithResponse(ctx context
 	return ParseAnalyticsServiceGetSessionResponse(rsp)
 }
 
-// AnalyticsServiceListSessionEventsWithResponse Lists one room session's events, oldest first by default, cursor-paginated
+// AnalyticsServiceListSessionEventsWithResponse Lists the events in one room session, oldest first by default,
 //
-//	with no total. With no `types`, it returns the seven the dashboard's events
-//	table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
-//	PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
-//	for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
-//	participant session's events. With `participantSessionId` and no `types`,
-//	it returns the eleven the dashboard's participant events table shows: that
-//	participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-//	PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
-//	TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
-//	TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
+//	cursor-paginated with no total. With no `types`, it returns the seven the
+//	events table on the dashboard shows: `PARTICIPANT_JOINED`,
+//	`PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`, `PARTICIPANT_RESUMED`,
+//	`ROOM_CREATED`, `ROOM_ENDED` and `API_CALL`. `types` asks for others, such
+//	as `TRACK_PUBLISHED`, and `participantSessionId` keeps the events for one
+//	participant session. With `participantSessionId` and no `types`, it returns
+//	the eleven the participant events table on the dashboard shows for that
+//	participant session: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`,
+//	`PARTICIPANT_RESUMED` and `PARTICIPANT_ACTIVE`, and its `TRACK_MUTED`,
+//	`TRACK_UNMUTED`, `TRACK_PUBLISHED`, `TRACK_UNPUBLISHED`,
+//	`TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED` and
+//	`TRACK_SUBSCRIBE_FAILED`.
 //
 // Unlike the dashboard, on purpose: an unknown type or a malformed
 //
-//	participant session id is InvalidArgument rather than being searched for as
-//	typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
-//	TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
+//	participant session ID is `InvalidArgument` rather than being searched for
+//	as typed, and types match exactly, so `TRACK_PUBLISHED` doesn't also return
+//	`TRACK_PUBLISHED_UPDATE`. Each event payload keeps only an allowlist of
 //	fields, leaving out participants' attributes and metadata and API calls'
 //	request bodies. Each event and participant row still carries the
 //	participant's identity, as the dashboard shows it to every member, and for
 //	a SIP caller that can be a phone number.
 //
-//	Events are kept for 60 days, which can be shorter than the session's other
-//	data, so an older session can list no events. An ACTIVE session lists the
-//	events recorded so far. An unknown session is NotFound.
+//	Events are kept for 60 days, which can be shorter than the retention of
+//	other data for the session, so an older session can list no events. An
+//	`ACTIVE` session lists the events recorded so far. An unknown session is
+//	`NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18659,19 +21316,19 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionEventsWithResponse(ctx 
 	return ParseAnalyticsServiceListSessionEventsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the session's agents exported, in time order: what
+// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the agents in the session exported, in time order:
 //
-//	the dashboard's logs panel shows. Their chat history is left out, since
-//	GetSessionTranscript reads it, and their evaluation results stay in. The
-//	session's events, such as participants joining, come from
-//	AnalyticsService's ListSessionEvents.
+//	what the logs panel on the dashboard shows. Their chat history is left out,
+//	since `GetSessionTranscript` reads it, and their evaluation results stay
+//	in. The session events, such as participants joining, come from
+//	`ListSessionEvents` on `AnalyticsService`.
 //
-// An ACTIVE session returns what its agents have exported so far. A record
+// An `ACTIVE` session returns what its agents have exported so far. A record
 //
 //	exported mid-read with a time this read has already paged past, earlier
-//	than its cursor's when oldest first, is missed until a new read. An unknown
-//	session is NotFound. A read filtered by logLevels can come back empty
-//	because no record is at those levels, so only an unfiltered one is
+//	than its cursor position when oldest first, is missed until a new read. An
+//	unknown session is NotFound. A read filtered by logLevels can come back
+//	empty because no record is at those levels, so only an unfiltered one is
 //	ObservabilityDisabled.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -18685,27 +21342,32 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionLogsWithResponse(ctx
 	return ParseObservabilityServiceGetSessionLogsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the session's agents exported, by
+// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the agents in the session exported,
 //
-//	time, typed: turn latencies such as lk.agents.turn.e2e_latency and
+//	by time, typed: turn latencies such as lk.agents.turn.e2e_latency and
 //	lk.agents.turn.llm_ttft, token and duration usage such as
 //	lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
 //	any metrics the agent's own code recorded.
 //
 // These are the raw metrics agents emit, so they won't exactly match the
 //
-//	dashboard's metrics panel, which derives its numbers from the transcript
-//	and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-//	produce them: an agent whose code installs its own MeterProvider exports
-//	none to LiveKit Cloud, and its sessions return no points.
+//	metrics panel on the dashboard, which derives its numbers from the
+//	transcript and traces. Only agents that export OpenTelemetry metrics to
+//	LiveKit Cloud produce them: an agent whose code installs its own
+//	MeterProvider exports none to LiveKit Cloud, and its sessions return no
+//	points.
 //
 //	Some points aren't labeled as their agent exported them. LiveKit Cloud
-//	groups a session's series by their attributes alone and names each group
-//	after its first row, so: - several metrics can come back under one name,
-//	such as an LLM's input, output and cached token counts, all named
-//	lk.agents.usage.llm_input_tokens; - points of one series at the same time
-//	that recorded equal values collapse into one point; - with two agents in
-//	one session, a point can carry the other agent's resource attributes.
+//	groups the series for a session by their attributes alone and names each
+//	group after its first row. As a result:
+//
+//	- Several metrics can come back under one name. For example, the input,
+//	  output, and cached token counts for an LLM all have the name
+//	  `lk.agents.usage.llm_input_tokens`.
+//	- Points of one series at the same time that recorded equal values
+//	  collapse into one point.
+//	- When a session has two agents, a point can carry the resource attributes
+//	  of the other agent.
 //
 //	An agent exports its metrics every 30 seconds, and its turn latencies when
 //	the session ends, so an ACTIVE session returns what it has exported so far.
@@ -18745,7 +21407,7 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionParticipantsWithRespons
 
 // ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 //
-// Returns a short-lived signed URL for one of the session's recordings: its
+// Returns a short-lived signed URL for one of the session recordings: its
 //
 //	audio or its chat history. A session with no recording of that type is
 //	NotFound. A new recording can be NotFound for up to a minute after the
@@ -18762,11 +21424,11 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionRecordingURLWithResp
 	return ParseObservabilityServiceGetSessionRecordingURLResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the session's agents exported, by start time: what the
+// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the agents in the session exported, by start time: what
 //
-//	dashboard's trace view shows. Each span names its parent, so the pages
-//	rebuild the span tree, and its attributes carry the turn and latency fields
-//	the dashboard's turn view reads, such as lk.generation_id and
+//	the trace view on the dashboard shows. Each span names its parent, so the
+//	pages rebuild the span tree, and its attributes carry the turn and latency
+//	fields the turn view on the dashboard reads, such as lk.generation_id and
 //	lk.response.ttft.
 //
 // An ACTIVE session returns what its agents have exported so far; a span
@@ -18787,15 +21449,15 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTracesWithResponse(c
 	return ParseObservabilityServiceGetSessionTracesResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session's conversation as ordered transcript items: messages,
+// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session conversation as ordered transcript items: messages,
 //
 //	tool calls and results, agent handoffs and agent configuration changes. It
-//	is the conversation the dashboard's transcript shows.
+//	is the conversation the transcript on the dashboard shows.
 //
 // The agent exports its transcript when the session ends, and it can be read
 //
 //	a minute or two later; on a project with PII redaction, only once the
-//	session's recording has been redacted. So a session that is still ACTIVE
+//	session recording has been redacted. So a session that is still ACTIVE
 //	returns what exists so far, usually nothing, without an error: read it
 //	again after the session ends. An unknown session is NotFound.
 //
@@ -18812,11 +21474,11 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTranscriptWithRespon
 
 // SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
 //
-// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
+// Lists the runs for a project, newest first, cursor-paginated, optionally
 //
-//	by status, agent, conversation mode and a time window. Rows carry headline
-//	counts (jobCount, passedCount, failedCount, issueCount) but neither
-//	jobs nor the summary.
+//	narrowed by status, agent, conversation mode and a time window. Rows carry
+//	headline counts (`jobCount`, `passedCount`, `failedCount`, `issueCount`) but
+//	neither jobs nor the summary.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18833,7 +21495,7 @@ func (c *ClientWithResponses) SimulationServiceListSimulationRunsWithResponse(ct
 //
 // Registers a new run. With a scenarioGroup it starts right away and no
 //
-//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
+//	upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
 //	agent source that scenarios are generated from: upload it to the returned
 //	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
 //	for an hour is failed. Creating a run is not idempotent: a retried request
@@ -18854,7 +21516,7 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithBodyWithRe
 //
 // Registers a new run. With a scenarioGroup it starts right away and no
 //
-//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
+//	upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
 //	agent source that scenarios are generated from: upload it to the returned
 //	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
 //	for an hour is failed. Creating a run is not idempotent: a retried request
@@ -18930,7 +21592,7 @@ func (c *ClientWithResponses) SimulationServiceCancelSimulationRunWithResponse(c
 // Marks the agent source as uploaded and starts scenario generation; the run
 //
 //	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is PENDING_UPLOAD, so a repeated call fails.
+//	while the run is `PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18948,7 +21610,7 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 // Marks the agent source as uploaded and starts scenario generation; the run
 //
 //	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is PENDING_UPLOAD, so a repeated call fails.
+//	while the run is `PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19089,7 +21751,7 @@ func (c *ClientWithResponses) ThreadServiceUpdateThreadWithResponse(ctx context.
 
 // ThreadServiceGetThreadItemsWithResponse GetThreadItems
 //
-// Returns the thread's chat items, oldest first.
+// Returns the chat items in the thread, oldest first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19104,7 +21766,7 @@ func (c *ClientWithResponses) ThreadServiceGetThreadItemsWithResponse(ctx contex
 
 // ThreadServiceGetThreadTasksWithResponse GetThreadTasks
 //
-// Returns the thread's background tasks, oldest first.
+// Returns the background tasks in the thread, oldest first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19155,11 +21817,15 @@ func (c *ClientWithResponses) ProjectServiceCreateTokenWithResponse(ctx context.
 
 // ProjectServiceListWebhookEventsWithResponse ListWebhookEvents
 //
+// Lists the event names that the webhooks of a project can receive. The list
+//
+//	is always one page.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
-func (c *ClientWithResponses) ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error) {
-	rsp, err := c.ProjectServiceListWebhookEvents(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, params *ProjectServiceListWebhookEventsParams, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error) {
+	rsp, err := c.ProjectServiceListWebhookEvents(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19168,13 +21834,15 @@ func (c *ClientWithResponses) ProjectServiceListWebhookEventsWithResponse(ctx co
 
 // ProjectServiceListWebhooksWithResponse ListWebhooks
 //
-// Lists the project's webhook destinations.
+// Lists the webhook destinations for the project, in the order that they
+//
+//	were added. The list is always one page.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
-func (c *ClientWithResponses) ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error) {
-	rsp, err := c.ProjectServiceListWebhooks(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, params *ProjectServiceListWebhooksParams, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error) {
+	rsp, err := c.ProjectServiceListWebhooks(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19443,11 +22111,13 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateWorkspaceWithResponse(ctx co
 
 // WorkspaceServiceListInvitesWithResponse ListInvites
 //
+// Lists the unexpired invites of a workspace, ordered by email.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
-func (c *ClientWithResponses) WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error) {
-	rsp, err := c.WorkspaceServiceListInvites(ctx, workspaceId, reqEditors...)
+func (c *ClientWithResponses) WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListInvitesParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error) {
+	rsp, err := c.WorkspaceServiceListInvites(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19495,13 +22165,13 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteInviteWithResponse(ctx conte
 
 // WorkspaceServiceListMembersWithResponse ListMembers
 //
-// Lists the workspace's members.
+// Lists the workspace members, ordered by user ID.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
-func (c *ClientWithResponses) WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error) {
-	rsp, err := c.WorkspaceServiceListMembers(ctx, workspaceId, reqEditors...)
+func (c *ClientWithResponses) WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListMembersParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error) {
+	rsp, err := c.WorkspaceServiceListMembers(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19843,6 +22513,204 @@ func ParseProjectServiceUpdateProjectResponse(rsp *http.Response) (*ProjectServi
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiProjectsV1UpdateProjectResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBuilderAgentServiceListBuilderAgentsResponse parses an HTTP response from a BuilderAgentServiceListBuilderAgentsWithResponse call
+func ParseBuilderAgentServiceListBuilderAgentsResponse(rsp *http.Response) (*BuilderAgentServiceListBuilderAgentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BuilderAgentServiceListBuilderAgentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1BuilderAgentsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBuilderAgentServiceCreateBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceCreateBuilderAgentWithResponse call
+func ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BuilderAgentServiceCreateBuilderAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1BuilderAgentsCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBuilderAgentServiceDeleteBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceDeleteBuilderAgentWithResponse call
+func ParseBuilderAgentServiceDeleteBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceDeleteBuilderAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BuilderAgentServiceDeleteBuilderAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBuilderAgentServiceGetBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceGetBuilderAgentWithResponse call
+func ParseBuilderAgentServiceGetBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceGetBuilderAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BuilderAgentServiceGetBuilderAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1BuilderAgentsGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBuilderAgentServiceUpdateBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceUpdateBuilderAgentWithResponse call
+func ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BuilderAgentServiceUpdateBuilderAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBuilderAgentServiceDeployBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceDeployBuilderAgentWithResponse call
+func ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BuilderAgentServiceDeployBuilderAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1BuilderAgentsDeployResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20536,39 +23404,6 @@ func ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp *http.Respons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseProjectServiceListScopedKeysResponse parses an HTTP response from a ProjectServiceListScopedKeysWithResponse call
-func ParseProjectServiceListScopedKeysResponse(rsp *http.Response) (*ProjectServiceListScopedKeysResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ProjectServiceListScopedKeysResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiProjectsV1ListScopedKeysResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

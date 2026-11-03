@@ -68,21 +68,19 @@ func bearerAuth(token string) oapi.RequestEditorFn {
 	}
 }
 
-// ListProjects returns the projects the authenticated user can access.
-//
-// NOTE: this returns only the first page; wire up PageInfo/cursor paging when a
-// command needs the full set.
+// ListProjects returns every project the authenticated user can access,
+// reading each page.
 func (c *Client) ListProjects(ctx context.Context) ([]oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.ProjectServiceListProjectsWithResponse(ctx, &oapi.ProjectServiceListProjectsParams{
-		PagePageSize: ptr(int32(100)),
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiProjectsV1Project, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.ProjectServiceListProjectsWithResponse(ctx, &oapi.ProjectServiceListProjectsParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
 }
 
 // GetProject returns a single project by id.
@@ -255,6 +253,30 @@ func pageCursor(pi *oapi.LivekitPublicapiCommonV1PageInfo) string {
 		return ""
 	}
 	return *pi.NextCursor
+}
+
+// allPages reads a whole list, one page at a time from the first: it passes
+// fetch a nil cursor, then each page's nextCursor, until a page says it is
+// the last. fetch reads the page at cursor.
+func allPages[T any](fetch func(cursor *string) ([]T, *oapi.LivekitPublicapiCommonV1PageInfo, error)) ([]T, error) {
+	var all []T
+	var cursor *string
+	for {
+		page, info, err := fetch(cursor)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, page...)
+		next := pageCursor(info)
+		if info == nil || info.HasMore == nil || !*info.HasMore || next == "" {
+			return all, nil
+		}
+		// A cursor that didn't move would read the same page forever.
+		if cursor != nil && *cursor == next {
+			return nil, fmt.Errorf("unexpected response from server: page cursor %q repeats", next)
+		}
+		cursor = &next
+	}
 }
 
 // requirePayload guards a nested payload pointer from an otherwise-successful

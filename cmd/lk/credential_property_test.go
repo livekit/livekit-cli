@@ -119,7 +119,7 @@ func TestCredentialResolution(t *testing.T) {
 			respond("POST http://"+name+".test/twirp/livekit.Egress/ListEgress", http.StatusOK, "")
 		}
 		for _, id := range []string{"p_1", "p_2", "two", "gone"} {
-			respond("GET "+publicAPI+"/v0/projects/"+id+"/keys", http.StatusOK, `{"keys":[]}`)
+			respond("GET "+publicAPI+"/v0/projects/"+id+"/keys", http.StatusOK, `{"items":[]}`)
 		}
 		// Every key's secret is known, so every token's signature is checked:
 		// configured projects', --dev's, and the inline key paired with the

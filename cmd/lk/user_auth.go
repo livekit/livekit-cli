@@ -420,8 +420,7 @@ func fetchUserWorkspaces(ctx context.Context, sessionToken string) ([]config.Use
 	if err != nil {
 		return nil, err
 	}
-	// Best-effort cache of the first (large) page; cache resolution refreshes on miss.
-	workspaces, _, err := client.ListWorkspaces(ctx, 200, "")
+	workspaces, err := client.ListAllWorkspaces(ctx)
 	if err != nil {
 		return nil, err
 	}

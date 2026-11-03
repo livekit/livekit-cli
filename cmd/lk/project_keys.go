@@ -21,6 +21,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
@@ -81,17 +82,23 @@ func listProjectKeys(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	filter := public.KeyFilter{IncludeAgentKeys: cmd.Bool("include-agent-keys")}
 	if cmd.Bool("mine") {
-		if cmd.Bool("include-agent-keys") {
+		if filter.IncludeAgentKeys {
 			return errors.New("--mine and --include-agent-keys cannot be combined")
 		}
-		personal, _, err := client.ListScopedKeys(ctx, projectID)
+		// The Public API's id for the signed-in user, which the stored session
+		// may not record.
+		me, err := client.GetCurrentUser(ctx)
 		if err != nil {
 			return cloudAPIError(err)
 		}
-		return render.AccessKeys(out, cmd.Bool("json"), personal)
+		// An empty owner would list everyone's keys.
+		if filter.OwnerID = util.Deref(me.Id); filter.OwnerID == "" {
+			return errors.New("unexpected response from server: missing user id")
+		}
 	}
-	keys, err := client.ListKeys(ctx, projectID, cmd.Bool("include-agent-keys"))
+	keys, err := client.ListKeys(ctx, projectID, filter)
 	if err != nil {
 		return cloudAPIError(err)
 	}

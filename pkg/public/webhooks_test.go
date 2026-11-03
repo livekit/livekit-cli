@@ -29,7 +29,7 @@ import (
 
 func TestListWebhooks(t *testing.T) {
 	var path string
-	srv := jsonServer(t, http.StatusOK, `{"webhooks":[{"id":"wh_1","url":"https://example.com/hook","filterParams":{"includeEvents":["room_started"]}}]}`, nil, &path)
+	srv := jsonServer(t, http.StatusOK, `{"items":[{"id":"wh_1","url":"https://example.com/hook","filterParams":{"includeEvents":["room_started"]}}]}`, nil, &path)
 	c, err := New(srv.URL, "tok")
 	require.NoError(t, err)
 

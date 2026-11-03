@@ -20,16 +20,19 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
-// ListProjectInvites returns the pending invites for a project.
+// ListProjectInvites returns every pending invite for a project, reading each
+// page.
 func (c *Client) ListProjectInvites(ctx context.Context, projectID string) ([]oapi.LivekitPublicapiProjectsV1ProjectInvite, error) {
-	resp, err := c.gen.ProjectServiceListInvitesWithResponse(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiProjectsV1ProjectInvite, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.ProjectServiceListInvitesWithResponse(ctx, projectID, &oapi.ProjectServiceListInvitesParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
 }
 
 // GetProjectInvite returns a single invite by its token.
