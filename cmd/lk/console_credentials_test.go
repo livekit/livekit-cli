@@ -48,10 +48,11 @@ func TestConsoleInjectsOptionalCredentialsBeforePythonImports(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 			args := []string{"agent", "console", "--text", "agent.py"}
-			if scenario == "explicit credentials" {
+			switch scenario {
+			case "explicit credentials":
 				args = append([]string{"--url", "wss://explicit.invalid", "--api-key", "explicit-key", "--api-secret", "explicit-secret"}, args...)
 				want = []string{"wss://explicit.invalid", "explicit-key", "explicit-secret"}
-			} else if scenario == "invalid named project" {
+			case "invalid named project":
 				args = append([]string{"--project", "missing"}, args...)
 			}
 			cmd := exec.CommandContext(ctx, "lk", args...)
