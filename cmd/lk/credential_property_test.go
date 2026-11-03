@@ -538,15 +538,15 @@ func requestProject(line string) (string, bool) {
 	return strings.TrimSuffix(host, ".test"), true
 }
 
-// mustFail is set when lk can't act: both mode flags at once, a Public API
-// command outside --user-auth, --dev with an inline key or secret outside
-// --user-auth, or, under --user-auth, no user who can act (no unexpired
-// session, a --user with no unexpired session, or a Public API URL nobody is
-// signed in to). Every drawn user is signed in to publicAPI.
+// mustFail is set when lk can't act: both mode flags at once, --dev under
+// --user-auth, a Public API command outside --user-auth, --dev with an inline
+// key or secret outside --user-auth, or, under --user-auth, no user who can
+// act (no unexpired session, a --user with no unexpired session, or a Public
+// API URL nobody is signed in to). Every drawn user is signed in to publicAPI.
 func (c credentialCase) mustFail() bool {
 	_, key, secret := c.inlineCredentials()
 	switch {
-	case c.userAuth && c.legacyAuth:
+	case c.userAuth && (c.legacyAuth || c.dev):
 		return true
 	case !c.userAuth:
 		return c.command.publicAPI || c.dev && (key != "" || secret != "")
