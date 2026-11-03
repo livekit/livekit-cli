@@ -86,7 +86,7 @@ var (
 	userAuthFlag = userAuthOnlyFlag(&cli.BoolFlag{
 		Name:    "user-auth",
 		Aliases: []string{"experimental-auth"},
-		Usage:   "BETA: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
+		Usage:   "BETA: use user-based (session) auth against the LiveKit Cloud API instead of API-key auth. Most commands are not yet supported under this mode.",
 		Hidden:  true,
 	})
 	legacyAuthFlag = &cli.BoolFlag{
@@ -219,7 +219,7 @@ var (
 		userAuthOnlyFlag(&cli.StringFlag{
 			Name:        "public-api-url",
 			Aliases:     []string{"experimental-api-url"},
-			Usage:       "Base `URL` of the LiveKit Public API used with --user-auth",
+			Usage:       "Base `URL` of the LiveKit Cloud API used with --user-auth",
 			Value:       public.DefaultBaseURL,
 			Destination: &publicAPIURL,
 			Sources:     cli.EnvVars("LIVEKIT_API_URL"),
