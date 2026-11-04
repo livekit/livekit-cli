@@ -101,7 +101,7 @@ func TestStartPythonAgentImportsOnceAndReportsMissingDependencies(t *testing.T) 
 	require.NoError(t, err)
 	t.Cleanup(func() { missing.Kill() })
 	require.Error(t, <-missing.Done())
-	require.Contains(t, strings.Join(missing.RecentLogs(0), "\n"), "sync or install the project's dependencies")
+	require.Contains(t, strings.Join(missing.RecentLogs(0), "\n"), "run `uv sync`")
 
 	module := filepath.Join(source, "livekit", "agents")
 	require.NoError(t, os.MkdirAll(module, 0o755))
@@ -123,6 +123,26 @@ func TestStartPythonAgentImportsOnceAndReportsMissingDependencies(t *testing.T) 
 	imports, err := os.ReadFile(count)
 	require.NoError(t, err)
 	require.Equal(t, "import\n", string(imports))
+}
+
+// An SDK older than the thin CLI has no livekit.agents.__main__. Its failure
+// must name the version floor, not suggest syncing dependencies already there.
+func TestStartPythonAgentReportsSDKOlderThanThinCLI(t *testing.T) {
+	dir := setupUvAgentProject(t, "1.5.0", "livekit-agents", true)
+	source := filepath.Join(dir, "old-sdk-source")
+	require.NoError(t, os.MkdirAll(filepath.Join(source, "livekit", "agents"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(source, "livekit", "agents", "__init__.py"), nil, 0o644))
+	ap, err := startAgent(AgentStartConfig{
+		Dir: dir, Entrypoint: "agent.py", ProjectType: agentfs.ProjectTypePythonUV,
+		CLIArgs: []string{"start", "--dev"}, Env: []string{"PYTHONPATH=" + source},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { ap.Kill() })
+	require.Error(t, <-ap.Done())
+	logs := strings.Join(ap.RecentLogs(0), "\n")
+	require.Contains(t, logs, "No module named livekit.agents.__main__")
+	require.Contains(t, logs, "livekit-agents version 1.5.0 is too old, please upgrade to 1.6.0 or newer")
+	require.NotContains(t, logs, "sync or install")
 }
 
 func TestFindPythonBinary_UVRunDoesNotSyncEnvironment(t *testing.T) {
