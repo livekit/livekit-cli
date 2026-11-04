@@ -28,6 +28,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
@@ -214,6 +215,39 @@ type AgentStartConfig struct {
 	OnServerInfo func(agentName, wsURL string)
 }
 
+// thinCLIMinVersion is the first livekit-agents release that exposes the
+// start/dev/console/simulate subcommands under `python -m livekit.agents`.
+const thinCLIMinVersion = "1.6.0"
+
+// isPythonImportFailure reports whether an agent log line shows Python failing
+// to import a module, including `-m livekit.agents` on an SDK without it.
+func isPythonImportFailure(line string) bool {
+	return strings.Contains(line, "ModuleNotFoundError:") ||
+		strings.Contains(line, "ImportError:") ||
+		strings.Contains(line, ": No module named livekit.agents")
+}
+
+// pythonImportFailureHint explains an import failure that killed a Python
+// agent. It inspects the installed SDK only on this failure path, so startup
+// stays a single interpreter launch.
+func pythonImportFailureHint(cfg AgentStartConfig) string {
+	version, notInstalled := agentfs.ResolvePythonAgentVersion(cfg.Dir, cfg.ProjectType)
+	switch {
+	case notInstalled && cfg.ProjectType == agentfs.ProjectTypePythonUV:
+		// The launch runs `uv run --no-sync`, so a missing package is never
+		// installed on the way up.
+		return "livekit-agents is not installed in the project environment; run `uv sync` and try again."
+	case notInstalled:
+		return "livekit-agents is not installed in the project's Python environment; install the project's dependencies and try again."
+	case version != "":
+		// An unparseable version (e.g. a local "0.0.0.dev" tag) falls through.
+		if ok, err := agentfs.IsVersionSatisfied(version, thinCLIMinVersion); err == nil && !ok {
+			return fmt.Sprintf("livekit-agents version %s is too old, please upgrade to %s or newer.", version, thinCLIMinVersion)
+		}
+	}
+	return "Python could not import the agent or one of its dependencies; sync or install the project's dependencies and check its Python path."
+}
+
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
 // branching on project type. Python uses the thin CLI:
 // `<python> <runtime-args> -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS`
@@ -314,7 +348,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 
 	// Capture output from both stdout and stderr
 	readyOnce := sync.Once{}
-	importHintOnce := sync.Once{}
+	var importFailed atomic.Bool
 	failOnce := sync.Once{}
 	scanOutput := func(r io.Reader) {
 		scanner := bufio.NewScanner(r)
@@ -327,14 +361,8 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 			if cfg.ForwardOutput != nil {
 				fmt.Fprintln(cfg.ForwardOutput, line)
 			}
-			if cfg.ProjectType.IsPython() && (strings.Contains(line, "ModuleNotFoundError:") || strings.Contains(line, "ImportError:") || strings.Contains(line, ": No module named livekit.agents")) {
-				importHintOnce.Do(func() {
-					hint := "Python could not import the agent or one of its dependencies; sync or install the project's dependencies and check its Python path."
-					ap.appendLog(hint)
-					if cfg.ForwardOutput != nil {
-						fmt.Fprintln(cfg.ForwardOutput, hint)
-					}
-				})
+			if cfg.ProjectType.IsPython() && isPythonImportFailure(line) {
+				importFailed.Store(true)
 			}
 			if cfg.ReadySignal != "" && strings.Contains(line, cfg.ReadySignal) {
 				readyOnce.Do(func() { close(ap.readyCh) })
@@ -361,6 +389,15 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		processErr := cmd.Wait()
 		close(ap.exitCh)
 		scanWg.Wait()
+		// Diagnose only after a failed exit, so a healthy startup never pays for
+		// a second interpreter and a caught ImportError in a job never warns.
+		if processErr != nil && importFailed.Load() {
+			hint := pythonImportFailureHint(cfg)
+			ap.appendLog(hint)
+			if cfg.ForwardOutput != nil {
+				fmt.Fprintln(cfg.ForwardOutput, hint)
+			}
+		}
 		ap.doneCh <- processErr
 		if ap.LogStream != nil {
 			close(ap.LogStream)
