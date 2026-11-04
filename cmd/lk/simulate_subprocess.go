@@ -52,6 +52,55 @@ type AgentProcess struct {
 	latestRoomByPx map[string]string // prefix → latest room name seen
 	logFile        *os.File
 	LogPath        string
+
+	// A warm spare holds its output until Activate, then forwards it.
+	stdin   io.WriteCloser
+	forward io.Writer
+	held    bool
+	pending []string
+}
+
+// forwardLine writes an output line to ForwardOutput, or holds it while the
+// process is an inactive spare.
+func (ap *AgentProcess) forwardLine(line string) {
+	if ap.forward == nil {
+		return
+	}
+	ap.mu.Lock()
+	defer ap.mu.Unlock()
+	if ap.held {
+		ap.pending = append(ap.pending, line)
+		return
+	}
+	fmt.Fprintln(ap.forward, line)
+}
+
+// Activate lets a warm spare run the agent, flushing the output it held.
+func (ap *AgentProcess) Activate() error {
+	ap.mu.Lock()
+	if ap.forward != nil {
+		for _, line := range ap.pending {
+			fmt.Fprintln(ap.forward, line)
+		}
+	}
+	ap.pending = nil
+	ap.held = false
+	ap.mu.Unlock()
+	if ap.stdin == nil {
+		return nil
+	}
+	_, err := io.WriteString(ap.stdin, "go\n")
+	return err
+}
+
+// exited reports whether the process has already exited.
+func (ap *AgentProcess) exited() bool {
+	select {
+	case <-ap.exitCh:
+		return true
+	default:
+		return false
+	}
 }
 
 // isTypeScriptEntry reports whether the entrypoint is TypeScript source that
@@ -213,6 +262,13 @@ type AgentStartConfig struct {
 	// the dev-reload channel (agent name + the LiveKit URL it uses). Only wired
 	// for the reload-based dev path, which owns the channel.
 	OnServerInfo func(agentName, wsURL string)
+
+	// PythonPreloadFile, if set, launches Python through pythonDevBootstrap,
+	// which records the installed modules the worker imports in this file.
+	PythonPreloadFile string
+	// Warm starts a spare: it preloads those modules, holds its output, and
+	// waits for Activate before running the agent.
+	Warm bool
 }
 
 // thinCLIMinVersion is the first livekit-agents release that exposes the
@@ -282,7 +338,11 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	args := make([]string, 0, len(prefixArgs)+len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+4)
 	args = append(args, prefixArgs...)
 	args = append(args, cfg.RuntimeArgs...)
-	args = append(args, "-m", "livekit.agents")
+	if cfg.PythonPreloadFile != "" {
+		args = append(args, "-c", pythonDevBootstrap)
+	} else {
+		args = append(args, "-m", "livekit.agents")
+	}
 	if len(cfg.CLIArgs) > 0 {
 		args = append(args, cfg.CLIArgs[0]) // subcommand: start | console
 		args = append(args, cfg.Entrypoint) // entrypoint positional (server discovery)
@@ -310,8 +370,21 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	cmd := exec.Command(bin, args...)
 	setProcAttr(cmd)
 	cmd.Dir = cfg.Dir
-	if len(cfg.Env) > 0 {
-		cmd.Env = append(os.Environ(), cfg.Env...)
+	env := cfg.Env
+	if cfg.PythonPreloadFile != "" {
+		env = append(append([]string{}, env...), "LK_DEV_PRELOAD_FILE="+cfg.PythonPreloadFile)
+		if cfg.Warm {
+			env = append(env, "LK_DEV_WARM=1")
+		}
+	}
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
+	var stdin io.WriteCloser
+	if cfg.Warm {
+		if stdin, err = cmd.StdinPipe(); err != nil {
+			return nil, fmt.Errorf("failed to create stdin pipe: %w", err)
+		}
 	}
 
 	stdout, err := cmd.StdoutPipe()
@@ -338,6 +411,9 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		latestRoomByPx: make(map[string]string),
 		logFile:        logFile,
 		LogPath:        logFile.Name(),
+		stdin:          stdin,
+		held:           cfg.Warm,
+		forward:        cfg.ForwardOutput,
 	}
 
 	if err := cmd.Start(); err != nil {
@@ -358,9 +434,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 			// (log file, surfaced errors, fatal-marker matching) strip their own copy.
 			line := scanner.Text()
 			ap.appendLog(line)
-			if cfg.ForwardOutput != nil {
-				fmt.Fprintln(cfg.ForwardOutput, line)
-			}
+			ap.forwardLine(line)
 			if cfg.ProjectType.IsPython() && isPythonImportFailure(line) {
 				importFailed.Store(true)
 			}
@@ -394,9 +468,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		if processErr != nil && importFailed.Load() {
 			hint := pythonImportFailureHint(cfg)
 			ap.appendLog(hint)
-			if cfg.ForwardOutput != nil {
-				fmt.Fprintln(cfg.ForwardOutput, hint)
-			}
+			ap.forwardLine(hint)
 		}
 		ap.doneCh <- processErr
 		if ap.LogStream != nil {
