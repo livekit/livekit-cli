@@ -64,18 +64,24 @@ func (rs *devServer) takeSavedJobs() *agent.GetRunningAgentJobsResponse {
 
 // captureJobs asks the (old) session for its running jobs and stores them so the
 // next process can restore them. Best-effort: failures are logged, not fatal.
-func (rs *devServer) captureJobs(s *devSession) {
+// It reports whether the process is known to have no running jobs.
+func (rs *devServer) captureJobs(s *devSession) (idle bool) {
 	resp, err := s.getRunningJobs(1500 * time.Millisecond)
 	if err != nil {
 		out.Warnf("reload: failed to capture running jobs: %v", err)
-		return
+		return false
 	}
-	if resp != nil {
-		rs.mu.Lock()
-		rs.savedJobs = resp
-		rs.mu.Unlock()
-		out.Statusf("reload: captured %d running job(s)", len(resp.Jobs))
+	if resp == nil {
+		return false
 	}
+	rs.mu.Lock()
+	rs.savedJobs = resp
+	rs.mu.Unlock()
+	if len(resp.Jobs) == 0 {
+		return true
+	}
+	out.Statusf("reload: captured %d running job(s)", len(resp.Jobs))
+	return false
 }
 
 func (rs *devServer) close() error {

@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -100,6 +101,13 @@ type agentWatcher struct {
 
 	devSrv  *devServer
 	session *devSession
+
+	// spare is a Python interpreter that already imported the worker's installed
+	// modules, activated on the next reload (see agent_warm.go).
+	spareMu          sync.Mutex
+	spare            *AgentProcess
+	spareFingerprint string
+	spareClosed      bool // set on shutdown, so a late session starts no spare
 }
 
 // ignoredWatchDirs asks Git for whole ignored directories, without expanding
@@ -171,10 +179,16 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		config.CLIArgs = append(config.CLIArgs, addrFlag, rs.addr())
 	}
 
+	if config.ProjectType.IsPython() {
+		config.PythonPreloadFile = pythonPreloadFile(config.Dir)
+	}
+
 	return &agentWatcher{
-		config:    config,
-		exts:      watchExtensions(config.ProjectType),
-		debounce:  500 * time.Millisecond,
+		config: config,
+		exts:   watchExtensions(config.ProjectType),
+		// Long enough to coalesce one save's events (editors write and rename
+		// within a few ms), short enough not to dominate a warm reload.
+		debounce:  100 * time.Millisecond,
 		restartCh: make(chan struct{}, 1),
 		devSrv:    rs,
 	}, nil
@@ -203,31 +217,44 @@ func (aw *agentWatcher) acceptSession() {
 		s := aw.devSrv.newSession(conn)
 		aw.session = s
 		go s.run()
+		// The agent connects once its imports finish; preparing the next spare
+		// now keeps it from competing with them for CPU.
+		aw.prepareSpare()
 	}()
 }
 
 func (aw *agentWatcher) restart() error {
 	// 1. Capture active jobs from the current process (best-effort). Job
 	// capture/restore is Python-only; Node reloads are a plain kill+respawn.
+	idle := false
 	if aw.session != nil {
 		if aw.config.ProjectType.IsPython() {
-			aw.devSrv.captureJobs(aw.session)
+			idle = aw.devSrv.captureJobs(aw.session)
 		}
 		aw.session.close()
 		aw.session = nil
 	}
 
-	// 2. Kill old process
-	if aw.agent != nil {
-		aw.agent.Kill()
+	// 2. Kill old process. Without jobs to hand over, the new process need not
+	// wait out the old one's graceful shutdown (~200 ms); with jobs it must, so a
+	// restored job never overlaps the original.
+	if old := aw.agent; old != nil {
+		if idle {
+			go old.Kill()
+		} else {
+			old.Kill()
+		}
 	}
 
 	out.Status("Reloading agent...")
 
-	// 3. Start new process
-	agent, err := startAgent(aw.config)
-	if err != nil {
-		return err
+	// 3. Start new process, from the warm spare when there is one
+	agent := aw.takeSpare()
+	if agent == nil {
+		var err error
+		if agent, err = startAgent(aw.config); err != nil {
+			return err
+		}
 	}
 	aw.agent = agent
 
@@ -235,6 +262,53 @@ func (aw *agentWatcher) restart() error {
 	aw.acceptSession()
 
 	return nil
+}
+
+// prepareSpare starts the next reload's interpreter, if this project uses one.
+func (aw *agentWatcher) prepareSpare() {
+	if aw.config.PythonPreloadFile == "" {
+		return
+	}
+	aw.spareMu.Lock()
+	defer aw.spareMu.Unlock()
+	if aw.spare != nil || aw.spareClosed {
+		return
+	}
+	cfg := aw.config
+	cfg.Warm = true
+	fingerprint := pythonEnvFingerprint(cfg.Dir)
+	spare, err := startAgent(cfg)
+	if err != nil {
+		return // the reload falls back to a fresh interpreter
+	}
+	aw.spare, aw.spareFingerprint = spare, fingerprint
+}
+
+// takeSpare activates and returns the spare, or nil when there is none or it
+// preloaded dependencies that have since changed.
+func (aw *agentWatcher) takeSpare() *AgentProcess {
+	aw.spareMu.Lock()
+	spare, fingerprint := aw.spare, aw.spareFingerprint
+	aw.spare = nil
+	aw.spareMu.Unlock()
+	if spare == nil {
+		return nil
+	}
+	if spare.exited() || fingerprint != pythonEnvFingerprint(aw.config.Dir) || spare.Activate() != nil {
+		spare.Kill()
+		return nil
+	}
+	return spare
+}
+
+func (aw *agentWatcher) discardSpare() {
+	aw.spareMu.Lock()
+	spare := aw.spare
+	aw.spare, aw.spareClosed = nil, true
+	aw.spareMu.Unlock()
+	if spare != nil {
+		spare.Kill()
+	}
 }
 
 // Run watches for file changes and restarts the agent. Blocks until done is closed.
@@ -256,6 +330,7 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 			aw.session.close()
 		}
 		aw.devSrv.close()
+		aw.discardSpare()
 		if aw.watcher != nil {
 			aw.watcher.Close()
 		}
