@@ -488,33 +488,6 @@ func (e LivekitVideoCodec) Valid() bool {
 	}
 }
 
-// Defines values for LivekitAgentAgentTaskStatus.
-const (
-	CANCELED    LivekitAgentAgentTaskStatus = "CANCELED"
-	COMPLETED   LivekitAgentAgentTaskStatus = "COMPLETED"
-	FAILED      LivekitAgentAgentTaskStatus = "FAILED"
-	RUNNING     LivekitAgentAgentTaskStatus = "RUNNING"
-	UNSPECIFIED LivekitAgentAgentTaskStatus = "UNSPECIFIED"
-)
-
-// Valid indicates whether the value is a known member of the LivekitAgentAgentTaskStatus enum.
-func (e LivekitAgentAgentTaskStatus) Valid() bool {
-	switch e {
-	case CANCELED:
-		return true
-	case COMPLETED:
-		return true
-	case FAILED:
-		return true
-	case RUNNING:
-		return true
-	case UNSPECIFIED:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for LivekitAgentChatRole.
 const (
 	ASSISTANT LivekitAgentChatRole = "ASSISTANT"
@@ -854,6 +827,30 @@ func (e LivekitPublicapiCommonV1SortOrder) Valid() bool {
 	}
 }
 
+// Defines values for LivekitPublicapiObservabilityV1DataState.
+const (
+	DATASTATESESSIONACTIVE LivekitPublicapiObservabilityV1DataState = "DATA_STATE_SESSION_ACTIVE"
+	DATASTATESETTLED       LivekitPublicapiObservabilityV1DataState = "DATA_STATE_SETTLED"
+	DATASTATESETTLING      LivekitPublicapiObservabilityV1DataState = "DATA_STATE_SETTLING"
+	DATASTATEUNSPECIFIED   LivekitPublicapiObservabilityV1DataState = "DATA_STATE_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1DataState enum.
+func (e LivekitPublicapiObservabilityV1DataState) Valid() bool {
+	switch e {
+	case DATASTATESESSIONACTIVE:
+		return true
+	case DATASTATESETTLED:
+		return true
+	case DATASTATESETTLING:
+		return true
+	case DATASTATEUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LivekitPublicapiObservabilityV1LogLevel.
 const (
 	LOGLEVELDEBUG       LivekitPublicapiObservabilityV1LogLevel = "LOG_LEVEL_DEBUG"
@@ -1077,15 +1074,6 @@ type GoogleRpcStatus struct {
 
 	// Message A developer-facing error message.
 	Message *string `json:"message,omitempty"`
-}
-
-// LivekitAgentDBAgentDatabase One database, as get and list both report it.
-type LivekitAgentDBAgentDatabase struct {
-	CreatedAt  *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	DatabaseId *string                  `json:"databaseId,omitempty"`
-	ExpiresAt  *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	Region     *string                  `json:"region,omitempty"`
-	Tip        *string                  `json:"tip,omitempty"`
 }
 
 // LivekitAliOSSUpload defines model for livekit.AliOSSUpload.
@@ -1922,50 +1910,6 @@ type LivekitAgentAgentHandoff struct {
 	OldAgentId *string                  `json:"oldAgentId,omitempty"`
 }
 
-// LivekitAgentAgentTaskStatus A task is never UNSPECIFIED.
-type LivekitAgentAgentTaskStatus string
-
-// LivekitAgentAgentTaskTask defines model for livekit.agent.AgentTask.Task.
-type LivekitAgentAgentTaskTask struct {
-	// Name The task's name, as the agent defines it.
-	Name      *string                      `json:"name,omitempty"`
-	Status    *LivekitAgentAgentTaskStatus `json:"status,omitempty"`
-	TaskId    *string                      `json:"taskId,omitempty"`
-	ThreadId  *string                      `json:"threadId,omitempty"`
-	UpdatedAt *GoogleProtobufTimestamp     `json:"updatedAt,omitempty"`
-}
-
-// LivekitAgentAgentThreadItem One chat item of an agent. Stored as the JSON of
-//
-//	ChatContext.ChatItem (items.payload in thread_schema_v1.sql).
-type LivekitAgentAgentThreadItem struct {
-	Agent *string                          `json:"agent,omitempty"`
-	Item  *LivekitAgentChatContextChatItem `json:"item,omitempty"`
-
-	// MessageId The A2A message the item came from.
-	MessageId *string `json:"messageId,omitempty"`
-
-	// Seq Position in the agent's history.
-	Seq *string `json:"seq,omitempty"`
-}
-
-// LivekitAgentAgentThreadThread defines model for livekit.agent.AgentThread.Thread.
-type LivekitAgentAgentThreadThread struct {
-	Attributes *map[string]string       `json:"attributes,omitempty"`
-	CreatedAt  *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-
-	// DatabaseId The thread's database ("DB_..."), created with the thread.
-	DatabaseId *string `json:"databaseId,omitempty"`
-
-	// ExpiresAt last_active + idle_ttl; every update pushes it out. The thread and its
-	//  database are deleted once it passes.
-	ExpiresAt  *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	IdleTtl    *GoogleProtobufDuration  `json:"idleTtl,omitempty"`
-	LastActive *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
-	Scope      *string                  `json:"scope,omitempty"`
-	ThreadId   *string                  `json:"threadId,omitempty"`
-}
-
 // LivekitAgentChatContext defines model for livekit.agent.ChatContext.
 type LivekitAgentChatContext struct {
 	Items *[]LivekitAgentChatContextChatItem `json:"items,omitempty"`
@@ -2065,11 +2009,11 @@ type LivekitPublicapiAgentsV1BuilderAgent struct {
 	//  CLI show it.
 	AgentId *string `json:"agentId,omitempty"`
 
-	// Config The current configuration. ListBuilderAgents does not set it.
+	// Config The current configuration. `ListBuilderAgents` does not set it.
 	Config    *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
 	CreatedAt *GoogleProtobufTimestamp                    `json:"createdAt,omitempty"`
 
-	// Deployment The deployment of the agent. Unset when the status cannot be read now.
+	// Deployment The deployment of the agent. Unset when the API cannot read the status.
 	Deployment *LivekitPublicapiAgentsV1Deployment `json:"deployment,omitempty"`
 	Id         *string                             `json:"id,omitempty"`
 
@@ -2407,8 +2351,8 @@ type LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse = map[string]interface{
 
 // LivekitPublicapiAgentsV1BuilderAgentsDeployResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Deploy.Response.
 type LivekitPublicapiAgentsV1BuilderAgentsDeployResponse struct {
-	// Status DEPLOYMENT_STATUS_BUILDING. Call GetBuilderAgent to follow the
-	//  deployment.
+	// Status The deployment status, which is `DEPLOYMENT_STATUS_BUILDING`.
+	//  Call `GetBuilderAgent` to follow the deployment.
 	Status *LivekitPublicapiAgentsV1DeploymentStatus `json:"status,omitempty"`
 
 	// VersionId The version that the deployment builds.
@@ -2442,68 +2386,12 @@ type LivekitPublicapiAgentsV1Deployment struct {
 	VersionId *string `json:"versionId,omitempty"`
 }
 
-// LivekitPublicapiAgentsV1DeploymentStatus The state of a builder agent's deployment. When the agent runs in more than
+// LivekitPublicapiAgentsV1DeploymentStatus The deployment state of a builder agent. When the agent runs in more
 //
-//	one region, the status is the one that needs attention first.
+//	than one region, the status is the one that needs attention first.
 type LivekitPublicapiAgentsV1DeploymentStatus string
 
-// LivekitPublicapiAnalyticsV1AgentAnalytics One agent's analytics over a time range. Common concerns are grouped so they
-//
-//	read the same whether you fetch one agent or the whole roster: `sessions`,
-//	`performance`, and `usage` are always found under those names.
-type LivekitPublicapiAnalyticsV1AgentAnalytics struct {
-	AgentId     *string                                               `json:"agentId,omitempty"`
-	AgentName   *string                                               `json:"agentName,omitempty"`
-	Performance *LivekitPublicapiAnalyticsV1AgentAnalyticsPerformance `json:"performance,omitempty"`
-	Region      *string                                               `json:"region,omitempty"`
-	Sessions    *LivekitPublicapiAnalyticsV1AgentAnalyticsSessions    `json:"sessions,omitempty"`
-	Status      *string                                               `json:"status,omitempty"`
-	Usage       *LivekitPublicapiAnalyticsV1AgentAnalyticsUsage       `json:"usage,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1AgentAnalyticsPerformance defines model for livekit.publicapi.analytics.v1.AgentAnalytics.Performance.
-type LivekitPublicapiAnalyticsV1AgentAnalyticsPerformance struct {
-	// InterruptedRate Fraction 0..1 of turns the user interrupted the agent.
-	InterruptedRate *float64                                     `json:"interruptedRate,omitempty"`
-	JoinLatency     *LivekitPublicapiAnalyticsV1Percentiles      `json:"joinLatency,omitempty"`
-	Latency         *LivekitPublicapiAnalyticsV1LatencyBreakdown `json:"latency,omitempty"`
-	Turns           *string                                      `json:"turns,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1AgentAnalyticsSessions defines model for livekit.publicapi.analytics.v1.AgentAnalytics.Sessions.
-type LivekitPublicapiAnalyticsV1AgentAnalyticsSessions struct {
-	Active         *string `json:"active,omitempty"`
-	DispatchErrors *string `json:"dispatchErrors,omitempty"`
-
-	// Estimate Set when `total` is an approximation; carries its tolerance.
-	Estimate *LivekitPublicapiAnalyticsV1Estimate `json:"estimate,omitempty"`
-	Total    *string                              `json:"total,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1AgentAnalyticsUsage defines model for livekit.publicapi.analytics.v1.AgentAnalytics.Usage.
-type LivekitPublicapiAnalyticsV1AgentAnalyticsUsage struct {
-	AvgTokensPerSession *string                                  `json:"avgTokensPerSession,omitempty"`
-	Models              *[]LivekitPublicapiAnalyticsV1ModelUsage `json:"models,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1AgentsGetResponse defines model for livekit.publicapi.analytics.v1.Agents.Get.Response.
-type LivekitPublicapiAnalyticsV1AgentsGetResponse struct {
-	Analytics *LivekitPublicapiAnalyticsV1AgentAnalytics `json:"analytics,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1AgentsListResponse defines model for livekit.publicapi.analytics.v1.Agents.List.Response.
-type LivekitPublicapiAnalyticsV1AgentsListResponse struct {
-	Items    *[]LivekitPublicapiAnalyticsV1AgentAnalytics `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo            `json:"pageInfo,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1CountryCount A per-country connection count for the top-countries breakdown.
-type LivekitPublicapiAnalyticsV1CountryCount struct {
-	Count *string `json:"count,omitempty"`
-	Name  *string `json:"name,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1DataPoint One point of a per-session time series (quality, bandwidth, fps).
+// LivekitPublicapiAnalyticsV1DataPoint A point of a session time series, such as quality, bandwidth, or frame rate.
 type LivekitPublicapiAnalyticsV1DataPoint struct {
 	// Timestamp The start of the sample interval.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
@@ -2512,59 +2400,18 @@ type LivekitPublicapiAnalyticsV1DataPoint struct {
 	Value *float64 `json:"value,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1Estimate Flags a value that is approximate over large windows, with its tolerance. A
-//
-//	consumer should not treat an estimated value as exact.
-type LivekitPublicapiAnalyticsV1Estimate struct {
-	// ErrorMargin Fractional tolerance, such as 0.01 for +/-1%. Zero when unknown.
-	ErrorMargin *float64 `json:"errorMargin,omitempty"`
-
-	// IsEstimate True when the value is approximate rather than exact.
-	IsEstimate *bool `json:"isEstimate,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1LatencyBreakdown Where the time in an average agent reply goes, in
-//
-//	milliseconds.
-type LivekitPublicapiAnalyticsV1LatencyBreakdown struct {
-	AvgReplyMs *float64 `json:"avgReplyMs,omitempty"`
-	EouMs      *float64 `json:"eouMs,omitempty"`
-	LlmTtftMs  *float64 `json:"llmTtftMs,omitempty"`
-	SttDelayMs *float64 `json:"sttDelayMs,omitempty"`
-	TtsTtfbMs  *float64 `json:"ttsTtfbMs,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ModelUsage Per-model usage over the window. `component` is the stage the model served
-//
-//	(llm, tts, realtime); latency is TTFT for llm/realtime rows and TTFB for tts
-//	rows.
-type LivekitPublicapiAnalyticsV1ModelUsage struct {
-	CachedTokens *string  `json:"cachedTokens,omitempty"`
-	Component    *string  `json:"component,omitempty"`
-	InTokens     *string  `json:"inTokens,omitempty"`
-	LatencyP50Ms *float64 `json:"latencyP50Ms,omitempty"`
-	LatencyP95Ms *float64 `json:"latencyP95Ms,omitempty"`
-	Model        *string  `json:"model,omitempty"`
-	OutTokens    *string  `json:"outTokens,omitempty"`
-	Provider     *string  `json:"provider,omitempty"`
-	Requests     *string  `json:"requests,omitempty"`
-	Sessions     *string  `json:"sessions,omitempty"`
-	TtsChars     *string  `json:"ttsChars,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ParticipantInfo One participant identity of a room session, as the participants table on
-//
-//	the dashboard shows it.
+// LivekitPublicapiAnalyticsV1ParticipantInfo A participant identity of a room session.
 type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
-	// JoinedAt First join across the connections for the identity.
+	// JoinedAt The time of the first join across the connections of the identity.
 	JoinedAt *GoogleProtobufTimestamp `json:"joinedAt,omitempty"`
 
-	// LeftAt Last leave across the connections for the identity; unset while no leave is
-	//  recorded, so a participant of an active session with no leftAt may still be
-	//  connected.
+	// LeftAt The time of the last leave across the connections of the identity. Unset
+	//  while no leave is recorded, so a participant of an active session with no
+	//  `leftAt` can still be connected.
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
-	// Location Country name, such as "United States"; "Unknown" when no country is recorded.
+	// Location The name of the country, for example `United States`. `Unknown` when the
+	//  country is not known.
 	Location *string `json:"location,omitempty"`
 
 	// ParticipantIdentity The identity the participant connected with.
@@ -2573,111 +2420,73 @@ type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
 	// ParticipantName The display name of the participant.
 	ParticipantName *string `json:"participantName,omitempty"`
 
-	// PublishedSources Which track sources the participant published during the session.
+	// PublishedSources The track sources that the participant published during the session.
 	PublishedSources *LivekitPublicapiAnalyticsV1PublishedSources `json:"publishedSources,omitempty"`
 
-	// Region LiveKit region display name; "Unknown" when the region isn't recognized.
+	// Region The display name of the LiveKit region. `Unknown` when the region is not
+	//  recognized.
 	Region *string `json:"region,omitempty"`
 
-	// Sessions The participant's participant sessions, oldest join first: one per
-	//  connection, so each reconnect adds one. At most 50: a participant that
-	//  reconnected more often has its oldest 50 here. Empty when they couldn't be
-	//  read; the rest of the row still returns.
+	// Sessions The participant sessions of the participant, oldest join first. There is
+	//  one for each connection, so each reconnect adds one. The maximum is 50.
+	//  For a participant with more, this has the oldest 50. Empty when the
+	//  participant sessions cannot be read. The other fields still return.
 	Sessions *[]LivekitPublicapiAnalyticsV1ParticipantSession `json:"sessions,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantSession One participant session of a participant: one join-to-leave stretch,
+// LivekitPublicapiAnalyticsV1ParticipantSession A participant session: the time from one join of a participant to its
 //
-//	identified by its participant session id (PA_...), with the client it
-//	connected from. A participant that reconnects, from the same device or
-//	another, has several.
+//	leave, with the client that it connected from. A participant that
+//	reconnects, from the same device or a different one, has more than one.
 type LivekitPublicapiAnalyticsV1ParticipantSession struct {
-	// Browser Client browser, such as "chrome".
+	// Browser The browser of the client, for example `chrome`.
 	Browser *string `json:"browser,omitempty"`
 
-	// ConnectionTimeMs Milliseconds the client took to connect.
+	// ConnectionTimeMs The time that the client took to connect, in milliseconds.
 	ConnectionTimeMs *int32 `json:"connectionTimeMs,omitempty"`
 
-	// ConnectionType Transport the client connected over: "UDP", "TCP" or "TURN"; empty when
-	//  not reported.
+	// ConnectionType The transport that the client connected over: `UDP`, `TCP`, or `TURN`.
+	//  Empty when not reported.
 	ConnectionType *string `json:"connectionType,omitempty"`
 
-	// DeviceModel Client device model, such as "iPhone 15".
+	// DeviceModel The device model of the client, for example `iPhone 15`.
 	DeviceModel *string `json:"deviceModel,omitempty"`
 
-	// DurationSeconds Seconds from joinedAt to leftAt, as the dashboard counts them. While no
-	//  leave is recorded, to the session end once it has one, else to now.
+	// DurationSeconds The number of seconds from `joinedAt` to `leftAt`. While no leave is
+	//  recorded, the count goes to the end of the room session, or to now when
+	//  the room session has no end.
 	DurationSeconds *string `json:"durationSeconds,omitempty"`
 
-	// JoinedAt When this participant session joined.
+	// JoinedAt The time the participant session joined.
 	JoinedAt *GoogleProtobufTimestamp `json:"joinedAt,omitempty"`
 
-	// LeftAt When it left; unset while no leave is recorded.
+	// LeftAt The time the participant session left. Unset while no leave is recorded.
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
-	// Location Country name, such as "United States"; "Unknown" when no country is recorded.
+	// Location The name of the country, for example `United States`. `Unknown` when the
+	//  country is not known.
 	Location *string `json:"location,omitempty"`
 
-	// Os Client operating system: "ios", "android", "windows", "mac" or "linux";
-	//  empty when not reported.
+	// Os The operating system of the client: `ios`, `android`, `windows`, `mac`,
+	//  or `linux`. Empty when not reported.
 	Os *string `json:"os,omitempty"`
 
-	// ParticipantSessionId The participant session id (PA_...).
+	// ParticipantSessionId The ID of the participant session (`PA_...`).
 	ParticipantSessionId *string `json:"participantSessionId,omitempty"`
 
-	// Region LiveKit region display name; "Unknown" when the region isn't recognized.
+	// Region The display name of the LiveKit region. `Unknown` when the region is not
+	//  recognized.
 	Region *string `json:"region,omitempty"`
 
-	// SdkVersion LiveKit client SDK version, such as "2.6.1". The SDK name isn't recorded.
+	// SdkVersion The version of the LiveKit client SDK, for example `2.6.1`. The name of
+	//  the SDK is not recorded.
 	SdkVersion *string `json:"sdkVersion,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantSortField The column a participant listing is ordered by.
+// LivekitPublicapiAnalyticsV1ParticipantSortField The field that a participant list sorts by.
 type LivekitPublicapiAnalyticsV1ParticipantSortField string
 
-// LivekitPublicapiAnalyticsV1Percentiles A p50/p90/p99 triple in milliseconds.
-type LivekitPublicapiAnalyticsV1Percentiles struct {
-	P50Ms *float64 `json:"p50Ms,omitempty"`
-	P90Ms *float64 `json:"p90Ms,omitempty"`
-	P99Ms *float64 `json:"p99Ms,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1PlatformShare A per-platform share of connections (fraction 0..1).
-type LivekitPublicapiAnalyticsV1PlatformShare struct {
-	Name  *string  `json:"name,omitempty"`
-	Share *float64 `json:"share,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ProjectAnalytics The project overview over a time range, grouped the same way: `sessions` and
-//
-//	`participants`.
-type LivekitPublicapiAnalyticsV1ProjectAnalytics struct {
-	Participants *LivekitPublicapiAnalyticsV1ProjectAnalyticsParticipants `json:"participants,omitempty"`
-	Sessions     *LivekitPublicapiAnalyticsV1ProjectAnalyticsSessions     `json:"sessions,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ProjectAnalyticsParticipants defines model for livekit.publicapi.analytics.v1.ProjectAnalytics.Participants.
-type LivekitPublicapiAnalyticsV1ProjectAnalyticsParticipants struct {
-	Platforms    *[]LivekitPublicapiAnalyticsV1PlatformShare `json:"platforms,omitempty"`
-	TopCountries *[]LivekitPublicapiAnalyticsV1CountryCount  `json:"topCountries,omitempty"`
-	Total        *string                                     `json:"total,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ProjectAnalyticsSessions defines model for livekit.publicapi.analytics.v1.ProjectAnalytics.Sessions.
-type LivekitPublicapiAnalyticsV1ProjectAnalyticsSessions struct {
-	AgentMinutes       *string  `json:"agentMinutes,omitempty"`
-	AvgDurationSeconds *float64 `json:"avgDurationSeconds,omitempty"`
-	Served             *string  `json:"served,omitempty"`
-	WithAgents         *string  `json:"withAgents,omitempty"`
-	WithTelephony      *string  `json:"withTelephony,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse defines model for livekit.publicapi.analytics.v1.ProjectOverview.Get.Response.
-type LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse struct {
-	Analytics *LivekitPublicapiAnalyticsV1ProjectAnalytics `json:"analytics,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1PublishedSources Which track sources a participant published.
+// LivekitPublicapiAnalyticsV1PublishedSources The track sources that a participant published.
 type LivekitPublicapiAnalyticsV1PublishedSources struct {
 	// CameraTrack True when the participant published a camera track.
 	CameraTrack *bool `json:"cameraTrack,omitempty"`
@@ -2692,24 +2501,26 @@ type LivekitPublicapiAnalyticsV1PublishedSources struct {
 	ScreenShareTrack *bool `json:"screenShareTrack,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1Session One room-session list row. Bandwidth and connection time are on the
+// LivekitPublicapiAnalyticsV1Session A room session, as `ListProjectSessions` returns it. Only the `detail` from
 //
-//	GetSession detail only.
+//	`GetSession` has bandwidth and connection time.
 type LivekitPublicapiAnalyticsV1Session struct {
-	// EndedAt When the session ended. A session that stopped reporting is given its last
-	//  report time, even while its status is still ACTIVE; unset while it is live.
+	// EndedAt The time the session ended. Unset while the session is live. For a session
+	//  that stopped reporting, this is the time of its last report, also when
+	//  its status is `ACTIVE`.
 	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 
-	// HasDetailData False while the full session detail (end time, participant counts,
-	//  duration) is still being finalized; the detail endpoints are complete once
-	//  it is true.
+	// HasDetailData True when the full detail of the session is final. While false, LiveKit
+	//  still finalizes the end time, the participant counts, and the duration.
+	//  When true, the detail RPCs return complete data.
 	HasDetailData *bool `json:"hasDetailData,omitempty"`
 
 	// LastActive When the session last reported activity.
 	LastActive *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
 
-	// NumParticipants Distinct participants (by identity) connected for more than zero seconds
-	//  during the session. Not a live count: a closed session keeps its total.
+	// NumParticipants The number of distinct participants, by identity, that connected for more
+	//  than zero seconds during the session. This is not a live count: a closed
+	//  session keeps its total.
 	NumParticipants *int32 `json:"numParticipants,omitempty"`
 
 	// RoomName The name of the room the session ran in.
@@ -2721,54 +2532,60 @@ type LivekitPublicapiAnalyticsV1Session struct {
 	// StartedAt When the session started.
 	StartedAt *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
 
-	// Status ACTIVE until the session close is recorded, so a session that stopped
-	//  reporting can be ACTIVE with an endedAt.
+	// Status The status of the session. It is `ACTIVE` until LiveKit records that the
+	//  session closed, so a session that stopped reporting can be `ACTIVE` and
+	//  have an `endedAt`.
 	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
 
 	// Tags The tags recorded on the session.
 	Tags *[]string `json:"tags,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1SessionDetail The richer per-session view: a superset of Session with the room id, totals,
+// LivekitPublicapiAnalyticsV1SessionDetail The detail of a room session. It has the fields of `Session`, and also
 //
-//	the first page of participants, and per-metric timelines. The timelines share
-//	one grid sized from the session length, as on the dashboard: one point per
-//	bucket, 0 where a bucket has no data.
+//	totals, the first page of participants, and a timeline for each metric.
+//
+//	All timelines use the same time buckets, sized from the length of the
+//	session. Each timeline has one point for each bucket, with `0` where a
+//	bucket has no data.
 type LivekitPublicapiAnalyticsV1SessionDetail struct {
-	// BandwidthIn Bytes participants published, all track types.
+	// BandwidthIn The number of bytes that participants published, for all track types.
 	BandwidthIn *string `json:"bandwidthIn,omitempty"`
 
-	// BandwidthOut Bytes participants subscribed to, all track types.
+	// BandwidthOut The number of bytes that participants subscribed to, for all track types.
 	BandwidthOut *string `json:"bandwidthOut,omitempty"`
 
-	// ConnectionSeconds WebRTC connection time in seconds, summed over standard participants and
-	//  self-hosted agents (cloud agents excluded), as the dashboard counts it.
+	// ConnectionSeconds The total WebRTC connection time in seconds, of standard participants and
+	//  self-hosted agents. Cloud agents are not included.
 	ConnectionSeconds *string `json:"connectionSeconds,omitempty"`
 
 	// EndedAt When the session ended, as on Session.
 	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 
-	// NumParticipants Same count as Session.numParticipants.
+	// NumParticipants The number of participants. This is the same count as `numParticipants`
+	//  in `Session`.
 	NumParticipants *int32 `json:"numParticipants,omitempty"`
 
-	// Participants The first page of participants, newest join first (at most 50). When
-	//  participantsPage.hasMore, continue with ListSessionParticipants: pass
-	//  participantsPage.nextCursor as page.cursor, with sortBy and sortOrder unset
-	//  (or joinedAt descending, the same thing).
+	// Participants The first page of participants, newest join first. The maximum is 50.
+	//  When `participantsPage.hasMore` is true, call `ListSessionParticipants` to
+	//  get the next page. Set `page.cursor` to `participantsPage.nextCursor`, and
+	//  leave `sortBy` and `sortOrder` unset, or set them to `joinedAt` and
+	//  descending.
 	Participants *[]LivekitPublicapiAnalyticsV1ParticipantInfo `json:"participants,omitempty"`
 
-	// ParticipantsPage Paging state for participants. Unset when the first page couldn't be
-	//  read: the rest of the detail still returns, and ListSessionParticipants
-	//  lists the participants.
+	// ParticipantsPage The page info for `participants`. Unset when the first page cannot be
+	//  read. The other fields still return, and `ListSessionParticipants` lists
+	//  the participants.
 	ParticipantsPage *LivekitPublicapiCommonV1PageInfo `json:"participantsPage,omitempty"`
 
-	// PublishBps Published audio plus video bitrate, in bits per second.
+	// PublishBps The published audio and video bitrate, in bits per second.
 	PublishBps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"publishBps,omitempty"`
 
-	// PublishFps Published video frame rate.
+	// PublishFps The published video frame rate.
 	PublishFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"publishFps,omitempty"`
 
-	// Quality Average connection quality as a 0-1 fraction of the 0-5 track score.
+	// Quality The average connection quality, as a fraction from 0 to 1 of the track
+	//  score, which goes from 0 to 5.
 	Quality *[]LivekitPublicapiAnalyticsV1DataPoint `json:"quality,omitempty"`
 
 	// RoomName The name of the room the session ran in.
@@ -2783,43 +2600,45 @@ type LivekitPublicapiAnalyticsV1SessionDetail struct {
 	// Status The session status, as on Session.
 	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
 
-	// SubscribeBps Subscribed audio plus video bitrate, in bits per second.
+	// SubscribeBps The subscribed audio and video bitrate, in bits per second.
 	SubscribeBps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeBps,omitempty"`
 
-	// SubscribeFps Subscribed video frame rate.
+	// SubscribeFps The subscribed video frame rate.
 	SubscribeFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeFps,omitempty"`
 
-	// Tags The session tags, as on Session.
+	// Tags The tags of the session, the same as in `Session`.
 	Tags *[]string `json:"tags,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1SessionEvent One event of a room session, such as a participant joining or a track being
+// LivekitPublicapiAnalyticsV1SessionEvent An event of a room session, such as a participant that joins or a track
 //
-//	published.
+//	that is published.
 type LivekitPublicapiAnalyticsV1SessionEvent struct {
-	// ParticipantIdentity The identity of the participant the event is about; empty for a room
-	//  event, or an API call that names no participant.
+	// ParticipantIdentity The identity of the participant that the event is about. Empty for a room
+	//  event, or for an API call that names no participant.
 	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
 
-	// ParticipantSessionId The participant session (`PA_...`) the event is about; empty when
-	//  `participantIdentity` is.
+	// ParticipantSessionId The ID of the participant session (`PA_...`) that the event is about.
+	//  Empty when `participantIdentity` is empty.
 	ParticipantSessionId *string `json:"participantSessionId,omitempty"`
 
-	// Payload The event fields from an allowlist, each present only when the event
-	//  has it:
-	//    - participant events: participantKind, disconnectReason,
-	//      reconnectReason, isMigration and connectionType;
-	//    - track events: trackId, trackType, trackSource, mimeType and muted;
-	//    - `ROOM_ENDED`: reason;
-	//    - `API_CALL`: service, method, status, twirpErrorCode and durationNs.
+	// Payload The fields of the event. Each field is present only when the event has it.
+	//  The payload has only these fields:
 	//
-	//  Every other field that the event recorded is left out.
+	//  - Participant events: `participantKind`, `disconnectReason`,
+	//    `reconnectReason`, `isMigration`, and `connectionType`.
+	//  - Track events: `trackId`, `trackType`, `trackSource`, `mimeType`, and
+	//    `muted`.
+	//  - `ROOM_ENDED`: `reason`.
+	//  - `API_CALL`: `service`, `method`, `status`, `twirpErrorCode`, and
+	//    `durationNs`.
 	Payload *GoogleProtobufStruct `json:"payload,omitempty"`
 
 	// Timestamp When the event was recorded.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 
-	// Type The event type, an `AnalyticsEventType` name such as `PARTICIPANT_JOINED`.
+	// Type The type of the event, an `AnalyticsEventType` name such as
+	//  `PARTICIPANT_JOINED`.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -2840,8 +2659,8 @@ type LivekitPublicapiAnalyticsV1SessionStatus string
 
 // LivekitPublicapiAnalyticsV1SessionsGetResponse defines model for livekit.publicapi.analytics.v1.Sessions.Get.Response.
 type LivekitPublicapiAnalyticsV1SessionsGetResponse struct {
-	// Detail Absent while the session detail is still being finalized (see
-	//  Session.hasDetailData on the list row).
+	// Detail The detail of the session. Absent while LiveKit finalizes the
+	//  detail. See `hasDetailData` on `session`.
 	Detail  *LivekitPublicapiAnalyticsV1SessionDetail `json:"detail,omitempty"`
 	Session *LivekitPublicapiAnalyticsV1Session       `json:"session,omitempty"`
 }
@@ -2852,153 +2671,141 @@ type LivekitPublicapiAnalyticsV1SessionsListResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo     `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiCommonV1PageInfo The cursor-pagination metadata shared by every list response.
+// LivekitPublicapiCommonV1PageInfo The paging state of a list response.
 type LivekitPublicapiCommonV1PageInfo struct {
 	// HasMore True when another page follows this one.
 	HasMore *bool `json:"hasMore,omitempty"`
 
-	// NextCursor Pass as `cursor` on the next request to fetch the following page. Empty on
-	//  the last page.
+	// NextCursor The cursor of the next page. To get the next page, send it as `cursor` in
+	//  the next request. Empty on the last page.
 	NextCursor *string `json:"nextCursor,omitempty"`
 }
 
-// LivekitPublicapiCommonV1SortOrder The sort direction of a list request. A list that lets the caller pick a
-//
-//	direction takes it as `sortOrder` and documents its default column and
-//	direction; one that can also sort on more than one column adds its own
-//	`<X>SortField sortBy`.
+// LivekitPublicapiCommonV1SortOrder The sort direction of a list.
 type LivekitPublicapiCommonV1SortOrder string
 
-// LivekitPublicapiDatabasesV1DatabasesCreateResponse defines model for livekit.publicapi.databases.v1.Databases.Create.Response.
-type LivekitPublicapiDatabasesV1DatabasesCreateResponse struct {
-	DatabaseId *string `json:"databaseId,omitempty"`
+// LivekitPublicapiObservabilityV1DataState A state of the session data: whether more of it can still arrive.
+type LivekitPublicapiObservabilityV1DataState string
 
-	// ExpiresAt Unset when the database never expires.
-	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-}
-
-// LivekitPublicapiDatabasesV1DatabasesDeleteResponse defines model for livekit.publicapi.databases.v1.Databases.Delete.Response.
-type LivekitPublicapiDatabasesV1DatabasesDeleteResponse = map[string]interface{}
-
-// LivekitPublicapiDatabasesV1DatabasesExportResponse defines model for livekit.publicapi.databases.v1.Databases.Export.Response.
-type LivekitPublicapiDatabasesV1DatabasesExportResponse struct {
-	// DownloadUrl Pre-authenticated object-storage URL.
-	DownloadUrl *string `json:"downloadUrl,omitempty"`
-
-	// ExpiresAt Of the URL, not the database.
-	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-
-	// Tip The commit sequence the export is consistent at.
-	Tip *string `json:"tip,omitempty"`
-}
-
-// LivekitPublicapiDatabasesV1DatabasesGetResponse defines model for livekit.publicapi.databases.v1.Databases.Get.Response.
-type LivekitPublicapiDatabasesV1DatabasesGetResponse struct {
-	Database *LivekitAgentDBAgentDatabase `json:"database,omitempty"`
-}
-
-// LivekitPublicapiDatabasesV1DatabasesListResponse defines model for livekit.publicapi.databases.v1.Databases.List.Response.
-type LivekitPublicapiDatabasesV1DatabasesListResponse struct {
-	Items    *[]LivekitAgentDBAgentDatabase    `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-}
-
-// LivekitPublicapiObservabilityV1LogLevel A log record level, as the logs panel on the dashboard shows and filters
+// LivekitPublicapiObservabilityV1DataStatus The status of the session data: whether more of it can still arrive. A
 //
-//	it. Agents name levels differently by runtime, such as CRITICAL in Python
-//	and FATAL in Node, so a record level comes from its OpenTelemetry severity
-//	number, or from its level name when it has none; a level means the same for
-//	Python and Node agents.
+//	read returns the data that exists when it runs, so a response can hold only
+//	part of the session data in every state.
+type LivekitPublicapiObservabilityV1DataStatus struct {
+	// RetryAfterSeconds The number of seconds to wait before you read again. Set only when
+	//  `state` is `DATA_STATE_SETTLING`, and 0 in every other state.
+	RetryAfterSeconds *int `json:"retryAfterSeconds,omitempty"`
+
+	// State The state of the session data: whether more of it can still arrive.
+	State *LivekitPublicapiObservabilityV1DataState `json:"state,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1LogLevel The level of a log record, as the logs panel on the dashboard shows and
+//
+//	filters it. Python and Node.js agents use different level names, such as
+//	`CRITICAL` in Python and `FATAL` in Node.js. Thus, the level of a record
+//	comes from its OpenTelemetry severity number, or from its level name when it
+//	has no severity number. Each level has the same meaning for Python and
+//	Node.js agents.
 type LivekitPublicapiObservabilityV1LogLevel string
 
-// LivekitPublicapiObservabilityV1LogRecord One log record an agent in the session exported.
+// LivekitPublicapiObservabilityV1LogRecord A log record that an agent of a session exported.
 type LivekitPublicapiObservabilityV1LogRecord struct {
-	// Attributes The record attributes, typed and nested as the agent recorded them, with
-	//  the resource and scope attributes merged in; the value on the record
-	//  wins. An integer beyond ±2^53 is its decimal string, and bytes are
+	// Attributes The attributes of the record, typed and nested as the agent recorded
+	//  them. They include its resource and scope attributes. When an
+	//  attribute has two values, the value of the record is used. An integer
+	//  larger than 2^53 or smaller than -2^53 is a decimal string. Bytes are
 	//  base64.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
-	// BodyFields The body fields of a structured logger other than its message; empty
-	//  for a plain text body.
+	// BodyFields The fields of a structured log body, other than the message.
+	//  Empty for a plain text body.
 	BodyFields *map[string]*GoogleProtobufValue `json:"bodyFields,omitempty"`
 
-	// Id The record ID, the same on every read.
+	// Id The ID of the record. It is the same on every read.
 	Id *string `json:"id,omitempty"`
 
 	// Level The level, mapped onto the LogLevel values.
 	Level *LivekitPublicapiObservabilityV1LogLevel `json:"level,omitempty"`
 
-	// Logger The logger that wrote the record (its logger.name attribute).
+	// Logger The logger that wrote the record (its `logger.name` attribute).
 	Logger *string `json:"logger,omitempty"`
 
-	// Message The record text. A structured logger body keeps it under its event,
-	//  message or msg field; a structured body with none of them is written
-	//  here whole, as JSON.
+	// Message The text of the record. A structured logger puts the text in the `event`,
+	//  `message`, or `msg` field of its body. When a structured body has none of
+	//  these fields, this field holds the full body as JSON.
 	Message *string `json:"message,omitempty"`
 
-	// SeverityText The level name as the agent logged it, such as "WARN" or "CRITICAL".
+	// SeverityText The name of the level, as the agent logged it, such as `WARN` or
+	//  `CRITICAL`.
 	SeverityText *string `json:"severityText,omitempty"`
 
-	// SpanId The span the record was logged in. See `traceId`.
+	// SpanId The ID of the span that the record was logged in, as lowercase hex. Empty
+	//  when the record was logged outside a span.
 	SpanId *string `json:"spanId,omitempty"`
 
 	// Timestamp When the record was logged.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 
-	// TraceId The trace and span the record was logged in, as lowercase hex; empty when
-	//  it was logged outside one. They link the record to its span in
-	//  GetSessionTraces.
+	// TraceId The ID of the trace that the record was logged in, as lowercase hex.
+	//  Empty when the record was logged outside a trace. With `spanId`, it links
+	//  the record to its span in `GetSessionTraces`.
 	TraceId *string `json:"traceId,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1LogsGetResponse defines model for livekit.publicapi.observability.v1.Logs.Get.Response.
 type LivekitPublicapiObservabilityV1LogsGetResponse struct {
-	Items    *[]LivekitPublicapiObservabilityV1LogRecord `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo           `json:"pageInfo,omitempty"`
+	// DataStatus The data status of the session logs: whether more of them can still
+	//  arrive.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus  `json:"dataStatus,omitempty"`
+	Items      *[]LivekitPublicapiObservabilityV1LogRecord `json:"items,omitempty"`
+	PageInfo   *LivekitPublicapiCommonV1PageInfo           `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1MetricHistogram Summarizes the values a histogram point recorded.
+// LivekitPublicapiObservabilityV1MetricHistogram A summary of the values that a histogram point recorded.
 type LivekitPublicapiObservabilityV1MetricHistogram struct {
-	// BucketBounds The buckets of a histogram, with one more count than bounds:
-	//  bucketCounts[0] counts the values up to bucketBounds[0], bucketCounts[i]
-	//  those in (bucketBounds[i-1], bucketBounds[i]], and the last count those
-	//  above the last bound. Both are empty for an exponential histogram.
+	// BucketBounds The upper bounds of the histogram buckets. `bucketCounts` has one
+	//  more count than `bucketBounds`. `bucketCounts[0]` counts the values up to
+	//  `bucketBounds[0]`. `bucketCounts[i]` counts the values in
+	//  `(bucketBounds[i-1], bucketBounds[i]]`. The last count counts the values
+	//  above the last bound. Empty for an exponential histogram.
 	BucketBounds *[]float64 `json:"bucketBounds,omitempty"`
 
-	// BucketCounts The count in each bucket. See `bucketBounds`.
+	// BucketCounts The number of values in each histogram bucket. See `bucketBounds`.
+	//  Empty for an exponential histogram.
 	BucketCounts *[]string `json:"bucketCounts,omitempty"`
 
-	// Count How many values were recorded.
+	// Count The number of values recorded.
 	Count *string `json:"count,omitempty"`
 
-	// Max Their maximum; unset when the agent didn't record it.
+	// Max The maximum value. Unset when the agent did not record it.
 	Max *float64 `json:"max,omitempty"`
 
-	// Min Their minimum; unset when the agent didn't record it.
+	// Min The minimum value. Unset when the agent did not record it.
 	Min *float64 `json:"min,omitempty"`
 
-	// Sum Their sum; unset when the agent didn't record it.
+	// Sum The sum of the values. Unset when the agent did not record it.
 	Sum *float64 `json:"sum,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1MetricKind The OpenTelemetry data type a metric point was exported as.
+// LivekitPublicapiObservabilityV1MetricKind The OpenTelemetry data type of a metric point.
 type LivekitPublicapiObservabilityV1MetricKind string
 
-// LivekitPublicapiObservabilityV1MetricPoint One OpenTelemetry metric data point an agent in the session exported. It is
+// LivekitPublicapiObservabilityV1MetricPoint An OpenTelemetry metric data point that an agent of a session exported. It is
 //
-//	the raw metric the agent emits, so it won't exactly match the metrics panel
-//	on the dashboard, which derives its numbers from the transcript and traces.
-//	Only agents that export OpenTelemetry metrics to LiveKit Cloud produce
-//	points; an agent whose code installs its own MeterProvider exports none to
-//	LiveKit Cloud.
+//	the raw metric that the agent exports, so it does not exactly match the
+//	metrics panel on the dashboard, which calculates its values from the
+//	transcript and traces. Only an agent that exports OpenTelemetry metrics to
+//	LiveKit Cloud has points. An agent whose code installs its own
+//	`MeterProvider` exports no metrics to LiveKit Cloud.
 type LivekitPublicapiObservabilityV1MetricPoint struct {
-	// Attributes The point attributes, typed and nested as the agent recorded them, with
-	//  the resource and scope attributes merged in, such as room_id, job_id,
-	//  lk.agent_name and model_name for the model; the value on the point wins.
-	//  With two agents in one session, the resource attributes can be the other
-	//  agent's. An integer beyond ±2^53 is its decimal string, and bytes are
-	//  base64.
+	// Attributes The attributes of the point, typed and nested as the agent recorded them.
+	//  They include its resource and scope attributes, such as `room_id`,
+	//  `job_id`, `lk.agent_name`, and the `model_name` of the model. When an
+	//  attribute has two values, the value of the point is used. When a session
+	//  has two agents, the resource attributes can be those of the other agent.
+	//  An integer larger than 2^53 or smaller than -2^53 is a decimal string.
+	//  Bytes are base64.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
 	// EndTime The end of the interval, and the moment a gauge was measured.
@@ -3008,80 +2815,94 @@ type LivekitPublicapiObservabilityV1MetricPoint struct {
 	//  set.
 	Kind *LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
 
-	// Name The metric name, such as lk.agents.turn.e2e_latency or
-	//  gen_ai.client.token.usage. Several metrics that share their attributes
-	//  can come back under one name; see GetSessionMetrics.
+	// Name The name of the metric, such as `lk.agents.turn.e2e_latency` or
+	//  `gen_ai.client.token.usage`. Several metrics with the same attributes can
+	//  have one name. See `GetSessionMetrics`.
 	Name *string `json:"name,omitempty"`
 
-	// StartTime The interval the point covers. An agent exports every 30 seconds, so a sum
-	//  or histogram covers the time since its previous export; a gauge has no
-	//  startTime.
+	// StartTime The start of the interval that the point covers. An agent exports every
+	//  30 seconds, so a sum or histogram covers the time since its previous
+	//  export. Unset for a gauge.
 	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
 
-	// Unit The metric unit as the agent declared it, such as "s" or "{token}";
-	//  empty when it declared none.
+	// Unit The unit of the metric, as the agent declared it, such as `s` or
+	//  `{token}`. Empty when the agent declared no unit.
 	Unit  *string `json:"unit,omitempty"`
 	union json.RawMessage
 }
 
 // LivekitPublicapiObservabilityV1MetricPoint0 defines model for LivekitPublicapiObservabilityV1MetricPoint.0.
 type LivekitPublicapiObservabilityV1MetricPoint0 struct {
-	// Histogram The summary of a histogram or exponential histogram.
+	// Histogram The summary of a histogram or exponential histogram. Set when `kind` is
+	//  `METRIC_KIND_HISTOGRAM` or `METRIC_KIND_EXPONENTIAL_HISTOGRAM`.
 	Histogram *LivekitPublicapiObservabilityV1MetricHistogram `json:"histogram,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricPoint1 defines model for LivekitPublicapiObservabilityV1MetricPoint.1.
 type LivekitPublicapiObservabilityV1MetricPoint1 struct {
-	// Value The value of a gauge or sum.
+	// Value The value of a gauge or sum. Set when `kind` is `METRIC_KIND_GAUGE` or
+	//  `METRIC_KIND_SUM`.
 	Value *float64 `json:"value,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricsGetResponse defines model for livekit.publicapi.observability.v1.Metrics.Get.Response.
 type LivekitPublicapiObservabilityV1MetricsGetResponse struct {
-	// Items By end time, oldest first; points that end together are ordered by
-	//  start time, a point with none first, then by kind and a hash of what
-	//  they recorded, not by name. A page continues after the last point on
-	//  the previous page, so on an ACTIVE session a point exported mid-read
-	//  with a later time comes on a later page, and one with an earlier time
-	//  is missed until a new read.
+	// DataStatus The data status of the session metric points: whether more of them can
+	//  still arrive.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
+
+	// Items The metric points, ordered by end time, oldest first. Points with the
+	//  same end time are ordered by start time, with a point that has no
+	//  start time first. Then they are ordered by kind and by a hash of their
+	//  values, not by name. A page starts after the last point of the
+	//  previous page. Thus, on an `ACTIVE` session, a point exported during
+	//  your read with a later time appears on a later page. A point exported
+	//  during your read with an earlier time appears only in a new read.
 	Items    *[]LivekitPublicapiObservabilityV1MetricPoint `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo             `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1RecordingGetURLResponse defines model for livekit.publicapi.observability.v1.Recording.GetURL.Response.
 type LivekitPublicapiObservabilityV1RecordingGetURLResponse struct {
-	// ExpiresAt When the URL stops working: the request time plus the granted
-	//  expiry, after the 15-minute clamp.
+	// DataStatus The data status of the session recording: whether it can still arrive
+	//  or change. When `url` is empty, `expiresAt` is unset: read again after
+	//  `retryAfterSeconds`, or after the session ends.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
+
+	// ExpiresAt The time that the URL stops working: the time of the request plus the
+	//  granted expiry, after the 15-minute clamp.
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
-	// RecordingStartedAt When the recording started, as the agent reported it on upload. Line
-	//  the audio up with the transcript by it.
+	// RecordingStartedAt The time that the recording started, as the agent reported it when it
+	//  uploaded the recording. Use it to align the audio with the transcript.
 	RecordingStartedAt *GoogleProtobufTimestamp `json:"recordingStartedAt,omitempty"`
 
-	// Url A signed URL that downloads the recording straight from the object
-	//  store in the project data region, without credentials, until
-	//  expiresAt. Audio is Ogg; chat history is JSON served with
-	//  Content-Encoding: gzip.
+	// Url A signed URL that downloads the recording from storage in the data
+	//  region of the project. The URL needs no credentials and is valid until
+	//  `expiresAt`. Audio is Ogg. Chat history is JSON, served with
+	//  `Content-Encoding: gzip`. Empty when the recording doesn't exist and
+	//  `dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+	//  `DATA_STATE_SETTLING`.
 	Url *string `json:"url,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1RecordingFileType The recording requested from GetSessionRecordingURL. The session
+// LivekitPublicapiObservabilityV1RecordingFileType The type of recording that `GetSessionRecordingURL` returns. To get the
 //
-//	conversation as typed items comes from GetSessionTranscript, not from a
-//	recording.
+//	conversation of a session as typed items, use `GetSessionTranscript`.
 type LivekitPublicapiObservabilityV1RecordingFileType string
 
-// LivekitPublicapiObservabilityV1Role Who a transcript message is from.
+// LivekitPublicapiObservabilityV1Role The sender of a transcript message.
 type LivekitPublicapiObservabilityV1Role string
 
-// LivekitPublicapiObservabilityV1Span One unit of work in the session trace, such as an agent turn or an LLM
+// LivekitPublicapiObservabilityV1Span A unit of work in the trace of a session, such as an agent turn or an LLM
 //
 //	request.
 type LivekitPublicapiObservabilityV1Span struct {
-	// Attributes The span attributes, typed and nested as the agent recorded them, with
-	//  the resource and scope attributes merged in, such as lk.agent_name; the
-	//  value on the span wins. An integer beyond ±2^53 is its decimal string,
-	//  and bytes are base64.
+	// Attributes The attributes of the span, typed and nested as the agent recorded them.
+	//  They include its resource and scope attributes, such as
+	//  `lk.agent_name`. When an attribute has two values, the value of the span
+	//  is used. An integer larger than 2^53 or smaller than -2^53 is a decimal
+	//  string. Bytes are base64.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
 	// EndTime When the span ended.
@@ -3097,11 +2918,12 @@ type LivekitPublicapiObservabilityV1Span struct {
 	// Name The span name, as the agent recorded it.
 	Name *string `json:"name,omitempty"`
 
-	// ParentSpanId Empty for a root span. A span whose parent isn't among the session
-	//  spans is a root too, as the dashboard shows it.
+	// ParentSpanId The ID of the parent span, as lowercase hex. Empty for a root span. The
+	//  dashboard also shows a span as a root when its parent is not one of the
+	//  spans of the session.
 	ParentSpanId *string `json:"parentSpanId,omitempty"`
 
-	// SpanId The span ID, as lowercase hex.
+	// SpanId The ID of the span, as lowercase hex.
 	SpanId *string `json:"spanId,omitempty"`
 
 	// StartTime When the span started.
@@ -3113,13 +2935,13 @@ type LivekitPublicapiObservabilityV1Span struct {
 	// StatusMessage Why the span failed; set when `status` is error.
 	StatusMessage *string `json:"statusMessage,omitempty"`
 
-	// TraceId The trace ID, as lowercase hex.
+	// TraceId The trace ID of the span, as lowercase hex.
 	TraceId *string `json:"traceId,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1SpanEvent A timestamped event recorded within a Span, such as an exception.
+// LivekitPublicapiObservabilityV1SpanEvent An event with a timestamp that a span recorded, such as an exception.
 type LivekitPublicapiObservabilityV1SpanEvent struct {
-	// Attributes The attributes on the event, typed and nested as the agent recorded
+	// Attributes The attributes of the event, typed and nested as the agent recorded
 	//  them.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
@@ -3130,49 +2952,60 @@ type LivekitPublicapiObservabilityV1SpanEvent struct {
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1SpanKind The OpenTelemetry kind of the span.
+// LivekitPublicapiObservabilityV1SpanKind The OpenTelemetry kind of a span.
 type LivekitPublicapiObservabilityV1SpanKind string
 
-// LivekitPublicapiObservabilityV1SpanStatus The OpenTelemetry status code of the span.
+// LivekitPublicapiObservabilityV1SpanStatus The OpenTelemetry status code of a span.
 type LivekitPublicapiObservabilityV1SpanStatus string
 
 // LivekitPublicapiObservabilityV1TracesGetResponse defines model for livekit.publicapi.observability.v1.Traces.Get.Response.
 type LivekitPublicapiObservabilityV1TracesGetResponse struct {
-	// Items By start time, oldest first. Spans that start together are ordered by
-	//  span id as it is stored: the 8 bytes of the id read as a little-endian
-	//  unsigned integer, which isn't the order of its hex string. The pages
-	//  read the spans the first page found, so a span exported later waits for
-	//  a new read. On an ACTIVE session, a span exported mid-read can still
-	//  shift the later pages, which are read by offset, so a span can repeat
-	//  or be skipped: dedupe by spanId, and read again from the first page to
-	//  pick up a skipped span.
+	// DataStatus The data status of the session spans: whether more of them can still
+	//  arrive.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
+
+	// Items The spans, ordered by start time, oldest first. Spans with the same
+	//  start time are ordered by span ID, read as a little-endian unsigned
+	//  64-bit integer. This is not the order of the hex strings. The later
+	//  pages read only the spans that the first page found, so a span
+	//  exported after the first page appears only in a new read. On an
+	//  `ACTIVE` session, a span exported during your read can move the later
+	//  pages, which the API reads by offset. Thus, a span can repeat, or a
+	//  page can skip a span. Remove duplicates by `spanId`. To get a skipped
+	//  span, read again from the first page.
 	Items    *[]LivekitPublicapiObservabilityV1Span `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo      `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptGetResponse defines model for livekit.publicapi.observability.v1.Transcript.Get.Response.
 type LivekitPublicapiObservabilityV1TranscriptGetResponse struct {
-	// Items Oldest first, in the order the agent recorded them.
+	// DataStatus The data status of the session transcript: whether more of it can still
+	//  arrive.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
+
+	// Items The transcript items, oldest first, in the order that the agent
+	//  recorded them.
 	Items    *[]LivekitPublicapiObservabilityV1TranscriptItem `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo                `json:"pageInfo,omitempty"`
 
-	// SkippedRecords How many of the records on this page couldn't be read as transcript
-	//  items and were left out, such as an item kind newer than this
-	//  server. Zero when the page is complete.
+	// SkippedRecords The number of records in this page that the API cannot read as
+	//  transcript items, and does not return. For example, a record of an
+	//  item type that the API does not know. Zero when the page is complete.
 	SkippedRecords *int `json:"skippedRecords,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItem One ordered entry in a session conversation. Exactly one of the `item`
+// LivekitPublicapiObservabilityV1TranscriptItem An entry in the conversation of a session. Exactly one of `message`,
 //
-//	variants is set.
+//	`toolCall`, `toolResult`, `agentHandoff`, and `configUpdate` is set.
 type LivekitPublicapiObservabilityV1TranscriptItem struct {
-	// Id The item ID, as the agent assigned it (item_...).
+	// Id The ID of the item, as the agent assigned it (`item_...`).
 	Id *string `json:"id,omitempty"`
 
-	// Timestamp When the item happened. For a message, when its speaker started speaking,
-	//  else when the agent created it; for any other item, when the agent
-	//  recorded it. Items are ordered by when the agent recorded them, so a
-	//  message timestamp can be earlier than the item before it.
+	// Timestamp The time of the item. For a message, the time that its speaker started to
+	//  speak, or else the time that the agent created it. For other items, the
+	//  time that the agent recorded it. Items are ordered by the time that the
+	//  agent recorded them, so the timestamp of a message can be earlier than
+	//  the timestamp of the item before it.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 	union     json.RawMessage
 }
@@ -3209,7 +3042,8 @@ type LivekitPublicapiObservabilityV1TranscriptItem4 struct {
 
 // LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff The session passing from one agent to another.
 type LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff struct {
-	// FromAgentId Unset for the first agent in the session.
+	// FromAgentId The ID of the agent that hands off the session. Unset for the first
+	//  agent of the session.
 	FromAgentId *string `json:"fromAgentId,omitempty"`
 
 	// ToAgentId The agent taking over.
@@ -3218,7 +3052,8 @@ type LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff struct {
 
 // LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate A change to the agent's instructions or tools during the session.
 type LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate struct {
-	// Instructions The agent's new instructions; empty when they didn't change.
+	// Instructions The new agent instructions. Empty when the instructions did not
+	//  change.
 	Instructions *string `json:"instructions,omitempty"`
 
 	// ToolsAdded The tools the agent gained.
@@ -3228,68 +3063,70 @@ type LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate struct {
 	ToolsRemoved *[]string `json:"toolsRemoved,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItemMessage Something said, or added to the conversation as text.
+// LivekitPublicapiObservabilityV1TranscriptItemMessage A message that a participant spoke, or text added to the conversation.
 type LivekitPublicapiObservabilityV1TranscriptItemMessage struct {
-	// E2eLatencyMs The end-to-end latency in milliseconds, from when the user finished
-	//  speaking to when the agent began responding (`e2e_latency`). Set only on
-	//  an agent message, when the agent recorded it.
+	// E2eLatencyMs The end-to-end latency in milliseconds, from the time that the user
+	//  stopped speaking to the time that the agent started to respond (the
+	//  agent's `e2e_latency`). Set on an agent message. Unset when the agent
+	//  did not record it.
 	E2eLatencyMs *float64 `json:"e2eLatencyMs,omitempty"`
 
-	// EndOfTurnDelayMs The time in milliseconds from the end of the user speech to when the
-	//  agent decided that the turn ended (`end_of_turn_delay`). Set only on a
-	//  user message, when the agent recorded it.
+	// EndOfTurnDelayMs The time in milliseconds from the end of the user's speech to the time
+	//  that the agent decided that the turn ended (`end_of_turn_delay`). Set
+	//  on a user message. Unset when the agent did not record it.
 	EndOfTurnDelayMs *float64 `json:"endOfTurnDelayMs,omitempty"`
 
-	// Interrupted Set on an agent message the user talked over before it finished.
+	// Interrupted When true, the user interrupted this agent message before it ended.
 	Interrupted *bool `json:"interrupted,omitempty"`
 
-	// LlmTtftMs The LLM time to first token in milliseconds (`llm_node_ttft`). Set only
-	//  on an agent message, when the agent recorded it.
+	// LlmTtftMs The LLM time to first token in milliseconds (`llm_node_ttft`). Set on
+	//  an agent message. Unset when the agent did not record it.
 	LlmTtftMs *float64 `json:"llmTtftMs,omitempty"`
 
 	// OnUserTurnCompletedDelayMs The time in milliseconds that the agent spent in its
 	//  `on_user_turn_completed` callback (`on_user_turn_completed_delay`). Set
-	//  only on a user message, when the agent recorded it.
+	//  on a user message. Unset when the agent did not record it.
 	OnUserTurnCompletedDelayMs *float64 `json:"onUserTurnCompletedDelayMs,omitempty"`
 
-	// Redacted Set when PII redaction for the project rewrote the text.
+	// Redacted When true, PII redaction for the project changed the text.
 	Redacted *bool `json:"redacted,omitempty"`
 
 	// Role Who the message came from.
 	Role *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
 
-	// StartedSpeakingAt When the speaker started speaking; unset for a message that wasn't
-	//  spoken.
+	// StartedSpeakingAt The time that the speaker started to speak. Unset for a message that
+	//  was not spoken.
 	StartedSpeakingAt *GoogleProtobufTimestamp `json:"startedSpeakingAt,omitempty"`
 
-	// StoppedSpeakingAt When the speaker stopped speaking; unset for a message that wasn't
-	//  spoken.
+	// StoppedSpeakingAt The time that the speaker stopped speaking. Unset for a message that
+	//  was not spoken.
 	StoppedSpeakingAt *GoogleProtobufTimestamp `json:"stoppedSpeakingAt,omitempty"`
 
-	// Text The message text. Text the agent recorded in several parts is joined
-	//  with newlines. When `redacted` is true, PII in it is replaced with
-	//  `<redaction type="..."/>` markers.
+	// Text The text of the message. When the agent recorded the text in several
+	//  parts, newlines join the parts. When `redacted` is true,
+	//  `<redaction type="..."/>` markers replace the PII in the text.
 	Text *string `json:"text,omitempty"`
 
 	// TranscriptConfidence The speech-to-text confidence of a spoken user message, from 0 to 1.
 	TranscriptConfidence *float64 `json:"transcriptConfidence,omitempty"`
 
-	// TranscriptionDelayMs The time in milliseconds from the end of the user speech to its final
-	//  transcript (`transcription_delay`). Set only on a user message, when the
-	//  agent recorded it.
+	// TranscriptionDelayMs The time in milliseconds from the end of the user's speech to its final
+	//  transcript (`transcription_delay`). Set on a user message. Unset when
+	//  the agent did not record it.
 	TranscriptionDelayMs *float64 `json:"transcriptionDelayMs,omitempty"`
 
 	// TtsTtfbMs The TTS time to first byte of audio in milliseconds (`tts_node_ttfb`).
-	//  Set only on an agent message, when the agent recorded it.
+	//  Set on an agent message. Unset when the agent did not record it.
 	TtsTtfbMs *float64 `json:"ttsTtfbMs,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemToolCall The agent calling a tool.
 type LivekitPublicapiObservabilityV1TranscriptItemToolCall struct {
-	// Arguments The call arguments as a JSON string.
+	// Arguments The arguments of the call, as a JSON string.
 	Arguments *string `json:"arguments,omitempty"`
 
-	// CallId Pairs the call with its ToolResult.
+	// CallId The ID of the call. The `ToolResult` of the call has the same
+	//  `callId`.
 	CallId *string `json:"callId,omitempty"`
 
 	// Name The tool the agent called.
@@ -3298,10 +3135,10 @@ type LivekitPublicapiObservabilityV1TranscriptItemToolCall struct {
 
 // LivekitPublicapiObservabilityV1TranscriptItemToolResult The output a tool returned for a ToolCall.
 type LivekitPublicapiObservabilityV1TranscriptItemToolResult struct {
-	// CallId The callId of the ToolCall it answers.
+	// CallId The `callId` of the `ToolCall` that this result answers.
 	CallId *string `json:"callId,omitempty"`
 
-	// IsError Set when the tool failed; output then describes the error.
+	// IsError When true, the tool failed, and `output` describes the error.
 	IsError *bool `json:"isError,omitempty"`
 
 	// Name The tool that returned the output.
@@ -3311,9 +3148,9 @@ type LivekitPublicapiObservabilityV1TranscriptItemToolResult struct {
 	Output *string `json:"output,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1AccessKey Project API-key metadata. The secret is never included on list RPCs; it is
+// LivekitPublicapiProjectsV1AccessKey The metadata of a project API key. A list never includes the secret. Only
 //
-//	returned only from GenerateKey.
+//	`GenerateKey` returns it.
 type LivekitPublicapiProjectsV1AccessKey struct {
 	// AgentId The cloud agent that the key belongs to. Set only for agent keys.
 	AgentId *string `json:"agentId,omitempty"`
@@ -3346,13 +3183,13 @@ type LivekitPublicapiProjectsV1AddWorkspaceMembersToProjectResponse struct {
 
 // LivekitPublicapiProjectsV1AnswerInvitationResponse defines model for livekit.publicapi.projects.v1.AnswerInvitationResponse.
 type LivekitPublicapiProjectsV1AnswerInvitationResponse struct {
-	// Member The new membership. Set only when `accept` is true.
+	// Member The new membership. Set only when `accept` is `true`.
 	Member *LivekitPublicapiProjectsV1ProjectMember `json:"member,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1CreateProjectMember Grants a user access to a project at creation time.
+// LivekitPublicapiProjectsV1CreateProjectMember A user and the role that the user gets on a project.
 type LivekitPublicapiProjectsV1CreateProjectMember struct {
-	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
+	// Role The role of the user: `0` invited, `1` read, `2` write, `3` admin.
 	Role *int32 `json:"role,omitempty"`
 
 	// UserId The user to add. They must already be a member of the workspace.
@@ -3438,18 +3275,19 @@ type LivekitPublicapiProjectsV1CreateProjectRequest struct {
 	// Name The project name.
 	Name *string `json:"name,omitempty"`
 
-	// PiiRedactionCategories The categories to redact. When empty and `enablePiiRedaction` is true, the
-	//  default categories apply.
+	// PiiRedactionCategories The categories to redact. When empty and `enablePiiRedaction` is `true`,
+	//  the API applies the default categories.
 	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
 
-	// PinnedRegions SFU region pins. Empty leaves the project unpinned.
+	// PinnedRegions The SFU regions to pin the project to. When empty, the project has no
+	//  pinned regions.
 	PinnedRegions *[]string `json:"pinnedRegions,omitempty"`
 
 	// RequireExplicitDispatch True rejects an agent server that registers without an explicit agent
 	//  name.
 	RequireExplicitDispatch *bool `json:"requireExplicitDispatch,omitempty"`
 
-	// RoomConfigs Room configurations stored on the project preferences.
+	// RoomConfigs The room configurations of the project.
 	RoomConfigs *[]LivekitRoomConfiguration `json:"roomConfigs,omitempty"`
 
 	// SfuAllowPause True lets the SFU pause video tracks when subscribers are congested.
@@ -3480,8 +3318,9 @@ type LivekitPublicapiProjectsV1CreateProjectResponse struct {
 type LivekitPublicapiProjectsV1CreateTokenResponse struct {
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
-	// Token Signed JWT, sent as `Authorization: Bearer` to the server APIs for the
-	//  project or used to join a room, depending on the grants.
+	// Token The signed JWT. Depending on the grants, send it as
+	//  `Authorization: Bearer` to the server APIs of the project, or use it to
+	//  join a room.
 	Token *string `json:"token,omitempty"`
 }
 
@@ -3555,7 +3394,8 @@ type LivekitPublicapiProjectsV1ListProjectsResponse struct {
 
 // LivekitPublicapiProjectsV1ListWebhookEventsResponse defines model for livekit.publicapi.projects.v1.ListWebhookEventsResponse.
 type LivekitPublicapiProjectsV1ListWebhookEventsResponse struct {
-	// Items Event names the project can receive, for filterParams and SendTestWebhook.
+	// Items The names of the events that the project can receive. Use them in
+	//  `filterParams` and `SendTestWebhook`.
 	Items *[]string `json:"items,omitempty"`
 
 	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
@@ -3570,9 +3410,9 @@ type LivekitPublicapiProjectsV1ListWebhooksResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1PinnedRegions Wraps the region pin set so an explicit empty list can clear the pins, which
+// LivekitPublicapiProjectsV1PinnedRegions A set of SFU regions to pin a project to. A set message with an empty
 //
-//	a bare repeated field cannot express.
+//	`regions` list removes all pins.
 type LivekitPublicapiProjectsV1PinnedRegions struct {
 	// Regions The regions to pin the project traffic to. An empty list clears the pins.
 	Regions *[]string `json:"regions,omitempty"`
@@ -3637,9 +3477,10 @@ type LivekitPublicapiProjectsV1Project struct {
 	// Name The project name.
 	Name *string `json:"name,omitempty"`
 
-	// PiiRedactionCategories Categories to redact when enablePiiRedaction is on. Empty on read means the
-	//  stored set, or the defaults applied when redaction was enabled. It never
-	//  means "redact nothing".
+	// PiiRedactionCategories The categories to redact when `enablePiiRedaction` is `true`. When empty,
+	//  the project uses its saved categories, or the default categories that
+	//  apply when you turn on redaction. An empty list never means that nothing
+	//  is redacted.
 	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
 
 	// PinnedRegions The regions the project pins its traffic to. Empty leaves it unpinned.
@@ -3655,8 +3496,8 @@ type LivekitPublicapiProjectsV1Project struct {
 	// Subdomain The project subdomain, which forms `url`.
 	Subdomain *string `json:"subdomain,omitempty"`
 
-	// Url The LiveKit server URL for the project (wss://), derived from its
-	//  subdomain.
+	// Url The LiveKit server URL of the project (`wss://...`). The API derives it
+	//  from `subdomain`.
 	Url                  *string `json:"url,omitempty"`
 	UserDataLifetimeDays *int32  `json:"userDataLifetimeDays,omitempty"`
 
@@ -3683,6 +3524,9 @@ type LivekitPublicapiProjectsV1ProjectInvite struct {
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
 	// InviteToken The token that identifies the invite. The invitee answers with it.
+	//  Only `GetInvite` returns it, to the invitee who asks with it. `ListInvites`
+	//  and `UpdateInvite` leave it empty. `InviteMember` returns the token of the
+	//  invite that it creates.
 	InviteToken *string `json:"inviteToken,omitempty"`
 
 	// ProjectId The project the invite is to (`p_...`).
@@ -3701,14 +3545,14 @@ type LivekitPublicapiProjectsV1ProjectMember struct {
 	// ProjectId The project the membership is on (`p_...`).
 	ProjectId *string `json:"projectId,omitempty"`
 
-	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
+	// Role The role of the user: `0` invited, `1` read, `2` write, `3` admin.
 	Role *int32 `json:"role,omitempty"`
 
 	// UserId The user who holds the membership.
 	UserId *string `json:"userId,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1ProjectPreferences Per-project UI and feature settings.
+// LivekitPublicapiProjectsV1ProjectPreferences The UI and feature settings of a project.
 type LivekitPublicapiProjectsV1ProjectPreferences struct {
 	// DisableTokenEndpoint True turns off the sandbox token endpoint for the project.
 	DisableTokenEndpoint *bool `json:"disableTokenEndpoint,omitempty"`
@@ -3743,27 +3587,27 @@ type LivekitPublicapiProjectsV1ProjectPreferences struct {
 
 // LivekitPublicapiProjectsV1RemoveMemberResponse defines model for livekit.publicapi.projects.v1.RemoveMemberResponse.
 type LivekitPublicapiProjectsV1RemoveMemberResponse struct {
-	// NumKeys Non-agent API keys the removal deleted.
+	// NumKeys The number of API keys that the removal deleted, not counting agent keys.
 	NumKeys *int `json:"numKeys,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1SendTestWebhookResponse Reports the answer from the receiver to one delivery attempt. The test is
+// LivekitPublicapiProjectsV1SendTestWebhookResponse The answer of the receiver to one test delivery. The API does not retry the
 //
-//	not retried and redirects are not followed; a failed delivery is reported
-//	here, not as an RPC error.
+//	test and does not follow redirects. A failed delivery shows in this
+//	response, not as an RPC error.
 type LivekitPublicapiProjectsV1SendTestWebhookResponse struct {
-	// Error Why no response arrived, such as a timeout or refused connection. Empty
-	//  when statusCode is set.
+	// Error The reason that no response arrived, such as a timeout or a refused
+	//  connection. Empty when `statusCode` is set.
 	Error *string `json:"error,omitempty"`
 
-	// StatusCode HTTP status the receiver answered with; 0 when no response arrived.
+	// StatusCode The HTTP status of the response from the receiver. `0` when no response
+	//  arrived.
 	StatusCode *int32 `json:"statusCode,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrants The claims of a LiveKit access token. Field names match the JSON claims
+// LivekitPublicapiProjectsV1TokenGrants The claims of a LiveKit access token. The field names match the JSON claims
 //
-//	in the token, so the claims JSON from a token is a valid TokenGrants in
-//	JSON form.
+//	of the token, so the claims JSON of a token is a valid `TokenGrants`.
 type LivekitPublicapiProjectsV1TokenGrants struct {
 	// Agent Agent server API permissions.
 	Agent *LivekitPublicapiProjectsV1TokenGrantsAgent `json:"agent,omitempty"`
@@ -3777,30 +3621,32 @@ type LivekitPublicapiProjectsV1TokenGrants struct {
 	// Attributes Attributes carried on the participant.
 	Attributes *map[string]string `json:"attributes,omitempty"`
 
-	// Identity Participant identity (the token subject).
+	// Identity The identity of the participant: the subject of the token.
 	Identity *string `json:"identity,omitempty"`
 
 	// Inference Inference permissions.
 	Inference *LivekitPublicapiProjectsV1TokenGrantsInference `json:"inference,omitempty"`
 
-	// Kind Participant kind: "standard", "ingress", "egress", "sip", or "agent".
+	// Kind The kind of participant: `standard`, `ingress`, `egress`, `sip`, or
+	//  `agent`.
 	Kind        *string   `json:"kind,omitempty"`
 	KindDetails *[]string `json:"kindDetails,omitempty"`
 
 	// Metadata Metadata carried on the participant.
 	Metadata *string `json:"metadata,omitempty"`
 
-	// Name Participant display name.
+	// Name The display name of the participant.
 	Name *string `json:"name,omitempty"`
 
 	// Observability Observability permissions.
 	Observability *LivekitPublicapiProjectsV1TokenGrantsObservability `json:"observability,omitempty"`
 
-	// RoomConfig Configuration for a room this participant creates on join, including
-	//  agent dispatches.
+	// RoomConfig The configuration of a room that this participant creates when it joins,
+	//  with its agent dispatches.
 	RoomConfig *LivekitRoomConfiguration `json:"roomConfig,omitempty"`
 
-	// RoomPreset Cloud room configuration preset; fields in roomConfig override it.
+	// RoomPreset The name of a LiveKit Cloud room configuration preset. The fields in
+	//  `roomConfig` override it.
 	RoomPreset *string `json:"roomPreset,omitempty"`
 
 	// Sip SIP server API permissions.
@@ -3810,7 +3656,7 @@ type LivekitPublicapiProjectsV1TokenGrants struct {
 	Video *LivekitPublicapiProjectsV1TokenGrantsVideo `json:"video,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsAgent Agent server API permissions.
+// LivekitPublicapiProjectsV1TokenGrantsAgent The permissions for the agent server API.
 type LivekitPublicapiProjectsV1TokenGrantsAgent struct {
 	// Admin Create, update, and delete cloud agents.
 	Admin *bool `json:"admin,omitempty"`
@@ -3825,23 +3671,26 @@ type LivekitPublicapiProjectsV1TokenGrantsAgent struct {
 	SimulationAdmin *bool `json:"simulationAdmin,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint Calling an agent's non-public HTTP endpoints.
+// LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint The permission to call the non-public HTTP endpoints of an agent.
 type LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint struct {
-	// AgentName One agent; empty for every agent of the project.
+	// AgentName The name of one agent. When empty, the grant applies to every agent of
+	//  the project.
 	AgentName *string `json:"agentName,omitempty"`
 
 	// Call Call the endpoints.
 	Call *bool `json:"call,omitempty"`
 
-	// Deployment One deployment; empty for every deployment.
+	// Deployment One deployment of the agent. When empty, the grant applies to every
+	//  deployment.
 	Deployment *string `json:"deployment,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsAgentThread A thread token: list and create in scope; read, write and delete the
+// LivekitPublicapiProjectsV1TokenGrantsAgentThread The permissions of a thread token. The token can list and create threads
 //
-//	threads in `threadIds`, such as for a frontend that shows one
-//	conversation. `all` extends it to every thread of the project; the action
-//	flags still apply.
+//	in `scope`. It can read, write, and delete the threads in `threadIds`, for
+//	example for a frontend that shows one conversation. When `all` is `true`,
+//	the token can act on every thread of the project. The action flags still
+//	apply.
 type LivekitPublicapiProjectsV1TokenGrantsAgentThread struct {
 	// All Extend the read, write, and delete permissions to every thread of the
 	//  project.
@@ -3881,7 +3730,7 @@ type LivekitPublicapiProjectsV1TokenGrantsObservability struct {
 	Write *bool `json:"write,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsSip SIP server API permissions.
+// LivekitPublicapiProjectsV1TokenGrantsSip The permissions for the SIP server API.
 type LivekitPublicapiProjectsV1TokenGrantsSip struct {
 	// Admin Every SIP feature.
 	Admin *bool `json:"admin,omitempty"`
@@ -3890,7 +3739,7 @@ type LivekitPublicapiProjectsV1TokenGrantsSip struct {
 	Call *bool `json:"call,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsVideo Room and participant permissions.
+// LivekitPublicapiProjectsV1TokenGrantsVideo The room and participant permissions.
 type LivekitPublicapiProjectsV1TokenGrantsVideo struct {
 	// Agent Register as an Agents framework worker.
 	Agent *bool `json:"agent,omitempty"`
@@ -3898,13 +3747,14 @@ type LivekitPublicapiProjectsV1TokenGrantsVideo struct {
 	// CanManageAgentSession Manage an agent session through RemoteSession.
 	CanManageAgentSession *bool `json:"canManageAgentSession,omitempty"`
 
-	// CanPublish Publish tracks. Unset means allowed.
+	// CanPublish When true, the participant can publish tracks. Unset means `true`.
 	CanPublish *bool `json:"canPublish,omitempty"`
 
 	// CanPublishData Publish data to the room. Unset means allowed.
 	CanPublishData *bool `json:"canPublishData,omitempty"`
 
-	// CanPublishSources Restrict publishing to these sources ("camera", "microphone", …).
+	// CanPublishSources The sources that the participant can publish, such as `camera` and
+	//  `microphone`.
 	CanPublishSources *[]string `json:"canPublishSources,omitempty"`
 
 	// CanSubscribe Subscribe to tracks. Unset means allowed.
@@ -3916,13 +3766,13 @@ type LivekitPublicapiProjectsV1TokenGrantsVideo struct {
 	// CanUpdateOwnMetadata Update the participant's own metadata. Unset means allowed.
 	CanUpdateOwnMetadata *bool `json:"canUpdateOwnMetadata,omitempty"`
 
-	// DestinationRoom Room to move or forward participants to.
+	// DestinationRoom The room to move or forward participants to.
 	DestinationRoom *string `json:"destinationRoom,omitempty"`
 
 	// Hidden Hide the participant from the others in the room.
 	Hidden *bool `json:"hidden,omitempty"`
 
-	// IngressAdmin Server API: manage ingress.
+	// IngressAdmin When true, the token can manage ingress with the server API.
 	IngressAdmin *bool `json:"ingressAdmin,omitempty"`
 
 	// Recorder Tell the room the participant is a recorder.
@@ -3932,19 +3782,20 @@ type LivekitPublicapiProjectsV1TokenGrantsVideo struct {
 	//  is set.
 	Room *string `json:"room,omitempty"`
 
-	// RoomAdmin Server API: manage `room` (or any room when unset).
+	// RoomAdmin When true, the token can manage `room` with the server API. When `room`
+	//  is empty, the token can manage every room.
 	RoomAdmin *bool `json:"roomAdmin,omitempty"`
 
-	// RoomCreate Server API: create rooms.
+	// RoomCreate When true, the token can create rooms with the server API.
 	RoomCreate *bool `json:"roomCreate,omitempty"`
 
-	// RoomJoin Join `room`.
+	// RoomJoin When true, the participant can join `room`.
 	RoomJoin *bool `json:"roomJoin,omitempty"`
 
-	// RoomList Server API: list rooms.
+	// RoomList When true, the token can list rooms with the server API.
 	RoomList *bool `json:"roomList,omitempty"`
 
-	// RoomRecord Server API: start and manage egress.
+	// RoomRecord When true, the token can start and manage egress with the server API.
 	RoomRecord *bool `json:"roomRecord,omitempty"`
 }
 
@@ -3968,7 +3819,7 @@ type LivekitPublicapiProjectsV1UpdateWebhookResponse struct {
 	Webhook *LivekitPublicapiProjectsV1Webhook `json:"webhook,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1Webhook A project webhook destination.
+// LivekitPublicapiProjectsV1Webhook A webhook destination of a project.
 type LivekitPublicapiProjectsV1Webhook struct {
 	// FilterParams The events to send, named by `includeEvents` or `excludeEvents`. Read the
 	//  names from List webhook events.
@@ -4001,30 +3852,32 @@ type LivekitPublicapiSimulationsV1SimulationRunsConfirmSourceUploadResponse = ma
 
 // LivekitPublicapiSimulationsV1SimulationRunsCountsResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.Counts.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsCountsResponse struct {
-	// Buckets Buckets holding at least one run, ascending by bucketStart. Empty
-	//  buckets are omitted; each run lands in exactly one bucket, so the
-	//  counts sum to the number of runs in the window.
+	// Buckets The buckets that hold at least one run, in ascending order of
+	//  `bucketStart`. The response does not include empty buckets. Each run is
+	//  in exactly one bucket, so the sum of the counts is the number of runs
+	//  in the window.
 	Buckets *[]LivekitSimulationRunCountsBucket `json:"buckets,omitempty"`
 
-	// Interval The bucket width the service chose for the window (at most 60 buckets,
-	//  never narrower than one minute), so a client zero-fills the omitted
-	//  buckets on the grid the counts were built on.
+	// Interval The width of each bucket. The API chooses the width from the window:
+	//  the window has at most 60 buckets, and a bucket is at least one minute
+	//  wide. Use the width to add the empty buckets, with a count of 0.
 	Interval *GoogleProtobufDuration `json:"interval,omitempty"`
 }
 
 // LivekitPublicapiSimulationsV1SimulationRunsCreateResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.Create.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsCreateResponse struct {
-	// PresignedPostRequest Presigned POST for uploading the agent source archive that scenarios
-	//  are generated from; upload, then call ConfirmSimulationSourceUpload.
-	//  Unset when the run was created with a scenarioGroup.
+	// PresignedPostRequest The presigned POST to upload the agent source archive that the API
+	//  generates scenarios from. After the upload, call
+	//  `ConfirmSimulationSourceUpload`. Unset when the run has a
+	//  `scenarioGroup`.
 	PresignedPostRequest *LivekitPresignedPostRequest `json:"presignedPostRequest,omitempty"`
 	SimulationRunId      *string                      `json:"simulationRunId,omitempty"`
 }
 
 // LivekitPublicapiSimulationsV1SimulationRunsGetResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.Get.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsGetResponse struct {
-	// Run The run. summaryZstd is always empty here; see
-	//  GetSimulationRunSummary.
+	// Run The run. `summaryZstd` is always empty. To get the summary, call
+	//  `GetSimulationRunSummary`.
 	Run *LivekitSimulationRun `json:"run,omitempty"`
 }
 
@@ -4038,42 +3891,6 @@ type LivekitPublicapiSimulationsV1SimulationRunsGetSummaryResponse struct {
 type LivekitPublicapiSimulationsV1SimulationRunsListResponse struct {
 	Items    *[]LivekitSimulationRun           `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-}
-
-// LivekitPublicapiThreadsV1ThreadsCreateResponse defines model for livekit.publicapi.threads.v1.Threads.Create.Response.
-type LivekitPublicapiThreadsV1ThreadsCreateResponse struct {
-	Thread *LivekitAgentAgentThreadThread `json:"thread,omitempty"`
-}
-
-// LivekitPublicapiThreadsV1ThreadsDeleteResponse defines model for livekit.publicapi.threads.v1.Threads.Delete.Response.
-type LivekitPublicapiThreadsV1ThreadsDeleteResponse = map[string]interface{}
-
-// LivekitPublicapiThreadsV1ThreadsGetResponse defines model for livekit.publicapi.threads.v1.Threads.Get.Response.
-type LivekitPublicapiThreadsV1ThreadsGetResponse struct {
-	Thread *LivekitAgentAgentThreadThread `json:"thread,omitempty"`
-}
-
-// LivekitPublicapiThreadsV1ThreadsItemsResponse defines model for livekit.publicapi.threads.v1.Threads.Items.Response.
-type LivekitPublicapiThreadsV1ThreadsItemsResponse struct {
-	Items    *[]LivekitAgentAgentThreadItem    `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-}
-
-// LivekitPublicapiThreadsV1ThreadsListResponse defines model for livekit.publicapi.threads.v1.Threads.List.Response.
-type LivekitPublicapiThreadsV1ThreadsListResponse struct {
-	Items    *[]LivekitAgentAgentThreadThread  `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-}
-
-// LivekitPublicapiThreadsV1ThreadsTasksResponse defines model for livekit.publicapi.threads.v1.Threads.Tasks.Response.
-type LivekitPublicapiThreadsV1ThreadsTasksResponse struct {
-	Items    *[]LivekitAgentAgentTaskTask      `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-}
-
-// LivekitPublicapiThreadsV1ThreadsUpdateResponse defines model for livekit.publicapi.threads.v1.Threads.Update.Response.
-type LivekitPublicapiThreadsV1ThreadsUpdateResponse struct {
-	Thread *LivekitAgentAgentThreadThread `json:"thread,omitempty"`
 }
 
 // LivekitPublicapiUsersV1GetCurrentUserResponse defines model for livekit.publicapi.users.v1.GetCurrentUserResponse.
@@ -4106,7 +3923,7 @@ type LivekitPublicapiUsersV1User struct {
 
 // LivekitPublicapiWorkspacesV1AnswerInviteResponse defines model for livekit.publicapi.workspaces.v1.AnswerInviteResponse.
 type LivekitPublicapiWorkspacesV1AnswerInviteResponse struct {
-	// Member The new membership. Set only when `accept` is true.
+	// Member The new membership. Set only when `accept` is `true`.
 	Member *LivekitPublicapiWorkspacesV1WorkspaceMember `json:"member,omitempty"`
 }
 
@@ -4126,7 +3943,7 @@ type LivekitPublicapiWorkspacesV1CreateWorkspaceRequest struct {
 	// Name The workspace name.
 	Name *string `json:"name,omitempty"`
 
-	// OrganizationId Optional organization association.
+	// OrganizationId The ID of an organization to associate the workspace with. Optional.
 	OrganizationId *string `json:"organizationId,omitempty"`
 }
 
@@ -4140,7 +3957,7 @@ type LivekitPublicapiWorkspacesV1DeleteInviteResponse = map[string]interface{}
 
 // LivekitPublicapiWorkspacesV1DeleteMemberResponse defines model for livekit.publicapi.workspaces.v1.DeleteMemberResponse.
 type LivekitPublicapiWorkspacesV1DeleteMemberResponse struct {
-	// NumKeys Non-agent API keys the removal deleted.
+	// NumKeys The number of API keys that the removal deleted, not counting agent keys.
 	NumKeys *int `json:"numKeys,omitempty"`
 }
 
@@ -4222,6 +4039,9 @@ type LivekitPublicapiWorkspacesV1WorkspaceInvite struct {
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
 	// InviteToken The token that identifies the invite. The invitee answers with it.
+	//  Only `GetInvite` returns it, to the invitee who asks with it. `ListInvites`
+	//  leaves it empty. `CreateInvite` returns the token of the invite that it
+	//  creates.
 	InviteToken *string `json:"inviteToken,omitempty"`
 
 	// Role Access level the invitee takes on the workspace: 0 invited, 1 read,
@@ -4237,7 +4057,7 @@ type LivekitPublicapiWorkspacesV1WorkspaceMember struct {
 	// Email The email address on the user account.
 	Email *string `json:"email,omitempty"`
 
-	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
+	// Role The role of the member: `0` invited, `1` read, `2` write, `3` admin.
 	Role *int32 `json:"role,omitempty"`
 
 	// UserId The user who holds the membership.
@@ -4247,7 +4067,7 @@ type LivekitPublicapiWorkspacesV1WorkspaceMember struct {
 	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
-// LivekitPublicapiWorkspacesV1WorkspacePreferences Per-workspace settings.
+// LivekitPublicapiWorkspacesV1WorkspacePreferences The settings of a workspace.
 type LivekitPublicapiWorkspacesV1WorkspacePreferences struct {
 	HipaaCompliant *bool `json:"hipaaCompliant,omitempty"`
 }
@@ -4260,11 +4080,12 @@ type ProjectServiceAnswerInvitationJSONBody struct {
 
 // ProjectServiceListProjectsParams defines parameters for ProjectServiceListProjects.
 type ProjectServiceListProjectsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
 	// WorkspaceId The workspace to list projects from. Private projects that you are not a
@@ -4344,21 +4165,23 @@ type ProjectServiceUpdateProjectJSONBody struct {
 	// JoinableByDomain When true, adds your email domain to the project.
 	JoinableByDomain *bool `json:"joinableByDomain,omitempty"`
 
-	// Members The members to keep when the project becomes private. The caller keeps
-	//  the admin role.
+	// Members The members to keep when the project becomes private. You keep the admin
+	//  role.
 	Members *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
 
 	// Name The project name.
 	Name *string `json:"name,omitempty"`
 
-	// PiiRedactionCategories A non-empty list replaces the stored set. An empty list is ignored, so
-	//  the set cannot be cleared this way. Turning redaction on with nothing
-	//  stored applies the default categories.
+	// PiiRedactionCategories The categories to redact. A non-empty list replaces the saved categories.
+	//  The API ignores an empty list, so you cannot clear the categories this
+	//  way. When you turn on redaction and the project has no saved categories,
+	//  the API applies the default categories.
 	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
 
-	// PinnedRegions SFU region pins. Unset leaves them unchanged; a set message replaces the
-	//  stored set, so an empty regions list clears the pins. Distinct from
-	//  userDataRegion, which decides where session data is stored.
+	// PinnedRegions The SFU regions to pin the project to. When unset, the pins do not
+	//  change. A set message replaces the pins, so an empty `regions` list
+	//  removes all pins. This field is different from `userDataRegion`, which
+	//  sets where the project keeps its session data.
 	PinnedRegions *LivekitPublicapiProjectsV1PinnedRegions `json:"pinnedRegions,omitempty"`
 
 	// RequireExplicitDispatch True rejects an agent server that registers without an explicit agent
@@ -4382,11 +4205,12 @@ type ProjectServiceUpdateProjectJSONBody struct {
 
 // BuilderAgentServiceListBuilderAgentsParams defines parameters for BuilderAgentServiceListBuilderAgents.
 type BuilderAgentServiceListBuilderAgentsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
@@ -4395,8 +4219,10 @@ type BuilderAgentServiceCreateBuilderAgentJSONBody struct {
 	// Config The configuration. Unset uses the default configuration.
 	Config *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
 
-	// Name The name the agent registers under: a letter, then letters, digits, "_"
-	//  and "-", at most 128 characters. Unique in the project.
+	// Name The agent name. The agent registers under this name, and you use it
+	//  to dispatch the agent to a room. It starts with a letter, and has only
+	//  letters, digits, `_`, and `-`. At most 128 characters. Must be unique
+	//  in the project.
 	Name *string `json:"name,omitempty"`
 }
 
@@ -4413,67 +4239,14 @@ type BuilderAgentServiceDeployBuilderAgentJSONBody struct {
 	VersionId *string `json:"versionId,omitempty"`
 }
 
-// AnalyticsServiceGetProjectAnalyticsParams defines parameters for AnalyticsServiceGetProjectAnalytics.
-type AnalyticsServiceGetProjectAnalyticsParams struct {
-	// RangeStartTime The start of the window, included. Unset means the end minus the service
-	//  default.
-	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
-
-	// RangeEndTime The end of the window, excluded. Unset means now.
-	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
-}
-
-// AnalyticsServiceListAgentAnalyticsParams defines parameters for AnalyticsServiceListAgentAnalytics.
-type AnalyticsServiceListAgentAnalyticsParams struct {
-	// RangeStartTime The start of the window, included. Unset means the end minus the service
-	//  default.
-	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
-
-	// RangeEndTime The end of the window, excluded. Unset means now.
-	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
-
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
-	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
-
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
-	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
-}
-
-// AnalyticsServiceGetAgentAnalyticsParams defines parameters for AnalyticsServiceGetAgentAnalytics.
-type AnalyticsServiceGetAgentAnalyticsParams struct {
-	// RangeStartTime The start of the window, included. Unset means the end minus the service
-	//  default.
-	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
-
-	// RangeEndTime The end of the window, excluded. Unset means now.
-	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
-}
-
-// DatabaseServiceListDatabasesParams defines parameters for DatabaseServiceListDatabases.
-type DatabaseServiceListDatabasesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
-	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
-
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
-	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
-}
-
-// DatabaseServiceCreateDatabaseJSONBody defines parameters for DatabaseServiceCreateDatabase.
-type DatabaseServiceCreateDatabaseJSONBody struct {
-	// Ttl Unset: never expires. Otherwise clamped to the server cap, and never
-	//  extended.
-	Ttl *GoogleProtobufDuration `json:"ttl,omitempty"`
-}
-
 // ProjectServiceListInvitesParams defines parameters for ProjectServiceListInvites.
 type ProjectServiceListInvitesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
@@ -4494,14 +4267,16 @@ type ProjectServiceUpdateInviteJSONBody struct {
 
 // ProjectServiceListKeysParams defines parameters for ProjectServiceListKeys.
 type ProjectServiceListKeysParams struct {
-	// IncludeAgentKeys Agent keys are hidden by default.
+	// IncludeAgentKeys When true, the list includes the keys of cloud agents. By default, the
+	//  list does not include them.
 	IncludeAgentKeys *bool `form:"includeAgentKeys,omitempty" json:"includeAgentKeys,omitempty"`
 
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
 	// OwnerId The ID of a user. Returns only the keys that this user owns. When empty,
@@ -4514,27 +4289,29 @@ type ProjectServiceGenerateKeyJSONBody struct {
 	// Description A label for the key.
 	Description *string `json:"description,omitempty"`
 
-	// IsServiceAccount When true, the key is created without an owner (project-owned). `ListKeys`
-	//  with an `ownerId` does not return it, and it survives the generating user
-	//  leaving.
+	// IsServiceAccount When true, the key has no owner, and it belongs to the project.
+	//  `ListKeys` with an `ownerId` does not return it, and it stays when the
+	//  user who created it leaves the project.
 	IsServiceAccount *bool `json:"isServiceAccount,omitempty"`
 }
 
 // ProjectServiceListMembersParams defines parameters for ProjectServiceListMembers.
 type ProjectServiceListMembersParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ProjectServiceRemoveMemberParams defines parameters for ProjectServiceRemoveMember.
 type ProjectServiceRemoveMemberParams struct {
-	// ConfirmedNumKeys Number of the member's API keys the caller agrees to delete. Call with 0;
-	//  if the member owns keys, the call fails with a MemberRemovalNotConfirmed
-	//  detail, so show its num_keys to the user and call again with it.
+	// ConfirmedNumKeys The number of the member's API keys that you agree to delete. Send `0`
+	//  first. When the member owns API keys, the call fails with
+	//  `FailedPrecondition` and a `MemberRemovalNotConfirmed` detail. Show its
+	//  `numKeys` to the user, then send the request again with that number.
 	ConfirmedNumKeys *int `form:"confirmedNumKeys,omitempty" json:"confirmedNumKeys,omitempty"`
 }
 
@@ -4555,369 +4332,341 @@ type ProjectServiceAddWorkspaceMembersToProjectJSONBody struct {
 
 // SimulationServiceGenerateScenarioFromSessionJSONBody defines parameters for SimulationServiceGenerateScenarioFromSession.
 type SimulationServiceGenerateScenarioFromSessionJSONBody struct {
-	// Region Not used. The server finds the session recording from the project and
-	//  `roomId`.
+	// Region Ignored. The API finds the session recording by project and
+	//  room.
 	Region *string `json:"region,omitempty"`
 
-	// RoomId Room session (RM_...) to derive the scenario from.
+	// RoomId The ID of the room session (`RM_...`) to generate the scenario from.
 	RoomId *string `json:"roomId,omitempty"`
 }
 
 // AnalyticsServiceListProjectSessionsParams defines parameters for AnalyticsServiceListProjectSessions.
 type AnalyticsServiceListProjectSessionsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// FilterRangeStartTime The start of the window, included. Unset means the end minus the service
-	//  default.
+	// FilterRangeStartTime The start of the range, included. Unset means 24 hours before the end.
 	FilterRangeStartTime *time.Time `form:"filter.range.startTime,omitempty" json:"filter.range.startTime,omitempty"`
 
-	// FilterRangeEndTime The end of the window, excluded. Unset means now.
+	// FilterRangeEndTime The end of the range, excluded. Unset means now.
 	FilterRangeEndTime *time.Time `form:"filter.range.endTime,omitempty" json:"filter.range.endTime,omitempty"`
 
-	// FilterStatuses OR semantics; empty matches any status.
+	// FilterStatuses The statuses to match. A session matches when it has one of the statuses.
+	//  When empty, a session with any status matches.
 	FilterStatuses *[]LivekitPublicapiAnalyticsV1SessionStatus `form:"filter.statuses,omitempty" json:"filter.statuses,omitempty"`
 
-	// FilterRoomName Room-name prefix match (case-sensitive): returns sessions whose room name
-	//  starts with this value. For example, `demo-` matches `demo-1` and
-	//  `demo-lobby`.
+	// FilterRoomName A prefix of the room name. Returns only the sessions whose room name
+	//  starts with this value. The match is case-sensitive. For example, `demo-`
+	//  matches `demo-1` and `demo-lobby`.
 	FilterRoomName *string `form:"filter.roomName,omitempty" json:"filter.roomName,omitempty"`
 
-	// FilterSessionId Exact room-session id match (RM_...).
+	// FilterSessionId The ID of a room session (`RM_...`). Returns only the session with this
+	//  exact ID.
 	FilterSessionId *string `form:"filter.sessionId,omitempty" json:"filter.sessionId,omitempty"`
 
-	// FilterTags OR semantics.
+	// FilterTags The tags to match. A session matches when it has one of the tags.
 	FilterTags *[]string `form:"filter.tags,omitempty" json:"filter.tags,omitempty"`
 
 	// FilterAgentId The ID of a cloud agent (`CA_...`). Returns only the sessions that this
 	//  agent served.
 	FilterAgentId *string `form:"filter.agentId,omitempty" json:"filter.agentId,omitempty"`
 
-	// SortOrder Direction of the startedAt ordering, the only column sessions sort on.
-	//  Defaults to descending (newest first) when unset.
+	// SortOrder The sort direction of `startedAt`. Sessions sort only on `startedAt`.
+	//  Defaults to descending (newest first).
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // AnalyticsServiceListSessionEventsParams defines parameters for AnalyticsServiceListSessionEvents.
 type AnalyticsServiceListSessionEventsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// Types Event types to return, by name, such as `TRACK_PUBLISHED`: the names of
-	//  the LiveKit `AnalyticsEventType`. Each matches exactly. Empty returns the
-	//  seven defaults on the dashboard, or with `participantSessionId` its
-	//  eleven participant defaults, track events included (see
-	//  `ListSessionEvents`). An unknown name is `InvalidArgument`.
+	// Types The event types to return, by name, such as `TRACK_PUBLISHED`. The
+	//  names are the values of the LiveKit `AnalyticsEventType`. Each name
+	//  matches exactly. When empty, the list has the default types. See
+	//  `ListSessionEvents`. An unknown name returns `InvalidArgument`.
 	Types *[]string `form:"types,omitempty" json:"types,omitempty"`
 
-	// ParticipantSessionId Only the events of this participant session (PA_...), as
-	//  ParticipantSession.participantSessionId in the participants list names
-	//  it. Room events and API calls name no participant session, so they are
-	//  left out. Anything but a PA_ id is InvalidArgument.
+	// ParticipantSessionId The ID of a participant session (`PA_...`), as in
+	//  `participantSessionId` of a participant session from
+	//  `ListSessionParticipants`. Returns only the events of this participant
+	//  session. Room events and API calls have no participant session, so the
+	//  list does not include them. A value that is not a `PA_` ID returns
+	//  `InvalidArgument`.
 	ParticipantSessionId *string `form:"participantSessionId,omitempty" json:"participantSessionId,omitempty"`
 
-	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
-	//  first) when unset.
+	// SortOrder The sort direction of `timestamp`. Defaults to ascending (oldest
+	//  first).
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // ObservabilityServiceGetSessionLogsParams defines parameters for ObservabilityServiceGetSessionLogs.
 type ObservabilityServiceGetSessionLogsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// LogLevels Only records at these levels, as the logs filter on the dashboard
-	//  selects them, for example only TRACE and FATAL. Empty returns every
-	//  record, including those with no level, such as a passed evaluation.
-	//  `LOG_LEVEL_UNSPECIFIED` is `InvalidArgument`.
+	// LogLevels The log levels to return, as the logs filter on the dashboard selects
+	//  them. For example, only `TRACE` and `FATAL`. Returns only the records
+	//  at these levels. When empty, returns all records, including records
+	//  with no level, such as a passed evaluation. `LOG_LEVEL_UNSPECIFIED`
+	//  returns `InvalidArgument`.
 	LogLevels *[]LivekitPublicapiObservabilityV1LogLevel `form:"logLevels,omitempty" json:"logLevels,omitempty"`
 
-	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
-	//  first) when unset.
+	// SortOrder The sort direction of the timestamps. Defaults to ascending (oldest
+	//  first).
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // ObservabilityServiceGetSessionMetricsParams defines parameters for ObservabilityServiceGetSessionMetrics.
 type ObservabilityServiceGetSessionMetricsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// Names Only the points of these metrics, matched exactly, such as
-	//  lk.agents.turn.e2e_latency. Empty returns every metric. At most 50
-	//  names, each 1 to 256 characters.
+	// Names The names of the metrics to return, such as
+	//  `lk.agents.turn.e2e_latency`. Returns only the points of these
+	//  metrics. Each name must match exactly. When empty, returns all
+	//  metrics. The maximum is 50 names, each 1 to 256 characters.
 	Names *[]string `form:"names,omitempty" json:"names,omitempty"`
 }
 
 // AnalyticsServiceListSessionParticipantsParams defines parameters for AnalyticsServiceListSessionParticipants.
 type AnalyticsServiceListSessionParticipantsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// SortBy Column to order by. Defaults to joinedAt when unset.
+	// SortBy The field to sort by. Defaults to `joinedAt`.
 	SortBy *LivekitPublicapiAnalyticsV1ParticipantSortField `form:"sortBy,omitempty" json:"sortBy,omitempty"`
 
-	// SortOrder Direction of sortBy. Defaults to descending (newest first) when unset.
+	// SortOrder The sort direction of `sortBy`. Defaults to descending (newest
+	//  first).
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // ObservabilityServiceGetSessionRecordingURLParams defines parameters for ObservabilityServiceGetSessionRecordingURL.
 type ObservabilityServiceGetSessionRecordingURLParams struct {
-	// FileType Which recording to sign a URL for. UNSPECIFIED is InvalidArgument.
+	// FileType The recording to sign a URL for. `RECORDING_FILE_TYPE_UNSPECIFIED`
+	//  returns `InvalidArgument`.
 	FileType *LivekitPublicapiObservabilityV1RecordingFileType `form:"fileType,omitempty" json:"fileType,omitempty"`
 
-	// ExpirySeconds How long the URL stays valid, in seconds. Unset or 0 is 900 (15
-	//  minutes), and anything longer is clamped to 900 without an error;
-	//  expiresAt says what was granted.
+	// ExpirySeconds The time that the URL stays valid, in seconds. Defaults to 900 (15
+	//  minutes) when unset or 0. The API clamps a larger value to 900, with
+	//  no error. `expiresAt` gives the expiry that the API granted.
 	ExpirySeconds *int `form:"expirySeconds,omitempty" json:"expirySeconds,omitempty"`
 }
 
 // ObservabilityServiceGetSessionTracesParams defines parameters for ObservabilityServiceGetSessionTraces.
 type ObservabilityServiceGetSessionTracesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ObservabilityServiceGetSessionTranscriptParams defines parameters for ObservabilityServiceGetSessionTranscript.
 type ObservabilityServiceGetSessionTranscriptParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // SimulationServiceListSimulationRunsParams defines parameters for SimulationServiceListSimulationRuns.
 type SimulationServiceListSimulationRunsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// Status Only runs in this status.
+	// Status A run status. Returns only the runs in this status.
 	Status *LivekitSimulationRunStatus `form:"status,omitempty" json:"status,omitempty"`
 
-	// AgentName Only runs of this agent (exact name).
+	// AgentName An agent name. Returns only the runs of the agent with this exact
+	//  name.
 	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
 
-	// StartTime Half-open window [startTime, endTime) on the run creation time.
-	//  Either bound may be left unset.
+	// StartTime The start of the window on the creation time of the run, inclusive.
+	//  When unset, the window starts 45 days before `endTime`. The window can
+	//  be at most 45 days. A longer window returns `InvalidArgument`.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
-	// EndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// EndTime The end of the window on the creation time of the run, exclusive.
+	//  When unset, the window ends now.
 	EndTime *time.Time `form:"endTime,omitempty" json:"endTime,omitempty"`
 
-	// Mode Only runs in this conversation mode.
+	// Mode A conversation mode. Returns only the runs in this mode.
 	Mode *LivekitSimulationMode `form:"mode,omitempty" json:"mode,omitempty"`
 }
 
 // SimulationServiceCreateSimulationRunJSONBody defines parameters for SimulationServiceCreateSimulationRun.
 type SimulationServiceCreateSimulationRunJSONBody struct {
-	// AgentName Name the agent under test is registered under; every job dispatches it
-	//  into the simulation room, so it must already be deployed or running as
-	//  a worker. Empty uses the default agent for the project. Recorded on
-	//  the run and usable as a ListSimulationRuns filter.
+	// AgentName The name of the agent under test. Each job dispatches this agent into
+	//  the simulation room, so the agent must be deployed or running as a
+	//  worker. When empty, the run uses the default agent of the project. The
+	//  run records the name, and `ListSimulationRuns` can filter on it.
 	AgentName *string `json:"agentName,omitempty"`
 
-	// BackgroundNoise Audio impairments applied to the simulated user; AUDIO mode only.
+	// BackgroundNoise When true, the simulated user has background noise. Applies only in
+	//  `AUDIO` mode.
 	BackgroundNoise *bool `json:"backgroundNoise,omitempty"`
 
-	// Ci The CI pipeline this run came from, so runs can be linked back to
-	//  commits.
+	// Ci The CI pipeline that started the run. Use it to link a run to its
+	//  commit.
 	Ci *LivekitSimulationRunCI `json:"ci,omitempty"`
 
-	// Concurrency Maximum jobs running in parallel, at most 20; above that the request is
-	//  InvalidArgument. The concurrency quota for the project can run fewer at
-	//  once. Unset uses the server default.
-	Concurrency          *int32 `json:"concurrency,omitempty"`
-	LowQualityMicrophone *bool  `json:"lowQualityMicrophone,omitempty"`
+	// Concurrency The maximum number of jobs that run in parallel. The maximum value is
+	//  20. A larger value returns `InvalidArgument`. The concurrency quota of
+	//  the project can run fewer jobs at a time. When unset, the API uses its
+	//  default.
+	Concurrency *int32 `json:"concurrency,omitempty"`
 
-	// Mode Conversation mode for every job; unspecified means TEXT.
+	// LowQualityMicrophone When true, the simulated user has a low-quality microphone. Applies
+	//  only in `AUDIO` mode.
+	LowQualityMicrophone *bool `json:"lowQualityMicrophone,omitempty"`
+
+	// Mode The conversation mode of each job. Unset means `TEXT`.
 	Mode *LivekitSimulationMode `json:"mode,omitempty"`
 
-	// NumSimulations Number of scenarios to generate from the agent source when
-	//  scenarioGroup is unset.
+	// NumSimulations The number of scenarios to generate from the agent source when
+	//  `scenarioGroup` is unset.
 	NumSimulations *int32 `json:"numSimulations,omitempty"`
-	PacketLoss     *bool  `json:"packetLoss,omitempty"`
 
-	// Region Reserved: must be empty, and the service chooses where the run happens.
+	// PacketLoss When true, the audio of the simulated user has packet loss. Applies
+	//  only in `AUDIO` mode.
+	PacketLoss *bool `json:"packetLoss,omitempty"`
+
+	// Region Reserved. Must be empty. The API chooses where the run happens.
 	Region *string `json:"region,omitempty"`
 
-	// ScenarioGroup Run exactly these scenarios (the contents of a scenarios.yaml) instead
-	//  of generating numSimulations of them; the run then needs no source
-	//  upload and starts immediately.
+	// ScenarioGroup The scenarios to run, with the contents of a `scenarios.yaml` file.
+	//  When set, the run plays only these scenarios and does not generate
+	//  `numSimulations` scenarios. The run needs no source upload and starts
+	//  immediately.
 	ScenarioGroup *LivekitScenarioGroup `json:"scenarioGroup,omitempty"`
 }
 
 // SimulationServiceConfirmSimulationSourceUploadJSONBody defines parameters for SimulationServiceConfirmSimulationSourceUpload.
 type SimulationServiceConfirmSimulationSourceUploadJSONBody struct {
-	// CodeEntrypoint Entrypoint of the uploaded source, for example "agent.py".
+	// CodeEntrypoint The entrypoint of the uploaded source, for example `agent.py`.
 	CodeEntrypoint *string `json:"codeEntrypoint,omitempty"`
 }
 
 // SimulationServiceCountSimulationRunsParams defines parameters for SimulationServiceCountSimulationRuns.
 type SimulationServiceCountSimulationRunsParams struct {
-	// StartTime Half-open window [startTime, endTime) on the run creation time. Both
-	//  are required and endTime must be after startTime.
+	// StartTime The start of the window on the creation time of the run, inclusive.
+	//  Required.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
-	// EndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// EndTime The end of the window on the creation time of the run, exclusive.
+	//  Required. Must be after `startTime`.
 	EndTime *time.Time `form:"endTime,omitempty" json:"endTime,omitempty"`
 
-	// Status Only runs in this status.
+	// Status A run status. Counts only the runs in this status.
 	Status *LivekitSimulationRunStatus `form:"status,omitempty" json:"status,omitempty"`
 
-	// AgentName Only runs of this agent (exact name).
+	// AgentName An agent name. Counts only the runs of the agent with this exact name.
 	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
 
-	// Mode Only runs in this conversation mode.
+	// Mode A conversation mode. Counts only the runs in this mode.
 	Mode *LivekitSimulationMode `form:"mode,omitempty" json:"mode,omitempty"`
-}
-
-// ThreadServiceListThreadsParams defines parameters for ThreadServiceListThreads.
-type ThreadServiceListThreadsParams struct {
-	// Scope The scope query parameter.
-	Scope *string `form:"scope,omitempty" json:"scope,omitempty"`
-
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
-	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
-
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
-	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
-}
-
-// ThreadServiceCreateThreadJSONBody defines parameters for ThreadServiceCreateThread.
-type ThreadServiceCreateThreadJSONBody struct {
-	Attributes *map[string]string `json:"attributes,omitempty"`
-
-	// IdleTtl Unset takes the server default.
-	IdleTtl *GoogleProtobufDuration `json:"idleTtl,omitempty"`
-
-	// Scope Optional scope grouping the thread (typically the user's identity),
-	//  at most 256 bytes.
-	Scope *string `json:"scope,omitempty"`
-}
-
-// ThreadServiceUpdateThreadJSONBody defines parameters for ThreadServiceUpdateThread.
-type ThreadServiceUpdateThreadJSONBody struct {
-	Attributes *map[string]string      `json:"attributes,omitempty"`
-	IdleTtl    *GoogleProtobufDuration `json:"idleTtl,omitempty"`
-}
-
-// ThreadServiceGetThreadItemsParams defines parameters for ThreadServiceGetThreadItems.
-type ThreadServiceGetThreadItemsParams struct {
-	// Agent One agent's items; empty for every agent's.
-	Agent *string `form:"agent,omitempty" json:"agent,omitempty"`
-
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
-	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
-
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
-	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
-
-	// SortOrder Direction of the item order. Defaults to ascending (oldest first) when
-	//  unset; descending starts from the latest item and pages back.
-	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
-}
-
-// ThreadServiceGetThreadTasksParams defines parameters for ThreadServiceGetThreadTasks.
-type ThreadServiceGetThreadTasksParams struct {
-	// Status Only tasks in this status; unset for every status.
-	Status *LivekitAgentAgentTaskStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
-	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
-
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
-	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ProjectServiceCreateTokenJSONBody defines parameters for ProjectServiceCreateToken.
 type ProjectServiceCreateTokenJSONBody struct {
-	// Grants The caller's project role must cover every grant requested.
+	// Grants The grants of the token. Your project role must cover every grant that
+	//  you request.
 	Grants *LivekitPublicapiProjectsV1TokenGrants `json:"grants,omitempty"`
 
-	// TtlSeconds Requested lifetime in seconds. 0 means the default (10 minutes); at most
-	//  86400 (24 hours).
+	// TtlSeconds The token lifetime, in seconds. `0` means the default, 10 minutes.
+	//  The maximum is 86400 (24 hours). A larger value returns
+	//  `InvalidArgument`.
 	TtlSeconds *int `json:"ttlSeconds,omitempty"`
 }
 
 // ProjectServiceListWebhookEventsParams defines parameters for ProjectServiceListWebhookEvents.
 type ProjectServiceListWebhookEventsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ProjectServiceListWebhooksParams defines parameters for ProjectServiceListWebhooks.
 type ProjectServiceListWebhooksParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ProjectServiceCreateWebhookJSONBody defines parameters for ProjectServiceCreateWebhook.
 type ProjectServiceCreateWebhookJSONBody struct {
-	// FilterParams Event names from ListWebhookEvents. Unset delivers every event.
+	// FilterParams The names of the events to deliver, from `ListWebhookEvents`. When unset,
+	//  the webhook gets every event.
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
 
 	// Name A label for the destination.
 	Name *string `json:"name,omitempty"`
 
-	// SigningKey API key of this project whose secret signs deliveries. Optional: when
-	//  empty, the oldest key in the project is chosen and stored on the
-	//  webhook.
+	// SigningKey The API key of this project whose secret signs the deliveries. Optional.
+	//  When empty, the API uses the oldest API key of the project and saves it on
+	//  the webhook.
 	SigningKey *string `json:"signingKey,omitempty"`
 
-	// Url http(s) URL deliveries are POSTed to.
+	// Url The HTTP or HTTPS URL that receives the deliveries as POST requests.
 	Url *string `json:"url,omitempty"`
 }
 
 // ProjectServiceUpdateWebhookJSONBody defines parameters for ProjectServiceUpdateWebhook.
 type ProjectServiceUpdateWebhookJSONBody struct {
-	// FilterParams Replaces the whole filter; an empty filter delivers every event.
+	// FilterParams The names of the events to deliver. A set filter replaces the whole
+	//  filter. An empty filter delivers every event.
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
 
 	// Name The project name.
 	Name *string `json:"name,omitempty"`
 
-	// SigningKey API key of this project whose secret signs deliveries. Unset or empty
-	//  leaves the signing key unchanged.
+	// SigningKey The API key of this project whose secret signs the deliveries. When unset
+	//  or empty, the signing key does not change.
 	SigningKey *string `json:"signingKey,omitempty"`
 
 	// Url The URL that receives the events.
@@ -4926,27 +4675,28 @@ type ProjectServiceUpdateWebhookJSONBody struct {
 
 // ProjectServiceSendTestWebhookJSONBody defines parameters for ProjectServiceSendTestWebhook.
 type ProjectServiceSendTestWebhookJSONBody struct {
-	// Event One of ListWebhookEvents. Sent with sample data, regardless of the
-	//  webhook filter.
+	// Event The event to send: one of the names from `ListWebhookEvents`. The API
+	//  sends it with sample data and ignores the webhook filter.
 	Event *string `json:"event,omitempty"`
 }
 
 // UserServiceListUsersParams defines parameters for UserServiceListUsers.
 type UserServiceListUsersParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// ProjectId The project ID (`p_...`). Returns only the members of this project. Set
-	//  `projectId`, `workspaceId`, or both. When you set both, the project must
-	//  belong to the workspace.
+	// ProjectId The ID of a project (`p_...`). Returns only the members of this project.
+	//  Set `projectId`, `workspaceId`, or both. When you set both, the project
+	//  must be in the workspace, and the list has the members of the project.
 	ProjectId *string `form:"projectId,omitempty" json:"projectId,omitempty"`
 
-	// WorkspaceId The workspace ID (`wo_...`). Returns only the members of this workspace,
-	//  unless you also set `projectId`.
+	// WorkspaceId The ID of a workspace (`wo_...`). Returns only the members of this
+	//  workspace.
 	WorkspaceId *string `form:"workspaceId,omitempty" json:"workspaceId,omitempty"`
 }
 
@@ -4958,11 +4708,12 @@ type WorkspaceServiceAnswerInviteJSONBody struct {
 
 // WorkspaceServiceListWorkspacesParams defines parameters for WorkspaceServiceListWorkspaces.
 type WorkspaceServiceListWorkspacesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
@@ -4974,11 +4725,12 @@ type WorkspaceServiceUpdateWorkspaceJSONBody struct {
 
 // WorkspaceServiceListInvitesParams defines parameters for WorkspaceServiceListInvites.
 type WorkspaceServiceListInvitesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
@@ -4993,19 +4745,21 @@ type WorkspaceServiceCreateInviteJSONBody struct {
 
 // WorkspaceServiceListMembersParams defines parameters for WorkspaceServiceListMembers.
 type WorkspaceServiceListMembersParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // WorkspaceServiceDeleteMemberParams defines parameters for WorkspaceServiceDeleteMember.
 type WorkspaceServiceDeleteMemberParams struct {
-	// ConfirmedNumKeys Number of the member's API keys the caller agrees to delete. Call with 0;
-	//  if the member owns keys, the call fails with a MemberRemovalNotConfirmed
-	//  detail, so show its num_keys to the user and call again with it.
+	// ConfirmedNumKeys The number of the member's API keys that you agree to delete. Send `0`
+	//  first. When the member owns API keys, the call fails with
+	//  `FailedPrecondition` and a `MemberRemovalNotConfirmed` detail. Show its
+	//  `numKeys` to the user, then send the request again with that number.
 	ConfirmedNumKeys *int `form:"confirmedNumKeys,omitempty" json:"confirmedNumKeys,omitempty"`
 }
 
@@ -5017,11 +4771,12 @@ type WorkspaceServiceUpdateMemberJSONBody struct {
 
 // WorkspaceServiceListProjectsParams defines parameters for WorkspaceServiceListProjects.
 type WorkspaceServiceListProjectsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
@@ -5046,9 +4801,6 @@ type BuilderAgentServiceUpdateBuilderAgentJSONRequestBody BuilderAgentServiceUpd
 // BuilderAgentServiceDeployBuilderAgentJSONRequestBody defines body for BuilderAgentServiceDeployBuilderAgent for application/json ContentType.
 type BuilderAgentServiceDeployBuilderAgentJSONRequestBody BuilderAgentServiceDeployBuilderAgentJSONBody
 
-// DatabaseServiceCreateDatabaseJSONRequestBody defines body for DatabaseServiceCreateDatabase for application/json ContentType.
-type DatabaseServiceCreateDatabaseJSONRequestBody DatabaseServiceCreateDatabaseJSONBody
-
 // ProjectServiceInviteMemberJSONRequestBody defines body for ProjectServiceInviteMember for application/json ContentType.
 type ProjectServiceInviteMemberJSONRequestBody ProjectServiceInviteMemberJSONBody
 
@@ -5072,12 +4824,6 @@ type SimulationServiceCreateSimulationRunJSONRequestBody SimulationServiceCreate
 
 // SimulationServiceConfirmSimulationSourceUploadJSONRequestBody defines body for SimulationServiceConfirmSimulationSourceUpload for application/json ContentType.
 type SimulationServiceConfirmSimulationSourceUploadJSONRequestBody SimulationServiceConfirmSimulationSourceUploadJSONBody
-
-// ThreadServiceCreateThreadJSONRequestBody defines body for ThreadServiceCreateThread for application/json ContentType.
-type ThreadServiceCreateThreadJSONRequestBody ThreadServiceCreateThreadJSONBody
-
-// ThreadServiceUpdateThreadJSONRequestBody defines body for ThreadServiceUpdateThread for application/json ContentType.
-type ThreadServiceUpdateThreadJSONRequestBody ThreadServiceUpdateThreadJSONBody
 
 // ProjectServiceCreateTokenJSONRequestBody defines body for ProjectServiceCreateToken for application/json ContentType.
 type ProjectServiceCreateTokenJSONRequestBody ProjectServiceCreateTokenJSONBody
@@ -7299,17 +7045,17 @@ type ClientInterface interface {
 
 	// BuilderAgentServiceListBuilderAgents ListBuilderAgents
 	//
-	// Lists a project's builder agents by name, one page at a time, with the
-	//  status of each deployment. The list does not include configurations: use
-	//  GetBuilderAgent for one.
+	// Lists the builder agents of a project by name, with the deployment status
+	//  of each. The list does not include configurations. To get the
+	//  configuration of an agent, call `GetBuilderAgent`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
 	BuilderAgentServiceListBuilderAgents(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BuilderAgentServiceCreateBuilderAgentWithBody CreateBuilderAgent
 	//
-	// Makes a builder agent from a name and a configuration. The agent is not
-	//  deployed: call DeployBuilderAgent to run it. Unset configuration
+	// Creates a builder agent from a name and a configuration. The agent is not
+	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
 	//  properties take their default, and unknown properties are ignored.
 	//
 	// Takes any type of body and a specified content type.
@@ -7319,8 +7065,8 @@ type ClientInterface interface {
 
 	// BuilderAgentServiceCreateBuilderAgent CreateBuilderAgent
 	//
-	// Makes a builder agent from a name and a configuration. The agent is not
-	//  deployed: call DeployBuilderAgent to run it. Unset configuration
+	// Creates a builder agent from a name and a configuration. The agent is not
+	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
 	//  properties take their default, and unknown properties are ignored.
 	//
 	// Takes a body of the `application/json` content type.
@@ -7337,15 +7083,15 @@ type ClientInterface interface {
 
 	// BuilderAgentServiceGetBuilderAgent GetBuilderAgent
 	//
-	// Returns a builder agent with its current configuration and the status of
-	//  its deployment.
+	// Returns a builder agent with its current configuration and its deployment
+	//  status.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
 	BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
 	//
-	// Replaces a builder agent's configuration. Each update makes a new
+	// Replaces the configuration of a builder agent. Each update makes a new
 	//  version. The running agent does not change until you deploy again.
 	//
 	// Takes any type of body and a specified content type.
@@ -7355,7 +7101,7 @@ type ClientInterface interface {
 
 	// BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
 	//
-	// Replaces a builder agent's configuration. Each update makes a new
+	// Replaces the configuration of a builder agent. Each update makes a new
 	//  version. The running agent does not change until you deploy again.
 	//
 	// Takes a body of the `application/json` content type.
@@ -7365,11 +7111,11 @@ type ClientInterface interface {
 
 	// BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
 	//
-	// Starts a deployment of a builder agent's current configuration, or of
-	//  an earlier version. The call returns when the build starts, with status
-	//  DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
-	//  Call GetBuilderAgent to follow the deployment until its status is
-	//  DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+	// Starts a deployment of the current configuration of a builder agent, or of
+	//  an earlier version. The call returns when the build starts, with the
+	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
+	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -7378,85 +7124,16 @@ type ClientInterface interface {
 
 	// BuilderAgentServiceDeployBuilderAgent DeployBuilderAgent
 	//
-	// Starts a deployment of a builder agent's current configuration, or of
-	//  an earlier version. The call returns when the build starts, with status
-	//  DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
-	//  Call GetBuilderAgent to follow the deployment until its status is
-	//  DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+	// Starts a deployment of the current configuration of a builder agent, or of
+	//  an earlier version. The call returns when the build starts, with the
+	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
+	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
 	BuilderAgentServiceDeployBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
-	//
-	// Returns the project overview over a time range.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
-	AnalyticsServiceGetProjectAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AnalyticsServiceListAgentAnalytics ListAgentAnalytics
-	//
-	// Lists the analytics of each agent in the project over a time range. Each
-	//  item is an `AgentAnalytics`, the same message that `GetAgentAnalytics`
-	//  returns for one agent.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
-	AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AnalyticsServiceGetAgentAnalytics GetAgentAnalytics
-	//
-	// Returns the analytics for one agent over a time range.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
-	AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DatabaseServiceListDatabases ListDatabases
-	//
-	// Lists the project databases, cursor-paginated.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
-	DatabaseServiceListDatabases(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DatabaseServiceCreateDatabaseWithBody CreateDatabase
-	//
-	// Creates an empty database. Not idempotent: a retried request creates a
-	//  second database.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-	DatabaseServiceCreateDatabaseWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DatabaseServiceCreateDatabase CreateDatabase
-	//
-	// Creates an empty database. Not idempotent: a retried request creates a
-	//  second database.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-	DatabaseServiceCreateDatabase(ctx context.Context, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DatabaseServiceDeleteDatabase DeleteDatabase
-	//
-	// Deletes the stored data, not just the metadata.
-	//
-	// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
-	DatabaseServiceDeleteDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DatabaseServiceGetDatabase GetDatabase
-	//
-	// Corresponds with GET /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceGetDatabase` operationId).
-	DatabaseServiceGetDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DatabaseServiceExportDatabase ExportDatabase
-	//
-	// Exports a consistent SQLite file as a time-limited download URL.
-	//
-	// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
-	DatabaseServiceExportDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListInvites ListInvites
 	//
@@ -7508,8 +7185,8 @@ type ClientInterface interface {
 
 	// ProjectServiceGenerateKeyWithBody GenerateKey
 	//
-	// Creates an API key and secret for the project. The secret is returned once,
-	//  in the response, and cannot be read again.
+	// Creates an API key and secret for the project. The response includes the
+	//  secret. You cannot read the secret again.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -7518,8 +7195,8 @@ type ClientInterface interface {
 
 	// ProjectServiceGenerateKey GenerateKey
 	//
-	// Creates an API key and secret for the project. The secret is returned once,
-	//  in the response, and cannot be read again.
+	// Creates an API key and secret for the project. The response includes the
+	//  secret. You cannot read the secret again.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -7578,12 +7255,12 @@ type ClientInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
 	//
-	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in the scenarioGroup of a later run.
-	//  Nothing is stored; the returned scenario is the result. The session must
-	//  have a recorded chat history. Each call runs an LLM over it, so it counts
-	//  against the scenario-generation quota for the project and can take up to
-	//  about a minute.
+	// Generates a scenario (label, instructions, and expectations) from a
+	//  recorded room session. Use the scenario in the `scenarioGroup` of a later
+	//  run. The API does not save the scenario: the response is the only copy.
+	//  The session must have a recorded chat history. Each call runs an LLM on
+	//  the chat history, so it counts against the scenario-generation quota of
+	//  the project. A call can take up to about one minute.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -7592,12 +7269,12 @@ type ClientInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSession GenerateScenarioFromSession
 	//
-	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in the scenarioGroup of a later run.
-	//  Nothing is stored; the returned scenario is the result. The session must
-	//  have a recorded chat history. Each call runs an LLM over it, so it counts
-	//  against the scenario-generation quota for the project and can take up to
-	//  about a minute.
+	// Generates a scenario (label, instructions, and expectations) from a
+	//  recorded room session. Use the scenario in the `scenarioGroup` of a later
+	//  run. The API does not save the scenario: the response is the only copy.
+	//  The session must have a recorded chat history. Each call runs an LLM on
+	//  the chat history, so it counts against the scenario-generation quota of
+	//  the project. A call can take up to about one minute.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -7606,166 +7283,171 @@ type ClientInterface interface {
 
 	// AnalyticsServiceListProjectSessions ListProjectSessions
 	//
-	// Lists room sessions for a project, newest first, cursor-paginated.
+	// Lists the room sessions of a project, newest first.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 	AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceGetSession GetSession
 	//
-	// Returns one room session. The response carries both the list-row `session`
-	//  and the richer `detail` (participants, per-metric data points).
+	// Returns one room session. The response has the `session` that the list
+	//  returns, and a `detail` with the participants and the metric timelines.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnalyticsServiceListSessionEvents Lists the events in one room session, oldest first by default,
-	//  cursor-paginated with no total. With no `types`, it returns the seven the
-	//  events table on the dashboard shows: `PARTICIPANT_JOINED`,
-	//  `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`, `PARTICIPANT_RESUMED`,
-	//  `ROOM_CREATED`, `ROOM_ENDED` and `API_CALL`. `types` asks for others, such
-	//  as `TRACK_PUBLISHED`, and `participantSessionId` keeps the events for one
-	//  participant session. With `participantSessionId` and no `types`, it returns
-	//  the eleven the participant events table on the dashboard shows for that
-	//  participant session: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`,
-	//  `PARTICIPANT_RESUMED` and `PARTICIPANT_ACTIVE`, and its `TRACK_MUTED`,
-	//  `TRACK_UNMUTED`, `TRACK_PUBLISHED`, `TRACK_UNPUBLISHED`,
-	//  `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED` and
+	// AnalyticsServiceListSessionEvents Lists the events of a room session. Defaults to oldest first. The page info
+	//  has no total.
+	//
+	// When `types` is empty, the list has these seven types:
+	//  `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`,
+	//  `PARTICIPANT_RESUMED`, `ROOM_CREATED`, `ROOM_ENDED`, and `API_CALL`. To get
+	//  other types, such as `TRACK_PUBLISHED`, set `types`. To get the events of
+	//  one participant session, set `participantSessionId`. When you set
+	//  `participantSessionId` and `types` is empty, the list has these eleven
+	//  types: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_RESUMED`,
+	//  `PARTICIPANT_ACTIVE`, `TRACK_MUTED`, `TRACK_UNMUTED`, `TRACK_PUBLISHED`,
+	//  `TRACK_UNPUBLISHED`, `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED`, and
 	//  `TRACK_SUBSCRIBE_FAILED`.
 	//
-	// Unlike the dashboard, on purpose: an unknown type or a malformed
-	//  participant session ID is `InvalidArgument` rather than being searched for
-	//  as typed, and types match exactly, so `TRACK_PUBLISHED` doesn't also return
-	//  `TRACK_PUBLISHED_UPDATE`. Each event payload keeps only an allowlist of
-	//  fields, leaving out participants' attributes and metadata and API calls'
-	//  request bodies. Each event and participant row still carries the
-	//  participant's identity, as the dashboard shows it to every member, and for
-	//  a SIP caller that can be a phone number.
+	//  Each type matches exactly, so `TRACK_PUBLISHED` does not also return
+	//  `TRACK_PUBLISHED_UPDATE`. The `payload` of an event has only a fixed set of
+	//  fields. It does not include participant attributes, participant metadata,
+	//  or the request bodies of API calls. Each event and participant item has the
+	//  identity of the participant. For a SIP caller, the identity can be a phone
+	//  number.
 	//
-	//  Events are kept for 60 days, which can be shorter than the retention of
-	//  other data for the session, so an older session can list no events. An
-	//  `ACTIVE` session lists the events recorded so far. An unknown session is
-	//  `NotFound`.
+	//  LiveKit keeps events for 60 days. This can be shorter than the other data
+	//  of the session, so an older session can have no events. An `ACTIVE` session
+	//  lists the events recorded until now.
+	//
+	//  Errors: an unknown type or a malformed participant session ID returns
+	//  `InvalidArgument`. An unknown session returns `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionLogs Returns the log records the agents in the session exported, in time order:
-	//  what the logs panel on the dashboard shows. Their chat history is left out,
-	//  since `GetSessionTranscript` reads it, and their evaluation results stay
-	//  in. The session events, such as participants joining, come from
-	//  `ListSessionEvents` on `AnalyticsService`.
+	// ObservabilityServiceGetSessionLogs Returns the log records that the agents of a session exported, in time
+	//  order. These are the records that the logs panel on the dashboard shows.
+	//  The chat history is not included, because `GetSessionTranscript` returns
+	//  it. Evaluation results are included. To get the events of the session, such
+	//  as participants that join, use `AnalyticsService.ListSessionEvents`.
 	//
-	// An `ACTIVE` session returns what its agents have exported so far. A record
-	//  exported mid-read with a time this read has already paged past, earlier
-	//  than its cursor position when oldest first, is missed until a new read. An
-	//  unknown session is NotFound. A read filtered by logLevels can come back
-	//  empty because no record is at those levels, so only an unfiltered one is
-	//  ObservabilityDisabled.
+	// An `ACTIVE` session returns the records that its agents exported up to now.
+	//  While you page through the records, an agent can export a record with a
+	//  time that your pages already passed. For example, in oldest-first order, a
+	//  record with a time earlier than the cursor position. This read does not
+	//  return that record. A new read returns it. An unknown session returns
+	//  `NotFound`. A read filtered by `logLevels` can return no records because no
+	//  record has those levels. Thus, only a read with no filter returns the
+	//  `ObservabilityDisabled` error.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the agents in the session exported,
-	//  by time, typed: turn latencies such as lk.agents.turn.e2e_latency and
-	//  lk.agents.turn.llm_ttft, token and duration usage such as
-	//  lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
-	//  any metrics the agent's own code recorded.
+	// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points that the agents of a session
+	//  exported, ordered by time. The points include turn latencies, such as
+	//  `lk.agents.turn.e2e_latency` and `lk.agents.turn.llm_ttft`, token and
+	//  duration usage, such as `lk.agents.usage.llm_input_tokens`, and the
+	//  `gen_ai.*` histograms. They also include the metrics that the agent's own
+	//  code recorded.
 	//
-	// These are the raw metrics agents emit, so they won't exactly match the
-	//  metrics panel on the dashboard, which derives its numbers from the
-	//  transcript and traces. Only agents that export OpenTelemetry metrics to
-	//  LiveKit Cloud produce them: an agent whose code installs its own
-	//  MeterProvider exports none to LiveKit Cloud, and its sessions return no
-	//  points.
+	// These are the raw metrics that agents export. They do not exactly match the
+	//  metrics panel on the dashboard, which calculates its values from the
+	//  transcript and traces. Only an agent that exports OpenTelemetry metrics to
+	//  LiveKit Cloud has points. An agent whose code installs its own
+	//  `MeterProvider` exports no metrics to LiveKit Cloud, and its sessions
+	//  return no points.
 	//
-	//  Some points aren't labeled as their agent exported them. LiveKit Cloud
-	//  groups the series for a session by their attributes alone and names each
-	//  group after its first row. As a result:
-	//
-	//  - Several metrics can come back under one name. For example, the input,
-	//    output, and cached token counts for an LLM all have the name
-	//    `lk.agents.usage.llm_input_tokens`.
-	//  - Points of one series at the same time that recorded equal values
-	//    collapse into one point.
-	//  - When a session has two agents, a point can carry the resource attributes
-	//    of the other agent.
+	//  Some points do not have the labels that their agent exported. LiveKit Cloud
+	//  groups the series of a session by their attributes only, and gives each
+	//  group the name of its first point. This has these results. Several metrics
+	//  can have one name. For example, the input, output, and cached token counts
+	//  of an LLM all have the name `lk.agents.usage.llm_input_tokens`. Points of
+	//  one series with the same time and the same value become one point. When a
+	//  session has two agents, a point can have the resource attributes of the
+	//  other agent.
 	//
 	//  An agent exports its metrics every 30 seconds, and its turn latencies when
-	//  the session ends, so an ACTIVE session returns what it has exported so far.
-	//  An unknown session is NotFound. A read filtered by names can come back
-	//  empty because no metric has those names, so only an unfiltered one is
-	//  ObservabilityDisabled.
+	//  the session ends. Thus, an `ACTIVE` session returns the points that its
+	//  agents exported up to now. An unknown session returns `NotFound`. A read
+	//  filtered by `names` can return no points because no metric has those names.
+	//  Thus, only a read with no filter returns the `ObservabilityDisabled` error.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 	ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListSessionParticipants ListSessionParticipants
 	//
-	// Lists the participants of one room session, one row per identity,
-	//  cursor-paginated; newest join first by default. Each row carries the
-	//  participant's participant sessions (PA_...), each with the client it
-	//  connected from.
+	// Lists the participants of a room session, one item for each identity.
+	//  Defaults to newest join first. Each item has the participant sessions of
+	//  the participant (`PA_...`), each with the client that it connected from.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 	AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 	//
-	// Returns a short-lived signed URL for one of the session recordings: its
-	//  audio or its chat history. A session with no recording of that type is
-	//  NotFound. A new recording can be NotFound for up to a minute after the
-	//  session ends.
+	// Returns a short-lived signed URL for a session recording: its audio
+	//  or its chat history. When the recording doesn't exist and
+	//  `dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+	//  `DATA_STATE_SETTLING`, the response has an empty `url`, because the
+	//  agent can still upload the recording. In every other state, a session
+	//  with no recording of that type returns `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTraces Returns the spans the agents in the session exported, by start time: what
-	//  the trace view on the dashboard shows. Each span names its parent, so the
-	//  pages rebuild the span tree, and its attributes carry the turn and latency
-	//  fields the turn view on the dashboard reads, such as lk.generation_id and
-	//  lk.response.ttft.
+	// ObservabilityServiceGetSessionTraces Returns the spans that the agents of a session exported, ordered by start
+	//  time. These are the spans that the trace view on the dashboard shows. Each
+	//  span names its parent, so you can build the span tree from the pages. The
+	//  attributes of a span hold the turn and latency fields that the turn view on
+	//  the dashboard uses, such as `lk.generation_id` and `lk.response.ttft`.
 	//
-	// An ACTIVE session returns what its agents have exported so far; a span
-	//  exported after the first page waits for a new read. The later pages are
-	//  read by offset, so a span exported mid-read can still shift them: a span
-	//  can repeat, or be skipped. Dedupe by spanId, and read again from the first
-	//  page to pick up a skipped span. An unknown session is NotFound.
+	// An `ACTIVE` session returns the spans that its agents exported up to now. A
+	//  span exported after the first page appears only in a new read. The API
+	//  reads the later pages by offset, so a span exported during your read can
+	//  move them. Thus, a span can repeat, or a page can skip a span. Remove
+	//  duplicates by `spanId`. To get a skipped span, read again from the first
+	//  page. An unknown session returns `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTranscript Returns the session conversation as ordered transcript items: messages,
-	//  tool calls and results, agent handoffs and agent configuration changes. It
-	//  is the conversation the transcript on the dashboard shows.
+	// ObservabilityServiceGetSessionTranscript Returns the conversation of a session as ordered transcript items. The
+	//  items are messages, tool calls and results, agent handoffs, and agent
+	//  configuration changes. It is the conversation that the transcript on the
+	//  dashboard shows.
 	//
-	// The agent exports its transcript when the session ends, and it can be read
-	//  a minute or two later; on a project with PII redaction, only once the
-	//  session recording has been redacted. So a session that is still ACTIVE
-	//  returns what exists so far, usually nothing, without an error: read it
-	//  again after the session ends. An unknown session is NotFound.
+	// The agent exports its transcript when the session ends. There is a delay
+	//  before you can read it, and the length of the delay is not fixed. On a
+	//  project with PII redaction, you can read it only after LiveKit redacts the
+	//  session recording. Thus, an `ACTIVE` session returns the items that exist,
+	//  usually none, with no error. Read it again after the session ends. An
+	//  unknown session returns `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 	ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceListSimulationRuns ListSimulationRuns
 	//
-	// Lists the runs for a project, newest first, cursor-paginated, optionally
-	//  narrowed by status, agent, conversation mode and a time window. Rows carry
-	//  headline counts (`jobCount`, `passedCount`, `failedCount`, `issueCount`) but
-	//  neither jobs nor the summary.
+	// Lists the runs of a project, newest first. You can filter the runs by
+	//  status, agent, conversation mode, and time window. Each run includes its
+	//  counts (`jobCount`, `passedCount`, `failedCount`, and `issueCount`), but
+	//  not its jobs or its summary.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 	SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCreateSimulationRunWithBody CreateSimulationRun
 	//
-	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
-	//  agent source that scenarios are generated from: upload it to the returned
-	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-	//  for an hour is failed. Creating a run is not idempotent: a retried request
-	//  starts a second run.
+	// Creates a simulation run. With a `scenarioGroup`, the run starts
+	//  immediately and the response has no upload target. Without a
+	//  `scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+	//  that the API generates scenarios from. Upload the source to the returned
+	//  presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+	//  pending for one hour fails. This RPC is not idempotent: a retry starts a
+	//  second run.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -7774,12 +7456,13 @@ type ClientInterface interface {
 
 	// SimulationServiceCreateSimulationRun CreateSimulationRun
 	//
-	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
-	//  agent source that scenarios are generated from: upload it to the returned
-	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-	//  for an hour is failed. Creating a run is not idempotent: a retried request
-	//  starts a second run.
+	// Creates a simulation run. With a `scenarioGroup`, the run starts
+	//  immediately and the response has no upload target. Without a
+	//  `scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+	//  that the API generates scenarios from. Upload the source to the returned
+	//  presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+	//  pending for one hour fails. This RPC is not idempotent: a retry starts a
+	//  second run.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -7788,36 +7471,38 @@ type ClientInterface interface {
 
 	// SimulationServiceGetSimulationRun GetSimulationRun
 	//
-	// Returns one run with its jobs and aggregate metrics. The compressed summary
-	//  blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
-	//  summary.
+	// Returns one run with its jobs and aggregate metrics. The response does not
+	//  include the compressed summary (`summaryZstd`). To get the summary, call
+	//  `GetSimulationRunSummary`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 	SimulationServiceGetSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceGetSimulationRunSummary GetSimulationRunSummary
 	//
-	// Returns the graded outcome of a finished run: pass/fail counts, what went
-	//  well, what to improve, flagged issues with suggestions, and the per-job
-	//  chat history. FailedPrecondition while the run is still going; NotFound if
-	//  the run finished without a summary.
+	// Returns the graded outcome of a finished run: the pass and fail counts,
+	//  what went well, what to improve, the flagged issues with suggestions, and
+	//  the chat history of each job. Returns `FailedPrecondition` while the run
+	//  is in progress. Returns `NotFound` when the run finished without a
+	//  summary.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 	SimulationServiceGetSimulationRunSummary(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCancelSimulationRun CancelSimulationRun
 	//
-	// Stops a run that has not finished. Cancelling a run that already finished
-	//  succeeds without effect.
+	// Stops a run that has not finished. When the run is already finished, the
+	//  call succeeds and has no effect.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 	SimulationServiceCancelSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceConfirmSimulationSourceUploadWithBody ConfirmSimulationSourceUpload
 	//
-	// Marks the agent source as uploaded and starts scenario generation; the run
-	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is `PENDING_UPLOAD`, so a repeated call fails.
+	// Confirms that the agent source is uploaded and starts scenario
+	//  generation. The run goes to `GENERATING`, then to `RUNNING` when the
+	//  scenarios exist. The call is valid only while the run is
+	//  `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -7826,9 +7511,10 @@ type ClientInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUpload ConfirmSimulationSourceUpload
 	//
-	// Marks the agent source as uploaded and starts scenario generation; the run
-	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is `PENDING_UPLOAD`, so a repeated call fails.
+	// Confirms that the agent source is uploaded and starts scenario
+	//  generation. The run goes to `GENERATING`, then to `RUNNING` when the
+	//  scenarios exist. The call is valid only while the run is
+	//  `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -7837,90 +7523,19 @@ type ClientInterface interface {
 
 	// SimulationServiceCountSimulationRuns CountSimulationRuns
 	//
-	// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
-	//  into a histogram. It takes the same filters over the same window, so the
-	//  bars and the rows beneath them always describe one set. Both bounds are
-	//  required and endTime must be after startTime.
+	// Returns a histogram of the runs in the window [`startTime`, `endTime`). It
+	//  takes the same filters as `ListSimulationRuns`, so the histogram and the
+	//  list describe the same set of runs. Both bounds are required, and
+	//  `endTime` must be after `startTime`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceListThreads ListThreads
-	//
-	// Lists the threads of one scope, newest first.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
-	ThreadServiceListThreads(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ThreadServiceCreateThreadWithBody CreateThread
-	//
-	// Creates a thread and its database.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-	ThreadServiceCreateThreadWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ThreadServiceCreateThread CreateThread
-	//
-	// Creates a thread and its database.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-	ThreadServiceCreateThread(ctx context.Context, projectId string, body ThreadServiceCreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ThreadServiceDeleteThread DeleteThread
-	//
-	// Deletes the thread and its database.
-	//
-	// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
-	ThreadServiceDeleteThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ThreadServiceGetThread GetThread
-	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceGetThread` operationId).
-	ThreadServiceGetThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ThreadServiceUpdateThreadWithBody UpdateThread
-	//
-	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-	//  Every update counts as activity and pushes expiresAt out.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-	ThreadServiceUpdateThreadWithBody(ctx context.Context, projectId string, threadId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ThreadServiceUpdateThread UpdateThread
-	//
-	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-	//  Every update counts as activity and pushes expiresAt out.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-	ThreadServiceUpdateThread(ctx context.Context, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ThreadServiceGetThreadItems GetThreadItems
-	//
-	// Returns the chat items in the thread, oldest first.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
-	ThreadServiceGetThreadItems(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ThreadServiceGetThreadTasks GetThreadTasks
-	//
-	// Returns the background tasks in the thread, oldest first.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
-	ThreadServiceGetThreadTasks(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ProjectServiceCreateTokenWithBody CreateToken
 	//
-	// Mints a short-lived LiveKit access token for the project, signed
-	//  server-side, so user-authenticated clients can call LiveKit server APIs
-	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Creates a short-lived LiveKit access token for the project. The API signs
+	//  the token, so a signed-in user can call the LiveKit server APIs, such as
+	//  rooms, SIP, and egress, or join a room without an API secret.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -7929,9 +7544,9 @@ type ClientInterface interface {
 
 	// ProjectServiceCreateToken CreateToken
 	//
-	// Mints a short-lived LiveKit access token for the project, signed
-	//  server-side, so user-authenticated clients can call LiveKit server APIs
-	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Creates a short-lived LiveKit access token for the project. The API signs
+	//  the token, so a signed-in user can call the LiveKit server APIs, such as
+	//  rooms, SIP, and egress, or join a room without an API secret.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -8137,8 +7752,8 @@ type ClientInterface interface {
 
 	// WorkspaceServiceListProjects ListProjects
 	//
-	// The projects in a workspace. These return the same Project message as
-	//  the project endpoints.
+	// Lists the projects in a workspace. The items are the same `Project`
+	//  message that `ProjectService` returns.
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 	WorkspaceServiceListProjects(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8332,10 +7947,10 @@ func (c *Client) ProjectServiceUpdateProject(ctx context.Context, projectId stri
 
 // BuilderAgentServiceListBuilderAgents ListBuilderAgents
 //
-// Lists a project's builder agents by name, one page at a time, with the
+// Lists the builder agents of a project by name, with the deployment status
 //
-//	status of each deployment. The list does not include configurations: use
-//	GetBuilderAgent for one.
+//	of each. The list does not include configurations. To get the
+//	configuration of an agent, call `GetBuilderAgent`.
 //
 // Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
 func (c *Client) BuilderAgentServiceListBuilderAgents(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8352,9 +7967,9 @@ func (c *Client) BuilderAgentServiceListBuilderAgents(ctx context.Context, proje
 
 // BuilderAgentServiceCreateBuilderAgentWithBody CreateBuilderAgent
 //
-// Makes a builder agent from a name and a configuration. The agent is not
+// Creates a builder agent from a name and a configuration. The agent is not
 //
-//	deployed: call DeployBuilderAgent to run it. Unset configuration
+//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
 //	properties take their default, and unknown properties are ignored.
 //
 // Takes any type of body and a specified content type.
@@ -8374,9 +7989,9 @@ func (c *Client) BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Conte
 
 // BuilderAgentServiceCreateBuilderAgent CreateBuilderAgent
 //
-// Makes a builder agent from a name and a configuration. The agent is not
+// Creates a builder agent from a name and a configuration. The agent is not
 //
-//	deployed: call DeployBuilderAgent to run it. Unset configuration
+//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
 //	properties take their default, and unknown properties are ignored.
 //
 // Takes a body of the `application/json` content type.
@@ -8413,9 +8028,9 @@ func (c *Client) BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, proj
 
 // BuilderAgentServiceGetBuilderAgent GetBuilderAgent
 //
-// Returns a builder agent with its current configuration and the status of
+// Returns a builder agent with its current configuration and its deployment
 //
-//	its deployment.
+//	status.
 //
 // Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
 func (c *Client) BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8432,7 +8047,7 @@ func (c *Client) BuilderAgentServiceGetBuilderAgent(ctx context.Context, project
 
 // BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
 //
-// Replaces a builder agent's configuration. Each update makes a new
+// Replaces the configuration of a builder agent. Each update makes a new
 //
 //	version. The running agent does not change until you deploy again.
 //
@@ -8453,7 +8068,7 @@ func (c *Client) BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Conte
 
 // BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
 //
-// Replaces a builder agent's configuration. Each update makes a new
+// Replaces the configuration of a builder agent. Each update makes a new
 //
 //	version. The running agent does not change until you deploy again.
 //
@@ -8474,12 +8089,12 @@ func (c *Client) BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, proj
 
 // BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
 //
-// Starts a deployment of a builder agent's current configuration, or of
+// Starts a deployment of the current configuration of a builder agent, or of
 //
-//	an earlier version. The call returns when the build starts, with status
-//	DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
-//	Call GetBuilderAgent to follow the deployment until its status is
-//	DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+//	an earlier version. The call returns when the build starts, with the
+//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+//	returns. Call `GetBuilderAgent` to follow the deployment until its status
+//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8498,180 +8113,18 @@ func (c *Client) BuilderAgentServiceDeployBuilderAgentWithBody(ctx context.Conte
 
 // BuilderAgentServiceDeployBuilderAgent DeployBuilderAgent
 //
-// Starts a deployment of a builder agent's current configuration, or of
+// Starts a deployment of the current configuration of a builder agent, or of
 //
-//	an earlier version. The call returns when the build starts, with status
-//	DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
-//	Call GetBuilderAgent to follow the deployment until its status is
-//	DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+//	an earlier version. The call returns when the build starts, with the
+//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+//	returns. Call `GetBuilderAgent` to follow the deployment until its status
+//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 //
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
 func (c *Client) BuilderAgentServiceDeployBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBuilderAgentServiceDeployBuilderAgentRequest(c.Server, projectId, builderAgentId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
-//
-// Returns the project overview over a time range.
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
-func (c *Client) AnalyticsServiceGetProjectAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAnalyticsServiceGetProjectAnalyticsRequest(c.Server, projectId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// AnalyticsServiceListAgentAnalytics ListAgentAnalytics
-//
-// Lists the analytics of each agent in the project over a time range. Each
-//
-//	item is an `AgentAnalytics`, the same message that `GetAgentAnalytics`
-//	returns for one agent.
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
-func (c *Client) AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAnalyticsServiceListAgentAnalyticsRequest(c.Server, projectId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// AnalyticsServiceGetAgentAnalytics GetAgentAnalytics
-//
-// Returns the analytics for one agent over a time range.
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
-func (c *Client) AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAnalyticsServiceGetAgentAnalyticsRequest(c.Server, projectId, agentId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DatabaseServiceListDatabases ListDatabases
-//
-// Lists the project databases, cursor-paginated.
-//
-// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
-func (c *Client) DatabaseServiceListDatabases(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceListDatabasesRequest(c.Server, projectId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DatabaseServiceCreateDatabaseWithBody CreateDatabase
-//
-// Creates an empty database. Not idempotent: a retried request creates a
-//
-//	second database.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-func (c *Client) DatabaseServiceCreateDatabaseWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceCreateDatabaseRequestWithBody(c.Server, projectId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DatabaseServiceCreateDatabase CreateDatabase
-//
-// Creates an empty database. Not idempotent: a retried request creates a
-//
-//	second database.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-func (c *Client) DatabaseServiceCreateDatabase(ctx context.Context, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceCreateDatabaseRequest(c.Server, projectId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DatabaseServiceDeleteDatabase DeleteDatabase
-//
-// Deletes the stored data, not just the metadata.
-//
-// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
-func (c *Client) DatabaseServiceDeleteDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceDeleteDatabaseRequest(c.Server, projectId, databaseId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DatabaseServiceGetDatabase GetDatabase
-//
-// Corresponds with GET /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceGetDatabase` operationId).
-func (c *Client) DatabaseServiceGetDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceGetDatabaseRequest(c.Server, projectId, databaseId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DatabaseServiceExportDatabase ExportDatabase
-//
-// Exports a consistent SQLite file as a time-limited download URL.
-//
-// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
-func (c *Client) DatabaseServiceExportDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceExportDatabaseRequest(c.Server, projectId, databaseId)
 	if err != nil {
 		return nil, err
 	}
@@ -8803,9 +8256,9 @@ func (c *Client) ProjectServiceListKeys(ctx context.Context, projectId string, p
 
 // ProjectServiceGenerateKeyWithBody GenerateKey
 //
-// Creates an API key and secret for the project. The secret is returned once,
+// Creates an API key and secret for the project. The response includes the
 //
-//	in the response, and cannot be read again.
+//	secret. You cannot read the secret again.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8824,9 +8277,9 @@ func (c *Client) ProjectServiceGenerateKeyWithBody(ctx context.Context, projectI
 
 // ProjectServiceGenerateKey GenerateKey
 //
-// Creates an API key and secret for the project. The secret is returned once,
+// Creates an API key and secret for the project. The response includes the
 //
-//	in the response, and cannot be read again.
+//	secret. You cannot read the secret again.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8975,13 +8428,13 @@ func (c *Client) ProjectServiceAddWorkspaceMembersToProject(ctx context.Context,
 
 // SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
 //
-// Derives a reusable scenario (label, instructions and expectations) from a
+// Generates a scenario (label, instructions, and expectations) from a
 //
-//	recorded room session, for use in the scenarioGroup of a later run.
-//	Nothing is stored; the returned scenario is the result. The session must
-//	have a recorded chat history. Each call runs an LLM over it, so it counts
-//	against the scenario-generation quota for the project and can take up to
-//	about a minute.
+//	recorded room session. Use the scenario in the `scenarioGroup` of a later
+//	run. The API does not save the scenario: the response is the only copy.
+//	The session must have a recorded chat history. Each call runs an LLM on
+//	the chat history, so it counts against the scenario-generation quota of
+//	the project. A call can take up to about one minute.
 //
 // Takes any type of body and a specified content type.
 //
@@ -9000,13 +8453,13 @@ func (c *Client) SimulationServiceGenerateScenarioFromSessionWithBody(ctx contex
 
 // SimulationServiceGenerateScenarioFromSession GenerateScenarioFromSession
 //
-// Derives a reusable scenario (label, instructions and expectations) from a
+// Generates a scenario (label, instructions, and expectations) from a
 //
-//	recorded room session, for use in the scenarioGroup of a later run.
-//	Nothing is stored; the returned scenario is the result. The session must
-//	have a recorded chat history. Each call runs an LLM over it, so it counts
-//	against the scenario-generation quota for the project and can take up to
-//	about a minute.
+//	recorded room session. Use the scenario in the `scenarioGroup` of a later
+//	run. The API does not save the scenario: the response is the only copy.
+//	The session must have a recorded chat history. Each call runs an LLM on
+//	the chat history, so it counts against the scenario-generation quota of
+//	the project. A call can take up to about one minute.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9025,7 +8478,7 @@ func (c *Client) SimulationServiceGenerateScenarioFromSession(ctx context.Contex
 
 // AnalyticsServiceListProjectSessions ListProjectSessions
 //
-// Lists room sessions for a project, newest first, cursor-paginated.
+// Lists the room sessions of a project, newest first.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9042,9 +8495,9 @@ func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projec
 
 // AnalyticsServiceGetSession GetSession
 //
-// Returns one room session. The response carries both the list-row `session`
+// Returns one room session. The response has the `session` that the list
 //
-//	and the richer `detail` (participants, per-metric data points).
+//	returns, and a `detail` with the participants and the metric timelines.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9059,35 +8512,35 @@ func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId strin
 	return c.Client.Do(req)
 }
 
-// AnalyticsServiceListSessionEvents Lists the events in one room session, oldest first by default,
+// AnalyticsServiceListSessionEvents Lists the events of a room session. Defaults to oldest first. The page info
 //
-//	cursor-paginated with no total. With no `types`, it returns the seven the
-//	events table on the dashboard shows: `PARTICIPANT_JOINED`,
-//	`PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`, `PARTICIPANT_RESUMED`,
-//	`ROOM_CREATED`, `ROOM_ENDED` and `API_CALL`. `types` asks for others, such
-//	as `TRACK_PUBLISHED`, and `participantSessionId` keeps the events for one
-//	participant session. With `participantSessionId` and no `types`, it returns
-//	the eleven the participant events table on the dashboard shows for that
-//	participant session: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`,
-//	`PARTICIPANT_RESUMED` and `PARTICIPANT_ACTIVE`, and its `TRACK_MUTED`,
-//	`TRACK_UNMUTED`, `TRACK_PUBLISHED`, `TRACK_UNPUBLISHED`,
-//	`TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED` and
+//	has no total.
+//
+// When `types` is empty, the list has these seven types:
+//
+//	`PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`,
+//	`PARTICIPANT_RESUMED`, `ROOM_CREATED`, `ROOM_ENDED`, and `API_CALL`. To get
+//	other types, such as `TRACK_PUBLISHED`, set `types`. To get the events of
+//	one participant session, set `participantSessionId`. When you set
+//	`participantSessionId` and `types` is empty, the list has these eleven
+//	types: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_RESUMED`,
+//	`PARTICIPANT_ACTIVE`, `TRACK_MUTED`, `TRACK_UNMUTED`, `TRACK_PUBLISHED`,
+//	`TRACK_UNPUBLISHED`, `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED`, and
 //	`TRACK_SUBSCRIBE_FAILED`.
 //
-// Unlike the dashboard, on purpose: an unknown type or a malformed
+//	Each type matches exactly, so `TRACK_PUBLISHED` does not also return
+//	`TRACK_PUBLISHED_UPDATE`. The `payload` of an event has only a fixed set of
+//	fields. It does not include participant attributes, participant metadata,
+//	or the request bodies of API calls. Each event and participant item has the
+//	identity of the participant. For a SIP caller, the identity can be a phone
+//	number.
 //
-//	participant session ID is `InvalidArgument` rather than being searched for
-//	as typed, and types match exactly, so `TRACK_PUBLISHED` doesn't also return
-//	`TRACK_PUBLISHED_UPDATE`. Each event payload keeps only an allowlist of
-//	fields, leaving out participants' attributes and metadata and API calls'
-//	request bodies. Each event and participant row still carries the
-//	participant's identity, as the dashboard shows it to every member, and for
-//	a SIP caller that can be a phone number.
+//	LiveKit keeps events for 60 days. This can be shorter than the other data
+//	of the session, so an older session can have no events. An `ACTIVE` session
+//	lists the events recorded until now.
 //
-//	Events are kept for 60 days, which can be shorter than the retention of
-//	other data for the session, so an older session can list no events. An
-//	`ACTIVE` session lists the events recorded so far. An unknown session is
-//	`NotFound`.
+//	Errors: an unknown type or a malformed participant session ID returns
+//	`InvalidArgument`. An unknown session returns `NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9102,20 +8555,22 @@ func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectI
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionLogs Returns the log records the agents in the session exported, in time order:
+// ObservabilityServiceGetSessionLogs Returns the log records that the agents of a session exported, in time
 //
-//	what the logs panel on the dashboard shows. Their chat history is left out,
-//	since `GetSessionTranscript` reads it, and their evaluation results stay
-//	in. The session events, such as participants joining, come from
-//	`ListSessionEvents` on `AnalyticsService`.
+//	order. These are the records that the logs panel on the dashboard shows.
+//	The chat history is not included, because `GetSessionTranscript` returns
+//	it. Evaluation results are included. To get the events of the session, such
+//	as participants that join, use `AnalyticsService.ListSessionEvents`.
 //
-// An `ACTIVE` session returns what its agents have exported so far. A record
+// An `ACTIVE` session returns the records that its agents exported up to now.
 //
-//	exported mid-read with a time this read has already paged past, earlier
-//	than its cursor position when oldest first, is missed until a new read. An
-//	unknown session is NotFound. A read filtered by logLevels can come back
-//	empty because no record is at those levels, so only an unfiltered one is
-//	ObservabilityDisabled.
+//	While you page through the records, an agent can export a record with a
+//	time that your pages already passed. For example, in oldest-first order, a
+//	record with a time earlier than the cursor position. This read does not
+//	return that record. A new read returns it. An unknown session returns
+//	`NotFound`. A read filtered by `logLevels` can return no records because no
+//	record has those levels. Thus, only a read with no filter returns the
+//	`ObservabilityDisabled` error.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9130,38 +8585,36 @@ func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, project
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the agents in the session exported,
+// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points that the agents of a session
 //
-//	by time, typed: turn latencies such as lk.agents.turn.e2e_latency and
-//	lk.agents.turn.llm_ttft, token and duration usage such as
-//	lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
-//	any metrics the agent's own code recorded.
+//	exported, ordered by time. The points include turn latencies, such as
+//	`lk.agents.turn.e2e_latency` and `lk.agents.turn.llm_ttft`, token and
+//	duration usage, such as `lk.agents.usage.llm_input_tokens`, and the
+//	`gen_ai.*` histograms. They also include the metrics that the agent's own
+//	code recorded.
 //
-// These are the raw metrics agents emit, so they won't exactly match the
+// These are the raw metrics that agents export. They do not exactly match the
 //
-//	metrics panel on the dashboard, which derives its numbers from the
-//	transcript and traces. Only agents that export OpenTelemetry metrics to
-//	LiveKit Cloud produce them: an agent whose code installs its own
-//	MeterProvider exports none to LiveKit Cloud, and its sessions return no
-//	points.
+//	metrics panel on the dashboard, which calculates its values from the
+//	transcript and traces. Only an agent that exports OpenTelemetry metrics to
+//	LiveKit Cloud has points. An agent whose code installs its own
+//	`MeterProvider` exports no metrics to LiveKit Cloud, and its sessions
+//	return no points.
 //
-//	Some points aren't labeled as their agent exported them. LiveKit Cloud
-//	groups the series for a session by their attributes alone and names each
-//	group after its first row. As a result:
-//
-//	- Several metrics can come back under one name. For example, the input,
-//	  output, and cached token counts for an LLM all have the name
-//	  `lk.agents.usage.llm_input_tokens`.
-//	- Points of one series at the same time that recorded equal values
-//	  collapse into one point.
-//	- When a session has two agents, a point can carry the resource attributes
-//	  of the other agent.
+//	Some points do not have the labels that their agent exported. LiveKit Cloud
+//	groups the series of a session by their attributes only, and gives each
+//	group the name of its first point. This has these results. Several metrics
+//	can have one name. For example, the input, output, and cached token counts
+//	of an LLM all have the name `lk.agents.usage.llm_input_tokens`. Points of
+//	one series with the same time and the same value become one point. When a
+//	session has two agents, a point can have the resource attributes of the
+//	other agent.
 //
 //	An agent exports its metrics every 30 seconds, and its turn latencies when
-//	the session ends, so an ACTIVE session returns what it has exported so far.
-//	An unknown session is NotFound. A read filtered by names can come back
-//	empty because no metric has those names, so only an unfiltered one is
-//	ObservabilityDisabled.
+//	the session ends. Thus, an `ACTIVE` session returns the points that its
+//	agents exported up to now. An unknown session returns `NotFound`. A read
+//	filtered by `names` can return no points because no metric has those names.
+//	Thus, only a read with no filter returns the `ObservabilityDisabled` error.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9178,11 +8631,10 @@ func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, proj
 
 // AnalyticsServiceListSessionParticipants ListSessionParticipants
 //
-// Lists the participants of one room session, one row per identity,
+// Lists the participants of a room session, one item for each identity.
 //
-//	cursor-paginated; newest join first by default. Each row carries the
-//	participant's participant sessions (PA_...), each with the client it
-//	connected from.
+//	Defaults to newest join first. Each item has the participant sessions of
+//	the participant (`PA_...`), each with the client that it connected from.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9199,11 +8651,13 @@ func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, pr
 
 // ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 //
-// Returns a short-lived signed URL for one of the session recordings: its
+// Returns a short-lived signed URL for a session recording: its audio
 //
-//	audio or its chat history. A session with no recording of that type is
-//	NotFound. A new recording can be NotFound for up to a minute after the
-//	session ends.
+//	or its chat history. When the recording doesn't exist and
+//	`dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+//	`DATA_STATE_SETTLING`, the response has an empty `url`, because the
+//	agent can still upload the recording. In every other state, a session
+//	with no recording of that type returns `NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9218,19 +8672,20 @@ func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context,
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTraces Returns the spans the agents in the session exported, by start time: what
+// ObservabilityServiceGetSessionTraces Returns the spans that the agents of a session exported, ordered by start
 //
-//	the trace view on the dashboard shows. Each span names its parent, so the
-//	pages rebuild the span tree, and its attributes carry the turn and latency
-//	fields the turn view on the dashboard reads, such as lk.generation_id and
-//	lk.response.ttft.
+//	time. These are the spans that the trace view on the dashboard shows. Each
+//	span names its parent, so you can build the span tree from the pages. The
+//	attributes of a span hold the turn and latency fields that the turn view on
+//	the dashboard uses, such as `lk.generation_id` and `lk.response.ttft`.
 //
-// An ACTIVE session returns what its agents have exported so far; a span
+// An `ACTIVE` session returns the spans that its agents exported up to now. A
 //
-//	exported after the first page waits for a new read. The later pages are
-//	read by offset, so a span exported mid-read can still shift them: a span
-//	can repeat, or be skipped. Dedupe by spanId, and read again from the first
-//	page to pick up a skipped span. An unknown session is NotFound.
+//	span exported after the first page appears only in a new read. The API
+//	reads the later pages by offset, so a span exported during your read can
+//	move them. Thus, a span can repeat, or a page can skip a span. Remove
+//	duplicates by `spanId`. To get a skipped span, read again from the first
+//	page. An unknown session returns `NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9245,17 +8700,19 @@ func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, proje
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTranscript Returns the session conversation as ordered transcript items: messages,
+// ObservabilityServiceGetSessionTranscript Returns the conversation of a session as ordered transcript items. The
 //
-//	tool calls and results, agent handoffs and agent configuration changes. It
-//	is the conversation the transcript on the dashboard shows.
+//	items are messages, tool calls and results, agent handoffs, and agent
+//	configuration changes. It is the conversation that the transcript on the
+//	dashboard shows.
 //
-// The agent exports its transcript when the session ends, and it can be read
+// The agent exports its transcript when the session ends. There is a delay
 //
-//	a minute or two later; on a project with PII redaction, only once the
-//	session recording has been redacted. So a session that is still ACTIVE
-//	returns what exists so far, usually nothing, without an error: read it
-//	again after the session ends. An unknown session is NotFound.
+//	before you can read it, and the length of the delay is not fixed. On a
+//	project with PII redaction, you can read it only after LiveKit redacts the
+//	session recording. Thus, an `ACTIVE` session returns the items that exist,
+//	usually none, with no error. Read it again after the session ends. An
+//	unknown session returns `NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9272,11 +8729,11 @@ func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, p
 
 // SimulationServiceListSimulationRuns ListSimulationRuns
 //
-// Lists the runs for a project, newest first, cursor-paginated, optionally
+// Lists the runs of a project, newest first. You can filter the runs by
 //
-//	narrowed by status, agent, conversation mode and a time window. Rows carry
-//	headline counts (`jobCount`, `passedCount`, `failedCount`, `issueCount`) but
-//	neither jobs nor the summary.
+//	status, agent, conversation mode, and time window. Each run includes its
+//	counts (`jobCount`, `passedCount`, `failedCount`, and `issueCount`), but
+//	not its jobs or its summary.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9293,13 +8750,14 @@ func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projec
 
 // SimulationServiceCreateSimulationRunWithBody CreateSimulationRun
 //
-// Registers a new run. With a scenarioGroup it starts right away and no
+// Creates a simulation run. With a `scenarioGroup`, the run starts
 //
-//	upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
-//	agent source that scenarios are generated from: upload it to the returned
-//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-//	for an hour is failed. Creating a run is not idempotent: a retried request
-//	starts a second run.
+//	immediately and the response has no upload target. Without a
+//	`scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+//	that the API generates scenarios from. Upload the source to the returned
+//	presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+//	pending for one hour fails. This RPC is not idempotent: a retry starts a
+//	second run.
 //
 // Takes any type of body and a specified content type.
 //
@@ -9318,13 +8776,14 @@ func (c *Client) SimulationServiceCreateSimulationRunWithBody(ctx context.Contex
 
 // SimulationServiceCreateSimulationRun CreateSimulationRun
 //
-// Registers a new run. With a scenarioGroup it starts right away and no
+// Creates a simulation run. With a `scenarioGroup`, the run starts
 //
-//	upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
-//	agent source that scenarios are generated from: upload it to the returned
-//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-//	for an hour is failed. Creating a run is not idempotent: a retried request
-//	starts a second run.
+//	immediately and the response has no upload target. Without a
+//	`scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+//	that the API generates scenarios from. Upload the source to the returned
+//	presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+//	pending for one hour fails. This RPC is not idempotent: a retry starts a
+//	second run.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9343,10 +8802,10 @@ func (c *Client) SimulationServiceCreateSimulationRun(ctx context.Context, proje
 
 // SimulationServiceGetSimulationRun GetSimulationRun
 //
-// Returns one run with its jobs and aggregate metrics. The compressed summary
+// Returns one run with its jobs and aggregate metrics. The response does not
 //
-//	blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
-//	summary.
+//	include the compressed summary (`summaryZstd`). To get the summary, call
+//	`GetSimulationRunSummary`.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 func (c *Client) SimulationServiceGetSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9363,11 +8822,12 @@ func (c *Client) SimulationServiceGetSimulationRun(ctx context.Context, projectI
 
 // SimulationServiceGetSimulationRunSummary GetSimulationRunSummary
 //
-// Returns the graded outcome of a finished run: pass/fail counts, what went
+// Returns the graded outcome of a finished run: the pass and fail counts,
 //
-//	well, what to improve, flagged issues with suggestions, and the per-job
-//	chat history. FailedPrecondition while the run is still going; NotFound if
-//	the run finished without a summary.
+//	what went well, what to improve, the flagged issues with suggestions, and
+//	the chat history of each job. Returns `FailedPrecondition` while the run
+//	is in progress. Returns `NotFound` when the run finished without a
+//	summary.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 func (c *Client) SimulationServiceGetSimulationRunSummary(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9384,9 +8844,9 @@ func (c *Client) SimulationServiceGetSimulationRunSummary(ctx context.Context, p
 
 // SimulationServiceCancelSimulationRun CancelSimulationRun
 //
-// Stops a run that has not finished. Cancelling a run that already finished
+// Stops a run that has not finished. When the run is already finished, the
 //
-//	succeeds without effect.
+//	call succeeds and has no effect.
 //
 // Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9403,10 +8863,11 @@ func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, proje
 
 // SimulationServiceConfirmSimulationSourceUploadWithBody ConfirmSimulationSourceUpload
 //
-// Marks the agent source as uploaded and starts scenario generation; the run
+// Confirms that the agent source is uploaded and starts scenario
 //
-//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is `PENDING_UPLOAD`, so a repeated call fails.
+//	generation. The run goes to `GENERATING`, then to `RUNNING` when the
+//	scenarios exist. The call is valid only while the run is
+//	`PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes any type of body and a specified content type.
 //
@@ -9425,10 +8886,11 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUploadWithBody(ctx cont
 
 // SimulationServiceConfirmSimulationSourceUpload ConfirmSimulationSourceUpload
 //
-// Marks the agent source as uploaded and starts scenario generation; the run
+// Confirms that the agent source is uploaded and starts scenario
 //
-//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is `PENDING_UPLOAD`, so a repeated call fails.
+//	generation. The run goes to `GENERATING`, then to `RUNNING` when the
+//	scenarios exist. The call is valid only while the run is
+//	`PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9447,11 +8909,11 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUpload(ctx context.Cont
 
 // SimulationServiceCountSimulationRuns CountSimulationRuns
 //
-// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
+// Returns a histogram of the runs in the window [`startTime`, `endTime`). It
 //
-//	into a histogram. It takes the same filters over the same window, so the
-//	bars and the rows beneath them always describe one set. Both bounds are
-//	required and endTime must be after startTime.
+//	takes the same filters as `ListSimulationRuns`, so the histogram and the
+//	list describe the same set of runs. Both bounds are required, and
+//	`endTime` must be after `startTime`.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9466,175 +8928,12 @@ func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, proje
 	return c.Client.Do(req)
 }
 
-// ThreadServiceListThreads ListThreads
-//
-// Lists the threads of one scope, newest first.
-//
-// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
-func (c *Client) ThreadServiceListThreads(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceListThreadsRequest(c.Server, projectId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ThreadServiceCreateThreadWithBody CreateThread
-//
-// Creates a thread and its database.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-func (c *Client) ThreadServiceCreateThreadWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceCreateThreadRequestWithBody(c.Server, projectId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ThreadServiceCreateThread CreateThread
-//
-// Creates a thread and its database.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-func (c *Client) ThreadServiceCreateThread(ctx context.Context, projectId string, body ThreadServiceCreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceCreateThreadRequest(c.Server, projectId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ThreadServiceDeleteThread DeleteThread
-//
-// Deletes the thread and its database.
-//
-// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
-func (c *Client) ThreadServiceDeleteThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceDeleteThreadRequest(c.Server, projectId, threadId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ThreadServiceGetThread GetThread
-//
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceGetThread` operationId).
-func (c *Client) ThreadServiceGetThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceGetThreadRequest(c.Server, projectId, threadId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ThreadServiceUpdateThreadWithBody UpdateThread
-//
-// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-//
-//	Every update counts as activity and pushes expiresAt out.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-func (c *Client) ThreadServiceUpdateThreadWithBody(ctx context.Context, projectId string, threadId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceUpdateThreadRequestWithBody(c.Server, projectId, threadId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ThreadServiceUpdateThread UpdateThread
-//
-// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-//
-//	Every update counts as activity and pushes expiresAt out.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-func (c *Client) ThreadServiceUpdateThread(ctx context.Context, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceUpdateThreadRequest(c.Server, projectId, threadId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ThreadServiceGetThreadItems GetThreadItems
-//
-// Returns the chat items in the thread, oldest first.
-//
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
-func (c *Client) ThreadServiceGetThreadItems(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceGetThreadItemsRequest(c.Server, projectId, threadId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ThreadServiceGetThreadTasks GetThreadTasks
-//
-// Returns the background tasks in the thread, oldest first.
-//
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
-func (c *Client) ThreadServiceGetThreadTasks(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceGetThreadTasksRequest(c.Server, projectId, threadId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // ProjectServiceCreateTokenWithBody CreateToken
 //
-// Mints a short-lived LiveKit access token for the project, signed
+// Creates a short-lived LiveKit access token for the project. The API signs
 //
-//	server-side, so user-authenticated clients can call LiveKit server APIs
-//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	the token, so a signed-in user can call the LiveKit server APIs, such as
+//	rooms, SIP, and egress, or join a room without an API secret.
 //
 // Takes any type of body and a specified content type.
 //
@@ -9653,10 +8952,10 @@ func (c *Client) ProjectServiceCreateTokenWithBody(ctx context.Context, projectI
 
 // ProjectServiceCreateToken CreateToken
 //
-// Mints a short-lived LiveKit access token for the project, signed
+// Creates a short-lived LiveKit access token for the project. The API signs
 //
-//	server-side, so user-authenticated clients can call LiveKit server APIs
-//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	the token, so a signed-in user can call the LiveKit server APIs, such as
+//	rooms, SIP, and egress, or join a room without an API secret.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -10184,9 +9483,9 @@ func (c *Client) WorkspaceServiceUpdateMember(ctx context.Context, workspaceId s
 
 // WorkspaceServiceListProjects ListProjects
 //
-// The projects in a workspace. These return the same Project message as
+// Lists the projects in a workspace. The items are the same `Project`
 //
-//	the project endpoints.
+//	message that `ProjectService` returns.
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 func (c *Client) WorkspaceServiceListProjects(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -10897,499 +10196,6 @@ func NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server string, proj
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewAnalyticsServiceGetProjectAnalyticsRequest constructs an http.Request for the AnalyticsServiceGetProjectAnalytics method
-func NewAnalyticsServiceGetProjectAnalyticsRequest(server string, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/analytics", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.RangeStartTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RangeEndTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAnalyticsServiceListAgentAnalyticsRequest constructs an http.Request for the AnalyticsServiceListAgentAnalytics method
-func NewAnalyticsServiceListAgentAnalyticsRequest(server string, projectId string, params *AnalyticsServiceListAgentAnalyticsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/analytics/agents", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.RangeStartTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RangeEndTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageCursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PagePageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAnalyticsServiceGetAgentAnalyticsRequest constructs an http.Request for the AnalyticsServiceGetAgentAnalytics method
-func NewAnalyticsServiceGetAgentAnalyticsRequest(server string, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/analytics/agents/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.RangeStartTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RangeEndTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDatabaseServiceListDatabasesRequest constructs an http.Request for the DatabaseServiceListDatabases method
-func NewDatabaseServiceListDatabasesRequest(server string, projectId string, params *DatabaseServiceListDatabasesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.PageCursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PagePageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDatabaseServiceCreateDatabaseRequest calls the generic DatabaseServiceCreateDatabase builder with application/json body
-func NewDatabaseServiceCreateDatabaseRequest(server string, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewDatabaseServiceCreateDatabaseRequestWithBody(server, projectId, "application/json", bodyReader)
-}
-
-// NewDatabaseServiceCreateDatabaseRequestWithBody constructs an http.Request for the DatabaseServiceCreateDatabase method, with any body, and a specified content type
-func NewDatabaseServiceCreateDatabaseRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDatabaseServiceDeleteDatabaseRequest constructs an http.Request for the DatabaseServiceDeleteDatabase method
-func NewDatabaseServiceDeleteDatabaseRequest(server string, projectId string, databaseId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "databaseId", databaseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDatabaseServiceGetDatabaseRequest constructs an http.Request for the DatabaseServiceGetDatabase method
-func NewDatabaseServiceGetDatabaseRequest(server string, projectId string, databaseId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "databaseId", databaseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDatabaseServiceExportDatabaseRequest constructs an http.Request for the DatabaseServiceExportDatabase method
-func NewDatabaseServiceExportDatabaseRequest(server string, projectId string, databaseId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "databaseId", databaseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases/%s:export", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -13456,470 +12262,6 @@ func NewSimulationServiceCountSimulationRunsRequest(server string, projectId str
 	return req, nil
 }
 
-// NewThreadServiceListThreadsRequest constructs an http.Request for the ThreadServiceListThreads method
-func NewThreadServiceListThreadsRequest(server string, projectId string, params *ThreadServiceListThreadsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Scope != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageCursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PagePageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewThreadServiceCreateThreadRequest calls the generic ThreadServiceCreateThread builder with application/json body
-func NewThreadServiceCreateThreadRequest(server string, projectId string, body ThreadServiceCreateThreadJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewThreadServiceCreateThreadRequestWithBody(server, projectId, "application/json", bodyReader)
-}
-
-// NewThreadServiceCreateThreadRequestWithBody constructs an http.Request for the ThreadServiceCreateThread method, with any body, and a specified content type
-func NewThreadServiceCreateThreadRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewThreadServiceDeleteThreadRequest constructs an http.Request for the ThreadServiceDeleteThread method
-func NewThreadServiceDeleteThreadRequest(server string, projectId string, threadId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewThreadServiceGetThreadRequest constructs an http.Request for the ThreadServiceGetThread method
-func NewThreadServiceGetThreadRequest(server string, projectId string, threadId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewThreadServiceUpdateThreadRequest calls the generic ThreadServiceUpdateThread builder with application/json body
-func NewThreadServiceUpdateThreadRequest(server string, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewThreadServiceUpdateThreadRequestWithBody(server, projectId, threadId, "application/json", bodyReader)
-}
-
-// NewThreadServiceUpdateThreadRequestWithBody constructs an http.Request for the ThreadServiceUpdateThread method, with any body, and a specified content type
-func NewThreadServiceUpdateThreadRequestWithBody(server string, projectId string, threadId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewThreadServiceGetThreadItemsRequest constructs an http.Request for the ThreadServiceGetThreadItems method
-func NewThreadServiceGetThreadItemsRequest(server string, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s/items", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Agent != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent", *params.Agent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageCursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PagePageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.SortOrder != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewThreadServiceGetThreadTasksRequest constructs an http.Request for the ThreadServiceGetThreadTasks method
-func NewThreadServiceGetThreadTasksRequest(server string, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s/tasks", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageCursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PagePageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewProjectServiceCreateTokenRequest calls the generic ProjectServiceCreateToken builder with application/json body
 func NewProjectServiceCreateTokenRequest(server string, projectId string, body ProjectServiceCreateTokenJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -15477,9 +13819,9 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceListBuilderAgentsWithResponse ListBuilderAgents
 	//
-	// Lists a project's builder agents by name, one page at a time, with the
-	//  status of each deployment. The list does not include configurations: use
-	//  GetBuilderAgent for one.
+	// Lists the builder agents of a project by name, with the deployment status
+	//  of each. The list does not include configurations. To get the
+	//  configuration of an agent, call `GetBuilderAgent`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15488,8 +13830,8 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse CreateBuilderAgent
 	//
-	// Makes a builder agent from a name and a configuration. The agent is not
-	//  deployed: call DeployBuilderAgent to run it. Unset configuration
+	// Creates a builder agent from a name and a configuration. The agent is not
+	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
 	//  properties take their default, and unknown properties are ignored.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -15499,8 +13841,8 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceCreateBuilderAgentWithResponse CreateBuilderAgent
 	//
-	// Makes a builder agent from a name and a configuration. The agent is not
-	//  deployed: call DeployBuilderAgent to run it. Unset configuration
+	// Creates a builder agent from a name and a configuration. The agent is not
+	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
 	//  properties take their default, and unknown properties are ignored.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -15519,8 +13861,8 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
 	//
-	// Returns a builder agent with its current configuration and the status of
-	//  its deployment.
+	// Returns a builder agent with its current configuration and its deployment
+	//  status.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15529,7 +13871,7 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
 	//
-	// Replaces a builder agent's configuration. Each update makes a new
+	// Replaces the configuration of a builder agent. Each update makes a new
 	//  version. The running agent does not change until you deploy again.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -15539,7 +13881,7 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
 	//
-	// Replaces a builder agent's configuration. Each update makes a new
+	// Replaces the configuration of a builder agent. Each update makes a new
 	//  version. The running agent does not change until you deploy again.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -15549,11 +13891,11 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
 	//
-	// Starts a deployment of a builder agent's current configuration, or of
-	//  an earlier version. The call returns when the build starts, with status
-	//  DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
-	//  Call GetBuilderAgent to follow the deployment until its status is
-	//  DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+	// Starts a deployment of the current configuration of a builder agent, or of
+	//  an earlier version. The call returns when the build starts, with the
+	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
+	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -15562,99 +13904,16 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceDeployBuilderAgentWithResponse DeployBuilderAgent
 	//
-	// Starts a deployment of a builder agent's current configuration, or of
-	//  an earlier version. The call returns when the build starts, with status
-	//  DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
-	//  Call GetBuilderAgent to follow the deployment until its status is
-	//  DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+	// Starts a deployment of the current configuration of a builder agent, or of
+	//  an earlier version. The call returns when the build starts, with the
+	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
+	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
 	BuilderAgentServiceDeployBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error)
-
-	// AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
-	//
-	// Returns the project overview over a time range.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
-	AnalyticsServiceGetProjectAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetProjectAnalyticsResponse, error)
-
-	// AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
-	//
-	// Lists the analytics of each agent in the project over a time range. Each
-	//  item is an `AgentAnalytics`, the same message that `GetAgentAnalytics`
-	//  returns for one agent.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
-	AnalyticsServiceListAgentAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListAgentAnalyticsResponse, error)
-
-	// AnalyticsServiceGetAgentAnalyticsWithResponse GetAgentAnalytics
-	//
-	// Returns the analytics for one agent over a time range.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
-	AnalyticsServiceGetAgentAnalyticsWithResponse(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetAgentAnalyticsResponse, error)
-
-	// DatabaseServiceListDatabasesWithResponse ListDatabases
-	//
-	// Lists the project databases, cursor-paginated.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
-	DatabaseServiceListDatabasesWithResponse(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*DatabaseServiceListDatabasesResponse, error)
-
-	// DatabaseServiceCreateDatabaseWithBodyWithResponse CreateDatabase
-	//
-	// Creates an empty database. Not idempotent: a retried request creates a
-	//  second database.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-	DatabaseServiceCreateDatabaseWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DatabaseServiceCreateDatabaseResponse, error)
-
-	// DatabaseServiceCreateDatabaseWithResponse CreateDatabase
-	//
-	// Creates an empty database. Not idempotent: a retried request creates a
-	//  second database.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-	DatabaseServiceCreateDatabaseWithResponse(ctx context.Context, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody, reqEditors ...RequestEditorFn) (*DatabaseServiceCreateDatabaseResponse, error)
-
-	// DatabaseServiceDeleteDatabaseWithResponse DeleteDatabase
-	//
-	// Deletes the stored data, not just the metadata.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
-	DatabaseServiceDeleteDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceDeleteDatabaseResponse, error)
-
-	// DatabaseServiceGetDatabaseWithResponse GetDatabase
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceGetDatabase` operationId).
-	DatabaseServiceGetDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceGetDatabaseResponse, error)
-
-	// DatabaseServiceExportDatabaseWithResponse ExportDatabase
-	//
-	// Exports a consistent SQLite file as a time-limited download URL.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
-	DatabaseServiceExportDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceExportDatabaseResponse, error)
 
 	// ProjectServiceListInvitesWithResponse ListInvites
 	//
@@ -15712,8 +13971,8 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceGenerateKeyWithBodyWithResponse GenerateKey
 	//
-	// Creates an API key and secret for the project. The secret is returned once,
-	//  in the response, and cannot be read again.
+	// Creates an API key and secret for the project. The response includes the
+	//  secret. You cannot read the secret again.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -15722,8 +13981,8 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceGenerateKeyWithResponse GenerateKey
 	//
-	// Creates an API key and secret for the project. The secret is returned once,
-	//  in the response, and cannot be read again.
+	// Creates an API key and secret for the project. The response includes the
+	//  secret. You cannot read the secret again.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -15790,12 +14049,12 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
 	//
-	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in the scenarioGroup of a later run.
-	//  Nothing is stored; the returned scenario is the result. The session must
-	//  have a recorded chat history. Each call runs an LLM over it, so it counts
-	//  against the scenario-generation quota for the project and can take up to
-	//  about a minute.
+	// Generates a scenario (label, instructions, and expectations) from a
+	//  recorded room session. Use the scenario in the `scenarioGroup` of a later
+	//  run. The API does not save the scenario: the response is the only copy.
+	//  The session must have a recorded chat history. Each call runs an LLM on
+	//  the chat history, so it counts against the scenario-generation quota of
+	//  the project. A call can take up to about one minute.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -15804,12 +14063,12 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSessionWithResponse GenerateScenarioFromSession
 	//
-	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in the scenarioGroup of a later run.
-	//  Nothing is stored; the returned scenario is the result. The session must
-	//  have a recorded chat history. Each call runs an LLM over it, so it counts
-	//  against the scenario-generation quota for the project and can take up to
-	//  about a minute.
+	// Generates a scenario (label, instructions, and expectations) from a
+	//  recorded room session. Use the scenario in the `scenarioGroup` of a later
+	//  run. The API does not save the scenario: the response is the only copy.
+	//  The session must have a recorded chat history. Each call runs an LLM on
+	//  the chat history, so it counts against the scenario-generation quota of
+	//  the project. A call can take up to about one minute.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -15818,7 +14077,7 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 	//
-	// Lists room sessions for a project, newest first, cursor-paginated.
+	// Lists the room sessions of a project, newest first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15827,95 +14086,95 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceGetSessionWithResponse GetSession
 	//
-	// Returns one room session. The response carries both the list-row `session`
-	//  and the richer `detail` (participants, per-metric data points).
+	// Returns one room session. The response has the `session` that the list
+	//  returns, and a `detail` with the participants and the metric timelines.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSessionWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionResponse, error)
 
-	// AnalyticsServiceListSessionEventsWithResponse Lists the events in one room session, oldest first by default,
-	//  cursor-paginated with no total. With no `types`, it returns the seven the
-	//  events table on the dashboard shows: `PARTICIPANT_JOINED`,
-	//  `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`, `PARTICIPANT_RESUMED`,
-	//  `ROOM_CREATED`, `ROOM_ENDED` and `API_CALL`. `types` asks for others, such
-	//  as `TRACK_PUBLISHED`, and `participantSessionId` keeps the events for one
-	//  participant session. With `participantSessionId` and no `types`, it returns
-	//  the eleven the participant events table on the dashboard shows for that
-	//  participant session: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`,
-	//  `PARTICIPANT_RESUMED` and `PARTICIPANT_ACTIVE`, and its `TRACK_MUTED`,
-	//  `TRACK_UNMUTED`, `TRACK_PUBLISHED`, `TRACK_UNPUBLISHED`,
-	//  `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED` and
+	// AnalyticsServiceListSessionEventsWithResponse Lists the events of a room session. Defaults to oldest first. The page info
+	//  has no total.
+	//
+	// When `types` is empty, the list has these seven types:
+	//  `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`,
+	//  `PARTICIPANT_RESUMED`, `ROOM_CREATED`, `ROOM_ENDED`, and `API_CALL`. To get
+	//  other types, such as `TRACK_PUBLISHED`, set `types`. To get the events of
+	//  one participant session, set `participantSessionId`. When you set
+	//  `participantSessionId` and `types` is empty, the list has these eleven
+	//  types: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_RESUMED`,
+	//  `PARTICIPANT_ACTIVE`, `TRACK_MUTED`, `TRACK_UNMUTED`, `TRACK_PUBLISHED`,
+	//  `TRACK_UNPUBLISHED`, `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED`, and
 	//  `TRACK_SUBSCRIBE_FAILED`.
 	//
-	// Unlike the dashboard, on purpose: an unknown type or a malformed
-	//  participant session ID is `InvalidArgument` rather than being searched for
-	//  as typed, and types match exactly, so `TRACK_PUBLISHED` doesn't also return
-	//  `TRACK_PUBLISHED_UPDATE`. Each event payload keeps only an allowlist of
-	//  fields, leaving out participants' attributes and metadata and API calls'
-	//  request bodies. Each event and participant row still carries the
-	//  participant's identity, as the dashboard shows it to every member, and for
-	//  a SIP caller that can be a phone number.
+	//  Each type matches exactly, so `TRACK_PUBLISHED` does not also return
+	//  `TRACK_PUBLISHED_UPDATE`. The `payload` of an event has only a fixed set of
+	//  fields. It does not include participant attributes, participant metadata,
+	//  or the request bodies of API calls. Each event and participant item has the
+	//  identity of the participant. For a SIP caller, the identity can be a phone
+	//  number.
 	//
-	//  Events are kept for 60 days, which can be shorter than the retention of
-	//  other data for the session, so an older session can list no events. An
-	//  `ACTIVE` session lists the events recorded so far. An unknown session is
-	//  `NotFound`.
+	//  LiveKit keeps events for 60 days. This can be shorter than the other data
+	//  of the session, so an older session can have no events. An `ACTIVE` session
+	//  lists the events recorded until now.
+	//
+	//  Errors: an unknown type or a malformed participant session ID returns
+	//  `InvalidArgument`. An unknown session returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEventsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionEventsResponse, error)
 
-	// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the agents in the session exported, in time order:
-	//  what the logs panel on the dashboard shows. Their chat history is left out,
-	//  since `GetSessionTranscript` reads it, and their evaluation results stay
-	//  in. The session events, such as participants joining, come from
-	//  `ListSessionEvents` on `AnalyticsService`.
+	// ObservabilityServiceGetSessionLogsWithResponse Returns the log records that the agents of a session exported, in time
+	//  order. These are the records that the logs panel on the dashboard shows.
+	//  The chat history is not included, because `GetSessionTranscript` returns
+	//  it. Evaluation results are included. To get the events of the session, such
+	//  as participants that join, use `AnalyticsService.ListSessionEvents`.
 	//
-	// An `ACTIVE` session returns what its agents have exported so far. A record
-	//  exported mid-read with a time this read has already paged past, earlier
-	//  than its cursor position when oldest first, is missed until a new read. An
-	//  unknown session is NotFound. A read filtered by logLevels can come back
-	//  empty because no record is at those levels, so only an unfiltered one is
-	//  ObservabilityDisabled.
+	// An `ACTIVE` session returns the records that its agents exported up to now.
+	//  While you page through the records, an agent can export a record with a
+	//  time that your pages already passed. For example, in oldest-first order, a
+	//  record with a time earlier than the cursor position. This read does not
+	//  return that record. A new read returns it. An unknown session returns
+	//  `NotFound`. A read filtered by `logLevels` can return no records because no
+	//  record has those levels. Thus, only a read with no filter returns the
+	//  `ObservabilityDisabled` error.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionLogsResponse, error)
 
-	// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the agents in the session exported,
-	//  by time, typed: turn latencies such as lk.agents.turn.e2e_latency and
-	//  lk.agents.turn.llm_ttft, token and duration usage such as
-	//  lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
-	//  any metrics the agent's own code recorded.
+	// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points that the agents of a session
+	//  exported, ordered by time. The points include turn latencies, such as
+	//  `lk.agents.turn.e2e_latency` and `lk.agents.turn.llm_ttft`, token and
+	//  duration usage, such as `lk.agents.usage.llm_input_tokens`, and the
+	//  `gen_ai.*` histograms. They also include the metrics that the agent's own
+	//  code recorded.
 	//
-	// These are the raw metrics agents emit, so they won't exactly match the
-	//  metrics panel on the dashboard, which derives its numbers from the
-	//  transcript and traces. Only agents that export OpenTelemetry metrics to
-	//  LiveKit Cloud produce them: an agent whose code installs its own
-	//  MeterProvider exports none to LiveKit Cloud, and its sessions return no
-	//  points.
+	// These are the raw metrics that agents export. They do not exactly match the
+	//  metrics panel on the dashboard, which calculates its values from the
+	//  transcript and traces. Only an agent that exports OpenTelemetry metrics to
+	//  LiveKit Cloud has points. An agent whose code installs its own
+	//  `MeterProvider` exports no metrics to LiveKit Cloud, and its sessions
+	//  return no points.
 	//
-	//  Some points aren't labeled as their agent exported them. LiveKit Cloud
-	//  groups the series for a session by their attributes alone and names each
-	//  group after its first row. As a result:
-	//
-	//  - Several metrics can come back under one name. For example, the input,
-	//    output, and cached token counts for an LLM all have the name
-	//    `lk.agents.usage.llm_input_tokens`.
-	//  - Points of one series at the same time that recorded equal values
-	//    collapse into one point.
-	//  - When a session has two agents, a point can carry the resource attributes
-	//    of the other agent.
+	//  Some points do not have the labels that their agent exported. LiveKit Cloud
+	//  groups the series of a session by their attributes only, and gives each
+	//  group the name of its first point. This has these results. Several metrics
+	//  can have one name. For example, the input, output, and cached token counts
+	//  of an LLM all have the name `lk.agents.usage.llm_input_tokens`. Points of
+	//  one series with the same time and the same value become one point. When a
+	//  session has two agents, a point can have the resource attributes of the
+	//  other agent.
 	//
 	//  An agent exports its metrics every 30 seconds, and its turn latencies when
-	//  the session ends, so an ACTIVE session returns what it has exported so far.
-	//  An unknown session is NotFound. A read filtered by names can come back
-	//  empty because no metric has those names, so only an unfiltered one is
-	//  ObservabilityDisabled.
+	//  the session ends. Thus, an `ACTIVE` session returns the points that its
+	//  agents exported up to now. An unknown session returns `NotFound`. A read
+	//  filtered by `names` can return no points because no metric has those names.
+	//  Thus, only a read with no filter returns the `ObservabilityDisabled` error.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15924,10 +14183,9 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceListSessionParticipantsWithResponse ListSessionParticipants
 	//
-	// Lists the participants of one room session, one row per identity,
-	//  cursor-paginated; newest join first by default. Each row carries the
-	//  participant's participant sessions (PA_...), each with the client it
-	//  connected from.
+	// Lists the participants of a room session, one item for each identity.
+	//  Defaults to newest join first. Each item has the participant sessions of
+	//  the participant (`PA_...`), each with the client that it connected from.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15936,42 +14194,47 @@ type ClientWithResponsesInterface interface {
 
 	// ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 	//
-	// Returns a short-lived signed URL for one of the session recordings: its
-	//  audio or its chat history. A session with no recording of that type is
-	//  NotFound. A new recording can be NotFound for up to a minute after the
-	//  session ends.
+	// Returns a short-lived signed URL for a session recording: its audio
+	//  or its chat history. When the recording doesn't exist and
+	//  `dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+	//  `DATA_STATE_SETTLING`, the response has an empty `url`, because the
+	//  agent can still upload the recording. In every other state, a session
+	//  with no recording of that type returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURLWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionRecordingURLResponse, error)
 
-	// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the agents in the session exported, by start time: what
-	//  the trace view on the dashboard shows. Each span names its parent, so the
-	//  pages rebuild the span tree, and its attributes carry the turn and latency
-	//  fields the turn view on the dashboard reads, such as lk.generation_id and
-	//  lk.response.ttft.
+	// ObservabilityServiceGetSessionTracesWithResponse Returns the spans that the agents of a session exported, ordered by start
+	//  time. These are the spans that the trace view on the dashboard shows. Each
+	//  span names its parent, so you can build the span tree from the pages. The
+	//  attributes of a span hold the turn and latency fields that the turn view on
+	//  the dashboard uses, such as `lk.generation_id` and `lk.response.ttft`.
 	//
-	// An ACTIVE session returns what its agents have exported so far; a span
-	//  exported after the first page waits for a new read. The later pages are
-	//  read by offset, so a span exported mid-read can still shift them: a span
-	//  can repeat, or be skipped. Dedupe by spanId, and read again from the first
-	//  page to pick up a skipped span. An unknown session is NotFound.
+	// An `ACTIVE` session returns the spans that its agents exported up to now. A
+	//  span exported after the first page appears only in a new read. The API
+	//  reads the later pages by offset, so a span exported during your read can
+	//  move them. Thus, a span can repeat, or a page can skip a span. Remove
+	//  duplicates by `spanId`. To get a skipped span, read again from the first
+	//  page. An unknown session returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTracesWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTracesResponse, error)
 
-	// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session conversation as ordered transcript items: messages,
-	//  tool calls and results, agent handoffs and agent configuration changes. It
-	//  is the conversation the transcript on the dashboard shows.
+	// ObservabilityServiceGetSessionTranscriptWithResponse Returns the conversation of a session as ordered transcript items. The
+	//  items are messages, tool calls and results, agent handoffs, and agent
+	//  configuration changes. It is the conversation that the transcript on the
+	//  dashboard shows.
 	//
-	// The agent exports its transcript when the session ends, and it can be read
-	//  a minute or two later; on a project with PII redaction, only once the
-	//  session recording has been redacted. So a session that is still ACTIVE
-	//  returns what exists so far, usually nothing, without an error: read it
-	//  again after the session ends. An unknown session is NotFound.
+	// The agent exports its transcript when the session ends. There is a delay
+	//  before you can read it, and the length of the delay is not fixed. On a
+	//  project with PII redaction, you can read it only after LiveKit redacts the
+	//  session recording. Thus, an `ACTIVE` session returns the items that exist,
+	//  usually none, with no error. Read it again after the session ends. An
+	//  unknown session returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15980,10 +14243,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
 	//
-	// Lists the runs for a project, newest first, cursor-paginated, optionally
-	//  narrowed by status, agent, conversation mode and a time window. Rows carry
-	//  headline counts (`jobCount`, `passedCount`, `failedCount`, `issueCount`) but
-	//  neither jobs nor the summary.
+	// Lists the runs of a project, newest first. You can filter the runs by
+	//  status, agent, conversation mode, and time window. Each run includes its
+	//  counts (`jobCount`, `passedCount`, `failedCount`, and `issueCount`), but
+	//  not its jobs or its summary.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15992,12 +14255,13 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCreateSimulationRunWithBodyWithResponse CreateSimulationRun
 	//
-	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
-	//  agent source that scenarios are generated from: upload it to the returned
-	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-	//  for an hour is failed. Creating a run is not idempotent: a retried request
-	//  starts a second run.
+	// Creates a simulation run. With a `scenarioGroup`, the run starts
+	//  immediately and the response has no upload target. Without a
+	//  `scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+	//  that the API generates scenarios from. Upload the source to the returned
+	//  presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+	//  pending for one hour fails. This RPC is not idempotent: a retry starts a
+	//  second run.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -16006,12 +14270,13 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCreateSimulationRunWithResponse CreateSimulationRun
 	//
-	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
-	//  agent source that scenarios are generated from: upload it to the returned
-	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-	//  for an hour is failed. Creating a run is not idempotent: a retried request
-	//  starts a second run.
+	// Creates a simulation run. With a `scenarioGroup`, the run starts
+	//  immediately and the response has no upload target. Without a
+	//  `scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+	//  that the API generates scenarios from. Upload the source to the returned
+	//  presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+	//  pending for one hour fails. This RPC is not idempotent: a retry starts a
+	//  second run.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -16020,9 +14285,9 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGetSimulationRunWithResponse GetSimulationRun
 	//
-	// Returns one run with its jobs and aggregate metrics. The compressed summary
-	//  blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
-	//  summary.
+	// Returns one run with its jobs and aggregate metrics. The response does not
+	//  include the compressed summary (`summaryZstd`). To get the summary, call
+	//  `GetSimulationRunSummary`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -16031,10 +14296,11 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGetSimulationRunSummaryWithResponse GetSimulationRunSummary
 	//
-	// Returns the graded outcome of a finished run: pass/fail counts, what went
-	//  well, what to improve, flagged issues with suggestions, and the per-job
-	//  chat history. FailedPrecondition while the run is still going; NotFound if
-	//  the run finished without a summary.
+	// Returns the graded outcome of a finished run: the pass and fail counts,
+	//  what went well, what to improve, the flagged issues with suggestions, and
+	//  the chat history of each job. Returns `FailedPrecondition` while the run
+	//  is in progress. Returns `NotFound` when the run finished without a
+	//  summary.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -16043,8 +14309,8 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCancelSimulationRunWithResponse CancelSimulationRun
 	//
-	// Stops a run that has not finished. Cancelling a run that already finished
-	//  succeeds without effect.
+	// Stops a run that has not finished. When the run is already finished, the
+	//  call succeeds and has no effect.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -16053,9 +14319,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse ConfirmSimulationSourceUpload
 	//
-	// Marks the agent source as uploaded and starts scenario generation; the run
-	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is `PENDING_UPLOAD`, so a repeated call fails.
+	// Confirms that the agent source is uploaded and starts scenario
+	//  generation. The run goes to `GENERATING`, then to `RUNNING` when the
+	//  scenarios exist. The call is valid only while the run is
+	//  `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -16064,9 +14331,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUploadWithResponse ConfirmSimulationSourceUpload
 	//
-	// Marks the agent source as uploaded and starts scenario generation; the run
-	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is `PENDING_UPLOAD`, so a repeated call fails.
+	// Confirms that the agent source is uploaded and starts scenario
+	//  generation. The run goes to `GENERATING`, then to `RUNNING` when the
+	//  scenarios exist. The call is valid only while the run is
+	//  `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -16075,102 +14343,21 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCountSimulationRunsWithResponse CountSimulationRuns
 	//
-	// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
-	//  into a histogram. It takes the same filters over the same window, so the
-	//  bars and the rows beneath them always describe one set. Both bounds are
-	//  required and endTime must be after startTime.
+	// Returns a histogram of the runs in the window [`startTime`, `endTime`). It
+	//  takes the same filters as `ListSimulationRuns`, so the histogram and the
+	//  list describe the same set of runs. Both bounds are required, and
+	//  `endTime` must be after `startTime`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRunsWithResponse(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*SimulationServiceCountSimulationRunsResponse, error)
 
-	// ThreadServiceListThreadsWithResponse ListThreads
-	//
-	// Lists the threads of one scope, newest first.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
-	ThreadServiceListThreadsWithResponse(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*ThreadServiceListThreadsResponse, error)
-
-	// ThreadServiceCreateThreadWithBodyWithResponse CreateThread
-	//
-	// Creates a thread and its database.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-	ThreadServiceCreateThreadWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ThreadServiceCreateThreadResponse, error)
-
-	// ThreadServiceCreateThreadWithResponse CreateThread
-	//
-	// Creates a thread and its database.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-	ThreadServiceCreateThreadWithResponse(ctx context.Context, projectId string, body ThreadServiceCreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*ThreadServiceCreateThreadResponse, error)
-
-	// ThreadServiceDeleteThreadWithResponse DeleteThread
-	//
-	// Deletes the thread and its database.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
-	ThreadServiceDeleteThreadWithResponse(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*ThreadServiceDeleteThreadResponse, error)
-
-	// ThreadServiceGetThreadWithResponse GetThread
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceGetThread` operationId).
-	ThreadServiceGetThreadWithResponse(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadResponse, error)
-
-	// ThreadServiceUpdateThreadWithBodyWithResponse UpdateThread
-	//
-	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-	//  Every update counts as activity and pushes expiresAt out.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-	ThreadServiceUpdateThreadWithBodyWithResponse(ctx context.Context, projectId string, threadId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ThreadServiceUpdateThreadResponse, error)
-
-	// ThreadServiceUpdateThreadWithResponse UpdateThread
-	//
-	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-	//  Every update counts as activity and pushes expiresAt out.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-	ThreadServiceUpdateThreadWithResponse(ctx context.Context, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*ThreadServiceUpdateThreadResponse, error)
-
-	// ThreadServiceGetThreadItemsWithResponse GetThreadItems
-	//
-	// Returns the chat items in the thread, oldest first.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
-	ThreadServiceGetThreadItemsWithResponse(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadItemsResponse, error)
-
-	// ThreadServiceGetThreadTasksWithResponse GetThreadTasks
-	//
-	// Returns the background tasks in the thread, oldest first.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
-	ThreadServiceGetThreadTasksWithResponse(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadTasksResponse, error)
-
 	// ProjectServiceCreateTokenWithBodyWithResponse CreateToken
 	//
-	// Mints a short-lived LiveKit access token for the project, signed
-	//  server-side, so user-authenticated clients can call LiveKit server APIs
-	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Creates a short-lived LiveKit access token for the project. The API signs
+	//  the token, so a signed-in user can call the LiveKit server APIs, such as
+	//  rooms, SIP, and egress, or join a room without an API secret.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -16179,9 +14366,9 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceCreateTokenWithResponse CreateToken
 	//
-	// Mints a short-lived LiveKit access token for the project, signed
-	//  server-side, so user-authenticated clients can call LiveKit server APIs
-	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Creates a short-lived LiveKit access token for the project. The API signs
+	//  the token, so a signed-in user can call the LiveKit server APIs, such as
+	//  rooms, SIP, and egress, or join a room without an API secret.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -16417,8 +14604,8 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceListProjectsWithResponse ListProjects
 	//
-	// The projects in a workspace. These return the same Project message as
-	//  the project endpoints.
+	// Lists the projects in a workspace. The items are the same `Project`
+	//  message that `ProjectService` returns.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -17072,390 +15259,6 @@ func (r BuilderAgentServiceDeployBuilderAgentResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r BuilderAgentServiceDeployBuilderAgentResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type AnalyticsServiceGetProjectAnalyticsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r AnalyticsServiceGetProjectAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r AnalyticsServiceGetProjectAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r AnalyticsServiceGetProjectAnalyticsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r AnalyticsServiceGetProjectAnalyticsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AnalyticsServiceGetProjectAnalyticsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AnalyticsServiceGetProjectAnalyticsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type AnalyticsServiceListAgentAnalyticsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAnalyticsV1AgentsListResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r AnalyticsServiceListAgentAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1AgentsListResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r AnalyticsServiceListAgentAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r AnalyticsServiceListAgentAnalyticsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r AnalyticsServiceListAgentAnalyticsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AnalyticsServiceListAgentAnalyticsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AnalyticsServiceListAgentAnalyticsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type AnalyticsServiceGetAgentAnalyticsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAnalyticsV1AgentsGetResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r AnalyticsServiceGetAgentAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1AgentsGetResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r AnalyticsServiceGetAgentAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r AnalyticsServiceGetAgentAnalyticsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r AnalyticsServiceGetAgentAnalyticsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AnalyticsServiceGetAgentAnalyticsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AnalyticsServiceGetAgentAnalyticsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DatabaseServiceListDatabasesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesListResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceListDatabasesResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesListResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceListDatabasesResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DatabaseServiceListDatabasesResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DatabaseServiceListDatabasesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceListDatabasesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceListDatabasesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DatabaseServiceCreateDatabaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesCreateResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceCreateDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesCreateResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceCreateDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DatabaseServiceCreateDatabaseResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DatabaseServiceCreateDatabaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceCreateDatabaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceCreateDatabaseResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DatabaseServiceDeleteDatabaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesDeleteResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceDeleteDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesDeleteResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceDeleteDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DatabaseServiceDeleteDatabaseResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DatabaseServiceDeleteDatabaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceDeleteDatabaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceDeleteDatabaseResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DatabaseServiceGetDatabaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesGetResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceGetDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesGetResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceGetDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DatabaseServiceGetDatabaseResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DatabaseServiceGetDatabaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceGetDatabaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceGetDatabaseResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DatabaseServiceExportDatabaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesExportResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceExportDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesExportResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceExportDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DatabaseServiceExportDatabaseResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DatabaseServiceExportDatabaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceExportDatabaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceExportDatabaseResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18848,342 +16651,6 @@ func (r SimulationServiceCountSimulationRunsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SimulationServiceCountSimulationRunsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ThreadServiceListThreadsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsListResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceListThreadsResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsListResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceListThreadsResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ThreadServiceListThreadsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ThreadServiceListThreadsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceListThreadsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceListThreadsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ThreadServiceCreateThreadResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsCreateResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceCreateThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsCreateResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceCreateThreadResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ThreadServiceCreateThreadResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ThreadServiceCreateThreadResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceCreateThreadResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceCreateThreadResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ThreadServiceDeleteThreadResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsDeleteResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceDeleteThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsDeleteResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceDeleteThreadResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ThreadServiceDeleteThreadResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ThreadServiceDeleteThreadResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceDeleteThreadResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceDeleteThreadResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ThreadServiceGetThreadResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsGetResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceGetThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsGetResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceGetThreadResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ThreadServiceGetThreadResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ThreadServiceGetThreadResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceGetThreadResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceGetThreadResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ThreadServiceUpdateThreadResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsUpdateResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceUpdateThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsUpdateResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceUpdateThreadResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ThreadServiceUpdateThreadResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ThreadServiceUpdateThreadResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceUpdateThreadResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceUpdateThreadResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ThreadServiceGetThreadItemsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsItemsResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceGetThreadItemsResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsItemsResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceGetThreadItemsResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ThreadServiceGetThreadItemsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ThreadServiceGetThreadItemsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceGetThreadItemsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceGetThreadItemsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ThreadServiceGetThreadTasksResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsTasksResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceGetThreadTasksResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsTasksResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceGetThreadTasksResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ThreadServiceGetThreadTasksResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ThreadServiceGetThreadTasksResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceGetThreadTasksResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceGetThreadTasksResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -20666,10 +18133,10 @@ func (c *ClientWithResponses) ProjectServiceUpdateProjectWithResponse(ctx contex
 
 // BuilderAgentServiceListBuilderAgentsWithResponse ListBuilderAgents
 //
-// Lists a project's builder agents by name, one page at a time, with the
+// Lists the builder agents of a project by name, with the deployment status
 //
-//	status of each deployment. The list does not include configurations: use
-//	GetBuilderAgent for one.
+//	of each. The list does not include configurations. To get the
+//	configuration of an agent, call `GetBuilderAgent`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -20684,9 +18151,9 @@ func (c *ClientWithResponses) BuilderAgentServiceListBuilderAgentsWithResponse(c
 
 // BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse CreateBuilderAgent
 //
-// Makes a builder agent from a name and a configuration. The agent is not
+// Creates a builder agent from a name and a configuration. The agent is not
 //
-//	deployed: call DeployBuilderAgent to run it. Unset configuration
+//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
 //	properties take their default, and unknown properties are ignored.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -20702,9 +18169,9 @@ func (c *ClientWithResponses) BuilderAgentServiceCreateBuilderAgentWithBodyWithR
 
 // BuilderAgentServiceCreateBuilderAgentWithResponse CreateBuilderAgent
 //
-// Makes a builder agent from a name and a configuration. The agent is not
+// Creates a builder agent from a name and a configuration. The agent is not
 //
-//	deployed: call DeployBuilderAgent to run it. Unset configuration
+//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
 //	properties take their default, and unknown properties are ignored.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -20735,9 +18202,9 @@ func (c *ClientWithResponses) BuilderAgentServiceDeleteBuilderAgentWithResponse(
 
 // BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
 //
-// Returns a builder agent with its current configuration and the status of
+// Returns a builder agent with its current configuration and its deployment
 //
-//	its deployment.
+//	status.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -20752,7 +18219,7 @@ func (c *ClientWithResponses) BuilderAgentServiceGetBuilderAgentWithResponse(ctx
 
 // BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
 //
-// Replaces a builder agent's configuration. Each update makes a new
+// Replaces the configuration of a builder agent. Each update makes a new
 //
 //	version. The running agent does not change until you deploy again.
 //
@@ -20769,7 +18236,7 @@ func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithBodyWithR
 
 // BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
 //
-// Replaces a builder agent's configuration. Each update makes a new
+// Replaces the configuration of a builder agent. Each update makes a new
 //
 //	version. The running agent does not change until you deploy again.
 //
@@ -20786,12 +18253,12 @@ func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithResponse(
 
 // BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
 //
-// Starts a deployment of a builder agent's current configuration, or of
+// Starts a deployment of the current configuration of a builder agent, or of
 //
-//	an earlier version. The call returns when the build starts, with status
-//	DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
-//	Call GetBuilderAgent to follow the deployment until its status is
-//	DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+//	an earlier version. The call returns when the build starts, with the
+//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+//	returns. Call `GetBuilderAgent` to follow the deployment until its status
+//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -20806,12 +18273,12 @@ func (c *ClientWithResponses) BuilderAgentServiceDeployBuilderAgentWithBodyWithR
 
 // BuilderAgentServiceDeployBuilderAgentWithResponse DeployBuilderAgent
 //
-// Starts a deployment of a builder agent's current configuration, or of
+// Starts a deployment of the current configuration of a builder agent, or of
 //
-//	an earlier version. The call returns when the build starts, with status
-//	DEPLOYMENT_STATUS_BUILDING. The build continues after the call returns.
-//	Call GetBuilderAgent to follow the deployment until its status is
-//	DEPLOYMENT_STATUS_RUNNING, or DEPLOYMENT_STATUS_BUILD_FAILED.
+//	an earlier version. The call returns when the build starts, with the
+//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+//	returns. Call `GetBuilderAgent` to follow the deployment until its status
+//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -20822,146 +18289,6 @@ func (c *ClientWithResponses) BuilderAgentServiceDeployBuilderAgentWithResponse(
 		return nil, err
 	}
 	return ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp)
-}
-
-// AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
-//
-// Returns the project overview over a time range.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
-func (c *ClientWithResponses) AnalyticsServiceGetProjectAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetProjectAnalyticsResponse, error) {
-	rsp, err := c.AnalyticsServiceGetProjectAnalytics(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAnalyticsServiceGetProjectAnalyticsResponse(rsp)
-}
-
-// AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
-//
-// Lists the analytics of each agent in the project over a time range. Each
-//
-//	item is an `AgentAnalytics`, the same message that `GetAgentAnalytics`
-//	returns for one agent.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
-func (c *ClientWithResponses) AnalyticsServiceListAgentAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListAgentAnalyticsResponse, error) {
-	rsp, err := c.AnalyticsServiceListAgentAnalytics(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAnalyticsServiceListAgentAnalyticsResponse(rsp)
-}
-
-// AnalyticsServiceGetAgentAnalyticsWithResponse GetAgentAnalytics
-//
-// Returns the analytics for one agent over a time range.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
-func (c *ClientWithResponses) AnalyticsServiceGetAgentAnalyticsWithResponse(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetAgentAnalyticsResponse, error) {
-	rsp, err := c.AnalyticsServiceGetAgentAnalytics(ctx, projectId, agentId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAnalyticsServiceGetAgentAnalyticsResponse(rsp)
-}
-
-// DatabaseServiceListDatabasesWithResponse ListDatabases
-//
-// Lists the project databases, cursor-paginated.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
-func (c *ClientWithResponses) DatabaseServiceListDatabasesWithResponse(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*DatabaseServiceListDatabasesResponse, error) {
-	rsp, err := c.DatabaseServiceListDatabases(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDatabaseServiceListDatabasesResponse(rsp)
-}
-
-// DatabaseServiceCreateDatabaseWithBodyWithResponse CreateDatabase
-//
-// Creates an empty database. Not idempotent: a retried request creates a
-//
-//	second database.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceCreateDatabaseWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DatabaseServiceCreateDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceCreateDatabaseWithBody(ctx, projectId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDatabaseServiceCreateDatabaseResponse(rsp)
-}
-
-// DatabaseServiceCreateDatabaseWithResponse CreateDatabase
-//
-// Creates an empty database. Not idempotent: a retried request creates a
-//
-//	second database.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceCreateDatabaseWithResponse(ctx context.Context, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody, reqEditors ...RequestEditorFn) (*DatabaseServiceCreateDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceCreateDatabase(ctx, projectId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDatabaseServiceCreateDatabaseResponse(rsp)
-}
-
-// DatabaseServiceDeleteDatabaseWithResponse DeleteDatabase
-//
-// Deletes the stored data, not just the metadata.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceDeleteDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceDeleteDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceDeleteDatabase(ctx, projectId, databaseId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDatabaseServiceDeleteDatabaseResponse(rsp)
-}
-
-// DatabaseServiceGetDatabaseWithResponse GetDatabase
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceGetDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceGetDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceGetDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceGetDatabase(ctx, projectId, databaseId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDatabaseServiceGetDatabaseResponse(rsp)
-}
-
-// DatabaseServiceExportDatabaseWithResponse ExportDatabase
-//
-// Exports a consistent SQLite file as a time-limited download URL.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceExportDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceExportDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceExportDatabase(ctx, projectId, databaseId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDatabaseServiceExportDatabaseResponse(rsp)
 }
 
 // ProjectServiceListInvitesWithResponse ListInvites
@@ -21063,9 +18390,9 @@ func (c *ClientWithResponses) ProjectServiceListKeysWithResponse(ctx context.Con
 
 // ProjectServiceGenerateKeyWithBodyWithResponse GenerateKey
 //
-// Creates an API key and secret for the project. The secret is returned once,
+// Creates an API key and secret for the project. The response includes the
 //
-//	in the response, and cannot be read again.
+//	secret. You cannot read the secret again.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21080,9 +18407,9 @@ func (c *ClientWithResponses) ProjectServiceGenerateKeyWithBodyWithResponse(ctx 
 
 // ProjectServiceGenerateKeyWithResponse GenerateKey
 //
-// Creates an API key and secret for the project. The secret is returned once,
+// Creates an API key and secret for the project. The response includes the
 //
-//	in the response, and cannot be read again.
+//	secret. You cannot read the secret again.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21203,13 +18530,13 @@ func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithResp
 
 // SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
 //
-// Derives a reusable scenario (label, instructions and expectations) from a
+// Generates a scenario (label, instructions, and expectations) from a
 //
-//	recorded room session, for use in the scenarioGroup of a later run.
-//	Nothing is stored; the returned scenario is the result. The session must
-//	have a recorded chat history. Each call runs an LLM over it, so it counts
-//	against the scenario-generation quota for the project and can take up to
-//	about a minute.
+//	recorded room session. Use the scenario in the `scenarioGroup` of a later
+//	run. The API does not save the scenario: the response is the only copy.
+//	The session must have a recorded chat history. Each call runs an LLM on
+//	the chat history, so it counts against the scenario-generation quota of
+//	the project. A call can take up to about one minute.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21224,13 +18551,13 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithBo
 
 // SimulationServiceGenerateScenarioFromSessionWithResponse GenerateScenarioFromSession
 //
-// Derives a reusable scenario (label, instructions and expectations) from a
+// Generates a scenario (label, instructions, and expectations) from a
 //
-//	recorded room session, for use in the scenarioGroup of a later run.
-//	Nothing is stored; the returned scenario is the result. The session must
-//	have a recorded chat history. Each call runs an LLM over it, so it counts
-//	against the scenario-generation quota for the project and can take up to
-//	about a minute.
+//	recorded room session. Use the scenario in the `scenarioGroup` of a later
+//	run. The API does not save the scenario: the response is the only copy.
+//	The session must have a recorded chat history. Each call runs an LLM on
+//	the chat history, so it counts against the scenario-generation quota of
+//	the project. A call can take up to about one minute.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21245,7 +18572,7 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithRe
 
 // AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 //
-// Lists room sessions for a project, newest first, cursor-paginated.
+// Lists the room sessions of a project, newest first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21260,9 +18587,9 @@ func (c *ClientWithResponses) AnalyticsServiceListProjectSessionsWithResponse(ct
 
 // AnalyticsServiceGetSessionWithResponse GetSession
 //
-// Returns one room session. The response carries both the list-row `session`
+// Returns one room session. The response has the `session` that the list
 //
-//	and the richer `detail` (participants, per-metric data points).
+//	returns, and a `detail` with the participants and the metric timelines.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21275,35 +18602,35 @@ func (c *ClientWithResponses) AnalyticsServiceGetSessionWithResponse(ctx context
 	return ParseAnalyticsServiceGetSessionResponse(rsp)
 }
 
-// AnalyticsServiceListSessionEventsWithResponse Lists the events in one room session, oldest first by default,
+// AnalyticsServiceListSessionEventsWithResponse Lists the events of a room session. Defaults to oldest first. The page info
 //
-//	cursor-paginated with no total. With no `types`, it returns the seven the
-//	events table on the dashboard shows: `PARTICIPANT_JOINED`,
-//	`PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`, `PARTICIPANT_RESUMED`,
-//	`ROOM_CREATED`, `ROOM_ENDED` and `API_CALL`. `types` asks for others, such
-//	as `TRACK_PUBLISHED`, and `participantSessionId` keeps the events for one
-//	participant session. With `participantSessionId` and no `types`, it returns
-//	the eleven the participant events table on the dashboard shows for that
-//	participant session: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`,
-//	`PARTICIPANT_RESUMED` and `PARTICIPANT_ACTIVE`, and its `TRACK_MUTED`,
-//	`TRACK_UNMUTED`, `TRACK_PUBLISHED`, `TRACK_UNPUBLISHED`,
-//	`TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED` and
+//	has no total.
+//
+// When `types` is empty, the list has these seven types:
+//
+//	`PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`,
+//	`PARTICIPANT_RESUMED`, `ROOM_CREATED`, `ROOM_ENDED`, and `API_CALL`. To get
+//	other types, such as `TRACK_PUBLISHED`, set `types`. To get the events of
+//	one participant session, set `participantSessionId`. When you set
+//	`participantSessionId` and `types` is empty, the list has these eleven
+//	types: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_RESUMED`,
+//	`PARTICIPANT_ACTIVE`, `TRACK_MUTED`, `TRACK_UNMUTED`, `TRACK_PUBLISHED`,
+//	`TRACK_UNPUBLISHED`, `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED`, and
 //	`TRACK_SUBSCRIBE_FAILED`.
 //
-// Unlike the dashboard, on purpose: an unknown type or a malformed
+//	Each type matches exactly, so `TRACK_PUBLISHED` does not also return
+//	`TRACK_PUBLISHED_UPDATE`. The `payload` of an event has only a fixed set of
+//	fields. It does not include participant attributes, participant metadata,
+//	or the request bodies of API calls. Each event and participant item has the
+//	identity of the participant. For a SIP caller, the identity can be a phone
+//	number.
 //
-//	participant session ID is `InvalidArgument` rather than being searched for
-//	as typed, and types match exactly, so `TRACK_PUBLISHED` doesn't also return
-//	`TRACK_PUBLISHED_UPDATE`. Each event payload keeps only an allowlist of
-//	fields, leaving out participants' attributes and metadata and API calls'
-//	request bodies. Each event and participant row still carries the
-//	participant's identity, as the dashboard shows it to every member, and for
-//	a SIP caller that can be a phone number.
+//	LiveKit keeps events for 60 days. This can be shorter than the other data
+//	of the session, so an older session can have no events. An `ACTIVE` session
+//	lists the events recorded until now.
 //
-//	Events are kept for 60 days, which can be shorter than the retention of
-//	other data for the session, so an older session can list no events. An
-//	`ACTIVE` session lists the events recorded so far. An unknown session is
-//	`NotFound`.
+//	Errors: an unknown type or a malformed participant session ID returns
+//	`InvalidArgument`. An unknown session returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21316,20 +18643,22 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionEventsWithResponse(ctx 
 	return ParseAnalyticsServiceListSessionEventsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the agents in the session exported, in time order:
+// ObservabilityServiceGetSessionLogsWithResponse Returns the log records that the agents of a session exported, in time
 //
-//	what the logs panel on the dashboard shows. Their chat history is left out,
-//	since `GetSessionTranscript` reads it, and their evaluation results stay
-//	in. The session events, such as participants joining, come from
-//	`ListSessionEvents` on `AnalyticsService`.
+//	order. These are the records that the logs panel on the dashboard shows.
+//	The chat history is not included, because `GetSessionTranscript` returns
+//	it. Evaluation results are included. To get the events of the session, such
+//	as participants that join, use `AnalyticsService.ListSessionEvents`.
 //
-// An `ACTIVE` session returns what its agents have exported so far. A record
+// An `ACTIVE` session returns the records that its agents exported up to now.
 //
-//	exported mid-read with a time this read has already paged past, earlier
-//	than its cursor position when oldest first, is missed until a new read. An
-//	unknown session is NotFound. A read filtered by logLevels can come back
-//	empty because no record is at those levels, so only an unfiltered one is
-//	ObservabilityDisabled.
+//	While you page through the records, an agent can export a record with a
+//	time that your pages already passed. For example, in oldest-first order, a
+//	record with a time earlier than the cursor position. This read does not
+//	return that record. A new read returns it. An unknown session returns
+//	`NotFound`. A read filtered by `logLevels` can return no records because no
+//	record has those levels. Thus, only a read with no filter returns the
+//	`ObservabilityDisabled` error.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21342,38 +18671,36 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionLogsWithResponse(ctx
 	return ParseObservabilityServiceGetSessionLogsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the agents in the session exported,
+// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points that the agents of a session
 //
-//	by time, typed: turn latencies such as lk.agents.turn.e2e_latency and
-//	lk.agents.turn.llm_ttft, token and duration usage such as
-//	lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
-//	any metrics the agent's own code recorded.
+//	exported, ordered by time. The points include turn latencies, such as
+//	`lk.agents.turn.e2e_latency` and `lk.agents.turn.llm_ttft`, token and
+//	duration usage, such as `lk.agents.usage.llm_input_tokens`, and the
+//	`gen_ai.*` histograms. They also include the metrics that the agent's own
+//	code recorded.
 //
-// These are the raw metrics agents emit, so they won't exactly match the
+// These are the raw metrics that agents export. They do not exactly match the
 //
-//	metrics panel on the dashboard, which derives its numbers from the
-//	transcript and traces. Only agents that export OpenTelemetry metrics to
-//	LiveKit Cloud produce them: an agent whose code installs its own
-//	MeterProvider exports none to LiveKit Cloud, and its sessions return no
-//	points.
+//	metrics panel on the dashboard, which calculates its values from the
+//	transcript and traces. Only an agent that exports OpenTelemetry metrics to
+//	LiveKit Cloud has points. An agent whose code installs its own
+//	`MeterProvider` exports no metrics to LiveKit Cloud, and its sessions
+//	return no points.
 //
-//	Some points aren't labeled as their agent exported them. LiveKit Cloud
-//	groups the series for a session by their attributes alone and names each
-//	group after its first row. As a result:
-//
-//	- Several metrics can come back under one name. For example, the input,
-//	  output, and cached token counts for an LLM all have the name
-//	  `lk.agents.usage.llm_input_tokens`.
-//	- Points of one series at the same time that recorded equal values
-//	  collapse into one point.
-//	- When a session has two agents, a point can carry the resource attributes
-//	  of the other agent.
+//	Some points do not have the labels that their agent exported. LiveKit Cloud
+//	groups the series of a session by their attributes only, and gives each
+//	group the name of its first point. This has these results. Several metrics
+//	can have one name. For example, the input, output, and cached token counts
+//	of an LLM all have the name `lk.agents.usage.llm_input_tokens`. Points of
+//	one series with the same time and the same value become one point. When a
+//	session has two agents, a point can have the resource attributes of the
+//	other agent.
 //
 //	An agent exports its metrics every 30 seconds, and its turn latencies when
-//	the session ends, so an ACTIVE session returns what it has exported so far.
-//	An unknown session is NotFound. A read filtered by names can come back
-//	empty because no metric has those names, so only an unfiltered one is
-//	ObservabilityDisabled.
+//	the session ends. Thus, an `ACTIVE` session returns the points that its
+//	agents exported up to now. An unknown session returns `NotFound`. A read
+//	filtered by `names` can return no points because no metric has those names.
+//	Thus, only a read with no filter returns the `ObservabilityDisabled` error.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21388,11 +18715,10 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionMetricsWithResponse(
 
 // AnalyticsServiceListSessionParticipantsWithResponse ListSessionParticipants
 //
-// Lists the participants of one room session, one row per identity,
+// Lists the participants of a room session, one item for each identity.
 //
-//	cursor-paginated; newest join first by default. Each row carries the
-//	participant's participant sessions (PA_...), each with the client it
-//	connected from.
+//	Defaults to newest join first. Each item has the participant sessions of
+//	the participant (`PA_...`), each with the client that it connected from.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21407,11 +18733,13 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionParticipantsWithRespons
 
 // ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 //
-// Returns a short-lived signed URL for one of the session recordings: its
+// Returns a short-lived signed URL for a session recording: its audio
 //
-//	audio or its chat history. A session with no recording of that type is
-//	NotFound. A new recording can be NotFound for up to a minute after the
-//	session ends.
+//	or its chat history. When the recording doesn't exist and
+//	`dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+//	`DATA_STATE_SETTLING`, the response has an empty `url`, because the
+//	agent can still upload the recording. In every other state, a session
+//	with no recording of that type returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21424,19 +18752,20 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionRecordingURLWithResp
 	return ParseObservabilityServiceGetSessionRecordingURLResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the agents in the session exported, by start time: what
+// ObservabilityServiceGetSessionTracesWithResponse Returns the spans that the agents of a session exported, ordered by start
 //
-//	the trace view on the dashboard shows. Each span names its parent, so the
-//	pages rebuild the span tree, and its attributes carry the turn and latency
-//	fields the turn view on the dashboard reads, such as lk.generation_id and
-//	lk.response.ttft.
+//	time. These are the spans that the trace view on the dashboard shows. Each
+//	span names its parent, so you can build the span tree from the pages. The
+//	attributes of a span hold the turn and latency fields that the turn view on
+//	the dashboard uses, such as `lk.generation_id` and `lk.response.ttft`.
 //
-// An ACTIVE session returns what its agents have exported so far; a span
+// An `ACTIVE` session returns the spans that its agents exported up to now. A
 //
-//	exported after the first page waits for a new read. The later pages are
-//	read by offset, so a span exported mid-read can still shift them: a span
-//	can repeat, or be skipped. Dedupe by spanId, and read again from the first
-//	page to pick up a skipped span. An unknown session is NotFound.
+//	span exported after the first page appears only in a new read. The API
+//	reads the later pages by offset, so a span exported during your read can
+//	move them. Thus, a span can repeat, or a page can skip a span. Remove
+//	duplicates by `spanId`. To get a skipped span, read again from the first
+//	page. An unknown session returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21449,17 +18778,19 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTracesWithResponse(c
 	return ParseObservabilityServiceGetSessionTracesResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session conversation as ordered transcript items: messages,
+// ObservabilityServiceGetSessionTranscriptWithResponse Returns the conversation of a session as ordered transcript items. The
 //
-//	tool calls and results, agent handoffs and agent configuration changes. It
-//	is the conversation the transcript on the dashboard shows.
+//	items are messages, tool calls and results, agent handoffs, and agent
+//	configuration changes. It is the conversation that the transcript on the
+//	dashboard shows.
 //
-// The agent exports its transcript when the session ends, and it can be read
+// The agent exports its transcript when the session ends. There is a delay
 //
-//	a minute or two later; on a project with PII redaction, only once the
-//	session recording has been redacted. So a session that is still ACTIVE
-//	returns what exists so far, usually nothing, without an error: read it
-//	again after the session ends. An unknown session is NotFound.
+//	before you can read it, and the length of the delay is not fixed. On a
+//	project with PII redaction, you can read it only after LiveKit redacts the
+//	session recording. Thus, an `ACTIVE` session returns the items that exist,
+//	usually none, with no error. Read it again after the session ends. An
+//	unknown session returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21474,11 +18805,11 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTranscriptWithRespon
 
 // SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
 //
-// Lists the runs for a project, newest first, cursor-paginated, optionally
+// Lists the runs of a project, newest first. You can filter the runs by
 //
-//	narrowed by status, agent, conversation mode and a time window. Rows carry
-//	headline counts (`jobCount`, `passedCount`, `failedCount`, `issueCount`) but
-//	neither jobs nor the summary.
+//	status, agent, conversation mode, and time window. Each run includes its
+//	counts (`jobCount`, `passedCount`, `failedCount`, and `issueCount`), but
+//	not its jobs or its summary.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21493,13 +18824,14 @@ func (c *ClientWithResponses) SimulationServiceListSimulationRunsWithResponse(ct
 
 // SimulationServiceCreateSimulationRunWithBodyWithResponse CreateSimulationRun
 //
-// Registers a new run. With a scenarioGroup it starts right away and no
+// Creates a simulation run. With a `scenarioGroup`, the run starts
 //
-//	upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
-//	agent source that scenarios are generated from: upload it to the returned
-//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-//	for an hour is failed. Creating a run is not idempotent: a retried request
-//	starts a second run.
+//	immediately and the response has no upload target. Without a
+//	`scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+//	that the API generates scenarios from. Upload the source to the returned
+//	presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+//	pending for one hour fails. This RPC is not idempotent: a retry starts a
+//	second run.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21514,13 +18846,14 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithBodyWithRe
 
 // SimulationServiceCreateSimulationRunWithResponse CreateSimulationRun
 //
-// Registers a new run. With a scenarioGroup it starts right away and no
+// Creates a simulation run. With a `scenarioGroup`, the run starts
 //
-//	upload target is returned. Without one it waits in `PENDING_UPLOAD` for the
-//	agent source that scenarios are generated from: upload it to the returned
-//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-//	for an hour is failed. Creating a run is not idempotent: a retried request
-//	starts a second run.
+//	immediately and the response has no upload target. Without a
+//	`scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+//	that the API generates scenarios from. Upload the source to the returned
+//	presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+//	pending for one hour fails. This RPC is not idempotent: a retry starts a
+//	second run.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21535,10 +18868,10 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithResponse(c
 
 // SimulationServiceGetSimulationRunWithResponse GetSimulationRun
 //
-// Returns one run with its jobs and aggregate metrics. The compressed summary
+// Returns one run with its jobs and aggregate metrics. The response does not
 //
-//	blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
-//	summary.
+//	include the compressed summary (`summaryZstd`). To get the summary, call
+//	`GetSimulationRunSummary`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21553,11 +18886,12 @@ func (c *ClientWithResponses) SimulationServiceGetSimulationRunWithResponse(ctx 
 
 // SimulationServiceGetSimulationRunSummaryWithResponse GetSimulationRunSummary
 //
-// Returns the graded outcome of a finished run: pass/fail counts, what went
+// Returns the graded outcome of a finished run: the pass and fail counts,
 //
-//	well, what to improve, flagged issues with suggestions, and the per-job
-//	chat history. FailedPrecondition while the run is still going; NotFound if
-//	the run finished without a summary.
+//	what went well, what to improve, the flagged issues with suggestions, and
+//	the chat history of each job. Returns `FailedPrecondition` while the run
+//	is in progress. Returns `NotFound` when the run finished without a
+//	summary.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21572,9 +18906,9 @@ func (c *ClientWithResponses) SimulationServiceGetSimulationRunSummaryWithRespon
 
 // SimulationServiceCancelSimulationRunWithResponse CancelSimulationRun
 //
-// Stops a run that has not finished. Cancelling a run that already finished
+// Stops a run that has not finished. When the run is already finished, the
 //
-//	succeeds without effect.
+//	call succeeds and has no effect.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21589,10 +18923,11 @@ func (c *ClientWithResponses) SimulationServiceCancelSimulationRunWithResponse(c
 
 // SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse ConfirmSimulationSourceUpload
 //
-// Marks the agent source as uploaded and starts scenario generation; the run
+// Confirms that the agent source is uploaded and starts scenario
 //
-//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is `PENDING_UPLOAD`, so a repeated call fails.
+//	generation. The run goes to `GENERATING`, then to `RUNNING` when the
+//	scenarios exist. The call is valid only while the run is
+//	`PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21607,10 +18942,11 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 
 // SimulationServiceConfirmSimulationSourceUploadWithResponse ConfirmSimulationSourceUpload
 //
-// Marks the agent source as uploaded and starts scenario generation; the run
+// Confirms that the agent source is uploaded and starts scenario
 //
-//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is `PENDING_UPLOAD`, so a repeated call fails.
+//	generation. The run goes to `GENERATING`, then to `RUNNING` when the
+//	scenarios exist. The call is valid only while the run is
+//	`PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21625,11 +18961,11 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 
 // SimulationServiceCountSimulationRunsWithResponse CountSimulationRuns
 //
-// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
+// Returns a histogram of the runs in the window [`startTime`, `endTime`). It
 //
-//	into a histogram. It takes the same filters over the same window, so the
-//	bars and the rows beneath them always describe one set. Both bounds are
-//	required and endTime must be after startTime.
+//	takes the same filters as `ListSimulationRuns`, so the histogram and the
+//	list describe the same set of runs. Both bounds are required, and
+//	`endTime` must be after `startTime`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21642,149 +18978,12 @@ func (c *ClientWithResponses) SimulationServiceCountSimulationRunsWithResponse(c
 	return ParseSimulationServiceCountSimulationRunsResponse(rsp)
 }
 
-// ThreadServiceListThreadsWithResponse ListThreads
-//
-// Lists the threads of one scope, newest first.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
-func (c *ClientWithResponses) ThreadServiceListThreadsWithResponse(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*ThreadServiceListThreadsResponse, error) {
-	rsp, err := c.ThreadServiceListThreads(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceListThreadsResponse(rsp)
-}
-
-// ThreadServiceCreateThreadWithBodyWithResponse CreateThread
-//
-// Creates a thread and its database.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-func (c *ClientWithResponses) ThreadServiceCreateThreadWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ThreadServiceCreateThreadResponse, error) {
-	rsp, err := c.ThreadServiceCreateThreadWithBody(ctx, projectId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceCreateThreadResponse(rsp)
-}
-
-// ThreadServiceCreateThreadWithResponse CreateThread
-//
-// Creates a thread and its database.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-func (c *ClientWithResponses) ThreadServiceCreateThreadWithResponse(ctx context.Context, projectId string, body ThreadServiceCreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*ThreadServiceCreateThreadResponse, error) {
-	rsp, err := c.ThreadServiceCreateThread(ctx, projectId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceCreateThreadResponse(rsp)
-}
-
-// ThreadServiceDeleteThreadWithResponse DeleteThread
-//
-// Deletes the thread and its database.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
-func (c *ClientWithResponses) ThreadServiceDeleteThreadWithResponse(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*ThreadServiceDeleteThreadResponse, error) {
-	rsp, err := c.ThreadServiceDeleteThread(ctx, projectId, threadId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceDeleteThreadResponse(rsp)
-}
-
-// ThreadServiceGetThreadWithResponse GetThread
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceGetThread` operationId).
-func (c *ClientWithResponses) ThreadServiceGetThreadWithResponse(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadResponse, error) {
-	rsp, err := c.ThreadServiceGetThread(ctx, projectId, threadId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceGetThreadResponse(rsp)
-}
-
-// ThreadServiceUpdateThreadWithBodyWithResponse UpdateThread
-//
-// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-//
-//	Every update counts as activity and pushes expiresAt out.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-func (c *ClientWithResponses) ThreadServiceUpdateThreadWithBodyWithResponse(ctx context.Context, projectId string, threadId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ThreadServiceUpdateThreadResponse, error) {
-	rsp, err := c.ThreadServiceUpdateThreadWithBody(ctx, projectId, threadId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceUpdateThreadResponse(rsp)
-}
-
-// ThreadServiceUpdateThreadWithResponse UpdateThread
-//
-// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-//
-//	Every update counts as activity and pushes expiresAt out.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-func (c *ClientWithResponses) ThreadServiceUpdateThreadWithResponse(ctx context.Context, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*ThreadServiceUpdateThreadResponse, error) {
-	rsp, err := c.ThreadServiceUpdateThread(ctx, projectId, threadId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceUpdateThreadResponse(rsp)
-}
-
-// ThreadServiceGetThreadItemsWithResponse GetThreadItems
-//
-// Returns the chat items in the thread, oldest first.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
-func (c *ClientWithResponses) ThreadServiceGetThreadItemsWithResponse(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadItemsResponse, error) {
-	rsp, err := c.ThreadServiceGetThreadItems(ctx, projectId, threadId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceGetThreadItemsResponse(rsp)
-}
-
-// ThreadServiceGetThreadTasksWithResponse GetThreadTasks
-//
-// Returns the background tasks in the thread, oldest first.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
-func (c *ClientWithResponses) ThreadServiceGetThreadTasksWithResponse(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadTasksResponse, error) {
-	rsp, err := c.ThreadServiceGetThreadTasks(ctx, projectId, threadId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseThreadServiceGetThreadTasksResponse(rsp)
-}
-
 // ProjectServiceCreateTokenWithBodyWithResponse CreateToken
 //
-// Mints a short-lived LiveKit access token for the project, signed
+// Creates a short-lived LiveKit access token for the project. The API signs
 //
-//	server-side, so user-authenticated clients can call LiveKit server APIs
-//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	the token, so a signed-in user can call the LiveKit server APIs, such as
+//	rooms, SIP, and egress, or join a room without an API secret.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21799,10 +18998,10 @@ func (c *ClientWithResponses) ProjectServiceCreateTokenWithBodyWithResponse(ctx 
 
 // ProjectServiceCreateTokenWithResponse CreateToken
 //
-// Mints a short-lived LiveKit access token for the project, signed
+// Creates a short-lived LiveKit access token for the project. The API signs
 //
-//	server-side, so user-authenticated clients can call LiveKit server APIs
-//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	the token, so a signed-in user can call the LiveKit server APIs, such as
+//	rooms, SIP, and egress, or join a room without an API secret.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -22232,9 +19431,9 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateMemberWithResponse(ctx conte
 
 // WorkspaceServiceListProjectsWithResponse ListProjects
 //
-// The projects in a workspace. These return the same Project message as
+// Lists the projects in a workspace. The items are the same `Project`
 //
-//	the project endpoints.
+//	message that `ProjectService` returns.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -22711,270 +19910,6 @@ func ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp *http.Response) (*Bu
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiAgentsV1BuilderAgentsDeployResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAnalyticsServiceGetProjectAnalyticsResponse parses an HTTP response from a AnalyticsServiceGetProjectAnalyticsWithResponse call
-func ParseAnalyticsServiceGetProjectAnalyticsResponse(rsp *http.Response) (*AnalyticsServiceGetProjectAnalyticsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AnalyticsServiceGetProjectAnalyticsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAnalyticsServiceListAgentAnalyticsResponse parses an HTTP response from a AnalyticsServiceListAgentAnalyticsWithResponse call
-func ParseAnalyticsServiceListAgentAnalyticsResponse(rsp *http.Response) (*AnalyticsServiceListAgentAnalyticsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AnalyticsServiceListAgentAnalyticsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAnalyticsV1AgentsListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAnalyticsServiceGetAgentAnalyticsResponse parses an HTTP response from a AnalyticsServiceGetAgentAnalyticsWithResponse call
-func ParseAnalyticsServiceGetAgentAnalyticsResponse(rsp *http.Response) (*AnalyticsServiceGetAgentAnalyticsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AnalyticsServiceGetAgentAnalyticsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAnalyticsV1AgentsGetResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDatabaseServiceListDatabasesResponse parses an HTTP response from a DatabaseServiceListDatabasesWithResponse call
-func ParseDatabaseServiceListDatabasesResponse(rsp *http.Response) (*DatabaseServiceListDatabasesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DatabaseServiceListDatabasesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDatabaseServiceCreateDatabaseResponse parses an HTTP response from a DatabaseServiceCreateDatabaseWithResponse call
-func ParseDatabaseServiceCreateDatabaseResponse(rsp *http.Response) (*DatabaseServiceCreateDatabaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DatabaseServiceCreateDatabaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesCreateResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDatabaseServiceDeleteDatabaseResponse parses an HTTP response from a DatabaseServiceDeleteDatabaseWithResponse call
-func ParseDatabaseServiceDeleteDatabaseResponse(rsp *http.Response) (*DatabaseServiceDeleteDatabaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DatabaseServiceDeleteDatabaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesDeleteResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDatabaseServiceGetDatabaseResponse parses an HTTP response from a DatabaseServiceGetDatabaseWithResponse call
-func ParseDatabaseServiceGetDatabaseResponse(rsp *http.Response) (*DatabaseServiceGetDatabaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DatabaseServiceGetDatabaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesGetResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDatabaseServiceExportDatabaseResponse parses an HTTP response from a DatabaseServiceExportDatabaseWithResponse call
-func ParseDatabaseServiceExportDatabaseResponse(rsp *http.Response) (*DatabaseServiceExportDatabaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DatabaseServiceExportDatabaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesExportResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -23932,237 +20867,6 @@ func ParseSimulationServiceCountSimulationRunsResponse(rsp *http.Response) (*Sim
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiSimulationsV1SimulationRunsCountsResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseThreadServiceListThreadsResponse parses an HTTP response from a ThreadServiceListThreadsWithResponse call
-func ParseThreadServiceListThreadsResponse(rsp *http.Response) (*ThreadServiceListThreadsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ThreadServiceListThreadsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseThreadServiceCreateThreadResponse parses an HTTP response from a ThreadServiceCreateThreadWithResponse call
-func ParseThreadServiceCreateThreadResponse(rsp *http.Response) (*ThreadServiceCreateThreadResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ThreadServiceCreateThreadResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsCreateResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseThreadServiceDeleteThreadResponse parses an HTTP response from a ThreadServiceDeleteThreadWithResponse call
-func ParseThreadServiceDeleteThreadResponse(rsp *http.Response) (*ThreadServiceDeleteThreadResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ThreadServiceDeleteThreadResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsDeleteResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseThreadServiceGetThreadResponse parses an HTTP response from a ThreadServiceGetThreadWithResponse call
-func ParseThreadServiceGetThreadResponse(rsp *http.Response) (*ThreadServiceGetThreadResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ThreadServiceGetThreadResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsGetResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseThreadServiceUpdateThreadResponse parses an HTTP response from a ThreadServiceUpdateThreadWithResponse call
-func ParseThreadServiceUpdateThreadResponse(rsp *http.Response) (*ThreadServiceUpdateThreadResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ThreadServiceUpdateThreadResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsUpdateResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseThreadServiceGetThreadItemsResponse parses an HTTP response from a ThreadServiceGetThreadItemsWithResponse call
-func ParseThreadServiceGetThreadItemsResponse(rsp *http.Response) (*ThreadServiceGetThreadItemsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ThreadServiceGetThreadItemsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsItemsResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseThreadServiceGetThreadTasksResponse parses an HTTP response from a ThreadServiceGetThreadTasksWithResponse call
-func ParseThreadServiceGetThreadTasksResponse(rsp *http.Response) (*ThreadServiceGetThreadTasksResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ThreadServiceGetThreadTasksResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsTasksResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
