@@ -1,10 +1,10 @@
 [
   {
     "message": "LiveKit Cloud API (beta): your coding agent can now read your sessions' transcripts, logs and traces. Sign in with lk cloud auth --user-auth to try it. Docs: https://docs.livekit.io/reference/api/",
-    "versions": ">= 2.19.2"
+    "versions": ">= 2.19.3"
   },
   {
     "message": "LiveKit Cloud API (beta): your coding agent can now read your sessions' transcripts, logs and traces. Update lk to try it. Docs: https://docs.livekit.io/reference/api/",
-    "versions": "< 2.19.2"
+    "versions": "< 2.19.3"
   }
 ]
