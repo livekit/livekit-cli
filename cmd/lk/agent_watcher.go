@@ -184,9 +184,11 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 	}
 
 	return &agentWatcher{
-		config:    config,
-		exts:      watchExtensions(config.ProjectType),
-		debounce:  500 * time.Millisecond,
+		config: config,
+		exts:   watchExtensions(config.ProjectType),
+		// Long enough to coalesce one save's events (editors write and rename
+		// within a few ms), short enough not to dominate a warm reload.
+		debounce:  100 * time.Millisecond,
 		restartCh: make(chan struct{}, 1),
 		devSrv:    rs,
 	}, nil
