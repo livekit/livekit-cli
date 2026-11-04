@@ -1,0 +1,25 @@
+# --quiet hides the notes that more of a session's data can still arrive, but
+# a recording that isn't there yet still fails and says why.
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/traces 200 '{"items":[{"spanId":"a1a1a1a1a1a1a1a1","name":"agent_session","startTime":"2026-10-07T11:00:00Z","endTime":"2026-10-07T11:05:00Z"}],"dataStatus":{"state":"DATA_STATE_SESSION_ACTIVE","retryAfterSeconds":0}}'
+exec lk --user-auth --quiet analytics session traces RM_1
+stdout 'agent_session'
+! stderr .
+
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/recording-url 200 '{"url":"","dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}'
+! exec lk --user-auth --quiet analytics session recording RM_1 -o .
+! stdout .
+stderr '^session RM_1 has no audio recording yet, and its agent can still upload it: the session just ended — read again in 42s$'
+! exists RM_1-audio.ogg
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one

@@ -350,12 +350,20 @@ const transcriptPage = `{
     {"id": "item_6", "timestamp": "2026-10-07T11:00:06Z", "configUpdate": {"toolsAdded": ["lookup"]}}
   ],
   "pageInfo": {"nextCursor": "next", "hasMore": true},
-  "skippedRecords": 2
+  "skippedRecords": 2,
+  "dataStatus": {"state": "DATA_STATE_SETTLING", "retryAfterSeconds": 42}
 }`
+
+// settling42 is the data status the session read fixtures carry: the session
+// just ended, so read again in 42 seconds.
+var settling42 = &oapi.LivekitPublicapiObservabilityV1DataStatus{
+	State:             ptr(oapi.DATASTATESETTLING),
+	RetryAfterSeconds: ptr(42),
+}
 
 // TestGetSessionTranscript checks the request GetSessionTranscript sends for
 // each option, and that every item kind comes back typed with the page's
-// cursor and skipped record count.
+// cursor, skipped record count and data status.
 func TestGetSessionTranscript(t *testing.T) {
 	tests := []struct {
 		name string
@@ -391,6 +399,7 @@ func TestGetSessionTranscript(t *testing.T) {
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
+			assert.Equal(t, settling42, page.DataStatus)
 			assert.Equal(t, 2, page.SkippedRecords)
 			require.Len(t, page.Items, 6)
 
@@ -509,11 +518,12 @@ const logsPage = `{
     },
     {"id": "log_2", "timestamp": "2026-10-07T11:00:02Z", "message": "evaluation passed"}
   ],
-  "pageInfo": {"nextCursor": "next", "hasMore": true}
+  "pageInfo": {"nextCursor": "next", "hasMore": true},
+  "dataStatus": {"state": "DATA_STATE_SETTLING", "retryAfterSeconds": 42}
 }`
 
 // TestGetSessionLogs checks the request GetSessionLogs sends for each option,
-// and that records come back typed with the page's cursor.
+// and that records come back typed with the page's cursor and data status.
 func TestGetSessionLogs(t *testing.T) {
 	tests := []struct {
 		name string
@@ -554,6 +564,7 @@ func TestGetSessionLogs(t *testing.T) {
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
+			assert.Equal(t, settling42, page.DataStatus)
 			require.Len(t, page.Records, 2)
 			rec := page.Records[0]
 			assert.Equal(t, "log_1", *rec.Id)
@@ -689,11 +700,13 @@ const tracesPage = `{
       "events": [{"name": "exception", "timestamp": "2026-10-07T11:00:01.800Z", "attributes": {"exception.type": "RateLimitError"}}]
     }
   ],
-  "pageInfo": {"nextCursor": "next", "hasMore": true}
+  "pageInfo": {"nextCursor": "next", "hasMore": true},
+  "dataStatus": {"state": "DATA_STATE_SETTLING", "retryAfterSeconds": 42}
 }`
 
 // TestGetSessionTraces checks the request GetSessionTraces sends for each
-// option, and that spans come back typed with the page's cursor.
+// option, and that spans come back typed with the page's cursor and data
+// status.
 func TestGetSessionTraces(t *testing.T) {
 	tests := []struct {
 		name string
@@ -729,6 +742,7 @@ func TestGetSessionTraces(t *testing.T) {
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
+			assert.Equal(t, settling42, page.DataStatus)
 			require.Len(t, page.Spans, 2)
 			root, child := page.Spans[0], page.Spans[1]
 			assert.Equal(t, "a1a1a1a1a1a1a1a1", *root.SpanId)
@@ -860,12 +874,13 @@ const metricsPage = `{
       "histogram": {"count": "2", "sum": 1.5}
     }
   ],
-  "pageInfo": {"nextCursor": "next", "hasMore": true}
+  "pageInfo": {"nextCursor": "next", "hasMore": true},
+  "dataStatus": {"state": "DATA_STATE_SETTLING", "retryAfterSeconds": 42}
 }`
 
 // TestGetSessionMetrics checks the request GetSessionMetrics sends for each
-// option, and that points come back with their value or histogram decoded and
-// the page's cursor.
+// option, and that points come back with their value or histogram decoded, and
+// the page's cursor and data status.
 func TestGetSessionMetrics(t *testing.T) {
 	tests := []struct {
 		name string
@@ -905,6 +920,7 @@ func TestGetSessionMetrics(t *testing.T) {
 			assert.Equal(t, tt.want, gotQuery)
 
 			assert.Equal(t, "next", page.NextCursor)
+			assert.Equal(t, settling42, page.DataStatus)
 			require.Len(t, page.Points, 4)
 			gauge, sum, hist, expHist := page.Points[0], page.Points[1], page.Points[2], page.Points[3]
 

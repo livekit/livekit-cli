@@ -129,15 +129,19 @@ type TranscriptPage struct {
 	// SkippedRecords counts this page's records the server couldn't read as
 	// transcript items and left out.
 	SkippedRecords int
+	// DataStatus says whether more of the session's data can still arrive,
+	// and when to read again; nil from a Public API that doesn't say.
+	DataStatus *oapi.LivekitPublicapiObservabilityV1DataStatus
 }
 
 // GetSessionTranscript returns one page of a session's conversation: messages
 // with their roles and latencies, tool calls and results, agent handoffs and
 // configuration changes. The agent exports its transcript when the session
 // ends, so an active session returns what exists so far, usually nothing,
-// without an error. An unknown session is NotFound (see IsNotFound); an empty
-// first page while the project's user data recording is off is a
-// FailedPrecondition that ObservabilityDisabled recognizes.
+// without an error; DataStatus says whether more can still arrive. An
+// unknown session is NotFound (see IsNotFound); an empty first page while the
+// project's user data recording is off is a FailedPrecondition that
+// ObservabilityDisabled recognizes.
 func (c *Client) GetSessionTranscript(ctx context.Context, projectID, sessionID string, opts PageOptions) (*TranscriptPage, error) {
 	if err := opts.Validate(); err != nil {
 		return nil, err
@@ -159,7 +163,7 @@ func (c *Client) GetSessionTranscript(ctx context.Context, projectID, sessionID 
 	if err := json.Unmarshal(resp.Body, &body); err != nil {
 		return nil, fmt.Errorf("unexpected response from server: %w", err)
 	}
-	page := &TranscriptPage{Items: body.Items, NextCursor: pageCursor(resp.JSON200.PageInfo)}
+	page := &TranscriptPage{Items: body.Items, NextCursor: pageCursor(resp.JSON200.PageInfo), DataStatus: resp.JSON200.DataStatus}
 	if n := resp.JSON200.SkippedRecords; n != nil {
 		page.SkippedRecords = *n
 	}
@@ -245,6 +249,9 @@ type LogPage struct {
 	// NextCursor is non-empty when more pages remain (pass it back as
 	// LogOptions.Cursor).
 	NextCursor string
+	// DataStatus says whether more of the session's data can still arrive,
+	// and when to read again; nil from a Public API that doesn't say.
+	DataStatus *oapi.LivekitPublicapiObservabilityV1DataStatus
 }
 
 // GetSessionLogs returns one page of the log records a session's agents
@@ -266,7 +273,7 @@ func (c *Client) GetSessionLogs(ctx context.Context, projectID, sessionID string
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return &LogPage{Records: items(resp.JSON200.Items), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+	return &LogPage{Records: items(resp.JSON200.Items), NextCursor: pageCursor(resp.JSON200.PageInfo), DataStatus: resp.JSON200.DataStatus}, nil
 }
 
 // TracePage is one page of a session's trace spans.
@@ -277,6 +284,9 @@ type TracePage struct {
 	// NextCursor is non-empty when more pages remain (pass it back as
 	// PageOptions.Cursor).
 	NextCursor string
+	// DataStatus says whether more of the session's data can still arrive,
+	// and when to read again; nil from a Public API that doesn't say.
+	DataStatus *oapi.LivekitPublicapiObservabilityV1DataStatus
 }
 
 // GetSessionTraces returns one page of the spans a session's agents exported:
@@ -300,7 +310,7 @@ func (c *Client) GetSessionTraces(ctx context.Context, projectID, sessionID stri
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return &TracePage{Spans: items(resp.JSON200.Items), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+	return &TracePage{Spans: items(resp.JSON200.Items), NextCursor: pageCursor(resp.JSON200.PageInfo), DataStatus: resp.JSON200.DataStatus}, nil
 }
 
 // MetricOptions filters and pages GetSessionMetrics. Zero values return every
@@ -372,6 +382,9 @@ type MetricPage struct {
 	// NextCursor is non-empty when more pages remain (pass it back as
 	// MetricOptions.Cursor).
 	NextCursor string
+	// DataStatus says whether more of the session's data can still arrive,
+	// and when to read again; nil from a Public API that doesn't say.
+	DataStatus *oapi.LivekitPublicapiObservabilityV1DataStatus
 }
 
 // GetSessionMetrics returns one page of the OpenTelemetry metric points a
@@ -404,7 +417,7 @@ func (c *Client) GetSessionMetrics(ctx context.Context, projectID, sessionID str
 	if err := json.Unmarshal(resp.Body, &body); err != nil {
 		return nil, fmt.Errorf("unexpected response from server: %w", err)
 	}
-	return &MetricPage{Points: body.Items, NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+	return &MetricPage{Points: body.Items, NextCursor: pageCursor(resp.JSON200.PageInfo), DataStatus: resp.JSON200.DataStatus}, nil
 }
 
 // gzipMagic opens every gzip stream (RFC 1952).

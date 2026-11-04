@@ -1269,12 +1269,14 @@ func TestReadPages(t *testing.T) {
 }
 
 // TestFetchSessionTranscriptPages checks the transcript reads every page into
-// one transcript, adding up the records each page left out.
+// one transcript, adding up the records each page left out, and keeps the
+// data status of the first page read, the least settled.
 func TestFetchSessionTranscriptPages(t *testing.T) {
 	pages := map[string]string{
 		"": `{"items":[{"id":"item_1","message":{"role":"ROLE_USER","text":"hi"}}],` +
-			`"skippedRecords":1,"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
-		"c2": `{"items":[{"id":"item_2","message":{"role":"ROLE_AGENT","text":"hello"}}],"skippedRecords":2}`,
+			`"skippedRecords":1,"pageInfo":{"nextCursor":"c2","hasMore":true},"dataStatus":{"state":"DATA_STATE_SESSION_ACTIVE"}}`,
+		"c2": `{"items":[{"id":"item_2","message":{"role":"ROLE_AGENT","text":"hello"}}],"skippedRecords":2,` +
+			`"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`,
 	}
 	var cursors []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1294,12 +1296,16 @@ func TestFetchSessionTranscriptPages(t *testing.T) {
 	assert.Contains(t, plain, "● Agent")
 	assert.Contains(t, stderr.String(), "3 records couldn't be read as transcript items")
 	assert.NotContains(t, stderr.String(), "More items available")
+	assert.Contains(t, stderr.String(), "More transcript items can still arrive: the session is still active")
+	assert.NotContains(t, stderr.String(), "read again")
 }
 
 // TestFetchSessionTranscript prints a page one line per item and, when the
 // first page is empty, says why: the session is still active, or it ended
-// without a transcript to read yet. A later empty page needs no lookup, and a
-// page with no items but skipped records or a next cursor isn't empty.
+// without a transcript to read yet. A page with a data status says which
+// itself, so it needs no lookup and prints no note beside its reason; nor does
+// a later empty page need a lookup. A page with no items but skipped records
+// or a next cursor isn't empty.
 func TestFetchSessionTranscript(t *testing.T) {
 	const page = `{"items":[` +
 		`{"id":"item_1","message":{"role":"ROLE_USER","text":"hi","endOfTurnDelayMs":320}},` +
@@ -1328,6 +1334,36 @@ func TestFetchSessionTranscript(t *testing.T) {
 			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
 			wantStatus: []string{"Session RM_1 is still active", "appears after it ends"},
 			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript", "/v0/projects/p1/sessions/RM_1"},
+		},
+		{
+			name:       "active session, with a data status",
+			body:       `{"items":[],"dataStatus":{"state":"DATA_STATE_SESSION_ACTIVE","retryAfterSeconds":0}}`,
+			wantStatus: []string{"Session RM_1 is still active: its transcript appears after it ends\n"},
+			noStatus:   []string{"no transcript", "can still arrive"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
+		},
+		{
+			name:       "settling session",
+			body:       `{"items":[],"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`,
+			wantStatus: []string{"Session RM_1 has no transcript yet: the session just ended — read again in 42s\n"},
+			noStatus:   []string{"can still arrive"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
+		},
+		{
+			name: "settled session",
+			body: `{"items":[],"dataStatus":{"state":"DATA_STATE_SETTLED","retryAfterSeconds":0}}`,
+			wantStatus: []string{"Session RM_1 has no transcript to read. The agent exports it when the session ends " +
+				"(on a project with PII redaction, once the recording is redacted); a session without an agent has none\n"},
+			noStatus:  []string{"a minute or two", "can still arrive"},
+			wantPaths: []string{"/v0/projects/p1/sessions/RM_1/transcript"},
+		},
+		{
+			name:       "last page, settling",
+			body:       `{"items":[],"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`,
+			opts:       public.PageOptions{Cursor: "c2"},
+			wantStatus: []string{"No more transcript items yet: the session just ended — read again in 42s\n"},
+			noStatus:   []string{"can still arrive"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
 		},
 		{
 			name:       "closed session",

@@ -230,16 +230,25 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 
 // jsonPage is the --json shape of a read of a session's transcript, agent
 // logs, trace spans, agent metrics or events: a util.Page, every page read
-// merged, and for a transcript the records the server couldn't read as items.
+// merged, for a transcript the records the server couldn't read as items, and
+// the data status of the last page read.
 type jsonPage[T any] struct {
 	util.Page[T]
 	// SkippedRecords counts the transcript records the server couldn't read as
 	// items, across every page read; the other reads skip none.
 	SkippedRecords int `json:"skippedRecords,omitempty"`
+	// DataStatus says whether more can still arrive; events have none.
+	DataStatus *oapi.LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
 }
 
-func newJSONPage[T any](items []T, nextCursor string, skipped int) jsonPage[T] {
-	return jsonPage[T]{Page: util.NewPage(items, nextCursor), SkippedRecords: skipped}
+func newJSONPage[T any](items []T, nextCursor string, skipped int, status *oapi.LivekitPublicapiObservabilityV1DataStatus) jsonPage[T] {
+	return jsonPage[T]{Page: util.NewPage(items, nextCursor), SkippedRecords: skipped, DataStatus: status}
+}
+
+// isEmpty reports whether a page is empty as the server counts it: no items,
+// nothing skipped and no next cursor.
+func (page jsonPage[T]) isEmpty() bool {
+	return len(page.Items) == 0 && page.SkippedRecords == 0 && !page.PageInfo.HasMore
 }
 
 // renderPage prints a page of a session's items: one line each, as lines
@@ -258,10 +267,18 @@ func renderPage[T any](p *util.Printer, asJSON bool, page jsonPage[T], empty str
 			p.Result(line)
 		}
 	}
-	if len(page.Items) == 0 && page.SkippedRecords == 0 && !page.PageInfo.HasMore && empty != "" {
+	if page.isEmpty() && empty != "" {
 		p.Status(empty)
 	}
 	return nil
+}
+
+// moreCanArrive says more of what can still arrive, until the data settles.
+// --json says it with the page's dataStatus instead.
+func moreCanArrive(p *util.Printer, what string, status *oapi.LivekitPublicapiObservabilityV1DataStatus) {
+	if why, ok := DataPending(status); ok {
+		p.Statusf("More %s can still arrive: %s", what, why)
+	}
 }
 
 // moreAvailable says a page has more after it and the command that reads
@@ -337,11 +354,12 @@ func formatBitrate(bps float64) string {
 
 // SessionTranscript prints a page of a session's transcript, as lines renders
 // it; --json prints the items as the API sent them. empty says why a page has
-// no items, on stderr in both modes so --json output stays parseable. lines
-// gets the items as the API sent them, so it must strip what a terminal acts
-// on from their text (see StripControls).
+// no items, on stderr in both modes so --json output stays parseable, and
+// whether more can still arrive, so no note follows it. lines gets the items
+// as the API sent them, so it must strip what a terminal acts on from their
+// text (see StripControls).
 func SessionTranscript(p *util.Printer, asJSON bool, page public.TranscriptPage, empty string, lines func([]public.TranscriptItem) []string) error {
-	jp := newJSONPage(page.Items, page.NextCursor, page.SkippedRecords)
+	jp := newJSONPage(page.Items, page.NextCursor, page.SkippedRecords, page.DataStatus)
 	if err := renderPage(p, asJSON, jp, empty, lines); err != nil || asJSON {
 		return err
 	}
@@ -352,6 +370,9 @@ func SessionTranscript(p *util.Printer, asJSON bool, page public.TranscriptPage,
 		p.Statusf("%d records couldn't be read as transcript items and were left out", n)
 	}
 	moreAvailable(p, "items", page.NextCursor)
+	if !jp.isEmpty() || empty == "" {
+		moreCanArrive(p, "transcript items", page.DataStatus)
+	}
 	return nil
 }
 
@@ -382,11 +403,12 @@ func clip(s string, max int) string {
 // API sent them. empty says why a page has no records, on stderr in both modes
 // so --json output stays parseable.
 func SessionLogs(p *util.Printer, asJSON bool, page public.LogPage, empty string) error {
-	jp := newJSONPage(page.Records, page.NextCursor, 0)
+	jp := newJSONPage(page.Records, page.NextCursor, 0, page.DataStatus)
 	if err := renderPage(p, asJSON, jp, empty, logLines); err != nil || asJSON {
 		return err
 	}
 	moreAvailable(p, "records", page.NextCursor)
+	moreCanArrive(p, "log records", page.DataStatus)
 	return nil
 }
 
@@ -430,7 +452,7 @@ func logLevelName(r oapi.LivekitPublicapiObservabilityV1LogRecord) string {
 // page has no events, on stderr in both modes so --json output stays
 // parseable.
 func SessionEvents(p *util.Printer, asJSON bool, page public.EventPage, empty string) error {
-	jp := newJSONPage(page.Events, page.NextCursor, 0)
+	jp := newJSONPage(page.Events, page.NextCursor, 0, nil)
 	if err := renderPage(p, asJSON, jp, empty, eventLines); err != nil || asJSON {
 		return err
 	}
@@ -521,12 +543,15 @@ func payloadValue(v *oapi.GoogleProtobufValue) string {
 // stays parseable. page.NextCursor is where the read stopped short of the
 // session's last span.
 func SessionTraces(p *util.Printer, asJSON bool, page public.TracePage, empty string) error {
-	jp := newJSONPage(page.Spans, page.NextCursor, 0)
-	if err := renderPage(p, asJSON, jp, empty, spanLines); err != nil || asJSON || page.NextCursor == "" {
+	jp := newJSONPage(page.Spans, page.NextCursor, 0, page.DataStatus)
+	if err := renderPage(p, asJSON, jp, empty, spanLines); err != nil || asJSON {
 		return err
 	}
-	p.Statusf("Printed %d spans; more remain — raise --limit to read them into this tree, or read the next ones with %s",
-		len(page.Spans), util.NextPageHint(page.NextCursor))
+	if page.NextCursor != "" {
+		p.Statusf("Printed %d spans; more remain — raise --limit to read them into this tree, or read the next ones with %s",
+			len(page.Spans), util.NextPageHint(page.NextCursor))
+	}
+	moreCanArrive(p, "spans", page.DataStatus)
 	return nil
 }
 
@@ -637,11 +662,12 @@ func spanDuration(s oapi.LivekitPublicapiObservabilityV1Span) string {
 // buckets included. empty says why a page has no points, on stderr in both
 // modes so --json output stays parseable.
 func SessionMetrics(p *util.Printer, asJSON bool, page public.MetricPage, empty string) error {
-	jp := newJSONPage(page.Points, page.NextCursor, 0)
+	jp := newJSONPage(page.Points, page.NextCursor, 0, page.DataStatus)
 	if err := renderPage(p, asJSON, jp, empty, metricLines); err != nil || asJSON {
 		return err
 	}
 	moreAvailable(p, "points", page.NextCursor)
+	moreCanArrive(p, "metric points", page.DataStatus)
 	return nil
 }
 
@@ -743,14 +769,23 @@ func RecordingLabel(recording string) string {
 
 // RecordingURL prints a signed recording URL. As text it is the bare URL on
 // stdout, so it pipes into curl, with its expiry as a status line; as JSON it
-// is the API's response, recording start included.
+// is the API's response, recording start and data status included.
 func RecordingURL(p *util.Printer, asJSON bool, r oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse) error {
 	if asJSON {
 		return util.PrintJSONTo(p.ResultWriter(), r)
 	}
 	p.Result(util.Deref(r.Url))
 	p.Statusf("The URL expires %s", util.FormatTime(r.ExpiresAt))
+	recordingCanChange(p, r.DataStatus)
 	return nil
+}
+
+// recordingCanChange says a later upload can still replace a recording, until
+// the session's data settles.
+func recordingCanChange(p *util.Printer, status *oapi.LivekitPublicapiObservabilityV1DataStatus) {
+	if why, ok := DataPending(status); ok {
+		p.Statusf("A later upload can still replace this recording: %s", why)
+	}
 }
 
 // SavedRecording is a recording downloaded to a file.
@@ -772,5 +807,6 @@ func RecordingSaved(p *util.Printer, r oapi.LivekitPublicapiObservabilityV1Recor
 	if r.RecordingStartedAt != nil {
 		p.Statusf("The recording started %s", util.FormatTime(r.RecordingStartedAt))
 	}
+	recordingCanChange(p, r.DataStatus)
 	return nil
 }
