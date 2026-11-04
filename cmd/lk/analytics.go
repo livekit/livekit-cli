@@ -108,7 +108,10 @@ var (
 								"-o also downloads the recording, straight from the project's data region, and prints where it saved it: " +
 								"to a file, replaced if it exists, or into a directory, as SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, " +
 								"numbered (SESSION_ID-audio-1.ogg, ...) rather than replacing a file already there. " +
-								"Use -o . for the working directory.",
+								"Use -o . for the working directory.\n\n" +
+								"While the session is active, or just after it ends, its agent can still upload the recording. " +
+								"A recording that isn't there yet fails, saying when to read again, and -o downloads nothing; " +
+								"--json still prints the API's response, its dataStatus included.",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(sessionRecordingOptionsFrom, fetchSessionRecording),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsRecordingFlags()...),
@@ -994,11 +997,21 @@ func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, err
 // fetchSessionRecording asks the Public API to sign a URL for the recording
 // and prints it, the command's primary output. With -o it also downloads the
 // recording to a file and says where on stderr. The download goes straight to
-// the object store; nothing passes through the API.
+// the object store; nothing passes through the API. A recording that isn't
+// there yet fails, after --json prints the response, so a script can read its
+// dataStatus.
 func fetchSessionRecording(ctx context.Context, client *public.Client, projectID, sessionID string, opts sessionRecordingOptions, asJSON bool) error {
 	res, err := client.GetSessionRecordingURL(ctx, projectID, sessionID, opts.RecordingURLOptions)
 	if err != nil {
 		return sessionRecordingError(err, projectID, sessionID, opts.Recording)
+	}
+	if util.Deref(res.Url) == "" {
+		if asJSON {
+			if err := render.RecordingURL(out, true, *res); err != nil {
+				return err
+			}
+		}
+		return recordingNotYetError(sessionID, opts.Recording, res.DataStatus)
 	}
 	if opts.Output == "" {
 		return render.RecordingURL(out, asJSON, *res)
@@ -1126,10 +1139,21 @@ func sessionRecordingError(err error, projectID, sessionID, recording string) er
 		// The API answers an unknown session, or a mistyped --project, the same
 		// way, so say so too and name the project.
 		return fmt.Errorf("session %s has no %s (%w): it wasn't recorded, has expired, "+
-			"or the session ended less than a minute ago and the recording is still being indexed; "+
+			"or hasn't been indexed yet (a recording can take a few minutes after the session ends); "+
 			"or there is no such session in project %s", sessionID, label, err, projectID)
 	}
 	return sessionAPIError(err, label, projectAdminAccess)
+}
+
+// recordingNotYetError says a session's recording isn't there yet, while its
+// agent can still upload it, and when to read again. The API sends no URL
+// only then, so any other status is a bad response.
+func recordingNotYetError(sessionID, recording string, status *oapi.LivekitPublicapiObservabilityV1DataStatus) error {
+	why, ok := render.DataPending(status)
+	if !ok {
+		return errors.New("unexpected response from server: missing url")
+	}
+	return fmt.Errorf("session %s has no %s yet, and its agent can still upload it: %s", sessionID, render.RecordingLabel(recording), why)
 }
 
 // observabilityDisabledError says a session has nothing to read because the

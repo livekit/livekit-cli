@@ -68,9 +68,11 @@ func (o RecordingURLOptions) Validate() error {
 // GetSessionRecordingURL returns a short-lived signed URL for one of a session's
 // recordings, with when it expires and when the recording started. The URL
 // downloads straight from the project's data region (see DownloadRecording).
-// A session with no such recording is NotFound (see IsNotFound), or, while the
-// project's user data recording is off, a FailedPrecondition that
-// ObservabilityDisabled recognizes.
+// While the session is active or has just ended, its agent can still upload
+// the recording, so one that isn't there yet comes back with an empty Url and
+// a DataStatus that says when to read again. Otherwise a session with no such
+// recording is NotFound (see IsNotFound), or, while the project's user data
+// recording is off, a FailedPrecondition that ObservabilityDisabled recognizes.
 func (c *Client) GetSessionRecordingURL(ctx context.Context, projectID, sessionID string, opts RecordingURLOptions) (*oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse, error) {
 	fileType, err := parseRecordingFileType(opts.Recording)
 	if err != nil {
@@ -83,9 +85,6 @@ func (c *Client) GetSessionRecordingURL(ctx context.Context, projectID, sessionI
 	}
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	if resp.JSON200.Url == nil || *resp.JSON200.Url == "" {
-		return nil, errors.New("unexpected response from server: missing url")
 	}
 	return resp.JSON200, nil
 }

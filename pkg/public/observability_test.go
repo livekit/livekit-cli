@@ -100,19 +100,25 @@ func TestGetSessionRecordingURLRejectsUnknownRecording(t *testing.T) {
 	}
 }
 
-// TestGetSessionRecordingURLMissingURL guards a 200 without a URL, which would
-// otherwise download from "".
-func TestGetSessionRecordingURLMissingURL(t *testing.T) {
+// TestGetSessionRecordingURLNotYetUploaded checks a recording that isn't there
+// yet comes back as the API sent it: no URL, and the data status that says
+// when to read again.
+func TestGetSessionRecordingURLNotYetUploaded(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{}`))
+		_, _ = w.Write([]byte(`{"url":"","dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`))
 	}))
 	t.Cleanup(srv.Close)
 	c, err := New(srv.URL, "sekret")
 	require.NoError(t, err)
 
-	_, err = c.GetSessionRecordingURL(context.Background(), "p1", "RM_1", RecordingURLOptions{Recording: "audio"})
-	require.EqualError(t, err, "unexpected response from server: missing url")
+	res, err := c.GetSessionRecordingURL(context.Background(), "p1", "RM_1", RecordingURLOptions{Recording: "audio"})
+	require.NoError(t, err)
+	assert.Empty(t, *res.Url)
+	assert.Nil(t, res.ExpiresAt)
+	require.NotNil(t, res.DataStatus)
+	assert.Equal(t, oapi.DATASTATESETTLING, *res.DataStatus.State)
+	assert.Equal(t, 42, *res.DataStatus.RetryAfterSeconds)
 }
 
 // TestGetSessionRecordingURLErrors checks the two "nothing to download"

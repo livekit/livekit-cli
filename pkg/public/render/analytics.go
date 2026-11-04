@@ -718,6 +718,21 @@ func formatMetricNumber(v float64, unit string) string {
 	return s + " " + unit
 }
 
+// DataPending says why a session's data can still change: the session is
+// still active, or it just ended, with when to read again. ok is false once the
+// data has settled, or when the API sent no status.
+func DataPending(status *oapi.LivekitPublicapiObservabilityV1DataStatus) (why string, ok bool) {
+	s := util.Deref(status)
+	switch util.Deref(s.State) {
+	case oapi.DATASTATESESSIONACTIVE:
+		return "the session is still active", true
+	case oapi.DATASTATESETTLING:
+		return fmt.Sprintf("the session just ended — read again in %ds", util.Deref(s.RetryAfterSeconds)), true
+	default:
+		return "", false
+	}
+}
+
 // RecordingLabel names a recording ("audio" or "chat-history") for a sentence.
 func RecordingLabel(recording string) string {
 	if recording == public.RecordingChatHistory {

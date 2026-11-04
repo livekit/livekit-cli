@@ -31,6 +31,7 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -905,7 +906,7 @@ func TestFetchSessionRecordingNothingToDownload(t *testing.T) {
 			name:    "not recorded",
 			status:  http.StatusNotFound,
 			body:    `{"code":5,"message":"recording not found"}`,
-			wantErr: []string{"session RM_1 has no chat history", "recording not found", "wasn't recorded", "less than a minute ago", "or there is no such session in project p1"},
+			wantErr: []string{"session RM_1 has no chat history", "recording not found", "wasn't recorded", "hasn't been indexed yet", "or there is no such session in project p1"},
 		},
 		{
 			name:   "recording off",
@@ -953,6 +954,75 @@ func TestFetchSessionRecordingNothingToDownload(t *testing.T) {
 			entries, err := os.ReadDir(".")
 			require.NoError(t, err)
 			assert.Empty(t, entries)
+		})
+	}
+}
+
+// TestFetchSessionRecordingNotYetUploaded checks a recording the agent can
+// still upload fails, saying when to try again, without downloading anything
+// or saving a file, and that --json still prints the response first.
+func TestFetchSessionRecordingNotYetUploaded(t *testing.T) {
+	const body = `{"url":"","dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`
+	const wantErr = "session RM_1 has no audio recording yet, and its agent can still upload it: the session just ended — read again in 42s"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+
+	t.Run("-o", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		stdout, _ := captureOut(t)
+		opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, Output: "."}
+		require.EqualError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false), wantErr)
+		assert.Empty(t, stdout.String())
+		entries, err := os.ReadDir(".")
+		require.NoError(t, err)
+		assert.Empty(t, entries, "nothing is saved")
+	})
+	t.Run("--json", func(t *testing.T) {
+		stdout, _ := captureOut(t)
+		opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
+		require.EqualError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, true), wantErr)
+		assert.JSONEq(t, body, stdout.String())
+	})
+}
+
+// TestRecordingNotYetError checks a recording that isn't there yet says why
+// and, while the session settles, when to read again; a missing URL with any
+// other status is a bad response.
+func TestRecordingNotYetError(t *testing.T) {
+	tests := []struct {
+		name   string
+		status *oapi.LivekitPublicapiObservabilityV1DataStatus
+		want   string
+	}{
+		{
+			name:   "settling",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptrTo(oapi.DATASTATESETTLING), RetryAfterSeconds: ptrTo(42)},
+			want:   "session RM_1 has no chat history yet, and its agent can still upload it: the session just ended — read again in 42s",
+		},
+		{
+			name:   "active",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptrTo(oapi.DATASTATESESSIONACTIVE), RetryAfterSeconds: ptrTo(0)},
+			want:   "session RM_1 has no chat history yet, and its agent can still upload it: the session is still active",
+		},
+		{
+			// The API sends no URL only while the agent can still upload.
+			name:   "settled",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptrTo(oapi.DATASTATESETTLED), RetryAfterSeconds: ptrTo(0)},
+			want:   "unexpected response from server: missing url",
+		},
+		{
+			name: "no status",
+			want: "unexpected response from server: missing url",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.EqualError(t, recordingNotYetError("RM_1", "chat-history", tt.status), tt.want)
 		})
 	}
 }
