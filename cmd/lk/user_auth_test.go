@@ -359,7 +359,8 @@ func TestSetUserAuthHidden(t *testing.T) {
 	assert.True(t, simulateList.Flags[1].(*cli.StringFlag).Hidden)
 
 	setUserAuthHidden(root, false)
-	assert.Contains(t, names(root.VisibleCommands()), "workspace")
+	assert.NotContains(t, names(root.VisibleCommands()), "workspace", "workspace stays unlisted after sign-in")
+	assert.NotNil(t, root.Command("workspace"), "an unlisted command still runs when typed")
 	assert.Contains(t, names(root.VisibleCommands()), "user")
 	assert.Contains(t, names(project.VisibleCommands()), "member")
 	assert.Contains(t, names(root.Command("cloud").VisibleCommands()), "whoami")

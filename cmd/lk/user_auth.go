@@ -159,6 +159,14 @@ var userAuthOnly = map[string]any{userAuthOnlyKey: true}
 
 const userAuthOnlyKey = "userAuthOnly"
 
+// userAuthUnlisted is the Metadata of a userAuthOnly command that stays out of
+// help and completion even after a user signs in. It still runs when typed,
+// but nothing advertises it, so a coding agent reading --help doesn't reach
+// for it. Use it for a command group that isn't generally available yet.
+var userAuthUnlisted = map[string]any{userAuthOnlyKey: true, unlistedKey: true}
+
+const unlistedKey = "unlisted"
+
 // userAuthOnlyFlags holds the Hidden fields of the flags registered with
 // userAuthOnlyFlag (flags have no Metadata to mark them with).
 var userAuthOnlyFlags []*bool
@@ -187,7 +195,7 @@ func setUserAuthHidden(root *cli.Command, hidden bool) {
 	walk = func(cmd *cli.Command) {
 		for _, c := range cmd.Commands {
 			if c.Metadata[userAuthOnlyKey] == true {
-				c.Hidden = hidden
+				c.Hidden = hidden || c.Metadata[unlistedKey] == true
 			}
 			walk(c)
 		}
