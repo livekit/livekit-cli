@@ -32,6 +32,7 @@ import (
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -229,6 +230,9 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	if err := devUnderUserAuthGate(cmd); err != nil {
 		return nil, err
 	}
+
+	apiClientInfo.Command = commandName(cmd)
+	apiClientInfo.CodingAgent = public.DetectCodingAgent(os.Getenv)
 
 	showBanner(ctx, cmd)
 

@@ -26,6 +26,7 @@ import (
 	"charm.land/huh/v2"
 	"github.com/urfave/cli/v3"
 
+	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -362,10 +363,21 @@ func resolveSessionUser(conf *config.CLIConfig, userRef string, apiURLSet bool) 
 	return nil, fmt.Errorf("no user is signed in to %s (run %s to sign in)", publicAPIURL, signInCommand())
 }
 
+// apiClientInfo identifies this run on every Public API request: the CLI, its
+// version, the command, and any coding agent running it. The root Before hook
+// sets it once the command is known.
+var apiClientInfo = public.ClientInfo{Name: "cli", Version: livekitcli.Version}
+
 // publicClientForToken builds a Public API client authenticated with the given
 // session token, honoring --public-api-url.
 func publicClientForToken(token string) (*public.Client, error) {
-	return public.New(publicAPIURL, token)
+	return public.New(publicAPIURL, token, public.WithClientInfo(apiClientInfo))
+}
+
+// commandName is the command a run resolves to, without the root name or any
+// arguments, such as "analytics session list".
+func commandName(cmd *cli.Command) string {
+	return strings.TrimPrefix(leafCommand(cmd).FullName(), cmd.Root().Name+" ")
 }
 
 // requireCloudClient is the entry point for the Public-API-only commands: it
