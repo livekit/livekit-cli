@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -94,6 +95,6 @@ func TestDetectCodingAgent(t *testing.T) {
 }
 
 func TestCleanAgentNameCapsLength(t *testing.T) {
-	long := "a-very-long-agent-name-that-keeps-going-and-going"
-	assert.Len(t, cleanAgentName(long), 32)
+	assert.Len(t, cleanAgentName(strings.Repeat("a", maxAgentNameLen+10)), maxAgentNameLen)
+	assert.Equal(t, "claude-code", cleanAgentName("claude-code"), "a short name is kept whole")
 }

@@ -84,13 +84,17 @@ func DetectCodingAgent(getenv func(string) string) string {
 	return ""
 }
 
+// maxAgentNameLen caps a detected coding agent's name. Known names are under
+// 20 characters, so this leaves headroom while keeping the header bounded.
+const maxAgentNameLen = 64
+
 // cleanAgentName keeps a detected name to lowercase letters, digits, dots and
-// dashes, at most 32 characters, so an unexpected value can't put anything
-// else into a header.
+// dashes, at most maxAgentNameLen characters, so an unexpected value can't put
+// anything else into a header.
 func cleanAgentName(s string) string {
 	var b strings.Builder
 	for _, r := range strings.ToLower(s) {
-		if b.Len() == 32 {
+		if b.Len() == maxAgentNameLen {
 			break
 		}
 		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '.' || r == '-' {
