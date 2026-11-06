@@ -584,6 +584,20 @@ func parseSIPMediaConfig(cmd *cli.Command) (*livekit.SIPMediaConfig, error) {
 	return m, nil
 }
 
+// mergeSIPMediaConfig applies media settings given as flags to dst. If no media
+// flags were set, dst is left untouched so values read from a JSON request
+// file are not discarded.
+func mergeSIPMediaConfig(cmd *cli.Command, dst **livekit.SIPMediaConfig) error {
+	m, err := parseSIPMediaConfig(cmd)
+	if err != nil {
+		return err
+	}
+	if m != nil {
+		*dst = m
+	}
+	return nil
+}
+
 func createSIPClient(ctx context.Context, cmd *cli.Command) (*lksdk.SIPClient, error) {
 	_, err := requireProjectForSDK(ctx, cmd)
 	if err != nil {
@@ -608,9 +622,7 @@ func createSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		if val, ok := listSetFlag(cmd, "numbers"); ok {
 			p.Numbers = val
 		}
-		if m, err := parseSIPMediaConfig(cmd); err == nil {
-			p.Media = m
-		} else if err != nil {
+		if err := mergeSIPMediaConfig(cmd, &p.Media); err != nil {
 			return err
 		}
 		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
@@ -730,9 +742,7 @@ func createSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		if val := cmd.String("destination-country"); val != "" {
 			p.DestinationCountry = val
 		}
-		if m, err := parseSIPMediaConfig(cmd); err == nil {
-			p.Media = m
-		} else if err != nil {
+		if err := mergeSIPMediaConfig(cmd, &p.Media); err != nil {
 			return err
 		}
 		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
@@ -1019,9 +1029,7 @@ func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		if val, ok := listSetFlag(cmd, "trunks"); ok {
 			p.TrunkIds = val
 		}
-		if m, err := parseSIPMediaConfig(cmd); err == nil {
-			p.Media = m
-		} else if err != nil {
+		if err := mergeSIPMediaConfig(cmd, &p.Media); err != nil {
 			return err
 		}
 		if enc, err := parseSIPMediaEnc(cmd); err == nil && enc != nil {
