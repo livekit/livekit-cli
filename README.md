@@ -35,6 +35,8 @@ brew install livekit-cli
 curl -sSL https://get.livekit.io/cli | bash
 ```
 
+The script installs `lk` to `/usr/local/bin`. Set `LK_INSTALL_PATH` to install somewhere else.
+
 Or download a precompiled binary for the [latest release](https://github.com/livekit/livekit-cli/releases/latest)
 
 ## Windows
@@ -584,6 +586,8 @@ lk skills remove
 Skills are copied (not symlinked) into each agent's skills directory; agents that read the shared `.agents/skills` directory get one copy. Installs are recorded in `skills-lock.json` (commit it with the skills), or `~/.agents/.skill-lock.json` with `--global`. These are the same lock files [`npx skills`](https://github.com/vercel-labs/skills) and `gh skill` use, so any of the three tools can update what another installed. Skills you've edited locally are never overwritten unless you pass `--force`.
 
 `lk agent init` offers to install skills into new agent projects for the coding agents on your machine; pass `--skills=false` to skip.
+
+If a coding agent is on your machine but no LiveKit skills are installed, `lk` offers once, in a terminal, to install them globally (`lk skills install --global`). Runs without a terminal or with `--yes`, such as a coding agent calling `lk`, print a one-line tip instead and never wait for input. Neither appears in CI, with `--quiet` or `--json`, or when `LK_NO_SKILLS_PROMPT=1` is set.
 
 ## Additional notes
 

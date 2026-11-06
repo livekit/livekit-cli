@@ -112,6 +112,34 @@ func TestUserAuthEnabled(t *testing.T) {
 	assert.False(t, enabled(t, "--legacy-auth"))
 }
 
+// TestDevUnderUserAuthGate checks that --dev under --user-auth, in either
+// spelling, is an error, and that each flag alone is not.
+func TestDevUnderUserAuthGate(t *testing.T) {
+	gate := func(t *testing.T, args ...string) error {
+		t.Helper()
+		var err error
+		cmd := &cli.Command{
+			Name: "lk",
+			Flags: []cli.Flag{
+				&cli.BoolFlag{Name: "user-auth", Aliases: []string{"experimental-auth"}},
+				&cli.BoolFlag{Name: "dev"},
+			},
+			Action: func(_ context.Context, cmd *cli.Command) error {
+				err = devUnderUserAuthGate(cmd)
+				return nil
+			},
+		}
+		require.NoError(t, cmd.Run(context.Background(), append([]string{"lk"}, args...)))
+		return err
+	}
+
+	const want = "--dev can't be combined with --user-auth; remove --user-auth or drop --dev"
+	assert.EqualError(t, gate(t, "--user-auth", "--dev"), want)
+	assert.EqualError(t, gate(t, "--experimental-auth", "--dev"), want)
+	assert.NoError(t, gate(t, "--dev"))
+	assert.NoError(t, gate(t, "--user-auth"))
+}
+
 func TestRequireUserSessionAPIURL(t *testing.T) {
 	const staging = "https://beta-api.staging.livekit.cloud"
 	setHome(t, t.TempDir())
@@ -331,7 +359,8 @@ func TestSetUserAuthHidden(t *testing.T) {
 	assert.True(t, simulateList.Flags[1].(*cli.StringFlag).Hidden)
 
 	setUserAuthHidden(root, false)
-	assert.Contains(t, names(root.VisibleCommands()), "workspace")
+	assert.NotContains(t, names(root.VisibleCommands()), "workspace", "workspace stays unlisted after sign-in")
+	assert.NotNil(t, root.Command("workspace"), "an unlisted command still runs when typed")
 	assert.Contains(t, names(root.VisibleCommands()), "user")
 	assert.Contains(t, names(project.VisibleCommands()), "member")
 	assert.Contains(t, names(root.Command("cloud").VisibleCommands()), "whoami")
@@ -355,4 +384,29 @@ func TestUserAuthOnlyCommandsMarked(t *testing.T) {
 	for _, cmds := range [][]*cli.Command{ProjectCommands, WorkspaceCommands, UserCommands, CloudCommands, AgentCommands, AnalyticsCommands} {
 		walk("lk", cmds)
 	}
+}
+
+// The command sent to the API is the command's name, never its arguments.
+func TestCommandNameLeavesOutArguments(t *testing.T) {
+	var got string
+	root := &cli.Command{
+		Name: "lk",
+		Commands: []*cli.Command{{
+			Name: "analytics",
+			Commands: []*cli.Command{{
+				Name: "session",
+				Commands: []*cli.Command{{
+					Name:      "transcript",
+					ArgsUsage: "SESSION_ID",
+					Action:    func(context.Context, *cli.Command) error { return nil },
+				}},
+			}},
+		}},
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			got = commandName(cmd)
+			return ctx, nil
+		},
+	}
+	require.NoError(t, root.Run(context.Background(), []string{"lk", "analytics", "session", "transcript", "RM_secret123"}))
+	assert.Equal(t, "analytics session transcript", got)
 }

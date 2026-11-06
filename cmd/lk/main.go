@@ -32,6 +32,7 @@ import (
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -77,10 +78,33 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 					},
 				},
 			},
+			{
+				Name:      "generate-docs",
+				Usage:     "Print markdown reference docs for a command",
+				ArgsUsage: "[command path...]",
+				Action:    generateDocs,
+				Hidden:    true,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "list",
+						Usage: "Print the path of every command below the given one that has a reference entry, instead of its docs",
+					},
+				},
+			},
 		},
 		Before: initLogger,
 	}
 
+	// urfave's help doesn't mark required flags; mark them here, as
+	// generate-docs does, rather than in each flag's usage.
+	flagString := cli.FlagStringer
+	cli.FlagStringer = func(f cli.Flag) string {
+		s := flagString(f)
+		if r, ok := f.(cli.RequiredFlag); ok && r.IsRequired() {
+			s += " (required)"
+		}
+		return s
+	}
 	cli.HelpPrinter = func(w io.Writer, templ string, data any) {
 		// cli/v3 renders `lk agent --help` with its stock subcommand template
 		// regardless of CustomHelpTemplate; swap in the grouped one here.
@@ -203,10 +227,23 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 	}
 	util.DetectBackground()
 
-	showBanner(ctx)
+	if err := devUnderUserAuthGate(cmd); err != nil {
+		return nil, err
+	}
+
+	apiClientInfo.Command = commandName(cmd)
+	apiClientInfo.CodingAgent = public.DetectCodingAgent(os.Getenv)
+
+	showBanner(ctx, cmd)
 
 	// Nudge users still on API-key auth toward the new account-based flow.
 	maybeShowUpgradeNotice(cmd, conf)
+
+	// Offer LiveKit's coding agent skills once, before any sign-in, so API-key
+	// and self-hosted users get it too. Cancelling the prompt cancels the command.
+	if err := maybeOfferSkills(ctx, cmd, conf); err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }

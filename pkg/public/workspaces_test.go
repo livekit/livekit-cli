@@ -43,7 +43,7 @@ func TestUpdateWorkspaceProject(t *testing.T) {
 	c, err := New(srv.URL, "tok")
 	require.NoError(t, err)
 
-	p, err := c.UpdateWorkspaceProject(context.Background(), "ws_1", "p_1", "New")
+	p, err := c.UpdateWorkspaceProject(context.Background(), "ws_1", "p_1", ProjectSettings{Name: ptr("New")})
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		"GET /v0/workspaces/ws_1/projects/p_1",
@@ -65,7 +65,7 @@ func TestUpdateWorkspaceProjectOutsideWorkspace(t *testing.T) {
 	c, err := New(srv.URL, "tok")
 	require.NoError(t, err)
 
-	_, err = c.UpdateWorkspaceProject(context.Background(), "ws_other", "p_1", "New")
+	_, err = c.UpdateWorkspaceProject(context.Background(), "ws_other", "p_1", ProjectSettings{Name: ptr("New")})
 	assert.True(t, IsNotFound(err))
 	assert.Equal(t, []string{"GET /v0/workspaces/ws_other/projects/p_1"}, calls)
 }

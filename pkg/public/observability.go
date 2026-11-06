@@ -267,7 +267,7 @@ func (c *Client) GetSessionLogs(ctx context.Context, projectID, sessionID string
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return &LogPage{Records: items(resp.JSON200.Records), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+	return &LogPage{Records: items(resp.JSON200.Items), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
 }
 
 // TracePage is one page of a session's trace spans.
@@ -301,7 +301,7 @@ func (c *Client) GetSessionTraces(ctx context.Context, projectID, sessionID stri
 	if resp.JSON200 == nil {
 		return nil, responseError(resp.StatusCode(), resp.Body)
 	}
-	return &TracePage{Spans: items(resp.JSON200.Spans), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+	return &TracePage{Spans: items(resp.JSON200.Items), NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
 }
 
 // MetricOptions filters and pages GetSessionMetrics. Zero values return every
@@ -400,12 +400,12 @@ func (c *Client) GetSessionMetrics(ctx context.Context, projectID, sessionID str
 	// The generated point is a union that hides whether it holds a value or a
 	// histogram, so decode the body again into points that say.
 	var body struct {
-		Points []MetricPoint `json:"points"`
+		Items []MetricPoint `json:"items"`
 	}
 	if err := json.Unmarshal(resp.Body, &body); err != nil {
 		return nil, fmt.Errorf("unexpected response from server: %w", err)
 	}
-	return &MetricPage{Points: body.Points, NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
+	return &MetricPage{Points: body.Items, NextCursor: pageCursor(resp.JSON200.PageInfo)}, nil
 }
 
 // gzipMagic opens every gzip stream (RFC 1952).

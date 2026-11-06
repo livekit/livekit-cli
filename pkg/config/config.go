@@ -35,6 +35,9 @@ type CLIConfig struct {
 	Users          []UserConfig    `yaml:"users"`
 	DeviceName     string          `yaml:"device_name"`
 	Theme          string          `yaml:"theme"`
+	// SkillsPrompted records that the first-run offer to install LiveKit's
+	// coding agent skills was answered, so it's asked only once.
+	SkillsPrompted bool `yaml:"skills_prompted,omitempty"`
 	// absent from YAML
 	hasPersisted bool
 }
@@ -398,7 +401,7 @@ func (c *CLIConfig) PersistQuietly() error {
 }
 
 func (c *CLIConfig) persist(announce bool) error {
-	if len(c.Projects) == 0 && len(c.Users) == 0 && c.Theme == "" && !c.hasPersisted {
+	if len(c.Projects) == 0 && len(c.Users) == 0 && c.Theme == "" && !c.SkillsPrompted && !c.hasPersisted {
 		// nothing worth persisting yet
 		return nil
 	}
