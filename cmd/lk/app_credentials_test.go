@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -72,22 +73,106 @@ func runWithProjectFlag(t *testing.T, args []string, action cli.ActionFunc) {
 	require.NoError(t, app.Run(context.Background(), append([]string{"lk"}, args...)))
 }
 
-func TestAgentEnvCredentials(t *testing.T) {
+func TestTaskfileEnvFile(t *testing.T) {
 	dir := t.TempDir()
-	runWithProjectFlag(t, nil, func(ctx context.Context, cmd *cli.Command) error {
-		_, err := agentEnvCredentials(ctx, cmd, dir)
-		assert.ErrorContains(t, err, "lk app env --write", "a missing key points at the command that creates one")
-		return nil
-	})
+	assert.Equal(t, []string{".env.local", ".env"}, agentEnvFileNames(dir), "no Taskfile")
+	writeEnvFile(t, dir, "taskfile.yaml", "version: '3'\nvars:\n  env_file: .env.agent\n")
+	assert.Equal(t, []string{".env.agent", ".env.local", ".env"}, agentEnvFileNames(dir))
+	writeEnvFile(t, dir, "taskfile.yaml", "not: [valid")
+	assert.Equal(t, []string{".env.local", ".env"}, agentEnvFileNames(dir), "a broken Taskfile is ignored")
+	assert.Equal(t, []string{".env.local", ".env"}, agentEnvFileNames(""))
+}
 
-	// A complete file is used as is, without consulting the session.
-	writeEnvFile(t, dir, ".env.local", "LIVEKIT_URL=wss://p.livekit.cloud\nLIVEKIT_API_KEY=APIk\nLIVEKIT_API_SECRET=s\n")
-	runWithProjectFlag(t, nil, func(ctx context.Context, cmd *cli.Command) error {
-		creds, err := agentEnvCredentials(ctx, cmd, dir)
+func TestWriteAgentEnvKey(t *testing.T) {
+	creds := agentCredentials{url: "wss://p.livekit.cloud", apiKey: "APIk", apiSecret: "s"}
+	read := func(dir, f string) string {
+		b, err := os.ReadFile(filepath.Join(dir, f))
 		require.NoError(t, err)
-		assert.Equal(t, agentCredentials{url: "wss://p.livekit.cloud", apiKey: "APIk", apiSecret: "s"}, creds)
-		return nil
-	})
+		return string(b)
+	}
+
+	// No env file: .env.local is created.
+	dir := t.TempDir()
+	writeAgentEnvKey(dir, agentEnvFiles, creds)
+	assert.Contains(t, read(dir, ".env.local"), `LIVEKIT_API_KEY="APIk"`)
+
+	// An existing .env is written to, keeping what else it holds.
+	dir = t.TempDir()
+	writeEnvFile(t, dir, ".env", "OPENAI_API_KEY=sk\nLIVEKIT_URL=wss://p.livekit.cloud/\n")
+	writeAgentEnvKey(dir, agentEnvFiles, creds)
+	got := read(dir, ".env")
+	assert.Contains(t, got, "OPENAI_API_KEY=sk")
+	assert.Contains(t, got, `LIVEKIT_API_SECRET="s"`)
+	assert.NoFileExists(t, filepath.Join(dir, ".env.local"))
+
+	// A file for another project is left alone.
+	dir = t.TempDir()
+	writeEnvFile(t, dir, ".env.local", "LIVEKIT_URL=wss://other.livekit.cloud\n")
+	writeAgentEnvKey(dir, agentEnvFiles, creds)
+	assert.Equal(t, "LIVEKIT_URL=wss://other.livekit.cloud\n", read(dir, ".env.local"))
+
+	// A stale key is replaced.
+	dir = t.TempDir()
+	writeEnvFile(t, dir, ".env.local", "LIVEKIT_URL=wss://p.livekit.cloud\nLIVEKIT_API_KEY=APIold\nLIVEKIT_API_SECRET=old\n")
+	writeAgentEnvKey(dir, agentEnvFiles, creds)
+	got = read(dir, ".env.local")
+	assert.Contains(t, got, `LIVEKIT_API_KEY="APIk"`)
+	assert.NotContains(t, got, "APIold")
+}
+
+func TestGitIgnore(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("needs git")
+	}
+	// Outside a repository nothing is written.
+	dir := t.TempDir()
+	gitIgnore(dir, ".env.local")
+	assert.NoFileExists(t, filepath.Join(dir, ".gitignore"))
+
+	require.NoError(t, exec.Command("git", "init", "-q", dir).Run())
+	writeEnvFile(t, dir, ".gitignore", "node_modules")
+	gitIgnore(dir, ".env.local")
+	b, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	require.NoError(t, err)
+	assert.Equal(t, "node_modules\n.env.local\n", string(b))
+
+	// Ignored already: unchanged.
+	gitIgnore(dir, ".env.local")
+	b, err = os.ReadFile(filepath.Join(dir, ".gitignore"))
+	require.NoError(t, err)
+	assert.Equal(t, "node_modules\n.env.local\n", string(b))
+}
+
+func TestUniqueProjectName(t *testing.T) {
+	conf := &config.CLIConfig{Projects: []config.ProjectConfig{{Name: "my-app"}, {Name: "my-app-2"}}}
+	assert.Equal(t, "my-app-3", uniqueProjectName(conf, "my app", "wss://x.livekit.cloud"))
+	assert.Equal(t, "other", uniqueProjectName(conf, "other", ""))
+	assert.Equal(t, "sub", uniqueProjectName(conf, "", "wss://sub.livekit.cloud"))
+	assert.Equal(t, "project", uniqueProjectName(conf, "!!", ""))
+}
+
+func TestMissingKeyError(t *testing.T) {
+	prev := cliConfig
+	t.Cleanup(func() { cliConfig = prev })
+	cliConfig = &config.CLIConfig{}
+
+	pc := &config.ProjectConfig{Name: "one", URL: "wss://one.livekit.cloud"}
+	err := missingKeyError(pc, keyRequest{dir: "agent", files: agentEnvFiles, purpose: "to run the agent with"},
+		"your role on project [one] can't create API keys (that takes Admin)", nil)
+	assert.EqualError(t, err, `no LiveKit API key to run the agent with for project [one]: your role on project [one] can't create API keys (that takes Admin)
+
+To supply one, do one of:
+  - re-run in a terminal and enter a key when asked (find or create one under Settings › API keys at `+dashboardURL+`, or ask a project admin)
+  - add LIVEKIT_URL=wss://one.livekit.cloud, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to agent/.env.local
+  - save a key for lk to use: lk project add one --url wss://one.livekit.cloud --api-key KEY --api-secret SECRET
+  - pass --api-key and --api-secret, or set LIVEKIT_API_KEY and LIVEKIT_API_SECRET`)
+
+	// No project at all, with a signed-in user API-key mode didn't use.
+	err = missingKeyError(nil, keyRequest{purpose: "to run the agent with"}, "no LiveKit project is configured",
+		&config.UserConfig{Email: "dev@example.com"})
+	assert.ErrorContains(t, err, "run `lk cloud auth` in a terminal")
+	assert.ErrorContains(t, err, "re-run with --user-auth to use your signed-in account (dev@example.com)")
+	assert.NotContains(t, err.Error(), ".env.local", "no directory, no env file advice")
 }
 
 func TestEnsureProjectAPIKeyReusesEnvFile(t *testing.T) {

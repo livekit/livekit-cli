@@ -1,0 +1,51 @@
+# A user signed in only with --user-auth, on a brand-new project with no API
+# key on this machine, runs an agent lk didn't scaffold (no .env.local). lk
+# creates a service-account key before the agent starts, hands it to the
+# agent, saves it to the CLI config and writes it to .env.local, so the agent
+# also runs without lk.
+[!exec:node] skip 'needs node to run the agent'
+respond POST http://publicapi.test/v0/projects/p_1/keys 200 '{"apiKey":"APInew","secret":"secretnew"}'
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
+
+exec lk --user-auth agent start
+stdout '^agent ws://one.test APInew secretnew$'
+stderr '^Created API key \[APInew\] on project \[one\]$'
+stderr '^Saved API key \[APInew\] to the CLI config as project \[one\]$'
+stderr '^Saved API key \[APInew\] to .*/\.env\.local$'
+grep '^LIVEKIT_API_KEY="APInew"$' .env.local
+grep '^LIVEKIT_URL="ws://one.test"$' .env.local
+grep 'api_key: APInew' home/.livekit/cli-config.yaml
+grep 'project_id: p_1' home/.livekit/cli-config.yaml
+grep 'default_project: one' home/.livekit/cli-config.yaml
+
+# The next run reuses the key in .env.local: nothing more is created.
+exec lk --user-auth agent start
+stdout '^agent ws://one.test APInew secretnew$'
+stderr '^Using API key \[APInew\] from .*/\.env\.local$'
+! stderr 'Created API key'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/keys bearer=st_1 project=p_1
+POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APInew

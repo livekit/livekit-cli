@@ -66,7 +66,9 @@ default entrypoint, or the file you name:
    lk agent console agent.ts -- --env-file=.env   # args after -- go to node/python
 
 Console needs a terminal. For scripts and coding agents that drive a
-conversation one command at a time, use "lk agent debugger" instead.`,
+conversation one command at a time, use "lk agent debugger" instead.
+
+` + agentCredentialsHelp,
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,
@@ -162,6 +164,14 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
 
+	// Resolve credentials before the TUI takes the terminal, so a missing key
+	// is asked for (or reported) up front rather than crashing the agent's
+	// first LiveKit Inference call.
+	credsEnv, err := resolveCredentials(ctx, cmd, projectDir)
+	if err != nil {
+		return err
+	}
+
 	// Show spinner while starting agent
 	stopSpinner := startSpinner("Starting agent")
 	agentProc, err := startAgent(AgentStartConfig{
@@ -171,6 +181,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 		RuntimeArgs: forwardedArgs(cmd),
 		CLIArgs:     buildConsoleArgs(actualAddr, cmd.Bool("record")),
 		FailSignals: consoleCrashSignals,
+		Env:         credsEnv,
 	})
 	if err != nil {
 		stopSpinner()

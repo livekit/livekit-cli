@@ -41,9 +41,9 @@ import (
 // and tokens the CLI signs itself go through the tokenauth helpers with
 // sessionTokenSource.
 //
-// Apps and agents need a real key of their own; see app_credentials.go. The
-// rest (agent simulate's local runs) keep loadProjectDetails/requireProject
-// and stay behind userAuthGate.
+// Apps and agents (and agent simulate, whose spawned agent registers with
+// the same key it calls the simulation service with) need a real key of their
+// own; see app_credentials.go for where it comes from.
 
 // sessionTokenSources holds the token source for each session project, by
 // project ID, for withDefaultClientOpts to attach.

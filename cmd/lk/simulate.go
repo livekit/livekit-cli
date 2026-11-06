@@ -114,23 +114,33 @@ var simulateCommand = &cli.Command{
 	},
 }
 
-// loadSimulateProject resolves the API-key project for the subcommands that talk
-// to the agent simulation service directly. It is attached per subcommand, not
-// on `simulate`, so the --user-auth-only `get` and the experimental
-// `list` and `cancel` never hit the API-key project gate.
+// loadSimulateProject resolves the project, with a real API key, for the
+// subcommands that talk to the agent simulation service directly. It is
+// attached per subcommand, not on `simulate`, so the --user-auth-only `get`
+// and the experimental `list` and `cancel` never need a key.
 //
-// TODO(DEVX-577): unify text/audio/view/export with --user-auth. For
-// now they stay API-key only (loadProjectDetails rejects --user-auth).
-// Blockers: a spawned agent needs API keys to register as a worker, and the
-// Public API can't issue them; it also lacks a confirm-source-upload op, and
-// its create has no audio-impairment or CI fields. Live-agent mode
-// (--agent-name + --scenarios) could work over the Public API today, but its
-// oapi run type would need converting to the livekit.SimulationRun the TUI,
-// CI report and export consume.
+// Under --user-auth the key comes from the chain in app_credentials.go (one
+// saved in the CLI config, a new one, or one the user types in): the agent a
+// simulation spawns registers with it, and the simulation service, which
+// the Public API doesn't cover yet (it lacks a confirm-source-upload op, and
+// its create has no audio-impairment or CI fields), is called with it too.
 func loadSimulateProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := loadProjectDetails(cmd)
-	if err != nil {
-		return nil, err
+	var pc *config.ProjectConfig
+	if userAuthEnabled(cmd) {
+		session, err := loadSessionProject(ctx, cmd)
+		if err != nil {
+			return nil, err
+		}
+		creds, err := projectKey(ctx, cmd, session, keyRequest{purpose: "to run simulations with"})
+		if err != nil {
+			return nil, err
+		}
+		pc = withAPIKey(session, creds.apiKey, creds.apiSecret)
+	} else {
+		var err error
+		if pc, err = loadProjectDetails(cmd); err != nil {
+			return nil, err
+		}
 	}
 	simulateProjectConfig = pc
 	if !cmd.IsSet("server-url") {
