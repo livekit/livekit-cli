@@ -74,6 +74,11 @@ func runSessionDaemon() {
 		ProjectType: ptype,
 		CLIArgs:     buildConsoleArgs(server.Addr().String(), false),
 		FailSignals: consoleCrashSignals,
+		Env: agentCredentials{
+			url:       os.Getenv(envSessionURL),
+			apiKey:    os.Getenv(envSessionAPIKey),
+			apiSecret: os.Getenv(envSessionAPISecret),
+		}.env(),
 	})
 	if err != nil {
 		signalReady(ready, "error: failed to start agent: "+err.Error())

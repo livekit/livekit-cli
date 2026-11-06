@@ -1,0 +1,34 @@
+# Signed in with --user-auth only, but run without it: API-key mode has no
+# project, and never uses the session on its own. Without a terminal to ask
+# in, lk stops before the agent starts and names --user-auth among the fixes.
+[!exec:node] skip 'needs node to run the agent'
+
+! exec lk agent start
+! stdout .
+stderr '^no LiveKit API key to run the agent with: no LiveKit project is configured$'
+stderr '^  - run `lk cloud auth` in a terminal to sign in and add a project$'
+stderr '^  - re-run with --user-auth to use your signed-in account \(dev@example.com\)$'
+stderr '^  - add LIVEKIT_URL=URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to .*/\.env\.local$'
+
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --

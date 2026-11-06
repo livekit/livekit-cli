@@ -416,7 +416,7 @@ func setupTemplateWith(ctx context.Context, cmd *cli.Command, afterInstall func(
 			}
 		}
 	}
-	env, err := instantiateEnv(ctx, cmd, appName, nil, envExampleFile, nil)
+	env, err := instantiateEnv(ctx, cmd, appName, nil, envExampleFile, nil, false)
 	if err != nil {
 		return err
 	}
@@ -533,7 +533,7 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 		priors = existing
 	}
 
-	env, err := instantiateEnv(ctx, cmd, rootDir, nil, exampleFile, priors)
+	env, err := instantiateEnv(ctx, cmd, rootDir, nil, exampleFile, priors, true)
 	if err != nil {
 		return err
 	}
@@ -545,7 +545,10 @@ func manageEnv(ctx context.Context, cmd *cli.Command) error {
 	}
 }
 
-func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string, priors map[string]string) (map[string]string, error) {
+// instantiateEnv builds an app's env from exampleFile, with the project's URL
+// and API key. keyRequired is false for a template just cloned, which is
+// finished without a key (with a warning) rather than left half set up.
+func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addlEnv *map[string]string, exampleFile string, priors map[string]string, keyRequired bool) (map[string]string, error) {
 	env := map[string]string{}
 	if priors != nil {
 		maps.Copy(env, priors)
@@ -557,10 +560,16 @@ func instantiateEnv(ctx context.Context, cmd *cli.Command, rootPath string, addl
 		// if no project is selected, we prompt for all environment variables including LIVEKIT_ ones
 	} else {
 		if err := ensureProjectAPIKey(ctx, cmd, rootPath, appEnvFiles(destinationFile)...); err != nil {
-			return nil, err
+			if keyRequired {
+				return nil, err
+			}
+			// The template is already in place: finish it without a key, and
+			// say how to add one (agent runs ask again before starting).
+			out.Warnf("%v", err)
+		} else {
+			env["LIVEKIT_API_KEY"] = project.APIKey
+			env["LIVEKIT_API_SECRET"] = project.APISecret
 		}
-		env["LIVEKIT_API_KEY"] = project.APIKey
-		env["LIVEKIT_API_SECRET"] = project.APISecret
 		env["LIVEKIT_URL"] = project.URL
 		env["NEXT_PUBLIC_LIVEKIT_URL"] = project.URL
 	}

@@ -1,0 +1,41 @@
+# A member whose role can't create API keys runs an agent with no key on
+# this machine and no terminal to type one in. The refusal is an expected
+# step, not a failure of its own: lk stops before the agent starts, with
+# every way to supply a key. Nothing is saved anywhere.
+[!exec:node] skip 'needs node to run the agent'
+respond POST http://publicapi.test/v0/projects/p_1/keys 403 '{"code":7,"message":"permission denied: this needs ADMIN on the project"}'
+
+! exec lk --user-auth agent start
+! stdout .
+stderr '^no LiveKit API key to run the agent with for project \[one\]: your role on project \[one\] can''t create API keys \(that takes Admin\)$'
+stderr '^  - re-run in a terminal and enter a key when asked'
+stderr '^  - add LIVEKIT_URL=ws://one.test, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to .*/\.env\.local$'
+stderr '^  - save a key for lk to use: lk project add one --url ws://one.test --api-key KEY --api-secret SECRET$'
+stderr '^  - pass --api-key and --api-secret, or set LIVEKIT_API_KEY and LIVEKIT_API_SECRET$'
+! exists .env.local
+! grep 'api_key' home/.livekit/cli-config.yaml
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/keys bearer=st_1 project=p_1

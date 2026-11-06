@@ -333,12 +333,12 @@ func runSessionStart(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	port := int(cmd.Int("port"))
-	audioEnv, err := sessionAudioEnv(ctx, cmd, projectDir, cmd.Bool("audio"))
+	sessEnv, err := sessionEnv(ctx, cmd, projectDir, cmd.Bool("audio"))
 	if err != nil {
 		return err
 	}
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
-	return startSessionDaemon(port, projectDir, projectType, entrypoint, cmd.Duration("idle-timeout"), audioEnv, cmd.Bool("json"))
+	return startSessionDaemon(port, projectDir, projectType, entrypoint, cmd.Duration("idle-timeout"), sessEnv, cmd.Bool("json"))
 }
 
 func sessionMode(audio bool) string {
@@ -348,17 +348,19 @@ func sessionMode(audio bool) string {
 	return "text"
 }
 
-// sessionAudioEnv returns the daemon environment for an audio session: the
-// mode, plus the project credentials the user's turns are spoken with.
-func sessionAudioEnv(ctx context.Context, cmd *cli.Command, dir string, audio bool) ([]string, error) {
-	if !audio {
-		return nil, nil
-	}
+// sessionEnv returns the daemon environment: the project credentials the
+// agent runs with (and, in an audio session, the user's turns are spoken
+// with), plus the mode. They're resolved here, in the foreground, so a missing
+// key is asked for or reported before the daemon and agent start.
+func sessionEnv(ctx context.Context, cmd *cli.Command, dir string, audio bool) ([]string, error) {
 	creds, err := resolveCredentials(ctx, cmd, dir)
 	if err != nil {
-		return nil, fmt.Errorf("--audio speaks your turns with LiveKit Inference, which needs project credentials: %w", err)
+		return nil, err
 	}
-	env := []string{envSessionAudio + "=1"}
+	var env []string
+	if audio {
+		env = append(env, envSessionAudio+"=1")
+	}
 	for _, kv := range creds {
 		env = append(env, "LK_SESSION_"+kv)
 	}
@@ -368,7 +370,7 @@ func sessionAudioEnv(ctx context.Context, cmd *cli.Command, dir string, audio bo
 // startSessionDaemon launches the detached daemon, waits for it to report
 // ready, then prints the agent's opening message (if it produced one) and a
 // short status line.
-func startSessionDaemon(port int, projectDir string, projectType agentfs.ProjectType, entrypoint string, idleTimeout time.Duration, audioEnv []string, asJSON bool) error {
+func startSessionDaemon(port int, projectDir string, projectType agentfs.ProjectType, entrypoint string, idleTimeout time.Duration, sessEnv []string, asJSON bool) error {
 	exe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("could not resolve own binary: %w", err)
@@ -400,7 +402,7 @@ func startSessionDaemon(port int, projectDir string, projectType agentfs.Project
 		envSessionPType+"="+string(projectType),
 		envSessionReadyFile+"="+readyPath,
 	)
-	daemon.Env = append(daemon.Env, audioEnv...)
+	daemon.Env = append(daemon.Env, sessEnv...)
 	daemon.Stdout = logFile
 	daemon.Stderr = logFile
 	setDetachedProcAttr(daemon)
@@ -900,13 +902,13 @@ func runSessionRestart(ctx context.Context, cmd *cli.Command) error {
 		c.Close()
 		time.Sleep(100 * time.Millisecond)
 	}
-	audioEnv, err := sessionAudioEnv(ctx, cmd, st.ProjectDir, st.Audio)
+	sessEnv, err := sessionEnv(ctx, cmd, st.ProjectDir, st.Audio)
 	if err != nil {
 		return err
 	}
 	out.Statusf("Restarting %s agent (%s in %s)", agentfs.ProjectType(st.ProjectType).Lang(), st.Entrypoint, st.ProjectDir)
 	return startSessionDaemon(port, st.ProjectDir, agentfs.ProjectType(st.ProjectType), st.Entrypoint,
-		time.Duration(st.IdleTimeoutSeconds)*time.Second, audioEnv, cmd.Bool("json"))
+		time.Duration(st.IdleTimeoutSeconds)*time.Second, sessEnv, cmd.Bool("json"))
 }
 
 // dialControl connects to the session daemon and sends the control preamble.
