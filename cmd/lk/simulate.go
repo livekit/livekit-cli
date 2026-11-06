@@ -111,6 +111,10 @@ var simulateCommand = &cli.Command{
 			Name:  "deployment",
 			Usage: "`NAME` of the agent deployment to run against, such as a non-production deployment. Defaults to production. Requires --agent-name.",
 		},
+		&cli.StringSliceFlag{
+			Name:  "set",
+			Usage: "Pass `KEY=VALUE` to the agent under test, which reads it with SimulationContext.defines(). The same on every scenario of the run. Repeat to pass more than one.",
+		},
 	},
 }
 
@@ -443,6 +447,9 @@ type simulateConfig struct {
 
 	// named deployment of agentName to dispatch to; empty is production
 	deployment string
+
+	// --set KEY=VALUE pairs, surfaced to the agent as SimulationContext.defines()
+	defines map[string]string
 }
 
 type simulateMode int
@@ -566,6 +573,11 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		return fmt.Errorf("--to requires --from")
 	}
 
+	defines, err := parseSetFlags(cmd.StringSlice("set"))
+	if err != nil {
+		return err
+	}
+
 	// never auto-discovered: an explicit --scenarios file is the source of
 	// truth, otherwise scenarios are generated from the agent's source
 	scenariosPath := cmd.String("scenarios")
@@ -585,7 +597,6 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		projectType agentfs.ProjectType
 		entrypoint  string
 		liveAgent   bool
-		err         error
 	)
 
 	// --agent-name (even empty) means: run against an already-running agent,
@@ -665,6 +676,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		simulationMode: simulationMode,
 		agentName:      agentName,
 		deployment:     deployment,
+		defines:        defines,
 		projectDir:     projectDir,
 		projectType:    projectType,
 		entrypoint:     entrypoint,
@@ -850,6 +862,7 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 	req := &livekit.SimulationRun_Create_Request{
 		AgentName:            c.agentName,
 		Deployment:           c.deployment,
+		Defines:              c.defines,
 		NumSimulations:       c.numSimulations,
 		Mode:                 c.simulationMode,
 		BackgroundNoise:      c.backgroundNoise,
@@ -1222,4 +1235,24 @@ func decodeRunSummaryStrict(run *livekit.SimulationRun) (*livekit.SimulationRunS
 func decodeRunSummary(run *livekit.SimulationRun) *livekit.SimulationRunSummary {
 	summary, _ := decodeRunSummaryStrict(run)
 	return summary
+}
+
+// parseSetFlags reads repeated --set KEY=VALUE flags. VALUE may be empty or
+// contain '='; KEY may not repeat.
+func parseSetFlags(values []string) (map[string]string, error) {
+	if len(values) == 0 {
+		return nil, nil
+	}
+	defines := make(map[string]string, len(values))
+	for _, kv := range values {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok || k == "" {
+			return nil, fmt.Errorf("--set must be KEY=VALUE (got %q)", kv)
+		}
+		if _, dup := defines[k]; dup {
+			return nil, fmt.Errorf("--set %s is given more than once", k)
+		}
+		defines[k] = v
+	}
+	return defines, nil
 }
