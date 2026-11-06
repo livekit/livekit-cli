@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -177,7 +178,7 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 		for line := range strings.SplitSeq(err.Error(), "\n") {
 			fmt.Fprintln(errOut, errStyle.Render(line))
 		}
-		os.Exit(1)
+		os.Exit(exitCode(err))
 	}
 }
 
@@ -396,4 +397,26 @@ func rootHelpSections(root *cli.Command) []helpSection {
 		sections = append(sections, other)
 	}
 	return sections
+}
+
+// exitTempFail is sysexits' EX_TEMPFAIL: the command may succeed if run again
+// later, such as a recording its agent is still uploading.
+const exitTempFail = 75
+
+// exitError is an error that ends lk with code instead of 1. It has no
+// ExitCode method, so urfave/cli leaves it for main to print and exit with.
+type exitError struct {
+	error
+	code int
+}
+
+func (e exitError) Unwrap() error { return e.error }
+
+// exitCode is the code lk exits with for err: its exitError's, or 1.
+func exitCode(err error) int {
+	var e exitError
+	if errors.As(err, &e) {
+		return e.code
+	}
+	return 1
 }

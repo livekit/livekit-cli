@@ -963,7 +963,7 @@ func TestFetchSessionRecordingNothingToDownload(t *testing.T) {
 // or saving a file, and that --json still prints the response first.
 func TestFetchSessionRecordingNotYetUploaded(t *testing.T) {
 	const body = `{"url":"","dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`
-	const wantErr = "session RM_1 has no audio recording yet, and its agent can still upload it: the session just ended — read again in 42s"
+	const wantErr = "session RM_1 has no audio recording yet: the session just ended, and its agent can still upload it — read again in 42s"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(body))
@@ -972,6 +972,12 @@ func TestFetchSessionRecordingNotYetUploaded(t *testing.T) {
 	client, err := public.New(srv.URL, "sekret")
 	require.NoError(t, err)
 
+	t.Run("exits 75", func(t *testing.T) {
+		_, _ = captureOut(t)
+		opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
+		err := fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false)
+		assert.Equal(t, exitTempFail, exitCode(err), "a script can retry on 75 and stop on 1")
+	})
 	t.Run("-o", func(t *testing.T) {
 		t.Chdir(t.TempDir())
 		stdout, _ := captureOut(t)
@@ -1002,12 +1008,12 @@ func TestRecordingNotYetError(t *testing.T) {
 		{
 			name:   "settling",
 			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptrTo(oapi.DATASTATESETTLING), RetryAfterSeconds: ptrTo(42)},
-			want:   "session RM_1 has no chat history yet, and its agent can still upload it: the session just ended — read again in 42s",
+			want:   "session RM_1 has no chat history yet: the session just ended, and its agent can still upload it — read again in 42s",
 		},
 		{
 			name:   "active",
 			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptrTo(oapi.DATASTATESESSIONACTIVE), RetryAfterSeconds: ptrTo(0)},
-			want:   "session RM_1 has no chat history yet, and its agent can still upload it: the session is still active",
+			want:   "session RM_1 has no chat history yet: the session is still active, and its agent uploads it after the session ends",
 		},
 		{
 			// The API sends no URL only while the agent can still upload.
@@ -2477,4 +2483,10 @@ func TestSessionAPIError(t *testing.T) {
 
 	signedOut := &public.APIError{Status: http.StatusUnauthorized, Message: "authentication required"}
 	assert.ErrorContains(t, sessionAPIError(signedOut, "transcript", projectAdminAccess), "lk cloud auth")
+}
+
+// TestExitCode checks only an exitError changes lk's exit code.
+func TestExitCode(t *testing.T) {
+	assert.Equal(t, 1, exitCode(errors.New("boom")))
+	assert.Equal(t, exitTempFail, exitCode(fmt.Errorf("wrapped: %w", exitError{errors.New("later"), exitTempFail})))
 }

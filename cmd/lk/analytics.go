@@ -1154,14 +1154,21 @@ func sessionRecordingError(err error, projectID, sessionID, recording string) er
 }
 
 // recordingNotYetError says a session's recording isn't there yet, while its
-// agent can still upload it, and when to read again. The API sends no URL
-// only then, so any other status is a bad response.
+// agent can still upload it, and when to read again. lk exits with
+// exitTempFail, so a script can retry it and stop on a real failure. The API
+// sends no URL only then, so any other status is a bad response.
 func recordingNotYetError(sessionID, recording string, status *oapi.LivekitPublicapiObservabilityV1DataStatus) error {
-	why, ok := render.DataPending(status)
-	if !ok {
+	s := util.Deref(status)
+	var why string
+	switch util.Deref(s.State) {
+	case oapi.DATASTATESESSIONACTIVE:
+		why = "the session is still active, and its agent uploads it after the session ends"
+	case oapi.DATASTATESETTLING:
+		why = fmt.Sprintf("the session just ended, and its agent can still upload it — read again in %ds", util.Deref(s.RetryAfterSeconds))
+	default:
 		return errors.New("unexpected response from server: missing url")
 	}
-	return fmt.Errorf("session %s has no %s yet, and its agent can still upload it: %s", sessionID, render.RecordingLabel(recording), why)
+	return exitError{fmt.Errorf("session %s has no %s yet: %s", sessionID, render.RecordingLabel(recording), why), exitTempFail}
 }
 
 // observabilityDisabledError says a session has nothing to read because the

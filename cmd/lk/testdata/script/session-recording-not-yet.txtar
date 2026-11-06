@@ -5,23 +5,23 @@
 respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_settling/recording-url 200 '{"url":"","dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}'
 ! exec lk --user-auth analytics session recording RM_settling -o .
 ! stdout .
-stderr '^session RM_settling has no audio recording yet, and its agent can still upload it: the session just ended — read again in 42s$'
+stderr '^session RM_settling has no audio recording yet: the session just ended, and its agent can still upload it — read again in 42s$'
 ! exists RM_settling-audio.ogg
 
 ! exec lk --user-auth analytics session recording RM_settling --json
 cmp stdout want-settling-json
-stderr '^session RM_settling has no audio recording yet, .* read again in 42s$'
+stderr '^session RM_settling has no audio recording yet: .* read again in 42s$'
 
 # The API sends retryAfterSeconds 0 outside settling; --json passes it through.
 respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_active/recording-url 200 '{"url":"","dataStatus":{"state":"DATA_STATE_SESSION_ACTIVE","retryAfterSeconds":0}}'
 ! exec lk --user-auth analytics session recording RM_active --type chat-history -o .
 ! stdout .
-stderr '^session RM_active has no chat history yet, and its agent can still upload it: the session is still active$'
+stderr '^session RM_active has no chat history yet: the session is still active, and its agent uploads it after the session ends$'
 ! exists RM_active-chat-history.json
 
 ! exec lk --user-auth analytics session recording RM_active --type chat-history --json
 cmp stdout want-active-json
-stderr '^session RM_active has no chat history yet, .*: the session is still active$'
+stderr '^session RM_active has no chat history yet: the session is still active, .*$'
 
 requests
 cmp stdout want-requests

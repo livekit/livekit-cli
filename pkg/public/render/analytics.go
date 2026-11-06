@@ -231,7 +231,7 @@ func SessionDetail(p *util.Printer, asJSON bool, s oapi.LivekitPublicapiAnalytic
 // jsonPage is the --json shape of a read of a session's transcript, agent
 // logs, trace spans, agent metrics or events: a util.Page, every page read
 // merged, for a transcript the records the server couldn't read as items, and
-// the data status of the last page read.
+// the data status of the first page read.
 type jsonPage[T any] struct {
 	util.Page[T]
 	// SkippedRecords counts the transcript records the server couldn't read as

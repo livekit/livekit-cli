@@ -8,7 +8,7 @@ stdout 'agent_session'
 respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/recording-url 200 '{"url":"","dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}'
 ! exec lk --user-auth --quiet analytics session recording RM_1 -o .
 ! stdout .
-stderr '^session RM_1 has no audio recording yet, and its agent can still upload it: the session just ended — read again in 42s$'
+stderr '^session RM_1 has no audio recording yet: the session just ended, and its agent can still upload it — read again in 42s$'
 ! exists RM_1-audio.ogg
 
 -- home/.livekit/cli-config.yaml --
