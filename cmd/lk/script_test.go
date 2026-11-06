@@ -109,6 +109,10 @@ func setupScript(env *testscript.Env) error {
 		return err
 	}
 
+	// lk offers to install skills when it finds a coding agent on PATH,
+	// which would add a line to stderr on some machines and not others.
+	env.Setenv(skillsPromptOptOutEnv, "1")
+
 	cloud := newFakeCloud()
 	env.Defer(cloud.Close)
 	env.Values[fakeCloudKey{}] = cloud
