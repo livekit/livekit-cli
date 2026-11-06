@@ -1,0 +1,34 @@
+# --mine lists the keys the signed-in user owns: lk asks the Public API who
+# the user is and filters the key list by that owner. The fake answers only
+# the filtered list, so a request without the owner fails.
+respond GET http://publicapi.test/v0/users/me 200 '{"user":{"id":"u_admin","email":"admin@example.com"}}'
+respond GET http://publicapi.test/v0/projects/p_1/keys?includeAgentKeys=false&ownerId=u_admin 200 '{"items":[{"apiKey":"APImine","description":"laptop","ownerId":"u_admin","ownerEmail":"admin@example.com"}],"pageInfo":{"hasMore":false}}'
+exec lk --user-auth project key list --mine --project one
+cmp stdout want-list-stdout
+
+! exec lk --user-auth project key list --mine --include-agent-keys --project one
+stderr '--mine and --include-agent-keys cannot be combined'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_admin
+users:
+  - id: u_admin
+    email: admin@example.com
+    session_token: st_admin
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+-- want-list-stdout --
+┌─────────┬─────────────┬───────────────────┬─────────┐
+│ API Key │ Description │ Owner             │ Created │
+├─────────┼─────────────┼───────────────────┼─────────┤
+│ APImine │ laptop      │ admin@example.com │ -       │
+└─────────┴─────────────┴───────────────────┴─────────┘
+-- want-requests --
+GET http://publicapi.test/v0/users/me bearer=st_admin
+GET http://publicapi.test/v0/projects/p_1/keys bearer=st_admin project=p_1

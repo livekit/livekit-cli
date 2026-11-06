@@ -20,32 +20,32 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
-// ListKeys returns the API keys of a project. Agent keys (created for cloud
-// agents) are hidden unless includeAgentKeys is set. Secrets are never returned.
-func (c *Client) ListKeys(ctx context.Context, projectID string, includeAgentKeys bool) ([]oapi.LivekitPublicapiProjectsV1AccessKey, error) {
-	resp, err := c.gen.ProjectServiceListKeysWithResponse(ctx, projectID, &oapi.ProjectServiceListKeysParams{
-		IncludeAgentKeys: ptr(includeAgentKeys),
-	})
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Keys), nil
+// KeyFilter narrows ListKeys. The zero value lists every key except agent keys.
+type KeyFilter struct {
+	// IncludeAgentKeys also lists the keys created for cloud agents.
+	IncludeAgentKeys bool
+	// OwnerID, when set, lists only the keys this user owns.
+	OwnerID string
 }
 
-// ListScopedKeys returns a project's API keys split into those owned by the
-// authenticated user (personal) and the rest (other).
-func (c *Client) ListScopedKeys(ctx context.Context, projectID string) (personal, other []oapi.LivekitPublicapiProjectsV1AccessKey, err error) {
-	resp, err := c.gen.ProjectServiceListScopedKeysWithResponse(ctx, projectID)
-	if err != nil {
-		return nil, nil, err
+// ListKeys returns every API key of a project that matches filter, oldest
+// first, reading each page. Secrets are never returned.
+func (c *Client) ListKeys(ctx context.Context, projectID string, filter KeyFilter) ([]oapi.LivekitPublicapiProjectsV1AccessKey, error) {
+	params := &oapi.ProjectServiceListKeysParams{IncludeAgentKeys: ptr(filter.IncludeAgentKeys)}
+	if filter.OwnerID != "" {
+		params.OwnerId = ptr(filter.OwnerID)
 	}
-	if resp.JSON200 == nil {
-		return nil, nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.PersonalKeys), items(resp.JSON200.OtherKeys), nil
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiProjectsV1AccessKey, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		params.PageCursor = cursor
+		resp, err := c.gen.ProjectServiceListKeysWithResponse(ctx, projectID, params)
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
 }
 
 // GenerateKey creates a new API key on a project. A service-account key has no

@@ -148,6 +148,33 @@ func TestResolveProjectSource(t *testing.T) {
 		assert.Contains(t, err.Error(), "both project and dev flags are set")
 	})
 
+	t.Run("dev and inline credentials conflict", func(t *testing.T) {
+		for _, tc := range []struct {
+			name        string
+			key, secret string // LIVEKIT_API_KEY, LIVEKIT_API_SECRET
+			args        []string
+			want        string
+		}{
+			{name: "env key", key: "envkey",
+				want: "--dev can't be combined with API key credentials; unset LIVEKIT_API_KEY or drop --dev"},
+			{name: "env key and secret", key: "envkey", secret: "envsecret",
+				want: "--dev can't be combined with API key credentials; unset LIVEKIT_API_KEY and LIVEKIT_API_SECRET or drop --dev"},
+			{name: "flag key", args: []string{"--api-key", "k"},
+				want: "--dev can't be combined with API key credentials; remove --api-key or drop --dev"},
+			{name: "flag key over env key", key: "envkey", args: []string{"--api-key", "k"},
+				want: "--dev can't be combined with API key credentials; remove --api-key or drop --dev"},
+			{name: "flag key and env secret", secret: "envsecret", args: []string{"--api-key", "k"},
+				want: "--dev can't be combined with API key credentials; unset LIVEKIT_API_SECRET and remove --api-key or drop --dev"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				t.Setenv("LIVEKIT_API_KEY", tc.key)
+				t.Setenv("LIVEKIT_API_SECRET", tc.secret)
+				_, err := resolveWith(t, append([]string{"--dev"}, tc.args...)...)
+				assert.EqualError(t, err, tc.want)
+			})
+		}
+	})
+
 	t.Run("--quiet suppresses the breadcrumb", func(t *testing.T) {
 		prev := out
 		var buf bytes.Buffer
@@ -200,6 +227,58 @@ func TestRequireProjectNamedProjectIsAnError(t *testing.T) {
 			require.NoError(t, app.Run(context.Background(), append([]string{"lk", "--yes"}, args...)))
 			assert.ErrorContains(t, err, "project not found")
 			assert.Nil(t, project, "no project is chosen for a name that doesn't resolve")
+		})
+	}
+}
+
+// TestRequireProjectDevWithCredentialsIsAnError checks that --dev with an API
+// key or secret, from its flag or its env var, fails instead of falling back
+// to the only configured project, even when prompts are skipped.
+func TestRequireProjectDevWithCredentialsIsAnError(t *testing.T) {
+	t.Setenv("LIVEKIT_URL", "")
+	t.Setenv("LIVEKIT_API_KEY", "")
+	t.Setenv("LIVEKIT_API_SECRET", "")
+	setHome(t, t.TempDir())
+	conf := &config.CLIConfig{Projects: []config.ProjectConfig{
+		{Name: "one", URL: "https://one.livekit.cloud", APIKey: "APIone", APISecret: "secretone"},
+	}}
+	require.NoError(t, conf.PersistQuietly())
+	prevProject, prevConfig := project, cliConfig
+	t.Cleanup(func() { project, cliConfig = prevProject, prevConfig })
+
+	for _, tc := range []struct {
+		name string
+		env  string // LIVEKIT_API_KEY
+		args []string
+	}{
+		{name: "env key", env: "APIenv"},
+		{name: "flag key", args: []string{"--api-key", "APIflag"}},
+		{name: "flag secret", args: []string{"--api-secret", "secretflag"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("LIVEKIT_API_KEY", tc.env)
+			project = nil
+			var err error
+			app := &cli.Command{
+				Name: "lk",
+				Flags: []cli.Flag{
+					&cli.StringFlag{Name: "url", Sources: cli.EnvVars("LIVEKIT_URL"), Value: "http://localhost:7880"},
+					&cli.StringFlag{Name: "api-key", Sources: cli.EnvVars("LIVEKIT_API_KEY")},
+					&cli.StringFlag{Name: "api-secret", Sources: cli.EnvVars("LIVEKIT_API_SECRET")},
+					&cli.BoolFlag{Name: "dev"},
+					&cli.StringFlag{Name: "project"},
+					&cli.StringFlag{Name: "subdomain"},
+					&cli.BoolFlag{Name: "user-auth"},
+					&cli.BoolFlag{Name: "yes"},
+				},
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					_, err = requireProjectWithOpts(ctx, cmd)
+					return nil
+				},
+			}
+			require.NoError(t, app.Run(context.Background(), append([]string{"lk", "--yes", "--dev"}, tc.args...)))
+			assert.ErrorContains(t, err, "--dev can't be combined with API key credentials")
+			assert.Nil(t, project, "no project is chosen when --dev conflicts with API key credentials")
 		})
 	}
 }

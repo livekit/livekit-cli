@@ -44,7 +44,7 @@ var simulateListCommand = &cli.Command{
 	Flags: []cli.Flag{
 		&cli.IntFlag{
 			Name:  "limit",
-			Usage: "maximum number of runs to return. If unset, defaults to API page size",
+			Usage: "Number `N` of runs to return. If unset, defaults to the API page size.",
 		},
 		// user-auth only: the Public API filters by status and is
 		// cursor-paginated.

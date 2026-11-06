@@ -1,0 +1,43 @@
+# If the member's API keys change between lk's calls, the Public API refuses
+# the confirmed count and reports the new one. lk confirms once more (here
+# with --yes) and goes ahead; if the count changes again, it fails and
+# nothing is removed. lk leaves the first call's count of 0 out, so its
+# answer has no query; each retry's answer is only for the confirmedNumKeys
+# it names, and wins.
+respond DELETE http://publicapi.test/v0/projects/p_1/members/u_2 400 '{"code":9, "message":"removing this member deletes the API keys they own (3 in total), and services using them stop working; repeat the request with confirmed_num_keys=3 to remove them", "details":[{"@type":"type.googleapis.com/livekit.publicapi.common.v1.MemberRemovalNotConfirmed", "numKeys":3, "lastKeyProjectNames":[], "numPrivateLastKeyProjects":0}]}'
+respond DELETE http://publicapi.test/v0/projects/p_1/members/u_2?confirmedNumKeys=3 400 '{"code":9, "message":"removing this member deletes the API keys they own (4 in total), and services using them stop working; repeat the request with confirmed_num_keys=4 to remove them", "details":[{"@type":"type.googleapis.com/livekit.publicapi.common.v1.MemberRemovalNotConfirmed", "numKeys":4, "lastKeyProjectNames":[], "numPrivateLastKeyProjects":0}]}'
+respond DELETE http://publicapi.test/v0/projects/p_1/members/u_2?confirmedNumKeys=4 200 '{"numKeys":4}'
+exec lk --user-auth --yes project member remove u_2 --project one
+stderr '^Removed member u_2 and deleted the 4 API key\(s\) they owned$'
+
+respond DELETE http://publicapi.test/v0/projects/p_1/members/u_3 400 '{"code":9, "message":"removing this member deletes the API keys they own (3 in total), and services using them stop working; repeat the request with confirmed_num_keys=3 to remove them", "details":[{"@type":"type.googleapis.com/livekit.publicapi.common.v1.MemberRemovalNotConfirmed", "numKeys":3, "lastKeyProjectNames":[], "numPrivateLastKeyProjects":0}]}'
+respond DELETE http://publicapi.test/v0/projects/p_1/members/u_3?confirmedNumKeys=3 400 '{"code":9, "message":"removing this member deletes the API keys they own (4 in total), and services using them stop working; repeat the request with confirmed_num_keys=4 to remove them", "details":[{"@type":"type.googleapis.com/livekit.publicapi.common.v1.MemberRemovalNotConfirmed", "numKeys":4, "lastKeyProjectNames":[], "numPrivateLastKeyProjects":0}]}'
+respond DELETE http://publicapi.test/v0/projects/p_1/members/u_3?confirmedNumKeys=4 400 '{"code":9, "message":"removing this member deletes the API keys they own (5 in total), and services using them stop working; repeat the request with confirmed_num_keys=5 to remove them", "details":[{"@type":"type.googleapis.com/livekit.publicapi.common.v1.MemberRemovalNotConfirmed", "numKeys":5, "lastKeyProjectNames":[], "numPrivateLastKeyProjects":0}]}'
+! exec lk --user-auth --yes project member remove u_3 --project one
+stderr '^u_3''s API keys changed again \(they now own 5\); nothing was removed, run the command again$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_admin
+users:
+  - id: u_admin
+    email: admin@example.com
+    session_token: st_admin
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+    workspaces:
+      - workspace_id: ws_1
+        name: acme
+        alias: acme
+-- want-requests --
+DELETE http://publicapi.test/v0/projects/p_1/members/u_2 bearer=st_admin project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/members/u_2 bearer=st_admin project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/members/u_2 bearer=st_admin project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/members/u_3 bearer=st_admin project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/members/u_3 bearer=st_admin project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/members/u_3 bearer=st_admin project=p_1

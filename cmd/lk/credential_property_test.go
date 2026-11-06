@@ -119,7 +119,7 @@ func TestCredentialResolution(t *testing.T) {
 			respond("POST http://"+name+".test/twirp/livekit.Egress/ListEgress", http.StatusOK, "")
 		}
 		for _, id := range []string{"p_1", "p_2", "two", "gone"} {
-			respond("GET "+publicAPI+"/v0/projects/"+id+"/keys", http.StatusOK, `{"keys":[]}`)
+			respond("GET "+publicAPI+"/v0/projects/"+id+"/keys", http.StatusOK, `{"items":[]}`)
 		}
 		// Every key's secret is known, so every token's signature is checked:
 		// configured projects', --dev's, and the inline key paired with the
@@ -155,9 +155,14 @@ func TestCredentialResolution(t *testing.T) {
 			strings.Join(c.env(), " "), strings.Join(c.args(), " "), conf, strings.Join(requests, "\n"), output)
 
 		allowed := c.namedProjects()
-		if sole := c.soleProject(); !c.userAuth && c.command.fallback && sole != "" {
-			// Known bug: when resolving what the user named fails, room list
-			// falls back to the only configured project (mistyped-project.txtar).
+		_, key, secret := c.inlineCredentials()
+		tomlUnresolved := !c.dev && (key == "" || secret == "") && c.toml != "" && !c.configured(c.toml)
+		if sole := c.soleProject(); !c.userAuth && c.command.fallback && sole != "" &&
+			c.project == "" && c.subdomain == "" && tomlUnresolved {
+			// With no project named on the command line, room list falls back
+			// to the only configured project when resolving fails. lk keeps
+			// that on purpose for a livekit.toml naming a project that isn't
+			// configured, so an agent repo still gets a project to choose.
 			allowed = append(allowed, sole)
 		}
 		named := false
@@ -266,8 +271,9 @@ type credentialCase struct {
 type credentialCommand struct {
 	args []string
 	// fallback is set when, in API-key mode, a failure to resolve a project
-	// falls back to the only configured one (requireProjectWithOpts);
-	// loadProjectDetails fails instead.
+	// that --project, --subdomain or --dev didn't ask for falls back to the
+	// only configured one (requireProjectWithOpts); loadProjectDetails fails
+	// instead.
 	fallback bool
 	// publicAPI is set for a command that calls the Public API directly with
 	// the session (and only runs under --user-auth), instead of using a
@@ -532,16 +538,18 @@ func requestProject(line string) (string, bool) {
 	return strings.TrimSuffix(host, ".test"), true
 }
 
-// mustFail is set when lk can't act: both mode flags at once, a Public API
-// command outside --user-auth, or, under --user-auth, no user who can act (no
-// unexpired session, a --user with no unexpired session, or a Public API URL
-// nobody is signed in to). Every drawn user is signed in to publicAPI.
+// mustFail is set when lk can't act: both mode flags at once, --dev under
+// --user-auth, a Public API command outside --user-auth, --dev with an inline
+// key or secret outside --user-auth, or, under --user-auth, no user who can
+// act (no unexpired session, a --user with no unexpired session, or a Public
+// API URL nobody is signed in to). Every drawn user is signed in to publicAPI.
 func (c credentialCase) mustFail() bool {
+	_, key, secret := c.inlineCredentials()
 	switch {
-	case c.userAuth && c.legacyAuth:
+	case c.userAuth && (c.legacyAuth || c.dev):
 		return true
 	case !c.userAuth:
-		return c.command.publicAPI
+		return c.command.publicAPI || c.dev && (key != "" || secret != "")
 	case !slices.ContainsFunc(c.users, func(u sessionUser) bool { return !u.expired }):
 		return true
 	case c.user != "" && !slices.ContainsFunc(c.users, func(u sessionUser) bool { return (u.id == c.user || u.email == c.user) && !u.expired }):

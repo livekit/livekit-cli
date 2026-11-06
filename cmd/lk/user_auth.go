@@ -26,6 +26,7 @@ import (
 	"charm.land/huh/v2"
 	"github.com/urfave/cli/v3"
 
+	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -91,6 +92,16 @@ func userAuthGate(cmd *cli.Command) error {
 	return nil
 }
 
+// devUnderUserAuthGate refuses --dev under --user-auth. --dev asks for the
+// local dev server's API key, which no user-auth path reads, so lk would
+// otherwise act on the session's cloud project instead of the dev server.
+func devUnderUserAuthGate(cmd *cli.Command) error {
+	if userAuthEnabled(cmd) && cmd.Bool("dev") {
+		return errors.New("--dev can't be combined with --user-auth; remove --user-auth or drop --dev")
+	}
+	return nil
+}
+
 // authModeFlags declares, for a dual-mode command, which flags are valid only in
 // one auth mode. It lets a command reject cross-mode misuse up front with a clear
 // message instead of silently ignoring a flag the active mode can't honor:
@@ -149,6 +160,14 @@ var userAuthOnly = map[string]any{userAuthOnlyKey: true}
 
 const userAuthOnlyKey = "userAuthOnly"
 
+// userAuthUnlisted is the Metadata of a userAuthOnly command that stays out of
+// help and completion even after a user signs in. It still runs when typed,
+// but nothing advertises it, so a coding agent reading --help doesn't reach
+// for it. Use it for a command group that isn't generally available yet.
+var userAuthUnlisted = map[string]any{userAuthOnlyKey: true, unlistedKey: true}
+
+const unlistedKey = "unlisted"
+
 // userAuthOnlyFlags holds the Hidden fields of the flags registered with
 // userAuthOnlyFlag (flags have no Metadata to mark them with).
 var userAuthOnlyFlags []*bool
@@ -177,7 +196,7 @@ func setUserAuthHidden(root *cli.Command, hidden bool) {
 	walk = func(cmd *cli.Command) {
 		for _, c := range cmd.Commands {
 			if c.Metadata[userAuthOnlyKey] == true {
-				c.Hidden = hidden
+				c.Hidden = hidden || c.Metadata[unlistedKey] == true
 			}
 			walk(c)
 		}
@@ -352,10 +371,21 @@ func resolveSessionUser(conf *config.CLIConfig, userRef string, apiURLSet bool) 
 	return nil, fmt.Errorf("no user is signed in to %s (run %s to sign in)", publicAPIURL, signInCommand())
 }
 
+// apiClientInfo identifies this run on every Public API request: the CLI, its
+// version, the command, and any coding agent running it. The root Before hook
+// sets it once the command is known.
+var apiClientInfo = public.ClientInfo{Name: "cli", Version: livekitcli.Version}
+
 // publicClientForToken builds a Public API client authenticated with the given
 // session token, honoring --public-api-url.
 func publicClientForToken(token string) (*public.Client, error) {
-	return public.New(publicAPIURL, token)
+	return public.New(publicAPIURL, token, public.WithClientInfo(apiClientInfo))
+}
+
+// commandName is the command a run resolves to, without the root name or any
+// arguments, such as "analytics session list".
+func commandName(cmd *cli.Command) string {
+	return strings.TrimPrefix(leafCommand(cmd).FullName(), cmd.Root().Name+" ")
 }
 
 // requireCloudClient is the entry point for the Public-API-only commands: it
@@ -420,8 +450,7 @@ func fetchUserWorkspaces(ctx context.Context, sessionToken string) ([]config.Use
 	if err != nil {
 		return nil, err
 	}
-	// Best-effort cache of the first (large) page; cache resolution refreshes on miss.
-	workspaces, _, err := client.ListWorkspaces(ctx, 200, "")
+	workspaces, err := client.ListAllWorkspaces(ctx)
 	if err != nil {
 		return nil, err
 	}

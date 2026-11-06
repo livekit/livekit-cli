@@ -43,34 +43,33 @@ var (
 				{
 					Name:      "add",
 					Usage:     "Add a new project (for LiveKit Cloud projects, also see `lk cloud auth`)",
-					UsageText: "lk project add PROJECT_NAME",
-					ArgsUsage: "PROJECT_NAME",
+					ArgsUsage: "[PROJECT_NAME]",
 					Action:    addProject,
 					Flags: []cli.Flag{
 						&cli.StringFlag{
 							Name:  "url",
-							Usage: "`URL` of the LiveKit server",
+							Usage: "WebSocket `URL` of the LiveKit server. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.StringFlag{
 							Name:  "api-key",
-							Usage: "Project `KEY`",
+							Usage: "Project API `KEY`. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.StringFlag{
 							Name:  "api-secret",
-							Usage: "Project `SECRET`",
+							Usage: "Project API `SECRET`. If unset, the CLI asks for it. Required in non-interactive mode.",
 						},
 						&cli.BoolFlag{
 							Name:  "default",
-							Usage: "Set this project as the default",
+							Usage: "Set this project as the default.",
 						},
 					},
 				},
 				{
 					Name:      "list",
 					Usage:     "List all configured projects",
-					UsageText: "lk project list",
+					UsageText: "lk project list [options]",
 					Action:    listProjects,
-					Flags:     []cli.Flag{jsonFlag},
+					Flags:     []cli.Flag{jsonFlagWithUsage("Output as JSON, including each project's API key and secret.")},
 				},
 				{
 					Name:      "get",
@@ -85,29 +84,27 @@ var (
 				{
 					Name:      "create",
 					Usage:     "Create a new LiveKit Cloud project (requires --user-auth)",
-					UsageText: "lk project create PROJECT_NAME --user-auth",
+					UsageText: "lk project create PROJECT_NAME [--private] [--pinned-regions REGIONS] ... --user-auth",
 					ArgsUsage: "PROJECT_NAME",
 					Hidden:    true,
 					Metadata:  userAuthOnly,
 					Action:    createUserProject,
-					Flags:     []cli.Flag{jsonFlag},
+					Flags:     append(projectSettingsFlags(true), jsonFlag),
 				},
 				{
 					Name:      "update",
-					Usage:     "Rename a LiveKit Cloud project (requires --user-auth)",
-					UsageText: "lk project update PROJECT_ID --name NEW_NAME --user-auth",
+					Usage:     "Rename a LiveKit Cloud project or change its settings (requires --user-auth)",
+					UsageText: "lk project update PROJECT_ID [--name NEW_NAME] [--analytics=false] ... --user-auth",
 					ArgsUsage: "PROJECT_ID",
 					Hidden:    true,
 					Metadata:  userAuthOnly,
 					Action:    updateUserProject,
-					Flags: []cli.Flag{
+					Flags: append([]cli.Flag{
 						&cli.StringFlag{
-							Name:     "name",
-							Usage:    "New project `NAME`",
-							Required: true,
+							Name:  "name",
+							Usage: "New project `NAME`.",
 						},
-						jsonFlag,
-					},
+					}, append(projectSettingsFlags(false), jsonFlag)...),
 				},
 				{
 					Name:      "delete",
@@ -428,11 +425,16 @@ func createUserProject(ctx context.Context, cmd *cli.Command) error {
 	if name == "" {
 		return errors.New("project name is required")
 	}
+	settings, err := projectSettingsFromFlags(cmd)
+	if err != nil {
+		return err
+	}
+	settings.Name = &name
 	client, _, _, err := newCloudAPIClient(cmd)
 	if err != nil {
 		return err
 	}
-	project, err := client.CreateProject(ctx, name)
+	project, err := client.CreateProject(ctx, settings)
 	if err != nil {
 		return cloudAPIError(err)
 	}
@@ -440,9 +442,13 @@ func createUserProject(ctx context.Context, cmd *cli.Command) error {
 	return renderProject(cmd, *project)
 }
 
-// updateUserProject implements `lk project update PROJECT_ID --name NAME` (user auth only).
+// updateUserProject implements `lk project update PROJECT_ID [settings]` (user auth only).
 func updateUserProject(ctx context.Context, cmd *cli.Command) error {
 	if err := requireUserAuth(cmd); err != nil {
+		return err
+	}
+	settings, err := projectUpdateFromFlags(cmd)
+	if err != nil {
 		return err
 	}
 	client, conf, user, err := newCloudAPIClient(cmd)
@@ -453,7 +459,7 @@ func updateUserProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	project, err := client.UpdateProject(ctx, id, cmd.String("name"))
+	project, err := client.UpdateProject(ctx, id, settings)
 	if err != nil {
 		return cloudAPIError(err)
 	}

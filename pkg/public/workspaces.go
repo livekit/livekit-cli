@@ -41,6 +41,21 @@ func (c *Client) ListWorkspaces(ctx context.Context, limit int32, cursor string)
 	return items(resp.JSON200.Items), pageCursor(resp.JSON200.PageInfo), nil
 }
 
+// ListAllWorkspaces returns every workspace the authenticated user can access,
+// reading each page.
+func (c *Client) ListAllWorkspaces(ctx context.Context) ([]oapi.LivekitPublicapiWorkspacesV1Workspace, error) {
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiWorkspacesV1Workspace, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.WorkspaceServiceListWorkspacesWithResponse(ctx, &oapi.WorkspaceServiceListWorkspacesParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
+}
+
 // GetWorkspace returns a single workspace by id.
 func (c *Client) GetWorkspace(ctx context.Context, workspaceID string) (*oapi.LivekitPublicapiWorkspacesV1Workspace, error) {
 	resp, err := c.gen.WorkspaceServiceGetWorkspaceWithResponse(ctx, workspaceID)
@@ -123,11 +138,10 @@ func (c *Client) GetWorkspaceProject(ctx context.Context, workspaceID, projectID
 	return requirePayload(resp.JSON200.Project, "project")
 }
 
-// CreateWorkspaceProject creates a project within a workspace.
-func (c *Client) CreateWorkspaceProject(ctx context.Context, workspaceID, name string) (*oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.WorkspaceServiceCreateProjectWithResponse(ctx, workspaceID, oapi.WorkspaceServiceCreateProjectJSONRequestBody{
-		Name: ptr(name),
-	})
+// CreateWorkspaceProject creates a project with the given settings within a
+// workspace.
+func (c *Client) CreateWorkspaceProject(ctx context.Context, workspaceID string, settings ProjectSettings) (*oapi.LivekitPublicapiProjectsV1Project, error) {
+	resp, err := c.gen.WorkspaceServiceCreateProjectWithResponse(ctx, workspaceID, settings.createRequest())
 	if err != nil {
 		return nil, err
 	}
@@ -137,14 +151,14 @@ func (c *Client) CreateWorkspaceProject(ctx context.Context, workspaceID, name s
 	return requirePayload(resp.JSON200.Project, "project")
 }
 
-// UpdateWorkspaceProject renames a project within a workspace. The Public API
+// UpdateWorkspaceProject updates a project within a workspace. The Public API
 // has no workspace-scoped update, so it checks that the project is in the
-// workspace and then renames it by id.
-func (c *Client) UpdateWorkspaceProject(ctx context.Context, workspaceID, projectID, name string) (*oapi.LivekitPublicapiProjectsV1Project, error) {
+// workspace and then updates it by id.
+func (c *Client) UpdateWorkspaceProject(ctx context.Context, workspaceID, projectID string, settings ProjectSettings) (*oapi.LivekitPublicapiProjectsV1Project, error) {
 	if _, err := c.GetWorkspaceProject(ctx, workspaceID, projectID); err != nil {
 		return nil, err
 	}
-	return c.UpdateProject(ctx, projectID, name)
+	return c.UpdateProject(ctx, projectID, settings)
 }
 
 // DeleteWorkspaceProject deletes a project within a workspace.
@@ -156,16 +170,18 @@ func (c *Client) DeleteWorkspaceProject(ctx context.Context, workspaceID, projec
 	return okOrError(resp.StatusCode(), resp.Body)
 }
 
-// ListWorkspaceMembers returns the members of a workspace.
+// ListWorkspaceMembers returns every member of a workspace, reading each page.
 func (c *Client) ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]oapi.LivekitPublicapiWorkspacesV1WorkspaceMember, error) {
-	resp, err := c.gen.WorkspaceServiceListMembersWithResponse(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiWorkspacesV1WorkspaceMember, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.WorkspaceServiceListMembersWithResponse(ctx, workspaceID, &oapi.WorkspaceServiceListMembersParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
 }
 
 // GetWorkspaceMember returns a single workspace member by user id.
@@ -194,25 +210,35 @@ func (c *Client) UpdateWorkspaceMember(ctx context.Context, workspaceID, userID 
 	return requirePayload(resp.JSON200.Member, "member")
 }
 
-// DeleteWorkspaceMember removes a member from a workspace.
-func (c *Client) DeleteWorkspaceMember(ctx context.Context, workspaceID, userID string) error {
-	resp, err := c.gen.WorkspaceServiceDeleteMemberWithResponse(ctx, workspaceID, userID)
+// DeleteWorkspaceMember removes a member from a workspace and its projects,
+// deletes the API keys they own there, and returns how many it deleted.
+// confirmedNumKeys must be that count, as for RemoveProjectMember.
+func (c *Client) DeleteWorkspaceMember(ctx context.Context, workspaceID, userID string, confirmedNumKeys uint32) (uint32, error) {
+	resp, err := c.gen.WorkspaceServiceDeleteMemberWithResponse(ctx, workspaceID, userID, &oapi.WorkspaceServiceDeleteMemberParams{
+		ConfirmedNumKeys: confirmedNumKeysParam(confirmedNumKeys),
+	})
 	if err != nil {
-		return err
-	}
-	return okOrError(resp.StatusCode(), resp.Body)
-}
-
-// ListWorkspaceInvites returns the pending invites for a workspace.
-func (c *Client) ListWorkspaceInvites(ctx context.Context, workspaceID string) ([]oapi.LivekitPublicapiWorkspacesV1WorkspaceInvite, error) {
-	resp, err := c.gen.WorkspaceServiceListInvitesWithResponse(ctx, workspaceID)
-	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
+		return 0, responseError(resp.StatusCode(), resp.Body)
 	}
-	return items(resp.JSON200.Items), nil
+	return numKeys(resp.JSON200.NumKeys), nil
+}
+
+// ListWorkspaceInvites returns every pending invite for a workspace, reading
+// each page.
+func (c *Client) ListWorkspaceInvites(ctx context.Context, workspaceID string) ([]oapi.LivekitPublicapiWorkspacesV1WorkspaceInvite, error) {
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiWorkspacesV1WorkspaceInvite, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.WorkspaceServiceListInvitesWithResponse(ctx, workspaceID, &oapi.WorkspaceServiceListInvitesParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
 }
 
 // GetWorkspaceInvite returns a single workspace invite by its token.

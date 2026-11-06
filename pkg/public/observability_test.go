@@ -488,7 +488,7 @@ func TestGetSessionTranscriptErrors(t *testing.T) {
 // it: a structured record with body fields, typed attributes and its span, and
 // an evaluation result with no level.
 const logsPage = `{
-  "records": [
+  "items": [
     {
       "id": "log_1",
       "timestamp": "2026-10-07T11:00:01.250Z",
@@ -658,7 +658,7 @@ func TestGetSessionLogsErrors(t *testing.T) {
 // writes it: a root span with typed attributes, and a child that failed with
 // an exception event.
 const tracesPage = `{
-  "spans": [
+  "items": [
     {
       "traceId": "0af7651916cd43dd8448eb211c80319c",
       "spanId": "a1a1a1a1a1a1a1a1",
@@ -820,7 +820,7 @@ func TestGetSessionTracesErrors(t *testing.T) {
 // writes it: a gauge with no start time whose value is zero, a sum, a
 // histogram with its buckets and an exponential histogram with none.
 const metricsPage = `{
-  "points": [
+  "items": [
     {
       "name": "lk.agents.active_sessions",
       "kind": "METRIC_KIND_GAUGE",

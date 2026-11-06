@@ -336,12 +336,14 @@ var (
 									Usage: "`SIP_TRUNK_ID` to use for the call (overrides json config)",
 								},
 								&cli.StringFlag{
-									Name:  "number",
-									Usage: "`SIP_NUMBER` to use for the call (overrides json config)",
+									Name:    "from",
+									Aliases: []string{"number"},
+									Usage:   "`SIP_NUMBER` to use for the call (overrides json config)",
 								},
 								&cli.StringFlag{
-									Name:  "call",
-									Usage: "`SIP_CALL_TO` number to use (overrides json config)",
+									Name:    "to",
+									Aliases: []string{"call"},
+									Usage:   "`SIP_CALL_TO` phone number or SIP user to call (overrides json config)",
 								},
 								&cli.StringFlag{
 									Name:  "name",
@@ -1273,10 +1275,10 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		if v := cmd.String("trunk"); v != "" {
 			req.SipTrunkId = v
 		}
-		if v := cmd.String("number"); v != "" {
+		if v := cmd.String("from"); v != "" {
 			req.SipNumber = v
 		}
-		if v := cmd.String("call"); v != "" {
+		if v := cmd.String("to"); v != "" {
 			req.SipCallTo = v
 		}
 		if v := cmd.String("room"); v != "" {

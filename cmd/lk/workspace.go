@@ -30,7 +30,9 @@ import (
 )
 
 // WorkspaceCommands are the Public-API-only workspace commands. The whole group
-// is Hidden and requires --user-auth (user-based auth). Top-level
+// is Hidden and requires --user-auth (user-based auth). Workspaces aren't
+// generally available yet, so the group stays out of help even after sign-in
+// (userAuthUnlisted). Top-level
 // commands take the workspace as a positional (id, name, or alias, resolved
 // against the per-user cache, with a picker when omitted); nested project/member/
 // invite commands take it via --workspace so the entity id stays positional.
@@ -39,7 +41,7 @@ var WorkspaceCommands = []*cli.Command{
 		Name:     "workspace",
 		Usage:    "Manage LiveKit Cloud workspaces (requires --user-auth)",
 		Hidden:   true,
-		Metadata: userAuthOnly,
+		Metadata: userAuthUnlisted,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",
@@ -116,22 +118,21 @@ func workspaceProjectCommand() *cli.Command {
 			{
 				Name:      "create",
 				Usage:     "Create a project in a workspace",
-				UsageText: "lk workspace project create NAME --workspace WORKSPACE --user-auth",
+				UsageText: "lk workspace project create NAME --workspace WORKSPACE [--private] ... --user-auth",
 				ArgsUsage: "NAME",
 				Action:    createWorkspaceProject,
-				Flags:     []cli.Flag{workspaceFlag, jsonFlag},
+				Flags:     append([]cli.Flag{workspaceFlag}, append(projectSettingsFlags(true), jsonFlag)...),
 			},
 			{
 				Name:      "update",
-				Usage:     "Rename a project in a workspace",
-				UsageText: "lk workspace project update PROJECT_ID --workspace WORKSPACE --name NAME --user-auth",
+				Usage:     "Rename a project in a workspace or change its settings",
+				UsageText: "lk workspace project update PROJECT_ID --workspace WORKSPACE [--name NAME] [--analytics=false] ... --user-auth",
 				ArgsUsage: "PROJECT_ID",
 				Action:    updateWorkspaceProject,
-				Flags: []cli.Flag{
+				Flags: append([]cli.Flag{
 					workspaceFlag,
-					&cli.StringFlag{Name: "name", Usage: "New project `NAME`", Required: true},
-					jsonFlag,
-				},
+					&cli.StringFlag{Name: "name", Usage: "New project `NAME`"},
+				}, append(projectSettingsFlags(false), jsonFlag)...),
 			},
 			{
 				Name:      "delete",
@@ -175,7 +176,7 @@ func workspaceMemberCommand() *cli.Command {
 			},
 			{
 				Name:      "delete",
-				Usage:     "Remove a member from a workspace",
+				Usage:     "Remove a member from a workspace and delete the API keys they own",
 				UsageText: "lk workspace member delete USER_ID --workspace WORKSPACE --user-auth",
 				ArgsUsage: "USER_ID",
 				Action:    deleteWorkspaceMember,
@@ -390,7 +391,12 @@ func createWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	p, err := client.CreateWorkspaceProject(ctx, wsID, name)
+	settings, err := projectSettingsFromFlags(cmd)
+	if err != nil {
+		return err
+	}
+	settings.Name = &name
+	p, err := client.CreateWorkspaceProject(ctx, wsID, settings)
 	if err != nil {
 		return cloudAPIError(err)
 	}
@@ -407,7 +413,11 @@ func updateWorkspaceProject(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	p, err := client.UpdateWorkspaceProject(ctx, wsID, projectID, cmd.String("name"))
+	settings, err := projectUpdateFromFlags(cmd)
+	if err != nil {
+		return err
+	}
+	p, err := client.UpdateWorkspaceProject(ctx, wsID, projectID, settings)
 	if err != nil {
 		return cloudAPIError(err)
 	}
@@ -491,10 +501,13 @@ func deleteWorkspaceMember(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	if err := client.DeleteWorkspaceMember(ctx, wsID, userID); err != nil {
+	numKeys, err := removeMember(ctx, cmd, userID, "", func(confirmedNumKeys uint32) (uint32, error) {
+		return client.DeleteWorkspaceMember(ctx, wsID, userID, confirmedNumKeys)
+	})
+	if err != nil {
 		return cloudAPIError(err)
 	}
-	return util.RenderAction(out, cmd.Bool("json"), "userId", userID, "removed", fmt.Sprintf("Removed member %s", util.Accented(userID)))
+	return renderMemberRemoved(cmd, userID, numKeys)
 }
 
 func listWorkspaceInvites(ctx context.Context, cmd *cli.Command) error {

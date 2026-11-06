@@ -68,21 +68,19 @@ func bearerAuth(token string) oapi.RequestEditorFn {
 	}
 }
 
-// ListProjects returns the projects the authenticated user can access.
-//
-// NOTE: this returns only the first page; wire up PageInfo/cursor paging when a
-// command needs the full set.
+// ListProjects returns every project the authenticated user can access,
+// reading each page.
 func (c *Client) ListProjects(ctx context.Context) ([]oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.ProjectServiceListProjectsWithResponse(ctx, &oapi.ProjectServiceListProjectsParams{
-		PagePageSize: ptr(int32(100)),
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiProjectsV1Project, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.ProjectServiceListProjectsWithResponse(ctx, &oapi.ProjectServiceListProjectsParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
 }
 
 // GetProject returns a single project by id.
@@ -97,11 +95,10 @@ func (c *Client) GetProject(ctx context.Context, projectID string) (*oapi.Liveki
 	return requirePayload(resp.JSON200.Project, "project")
 }
 
-// CreateProject creates a new project with the given name and returns it.
-func (c *Client) CreateProject(ctx context.Context, name string) (*oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.ProjectServiceCreateProjectWithResponse(ctx, oapi.ProjectServiceCreateProjectJSONRequestBody{
-		Name: &name,
-	})
+// CreateProject creates a new project with the given settings and returns it.
+// Settings left nil get the server's defaults.
+func (c *Client) CreateProject(ctx context.Context, settings ProjectSettings) (*oapi.LivekitPublicapiProjectsV1Project, error) {
+	resp, err := c.gen.ProjectServiceCreateProjectWithResponse(ctx, settings.createRequest())
 	if err != nil {
 		return nil, err
 	}
@@ -111,11 +108,14 @@ func (c *Client) CreateProject(ctx context.Context, name string) (*oapi.LivekitP
 	return requirePayload(resp.JSON200.Project, "project")
 }
 
-// UpdateProject updates a project's name and returns the updated project.
-func (c *Client) UpdateProject(ctx context.Context, projectID, name string) (*oapi.LivekitPublicapiProjectsV1Project, error) {
-	resp, err := c.gen.ProjectServiceUpdateProjectWithResponse(ctx, projectID, oapi.ProjectServiceUpdateProjectJSONRequestBody{
-		Name: &name,
-	})
+// UpdateProject changes the settings that are set and returns the updated
+// project. Settings left nil keep their current values.
+func (c *Client) UpdateProject(ctx context.Context, projectID string, settings ProjectSettings) (*oapi.LivekitPublicapiProjectsV1Project, error) {
+	body, err := settings.updateRequest()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.gen.ProjectServiceUpdateProjectWithResponse(ctx, projectID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -253,6 +253,30 @@ func pageCursor(pi *oapi.LivekitPublicapiCommonV1PageInfo) string {
 		return ""
 	}
 	return *pi.NextCursor
+}
+
+// allPages reads a whole list, one page at a time from the first: it passes
+// fetch a nil cursor, then each page's nextCursor, until a page says it is
+// the last. fetch reads the page at cursor.
+func allPages[T any](fetch func(cursor *string) ([]T, *oapi.LivekitPublicapiCommonV1PageInfo, error)) ([]T, error) {
+	var all []T
+	var cursor *string
+	for {
+		page, info, err := fetch(cursor)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, page...)
+		next := pageCursor(info)
+		if info == nil || info.HasMore == nil || !*info.HasMore || next == "" {
+			return all, nil
+		}
+		// A cursor that didn't move would read the same page forever.
+		if cursor != nil && *cursor == next {
+			return nil, fmt.Errorf("unexpected response from server: page cursor %q repeats", next)
+		}
+		cursor = &next
+	}
 }
 
 // requirePayload guards a nested payload pointer from an otherwise-successful

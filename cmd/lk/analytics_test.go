@@ -1481,7 +1481,7 @@ func logsAPI(t *testing.T, status int, body string) (*public.Client, *url.Values
 // asked for and, when a page is empty, says why: no records at those levels,
 // none at all, or no more.
 func TestFetchSessionLogs(t *testing.T) {
-	const page = `{"records":[` +
+	const page = `{"items":[` +
 		`{"id":"log_1","level":"LOG_LEVEL_WARN","logger":"app","message":"slow tts"},` +
 		`{"id":"log_2","level":"LOG_LEVEL_ERROR","logger":"app","message":"tts failed"}],` +
 		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`
@@ -1503,7 +1503,7 @@ func TestFetchSessionLogs(t *testing.T) {
 		},
 		{
 			name:       "no records at those levels",
-			body:       `{"records":[]}`,
+			body:       `{"items":[]}`,
 			opts:       public.LogOptions{Levels: []string{"fatal"}},
 			wantQuery:  url.Values{"logLevels": {"LOG_LEVEL_FATAL"}},
 			wantStatus: []string{"Session RM_1 has no agent log records at the levels asked for (fatal)"},
@@ -1516,7 +1516,7 @@ func TestFetchSessionLogs(t *testing.T) {
 		},
 		{
 			name:       "last page",
-			body:       `{"records":[]}`,
+			body:       `{"items":[]}`,
 			opts:       public.LogOptions{PageOptions: public.PageOptions{Cursor: "c2"}},
 			wantQuery:  url.Values{"page.cursor": {"c2"}},
 			wantStatus: []string{"No more log records"},
@@ -1546,7 +1546,7 @@ func TestFetchSessionLogs(t *testing.T) {
 // TestFetchSessionLogsJSON checks --json prints the records and still
 // explains an empty page on stderr.
 func TestFetchSessionLogsJSON(t *testing.T) {
-	client, _ := logsAPI(t, http.StatusOK, `{"records":[]}`)
+	client, _ := logsAPI(t, http.StatusOK, `{"items":[]}`)
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionLogs(context.Background(), client, "p1", "RM_1", public.LogOptions{}, true))
@@ -1702,11 +1702,11 @@ func tracesAPI(t *testing.T, status int, pages map[string]string) (*public.Clien
 // tracePages is a session's trace across two pages, the second starting with
 // the children of a span on the first.
 var tracePages = map[string]string{
-	"": `{"spans":[` +
+	"": `{"items":[` +
 		`{"spanId":"a1","name":"agent_session"},` +
 		`{"spanId":"b2","parentSpanId":"a1","name":"agent_turn"}],` +
 		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
-	"c2": `{"spans":[` +
+	"c2": `{"items":[` +
 		`{"spanId":"c3","parentSpanId":"b2","name":"llm_request"},` +
 		`{"spanId":"d4","parentSpanId":"b2","name":"tts_request"}]}`,
 }
@@ -1792,7 +1792,7 @@ func TestFetchSessionTracesEmpty(t *testing.T) {
 		{wantStatus: "Session RM_1 has no trace spans"},
 		{cursor: "c9", wantStatus: "No more spans"},
 	} {
-		client, _ := tracesAPI(t, http.StatusOK, map[string]string{"": `{}`, "c9": `{"spans":[]}`})
+		client, _ := tracesAPI(t, http.StatusOK, map[string]string{"": `{}`, "c9": `{"items":[]}`})
 		stdout, stderr := captureOut(t)
 
 		require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 10, Cursor: tt.cursor}, false))
@@ -1987,7 +1987,7 @@ func metricsAPI(t *testing.T, status int, body string) (*public.Client, *url.Val
 // asked for and, when a page is empty, says why: no points for those names,
 // none at all, or no more.
 func TestFetchSessionMetrics(t *testing.T) {
-	const page = `{"points":[` +
+	const page = `{"items":[` +
 		`{"name":"lk.agents.turn.e2e_latency","unit":"s","kind":"METRIC_KIND_HISTOGRAM","endTime":"2026-10-07T11:00:30Z",` +
 		`"histogram":{"count":"3","sum":2.4,"min":0.6,"max":1.1}},` +
 		`{"name":"lk.agents.usage.llm_input_tokens","unit":"{token}","kind":"METRIC_KIND_SUM","endTime":"2026-10-07T11:00:30Z","value":1520}],` +
@@ -2013,7 +2013,7 @@ func TestFetchSessionMetrics(t *testing.T) {
 		},
 		{
 			name:       "no points for those names",
-			body:       `{"points":[]}`,
+			body:       `{"items":[]}`,
 			opts:       public.MetricOptions{Names: []string{"lk.agents.nope"}},
 			wantQuery:  url.Values{"names": {"lk.agents.nope"}},
 			wantStatus: []string{"Session RM_1 has no points for the metrics asked for (lk.agents.nope)"},
@@ -2026,7 +2026,7 @@ func TestFetchSessionMetrics(t *testing.T) {
 		},
 		{
 			name:       "last page",
-			body:       `{"points":[]}`,
+			body:       `{"items":[]}`,
 			opts:       public.MetricOptions{PageOptions: public.PageOptions{Cursor: "c2"}},
 			wantQuery:  url.Values{"page.cursor": {"c2"}},
 			wantStatus: []string{"No more metric points"},
@@ -2056,7 +2056,7 @@ func TestFetchSessionMetrics(t *testing.T) {
 // TestFetchSessionMetricsJSON checks --json prints the points and still
 // explains an empty page on stderr.
 func TestFetchSessionMetricsJSON(t *testing.T) {
-	client, _ := metricsAPI(t, http.StatusOK, `{"points":[]}`)
+	client, _ := metricsAPI(t, http.StatusOK, `{"items":[]}`)
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionMetrics(context.Background(), client, "p1", "RM_1", public.MetricOptions{}, true))

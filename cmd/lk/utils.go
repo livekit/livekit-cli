@@ -64,10 +64,13 @@ var (
 		Usage:    "`ID` of participant (supports templates)",
 		Required: true,
 	}
-	jsonFlag = &cli.BoolFlag{
-		Name:    "json",
-		Aliases: []string{"j"},
-		Usage:   "Output as JSON",
+	jsonFlag          = jsonFlagWithUsage("Output as JSON.")
+	jsonFlagWithUsage = func(usage string) *cli.BoolFlag {
+		return &cli.BoolFlag{
+			Name:    "json",
+			Aliases: []string{"j"},
+			Usage:   usage,
+		}
 	}
 	// quietFlag is global. "silent" is kept as an alias for backwards compatibility with
 	// the former per-command --silent flag; both resolve to the same value and feed the
@@ -83,7 +86,7 @@ var (
 	userAuthFlag = userAuthOnlyFlag(&cli.BoolFlag{
 		Name:    "user-auth",
 		Aliases: []string{"experimental-auth"},
-		Usage:   "BETA: use user-based (session) auth against the LiveKit Public API instead of API-key auth. Most commands are not yet supported under this mode.",
+		Usage:   "BETA: use user-based (session) auth against the LiveKit Cloud API instead of API-key auth. Most commands are not yet supported under this mode.",
 		Hidden:  true,
 	})
 	legacyAuthFlag = &cli.BoolFlag{
@@ -93,23 +96,23 @@ var (
 	}
 	templateFlag = &cli.StringFlag{
 		Name:        "template",
-		Usage:       "`TEMPLATE` to instantiate, see " + bootstrap.TemplateBaseURL,
+		Usage:       "`TEMPLATE` to instantiate. For example, agent-starter-python or agent-starter-node. See " + bootstrap.TemplateBaseURL + " for the full list.",
 		Destination: &templateName,
 	}
 	templateURLFlag = &cli.StringFlag{
 		Name:        "template-url",
-		Usage:       "`URL` to instantiate, must contain a taskfile.yaml",
+		Usage:       "Custom `URL` to a repository or archive to instantiate (for example, a Git repo URL). The project at that URL must include a taskfile.yaml file at its root.",
 		Destination: &templateURL,
 	}
 	installFlag = &cli.BoolFlag{
 		Name:  "install",
-		Usage: "Run installation after creating the application",
+		Usage: "Install the project's dependencies after creating it. If unset, the CLI asks. Skipped in non-interactive mode. Pass --install=false to skip.",
 	}
 	// skillsSetupFlag controls whether lk agent init installs LiveKit's coding
 	// agent skills; unset, lk asks (or installs, without a terminal).
 	skillsSetupFlag = &cli.BoolFlag{
 		Name:  "skills",
-		Usage: "Install LiveKit skills and the Docs MCP server for your coding agents (see lk skills)",
+		Usage: "Install LiveKit Agent Skills and the Docs MCP server for your coding agents (see lk skills). If unset, the CLI asks. Automatically installed in non-interactive mode. Pass --skills=false to skip.",
 	}
 	// roleFlag selects a member/invite access level for the Public API commands.
 	roleFlag = &cli.StringFlag{
@@ -216,7 +219,7 @@ var (
 		userAuthOnlyFlag(&cli.StringFlag{
 			Name:        "public-api-url",
 			Aliases:     []string{"experimental-api-url"},
-			Usage:       "Base `URL` of the LiveKit Public API used with --user-auth",
+			Usage:       "Base `URL` of the LiveKit Cloud API used with --user-auth",
 			Value:       public.DefaultBaseURL,
 			Destination: &publicAPIURL,
 			Sources:     cli.EnvVars("LIVEKIT_API_URL"),
@@ -394,7 +397,8 @@ func (rp *resolvedProject) announce() {
 //
 // It performs no prompting and no printing: callers print rp.notice via out.Status.
 // requireProjectWithOpts handles a returned error by offering interactive
-// selection, unless --project or --subdomain named a project (see namedProject).
+// selection, unless --project or --subdomain named a project (see namedProject)
+// or --dev asked for dev credentials.
 func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 	// 1. explicit project
 	if c.String("project") != "" {
@@ -421,20 +425,17 @@ func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 	}
 
 	// 3. inline credentials (flags or environment)
+	if c.Bool("dev") && (c.String("api-key") != "" || c.String("api-secret") != "") {
+		return nil, devCredentialsError(c)
+	}
 	pc := &config.ProjectConfig{}
 	if val := c.String("url"); val != "" {
 		pc.URL = val
 	}
 	if val := c.String("api-key"); val != "" {
-		if c.Bool("dev") {
-			return nil, errors.New("both api-key and dev flags are set")
-		}
 		pc.APIKey = val
 	}
 	if val := c.String("api-secret"); val != "" {
-		if c.Bool("dev") {
-			return nil, errors.New("both api-secret and dev flags are set")
-		}
 		pc.APISecret = val
 	}
 	if pc.APIKey != "" && pc.APISecret != "" && (pc.URL != "" || !p.requireURL) {
@@ -491,6 +492,33 @@ func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 
 	// cannot happen
 	return &resolvedProject{project: pc, source: sourceInlineFlags}, nil
+}
+
+// devCredentialsError is the error for --dev with an API key or secret. It
+// names each one to remove: the env var when the value is the env var's, the
+// flag otherwise.
+func devCredentialsError(c *cli.Command) error {
+	var envVars, flags []string
+	for _, cred := range []struct{ flag, env string }{
+		{"api-key", "LIVEKIT_API_KEY"},
+		{"api-secret", "LIVEKIT_API_SECRET"},
+	} {
+		switch val := c.String(cred.flag); {
+		case val == "":
+		case val == os.Getenv(cred.env):
+			envVars = append(envVars, cred.env)
+		default:
+			flags = append(flags, "--"+cred.flag)
+		}
+	}
+	var fixes []string
+	if len(envVars) > 0 {
+		fixes = append(fixes, "unset "+strings.Join(envVars, " and "))
+	}
+	if len(flags) > 0 {
+		fixes = append(fixes, "remove "+strings.Join(flags, " and "))
+	}
+	return fmt.Errorf("--dev can't be combined with API key credentials; %s or drop --dev", strings.Join(fixes, " and "))
 }
 
 // loadProjectDetails resolves project credentials for commands that consume the result
