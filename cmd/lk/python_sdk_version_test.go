@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -77,28 +78,51 @@ func TestResolvePythonAgentVersion_ReadsInstalledVersion(t *testing.T) {
 	require.False(t, notInstalled)
 }
 
-func TestCheckPythonSDKVersion_TooOld(t *testing.T) {
-	dir := setupUvAgentProject(t, "1.0.0", "livekit-agents", true)
-	err := checkPythonSDKVersion(AgentStartConfig{Dir: dir, ProjectType: agentfs.ProjectTypePythonUV})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "too old")
-}
+// A missing module gets an actionable error; an importable module from an
+// arbitrary source directory launches without distribution metadata.
+func TestStartPythonAgentImportsOnceAndReportsMissingDependencies(t *testing.T) {
+	if _, err := exec.LookPath("uv"); err != nil {
+		t.Skip("uv not on PATH")
+	}
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(
+		"[project]\nname = \"test-agent\"\nversion = \"0.0.0\"\n"), 0o644))
+	venv := exec.Command("uv", "venv", "--offline", ".venv")
+	venv.Dir = dir
+	out, err := venv.CombinedOutput()
+	require.NoError(t, err, "%s", out)
+	source := filepath.Join(dir, "custom-sdk-source")
+	cfg := AgentStartConfig{
+		Dir: dir, Entrypoint: "agent.py", ProjectType: agentfs.ProjectTypePythonUV,
+		CLIArgs: []string{"start", "--dev"}, ReadySignal: "module launched",
+		Env: []string{"PYTHONPATH=" + source},
+	}
+	missing, err := startAgent(cfg)
+	require.NoError(t, err)
+	t.Cleanup(func() { missing.Kill() })
+	require.Error(t, <-missing.Done())
+	require.Contains(t, strings.Join(missing.RecentLogs(0), "\n"), "sync or install the project's dependencies")
 
-func TestCheckPythonSDKVersion_InstalledBeatsLooseConstraint(t *testing.T) {
-	// The pyproject floor >=1.0 would fail static parsing, but the installed
-	// 1.6.7 is what gets used — proving the resolved version wins.
-	dir := setupUvAgentProject(t, "1.6.7", "livekit-agents>=1.0", true)
-	require.NoError(t, checkPythonSDKVersion(AgentStartConfig{Dir: dir, ProjectType: agentfs.ProjectTypePythonUV}))
-}
-
-func TestCheckPythonSDKVersion_UnsyncedUVProjectSuggestsSync(t *testing.T) {
-	// Models a fresh clone where dependencies were never installed. The CLI is
-	// a proxy for the local environment and never syncs it implicitly, so the
-	// agent would die at launch with ModuleNotFoundError; the pre-flight must
-	// fail fast and tell the user how to fix it instead.
-	dir := setupUvAgentProject(t, "1.6.7", "livekit-agents>=1.6.0", false)
-	err := checkPythonSDKVersion(AgentStartConfig{Dir: dir, ProjectType: agentfs.ProjectTypePythonUV})
-	require.ErrorContains(t, err, "uv sync")
+	module := filepath.Join(source, "livekit", "agents")
+	require.NoError(t, os.MkdirAll(module, 0o755))
+	count := filepath.Join(dir, "imports.txt")
+	cfg.Env = append(cfg.Env, "IMPORT_COUNT="+count)
+	require.NoError(t, os.WriteFile(filepath.Join(module, "__init__.py"),
+		[]byte("import os\nwith open(os.environ['IMPORT_COUNT'], 'a', newline='') as f: f.write('import\\n')\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(module, "__main__.py"),
+		[]byte("print('module launched', flush=True)\n"), 0o644))
+	ap, err := startAgent(cfg)
+	require.NoError(t, err)
+	t.Cleanup(func() { ap.Kill() })
+	select {
+	case <-ap.readyCh:
+	case <-time.After(10 * time.Second):
+		t.Fatal("Python module did not launch")
+	}
+	require.NoError(t, <-ap.doneCh)
+	imports, err := os.ReadFile(count)
+	require.NoError(t, err)
+	require.Equal(t, "import\n", string(imports))
 }
 
 func TestFindPythonBinary_UVRunDoesNotSyncEnvironment(t *testing.T) {

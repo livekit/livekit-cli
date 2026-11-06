@@ -320,13 +320,17 @@ func parseKeyValuePairs(c *cli.Command, flag string) (map[string]string, error) 
 }
 
 type loadParams struct {
-	requireURL     bool
-	confirmProject bool
+	requireURL              bool
+	confirmProject          bool
+	allowMissingCredentials bool
 }
 
 type loadOption func(*loadParams)
 
 var (
+	optionalCredentials = func(p *loadParams) {
+		p.allowMissingCredentials = true
+	}
 	ignoreURL = func(p *loadParams) {
 		p.requireURL = false
 	}
@@ -478,6 +482,11 @@ func resolveProject(c *cli.Command, p loadParams) (*resolvedProject, error) {
 	// 6. configured default project
 	if dp, err := config.LoadDefaultProject(); err == nil {
 		return &resolvedProject{project: dp, source: sourceDefault}, nil
+	}
+	// Local console sessions can use provider credentials of their own. Resolve
+	// configured LiveKit credentials when available, without requiring a project.
+	if p.allowMissingCredentials {
+		return &resolvedProject{project: &config.ProjectConfig{}, source: sourceInlineFlags}, nil
 	}
 
 	if p.requireURL && pc.URL == "" {
