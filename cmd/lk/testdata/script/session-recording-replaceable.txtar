@@ -1,0 +1,45 @@
+# A recording found while the session is active or settling can still be
+# replaced by a later upload. lk prints and saves it as before, and says so on
+# stderr; --quiet hides the note, and a settled one, or one from a Public API
+# that sends no data status, gets none.
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/recording-url 200 '{"url":"http://store.test/rec.ogg?sig=x","expiresAt":"2026-10-07T12:15:00Z","dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}'
+respond GET http://store.test/rec.ogg 200 'OggS'
+exec lk --user-auth analytics session recording RM_1
+cmp stdout want-url
+stderr '^A later upload can still replace this recording: the session just ended — read again in 42s$'
+
+exec lk --user-auth analytics session recording RM_1 -o .
+cmp stdout want-url
+stderr '^Saved audio recording of session RM_1 to RM_1-audio.ogg '
+stderr '^A later upload can still replace this recording: the session just ended — read again in 42s$'
+grep '^OggS$' RM_1-audio.ogg
+
+exec lk --user-auth --quiet analytics session recording RM_1
+cmp stdout want-url
+! stderr 'replace'
+
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/recording-url 200 '{"url":"http://store.test/rec.ogg?sig=x","expiresAt":"2026-10-07T12:15:00Z","dataStatus":{"state":"DATA_STATE_SETTLED","retryAfterSeconds":0}}'
+exec lk --user-auth analytics session recording RM_1
+cmp stdout want-url
+! stderr 'replace'
+
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/recording-url 200 '{"url":"http://store.test/rec.ogg?sig=x","expiresAt":"2026-10-07T12:15:00Z"}'
+exec lk --user-auth analytics session recording RM_1
+cmp stdout want-url
+stderr '^The URL expires '
+! stderr 'replace'
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+-- want-url --
+http://store.test/rec.ogg?sig=x
