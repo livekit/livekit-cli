@@ -1,0 +1,24 @@
+# A command that doesn't support user auth yet says so under
+# --user-auth, rather than falling back to an API key.
+! exec lk --user-auth agent simulate text
+! stdout .
+cmp stderr want-stderr
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+-- want-stderr --
+this command is not yet available under --user-auth (user-based auth); re-run without it to use API-key authentication

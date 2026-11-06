@@ -65,9 +65,11 @@ import (
 //
 // When lk creates a key: only at step 4, so only under --user-auth, only in
 // the commands that hand a key to an app or agent (agent dev, start, console,
-// debugger, init and simulate; app create and env), and only when steps 1-3
-// found no usable key. Commands that only call LiveKit themselves (room, sip,
-// egress, ...) use session tokens and never create one.
+// debugger and init; app create and env), and only when steps 1-3 found no
+// usable key. Commands that only call LiveKit themselves (room, sip, egress,
+// ...) use session tokens and never create one. agent simulate stays
+// API-key only for now; once its simulation calls move to the Public API, the
+// agent it spawns can get its key from projectKey too.
 //
 // Where lk keeps it: a key from steps 3-5 is saved to the CLI config (so other
 // agents and later runs on this machine reuse it rather than create another)
