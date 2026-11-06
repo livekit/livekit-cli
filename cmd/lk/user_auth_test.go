@@ -385,3 +385,28 @@ func TestUserAuthOnlyCommandsMarked(t *testing.T) {
 		walk("lk", cmds)
 	}
 }
+
+// The command sent to the API is the command's name, never its arguments.
+func TestCommandNameLeavesOutArguments(t *testing.T) {
+	var got string
+	root := &cli.Command{
+		Name: "lk",
+		Commands: []*cli.Command{{
+			Name: "analytics",
+			Commands: []*cli.Command{{
+				Name: "session",
+				Commands: []*cli.Command{{
+					Name:      "transcript",
+					ArgsUsage: "SESSION_ID",
+					Action:    func(context.Context, *cli.Command) error { return nil },
+				}},
+			}},
+		}},
+		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			got = commandName(cmd)
+			return ctx, nil
+		},
+	}
+	require.NoError(t, root.Run(context.Background(), []string{"lk", "analytics", "session", "transcript", "RM_secret123"}))
+	assert.Equal(t, "analytics session transcript", got)
+}
