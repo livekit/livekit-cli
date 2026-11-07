@@ -26,6 +26,7 @@ require (
 	github.com/livekit/protocol v1.53.3-0.20261104230654-7bbaddbd56db
 	github.com/livekit/server-sdk-go/v2 v2.19.0
 	github.com/mattn/go-isatty v0.0.22
+	github.com/moby/buildkit v0.33.0
 	github.com/moby/moby/client v0.4.1
 	github.com/moby/patternmatcher v0.6.1
 	github.com/modelcontextprotocol/go-sdk v1.6.1
@@ -66,6 +67,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0 // indirect
 	github.com/Ladicle/tabwriter v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.3-0.20251027160822-ad3df93bed29 // indirect
+	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/alecthomas/chroma/v2 v2.23.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
@@ -167,7 +169,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.30 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
-	github.com/moby/buildkit v0.33.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/moby/api v1.54.2 // indirect

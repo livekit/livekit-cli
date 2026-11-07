@@ -770,6 +770,7 @@ func createAgent(ctx context.Context, cmd *cli.Command) error {
 	if err := requireDockerfile(ctx, cmd, workingDir, projectType, settingsMap); err != nil {
 		return err
 	}
+	warnStartCommand(workingDir)
 
 	if err := agentfs.CheckSDKVersion(workingDir, projectType, settingsMap); err != nil {
 		if cmd.Bool("skip-sdk-check") {
@@ -961,6 +962,7 @@ func deployAgent(ctx context.Context, cmd *cli.Command) error {
 		return noAgentError()
 	}
 	out.Statusf("Detected agent language [%s]", util.Accented(string(projectType)))
+	warnStartCommand(workingDir)
 
 	settingsMap, err := getClientSettings(ctx)
 	if err != nil {
@@ -2003,6 +2005,18 @@ func requireSecrets(_ context.Context, cmd *cli.Command, required, lazy bool) ([
 	}
 
 	return secretsSlice, nil
+}
+
+// warnStartCommand warns when the Dockerfile's start command keeps the agent from draining on
+// SIGTERM. The build itself reports a missing or invalid Dockerfile.
+func warnStartCommand(workingDir string) {
+	dockerfile, err := os.ReadFile(filepath.Join(workingDir, "Dockerfile"))
+	if err != nil {
+		return
+	}
+	if warning := agentfs.StartCommandWarning(dockerfile); warning != "" {
+		out.Warnf("%s", warning)
+	}
 }
 
 func requireDockerfile(ctx context.Context, cmd *cli.Command, workingDir string, projectType agentfs.ProjectType, settingsMap map[string]string) error {
