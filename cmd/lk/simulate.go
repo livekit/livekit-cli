@@ -71,7 +71,7 @@ var simulateCommand = &cli.Command{
 		return cli.ShowSubcommandHelp(cmd)
 	},
 	Commands: []*cli.Command{
-		simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand,
+		simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand, simulateCompareCommand,
 		simulateGetCommand, simulateCancelCommand,
 	},
 	Flags: []cli.Flag{

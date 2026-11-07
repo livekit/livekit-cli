@@ -48,20 +48,27 @@ var simulationRunMarshaler = protojson.MarshalOptions{
 }
 
 func writeSimulationRunJSON(w io.Writer, run *livekit.SimulationRun) error {
-	if run == nil {
-		return fmt.Errorf("cannot export a nil simulation run")
+	export, err := newSimulationRunJSON(run)
+	if err != nil {
+		return err
 	}
+	return encodeIndentedJSON(w, export)
+}
 
+func newSimulationRunJSON(run *livekit.SimulationRun) (simulationRunJSON, error) {
 	export := simulationRunJSON{Version: simulationRunJSONVersion}
+	if run == nil {
+		return export, fmt.Errorf("cannot export a nil simulation run")
+	}
 
 	summary, err := decodeRunSummaryStrict(run)
 	if err != nil {
-		return fmt.Errorf("decode simulation run summary: %w", err)
+		return export, fmt.Errorf("decode simulation run summary: %w", err)
 	}
 	if summary != nil {
 		encoded, err := simulationRunMarshaler.Marshal(summary)
 		if err != nil {
-			return fmt.Errorf("encode simulation run summary: %w", err)
+			return export, fmt.Errorf("encode simulation run summary: %w", err)
 		}
 		export.Summary = encoded
 	}
@@ -71,14 +78,17 @@ func writeSimulationRunJSON(w io.Writer, run *livekit.SimulationRun) error {
 	stripped.SummaryZstd = nil
 	encoded, err := simulationRunMarshaler.Marshal(stripped)
 	if err != nil {
-		return fmt.Errorf("encode simulation run: %w", err)
+		return export, fmt.Errorf("encode simulation run: %w", err)
 	}
 	export.Run = encoded
+	return export, nil
+}
 
+func encodeIndentedJSON(w io.Writer, v any) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(export); err != nil {
+	if err := encoder.Encode(v); err != nil {
 		return fmt.Errorf("encode simulation run JSON: %w", err)
 	}
 	return nil
@@ -98,14 +108,23 @@ func exportSimulationRunJSON(ctx context.Context, pc *config.ProjectConfig, runI
 		return err
 	}
 
-	if !isTerminalRunStatus(run.GetStatus()) {
-		return fmt.Errorf(
-			"simulation run %s is still in progress (%s); follow it with %s",
-			runID,
-			strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
-			viewCommandHint(runID),
-		)
+	if err := requireFinishedRun(runID, run); err != nil {
+		return err
 	}
 
 	return writeSimulationRunJSON(out.ResultWriter(), run)
+}
+
+// requireFinishedRun keeps a run's JSON to finished runs, so stdout is either
+// a complete export or nothing.
+func requireFinishedRun(runID string, run *livekit.SimulationRun) error {
+	if isTerminalRunStatus(run.GetStatus()) {
+		return nil
+	}
+	return fmt.Errorf(
+		"simulation run %s is still in progress (%s); follow it with %s",
+		runID,
+		strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
+		viewCommandHint(runID),
+	)
 }
