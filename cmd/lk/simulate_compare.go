@@ -22,6 +22,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
@@ -61,21 +62,36 @@ func runSimulateCompare(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+	export, err := compareRunsJSON(runIDs, func(id string) (*livekit.SimulationRun, error) {
+		fetchCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
+		defer cancel()
+		return getSimulationRun(fetchCtx, client, id, pc.ProjectId)
+	})
+	if err != nil {
+		return err
+	}
+	return encodeIndentedJSON(out.ResultWriter(), export)
+}
+
+// compareRunsJSON holds every run finished, as export requires, so stdout is
+// either the whole comparison or nothing.
+func compareRunsJSON(runIDs []string, fetch func(id string) (*livekit.SimulationRun, error)) (simulationCompareJSON, error) {
 	export := simulationCompareJSON{Version: simulationRunJSONVersion}
 	for _, id := range runIDs {
-		fetchCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
-		run, err := getSimulationRun(fetchCtx, client, id, pc.ProjectId)
-		cancel()
+		run, err := fetch(id)
 		if err != nil {
-			return err
+			return export, err
+		}
+		if err := requireFinishedRun(id, run); err != nil {
+			return export, err
 		}
 		r, err := newSimulationRunJSON(run)
 		if err != nil {
-			return err
+			return export, err
 		}
 		export.Runs = append(export.Runs, r)
 	}
-	return encodeIndentedJSON(out.ResultWriter(), export)
+	return export, nil
 }
 
 func compareRunIDs(args []string) ([]string, error) {

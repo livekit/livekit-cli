@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/livekit/protocol/livekit"
 )
 
 func TestCompareRunIDs(t *testing.T) {
@@ -39,4 +41,21 @@ func TestCompareRunIDs(t *testing.T) {
 func TestSimulationCompareDashboardURLNeedsAProject(t *testing.T) {
 	require.Empty(t, simulationCompareDashboardURL("", []string{"SR_a", "SR_b"}))
 	require.Contains(t, simulationCompareDashboardURL("p_1", []string{"SR_a", "SR_b"}), "/projects/p_1/simulations/compare?runs=SR_a,SR_b")
+}
+
+func TestCompareRunsJSONNeedsFinishedRuns(t *testing.T) {
+	runs := map[string]*livekit.SimulationRun{
+		"SR_a": {Id: "SR_a", Status: livekit.SimulationRun_STATUS_COMPLETED},
+		"SR_b": {Id: "SR_b", Status: livekit.SimulationRun_STATUS_RUNNING},
+		"SR_c": {Id: "SR_c", Status: livekit.SimulationRun_STATUS_FAILED},
+	}
+	fetch := func(id string) (*livekit.SimulationRun, error) { return runs[id], nil }
+
+	_, err := compareRunsJSON([]string{"SR_a", "SR_b"}, fetch)
+	require.ErrorContains(t, err, "SR_b is still in progress")
+
+	export, err := compareRunsJSON([]string{"SR_c", "SR_a"}, fetch)
+	require.NoError(t, err)
+	require.Len(t, export.Runs, 2)
+	require.Contains(t, string(export.Runs[0].Run), `"SR_c"`, "baseline stays first")
 }
