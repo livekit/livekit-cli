@@ -108,14 +108,23 @@ func exportSimulationRunJSON(ctx context.Context, pc *config.ProjectConfig, runI
 		return err
 	}
 
-	if !isTerminalRunStatus(run.GetStatus()) {
-		return fmt.Errorf(
-			"simulation run %s is still in progress (%s); follow it with %s",
-			runID,
-			strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
-			viewCommandHint(runID),
-		)
+	if err := requireFinishedRun(runID, run); err != nil {
+		return err
 	}
 
 	return writeSimulationRunJSON(out.ResultWriter(), run)
+}
+
+// requireFinishedRun keeps a run's JSON to finished runs, so stdout is either
+// a complete export or nothing.
+func requireFinishedRun(runID string, run *livekit.SimulationRun) error {
+	if isTerminalRunStatus(run.GetStatus()) {
+		return nil
+	}
+	return fmt.Errorf(
+		"simulation run %s is still in progress (%s); follow it with %s",
+		runID,
+		strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
+		viewCommandHint(runID),
+	)
 }
