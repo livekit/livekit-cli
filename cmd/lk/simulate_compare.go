@@ -54,7 +54,7 @@ func runSimulateCompare(ctx context.Context, cmd *cli.Command) error {
 	if !cmd.Bool("json") {
 		u := simulationCompareDashboardURL(pc.ProjectId, runIDs)
 		if u == "" {
-			return fmt.Errorf("no dashboard for %s; use --json", serverURL)
+			return fmt.Errorf("no project ID to link the dashboard to; pick a project with --project, or use --json")
 		}
 		fmt.Fprintln(out.ResultWriter(), u)
 		return nil
@@ -94,11 +94,13 @@ func compareRunIDs(args []string) ([]string, error) {
 	return ids, nil
 }
 
+// simulationCompareDashboardURL is "" without a project ID, as
+// simulationDashboardURL is.
 func simulationCompareDashboardURL(projectID string, runIDs []string) string {
-	base := dashboardBaseURL()
-	if base == "" {
+	if projectID == "" {
 		return ""
 	}
+	base := dashboardBaseURL()
 	escaped := make([]string, len(runIDs))
 	for i, id := range runIDs {
 		escaped[i] = url.QueryEscape(id)

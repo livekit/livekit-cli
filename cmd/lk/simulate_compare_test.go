@@ -35,3 +35,8 @@ func TestCompareRunIDs(t *testing.T) {
 		require.Error(t, err, "%v", args)
 	}
 }
+
+func TestSimulationCompareDashboardURLNeedsAProject(t *testing.T) {
+	require.Empty(t, simulationCompareDashboardURL("", []string{"SR_a", "SR_b"}))
+	require.Contains(t, simulationCompareDashboardURL("p_1", []string{"SR_a", "SR_b"}), "/projects/p_1/simulations/compare?runs=SR_a,SR_b")
+}
