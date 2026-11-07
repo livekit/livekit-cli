@@ -1,0 +1,19 @@
+pkg/agentfs/examples/node.Dockerfile
+  s_0e00a4a4b25aa3::t_0fdf16847b0e18 81-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8758307da5efba24b69137f73b2215791d8e4267",
+  "prompts": {},
+  "sessions": {
+    "s_0e00a4a4b25aa3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d26ea2a4-89d0-4caf-af15-a7503563d7c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
