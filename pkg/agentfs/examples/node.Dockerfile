@@ -78,11 +78,9 @@ USER appuser
 # Set Node.js to production mode
 ENV NODE_ENV=production
 
-# Run package.json scripts with bash instead of sh.
-# pnpm runs the "start" script through a shell. Debian's sh (dash) keeps running as the
-# parent of node, so the SIGTERM sent on shutdown stops the shell and never reaches node.
-# The agent then cannot drain, and active sessions drop. bash replaces itself with node when
-# the script is a single command, so node receives SIGTERM and finishes its sessions.
+# pnpm runs the "start" script through sh. Debian's sh (dash) stays as node's parent, so
+# SIGTERM stops the shell and never reaches node: the agent can't drain and active sessions
+# drop. bash execs a single-command script, so node receives SIGTERM.
 ENV npm_config_script_shell=/bin/bash
 
 # Run the application
