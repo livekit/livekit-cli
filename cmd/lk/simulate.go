@@ -70,6 +70,8 @@ var simulateCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		return cli.ShowSubcommandHelp(cmd)
 	},
+	// --set values may hold commas
+	DisableSliceFlagSeparator: true,
 	Commands: []*cli.Command{
 		simulateTextCommand, simulateAudioCommand, simulateListCommand, simulateViewCommand, simulateExportCommand,
 		simulateGetCommand, simulateCancelCommand,
@@ -146,13 +148,15 @@ func loadSimulateProject(ctx context.Context, cmd *cli.Command) (context.Context
 }
 
 var simulateTextCommand = &cli.Command{
-	Name:            "text",
-	Usage:           "Run scenarios in text mode",
-	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
-	Metadata:        map[string]any{docsInheritsOptions: true},
-	ArgsUsage:       "[entrypoint]",
-	HideHelpCommand: true,
-	Before:          loadSimulateProject,
+	Name: "text",
+	// --set values may hold commas
+	DisableSliceFlagSeparator: true,
+	Usage:                     "Run scenarios in text mode",
+	Description:               "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
+	Metadata:                  map[string]any{docsInheritsOptions: true},
+	ArgsUsage:                 "[entrypoint]",
+	HideHelpCommand:           true,
+	Before:                    loadSimulateProject,
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_TEXT)
 	},
@@ -162,13 +166,15 @@ var simulateTextCommand = &cli.Command{
 // persistent (cli.FlagBase.Local defaults to false), so they parse on either
 // side of the subcommand name.
 var simulateAudioCommand = &cli.Command{
-	Name:            "audio",
-	Usage:           "Run scenarios through the full STT-LLM-TTS pipeline",
-	Description:     "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
-	Metadata:        map[string]any{docsInheritsOptions: true},
-	ArgsUsage:       "[entrypoint]",
-	HideHelpCommand: true,
-	Before:          loadSimulateProject,
+	Name: "audio",
+	// --set values may hold commas
+	DisableSliceFlagSeparator: true,
+	Usage:                     "Run scenarios through the full STT-LLM-TTS pipeline",
+	Description:               "Options on lk agent simulate apply here too, e.g. --scenarios and --agent-name.",
+	Metadata:                  map[string]any{docsInheritsOptions: true},
+	ArgsUsage:                 "[entrypoint]",
+	HideHelpCommand:           true,
+	Before:                    loadSimulateProject,
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		return runSimulate(ctx, cmd, livekit.SimulationMode_SIMULATION_MODE_AUDIO)
 	},

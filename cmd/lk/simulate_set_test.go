@@ -15,9 +15,11 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
 )
 
 func TestParseSetFlags(t *testing.T) {
@@ -32,5 +34,22 @@ func TestParseSetFlags(t *testing.T) {
 	for _, bad := range [][]string{{"llm"}, {"=x"}, {"llm=a", "llm=b"}} {
 		_, err := parseSetFlags(bad)
 		require.Error(t, err, "%v", bad)
+	}
+}
+
+func TestSetFlagKeepsCommas(t *testing.T) {
+	for _, sub := range []*cli.Command{simulateTextCommand, simulateAudioCommand} {
+		var got []string
+		leaf := *sub
+		leaf.Before = nil
+		leaf.Action = func(_ context.Context, cmd *cli.Command) error {
+			got = cmd.StringSlice("set")
+			return nil
+		}
+		parent := *simulateCommand
+		parent.Commands = []*cli.Command{&leaf}
+		root := &cli.Command{Name: "lk", Commands: []*cli.Command{&parent}}
+		require.NoError(t, root.Run(context.Background(), []string{"lk", "simulate", "--set", "prompt=hello,world", sub.Name, "--set", "pair=a,b=c"}))
+		require.Equal(t, []string{"prompt=hello,world", "pair=a,b=c"}, got, sub.Name)
 	}
 }
