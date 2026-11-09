@@ -278,7 +278,7 @@ func signedInToSeveralAPIs(ref string, matches []*config.UserConfig) error {
 // revokeUserSession signs a user out under --user-auth: the --user flag if
 // given, otherwise the default user. It revokes their session on the Public
 // API, then removes them from the CLI config. A 401 means the session is
-// already dead, and an expired session isn't sent at all, so both still
+// no longer valid, and an expired session isn't sent at all, so both still
 // remove the user. Any other failure keeps the user, because the stored token
 // is the only way to revoke the session, which stays valid until it expires.
 func revokeUserSession(ctx context.Context, cmd *cli.Command) error {
@@ -313,7 +313,7 @@ func revokeUserSession(ctx context.Context, cmd *cli.Command) error {
 		case err == nil:
 			out.Statusf("Signed out %s", label)
 		case public.IsUnauthenticated(err):
-			out.Statusf("Session for %s was already revoked; signed out on this device", label)
+			out.Statusf("Session for %s is no longer valid; signed out on this device", label)
 		default:
 			return fmt.Errorf("couldn't revoke the session for %s, which is still signed in: %w", userLabel(&user), err)
 		}

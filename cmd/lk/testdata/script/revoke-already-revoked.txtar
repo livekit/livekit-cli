@@ -1,4 +1,4 @@
-# A session the Public API already rejects is dead, so --revoke still signs
+# A session the Public API rejects is no longer valid, so --revoke still signs
 # the user out on this device and succeeds. The 401 body is the one the
 # Public API's auth middleware sends.
 respond DELETE http://publicapi.test/v0/users/me/session-token 401 '{"code":16,"message":"authentication required","details":[]}'
@@ -18,7 +18,7 @@ users:
     api_url: http://publicapi.test
 -- want-stderr --
 Using user [dev@example.com] on [http://publicapi.test]
-Session for dev@example.com was already revoked; signed out on this device
+Session for dev@example.com is no longer valid; signed out on this device
 Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
 -- want-requests --
 DELETE http://publicapi.test/v0/users/me/session-token bearer=st_revoked
