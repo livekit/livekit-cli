@@ -1,0 +1,44 @@
+# Without --user-auth, --revoke works as before: lk revokes the project's API
+# key on LiveKit Cloud, signing the request with that key, then removes the
+# project from the CLI config. The signed-in user stays.
+respond DELETE http://cloud.test/cli/revoke 200
+exec lk cloud auth --revoke --server-url http://cloud.test
+! stdout .
+cmpenv stderr want-stderr
+requests
+cmp stdout want-requests
+cmp home/.livekit/cli-config.yaml want-config
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+default_user: u_1
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_live
+    api_url: http://publicapi.test
+-- want-stderr --
+Using project [one]
+Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
+Removed project one
+-- want-requests --
+DELETE http://cloud.test/cli/revoke apikey=APIone
+-- want-config --
+default_project: ""
+default_user: u_1
+projects: []
+users:
+    - id: u_1
+      name: ""
+      email: dev@example.com
+      session_token: st_live
+      session_expiry: 0
+      api_url: http://publicapi.test
+device_name: ""
+theme: ""

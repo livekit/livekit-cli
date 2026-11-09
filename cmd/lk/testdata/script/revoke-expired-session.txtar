@@ -1,0 +1,28 @@
+# A session past its expiry can't authenticate, so --revoke never sends it:
+# it signs the user out on this device and succeeds.
+exec lk --user-auth cloud auth --revoke
+! stdout .
+cmpenv stderr want-stderr
+requests
+! stdout .
+cmp home/.livekit/cli-config.yaml want-config
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_expired
+    session_expiry: 1
+    api_url: http://publicapi.test
+-- want-stderr --
+Using user [dev@example.com] on [http://publicapi.test]
+Session for dev@example.com had already expired; signed out on this device
+Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
+-- want-config --
+default_project: ""
+default_user: ""
+projects: []
+users: []
+device_name: ""
+theme: ""

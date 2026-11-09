@@ -1,0 +1,31 @@
+# Under --user-auth, --revoke signs the user out: lk revokes their session
+# token on the Public API, then removes them, and the default user they were,
+# from the CLI config.
+respond DELETE http://publicapi.test/v0/users/me/session-token 200 '{}'
+exec lk --user-auth cloud auth --revoke
+! stdout .
+cmpenv stderr want-stderr
+requests
+cmp stdout want-requests
+cmp home/.livekit/cli-config.yaml want-config
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_live
+    api_url: http://publicapi.test
+-- want-stderr --
+Using user [dev@example.com] on [http://publicapi.test]
+Signed out dev@example.com
+Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
+-- want-requests --
+DELETE http://publicapi.test/v0/users/me/session-token bearer=st_live
+-- want-config --
+default_project: ""
+default_user: ""
+projects: []
+users: []
+device_name: ""
+theme: ""

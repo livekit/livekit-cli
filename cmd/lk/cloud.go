@@ -88,7 +88,7 @@ var (
 						&cli.BoolFlag{
 							Name:        "revoke",
 							Aliases:     []string{"R"},
-							Usage:       "Revoke an authorization for an existing project, selected with --project or the default project. This revokes the API keys that were issued with lk cloud auth, and then removes the project from the CLI.",
+							Usage:       "Revoke an authorization for an existing project, selected with --project or the default project. This revokes the API keys that were issued with lk cloud auth, and then removes the project from the CLI. With --user-auth, it signs the user out instead: it revokes their session and removes them from the CLI. Access tokens that lk already fetched for that session stay valid until they expire.",
 							Destination: &revoke,
 						},
 						&cli.IntFlag{
@@ -298,7 +298,7 @@ func initAuth(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 func handleAuth(ctx context.Context, cmd *cli.Command) error {
 	if revoke {
 		if userAuthEnabled(cmd) {
-			return errors.New("revoking a user session is not yet supported under --user-auth")
+			return revokeUserSession(ctx, cmd)
 		}
 		if _, err := loadProjectConfig(ctx, cmd); err != nil {
 			return err

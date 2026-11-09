@@ -264,6 +264,47 @@ func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig
 	return conf, user, nil
 }
 
+// revokeUserSession signs a user out under --user-auth: the --user flag if
+// given, otherwise the default user. It revokes their session on the Public
+// API, then removes them from the CLI config. A 401 means the session is
+// already dead, and an expired session isn't sent at all, so both still
+// remove the user. Any other failure keeps the user, because the stored token
+// is the only way to revoke the session, which stays valid until it expires.
+func revokeUserSession(ctx context.Context, cmd *cli.Command) error {
+	conf, err := config.LoadOrCreate()
+	if err != nil {
+		return err
+	}
+	stored, err := resolveSessionUser(conf, cmd.String("user"), cmd.IsSet("public-api-url"))
+	if err != nil {
+		return err
+	}
+	// RemoveUser shifts the entries that stored points into.
+	user := *stored
+	label := util.Accented(userLabel(&user))
+	announceUser(&user)
+
+	if user.SessionValid() {
+		client, err := publicClientForToken(user.SessionToken)
+		if err != nil {
+			return err
+		}
+		switch err := client.RevokeSessionToken(ctx); {
+		case err == nil:
+			out.Statusf("Signed out %s", label)
+		case public.IsUnauthenticated(err):
+			out.Statusf("Session for %s was already revoked; signed out on this device", label)
+		default:
+			return fmt.Errorf("couldn't revoke the session for %s, which is still signed in: %w", userLabel(&user), err)
+		}
+	} else {
+		out.Statusf("Session for %s had already expired; signed out on this device", label)
+	}
+
+	conf.RemoveUser(user)
+	return conf.PersistIfNeeded()
+}
+
 // userAnnounced records that announceUser has printed, so a command that
 // resolves the session more than once still prints the breadcrumb only once.
 var userAnnounced bool
