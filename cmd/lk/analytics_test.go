@@ -97,11 +97,11 @@ func TestAnalyticsFailsWithoutExperimentalFlag(t *testing.T) {
 	// any action (and its network calls) runs.
 	err := runAnalytics("session", "list")
 	require.Error(t, err, "'analytics session list' must fail without --experimental")
-	assert.Contains(t, err.Error(), "--experimental is required")
+	assert.Contains(t, err.Error(), "--user-auth is required (or --experimental for the deprecated API-key path)")
 
 	err = runAnalytics("session", "get", "sess_123")
 	require.Error(t, err, "'analytics session get' must fail without --experimental")
-	assert.Contains(t, err.Error(), "--experimental is required")
+	assert.Contains(t, err.Error(), "--user-auth is required (or --experimental for the deprecated API-key path)")
 }
 
 func TestAnalyticsFailsWithExperimentalFlagDisabled(t *testing.T) {
@@ -117,7 +117,7 @@ func TestAnalyticsPassesFlagValidationWithExperimentalFlag(t *testing.T) {
 	// from the action itself (e.g. project resolution), not the flag check.
 	err := runAnalytics("--experimental", "session", "list")
 	if err != nil {
-		assert.NotContains(t, err.Error(), "--experimental is required")
+		assert.NotContains(t, err.Error(), "--user-auth is required")
 	}
 }
 

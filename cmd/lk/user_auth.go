@@ -144,11 +144,12 @@ func requireUserAuth(cmd *cli.Command) error {
 }
 
 // requireExperimentalUnlessUserAuth is the Before of a command whose API-key
-// implementation is experimental but whose user-auth one is not: it requires
-// --experimental unless the command runs under --user-auth.
+// implementation is experimental and deprecated but whose user-auth one is
+// not: it requires --experimental unless the command runs under --user-auth.
+// The error leads with --user-auth, the path to take.
 func requireExperimentalUnlessUserAuth(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	if !userAuthEnabled(cmd) && !cmd.Bool("experimental") {
-		return ctx, errors.New("--experimental is required for this command (or use --user-auth)")
+		return ctx, errors.New("--user-auth is required (or --experimental for the deprecated API-key path)")
 	}
 	return ctx, nil
 }
