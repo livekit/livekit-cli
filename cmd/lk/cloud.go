@@ -88,7 +88,7 @@ var (
 						&cli.BoolFlag{
 							Name:        "revoke",
 							Aliases:     []string{"R"},
-							Usage:       "Revoke an authorization for an existing project, selected with --project or the default project. This revokes the API keys that were issued with lk cloud auth, and then removes the project from the CLI. With --user-auth, it signs the user out instead: it revokes their session and removes them from the CLI. Access tokens that lk already fetched for that session stay valid until they expire.",
+							Usage:       "Revoke an authorization for an existing project, selected with --project or the default project. This revokes the API keys that were issued with lk cloud auth, and then removes the project from the CLI. With --user-auth, it signs a user out instead: the user selected with --user, or the default user. It revokes their session and removes them from the CLI. Access tokens that lk already fetched for that session stay valid until they expire.",
 							Destination: &revoke,
 						},
 						&cli.IntFlag{
