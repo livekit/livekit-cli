@@ -16,11 +16,15 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
@@ -83,66 +87,6 @@ func TestTaskfileEnvFile(t *testing.T) {
 	assert.Equal(t, []string{".env.local", ".env"}, agentEnvFileNames(""))
 }
 
-func TestWriteAgentEnvKey(t *testing.T) {
-	creds := agentCredentials{url: "wss://p.livekit.cloud", apiKey: "APIk", apiSecret: "s"}
-	read := func(dir, f string) string {
-		b, err := os.ReadFile(filepath.Join(dir, f))
-		require.NoError(t, err)
-		return string(b)
-	}
-
-	// No env file: .env.local is created.
-	dir := t.TempDir()
-	writeAgentEnvKey(dir, agentEnvFiles, creds)
-	assert.Contains(t, read(dir, ".env.local"), `LIVEKIT_API_KEY="APIk"`)
-
-	// An existing .env is written to, keeping what else it holds.
-	dir = t.TempDir()
-	writeEnvFile(t, dir, ".env", "OPENAI_API_KEY=sk\nLIVEKIT_URL=wss://p.livekit.cloud/\n")
-	writeAgentEnvKey(dir, agentEnvFiles, creds)
-	got := read(dir, ".env")
-	assert.Contains(t, got, "OPENAI_API_KEY=sk")
-	assert.Contains(t, got, `LIVEKIT_API_SECRET="s"`)
-	assert.NoFileExists(t, filepath.Join(dir, ".env.local"))
-
-	// A file for another project is left alone.
-	dir = t.TempDir()
-	writeEnvFile(t, dir, ".env.local", "LIVEKIT_URL=wss://other.livekit.cloud\n")
-	writeAgentEnvKey(dir, agentEnvFiles, creds)
-	assert.Equal(t, "LIVEKIT_URL=wss://other.livekit.cloud\n", read(dir, ".env.local"))
-
-	// A stale key is replaced.
-	dir = t.TempDir()
-	writeEnvFile(t, dir, ".env.local", "LIVEKIT_URL=wss://p.livekit.cloud\nLIVEKIT_API_KEY=APIold\nLIVEKIT_API_SECRET=old\n")
-	writeAgentEnvKey(dir, agentEnvFiles, creds)
-	got = read(dir, ".env.local")
-	assert.Contains(t, got, `LIVEKIT_API_KEY="APIk"`)
-	assert.NotContains(t, got, "APIold")
-}
-
-func TestGitIgnore(t *testing.T) {
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("needs git")
-	}
-	// Outside a repository nothing is written.
-	dir := t.TempDir()
-	gitIgnore(dir, ".env.local")
-	assert.NoFileExists(t, filepath.Join(dir, ".gitignore"))
-
-	require.NoError(t, exec.Command("git", "init", "-q", dir).Run())
-	writeEnvFile(t, dir, ".gitignore", "node_modules")
-	gitIgnore(dir, ".env.local")
-	b, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
-	require.NoError(t, err)
-	assert.Equal(t, "node_modules\n.env.local\n", string(b))
-
-	// Ignored already: unchanged.
-	gitIgnore(dir, ".env.local")
-	b, err = os.ReadFile(filepath.Join(dir, ".gitignore"))
-	require.NoError(t, err)
-	assert.Equal(t, "node_modules\n.env.local\n", string(b))
-}
-
 func TestUniqueProjectName(t *testing.T) {
 	conf := &config.CLIConfig{Projects: []config.ProjectConfig{{Name: "my-app"}, {Name: "my-app-2"}}}
 	assert.Equal(t, "my-app-3", uniqueProjectName(conf, "my app", "wss://x.livekit.cloud"))
@@ -203,4 +147,100 @@ func TestEnsureProjectAPIKeyReusesEnvFile(t *testing.T) {
 		return nil
 	})
 	assert.Same(t, real, project)
+}
+
+func TestCheckAPIKey(t *testing.T) {
+	var (
+		status int
+		body   string
+		auth   string
+	)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	ctx := context.Background()
+
+	status, body = http.StatusOK, ""
+	require.NoError(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"))
+
+	// The token survives a clock that's off: no nbf, a day's exp.
+	claims := jwt.MapClaims{}
+	_, err := jwt.ParseWithClaims(strings.TrimPrefix(auth, "Bearer "), claims, func(*jwt.Token) (any, error) { return []byte("secret"), nil })
+	require.NoError(t, err)
+	assert.Equal(t, "APIk", claims["iss"])
+	assert.NotContains(t, claims, "nbf")
+	assert.NotContains(t, claims, "iat")
+	exp, err := claims.GetExpirationTime()
+	require.NoError(t, err)
+	assert.Greater(t, time.Until(exp.Time), 23*time.Hour)
+
+	status, body = http.StatusUnauthorized, `{"code":"unauthenticated","msg":"invalid API key"}`
+	assert.ErrorIs(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"), errKeyRejected)
+
+	// A 401 without LiveKit's body is a proxy's: the key isn't judged.
+	status, body = http.StatusUnauthorized, "<html>sign in</html>"
+	assert.NoError(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"))
+}
+
+func TestSaveProjectKeyUpdatesMovedURL(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".livekit"), 0o700))
+	writeEnvFile(t, filepath.Join(home, ".livekit"), "cli-config.yaml",
+		"projects:\n  - name: one\n    project_id: p_1\n    url: ws://old.test\n    api_key: APIold\n    api_secret: old\n")
+	prev := cliConfig
+	t.Cleanup(func() { cliConfig = prev })
+	cliConfig = nil
+
+	pc := &config.ProjectConfig{Name: "one", ProjectId: "p_1", URL: "ws://new.test",
+		APIKey: tokenauth.PlaceholderAPIKey, APISecret: tokenauth.PlaceholderAPISecret}
+	saveProjectKey(pc, agentCredentials{url: "ws://new.test", apiKey: "APInew", apiSecret: "new"})
+
+	conf, err := config.LoadOrCreate()
+	require.NoError(t, err)
+	require.Len(t, conf.Projects, 1)
+	assert.Equal(t, config.ProjectConfig{Name: "one", ProjectId: "p_1", URL: "ws://new.test", APIKey: "APInew", APISecret: "new"}, conf.Projects[0])
+}
+
+// An agent that can run without a LiveKit key (console, the text debugger)
+// starts without one when there's none, where agent start stops.
+func TestResolveOptionalCredentials(t *testing.T) {
+	clearLiveKitEnv(t)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	prev := cliConfig
+	t.Cleanup(func() { cliConfig = prev })
+	cliConfig = nil
+
+	run := func(resolve func(context.Context, *cli.Command, string) ([]string, error)) ([]string, error) {
+		var (
+			env []string
+			err error
+		)
+		app := &cli.Command{
+			Name:  "lk",
+			Flags: globalFlags,
+			Action: func(ctx context.Context, cmd *cli.Command) error {
+				env, err = resolve(ctx, cmd, t.TempDir())
+				return nil
+			},
+		}
+		require.NoError(t, app.Run(context.Background(), []string{"lk"}))
+		return env, err
+	}
+
+	_, err := run(resolveCredentials)
+	var noKey *noKeyError
+	require.ErrorAs(t, err, &noKey)
+	assert.ErrorContains(t, err, "no LiveKit project is configured")
+
+	env, err := run(resolveOptionalCredentials)
+	require.NoError(t, err)
+	assert.Empty(t, env)
 }

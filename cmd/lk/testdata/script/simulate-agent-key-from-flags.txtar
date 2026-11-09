@@ -1,0 +1,29 @@
+# Under --user-auth, a key and secret passed with --api-key/--api-secret go to
+# the agent agent simulate starts, once LiveKit accepts them for the project:
+# a member who can't create keys can still run simulations.
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
+
+! exec lk --user-auth --api-key APIone --api-secret secretone agent simulate text
+stderr '^Using API key \[APIone\] from --api-key$'
+stderr 're-run with --yes to confirm$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+-- want-requests --
+POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone

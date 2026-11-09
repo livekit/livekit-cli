@@ -78,11 +78,18 @@ func requireProjectForSDK(ctx context.Context, cmd *cli.Command, opts ...loadOpt
 // project, or picker) and returns a ProjectConfig with placeholder credentials,
 // whose SDK clients are authorized by tokens minted for the session.
 func loadSessionProject(ctx context.Context, cmd *cli.Command) (*config.ProjectConfig, error) {
+	return loadSessionProjectRef(ctx, cmd, "")
+}
+
+// loadSessionProjectRef is loadSessionProject for the project ref (an id,
+// name or alias) names, or the one --project or the defaults pick when ref
+// is "".
+func loadSessionProjectRef(ctx context.Context, cmd *cli.Command, ref string) (*config.ProjectConfig, error) {
 	client, conf, user, err := newCloudAPIClient(cmd)
 	if err != nil {
 		return nil, err
 	}
-	id, err := resolveProjectRef(ctx, cmd, conf, user, "")
+	id, err := resolveProjectRef(ctx, cmd, conf, user, ref)
 	if err != nil {
 		return nil, err
 	}

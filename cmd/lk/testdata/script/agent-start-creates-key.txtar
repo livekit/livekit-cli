@@ -1,8 +1,8 @@
 # A user signed in only with --user-auth, on a brand-new project with no API
 # key on this machine, runs an agent lk didn't scaffold (no .env.local). lk
 # creates a service-account key before the agent starts, hands it to the
-# agent, saves it to the CLI config and writes it to .env.local, so the agent
-# also runs without lk.
+# agent and saves it to the CLI config. It writes nothing into the agent's
+# directory, where a secret could be committed.
 [!exec:node] skip 'needs node to run the agent'
 respond POST http://publicapi.test/v0/projects/p_1/keys 200 '{"apiKey":"APInew","secret":"secretnew"}'
 respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
@@ -11,17 +11,15 @@ exec lk --user-auth agent start
 stdout '^agent ws://one.test APInew secretnew$'
 stderr '^Created API key \[APInew\] on project \[one\]$'
 stderr '^Saved API key \[APInew\] to the CLI config as project \[one\]$'
-stderr '^Saved API key \[APInew\] to .*/\.env\.local$'
-grep '^LIVEKIT_API_KEY="APInew"$' .env.local
-grep '^LIVEKIT_URL="ws://one.test"$' .env.local
+! exists .env.local
 grep 'api_key: APInew' home/.livekit/cli-config.yaml
 grep 'project_id: p_1' home/.livekit/cli-config.yaml
 grep 'default_project: one' home/.livekit/cli-config.yaml
 
-# The next run reuses the key in .env.local: nothing more is created.
+# The next run reuses the saved key: nothing more is created.
 exec lk --user-auth agent start
 stdout '^agent ws://one.test APInew secretnew$'
-stderr '^Using API key \[APInew\] from .*/\.env\.local$'
+stderr '^Using API key \[APInew\] for project \[one\] from the CLI config$'
 ! stderr 'Created API key'
 
 requests

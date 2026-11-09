@@ -175,7 +175,8 @@ main.ts, src/main.ts, or src/main.js for Node. Pass a file to override:
    lk agent debugger start src/my_agent.py
    lk agent debugger start agent.ts -- --env-file=.env
 
-The agent reads its own .env for credentials, exactly like "lk agent console".
+lk gives the agent its LiveKit credentials as "lk agent console" does (see its
+help). Without a key, a text session warns and starts anyway; --audio needs one.
 Only one session runs per port; use --port for more, or "restart" to replace
 the current one. The session stops itself after --idle-timeout (default 30m)
 without any command, so a forgotten session does not linger.`,
@@ -351,9 +352,15 @@ func sessionMode(audio bool) string {
 // sessionEnv returns the daemon environment: the project credentials the
 // agent runs with (and, in an audio session, the user's turns are spoken
 // with), plus the mode. They're resolved here, in the foreground, so a missing
-// key is asked for or reported before the daemon and agent start.
+// key is asked for or reported before the daemon and agent start. A text
+// session runs without a LiveKit key when there's none (with a warning); an
+// audio session speaks the user's turns with LiveKit Inference and needs one.
 func sessionEnv(ctx context.Context, cmd *cli.Command, dir string, audio bool) ([]string, error) {
-	creds, err := resolveCredentials(ctx, cmd, dir)
+	resolve := resolveOptionalCredentials
+	if audio {
+		resolve = resolveCredentials
+	}
+	creds, err := resolve(ctx, cmd, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -889,6 +896,12 @@ func runSessionRestart(ctx context.Context, cmd *cli.Command) error {
 	if st == nil {
 		return fmt.Errorf("daemon returned no status")
 	}
+	// Before stopping: when no key can be found (one given only by flag to
+	// start, say), the running session stays up.
+	sessEnv, err := sessionEnv(ctx, cmd, st.ProjectDir, st.Audio)
+	if err != nil {
+		return err
+	}
 	if _, _, err := stopSession(port, controlRequest{Cmd: "stop"}); err != nil {
 		return err
 	}
@@ -901,10 +914,6 @@ func runSessionRestart(ctx context.Context, cmd *cli.Command) error {
 		}
 		c.Close()
 		time.Sleep(100 * time.Millisecond)
-	}
-	sessEnv, err := sessionEnv(ctx, cmd, st.ProjectDir, st.Audio)
-	if err != nil {
-		return err
 	}
 	out.Statusf("Restarting %s agent (%s in %s)", agentfs.ProjectType(st.ProjectType).Lang(), st.Entrypoint, st.ProjectDir)
 	return startSessionDaemon(port, st.ProjectDir, agentfs.ProjectType(st.ProjectType), st.Entrypoint,

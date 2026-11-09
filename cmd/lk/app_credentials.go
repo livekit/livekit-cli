@@ -18,14 +18,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"charm.land/huh/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
@@ -36,7 +37,7 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
-	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/livekit/server-sdk-go/v2/signalling"
 )
 
 // API keys for apps and agents.
@@ -59,9 +60,14 @@ import (
 //     it's used (what `lk project add` asks for).
 //
 // Without a terminal, the chain ends in an error that says exactly how to
-// supply a key, before any agent starts. A key LiveKit rejects (deleted, or
+// supply a key, before any agent starts. agent console and the text-mode
+// agent debugger run the agent on this machine, where an agent that brings
+// its own providers needs no LiveKit key: for them a key is optional, and the
+// chain stops after step 4 with a warning that says the same, and the agent
+// starts without one. A key LiveKit rejects (deleted, or
 // for another project) at steps 2 and 3 is skipped with a warning, and the
-// next step replaces it.
+// next step replaces it. A rejected key in an env file whose LIVEKIT_URL
+// names a project is replaced with a key for that project, never another one.
 //
 // When lk creates a key: only at step 4, so only under --user-auth, only in
 // the commands that hand a key to an app or agent (agent dev, start, console,
@@ -71,11 +77,14 @@ import (
 // LiveKit themselves (room, sip, egress, simulate view and export, ...) use
 // session tokens and never create one.
 //
-// Where lk keeps it: a key from steps 3-5 is saved to the CLI config (so other
-// agents and later runs on this machine reuse it rather than create another)
-// and written to the agent's env file, so the agent also runs without lk
-// (`python agent.py console`, an IDE, docker compose). An env file lk writes
-// to is added to .gitignore when the agent is in a git repository.
+// Where lk keeps it: a key from steps 4 and 5 is saved to the CLI config
+// (~/.livekit, outside any repository), so other agents and later runs on
+// this machine reuse it rather than create another, and lk passes it to the
+// agent in its environment. Running an agent doesn't write its env files: a
+// secret written into the agent's directory can be committed. lk writes one
+// only when asked: agent init, app create, and app env --write. The templates
+// load .env.local without overriding variables already set, so the key lk
+// passes wins over a stale one there.
 //
 // In API-key mode the CLI never uses a signed-in session on its own; when no
 // API-key project is configured, an interactive run offers the signed-in
@@ -138,8 +147,8 @@ func envFileCredentials(dir string, files ...string) (agentCredentials, string, 
 	return agentCredentials{}, "", nil
 }
 
-// keyRequest describes what a key is wanted for, for the prompt, the error
-// when there's none, and where to write it.
+// keyRequest describes what a key is wanted for, for the prompt and the error
+// when there's none.
 type keyRequest struct {
 	// dir is the agent's or app's directory, or "" when there is none.
 	dir string
@@ -147,12 +156,40 @@ type keyRequest struct {
 	files []string
 	// purpose finishes "no LiveKit API key ...", e.g. "to run the agent with".
 	purpose string
+	// optional is set when the agent can run without a key: nothing is asked
+	// for, and the chain ends in a noKeyError that the caller warns with.
+	optional bool
 }
 
+// noKeyError is the end of the chain when no key was found: it says how to
+// supply one.
+type noKeyError struct{ msg string }
+
+func (e *noKeyError) Error() string { return e.msg }
+
 // resolveAgentCredentials returns the credentials the agent in dir runs with,
-// from the chain at the top of this file, and saves a key the chain found or
-// made (see saveProjectKey, writeAgentEnvKey).
+// from the chain at the top of this file, and saves a key the chain made or
+// was given (see saveProjectKey).
 func resolveAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) (agentCredentials, error) {
+	return agentCredentialsChain(ctx, cmd, dir, false)
+}
+
+// resolveOptionalAgentCredentials is resolveAgentCredentials for an agent that
+// can run without a LiveKit key (agent console, the text-mode debugger): when
+// the chain finds none without asking, it warns how to supply one and
+// returns no credentials, and the agent starts with whatever its own env file
+// holds.
+func resolveOptionalAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) (agentCredentials, error) {
+	creds, err := agentCredentialsChain(ctx, cmd, dir, true)
+	var noKey *noKeyError
+	if errors.As(err, &noKey) {
+		out.Warnf("%s\n\nStarting the agent without one: what it asks of LiveKit, such as LiveKit Inference, will fail.", noKey.msg)
+		return agentCredentials{}, nil
+	}
+	return creds, err
+}
+
+func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, optional bool) (agentCredentials, error) {
 	explicit := explicitCredentials(cmd)
 	// The agent gets LIVEKIT_* credentials from the environment even under
 	// --user-auth, so they aren't ignored here.
@@ -181,7 +218,7 @@ func resolveAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) 
 		return explicit, nil
 	}
 
-	req := keyRequest{dir: dir, files: agentEnvFileNames(dir), purpose: "to run the agent with"}
+	req := keyRequest{dir: dir, files: agentEnvFileNames(dir), purpose: "to run the agent with", optional: optional}
 	fileCreds, file, err := envFileCredentials(dir, req.files...)
 	if err != nil {
 		return agentCredentials{}, err
@@ -210,9 +247,24 @@ func resolveAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) 
 			}
 			creds.url = pc.URL
 		}
-		if keyAccepted(ctx, creds, filepath.Join(dir, file)) {
-			out.Statusf("Using API key [%s] from %s", util.Accented(creds.apiKey), util.Accented(filepath.Join(dir, file)))
+		path := filepath.Join(dir, file)
+		if keyAccepted(ctx, creds, path) {
+			out.Statusf("Using API key [%s] from %s", util.Accented(creds.apiKey), util.Accented(path))
 			return creds, nil
+		}
+		if fileCreds.url != "" {
+			// The file names its project: the replacement is for that project,
+			// or there's none. Falling back to the default project would run
+			// the agent somewhere the user didn't point it.
+			pc, err := projectAtURL(ctx, cmd, fileCreds.url, path)
+			if err != nil {
+				return agentCredentials{}, err
+			}
+			key, err := projectKey(ctx, cmd, pc, req)
+			if err != nil {
+				return agentCredentials{}, err
+			}
+			return mergeCredentials(explicit, key), nil
 		}
 		fileCreds = agentCredentials{}
 	}
@@ -230,7 +282,7 @@ func resolveAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) 
 
 // agentKeyForProject returns a key for pc from steps 2-5: the agent's env file
 // (fileCreds, read from file), when it's for pc and LiveKit accepts it, else
-// projectKey, whose key is then written to the env file.
+// projectKey.
 func agentKeyForProject(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig, req keyRequest, fileCreds agentCredentials, file string) (agentCredentials, error) {
 	if fileCreds.apiKey != "" {
 		path := filepath.Join(req.dir, file)
@@ -245,22 +297,75 @@ func agentKeyForProject(ctx context.Context, cmd *cli.Command, pc *config.Projec
 		}
 	}
 
-	key, err := projectKey(ctx, cmd, pc, req)
-	if err != nil {
-		return agentCredentials{}, err
+	return projectKey(ctx, cmd, pc, req)
+}
+
+// projectAtURL returns the project whose URL is url, for a key from the env
+// file at path that LiveKit rejected: under --user-auth one of the signed-in
+// user's projects (a session project), otherwise one in the CLI config.
+func projectAtURL(ctx context.Context, cmd *cli.Command, url, path string) (*config.ProjectConfig, error) {
+	notFound := func(where string) error {
+		return &noKeyError{fmt.Sprintf("LiveKit rejected the API key in %s, and its LIVEKIT_URL (%s) isn't %s; "+
+			"put a working key for that project in the file, remove its LIVEKIT_* lines to use your default project, or pass --project",
+			path, url, where)}
 	}
-	writeAgentEnvKey(req.dir, req.files, key)
-	return key, nil
+	if userAuthEnabled(cmd) {
+		_, conf, user, err := newCloudAPIClient(cmd)
+		if err != nil {
+			return nil, err
+		}
+		find := func() string {
+			for _, p := range user.Projects {
+				if p.URL != "" && sameProjectURL(p.URL, url) {
+					return p.ProjectId
+				}
+			}
+			return ""
+		}
+		id := find()
+		if id == "" {
+			if _, err := refreshUserProjects(ctx, conf, user); err != nil {
+				return nil, cloudAPIError(err)
+			}
+			id = find()
+		}
+		if id == "" {
+			return nil, notFound("a project " + userLabel(user) + " belongs to")
+		}
+		return loadSessionProjectRef(ctx, cmd, id)
+	}
+	if _, err := loadProjectConfig(ctx, cmd); err != nil {
+		return nil, err
+	}
+	if cliConfig != nil {
+		for _, p := range cliConfig.Projects {
+			if sameProjectURL(p.URL, url) {
+				p := p
+				out.Statusf("Using project [%s]", util.Accented(p.Name))
+				return &p, nil
+			}
+		}
+	}
+	return nil, notFound("a project in the CLI config")
 }
 
 // simulationAgentCredentials returns what the agent `agent simulate` starts in
 // dir registers with. It must be on pc, the project the simulation run is
-// created on, so --api-key and the env file's LIVEKIT_URL can't move it
-// elsewhere: in API-key mode it's pc's own key; under --user-auth, a key for
-// pc from agentKeyForProject.
+// created on, so --url and the env file's LIVEKIT_URL can't move it
+// elsewhere: in API-key mode it's pc's own key; under --user-auth, a key and
+// secret given with --api-key/--api-secret (or LIVEKIT_API_KEY/SECRET) that
+// LiveKit accepts for pc, else a key for pc from agentKeyForProject.
 func simulationAgentCredentials(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig, dir string) (agentCredentials, error) {
 	if !isSessionProject(pc) {
 		return credentialsOf(pc), nil
+	}
+	if explicit := explicitCredentials(cmd); explicit.apiKey != "" && explicit.apiSecret != "" {
+		envCredentialsUsed = true
+		creds := agentCredentials{url: pc.URL, apiKey: explicit.apiKey, apiSecret: explicit.apiSecret}
+		if keyAccepted(ctx, creds, "--api-key") {
+			out.Statusf("Using API key [%s] from --api-key", util.Accented(creds.apiKey))
+			return creds, nil
+		}
 	}
 	req := keyRequest{dir: dir, files: agentEnvFileNames(dir), purpose: "to run the agent with"}
 	fileCreds, file, err := envFileCredentials(dir, req.files...)
@@ -305,7 +410,7 @@ const (
 // returns an error listing those.
 func chooseAgentProject(ctx context.Context, cmd *cli.Command, req keyRequest) (*config.ProjectConfig, error) {
 	user := signedInUser(cmd)
-	if SkipPrompts(cmd) {
+	if SkipPrompts(cmd) || req.optional {
 		return nil, missingKeyError(nil, req, "no LiveKit project is configured", user)
 	}
 
@@ -434,7 +539,7 @@ func mintProjectKey(ctx context.Context, cmd *cli.Command, pc *config.ProjectCon
 // reason says why there's no key yet. Without a terminal it returns
 // missingKeyError instead.
 func promptForKey(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig, req keyRequest, reason string) (agentCredentials, error) {
-	if SkipPrompts(cmd) {
+	if SkipPrompts(cmd) || req.optional {
 		return agentCredentials{}, missingKeyError(pc, req, reason, nil)
 	}
 	if reason != "" {
@@ -529,7 +634,11 @@ func missingKeyError(pc *config.ProjectConfig, req keyRequest, reason string, us
 	if reason != "" {
 		b.WriteString(": " + reason)
 	}
-	b.WriteString("\n\nTo supply one, do one of:\n")
+	if req.optional && pc != nil {
+		b.WriteString("\n\nTo supply one (find or create one under Settings › API keys at " + dashboardURL + ", or ask a project admin), do one of:\n")
+	} else {
+		b.WriteString("\n\nTo supply one, do one of:\n")
+	}
 
 	url, name := "URL", "NAME"
 	if pc != nil {
@@ -541,7 +650,7 @@ func missingKeyError(pc *config.ProjectConfig, req keyRequest, reason string, us
 		if user != nil {
 			fmt.Fprintf(&b, "  - re-run with --user-auth to use your signed-in account (%s)\n", userLabel(user))
 		}
-	} else {
+	} else if !req.optional {
 		b.WriteString("  - re-run in a terminal and enter a key when asked (find or create one under Settings › API keys at " + dashboardURL + ", or ask a project admin)\n")
 	}
 	if req.dir != "" {
@@ -550,14 +659,19 @@ func missingKeyError(pc *config.ProjectConfig, req keyRequest, reason string, us
 	}
 	fmt.Fprintf(&b, "  - save a key for lk to use: lk project add %s --url %s --api-key KEY --api-secret SECRET\n", name, url)
 	b.WriteString("  - pass --api-key and --api-secret, or set LIVEKIT_API_KEY and LIVEKIT_API_SECRET")
-	return errors.New(b.String())
+	return &noKeyError{b.String()}
 }
 
 // keyAccepted checks creds with LiveKit, warning (naming where the key came
 // from) when it's rejected. Anything short of a rejection counts as accepted.
 func keyAccepted(ctx context.Context, creds agentCredentials, from string) bool {
 	if err := checkAPIKey(ctx, creds.url, creds.apiKey, creds.apiSecret); err != nil {
-		out.Warnf("LiveKit rejected API key [%s] from %s (deleted, or for another project); not using it", creds.apiKey, from)
+		hint := ""
+		if strings.Contains(from, ".env") {
+			// lk doesn't rewrite the file, so say how to stop this repeating.
+			hint = "; remove its LIVEKIT_API_KEY and LIVEKIT_API_SECRET lines, or replace them with a working key"
+		}
+		out.Warnf("LiveKit rejected API key [%s] from %s (deleted, or for another project); not using it%s", creds.apiKey, from, hint)
 		return false
 	}
 	return true
@@ -567,18 +681,35 @@ func keyAccepted(ctx context.Context, creds agentCredentials, from string) bool 
 var errKeyRejected = errors.New("API key rejected")
 
 // checkAPIKey asks the server at url whether it accepts the key, with one
-// ListRooms call. Only a definite refusal returns errKeyRejected: when the
-// server can't be asked (offline, a timeout, anything else) the key is given
-// the benefit of the doubt and the agent reports what it finds.
+// ListRooms call. Only a definite refusal by LiveKit returns errKeyRejected:
+// when the server can't be asked (offline, a timeout, a proxy's 401, anything
+// else) the key is given the benefit of the doubt and the agent reports what
+// it finds. A refusal replaces the key (under --user-auth, with a new one), so
+// the check's token has no nbf and a day's exp, and a clock that's off by
+// more than the server's minute of leeway can't make a good key look bad.
 var checkAPIKey = func(ctx context.Context, url, apiKey, apiSecret string) error {
 	if url == "" || apiKey == "" || apiSecret == "" {
 		return nil
 	}
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"iss":   apiKey,
+		"exp":   time.Now().Add(24 * time.Hour).Unix(),
+		"video": map[string]any{"roomList": true},
+	}).SignedString([]byte(apiSecret))
+	if err != nil {
+		return nil
+	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	_, err := lksdk.NewRoomServiceClient(url, apiKey, apiSecret).ListRooms(ctx, &livekit.ListRoomsRequest{})
+	ctx, err = twirp.WithHTTPRequestHeaders(ctx, http.Header{"Authorization": {"Bearer " + token}})
+	if err != nil {
+		return nil
+	}
+	client := livekit.NewRoomServiceProtobufClient(signalling.ToHttpURL(url), &http.Client{})
+	_, err = client.ListRooms(ctx, &livekit.ListRoomsRequest{})
 	var terr twirp.Error
-	if errors.As(err, &terr) && (terr.Code() == twirp.Unauthenticated || terr.Code() == twirp.PermissionDenied) {
+	if errors.As(err, &terr) && terr.Meta("http_error_from_intermediary") == "" &&
+		(terr.Code() == twirp.Unauthenticated || terr.Code() == twirp.PermissionDenied) {
 		return errKeyRejected
 	}
 	if err != nil {
@@ -636,6 +767,10 @@ func saveProjectKey(pc *config.ProjectConfig, creds agentCredentials) {
 		if p.ProjectId == "" {
 			p.ProjectId = pc.ProjectId
 		}
+		if p.ProjectId == pc.ProjectId && target.URL != "" {
+			// Matched by id: the project may have moved since it was saved.
+			p.URL = target.URL
+		}
 		name = p.Name
 	} else {
 		name = uniqueProjectName(conf, pc.Name, target.URL)
@@ -689,79 +824,6 @@ func uniqueProjectName(conf *config.CLIConfig, name, url string) string {
 		candidate = fmt.Sprintf("%s-%d", base, i)
 	}
 	return candidate
-}
-
-// writeAgentEnvKey writes creds into the agent's env file in dir: the first of
-// files that exists, else the first. It leaves alone a file whose LIVEKIT_URL
-// is for another project, and adds the file it writes to .gitignore.
-func writeAgentEnvKey(dir string, files []string, creds agentCredentials) {
-	if dir == "" || len(files) == 0 {
-		return
-	}
-	file := files[0]
-	for _, f := range files {
-		if _, err := os.Stat(filepath.Join(dir, f)); err == nil {
-			file = f
-			break
-		}
-	}
-	path := filepath.Join(dir, file)
-	env, err := bootstrap.ReadDotEnv(dir, file)
-	if err != nil {
-		out.Warnf("Couldn't save API key [%s] to %s: %v", creds.apiKey, path, err)
-		return
-	}
-	if u := env["LIVEKIT_URL"]; u != "" && !sameProjectURL(u, creds.url) {
-		out.Warnf("Not saving API key [%s] to %s: its LIVEKIT_URL is for another project (%s)", creds.apiKey, path, u)
-		return
-	}
-	if env["LIVEKIT_API_KEY"] == creds.apiKey && env["LIVEKIT_API_SECRET"] == creds.apiSecret && env["LIVEKIT_URL"] != "" {
-		return
-	}
-	if err := bootstrap.WriteDotEnv(dir, file, map[string]string{
-		"LIVEKIT_URL":        creds.url,
-		"LIVEKIT_API_KEY":    creds.apiKey,
-		"LIVEKIT_API_SECRET": creds.apiSecret,
-	}, false); err != nil {
-		out.Warnf("Couldn't save API key [%s] to %s: %v", creds.apiKey, path, err)
-		return
-	}
-	out.Statusf("Saved API key [%s] to %s", util.Accented(creds.apiKey), util.Accented(path))
-	gitIgnore(dir, file)
-}
-
-// gitIgnore adds file to dir's .gitignore when dir is in a git repository that
-// doesn't ignore it already, so a key lk wrote isn't committed. Without git, or
-// outside a repository, it does nothing.
-func gitIgnore(dir, file string) {
-	err := exec.Command("git", "-C", dir, "check-ignore", "-q", "--", file).Run()
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
-		// 0: ignored already; 128 or no git: not a repository
-		return
-	}
-	path := filepath.Join(dir, ".gitignore")
-	existing, err := os.ReadFile(path)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		out.Warnf("Couldn't add %s to %s: %v", file, path, err)
-		return
-	}
-	line := file + "\n"
-	if len(existing) > 0 && !strings.HasSuffix(string(existing), "\n") {
-		line = "\n" + line
-	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err == nil {
-		_, err = f.WriteString(line)
-		if cerr := f.Close(); err == nil {
-			err = cerr
-		}
-	}
-	if err != nil {
-		out.Warnf("Couldn't add %s to %s: %v", file, path, err)
-		return
-	}
-	out.Statusf("Added %s to %s so the key isn't committed", util.Accented(file), util.Accented(path))
 }
 
 // ensureProjectAPIKey gives the session project real API credentials, for

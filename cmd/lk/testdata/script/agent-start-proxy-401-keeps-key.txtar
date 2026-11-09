@@ -1,0 +1,42 @@
+# A 401 that isn't LiveKit's (a proxy's, with no twirp body) doesn't prove
+# the key bad: lk keeps it rather than create a new key on every run.
+[!exec:node] skip 'needs node to run the agent'
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 401 ''
+
+exec lk --user-auth agent start
+stdout '^agent ws://one.test APIok secretok$'
+stderr '^Using API key \[APIok\] from .*/\.env\.local$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+      - project_id: p_2
+        name: two
+        alias: two
+        url: ws://two.test
+-- .env.local --
+LIVEKIT_URL=ws://one.test
+LIVEKIT_API_KEY=APIok
+LIVEKIT_API_SECRET=secretok
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIok

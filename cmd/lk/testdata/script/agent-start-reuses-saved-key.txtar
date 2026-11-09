@@ -1,13 +1,14 @@
 # Under --user-auth, a key for the project already in the CLI config (saved
 # by an earlier run, `lk cloud auth` or `lk project add`) is reused for an
-# agent without one, and written to its .env.local: no new key is created.
+# agent without one: no new key is created, and the agent's files are left
+# alone.
 [!exec:node] skip 'needs node to run the agent'
 respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
 
 exec lk --user-auth agent start
 stdout '^agent ws://one.test APIone secretone$'
 stderr '^Using API key \[APIone\] for project \[one\] from the CLI config$'
-grep '^LIVEKIT_API_KEY="APIone"$' .env.local
+! exists .env.local
 
 requests
 cmp stdout want-requests

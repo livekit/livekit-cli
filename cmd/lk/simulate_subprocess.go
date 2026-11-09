@@ -339,6 +339,9 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 
 	logFile, err := os.CreateTemp("", "lk-simulate-*.log")
 	if err != nil {
+		closePipes()
+		stdoutW.Close()
+		stderrW.Close()
 		return nil, fmt.Errorf("failed to create log file: %w", err)
 	}
 

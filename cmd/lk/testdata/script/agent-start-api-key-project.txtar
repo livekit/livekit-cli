@@ -1,7 +1,6 @@
 # In API-key mode an agent without a .env.local runs with the default
-# project's key, which is also written to .env.local so the agent runs
-# without lk too. The agent dir is a git repository that doesn't ignore
-# .env.local yet, so lk adds it to .gitignore.
+# project's key. lk writes nothing into the agent's directory: no env file,
+# and no change to .gitignore.
 [!exec:node] skip 'needs node to run the agent'
 [!exec:git] skip 'needs git'
 respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
@@ -10,9 +9,8 @@ exec git init -q .
 exec lk agent start
 stdout '^agent ws://one.test APIone secretone$'
 stderr '^Using project \[one\]$'
-grep '^LIVEKIT_API_KEY="APIone"$' .env.local
-grep '^\.env\.local$' .gitignore
-grep '^node_modules$' .gitignore
+! exists .env.local
+cmp .gitignore want-gitignore
 
 requests
 cmp stdout want-requests
@@ -36,3 +34,5 @@ console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, proce
 -- node_modules/@livekit/agents/index.js --
 -- want-requests --
 POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone
+-- want-gitignore --
+node_modules

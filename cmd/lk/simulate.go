@@ -1052,10 +1052,11 @@ func simulationItemDashboardURL(projectID, runID, jobID, itemID string) string {
 	return fmt.Sprintf("%s&item=%s", base, itemID)
 }
 
-func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
+func cancelSimulationRun(client *lksdk.AgentSimulationClient, projectID, runID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if _, err := client.CancelSimulationRun(ctx, &livekit.SimulationRun_Cancel_Request{
+		ProjectId:       projectID,
 		SimulationRunId: runID,
 	}); err != nil {
 		out.Warnf("Warning: failed to cancel run: %v", err)

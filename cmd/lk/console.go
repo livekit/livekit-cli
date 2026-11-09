@@ -68,7 +68,7 @@ default entrypoint, or the file you name:
 Console needs a terminal. For scripts and coding agents that drive a
 conversation one command at a time, use "lk agent debugger" instead.
 
-` + agentCredentialsHelp,
+` + consoleCredentialsHelp,
 	// Hide the implicit `help` subcommand so shell completion falls back to
 	// native filename completion for the entrypoint arg (see startCommand).
 	HideHelpCommand: true,
@@ -164,10 +164,11 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 
 	out.Statusf("Detected %s agent (%s in %s)", projectType.Lang(), util.Accented(entrypoint), util.Accented(projectDir))
 
-	// Resolve credentials before the TUI takes the terminal, so a missing key
-	// is asked for (or reported) up front rather than crashing the agent's
-	// first LiveKit Inference call.
-	credsEnv, err := resolveCredentials(ctx, cmd, projectDir)
+	// Resolve credentials before the TUI takes the terminal. Console runs the
+	// agent here, so an agent with its own providers needs no LiveKit key:
+	// without one lk warns (how to add one, for LiveKit Inference) and starts
+	// it anyway.
+	credsEnv, err := resolveOptionalCredentials(ctx, cmd, projectDir)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,45 @@
+# The key in .env.local is for project two, not the default project one, and
+# LiveKit rejects it. Its replacement is for project two too: the agent never
+# moves to a project the file didn't name.
+[!exec:node] skip 'needs node to run the agent'
+respond POST http://two.test/twirp/livekit.RoomService/ListRooms 401 '{"code":"unauthenticated","msg":"invalid API key"}'
+respond POST http://publicapi.test/v0/projects/p_2/keys 200 '{"apiKey":"APInew","secret":"secretnew"}'
+
+exec lk --user-auth agent start
+stdout '^agent ws://two.test APInew secretnew$'
+stderr '^Created API key \[APInew\] on project \[two\]$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+      - project_id: p_2
+        name: two
+        alias: two
+        url: ws://two.test
+-- .env.local --
+LIVEKIT_URL=ws://two.test
+LIVEKIT_API_KEY=APIgone
+LIVEKIT_API_SECRET=secretgone
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://two.test/twirp/livekit.RoomService/ListRooms apikey=APIgone
+POST http://publicapi.test/v0/projects/p_2/keys bearer=st_1 project=p_2

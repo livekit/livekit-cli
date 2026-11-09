@@ -1,13 +1,12 @@
 # --project names another project than the one the key in .env.local is for:
-# that key isn't used, and the file is left alone, since it's for the other
-# project. The agent runs with the named project's key.
+# that key isn't used, and the file is left alone. The agent runs with the
+# named project's key.
 [!exec:node] skip 'needs node to run the agent'
 respond POST http://two.test/twirp/livekit.RoomService/ListRooms 200 ''
 
 exec lk agent start --project two
 stdout '^agent ws://two.test APItwo secrettwo$'
 stderr '^Not using the API key in .*/\.env\.local: it''s for ws://one.test, not project \[two\]$'
-stderr '^Not saving API key \[APItwo\] to .*/\.env\.local: its LIVEKIT_URL is for another project \(ws://one.test\)$'
 cmp .env.local want-env
 
 requests

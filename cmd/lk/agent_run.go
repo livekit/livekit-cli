@@ -110,9 +110,17 @@ LIVEKIT_API_SECRET from --url/--api-key/--api-secret or the LIVEKIT_*
 environment variables, else from its .env.local (or .env), else from the
 project's key in the CLI config. With --user-auth and no key yet, lk creates
 one if your role allows (Admin); otherwise it asks you to enter one. A key
-found this way is saved to the CLI config and the agent's .env.local, so the
-agent runs without lk too. Without a terminal, lk stops before the agent
-starts and lists the ways to supply a key.`
+lk creates or you enter is saved to the CLI config, not to the agent's files;
+to run the agent without lk, write it there with "lk app env --write".
+Without a terminal, lk stops before the agent starts and lists the ways to
+supply a key.`
+
+// consoleCredentialsHelp is agentCredentialsHelp for agent console, where the
+// key is optional.
+const consoleCredentialsHelp = `Credentials: found as for "lk agent dev" (see its help). Console runs the
+agent on this machine, so an agent that brings its own providers needs no
+LiveKit key: without one, lk warns how to add one (LiveKit Inference needs it)
+and starts the agent anyway.`
 
 var startCommand = &cli.Command{
 	Name:        "start",
@@ -226,6 +234,16 @@ func mergeCredentials(explicit, project agentCredentials) agentCredentials {
 // (or creates, or asks for) before the agent starts.
 func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string) ([]string, error) {
 	creds, err := resolveAgentCredentials(ctx, cmd, dir)
+	if err != nil {
+		return nil, err
+	}
+	return creds.env(), nil
+}
+
+// resolveOptionalCredentials is resolveCredentials for an agent that can run
+// without a LiveKit key (see resolveOptionalAgentCredentials).
+func resolveOptionalCredentials(ctx context.Context, cmd *cli.Command, dir string) ([]string, error) {
+	creds, err := resolveOptionalAgentCredentials(ctx, cmd, dir)
 	if err != nil {
 		return nil, err
 	}
