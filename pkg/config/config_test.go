@@ -152,3 +152,34 @@ func TestCLIConfigUpsertUser(t *testing.T) {
 	assert.Equal(t, "prod2", c.Users[0].SessionToken)
 	assert.Equal(t, "staging2", c.Users[2].SessionToken)
 }
+
+func TestCLIConfigRemoveUser(t *testing.T) {
+	const staging = "https://beta-api.staging.livekit.cloud"
+	alice := UserConfig{Id: "usr_1", Email: "alice@livekit.io", SessionToken: "prod"}
+	aliceStaging := UserConfig{Id: "usr_1", Email: "alice@livekit.io", SessionToken: "staging", APIURL: staging}
+	bob := UserConfig{Id: "usr_2", Email: "bob@livekit.io", SessionToken: "bob"}
+
+	// Removing the staging entry keeps the same person's production entry,
+	// and so the default user.
+	c := &CLIConfig{DefaultUser: "usr_1", Users: []UserConfig{alice, aliceStaging, bob}}
+	c.RemoveUser(aliceStaging)
+	assert.Equal(t, []UserConfig{alice, bob}, c.Users)
+	assert.Equal(t, "usr_1", c.DefaultUser)
+
+	// Removing their last entry clears the default user. A legacy entry with
+	// no api_url matches an explicit default URL.
+	c.RemoveUser(UserConfig{Id: "usr_1", APIURL: public.DefaultBaseURL})
+	assert.Equal(t, []UserConfig{bob}, c.Users)
+	assert.Empty(t, c.DefaultUser)
+
+	// Removing another user keeps the default user.
+	c = &CLIConfig{DefaultUser: "bob@livekit.io", Users: []UserConfig{alice, bob}}
+	c.RemoveUser(alice)
+	assert.Equal(t, []UserConfig{bob}, c.Users)
+	assert.Equal(t, "bob@livekit.io", c.DefaultUser)
+
+	// Removing a user who isn't signed in changes nothing.
+	c.RemoveUser(UserConfig{Id: "usr_3", Email: "carol@livekit.io"})
+	assert.Equal(t, []UserConfig{bob}, c.Users)
+	assert.Equal(t, "bob@livekit.io", c.DefaultUser)
+}

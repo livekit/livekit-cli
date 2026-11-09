@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -200,6 +201,18 @@ func (c *CLIConfig) UpsertUser(u UserConfig) (stored *UserConfig, replaced bool)
 	}
 	c.Users = append(c.Users, u)
 	return &c.Users[len(c.Users)-1], false
+}
+
+// RemoveUser removes u's entry: the same person on the same Public API (see
+// sameUser). It clears DefaultUser only when no remaining entry matches it,
+// because DefaultUser names a person, not an API: the same person signed in
+// to another API stays the default there. Pass a copy, not a pointer from
+// GetUser, because removing shifts the entries after it.
+func (c *CLIConfig) RemoveUser(u UserConfig) {
+	c.Users = slices.DeleteFunc(c.Users, func(e UserConfig) bool { return sameUser(e, u) })
+	if c.DefaultUser != "" && len(c.FindUsers(c.DefaultUser)) == 0 {
+		c.DefaultUser = ""
+	}
 }
 
 // sameUser reports whether two entries refer to the same person on the same
