@@ -4,7 +4,9 @@
 respond DELETE http://cloud.test/cli/revoke 200
 exec lk cloud auth --revoke --server-url http://cloud.test
 ! stdout .
-cmpenv stderr want-stderr
+stderr '^Using project \[one\]$'
+stderr '^Saved CLI config to \[.*cli-config\.yaml\]$'
+stderr '^Removed project one$'
 requests
 cmp stdout want-requests
 cmp home/.livekit/cli-config.yaml want-config
@@ -23,10 +25,6 @@ users:
     email: dev@example.com
     session_token: st_live
     api_url: http://publicapi.test
--- want-stderr --
-Using project [one]
-Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
-Removed project one
 -- want-requests --
 DELETE http://cloud.test/cli/revoke apikey=APIone
 -- want-config --

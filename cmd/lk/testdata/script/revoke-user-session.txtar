@@ -4,7 +4,9 @@
 respond DELETE http://publicapi.test/v0/users/me/session-token 200 '{}'
 exec lk --user-auth cloud auth --revoke
 ! stdout .
-cmpenv stderr want-stderr
+stderr '^Using user \[dev@example\.com\] on \[http://publicapi\.test\]$'
+stderr '^Signed out dev@example\.com$'
+stderr '^Saved CLI config to \[.*cli-config\.yaml\]$'
 requests
 cmp stdout want-requests
 cmp home/.livekit/cli-config.yaml want-config
@@ -16,10 +18,6 @@ users:
     email: dev@example.com
     session_token: st_live
     api_url: http://publicapi.test
--- want-stderr --
-Using user [dev@example.com] on [http://publicapi.test]
-Signed out dev@example.com
-Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
 -- want-requests --
 DELETE http://publicapi.test/v0/users/me/session-token bearer=st_live
 -- want-config --

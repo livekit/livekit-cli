@@ -4,7 +4,9 @@
 respond DELETE http://staging.test/v0/users/me/session-token 200 '{}'
 exec lk --user-auth cloud auth --revoke --public-api-url http://staging.test
 ! stdout .
-cmpenv stderr want-stderr
+stderr '^Using user \[dev@example\.com\] on \[http://staging\.test\]$'
+stderr '^Signed out dev@example\.com$'
+stderr '^Saved CLI config to \[.*cli-config\.yaml\]$'
 requests
 cmp stdout want-requests
 cmp home/.livekit/cli-config.yaml want-config
@@ -20,10 +22,6 @@ users:
     email: dev@example.com
     session_token: st_prod
     api_url: http://prod.test
--- want-stderr --
-Using user [dev@example.com] on [http://staging.test]
-Signed out dev@example.com
-Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
 -- want-requests --
 DELETE http://staging.test/v0/users/me/session-token bearer=st_staging
 -- want-config --

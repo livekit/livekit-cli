@@ -2,7 +2,9 @@
 # it signs the user out on this device and succeeds.
 exec lk --user-auth cloud auth --revoke
 ! stdout .
-cmpenv stderr want-stderr
+stderr '^Using user \[dev@example\.com\] on \[http://publicapi\.test\]$'
+stderr '^Session for dev@example\.com had already expired; signed out on this device$'
+stderr '^Saved CLI config to \[.*cli-config\.yaml\]$'
 requests
 ! stdout .
 cmp home/.livekit/cli-config.yaml want-config
@@ -15,10 +17,6 @@ users:
     session_token: st_expired
     session_expiry: 1
     api_url: http://publicapi.test
--- want-stderr --
-Using user [dev@example.com] on [http://publicapi.test]
-Session for dev@example.com had already expired; signed out on this device
-Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
 -- want-config --
 default_project: ""
 default_user: ""

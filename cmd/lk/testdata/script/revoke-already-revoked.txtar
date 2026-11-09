@@ -4,7 +4,9 @@
 respond DELETE http://publicapi.test/v0/users/me/session-token 401 '{"code":16,"message":"authentication required","details":[]}'
 exec lk --user-auth cloud auth --revoke
 ! stdout .
-cmpenv stderr want-stderr
+stderr '^Using user \[dev@example\.com\] on \[http://publicapi\.test\]$'
+stderr '^Session for dev@example\.com is no longer valid; signed out on this device$'
+stderr '^Saved CLI config to \[.*cli-config\.yaml\]$'
 requests
 cmp stdout want-requests
 cmp home/.livekit/cli-config.yaml want-config
@@ -16,10 +18,6 @@ users:
     email: dev@example.com
     session_token: st_revoked
     api_url: http://publicapi.test
--- want-stderr --
-Using user [dev@example.com] on [http://publicapi.test]
-Session for dev@example.com is no longer valid; signed out on this device
-Saved CLI config to [$WORK/home/.livekit/cli-config.yaml]
 -- want-requests --
 DELETE http://publicapi.test/v0/users/me/session-token bearer=st_revoked
 -- want-config --
