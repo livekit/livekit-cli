@@ -120,8 +120,18 @@ To supply one, do one of:
 }
 
 func TestEnsureProjectAPIKeyReusesEnvFile(t *testing.T) {
-	prev := project
-	t.Cleanup(func() { project = prev })
+	prev, prevCheck := project, checkAPIKey
+	t.Cleanup(func() { project, checkAPIKey = prev, prevCheck })
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	rejected := map[string]bool{}
+	checkAPIKey = func(_ context.Context, _, apiKey, _ string) error {
+		if rejected[apiKey] {
+			return errKeyRejected
+		}
+		return nil
+	}
 	session := &config.ProjectConfig{
 		Name: "p", ProjectId: "p_1", URL: "wss://p.livekit.cloud",
 		APIKey: tokenauth.PlaceholderAPIKey, APISecret: tokenauth.PlaceholderAPISecret,
@@ -138,6 +148,18 @@ func TestEnsureProjectAPIKeyReusesEnvFile(t *testing.T) {
 	assert.Equal(t, "s", project.APISecret)
 	assert.False(t, isSessionProject(project))
 	assert.True(t, isSessionProject(session), "the session project itself is not modified")
+
+	// A key LiveKit rejects isn't used for the app: the chain goes on (and,
+	// with no terminal and no way to create one, says how to supply a key).
+	rejected["APIk"] = true
+	project = session
+	runWithProjectFlag(t, nil, func(ctx context.Context, cmd *cli.Command) error {
+		var noKey *noKeyError
+		assert.ErrorAs(t, ensureProjectAPIKey(ctx, cmd, dir, appEnvFiles("")...), &noKey)
+		return nil
+	})
+	assert.True(t, isSessionProject(project), "the rejected key isn't used")
+	rejected["APIk"] = false
 
 	// A project with a real key is left alone.
 	real := &config.ProjectConfig{Name: "p", URL: "wss://p.livekit.cloud", APIKey: "APIreal", APISecret: "real"}

@@ -655,17 +655,18 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		mode = modeScenarios
 	}
 
-	// Resolved before the TUI starts: getting a key may ask for one. After the
-	// scenarios load, so a bad file fails before a key is created.
-	var agentCreds agentCredentials
-	if !liveAgent {
-		if agentCreds, err = simulationAgentCredentials(ctx, cmd, pc, projectDir); err != nil {
+	if mode == modeGenerateFromSource {
+		if err := confirmSourceUpload(cmd, projectDir); err != nil {
 			return err
 		}
 	}
 
-	if mode == modeGenerateFromSource {
-		if err := confirmSourceUpload(cmd, projectDir); err != nil {
+	// Resolved before the TUI starts: getting a key may ask for one. After the
+	// scenarios load and the upload is confirmed, so a bad file or a declined
+	// upload doesn't leave a new key behind.
+	var agentCreds agentCredentials
+	if !liveAgent {
+		if agentCreds, err = simulationAgentCredentials(ctx, cmd, pc, projectDir); err != nil {
 			return err
 		}
 	}
@@ -798,11 +799,11 @@ func (l *agentLauncher) ForceStop() {
 }
 
 func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentProcess, error) {
+	// The credentials go in the environment only: other users on the machine
+	// can read a process's arguments, and the Python and Node SDKs' start
+	// read LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET from it.
 	args := []string{
 		"start",
-		"--url", c.agentCreds.url,
-		"--api-key", c.agentCreds.apiKey,
-		"--api-secret", c.agentCreds.apiSecret,
 		"--log-level", normalizeLogLevel(c.projectType, "DEBUG"),
 		// disable the worker load limit so the run can saturate the agent
 		"--simulation",

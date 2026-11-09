@@ -1,10 +1,11 @@
 # The agent agent simulate starts locally registers as a worker, which takes
 # a real API key, not a session token. Under --user-auth it gets one the way
-# agent start does, before anything starts or uploads: here a member whose role
+# agent start does, before anything starts or uploads (and after the upload is
+# confirmed, so declining it leaves no new key): here a member whose role
 # can't create keys, with no terminal, is told how to supply one.
 respond POST http://publicapi.test/v0/projects/p_1/keys 403 '{"code":7,"message":"permission denied: this needs ADMIN on the project"}'
 
-! exec lk --user-auth agent simulate text
+! exec lk --user-auth agent simulate text --yes
 ! stdout .
 stderr '^no LiveKit API key to run the agent with for project \[one\]: your role on project \[one\] can''t create API keys \(that takes Admin\)$'
 stderr '^  - add LIVEKIT_URL=ws://one.test, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to .*/\.env\.local$'

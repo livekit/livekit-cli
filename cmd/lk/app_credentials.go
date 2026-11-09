@@ -48,7 +48,8 @@ import (
 // auth modes:
 //
 //  1. --api-key/--api-secret, or LIVEKIT_API_KEY/LIVEKIT_API_SECRET, as given
-//     (never checked, saved, or replaced: they're the user's override).
+//     (never checked, saved, or replaced: they're the user's override). Half
+//     a pair is ignored with a warning: a key works only with its own secret.
 //  2. The agent's own env file (the Taskfile's env_file, .env.local, .env),
 //     unless --project or --subdomain names a project the key isn't for.
 //  3. A key for the project in the CLI config's projects, where `lk cloud
@@ -66,8 +67,14 @@ import (
 // chain stops after step 4 with a warning that says the same, and the agent
 // starts without one. A key LiveKit rejects (deleted, or
 // for another project) at steps 2 and 3 is skipped with a warning, and the
-// next step replaces it. A rejected key in an env file whose LIVEKIT_URL
-// names a project is replaced with a key for that project, never another one.
+// next step replaces it.
+//
+// The URL the agent will connect to, when something names one (--url, else
+// LIVEKIT_URL in the agent's env file, with or without a key), picks the
+// project for steps 3-5, so a key is never paired with another project's URL.
+// An env file's URL that lk knows no project for ends the chain rather than
+// fall back to the default project; a --url it knows none for (a custom
+// domain, a tunnel) means the project lk would pick, reached at that URL.
 //
 // When lk creates a key: only at step 4, so only under --user-auth, only in
 // the commands that hand a key to an app or agent (agent dev, start, console,
@@ -217,6 +224,7 @@ func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, op
 	if explicit.complete() {
 		return explicit, nil
 	}
+	explicit = wholeKeyPair(explicit)
 
 	req := keyRequest{dir: dir, files: agentEnvFileNames(dir), purpose: "to run the agent with", optional: optional}
 	fileCreds, file, err := envFileCredentials(dir, req.files...)
@@ -224,60 +232,85 @@ func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, op
 		return agentCredentials{}, err
 	}
 
+	// The URL the agent will connect to, when something names one: --url,
+	// else the agent's env file (whether or not it has a key). It picks the
+	// project, so a key is never paired with another project's URL.
+	target, fromFile := explicit.url, ""
+	if target == "" && !namedProject(cmd) {
+		if fileCreds.url != "" {
+			target, fromFile = fileCreds.url, file
+		} else if u, f := envFileURL(dir, req.files...); u != "" {
+			target, fromFile = u, f
+		}
+	}
+
 	// A key and secret given without a URL only need the project's URL.
-	if explicit.apiKey != "" && explicit.apiSecret != "" {
-		if fileCreds.url != "" && !namedProject(cmd) {
-			return mergeCredentials(explicit, fileCreds), nil
+	if explicit.apiKey != "" {
+		if target != "" {
+			return agentCredentials{url: target, apiKey: explicit.apiKey, apiSecret: explicit.apiSecret}, nil
 		}
 		pc, err := resolveAgentProject(ctx, cmd, req)
 		if err != nil {
 			return agentCredentials{}, err
 		}
-		return mergeCredentials(explicit, credentialsOf(pc)), nil
+		return agentCredentials{url: pc.URL, apiKey: explicit.apiKey, apiSecret: explicit.apiSecret}, nil
 	}
 
 	// The agent's own key needs no project lookup, unless a project was named
-	// (the key must be for it) or the file has no URL.
-	if fileCreds.apiKey != "" && !namedProject(cmd) {
-		creds := mergeCredentials(explicit, fileCreds)
-		if creds.url == "" {
-			pc, err := resolveAgentProject(ctx, cmd, req)
-			if err != nil {
-				return agentCredentials{}, err
-			}
-			creds.url = pc.URL
-		}
+	// (the key must be for it) or nothing names a URL.
+	if fileCreds.apiKey != "" && !namedProject(cmd) && target != "" {
+		creds := agentCredentials{url: target, apiKey: fileCreds.apiKey, apiSecret: fileCreds.apiSecret}
 		path := filepath.Join(dir, file)
 		if keyAccepted(ctx, creds, path) {
 			out.Statusf("Using API key [%s] from %s", util.Accented(creds.apiKey), util.Accented(path))
 			return creds, nil
 		}
-		if fileCreds.url != "" {
-			// The file names its project: the replacement is for that project,
-			// or there's none. Falling back to the default project would run
-			// the agent somewhere the user didn't point it.
-			pc, err := projectAtURL(ctx, cmd, fileCreds.url, path)
-			if err != nil {
-				return agentCredentials{}, err
-			}
-			key, err := projectKey(ctx, cmd, pc, req)
-			if err != nil {
-				return agentCredentials{}, err
-			}
-			return mergeCredentials(explicit, key), nil
-		}
 		fileCreds = agentCredentials{}
 	}
 
-	pc, err := resolveAgentProject(ctx, cmd, req)
+	var pc *config.ProjectConfig
+	switch {
+	case target != "" && fromFile != "":
+		pc, err = projectAtFileURL(ctx, cmd, req, target, filepath.Join(dir, fromFile))
+	case target != "":
+		pc, err = projectAtFlagURL(ctx, cmd, req, target)
+	default:
+		pc, err = resolveAgentProject(ctx, cmd, req)
+	}
 	if err != nil {
 		return agentCredentials{}, err
 	}
-	key, err := agentKeyForProject(ctx, cmd, pc, req, fileCreds, file)
-	if err != nil {
-		return agentCredentials{}, err
+	return agentKeyForProject(ctx, cmd, pc, req, fileCreds, file)
+}
+
+// wholeKeyPair drops half a key pair: an API key works only with its own
+// secret, and paired with the other half of another key it fails to
+// authenticate. Half a pair usually comes from a stray LIVEKIT_API_KEY or
+// LIVEKIT_API_SECRET in the shell.
+func wholeKeyPair(c agentCredentials) agentCredentials {
+	switch {
+	case c.apiKey != "" && c.apiSecret == "":
+		out.Warnf("Ignoring the API key [%s] from --api-key or LIVEKIT_API_KEY: it has no secret (--api-secret or LIVEKIT_API_SECRET)", c.apiKey)
+	case c.apiKey == "" && c.apiSecret != "":
+		out.Warnf("Ignoring the API secret from --api-secret or LIVEKIT_API_SECRET: it has no API key (--api-key or LIVEKIT_API_KEY)")
+	default:
+		return c
 	}
-	return mergeCredentials(explicit, key), nil
+	return agentCredentials{url: c.url}
+}
+
+// envFileURL returns the first LIVEKIT_URL in dir's files, and the file it's
+// in, whether or not that file has a key.
+func envFileURL(dir string, files ...string) (string, string) {
+	if dir == "" {
+		return "", ""
+	}
+	for _, f := range files {
+		if env, err := bootstrap.ReadDotEnv(dir, f); err == nil && env["LIVEKIT_URL"] != "" {
+			return env["LIVEKIT_URL"], f
+		}
+	}
+	return "", ""
 }
 
 // agentKeyForProject returns a key for pc from steps 2-5: the agent's env file
@@ -300,19 +333,14 @@ func agentKeyForProject(ctx context.Context, cmd *cli.Command, pc *config.Projec
 	return projectKey(ctx, cmd, pc, req)
 }
 
-// projectAtURL returns the project whose URL is url, for a key from the env
-// file at path that LiveKit rejected: under --user-auth one of the signed-in
-// user's projects (a session project), otherwise one in the CLI config.
-func projectAtURL(ctx context.Context, cmd *cli.Command, url, path string) (*config.ProjectConfig, error) {
-	notFound := func(where string) error {
-		return &noKeyError{fmt.Sprintf("LiveKit rejected the API key in %s, and its LIVEKIT_URL (%s) isn't %s; "+
-			"put a working key for that project in the file, remove its LIVEKIT_* lines to use your default project, or pass --project",
-			path, url, where)}
-	}
+// findProjectAtURL returns the project whose URL is url: under --user-auth
+// one of the signed-in user's projects (a session project), otherwise one in
+// the CLI config. When there's none, it returns nil and where it looked.
+func findProjectAtURL(ctx context.Context, cmd *cli.Command, url string) (*config.ProjectConfig, string, error) {
 	if userAuthEnabled(cmd) {
 		_, conf, user, err := newCloudAPIClient(cmd)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		find := func() string {
 			for _, p := range user.Projects {
@@ -325,28 +353,63 @@ func projectAtURL(ctx context.Context, cmd *cli.Command, url, path string) (*con
 		id := find()
 		if id == "" {
 			if _, err := refreshUserProjects(ctx, conf, user); err != nil {
-				return nil, cloudAPIError(err)
+				return nil, "", cloudAPIError(err)
 			}
 			id = find()
 		}
 		if id == "" {
-			return nil, notFound("a project " + userLabel(user) + " belongs to")
+			return nil, "a project " + userLabel(user) + " belongs to", nil
 		}
-		return loadSessionProjectRef(ctx, cmd, id)
+		pc, err := loadSessionProjectRef(ctx, cmd, id)
+		return pc, "", err
 	}
 	if _, err := loadProjectConfig(ctx, cmd); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if cliConfig != nil {
 		for _, p := range cliConfig.Projects {
 			if sameProjectURL(p.URL, url) {
 				p := p
 				out.Statusf("Using project [%s]", util.Accented(p.Name))
-				return &p, nil
+				return &p, "", nil
 			}
 		}
 	}
-	return nil, notFound("a project in the CLI config")
+	return nil, "a project in the CLI config", nil
+}
+
+// projectAtFileURL returns the project an env file's LIVEKIT_URL names. When
+// lk knows none there, the chain ends: running the agent on the default
+// project instead would send it somewhere the file didn't point it.
+func projectAtFileURL(ctx context.Context, cmd *cli.Command, req keyRequest, url, path string) (*config.ProjectConfig, error) {
+	pc, where, err := findProjectAtURL(ctx, cmd, url)
+	if err != nil || pc != nil {
+		return pc, err
+	}
+	return nil, &noKeyError{fmt.Sprintf("no LiveKit API key %s for %s, the LIVEKIT_URL in %s: it isn't %s\n\n"+
+		"To supply one, do one of:\n"+
+		"  - add LIVEKIT_API_KEY and LIVEKIT_API_SECRET for it to %s\n"+
+		"  - remove LIVEKIT_URL from %s to use your default project, or pass --project\n"+
+		"  - pass --api-key and --api-secret, or set LIVEKIT_API_KEY and LIVEKIT_API_SECRET",
+		req.purpose, url, path, where, path, path)}
+}
+
+// projectAtFlagURL returns the project --url names. When lk knows none there
+// (a custom domain, a tunnel), --url keeps its API-key mode meaning: the
+// project lk would otherwise pick, reached at url, and its key is checked
+// there.
+func projectAtFlagURL(ctx context.Context, cmd *cli.Command, req keyRequest, url string) (*config.ProjectConfig, error) {
+	pc, _, err := findProjectAtURL(ctx, cmd, url)
+	if err != nil || pc != nil {
+		return pc, err
+	}
+	pc, err = resolveAgentProject(ctx, cmd, req)
+	if err != nil {
+		return nil, err
+	}
+	at := *pc
+	at.URL = url
+	return &at, nil
 }
 
 // simulationAgentCredentials returns what the agent `agent simulate` starts in
@@ -828,7 +891,8 @@ func uniqueProjectName(conf *config.CLIConfig, name, url string) string {
 
 // ensureProjectAPIKey gives the session project real API credentials, for
 // commands that write them into an app in dir: a key for the same project
-// already in one of dir's envFiles, else the rest of the chain (projectKey).
+// already in one of dir's envFiles that LiveKit accepts, else the rest of the
+// chain (projectKey).
 // A project loaded with an API key is left alone.
 func ensureProjectAPIKey(ctx context.Context, cmd *cli.Command, dir string, envFiles ...string) error {
 	if !isSessionProject(project) {
@@ -839,9 +903,11 @@ func ensureProjectAPIKey(ctx context.Context, cmd *cli.Command, dir string, envF
 		if err != nil {
 			return err
 		}
-		if creds.apiKey != "" && (creds.url == "" || sameProjectURL(creds.url, project.URL)) {
+		path := filepath.Join(dir, file)
+		if creds.apiKey != "" && (creds.url == "" || sameProjectURL(creds.url, project.URL)) &&
+			keyAccepted(ctx, agentCredentials{url: project.URL, apiKey: creds.apiKey, apiSecret: creds.apiSecret}, path) {
 			project = withAPIKey(project, creds.apiKey, creds.apiSecret)
-			out.Statusf("Using API key [%s] from %s", util.Accented(creds.apiKey), util.Accented(filepath.Join(dir, file)))
+			out.Statusf("Using API key [%s] from %s", util.Accented(creds.apiKey), util.Accented(path))
 			return nil
 		}
 	}
