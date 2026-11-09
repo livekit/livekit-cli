@@ -553,6 +553,7 @@ func projectKey(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig,
 		creds.url = pc.URL
 		if keyAccepted(ctx, creds, "the CLI config") {
 			out.Statusf("Using API key [%s] for project [%s] from the CLI config", util.Accented(creds.apiKey), util.Accented(pc.Name))
+			saveProjectKey(pc, creds) // only updates the URL, if the project moved
 			return creds, nil
 		}
 	}
@@ -564,6 +565,10 @@ func projectKey(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig,
 	}
 	var reason string
 	switch {
+	case public.IsUnauthenticated(err):
+		// The session was revoked or expired: signing in again is the fix,
+		// not a key.
+		return agentCredentials{}, cloudAPIError(err)
 	case public.IsPermissionDenied(err):
 		reason = fmt.Sprintf("your role on project [%s] can't create API keys (that takes Admin)", pc.Name)
 	default:
@@ -744,9 +749,10 @@ func keyAccepted(ctx context.Context, creds agentCredentials, from string) bool 
 var errKeyRejected = errors.New("API key rejected")
 
 // checkAPIKey asks the server at url whether it accepts the key, with one
-// ListRooms call. Only a definite refusal by LiveKit returns errKeyRejected:
-// when the server can't be asked (offline, a timeout, a proxy's 401, anything
-// else) the key is given the benefit of the doubt and the agent reports what
+// ListRooms call. Only a 401 returns errKeyRejected. LiveKit sends it as
+// plain text, not twirp JSON, so twirp can't tell it from a proxy's, and
+// every 401 counts. Anything else (offline, a timeout, the 403 of a suspended
+// project) gives the key the benefit of the doubt, and the agent reports what
 // it finds. A refusal replaces the key (under --user-auth, with a new one), so
 // the check's token has no nbf and a day's exp, and a clock that's off by
 // more than the server's minute of leeway can't make a good key look bad.
@@ -771,8 +777,7 @@ var checkAPIKey = func(ctx context.Context, url, apiKey, apiSecret string) error
 	client := livekit.NewRoomServiceProtobufClient(signalling.ToHttpURL(url), &http.Client{})
 	_, err = client.ListRooms(ctx, &livekit.ListRoomsRequest{})
 	var terr twirp.Error
-	if errors.As(err, &terr) && terr.Meta("http_error_from_intermediary") == "" &&
-		(terr.Code() == twirp.Unauthenticated || terr.Code() == twirp.PermissionDenied) {
+	if errors.As(err, &terr) && terr.Code() == twirp.Unauthenticated {
 		return errKeyRejected
 	}
 	if err != nil {
@@ -822,18 +827,23 @@ func saveProjectKey(pc *config.ProjectConfig, creds agentCredentials) {
 	}
 	target := &config.ProjectConfig{Name: pc.Name, ProjectId: pc.ProjectId, URL: cmpOr(pc.URL, creds.url)}
 	name := ""
+	saved := "Saved API key [%s] to the CLI config as project [%s]"
 	if p := findProjectEntry(conf, target); p != nil {
-		if p.APIKey == creds.apiKey && p.APISecret == creds.apiSecret {
-			return
-		}
-		p.APIKey, p.APISecret = creds.apiKey, creds.apiSecret
 		if p.ProjectId == "" {
 			p.ProjectId = pc.ProjectId
 		}
-		if p.ProjectId == pc.ProjectId && target.URL != "" {
-			// Matched by id: the project may have moved since it was saved.
+		// Matched by id: the project may have moved since it was saved.
+		moved := p.ProjectId == pc.ProjectId && target.URL != "" && p.URL != target.URL
+		if p.APIKey == creds.apiKey && p.APISecret == creds.apiSecret {
+			if !moved {
+				return
+			}
+			saved = "Updated the URL of API key [%s]'s project [%s] in the CLI config"
+		}
+		if moved {
 			p.URL = target.URL
 		}
+		p.APIKey, p.APISecret = creds.apiKey, creds.apiSecret
 		name = p.Name
 	} else {
 		name = uniqueProjectName(conf, pc.Name, target.URL)
@@ -851,7 +861,7 @@ func saveProjectKey(pc *config.ProjectConfig, creds agentCredentials) {
 	if cliConfig != nil {
 		cliConfig = conf
 	}
-	out.Statusf("Saved API key [%s] to the CLI config as project [%s]", util.Accented(creds.apiKey), util.Accented(name))
+	out.Statusf(saved, util.Accented(creds.apiKey), util.Accented(name))
 }
 
 func cmpOr(a, b string) string {

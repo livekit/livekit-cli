@@ -200,11 +200,15 @@ func TestCheckAPIKey(t *testing.T) {
 	require.NoError(t, err)
 	assert.Greater(t, time.Until(exp.Time), 23*time.Hour)
 
+	// LiveKit sends its 401 as plain text, which twirp can't tell from a
+	// proxy's; every 401 counts.
+	status, body = http.StatusUnauthorized, "invalid API key"
+	assert.ErrorIs(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"), errKeyRejected)
 	status, body = http.StatusUnauthorized, `{"code":"unauthenticated","msg":"invalid API key"}`
 	assert.ErrorIs(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"), errKeyRejected)
 
-	// A 401 without LiveKit's body is a proxy's: the key isn't judged.
-	status, body = http.StatusUnauthorized, "<html>sign in</html>"
+	// A 403 (a suspended project) doesn't prove the key bad.
+	status, body = http.StatusForbidden, "project suspended"
 	assert.NoError(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"))
 }
 
@@ -227,6 +231,14 @@ func TestSaveProjectKeyUpdatesMovedURL(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, conf.Projects, 1)
 	assert.Equal(t, config.ProjectConfig{Name: "one", ProjectId: "p_1", URL: "ws://new.test", APIKey: "APInew", APISecret: "new"}, conf.Projects[0])
+
+	// The same key, reused for a project that moved again: only the URL changes.
+	pc.URL = "ws://newer.test"
+	saveProjectKey(pc, agentCredentials{url: "ws://newer.test", apiKey: "APInew", apiSecret: "new"})
+	conf, err = config.LoadOrCreate()
+	require.NoError(t, err)
+	assert.Equal(t, "ws://newer.test", conf.Projects[0].URL)
+	assert.Equal(t, "APInew", conf.Projects[0].APIKey)
 }
 
 // An agent that can run without a LiveKit key (console, the text debugger)

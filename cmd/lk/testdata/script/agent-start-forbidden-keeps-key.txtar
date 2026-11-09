@@ -1,7 +1,8 @@
-# A 401 that isn't LiveKit's (a proxy's, with no twirp body) doesn't prove
-# the key bad: lk keeps it rather than create a new key on every run.
+# Only a 401 means LiveKit rejected the key. A 403 (LiveKit Cloud sends one
+# for a suspended project) doesn't prove the key bad: lk keeps it rather than
+# create a new key on every run, and the agent reports what it finds.
 [!exec:node] skip 'needs node to run the agent'
-respond POST http://one.test/twirp/livekit.RoomService/ListRooms 401 ''
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 403 'project suspended'
 
 exec lk --user-auth agent start
 stdout '^agent ws://one.test APIok secretok$'

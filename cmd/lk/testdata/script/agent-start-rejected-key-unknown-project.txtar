@@ -1,7 +1,7 @@
 # The rejected key in .env.local is for a project the signed-in user doesn't
 # belong to. lk stops rather than run the agent on the default project.
 [!exec:node] skip 'needs node to run the agent'
-respond POST http://three.test/twirp/livekit.RoomService/ListRooms 401 '{"code":"unauthenticated","msg":"invalid API key"}'
+respond POST http://three.test/twirp/livekit.RoomService/ListRooms 401 'invalid API key'
 respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one","url":"ws://one.test"},{"id":"p_2","name":"two","url":"ws://two.test"}]}'
 
 ! exec lk --user-auth agent start

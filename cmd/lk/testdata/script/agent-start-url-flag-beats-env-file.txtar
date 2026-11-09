@@ -2,7 +2,7 @@
 # key is checked at the --url and rejected there, and its replacement is for
 # project two: the agent never gets one project's key with another's URL.
 [!exec:node] skip 'needs node to run the agent'
-respond POST http://two.test/twirp/livekit.RoomService/ListRooms 401 '{"code":"unauthenticated","msg":"invalid API key"}'
+respond POST http://two.test/twirp/livekit.RoomService/ListRooms 401 'invalid API key'
 respond POST http://publicapi.test/v0/projects/p_2/keys 200 '{"apiKey":"APInew","secret":"secretnew"}'
 
 exec lk --user-auth agent start --url ws://two.test
