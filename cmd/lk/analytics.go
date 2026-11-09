@@ -43,6 +43,11 @@ const (
 	analyticsProjectSelectHint    = "Select a cloud project via --project or run `lk cloud auth`"
 )
 
+// legacyAnalyticsHelp ends the help of session list and get, the two
+// commands that still run without --user-auth.
+const legacyAnalyticsHelp = "Without --user-auth, this reads sessions with an API key and needs --experimental. " +
+	"That API-key path is deprecated: sign in once with `lk cloud auth --user-auth`, then run with --user-auth."
+
 // defaultAnalyticsWindow is how far back a session listing searches when no
 // --since, --start or cursor sets its window.
 const defaultAnalyticsWindow = 14 * 24 * time.Hour
@@ -74,16 +79,18 @@ var (
 					Name:  "session",
 					Usage: "List and inspect sessions", Commands: []*cli.Command{
 						{
-							Name:   "list",
-							Usage:  "List analytics sessions",
-							Action: listAnalyticsSessions,
-							Flags:  append([]cli.Flag{jsonFlag}, analyticsSessionListFlags()...),
+							Name:        "list",
+							Usage:       "List analytics sessions",
+							Description: legacyAnalyticsHelp,
+							Action:      listAnalyticsSessions,
+							Flags:       append([]cli.Flag{jsonFlag}, analyticsSessionListFlags()...),
 						},
 						{
-							Name:      "get",
-							Usage:     "Get analytics session details by session ID",
-							ArgsUsage: "SESSION_ID",
-							Action:    getAnalyticsSession,
+							Name:        "get",
+							Usage:       "Get analytics session details by session ID",
+							Description: legacyAnalyticsHelp,
+							ArgsUsage:   "SESSION_ID",
+							Action:      getAnalyticsSession,
 							Flags: []cli.Flag{
 								jsonFlag,
 							},
@@ -238,7 +245,7 @@ func analyticsSessionListFlags() []cli.Flag {
 		},
 		&cli.IntFlag{
 			Name:  "page",
-			Usage: "Page number (starts at 0)",
+			Usage: "Page number (starts at 0); deprecated, API-key only (--user-auth pages with --cursor)",
 		},
 		&cli.StringFlag{
 			Name:  "since",
@@ -433,6 +440,7 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if userAuthEnabled(cmd) {
 		return listUserAnalyticsSessions(ctx, cmd)
 	}
+	printLegacyAnalyticsDeprecation()
 
 	query, err := buildAnalyticsListQuery(cmd)
 	if err != nil {
@@ -493,6 +501,7 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 	if userAuthEnabled(cmd) {
 		return getUserAnalyticsSession(ctx, cmd)
 	}
+	printLegacyAnalyticsDeprecation()
 
 	sessionID, err := extractArg(cmd)
 	if err != nil {
@@ -556,6 +565,15 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 
 	out.Result(participantTable)
 	return nil
+}
+
+// printLegacyAnalyticsDeprecation says, on stderr, that reading sessions with
+// an API key is deprecated and how to move to --user-auth. Stdout is left
+// alone, so scripts reading it keep working. It's a warning, so --quiet
+// doesn't hide it: scripts that pass --quiet are the ones that need to move.
+func printLegacyAnalyticsDeprecation() {
+	out.Warnf("API-key analytics is deprecated: sign in once with %s, then run the same command with `--user-auth`",
+		signInCommand())
 }
 
 func buildAnalyticsListQuery(cmd *cli.Command) (url.Values, error) {
