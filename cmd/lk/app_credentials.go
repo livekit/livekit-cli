@@ -66,10 +66,10 @@ import (
 // When lk creates a key: only at step 4, so only under --user-auth, only in
 // the commands that hand a key to an app or agent (agent dev, start, console,
 // debugger and init; app create and env), and only when steps 1-3 found no
-// usable key. Commands that only call LiveKit themselves (room, sip, egress,
-// ...) use session tokens and never create one. agent simulate stays
-// API-key only for now; once its simulation calls move to the Public API, the
-// agent it spawns can get its key from projectKey too.
+// usable key; agent simulate text and audio, for the agent they start, also
+// create one at step 4 (simulationAgentCredentials). Commands that only call
+// LiveKit themselves (room, sip, egress, simulate view and export, ...) use
+// session tokens and never create one.
 //
 // Where lk keeps it: a key from steps 3-5 is saved to the CLI config (so other
 // agents and later runs on this machine reuse it rather than create another)
@@ -221,13 +221,23 @@ func resolveAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) 
 	if err != nil {
 		return agentCredentials{}, err
 	}
+	key, err := agentKeyForProject(ctx, cmd, pc, req, fileCreds, file)
+	if err != nil {
+		return agentCredentials{}, err
+	}
+	return mergeCredentials(explicit, key), nil
+}
+
+// agentKeyForProject returns a key for pc from steps 2-5: the agent's env file
+// (fileCreds, read from file), when it's for pc and LiveKit accepts it, else
+// projectKey, whose key is then written to the env file.
+func agentKeyForProject(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig, req keyRequest, fileCreds agentCredentials, file string) (agentCredentials, error) {
 	if fileCreds.apiKey != "" {
-		// --project or --subdomain named pc.
-		path := filepath.Join(dir, file)
+		path := filepath.Join(req.dir, file)
 		if fileCreds.url != "" && !sameProjectURL(fileCreds.url, pc.URL) {
 			out.Statusf("Not using the API key in %s: it's for %s, not project [%s]", util.Accented(path), fileCreds.url, util.Accented(pc.Name))
 		} else {
-			creds := mergeCredentials(explicit, agentCredentials{url: pc.URL, apiKey: fileCreds.apiKey, apiSecret: fileCreds.apiSecret})
+			creds := agentCredentials{url: pc.URL, apiKey: fileCreds.apiKey, apiSecret: fileCreds.apiSecret}
 			if keyAccepted(ctx, creds, path) {
 				out.Statusf("Using API key [%s] from %s", util.Accented(creds.apiKey), util.Accented(path))
 				return creds, nil
@@ -239,8 +249,25 @@ func resolveAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) 
 	if err != nil {
 		return agentCredentials{}, err
 	}
-	writeAgentEnvKey(dir, req.files, key)
-	return mergeCredentials(explicit, key), nil
+	writeAgentEnvKey(req.dir, req.files, key)
+	return key, nil
+}
+
+// simulationAgentCredentials returns what the agent `agent simulate` starts in
+// dir registers with. It must be on pc, the project the simulation run is
+// created on, so --api-key and the env file's LIVEKIT_URL can't move it
+// elsewhere: in API-key mode it's pc's own key; under --user-auth, a key for
+// pc from agentKeyForProject.
+func simulationAgentCredentials(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig, dir string) (agentCredentials, error) {
+	if !isSessionProject(pc) {
+		return credentialsOf(pc), nil
+	}
+	req := keyRequest{dir: dir, files: agentEnvFileNames(dir), purpose: "to run the agent with"}
+	fileCreds, file, err := envFileCredentials(dir, req.files...)
+	if err != nil {
+		return agentCredentials{}, err
+	}
+	return agentKeyForProject(ctx, cmd, pc, req, fileCreds, file)
 }
 
 // resolveAgentProject returns the project an agent runs against: under

@@ -30,7 +30,7 @@ import (
 // Session auth for server SDK calls.
 //
 // Commands that talk to LiveKit only through server-sdk-go (room, sip, egress,
-// ingress, dispatch, phone-number, replay, cloud agents), join rooms (room
+// ingress, dispatch, phone-number, replay, cloud agents, agent simulate), join rooms (room
 // join, perf load tests, the egress layout demo) or print tokens (token create)
 // load their project with loadProjectForSDK or requireProjectForSDK. With an
 // API key these behave like loadProjectDetails/requireProject. Under
@@ -41,9 +41,7 @@ import (
 // and tokens the CLI signs itself go through the tokenauth helpers with
 // sessionTokenSource.
 //
-// Apps and agents need a real key of their own; see app_credentials.go. The
-// rest (agent simulate's local runs) keep loadProjectDetails/requireProject
-// and stay behind userAuthGate.
+// Apps and agents need a real key of their own; see app_credentials.go.
 
 // sessionTokenSources holds the token source for each session project, by
 // project ID, for withDefaultClientOpts to attach.

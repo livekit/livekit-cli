@@ -88,6 +88,7 @@ func TestScripts(t *testing.T) {
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
 			"respond":  cmdRespond,
 			"requests": cmdRequests,
+			"mint":     cmdMint,
 		},
 		UpdateScripts:       os.Getenv("UPDATE_LK_SCRIPTS") != "",
 		RequireExplicitExec: true,
@@ -259,6 +260,22 @@ func cmdRespond(ts *testscript.TestScript, neg bool, args []string) {
 		body = args[3]
 	}
 	ts.Check(ts.Value(fakeCloudKey{}).(*fakeCloud).respond(args[0]+" "+args[1], status, body))
+}
+
+// cmdMint implements `mint SESSION_TOKEN...`: the fake answers token
+// requests made with any of those sessions as the Public API does (see
+// fakeCloud.mint).
+func cmdMint(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) == 0 {
+		ts.Fatalf("usage: mint SESSION_TOKEN...")
+	}
+	f := ts.Value(fakeCloudKey{}).(*fakeCloud)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.mint = true
+	for _, token := range args {
+		f.sessions[token] = true
+	}
 }
 
 // cmdRequests implements `requests`.
