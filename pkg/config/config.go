@@ -203,13 +203,18 @@ func (c *CLIConfig) UpsertUser(u UserConfig) (stored *UserConfig, replaced bool)
 	return &c.Users[len(c.Users)-1], false
 }
 
-// RemoveUser removes u's entry: the same person on the same Public API (see
-// sameUser). It clears DefaultUser only when no remaining entry matches it,
-// because DefaultUser names a person, not an API: the same person signed in
-// to another API stays the default there. Pass a copy, not a pointer from
-// GetUser, because removing shifts the entries after it.
+// RemoveUser removes u's entry: the first entry for the same person on the
+// same Public API (see sameUser). UpsertUser keeps one such entry, so only a
+// hand-edited config has more, and each of those holds a token of its own
+// that the caller hasn't revoked. It clears DefaultUser only when no
+// remaining entry matches it, because DefaultUser names a person, not an API:
+// the same person signed in to another API stays the default there. Pass a
+// copy, not a pointer from GetUser, because removing shifts the entries after
+// it.
 func (c *CLIConfig) RemoveUser(u UserConfig) {
-	c.Users = slices.DeleteFunc(c.Users, func(e UserConfig) bool { return sameUser(e, u) })
+	if i := slices.IndexFunc(c.Users, func(e UserConfig) bool { return sameUser(e, u) }); i >= 0 {
+		c.Users = slices.Delete(c.Users, i, i+1)
+	}
 	if c.DefaultUser != "" && len(c.FindUsers(c.DefaultUser)) == 0 {
 		c.DefaultUser = ""
 	}

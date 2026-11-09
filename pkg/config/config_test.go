@@ -178,7 +178,17 @@ func TestCLIConfigRemoveUser(t *testing.T) {
 	assert.Equal(t, []UserConfig{bob}, c.Users)
 	assert.Equal(t, "bob@livekit.io", c.DefaultUser)
 
+	// Of two entries for the same person on one API, which only a
+	// hand-edited config has, only the first is removed: the second holds a
+	// token that wasn't revoked.
+	bobAgain := UserConfig{Id: "usr_2", Email: "bob@livekit.io", SessionToken: "bob2"}
+	c = &CLIConfig{DefaultUser: "usr_2", Users: []UserConfig{bob, bobAgain}}
+	c.RemoveUser(bob)
+	assert.Equal(t, []UserConfig{bobAgain}, c.Users)
+	assert.Equal(t, "usr_2", c.DefaultUser)
+
 	// Removing a user who isn't signed in changes nothing.
+	c = &CLIConfig{DefaultUser: "bob@livekit.io", Users: []UserConfig{bob}}
 	c.RemoveUser(UserConfig{Id: "usr_3", Email: "carol@livekit.io"})
 	assert.Equal(t, []UserConfig{bob}, c.Users)
 	assert.Equal(t, "bob@livekit.io", c.DefaultUser)
