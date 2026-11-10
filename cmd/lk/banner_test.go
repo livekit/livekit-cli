@@ -31,6 +31,8 @@ func TestBannerMessages(t *testing.T) {
 		{"audience shown, in file order, to users in it", `[{"message":"beta","audiences":["user-auth"]},{"message":"hi"}]`, "2.18.6", []string{"user-auth"}, []string{"beta", "hi"}},
 		{"any of several audiences matches", `[{"message":"beta","audiences":["someone-else","user-auth"]}]`, "2.18.6", []string{"user-auth"}, []string{"beta"}},
 		{"audiences still honor versions", `[{"message":"beta","audiences":["user-auth"],"versions":">= 3.0.0"}]`, "2.18.6", []string{"user-auth"}, nil},
+		{"signed-out entry hidden from signed-in users", `[{"message":"sign in","audiences":["signed-out"]},{"message":"hi"}]`, "2.19.5", []string{"user-auth"}, []string{"hi"}},
+		{"signed-out entry shown to signed-out users", `[{"message":"sign in","audiences":["signed-out"]},{"message":"hi"}]`, "2.19.5", []string{"signed-out"}, []string{"sign in", "hi"}},
 		{"unknown audience matches no one", `[{"message":"x","audiences":["someone-else"]},{"message":"hi"}]`, "2.18.6", []string{"user-auth"}, []string{"hi"}},
 	}
 	for _, c := range cases {
@@ -72,5 +74,14 @@ func TestBannerFileAudiencesExcludeOldCLIs(t *testing.T) {
 		if c.Check(lastUnaware) {
 			t.Errorf("entry %q: versions %q admits %s, which ignores audiences; use \">= %s\"", b.Message, b.Versions, lastUnaware, bannerAudiencesSince)
 		}
+	}
+}
+
+func TestBannerAudiences(t *testing.T) {
+	if got := bannerAudiences(true); !reflect.DeepEqual(got, []string{bannerAudienceUserAuth}) {
+		t.Errorf("signed in: got %v, want [%s]", got, bannerAudienceUserAuth)
+	}
+	if got := bannerAudiences(false); !reflect.DeepEqual(got, []string{bannerAudienceSignedOut}) {
+		t.Errorf("signed out: got %v, want [%s]", got, bannerAudienceSignedOut)
 	}
 }
