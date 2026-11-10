@@ -168,7 +168,7 @@ func TestCLIConfigRemoveUser(t *testing.T) {
 
 	// Removing their last entry clears the default user. A legacy entry with
 	// no api_url matches an explicit default URL.
-	c.RemoveUser(UserConfig{Id: "usr_1", APIURL: public.DefaultBaseURL})
+	c.RemoveUser(UserConfig{Id: "usr_1", Email: "alice@livekit.io", SessionToken: "prod", APIURL: public.DefaultBaseURL})
 	assert.Equal(t, []UserConfig{bob}, c.Users)
 	assert.Empty(t, c.DefaultUser)
 
@@ -179,13 +179,31 @@ func TestCLIConfigRemoveUser(t *testing.T) {
 	assert.Equal(t, "bob@livekit.io", c.DefaultUser)
 
 	// Of two entries for the same person on one API, which only a
-	// hand-edited config has, only the first is removed: the second holds a
-	// token that wasn't revoked.
+	// hand-edited config has, only the one whose token was revoked goes: the
+	// other holds a token that is still valid.
 	bobAgain := UserConfig{Id: "usr_2", Email: "bob@livekit.io", SessionToken: "bob2"}
 	c = &CLIConfig{DefaultUser: "usr_2", Users: []UserConfig{bob, bobAgain}}
-	c.RemoveUser(bob)
-	assert.Equal(t, []UserConfig{bobAgain}, c.Users)
+	c.RemoveUser(bobAgain)
+	assert.Equal(t, []UserConfig{bob}, c.Users)
 	assert.Equal(t, "usr_2", c.DefaultUser)
+
+	// The same email under two ids on one API: revoking the second entry,
+	// as --user <its id> does, removes that entry and leaves the first with
+	// its token.
+	dev1 := UserConfig{Id: "usr_a", Email: "dev@livekit.io", SessionToken: "dev-a"}
+	dev2 := UserConfig{Id: "usr_b", Email: "dev@livekit.io", SessionToken: "dev-b"}
+	c = &CLIConfig{DefaultUser: "usr_a", Users: []UserConfig{dev1, dev2}}
+	c.RemoveUser(dev2)
+	assert.Equal(t, []UserConfig{dev1}, c.Users)
+	assert.Equal(t, "usr_a", c.DefaultUser)
+
+	// An entry with no token is removed only for the same person, so that
+	// another tokenless entry on the API stays.
+	carol := UserConfig{Id: "usr_3", Email: "carol@livekit.io"}
+	dave := UserConfig{Id: "usr_4", Email: "dave@livekit.io"}
+	c = &CLIConfig{Users: []UserConfig{carol, dave}}
+	c.RemoveUser(dave)
+	assert.Equal(t, []UserConfig{carol}, c.Users)
 
 	// Removing a user who isn't signed in changes nothing.
 	c = &CLIConfig{DefaultUser: "bob@livekit.io", Users: []UserConfig{bob}}

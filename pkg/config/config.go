@@ -203,16 +203,21 @@ func (c *CLIConfig) UpsertUser(u UserConfig) (stored *UserConfig, replaced bool)
 	return &c.Users[len(c.Users)-1], false
 }
 
-// RemoveUser removes u's entry: the first entry for the same person on the
-// same Public API (see sameUser). UpsertUser keeps one such entry, so only a
-// hand-edited config has more, and each of those holds a token of its own
-// that the caller hasn't revoked. It clears DefaultUser only when no
-// remaining entry matches it, because DefaultUser names a person, not an API:
-// the same person signed in to another API stays the default there. Pass a
-// copy, not a pointer from GetUser, because removing shifts the entries after
-// it.
+// RemoveUser removes the entry that u copies: the entry on the same Public
+// API with the same session token, which is unique to one entry. It removes
+// nothing when no entry has that token, rather than another entry for the
+// same person, whose session the caller hasn't revoked. An entry with no token
+// matches only an entry for the same person (see sameUser) that has no token
+// either. It clears DefaultUser only when no remaining entry matches it,
+// because DefaultUser names a person, not an API: the same person signed in
+// to another API stays the default there. Pass a copy, not a pointer from
+// GetUser, because removing shifts the entries after it.
 func (c *CLIConfig) RemoveUser(u UserConfig) {
-	if i := slices.IndexFunc(c.Users, func(e UserConfig) bool { return sameUser(e, u) }); i >= 0 {
+	i := slices.IndexFunc(c.Users, func(e UserConfig) bool {
+		return SameAPIURL(e.APIURL, u.APIURL) && e.SessionToken == u.SessionToken &&
+			(u.SessionToken != "" || sameUser(e, u))
+	})
+	if i >= 0 {
 		c.Users = slices.Delete(c.Users, i, i+1)
 	}
 	if c.DefaultUser != "" && len(c.FindUsers(c.DefaultUser)) == 0 {
