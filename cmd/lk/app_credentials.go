@@ -268,19 +268,31 @@ func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, op
 		fileCreds = agentCredentials{}
 	}
 
-	var pc *config.ProjectConfig
+	var (
+		pc       *config.ProjectConfig
+		override string
+	)
 	switch {
 	case target != "" && fromFile != "":
 		pc, err = projectAtFileURL(ctx, cmd, req, target, filepath.Join(dir, fromFile))
 	case target != "":
-		pc, err = projectAtFlagURL(ctx, cmd, req, target)
+		pc, override, err = projectAtFlagURL(ctx, cmd, req, target)
 	default:
 		pc, err = resolveAgentProject(ctx, cmd, req)
 	}
 	if err != nil {
 		return agentCredentials{}, err
 	}
-	return agentKeyForProject(ctx, cmd, pc, req, fileCreds, file)
+	key, err := agentKeyForProject(ctx, cmd, pc, req, fileCreds, file)
+	if err != nil {
+		return agentCredentials{}, err
+	}
+	if override != "" {
+		// The key is looked up, checked and saved at the project's own URL;
+		// only the agent connects at --url.
+		key.url = override
+	}
+	return key, nil
 }
 
 // wholeKeyPair drops half a key pair: an API key works only with its own
@@ -395,21 +407,22 @@ func projectAtFileURL(ctx context.Context, cmd *cli.Command, req keyRequest, url
 }
 
 // projectAtFlagURL returns the project --url names. When lk knows none there
-// (a custom domain, a tunnel), --url keeps its API-key mode meaning: the
-// project lk would otherwise pick, reached at url, and its key is checked
-// there.
-func projectAtFlagURL(ctx context.Context, cmd *cli.Command, req keyRequest, url string) (*config.ProjectConfig, error) {
-	pc, _, err := findProjectAtURL(ctx, cmd, url)
+// (a local server, a tunnel, a custom domain), --url keeps its API-key mode
+// meaning: the project lk would otherwise pick, reached at url. It's
+// returned as override, for the agent only: the project's key is looked up,
+// checked and saved at the project's own URL. Checking it at an unknown
+// server (a local one answers 401) would replace a good key on every run,
+// and saving it there would move the project to url in the CLI config.
+func projectAtFlagURL(ctx context.Context, cmd *cli.Command, req keyRequest, url string) (pc *config.ProjectConfig, override string, err error) {
+	pc, _, err = findProjectAtURL(ctx, cmd, url)
 	if err != nil || pc != nil {
-		return pc, err
+		return pc, "", err
 	}
 	pc, err = resolveAgentProject(ctx, cmd, req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	at := *pc
-	at.URL = url
-	return &at, nil
+	return pc, url, nil
 }
 
 // simulationAgentCredentials returns what the agent `agent simulate` starts in
