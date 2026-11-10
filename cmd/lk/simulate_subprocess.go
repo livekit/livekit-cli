@@ -289,6 +289,10 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	return pythonBin, args, nil
 }
 
+// agentOutputDrainTimeout bounds how long an exited agent's output is read
+// for, in case a process it started still holds the pipes open.
+const agentOutputDrainTimeout = 2 * time.Second
+
 // startAgent launches a Python or Node agent subprocess and monitors its output.
 func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	// fail fast when the agent SDK is older than the baseline the CLI supports.
@@ -313,17 +317,31 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		cmd.Env = append(os.Environ(), cfg.Env...)
 	}
 
-	stdout, err := cmd.StdoutPipe()
+	// Our own pipes rather than cmd.StdoutPipe: Wait closes those as soon as
+	// the agent exits, dropping whatever output is still unread (the last
+	// lines of a short-lived agent, or the traceback of one that crashes on
+	// startup). These stay open until the output is drained.
+	stdout, stdoutW, err := os.Pipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
-	stderr, err := cmd.StderrPipe()
+	stderr, stderrW, err := os.Pipe()
 	if err != nil {
+		stdout.Close()
+		stdoutW.Close()
 		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+	cmd.Stdout, cmd.Stderr = stdoutW, stderrW
+	closePipes := func() {
+		stdout.Close()
+		stderr.Close()
 	}
 
 	logFile, err := os.CreateTemp("", "lk-simulate-*.log")
 	if err != nil {
+		closePipes()
+		stdoutW.Close()
+		stderrW.Close()
 		return nil, fmt.Errorf("failed to create log file: %w", err)
 	}
 
@@ -339,7 +357,12 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		LogPath:        logFile.Name(),
 	}
 
-	if err := cmd.Start(); err != nil {
+	err = cmd.Start()
+	// The agent has its own copies of the write ends now.
+	stdoutW.Close()
+	stderrW.Close()
+	if err != nil {
+		closePipes()
 		logFile.Close()
 		os.Remove(logFile.Name())
 		return nil, fmt.Errorf("failed to start agent: %w", err)
@@ -381,9 +404,22 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	go func() { defer scanWg.Done(); scanOutput(stdout) }()
 	go func() { defer scanWg.Done(); scanOutput(stderr) }()
 	go func() {
-		ap.doneCh <- cmd.Wait()
+		err := cmd.Wait()
+		// Drain the output before reporting the exit, so whoever waits on
+		// it has seen every line. A process the agent left behind can hold
+		// the pipes open, so don't wait on it for long.
+		scanned := make(chan struct{})
+		go func() { scanWg.Wait(); close(scanned) }()
+		select {
+		case <-scanned:
+		case <-time.After(agentOutputDrainTimeout):
+			closePipes()
+		}
+		ap.doneCh <- err
 		close(ap.exitCh)
-		scanWg.Wait()
+		// The scanners send to LogStream, so it closes only once they're done.
+		<-scanned
+		closePipes()
 		if ap.LogStream != nil {
 			close(ap.LogStream)
 		}

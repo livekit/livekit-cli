@@ -1,0 +1,45 @@
+# The rejected key in .env.local is for a project the signed-in user doesn't
+# belong to. lk stops rather than run the agent on the default project.
+[!exec:node] skip 'needs node to run the agent'
+respond POST http://three.test/twirp/livekit.RoomService/ListRooms 401 'invalid API key'
+respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one","url":"ws://one.test"},{"id":"p_2","name":"two","url":"ws://two.test"}]}'
+
+! exec lk --user-auth agent start
+! stdout .
+stderr '^no LiveKit API key to run the agent with for ws://three.test, the LIVEKIT_URL in .*[/\\]\.env\.local: it isn''t a project dev@example.com belongs to$'
+stderr '^  - remove LIVEKIT_URL from .*[/\\]\.env\.local to use your default project, or pass --project$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+      - project_id: p_2
+        name: two
+        alias: two
+        url: ws://two.test
+-- .env.local --
+LIVEKIT_URL=ws://three.test
+LIVEKIT_API_KEY=APIgone
+LIVEKIT_API_SECRET=secretgone
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://three.test/twirp/livekit.RoomService/ListRooms apikey=APIgone
+GET http://publicapi.test/v0/projects bearer=st_1

@@ -1,0 +1,43 @@
+# A stray LIVEKIT_API_KEY in the shell, without its secret, is ignored with a
+# warning: mixed into another key's secret, it would fail to authenticate.
+[!exec:node] skip 'needs node to run the agent'
+env LIVEKIT_API_KEY=APIstray
+respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
+
+exec lk --user-auth agent start
+stdout '^agent ws://one.test APIone secretone$'
+stderr '^Ignoring the API key \[APIstray\] from --api-key or LIVEKIT_API_KEY: it has no secret \(--api-secret or LIVEKIT_API_SECRET\)$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+      - project_id: p_2
+        name: two
+        alias: two
+        url: ws://two.test
+-- .env.local --
+LIVEKIT_URL=ws://one.test
+LIVEKIT_API_KEY=APIone
+LIVEKIT_API_SECRET=secretone
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone
