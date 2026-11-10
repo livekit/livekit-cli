@@ -335,6 +335,7 @@ var publicAPIRoutes = []struct {
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+/traces$`), func() any { return new(oapi.LivekitPublicapiObservabilityV1TracesGetResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+/metrics$`), func() any { return new(oapi.LivekitPublicapiObservabilityV1MetricsGetResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
+	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }
 
 // middlewareError is the body the Public API's auth middleware and panic

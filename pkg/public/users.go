@@ -33,6 +33,17 @@ func (c *Client) GetCurrentUser(ctx context.Context) (*oapi.LivekitPublicapiUser
 	return requirePayload(resp.JSON200.User, "user")
 }
 
+// RevokeSessionToken revokes the session token the client calls with. The
+// token then gets an Unauthenticated error on every call, a second revoke
+// included.
+func (c *Client) RevokeSessionToken(ctx context.Context) error {
+	resp, err := c.gen.UserServiceRevokeSessionTokenWithResponse(ctx)
+	if err != nil {
+		return err
+	}
+	return okOrError(resp.StatusCode(), resp.Body)
+}
+
 // GetUser returns a single user by id.
 func (c *Client) GetUser(ctx context.Context, userID string) (*oapi.LivekitPublicapiUsersV1User, error) {
 	resp, err := c.gen.UserServiceGetUserWithResponse(ctx, userID)

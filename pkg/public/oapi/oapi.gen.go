@@ -3909,6 +3909,9 @@ type LivekitPublicapiUsersV1ListUsersResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
+// LivekitPublicapiUsersV1SessionTokenRevokeResponse defines model for livekit.publicapi.users.v1.SessionToken.Revoke.Response.
+type LivekitPublicapiUsersV1SessionTokenRevokeResponse = map[string]interface{}
+
 // LivekitPublicapiUsersV1User A LiveKit Cloud user.
 type LivekitPublicapiUsersV1User struct {
 	// CreatedAt When the account was created.
@@ -7626,6 +7629,16 @@ type ClientInterface interface {
 	// Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 	UserServiceGetCurrentUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UserServiceRevokeSessionToken RevokeSessionToken
+	//
+	// Revokes the session token that you call with, and signs you out. After
+	//  this call, the token gets `Unauthenticated` on every call, a retry of this
+	//  call included. Your other session tokens stay valid. Access tokens that
+	//  `CreateToken` returned stay valid until they expire.
+	//
+	// Corresponds with DELETE /v0/users/me/session-token (the `UserServiceRevokeSessionToken` operationId).
+	UserServiceRevokeSessionToken(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UserServiceGetUser GetUser
 	//
 	// Corresponds with GET /v0/users/{userId} (the `UserServiceGetUser` operationId).
@@ -9147,6 +9160,27 @@ func (c *Client) UserServiceListUsers(ctx context.Context, params *UserServiceLi
 // Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 func (c *Client) UserServiceGetCurrentUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUserServiceGetCurrentUserRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UserServiceRevokeSessionToken RevokeSessionToken
+//
+// Revokes the session token that you call with, and signs you out. After
+//
+//	this call, the token gets `Unauthenticated` on every call, a retry of this
+//	call included. Your other session tokens stay valid. Access tokens that
+//	`CreateToken` returned stay valid until they expire.
+//
+// Corresponds with DELETE /v0/users/me/session-token (the `UserServiceRevokeSessionToken` operationId).
+func (c *Client) UserServiceRevokeSessionToken(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUserServiceRevokeSessionTokenRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -12768,6 +12802,33 @@ func NewUserServiceGetCurrentUserRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewUserServiceRevokeSessionTokenRequest constructs an http.Request for the UserServiceRevokeSessionToken method
+func NewUserServiceRevokeSessionTokenRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/users/me/session-token")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewUserServiceGetUserRequest constructs an http.Request for the UserServiceGetUser method
 func NewUserServiceGetUserRequest(server string, userId string) (*http.Request, error) {
 	var err error
@@ -14457,6 +14518,18 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 	UserServiceGetCurrentUserWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UserServiceGetCurrentUserResponse, error)
+
+	// UserServiceRevokeSessionTokenWithResponse RevokeSessionToken
+	//
+	// Revokes the session token that you call with, and signs you out. After
+	//  this call, the token gets `Unauthenticated` on every call, a retry of this
+	//  call included. Your other session tokens stay valid. Access tokens that
+	//  `CreateToken` returned stay valid until they expire.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/users/me/session-token (the `UserServiceRevokeSessionToken` operationId).
+	UserServiceRevokeSessionTokenWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UserServiceRevokeSessionTokenResponse, error)
 
 	// UserServiceGetUserWithResponse GetUser
 	//
@@ -17089,6 +17162,54 @@ func (r UserServiceGetCurrentUserResponse) ContentType() string {
 	return ""
 }
 
+type UserServiceRevokeSessionTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiUsersV1SessionTokenRevokeResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UserServiceRevokeSessionTokenResponse) GetJSON200() *LivekitPublicapiUsersV1SessionTokenRevokeResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UserServiceRevokeSessionTokenResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UserServiceRevokeSessionTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UserServiceRevokeSessionTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UserServiceRevokeSessionTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UserServiceRevokeSessionTokenResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type UserServiceGetUserResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -19165,6 +19286,25 @@ func (c *ClientWithResponses) UserServiceGetCurrentUserWithResponse(ctx context.
 	return ParseUserServiceGetCurrentUserResponse(rsp)
 }
 
+// UserServiceRevokeSessionTokenWithResponse RevokeSessionToken
+//
+// Revokes the session token that you call with, and signs you out. After
+//
+//	this call, the token gets `Unauthenticated` on every call, a retry of this
+//	call included. Your other session tokens stay valid. Access tokens that
+//	`CreateToken` returned stay valid until they expire.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/users/me/session-token (the `UserServiceRevokeSessionToken` operationId).
+func (c *ClientWithResponses) UserServiceRevokeSessionTokenWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UserServiceRevokeSessionTokenResponse, error) {
+	rsp, err := c.UserServiceRevokeSessionToken(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUserServiceRevokeSessionTokenResponse(rsp)
+}
+
 // UserServiceGetUserWithResponse GetUser
 //
 // Returns a wrapper object for the known response body format(s).
@@ -21164,6 +21304,39 @@ func ParseUserServiceGetCurrentUserResponse(rsp *http.Response) (*UserServiceGet
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiUsersV1GetCurrentUserResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUserServiceRevokeSessionTokenResponse parses an HTTP response from a UserServiceRevokeSessionTokenWithResponse call
+func ParseUserServiceRevokeSessionTokenResponse(rsp *http.Response) (*UserServiceRevokeSessionTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UserServiceRevokeSessionTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiUsersV1SessionTokenRevokeResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

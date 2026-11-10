@@ -1,0 +1,39 @@
+# One email signed in to staging and to prod: revoking the staging session
+# sends only the staging token, and keeps the prod session and the default
+# user.
+respond DELETE http://staging.test/v0/users/me/session-token 200 '{}'
+exec lk --user-auth cloud auth --revoke --public-api-url http://staging.test
+! stdout .
+stderr '^Using user \[dev@example\.com\] on \[http://staging\.test\]$'
+stderr '^Signed out dev@example\.com$'
+stderr '^Saved CLI config to \[.*cli-config\.yaml\]$'
+requests
+cmp stdout want-requests
+cmp home/.livekit/cli-config.yaml want-config
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_staging
+    api_url: http://staging.test
+  - id: u_1
+    email: dev@example.com
+    session_token: st_prod
+    api_url: http://prod.test
+-- want-requests --
+DELETE http://staging.test/v0/users/me/session-token bearer=st_staging
+-- want-config --
+default_project: ""
+default_user: u_1
+projects: []
+users:
+    - id: u_1
+      name: ""
+      email: dev@example.com
+      session_token: st_prod
+      session_expiry: 0
+      api_url: http://prod.test
+device_name: ""
+theme: ""
