@@ -67,8 +67,17 @@ type banner struct {
 	Audiences []string `json:"audiences"`
 }
 
-// bannerAudienceUserAuth is the audience of users signed in with --user-auth.
-const bannerAudienceUserAuth = "user-auth"
+// The banner audiences. Every user is in exactly one of them.
+const (
+	// bannerAudienceUserAuth is the audience of users signed in with --user-auth.
+	bannerAudienceUserAuth = "user-auth"
+	// bannerAudienceSignedOut is the audience of users who aren't, so a notice
+	// that asks people to sign in can skip those who already have. CLIs from
+	// before it was added don't know it, so an entry for it reaches no one on
+	// them: give such an entry a Versions constraint from the first release that
+	// has it.
+	bannerAudienceSignedOut = "signed-out"
+)
 
 // bannerAudiencesSince is the first CLI version that understands Audiences.
 const bannerAudiencesSince = "2.19.2"
@@ -166,11 +175,16 @@ func showBanner(ctx context.Context, cmd *cli.Command) {
 
 // userBannerAudiences returns the banner audiences this user belongs to.
 func userBannerAudiences() []string {
-	var audiences []string
-	if hasSignedInUser(startupConfig) {
-		audiences = append(audiences, bannerAudienceUserAuth)
+	return bannerAudiences(hasSignedInUser(startupConfig))
+}
+
+// bannerAudiences returns the banner audiences of a user who is, or isn't,
+// signed in with --user-auth.
+func bannerAudiences(signedIn bool) []string {
+	if signedIn {
+		return []string{bannerAudienceUserAuth}
 	}
-	return audiences
+	return []string{bannerAudienceSignedOut}
 }
 
 // printBanner writes the notices for this build and user to stderr, honoring
