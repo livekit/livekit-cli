@@ -6,8 +6,8 @@ respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":
 
 ! exec lk --user-auth agent start
 ! stdout .
-stderr '^no LiveKit API key to run the agent with for ws://three.test, the LIVEKIT_URL in .*/\.env\.local: it isn''t a project dev@example.com belongs to$'
-stderr '^  - remove LIVEKIT_URL from .*/\.env\.local to use your default project, or pass --project$'
+stderr '^no LiveKit API key to run the agent with for ws://three.test, the LIVEKIT_URL in .*[/\\]\.env\.local: it isn''t a project dev@example.com belongs to$'
+stderr '^  - remove LIVEKIT_URL from .*[/\\]\.env\.local to use your default project, or pass --project$'
 
 requests
 cmp stdout want-requests

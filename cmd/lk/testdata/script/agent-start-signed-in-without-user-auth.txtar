@@ -8,7 +8,7 @@
 stderr '^no LiveKit API key to run the agent with: no LiveKit project is configured$'
 stderr '^  - run `lk cloud auth` in a terminal to sign in and add a project$'
 stderr '^  - re-run with --user-auth to use your signed-in account \(dev@example.com\)$'
-stderr '^  - add LIVEKIT_URL=URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to .*/\.env\.local$'
+stderr '^  - add LIVEKIT_URL=URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to .*[/\\]\.env\.local$'
 
 requests
 ! stdout .

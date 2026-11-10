@@ -8,7 +8,7 @@ respond POST http://publicapi.test/v0/projects/p_1/keys 200 '{"apiKey":"APInew",
 
 exec lk --user-auth agent start
 stdout '^agent ws://one.test APInew secretnew$'
-stderr '^LiveKit rejected API key \[APIgone\] from .*/\.env\.local \(deleted, or for another project\); not using it; remove its LIVEKIT_API_KEY and LIVEKIT_API_SECRET lines, or replace them with a working key$'
+stderr '^LiveKit rejected API key \[APIgone\] from .*[/\\]\.env\.local \(deleted, or for another project\); not using it; remove its LIVEKIT_API_KEY and LIVEKIT_API_SECRET lines, or replace them with a working key$'
 grep APIgone .env.local
 
 requests

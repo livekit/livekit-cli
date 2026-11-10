@@ -8,7 +8,7 @@ respond POST http://publicapi.test/v0/projects/p_1/keys 403 '{"code":7,"message"
 ! exec lk --user-auth agent simulate text --yes
 ! stdout .
 stderr '^no LiveKit API key to run the agent with for project \[one\]: your role on project \[one\] can''t create API keys \(that takes Admin\)$'
-stderr '^  - add LIVEKIT_URL=ws://one.test, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to .*/\.env\.local$'
+stderr '^  - add LIVEKIT_URL=ws://one.test, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to .*[/\\]\.env\.local$'
 ! exists .env.local
 
 requests

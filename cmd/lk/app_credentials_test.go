@@ -107,7 +107,7 @@ func TestMissingKeyError(t *testing.T) {
 
 To supply one, do one of:
   - re-run in a terminal and enter a key when asked (find or create one under Settings › API keys at `+dashboardURL+`, or ask a project admin)
-  - add LIVEKIT_URL=wss://one.livekit.cloud, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to agent/.env.local
+  - add LIVEKIT_URL=wss://one.livekit.cloud, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to `+filepath.Join("agent", ".env.local")+`
   - save a key for lk to use: lk project add one --url wss://one.livekit.cloud --api-key KEY --api-secret SECRET
   - pass --api-key and --api-secret, or set LIVEKIT_API_KEY and LIVEKIT_API_SECRET`)
 

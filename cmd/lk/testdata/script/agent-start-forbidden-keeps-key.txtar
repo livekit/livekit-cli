@@ -6,7 +6,7 @@ respond POST http://one.test/twirp/livekit.RoomService/ListRooms 403 'project su
 
 exec lk --user-auth agent start
 stdout '^agent ws://one.test APIok secretok$'
-stderr '^Using API key \[APIok\] from .*/\.env\.local$'
+stderr '^Using API key \[APIok\] from .*[/\\]\.env\.local$'
 
 requests
 cmp stdout want-requests

@@ -6,7 +6,7 @@ respond POST http://two.test/twirp/livekit.RoomService/ListRooms 200 ''
 
 exec lk agent start --project two
 stdout '^agent ws://two.test APItwo secrettwo$'
-stderr '^Not using the API key in .*/\.env\.local: it''s for ws://one.test, not project \[two\]$'
+stderr '^Not using the API key in .*[/\\]\.env\.local: it''s for ws://one.test, not project \[two\]$'
 cmp .env.local want-env
 
 requests
