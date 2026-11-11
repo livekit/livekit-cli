@@ -112,6 +112,10 @@ var simulateCommand = &cli.Command{
 			Name:  "deployment",
 			Usage: "`NAME` of the agent deployment to run against, such as a non-production deployment. Defaults to production. Requires --agent-name.",
 		},
+		&cli.StringFlag{
+			Name:  "persona-model",
+			Usage: "`MODEL` that plays the simulated caller (the persona). Defaults to the standard persona model.",
+		},
 	},
 }
 
@@ -453,6 +457,9 @@ type simulateConfig struct {
 
 	// named deployment of agentName to dispatch to; empty is production
 	deployment string
+
+	// the persona's model; empty is the default
+	personaModel string
 }
 
 type simulateMode int
@@ -685,6 +692,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		simulationMode: simulationMode,
 		agentName:      agentName,
 		deployment:     deployment,
+		personaModel:   cmd.String("persona-model"),
 		projectDir:     projectDir,
 		projectType:    projectType,
 		entrypoint:     entrypoint,
@@ -880,6 +888,7 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 		SipTrunkId:           c.sipTrunkID,
 		SipNumber:            c.sipNumber,
 		Ci:                   ciFromEnv(),
+		PersonaModel:         c.personaModel,
 	}
 	if c.concurrency > 0 {
 		req.Concurrency = &c.concurrency
