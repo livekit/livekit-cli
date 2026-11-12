@@ -1,10 +1,16 @@
-# With an API key, the sip commands still call the project's SIP API through
-# server-sdk-go, signed with the key, and never the Public API.
+# With an API key, the sip and number commands still call the project's SIP
+# API through server-sdk-go, signed with the key, and never the Public API.
 respond POST http://one.test/twirp/livekit.SIP/ListSIPInboundTrunk 200 ''
 exec lk sip inbound list
 
 respond POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk 200 ''
 exec lk sip outbound delete ST_1
+
+respond POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers 200 ''
+exec lk number list
+
+! exec lk number list --cursor c2
+stderr '^--cursor is only supported with --user-auth'
 
 requests
 cmp stdout want-requests
@@ -20,3 +26,5 @@ projects:
 -- want-requests --
 POST http://one.test/twirp/livekit.SIP/ListSIPInboundTrunk apikey=APIone
 POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
+POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone
+POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone

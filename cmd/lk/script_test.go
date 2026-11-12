@@ -348,6 +348,12 @@ var publicAPIRoutes = []struct {
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/sip/dispatch-rules/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1DispatchRulesDeleteResponse) }},
 	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/sip/participants$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1SIPParticipantsCreateResponse) }},
 	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/sip/participants:transfer$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1SIPParticipantsTransferResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers:search$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersSearchResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersListResponse) }},
+	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersPurchaseResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersGetResponse) }},
+	{http.MethodPatch, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersUpdateResponse) }},
+	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }
