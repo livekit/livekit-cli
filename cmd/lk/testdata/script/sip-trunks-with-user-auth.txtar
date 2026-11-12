@@ -1,0 +1,53 @@
+# Under --user-auth the trunk commands call the Public API's
+# TelephonyService, and mint no token: the API checks the user's role
+# itself. The password the API answers with is its placeholder, so the table
+# still shows that one is set.
+respond GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks 200 '{"items":[{"sipTrunkId":"ST_in","name":"front","numbers":["+15550100"],"authUsername":"u","authPassword":"********"}],"pageInfo":{"hasMore":false}}'
+exec lk --user-auth sip inbound list
+stdout 'ST_in.*front.*\+15550100.*u / \*\*\*\*'
+
+respond POST http://publicapi.test/v0/projects/p_1/sip/outbound-trunks 200 '{"trunk":{"sipTrunkId":"ST_out","name":"carrier","address":"sip.example.com","authPassword":"********"}}'
+exec lk --user-auth sip outbound create --name carrier --address sip.example.com --numbers +15550100 --auth-user u --auth-pass secret
+stdout '^SIPTrunkID: ST_out$'
+
+respond PATCH http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_in 200 '{"trunk":{"sipTrunkId":"ST_in","name":"renamed"}}'
+exec lk --user-auth sip inbound update --id ST_in --name renamed
+stdout '^SIPTrunkID: ST_in$'
+
+# A replace from a request file keeps working.
+respond PATCH http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out 200 '{"trunk":{"sipTrunkId":"ST_out","name":"from-file"}}'
+exec lk --user-auth sip outbound update trunk.json
+stdout '^SIPTrunkID: ST_out$'
+
+# `sip inbound delete` deletes a trunk of either kind, as with an API key:
+# an ID that isn't an inbound trunk is tried as an outbound one.
+respond DELETE http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_out 404 '{"code":5,"message":"inbound trunk not found"}'
+respond DELETE http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out 200 '{}'
+exec lk --user-auth sip inbound delete ST_out
+stdout 'SIP Trunk \[ST_out\] deleted'
+
+requests
+cmp stdout want-requests
+
+-- trunk.json --
+{"sip_trunk_id": "ST_out", "name": "from-file", "address": "sip.example.com", "transport": "SIP_TRANSPORT_TLS"}
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-requests --
+GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/sip/outbound-trunks bearer=st_1 project=p_1
+PATCH http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_in bearer=st_1 project=p_1
+PATCH http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_out bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out bearer=st_1 project=p_1
