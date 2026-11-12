@@ -239,14 +239,13 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 		return nodeBin, args, nil
 	}
 
-	pythonBin, prefixArgs, err := agentfs.FindPythonBinary(cfg.Dir, cfg.ProjectType)
+	pythonBin, err := agentfs.FindPythonBinary(cfg.Dir)
 	if err != nil {
 		return "", nil, err
 	}
 	// python -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS: the framework
 	// discovers the AgentServer from the entrypoint and drives the thin CLI.
-	args := make([]string, 0, len(prefixArgs)+len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+4)
-	args = append(args, prefixArgs...)
+	args := make([]string, 0, len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+4)
 	args = append(args, cfg.RuntimeArgs...)
 	args = append(args, "-m", "livekit.agents")
 	if len(cfg.CLIArgs) > 0 {

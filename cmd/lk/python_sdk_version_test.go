@@ -73,7 +73,7 @@ func setupUvAgentProject(t *testing.T, stubVersion, depSpec string, sync bool) s
 
 func TestResolvePythonAgentVersion_ReadsInstalledVersion(t *testing.T) {
 	dir := setupUvAgentProject(t, "1.6.7", "livekit-agents", true)
-	version, notInstalled := agentfs.ResolvePythonAgentVersion(dir, agentfs.ProjectTypePythonUV)
+	version, notInstalled := agentfs.ResolvePythonAgentVersion(dir)
 	require.Equal(t, "1.6.7", version)
 	require.False(t, notInstalled)
 }
@@ -125,20 +125,19 @@ func TestStartPythonAgentImportsOnceAndReportsMissingDependencies(t *testing.T) 
 	require.Equal(t, "import\n", string(imports))
 }
 
-func TestFindPythonBinary_UVRunDoesNotSyncEnvironment(t *testing.T) {
+func TestFindPythonBinary_DoesNotSyncEnvironment(t *testing.T) {
 	// Models a user who synced their env, then edited a dependency's version
-	// without re-syncing. Running through the CLI-resolved interpreter must
-	// execute against the environment as it exists on disk — a plain `uv run`
-	// would re-lock and install 9.9.9 as a side effect of launching.
+	// without re-syncing. The CLI-resolved interpreter must run against the
+	// environment as it exists on disk, never re-lock and install 9.9.9.
 	dir := setupUvAgentProject(t, "1.6.7", "livekit-agents", true)
 	stubPyproject := filepath.Join(dir, "stub", "pyproject.toml")
 	orig, err := os.ReadFile(stubPyproject)
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(stubPyproject, []byte(strings.Replace(string(orig), "1.6.7", "9.9.9", 1)), 0o644))
 
-	bin, prefixArgs, err := agentfs.FindPythonBinary(dir, agentfs.ProjectTypePythonUV)
+	bin, err := agentfs.FindPythonBinary(dir)
 	require.NoError(t, err)
-	cmd := exec.Command(bin, append(prefixArgs, "-c", `import importlib.metadata as m; print(m.version("livekit-agents"))`)...)
+	cmd := exec.Command(bin, "-c", `import importlib.metadata as m; print(m.version("livekit-agents"))`)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	require.NoError(t, err)
