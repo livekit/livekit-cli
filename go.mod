@@ -25,21 +25,21 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.1
 	github.com/livekit/protocol v1.53.3-0.20261104230654-7bbaddbd56db
-	github.com/livekit/server-sdk-go/v2 v2.19.0
+	github.com/livekit/server-sdk-go/v2 v2.19.1-0.20261112154422-d28786dd4099
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
 	github.com/moby/patternmatcher v0.6.1
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/oapi-codegen/runtime v1.4.2
 	github.com/pelletier/go-toml/v2 v2.4.3
-	github.com/pion/rtcp v1.2.19
-	github.com/pion/rtp v1.10.5
-	github.com/pion/webrtc/v4 v4.2.23
+	github.com/pion/rtcp v1.2.20
+	github.com/pion/rtp v1.10.6
+	github.com/pion/webrtc/v4 v4.2.24
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/stretchr/testify v1.12.1
 	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f
 	github.com/twitchtv/twirp v8.1.3+incompatible
-	github.com/urfave/cli/v3 v3.9.0
+	github.com/urfave/cli/v3 v3.14.0
 	go.uber.org/atomic v1.12.0
 	golang.org/x/sync v0.24.0
 	golang.org/x/text v0.43.0
@@ -159,7 +159,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/lithammer/shortuuid/v4 v4.3.0 // indirect
 	github.com/livekit/mageutil v0.0.0-20250511045019-0f1ff63f7731 // indirect
-	github.com/livekit/mediatransportutil v0.0.0-20260821083140-f234b534b095 // indirect
+	github.com/livekit/mediatransportutil v0.0.0-20261014192331-dd8e31a0adc0 // indirect
 	github.com/livekit/psrpc v0.8.2 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/magefile/mage v1.17.2 // indirect
@@ -167,7 +167,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.30 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
-	github.com/moby/buildkit v0.33.0 // indirect
+	github.com/moby/buildkit v0.33.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/moby/api v1.54.2 // indirect
@@ -183,8 +183,9 @@ require (
 	github.com/petermattis/goid v0.0.0-20260918085751-abfca077860b // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pion/datachannel v1.6.3 // indirect
-	github.com/pion/dtls/v3 v3.1.10 // indirect
-	github.com/pion/ice/v4 v4.4.7 // indirect
+	github.com/pion/dtls/v3 v3.1.15 // indirect
+	github.com/pion/dtls/v4 v4.0.0-rc.8 // indirect
+	github.com/pion/ice/v4 v4.4.8 // indirect
 	github.com/pion/interceptor v0.1.49 // indirect
 	github.com/pion/logging v0.2.4 // indirect
 	github.com/pion/mdns/v2 v2.2.2 // indirect
@@ -193,7 +194,7 @@ require (
 	github.com/pion/sdp/v3 v3.0.20 // indirect
 	github.com/pion/srtp/v3 v3.1.3 // indirect
 	github.com/pion/stun/v4 v4.0.1 // indirect
-	github.com/pion/transport/v5 v5.1.1 // indirect
+	github.com/pion/transport/v5 v5.1.4 // indirect
 	github.com/pion/turn/v5 v5.1.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
@@ -271,3 +272,8 @@ require (
 // replace github.com/livekit/protocol => ../protocol
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
+
+// Keep in step with server-sdk-go's go.mod: its transport uses the dtls/v4 API these forks add.
+replace github.com/pion/webrtc/v4 => github.com/livekit/webrtc-pion/v4 v4.2.25-warp.1
+
+replace github.com/pion/ice/v4 => github.com/livekit/ice/v4 v4.4.8-warp.2
