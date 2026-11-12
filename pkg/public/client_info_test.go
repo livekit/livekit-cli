@@ -108,6 +108,8 @@ func TestDetectCodingAgent(t *testing.T) {
 		{"AI_AGENT that cleans to nothing falls through", map[string]string{"AI_AGENT": "!!!", "CLAUDECODE": "1"}, "claude-code"},
 		{"Claude Code", map[string]string{"CLAUDECODE": "1"}, "claude-code"},
 		{"Gemini CLI", map[string]string{"GEMINI_CLI": "1"}, "gemini-cli"},
+		{"Codex", map[string]string{"CODEX_VERSION": "0.140.0"}, "codex"},
+		{"Cursor", map[string]string{"CURSOR_AGENT": "1"}, "cursor"},
 		{"a variable set to something else", map[string]string{"CLAUDECODE": "0"}, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -83,7 +83,8 @@ func DetectSource(getenv func(string) string) string {
 //
 // AI_AGENT is a convention shared across vendors; its value starts with the
 // agent's name, as in "claude-code_2-1-317_agent". The rest are set by one
-// agent each.
+// agent each: Codex sets CODEX_VERSION on every command it runs, and Cursor
+// sets CURSOR_AGENT in its agent's terminal (not in a terminal a person uses).
 func DetectCodingAgent(getenv func(string) string) string {
 	if v := getenv("AI_AGENT"); v != "" {
 		name, _, _ := strings.Cut(v, "_")
@@ -96,6 +97,10 @@ func DetectCodingAgent(getenv func(string) string) string {
 		return "claude-code"
 	case getenv("GEMINI_CLI") == "1":
 		return "gemini-cli"
+	case getenv("CODEX_VERSION") != "":
+		return "codex"
+	case getenv("CURSOR_AGENT") != "":
+		return "cursor"
 	}
 	return ""
 }
