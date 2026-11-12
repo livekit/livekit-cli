@@ -1,0 +1,24 @@
+# Buying a number needs ADMIN on the project. A member below it gets the
+# Public API's refusal, which names the role, and lk exits non-zero.
+respond POST http://publicapi.test/v0/projects/p_1/phone-numbers 403 '{"code":7,"message":"this needs ADMIN on the project"}'
+! exec lk --user-auth number purchase --numbers +14155550100
+! stdout .
+stderr 'this needs ADMIN on the project — your account doesn.t have access'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/phone-numbers bearer=st_1 project=p_1

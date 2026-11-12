@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 
@@ -25,12 +26,12 @@ import (
 	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
-// The sip commands call the SIP API through server-sdk-go with an API key.
-// Under --user-auth they call the Public API's TelephonyService instead,
-// which checks the user's role on the project itself. Each command takes the
-// interface below, so its flags, request files and output are the same in
-// both modes: the SDK client implements it with an API key, and publicSIP
-// under --user-auth.
+// The sip and number commands call the SIP API through server-sdk-go with an
+// API key. Under --user-auth they call the Public API's TelephonyService
+// instead, which checks the user's role on the project itself. Each command
+// takes one of the interfaces below, so its flags, request files and output
+// are the same in both modes: the SDK client implements it with an API key,
+// and publicSIP or publicPhoneNumbers under --user-auth.
 
 // sipAPI is what the sip commands call.
 type sipAPI interface {
@@ -49,9 +50,21 @@ type sipAPI interface {
 	TransferSIPParticipant(ctx context.Context, req *livekit.TransferSIPParticipantRequest) (*livekit.TransferSIPParticipantResponse, error)
 }
 
+// phoneNumberAPI is what the number commands call, but list, whose paging
+// differs in each mode.
+type phoneNumberAPI interface {
+	SearchPhoneNumbers(ctx context.Context, req *livekit.SearchPhoneNumbersRequest) (*livekit.SearchPhoneNumbersResponse, error)
+	PurchasePhoneNumber(ctx context.Context, req *livekit.PurchasePhoneNumberRequest) (*livekit.PurchasePhoneNumberResponse, error)
+	GetPhoneNumber(ctx context.Context, req *livekit.GetPhoneNumberRequest) (*livekit.GetPhoneNumberResponse, error)
+	UpdatePhoneNumber(ctx context.Context, req *livekit.UpdatePhoneNumberRequest) (*livekit.UpdatePhoneNumberResponse, error)
+	ReleasePhoneNumbers(ctx context.Context, req *livekit.ReleasePhoneNumbersRequest) (*livekit.ReleasePhoneNumbersResponse, error)
+}
+
 var (
-	_ sipAPI = (*lksdk.SIPClient)(nil)
-	_ sipAPI = (*publicSIP)(nil)
+	_ sipAPI         = (*lksdk.SIPClient)(nil)
+	_ sipAPI         = (*publicSIP)(nil)
+	_ phoneNumberAPI = (*lksdk.PhoneNumberClient)(nil)
+	_ phoneNumberAPI = (*publicPhoneNumbers)(nil)
 )
 
 // telephonyProject resolves the signed-in user's project (--project, the
@@ -176,4 +189,86 @@ func (p *publicSIP) CreateSIPParticipant(ctx context.Context, req *livekit.Creat
 func (p *publicSIP) TransferSIPParticipant(ctx context.Context, req *livekit.TransferSIPParticipantRequest) (*livekit.TransferSIPParticipantResponse, error) {
 	res, err := p.client.TransferSIPParticipant(ctx, p.projectID, req)
 	return res, cloudAPIError(err)
+}
+
+// publicPhoneNumbers is phoneNumberAPI on the Public API, for one project. The
+// Public API buys and releases one number for each call, so a request for
+// several makes one call for each, in order, and stops at the first failure.
+type publicPhoneNumbers struct {
+	client    *public.Client
+	projectID string
+}
+
+func (p *publicPhoneNumbers) SearchPhoneNumbers(ctx context.Context, req *livekit.SearchPhoneNumbersRequest) (*livekit.SearchPhoneNumbersResponse, error) {
+	items, err := p.client.SearchPhoneNumbers(ctx, p.projectID, req.GetCountryCode(), req.GetAreaCode(), req.GetLimit())
+	if err != nil {
+		return nil, cloudAPIError(err)
+	}
+	return &livekit.SearchPhoneNumbersResponse{Items: items}, nil
+}
+
+func (p *publicPhoneNumbers) PurchasePhoneNumber(ctx context.Context, req *livekit.PurchasePhoneNumberRequest) (*livekit.PurchasePhoneNumberResponse, error) {
+	res := &livekit.PurchasePhoneNumberResponse{}
+	for _, e164 := range req.GetPhoneNumbers() {
+		number, err := p.client.PurchasePhoneNumber(ctx, p.projectID, e164, req.GetSipDispatchRuleId())
+		if err != nil {
+			return nil, partialError("purchased", numbersOf(res.PhoneNumbers), e164, cloudAPIError(err))
+		}
+		res.PhoneNumbers = append(res.PhoneNumbers, number)
+	}
+	return res, nil
+}
+
+func (p *publicPhoneNumbers) GetPhoneNumber(ctx context.Context, req *livekit.GetPhoneNumberRequest) (*livekit.GetPhoneNumberResponse, error) {
+	number, err := p.client.GetPhoneNumber(ctx, p.projectID, phoneNumberRef(req.GetId(), req.GetPhoneNumber()))
+	if err != nil {
+		return nil, cloudAPIError(err)
+	}
+	return &livekit.GetPhoneNumberResponse{PhoneNumber: number}, nil
+}
+
+func (p *publicPhoneNumbers) UpdatePhoneNumber(ctx context.Context, req *livekit.UpdatePhoneNumberRequest) (*livekit.UpdatePhoneNumberResponse, error) {
+	number, err := p.client.UpdatePhoneNumber(ctx, p.projectID, phoneNumberRef(req.GetId(), req.GetPhoneNumber()), req.Name, req.SipDispatchRuleId)
+	if err != nil {
+		return nil, cloudAPIError(err)
+	}
+	return &livekit.UpdatePhoneNumberResponse{PhoneNumber: number}, nil
+}
+
+func (p *publicPhoneNumbers) ReleasePhoneNumbers(ctx context.Context, req *livekit.ReleasePhoneNumbersRequest) (*livekit.ReleasePhoneNumbersResponse, error) {
+	refs := append(append([]string(nil), req.GetIds()...), req.GetPhoneNumbers()...)
+	var released []string
+	for _, ref := range refs {
+		if err := p.client.ReleasePhoneNumber(ctx, p.projectID, ref); err != nil {
+			return nil, partialError("released", released, ref, cloudAPIError(err))
+		}
+		released = append(released, ref)
+	}
+	return &livekit.ReleasePhoneNumbersResponse{}, nil
+}
+
+// phoneNumberRef is the path ID the Public API takes for a phone number: its
+// ID, or the number in E.164 format.
+func phoneNumberRef(id, e164 string) string {
+	if id != "" {
+		return id
+	}
+	return e164
+}
+
+// partialError is err for a call on failed, which names the numbers that
+// the earlier calls already did (purchased or released), if any.
+func partialError(did string, done []string, failed string, err error) error {
+	if len(done) == 0 {
+		return fmt.Errorf("%s: %w", failed, err)
+	}
+	return fmt.Errorf("%s %s, then %s failed: %w", did, strings.Join(done, ", "), failed, err)
+}
+
+func numbersOf(numbers []*livekit.PhoneNumber) []string {
+	out := make([]string, len(numbers))
+	for i, n := range numbers {
+		out[i] = n.GetE164Format()
+	}
+	return out
 }
