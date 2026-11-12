@@ -412,12 +412,14 @@ var (
 			Hidden: true, // deprecated: use `sip trunk list`
 			Name:   "list-sip-trunk",
 			Usage:  "List all SIP trunk",
+			Before: refuseUnderUserAuth("lk sip inbound list and lk sip outbound list"),
 			Action: listSipTrunk,
 		},
 		{
 			Hidden: true, // deprecated: use `sip trunk delete`
 			Name:   "delete-sip-trunk",
 			Usage:  "Delete SIP Trunk",
+			Before: refuseUnderUserAuth("lk sip inbound delete or lk sip outbound delete"),
 			Action: deleteSIPTrunkLegacy,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
@@ -431,6 +433,7 @@ var (
 			Hidden: true, // deprecated: use `sip dispatch create`
 			Name:   "create-sip-dispatch-rule",
 			Usage:  "Create a SIP Dispatch Rule",
+			Before: refuseUnderUserAuth("lk sip dispatch create"),
 			Action: createSIPDispatchRuleLegacy,
 			Flags: []cli.Flag{
 				RequestFlag[livekit.CreateSIPDispatchRuleRequest](),
@@ -440,12 +443,14 @@ var (
 			Hidden: true, // deprecated: use `sip dispatch list`
 			Name:   "list-sip-dispatch-rule",
 			Usage:  "List all SIP Dispatch Rule",
+			Before: refuseUnderUserAuth("lk sip dispatch list"),
 			Action: listSipDispatchRule,
 		},
 		{
 			Hidden: true, // deprecated: use `sip dispatch delete`
 			Name:   "delete-sip-dispatch-rule",
 			Usage:  "Delete SIP Dispatch Rule",
+			Before: refuseUnderUserAuth("lk sip dispatch delete"),
 			Action: deleteSIPDispatchRuleLegacy,
 			Flags: []cli.Flag{
 				&cli.StringFlag{
@@ -459,6 +464,7 @@ var (
 			Hidden: true, // deprecated: use `sip participant create`
 			Name:   "create-sip-participant",
 			Usage:  "Create a SIP Participant",
+			Before: refuseUnderUserAuth("lk sip participant create"),
 			Action: createSIPParticipantLegacy,
 			Flags: []cli.Flag{
 				RequestFlag[livekit.CreateSIPParticipantRequest](),
@@ -584,7 +590,22 @@ func parseSIPMediaConfig(cmd *cli.Command) (*livekit.SIPMediaConfig, error) {
 	return m, nil
 }
 
-func createSIPClient(ctx context.Context, cmd *cli.Command) (*lksdk.SIPClient, error) {
+// createSIPClient returns the SIP API: server-sdk-go's client with an API
+// key, or the Public API under --user-auth.
+func createSIPClient(ctx context.Context, cmd *cli.Command) (sipAPI, error) {
+	if userAuthEnabled(cmd) {
+		client, projectID, err := telephonyProject(ctx, cmd)
+		if err != nil {
+			return nil, err
+		}
+		return &publicSIP{client: client, projectID: projectID}, nil
+	}
+	return createSIPSDKClient(ctx, cmd)
+}
+
+// createSIPSDKClient returns server-sdk-go's SIP client, for the hidden
+// legacy commands, which refuse --user-auth.
+func createSIPSDKClient(ctx context.Context, cmd *cli.Command) (*lksdk.SIPClient, error) {
 	_, err := requireProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
@@ -889,7 +910,7 @@ func printHeaderMaps(arr ...map[string]string) string {
 }
 
 func listSipTrunk(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPSDKClient(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -981,7 +1002,7 @@ func deleteSIPTrunk(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteSIPTrunkLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPSDKClient(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -1071,7 +1092,7 @@ func createSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPSDKClient(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -1243,7 +1264,7 @@ func deleteSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 }
 
 func deleteSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPSDKClient(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -1269,6 +1290,13 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 	agentName := cmd.String("agent-name")
 	var dispatchCli *lksdk.AgentDispatchClient
 	if agentName != "" {
+		// Agent dispatch has no Public API RPC, so under --user-auth it goes
+		// through the session's token bridge.
+		if userAuthEnabled(cmd) {
+			if _, err := requireProjectForSDK(ctx, cmd); err != nil {
+				return err
+			}
+		}
 		dispatchCli = lksdk.NewAgentDispatchServiceClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...)
 	}
 	return createAndPrintReqs(ctx, cmd, func(req *livekit.CreateSIPParticipantRequest) error {
@@ -1394,7 +1422,7 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 }
 
 func createSIPParticipantLegacy(ctx context.Context, cmd *cli.Command) error {
-	cli, err := createSIPClient(ctx, cmd)
+	cli, err := createSIPSDKClient(ctx, cmd)
 	if err != nil {
 		return err
 	}

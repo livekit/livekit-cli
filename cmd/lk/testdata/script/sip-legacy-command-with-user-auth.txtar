@@ -1,0 +1,22 @@
+# The hidden legacy SIP commands have no Public API RPC. Under --user-auth
+# each one points to the command that replaces it, and calls nothing.
+! exec lk --user-auth list-sip-trunk
+stderr 'list-sip-trunk is not supported with --user-auth; use lk sip inbound list and lk sip outbound list'
+! exec lk --user-auth delete-sip-dispatch-rule --id SDR_1
+stderr 'delete-sip-dispatch-rule is not supported with --user-auth; use lk sip dispatch delete'
+
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test

@@ -1,0 +1,22 @@
+# With an API key, the sip commands still call the project's SIP API through
+# server-sdk-go, signed with the key, and never the Public API.
+respond POST http://one.test/twirp/livekit.SIP/ListSIPInboundTrunk 200 ''
+exec lk sip inbound list
+
+respond POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk 200 ''
+exec lk sip outbound delete ST_1
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+-- want-requests --
+POST http://one.test/twirp/livekit.SIP/ListSIPInboundTrunk apikey=APIone
+POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
