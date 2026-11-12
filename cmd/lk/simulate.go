@@ -79,7 +79,7 @@ var simulateCommand = &cli.Command{
 		&cli.IntFlag{
 			Name:    "num-simulations",
 			Aliases: []string{"n"},
-			Usage:   "Number `N` of scenarios to generate from the agent's source. Has no effect when a scenario file is in use.",
+			Usage:   "Number `N` of scenarios to generate from the agent's source. Defaults to 20 when unset. Has no effect when a scenario file is in use.",
 		},
 		&cli.IntFlag{
 			Name:  "concurrency",
@@ -180,15 +180,15 @@ var simulateAudioCommand = &cli.Command{
 	Flags: []cli.Flag{
 		&cli.BoolFlag{
 			Name:  "background-noise",
-			Usage: "Mix ambient noise into the simulated user's audio",
+			Usage: "Mix an ambient noise clip, such as rain, a cafe, or street traffic, into the simulated user's audio, as loud as the voice. Each simulation picks a clip at random",
 		},
 		&cli.BoolFlag{
 			Name:  "low-quality-microphone",
-			Usage: "Publish the simulated user's audio as a low-quality microphone would capture it",
+			Usage: "Publish the simulated user's audio as a phone line carries it: band-limited to 300-3400 Hz and G.711 µ-law encoded",
 		},
 		&cli.BoolFlag{
 			Name:  "packet-loss",
-			Usage: "Drop packets from the simulated user's audio track",
+			Usage: "Drop 25% of the simulated user's audio, in bursts of about 60 ms",
 		},
 		&cli.StringFlag{
 			Name:  "to",
