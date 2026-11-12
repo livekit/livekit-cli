@@ -188,7 +188,7 @@ var simulateAudioCommand = &cli.Command{
 		},
 		&cli.BoolFlag{
 			Name:  "packet-loss",
-			Usage: "Drop 25% of the simulated user's audio, in bursts of about 60 ms",
+			Usage: "Drop 25% of the simulated user's audio, in bursts of about 150 ms",
 		},
 		&cli.StringFlag{
 			Name:  "to",
