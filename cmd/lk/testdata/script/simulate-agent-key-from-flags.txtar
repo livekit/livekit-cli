@@ -1,10 +1,8 @@
 # Under --user-auth, a key and secret passed with --api-key/--api-secret go to
-# the agent agent simulate starts, once LiveKit accepts them for the project:
-# a member who can't create keys can still run simulations. The agent gets
+# the agent agent simulate starts: a member who can't create keys can still run simulations. The agent gets
 # them in its environment, not its arguments, where other users could read
 # the secret. (This agent exits at once, so the run stops there.)
 [!exec:node] skip 'needs node to run the agent'
-respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
 
 ! exec lk --user-auth --api-key APIone --api-secret secretone agent simulate text --yes
 stderr '^Using API key \[APIone\] from --api-key$'
@@ -34,4 +32,3 @@ console.log('agent', JSON.stringify(process.argv.slice(2)).replace(/[",]/g, (c) 
 {"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
 -- node_modules/@livekit/agents/index.js --
 -- want-requests --
-POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone

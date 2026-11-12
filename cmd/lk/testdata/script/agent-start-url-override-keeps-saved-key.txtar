@@ -1,12 +1,10 @@
 # LIVEKIT_URL in the shell points at a server lk knows no project for (a local
 # dev server here, which would 401 any cloud key). The agent connects there
-# with the project's saved key, but the key is checked at the project's own
-# URL: no key is created, and the project's saved URL isn't changed.
+# with the project's saved key: no key is created, and the project's saved URL
+# isn't changed.
 [!exec:node] skip 'needs node to run the agent'
 env LIVEKIT_URL=ws://local.test
 respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one","url":"ws://one.test"}]}'
-respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
-respond POST http://local.test/twirp/livekit.RoomService/ListRooms 401 'invalid API key'
 
 exec lk --user-auth agent start
 stdout '^agent ws://local.test APIone secretone$'
@@ -47,6 +45,4 @@ console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, proce
 -- node_modules/@livekit/agents/index.js --
 -- want-requests --
 GET http://publicapi.test/v0/projects bearer=st_1
-POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone
 GET http://publicapi.test/v0/projects bearer=st_1
-POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone
