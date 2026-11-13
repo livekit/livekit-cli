@@ -2,7 +2,6 @@
 # warning: mixed into another key's secret, it would fail to authenticate.
 [!exec:node] skip 'needs node to run the agent'
 env LIVEKIT_API_KEY=APIstray
-respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
 
 exec lk --user-auth agent start
 stdout '^agent ws://one.test APIone secretone$'
@@ -40,4 +39,3 @@ console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, proce
 {"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
 -- node_modules/@livekit/agents/index.js --
 -- want-requests --
-POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone

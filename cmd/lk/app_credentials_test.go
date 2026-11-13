@@ -16,15 +16,10 @@ package main
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
@@ -120,18 +115,11 @@ To supply one, do one of:
 }
 
 func TestEnsureProjectAPIKeyReusesEnvFile(t *testing.T) {
-	prev, prevCheck := project, checkAPIKey
-	t.Cleanup(func() { project, checkAPIKey = prev, prevCheck })
+	prev := project
+	t.Cleanup(func() { project = prev })
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	rejected := map[string]bool{}
-	checkAPIKey = func(_ context.Context, _, apiKey, _ string) error {
-		if rejected[apiKey] {
-			return errKeyRejected
-		}
-		return nil
-	}
 	session := &config.ProjectConfig{
 		Name: "p", ProjectId: "p_1", URL: "wss://p.livekit.cloud",
 		APIKey: tokenauth.PlaceholderAPIKey, APISecret: tokenauth.PlaceholderAPISecret,
@@ -149,18 +137,6 @@ func TestEnsureProjectAPIKeyReusesEnvFile(t *testing.T) {
 	assert.False(t, isSessionProject(project))
 	assert.True(t, isSessionProject(session), "the session project itself is not modified")
 
-	// A key LiveKit rejects isn't used for the app: the chain goes on (and,
-	// with no terminal and no way to create one, says how to supply a key).
-	rejected["APIk"] = true
-	project = session
-	runWithProjectFlag(t, nil, func(ctx context.Context, cmd *cli.Command) error {
-		var noKey *noKeyError
-		assert.ErrorAs(t, ensureProjectAPIKey(ctx, cmd, dir, appEnvFiles("")...), &noKey)
-		return nil
-	})
-	assert.True(t, isSessionProject(project), "the rejected key isn't used")
-	rejected["APIk"] = false
-
 	// A project with a real key is left alone.
 	real := &config.ProjectConfig{Name: "p", URL: "wss://p.livekit.cloud", APIKey: "APIreal", APISecret: "real"}
 	project = real
@@ -169,47 +145,6 @@ func TestEnsureProjectAPIKeyReusesEnvFile(t *testing.T) {
 		return nil
 	})
 	assert.Same(t, real, project)
-}
-
-func TestCheckAPIKey(t *testing.T) {
-	var (
-		status int
-		body   string
-		auth   string
-	)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth = r.Header.Get("Authorization")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		_, _ = w.Write([]byte(body))
-	}))
-	t.Cleanup(srv.Close)
-	ctx := context.Background()
-
-	status, body = http.StatusOK, ""
-	require.NoError(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"))
-
-	// The token survives a clock that's off: no nbf, a day's exp.
-	claims := jwt.MapClaims{}
-	_, err := jwt.ParseWithClaims(strings.TrimPrefix(auth, "Bearer "), claims, func(*jwt.Token) (any, error) { return []byte("secret"), nil })
-	require.NoError(t, err)
-	assert.Equal(t, "APIk", claims["iss"])
-	assert.NotContains(t, claims, "nbf")
-	assert.NotContains(t, claims, "iat")
-	exp, err := claims.GetExpirationTime()
-	require.NoError(t, err)
-	assert.Greater(t, time.Until(exp.Time), 23*time.Hour)
-
-	// LiveKit sends its 401 as plain text, which twirp can't tell from a
-	// proxy's; every 401 counts.
-	status, body = http.StatusUnauthorized, "invalid API key"
-	assert.ErrorIs(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"), errKeyRejected)
-	status, body = http.StatusUnauthorized, `{"code":"unauthenticated","msg":"invalid API key"}`
-	assert.ErrorIs(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"), errKeyRejected)
-
-	// A 403 (a suspended project) doesn't prove the key bad.
-	status, body = http.StatusForbidden, "project suspended"
-	assert.NoError(t, checkAPIKey(ctx, srv.URL, "APIk", "secret"))
 }
 
 func TestSaveProjectKeyUpdatesMovedURL(t *testing.T) {

@@ -2,7 +2,6 @@
 # that key isn't used, and the file is left alone. The agent runs with the
 # named project's key.
 [!exec:node] skip 'needs node to run the agent'
-respond POST http://two.test/twirp/livekit.RoomService/ListRooms 200 ''
 
 exec lk agent start --project two
 stdout '^agent ws://two.test APItwo secrettwo$'
@@ -39,4 +38,3 @@ console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, proce
 {"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
 -- node_modules/@livekit/agents/index.js --
 -- want-requests --
-POST http://two.test/twirp/livekit.RoomService/ListRooms apikey=APItwo

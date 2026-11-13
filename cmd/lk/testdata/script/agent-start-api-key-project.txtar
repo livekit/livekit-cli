@@ -3,7 +3,6 @@
 # and no change to .gitignore.
 [!exec:node] skip 'needs node to run the agent'
 [!exec:git] skip 'needs git'
-respond POST http://one.test/twirp/livekit.RoomService/ListRooms 200 ''
 exec git init -q .
 
 exec lk agent start
@@ -33,6 +32,5 @@ console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, proce
 {"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
 -- node_modules/@livekit/agents/index.js --
 -- want-requests --
-POST http://one.test/twirp/livekit.RoomService/ListRooms apikey=APIone
 -- want-gitignore --
 node_modules
