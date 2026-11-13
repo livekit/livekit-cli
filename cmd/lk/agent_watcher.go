@@ -15,8 +15,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -25,12 +28,18 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/agentfs"
 )
 
-// skipDirs are directories to never watch.
+// skipDirs are generated output, installed dependencies, and caches. Hidden
+// directories are also pruned by the walk, covering .git, .venv, .next, .cache,
+// .tox, .nox, .mypy_cache, .pytest_cache, .ruff_cache, .turbo, and similar trees.
 var skipDirs = map[string]bool{
-	".git": true, ".hg": true, ".svn": true,
-	"__pycache__": true, ".mypy_cache": true, ".pytest_cache": true, ".ruff_cache": true,
-	".venv": true, "venv": true, "env": true,
-	"node_modules": true, ".next": true, "dist": true, "build": true,
+	// Python environments and generated documentation.
+	"__pycache__": true, "__pypackages__": true, "site-packages": true,
+	"venv": true, "env": true, "htmlcov": true, "_build": true,
+	// JavaScript, Go, Swift, and other installed dependency trees.
+	"node_modules": true, "bower_components": true, "vendor": true,
+	"Pods": true, "Carthage": true, "elm-stuff": true,
+	// Build output and coverage reports, including Cargo's default target dir.
+	"target": true, "dist": true, "build": true, "out": true, "coverage": true,
 }
 
 // watchExtensions returns file extensions to watch for a project type.
@@ -41,30 +50,25 @@ func watchExtensions(pt agentfs.ProjectType) map[string]bool {
 	return map[string]bool{".js": true, ".ts": true, ".mjs": true, ".mts": true}
 }
 
-// firstPythonCLIAddrVersion is the first Python livekit-agents release that
-// accepts --cli-addr; releases up to and including 1.6.5 only accept the legacy
-// --reload-addr.
-const firstPythonCLIAddrVersion = "1.6.6"
-
 // firstNodeCLIAddrVersion is the first @livekit/agents release that accepts
 // --cli-addr; releases up to and including 1.5.0 reject unknown options, so
 // older SDKs must not be passed any dev-channel flag.
 const firstNodeCLIAddrVersion = "1.5.1"
 
 // devChannelAddrFlag picks the CLI flag used to hand the agent the dev-channel
-// address, or "" when the installed SDK predates any flag it would accept. The
-// installed version is resolved via the project's interpreter so symlinked/
-// workspace deps and loose constraints report what will actually run.
+// address, or "" when the Node SDK predates any flag it would accept. Python
+// uses its backwards-compatible alias without a separate interpreter probe.
 func devChannelAddrFlag(config AgentStartConfig) string {
+	// Python keeps --reload-addr as an alias of --cli-addr. Use the shared flag
+	// directly instead of starting a second interpreter just to inspect metadata.
+	if config.ProjectType.IsPython() {
+		return "--reload-addr"
+	}
 	return devChannelAddrFlagFor(config.ProjectType, agentfs.ResolveInstalledSDKVersion(config.Dir, config.Entrypoint, config.ProjectType))
 }
 
-// devChannelAddrFlagFor implements the flag choice. The flag was renamed
-// --reload-addr -> --cli-addr (it now carries more than reloads), but an SDK
-// must not be handed a flag it predates, so anything not positively new
-// enough — including an undetermined version — falls back to what released
-// SDKs accept: the legacy --reload-addr for Python, no flag at all for Node
-// (whose CLI hard-fails on unknown options).
+// devChannelAddrFlagFor keeps Node SDKs that predate the dev channel from
+// receiving an unknown flag. Python's shared alias needs no version probe.
 func devChannelAddrFlagFor(projectType agentfs.ProjectType, installedVersion string) string {
 	newEnough := func(minVersion string) bool {
 		if installedVersion == "" {
@@ -75,9 +79,6 @@ func devChannelAddrFlagFor(projectType agentfs.ProjectType, installedVersion str
 	}
 	switch {
 	case projectType.IsPython():
-		if newEnough(firstPythonCLIAddrVersion) {
-			return "--cli-addr"
-		}
 		return "--reload-addr"
 	case projectType.IsNode():
 		if newEnough(firstNodeCLIAddrVersion) {
@@ -101,22 +102,48 @@ type agentWatcher struct {
 	session *devSession
 }
 
-func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
+// ignoredWatchDirs asks Git for whole ignored directories, without expanding
+// their contents. This covers project-specific output such as a custom Cargo
+// target directory. Watching still works outside Git repositories.
+func ignoredWatchDirs(dir string) map[string]bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "-z")
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	ignored := make(map[string]bool)
+	if err != nil {
+		return ignored
+	}
+	for _, path := range strings.Split(string(output), "\x00") {
+		if strings.HasSuffix(path, "/") {
+			ignored[filepath.Join(dir, filepath.FromSlash(strings.TrimSuffix(path, "/")))] = true
+		}
+	}
+	return ignored
+}
+
+func newAgentFileWatcher(dir string) (*fsnotify.Watcher, error) {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, fmt.Errorf("invalid watch directory: %w", err)
+	}
+	info, err := os.Stat(dir)
+	if err != nil || !info.IsDir() {
+		return nil, fmt.Errorf("watch path must be an existing directory: %s", dir)
+	}
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
 	}
-
-	// Walk directory tree and add all non-skip directories
-	err = filepath.Walk(config.Dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		if !info.IsDir() {
+	ignored := ignoredWatchDirs(dir)
+	// Prune artifacts before registration: kqueue also inspects each directory's files.
+	err = filepath.WalkDir(dir, func(path string, info fs.DirEntry, err error) error {
+		if err != nil || !info.IsDir() {
 			return nil
 		}
 		name := info.Name()
-		if skipDirs[name] || (strings.HasPrefix(name, ".") && name != ".") {
+		if path != dir && (skipDirs[name] || ignored[path] || strings.HasPrefix(name, ".")) {
 			return filepath.SkipDir
 		}
 		return w.Add(path)
@@ -125,7 +152,10 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		w.Close()
 		return nil, fmt.Errorf("failed to setup file watcher: %w", err)
 	}
+	return w, nil
+}
 
+func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 	// The dev server backs two things over one channel: the ServerInfo the agent
 	// reports on connect (e.g. for the Cloud console link) and the reload protocol
 	// (capture running jobs from the old process, restore them in the new one). It
@@ -133,7 +163,6 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 	// is Python-only and gated in restart() (Node reloads are a plain kill+respawn).
 	rs, err := newDevServer()
 	if err != nil {
-		w.Close()
 		return nil, err
 	}
 	rs.onServerInfo = config.OnServerInfo
@@ -146,7 +175,6 @@ func newAgentWatcher(config AgentStartConfig) (*agentWatcher, error) {
 		config:    config,
 		exts:      watchExtensions(config.ProjectType),
 		debounce:  500 * time.Millisecond,
-		watcher:   w,
 		restartCh: make(chan struct{}, 1),
 		devSrv:    rs,
 	}, nil
@@ -211,9 +239,6 @@ func (aw *agentWatcher) restart() error {
 
 // Run watches for file changes and restarts the agent. Blocks until done is closed.
 func (aw *agentWatcher) Run(done <-chan struct{}) error {
-	if err := aw.start(); err != nil {
-		return err
-	}
 	defer func() {
 		if aw.agent != nil {
 			// If Shutdown() was already called by the signal forwarder,
@@ -231,8 +256,22 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 			aw.session.close()
 		}
 		aw.devSrv.close()
-		aw.watcher.Close()
+		if aw.watcher != nil {
+			aw.watcher.Close()
+		}
 	}()
+
+	// Start Python before scanning the tree so watcher setup overlaps imports.
+	if err := aw.start(); err != nil {
+		return err
+	}
+	// Watch the user's project, including shared modules outside the entrypoint's
+	// directory. Dependency, cache and build trees are pruned during registration.
+	watcher, err := newAgentFileWatcher(aw.config.Dir)
+	if err != nil {
+		return err
+	}
+	aw.watcher = watcher
 
 	var debounceTimer *time.Timer
 	var debounceCh <-chan time.Time

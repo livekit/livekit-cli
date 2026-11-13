@@ -67,15 +67,24 @@ type banner struct {
 	Audiences []string `json:"audiences"`
 }
 
-// bannerAudienceUserAuth is the audience of users signed in with --user-auth.
-const bannerAudienceUserAuth = "user-auth"
+// The banner audiences. Every user is in exactly one of them.
+const (
+	// bannerAudienceUserAuth is the audience of users signed in with --user-auth.
+	bannerAudienceUserAuth = "user-auth"
+	// bannerAudienceSignedOut is the audience of users who aren't, so a notice
+	// that asks people to sign in can skip those who already have. CLIs from
+	// before it was added don't know it, so an entry for it reaches no one on
+	// them: give such an entry a Versions constraint from the first release that
+	// has it.
+	bannerAudienceSignedOut = "signed-out"
+)
 
 // bannerAudiencesSince is the first CLI version that understands Audiences.
 const bannerAudiencesSince = "2.19.2"
 
 // loadBanner returns banner.json from the cache when it is fresh, otherwise from
 // the network, falling back to a stale cache when the fetch fails.
-func loadBanner(ctx context.Context) []byte {
+func loadBanner(ctx context.Context, cmd *cli.Command) []byte {
 	path, err := bannerCachePath()
 	if err != nil {
 		return nil
@@ -83,6 +92,15 @@ func loadBanner(ctx context.Context) []byte {
 	if st, err := os.Stat(path); err == nil && time.Since(st.ModTime()) < bannerTTL {
 		raw, _ := os.ReadFile(path)
 		return raw
+	}
+	// Local agents are frequently restarted. Never make their process startup
+	// wait for an optional promotional fetch, or display a stale cached offer.
+	leaf := leafCommand(cmd)
+	if lineage := leaf.Lineage(); len(lineage) > 1 && lineage[1].Name == "agent" {
+		switch leaf.Name {
+		case "dev", "start", "console", "debugger":
+			return nil
+		}
 	}
 	raw := fetchBanner(ctx)
 	if raw == nil {
@@ -161,16 +179,21 @@ func showBanner(ctx context.Context, cmd *cli.Command) {
 	if !out.Interactive() || SkipPrompts(cmd) {
 		return
 	}
-	printBanner(loadBanner(ctx), out.Err, userBannerAudiences())
+	printBanner(loadBanner(ctx, cmd), out.Err, userBannerAudiences())
 }
 
 // userBannerAudiences returns the banner audiences this user belongs to.
 func userBannerAudiences() []string {
-	var audiences []string
-	if hasSignedInUser(startupConfig) {
-		audiences = append(audiences, bannerAudienceUserAuth)
+	return bannerAudiences(hasSignedInUser(startupConfig))
+}
+
+// bannerAudiences returns the banner audiences of a user who is, or isn't,
+// signed in with --user-auth.
+func bannerAudiences(signedIn bool) []string {
+	if signedIn {
+		return []string{bannerAudienceUserAuth}
 	}
-	return audiences
+	return []string{bannerAudienceSignedOut}
 }
 
 // printBanner writes the notices for this build and user to stderr, honoring

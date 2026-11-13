@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"os/signal"
@@ -103,12 +104,32 @@ var agentRunFlags = []cli.Flag{
 	},
 }
 
+// agentCredentialsHelp is the part of the run commands' help that says where
+// the agent's API key comes from (see app_credentials.go).
+const agentCredentialsHelp = `Credentials: the agent gets LIVEKIT_URL, LIVEKIT_API_KEY and
+LIVEKIT_API_SECRET from --url/--api-key/--api-secret or the LIVEKIT_*
+environment variables, else from its .env.local (or .env), else from the
+project's key in the CLI config. With --user-auth and no key yet, lk creates
+one if your role allows (Admin); otherwise it asks you to enter one. A key
+lk creates or you enter is saved to the CLI config, not to the agent's files;
+to run the agent without lk, write it there with "lk app env --write".
+Without a terminal, lk stops before the agent starts and lists the ways to
+supply a key.`
+
+// consoleCredentialsHelp is agentCredentialsHelp for agent console, where the
+// key is optional.
+const consoleCredentialsHelp = `Credentials: found as for "lk agent dev" (see its help). Console runs the
+agent on this machine, so an agent that brings its own providers needs no
+LiveKit key: without one, lk warns how to add one (LiveKit Inference needs it)
+and starts the agent anyway.`
+
 var startCommand = &cli.Command{
-	Name:      "start",
-	Usage:     "Run an agent locally in production mode",
-	ArgsUsage: "[entrypoint] [-- node/python-args...]",
-	Flags:     agentRunFlags,
-	Action:    runAgentStart,
+	Name:        "start",
+	Usage:       "Run an agent locally in production mode",
+	Description: agentCredentialsHelp,
+	ArgsUsage:   "[entrypoint] [-- node/python-args...]",
+	Flags:       agentRunFlags,
+	Action:      runAgentStart,
 	// Leaf command whose positional arg is an entrypoint file. Drop the implicit
 	// `help` subcommand so shell completion returns nothing for the positional,
 	// letting the shell fall back to native filename completion (--help kept).
@@ -116,9 +137,10 @@ var startCommand = &cli.Command{
 }
 
 var devCommand = &cli.Command{
-	Name:      "dev",
-	Usage:     "Run an agent locally with hot reload",
-	ArgsUsage: "[entrypoint] [-- node/python-args...]",
+	Name:        "dev",
+	Usage:       "Run an agent locally with hot reload",
+	Description: agentCredentialsHelp,
+	ArgsUsage:   "[entrypoint] [-- node/python-args...]",
 	Flags: append(agentRunFlags,
 		&cli.BoolFlag{
 			Name:  "no-reload",
@@ -209,57 +231,24 @@ func mergeCredentials(explicit, project agentCredentials) agentCredentials {
 }
 
 // resolveCredentials returns LIVEKIT_* environment entries for the agent
-// subprocess running from dir.
-func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string, loadOpts ...loadOption) ([]string, error) {
-	explicit := explicitCredentials(cmd)
-	// The agent gets LIVEKIT_* credentials from the environment even under
-	// --user-auth, so they aren't ignored here.
-	envCredentialsUsed = true
-
-	// An explicitly named project always wins, mirroring resolveProject's
-	// priority order. Without this, ambient LIVEKIT_* shell variables (which
-	// count as explicit above) would override — or worse, mix into — the
-	// project the user asked for by name.
-	if namedProject(cmd) {
-		explicit = agentCredentials{}
+// subprocess running from dir: the credentials resolveAgentCredentials finds
+// (or creates, or asks for) before the agent starts.
+func resolveCredentials(ctx context.Context, cmd *cli.Command, dir string) ([]string, error) {
+	creds, err := resolveAgentCredentials(ctx, cmd, dir)
+	if err != nil {
+		return nil, err
 	}
+	return creds.env(), nil
+}
 
-	// --dev with an API key or secret is an error, as in resolveProject. A
-	// complete set skips the project lookup below, so check it here.
-	if cmd.Bool("dev") && (explicit.apiKey != "" || explicit.apiSecret != "") {
-		return nil, devCredentialsError(cmd)
+// resolveOptionalCredentials is resolveCredentials for an agent that can run
+// without a LiveKit key (see resolveOptionalAgentCredentials).
+func resolveOptionalCredentials(ctx context.Context, cmd *cli.Command, dir string) ([]string, error) {
+	creds, err := resolveOptionalAgentCredentials(ctx, cmd, dir)
+	if err != nil {
+		return nil, err
 	}
-
-	merged := explicit
-
-	// Under --user-auth there is no stored API key to hand the agent;
-	// it uses the one in its own env files (see agentEnvCredentials).
-	if !explicit.complete() && userAuthEnabled(cmd) {
-		creds, err := agentEnvCredentials(ctx, cmd, dir)
-		if err != nil {
-			return nil, err
-		}
-		return mergeCredentials(explicit, creds).env(), nil
-	}
-
-	// Only consult the project config when the user didn't fully specify the
-	// connection on the command line / environment.
-	if !explicit.complete() {
-		opts := append([]loadOption{ignoreURL}, loadOpts...)
-		pc, err := loadProjectDetails(cmd, opts...)
-		if err != nil {
-			return nil, err
-		}
-		if pc != nil {
-			merged = mergeCredentials(explicit, agentCredentials{
-				url:       pc.URL,
-				apiKey:    pc.APIKey,
-				apiSecret: pc.APISecret,
-			})
-		}
-	}
-
-	return merged.env(), nil
+	return creds.env(), nil
 }
 
 // agentDeploymentEnv is read by the agents SDKs to tag the worker's registration
@@ -374,6 +363,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
+	agentOutput := &quietWriter{w: os.Stdout, last: time.Now()}
 	cfg := AgentStartConfig{
 		Dir:           projectDir,
 		Entrypoint:    entrypoint,
@@ -381,7 +371,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		RuntimeArgs:   forwardedArgs(cmd),
 		CLIArgs:       cliArgs,
 		Env:           env,
-		ForwardOutput: os.Stdout,
+		ForwardOutput: agentOutput,
 	}
 
 	// When the agent reports its ServerInfo over the dev channel, print a console
@@ -391,18 +381,18 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	cfg.OnServerInfo = func(agentName, wsURL string) {
 		if link := cloudConsoleURL(wsURL, agentName, deployment); link != "" {
 			consoleLinkOnce.Do(func() {
-				// Delay briefly so the link prints after the agent's own startup
-				// logs rather than getting buried in them.
-				time.AfterFunc(time.Second, func() {
+				// Print once the agent's startup logs settle, so the link is not
+				// buried in them.
+				go func() {
+					agentOutput.waitQuiet(150*time.Millisecond, time.Second)
 					// Accent-colored, and a clickable OSC 8 hyperlink on terminals
 					// that support it (gated so the escape never leaks into pipes).
 					label := util.Accented(link)
 					if out.Interactive() {
 						label = util.Hyperlink(link, label)
 					}
-					out.Status("")
 					out.Statusf("Agent console: %s", label)
-				})
+				}()
 			})
 		}
 	}
@@ -459,4 +449,33 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	err = watcher.Run(done)
 	signal.Stop(sigCh)
 	return err
+}
+
+// quietWriter forwards agent output and remembers when it last wrote, so status
+// lines can wait for the agent's logs to settle instead of a fixed delay.
+type quietWriter struct {
+	w    io.Writer
+	mu   sync.Mutex
+	last time.Time
+}
+
+func (q *quietWriter) Write(p []byte) (int, error) {
+	q.mu.Lock()
+	q.last = time.Now()
+	q.mu.Unlock()
+	return q.w.Write(p)
+}
+
+// waitQuiet returns once nothing was written for quiet, or after max.
+func (q *quietWriter) waitQuiet(quiet, max time.Duration) {
+	deadline := time.Now().Add(max)
+	for {
+		q.mu.Lock()
+		idle := time.Since(q.last)
+		q.mu.Unlock()
+		if idle >= quiet || !time.Now().Before(deadline) {
+			return
+		}
+		time.Sleep(min(quiet-idle, time.Until(deadline)))
+	}
 }

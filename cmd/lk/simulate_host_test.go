@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/tokenauth"
 )
 
 func TestCloudAPIURL(t *testing.T) {
@@ -52,4 +53,21 @@ func TestSimulateCommandHintOmitsDerivedServerURL(t *testing.T) {
 
 	serverURL = "http://localhost:17770"
 	assert.Contains(t, simulateCommandHint("view", "SR_1"), "--server-url http://localhost:17770")
+}
+
+// A run created under --user-auth is followed under --user-auth too; API-key
+// mode might have no key for the project, or one for another user's role.
+func TestSimulateCommandHintKeepsUserAuth(t *testing.T) {
+	origPC, origURL := simulateProjectConfig, serverURL
+	t.Cleanup(func() { simulateProjectConfig, serverURL = origPC, origURL })
+
+	serverURL = cloudAPIServerURL
+	simulateProjectConfig = &config.ProjectConfig{Name: "one", URL: "wss://one.livekit.cloud", APIKey: "APIone", APISecret: "s"}
+	assert.NotContains(t, simulateCommandHint("view", "SR_1"), "--user-auth")
+
+	simulateProjectConfig = &config.ProjectConfig{
+		Name: "one", URL: "wss://one.livekit.cloud",
+		APIKey: tokenauth.PlaceholderAPIKey, APISecret: tokenauth.PlaceholderAPISecret,
+	}
+	assert.Contains(t, simulateCommandHint("view", "SR_1"), "--project one --user-auth")
 }

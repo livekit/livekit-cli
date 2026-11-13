@@ -31,7 +31,7 @@ import (
 func testDocsTree() *cli.Command {
 	return &cli.Command{
 		Name:  "lk",
-		Flags: []cli.Flag{&cli.BoolFlag{Name: "quiet"}, &cli.BoolFlag{Name: "user-auth"}},
+		Flags: []cli.Flag{&cli.BoolFlag{Name: "quiet"}},
 		Commands: []*cli.Command{
 			{
 				Name:      "generate-docs",
@@ -119,14 +119,12 @@ func TestGenerateDocsUserAuth(t *testing.T) {
 		require.NoError(t, root.Run(context.Background(), append([]string{"lk"}, args...)))
 		return buf.String()
 	}
-	assert.NotContains(t, list("generate-docs", "--list"), "agent user-auth-only")
-	assert.Contains(t, list("--user-auth", "generate-docs", "--list"), "agent user-auth-only")
-
-	// A signed-in user, whose session revealed it at startup, needs no flag.
-	root := testDocsTree()
-	setUserAuthHidden(root, false)
-	t.Cleanup(func() { setUserAuthHidden(root, true) })
-	require.NoError(t, root.Run(context.Background(), []string{"lk", "generate-docs", "agent", "user-auth-only"}))
+	// User-auth commands are documented without any flag or sign-in, but other
+	// hidden commands stay out.
+	paths := list("generate-docs", "--list")
+	assert.Contains(t, paths, "agent user-auth-only")
+	assert.NotContains(t, paths, "agent secret")
+	list("generate-docs", "agent", "user-auth-only")
 }
 
 func TestShortDuration(t *testing.T) {

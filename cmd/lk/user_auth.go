@@ -144,11 +144,12 @@ func requireUserAuth(cmd *cli.Command) error {
 }
 
 // requireExperimentalUnlessUserAuth is the Before of a command whose API-key
-// implementation is experimental but whose user-auth one is not: it requires
-// --experimental unless the command runs under --user-auth.
+// implementation is experimental and deprecated but whose user-auth one is
+// not: it requires --experimental unless the command runs under --user-auth.
+// The error leads with --user-auth, the path to take.
 func requireExperimentalUnlessUserAuth(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 	if !userAuthEnabled(cmd) && !cmd.Bool("experimental") {
-		return ctx, errors.New("--experimental is required for this command (or use --user-auth)")
+		return ctx, errors.New("--user-auth is required (or --experimental for the deprecated API-key path)")
 	}
 	return ctx, nil
 }
@@ -263,6 +264,67 @@ func requireUserSession(cmd *cli.Command) (*config.CLIConfig, *config.UserConfig
 	return conf, user, nil
 }
 
+// signedInToSeveralAPIs is the error for a user, named by ref, who is signed in
+// to more than one Public API (matches) when no --public-api-url picks one.
+func signedInToSeveralAPIs(ref string, matches []*config.UserConfig) error {
+	apis := make([]string, len(matches))
+	for i, u := range matches {
+		apis[i] = cmp.Or(u.APIURL, public.DefaultBaseURL)
+	}
+	return fmt.Errorf("user %q is signed in to multiple APIs (%s); pass --public-api-url to choose one",
+		ref, strings.Join(apis, ", "))
+}
+
+// revokeUserSession signs a user out under --user-auth: the --user flag if
+// given, otherwise the default user. It revokes their session on the Public
+// API, then removes them from the CLI config. A 401 means the session is
+// no longer valid, and an expired session isn't sent at all, so both still
+// remove the user. Any other failure keeps the user, because the stored token
+// is the only way to revoke the session, which stays valid until it expires.
+func revokeUserSession(ctx context.Context, cmd *cli.Command) error {
+	conf, err := config.LoadOrCreate()
+	if err != nil {
+		return err
+	}
+	userRef, apiURLSet := cmd.String("user"), cmd.IsSet("public-api-url")
+	// Other commands act as the default user on the first API it is signed in
+	// to. Signing out of one API would leave it the default on another, so
+	// revoking asks which API, as an explicit --user does.
+	if userRef == "" && !apiURLSet && conf.DefaultUser != "" {
+		if matches := conf.FindUsers(conf.DefaultUser); len(matches) > 1 {
+			return signedInToSeveralAPIs(conf.DefaultUser, matches)
+		}
+	}
+	stored, err := resolveSessionUser(conf, userRef, apiURLSet)
+	if err != nil {
+		return err
+	}
+	// RemoveUser shifts the entries that stored points into.
+	user := *stored
+	label := util.Accented(userLabel(&user))
+	announceUser(&user)
+
+	if user.SessionValid() {
+		client, err := publicClientForToken(user.SessionToken)
+		if err != nil {
+			return err
+		}
+		switch err := client.RevokeSessionToken(ctx); {
+		case err == nil:
+			out.Statusf("Signed out %s", label)
+		case public.IsUnauthenticated(err):
+			out.Statusf("Session for %s is no longer valid; signed out on this device", label)
+		default:
+			return fmt.Errorf("couldn't revoke the session for %s, which is still signed in: %w", userLabel(&user), err)
+		}
+	} else {
+		out.Statusf("Session for %s had already expired; signed out on this device", label)
+	}
+
+	conf.RemoveUser(user)
+	return conf.PersistIfNeeded()
+}
+
 // userAnnounced records that announceUser has printed, so a command that
 // resolves the session more than once still prints the breadcrumb only once.
 var userAnnounced bool
@@ -328,12 +390,7 @@ func resolveSessionUser(conf *config.CLIConfig, userRef string, apiURLSet bool) 
 		case len(matches) == 0 && explicit:
 			return nil, fmt.Errorf("user %q is not signed in (run %s to sign in)", userRef, signInCommand())
 		case len(matches) > 1 && explicit:
-			apis := make([]string, len(matches))
-			for i, u := range matches {
-				apis[i] = cmp.Or(u.APIURL, public.DefaultBaseURL)
-			}
-			return nil, fmt.Errorf("user %q is signed in to multiple APIs (%s); pass --public-api-url to choose one",
-				userRef, strings.Join(apis, ", "))
+			return nil, signedInToSeveralAPIs(userRef, matches)
 		case len(matches) > 0:
 			// For the default user, an id is unique across APIs; an email
 			// signed in to several resolves to the first entry.

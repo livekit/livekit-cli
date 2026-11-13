@@ -88,6 +88,7 @@ func TestScripts(t *testing.T) {
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
 			"respond":  cmdRespond,
 			"requests": cmdRequests,
+			"mint":     cmdMint,
 		},
 		UpdateScripts:       os.Getenv("UPDATE_LK_SCRIPTS") != "",
 		RequireExplicitExec: true,
@@ -108,6 +109,10 @@ func setupScript(env *testscript.Env) error {
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
+
+	// lk offers to install skills when it finds a coding agent on PATH,
+	// which would add a line to stderr on some machines and not others.
+	env.Setenv(skillsPromptOptOutEnv, "1")
 
 	cloud := newFakeCloud()
 	env.Defer(cloud.Close)
@@ -257,6 +262,22 @@ func cmdRespond(ts *testscript.TestScript, neg bool, args []string) {
 	ts.Check(ts.Value(fakeCloudKey{}).(*fakeCloud).respond(args[0]+" "+args[1], status, body))
 }
 
+// cmdMint implements `mint SESSION_TOKEN...`: the fake answers token
+// requests made with any of those sessions as the Public API does (see
+// fakeCloud.mint).
+func cmdMint(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) == 0 {
+		ts.Fatalf("usage: mint SESSION_TOKEN...")
+	}
+	f := ts.Value(fakeCloudKey{}).(*fakeCloud)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.mint = true
+	for _, token := range args {
+		f.sessions[token] = true
+	}
+}
+
 // cmdRequests implements `requests`.
 func cmdRequests(ts *testscript.TestScript, neg bool, args []string) {
 	if neg || len(args) != 0 {
@@ -306,7 +327,15 @@ var publicAPIRoutes = []struct {
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/members$`), func() any { return new(oapi.LivekitPublicapiProjectsV1ListMembersResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/members/[^/]+$`), func() any { return new(oapi.LivekitPublicapiProjectsV1RemoveMemberResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/workspaces/[^/]+/members/[^/]+$`), func() any { return new(oapi.LivekitPublicapiWorkspacesV1DeleteMemberResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions$`), func() any { return new(oapi.LivekitPublicapiAnalyticsV1SessionsListResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+$`), func() any { return new(oapi.LivekitPublicapiAnalyticsV1SessionsGetResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+/recording-url$`), func() any { return new(oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+/transcript$`), func() any { return new(oapi.LivekitPublicapiObservabilityV1TranscriptGetResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+/logs$`), func() any { return new(oapi.LivekitPublicapiObservabilityV1LogsGetResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+/traces$`), func() any { return new(oapi.LivekitPublicapiObservabilityV1TracesGetResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+/metrics$`), func() any { return new(oapi.LivekitPublicapiObservabilityV1MetricsGetResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
+	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }
 
 // middlewareError is the body the Public API's auth middleware and panic
