@@ -388,7 +388,6 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 					if out.Interactive() {
 						label = util.Hyperlink(link, label)
 					}
-					out.Status("")
 					out.Statusf("Agent console: %s", label)
 				})
 			})
