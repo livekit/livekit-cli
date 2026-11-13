@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -104,10 +105,13 @@ func TestFindPythonBinaryPrefersActivatedVenv(t *testing.T) {
 func TestFindPythonBinaryPrefersActivatedVenvWithoutUv(t *testing.T) {
 	root := t.TempDir()
 	activated := filepath.Join(root, "venv")
-	if err := os.MkdirAll(filepath.Join(activated, "bin"), 0o755); err != nil {
+	python := filepath.Join(activated, "bin", "python")
+	if runtime.GOOS == "windows" {
+		python = filepath.Join(activated, "Scripts", "python.exe")
+	}
+	if err := os.MkdirAll(filepath.Dir(python), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	python := filepath.Join(activated, "bin", "python")
 	if err := os.WriteFile(python, nil, 0o755); err != nil {
 		t.Fatal(err)
 	}
