@@ -123,9 +123,9 @@ func checkNodeSDKVersion(cfg AgentStartConfig) error {
 // order. Forward slashes are valid on all platforms.
 func defaultEntrypoints(projectType agentfs.ProjectType) []string {
 	if projectType.IsNode() {
-		return []string{"main.ts", "src/main.js"}
+		return []string{"main.ts", "main.js"}
 	}
-	return []string{"agent.py"}
+	return []string{"agent.py", "main.py"}
 }
 
 // fallbackEntrypoints are probed at the project root only after cwd-relative
@@ -135,7 +135,7 @@ func fallbackEntrypoints(projectType agentfs.ProjectType) []string {
 	if projectType.IsNode() {
 		return []string{"src/main.ts", "src/main.js"}
 	}
-	return []string{"src/agent.py"}
+	return []string{"src/agent.py", "src/main.py"}
 }
 
 // findEntrypoint resolves the agent entrypoint file.

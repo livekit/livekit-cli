@@ -169,8 +169,8 @@ and ready for turns, spoken ones with --audio. If the agent speaks first (a gree
 that is printed here. The summary line names the active agent and its tools.
 
 Without an entrypoint, the project in the current directory (or nearest parent)
-is used with its default entrypoint: agent.py or src/agent.py for Python,
-main.ts, src/main.ts, or src/main.js for Node. Pass a file to override:
+is used with its default entrypoint: agent.py or main.py (or under src/) for
+Python, main.ts or main.js (or under src/) for Node. Pass a file to override:
 
    lk agent debugger start src/my_agent.py
    lk agent debugger start agent.ts -- --env-file=.env
