@@ -110,7 +110,7 @@ func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	// the column shows only once a run asked for a persona model
+	// a server older than the field names no run's persona model, and the column stays hidden
 	personaModels := slices.ContainsFunc(runs, func(run *livekit.SimulationRun) bool {
 		return run.GetPersonaModel() != ""
 	})

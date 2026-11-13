@@ -114,7 +114,7 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "persona-model",
-			Usage: "`NAME` of the model that plays the simulated caller, such as usim-v1. Defaults to the standard persona.",
+			Usage: "`NAME` of the model that plays the simulated caller. Defaults to general. See https://docs.livekit.io/testing/simulations/#persona-model.",
 		},
 	},
 }
