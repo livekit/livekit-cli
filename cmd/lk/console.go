@@ -191,7 +191,7 @@ func runConsole(ctx context.Context, cmd *cli.Command) error {
 	defer agentProc.Kill()
 
 	// Stream agent logs to the TUI
-	agentProc.LogStream = make(chan string, 128)
+	agentProc.LogStream = make(chan string, 1024)
 
 	// Wait for TCP connection, agent crash, timeout, or cancellation
 	type acceptResult struct {
