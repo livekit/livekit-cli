@@ -21,6 +21,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/logger"
@@ -87,6 +88,12 @@ var (
 							Usage: "Offset for pagination (default: 0)",
 							Value: 0,
 						},
+						// user-auth only: the Public API pages by cursor.
+						userAuthOnlyFlag(&cli.StringFlag{
+							Name:   "cursor",
+							Usage:  "Page `CURSOR` that a previous page printed (requires --user-auth)",
+							Hidden: true,
+						}),
 						&cli.StringSliceFlag{
 							Name:  "status",
 							Usage: "Filter by status(es) (active, pending, released, offline). Multiple values can be specified.",
@@ -132,6 +139,10 @@ var (
 							Name:  "sip-dispatch-rule-id",
 							Usage: "SIP dispatch rule ID to assign to the phone number",
 						},
+						&cli.StringFlag{
+							Name:  "name",
+							Usage: "Sets a new `NAME` for the phone number",
+						},
 						jsonFlag,
 					},
 					ArgsUsage: "Either --id or --number must be provided",
@@ -157,7 +168,21 @@ var (
 	}
 )
 
-func createPhoneNumberClient(ctx context.Context, cmd *cli.Command) (*lksdk.PhoneNumberClient, error) {
+// createPhoneNumberClient returns the phone number API: server-sdk-go's
+// client with an API key, or the Public API under --user-auth.
+func createPhoneNumberClient(ctx context.Context, cmd *cli.Command) (phoneNumberAPI, error) {
+	if userAuthEnabled(cmd) {
+		client, projectID, err := telephonyProject(ctx, cmd)
+		if err != nil {
+			return nil, err
+		}
+		return &publicPhoneNumbers{client: client, projectID: projectID}, nil
+	}
+	return createPhoneNumberSDKClient(ctx, cmd)
+}
+
+// createPhoneNumberSDKClient returns server-sdk-go's phone number client.
+func createPhoneNumberSDKClient(ctx context.Context, cmd *cli.Command) (*lksdk.PhoneNumberClient, error) {
 	_, err := requireProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
@@ -263,8 +288,21 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	return nil
 }
 
+// phoneNumberListModeFlags: the API-key list pages by --offset, and the
+// Public API by --cursor.
+var phoneNumberListModeFlags = authModeFlags{
+	legacyOnly:   []string{"offset"},
+	userAuthOnly: []string{"cursor"},
+}
+
 func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
-	client, err := createPhoneNumberClient(ctx, cmd)
+	if err := phoneNumberListModeFlags.validate(cmd); err != nil {
+		return err
+	}
+	if userAuthEnabled(cmd) {
+		return cloudListPhoneNumbers(ctx, cmd)
+	}
+	client, err := createPhoneNumberSDKClient(ctx, cmd)
 	if err != nil {
 		return err
 	}
@@ -281,17 +319,11 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	}
 	req.PageToken = pageToken
 
-	if statuses := cmd.StringSlice("status"); len(statuses) > 0 {
-		var phoneNumberStatuses []livekit.PhoneNumberStatus
-		for _, status := range statuses {
-			statusValue, ok := livekit.PhoneNumberStatus_value["PHONE_NUMBER_STATUS_"+strings.ToUpper(status)]
-			if !ok {
-				return fmt.Errorf("invalid status: %s", status)
-			}
-			phoneNumberStatuses = append(phoneNumberStatuses, livekit.PhoneNumberStatus(statusValue))
-		}
-		req.Statuses = phoneNumberStatuses
+	statuses, err := phoneNumberStatuses(cmd.StringSlice("status"))
+	if err != nil {
+		return err
 	}
+	req.Statuses = statuses
 	if val := cmd.String("sip-dispatch-rule-id"); val != "" {
 		req.SipDispatchRuleId = &val
 	}
@@ -325,38 +357,89 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 
 	return listAndPrint(ctx, cmd, func(ctx context.Context, req *livekit.ListPhoneNumbersRequest) (*livekit.ListPhoneNumbersResponse, error) {
 		return client.ListPhoneNumbers(ctx, req)
-	}, req, []string{
-		"ID", "E164", "Country", "Area Code", "Type", "Locality", "Region", "Capabilities", "Status", "Inbound", "Outbound", "SIP Dispatch Rules",
-	}, func(item *livekit.PhoneNumber) []string {
-		dispatchRulesStr := ""
-		if len(item.SipDispatchRuleIds) > 0 {
-			dispatchRulesStr = strings.Join(item.SipDispatchRuleIds, ", ")
-		} else {
-			dispatchRulesStr = "-"
-		}
-		statusIn := ""
-		if st := item.InboundStatus; st != livekit.PhoneNumberInboundStatus_PHONE_NUMBER_IN_STATUS_UNSPECIFIED {
-			statusIn = strings.TrimPrefix(st.String(), "PHONE_NUMBER_IN_STATUS_")
-		}
-		statusOut := ""
-		if st := item.OutboundStatus; st != livekit.PhoneNumberOutboundStatus_PHONE_NUMBER_OUT_STATUS_UNSPECIFIED {
-			statusOut = strings.TrimPrefix(st.String(), "PHONE_NUMBER_OUT_STATUS_")
-		}
-		return []string{
-			item.Id,
-			item.E164Format,
-			item.CountryCode,
-			item.AreaCode,
-			strings.TrimPrefix(item.NumberType.String(), "PHONE_NUMBER_TYPE_"),
-			item.Locality,
-			item.Region,
-			strings.Join(item.Capabilities, ","),
-			strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"),
-			statusIn,
-			statusOut,
-			dispatchRulesStr,
-		}
+	}, req, phoneNumberListHeaders, phoneNumberListRow)
+}
+
+// cloudListPhoneNumbers prints one page of the project's phone numbers from
+// the Public API, newest first, with the command for the next page. --limit
+// is the page size, as without --user-auth.
+func cloudListPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
+	statuses, err := phoneNumberStatuses(cmd.StringSlice("status"))
+	if err != nil {
+		return err
+	}
+	client, projectID, err := telephonyProject(ctx, cmd)
+	if err != nil {
+		return err
+	}
+	numbers, next, err := client.ListPhoneNumbers(ctx, projectID, public.PhoneNumberListOptions{
+		Statuses:          statuses,
+		SipDispatchRuleID: cmd.String("sip-dispatch-rule-id"),
+		PageSize:          int32(cmd.Int("limit")),
+		Cursor:            cmd.String("cursor"),
 	})
+	if err != nil {
+		return cloudAPIError(err)
+	}
+	resp := &livekit.ListPhoneNumbersResponse{Items: numbers}
+	if next != "" {
+		resp.NextPageToken = &livekit.TokenPagination{Token: next}
+	}
+	err = listAndPrint(ctx, cmd, func(context.Context, *livekit.ListPhoneNumbersRequest) (*livekit.ListPhoneNumbersResponse, error) {
+		return resp, nil
+	}, &livekit.ListPhoneNumbersRequest{}, phoneNumberListHeaders, phoneNumberListRow)
+	if err == nil && next != "" && !cmd.Bool("json") {
+		out.Statusf("More results available. Use --cursor %s to see the next page.\n", next)
+	}
+	return err
+}
+
+// phoneNumberStatuses parses --status values, such as active.
+func phoneNumberStatuses(names []string) ([]livekit.PhoneNumberStatus, error) {
+	var statuses []livekit.PhoneNumberStatus
+	for _, status := range names {
+		statusValue, ok := livekit.PhoneNumberStatus_value["PHONE_NUMBER_STATUS_"+strings.ToUpper(status)]
+		if !ok {
+			return nil, fmt.Errorf("invalid status: %s", status)
+		}
+		statuses = append(statuses, livekit.PhoneNumberStatus(statusValue))
+	}
+	return statuses, nil
+}
+
+var phoneNumberListHeaders = []string{
+	"ID", "E164", "Country", "Area Code", "Type", "Locality", "Region", "Capabilities", "Status", "Inbound", "Outbound", "SIP Dispatch Rules",
+}
+
+func phoneNumberListRow(item *livekit.PhoneNumber) []string {
+	dispatchRulesStr := ""
+	if len(item.SipDispatchRuleIds) > 0 {
+		dispatchRulesStr = strings.Join(item.SipDispatchRuleIds, ", ")
+	} else {
+		dispatchRulesStr = "-"
+	}
+	statusIn := ""
+	if st := item.InboundStatus; st != livekit.PhoneNumberInboundStatus_PHONE_NUMBER_IN_STATUS_UNSPECIFIED {
+		statusIn = strings.TrimPrefix(st.String(), "PHONE_NUMBER_IN_STATUS_")
+	}
+	statusOut := ""
+	if st := item.OutboundStatus; st != livekit.PhoneNumberOutboundStatus_PHONE_NUMBER_OUT_STATUS_UNSPECIFIED {
+		statusOut = strings.TrimPrefix(st.String(), "PHONE_NUMBER_OUT_STATUS_")
+	}
+	return []string{
+		item.Id,
+		item.E164Format,
+		item.CountryCode,
+		item.AreaCode,
+		strings.TrimPrefix(item.NumberType.String(), "PHONE_NUMBER_TYPE_"),
+		item.Locality,
+		item.Region,
+		strings.Join(item.Capabilities, ","),
+		strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"),
+		statusIn,
+		statusOut,
+		dispatchRulesStr,
+	}
 }
 
 func getPhoneNumber(ctx context.Context, cmd *cli.Command) error {
@@ -444,6 +527,10 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	}
 	if dispatchRuleID != "" {
 		req.SipDispatchRuleId = &dispatchRuleID
+	}
+	if cmd.IsSet("name") {
+		name := cmd.String("name")
+		req.Name = &name
 	}
 
 	resp, err := client.UpdatePhoneNumber(ctx, req)
