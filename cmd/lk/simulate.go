@@ -114,7 +114,7 @@ var simulateCommand = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:  "persona-model",
-			Usage: "`MODEL` that plays the simulated caller (the persona). Defaults to the standard persona model.",
+			Usage: "`NAME` of the model that plays the simulated caller, such as usim-v1. Defaults to the standard persona.",
 		},
 	},
 }
