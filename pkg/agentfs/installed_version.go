@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -31,92 +32,60 @@ import (
 // will really run. Static project-file parsing (sdk_version_check.go) is the
 // fallback for when no runtime environment exists.
 
-// uvDiscoverVenv returns the virtual environment interpreter uv resolves from
-// dir, or "" if uv is unavailable or resolves something that is not a venv.
-//
-// With no venv to find, uv answers with a managed standalone interpreter that
-// has no project dependencies installed; a pyvenv.cfg beside the interpreter
-// is what distinguishes the two, and only a venv may pre-empt the search for
-// a system Python the user installed the SDK into.
-func uvDiscoverVenv(dir string) string {
-	uvPath, err := exec.LookPath("uv")
-	if err != nil {
-		return ""
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	// --offline: discovery must never reach the network, and never trigger a
-	// Python download as a side effect.
-	cmd := exec.CommandContext(ctx, uvPath, "python", "find", "--offline")
-	cmd.Dir = dir
-	out, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-	python := strings.TrimSpace(string(out))
-	if python == "" {
-		return ""
-	}
-	if _, err := os.Stat(filepath.Join(filepath.Dir(python), "..", "pyvenv.cfg")); err != nil {
-		return ""
-	}
-	return python
-}
-
-// activatedVenvPython returns the interpreter of the activated virtual
-// environment, or "" if none is activated. uv discovery already honors
-// $VIRTUAL_ENV; checking it directly keeps that behavior when uv is absent.
-func activatedVenvPython() string {
-	venv := os.Getenv("VIRTUAL_ENV")
-	if venv == "" {
-		return ""
-	}
+// venvPython returns the interpreter of the virtual environment at venv, or ""
+// if there is none.
+func venvPython(venv string) string {
 	python := filepath.Join(venv, "bin", "python")
+	if runtime.GOOS == "windows" {
+		python = filepath.Join(venv, "Scripts", "python.exe")
+	}
 	if _, err := os.Stat(python); err != nil {
 		return ""
 	}
 	return python
 }
 
-// FindPythonBinary locates a Python binary for the given project type.
-func FindPythonBinary(dir string, projectType ProjectType) (string, []string, error) {
-	if projectType == ProjectTypePythonUV {
-		uvPath, err := exec.LookPath("uv")
-		if err == nil {
-			// --no-sync: the CLI proxies the environment as it exists on disk
-			// and must never install or upgrade packages as a side effect.
-			return uvPath, []string{"run", "--no-sync", "python"}, nil
+// projectVenvPython returns the interpreter of the project's environment:
+// $UV_PROJECT_ENVIRONMENT, else the nearest .venv or venv from dir up, so an
+// agent in a workspace member runs in the workspace's environment.
+func projectVenvPython(dir string) string {
+	if env := os.Getenv("UV_PROJECT_ENVIRONMENT"); env != "" {
+		if !filepath.IsAbs(env) {
+			env = filepath.Join(dir, env)
+		}
+		return venvPython(env)
+	}
+	for current := dir; ; current = filepath.Dir(current) {
+		for _, name := range []string{".venv", "venv"} {
+			if python := venvPython(filepath.Join(current, name)); python != "" {
+				return python
+			}
+		}
+		if filepath.Dir(current) == current {
+			return ""
 		}
 	}
+}
 
-	if venvPython := activatedVenvPython(); venvPython != "" {
-		return venvPython, nil, nil
-	}
-
-	// Defer the rest of venv discovery to uv, which walks up to the enclosing
-	// project or workspace — an agent in a subdirectory has no environment of
-	// its own.
-	if venvPython := uvDiscoverVenv(dir); venvPython != "" {
-		return venvPython, nil, nil
-	}
-
-	// Check common venv locations
-	for _, venvDir := range []string{".venv", "venv"} {
-		candidate := filepath.Join(dir, venvDir, "bin", "python")
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate, nil, nil
+// FindPythonBinary locates the interpreter an agent in dir runs with: the
+// activated environment, else the project's, else the system Python. It is run
+// directly, never through a package manager: launching must not install
+// anything, and `uv run` alone costs ~0.3 s per start.
+func FindPythonBinary(dir string) (string, error) {
+	if venv := os.Getenv("VIRTUAL_ENV"); venv != "" {
+		if python := venvPython(venv); python != "" {
+			return python, nil
 		}
 	}
-
-	// Fall back to system python
-	pythonPath, err := exec.LookPath("python3")
-	if err != nil {
-		pythonPath, err = exec.LookPath("python")
-		if err != nil {
-			return "", nil, fmt.Errorf("could not find Python binary; ensure a virtual environment exists or Python is on PATH")
+	if python := projectVenvPython(dir); python != "" {
+		return python, nil
+	}
+	for _, name := range []string{"python3", "python"} {
+		if python, err := exec.LookPath(name); err == nil {
+			return python, nil
 		}
 	}
-	return pythonPath, nil, nil
+	return "", fmt.Errorf("could not find Python binary; ensure a virtual environment exists or Python is on PATH")
 }
 
 // FindNodeBinary locates the Node binary used to run a JS/TS agent.
@@ -167,15 +136,14 @@ const pythonAgentNotInstalled = "__NOT_INSTALLED__"
 // version that will actually run. notInstalled reports that the interpreter ran
 // but the package is missing from its environment; version is "" when it can't
 // be determined at all (no interpreter, probe failure, etc.).
-func ResolvePythonAgentVersion(dir string, projectType ProjectType) (version string, notInstalled bool) {
-	pythonBin, prefixArgs, err := FindPythonBinary(dir, projectType)
+func ResolvePythonAgentVersion(dir string) (version string, notInstalled bool) {
+	pythonBin, err := FindPythonBinary(dir)
 	if err != nil {
 		return "", false
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	args := append(append([]string{}, prefixArgs...), "-c", pythonResolveVersionScript)
-	cmd := exec.CommandContext(ctx, pythonBin, args...)
+	cmd := exec.CommandContext(ctx, pythonBin, "-c", pythonResolveVersionScript)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
@@ -203,6 +171,6 @@ func ResolveInstalledSDKVersion(dir, entrypoint string, projectType ProjectType)
 		fromDir := filepath.Dir(filepath.Join(dir, entrypoint))
 		return ResolveNodeAgentVersion(nodeBin, fromDir)
 	}
-	version, _ := ResolvePythonAgentVersion(dir, projectType)
+	version, _ := ResolvePythonAgentVersion(dir)
 	return version
 }

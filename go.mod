@@ -18,12 +18,13 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-logr/logr v1.4.4
 	github.com/go-task/task/v3 v3.51.1
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/go-containerregistry v0.21.7
 	github.com/google/go-querystring v1.2.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.1
-	github.com/livekit/protocol v1.53.3-0.20261106102436-89ca99fce70f
+	github.com/livekit/protocol v1.54.1-0.20261113133823-facac3f93e4a
 	github.com/livekit/server-sdk-go/v2 v2.19.0
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
@@ -139,7 +140,6 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/go-task/template v0.2.0 // indirect
 	github.com/gofrs/flock v0.13.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect

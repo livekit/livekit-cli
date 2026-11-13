@@ -64,7 +64,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			}
 		}
 		if runID != "" && !runFinished {
-			cancelSimulationRun(config.client, runID)
+			cancelSimulationRun(config.client, config.pc.ProjectId, runID)
 		}
 	}
 	defer cleanup()
@@ -173,7 +173,7 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 			if !brokenAgent && agentBroken(run, agent) {
 				brokenAgent = true
 				report.BrokenAgent()
-				cancelSimulationRun(config.client, runID)
+				cancelSimulationRun(config.client, config.pc.ProjectId, runID)
 				runFinished = true
 				break
 			}

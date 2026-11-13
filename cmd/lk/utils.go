@@ -140,7 +140,7 @@ var (
 	}
 	experimentalFlag = &cli.BoolFlag{
 		Name:  "experimental",
-		Usage: "Enable experimental features (not needed with --user-auth)",
+		Usage: "Use the deprecated API-key analytics (not needed with --user-auth)",
 		// Whether it's required depends on the auth mode, so a command checks
 		// for it (see requireExperimentalUnlessUserAuth). The Validator
 		// rejects an explicit --experimental=false.

@@ -30,12 +30,11 @@ import (
 // released help text. The output sits under a hand-written heading and
 // description, so it carries only the usage line, subcommands, and options.
 //
-// The user-auth beta is documented when whoever runs this is signed in (as for
-// help), or when --user-auth is passed, so CI can document it without a config.
+// The user-auth beta is always documented: its commands and flags (and only
+// those, not other hidden ones) are revealed regardless of sign-in or flags,
+// so CI documents them without a config.
 func generateDocs(ctx context.Context, cmd *cli.Command) error {
-	if userAuthEnabled(cmd) {
-		setUserAuthHidden(cmd.Root(), false)
-	}
+	setUserAuthHidden(cmd.Root(), false)
 	pruneHiddenCommands(cmd.Root())
 	path := cmd.Args().Slice()
 	target := cmd.Root()

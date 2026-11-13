@@ -30,6 +30,7 @@ import (
 
 	"charm.land/huh/v2"
 	"github.com/mattn/go-isatty"
+	"github.com/twitchtv/twirp"
 	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v3"
 
@@ -115,21 +116,19 @@ var simulateCommand = &cli.Command{
 	},
 }
 
-// loadSimulateProject resolves the API-key project for the subcommands that talk
-// to the agent simulation service directly. It is attached per subcommand, not
-// on `simulate`, so the --user-auth-only `get` and the experimental
-// `list` and `cancel` never hit the API-key project gate.
+// loadSimulateProject resolves the project for the subcommands that talk to
+// the agent simulation service directly. It is attached per subcommand, not
+// on `simulate`, so the --user-auth-only `get` never hits it, and `list` and
+// `cancel` use it only in API-key mode.
 //
-// TODO(DEVX-577): unify text/audio/view/export with --user-auth. For
-// now they stay API-key only (loadProjectDetails rejects --user-auth).
-// Blockers: a spawned agent needs API keys to register as a worker, and the
-// Public API can't issue them; it also lacks a confirm-source-upload op, and
-// its create has no audio-impairment or CI fields. Live-agent mode
-// (--agent-name + --scenarios) could work over the Public API today, but its
-// oapi run type would need converting to the livekit.SimulationRun the TUI,
-// CI report and export consume.
+// Under --user-auth it loads a session project: newSimulationClient swaps the
+// SDK's placeholder-signed token on each simulation call for one the Public
+// API creates (ProjectService.CreateToken, with the agent.simulationAdmin
+// grant). The agent that text and audio start locally can't use a session
+// token to register as a worker, so it gets a real API key from
+// simulationAgentCredentials.
 func loadSimulateProject(ctx context.Context, cmd *cli.Command) (context.Context, error) {
-	pc, err := loadProjectDetails(cmd)
+	pc, err := loadProjectForSDK(ctx, cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +139,16 @@ func loadSimulateProject(ctx context.Context, cmd *cli.Command) (context.Context
 		}
 	}
 	return nil, nil
+}
+
+// newSimulationClient returns a simulation service client for pc. For a
+// session project it carries the token bridge (see loadSimulateProject).
+func newSimulationClient(pc *config.ProjectConfig) *lksdk.AgentSimulationClient {
+	var opts []twirp.ClientOption
+	if src := sessionTokenSource(pc); src != nil {
+		opts = src.ClientOptions()
+	}
+	return lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret, opts...)
 }
 
 var simulateTextCommand = &cli.Command{
@@ -297,7 +306,7 @@ func cancelSimulationRunCommand(ctx context.Context, cmd *cli.Command) error {
 		}
 	} else {
 		pc := simulateProjectConfig
-		client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+		client := newSimulationClient(pc)
 		cancelCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
 		defer cancel()
 		if _, err := client.CancelSimulationRun(cancelCtx, &livekit.SimulationRun_Cancel_Request{
@@ -328,7 +337,7 @@ func runSimulateView(ctx context.Context, cmd *cli.Command) error {
 	pc := simulateProjectConfig
 	simCfg := &simulateConfig{
 		ctx:            ctx,
-		client:         lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret),
+		client:         newSimulationClient(pc),
 		pc:             pc,
 		mode:           modeView,
 		simulationMode: livekit.SimulationMode_SIMULATION_MODE_TEXT,
@@ -443,10 +452,11 @@ type simulateConfig struct {
 	projectType    agentfs.ProjectType
 	entrypoint     string
 	scenarioGroup  *livekit.ScenarioGroup
-	scenariosPath  string   // path to the --scenarios file (empty when generating from source)
-	viewModeRunID  string   // non-empty when `view` opens a pre-existing run
-	liveAgent      bool     // --agent-name or --to: run against an already-running agent, don't spawn one
-	warnings       []string // config-level warnings surfaced at setup (e.g. ignored flags)
+	scenariosPath  string           // path to the --scenarios file (empty when generating from source)
+	viewModeRunID  string           // non-empty when `view` opens a pre-existing run
+	liveAgent      bool             // --agent-name or --to: run against an already-running agent, don't spawn one
+	agentCreds     agentCredentials // what the locally started agent registers with; unset for liveAgent
+	warnings       []string         // config-level warnings surfaced at setup (e.g. ignored flags)
 
 	// impairments on the simulated user's audio, set only in SIMULATION_MODE_AUDIO
 	backgroundNoise      bool
@@ -725,7 +735,17 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		}
 	}
 
-	simClient := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+	// Resolved before the TUI starts: getting a key may ask for one. After the
+	// scenarios load and the upload is confirmed, so a bad file or a declined
+	// upload doesn't leave a new key behind.
+	var agentCreds agentCredentials
+	if !liveAgent {
+		if agentCreds, err = simulationAgentCredentials(ctx, cmd, pc, projectDir); err != nil {
+			return err
+		}
+	}
+
+	simClient := newSimulationClient(pc)
 
 	simCfg := &simulateConfig{
 		ctx:            ctx,
@@ -745,6 +765,7 @@ func runSimulate(ctx context.Context, cmd *cli.Command, simulationMode livekit.S
 		scenarioGroup:  scenarioGroup,
 		scenariosPath:  scenariosPath,
 		liveAgent:      liveAgent,
+		agentCreds:     agentCreds,
 		warnings:       simulateConfigWarnings(mode, numSimulations),
 	}
 
@@ -852,11 +873,11 @@ func (l *agentLauncher) ForceStop() {
 }
 
 func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentProcess, error) {
+	// The credentials go in the environment only: other users on the machine
+	// can read a process's arguments, and the Python and Node SDKs' start
+	// read LIVEKIT_URL, LIVEKIT_API_KEY and LIVEKIT_API_SECRET from it.
 	args := []string{
 		"start",
-		"--url", c.pc.URL,
-		"--api-key", c.pc.APIKey,
-		"--api-secret", c.pc.APISecret,
 		"--log-level", normalizeLogLevel(c.projectType, "DEBUG"),
 		// disable the worker load limit so the run can saturate the agent
 		"--simulation",
@@ -876,9 +897,9 @@ func startSimulationAgent(c *simulateConfig, forwardOutput io.Writer) (*AgentPro
 			// register under the dispatch name regardless of any agent_name
 			// hardcoded in the user's code
 			"LIVEKIT_AGENT_NAME_OVERRIDE=" + c.agentName,
-			"LIVEKIT_URL=" + c.pc.URL,
-			"LIVEKIT_API_KEY=" + c.pc.APIKey,
-			"LIVEKIT_API_SECRET=" + c.pc.APISecret,
+			"LIVEKIT_URL=" + c.agentCreds.url,
+			"LIVEKIT_API_KEY=" + c.agentCreds.apiKey,
+			"LIVEKIT_API_SECRET=" + c.agentCreds.apiSecret,
 			// the agent under test is spawned locally, so the SDK reads it as
 			// neither hosted nor dev and falls back to the local v1-mini turn
 			// detector and VAD interruption. Deployed, the same agent gets cloud
@@ -1034,7 +1055,7 @@ func dashboardBaseURL() string {
 // carrying over the resolved project and --server-url when the run lives
 // somewhere other than the project's own cloud API (e.g. a local stack), so the
 // printed command targets the same project and environment regardless of which
-// project is default when it is run. The project name is empty when credentials came
+// project is default when it is run, and in the same auth mode. The project name is empty when credentials came
 // from flags or the environment rather than a configured project, and no
 // --project would resolve those.
 // The binary name comes from argv[0] so a renamed or path-qualified lk is
@@ -1047,6 +1068,9 @@ func simulateCommandHint(subcommand, runID string) string {
 	hint := binary + " agent simulate " + subcommand + " " + runID
 	if simulateProjectConfig != nil && simulateProjectConfig.Name != "" {
 		hint += " --project " + simulateProjectConfig.Name
+	}
+	if isSessionProject(simulateProjectConfig) {
+		hint += " --user-auth"
 	}
 	projectAPI := ""
 	if simulateProjectConfig != nil {
@@ -1103,10 +1127,11 @@ func simulationItemDashboardURL(projectID, runID, jobID, itemID string) string {
 	return fmt.Sprintf("%s&item=%s", base, itemID)
 }
 
-func cancelSimulationRun(client *lksdk.AgentSimulationClient, runID string) {
+func cancelSimulationRun(client *lksdk.AgentSimulationClient, projectID, runID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if _, err := client.CancelSimulationRun(ctx, &livekit.SimulationRun_Cancel_Request{
+		ProjectId:       projectID,
 		SimulationRunId: runID,
 	}); err != nil {
 		out.Warnf("Warning: failed to cancel run: %v", err)

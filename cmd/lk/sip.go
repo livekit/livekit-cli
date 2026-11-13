@@ -382,6 +382,10 @@ var (
 									Name:  "agent-deployment",
 									Usage: "`DEPLOYMENT` of the agent to dispatch to, leave empty for production (requires --agent-name)",
 								},
+								&cli.StringFlag{
+									Name:  "thread-id",
+									Usage: "Agent thread the dispatched call reads and writes (requires --agent-name)",
+								},
 							}),
 						},
 						{
@@ -1285,8 +1289,8 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 			req.RoomName = v
 		}
 		if agentName == "" {
-			if cmd.String("agent-metadata") != "" || cmd.String("agent-deployment") != "" {
-				return errors.New("--agent-metadata/--agent-deployment require --agent-name")
+			if cmd.String("agent-metadata") != "" || cmd.String("agent-deployment") != "" || cmd.String("thread-id") != "" {
+				return errors.New("--agent-metadata/--agent-deployment/--thread-id require --agent-name")
 			}
 		} else if req.RoomName == "" {
 			req.RoomName = newRoomName()
@@ -1347,6 +1351,7 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 				AgentName:  agentName,
 				Metadata:   cmd.String("agent-metadata"),
 				Deployment: cmd.String("agent-deployment"),
+				ThreadId:   cmd.String("thread-id"),
 			}
 			if cmd.Bool("verbose") {
 				util.PrintJSON(dreq)

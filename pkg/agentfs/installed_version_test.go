@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -66,6 +67,7 @@ func makeVenv(t *testing.T, root, name string) string {
 func TestFindPythonBinaryResolvesVenvFromSubdirectory(t *testing.T) {
 	requireUv(t)
 	t.Setenv("VIRTUAL_ENV", "")
+	t.Setenv("UV_PROJECT_ENVIRONMENT", "")
 	root := t.TempDir()
 	venv := makeVenv(t, root, ".venv")
 	agentDir := filepath.Join(root, "examples", "myagent")
@@ -73,15 +75,12 @@ func TestFindPythonBinaryResolvesVenvFromSubdirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, prefixArgs, err := FindPythonBinary(agentDir, ProjectTypePythonPip)
+	got, err := FindPythonBinary(agentDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if venvOf(t, got) != wantVenv(t, venv) {
 		t.Errorf("got %s, want an interpreter inside %s", got, venv)
-	}
-	if len(prefixArgs) != 0 {
-		t.Errorf("got prefix args %v, want none", prefixArgs)
 	}
 }
 
@@ -92,7 +91,7 @@ func TestFindPythonBinaryPrefersActivatedVenv(t *testing.T) {
 	activated := makeVenv(t, filepath.Join(root, "elsewhere"), "venv")
 	t.Setenv("VIRTUAL_ENV", activated)
 
-	got, _, err := FindPythonBinary(root, ProjectTypePythonPip)
+	got, err := FindPythonBinary(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,16 +105,19 @@ func TestFindPythonBinaryPrefersActivatedVenv(t *testing.T) {
 func TestFindPythonBinaryPrefersActivatedVenvWithoutUv(t *testing.T) {
 	root := t.TempDir()
 	activated := filepath.Join(root, "venv")
-	if err := os.MkdirAll(filepath.Join(activated, "bin"), 0o755); err != nil {
+	python := filepath.Join(activated, "bin", "python")
+	if runtime.GOOS == "windows" {
+		python = filepath.Join(activated, "Scripts", "python.exe")
+	}
+	if err := os.MkdirAll(filepath.Dir(python), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	python := filepath.Join(activated, "bin", "python")
 	if err := os.WriteFile(python, nil, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("VIRTUAL_ENV", activated)
 
-	got, _, err := FindPythonBinary(root, ProjectTypePythonPip)
+	got, err := FindPythonBinary(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,17 +126,16 @@ func TestFindPythonBinaryPrefersActivatedVenvWithoutUv(t *testing.T) {
 	}
 }
 
-// With no venv anywhere, uv answers with a managed standalone interpreter that
-// has no dependencies installed; resolution must reject it and keep searching.
-func TestFindPythonBinaryRejectsNonVenvInterpreter(t *testing.T) {
-	requireUv(t)
+// With no environment anywhere, the agent runs on the system Python.
+func TestFindPythonBinaryFallsBackToSystemPython(t *testing.T) {
 	t.Setenv("VIRTUAL_ENV", "")
+	t.Setenv("UV_PROJECT_ENVIRONMENT", "")
 	agentDir := filepath.Join(t.TempDir(), "agent")
 	if err := os.MkdirAll(agentDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	got, _, err := FindPythonBinary(agentDir, ProjectTypePythonPip)
+	got, err := FindPythonBinary(agentDir)
 	if err != nil {
 		t.Skip("no system Python on PATH")
 	}
@@ -144,5 +145,23 @@ func TestFindPythonBinaryRejectsNonVenvInterpreter(t *testing.T) {
 	}
 	if got != systemPython {
 		t.Errorf("got %s, want system python %s", got, systemPython)
+	}
+}
+
+// uv's $UV_PROJECT_ENVIRONMENT names the environment wherever it lives.
+func TestFindPythonBinaryHonorsUvProjectEnvironment(t *testing.T) {
+	requireUv(t)
+	t.Setenv("VIRTUAL_ENV", "")
+	root := t.TempDir()
+	makeVenv(t, root, ".venv")
+	custom := makeVenv(t, filepath.Join(root, "envs"), "agent")
+	t.Setenv("UV_PROJECT_ENVIRONMENT", custom)
+
+	got, err := FindPythonBinary(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if venvOf(t, got) != wantVenv(t, custom) {
+		t.Errorf("got %s, want an interpreter inside %s", got, custom)
 	}
 }

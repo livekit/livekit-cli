@@ -22,6 +22,7 @@ func TestTokenCommandTree(t *testing.T) {
 	require.NotNil(t, createCmd.Action, "'token create' must have an action")
 	assert.True(t, commandHasFlag(createCmd, "json"), "'token create' must have --json")
 	assert.True(t, commandHasFlag(createCmd, "token-only"), "'token create' must have --token-only")
+	assert.True(t, commandHasFlag(createCmd, "thread-id"), "'token create' must have --thread-id")
 
 	deprecatedCreateCmd := findCommandByName(TokenCommands, "create-token")
 	require.NotNil(t, deprecatedCreateCmd, "deprecated 'create-token' command must exist")

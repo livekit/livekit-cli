@@ -77,7 +77,8 @@ type consoleTickMsg struct{}
 type sessionEventMsg struct{ event *agent.AgentSessionEvent }
 type sessionResponseMsg struct{ resp *agent.SessionResponse }
 type audioInitResultMsg struct{ err error }
-type agentLogMsg struct{ line string }
+type agentLogMsg struct{ lines []string }
+type consoleReadyMsg struct{}
 type agentExitedMsg struct{}
 type shutdownTimeoutMsg struct{}
 
@@ -150,11 +151,10 @@ func newConsoleModel(pipeline *console.AudioPipeline, pipelineCancel context.Can
 func (m consoleModel) Init() tea.Cmd {
 	cmds := []tea.Cmd{
 		consoleTickCmd(),
-		pollEventsCmd(m.pipeline),
-		pollResponsesCmd(m.pipeline),
-	}
-	if m.agentProc != nil && m.agentProc.LogStream != nil {
-		cmds = append(cmds, pollLogsCmd(m.agentProc.LogStream))
+		// Bubble Tea's Println before the first frame is flushed places the lines
+		// against a full-screen buffer, which garbles wrapped lines and shifts later
+		// ones, so the transcript and the agent's logs start once that frame is out.
+		tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg { return consoleReadyMsg{} }),
 	}
 	if m.textMode {
 		cmds = append(cmds, textinput.Blink)
@@ -189,13 +189,27 @@ func pollResponsesCmd(pipeline *console.AudioPipeline) tea.Cmd {
 	}
 }
 
+// pollLogsCmd waits for the next log line and takes the lines already queued
+// behind it.
 func pollLogsCmd(ch chan string) tea.Cmd {
 	return func() tea.Msg {
 		line, ok := <-ch
 		if !ok {
 			return nil
 		}
-		return agentLogMsg{line: line}
+		lines := []string{line}
+		for len(lines) < cap(ch) {
+			select {
+			case line, ok := <-ch:
+				if !ok {
+					return agentLogMsg{lines: lines}
+				}
+				lines = append(lines, line)
+			default:
+				return agentLogMsg{lines: lines}
+			}
+		}
+		return agentLogMsg{lines: lines}
 	}
 }
 
@@ -247,7 +261,7 @@ func (m consoleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmds := m.handleSessionEvent(msg.event)
 		cmds = append(cmds, pollEventsCmd(m.pipeline))
-		return m, tea.Batch(cmds...)
+		return m, tea.Sequence(cmds...)
 
 	case sessionResponseMsg:
 		if m.waitingForAgent {
@@ -272,13 +286,23 @@ func (m consoleModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case agentLogMsg:
-		cmd := tea.Println(dimStyle.Render(msg.line))
-		var nextCmd tea.Cmd
+	case consoleReadyMsg:
+		cmds := []tea.Cmd{pollEventsCmd(m.pipeline), pollResponsesCmd(m.pipeline)}
 		if m.agentProc != nil && m.agentProc.LogStream != nil {
-			nextCmd = pollLogsCmd(m.agentProc.LogStream)
+			cmds = append(cmds, pollLogsCmd(m.agentProc.LogStream))
 		}
-		return m, tea.Batch(cmd, nextCmd)
+		return m, tea.Batch(cmds...)
+
+	case agentLogMsg:
+		// Sequence, not Batch: a Batch runs the prints and the next poll
+		// concurrently, so consecutive lines could reach the screen out of order.
+		// One print per line: a print taller than the screen is misplaced.
+		cmds := make([]tea.Cmd, 0, len(msg.lines)+1)
+		for _, line := range msg.lines {
+			cmds = append(cmds, tea.Println(dimStyle.Render(line)))
+		}
+		cmds = append(cmds, pollLogsCmd(m.agentProc.LogStream))
+		return m, tea.Sequence(cmds...)
 
 	case agentExitedMsg:
 		return m, tea.Quit

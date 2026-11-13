@@ -1,0 +1,25 @@
+# The default user is signed in to prod and to staging. Without
+# --public-api-url, --revoke can't tell which session to sign out, so it
+# refuses before any request, as an explicit --user does, and leaves the
+# config as it was.
+cp home/.livekit/cli-config.yaml before.yaml
+! exec lk --user-auth cloud auth --revoke
+! stdout .
+cmp stderr want-stderr
+requests
+! stdout .
+cmp home/.livekit/cli-config.yaml before.yaml
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_prod
+    api_url: http://prod.test
+  - id: u_1
+    email: dev@example.com
+    session_token: st_staging
+    api_url: http://staging.test
+-- want-stderr --
+user "u_1" is signed in to multiple APIs (http://prod.test, http://staging.test); pass --public-api-url to choose one

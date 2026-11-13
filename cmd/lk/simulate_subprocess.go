@@ -94,9 +94,7 @@ func checkTypeStrippingSupport(dir, nodeBin string) error {
 }
 
 // nodeAgentMinVersion is the minimum @livekit/agents (agents-js) release the
-// CLI supports. Unlike the Python thin CLI (gated on thinCLIMinVersion), the
-// Node entrypoint exposes the start/console/simulate subcommands directly, so
-// the baseline differs. Local placeholder — the deploy path sources the
+// CLI supports. Local placeholder — the deploy path sources the
 // equivalent floor from server client settings.
 const nodeAgentMinVersion = "1.0.0"
 
@@ -120,38 +118,14 @@ func checkNodeSDKVersion(cfg AgentStartConfig) error {
 	return nil
 }
 
-// checkPythonSDKVersion gates a Python agent on thinCLIMinVersion. It prefers
-// the installed version (resolved via the interpreter, accurate regardless of
-// the package manager and not fooled by a loose version constraint); when
-// dependencies aren't installed it falls back to static project-file parsing.
-func checkPythonSDKVersion(cfg AgentStartConfig) error {
-	version, notInstalled := agentfs.ResolvePythonAgentVersion(cfg.Dir, cfg.ProjectType)
-	if notInstalled && cfg.ProjectType == agentfs.ProjectTypePythonUV {
-		// The launch runs `uv run --no-sync`, so a missing package won't be
-		// installed on the way up — fail fast with the fix instead.
-		return fmt.Errorf("livekit-agents is not installed in the project environment; run `uv sync` and try again")
-	}
-	if version != "" {
-		// An unparseable version (e.g. a local "0.0.0.dev" tag) shouldn't block a run.
-		if ok, err := agentfs.IsVersionSatisfied(version, thinCLIMinVersion); err == nil && !ok {
-			return fmt.Errorf("livekit-agents version %s is too old, please upgrade to %s or newer", version, thinCLIMinVersion)
-		}
-		return nil
-	}
-	return agentfs.CheckSDKVersion(cfg.Dir, cfg.ProjectType, map[string]string{
-		"python-min-sdk-version": thinCLIMinVersion,
-		"node-min-sdk-version":   thinCLIMinVersion,
-	})
-}
-
 // defaultEntrypoints returns candidate entrypoint paths (relative to the
 // project root or working directory) probed for a project type, in priority
 // order. Forward slashes are valid on all platforms.
 func defaultEntrypoints(projectType agentfs.ProjectType) []string {
 	if projectType.IsNode() {
-		return []string{"main.ts", "src/main.js"}
+		return []string{"main.ts", "main.js"}
 	}
-	return []string{"agent.py"}
+	return []string{"agent.py", "main.py"}
 }
 
 // fallbackEntrypoints are probed at the project root only after cwd-relative
@@ -161,7 +135,7 @@ func fallbackEntrypoints(projectType agentfs.ProjectType) []string {
 	if projectType.IsNode() {
 		return []string{"src/main.ts", "src/main.js"}
 	}
-	return []string{"src/agent.py"}
+	return []string{"src/agent.py", "src/main.py"}
 }
 
 // findEntrypoint resolves the agent entrypoint file.
@@ -240,10 +214,6 @@ type AgentStartConfig struct {
 	OnServerInfo func(agentName, wsURL string)
 }
 
-// thinCLIMinVersion is the first livekit-agents release that exposes the
-// start/dev/console/simulate subcommands under `python -m livekit.agents`.
-const thinCLIMinVersion = "1.6.0"
-
 // buildAgentCommand resolves the interpreter and argv for an agent subprocess,
 // branching on project type. Python uses the thin CLI:
 // `<python> <runtime-args> -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS`
@@ -269,14 +239,13 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 		return nodeBin, args, nil
 	}
 
-	pythonBin, prefixArgs, err := agentfs.FindPythonBinary(cfg.Dir, cfg.ProjectType)
+	pythonBin, err := agentfs.FindPythonBinary(cfg.Dir)
 	if err != nil {
 		return "", nil, err
 	}
 	// python -m livekit.agents SUBCOMMAND ENTRYPOINT FLAGS: the framework
 	// discovers the AgentServer from the entrypoint and drives the thin CLI.
-	args := make([]string, 0, len(prefixArgs)+len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+4)
-	args = append(args, prefixArgs...)
+	args := make([]string, 0, len(cfg.RuntimeArgs)+len(cfg.CLIArgs)+4)
 	args = append(args, cfg.RuntimeArgs...)
 	args = append(args, "-m", "livekit.agents")
 	if len(cfg.CLIArgs) > 0 {
@@ -289,17 +258,18 @@ func buildAgentCommand(cfg AgentStartConfig) (string, []string, error) {
 	return pythonBin, args, nil
 }
 
+// agentOutputDrainTimeout bounds how long an exited agent's output is read
+// for, in case a process it started still holds the pipes open.
+const agentOutputDrainTimeout = 2 * time.Second
+
 // startAgent launches a Python or Node agent subprocess and monitors its output.
 func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
-	// fail fast when the agent SDK is older than the baseline the CLI supports.
-	// Node resolves the installed package via the runtime so workspace/monorepo
-	// layouts work; Python parses project files against the thin-CLI baseline.
+	// Python validates imports in the worker itself; do not import the SDK
+	// in a throwaway preflight process. Node still checks its SDK baseline.
 	if cfg.ProjectType.IsNode() {
 		if err := checkNodeSDKVersion(cfg); err != nil {
 			return nil, err
 		}
-	} else if err := checkPythonSDKVersion(cfg); err != nil {
-		return nil, err
 	}
 
 	bin, args, err := buildAgentCommand(cfg)
@@ -313,17 +283,31 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		cmd.Env = append(os.Environ(), cfg.Env...)
 	}
 
-	stdout, err := cmd.StdoutPipe()
+	// Our own pipes rather than cmd.StdoutPipe: Wait closes those as soon as
+	// the agent exits, dropping whatever output is still unread (the last
+	// lines of a short-lived agent, or the traceback of one that crashes on
+	// startup). These stay open until the output is drained.
+	stdout, stdoutW, err := os.Pipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
-	stderr, err := cmd.StderrPipe()
+	stderr, stderrW, err := os.Pipe()
 	if err != nil {
+		stdout.Close()
+		stdoutW.Close()
 		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+	cmd.Stdout, cmd.Stderr = stdoutW, stderrW
+	closePipes := func() {
+		stdout.Close()
+		stderr.Close()
 	}
 
 	logFile, err := os.CreateTemp("", "lk-simulate-*.log")
 	if err != nil {
+		closePipes()
+		stdoutW.Close()
+		stderrW.Close()
 		return nil, fmt.Errorf("failed to create log file: %w", err)
 	}
 
@@ -339,7 +323,12 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 		LogPath:        logFile.Name(),
 	}
 
-	if err := cmd.Start(); err != nil {
+	err = cmd.Start()
+	// The agent has its own copies of the write ends now.
+	stdoutW.Close()
+	stderrW.Close()
+	if err != nil {
+		closePipes()
 		logFile.Close()
 		os.Remove(logFile.Name())
 		return nil, fmt.Errorf("failed to start agent: %w", err)
@@ -347,6 +336,7 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 
 	// Capture output from both stdout and stderr
 	readyOnce := sync.Once{}
+	importHintOnce := sync.Once{}
 	failOnce := sync.Once{}
 	scanOutput := func(r io.Reader) {
 		scanner := bufio.NewScanner(r)
@@ -358,6 +348,15 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 			ap.appendLog(line)
 			if cfg.ForwardOutput != nil {
 				fmt.Fprintln(cfg.ForwardOutput, line)
+			}
+			if cfg.ProjectType.IsPython() && (strings.Contains(line, "ModuleNotFoundError:") || strings.Contains(line, "ImportError:") || strings.Contains(line, ": No module named livekit.agents")) {
+				importHintOnce.Do(func() {
+					hint := "Python could not import the agent or one of its dependencies; sync or install the project's dependencies and check its Python path."
+					ap.appendLog(hint)
+					if cfg.ForwardOutput != nil {
+						fmt.Fprintln(cfg.ForwardOutput, hint)
+					}
+				})
 			}
 			if cfg.ReadySignal != "" && strings.Contains(line, cfg.ReadySignal) {
 				readyOnce.Do(func() { close(ap.readyCh) })
@@ -381,9 +380,22 @@ func startAgent(cfg AgentStartConfig) (*AgentProcess, error) {
 	go func() { defer scanWg.Done(); scanOutput(stdout) }()
 	go func() { defer scanWg.Done(); scanOutput(stderr) }()
 	go func() {
-		ap.doneCh <- cmd.Wait()
+		err := cmd.Wait()
+		// Drain the output before reporting the exit, so whoever waits on
+		// it has seen every line. A process the agent left behind can hold
+		// the pipes open, so don't wait on it for long.
+		scanned := make(chan struct{})
+		go func() { scanWg.Wait(); close(scanned) }()
+		select {
+		case <-scanned:
+		case <-time.After(agentOutputDrainTimeout):
+			closePipes()
+		}
+		ap.doneCh <- err
 		close(ap.exitCh)
-		scanWg.Wait()
+		// The scanners send to LogStream, so it closes only once they're done.
+		<-scanned
+		closePipes()
 		if ap.LogStream != nil {
 			close(ap.LogStream)
 		}
