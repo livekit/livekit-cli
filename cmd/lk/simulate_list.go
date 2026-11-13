@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/urfave/cli/v3"
@@ -109,19 +110,31 @@ func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
+	// the column shows only once a run asked for a persona model
+	personaModels := slices.ContainsFunc(runs, func(run *livekit.SimulationRun) bool {
+		return run.GetPersonaModel() != ""
+	})
 	var rows [][]string
 	for _, run := range runs {
-		rows = append(rows, []string{
+		row := []string{
 			run.GetId(),
 			util.FormatRFC3339(run.GetCreatedAt().AsTime(), "---"),
 			strings.TrimPrefix(run.GetStatus().String(), "STATUS_"),
 			strings.TrimPrefix(run.GetMode().String(), "SIMULATION_MODE_"),
 			run.GetAgentName(),
-		})
+		}
+		if personaModels {
+			row = append(row, run.GetPersonaModel())
+		}
+		rows = append(rows, row)
 	}
 
+	headers := []string{"ID", "Created At", "Status", "Mode", "Agent"}
+	if personaModels {
+		headers = append(headers, "Persona Model")
+	}
 	t := util.CreateTable().
-		Headers("ID", "Created At", "Status", "Mode", "Agent").
+		Headers(headers...).
 		Rows(rows...)
 	out.Result(t)
 	fmt.Fprintf(out.StatusWriter(), "To open a run: %s\n", viewCommandHint("<run-id>"))
