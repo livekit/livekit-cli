@@ -39,6 +39,7 @@ func TestWithClientInfoSendsHeaders(t *testing.T) {
 		Version:     "2.19.3",
 		Command:     "project list",
 		CodingAgent: "claude-code",
+		Source:      "skills",
 	}))
 	require.NoError(t, err)
 	_, err = c.ListProjects(context.Background())
@@ -48,6 +49,7 @@ func TestWithClientInfoSendsHeaders(t *testing.T) {
 	assert.Equal(t, "2.19.3", got.Get(HeaderClientVersion))
 	assert.Equal(t, "project list", got.Get(HeaderCommand))
 	assert.Equal(t, "claude-code", got.Get(HeaderCodingAgent))
+	assert.Equal(t, "skills", got.Get(HeaderSource))
 	assert.Equal(t, "livekit-cli/2.19.3", got.Get("User-Agent"))
 	assert.Equal(t, "Bearer sekret", got.Get("Authorization"), "client info doesn't replace auth")
 }
@@ -70,6 +72,27 @@ func TestWithClientInfoLeavesOutEmptyFields(t *testing.T) {
 	assert.False(t, hasAgent, "no coding agent, no header")
 	_, hasCommand := got[http.CanonicalHeaderKey(HeaderCommand)]
 	assert.False(t, hasCommand)
+	_, hasSource := got[http.CanonicalHeaderKey(HeaderSource)]
+	assert.False(t, hasSource, "no source set, no header")
+}
+
+func TestDetectSource(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		env  map[string]string
+		want string
+	}{
+		{"unset", nil, ""},
+		{"skills", map[string]string{EnvSource: "skills"}, "skills"},
+		{"lowercased", map[string]string{EnvSource: "Template"}, "template"},
+		{"other characters dropped", map[string]string{EnvSource: "skills; rm -rf /"}, "skillsrm-rf"},
+		{"capped", map[string]string{EnvSource: strings.Repeat("a", 100)}, strings.Repeat("a", maxAgentNameLen)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := DetectSource(func(k string) string { return tc.env[k] })
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func TestDetectCodingAgent(t *testing.T) {
@@ -85,6 +108,8 @@ func TestDetectCodingAgent(t *testing.T) {
 		{"AI_AGENT that cleans to nothing falls through", map[string]string{"AI_AGENT": "!!!", "CLAUDECODE": "1"}, "claude-code"},
 		{"Claude Code", map[string]string{"CLAUDECODE": "1"}, "claude-code"},
 		{"Gemini CLI", map[string]string{"GEMINI_CLI": "1"}, "gemini-cli"},
+		{"Codex", map[string]string{"CODEX_VERSION": "0.140.0"}, "codex"},
+		{"Cursor", map[string]string{"CURSOR_AGENT": "1"}, "cursor"},
 		{"a variable set to something else", map[string]string{"CLAUDECODE": "0"}, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
