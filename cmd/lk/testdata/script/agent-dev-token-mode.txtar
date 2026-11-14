@@ -1,0 +1,51 @@
+# A member whose role can't create API keys runs lk agent dev with
+# --user-auth and no API key for the project on this machine: lk doesn't ask
+# for a key, it runs the agent on a worker token from the Public API
+# (CreateToken). The agent gets
+# LIVEKIT_URL and LIVEKIT_TOKEN, with the key and secret set empty so an env
+# file can't set them. No key is created or saved. This agent exits without
+# reporting token-mode support on the dev channel, as an SDK without token
+# mode does, so lk asks for an SDK upgrade, then says how to supply a key.
+[!exec:node] skip 'needs node to run the agent'
+respond POST http://publicapi.test/v0/projects/p_1/keys 403 '{"code":7,"message":"permission denied: this needs ADMIN on the project"}'
+mint st_1
+
+! exec lk --user-auth agent dev --no-reload
+stdout '^agent ws://one.test key=<> secret=<> token=yes$'
+stderr '^Your role on project \[one\] can''t create API keys \(that takes Admin\)\.$'
+stderr '^Running the agent without an API key, on a worker token for project \[one\] that lk refreshes$'
+stderr '^No LiveKit API key to run the agent with for project \[one\]: your role on project \[one\] can''t create API keys \(that takes Admin\)$'
+stderr '^  - add LIVEKIT_URL=ws://one.test, LIVEKIT_API_KEY and LIVEKIT_API_SECRET to .*[/\\]\.env\.local$'
+stderr '^  - pass --api-key and --api-secret, or set LIVEKIT_API_KEY and LIVEKIT_API_SECRET$'
+! stderr 're-run in a terminal'
+stderr 'upgrade @livekit/agents \(Node\.js\) to X\.Y\.Z or later, which can run without an API key \(token mode\): lk started the agent on a worker token, and it exited before it reported that its SDK supports that\.'
+! stderr 'Created API key'
+! exists .env.local
+! grep 'api_key' home/.livekit/cli-config.yaml
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+const env = process.env;
+console.log('agent', env.LIVEKIT_URL, `key=<${env.LIVEKIT_API_KEY}>`, `secret=<${env.LIVEKIT_API_SECRET}>`, `token=${env.LIVEKIT_TOKEN ? 'yes' : 'no'}`);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/keys bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/tokens bearer=st_1 project=p_1

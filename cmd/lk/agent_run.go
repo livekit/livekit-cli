@@ -116,6 +116,15 @@ to run the agent without lk, write it there with "lk app env --write".
 Without a terminal, lk stops before the agent starts and lists the ways to
 supply a key.`
 
+// devCredentialsHelp is agentCredentialsHelp for agent dev, which under
+// --user-auth runs the agent without a key when it can't get one (token mode).
+const devCredentialsHelp = `Credentials: found as for "lk agent start" (see below), except that with
+--user-auth, when lk can't create a key, it doesn't ask for one: it runs the agent with LIVEKIT_URL and LIVEKIT_TOKEN, a worker token it gets
+as you and refreshes while it runs. This needs an agents SDK that supports
+token mode.
+
+` + agentCredentialsHelp
+
 // consoleCredentialsHelp is agentCredentialsHelp for agent console, where the
 // key is optional.
 const consoleCredentialsHelp = `Credentials: found as for "lk agent dev" (see its help). Console runs the
@@ -139,7 +148,7 @@ var startCommand = &cli.Command{
 var devCommand = &cli.Command{
 	Name:        "dev",
 	Usage:       "Run an agent locally with hot reload",
-	Description: agentCredentialsHelp,
+	Description: devCredentialsHelp,
 	ArgsUsage:   "[entrypoint] [-- node/python-args...]",
 	Flags: append(agentRunFlags,
 		&cli.BoolFlag{
@@ -162,6 +171,11 @@ type agentCredentials struct {
 	url       string
 	apiKey    string
 	apiSecret string
+	// workerToken is set in token mode (agent_token_mode.go), with no key.
+	workerToken *workerToken
+	// noKey, in token mode, is the error the chain ends in without it, for
+	// an agent whose SDK doesn't support token mode.
+	noKey error
 }
 
 // complete reports whether every field is populated, meaning no project lookup
@@ -185,6 +199,12 @@ func (c agentCredentials) env() []string {
 	}
 	if c.apiSecret != "" {
 		env = append(env, "LIVEKIT_API_SECRET="+c.apiSecret)
+	}
+	if c.workerToken != nil {
+		// Empty, the key and secret also keep the agent's env file from
+		// setting them (dotenv loaders don't overwrite a set variable), which
+		// would turn token mode off.
+		env = append(env, "LIVEKIT_API_KEY=", "LIVEKIT_API_SECRET=", "LIVEKIT_TOKEN="+c.workerToken.current())
 	}
 	return env
 }
@@ -350,12 +370,12 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 		subcmd = "start"
 	}
 	cliArgs := buildCLIArgs(projectType, subcmd, cmd)
-	credsEnv, err := resolveCredentials(ctx, cmd, projectDir)
+	creds, err := resolveDevAgentCredentials(ctx, cmd, projectDir)
 	if err != nil {
 		return err
 	}
 	deployment := resolveDevDeployment(cmd)
-	env := append(credsEnv, agentDeploymentEnv+"="+deployment)
+	env := append(creds.env(), agentDeploymentEnv+"="+deployment)
 	if projectType.IsPython() {
 		cliArgs = append(cliArgs, "--dev")
 		if cmd.String("log-level") == "" {
@@ -409,8 +429,30 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
+	// In token mode, lk refreshes the worker token for as long as it runs.
+	var tokenMode *devTokenMode
+	if creds.workerToken != nil {
+		tokenMode = &devTokenMode{token: creds.workerToken, noKey: creds.noKey, projectType: projectType}
+		refreshCtx, stopRefresh := context.WithCancel(ctx)
+		defer stopRefresh()
+		go creds.workerToken.keepFresh(refreshCtx, tokenMode.push)
+	}
+
 	if cmd.Bool("no-reload") {
-		// No reload — just run like start
+		// No reload — just run like start, plus the dev channel in token mode,
+		// for the refreshed worker token.
+		if tokenMode != nil {
+			devSrv, err := newDevServer()
+			if err != nil {
+				return err
+			}
+			defer devSrv.close()
+			devSrv.tokenMode = tokenMode
+			if addrFlag := devChannelAddrFlag(cfg); addrFlag != "" {
+				cfg.CLIArgs = append(cfg.CLIArgs, addrFlag, devSrv.addr())
+			}
+			go devSrv.serve()
+		}
 		agent, err := startAgent(cfg)
 		if err != nil {
 			return err
@@ -424,6 +466,9 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 
 		<-agent.exitCh
 		signal.Stop(sigCh)
+		if tokenMode != nil {
+			return tokenMode.exitError()
+		}
 		return nil
 	}
 
@@ -432,6 +477,7 @@ func runAgentDev(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	watcher.devSrv.tokenMode = tokenMode
 
 	done := make(chan struct{})
 	doneOnce := sync.Once{}

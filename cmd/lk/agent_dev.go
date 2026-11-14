@@ -28,6 +28,9 @@ type devServer struct {
 	// onServerInfo, if set, is invoked when a (re)started agent reports its
 	// ServerInfo over the dev channel (agent name + the LiveKit URL it uses).
 	onServerInfo func(agentName, url string)
+	// tokenMode is set when the agent runs on a worker token (see
+	// agent_token_mode.go).
+	tokenMode *devTokenMode
 }
 
 func newDevServer() (*devServer, error) {
@@ -49,7 +52,23 @@ func (rs *devServer) newSession(conn net.Conn) *devSession {
 	s := newDevSession(conn)
 	s.onServerInfo = rs.onServerInfo
 	s.jobsProvider = rs.takeSavedJobs
+	if rs.tokenMode != nil {
+		s.onTokenModeSupport = func(supported bool) { rs.tokenMode.onServerInfo(s, supported) }
+	}
 	return s
+}
+
+// serve hands every agent that connects to a devSession read loop, until the
+// listener closes. agentWatcher accepts its sessions itself; serve is for a run
+// without reload.
+func (rs *devServer) serve() {
+	for {
+		conn, err := rs.listener.Accept()
+		if err != nil {
+			return
+		}
+		go rs.newSession(conn).run()
+	}
 }
 
 // takeSavedJobs returns and clears the captured jobs. Jobs are restored to the
@@ -108,6 +127,9 @@ type devSession struct {
 
 	// onServerInfo, if set, is invoked when the peer pushes a ServerInfo.
 	onServerInfo func(agentName, url string)
+	// onTokenModeSupport, if set, is invoked with each ServerInfo's report of
+	// whether the agent's SDK supports token mode.
+	onTokenModeSupport func(supported bool)
 	// jobsProvider, if set, supplies the response to an inbound
 	// GetRunningJobsRequest (the restore side of a reload).
 	jobsProvider func() *agent.GetRunningAgentJobsResponse
@@ -136,9 +158,12 @@ func (s *devSession) run() {
 		}
 		switch msg.Message.(type) {
 		case *agent.AgentDevMessage_ServerInfo:
+			si := msg.GetServerInfo()
 			if s.onServerInfo != nil {
-				si := msg.GetServerInfo()
 				s.onServerInfo(si.GetAgentName(), si.GetUrl())
+			}
+			if s.onTokenModeSupport != nil {
+				s.onTokenModeSupport(si.GetSupportsTokenMode())
 			}
 		case *agent.AgentDevMessage_GetRunningJobsRequest:
 			s.handleJobsRequest()

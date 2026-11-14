@@ -266,8 +266,8 @@ require (
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
 
-// TEMP (local dev): use local protocol with the WorkerInfo dev message.
+// TEMP (local dev): use local protocol with the AgentDevMessage.Credentials dev message.
 // Drop once github.com/livekit/protocol publishes it.
-// replace github.com/livekit/protocol => ../protocol
+replace github.com/livekit/protocol => ../protocol
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen

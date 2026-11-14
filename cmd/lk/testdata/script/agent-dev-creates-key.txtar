@@ -1,0 +1,41 @@
+# An Admin with --user-auth and no API key for the project on this machine
+# runs lk agent dev: lk creates a key and saves it to the CLI config, as
+# before token mode. It gets no worker token, though the Public API would give
+# one.
+[!exec:node] skip 'needs node to run the agent'
+respond POST http://publicapi.test/v0/projects/p_1/keys 200 '{"apiKey":"APInew","secret":"secretnew"}'
+mint st_1
+
+exec lk --user-auth agent dev --no-reload
+stdout '^agent ws://one.test key=<APInew> secret=<secretnew> token=no$'
+stderr '^Created API key \[APInew\] on project \[one\]$'
+stderr '^Saved API key \[APInew\] to the CLI config as project \[one\]$'
+! stderr 'worker token'
+! exists .env.local
+grep 'api_key: APInew' home/.livekit/cli-config.yaml
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+const env = process.env;
+console.log('agent', env.LIVEKIT_URL, `key=<${env.LIVEKIT_API_KEY}>`, `secret=<${env.LIVEKIT_API_SECRET}>`, `token=${env.LIVEKIT_TOKEN ? 'yes' : 'no'}`);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/keys bearer=st_1 project=p_1
