@@ -118,12 +118,19 @@ supply a key.`
 
 // devCredentialsHelp is agentCredentialsHelp for agent dev, which under
 // --user-auth runs the agent without a key when it can't get one (token mode).
-const devCredentialsHelp = `Credentials: found as for "lk agent start" (see below), except that with
---user-auth, when lk can't create a key, it doesn't ask for one: it runs the agent with LIVEKIT_URL and LIVEKIT_TOKEN, a worker token it gets
-as you and refreshes while it runs. This needs an agents SDK that supports
-token mode.
+const devCredentialsHelp = `Credentials: the agent gets LIVEKIT_URL, LIVEKIT_API_KEY and
+LIVEKIT_API_SECRET from --url/--api-key/--api-secret or the LIVEKIT_*
+environment variables, else from its .env.local (or .env), else from the
+project's key in the CLI config.
 
-` + agentCredentialsHelp
+With --user-auth and no key yet, lk creates one if your role allows (Admin).
+A key lk creates is saved to the CLI config, not to the agent's files; to run
+the agent without lk, write it there with "lk app env --write".
+
+If your role can't create a key, lk runs the agent without one. The agent
+gets LIVEKIT_URL and LIVEKIT_TOKEN: a short-lived token for your account,
+which lk renews while the agent runs. This needs livekit-agents ` + tokenModeMinPython + ` or
+later (Python), or @livekit/agents ` + tokenModeMinNode + ` or later (Node.js).`
 
 // consoleCredentialsHelp is agentCredentialsHelp for agent console, where the
 // key is optional.
