@@ -234,6 +234,7 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 
 	apiClientInfo.Command = commandName(cmd)
 	apiClientInfo.CodingAgent = public.DetectCodingAgent(os.Getenv)
+	apiClientInfo.Source = public.DetectSource(os.Getenv)
 
 	showBanner(ctx, cmd)
 
