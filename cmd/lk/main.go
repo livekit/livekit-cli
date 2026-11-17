@@ -140,8 +140,17 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, UpdateCommands...)
 	app.CommandNotFound = commandNotFound
 	setCommandNotFound(app.Commands)
+	// Since urfave/cli v3.10, completing runs every Before in the command
+	// chain first. lk's Befores load a project, print notices and may prompt,
+	// so Tab would fail, hang or print to the terminal; skip them all, as
+	// urfave did before. Like urfave, treat a final
+	// --generate-shell-completion as a completion request.
+	completing := os.Args[len(os.Args)-1] == "--generate-shell-completion"
 	_ = app.Walk(func(c *cli.Command) error {
 		c.OnUsageError = onUsageError
+		if completing {
+			c.Before = nil
+		}
 		return nil
 	})
 
