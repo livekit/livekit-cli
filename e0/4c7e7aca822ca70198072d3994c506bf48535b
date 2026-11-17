@@ -1,0 +1,26 @@
+cmd/lk/simulate.go
+  s_aaf78334cb7322::t_4c4675a656906d 535
+  s_aaf78334cb7322::t_b48a94035fe6fc 430-436
+  s_aaf78334cb7322::t_5efbb189b93852 510-516
+  s_aaf78334cb7322::t_e29731b621c7d7 27
+cmd/lk/simulate_include.go
+  s_aaf78334cb7322::t_13772436f7d754 34-35,42-45,50,55-59,64,67,70,73,81-83,93,98-100,102,109,112,114-115,119,121,125-130,136,138,143-172,175-176,179
+cmd/lk/simulate_include_test.go
+  s_aaf78334cb7322::t_ce01679f1abebc 129-177,185,196-241
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e04c7e7aca822ca70198072d3994c506bf48535b",
+  "prompts": {},
+  "sessions": {
+    "s_aaf78334cb7322": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2193486-0057-4a50-bb24-44082ff248d9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
