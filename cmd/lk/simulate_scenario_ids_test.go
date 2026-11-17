@@ -499,7 +499,7 @@ scenarios:
 			yaml: `
 id: g1
 name: n
-defaults: &machine
+x-defaults: &machine
   speaker: MACHINE
   timeout: { after: 8s, to: livekit/hangup }
 nodes:
@@ -545,7 +545,7 @@ scenarios:
 			yaml: `
 id: g1
 name: n
-none: &none ~
+x-none: &none ~
 nodes:
   menu: { say: hi, then: *none }
 scenarios:
