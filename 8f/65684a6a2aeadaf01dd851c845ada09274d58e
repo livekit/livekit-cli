@@ -1,0 +1,21 @@
+cmd/lk/simulate_flow.go
+  s_aaf78334cb7322::t_1141beded0c469 18,32,55-57,64-75,81-84,86-87,91-94,97-98,103-216,220-229,231-279,281-283,286-297,360-363
+cmd/lk/simulate_scenario_ids_test.go
+  s_aaf78334cb7322::t_832aca80130640 307,467-606
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f65684a6a2aeadaf01dd851c845ada09274d58e",
+  "prompts": {},
+  "sessions": {
+    "s_aaf78334cb7322": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2193486-0057-4a50-bb24-44082ff248d9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Chenghao Mou <chenghao.mou@livekit.io>"
+    }
+  }
+}
