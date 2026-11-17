@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
 )
 
 // writeFiles writes each name -> content under one temp dir and returns it.
@@ -116,7 +117,7 @@ func TestIncludeErrors(t *testing.T) {
 				"nodes/menus.yaml":  "nodes: { menu: { say: hi, then: livekit/hangup } }\nscenarios: []\n",
 				"nodes/people.yaml": "nodes: { sam: { instructions: x } }\n",
 			},
-			want: "nodes/menus.yaml: an included file holds only `nodes` and `include`, not \"scenarios\"",
+			want: "nodes/menus.yaml: an included file holds only `nodes` and `include`, and keys that start with \"x-\" for anchors, not \"scenarios\"",
 		},
 		{
 			name: "a missing include path",
@@ -149,7 +150,7 @@ func TestIncludeErrors(t *testing.T) {
 			files: map[string]string{
 				"dental.yaml": "id: g\nincludes: [nodes.yaml]\nscenarios: [{ id: s, label: l, start: menu }]\n",
 			},
-			want: "a scenarios file holds only `id`, `name`, `include`, `nodes`, and `scenarios`, not \"includes\"",
+			want: "a scenarios file holds only `id`, `name`, `include`, `nodes`, and `scenarios`, and keys that start with \"x-\" for anchors, not \"includes\"",
 		},
 		{
 			name: "an empty include entry",
@@ -173,7 +174,7 @@ func TestIncludeErrors(t *testing.T) {
 				"a/nodes.yaml": "nodes: { x: { say: hi, then: livekit/hangup } }\n",
 				"b/nodes.yaml": "nodes: { y: { sya: hi } }\n",
 			},
-			want: `b/nodes.yaml: node "y" (line 1)`,
+			want: `b/nodes.yaml: node "y": line 1: unknown field "sya"`,
 		},
 		{
 			name: "a bad included node names its file",
@@ -182,7 +183,7 @@ func TestIncludeErrors(t *testing.T) {
 				"nodes/menus.yaml":  "nodes: { menu: { sya: hi } }\n",
 				"nodes/people.yaml": "nodes: { sam: { instructions: x } }\n",
 			},
-			want: `nodes/menus.yaml: node "menu" (line 1)`,
+			want: `nodes/menus.yaml: node "menu": line 1: unknown field "sya"`,
 		},
 	}
 	for _, c := range cases {
@@ -238,4 +239,59 @@ func TestScenariosFileKeysAreFreeWithoutFlows(t *testing.T) {
 	})
 	_, err := loadScenarioGroup(filepath.Join(dir, "s.yaml"))
 	require.NoError(t, err)
+}
+
+func TestIncludeResolvesDotDotPhysically(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"real/proj/dental.yaml": "id: g\ninclude: [nodes.yaml, deeper/../shared.yaml]\nscenarios: [{ id: s, label: l, start: menu }]\n",
+		"real/proj/nodes.yaml":  "nodes: { menu: { say: real, then: livekit/hangup } }\n",
+		"real/proj/sub/x":       "",
+		"real/shared.yaml":      "nodes: { bye: { say: shared, then: livekit/hangup } }\n",
+		"real/other/x":          "",
+		// decoys where a lexical clean of the paths would look
+		"cwd/dental.yaml": "id: g\ninclude: [nodes.yaml]\nscenarios: [{ id: s, label: l, start: menu }]\n",
+		"cwd/nodes.yaml":  "nodes: { menu: { say: decoy, then: livekit/hangup } }\n",
+	})
+	require.NoError(t, os.Symlink(filepath.Join(dir, "real", "proj", "sub"), filepath.Join(dir, "cwd", "link")))
+	require.NoError(t, os.Symlink(filepath.Join(dir, "real", "other"), filepath.Join(dir, "real", "proj", "deeper")))
+
+	t.Chdir(filepath.Join(dir, "cwd"))
+	group, err := loadScenarioGroup("link/../dental.yaml") // not filepath.Join, which cleans the ..
+	require.NoError(t, err)
+	require.Equal(t, "real", group.Nodes["menu"].Say)
+	require.Equal(t, "shared", group.Nodes["bye"].Say)
+}
+
+func TestIncludeOneFileUnderTwoCases(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"dental.yaml": "id: g\ninclude: [nodes.yaml, NODES.yaml]\nscenarios: [{ id: s, label: l, start: menu }]\n",
+		"nodes.yaml":  "nodes: { menu: { say: hi, then: livekit/hangup } }\n",
+	})
+	if _, err := os.Stat(filepath.Join(dir, "NODES.yaml")); err != nil {
+		t.Skip("the file system is case-sensitive")
+	}
+	group, err := loadScenarioGroup(filepath.Join(dir, "dental.yaml"))
+	require.NoError(t, err)
+	require.Len(t, group.Nodes, 1)
+}
+
+func TestAnchorKeysAreAllowed(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"dental.yaml": "id: g\nx-hangup: &bye { then: livekit/hangup }\ninclude: [nodes.yaml]\nnodes: { menu: { <<: *bye, say: hi } }\nscenarios: [{ id: s, label: l, start: menu }]\n",
+		"nodes.yaml":  "x-hangup: &bye { then: livekit/hangup }\nnodes: { sam: { <<: *bye, say: hello } }\n",
+	})
+	group, err := loadScenarioGroup(filepath.Join(dir, "dental.yaml"))
+	require.NoError(t, err)
+	require.Equal(t, "livekit/hangup", group.Nodes["sam"].Then)
+}
+
+func TestScenarioIDsAreNotWrittenIntoAnIncludedFile(t *testing.T) {
+	dir := writeFiles(t, map[string]string{"nodes.yaml": "nodes: { sam: { say: hi, then: livekit/hangup } }\n"})
+	path := filepath.Join(dir, "nodes.yaml")
+
+	err := ensureScenarioIDs(&cli.Command{}, path)
+	require.ErrorContains(t, err, "has no `scenarios`")
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.NotContains(t, string(data), "id:")
 }
