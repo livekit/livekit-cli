@@ -363,7 +363,7 @@ var (
 								},
 								&cli.DurationFlag{
 									Name:  "timeout",
-									Usage: "timeout for the call to dial",
+									Usage: "timeout for the call to dial (at most 75s with --wait under --user-auth)",
 									Value: 80 * time.Second,
 								},
 								&cli.StringSliceFlag{
@@ -1291,6 +1291,7 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	waitTimeout, waitErr := sipWaitTimeout(cmd.Duration("timeout"), cmd.IsSet("timeout"), userAuthEnabled(cmd))
 	agentName := cmd.String("agent-name")
 	var dispatchCli *lksdk.AgentDispatchClient
 	if agentName != "" {
@@ -1339,6 +1340,9 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		}
 		if cmd.Bool("wait") {
 			req.WaitUntilAnswered = true
+		}
+		if req.WaitUntilAnswered && waitErr != nil {
+			return waitErr
 		}
 		if m, err := parseSIPMediaConfig(cmd); err == nil {
 			req.Media = m
@@ -1396,9 +1400,7 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		// Default deadline is too short, thus, we must set a higher deadline for it.
 		timeout := 30 * time.Second
 		if req.WaitUntilAnswered {
-			if dt := cmd.Duration("timeout"); dt != 0 {
-				timeout = dt
-			}
+			timeout = waitTimeout
 			req.RingingTimeout = durationpb.New(timeout - 500*time.Millisecond)
 		} else {
 			// For async API we should use a default timeout for the RPC,
@@ -1424,6 +1426,28 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 		}
 		return resp, err
 	}, printSIPParticipantInfo)
+}
+
+// publicAPIMaxRinging is the longest ringing timeout that the Public API
+// accepts for a call placed with waitUntilAnswered.
+const publicAPIMaxRinging = 75 * time.Second
+
+// sipWaitTimeout is how long lk waits for a call placed with --wait: the
+// --timeout flag, or 30s if it is zero. The call rings for 0.5s less. Under
+// --user-auth it is at most publicAPIMaxRinging: an explicit --timeout over
+// that is refused before any request, and the 80s default is lowered to it.
+func sipWaitTimeout(flag time.Duration, set, userAuth bool) (time.Duration, error) {
+	timeout := flag
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	if userAuth && timeout > publicAPIMaxRinging {
+		if set {
+			return 0, fmt.Errorf("under --user-auth, --wait waits at most %s for an answer: set --timeout to %s or less", publicAPIMaxRinging, publicAPIMaxRinging)
+		}
+		timeout = publicAPIMaxRinging
+	}
+	return timeout, nil
 }
 
 func createSIPParticipantLegacy(ctx context.Context, cmd *cli.Command) error {
