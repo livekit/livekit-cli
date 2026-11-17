@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/livekit/livekit-cli/v2/pkg/util"
@@ -50,6 +51,13 @@ var (
 							Usage:  "List all inbound SIP Trunks",
 							Action: listSipInboundTrunk,
 							Flags:  []cli.Flag{jsonFlag},
+						},
+						{
+							Name:      "get",
+							Usage:     "Get an inbound SIP Trunk",
+							Action:    getSIPInboundTrunk,
+							ArgsUsage: "SIPTrunk ID to get",
+							Flags:     []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",
@@ -121,6 +129,13 @@ var (
 							Usage:  "List all outbound SIP Trunk",
 							Action: listSipOutboundTrunk,
 							Flags:  []cli.Flag{jsonFlag},
+						},
+						{
+							Name:      "get",
+							Usage:     "Get an outbound SIP Trunk",
+							Action:    getSIPOutboundTrunk,
+							ArgsUsage: "SIPTrunk ID to get",
+							Flags:     []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",
@@ -216,6 +231,13 @@ var (
 							Usage:  "List all SIP Dispatch Rule",
 							Action: listSipDispatchRule,
 							Flags:  []cli.Flag{jsonFlag},
+						},
+						{
+							Name:      "get",
+							Usage:     "Get a SIP Dispatch Rule",
+							Action:    getSIPDispatchRule,
+							ArgsUsage: "SIPDispatchRule ID to get",
+							Flags:     []cli.Flag{jsonFlag},
 						},
 						{
 							Name:      "create",
@@ -943,23 +965,58 @@ func listSipInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return listAndPrint(ctx, cmd, cli.ListSIPInboundTrunk, &livekit.ListSIPInboundTrunkRequest{}, []string{
-		"SipTrunkID", "Name", "Numbers",
-		"AllowedAddresses", "AllowedNumbers",
-		"Authentication",
-		"Encryption",
-		"Headers",
-		"Metadata",
-	}, func(item *livekit.SIPInboundTrunkInfo) []string {
-		return []string{
-			item.SipTrunkId, item.Name, strings.Join(item.Numbers, ","),
-			strings.Join(item.AllowedAddresses, ","), strings.Join(item.AllowedNumbers, ","),
-			userPass(item.AuthUsername, item.AuthPassword != ""),
-			strings.TrimPrefix(item.MediaEncryption.String(), "SIP_MEDIA_ENCRYPT_"),
-			printHeaderMaps(item.Headers, item.HeadersToAttributes),
-			item.Metadata,
+	return listAndPrint(ctx, cmd, cli.ListSIPInboundTrunk, &livekit.ListSIPInboundTrunkRequest{}, sipInboundTrunkColumns, sipInboundTrunkRow)
+}
+
+var sipInboundTrunkColumns = []string{
+	"SipTrunkID", "Name", "Numbers",
+	"AllowedAddresses", "AllowedNumbers",
+	"Authentication",
+	"Encryption",
+	"Headers",
+	"Metadata",
+}
+
+func sipInboundTrunkRow(item *livekit.SIPInboundTrunkInfo) []string {
+	return []string{
+		item.SipTrunkId, item.Name, strings.Join(item.Numbers, ","),
+		strings.Join(item.AllowedAddresses, ","), strings.Join(item.AllowedNumbers, ","),
+		userPass(item.AuthUsername, item.AuthPassword != ""),
+		strings.TrimPrefix(item.MediaEncryption.String(), "SIP_MEDIA_ENCRYPT_"),
+		printHeaderMaps(item.Headers, item.HeadersToAttributes),
+		item.Metadata,
+	}
+}
+
+func getSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
+	cli, err := createSIPClient(ctx, cmd)
+	if err != nil {
+		return err
+	}
+	return forEachID(ctx, cmd, func(ctx context.Context, id string) error {
+		trunk, err := sipInboundTrunkByID(ctx, cli, id)
+		if err != nil {
+			return err
 		}
+		printOne(cmd, trunk, sipInboundTrunkColumns, sipInboundTrunkRow)
+		return nil
 	})
+}
+
+// sipInboundTrunkByID returns the inbound trunk with id, with its password
+// redacted (see redactedPassword).
+func sipInboundTrunkByID(ctx context.Context, cli sipAPI, id string) (*livekit.SIPInboundTrunkInfo, error) {
+	trunk, err := onlyItem(cli.GetSIPInboundTrunksByIDs(ctx, []string{id}))
+	if err != nil {
+		return nil, err
+	}
+	if trunk == nil {
+		return nil, errors.New("inbound trunk not found")
+	}
+	if trunk.AuthPassword != "" {
+		trunk.AuthPassword = redactedPassword
+	}
+	return trunk, nil
 }
 
 func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
@@ -967,25 +1024,87 @@ func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return listAndPrint(ctx, cmd, cli.ListSIPOutboundTrunk, &livekit.ListSIPOutboundTrunkRequest{}, []string{
-		"SipTrunkID", "Name",
-		"Address", "Transport",
-		"Numbers",
-		"Authentication",
-		"Encryption",
-		"Headers",
-		"Metadata",
-	}, func(item *livekit.SIPOutboundTrunkInfo) []string {
-		return []string{
-			item.SipTrunkId, item.Name,
-			item.Address, strings.TrimPrefix(item.Transport.String(), "SIP_TRANSPORT_"),
-			strings.Join(item.Numbers, ","),
-			userPass(item.AuthUsername, item.AuthPassword != ""),
-			strings.TrimPrefix(item.MediaEncryption.String(), "SIP_MEDIA_ENCRYPT_"),
-			printHeaderMaps(item.Headers, item.HeadersToAttributes),
-			item.Metadata,
+	return listAndPrint(ctx, cmd, cli.ListSIPOutboundTrunk, &livekit.ListSIPOutboundTrunkRequest{}, sipOutboundTrunkColumns, sipOutboundTrunkRow)
+}
+
+var sipOutboundTrunkColumns = []string{
+	"SipTrunkID", "Name",
+	"Address", "Transport",
+	"Numbers",
+	"Authentication",
+	"Encryption",
+	"Headers",
+	"Metadata",
+}
+
+func sipOutboundTrunkRow(item *livekit.SIPOutboundTrunkInfo) []string {
+	return []string{
+		item.SipTrunkId, item.Name,
+		item.Address, strings.TrimPrefix(item.Transport.String(), "SIP_TRANSPORT_"),
+		strings.Join(item.Numbers, ","),
+		userPass(item.AuthUsername, item.AuthPassword != ""),
+		strings.TrimPrefix(item.MediaEncryption.String(), "SIP_MEDIA_ENCRYPT_"),
+		printHeaderMaps(item.Headers, item.HeadersToAttributes),
+		item.Metadata,
+	}
+}
+
+func getSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
+	cli, err := createSIPClient(ctx, cmd)
+	if err != nil {
+		return err
+	}
+	return forEachID(ctx, cmd, func(ctx context.Context, id string) error {
+		trunk, err := sipOutboundTrunkByID(ctx, cli, id)
+		if err != nil {
+			return err
 		}
+		printOne(cmd, trunk, sipOutboundTrunkColumns, sipOutboundTrunkRow)
+		return nil
 	})
+}
+
+// sipOutboundTrunkByID returns the outbound trunk with id, with its password
+// redacted (see redactedPassword).
+func sipOutboundTrunkByID(ctx context.Context, cli sipAPI, id string) (*livekit.SIPOutboundTrunkInfo, error) {
+	trunk, err := onlyItem(cli.GetSIPOutboundTrunksByIDs(ctx, []string{id}))
+	if err != nil {
+		return nil, err
+	}
+	if trunk == nil {
+		return nil, errors.New("outbound trunk not found")
+	}
+	if trunk.AuthPassword != "" {
+		trunk.AuthPassword = redactedPassword
+	}
+	return trunk, nil
+}
+
+// redactedPassword is what lk sip inbound|outbound get print for a trunk's
+// password, when it has one. With an API key, server-sdk-go has no Get by
+// ID, and GetSIP...TrunksByIDs reads through the SIP API's list, which lk
+// doesn't rely on to leave out the password; under --user-auth the Public
+// API's Get answers with this placeholder. lk redacts it itself in both
+// modes, so neither prints a password.
+const redactedPassword = "********"
+
+// onlyItem returns the one item of a get by ID, or nil when the SIP API had
+// no item with that ID.
+func onlyItem[T any](items []*T, err error) (*T, error) {
+	if err != nil || len(items) != 1 {
+		return nil, err
+	}
+	return items[0], nil
+}
+
+// printOne prints the one item a get returned: as JSON with --json, or else
+// as its list's table, with one row.
+func printOne[T proto.Message](cmd *cli.Command, item T, header []string, row func(T) []string) {
+	if cmd.Bool("json") {
+		util.PrintJSON(item)
+		return
+	}
+	out.Result(util.CreateTable().Headers(header...).Row(row(item)...))
 }
 
 func deleteSIPTrunk(ctx context.Context, cmd *cli.Command) error {
@@ -1211,43 +1330,73 @@ func listSipDispatchRule(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	return listAndPrint(ctx, cmd, cli.ListSIPDispatchRule, &livekit.ListSIPDispatchRuleRequest{}, []string{
-		"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin",
-		"Attributes", "Agents",
-	}, func(item *livekit.SIPDispatchRuleInfo) []string {
-		var room, typ, pin string
-		switch r := item.GetRule().GetRule().(type) {
-		case *livekit.SIPDispatchRule_DispatchRuleDirect:
-			room = r.DispatchRuleDirect.RoomName
-			pin = r.DispatchRuleDirect.Pin
-			typ = "Direct"
-		case *livekit.SIPDispatchRule_DispatchRuleIndividual:
-			room = r.DispatchRuleIndividual.RoomPrefix + "_<caller>_<random>"
-			pin = r.DispatchRuleIndividual.Pin
-			typ = "Individual (Caller)"
-		case *livekit.SIPDispatchRule_DispatchRuleCallee:
-			room = r.DispatchRuleCallee.RoomPrefix + "<callee>"
-			if r.DispatchRuleCallee.Randomize {
-				room += "_<random>"
-			}
-			pin = r.DispatchRuleCallee.Pin
-			typ = "Callee"
+	return listAndPrint(ctx, cmd, cli.ListSIPDispatchRule, &livekit.ListSIPDispatchRuleRequest{}, sipDispatchRuleColumns, sipDispatchRuleRow)
+}
+
+var sipDispatchRuleColumns = []string{
+	"SipDispatchRuleID", "Name", "SipTrunks", "Type", "RoomName", "Pin",
+	"Attributes", "Agents",
+}
+
+func sipDispatchRuleRow(item *livekit.SIPDispatchRuleInfo) []string {
+	var room, typ, pin string
+	switch r := item.GetRule().GetRule().(type) {
+	case *livekit.SIPDispatchRule_DispatchRuleDirect:
+		room = r.DispatchRuleDirect.RoomName
+		pin = r.DispatchRuleDirect.Pin
+		typ = "Direct"
+	case *livekit.SIPDispatchRule_DispatchRuleIndividual:
+		room = r.DispatchRuleIndividual.RoomPrefix + "_<caller>_<random>"
+		pin = r.DispatchRuleIndividual.Pin
+		typ = "Individual (Caller)"
+	case *livekit.SIPDispatchRule_DispatchRuleCallee:
+		room = r.DispatchRuleCallee.RoomPrefix + "<callee>"
+		if r.DispatchRuleCallee.Randomize {
+			room += "_<random>"
 		}
-		trunks := strings.Join(item.TrunkIds, ",")
-		if trunks == "" {
-			trunks = "<any>"
+		pin = r.DispatchRuleCallee.Pin
+		typ = "Callee"
+	}
+	trunks := strings.Join(item.TrunkIds, ",")
+	if trunks == "" {
+		trunks = "<any>"
+	}
+	var agents []string
+	if item.RoomConfig != nil {
+		for _, agent := range item.RoomConfig.Agents {
+			agents = append(agents, agent.AgentName)
 		}
-		var agents []string
-		if item.RoomConfig != nil {
-			for _, agent := range item.RoomConfig.Agents {
-				agents = append(agents, agent.AgentName)
-			}
+	}
+	return []string{
+		item.SipDispatchRuleId, item.Name, trunks, typ, room, pin,
+		fmt.Sprintf("%v", item.Attributes), strings.Join(agents, ","),
+	}
+}
+
+func getSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
+	cli, err := createSIPClient(ctx, cmd)
+	if err != nil {
+		return err
+	}
+	return forEachID(ctx, cmd, func(ctx context.Context, id string) error {
+		rule, err := sipDispatchRuleByID(ctx, cli, id)
+		if err != nil {
+			return err
 		}
-		return []string{
-			item.SipDispatchRuleId, item.Name, trunks, typ, room, pin,
-			fmt.Sprintf("%v", item.Attributes), strings.Join(agents, ","),
-		}
+		printOne(cmd, rule, sipDispatchRuleColumns, sipDispatchRuleRow)
+		return nil
 	})
+}
+
+func sipDispatchRuleByID(ctx context.Context, cli sipAPI, id string) (*livekit.SIPDispatchRuleInfo, error) {
+	rule, err := onlyItem(cli.GetSIPDispatchRulesByIDs(ctx, []string{id}))
+	if err != nil {
+		return nil, err
+	}
+	if rule == nil {
+		return nil, errors.New("dispatch rule not found")
+	}
+	return rule, nil
 }
 
 func deleteSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {

@@ -131,6 +131,33 @@ func TestCreateSIPDispatchRuleFromRequestFile(t *testing.T) {
 	assert.Equal(t, "SDR_1", rule.SipDispatchRuleId)
 }
 
+func TestGetSIPByID(t *testing.T) {
+	ctx := context.Background()
+	c, got := telephonyServer(t, http.StatusOK, `{"trunk":{"sipTrunkId":"ST_1","authUsername":"u","authPassword":"********"}}`)
+	in, err := c.GetSIPInboundTrunk(ctx, "p_1", "ST_1")
+	require.NoError(t, err)
+	assert.Equal(t, http.MethodGet, got.method)
+	assert.Equal(t, "/v0/projects/p_1/sip/inbound-trunks/ST_1", got.path)
+	assert.Equal(t, "ST_1", in.SipTrunkId)
+	assert.Equal(t, "********", in.AuthPassword)
+
+	out, err := c.GetSIPOutboundTrunk(ctx, "p_1", "ST_1")
+	require.NoError(t, err)
+	assert.Equal(t, "/v0/projects/p_1/sip/outbound-trunks/ST_1", got.path)
+	assert.Equal(t, "ST_1", out.SipTrunkId)
+
+	c, got = telephonyServer(t, http.StatusOK, `{"dispatchRule":{"sipDispatchRuleId":"SDR_1","name":"rule"}}`)
+	rule, err := c.GetSIPDispatchRule(ctx, "p_1", "SDR_1")
+	require.NoError(t, err)
+	assert.Equal(t, "/v0/projects/p_1/sip/dispatch-rules/SDR_1", got.path)
+	assert.Equal(t, "rule", rule.Name)
+
+	c, _ = telephonyServer(t, http.StatusNotFound, `{"code":5,"message":"outbound trunk not found"}`)
+	_, err = c.GetSIPOutboundTrunk(ctx, "p_1", "ST_9")
+	assert.True(t, IsNotFound(err))
+	assert.EqualError(t, err, "outbound trunk not found")
+}
+
 func TestListSIPLists(t *testing.T) {
 	ctx := context.Background()
 	c, got := telephonyServer(t, http.StatusOK, `{"items":[{"sipTrunkId":"ST_1"},{"sipTrunkId":"ST_2"}],"pageInfo":{}}`)

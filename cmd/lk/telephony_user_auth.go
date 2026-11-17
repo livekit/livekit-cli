@@ -39,13 +39,16 @@ type sipAPI interface {
 	CreateSIPInboundTrunk(ctx context.Context, req *livekit.CreateSIPInboundTrunkRequest) (*livekit.SIPInboundTrunkInfo, error)
 	UpdateSIPInboundTrunk(ctx context.Context, req *livekit.UpdateSIPInboundTrunkRequest) (*livekit.SIPInboundTrunkInfo, error)
 	ListSIPInboundTrunk(ctx context.Context, req *livekit.ListSIPInboundTrunkRequest) (*livekit.ListSIPInboundTrunkResponse, error)
+	GetSIPInboundTrunksByIDs(ctx context.Context, ids []string) ([]*livekit.SIPInboundTrunkInfo, error)
 	CreateSIPOutboundTrunk(ctx context.Context, req *livekit.CreateSIPOutboundTrunkRequest) (*livekit.SIPOutboundTrunkInfo, error)
 	UpdateSIPOutboundTrunk(ctx context.Context, req *livekit.UpdateSIPOutboundTrunkRequest) (*livekit.SIPOutboundTrunkInfo, error)
 	ListSIPOutboundTrunk(ctx context.Context, req *livekit.ListSIPOutboundTrunkRequest) (*livekit.ListSIPOutboundTrunkResponse, error)
+	GetSIPOutboundTrunksByIDs(ctx context.Context, ids []string) ([]*livekit.SIPOutboundTrunkInfo, error)
 	DeleteSIPTrunk(ctx context.Context, req *livekit.DeleteSIPTrunkRequest) (*livekit.SIPTrunkInfo, error)
 	CreateSIPDispatchRule(ctx context.Context, req *livekit.CreateSIPDispatchRuleRequest) (*livekit.SIPDispatchRuleInfo, error)
 	UpdateSIPDispatchRule(ctx context.Context, req *livekit.UpdateSIPDispatchRuleRequest) (*livekit.SIPDispatchRuleInfo, error)
 	ListSIPDispatchRule(ctx context.Context, req *livekit.ListSIPDispatchRuleRequest) (*livekit.ListSIPDispatchRuleResponse, error)
+	GetSIPDispatchRulesByIDs(ctx context.Context, ids []string) ([]*livekit.SIPDispatchRuleInfo, error)
 	DeleteSIPDispatchRule(ctx context.Context, req *livekit.DeleteSIPDispatchRuleRequest) (*livekit.SIPDispatchRuleInfo, error)
 	CreateSIPParticipant(ctx context.Context, req *livekit.CreateSIPParticipantRequest) (*livekit.SIPParticipantInfo, error)
 	TransferSIPParticipant(ctx context.Context, req *livekit.TransferSIPParticipantRequest) (*livekit.TransferSIPParticipantResponse, error)
@@ -118,6 +121,10 @@ func (p *publicSIP) ListSIPInboundTrunk(ctx context.Context, req *livekit.ListSI
 	return &livekit.ListSIPInboundTrunkResponse{Items: items}, nil
 }
 
+func (p *publicSIP) GetSIPInboundTrunksByIDs(ctx context.Context, ids []string) ([]*livekit.SIPInboundTrunkInfo, error) {
+	return getEach(ctx, p.projectID, ids, p.client.GetSIPInboundTrunk)
+}
+
 func (p *publicSIP) CreateSIPOutboundTrunk(ctx context.Context, req *livekit.CreateSIPOutboundTrunkRequest) (*livekit.SIPOutboundTrunkInfo, error) {
 	info, err := p.client.CreateSIPOutboundTrunk(ctx, p.projectID, req.GetTrunk())
 	return info, cloudAPIError(err)
@@ -134,6 +141,10 @@ func (p *publicSIP) ListSIPOutboundTrunk(ctx context.Context, req *livekit.ListS
 		return nil, cloudAPIError(err)
 	}
 	return &livekit.ListSIPOutboundTrunkResponse{Items: items}, nil
+}
+
+func (p *publicSIP) GetSIPOutboundTrunksByIDs(ctx context.Context, ids []string) ([]*livekit.SIPOutboundTrunkInfo, error) {
+	return getEach(ctx, p.projectID, ids, p.client.GetSIPOutboundTrunk)
 }
 
 // DeleteSIPTrunk deletes a trunk of either kind by its ID, as the SIP API
@@ -176,6 +187,25 @@ func (p *publicSIP) ListSIPDispatchRule(ctx context.Context, req *livekit.ListSI
 		return nil, cloudAPIError(err)
 	}
 	return &livekit.ListSIPDispatchRuleResponse{Items: items}, nil
+}
+
+func (p *publicSIP) GetSIPDispatchRulesByIDs(ctx context.Context, ids []string) ([]*livekit.SIPDispatchRuleInfo, error) {
+	return getEach(ctx, p.projectID, ids, p.client.GetSIPDispatchRule)
+}
+
+// getEach gets each of ids with the Public API's Get. Unlike server-sdk-go's
+// GetSIP...ByIDs, which read through the SIP API's list and leave a nil slot
+// for an ID it doesn't have, a missing ID is the API's NotFound.
+func getEach[T any](ctx context.Context, projectID string, ids []string, get func(ctx context.Context, projectID, id string) (*T, error)) ([]*T, error) {
+	out := make([]*T, len(ids))
+	for i, id := range ids {
+		item, err := get(ctx, projectID, id)
+		if err != nil {
+			return nil, cloudAPIError(err)
+		}
+		out[i] = item
+	}
+	return out, nil
 }
 
 func (p *publicSIP) DeleteSIPDispatchRule(ctx context.Context, req *livekit.DeleteSIPDispatchRuleRequest) (*livekit.SIPDispatchRuleInfo, error) {

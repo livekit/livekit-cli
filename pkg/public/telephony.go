@@ -126,6 +126,17 @@ func (c *Client) ListSIPInboundTrunks(ctx context.Context, projectID string, num
 	return items, err
 }
 
+// GetSIPInboundTrunk returns the inbound trunk with id. An outbound trunk's
+// ID is NotFound.
+func (c *Client) GetSIPInboundTrunk(ctx context.Context, projectID, id string) (*livekit.SIPInboundTrunkInfo, error) {
+	resp, err := c.gen.TelephonyServiceGetInboundTrunkWithResponse(ctx, projectID, id)
+	if err != nil {
+		return nil, err
+	}
+	out := new(livekit.SIPInboundTrunkInfo)
+	return out, decodeField(resp.StatusCode(), resp.Body, "trunk", out)
+}
+
 // CreateSIPInboundTrunk creates trunk. The API makes its ID.
 func (c *Client) CreateSIPInboundTrunk(ctx context.Context, projectID string, trunk *livekit.SIPInboundTrunkInfo) (*livekit.SIPInboundTrunkInfo, error) {
 	body, err := jsonBody("trunk", trunk)
@@ -190,6 +201,17 @@ func (c *Client) ListSIPOutboundTrunks(ctx context.Context, projectID string, nu
 	return items, err
 }
 
+// GetSIPOutboundTrunk returns the outbound trunk with id. An inbound trunk's
+// ID is NotFound.
+func (c *Client) GetSIPOutboundTrunk(ctx context.Context, projectID, id string) (*livekit.SIPOutboundTrunkInfo, error) {
+	resp, err := c.gen.TelephonyServiceGetOutboundTrunkWithResponse(ctx, projectID, id)
+	if err != nil {
+		return nil, err
+	}
+	out := new(livekit.SIPOutboundTrunkInfo)
+	return out, decodeField(resp.StatusCode(), resp.Body, "trunk", out)
+}
+
 // CreateSIPOutboundTrunk creates trunk. The API makes its ID.
 func (c *Client) CreateSIPOutboundTrunk(ctx context.Context, projectID string, trunk *livekit.SIPOutboundTrunkInfo) (*livekit.SIPOutboundTrunkInfo, error) {
 	body, err := jsonBody("trunk", trunk)
@@ -252,6 +274,16 @@ func (c *Client) ListSIPDispatchRules(ctx context.Context, projectID string, tru
 	}
 	items, _, err := decodeList[livekit.SIPDispatchRuleInfo](resp.StatusCode(), resp.Body)
 	return items, err
+}
+
+// GetSIPDispatchRule returns the dispatch rule with id.
+func (c *Client) GetSIPDispatchRule(ctx context.Context, projectID, id string) (*livekit.SIPDispatchRuleInfo, error) {
+	resp, err := c.gen.TelephonyServiceGetDispatchRuleWithResponse(ctx, projectID, id)
+	if err != nil {
+		return nil, err
+	}
+	out := new(livekit.SIPDispatchRuleInfo)
+	return out, decodeField(resp.StatusCode(), resp.Body, "dispatchRule", out)
 }
 
 // CreateSIPDispatchRule creates rule. The API makes its ID.

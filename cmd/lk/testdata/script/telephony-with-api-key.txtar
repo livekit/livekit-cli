@@ -13,6 +13,17 @@ respond POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk 404 '{"code":"not_
 ! stdout .
 stderr 'requested sip trunk does not exist'
 
+# A get reads through the SIP API's list, not its Get, which returns a
+# trunk's password; an ID the list doesn't have is named as the Public API
+# names it.
+respond POST http://one.test/twirp/livekit.SIP/ListSIPOutboundTrunk 200 ''
+! exec lk sip outbound get ST_none
+! stdout .
+stderr '^outbound trunk not found$'
+respond POST http://one.test/twirp/livekit.SIP/ListSIPDispatchRule 200 ''
+! exec lk sip dispatch get SDR_none
+stderr '^dispatch rule not found$'
+
 respond POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers 200 ''
 exec lk number list
 
@@ -34,5 +45,7 @@ projects:
 POST http://one.test/twirp/livekit.SIP/ListSIPInboundTrunk apikey=APIone
 POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
 POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
+POST http://one.test/twirp/livekit.SIP/ListSIPOutboundTrunk apikey=APIone
+POST http://one.test/twirp/livekit.SIP/ListSIPDispatchRule apikey=APIone
 POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone
 POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone
