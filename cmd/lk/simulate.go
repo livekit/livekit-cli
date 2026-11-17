@@ -44,7 +44,6 @@ import (
 	"github.com/livekit/protocol/utils"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/livekit/server-sdk-go/v2/pkg/cloudagents"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -382,12 +381,12 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 		f.ID = utils.NewGuid(utils.ScenarioGroupPrefix)
 	}
 	for name, node := range group.GetNodes() {
-		v, err := protoToYAMLValue(node)
+		v, err := protoToYAML(node)
 		if err != nil {
 			return nil, fmt.Errorf("failed to encode node %q: %w", name, err)
 		}
 		if f.Nodes == nil {
-			f.Nodes = map[string]any{}
+			f.Nodes = map[string]yaml.Node{}
 		}
 		f.Nodes[name] = v
 	}
@@ -417,14 +416,14 @@ func scenarioGroupToYAML(group *livekit.ScenarioGroup) ([]byte, error) {
 
 // scenariosFile mirrors a scenarios.yaml; `userdata` is a nested mapping here
 // and JSON-encoded into the proto's string field. Each `nodes` entry is a
-// SimulatorNode in protojson form. `include` names files whose nodes join this
-// file's (see simulate_include.go).
+// SimulatorNode in protojson form (see simulate_flow.go). `include` names files
+// whose nodes join this file's (see simulate_include.go).
 type scenariosFile struct {
-	ID        string         `yaml:"id"`
-	Name      string         `yaml:"name"`
-	Include   []string       `yaml:"include,omitempty"`
-	Nodes     map[string]any `yaml:"nodes,omitempty"`
-	Scenarios []yamlScenario `yaml:"scenarios"`
+	ID        string               `yaml:"id"`
+	Name      string               `yaml:"name"`
+	Include   []string             `yaml:"include,omitempty"`
+	Nodes     map[string]yaml.Node `yaml:"nodes,omitempty"`
+	Scenarios []yamlScenario       `yaml:"scenarios"`
 }
 
 type yamlScenario struct {
@@ -515,9 +514,10 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		node := &livekit.SimulatorNode{}
-		if err := yamlValueToProto(nodes[name].value, node); err != nil {
-			return nil, fmt.Errorf("node %q (%s): %w", name, filepath.Base(nodes[name].file), err)
+		value := nodes[name].value
+		node, err := decodeNode(name, &value)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", filepath.Base(nodes[name].file), err)
 		}
 		if group.Nodes == nil {
 			group.Nodes = map[string]*livekit.SimulatorNode{}
@@ -536,8 +536,9 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		if s.Start != "" && s.Instructions != "" {
 			return nil, fmt.Errorf("scenario %q: set `start` or `instructions`, not both", s.Label)
 		}
-		if s.Start != "" && group.Nodes[s.Start] == nil && !builtinSimulatorNodes[s.Start] {
-			return nil, fmt.Errorf("scenario %q: start %q is not a node", s.Label, s.Start)
+		// with nodes in the file, a scenario with neither is most likely a misspelled `start`
+		if s.Start == "" && s.Instructions == "" && len(group.Nodes) > 0 {
+			return nil, fmt.Errorf("scenario %q: set `start` or `instructions`", s.Label)
 		}
 		var userdata string
 		if len(s.Userdata) > 0 {
@@ -557,38 +558,10 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 			Userdata:          userdata,
 		})
 	}
+	if err := checkFlows(group); err != nil {
+		return nil, err
+	}
 	return group, nil
-}
-
-// builtinSimulatorNodes are the nodes the server provides; a scenario may start at one.
-var builtinSimulatorNodes = map[string]bool{
-	"livekit/hangup":      true,
-	"livekit/voicemail":   true,
-	"livekit/unavailable": true,
-}
-
-// yamlValueToProto decodes a YAML value through its JSON form with protojson,
-// so field names, enum names, durations, and unknown-key errors match the
-// server's parser.
-func yamlValueToProto(v any, m proto.Message) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-	return protojson.Unmarshal(b, m)
-}
-
-// protoToYAMLValue is the inverse of yamlValueToProto.
-func protoToYAMLValue(m proto.Message) (any, error) {
-	b, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-	var v any
-	if err := json.Unmarshal(b, &v); err != nil {
-		return nil, err
-	}
-	return v, nil
 }
 
 func generateAgentName() string {

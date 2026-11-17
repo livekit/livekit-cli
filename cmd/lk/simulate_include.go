@@ -27,13 +27,13 @@ import (
 // includedFile is a scenarios.yaml `include` target: it only contributes
 // nodes, so running one file never runs scenarios it did not list itself.
 type includedFile struct {
-	Include []string       `yaml:"include"`
-	Nodes   map[string]any `yaml:"nodes"`
+	Include []string             `yaml:"include"`
+	Nodes   map[string]yaml.Node `yaml:"nodes"`
 }
 
 // sourcedNode is a node in YAML form and the file that defines it.
 type sourcedNode struct {
-	value any
+	value yaml.Node
 	file  string
 }
 
@@ -48,7 +48,7 @@ type nodeResolver struct {
 	nodes  map[string]sourcedNode
 }
 
-func resolveNodes(path string, nodes map[string]any, include []string) (map[string]sourcedNode, error) {
+func resolveNodes(path string, nodes map[string]yaml.Node, include []string) (map[string]sourcedNode, error) {
 	real, err := filepath.EvalSymlinks(path)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (r *nodeResolver) load(real string) error {
 	return r.includeAll(real, f.Include)
 }
 
-func (r *nodeResolver) add(file string, nodes map[string]any) error {
+func (r *nodeResolver) add(file string, nodes map[string]yaml.Node) error {
 	for name, value := range nodes {
 		if prev, ok := r.nodes[name]; ok {
 			return fmt.Errorf("node %q is defined in both %s and %s", name, r.name(prev.file), r.name(file))

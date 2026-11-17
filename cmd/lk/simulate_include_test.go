@@ -133,7 +133,7 @@ func TestIncludeErrors(t *testing.T) {
 				"nodes/menus.yaml":  "nodes: { menu: { sya: hi } }\n",
 				"nodes/people.yaml": "nodes: { sam: { instructions: x } }\n",
 			},
-			want: `node "menu" (menus.yaml)`,
+			want: `menus.yaml: node "menu" (line 1)`,
 		},
 	}
 	for _, c := range cases {

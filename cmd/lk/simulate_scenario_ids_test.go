@@ -304,7 +304,7 @@ scenarios:
     label: call
     start: menu
 `,
-			wantErr: []string{`node "menu"`, "sya"},
+			wantErr: []string{`node "menu" (line 6)`, "sya"},
 		},
 		{
 			name: "start and instructions",
@@ -331,6 +331,154 @@ scenarios:
 `,
 			wantErr: []string{`scenario "call"`, `start "nowhere"`},
 		},
+		{
+			name: "misspelled start",
+			yaml: `
+id: g1
+name: n` + nodes + `
+scenarios:
+  - id: s1
+    label: call
+    strat: menu
+`,
+			wantErr: []string{`scenario "call": set ` + "`start` or `instructions`"},
+		},
+		{
+			name: "scalars keep their source text",
+			yaml: `
+id: g1
+name: n
+nodes:
+  menu:
+    say: 2026-01-01
+    routes:
+      - match: 0123
+        to: livekit/hangup
+      - match: 1
+        to: livekit/hangup
+      - match: yes
+        to: livekit/hangup
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			want: &livekit.ScenarioGroup{
+				Id:   "g1",
+				Name: "n",
+				Nodes: map[string]*livekit.SimulatorNode{
+					"menu": {
+						Say: "2026-01-01",
+						Routes: []*livekit.SimulatorNode_Route{
+							{Match: "0123", To: "livekit/hangup"},
+							{Match: "1", To: "livekit/hangup"},
+							{Match: "yes", To: "livekit/hangup"},
+						},
+					},
+				},
+				Scenarios: []*livekit.Scenario{{Id: "s1", Label: "call", Start: "menu"}},
+			},
+		},
+		{
+			name: "unquoted pound",
+			yaml: `
+id: g1
+name: n
+nodes:
+  menu:
+    say: Enter your number.
+    routes:
+      - match: #
+        to: livekit/hangup
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			wantErr: []string{`node "menu"`, "line 8: match has no value"},
+		},
+		{
+			name: "empty then",
+			yaml: `
+id: g1
+name: n
+nodes:
+  menu:
+    say: hi
+    then:
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			wantErr: []string{`node "menu"`, "then has no value"},
+		},
+		{
+			name: "dangling targets",
+			yaml: `
+id: g1
+name: n
+nodes:
+  menu:
+    say: hi
+    routes:
+      - match: "1"
+        to: nowhere
+      - match: "2"
+    timeout:
+      after: 30s
+      to: next
+  next:
+    say: bye
+    then: gone
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			wantErr: []string{
+				`node "menu": routes[0].to "nowhere" is not a node`,
+				`node "menu": routes[1].to names no node`,
+				`node "menu": timeout.after is 30s, more than 20s`,
+				`node "next": then "gone" is not a node`,
+			},
+		},
+		{
+			name: "unreached nodes and unknown built-ins pass",
+			yaml: `
+id: g1
+name: n
+nodes:
+  orphan:
+    say: hi
+    then: nowhere
+scenarios:
+  - id: s1
+    label: call
+    start: livekit/busy
+`,
+			want: &livekit.ScenarioGroup{
+				Id:        "g1",
+				Name:      "n",
+				Nodes:     map[string]*livekit.SimulatorNode{"orphan": {Say: "hi", Then: "nowhere"}},
+				Scenarios: []*livekit.Scenario{{Id: "s1", Label: "call", Start: "livekit/busy"}},
+			},
+		},
+		{
+			name: "reserved node name",
+			yaml: `
+id: g1
+name: n
+nodes:
+  livekit/hangup:
+    say: bye
+scenarios:
+  - id: s1
+    label: call
+    start: livekit/hangup
+`,
+			wantErr: []string{`node "livekit/hangup": the livekit/ prefix is reserved`},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -339,6 +487,7 @@ scenarios:
 				for _, e := range c.wantErr {
 					require.ErrorContains(t, err, e)
 				}
+				require.NotRegexp(t, `\(line \d+:\d+\)`, err.Error(), "a position in the JSON, not the YAML")
 				return
 			}
 			require.NoError(t, err)
@@ -358,9 +507,14 @@ nodes:
     routes:
       - match: "1"
         to: livekit/hangup
+      - match: "#"
+        to: livekit/hangup
     timeout:
       after: 1.5s
       to: livekit/voicemail
+  date:
+    say: "2026-01-01"
+    then: livekit/hangup
 scenarios:
   - id: s1
     label: call
