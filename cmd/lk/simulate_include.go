@@ -31,38 +31,46 @@ type includedFile struct {
 	Nodes   map[string]yaml.Node `yaml:"nodes"`
 }
 
-// sourcedNode is a node in YAML form and the file that defines it.
+// sourcedNode is a node in YAML form and the file that defines it, named as
+// errors name it.
 type sourcedNode struct {
 	value yaml.Node
 	file  string
 }
 
 // nodeResolver merges the nodes of a scenarios file and everything it
-// includes. Paths resolve relative to the file that names them, and each file
-// loads once by its real path, so a file reached through two includes is not a
-// duplicate.
+// includes. Each file has two paths: the path it was named by, which its own
+// relative includes resolve against, and its absolute real path, which
+// identifies it. A file reached through two includes, a symlink, or both a
+// relative and an absolute path loads once.
 type nodeResolver struct {
 	root   string // directory errors name files relative to
 	loaded map[string]bool
 	chain  []string // real paths from the root file to the one loading now
+	named  []string // the same files, as named
 	nodes  map[string]sourcedNode
 }
 
 func resolveNodes(path string, nodes map[string]yaml.Node, include []string) (map[string]sourcedNode, error) {
-	real, err := filepath.EvalSymlinks(path)
+	named, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	real, err := filepath.EvalSymlinks(named)
 	if err != nil {
 		return nil, err
 	}
 	r := &nodeResolver{
-		root:   filepath.Dir(real),
+		root:   filepath.Dir(named),
 		loaded: map[string]bool{real: true},
 		chain:  []string{real},
+		named:  []string{named},
 		nodes:  map[string]sourcedNode{},
 	}
-	if err := r.add(real, nodes); err != nil {
+	if err := r.add(named, nodes); err != nil {
 		return nil, err
 	}
-	if err := r.includeAll(real, include); err != nil {
+	if err := r.includeAll(named, include); err != nil {
 		return nil, err
 	}
 	return r.nodes, nil
@@ -70,6 +78,9 @@ func resolveNodes(path string, nodes map[string]yaml.Node, include []string) (ma
 
 func (r *nodeResolver) includeAll(from string, include []string) error {
 	for _, rel := range include {
+		if rel == "" {
+			return fmt.Errorf("%s: include has an empty entry", r.name(from))
+		}
 		path := rel
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(filepath.Dir(from), rel)
@@ -79,62 +90,93 @@ func (r *nodeResolver) includeAll(from string, include []string) error {
 			return fmt.Errorf("%s: include %q: %w", r.name(from), rel, err)
 		}
 		if slices.Contains(r.chain, real) {
-			return fmt.Errorf("include cycle: %s", r.chainNames(append(r.chain, real)))
+			return fmt.Errorf("include cycle: %s", r.chainNames(append(slices.Clone(r.named), path)))
 		}
 		if r.loaded[real] {
 			continue
 		}
+		if info, err := os.Stat(real); err == nil && info.IsDir() {
+			return fmt.Errorf("%s: include %q is a directory, not a file", r.name(from), rel)
+		}
 		r.loaded[real] = true
-		if err := r.load(real); err != nil {
+		if err := r.load(path, real); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (r *nodeResolver) load(real string) error {
+func (r *nodeResolver) load(named, real string) error {
 	data, err := os.ReadFile(real)
 	if err != nil {
-		return fmt.Errorf("%s: %w", r.name(real), err)
+		return fmt.Errorf("%s: %w", r.name(named), err)
 	}
-	var keys map[string]any
-	if err := yaml.Unmarshal(data, &keys); err != nil {
-		return fmt.Errorf("%s: %w", r.name(real), err)
-	}
-	for key := range keys {
-		if key != "nodes" && key != "include" {
-			return fmt.Errorf("%s: an included file holds only `nodes` and `include`, not %q", r.name(real), key)
-		}
+	if err := onlyKeys(data, "an included file", "nodes", "include"); err != nil {
+		return fmt.Errorf("%s: %w", r.name(named), err)
 	}
 	var f includedFile
 	if err := yaml.Unmarshal(data, &f); err != nil {
-		return fmt.Errorf("%s: %w", r.name(real), err)
+		return fmt.Errorf("%s: %w", r.name(named), err)
 	}
-	if err := r.add(real, f.Nodes); err != nil {
+	if err := r.add(named, f.Nodes); err != nil {
 		return err
 	}
 	r.chain = append(r.chain, real)
-	defer func() { r.chain = r.chain[:len(r.chain)-1] }()
-	return r.includeAll(real, f.Include)
+	r.named = append(r.named, named)
+	defer func() {
+		r.chain = r.chain[:len(r.chain)-1]
+		r.named = r.named[:len(r.named)-1]
+	}()
+	return r.includeAll(named, f.Include)
 }
 
 func (r *nodeResolver) add(file string, nodes map[string]yaml.Node) error {
 	for name, value := range nodes {
 		if prev, ok := r.nodes[name]; ok {
-			return fmt.Errorf("node %q is defined in both %s and %s", name, r.name(prev.file), r.name(file))
+			return fmt.Errorf("node %q is defined in both %s and %s", name, prev.file, r.name(file))
 		}
-		r.nodes[name] = sourcedNode{value: value, file: file}
+		r.nodes[name] = sourcedNode{value: value, file: r.name(file)}
 	}
 	return nil
 }
 
+// onlyKeys rejects a top-level key other than allowed, so a misspelled key
+// fails instead of being ignored.
+func onlyKeys(data []byte, what string, allowed ...string) error {
+	var keys map[string]any
+	if err := yaml.Unmarshal(data, &keys); err != nil {
+		return err
+	}
+	var unknown []string
+	for key := range keys {
+		if !slices.Contains(allowed, key) {
+			unknown = append(unknown, key)
+		}
+	}
+	if len(unknown) == 0 {
+		return nil
+	}
+	slices.Sort(unknown)
+	quoted := make([]string, len(allowed))
+	for i, key := range allowed {
+		quoted[i] = "`" + key + "`"
+	}
+	list := quoted[len(quoted)-1]
+	if len(quoted) == 2 {
+		list = quoted[0] + " and " + list
+	} else if len(quoted) > 2 {
+		list = strings.Join(quoted[:len(quoted)-1], ", ") + ", and " + list
+	}
+	return fmt.Errorf("%s holds only %s, not %q", what, list, unknown[0])
+}
+
 // name is how errors refer to a file: relative to the root file's directory,
 // with forward slashes as in `include`.
-func (r *nodeResolver) name(real string) string {
-	if rel, err := filepath.Rel(r.root, real); err == nil {
+func (r *nodeResolver) name(named string) string {
+	if rel, err := filepath.Rel(r.root, named); err == nil {
 		return filepath.ToSlash(rel)
 	}
-	return real
+	return named
 }
 
 func (r *nodeResolver) chainNames(chain []string) string {

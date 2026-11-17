@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -426,6 +427,13 @@ type scenariosFile struct {
 	Scenarios []yamlScenario       `yaml:"scenarios"`
 }
 
+func (f *scenariosFile) usesFlows() bool {
+	if len(f.Nodes) > 0 || len(f.Include) > 0 {
+		return true
+	}
+	return slices.ContainsFunc(f.Scenarios, func(s yamlScenario) bool { return s.Start != "" })
+}
+
 type yamlScenario struct {
 	ID                string            `yaml:"id"`
 	Label             string            `yaml:"label"`
@@ -499,6 +507,13 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 	if err := yaml.Unmarshal(data, &f); err != nil {
 		return nil, fmt.Errorf("failed to parse scenarios file: %w", err)
 	}
+	// only in a file with flows, where a misspelled `include` or `nodes` loses
+	// nodes; other files may carry keys of their own
+	if f.usesFlows() {
+		if err := onlyKeys(data, "a scenarios file", "id", "name", "include", "nodes", "scenarios"); err != nil {
+			return nil, err
+		}
+	}
 
 	if f.ID == "" {
 		return nil, fmt.Errorf("scenarios file has no id")
@@ -517,7 +532,7 @@ func loadScenarioGroup(path string) (*livekit.ScenarioGroup, error) {
 		value := nodes[name].value
 		node, err := decodeNode(name, &value)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", filepath.Base(nodes[name].file), err)
+			return nil, fmt.Errorf("%s: %w", nodes[name].file, err)
 		}
 		if group.Nodes == nil {
 			group.Nodes = map[string]*livekit.SimulatorNode{}

@@ -127,13 +127,62 @@ func TestIncludeErrors(t *testing.T) {
 			want: `dental.yaml: include "nodes/people.yaml"`,
 		},
 		{
+			name: "a cycle back to the root file",
+			files: map[string]string{
+				"dental.yaml":       includingScenarios,
+				"nodes/menus.yaml":  "include: [../dental.yaml]\n",
+				"nodes/people.yaml": "nodes: { sam: { instructions: x } }\n",
+			},
+			want: "include cycle: dental.yaml -> nodes/menus.yaml -> dental.yaml",
+		},
+		{
+			name: "a root node defined again in an included file",
+			files: map[string]string{
+				"dental.yaml":       includingScenarios,
+				"nodes/menus.yaml":  "nodes: { greeting: { say: hi, then: livekit/hangup } }\n",
+				"nodes/people.yaml": "nodes: { sam: { instructions: x } }\n",
+			},
+			want: `node "greeting" is defined in both dental.yaml and nodes/menus.yaml`,
+		},
+		{
+			name: "a misspelled include key in the root file",
+			files: map[string]string{
+				"dental.yaml": "id: g\nincludes: [nodes.yaml]\nscenarios: [{ id: s, label: l, start: menu }]\n",
+			},
+			want: "a scenarios file holds only `id`, `name`, `include`, `nodes`, and `scenarios`, not \"includes\"",
+		},
+		{
+			name: "an empty include entry",
+			files: map[string]string{
+				"dental.yaml": "id: g\ninclude: [\x27\x27]\nscenarios: [{ id: s, label: l, start: livekit/hangup }]\n",
+			},
+			want: "dental.yaml: include has an empty entry",
+		},
+		{
+			name: "a directory include",
+			files: map[string]string{
+				"dental.yaml":  "id: g\ninclude: [nodes]\nscenarios: [{ id: s, label: l, start: livekit/hangup }]\n",
+				"nodes/x.yaml": "nodes: {}\n",
+			},
+			want: `dental.yaml: include "nodes" is a directory, not a file`,
+		},
+		{
+			name: "two included files with the same name",
+			files: map[string]string{
+				"dental.yaml":  "id: g\ninclude: [a/nodes.yaml, b/nodes.yaml]\nscenarios: [{ id: s, label: l, start: x }]\n",
+				"a/nodes.yaml": "nodes: { x: { say: hi, then: livekit/hangup } }\n",
+				"b/nodes.yaml": "nodes: { y: { sya: hi } }\n",
+			},
+			want: `b/nodes.yaml: node "y" (line 1)`,
+		},
+		{
 			name: "a bad included node names its file",
 			files: map[string]string{
 				"dental.yaml":       includingScenarios,
 				"nodes/menus.yaml":  "nodes: { menu: { sya: hi } }\n",
 				"nodes/people.yaml": "nodes: { sam: { instructions: x } }\n",
 			},
-			want: `menus.yaml: node "menu" (line 1)`,
+			want: `nodes/menus.yaml: node "menu" (line 1)`,
 		},
 	}
 	for _, c := range cases {
@@ -143,4 +192,50 @@ func TestIncludeErrors(t *testing.T) {
 			require.ErrorContains(t, err, c.want)
 		})
 	}
+}
+
+const sharedNodes = `
+nodes:
+  menu: { say: hi, routes: [{ match: "1", to: sam }] }
+  sam: { instructions: You are Sam. }
+`
+
+func TestIncludeMixedPathFormsLoadOnce(t *testing.T) {
+	dir := writeFiles(t, map[string]string{"nodes/common.yaml": sharedNodes})
+	abs := filepath.Join(dir, "nodes", "common.yaml")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "dental.yaml"), []byte(`
+id: g
+include: [nodes/common.yaml, nodes/other.yaml]
+scenarios: [{ id: s, label: l, start: menu }]
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "nodes", "other.yaml"), []byte("include: ["+abs+"]\n"), 0o644))
+
+	t.Chdir(dir)
+	group, err := loadScenarioGroup("dental.yaml")
+	require.NoError(t, err)
+	require.Len(t, group.Nodes, 2)
+}
+
+func TestIncludeResolvesBesideSymlinks(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"shared/dental.yaml": "id: g\ninclude: [nodes.yaml]\nscenarios: [{ id: s, label: l, start: menu }]\n",
+		"shared/menus.yaml":  "include: [people.yaml]\nnodes: { menu: { say: hi, routes: [{ match: \"1\", to: sam }] } }\n",
+		// the files the symlinks' neighbors name; none sit beside the targets
+		"app/nodes.yaml":        "include: [links/menus.yaml]\n",
+		"app/links/people.yaml": "nodes: { sam: { instructions: You are Sam. } }\n",
+	})
+	require.NoError(t, os.Symlink(filepath.Join(dir, "shared", "dental.yaml"), filepath.Join(dir, "app", "dental.yaml")))
+	require.NoError(t, os.Symlink(filepath.Join(dir, "shared", "menus.yaml"), filepath.Join(dir, "app", "links", "menus.yaml")))
+
+	group, err := loadScenarioGroup(filepath.Join(dir, "app", "dental.yaml"))
+	require.NoError(t, err)
+	require.Len(t, group.Nodes, 2)
+}
+
+func TestScenariosFileKeysAreFreeWithoutFlows(t *testing.T) {
+	dir := writeFiles(t, map[string]string{
+		"s.yaml": "id: g\ndescription: kept for people\nscenarios: [{ id: s, label: l, instructions: hi }]\n",
+	})
+	_, err := loadScenarioGroup(filepath.Join(dir, "s.yaml"))
+	require.NoError(t, err)
 }
