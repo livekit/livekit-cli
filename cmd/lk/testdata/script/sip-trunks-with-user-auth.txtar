@@ -26,6 +26,17 @@ respond DELETE http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out 
 exec lk --user-auth sip inbound delete ST_out
 stdout 'SIP Trunk \[ST_out\] deleted'
 
+# An ID that is neither kind is "trunk not found" from either command, not
+# the outbound try's "outbound trunk not found".
+respond DELETE http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_none 404 '{"code":5,"message":"inbound trunk not found"}'
+respond DELETE http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_none 404 '{"code":5,"message":"outbound trunk not found"}'
+! exec lk --user-auth sip inbound delete ST_none
+! stdout .
+stderr '^trunk not found$'
+! exec lk --user-auth sip outbound delete ST_none
+! stdout .
+stderr '^trunk not found$'
+
 requests
 cmp stdout want-requests
 
@@ -51,3 +62,7 @@ PATCH http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_in bearer=st_1
 PATCH http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out bearer=st_1 project=p_1
 DELETE http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_out bearer=st_1 project=p_1
 DELETE http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_none bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_none bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_none bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_none bearer=st_1 project=p_1

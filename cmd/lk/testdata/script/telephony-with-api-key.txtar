@@ -6,6 +6,13 @@ exec lk sip inbound list
 respond POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk 200 ''
 exec lk sip outbound delete ST_1
 
+# The SIP API deletes a trunk of either kind by its ID, so its NotFound names
+# no kind, and lk passes it through.
+respond POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk 404 '{"code":"not_found","msg":"requested sip trunk does not exist"}'
+! exec lk sip inbound delete ST_none
+! stdout .
+stderr 'requested sip trunk does not exist'
+
 respond POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers 200 ''
 exec lk number list
 
@@ -25,6 +32,7 @@ projects:
     api_secret: secretone
 -- want-requests --
 POST http://one.test/twirp/livekit.SIP/ListSIPInboundTrunk apikey=APIone
+POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
 POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
 POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone
 POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone

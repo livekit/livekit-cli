@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/urfave/cli/v3"
@@ -138,12 +139,17 @@ func (p *publicSIP) ListSIPOutboundTrunk(ctx context.Context, req *livekit.ListS
 // DeleteSIPTrunk deletes a trunk of either kind by its ID, as the SIP API
 // does: `lk sip inbound delete` and `lk sip outbound delete` share it. The
 // Public API names the kind, so an ID that isn't an inbound trunk is tried as
-// an outbound one.
+// an outbound one. An ID that is neither is NotFound "trunk not found", not
+// the outbound try's "outbound trunk not found", which would misname the kind
+// for `lk sip inbound delete`.
 func (p *publicSIP) DeleteSIPTrunk(ctx context.Context, req *livekit.DeleteSIPTrunkRequest) (*livekit.SIPTrunkInfo, error) {
 	id := req.GetSipTrunkId()
 	err := p.client.DeleteSIPInboundTrunk(ctx, p.projectID, id)
 	if public.IsNotFound(err) {
 		err = p.client.DeleteSIPOutboundTrunk(ctx, p.projectID, id)
+		if public.IsNotFound(err) {
+			err = &public.APIError{Status: http.StatusNotFound, Message: "trunk not found"}
+		}
 	}
 	if err != nil {
 		return nil, cloudAPIError(err)
