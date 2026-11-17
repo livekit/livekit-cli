@@ -304,7 +304,7 @@ scenarios:
     label: call
     start: menu
 `,
-			wantErr: []string{`node "menu" (line 6)`, "sya"},
+			wantErr: []string{`node "menu": line 6: unknown field "sya"`},
 		},
 		{
 			name: "start and instructions",
@@ -462,6 +462,146 @@ scenarios:
 				Name:      "n",
 				Nodes:     map[string]*livekit.SimulatorNode{"orphan": {Say: "hi", Then: "nowhere"}},
 				Scenarios: []*livekit.Scenario{{Id: "s1", Label: "call", Start: "livekit/busy"}},
+			},
+		},
+		{
+			name: "an anchor that contains itself",
+			yaml: `
+id: g1
+name: n
+nodes:
+  menu: &menu
+    say: hi
+    routes: [*menu]
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			wantErr: []string{`node "menu": line 5: anchor "menu" contains itself`},
+		},
+		{
+			name: "an anchor used as a string field",
+			yaml: `
+id: g1
+name: n
+nodes:
+  loop: &loop { say: hi, then: *loop }
+scenarios:
+  - id: s1
+    label: call
+    start: loop
+`,
+			wantErr: []string{`node "loop": line 5: then takes a single value`},
+		},
+		{
+			name: "merge keys, numeric enums, and aliases",
+			yaml: `
+id: g1
+name: n
+defaults: &machine
+  speaker: MACHINE
+  timeout: { after: 8s, to: livekit/hangup }
+nodes:
+  menu:
+    <<: *machine
+    say: For Sam, press 1.
+    timeout: { after: 5s, to: menu }
+  greeting:
+    <<: [*machine]
+    say: Hello.
+    speaker: 0
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+  - id: s2
+    label: greeting
+    start: greeting
+`,
+			want: &livekit.ScenarioGroup{
+				Id:   "g1",
+				Name: "n",
+				Nodes: map[string]*livekit.SimulatorNode{
+					"menu": {
+						Say:     "For Sam, press 1.",
+						Speaker: livekit.SimulatorNode_MACHINE,
+						Timeout: &livekit.SimulatorNode_Timeout{After: durationpb.New(5 * time.Second), To: "menu"},
+					},
+					"greeting": {
+						Say:     "Hello.",
+						Speaker: livekit.SimulatorNode_PERSON,
+						Timeout: &livekit.SimulatorNode_Timeout{After: durationpb.New(8 * time.Second), To: "livekit/hangup"},
+					},
+				},
+				Scenarios: []*livekit.Scenario{
+					{Id: "s1", Label: "call", Start: "menu"},
+					{Id: "s2", Label: "greeting", Start: "greeting"},
+				},
+			},
+		},
+		{
+			name: "a null behind an alias",
+			yaml: `
+id: g1
+name: n
+none: &none ~
+nodes:
+  menu: { say: hi, then: *none }
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			wantErr: []string{`node "menu": line 6: then has no value`},
+		},
+		{
+			name: "an explicit tag",
+			yaml: `
+id: g1
+name: n
+nodes:
+  menu: { say: !!binary aGk=, then: livekit/hangup }
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			wantErr: []string{`node "menu": line 5: the !!binary tag is not supported`},
+		},
+		{
+			name: "an empty node",
+			yaml: `
+id: g1
+name: n
+nodes:
+  menu:
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+`,
+			wantErr: []string{`node "menu": line 5: no fields`},
+		},
+		{
+			name: "a timeout of zero",
+			yaml: `
+id: g1
+name: n
+nodes:
+  menu: { say: hi, timeout: { after: 0s, to: livekit/hangup } }
+  hold: { say: hold, timeout: { to: livekit/hangup } }
+scenarios:
+  - id: s1
+    label: call
+    start: menu
+  - id: s2
+    label: hold
+    start: hold
+`,
+			wantErr: []string{
+				`node "menu": timeout.after must be more than 0s`,
+				`node "hold": timeout.after must be more than 0s`,
 			},
 		},
 		{
