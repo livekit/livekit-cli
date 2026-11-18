@@ -103,36 +103,42 @@ type UserProjectConfig struct {
 // the --project flag against the user's project cache in user-auth mode. A
 // ProjectId match wins, so another project's name or alias can't shadow an ID.
 func (u *UserConfig) FindProject(ref string) *UserProjectConfig {
-	if u == nil || ref == "" {
+	if u == nil {
 		return nil
 	}
-	for i := range u.Projects {
-		if u.Projects[i].ProjectId == ref {
-			return &u.Projects[i]
-		}
-	}
-	for i := range u.Projects {
-		p := &u.Projects[i]
-		if (p.Name != "" && strings.EqualFold(p.Name, ref)) ||
-			(p.Alias != "" && strings.EqualFold(p.Alias, ref)) {
-			return p
-		}
-	}
-	return nil
+	return findRef(u.Projects, ref, func(p *UserProjectConfig) (string, string, string) {
+		return p.ProjectId, p.Name, p.Alias
+	})
 }
 
 // FindWorkspace resolves a workspace reference (id, name, or alias) against the
-// cached workspaces, mirroring FindProject.
+// cached workspaces, mirroring FindProject: a WorkspaceId match wins.
 func (u *UserConfig) FindWorkspace(ref string) *UserWorkspaceConfig {
-	if u == nil || ref == "" {
+	if u == nil {
 		return nil
 	}
-	for i := range u.Workspaces {
-		w := &u.Workspaces[i]
-		if w.WorkspaceId == ref ||
-			(w.Name != "" && strings.EqualFold(w.Name, ref)) ||
-			(w.Alias != "" && strings.EqualFold(w.Alias, ref)) {
-			return w
+	return findRef(u.Workspaces, ref, func(w *UserWorkspaceConfig) (string, string, string) {
+		return w.WorkspaceId, w.Name, w.Alias
+	})
+}
+
+// findRef returns the item whose ID is ref, or else the first whose name or
+// alias matches ref case-insensitively, or nil. keys returns an item's ID,
+// name and alias.
+func findRef[T any](items []T, ref string, keys func(*T) (id, name, alias string)) *T {
+	if ref == "" {
+		return nil
+	}
+	for i := range items {
+		if id, _, _ := keys(&items[i]); id == ref {
+			return &items[i]
+		}
+	}
+	for i := range items {
+		_, name, alias := keys(&items[i])
+		if (name != "" && strings.EqualFold(name, ref)) ||
+			(alias != "" && strings.EqualFold(alias, ref)) {
+			return &items[i]
 		}
 	}
 	return nil

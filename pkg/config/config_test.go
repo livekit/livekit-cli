@@ -121,6 +121,25 @@ func TestUserConfigFindProjectIDWinsOverAlias(t *testing.T) {
 	assert.Equal(t, "p_1", u.FindProject("one").ProjectId)
 }
 
+func TestUserConfigFindWorkspaceIDWinsOverAlias(t *testing.T) {
+	u := &UserConfig{
+		Workspaces: []UserWorkspaceConfig{
+			{WorkspaceId: "ws_1", Name: "one", Alias: "ws_2"},
+			{WorkspaceId: "ws_2", Name: "Two", Alias: "two"},
+		},
+	}
+
+	// ws_2 is ws_1's alias, but it is ws_2's ID.
+	assert.Equal(t, "ws_2", u.FindWorkspace("ws_2").WorkspaceId)
+	// names and aliases still resolve as before (case-insensitive)
+	assert.Equal(t, "ws_2", u.FindWorkspace("two").WorkspaceId)
+	assert.Equal(t, "ws_1", u.FindWorkspace("ONE").WorkspaceId)
+	// misses
+	assert.Nil(t, u.FindWorkspace("nope"))
+	assert.Nil(t, u.FindWorkspace(""))
+	assert.Nil(t, (*UserConfig)(nil).FindWorkspace("ws_1"))
+}
+
 func TestCLIConfigUpsertUser(t *testing.T) {
 	c := &CLIConfig{
 		Users: []UserConfig{

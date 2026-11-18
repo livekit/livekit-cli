@@ -326,6 +326,7 @@ var publicAPIRoutes = []struct {
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/keys/[^/]+$`), func() any { return new(oapi.LivekitPublicapiProjectsV1DeleteKeyResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/members$`), func() any { return new(oapi.LivekitPublicapiProjectsV1ListMembersResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/members/[^/]+$`), func() any { return new(oapi.LivekitPublicapiProjectsV1RemoveMemberResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/workspaces/[^/]+$`), func() any { return new(oapi.LivekitPublicapiWorkspacesV1GetWorkspaceResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/workspaces/[^/]+/members/[^/]+$`), func() any { return new(oapi.LivekitPublicapiWorkspacesV1DeleteMemberResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions$`), func() any { return new(oapi.LivekitPublicapiAnalyticsV1SessionsListResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/sessions/[^/]+$`), func() any { return new(oapi.LivekitPublicapiAnalyticsV1SessionsGetResponse) }},
