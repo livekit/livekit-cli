@@ -276,7 +276,7 @@ func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		return nil
 	}
 
-	out.Resultf("Successfully purchased %d phone numbers:\n", len(resp.PhoneNumbers))
+	out.Resultf("Successfully purchased %s:\n", phoneNumbersCount(len(resp.PhoneNumbers)))
 	for _, phoneNumber := range resp.PhoneNumbers {
 		ruleInfo := ""
 		if len(phoneNumber.SipDispatchRuleIds) > 0 {
@@ -591,10 +591,18 @@ func releasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if len(ids) > 0 {
-		out.Resultf("Successfully released %d phone numbers by ID: %s\n", len(ids), strings.Join(ids, ", "))
+		out.Resultf("Successfully released %s by ID: %s\n", phoneNumbersCount(len(ids)), strings.Join(ids, ", "))
 	} else {
-		out.Resultf("Successfully released %d phone numbers: %s\n", len(phoneNumbers), strings.Join(phoneNumbers, ", "))
+		out.Resultf("Successfully released %s: %s\n", phoneNumbersCount(len(phoneNumbers)), strings.Join(phoneNumbers, ", "))
 	}
 
 	return nil
+}
+
+// phoneNumbersCount is n with the noun, such as "1 phone number".
+func phoneNumbersCount(n int) string {
+	if n == 1 {
+		return "1 phone number"
+	}
+	return fmt.Sprintf("%d phone numbers", n)
 }

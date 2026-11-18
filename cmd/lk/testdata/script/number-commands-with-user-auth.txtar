@@ -7,6 +7,8 @@ stdout '\+14155550100.*US.*415.*LOCAL'
 respond POST http://publicapi.test/v0/projects/p_1/phone-numbers 200 '{"phoneNumber":{"id":"PN_1","e164Format":"+14155550100","status":"PHONE_NUMBER_STATUS_ACTIVE"}}'
 exec lk --user-auth number purchase --numbers +14155550100 --numbers +14155550101
 stdout '^Successfully purchased 2 phone numbers:$'
+exec lk --user-auth number purchase --numbers +14155550100
+stdout '^Successfully purchased 1 phone number:$'
 
 respond GET http://publicapi.test/v0/projects/p_1/phone-numbers/+14155550100 200 '{"phoneNumber":{"id":"PN_1","name":"lobby","e164Format":"+14155550100","status":"PHONE_NUMBER_STATUS_ACTIVE"}}'
 exec lk --user-auth number get --number +14155550100
@@ -19,6 +21,8 @@ stdout '^  Name: front desk$'
 stdout '^  SIP Dispatch Rules: SDR_1$'
 
 respond DELETE http://publicapi.test/v0/projects/p_1/phone-numbers/PN_1 200 '{}'
+exec lk --user-auth number release --ids PN_1
+stdout '^Successfully released 1 phone number by ID: PN_1$'
 respond DELETE http://publicapi.test/v0/projects/p_1/phone-numbers/PN_2 404 '{"code":5,"message":"phone number not found"}'
 ! exec lk --user-auth number release --ids PN_1 --ids PN_2 --ids PN_3
 stderr 'released PN_1, then PN_2 failed: phone number not found'
@@ -43,7 +47,9 @@ GET http://publicapi.test/v0/projects/p_1/phone-numbers:search bearer=st_1 proje
 GET http://publicapi.test/v0/projects/p_1/phone-numbers:search bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/phone-numbers bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/phone-numbers bearer=st_1 project=p_1
+POST http://publicapi.test/v0/projects/p_1/phone-numbers bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/phone-numbers/+14155550100 bearer=st_1 project=p_1
 PATCH http://publicapi.test/v0/projects/p_1/phone-numbers/PN_1 bearer=st_1 project=p_1
+DELETE http://publicapi.test/v0/projects/p_1/phone-numbers/PN_1 bearer=st_1 project=p_1
 DELETE http://publicapi.test/v0/projects/p_1/phone-numbers/PN_1 bearer=st_1 project=p_1
 DELETE http://publicapi.test/v0/projects/p_1/phone-numbers/PN_2 bearer=st_1 project=p_1
