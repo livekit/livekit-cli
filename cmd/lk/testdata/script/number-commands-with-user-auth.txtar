@@ -44,7 +44,6 @@ users:
         url: ws://one.test
 -- want-requests --
 GET http://publicapi.test/v0/projects/p_1/phone-numbers:search bearer=st_1 project=p_1
-GET http://publicapi.test/v0/projects/p_1/phone-numbers:search bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/phone-numbers bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/phone-numbers bearer=st_1 project=p_1
 POST http://publicapi.test/v0/projects/p_1/phone-numbers bearer=st_1 project=p_1

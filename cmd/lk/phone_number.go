@@ -210,21 +210,6 @@ func searchPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		req.Limit = &limit
 	}
 
-	resp, err := client.SearchPhoneNumbers(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	if cmd.Bool("json") {
-		util.PrintJSON(resp)
-		return nil
-	}
-
-	// Define the search function
-	searchFunc := func(ctx context.Context, req *livekit.SearchPhoneNumbersRequest) (*livekit.SearchPhoneNumbersResponse, error) {
-		return client.SearchPhoneNumbers(ctx, req)
-	}
-
 	// Define the column headers
 	headers := []string{
 		"E164", "Country", "Area Code", "Type", "Locality", "Region", "Capabilities",
@@ -243,7 +228,7 @@ func searchPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	return listAndPrint(ctx, cmd, searchFunc, req, headers, rowFormatter)
+	return listAndPrint(ctx, cmd, client.SearchPhoneNumbers, req, headers, rowFormatter)
 }
 
 func purchasePhoneNumbers(ctx context.Context, cmd *cli.Command) error {
