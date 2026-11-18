@@ -92,41 +92,32 @@ func (f *fakeSIPGets) GetSIPDispatchRulesByIDs(context.Context, []string) ([]*li
 	return []*livekit.SIPDispatchRuleInfo{f.rule}, f.err
 }
 
-// The get commands never print a trunk's password, whatever the SIP API
-// answers with, and name what they didn't find as the Public API does.
-func TestSIPGetByID(t *testing.T) {
+// A get by ID returns the item the SIP API found, and names what it didn't
+// find as the Public API does.
+func TestGetOne(t *testing.T) {
 	ctx := context.Background()
 	cli := &fakeSIPGets{
-		in:   &livekit.SIPInboundTrunkInfo{SipTrunkId: "ST_in", AuthUsername: "u", AuthPassword: "secret"},
-		out:  &livekit.SIPOutboundTrunkInfo{SipTrunkId: "ST_out", AuthUsername: "u", AuthPassword: "secret"},
+		in:   &livekit.SIPInboundTrunkInfo{SipTrunkId: "ST_in"},
+		out:  &livekit.SIPOutboundTrunkInfo{SipTrunkId: "ST_out"},
 		rule: &livekit.SIPDispatchRuleInfo{SipDispatchRuleId: "SDR_1"},
 	}
-	in, err := sipInboundTrunkByID(ctx, cli, "ST_in")
+	in, err := getOne(ctx, "ST_in", "inbound trunk", cli.GetSIPInboundTrunksByIDs)
 	require.NoError(t, err)
 	require.Equal(t, "ST_in", in.SipTrunkId)
-	require.Equal(t, "********", in.AuthPassword)
-	out, err := sipOutboundTrunkByID(ctx, cli, "ST_out")
+	out, err := getOne(ctx, "ST_out", "outbound trunk", cli.GetSIPOutboundTrunksByIDs)
 	require.NoError(t, err)
-	require.Equal(t, "********", out.AuthPassword)
-	rule, err := sipDispatchRuleByID(ctx, cli, "SDR_1")
+	require.Equal(t, "ST_out", out.SipTrunkId)
+	rule, err := getOne(ctx, "SDR_1", "dispatch rule", cli.GetSIPDispatchRulesByIDs)
 	require.NoError(t, err)
 	require.Equal(t, "SDR_1", rule.SipDispatchRuleId)
 
-	// A trunk with no password keeps none.
-	cli.in = &livekit.SIPInboundTrunkInfo{SipTrunkId: "ST_open"}
-	in, err = sipInboundTrunkByID(ctx, cli, "ST_open")
-	require.NoError(t, err)
-	require.Empty(t, in.AuthPassword)
-
 	none := &fakeSIPGets{}
-	_, err = sipInboundTrunkByID(ctx, none, "ST_x")
+	_, err = getOne(ctx, "ST_x", "inbound trunk", none.GetSIPInboundTrunksByIDs)
 	require.EqualError(t, err, "inbound trunk not found")
-	_, err = sipOutboundTrunkByID(ctx, none, "ST_x")
-	require.EqualError(t, err, "outbound trunk not found")
-	_, err = sipDispatchRuleByID(ctx, none, "SDR_x")
+	_, err = getOne(ctx, "SDR_x", "dispatch rule", none.GetSIPDispatchRulesByIDs)
 	require.EqualError(t, err, "dispatch rule not found")
 
 	failing := &fakeSIPGets{err: errors.New("twirp error unavailable")}
-	_, err = sipInboundTrunkByID(ctx, failing, "ST_x")
+	_, err = getOne(ctx, "ST_x", "inbound trunk", failing.GetSIPInboundTrunksByIDs)
 	require.EqualError(t, err, "twirp error unavailable")
 }

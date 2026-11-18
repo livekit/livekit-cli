@@ -15,6 +15,10 @@ exec lk --user-auth sip outbound get --json ST_out
 stdout '"sipTrunkId":\s+"ST_out"'
 stdout '"authPassword":\s+"\*\*\*\*\*\*\*\*"'
 ! stdout secret
+respond GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_raw 200 '{"trunk":{"sipTrunkId":"ST_raw","authUsername":"u","authPassword":"secret"}}'
+exec lk --user-auth sip inbound get --json ST_raw
+stdout '"authPassword":\s+"\*\*\*\*\*\*\*\*"'
+! stdout secret
 
 respond GET http://publicapi.test/v0/projects/p_1/sip/dispatch-rules/SDR_1 200 '{"dispatchRule":{"sipDispatchRuleId":"SDR_1","name":"support","trunkIds":["ST_in"],"rule":{"dispatchRuleDirect":{"roomName":"desk"}}}}'
 exec lk --user-auth sip dispatch get SDR_1
@@ -55,6 +59,7 @@ users:
 GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_in bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_in bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_raw bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/sip/dispatch-rules/SDR_1 bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_out bearer=st_1 project=p_1
 GET http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_in bearer=st_1 project=p_1

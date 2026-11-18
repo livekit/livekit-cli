@@ -994,29 +994,16 @@ func getSIPInboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return forEachID(ctx, cmd, func(ctx context.Context, id string) error {
-		trunk, err := sipInboundTrunkByID(ctx, cli, id)
+		trunk, err := getOne(ctx, id, "inbound trunk", cli.GetSIPInboundTrunksByIDs)
 		if err != nil {
 			return err
+		}
+		if trunk.AuthPassword != "" {
+			trunk.AuthPassword = redactedPassword
 		}
 		printOne(cmd, trunk, sipInboundTrunkColumns, sipInboundTrunkRow)
 		return nil
 	})
-}
-
-// sipInboundTrunkByID returns the inbound trunk with id, with its password
-// redacted (see redactedPassword).
-func sipInboundTrunkByID(ctx context.Context, cli sipAPI, id string) (*livekit.SIPInboundTrunkInfo, error) {
-	trunk, err := onlyItem(cli.GetSIPInboundTrunksByIDs(ctx, []string{id}))
-	if err != nil {
-		return nil, err
-	}
-	if trunk == nil {
-		return nil, errors.New("inbound trunk not found")
-	}
-	if trunk.AuthPassword != "" {
-		trunk.AuthPassword = redactedPassword
-	}
-	return trunk, nil
 }
 
 func listSipOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
@@ -1055,29 +1042,16 @@ func getSIPOutboundTrunk(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return forEachID(ctx, cmd, func(ctx context.Context, id string) error {
-		trunk, err := sipOutboundTrunkByID(ctx, cli, id)
+		trunk, err := getOne(ctx, id, "outbound trunk", cli.GetSIPOutboundTrunksByIDs)
 		if err != nil {
 			return err
+		}
+		if trunk.AuthPassword != "" {
+			trunk.AuthPassword = redactedPassword
 		}
 		printOne(cmd, trunk, sipOutboundTrunkColumns, sipOutboundTrunkRow)
 		return nil
 	})
-}
-
-// sipOutboundTrunkByID returns the outbound trunk with id, with its password
-// redacted (see redactedPassword).
-func sipOutboundTrunkByID(ctx context.Context, cli sipAPI, id string) (*livekit.SIPOutboundTrunkInfo, error) {
-	trunk, err := onlyItem(cli.GetSIPOutboundTrunksByIDs(ctx, []string{id}))
-	if err != nil {
-		return nil, err
-	}
-	if trunk == nil {
-		return nil, errors.New("outbound trunk not found")
-	}
-	if trunk.AuthPassword != "" {
-		trunk.AuthPassword = redactedPassword
-	}
-	return trunk, nil
 }
 
 // redactedPassword is what lk sip inbound|outbound get print for a trunk's
@@ -1088,11 +1062,16 @@ func sipOutboundTrunkByID(ctx context.Context, cli sipAPI, id string) (*livekit.
 // modes, so neither prints a password.
 const redactedPassword = "********"
 
-// onlyItem returns the one item of a get by ID, or nil when the SIP API had
-// no item with that ID.
-func onlyItem[T any](items []*T, err error) (*T, error) {
-	if err != nil || len(items) != 1 {
+// getOne returns the item with id that get found. With an API key, get
+// leaves a nil slot for an ID the SIP API doesn't have, and getOne names what
+// it didn't find, as the Public API does.
+func getOne[T any](ctx context.Context, id, what string, get func(context.Context, []string) ([]*T, error)) (*T, error) {
+	items, err := get(ctx, []string{id})
+	if err != nil {
 		return nil, err
+	}
+	if len(items) != 1 || items[0] == nil {
+		return nil, errors.New(what + " not found")
 	}
 	return items[0], nil
 }
@@ -1379,24 +1358,13 @@ func getSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 	return forEachID(ctx, cmd, func(ctx context.Context, id string) error {
-		rule, err := sipDispatchRuleByID(ctx, cli, id)
+		rule, err := getOne(ctx, id, "dispatch rule", cli.GetSIPDispatchRulesByIDs)
 		if err != nil {
 			return err
 		}
 		printOne(cmd, rule, sipDispatchRuleColumns, sipDispatchRuleRow)
 		return nil
 	})
-}
-
-func sipDispatchRuleByID(ctx context.Context, cli sipAPI, id string) (*livekit.SIPDispatchRuleInfo, error) {
-	rule, err := onlyItem(cli.GetSIPDispatchRulesByIDs(ctx, []string{id}))
-	if err != nil {
-		return nil, err
-	}
-	if rule == nil {
-		return nil, errors.New("dispatch rule not found")
-	}
-	return rule, nil
 }
 
 func deleteSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
