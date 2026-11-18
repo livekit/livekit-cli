@@ -108,6 +108,19 @@ func decodeList[T any, P interface {
 	return out, env.PageInfo.NextCursor, nil
 }
 
+// decodeOnePage decodes a list the API returns in one page. A next page
+// would hold items the caller never sees, so it is an error.
+func decodeOnePage[T any, P interface {
+	*T
+	proto.Message
+}](status int, body []byte) ([]P, error) {
+	items, next, err := decodeList[T, P](status, body)
+	if err == nil && next != "" {
+		return nil, errors.New("unexpected response from server: the list has more than one page")
+	}
+	return items, err
+}
+
 const jsonContentType = "application/json"
 
 // ListSIPInboundTrunks returns the project's inbound trunks, in ID order.
@@ -122,8 +135,7 @@ func (c *Client) ListSIPInboundTrunks(ctx context.Context, projectID string, num
 	if err != nil {
 		return nil, err
 	}
-	items, _, err := decodeList[livekit.SIPInboundTrunkInfo](resp.StatusCode(), resp.Body)
-	return items, err
+	return decodeOnePage[livekit.SIPInboundTrunkInfo](resp.StatusCode(), resp.Body)
 }
 
 // GetSIPInboundTrunk returns the inbound trunk with id. An outbound trunk's
@@ -197,8 +209,7 @@ func (c *Client) ListSIPOutboundTrunks(ctx context.Context, projectID string, nu
 	if err != nil {
 		return nil, err
 	}
-	items, _, err := decodeList[livekit.SIPOutboundTrunkInfo](resp.StatusCode(), resp.Body)
-	return items, err
+	return decodeOnePage[livekit.SIPOutboundTrunkInfo](resp.StatusCode(), resp.Body)
 }
 
 // GetSIPOutboundTrunk returns the outbound trunk with id. An inbound trunk's
@@ -272,8 +283,7 @@ func (c *Client) ListSIPDispatchRules(ctx context.Context, projectID string, tru
 	if err != nil {
 		return nil, err
 	}
-	items, _, err := decodeList[livekit.SIPDispatchRuleInfo](resp.StatusCode(), resp.Body)
-	return items, err
+	return decodeOnePage[livekit.SIPDispatchRuleInfo](resp.StatusCode(), resp.Body)
 }
 
 // GetSIPDispatchRule returns the dispatch rule with id.

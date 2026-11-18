@@ -175,6 +175,21 @@ func TestListSIPLists(t *testing.T) {
 	require.Len(t, rules, 1)
 }
 
+// The trunk and rule lists are one page. A list that reports a next page
+// would drop items lk never asked for, so it is an error, not a short list.
+func TestListSIPListsMorePages(t *testing.T) {
+	ctx := context.Background()
+	const more = `{"items":[{"sipTrunkId":"ST_1"}],"pageInfo":{"nextCursor":"c2","hasMore":true}}`
+	const want = "unexpected response from server: the list has more than one page"
+	c, _ := telephonyServer(t, http.StatusOK, more)
+	_, err := c.ListSIPInboundTrunks(ctx, "p_1", nil)
+	assert.EqualError(t, err, want)
+	_, err = c.ListSIPOutboundTrunks(ctx, "p_1", nil)
+	assert.EqualError(t, err, want)
+	_, err = c.ListSIPDispatchRules(ctx, "p_1", nil)
+	assert.EqualError(t, err, want)
+}
+
 // A call the far end refused is still the APIError it was, and carries the
 // SIP status that lk prints.
 func TestCreateSIPParticipantRefused(t *testing.T) {
