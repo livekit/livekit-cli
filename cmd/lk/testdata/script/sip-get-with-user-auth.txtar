@@ -1,0 +1,66 @@
+# Under --user-auth, sip inbound|outbound|dispatch get call the Public API's
+# Get, and print the item as the list prints it, or as JSON with --json. The
+# password the API answers with is its placeholder, so the table shows that
+# one is set and the JSON shows the placeholder.
+respond GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_in 200 '{"trunk":{"sipTrunkId":"ST_in","name":"front","numbers":["+15550100"],"authUsername":"u","authPassword":"********"}}'
+exec lk --user-auth sip inbound get ST_in
+stdout 'ST_in.*front.*\+15550100.*u / \*\*\*\*'
+exec lk --user-auth sip inbound get --json ST_in
+stdout '"authPassword":\s+"\*\*\*\*\*\*\*\*"'
+
+# lk redacts a password itself too, so it never prints one, whatever the API
+# answers with.
+respond GET http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out 200 '{"trunk":{"sipTrunkId":"ST_out","name":"carrier","address":"sip.example.com","authUsername":"u","authPassword":"secret"}}'
+exec lk --user-auth sip outbound get --json ST_out
+stdout '"sipTrunkId":\s+"ST_out"'
+stdout '"authPassword":\s+"\*\*\*\*\*\*\*\*"'
+! stdout secret
+respond GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_raw 200 '{"trunk":{"sipTrunkId":"ST_raw","authUsername":"u","authPassword":"secret"}}'
+exec lk --user-auth sip inbound get --json ST_raw
+stdout '"authPassword":\s+"\*\*\*\*\*\*\*\*"'
+! stdout secret
+
+respond GET http://publicapi.test/v0/projects/p_1/sip/dispatch-rules/SDR_1 200 '{"dispatchRule":{"sipDispatchRuleId":"SDR_1","name":"support","trunkIds":["ST_in"],"rule":{"dispatchRuleDirect":{"roomName":"desk"}}}}'
+exec lk --user-auth sip dispatch get SDR_1
+stdout 'SDR_1.*support.*ST_in.*Direct.*desk'
+
+# An ID the API doesn't have is its NotFound, which names the kind.
+respond GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_out 404 '{"code":5,"message":"inbound trunk not found"}'
+! exec lk --user-auth sip inbound get ST_out
+! stdout .
+stderr '^inbound trunk not found$'
+respond GET http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_in 404 '{"code":5,"message":"outbound trunk not found"}'
+! exec lk --user-auth sip outbound get ST_in
+stderr '^outbound trunk not found$'
+respond GET http://publicapi.test/v0/projects/p_1/sip/dispatch-rules/SDR_9 404 '{"code":5,"message":"dispatch rule not found"}'
+! exec lk --user-auth sip dispatch get SDR_9
+stderr '^dispatch rule not found$'
+
+! exec lk --user-auth sip inbound get
+stderr 'at least one ID is required'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-requests --
+GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_in bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_in bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_out bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_raw bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sip/dispatch-rules/SDR_1 bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sip/inbound-trunks/ST_out bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sip/outbound-trunks/ST_in bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sip/dispatch-rules/SDR_9 bearer=st_1 project=p_1

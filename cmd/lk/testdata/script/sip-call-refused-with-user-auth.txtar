@@ -1,0 +1,20 @@
+# A call the far end refuses prints its SIP status, read from the Public
+# API's error detail, as it does from the SIP API's error with an API key.
+respond POST http://publicapi.test/v0/projects/p_1/sip/participants 400 '{"code":9,"message":"the call failed with SIP status 486","details":[{"@type":"type.googleapis.com/livekit.SIPStatus","code":"SIP_STATUS_BUSY_HERE","status":"Busy Here"}]}'
+! exec lk --user-auth sip participant create --trunk ST_out --to +15550100 --room support
+stdout '^SIPStatusCode: 486$'
+stdout '^SIPStatus: Busy Here$'
+stderr 'the call failed with SIP status 486'
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
