@@ -17,11 +17,16 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/protocol/livekit"
 )
 
@@ -120,4 +125,55 @@ func TestGetOne(t *testing.T) {
 	failing := &fakeSIPGets{err: errors.New("twirp error unavailable")}
 	_, err = getOne(ctx, "ST_x", "inbound trunk", failing.GetSIPInboundTrunksByIDs)
 	require.EqualError(t, err, "twirp error unavailable")
+}
+
+// Under --user-auth, a SIP list by IDs gets each ID, in order, since the
+// Public API's list has no ID filter. A list with IDs and another filter is
+// refused before any request, since a get can't apply that filter.
+func TestPublicSIPListByIDs(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		id := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
+		switch {
+		case strings.Contains(r.URL.Path, "/inbound-trunks/"), strings.Contains(r.URL.Path, "/outbound-trunks/"):
+			_, _ = fmt.Fprintf(w, `{"trunk":{"sipTrunkId":%q}}`, id)
+		case strings.Contains(r.URL.Path, "/dispatch-rules/"):
+			_, _ = fmt.Fprintf(w, `{"dispatchRule":{"sipDispatchRuleId":%q}}`, id)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "tok")
+	require.NoError(t, err)
+	p := &publicSIP{client: client, projectID: "p_1"}
+	ctx := context.Background()
+
+	in, err := p.ListSIPInboundTrunk(ctx, &livekit.ListSIPInboundTrunkRequest{TrunkIds: []string{"ST_2", "ST_1"}})
+	require.NoError(t, err)
+	require.Equal(t, []string{"ST_2", "ST_1"}, []string{in.Items[0].SipTrunkId, in.Items[1].SipTrunkId})
+	out, err := p.ListSIPOutboundTrunk(ctx, &livekit.ListSIPOutboundTrunkRequest{TrunkIds: []string{"ST_3"}})
+	require.NoError(t, err)
+	require.Equal(t, "ST_3", out.Items[0].SipTrunkId)
+	rules, err := p.ListSIPDispatchRule(ctx, &livekit.ListSIPDispatchRuleRequest{DispatchRuleIds: []string{"SDR_1"}})
+	require.NoError(t, err)
+	require.Equal(t, "SDR_1", rules.Items[0].SipDispatchRuleId)
+	require.Equal(t, []string{
+		"/v0/projects/p_1/sip/inbound-trunks/ST_2",
+		"/v0/projects/p_1/sip/inbound-trunks/ST_1",
+		"/v0/projects/p_1/sip/outbound-trunks/ST_3",
+		"/v0/projects/p_1/sip/dispatch-rules/SDR_1",
+	}, paths)
+
+	paths = nil
+	const both = "under --user-auth, a SIP list takes IDs or a filter, not both"
+	_, err = p.ListSIPInboundTrunk(ctx, &livekit.ListSIPInboundTrunkRequest{TrunkIds: []string{"ST_1"}, Numbers: []string{"+15550100"}})
+	require.EqualError(t, err, both)
+	_, err = p.ListSIPOutboundTrunk(ctx, &livekit.ListSIPOutboundTrunkRequest{TrunkIds: []string{"ST_1"}, Numbers: []string{"+15550100"}})
+	require.EqualError(t, err, both)
+	_, err = p.ListSIPDispatchRule(ctx, &livekit.ListSIPDispatchRuleRequest{DispatchRuleIds: []string{"SDR_1"}, TrunkIds: []string{"ST_1"}})
+	require.EqualError(t, err, both)
+	require.Empty(t, paths)
 }

@@ -17,6 +17,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -114,7 +115,13 @@ func (p *publicSIP) UpdateSIPInboundTrunk(ctx context.Context, req *livekit.Upda
 	return info, cloudAPIError(err)
 }
 
+// ListSIPInboundTrunk lists the trunks with trunk_ids, when it is set, by
+// getting each (see listByIDs); otherwise the trunks that match numbers.
 func (p *publicSIP) ListSIPInboundTrunk(ctx context.Context, req *livekit.ListSIPInboundTrunkRequest) (*livekit.ListSIPInboundTrunkResponse, error) {
+	if ids := req.GetTrunkIds(); len(ids) > 0 {
+		items, err := listByIDs(ctx, p.projectID, ids, len(req.GetNumbers()) > 0, p.client.GetSIPInboundTrunk)
+		return &livekit.ListSIPInboundTrunkResponse{Items: items}, err
+	}
 	items, err := p.client.ListSIPInboundTrunks(ctx, p.projectID, req.GetNumbers())
 	if err != nil {
 		return nil, cloudAPIError(err)
@@ -136,7 +143,12 @@ func (p *publicSIP) UpdateSIPOutboundTrunk(ctx context.Context, req *livekit.Upd
 	return info, cloudAPIError(err)
 }
 
+// ListSIPOutboundTrunk lists as ListSIPInboundTrunk does.
 func (p *publicSIP) ListSIPOutboundTrunk(ctx context.Context, req *livekit.ListSIPOutboundTrunkRequest) (*livekit.ListSIPOutboundTrunkResponse, error) {
+	if ids := req.GetTrunkIds(); len(ids) > 0 {
+		items, err := listByIDs(ctx, p.projectID, ids, len(req.GetNumbers()) > 0, p.client.GetSIPOutboundTrunk)
+		return &livekit.ListSIPOutboundTrunkResponse{Items: items}, err
+	}
 	items, err := p.client.ListSIPOutboundTrunks(ctx, p.projectID, req.GetNumbers())
 	if err != nil {
 		return nil, cloudAPIError(err)
@@ -182,7 +194,13 @@ func (p *publicSIP) UpdateSIPDispatchRule(ctx context.Context, req *livekit.Upda
 	return info, cloudAPIError(err)
 }
 
+// ListSIPDispatchRule lists the rules with dispatch_rule_ids, when it is
+// set, by getting each (see listByIDs); otherwise the rules for trunk_ids.
 func (p *publicSIP) ListSIPDispatchRule(ctx context.Context, req *livekit.ListSIPDispatchRuleRequest) (*livekit.ListSIPDispatchRuleResponse, error) {
+	if ids := req.GetDispatchRuleIds(); len(ids) > 0 {
+		items, err := listByIDs(ctx, p.projectID, ids, len(req.GetTrunkIds()) > 0, p.client.GetSIPDispatchRule)
+		return &livekit.ListSIPDispatchRuleResponse{Items: items}, err
+	}
 	items, err := p.client.ListSIPDispatchRules(ctx, p.projectID, req.GetTrunkIds())
 	if err != nil {
 		return nil, cloudAPIError(err)
@@ -207,6 +225,16 @@ func getEach[T any](ctx context.Context, projectID string, ids []string, get fun
 		out[i] = item
 	}
 	return out, nil
+}
+
+// listByIDs is a SIP API list by IDs: the Public API's list has no ID
+// filter, so it gets each ID (see getEach). The SIP API applies the list's
+// other filter too, which a get can't, so a list with both is refused.
+func listByIDs[T any](ctx context.Context, projectID string, ids []string, filtered bool, get func(ctx context.Context, projectID, id string) (*T, error)) ([]*T, error) {
+	if filtered {
+		return nil, errors.New("under --user-auth, a SIP list takes IDs or a filter, not both")
+	}
+	return getEach(ctx, projectID, ids, get)
 }
 
 func (p *publicSIP) DeleteSIPDispatchRule(ctx context.Context, req *livekit.DeleteSIPDispatchRuleRequest) (*livekit.SIPDispatchRuleInfo, error) {
