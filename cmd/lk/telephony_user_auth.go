@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"net/http"
@@ -256,7 +257,7 @@ func (p *publicPhoneNumbers) PurchasePhoneNumber(ctx context.Context, req *livek
 }
 
 func (p *publicPhoneNumbers) GetPhoneNumber(ctx context.Context, req *livekit.GetPhoneNumberRequest) (*livekit.GetPhoneNumberResponse, error) {
-	number, err := p.client.GetPhoneNumber(ctx, p.projectID, phoneNumberRef(req.GetId(), req.GetPhoneNumber()))
+	number, err := p.client.GetPhoneNumber(ctx, p.projectID, cmp.Or(req.GetId(), req.GetPhoneNumber()))
 	if err != nil {
 		return nil, cloudAPIError(err)
 	}
@@ -264,7 +265,7 @@ func (p *publicPhoneNumbers) GetPhoneNumber(ctx context.Context, req *livekit.Ge
 }
 
 func (p *publicPhoneNumbers) UpdatePhoneNumber(ctx context.Context, req *livekit.UpdatePhoneNumberRequest) (*livekit.UpdatePhoneNumberResponse, error) {
-	number, err := p.client.UpdatePhoneNumber(ctx, p.projectID, phoneNumberRef(req.GetId(), req.GetPhoneNumber()), req.Name, req.SipDispatchRuleId)
+	number, err := p.client.UpdatePhoneNumber(ctx, p.projectID, cmp.Or(req.GetId(), req.GetPhoneNumber()), req.Name, req.SipDispatchRuleId)
 	if err != nil {
 		return nil, cloudAPIError(err)
 	}
@@ -281,15 +282,6 @@ func (p *publicPhoneNumbers) ReleasePhoneNumbers(ctx context.Context, req *livek
 		released = append(released, ref)
 	}
 	return &livekit.ReleasePhoneNumbersResponse{}, nil
-}
-
-// phoneNumberRef is the path ID the Public API takes for a phone number: its
-// ID, or the number in E.164 format.
-func phoneNumberRef(id, e164 string) string {
-	if id != "" {
-		return id
-	}
-	return e164
 }
 
 // partialError is err for a call on failed, which names the numbers that

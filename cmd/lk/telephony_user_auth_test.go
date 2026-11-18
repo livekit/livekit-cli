@@ -25,11 +25,6 @@ import (
 	"github.com/livekit/protocol/livekit"
 )
 
-func TestPhoneNumberRef(t *testing.T) {
-	require.Equal(t, "PN_1", phoneNumberRef("PN_1", ""))
-	require.Equal(t, "+15550100", phoneNumberRef("", "+15550100"))
-}
-
 // A failure partway through several purchases or releases names the numbers
 // that the earlier calls already changed, so the user knows what happened.
 func TestPartialError(t *testing.T) {
