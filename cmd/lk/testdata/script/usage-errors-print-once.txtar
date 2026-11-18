@@ -1,0 +1,19 @@
+# A usage error prints once, on stderr, after the command's help on stdout.
+# urfave/cli would print it as "Incorrect Usage: ..." too; lk prints it itself.
+! exec lk --bogus room list
+stdout '^NAME:'
+cmp stderr want-unknown-flag
+
+! exec lk room update --url ws://one.test --api-key APIone --api-secret secretone myroom
+stdout '^NAME:'
+cmp stderr want-required-flag
+
+requests
+! stdout .
+
+-- want-unknown-flag --
+flag provided but not defined: -bogus
+
+Did you mean "--subdomain"?
+-- want-required-flag --
+Required flag "metadata" not set
