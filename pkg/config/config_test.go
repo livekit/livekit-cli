@@ -106,6 +106,21 @@ func TestUserConfigFindProject(t *testing.T) {
 	assert.Nil(t, (*UserConfig)(nil).FindProject("p_abc"))
 }
 
+func TestUserConfigFindProjectIDWinsOverAlias(t *testing.T) {
+	u := &UserConfig{
+		Projects: []UserProjectConfig{
+			{ProjectId: "p_1", Name: "one", Alias: "p_2"},
+			{ProjectId: "p_2", Name: "two", Alias: "two"},
+		},
+	}
+
+	// p_2 is p_1's alias, but it is p_2's ID.
+	assert.Equal(t, "p_2", u.FindProject("p_2").ProjectId)
+	// names and aliases still resolve as before
+	assert.Equal(t, "p_2", u.FindProject("two").ProjectId)
+	assert.Equal(t, "p_1", u.FindProject("one").ProjectId)
+}
+
 func TestCLIConfigUpsertUser(t *testing.T) {
 	c := &CLIConfig{
 		Users: []UserConfig{

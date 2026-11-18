@@ -100,15 +100,20 @@ type UserProjectConfig struct {
 
 // FindProject returns the cached project matching ref by ProjectId or
 // (case-insensitively) by Name/alias, or nil if none matches. Used to resolve
-// the --project flag against the user's project cache in user-auth mode.
+// the --project flag against the user's project cache in user-auth mode. A
+// ProjectId match wins, so another project's name or alias can't shadow an ID.
 func (u *UserConfig) FindProject(ref string) *UserProjectConfig {
 	if u == nil || ref == "" {
 		return nil
 	}
 	for i := range u.Projects {
+		if u.Projects[i].ProjectId == ref {
+			return &u.Projects[i]
+		}
+	}
+	for i := range u.Projects {
 		p := &u.Projects[i]
-		if p.ProjectId == ref ||
-			(p.Name != "" && strings.EqualFold(p.Name, ref)) ||
+		if (p.Name != "" && strings.EqualFold(p.Name, ref)) ||
 			(p.Alias != "" && strings.EqualFold(p.Alias, ref)) {
 			return p
 		}
