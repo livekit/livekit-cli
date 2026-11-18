@@ -3,7 +3,7 @@
 respond GET 'http://publicapi.test/v0/projects/p_1/phone-numbers?page.pageSize=1' 200 '{"items":[{"id":"PN_2","e164Format":"+14155550101","status":"PHONE_NUMBER_STATUS_ACTIVE"}],"pageInfo":{"nextCursor":"c2","hasMore":true}}'
 exec lk --user-auth number list --limit 1
 stdout 'PN_2.*\+14155550101.*ACTIVE'
-stderr '^More results available. Use --cursor c2 to see the next page.$'
+stderr '^More results available — next page: lk --user-auth number list --limit 1 --cursor c2$'
 
 respond GET 'http://publicapi.test/v0/projects/p_1/phone-numbers?page.cursor=c2&page.pageSize=1' 200 '{"items":[{"id":"PN_1","e164Format":"+14155550100","status":"PHONE_NUMBER_STATUS_ACTIVE"}],"pageInfo":{"hasMore":false}}'
 exec lk --user-auth number list --limit 1 --cursor c2

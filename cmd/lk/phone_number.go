@@ -368,7 +368,7 @@ func cloudListPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		return resp, nil
 	}, &livekit.ListPhoneNumbersRequest{}, phoneNumberListHeaders, phoneNumberListRow)
 	if err == nil && next != "" && !cmd.Bool("json") {
-		out.Statusf("More results available. Use --cursor %s to see the next page.\n", next)
+		out.Statusf("More results available — next page: %s", util.NextPageHint(next))
 	}
 	return err
 }
