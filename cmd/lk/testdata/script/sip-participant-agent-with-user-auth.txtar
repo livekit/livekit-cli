@@ -1,0 +1,37 @@
+# Under --user-auth, a call with --agent-name dispatches the agent through the
+# token bridge, in the project the call goes to. lk resolves that project
+# once, so it can't prompt twice and pick two projects.
+mint st_1
+respond POST http://two.test/twirp/livekit.AgentDispatchService/CreateDispatch 200 ''
+respond POST http://publicapi.test/v0/projects/p_2/sip/participants 200 '{"participant":{"participantId":"PA_1","participantIdentity":"caller","roomName":"support","sipCallId":"SCL_1"}}'
+exec lk --user-auth sip participant create --trunk ST_out --to +15550100 --room support --identity caller --agent-name bot
+stdout '^SIPCallID: SCL_1$'
+cmp stderr want-stderr
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: two
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+      - project_id: p_2
+        name: two
+        alias: two
+        url: ws://two.test
+-- want-stderr --
+Using user [dev@example.com] on [http://publicapi.test]
+Using project [two]
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_2/tokens bearer=st_1 project=p_2
+POST http://two.test/twirp/livekit.AgentDispatchService/CreateDispatch apikey=APImint_p_2
+POST http://publicapi.test/v0/projects/p_2/sip/participants bearer=st_1 project=p_2

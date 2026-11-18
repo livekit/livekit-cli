@@ -1445,11 +1445,14 @@ func createSIPParticipant(ctx context.Context, cmd *cli.Command) error {
 	var dispatchCli *lksdk.AgentDispatchClient
 	if agentName != "" {
 		// Agent dispatch has no Public API RPC, so under --user-auth it goes
-		// through the session's token bridge.
-		if userAuthEnabled(cmd) {
-			if _, err := requireProjectForSDK(ctx, cmd); err != nil {
+		// through the session's token bridge, to the project the call uses.
+		// Resolving the project again could prompt again, and pick another.
+		if p, ok := cli.(*publicSIP); ok {
+			pc, err := loadSessionProjectRef(ctx, cmd, p.projectID)
+			if err != nil {
 				return err
 			}
+			project = pc
 		}
 		dispatchCli = lksdk.NewAgentDispatchServiceClient(project.URL, project.APIKey, project.APISecret, withDefaultClientOpts(project)...)
 	}
