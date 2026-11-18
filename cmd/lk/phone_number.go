@@ -360,17 +360,7 @@ func cloudListPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return cloudAPIError(err)
 	}
-	resp := &livekit.ListPhoneNumbersResponse{Items: numbers}
-	if next != "" {
-		resp.NextPageToken = &livekit.TokenPagination{Token: next}
-	}
-	err = listAndPrint(ctx, cmd, func(context.Context, *livekit.ListPhoneNumbersRequest) (*livekit.ListPhoneNumbersResponse, error) {
-		return resp, nil
-	}, &livekit.ListPhoneNumbersRequest{}, phoneNumberListHeaders, phoneNumberListRow)
-	if err == nil && next != "" && !cmd.Bool("json") {
-		out.Statusf("More results available — next page: %s", util.NextPageHint(next))
-	}
-	return err
+	return util.RenderPage(out, cmd.Bool("json"), numbers, next, "No phone numbers found.", phoneNumberListHeaders, phoneNumberListRow)
 }
 
 // phoneNumberStatuses parses --status values, such as active.
