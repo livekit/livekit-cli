@@ -68,7 +68,7 @@ var (
 						},
 						&cli.StringFlag{
 							Name:  "sip-dispatch-rule-id",
-							Usage: "SIP dispatch rule ID to apply to all purchased numbers",
+							Usage: "SIP dispatch rule ID to apply to all purchased numbers. The rule must list its trunks or phone numbers; a rule that lists none already applies to every number",
 						},
 						jsonFlag,
 					},
@@ -137,7 +137,7 @@ var (
 						},
 						&cli.StringFlag{
 							Name:  "sip-dispatch-rule-id",
-							Usage: "SIP dispatch rule ID to assign to the phone number",
+							Usage: "SIP dispatch rule ID to assign to the phone number. The rule must list its trunks or phone numbers; a rule that lists none already applies to every number",
 						},
 						&cli.StringFlag{
 							Name:  "name",

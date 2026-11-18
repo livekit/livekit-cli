@@ -251,7 +251,7 @@ var (
 								},
 								&cli.StringSliceFlag{
 									Name:  "trunks",
-									Usage: "Sets a list of trunks for the dispatch rule",
+									Usage: "Trunk and phone number IDs (ST_..., PN_...) the rule applies to. Without it, the rule applies to every trunk and phone number in the project",
 								},
 							}),
 							MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
@@ -300,7 +300,7 @@ var (
 								},
 								&cli.StringSliceFlag{
 									Name:  "trunks",
-									Usage: "Sets a new list of trunk IDs",
+									Usage: "Sets a new list of trunk and phone number IDs (ST_..., PN_...). An empty list makes the rule apply to every trunk and phone number in the project",
 								},
 							}),
 							MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
