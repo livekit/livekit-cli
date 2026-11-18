@@ -24,8 +24,10 @@ respond POST http://one.test/twirp/livekit.SIP/ListSIPDispatchRule 200 ''
 ! exec lk sip dispatch get SDR_none
 stderr '^dispatch rule not found$'
 
+# number list asks the SIP API once, and prints the total above the table.
 respond POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers 200 ''
 exec lk number list
+stdout '^Total phone numbers: 0$'
 
 ! exec lk number list --cursor c2
 stderr '^--cursor is only supported with --user-auth'
@@ -47,5 +49,4 @@ POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
 POST http://one.test/twirp/livekit.SIP/DeleteSIPTrunk apikey=APIone
 POST http://one.test/twirp/livekit.SIP/ListSIPOutboundTrunk apikey=APIone
 POST http://one.test/twirp/livekit.SIP/ListSIPDispatchRule apikey=APIone
-POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone
 POST http://one.test/twirp/livekit.PhoneNumberService/ListPhoneNumbers apikey=APIone

@@ -313,35 +313,29 @@ func listPhoneNumbers(ctx context.Context, cmd *cli.Command) error {
 		req.SipDispatchRuleId = &val
 	}
 
-	resp, err := client.ListPhoneNumbers(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	if cmd.Bool("json") {
-		util.PrintJSON(resp)
-		return nil
-	}
-
-	out.Resultf("Total phone numbers: %d", resp.TotalCount)
-	if resp.OfflineCount > 0 {
-		out.Resultf(" (%d offline)", resp.OfflineCount)
-	}
-	out.Resultf("\n")
-
-	// Show pagination info
-	if offset > 0 {
-		out.Resultf("Showing results from offset %d\n", offset)
-	}
-	if resp.NextPageToken != nil {
-		nextOffset, _, err := livekit.DecodeTokenPagination(resp.NextPageToken)
-		if err == nil {
-			out.Resultf("More results available. Use --offset %d to see the next page.\n", nextOffset)
-		}
-	}
-
 	return listAndPrint(ctx, cmd, func(ctx context.Context, req *livekit.ListPhoneNumbersRequest) (*livekit.ListPhoneNumbersResponse, error) {
-		return client.ListPhoneNumbers(ctx, req)
+		resp, err := client.ListPhoneNumbers(ctx, req)
+		if err != nil || cmd.Bool("json") {
+			return resp, err
+		}
+
+		out.Resultf("Total phone numbers: %d", resp.TotalCount)
+		if resp.OfflineCount > 0 {
+			out.Resultf(" (%d offline)", resp.OfflineCount)
+		}
+		out.Resultf("\n")
+
+		// Show pagination info
+		if offset > 0 {
+			out.Resultf("Showing results from offset %d\n", offset)
+		}
+		if resp.NextPageToken != nil {
+			nextOffset, _, err := livekit.DecodeTokenPagination(resp.NextPageToken)
+			if err == nil {
+				out.Resultf("More results available. Use --offset %d to see the next page.\n", nextOffset)
+			}
+		}
+		return resp, nil
 	}, req, phoneNumberListHeaders, phoneNumberListRow)
 }
 
