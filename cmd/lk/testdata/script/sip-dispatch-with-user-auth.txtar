@@ -14,7 +14,7 @@ stdout '^SIPDispatchRuleID: SDR_1$'
 
 respond DELETE http://publicapi.test/v0/projects/p_1/sip/dispatch-rules/SDR_1 200 '{}'
 exec lk --user-auth sip dispatch delete SDR_1
-stdout '^SIPDispatchRuleID: SDR_1$'
+stdout '^SIP Dispatch Rule \[SDR_1\] deleted$'
 
 requests
 cmp stdout want-requests

@@ -1411,7 +1411,7 @@ func deleteSIPDispatchRule(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			return err
 		}
-		printSIPDispatchRuleID(info)
+		out.Resultf("SIP Dispatch Rule [%s] deleted\n", util.Accented(info.GetSipDispatchRuleId()))
 		return nil
 	})
 }
@@ -1427,7 +1427,7 @@ func deleteSIPDispatchRuleLegacy(ctx context.Context, cmd *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	printSIPDispatchRuleID(info)
+	out.Resultf("SIP Dispatch Rule [%s] deleted\n", util.Accented(info.GetSipDispatchRuleId()))
 	return nil
 }
 
