@@ -24,7 +24,7 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.20.1
-	github.com/livekit/protocol v1.53.3-0.20261108034403-b499314eeb9a
+	github.com/livekit/protocol v1.54.1-0.20261115023925-4245c8d68588
 	github.com/livekit/server-sdk-go/v2 v2.19.0
 	github.com/mattn/go-isatty v0.0.22
 	github.com/moby/moby/client v0.4.1
@@ -265,9 +265,5 @@ require (
 	pgregory.net/rapid v1.2.0
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 )
-
-// TEMP (local dev): use local protocol with the WorkerInfo dev message.
-// Drop once github.com/livekit/protocol publishes it.
-// replace github.com/livekit/protocol => ../protocol
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen

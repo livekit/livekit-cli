@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -225,7 +226,13 @@ func (aw *agentWatcher) restart() error {
 	out.Status("Reloading agent...")
 
 	// 3. Start new process
-	agent, err := startAgent(aw.config)
+	cfg := aw.config
+	if tm := aw.devSrv.tokenMode; tm != nil {
+		// The worker token may have been refreshed since the first start; the
+		// last LIVEKIT_TOKEN in the environment wins.
+		cfg.Env = append(slices.Clip(cfg.Env), "LIVEKIT_TOKEN="+tm.token.current())
+	}
+	agent, err := startAgent(cfg)
 	if err != nil {
 		return err
 	}
@@ -340,6 +347,11 @@ func (aw *agentWatcher) Run(done <-chan struct{}) error {
 				debounceTimer.Stop()
 				debounceTimer = nil
 				debounceCh = nil
+			}
+			if tm := aw.devSrv.tokenMode; tm != nil {
+				if err := tm.exitError(); err != nil {
+					out.Warnf("%s", upperFirst(err.Error()))
+				}
 			}
 			out.Status("Agent exited. Waiting for file changes to restart...")
 		}

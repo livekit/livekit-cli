@@ -54,6 +54,11 @@ import (
 //  5. In a terminal: a key the user types in (what `lk project add` asks
 //     for).
 //
+// agent dev, under --user-auth, has no step 5: when step 4 fails it runs the
+// agent on a worker token (token mode, see agent_token_mode.go). It ends in
+// the no-key error when it can't get one, and asks for an SDK upgrade when the
+// agent's SDK doesn't support token mode.
+//
 // Without a terminal, the chain ends in an error that says exactly how to
 // supply a key, before any agent starts. agent console and the text-mode
 // agent debugger run the agent on this machine, where an agent that brings
@@ -160,6 +165,10 @@ type keyRequest struct {
 	// optional is set when the agent can run without a key: nothing is asked
 	// for, and the chain ends in a noKeyError that the caller warns with.
 	optional bool
+	// tokenMode is set when the agent can run on a worker token instead of a
+	// key (agent dev, see agent_token_mode.go): under --user-auth, it does
+	// when step 4 fails, in place of step 5.
+	tokenMode bool
 }
 
 // noKeyError is the end of the chain when no key was found: it says how to
@@ -172,7 +181,13 @@ func (e *noKeyError) Error() string { return e.msg }
 // from the chain at the top of this file, and saves a key the chain made or
 // was given (see saveProjectKey).
 func resolveAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) (agentCredentials, error) {
-	return agentCredentialsChain(ctx, cmd, dir, false)
+	return agentCredentialsChain(ctx, cmd, dir, false, false)
+}
+
+// resolveDevAgentCredentials is resolveAgentCredentials for `lk agent dev`,
+// whose agent can run on a worker token (token mode) when there's no key.
+func resolveDevAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) (agentCredentials, error) {
+	return agentCredentialsChain(ctx, cmd, dir, false, true)
 }
 
 // resolveOptionalAgentCredentials is resolveAgentCredentials for an agent that
@@ -181,7 +196,7 @@ func resolveAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) 
 // returns no credentials, and the agent starts with whatever its own env file
 // holds.
 func resolveOptionalAgentCredentials(ctx context.Context, cmd *cli.Command, dir string) (agentCredentials, error) {
-	creds, err := agentCredentialsChain(ctx, cmd, dir, true)
+	creds, err := agentCredentialsChain(ctx, cmd, dir, true, false)
 	var noKey *noKeyError
 	if errors.As(err, &noKey) {
 		out.Warnf("%s\n\nStarting the agent without one: what it asks of LiveKit, such as LiveKit Inference, will fail.", noKey.msg)
@@ -190,7 +205,7 @@ func resolveOptionalAgentCredentials(ctx context.Context, cmd *cli.Command, dir 
 	return creds, err
 }
 
-func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, optional bool) (agentCredentials, error) {
+func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, optional, tokenMode bool) (agentCredentials, error) {
 	explicit := explicitCredentials(cmd)
 	// The agent gets LIVEKIT_* credentials from the environment even under
 	// --user-auth, so they aren't ignored here.
@@ -220,7 +235,7 @@ func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, op
 	}
 	explicit = wholeKeyPair(explicit)
 
-	req := keyRequest{dir: dir, files: agentEnvFileNames(dir), purpose: "to run the agent with", optional: optional}
+	req := keyRequest{dir: dir, files: agentEnvFileNames(dir), purpose: "to run the agent with", optional: optional, tokenMode: tokenMode}
 	fileCreds, file, err := envFileCredentials(dir, req.files...)
 	if err != nil {
 		return agentCredentials{}, err
@@ -283,6 +298,9 @@ func agentCredentialsChain(ctx context.Context, cmd *cli.Command, dir string, op
 		// The key is looked up and saved at the project's own URL;
 		// only the agent connects at --url.
 		key.url = override
+		if key.workerToken != nil {
+			key.workerToken.url = override
+		}
 	}
 	return key, nil
 }
@@ -569,6 +587,23 @@ func projectKey(ctx context.Context, cmd *cli.Command, pc *config.ProjectConfig,
 	default:
 		reason = fmt.Sprintf("couldn't create an API key for project [%s]: %v", pc.Name, cloudAPIError(err))
 	}
+	if req.tokenMode {
+		// In place of promptForKey: token mode. noKey is the error when lk
+		// can't get a worker token, and what the SDK-upgrade message ends in
+		// when the agent's SDK doesn't support token mode.
+		noKey := missingKeyError(pc, req, reason, nil)
+		out.Statusf("%s.", upperFirst(reason))
+		creds, err := workerTokenCredentials(ctx, cmd, pc)
+		if err != nil {
+			// err is already a cloudAPIError (publicAPITokenSource).
+			if public.IsUnauthenticated(err) {
+				return agentCredentials{}, err
+			}
+			return agentCredentials{}, fmt.Errorf("%w\n\nlk also couldn't get a worker token to run the agent without a key: %v", noKey, err)
+		}
+		creds.noKey = noKey
+		return creds, nil
+	}
 	return promptForKey(ctx, cmd, pc, req, reason)
 }
 
@@ -705,7 +740,7 @@ func missingKeyError(pc *config.ProjectConfig, req keyRequest, reason string, us
 		if user != nil {
 			fmt.Fprintf(&b, "  - re-run with --user-auth to use your signed-in account (%s)\n", userLabel(user))
 		}
-	} else if !req.optional {
+	} else if !req.optional && !req.tokenMode {
 		b.WriteString("  - re-run in a terminal and enter a key when asked (find or create one under Settings › API keys at " + dashboardURL + ", or ask a project admin)\n")
 	}
 	if req.dir != "" {
