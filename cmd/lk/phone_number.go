@@ -486,6 +486,7 @@ func getPhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	out.Resultf("Phone Number Details:\n")
 	out.Resultf("  ID: %s\n", item.Id)
 	out.Resultf("  E164 Format: %s\n", item.E164Format)
+	out.Resultf("  Name: %s\n", item.Name)
 	out.Resultf("  Country: %s\n", item.CountryCode)
 	out.Resultf("  Area Code: %s\n", item.AreaCode)
 	out.Resultf("  Type: %s\n", strings.TrimPrefix(item.NumberType.String(), "PHONE_NUMBER_TYPE_"))
@@ -554,6 +555,7 @@ func updatePhoneNumber(ctx context.Context, cmd *cli.Command) error {
 	out.Resultf("Successfully updated phone number:\n")
 	out.Resultf("  ID: %s\n", item.Id)
 	out.Resultf("  E164 Format: %s\n", item.E164Format)
+	out.Resultf("  Name: %s\n", item.Name)
 	out.Resultf("  Status: %s\n", strings.TrimPrefix(item.Status.String(), "PHONE_NUMBER_STATUS_"))
 	out.Resultf("  SIP Dispatch Rules: %s\n", dispatchRulesStr)
 

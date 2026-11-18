@@ -8,12 +8,14 @@ respond POST http://publicapi.test/v0/projects/p_1/phone-numbers 200 '{"phoneNum
 exec lk --user-auth number purchase --numbers +14155550100 --numbers +14155550101
 stdout '^Successfully purchased 2 phone numbers:$'
 
-respond GET http://publicapi.test/v0/projects/p_1/phone-numbers/+14155550100 200 '{"phoneNumber":{"id":"PN_1","e164Format":"+14155550100","status":"PHONE_NUMBER_STATUS_ACTIVE"}}'
+respond GET http://publicapi.test/v0/projects/p_1/phone-numbers/+14155550100 200 '{"phoneNumber":{"id":"PN_1","name":"lobby","e164Format":"+14155550100","status":"PHONE_NUMBER_STATUS_ACTIVE"}}'
 exec lk --user-auth number get --number +14155550100
 stdout '^  ID: PN_1$'
+stdout '^  Name: lobby$'
 
 respond PATCH http://publicapi.test/v0/projects/p_1/phone-numbers/PN_1 200 '{"phoneNumber":{"id":"PN_1","name":"front desk","e164Format":"+14155550100","sipDispatchRuleIds":["SDR_1"]}}'
 exec lk --user-auth number update --id PN_1 --name 'front desk' --sip-dispatch-rule-id SDR_1
+stdout '^  Name: front desk$'
 stdout '^  SIP Dispatch Rules: SDR_1$'
 
 respond DELETE http://publicapi.test/v0/projects/p_1/phone-numbers/PN_1 200 '{}'
