@@ -102,6 +102,9 @@ func newFakeAgentMode(t *testing.T, audio bool) (*fakeAgent, *agentSession) {
 		speak = nil
 	}
 	sess := newAgentSession(server, nil, speak)
+	// The fake agent never pauses mid-reply, so it needs no settle long
+	// enough to outlast a delegating model's pause.
+	sess.settle = 100 * time.Millisecond
 	t.Cleanup(func() { client.Close(); server.Close() })
 	return fa, sess
 }
@@ -631,7 +634,7 @@ func TestAudioSayWaitsForTheAgentToHearTheUser(t *testing.T) {
 	fa.sendState(agent.AgentState_AS_SPEAKING)
 	fa.sendAssistant("June tenth has already passed.")
 	fa.sendState(agent.AgentState_AS_LISTENING)
-	time.Sleep(turnSettle + 500*time.Millisecond)
+	time.Sleep(sess.settle + 200*time.Millisecond)
 	select {
 	case <-run.done:
 		t.Fatal("the turn ended before the agent heard the user")
@@ -742,7 +745,7 @@ func TestAudioSayWaitsForHandoffIntroduction(t *testing.T) {
 	}})
 	// The old agent goes quiet before the new one has introduced itself.
 	fa.sendState(agent.AgentState_AS_LISTENING)
-	time.Sleep(turnSettle + 500*time.Millisecond)
+	time.Sleep(sess.settle + 200*time.Millisecond)
 	fa.sendAssistant("Hi, billing here.")
 
 	run.wait(t)
