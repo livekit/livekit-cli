@@ -120,6 +120,9 @@ func runSimulateCI(ctx context.Context, config *simulateConfig) error {
 	}
 	runID = created.SimulationRunId
 	report.SimulationCreated(time.Since(start))
+	if created.ObservabilityDisabled {
+		report.ObservabilityDisabled(observabilityNotice(config.pc.ProjectId))
+	}
 
 	if config.mode == modeGenerateFromSource {
 		start = time.Now()

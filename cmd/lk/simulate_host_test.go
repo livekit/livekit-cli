@@ -71,3 +71,14 @@ func TestSimulateCommandHintKeepsUserAuth(t *testing.T) {
 	}
 	assert.Contains(t, simulateCommandHint("view", "SR_1"), "--project one --user-auth")
 }
+
+// The notice links the settings page on the project's own dashboard, and still
+// says where to go when the project ID is unknown.
+func TestObservabilityNotice(t *testing.T) {
+	origPC := simulateProjectConfig
+	t.Cleanup(func() { simulateProjectConfig = origPC })
+
+	simulateProjectConfig = &config.ProjectConfig{Name: "stg", URL: "wss://stg.staging.livekit.cloud"}
+	assert.Contains(t, observabilityNotice("p_123"), "at https://cloud.staging.livekit.io/projects/p_123/settings/observability")
+	assert.Contains(t, observabilityNotice(""), "in the project's Observability settings")
+}

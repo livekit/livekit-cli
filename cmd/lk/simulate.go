@@ -898,6 +898,25 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (*livekit.Simul
 	return resp, nil
 }
 
+// observabilitySettingsURL is where a project's Agent Observability is turned
+// on, or "" when the project ID is unknown.
+func observabilitySettingsURL(projectID string) string {
+	if projectID == "" {
+		return ""
+	}
+	return dashboardBaseURL() + "/projects/" + projectID + "/settings/observability"
+}
+
+// observabilityNotice explains a run created while the project's Agent
+// Observability is off, and where to turn it on.
+func observabilityNotice(projectID string) string {
+	where := "in the project's Observability settings on the LiveKit Cloud dashboard"
+	if url := observabilitySettingsURL(projectID); url != "" {
+		where = "at " + url
+	}
+	return "Agent Observability is off for this project, so this run gets no summary and its sessions aren't recorded. Turn it on " + where
+}
+
 func uploadSource(ctx context.Context, client *lksdk.AgentSimulationClient, runID string, presigned *livekit.PresignedPostRequest, projectDir, entrypoint string) error {
 	if presigned == nil {
 		return fmt.Errorf("server did not return upload URL")
