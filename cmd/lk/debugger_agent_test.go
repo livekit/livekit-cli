@@ -737,6 +737,9 @@ func TestAudioSayWaitsForHandoffIntroduction(t *testing.T) {
 	fa.nextSpoken()
 	fa.sendUser("billing please")
 	fa.sendState(agent.AgentState_AS_THINKING)
+	// The old agent answers before handing off, so the turn has its reply and
+	// only the handoff wait can hold it open for the introduction.
+	fa.sendAssistant("Transferring you to billing.")
 	old := "assistant"
 	fa.sendEvent(&agent.AgentSessionEvent{Event: &agent.AgentSessionEvent_ConversationItemAdded_{
 		ConversationItemAdded: &agent.AgentSessionEvent_ConversationItemAdded{Item: &agent.ChatContext_ChatItem{
@@ -749,7 +752,8 @@ func TestAudioSayWaitsForHandoffIntroduction(t *testing.T) {
 	fa.sendAssistant("Hi, billing here.")
 
 	run.wait(t)
-	require.Len(t, run.got, 3)
-	require.Equal(t, "handoff", run.got[1].Type)
-	require.Equal(t, "Hi, billing here.", run.got[2].Text)
+	require.Len(t, run.got, 4)
+	require.Equal(t, "handoff", run.got[2].Type)
+	require.Equal(t, "Hi, billing here.", run.got[3].Text)
+	require.Equal(t, "Transferring you to billing.\nHi, billing here.", run.res.Reply)
 }
