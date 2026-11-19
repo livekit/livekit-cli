@@ -3,7 +3,7 @@
 # elsewhere.
 ! exec lk --user-auth project list
 ! stdout .
-stderr '^the default user "gone@example.com" is not signed in to https://beta-api.livekit.cloud \(run `lk cloud auth --user-auth` to sign in\)$'
+stderr '^the default user "gone@example.com" is not signed in to https://api.livekit.cloud \(run `lk cloud auth --user-auth` to sign in\)$'
 requests
 ! stdout .
 

@@ -15,10 +15,13 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public"
 )
@@ -65,7 +68,7 @@ func TestCLIConfigGetUser(t *testing.T) {
 }
 
 func TestCLIConfigGetUserScopedByAPIURL(t *testing.T) {
-	const staging = "https://beta-api.staging.livekit.cloud"
+	const staging = "https://api.staging.livekit.cloud"
 	c := &CLIConfig{
 		Users: []UserConfig{
 			// legacy entry without api_url: the default Public API
@@ -78,13 +81,43 @@ func TestCLIConfigGetUserScopedByAPIURL(t *testing.T) {
 	assert.Equal(t, "usr_prod", c.GetUser("alice@livekit.io", public.DefaultBaseURL).Id)
 	assert.Equal(t, "usr_stg", c.GetUser("alice@livekit.io", staging).Id)
 	// trailing slash and case are ignored
-	assert.Equal(t, "usr_stg", c.GetUser("alice@livekit.io", "HTTPS://beta-api.staging.livekit.cloud/").Id)
+	assert.Equal(t, "usr_stg", c.GetUser("alice@livekit.io", "HTTPS://api.staging.livekit.cloud/").Id)
 	// ids don't resolve across APIs
 	assert.Nil(t, c.GetUser("usr_prod", staging))
 	assert.Nil(t, c.GetUser("alice@livekit.io", "https://other.example"))
 
 	assert.Len(t, c.UsersForAPIURL(staging), 1)
 	assert.Empty(t, c.UsersForAPIURL("https://other.example"))
+}
+
+func TestSameAPIURLLegacyHosts(t *testing.T) {
+	assert.True(t, SameAPIURL("https://beta-api.livekit.cloud", public.DefaultBaseURL))
+	assert.True(t, SameAPIURL("https://beta-api.livekit.cloud", ""))
+	assert.True(t, SameAPIURL("HTTPS://beta-api.staging.livekit.cloud/", "https://api.staging.livekit.cloud"))
+	assert.False(t, SameAPIURL("https://beta-api.staging.livekit.cloud", public.DefaultBaseURL))
+}
+
+func TestLoadOrCreateMigratesLegacyAPIURLs(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".livekit"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".livekit", "cli-config.yaml"), []byte(`users:
+  - id: usr_prod
+    api_url: https://beta-api.livekit.cloud
+  - id: usr_stg
+    api_url: https://beta-api.staging.livekit.cloud/
+  - id: usr_default
+  - id: usr_local
+    api_url: http://localhost:8000
+`), 0o600))
+
+	c, err := LoadOrCreate()
+	require.NoError(t, err)
+	require.Len(t, c.Users, 4)
+	assert.Equal(t, public.DefaultBaseURL, c.Users[0].APIURL)
+	assert.Equal(t, "https://api.staging.livekit.cloud", c.Users[1].APIURL)
+	assert.Equal(t, "", c.Users[2].APIURL)
+	assert.Equal(t, "http://localhost:8000", c.Users[3].APIURL)
 }
 
 func TestUserConfigFindProject(t *testing.T) {
@@ -170,7 +203,7 @@ func TestCLIConfigUpsertUser(t *testing.T) {
 	assert.Len(t, c.Users, 2)
 
 	// The same person on a different Public API is stored separately.
-	const staging = "https://beta-api.staging.livekit.cloud"
+	const staging = "https://api.staging.livekit.cloud"
 	_, replaced = c.UpsertUser(UserConfig{Id: "usr_1_new", Email: "alice@livekit.io", SessionToken: "staging", APIURL: staging})
 	assert.False(t, replaced)
 	assert.Len(t, c.Users, 3)
@@ -188,7 +221,7 @@ func TestCLIConfigUpsertUser(t *testing.T) {
 }
 
 func TestCLIConfigRemoveUser(t *testing.T) {
-	const staging = "https://beta-api.staging.livekit.cloud"
+	const staging = "https://api.staging.livekit.cloud"
 	alice := UserConfig{Id: "usr_1", Email: "alice@livekit.io", SessionToken: "prod"}
 	aliceStaging := UserConfig{Id: "usr_1", Email: "alice@livekit.io", SessionToken: "staging", APIURL: staging}
 	bob := UserConfig{Id: "usr_2", Email: "bob@livekit.io", SessionToken: "bob"}
