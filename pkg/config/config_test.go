@@ -100,6 +100,7 @@ func TestSameAPIURLLegacyHosts(t *testing.T) {
 func TestLoadOrCreateMigratesLegacyAPIURLs(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir reads it on Windows
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".livekit"), 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(home, ".livekit", "cli-config.yaml"), []byte(`users:
   - id: usr_prod
