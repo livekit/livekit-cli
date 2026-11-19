@@ -54,6 +54,7 @@ type agentSession struct {
 
 	speak     speakFunc // nil in text mode
 	replyWait time.Duration
+	settle    time.Duration
 	mic       micStream
 	speaker   playout
 
@@ -82,6 +83,7 @@ func newAgentSession(conn net.Conn, reader io.Reader, speak speakFunc) *agentSes
 		reader:    reader,
 		speak:     speak,
 		replyWait: defaultReplyWait,
+		settle:    turnSettle,
 		pending:   make(map[string]chan *agent.SessionResponse),
 		subs:      make(map[*eventSub]struct{}),
 		observers: make(map[*eventSub]struct{}),
@@ -680,7 +682,7 @@ speaking:
 	// Output while the user was still being heard (the tail of an earlier
 	// reply) does not answer this turn, so the turn waits for the agent to
 	// transcribe the speech and respond to it.
-	s.awaitQuiet(ctx, sub, s.replyWait, turnSettle, nil, deliver, func() bool { return responded })
+	s.awaitQuiet(ctx, sub, s.replyWait, s.settle, nil, deliver, func() bool { return responded })
 	// A handoff target usually introduces itself from on_enter, which can
 	// start after the previous agent went quiet. Hold the turn open briefly so
 	// that introduction reads as part of the handoff.
