@@ -313,7 +313,7 @@ func (f *fakeCloud) respond(target string, status int, body string) error {
 }
 
 // publicAPIRoutes are the Public API routes the fake answers, each with the
-// generated type of its 200 body.
+// generated type of its 200 body, or nil for a route whose body isn't JSON.
 var publicAPIRoutes = []struct {
 	method string
 	path   *regexp.Regexp
@@ -365,6 +365,9 @@ var publicAPIRoutes = []struct {
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/:]+$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse) }},
 	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/:]+:deploy$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsDeployResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/]+/versions$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentVersionsListResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/]+/code-url$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsGetCodeURLResponse) }},
+	// The signed URL of a builder agent's code answers a zip, not JSON.
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/]+/versions/[^/]+/code$`), nil},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }
@@ -401,6 +404,9 @@ func checkPublicAPIBody(method, path string, status int, body string) error {
 	default:
 		for _, r := range publicAPIRoutes {
 			if r.method == method && r.path.MatchString(path) {
+				if r.body == nil {
+					return nil
+				}
 				v = r.body()
 				break
 			}

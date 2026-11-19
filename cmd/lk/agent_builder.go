@@ -15,13 +15,16 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"time"
 
 	"github.com/urfave/cli/v3"
@@ -124,6 +127,29 @@ deploy. To roll back, deploy an earlier version.`,
 						Usage: fmt.Sprintf("Wait until the agent runs, or its deployment fails, for up to %s", buildTimeout),
 					},
 					jsonFlag,
+				},
+			},
+			{
+				Name:      "download",
+				Usage:     "Download the agent code that LiveKit generates from a builder agent version",
+				UsageText: "lk agent builder download BUILDER_AGENT_ID [--version VERSION_ID] [--output FILE | --unzip DIR] --project PROJECT --user-auth",
+				Description: `Downloads a zip with src/agent.py, pyproject.toml, .env.example, a
+Dockerfile and the project docs, so that you can run and change the agent
+yourself. The code holds every header value of the configuration, so it
+needs the role that can update the agent, and lk writes it readable only
+by you.`,
+				ArgsUsage: "BUILDER_AGENT_ID",
+				Action:    downloadBuilderAgentCode,
+				Flags: []cli.Flag{
+					builderVersionFlag,
+					&cli.StringFlag{
+						Name:  "output",
+						Usage: "`FILE` to write the zip to. If unset, the name the server suggests, which must not exist yet",
+					},
+					&cli.StringFlag{
+						Name:  "unzip",
+						Usage: "Unpack the zip into `DIR`, which must be empty or not exist, instead of writing it",
+					},
 				},
 			},
 			{
@@ -405,4 +431,142 @@ func waitForBuilderDeployment(ctx context.Context, client *public.Client, projec
 		case <-time.After(builderDeployPoll):
 		}
 	}
+}
+
+// builderCodeURLExpiry is how long, in seconds, the code URL that download
+// asks for stays valid. download uses it at once, and the URL needs no other
+// credential, so it asks for far less than the API's 15 minutes.
+const builderCodeURLExpiry = 60
+
+func downloadBuilderAgentCode(ctx context.Context, cmd *cli.Command) error {
+	id, err := requireArg(cmd, "builder agent ID")
+	if err != nil {
+		return err
+	}
+	output, dir := cmd.String("output"), cmd.String("unzip")
+	if output != "" && dir != "" {
+		return errors.New("--output and --unzip can't be combined")
+	}
+	if dir != "" {
+		if err := requireEmptyDir(dir); err != nil {
+			return err
+		}
+	}
+	client, projectID, err := builderProject(ctx, cmd)
+	if err != nil {
+		return err
+	}
+	code, err := client.GetBuilderAgentCodeURL(ctx, projectID, id, cmd.String("version"), builderCodeURLExpiry)
+	if err != nil {
+		return cloudAPIError(err)
+	}
+	version := util.Deref(code.VersionId)
+	data, filename, err := public.DownloadBuilderAgentCode(ctx, *code.Url)
+	if err != nil {
+		return err
+	}
+	if dir != "" {
+		n, err := unzipBuilderAgentCode(data, dir)
+		if err != nil {
+			return err
+		}
+		out.Statusf("Unpacked %d files of version %s of builder agent %s into %s", n, util.Accented(version), util.Accented(id), dir)
+		return nil
+	}
+	flags := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+	if output == "" {
+		output = cmp.Or(filename, version+".zip")
+		flags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
+	}
+	f, err := os.OpenFile(output, flags, 0o600)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return fmt.Errorf("%s already exists; pass --output to choose the file", output)
+		}
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	out.Statusf("Downloaded version %s of builder agent %s to %s", util.Accented(version), util.Accented(id), output)
+	return nil
+}
+
+// requireEmptyDir checks that dir is an empty directory or doesn't exist, so
+// that unpacking into it overwrites nothing.
+func requireEmptyDir(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if len(entries) > 0 {
+		return fmt.Errorf("--unzip %s: the directory isn't empty", dir)
+	}
+	return nil
+}
+
+// unzipBuilderAgentCode unpacks the agent code zip data into dir, creating
+// it, and returns the number of files. Every path stays inside dir (os.Root
+// refuses the rest), and an entry that isn't a file or a directory is an
+// error. Files and directories are readable only by the user, because the
+// code holds the configuration's header values.
+func unzipBuilderAgentCode(data []byte, dir string) (int, error) {
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return 0, fmt.Errorf("the agent code isn't a zip: %w", err)
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return 0, err
+	}
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return 0, err
+	}
+	defer root.Close()
+	files := 0
+	for _, entry := range zr.File {
+		name := path.Clean(entry.Name)
+		switch mode := entry.Mode(); {
+		case mode.IsDir():
+			err = root.MkdirAll(name, 0o700)
+		case mode.IsRegular():
+			err = unzipFile(root, name, entry)
+			files++
+		default:
+			err = fmt.Errorf("%s is not a file or a directory", entry.Name)
+		}
+		if err != nil {
+			return 0, fmt.Errorf("unpack agent code: %w", err)
+		}
+	}
+	return files, nil
+}
+
+func unzipFile(root *os.Root, name string, entry *zip.File) error {
+	if dir := path.Dir(name); dir != "." {
+		if err := root.MkdirAll(dir, 0o700); err != nil {
+			return err
+		}
+	}
+	src, err := entry.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+	dst, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(dst, src); err != nil {
+		dst.Close()
+		return err
+	}
+	return dst.Close()
 }

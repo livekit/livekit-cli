@@ -155,3 +155,48 @@ func TestHasHiddenHeaderValues(t *testing.T) {
 		assert.Equal(t, tc.want, HasHiddenHeaderValues(json.RawMessage(tc.config)), tc.config)
 	}
 }
+
+func TestDownloadBuilderAgentCode(t *testing.T) {
+	var auth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Disposition", `attachment; filename="../greeter.zip"`)
+		_, _ = w.Write([]byte("zip"))
+	}))
+	t.Cleanup(srv.Close)
+
+	data, filename, err := DownloadBuilderAgentCode(context.Background(), srv.URL+"/code?signature=s")
+	require.NoError(t, err)
+	assert.Equal(t, "zip", string(data))
+	assert.Equal(t, "greeter.zip", filename, "only the base name of the suggestion")
+	assert.Empty(t, auth, "the signed URL is the credential")
+}
+
+func TestDownloadBuilderAgentCodeErrors(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"code":7,"message":"this code URL expired; call GetBuilderAgentCodeURL for a new one"}`))
+	}))
+	t.Cleanup(srv.Close)
+	_, _, err := DownloadBuilderAgentCode(context.Background(), srv.URL+"/code?signature=s")
+	assert.EqualError(t, err, "this code URL expired; call GetBuilderAgentCodeURL for a new one")
+
+	// A body that echoes the URL doesn't print its signature.
+	const sig = "0123456789abcdef0123"
+	echo := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = w.Write([]byte("bad gateway for " + r.URL.String()))
+	}))
+	t.Cleanup(echo.Close)
+	_, _, err = DownloadBuilderAgentCode(context.Background(), echo.URL+"/code?signature="+sig)
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), sig)
+
+	// A transport error doesn't quote the URL's signature, which is the
+	// credential.
+	srv.Close()
+	_, _, err = DownloadBuilderAgentCode(context.Background(), srv.URL+"/code?signature=secret")
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "secret")
+	assert.Contains(t, err.Error(), "download agent code: ")
+}

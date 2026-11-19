@@ -19,7 +19,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"mime"
 	"net/http"
+	"path/filepath"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
@@ -188,6 +192,46 @@ func (c *Client) GetBuilderAgentCodeURL(ctx context.Context, projectID, builderA
 		return nil, errors.New("unexpected response from server: missing url")
 	}
 	return resp.JSON200, nil
+}
+
+// maxBuilderAgentCode is the largest agent code zip DownloadBuilderAgentCode
+// reads. The zips hold a few source files and the project docs.
+const maxBuilderAgentCode = 100 << 20
+
+// DownloadBuilderAgentCode downloads the agent code zip from a signed URL
+// that GetBuilderAgentCodeURL returned. As in DownloadRecording, the request
+// sends no credentials, and no error holds the URL's signature. filename is
+// the name the server suggests for the zip, or "" when it suggests none.
+func DownloadBuilderAgentCode(ctx context.Context, signedURL string) (zip []byte, filename string, err error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, signedURL, nil)
+	if err != nil {
+		return nil, "", fmt.Errorf("download agent code: %w", redactURLError(err))
+	}
+	resp, err := signedURLClient.Do(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("download agent code: %w", redactURLError(err))
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxBuilderAgentCode+1))
+	if err != nil {
+		return nil, "", fmt.Errorf("download agent code: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		err := responseError(resp.StatusCode, body)
+		if apiErr, ok := err.(*APIError); ok {
+			apiErr.Message = redactSignature(apiErr.Message, signedURL)
+		}
+		return nil, "", err
+	}
+	if len(body) > maxBuilderAgentCode {
+		return nil, "", fmt.Errorf("download agent code: the zip is larger than %d MiB", maxBuilderAgentCode>>20)
+	}
+	if _, params, err := mime.ParseMediaType(resp.Header.Get("Content-Disposition")); err == nil {
+		if name := filepath.Base(params["filename"]); name != "." && name != ".." && name != string(filepath.Separator) {
+			filename = name
+		}
+	}
+	return body, filename, nil
 }
 
 // decodeBuilderAgent reads the builder agent of a get, create or update
