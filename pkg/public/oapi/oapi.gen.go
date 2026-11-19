@@ -3489,7 +3489,9 @@ type LivekitPublicapiAgentsV1BuilderAgentConfigHeader struct {
 	// Name Starts with a letter, then letters, digits, "_" and "-".
 	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
 
-	// Value Can contain {{metadata.<name>}} placeholders.
+	// Value Can contain {{metadata.<name>}} placeholders. A caller who cannot
+	// update the builder agent reads `********` in place of the value.
+	// The API rejects `********` as a value.
 	Value string `json:"value"`
 }
 
@@ -3595,6 +3597,30 @@ type LivekitPublicapiAgentsV1BuilderAgentConfigVariable2 struct {
 	Type interface{}                                    `json:"type,omitempty"`
 }
 
+// LivekitPublicapiAgentsV1BuilderAgentVersion A saved configuration of a builder agent. Creating the agent makes its
+//
+//	first version, and each update makes a new one.
+type LivekitPublicapiAgentsV1BuilderAgentVersion struct {
+	// Config The configuration that the version holds.
+	Config    *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+	CreatedAt *GoogleProtobufTimestamp                    `json:"createdAt,omitempty"`
+
+	// DeployedAt When the last deployment of this version finished its build. Unset when
+	//  there is no record that a deployment of this version finished. To learn
+	//  which version runs, read `deployment.versionId` from `GetBuilderAgent`.
+	DeployedAt *GoogleProtobufTimestamp `json:"deployedAt,omitempty"`
+	Id         *string                  `json:"id,omitempty"`
+
+	// OwnerId The ID of the user who saved the version. Empty when it is not known.
+	OwnerId *string `json:"ownerId,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentVersionsListResponse defines model for livekit.publicapi.agents.v1.BuilderAgentVersions.List.Response.
+type LivekitPublicapiAgentsV1BuilderAgentVersionsListResponse struct {
+	Items    *[]LivekitPublicapiAgentsV1BuilderAgentVersion `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo              `json:"pageInfo,omitempty"`
+}
+
 // LivekitPublicapiAgentsV1BuilderAgentsCreateResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Create.Response.
 type LivekitPublicapiAgentsV1BuilderAgentsCreateResponse struct {
 	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
@@ -3616,6 +3642,20 @@ type LivekitPublicapiAgentsV1BuilderAgentsDeployResponse struct {
 // LivekitPublicapiAgentsV1BuilderAgentsGetResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Get.Response.
 type LivekitPublicapiAgentsV1BuilderAgentsGetResponse struct {
 	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsGetCodeURLResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.GetCodeURL.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsGetCodeURLResponse struct {
+	// ExpiresAt The time that the URL stops working: the time of the request plus the
+	//  granted expiry, after the 15-minute clamp.
+	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+
+	// Url A signed URL that downloads the agent code as a zip file. The URL
+	//  needs no credentials and is valid until `expiresAt`.
+	Url *string `json:"url,omitempty"`
+
+	// VersionId The version that the zip file holds.
+	VersionId *string `json:"versionId,omitempty"`
 }
 
 // LivekitPublicapiAgentsV1BuilderAgentsListResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.List.Response.
@@ -4497,11 +4537,14 @@ type LivekitPublicapiProjectsV1CreateProjectRequest struct {
 	// EnableRemoteUnmute True lets an admin unmute the tracks of another participant.
 	EnableRemoteUnmute *bool `json:"enableRemoteUnmute,omitempty"`
 
-	// EnableUserDataRecording When true, the project records traces, transcripts, and audio from agent
-	//  sessions for agent observability. Defaults to false. While it is off, a
-	//  session read that finds no data returns `FailedPrecondition` with an
-	//  `ObservabilityDisabled` detail. This applies to a recording, and to the
-	//  first unfiltered page of a transcript, traces, logs, or metrics.
+	// EnableUserDataRecording Agent observability: when true, the project captures traces, transcripts,
+	//  and audio from agent sessions for debugging. Defaults to true, as it does
+	//  for a project created in the dashboard. Set it to false to turn it off.
+	//  You can change it later with `UpdateProject`, or in the dashboard under
+	//  the project's settings. While it is off, a session read that finds no data
+	//  returns `FailedPrecondition` with an `ObservabilityDisabled` detail. This
+	//  applies to a recording, and to the first unfiltered page of a transcript,
+	//  traces, logs, or metrics.
 	EnableUserDataRecording *bool `json:"enableUserDataRecording,omitempty"`
 
 	// EnableUserDataTraining True lets LiveKit use the observability data from this project to improve
@@ -5683,8 +5726,36 @@ type BuilderAgentServiceCreateBuilderAgentJSONBody struct {
 // BuilderAgentServiceUpdateBuilderAgentJSONBody defines parameters for BuilderAgentServiceUpdateBuilderAgent.
 type BuilderAgentServiceUpdateBuilderAgentJSONBody struct {
 	// Config The new configuration. It replaces the current one: unset properties
-	//  take their default, not their current value.
+	//  take their default, not their current value. When unset, the
+	//  configuration does not change.
 	Config *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+
+	// Name The new agent name. It has the same rules as the name in
+	//  `CreateBuilderAgent`. When unset, the name does not change.
+	Name *string `json:"name,omitempty"`
+}
+
+// BuilderAgentServiceGetBuilderAgentCodeURLParams defines parameters for BuilderAgentServiceGetBuilderAgentCodeURL.
+type BuilderAgentServiceGetBuilderAgentCodeURLParams struct {
+	// VersionId The version whose agent code to download. When empty, the current
+	//  version.
+	VersionId *string `form:"versionId,omitempty" json:"versionId,omitempty"`
+
+	// ExpirySeconds The time that the URL stays valid, in seconds. Defaults to 900 (15
+	//  minutes) when unset or 0. The API clamps a larger value to 900, with
+	//  no error. `expiresAt` gives the expiry that the API granted.
+	ExpirySeconds *int `form:"expirySeconds,omitempty" json:"expirySeconds,omitempty"`
+}
+
+// BuilderAgentServiceListBuilderAgentVersionsParams defines parameters for BuilderAgentServiceListBuilderAgentVersions.
+type BuilderAgentServiceListBuilderAgentVersionsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // BuilderAgentServiceDeployBuilderAgentJSONBody defines parameters for BuilderAgentServiceDeployBuilderAgent.
@@ -9250,6 +9321,7 @@ type ClientInterface interface {
 	//  problem, up to 100, which names a field, such as
 	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
 	//  problems gets one last violation for `config` that says how many more.
+	//  `********` is not a valid header value: send the value itself.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -9266,6 +9338,7 @@ type ClientInterface interface {
 	//  problem, up to 100, which names a field, such as
 	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
 	//  problems gets one last violation for `config` that says how many more.
+	//  `********` is not a valid header value: send the value itself.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -9282,17 +9355,23 @@ type ClientInterface interface {
 	// BuilderAgentServiceGetBuilderAgent GetBuilderAgent
 	//
 	// Returns a builder agent with its current configuration and its deployment
-	//  status.
+	//  status. A `READ` member reads `********` in place of each header value.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
 	BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
 	//
-	// Replaces the configuration of a builder agent. Each update makes a new
-	//  version. The running agent does not change until you deploy again. A
-	//  configuration that is not valid fails as it does in
-	//  `CreateBuilderAgent`.
+	// Changes the configuration of a builder agent, its name, or both. A new
+	//  configuration makes a new version. A new name does not. The running agent
+	//  does not change until you deploy again. Until then, it keeps the old
+	//  configuration and registers under the old name. After that deploy, a
+	//  dispatch or a SIP dispatch rule that uses the old name no longer reaches
+	//  it. A request with neither `config` nor `name` fails with
+	//  `InvalidArgument`. A name that another builder agent of the project has
+	//  fails with `AlreadyExists`. A configuration that is not valid fails as it
+	//  does in `CreateBuilderAgent`, which includes `********` as a header
+	//  value.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -9301,15 +9380,45 @@ type ClientInterface interface {
 
 	// BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
 	//
-	// Replaces the configuration of a builder agent. Each update makes a new
-	//  version. The running agent does not change until you deploy again. A
-	//  configuration that is not valid fails as it does in
-	//  `CreateBuilderAgent`.
+	// Changes the configuration of a builder agent, its name, or both. A new
+	//  configuration makes a new version. A new name does not. The running agent
+	//  does not change until you deploy again. Until then, it keeps the old
+	//  configuration and registers under the old name. After that deploy, a
+	//  dispatch or a SIP dispatch rule that uses the old name no longer reaches
+	//  it. A request with neither `config` nor `name` fails with
+	//  `InvalidArgument`. A name that another builder agent of the project has
+	//  fails with `AlreadyExists`. A configuration that is not valid fails as it
+	//  does in `CreateBuilderAgent`, which includes `********` as a header
+	//  value.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
 	BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceGetBuilderAgentCodeURL GetBuilderAgentCodeURL
+	//
+	// Returns a short-lived URL that downloads the agent code of a builder
+	//  agent version as a zip file. The zip holds `src/agent.py`,
+	//  `pyproject.toml`, `.env.example`, a `Dockerfile`, and the project docs,
+	//  so that you can run and change the agent yourself. The URL needs no
+	//  credentials and is valid until `expiresAt`. The agent code holds every
+	//  header value, so the call requires the `WRITE` role. A version whose
+	//  configuration can't make agent code returns `FailedPrecondition`.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId}/code-url (the `BuilderAgentServiceGetBuilderAgentCodeURL` operationId).
+	BuilderAgentServiceGetBuilderAgentCodeURL(ctx context.Context, projectId string, builderAgentId string, params *BuilderAgentServiceGetBuilderAgentCodeURLParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceListBuilderAgentVersions ListBuilderAgentVersions
+	//
+	// Lists the versions of a builder agent, newest first, each with its
+	//  configuration. To deploy an earlier version, pass its ID to
+	//  `DeployBuilderAgent`. To make its configuration current again, pass the
+	//  configuration to `UpdateBuilderAgent`. A `READ` member reads `********`
+	//  in place of each header value.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId}/versions (the `BuilderAgentServiceListBuilderAgentVersions` operationId).
+	BuilderAgentServiceListBuilderAgentVersions(ctx context.Context, projectId string, builderAgentId string, params *BuilderAgentServiceListBuilderAgentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
 	//
@@ -10853,6 +10962,7 @@ func (c *Client) BuilderAgentServiceListBuilderAgents(ctx context.Context, proje
 //	problem, up to 100, which names a field, such as
 //	`config.httpTools[0].url`, and what is wrong with it. A config with more
 //	problems gets one last violation for `config` that says how many more.
+//	`********` is not a valid header value: send the value itself.
 //
 // Takes any type of body and a specified content type.
 //
@@ -10880,6 +10990,7 @@ func (c *Client) BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Conte
 //	problem, up to 100, which names a field, such as
 //	`config.httpTools[0].url`, and what is wrong with it. A config with more
 //	problems gets one last violation for `config` that says how many more.
+//	`********` is not a valid header value: send the value itself.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -10917,7 +11028,7 @@ func (c *Client) BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, proj
 //
 // Returns a builder agent with its current configuration and its deployment
 //
-//	status.
+//	status. A `READ` member reads `********` in place of each header value.
 //
 // Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
 func (c *Client) BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -10934,11 +11045,17 @@ func (c *Client) BuilderAgentServiceGetBuilderAgent(ctx context.Context, project
 
 // BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
 //
-// Replaces the configuration of a builder agent. Each update makes a new
+// Changes the configuration of a builder agent, its name, or both. A new
 //
-//	version. The running agent does not change until you deploy again. A
-//	configuration that is not valid fails as it does in
-//	`CreateBuilderAgent`.
+//	configuration makes a new version. A new name does not. The running agent
+//	does not change until you deploy again. Until then, it keeps the old
+//	configuration and registers under the old name. After that deploy, a
+//	dispatch or a SIP dispatch rule that uses the old name no longer reaches
+//	it. A request with neither `config` nor `name` fails with
+//	`InvalidArgument`. A name that another builder agent of the project has
+//	fails with `AlreadyExists`. A configuration that is not valid fails as it
+//	does in `CreateBuilderAgent`, which includes `********` as a header
+//	value.
 //
 // Takes any type of body and a specified content type.
 //
@@ -10957,17 +11074,69 @@ func (c *Client) BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Conte
 
 // BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
 //
-// Replaces the configuration of a builder agent. Each update makes a new
+// Changes the configuration of a builder agent, its name, or both. A new
 //
-//	version. The running agent does not change until you deploy again. A
-//	configuration that is not valid fails as it does in
-//	`CreateBuilderAgent`.
+//	configuration makes a new version. A new name does not. The running agent
+//	does not change until you deploy again. Until then, it keeps the old
+//	configuration and registers under the old name. After that deploy, a
+//	dispatch or a SIP dispatch rule that uses the old name no longer reaches
+//	it. A request with neither `config` nor `name` fails with
+//	`InvalidArgument`. A name that another builder agent of the project has
+//	fails with `AlreadyExists`. A configuration that is not valid fails as it
+//	does in `CreateBuilderAgent`, which includes `********` as a header
+//	value.
 //
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
 func (c *Client) BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBuilderAgentServiceUpdateBuilderAgentRequest(c.Server, projectId, builderAgentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceGetBuilderAgentCodeURL GetBuilderAgentCodeURL
+//
+// Returns a short-lived URL that downloads the agent code of a builder
+//
+//	agent version as a zip file. The zip holds `src/agent.py`,
+//	`pyproject.toml`, `.env.example`, a `Dockerfile`, and the project docs,
+//	so that you can run and change the agent yourself. The URL needs no
+//	credentials and is valid until `expiresAt`. The agent code holds every
+//	header value, so the call requires the `WRITE` role. A version whose
+//	configuration can't make agent code returns `FailedPrecondition`.
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId}/code-url (the `BuilderAgentServiceGetBuilderAgentCodeURL` operationId).
+func (c *Client) BuilderAgentServiceGetBuilderAgentCodeURL(ctx context.Context, projectId string, builderAgentId string, params *BuilderAgentServiceGetBuilderAgentCodeURLParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceGetBuilderAgentCodeURLRequest(c.Server, projectId, builderAgentId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceListBuilderAgentVersions ListBuilderAgentVersions
+//
+// Lists the versions of a builder agent, newest first, each with its
+//
+//	configuration. To deploy an earlier version, pass its ID to
+//	`DeployBuilderAgent`. To make its configuration current again, pass the
+//	configuration to `UpdateBuilderAgent`. A `READ` member reads `********`
+//	in place of each header value.
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId}/versions (the `BuilderAgentServiceListBuilderAgentVersions` operationId).
+func (c *Client) BuilderAgentServiceListBuilderAgentVersions(ctx context.Context, projectId string, builderAgentId string, params *BuilderAgentServiceListBuilderAgentVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceListBuilderAgentVersionsRequest(c.Server, projectId, builderAgentId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -14022,6 +14191,166 @@ func NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server string, proj
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceGetBuilderAgentCodeURLRequest constructs an http.Request for the BuilderAgentServiceGetBuilderAgentCodeURL method
+func NewBuilderAgentServiceGetBuilderAgentCodeURLRequest(server string, projectId string, builderAgentId string, params *BuilderAgentServiceGetBuilderAgentCodeURLParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s/code-url", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.VersionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "versionId", *params.VersionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ExpirySeconds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "expirySeconds", *params.ExpirySeconds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceListBuilderAgentVersionsRequest constructs an http.Request for the BuilderAgentServiceListBuilderAgentVersions method
+func NewBuilderAgentServiceListBuilderAgentVersionsRequest(server string, projectId string, builderAgentId string, params *BuilderAgentServiceListBuilderAgentVersionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s/versions", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -19098,6 +19427,7 @@ type ClientWithResponsesInterface interface {
 	//  problem, up to 100, which names a field, such as
 	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
 	//  problems gets one last violation for `config` that says how many more.
+	//  `********` is not a valid header value: send the value itself.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -19114,6 +19444,7 @@ type ClientWithResponsesInterface interface {
 	//  problem, up to 100, which names a field, such as
 	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
 	//  problems gets one last violation for `config` that says how many more.
+	//  `********` is not a valid header value: send the value itself.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -19132,7 +19463,7 @@ type ClientWithResponsesInterface interface {
 	// BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
 	//
 	// Returns a builder agent with its current configuration and its deployment
-	//  status.
+	//  status. A `READ` member reads `********` in place of each header value.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -19141,10 +19472,16 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
 	//
-	// Replaces the configuration of a builder agent. Each update makes a new
-	//  version. The running agent does not change until you deploy again. A
-	//  configuration that is not valid fails as it does in
-	//  `CreateBuilderAgent`.
+	// Changes the configuration of a builder agent, its name, or both. A new
+	//  configuration makes a new version. A new name does not. The running agent
+	//  does not change until you deploy again. Until then, it keeps the old
+	//  configuration and registers under the old name. After that deploy, a
+	//  dispatch or a SIP dispatch rule that uses the old name no longer reaches
+	//  it. A request with neither `config` nor `name` fails with
+	//  `InvalidArgument`. A name that another builder agent of the project has
+	//  fails with `AlreadyExists`. A configuration that is not valid fails as it
+	//  does in `CreateBuilderAgent`, which includes `********` as a header
+	//  value.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -19153,15 +19490,49 @@ type ClientWithResponsesInterface interface {
 
 	// BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
 	//
-	// Replaces the configuration of a builder agent. Each update makes a new
-	//  version. The running agent does not change until you deploy again. A
-	//  configuration that is not valid fails as it does in
-	//  `CreateBuilderAgent`.
+	// Changes the configuration of a builder agent, its name, or both. A new
+	//  configuration makes a new version. A new name does not. The running agent
+	//  does not change until you deploy again. Until then, it keeps the old
+	//  configuration and registers under the old name. After that deploy, a
+	//  dispatch or a SIP dispatch rule that uses the old name no longer reaches
+	//  it. A request with neither `config` nor `name` fails with
+	//  `InvalidArgument`. A name that another builder agent of the project has
+	//  fails with `AlreadyExists`. A configuration that is not valid fails as it
+	//  does in `CreateBuilderAgent`, which includes `********` as a header
+	//  value.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
 	BuilderAgentServiceUpdateBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error)
+
+	// BuilderAgentServiceGetBuilderAgentCodeURLWithResponse GetBuilderAgentCodeURL
+	//
+	// Returns a short-lived URL that downloads the agent code of a builder
+	//  agent version as a zip file. The zip holds `src/agent.py`,
+	//  `pyproject.toml`, `.env.example`, a `Dockerfile`, and the project docs,
+	//  so that you can run and change the agent yourself. The URL needs no
+	//  credentials and is valid until `expiresAt`. The agent code holds every
+	//  header value, so the call requires the `WRITE` role. A version whose
+	//  configuration can't make agent code returns `FailedPrecondition`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId}/code-url (the `BuilderAgentServiceGetBuilderAgentCodeURL` operationId).
+	BuilderAgentServiceGetBuilderAgentCodeURLWithResponse(ctx context.Context, projectId string, builderAgentId string, params *BuilderAgentServiceGetBuilderAgentCodeURLParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceGetBuilderAgentCodeURLResponse, error)
+
+	// BuilderAgentServiceListBuilderAgentVersionsWithResponse ListBuilderAgentVersions
+	//
+	// Lists the versions of a builder agent, newest first, each with its
+	//  configuration. To deploy an earlier version, pass its ID to
+	//  `DeployBuilderAgent`. To make its configuration current again, pass the
+	//  configuration to `UpdateBuilderAgent`. A `READ` member reads `********`
+	//  in place of each header value.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId}/versions (the `BuilderAgentServiceListBuilderAgentVersions` operationId).
+	BuilderAgentServiceListBuilderAgentVersionsWithResponse(ctx context.Context, projectId string, builderAgentId string, params *BuilderAgentServiceListBuilderAgentVersionsParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceListBuilderAgentVersionsResponse, error)
 
 	// BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
 	//
@@ -21100,6 +21471,102 @@ func (r BuilderAgentServiceUpdateBuilderAgentResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r BuilderAgentServiceUpdateBuilderAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BuilderAgentServiceGetBuilderAgentCodeURLResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsGetCodeURLResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BuilderAgentServiceGetBuilderAgentCodeURLResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsGetCodeURLResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BuilderAgentServiceGetBuilderAgentCodeURLResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BuilderAgentServiceGetBuilderAgentCodeURLResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BuilderAgentServiceGetBuilderAgentCodeURLResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BuilderAgentServiceGetBuilderAgentCodeURLResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BuilderAgentServiceGetBuilderAgentCodeURLResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BuilderAgentServiceListBuilderAgentVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentVersionsListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BuilderAgentServiceListBuilderAgentVersionsResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentVersionsListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BuilderAgentServiceListBuilderAgentVersionsResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BuilderAgentServiceListBuilderAgentVersionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BuilderAgentServiceListBuilderAgentVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BuilderAgentServiceListBuilderAgentVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BuilderAgentServiceListBuilderAgentVersionsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -25289,6 +25756,7 @@ func (c *ClientWithResponses) BuilderAgentServiceListBuilderAgentsWithResponse(c
 //	problem, up to 100, which names a field, such as
 //	`config.httpTools[0].url`, and what is wrong with it. A config with more
 //	problems gets one last violation for `config` that says how many more.
+//	`********` is not a valid header value: send the value itself.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -25312,6 +25780,7 @@ func (c *ClientWithResponses) BuilderAgentServiceCreateBuilderAgentWithBodyWithR
 //	problem, up to 100, which names a field, such as
 //	`config.httpTools[0].url`, and what is wrong with it. A config with more
 //	problems gets one last violation for `config` that says how many more.
+//	`********` is not a valid header value: send the value itself.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -25343,7 +25812,7 @@ func (c *ClientWithResponses) BuilderAgentServiceDeleteBuilderAgentWithResponse(
 //
 // Returns a builder agent with its current configuration and its deployment
 //
-//	status.
+//	status. A `READ` member reads `********` in place of each header value.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -25358,11 +25827,17 @@ func (c *ClientWithResponses) BuilderAgentServiceGetBuilderAgentWithResponse(ctx
 
 // BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
 //
-// Replaces the configuration of a builder agent. Each update makes a new
+// Changes the configuration of a builder agent, its name, or both. A new
 //
-//	version. The running agent does not change until you deploy again. A
-//	configuration that is not valid fails as it does in
-//	`CreateBuilderAgent`.
+//	configuration makes a new version. A new name does not. The running agent
+//	does not change until you deploy again. Until then, it keeps the old
+//	configuration and registers under the old name. After that deploy, a
+//	dispatch or a SIP dispatch rule that uses the old name no longer reaches
+//	it. A request with neither `config` nor `name` fails with
+//	`InvalidArgument`. A name that another builder agent of the project has
+//	fails with `AlreadyExists`. A configuration that is not valid fails as it
+//	does in `CreateBuilderAgent`, which includes `********` as a header
+//	value.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -25377,11 +25852,17 @@ func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithBodyWithR
 
 // BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
 //
-// Replaces the configuration of a builder agent. Each update makes a new
+// Changes the configuration of a builder agent, its name, or both. A new
 //
-//	version. The running agent does not change until you deploy again. A
-//	configuration that is not valid fails as it does in
-//	`CreateBuilderAgent`.
+//	configuration makes a new version. A new name does not. The running agent
+//	does not change until you deploy again. Until then, it keeps the old
+//	configuration and registers under the old name. After that deploy, a
+//	dispatch or a SIP dispatch rule that uses the old name no longer reaches
+//	it. A request with neither `config` nor `name` fails with
+//	`InvalidArgument`. A name that another builder agent of the project has
+//	fails with `AlreadyExists`. A configuration that is not valid fails as it
+//	does in `CreateBuilderAgent`, which includes `********` as a header
+//	value.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -25392,6 +25873,48 @@ func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithResponse(
 		return nil, err
 	}
 	return ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceGetBuilderAgentCodeURLWithResponse GetBuilderAgentCodeURL
+//
+// Returns a short-lived URL that downloads the agent code of a builder
+//
+//	agent version as a zip file. The zip holds `src/agent.py`,
+//	`pyproject.toml`, `.env.example`, a `Dockerfile`, and the project docs,
+//	so that you can run and change the agent yourself. The URL needs no
+//	credentials and is valid until `expiresAt`. The agent code holds every
+//	header value, so the call requires the `WRITE` role. A version whose
+//	configuration can't make agent code returns `FailedPrecondition`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId}/code-url (the `BuilderAgentServiceGetBuilderAgentCodeURL` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceGetBuilderAgentCodeURLWithResponse(ctx context.Context, projectId string, builderAgentId string, params *BuilderAgentServiceGetBuilderAgentCodeURLParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceGetBuilderAgentCodeURLResponse, error) {
+	rsp, err := c.BuilderAgentServiceGetBuilderAgentCodeURL(ctx, projectId, builderAgentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceGetBuilderAgentCodeURLResponse(rsp)
+}
+
+// BuilderAgentServiceListBuilderAgentVersionsWithResponse ListBuilderAgentVersions
+//
+// Lists the versions of a builder agent, newest first, each with its
+//
+//	configuration. To deploy an earlier version, pass its ID to
+//	`DeployBuilderAgent`. To make its configuration current again, pass the
+//	configuration to `UpdateBuilderAgent`. A `READ` member reads `********`
+//	in place of each header value.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId}/versions (the `BuilderAgentServiceListBuilderAgentVersions` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceListBuilderAgentVersionsWithResponse(ctx context.Context, projectId string, builderAgentId string, params *BuilderAgentServiceListBuilderAgentVersionsParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceListBuilderAgentVersionsResponse, error) {
+	rsp, err := c.BuilderAgentServiceListBuilderAgentVersions(ctx, projectId, builderAgentId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceListBuilderAgentVersionsResponse(rsp)
 }
 
 // BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
@@ -27901,6 +28424,72 @@ func ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp *http.Response) (*Bu
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBuilderAgentServiceGetBuilderAgentCodeURLResponse parses an HTTP response from a BuilderAgentServiceGetBuilderAgentCodeURLWithResponse call
+func ParseBuilderAgentServiceGetBuilderAgentCodeURLResponse(rsp *http.Response) (*BuilderAgentServiceGetBuilderAgentCodeURLResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BuilderAgentServiceGetBuilderAgentCodeURLResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1BuilderAgentsGetCodeURLResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBuilderAgentServiceListBuilderAgentVersionsResponse parses an HTTP response from a BuilderAgentServiceListBuilderAgentVersionsWithResponse call
+func ParseBuilderAgentServiceListBuilderAgentVersionsResponse(rsp *http.Response) (*BuilderAgentServiceListBuilderAgentVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BuilderAgentServiceListBuilderAgentVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiAgentsV1BuilderAgentVersionsListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
