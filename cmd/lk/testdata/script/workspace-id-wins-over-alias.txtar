@@ -1,0 +1,24 @@
+# A workspace ID wins over another workspace's alias: ws_1's alias is ws_2,
+# and `workspace get ws_2` still gets ws_2.
+respond GET http://publicapi.test/v0/workspaces/ws_2 200 '{"workspace":{"id":"ws_2","name":"Two"}}'
+exec lk --user-auth workspace get ws_2
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    workspaces:
+      - workspace_id: ws_1
+        name: one
+        alias: ws_2
+      - workspace_id: ws_2
+        name: Two
+        alias: two
+-- want-requests --
+GET http://publicapi.test/v0/workspaces/ws_2 bearer=st_1

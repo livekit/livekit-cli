@@ -1,0 +1,21 @@
+# Under --user-auth, the Public API refuses a call placed with --wait that
+# rings longer than 75s. lk refuses a longer --timeout before it sends any
+# request, so no call is placed and no agent is dispatched.
+! exec lk --user-auth sip participant create --trunk ST_out --to +15550100 --room support --wait --timeout 2m
+stderr 'under --user-auth, --wait waits at most 1m15s for an answer: set --timeout to 1m15s or less'
+
+requests
+! stdout .
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
