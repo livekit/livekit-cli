@@ -36,7 +36,7 @@ import (
 // DefaultBaseURL is the base URL of the LiveKit Public API. Override it (e.g. to
 // http://localhost:8000) for local development. The generated operation paths
 // already include the /v0 prefix, so this is the host root.
-const DefaultBaseURL = "https://beta-api.livekit.cloud"
+const DefaultBaseURL = "https://api.livekit.cloud"
 
 // Client is the CLI's user-authenticated Public API client.
 type Client struct {

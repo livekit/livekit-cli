@@ -141,7 +141,7 @@ func TestDevUnderUserAuthGate(t *testing.T) {
 }
 
 func TestRequireUserSessionAPIURL(t *testing.T) {
-	const staging = "https://beta-api.staging.livekit.cloud"
+	const staging = "https://api.staging.livekit.cloud"
 	setHome(t, t.TempDir())
 	conf := &config.CLIConfig{
 		DefaultUser: "usr_stg",
@@ -239,7 +239,7 @@ func TestRequireUserSessionAPIURL(t *testing.T) {
 // `lk cloud auth` runs the API-key flow) and carry --public-api-url when
 // the session belongs to a non-default API.
 func TestSignInHint(t *testing.T) {
-	const staging = "https://beta-api.staging.livekit.cloud"
+	const staging = "https://api.staging.livekit.cloud"
 	prev := publicAPIURL
 	t.Cleanup(func() { publicAPIURL = prev })
 

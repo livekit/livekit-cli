@@ -248,9 +248,17 @@ func sameUser(a, b UserConfig) bool {
 	return a.Email != "" && strings.EqualFold(a.Email, b.Email)
 }
 
+// legacyAPIURLs maps the beta-api hosts that served the Public API before it
+// moved to api to their new hosts. Both hosts serve the same API, so a session
+// issued by one is valid on the other.
+var legacyAPIURLs = map[string]string{
+	"https://beta-api.livekit.cloud":         public.DefaultBaseURL,
+	"https://beta-api.staging.livekit.cloud": "https://api.staging.livekit.cloud",
+}
+
 // SameAPIURL reports whether two Public API base URLs refer to the same API.
-// Empty means the default Public API, and trailing slashes and case are
-// ignored.
+// Empty means the default Public API, a beta-api host means its api host, and
+// trailing slashes and case are ignored.
 func SameAPIURL(a, b string) bool {
 	return strings.EqualFold(normalizeAPIURL(a), normalizeAPIURL(b))
 }
@@ -259,6 +267,15 @@ func normalizeAPIURL(u string) string {
 	u = strings.TrimRight(strings.TrimSpace(u), "/")
 	if u == "" {
 		return public.DefaultBaseURL
+	}
+	return migrateAPIURL(u)
+}
+
+// migrateAPIURL returns the api host of a user stored with a beta-api host,
+// so that the CLI calls the new host. It leaves every other URL as it is.
+func migrateAPIURL(u string) string {
+	if moved, ok := legacyAPIURLs[strings.ToLower(strings.TrimRight(strings.TrimSpace(u), "/"))]; ok {
+		return moved
 	}
 	return u
 }
@@ -386,6 +403,9 @@ func LoadOrCreate() (*CLIConfig, error) {
 	err = yaml.Unmarshal(content, c)
 	if err != nil {
 		return nil, err
+	}
+	for i := range c.Users {
+		c.Users[i].APIURL = migrateAPIURL(c.Users[i].APIURL)
 	}
 	c.hasPersisted = true
 
