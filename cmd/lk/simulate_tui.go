@@ -427,10 +427,9 @@ type agentReadyMsg struct {
 }
 
 type simulationCreatedMsg struct {
-	runID     string
-	presigned *livekit.PresignedPostRequest
-	elapsed   time.Duration
-	err       error
+	resp    *livekit.SimulationRun_Create_Response
+	elapsed time.Duration
+	err     error
 }
 
 type sourceUploadedMsg struct {
@@ -565,8 +564,8 @@ func (m *simulateModel) waitAgentReadyCmd() tea.Cmd {
 func (m *simulateModel) createSimulationCmd() tea.Cmd {
 	return func() tea.Msg {
 		start := time.Now()
-		runID, presigned, err := createSimulationRun(m.setupCtx, m.config)
-		return simulationCreatedMsg{runID: runID, presigned: presigned, elapsed: time.Since(start), err: err}
+		resp, err := createSimulationRun(m.setupCtx, m.config)
+		return simulationCreatedMsg{resp: resp, elapsed: time.Since(start), err: err}
 	}
 }
 
@@ -670,11 +669,11 @@ func (m *simulateModel) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.failSetupStep(msg.err)
 			return m, nil
 		}
-		m.runID = msg.runID
+		m.runID = msg.resp.SimulationRunId
 		m.reporter.SimulationCreated(msg.elapsed)
 		if m.config.mode == modeGenerateFromSource {
 			m.advanceSetupStep(msg.elapsed)
-			return m, m.uploadSourceCmd(msg.presigned)
+			return m, m.uploadSourceCmd(msg.resp.PresignedPostRequest)
 		}
 		m.completeSetup(msg.elapsed)
 		return m, tea.Batch(m.pollSimulation(), m.waitSubprocess())

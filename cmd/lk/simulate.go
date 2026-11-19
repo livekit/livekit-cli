@@ -867,7 +867,7 @@ func ciFromEnv() *livekit.SimulationRun_CI {
 	}
 }
 
-func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livekit.PresignedPostRequest, error) {
+func createSimulationRun(ctx context.Context, c *simulateConfig) (*livekit.SimulationRun_Create_Response, error) {
 	req := &livekit.SimulationRun_Create_Request{
 		AgentName:            c.agentName,
 		Deployment:           c.deployment,
@@ -893,9 +893,9 @@ func createSimulationRun(ctx context.Context, c *simulateConfig) (string, *livek
 
 	resp, err := c.client.CreateSimulationRun(ctx, req)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create simulation: %w", err)
+		return nil, fmt.Errorf("failed to create simulation: %w", err)
 	}
-	return resp.SimulationRunId, resp.PresignedPostRequest, nil
+	return resp, nil
 }
 
 func uploadSource(ctx context.Context, client *lksdk.AgentSimulationClient, runID string, presigned *livekit.PresignedPostRequest, projectDir, entrypoint string) error {
