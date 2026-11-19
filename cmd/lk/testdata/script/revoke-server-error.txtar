@@ -1,0 +1,24 @@
+# When the Public API fails the revoke, the session may still be valid, and
+# the stored token is the only way to revoke it. So lk fails and keeps the
+# user signed in.
+respond DELETE http://publicapi.test/v0/users/me/session-token 500 '{"code":13,"message":"internal error","details":[]}'
+cp home/.livekit/cli-config.yaml before.yaml
+! exec lk --user-auth cloud auth --revoke
+! stdout .
+cmp stderr want-stderr
+requests
+cmp stdout want-requests
+cmp home/.livekit/cli-config.yaml before.yaml
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_live
+    api_url: http://publicapi.test
+-- want-stderr --
+Using user [dev@example.com] on [http://publicapi.test]
+couldn't revoke the session for dev@example.com, which is still signed in: internal error
+-- want-requests --
+DELETE http://publicapi.test/v0/users/me/session-token bearer=st_live

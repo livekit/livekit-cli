@@ -1,0 +1,39 @@
+# One email signed in to one API under two user ids. --revoke --user picks
+# the second entry: lk revokes that entry's session and removes that entry,
+# and the first entry keeps its session and stays the default user.
+respond DELETE http://publicapi.test/v0/users/me/session-token 200 '{}'
+exec lk --user-auth cloud auth --revoke --user u_2
+! stdout .
+stderr '^Using user \[dev@example\.com\] on \[http://publicapi\.test\]$'
+stderr '^Signed out dev@example\.com$'
+stderr '^Saved CLI config to \[.*cli-config\.yaml\]$'
+requests
+cmp stdout want-requests
+cmp home/.livekit/cli-config.yaml want-config
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_one
+    api_url: http://publicapi.test
+  - id: u_2
+    email: dev@example.com
+    session_token: st_two
+    api_url: http://publicapi.test
+-- want-requests --
+DELETE http://publicapi.test/v0/users/me/session-token bearer=st_two
+-- want-config --
+default_project: ""
+default_user: u_1
+projects: []
+users:
+    - id: u_1
+      name: ""
+      email: dev@example.com
+      session_token: st_one
+      session_expiry: 0
+      api_url: http://publicapi.test
+device_name: ""
+theme: ""

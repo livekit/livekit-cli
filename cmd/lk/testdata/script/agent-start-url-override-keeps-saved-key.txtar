@@ -1,0 +1,48 @@
+# LIVEKIT_URL in the shell points at a server lk knows no project for (a local
+# dev server here, which would 401 any cloud key). The agent connects there
+# with the project's saved key: no key is created, and the project's saved URL
+# isn't changed.
+[!exec:node] skip 'needs node to run the agent'
+env LIVEKIT_URL=ws://local.test
+respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one","url":"ws://one.test"}]}'
+
+exec lk --user-auth agent start
+stdout '^agent ws://local.test APIone secretone$'
+! stderr 'Created API key'
+grep 'url: ws://one.test' home/.livekit/cli-config.yaml
+! grep 'local.test' home/.livekit/cli-config.yaml
+
+exec lk --user-auth agent start
+stdout '^agent ws://local.test APIone secretone$'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+GET http://publicapi.test/v0/projects bearer=st_1
+GET http://publicapi.test/v0/projects bearer=st_1

@@ -20,16 +20,18 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
-// ListProjectMembers returns the members of a project.
+// ListProjectMembers returns every member of a project, reading each page.
 func (c *Client) ListProjectMembers(ctx context.Context, projectID string) ([]oapi.LivekitPublicapiProjectsV1ProjectMember, error) {
-	resp, err := c.gen.ProjectServiceListMembersWithResponse(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 == nil {
-		return nil, responseError(resp.StatusCode(), resp.Body)
-	}
-	return items(resp.JSON200.Items), nil
+	return allPages(func(cursor *string) ([]oapi.LivekitPublicapiProjectsV1ProjectMember, *oapi.LivekitPublicapiCommonV1PageInfo, error) {
+		resp, err := c.gen.ProjectServiceListMembersWithResponse(ctx, projectID, &oapi.ProjectServiceListMembersParams{PageCursor: cursor})
+		if err != nil {
+			return nil, nil, err
+		}
+		if resp.JSON200 == nil {
+			return nil, nil, responseError(resp.StatusCode(), resp.Body)
+		}
+		return items(resp.JSON200.Items), resp.JSON200.PageInfo, nil
+	})
 }
 
 // GetProjectMember returns a single project member by user id.

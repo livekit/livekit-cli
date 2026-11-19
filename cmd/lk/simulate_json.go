@@ -23,7 +23,6 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -89,7 +88,7 @@ func writeSimulationRunJSON(w io.Writer, run *livekit.SimulationRun) error {
 // complete export or nothing; an unknown run ID surfaces the API's not-found
 // error.
 func exportSimulationRunJSON(ctx context.Context, pc *config.ProjectConfig, runID string) error {
-	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+	client := newSimulationClient(pc)
 
 	fetchCtx, cancel := context.WithTimeout(ctx, simulationAPITimeout)
 	defer cancel()

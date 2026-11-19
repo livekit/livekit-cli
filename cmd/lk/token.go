@@ -149,6 +149,10 @@ var (
 							Name:  "job-metadata",
 							Usage: "Metadata attached to job dispatched to the agent (ctx.job.metadata)",
 						},
+						&cli.StringFlag{
+							Name:  "thread-id",
+							Usage: "Agent thread the dispatched call reads and writes",
+						},
 					},
 					MutuallyExclusiveFlags: tokenOutputMutuallyExclusiveFlags,
 				},
@@ -431,6 +435,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 	agent := c.String("agent")
 	agentDeployment := c.String("deployment")
 	jobMetadata := c.String("job-metadata")
+	threadID := c.String("thread-id")
 	if grant.RoomJoin {
 		if agent != "" {
 			at.SetRoomConfig(&livekit.RoomConfiguration{
@@ -439,6 +444,7 @@ func createToken(ctx context.Context, c *cli.Command) error {
 						AgentName:  agent,
 						Deployment: agentDeployment,
 						Metadata:   jobMetadata,
+						ThreadId:   threadID,
 					},
 				},
 			})

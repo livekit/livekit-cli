@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
+
+	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
 func testDocsTree() *cli.Command {
@@ -54,6 +57,7 @@ func testDocsTree() *cli.Command {
 					},
 					{Name: "logs", Aliases: []string{"tail"}, Usage: "Stream logs"},
 					{Name: "secret", Hidden: true},
+					{Name: "user-auth-only", Usage: "Only exists under --user-auth", Hidden: true, Metadata: userAuthOnly},
 				},
 			},
 		},
@@ -102,6 +106,25 @@ func TestGenerateDocsArgs(t *testing.T) {
 
 	require.NoError(t, testDocsTree().Run(context.Background(), []string{"lk", "generate-docs", "--list"}))
 	require.NoError(t, testDocsTree().Run(context.Background(), []string{"lk", "generate-docs", "agent", "deploy"}))
+}
+
+func TestGenerateDocsUserAuth(t *testing.T) {
+	list := func(args ...string) string {
+		var buf strings.Builder
+		prev := out
+		out = util.NewPrinter(&buf, io.Discard, false)
+		t.Cleanup(func() { out = prev })
+		root := testDocsTree()
+		t.Cleanup(func() { setUserAuthHidden(root, true) })
+		require.NoError(t, root.Run(context.Background(), append([]string{"lk"}, args...)))
+		return buf.String()
+	}
+	// User-auth commands are documented without any flag or sign-in, but other
+	// hidden commands stay out.
+	paths := list("generate-docs", "--list")
+	assert.Contains(t, paths, "agent user-auth-only")
+	assert.NotContains(t, paths, "agent secret")
+	list("generate-docs", "agent", "user-auth-only")
 }
 
 func TestShortDuration(t *testing.T) {

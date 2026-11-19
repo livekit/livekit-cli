@@ -1,0 +1,119 @@
+# Without --user-auth, lk analytics session list and get read sessions with
+# an API key from the dashboard's analytics endpoint, which is deprecated.
+# They still work: stdout is what it was, and a note on stderr says how to
+# move to --user-auth. The note is a warning, so --quiet doesn't hide it.
+# Under --user-auth there is no note.
+respond GET http://cloudapi.test/api/project/p_1/sessions 200 '{"sessions":[{"sessionId":"RM_1","roomName":"demo","createdAt":"2026-10-07T11:00:00Z","endedAt":"2026-10-07T11:05:00Z","numParticipants":2,"numActiveParticipants":0}]}'
+respond GET http://cloudapi.test/api/project/p_1/sessions/RM_1 200 '{"roomId":"RM_1","roomName":"demo","startTime":"2026-10-07T11:00:00Z","endTime":"2026-10-07T11:05:00Z","numParticipants":1,"participants":[{"participantIdentity":"agent","joinedAt":"2026-10-07T11:00:01Z","leftAt":"2026-10-07T11:05:00Z","region":"us-east","connectionType":"udp","sdkVersion":"1.2.3"}]}'
+
+exec lk --server-url http://cloudapi.test analytics session list --experimental
+cmp stdout want-list
+cmp stderr want-note
+
+exec lk --server-url http://cloudapi.test analytics session list --experimental --json
+cmp stdout want-list-json
+cmp stderr want-note
+
+exec lk --server-url http://cloudapi.test analytics session get RM_1 --experimental
+cmp stdout want-get
+cmp stderr want-note
+
+exec lk --server-url http://cloudapi.test --quiet analytics session list --experimental
+cmp stdout want-list
+cmp stderr want-note-quiet
+
+exec lk --server-url http://cloudapi.test --quiet analytics session get RM_1 --experimental
+cmp stdout want-get
+cmp stderr want-note-quiet
+
+# The Public API path, the replacement, prints no note.
+respond GET http://publicapi.test/v0/projects/p_1/sessions 200 '{"items":[{"sessionId":"RM_1","roomName":"demo","startedAt":"2026-10-07T11:00:00Z","endedAt":"2026-10-07T11:05:00Z","numParticipants":2,"status":"SESSION_STATUS_CLOSED","hasDetailData":true}]}'
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1 200 '{"session":{"sessionId":"RM_1","roomName":"demo","startedAt":"2026-10-07T11:00:00Z","endedAt":"2026-10-07T11:05:00Z","numParticipants":2,"status":"SESSION_STATUS_CLOSED","hasDetailData":true},"detail":{"participants":[{"participantIdentity":"agent","joinedAt":"2026-10-07T11:00:01Z","leftAt":"2026-10-07T11:05:00Z"}],"participantsPage":{}}}'
+
+exec lk --user-auth analytics session list
+stdout 'RM_1'
+cmp stderr want-user-auth-stderr
+
+exec lk --user-auth analytics session get RM_1
+stdout 'RM_1'
+cmp stderr want-user-auth-stderr
+
+# Pointed at another Public API, the note signs in to that one.
+env LIVEKIT_API_URL=http://staging.test
+exec lk --server-url http://cloudapi.test --quiet analytics session list --experimental
+cmp stdout want-list
+cmp stderr want-note-staging
+
+# The legacy runs still call the API-key endpoint; the --user-auth runs call
+# the Public API as the user.
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+-- want-list --
+┌────────────┬──────┬──────────────────────┬──────────────────────┬──────────────┬────────┬──────────────┬───────────────┐
+│ Session ID │ Room │ Created              │ Ended                │ Participants │ Active │ Bandwidth In │ Bandwidth Out │
+├────────────┼──────┼──────────────────────┼──────────────────────┼──────────────┼────────┼──────────────┼───────────────┤
+│ RM_1       │ demo │ 2026-10-07T11:00:00Z │ 2026-10-07T11:05:00Z │ 2            │ 0      │ -            │ -             │
+└────────────┴──────┴──────────────────────┴──────────────────────┴──────────────┴────────┴──────────────┴───────────────┘
+-- want-list-json --
+{
+  "sessions": [
+    {
+      "createdAt": "2026-10-07T11:00:00Z",
+      "endedAt": "2026-10-07T11:05:00Z",
+      "numActiveParticipants": 0,
+      "numParticipants": 2,
+      "roomName": "demo",
+      "sessionId": "RM_1"
+    }
+  ]
+}
+-- want-get --
+┌────────────┬──────┬──────────────────────┬──────────────────────┬──────────────┬────────────────────┬───────────┐
+│ Session ID │ Room │ Start                │ End                  │ Participants │ Connection Minutes │ Bandwidth │
+├────────────┼──────┼──────────────────────┼──────────────────────┼──────────────┼────────────────────┼───────────┤
+│ RM_1       │ demo │ 2026-10-07T11:00:00Z │ 2026-10-07T11:05:00Z │ 1            │ -                  │ -         │
+└────────────┴──────┴──────────────────────┴──────────────────────┴──────────────┴────────────────────┴───────────┘
+┌──────────┬──────┬──────────────────────┬──────────────────────┬─────────┬────────────┬───────┐
+│ Identity │ Name │ Joined               │ Left                 │ Region  │ Connection │ SDK   │
+├──────────┼──────┼──────────────────────┼──────────────────────┼─────────┼────────────┼───────┤
+│ agent    │ -    │ 2026-10-07T11:00:01Z │ 2026-10-07T11:05:00Z │ us-east │ udp        │ 1.2.3 │
+└──────────┴──────┴──────────────────────┴──────────────────────┴─────────┴────────────┴───────┘
+-- want-note --
+API-key analytics is deprecated: sign in once with `lk cloud auth --user-auth`, then run the same command with `--user-auth`
+Using project [one]
+-- want-note-quiet --
+API-key analytics is deprecated: sign in once with `lk cloud auth --user-auth`, then run the same command with `--user-auth`
+-- want-note-staging --
+API-key analytics is deprecated: sign in once with `lk cloud auth --user-auth --public-api-url http://staging.test`, then run the same command with `--user-auth`
+-- want-user-auth-stderr --
+Using user [dev@example.com] on [http://publicapi.test]
+Using project [one]
+-- want-requests --
+GET http://cloudapi.test/api/project/p_1/sessions apikey=APIone
+GET http://cloudapi.test/api/project/p_1/sessions apikey=APIone
+GET http://cloudapi.test/api/project/p_1/sessions/RM_1 apikey=APIone
+GET http://cloudapi.test/api/project/p_1/sessions apikey=APIone
+GET http://cloudapi.test/api/project/p_1/sessions/RM_1 apikey=APIone
+GET http://publicapi.test/v0/projects/p_1/sessions bearer=st_1 project=p_1
+GET http://publicapi.test/v0/projects/p_1/sessions/RM_1 bearer=st_1 project=p_1
+GET http://cloudapi.test/api/project/p_1/sessions apikey=APIone

@@ -41,18 +41,38 @@ func TestGenerateKey(t *testing.T) {
 	assert.Equal(t, "s3cret", *key.Secret)
 }
 
-func TestListScopedKeys(t *testing.T) {
-	var path string
-	srv := jsonServer(t, http.StatusOK, `{"personalKeys":[{"apiKey":"APIme"}],"otherKeys":[{"apiKey":"APIa"},{"apiKey":"APIb"}]}`, nil, &path)
-	c, err := New(srv.URL, "tok")
-	require.NoError(t, err)
+// TestListKeys checks that the filter reaches the query: agent keys are asked
+// for explicitly either way, and an owner only when one is set.
+func TestListKeys(t *testing.T) {
+	tests := []struct {
+		name      string
+		filter    KeyFilter
+		wantQuery string
+	}{
+		{name: "every owner", filter: KeyFilter{}, wantQuery: "includeAgentKeys=false"},
+		{name: "agent keys", filter: KeyFilter{IncludeAgentKeys: true}, wantQuery: "includeAgentKeys=true"},
+		{name: "one owner", filter: KeyFilter{OwnerID: "u_me"}, wantQuery: "includeAgentKeys=false&ownerId=u_me"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var path, query string
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				path, query = r.URL.Path, r.URL.Query().Encode()
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"items":[{"apiKey":"APIme"}],"pageInfo":{"hasMore":false}}`))
+			}))
+			t.Cleanup(srv.Close)
+			c, err := New(srv.URL, "tok")
+			require.NoError(t, err)
 
-	personal, other, err := c.ListScopedKeys(context.Background(), "p_1")
-	require.NoError(t, err)
-	assert.Equal(t, "/v0/projects/p_1/scoped-keys", path)
-	require.Len(t, personal, 1)
-	assert.Equal(t, "APIme", *personal[0].ApiKey)
-	assert.Len(t, other, 2)
+			keys, err := c.ListKeys(context.Background(), "p_1", tt.filter)
+			require.NoError(t, err)
+			assert.Equal(t, "/v0/projects/p_1/keys", path)
+			assert.Equal(t, tt.wantQuery, query)
+			require.Len(t, keys, 1)
+			assert.Equal(t, "APIme", *keys[0].ApiKey)
+		})
+	}
 }
 
 func TestDeleteKeyError(t *testing.T) {

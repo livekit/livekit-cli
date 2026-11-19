@@ -574,13 +574,6 @@ func createAgentClientWithOpts(ctx context.Context, cmd *cli.Command, opts ...lo
 		}
 	}
 
-	// cloudagents' registry transport signs image pushes itself and sends them
-	// through http.DefaultTransport, out of reach of the session transport.
-	// Refuse up front, before create registers an agent.
-	if isSessionProject(project) && (cmd.String("image") != "" || cmd.String("image-tar") != "") {
-		return ctx, errors.New("deploying a prebuilt image (--image, --image-tar) is not yet supported under --user-auth")
-	}
-
 	agentsClient, err = newAgentsClient(project)
 	if err != nil {
 		return ctx, err
@@ -596,8 +589,8 @@ var starterTemplateURLs = map[string]string{
 }
 
 // newAgentsClient returns a cloud agents client for pc. For a session project
-// its requests (twirp calls and the log/build streams alike) go through an
-// HTTP client that swaps in session tokens.
+// its requests (twirp calls, the log/build streams and image pushes alike) go
+// through an HTTP client that swaps in session tokens.
 func newAgentsClient(pc *config.ProjectConfig) (*cloudagents.Client, error) {
 	opts := []cloudagents.ClientOption{cloudagents.WithProject(pc.URL, pc.APIKey, pc.APISecret)}
 	if src := sessionTokenSource(pc); src != nil {

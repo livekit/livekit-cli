@@ -43,6 +43,11 @@ const (
 	analyticsProjectSelectHint    = "Select a cloud project via --project or run `lk cloud auth`"
 )
 
+// legacyAnalyticsHelp ends the help of session list and get, the two
+// commands that still run without --user-auth.
+const legacyAnalyticsHelp = "Without --user-auth, this reads sessions with an API key and needs --experimental. " +
+	"That API-key path is deprecated: sign in once with `lk cloud auth --user-auth`, then run with --user-auth."
+
 // defaultAnalyticsWindow is how far back a session listing searches when no
 // --since, --start or cursor sets its window.
 const defaultAnalyticsWindow = 14 * 24 * time.Hour
@@ -50,6 +55,11 @@ const defaultAnalyticsWindow = 14 * 24 * time.Hour
 // defaultPageLimit is how many of a session's participants a page reads by
 // default.
 const defaultPageLimit = 50
+
+// moreCanArriveHelp ends the help of a session read whose data can still
+// arrive.
+const moreCanArriveHelp = "While the session is active, or just after it ends, more can still arrive: " +
+	"a note on stderr says so and when to read again, and --json carries the API's dataStatus."
 
 var (
 	AnalyticsCommands = []*cli.Command{
@@ -69,16 +79,18 @@ var (
 					Name:  "session",
 					Usage: "List and inspect sessions", Commands: []*cli.Command{
 						{
-							Name:   "list",
-							Usage:  "List analytics sessions",
-							Action: listAnalyticsSessions,
-							Flags:  append([]cli.Flag{jsonFlag}, analyticsSessionListFlags()...),
+							Name:        "list",
+							Usage:       "List analytics sessions",
+							Description: legacyAnalyticsHelp,
+							Action:      listAnalyticsSessions,
+							Flags:       append([]cli.Flag{jsonFlag}, analyticsSessionListFlags()...),
 						},
 						{
-							Name:      "get",
-							Usage:     "Get analytics session details by session ID",
-							ArgsUsage: "SESSION_ID",
-							Action:    getAnalyticsSession,
+							Name:        "get",
+							Usage:       "Get analytics session details by session ID",
+							Description: legacyAnalyticsHelp,
+							ArgsUsage:   "SESSION_ID",
+							Action:      getAnalyticsSession,
 							Flags: []cli.Flag{
 								jsonFlag,
 							},
@@ -108,32 +120,38 @@ var (
 								"-o also downloads the recording, straight from the project's data region, and prints where it saved it: " +
 								"to a file, replaced if it exists, or into a directory, as SESSION_ID-audio.ogg or SESSION_ID-chat-history.json, " +
 								"numbered (SESSION_ID-audio-1.ogg, ...) rather than replacing a file already there. " +
-								"Use -o . for the working directory.",
+								"Use -o . for the working directory.\n\n" +
+								"While the session is active, or just after it ends, its agent can still upload the recording. " +
+								"A recording that isn't there yet fails, saying when to read again, and -o downloads nothing; " +
+								"--json still prints the API's response, its dataStatus included.",
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(sessionRecordingOptionsFrom, fetchSessionRecording),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsRecordingFlags()...),
 						},
 						{
-							Name:      "transcript",
-							Usage:     "Print a session's transcript (requires --user-auth)",
-							ArgsUsage: "SESSION_ID",
-							Action:    sessionRead(pageOptions, fetchSessionTranscript),
-							Flags:     append([]cli.Flag{jsonFlag}, analyticsTranscriptFlags()...),
+							Name:        "transcript",
+							Usage:       "Print a session's transcript (requires --user-auth)",
+							Description: moreCanArriveHelp,
+							ArgsUsage:   "SESSION_ID",
+							Action:      sessionRead(pageOptions, fetchSessionTranscript),
+							Flags:       append([]cli.Flag{jsonFlag}, analyticsTranscriptFlags()...),
 						},
 						{
-							Name:      "logs",
-							Usage:     "Print a session's agent logs (requires --user-auth)",
-							UsageText: "lk analytics session logs SESSION_ID [--log-level LEVEL ...] [--sort-order asc|desc]",
-							ArgsUsage: "SESSION_ID",
-							Action:    sessionRead(logOptions, fetchSessionLogs),
-							Flags:     append([]cli.Flag{jsonFlag}, analyticsLogFlags()...),
+							Name:        "logs",
+							Usage:       "Print a session's agent logs (requires --user-auth)",
+							UsageText:   "lk analytics session logs SESSION_ID [--log-level LEVEL ...] [--sort-order asc|desc]",
+							Description: moreCanArriveHelp,
+							ArgsUsage:   "SESSION_ID",
+							Action:      sessionRead(logOptions, fetchSessionLogs),
+							Flags:       append([]cli.Flag{jsonFlag}, analyticsLogFlags()...),
 						},
 						{
-							Name:      "traces",
-							Usage:     "Print a session's trace spans as a tree (requires --user-auth)",
-							ArgsUsage: "SESSION_ID",
-							Action:    sessionRead(pageOptions, fetchSessionTraces),
-							Flags:     append([]cli.Flag{jsonFlag}, analyticsTraceFlags()...),
+							Name:        "traces",
+							Usage:       "Print a session's trace spans as a tree (requires --user-auth)",
+							Description: moreCanArriveHelp,
+							ArgsUsage:   "SESSION_ID",
+							Action:      sessionRead(pageOptions, fetchSessionTraces),
+							Flags:       append([]cli.Flag{jsonFlag}, analyticsTraceFlags()...),
 						},
 						{
 							Name:      "metrics",
@@ -144,7 +162,7 @@ var (
 								"its time, its metric's name, and a gauge's or sum's value or a histogram's count, sum, min and max. " +
 								"--json prints the points with their attributes and histogram buckets.\n\n" +
 								"These are the raw metrics agents emit, so they won't exactly match the dashboard's metrics panel, " +
-								"which derives its numbers from the transcript and traces.",
+								"which derives its numbers from the transcript and traces.\n\n" + moreCanArriveHelp,
 							ArgsUsage: "SESSION_ID",
 							Action:    sessionRead(metricOptions, fetchSessionMetrics),
 							Flags:     append([]cli.Flag{jsonFlag}, analyticsMetricFlags()...),
@@ -227,7 +245,7 @@ func analyticsSessionListFlags() []cli.Flag {
 		},
 		&cli.IntFlag{
 			Name:  "page",
-			Usage: "Page number (starts at 0)",
+			Usage: "Page number (starts at 0); deprecated, API-key only (--user-auth pages with --cursor)",
 		},
 		&cli.StringFlag{
 			Name:  "since",
@@ -422,6 +440,7 @@ func listAnalyticsSessions(ctx context.Context, cmd *cli.Command) error {
 	if userAuthEnabled(cmd) {
 		return listUserAnalyticsSessions(ctx, cmd)
 	}
+	printLegacyAnalyticsDeprecation()
 
 	query, err := buildAnalyticsListQuery(cmd)
 	if err != nil {
@@ -482,6 +501,7 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 	if userAuthEnabled(cmd) {
 		return getUserAnalyticsSession(ctx, cmd)
 	}
+	printLegacyAnalyticsDeprecation()
 
 	sessionID, err := extractArg(cmd)
 	if err != nil {
@@ -545,6 +565,15 @@ func getAnalyticsSession(ctx context.Context, cmd *cli.Command) error {
 
 	out.Result(participantTable)
 	return nil
+}
+
+// printLegacyAnalyticsDeprecation says, on stderr, that reading sessions with
+// an API key is deprecated and how to move to --user-auth. Stdout is left
+// alone, so scripts reading it keep working. It's a warning, so --quiet
+// doesn't hide it: scripts that pass --quiet are the ones that need to move.
+func printLegacyAnalyticsDeprecation() {
+	out.Warnf("API-key analytics is deprecated: sign in once with %s, then run the same command with `--user-auth`",
+		signInCommand())
 }
 
 func buildAnalyticsListQuery(cmd *cli.Command) (url.Values, error) {
@@ -994,11 +1023,21 @@ func sessionRecordingOptionsFrom(cmd *cli.Command) (sessionRecordingOptions, err
 // fetchSessionRecording asks the Public API to sign a URL for the recording
 // and prints it, the command's primary output. With -o it also downloads the
 // recording to a file and says where on stderr. The download goes straight to
-// the object store; nothing passes through the API.
+// the object store; nothing passes through the API. A recording that isn't
+// there yet fails, after --json prints the response, so a script can read its
+// dataStatus.
 func fetchSessionRecording(ctx context.Context, client *public.Client, projectID, sessionID string, opts sessionRecordingOptions, asJSON bool) error {
 	res, err := client.GetSessionRecordingURL(ctx, projectID, sessionID, opts.RecordingURLOptions)
 	if err != nil {
 		return sessionRecordingError(err, projectID, sessionID, opts.Recording)
+	}
+	if util.Deref(res.Url) == "" {
+		if asJSON {
+			if err := render.RecordingURL(out, true, *res); err != nil {
+				return err
+			}
+		}
+		return recordingNotYetError(sessionID, opts.Recording, res.DataStatus)
 	}
 	if opts.Output == "" {
 		return render.RecordingURL(out, asJSON, *res)
@@ -1126,10 +1165,28 @@ func sessionRecordingError(err error, projectID, sessionID, recording string) er
 		// The API answers an unknown session, or a mistyped --project, the same
 		// way, so say so too and name the project.
 		return fmt.Errorf("session %s has no %s (%w): it wasn't recorded, has expired, "+
-			"or the session ended less than a minute ago and the recording is still being indexed; "+
+			"or hasn't been indexed yet (a recording can take a few minutes after the session ends); "+
 			"or there is no such session in project %s", sessionID, label, err, projectID)
 	}
 	return sessionAPIError(err, label, projectAdminAccess)
+}
+
+// recordingNotYetError says a session's recording isn't there yet, while its
+// agent can still upload it, and when to read again. lk exits with
+// exitTempFail, so a script can retry it and stop on a real failure. The API
+// sends no URL only then, so any other status is a bad response.
+func recordingNotYetError(sessionID, recording string, status *oapi.LivekitPublicapiObservabilityV1DataStatus) error {
+	s := util.Deref(status)
+	var why string
+	switch util.Deref(s.State) {
+	case oapi.DATASTATESESSIONACTIVE:
+		why = "the session is still active, and its agent uploads it after the session ends"
+	case oapi.DATASTATESETTLING:
+		why = fmt.Sprintf("the session just ended, and its agent can still upload it — read again in %ds", util.Deref(s.RetryAfterSeconds))
+	default:
+		return errors.New("unexpected response from server: missing url")
+	}
+	return exitError{fmt.Errorf("session %s has no %s yet: %s", sessionID, render.RecordingLabel(recording), why), exitTempFail}
 }
 
 // observabilityDisabledError says a session has nothing to read because the
@@ -1183,7 +1240,10 @@ func readPages[T any](page public.PageOptions, fetch func(public.PageOptions) ([
 
 // fetchSessionTranscript reads a session's transcript, every page up to
 // opts.Limit items, and prints it like the agent debugger's history, saying
-// why when there is none.
+// why when there is none. It keeps the data status of the first page read: the
+// state only moves forward, and an item that lands between page reads can sort
+// before the cursor and be missing, so the earliest status is the one true of
+// the whole read. The other session reads do the same.
 func fetchSessionTranscript(ctx context.Context, client *public.Client, projectID, sessionID string, opts public.PageOptions, asJSON bool) error {
 	page := &public.TranscriptPage{}
 	var err error
@@ -1193,6 +1253,9 @@ func fetchSessionTranscript(ctx context.Context, client *public.Client, projectI
 			return nil, "", err
 		}
 		page.SkippedRecords += p.SkippedRecords
+		if page.DataStatus == nil {
+			page.DataStatus = p.DataStatus
+		}
 		return p.Items, p.NextCursor, nil
 	})
 	if err != nil {
@@ -1203,7 +1266,7 @@ func fetchSessionTranscript(ctx context.Context, client *public.Client, projectI
 	// it skips emptyTranscriptReason's GetSession too.
 	var empty string
 	if len(page.Items) == 0 && page.SkippedRecords == 0 && page.NextCursor == "" {
-		empty = emptyTranscriptReason(ctx, client, projectID, sessionID, opts.Cursor != "")
+		empty = emptyTranscriptReason(ctx, client, projectID, sessionID, opts.Cursor != "", page.DataStatus)
 	}
 	return render.SessionTranscript(out, asJSON, *page, empty, transcriptLines)
 }
@@ -1225,14 +1288,30 @@ func transcriptLines(items []public.TranscriptItem) []string {
 	return lines
 }
 
-// emptyTranscriptReason explains a page with no items. The transcript read
-// doesn't say whether the session is still going, so a first page asks
-// GetSession: an active session's agent exports its transcript only when the
-// session ends. A session that stopped reporting keeps its ACTIVE status but
-// gets an end time, so only one with no end time is still active.
-func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID, sessionID string, laterPage bool) string {
+// emptyTranscriptReason explains a page with no items, and whether more can
+// still arrive. A transcript read with a data status says whether the session
+// is still going; without one, from a Public API that doesn't send it, a first
+// page asks GetSession: an active session's agent exports its transcript only
+// when the session ends. A session that stopped reporting keeps its ACTIVE
+// status but gets an end time, so only one with no end time is still active.
+func emptyTranscriptReason(ctx context.Context, client *public.Client, projectID, sessionID string, laterPage bool, status *oapi.LivekitPublicapiObservabilityV1DataStatus) string {
+	why, pending := render.DataPending(status)
 	if laterPage {
+		if pending {
+			return "No more transcript items yet: " + why
+		}
 		return "No more transcript items"
+	}
+	if status != nil {
+		switch util.Deref(status.State) {
+		case oapi.DATASTATESESSIONACTIVE:
+			return fmt.Sprintf("Session %s is still active: its transcript appears after it ends", sessionID)
+		case oapi.DATASTATESETTLING:
+			return fmt.Sprintf("Session %s has no transcript yet: %s", sessionID, why)
+		default:
+			return fmt.Sprintf("Session %s has no transcript to read. The agent exports it when the session ends "+
+				"(on a project with PII redaction, once the recording is redacted); a session without an agent has none", sessionID)
+		}
 	}
 	if session, _, err := client.GetSession(ctx, projectID, sessionID); err == nil &&
 		util.Deref(session.Status) == oapi.SESSIONSTATUSACTIVE && session.EndedAt == nil {
@@ -1312,6 +1391,9 @@ func fetchSessionLogs(ctx context.Context, client *public.Client, projectID, ses
 		if err != nil {
 			return nil, "", err
 		}
+		if page.DataStatus == nil {
+			page.DataStatus = p.DataStatus
+		}
 		return p.Records, p.NextCursor, nil
 	})
 	if err != nil {
@@ -1349,6 +1431,9 @@ func fetchSessionTraces(ctx context.Context, client *public.Client, projectID, s
 		p, err := client.GetSessionTraces(ctx, projectID, sessionID, o)
 		if err != nil {
 			return nil, "", err
+		}
+		if read.DataStatus == nil {
+			read.DataStatus = p.DataStatus
 		}
 		return p.Spans, p.NextCursor, nil
 	})
@@ -1401,6 +1486,9 @@ func fetchSessionMetrics(ctx context.Context, client *public.Client, projectID, 
 		p, err := client.GetSessionMetrics(ctx, projectID, sessionID, read)
 		if err != nil {
 			return nil, "", err
+		}
+		if page.DataStatus == nil {
+			page.DataStatus = p.DataStatus
 		}
 		return p.Points, p.NextCursor, nil
 	})

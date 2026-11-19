@@ -367,6 +367,121 @@ func TestRecordingSaved(t *testing.T) {
 	assert.Contains(t, stderr.String(), "The recording started")
 }
 
+// TestRecordingCanChange checks a recording found while the session's data
+// can still change says a later upload can replace it, on stderr, after the
+// URL is printed or saved; a settled one says nothing.
+func TestRecordingCanChange(t *testing.T) {
+	var resp oapi.LivekitPublicapiObservabilityV1RecordingGetURLResponse
+	require.NoError(t, json.Unmarshal([]byte(recordingURLResponse), &resp))
+	saved := SavedRecording{SessionID: "RM_1", Recording: "audio", File: "RM_1-audio.ogg", Bytes: 2048}
+	const note = "A later upload can still replace this recording: the session is still active\n"
+
+	for _, state := range []oapi.LivekitPublicapiObservabilityV1DataState{oapi.DATASTATESESSIONACTIVE, oapi.DATASTATESETTLED} {
+		resp.DataStatus = &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(state)}
+		var stdout, stderr bytes.Buffer
+		p := util.NewPrinter(&stdout, &stderr, false)
+		require.NoError(t, RecordingURL(p, false, resp))
+		require.NoError(t, RecordingSaved(p, resp, saved))
+		assert.Equal(t, "https://bucket.example/rec?sig=x\nhttps://bucket.example/rec?sig=x\n", stdout.String())
+		if state == oapi.DATASTATESETTLED {
+			assert.NotContains(t, stderr.String(), "replace", state)
+			continue
+		}
+		assert.Equal(t, 2, strings.Count(stderr.String(), note), state)
+		assert.True(t, strings.HasSuffix(stderr.String(), note), "the note comes last")
+	}
+}
+
+// TestMoreCanArrive checks the note each data status prints: what can still
+// arrive and why, with when to read again while settling, and nothing once
+// the data has settled or when the API sent no status.
+func TestMoreCanArrive(t *testing.T) {
+	tests := []struct {
+		name   string
+		status *oapi.LivekitPublicapiObservabilityV1DataStatus
+		want   string
+	}{
+		{
+			name:   "active",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(oapi.DATASTATESESSIONACTIVE)},
+			want:   "More spans can still arrive: the session is still active\n",
+		},
+		{
+			name:   "settling",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(oapi.DATASTATESETTLING), RetryAfterSeconds: ptr(42)},
+			want:   "More spans can still arrive: the session just ended — read again in 42s\n",
+		},
+		{
+			// The API sends retryAfterSeconds 0 outside settling.
+			name:   "active, retry 0",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(oapi.DATASTATESESSIONACTIVE), RetryAfterSeconds: ptr(0)},
+			want:   "More spans can still arrive: the session is still active\n",
+		},
+		{name: "settled", status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(oapi.DATASTATESETTLED)}},
+		{name: "settled, retry 0", status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(oapi.DATASTATESETTLED), RetryAfterSeconds: ptr(0)}},
+		{name: "unspecified", status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(oapi.DATASTATEUNSPECIFIED)}},
+		{name: "no state", status: &oapi.LivekitPublicapiObservabilityV1DataStatus{}},
+		{name: "no status"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			moreCanArrive(util.NewPrinter(&stdout, &stderr, false), "spans", tt.status)
+			assert.Empty(t, stdout.String())
+			assert.Equal(t, tt.want, stderr.String())
+		})
+	}
+}
+
+// TestSessionTranscriptEmptyWithStatus checks an empty transcript's reason,
+// which says whether more can still arrive, prints without a note beside it.
+func TestSessionTranscriptEmptyWithStatus(t *testing.T) {
+	page := public.TranscriptPage{DataStatus: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(oapi.DATASTATESETTLING), RetryAfterSeconds: ptr(42)}}
+	var stdout, stderr bytes.Buffer
+	require.NoError(t, SessionTranscript(util.NewPrinter(&stdout, &stderr, false), false, page, "Session RM_1 has no transcript yet", itemIDs))
+	assert.Empty(t, stdout.String())
+	assert.Equal(t, "Session RM_1 has no transcript yet\n", stderr.String())
+}
+
+// TestSessionReadsDataStatus checks each session read says, as text, that
+// more can still arrive on stderr, and with --json carries the data status in
+// the page instead.
+func TestSessionReadsDataStatus(t *testing.T) {
+	status := &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptr(oapi.DATASTATESETTLING), RetryAfterSeconds: ptr(42)}
+	reads := []struct {
+		name   string
+		note   string
+		render func(p *util.Printer, asJSON bool) error
+	}{
+		{"transcript", "More transcript items can still arrive", func(p *util.Printer, asJSON bool) error {
+			return SessionTranscript(p, asJSON, public.TranscriptPage{DataStatus: status}, "", itemIDs)
+		}},
+		{"logs", "More log records can still arrive", func(p *util.Printer, asJSON bool) error {
+			return SessionLogs(p, asJSON, public.LogPage{DataStatus: status}, "")
+		}},
+		{"traces", "More spans can still arrive", func(p *util.Printer, asJSON bool) error {
+			return SessionTraces(p, asJSON, public.TracePage{DataStatus: status}, "")
+		}},
+		{"metrics", "More metric points can still arrive", func(p *util.Printer, asJSON bool) error {
+			return SessionMetrics(p, asJSON, public.MetricPage{DataStatus: status}, "")
+		}},
+	}
+	for _, r := range reads {
+		t.Run(r.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			require.NoError(t, r.render(util.NewPrinter(&stdout, &stderr, false), false))
+			assert.Empty(t, stdout.String())
+			assert.Equal(t, r.note+": the session just ended — read again in 42s\n", stderr.String())
+
+			stdout.Reset()
+			stderr.Reset()
+			require.NoError(t, r.render(util.NewPrinter(&stdout, &stderr, false), true))
+			assert.JSONEq(t, `{"items":[],"pageInfo":{},"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`, stdout.String())
+			assert.Empty(t, stderr.String())
+		})
+	}
+}
+
 // transcriptItems is one page of a transcript with an item of each kind, as
 // the API sends it.
 const transcriptItems = `[

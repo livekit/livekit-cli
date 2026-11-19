@@ -1,5 +1,5 @@
 # A project ADMIN lists, creates and deletes the project's API keys.
-respond GET http://publicapi.test/v0/projects/p_1/keys 200 '{"keys":[{"apiKey":"APIold","description":"ci"}]}'
+respond GET http://publicapi.test/v0/projects/p_1/keys 200 '{"items":[{"apiKey":"APIold","description":"ci"}]}'
 exec lk --user-auth project key list --project one
 cmp stdout want-list-stdout
 

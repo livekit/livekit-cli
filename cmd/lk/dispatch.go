@@ -75,6 +75,10 @@ var (
 							Name:  "metadata",
 							Usage: "metadata to send to agent",
 						},
+						&cli.StringFlag{
+							Name:  "thread-id",
+							Usage: "agent thread the dispatched call reads and writes",
+						},
 						jsonFlag,
 					},
 				},
@@ -151,7 +155,7 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 		util.PrintJSON(res)
 	} else {
 		table := util.CreateTable().
-			Headers("DispatchID", "Room", "AgentName", "Deployment", "Metadata")
+			Headers("DispatchID", "Room", "AgentName", "Deployment", "ThreadID", "Metadata")
 		for _, item := range res.AgentDispatches {
 			if item == nil {
 				continue
@@ -162,6 +166,7 @@ func listDispatchAndPrint(cmd *cli.Command, req *livekit.ListAgentDispatchReques
 				item.Room,
 				item.AgentName,
 				item.Deployment,
+				item.ThreadId,
 				item.Metadata,
 			)
 		}
@@ -176,6 +181,7 @@ func createAgentDispatch(ctx context.Context, cmd *cli.Command) error {
 		AgentName:  cmd.String("agent-name"),
 		Deployment: cmd.String("deployment"),
 		Metadata:   cmd.String("metadata"),
+		ThreadId:   cmd.String("thread-id"),
 	}
 	if cmd.Bool("new-room") {
 		req.Room = newRoomName()

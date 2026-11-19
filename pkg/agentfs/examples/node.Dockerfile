@@ -78,6 +78,11 @@ USER appuser
 # Set Node.js to production mode
 ENV NODE_ENV=production
 
+# pnpm runs the "start" script through sh. Debian's sh (dash) stays as node's parent, so
+# SIGTERM stops the shell and never reaches node: the agent can't drain and active sessions
+# drop. bash execs a single-command script, so node receives SIGTERM.
+ENV npm_config_script_shell=/bin/bash
+
 # Run the application
 # The "start" command tells the worker to connect to LiveKit and begin waiting for jobs.
 # Your package.json must contain a "start" script, such as `"start": "node dist/agent.js start"`

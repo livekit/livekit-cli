@@ -1,0 +1,102 @@
+# A session's transcript, agent logs, trace spans and agent metrics say
+# whether more can still arrive. As text, stdout is what it was before the
+# Public API said so, and a note on stderr says why more can arrive and, while
+# the session settles, when to read again. --json carries the dataStatus in
+# the page. A settled session gets no note.
+env TZ=UTC
+
+# Settling: the note says when to read again. --quiet hides it.
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/transcript 200 '{"items":[{"id":"item_1","timestamp":"2026-10-07T11:00:01Z","message":{"role":"ROLE_USER","text":"hi"}}],"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}'
+exec lk --user-auth analytics session transcript RM_1
+cmp stdout want-transcript
+stderr '^More transcript items can still arrive: the session just ended — read again in 42s$'
+
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/logs 200 '{"items":[{"id":"log_1","timestamp":"2026-10-07T11:00:01.250Z","level":"LOG_LEVEL_INFO","logger":"app","message":"starting"}],"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}'
+exec lk --user-auth analytics session logs RM_1
+cmp stdout want-logs
+stderr '^More log records can still arrive: the session just ended — read again in 42s$'
+
+exec lk --user-auth --quiet analytics session logs RM_1
+cmp stdout want-logs
+! stderr 'can still arrive'
+
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/traces 200 '{"items":[{"spanId":"a1a1a1a1a1a1a1a1","name":"agent_session","startTime":"2026-10-07T11:00:00Z","endTime":"2026-10-07T11:05:00Z"}],"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}'
+exec lk --user-auth analytics session traces RM_1
+cmp stdout want-traces
+stderr '^More spans can still arrive: the session just ended — read again in 42s$'
+
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/metrics 200 '{"items":[{"name":"lk.agents.turn.e2e_latency","unit":"s","kind":"METRIC_KIND_GAUGE","endTime":"2026-10-07T11:00:30Z","value":0.82}],"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}'
+exec lk --user-auth analytics session metrics RM_1
+cmp stdout want-metrics
+stderr '^More metric points can still arrive: the session just ended — read again in 42s$'
+
+# --json carries the data status in the page, and needs no note.
+exec lk --user-auth analytics session logs RM_1 --json
+cmp stdout want-logs-json
+! stderr 'can still arrive'
+
+# Active: more can arrive, with no time to read again. The API sends
+# retryAfterSeconds 0 outside settling: text says nothing of it, and --json
+# passes it through.
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/transcript 200 '{"items":[{"id":"item_1","timestamp":"2026-10-07T11:00:01Z","message":{"role":"ROLE_USER","text":"hi"}}],"dataStatus":{"state":"DATA_STATE_SESSION_ACTIVE","retryAfterSeconds":0}}'
+exec lk --user-auth analytics session transcript RM_1
+cmp stdout want-transcript
+stderr '^More transcript items can still arrive: the session is still active$'
+! stderr 'read again'
+
+exec lk --user-auth analytics session transcript RM_1 --json
+stdout '"retryAfterSeconds": 0,'
+stdout '"state": "DATA_STATE_SESSION_ACTIVE"'
+! stderr 'can still arrive'
+
+# Settled, or a Public API that doesn't say: the same stdout, and no note.
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/metrics 200 '{"items":[{"name":"lk.agents.turn.e2e_latency","unit":"s","kind":"METRIC_KIND_GAUGE","endTime":"2026-10-07T11:00:30Z","value":0.82}],"dataStatus":{"state":"DATA_STATE_SETTLED","retryAfterSeconds":0}}'
+exec lk --user-auth analytics session metrics RM_1
+cmp stdout want-metrics
+! stderr 'can still arrive'
+
+respond GET http://publicapi.test/v0/projects/p_1/sessions/RM_1/transcript 200 '{"items":[{"id":"item_1","timestamp":"2026-10-07T11:00:01Z","message":{"role":"ROLE_USER","text":"hi"}}]}'
+exec lk --user-auth analytics session transcript RM_1
+cmp stdout want-transcript
+! stderr 'can still arrive'
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+-- want-transcript --
+
+  ● User 11:00:01
+    hi
+
+-- want-logs --
+11:00:01.250  INFO    app  starting
+-- want-traces --
+11:00:00.000      5m0s  agent_session
+-- want-metrics --
+11:00:30.000  lk.agents.turn.e2e_latency  0.82 s
+-- want-logs-json --
+{
+  "items": [
+    {
+      "id": "log_1",
+      "level": "LOG_LEVEL_INFO",
+      "logger": "app",
+      "message": "starting",
+      "timestamp": "2026-10-07T11:00:01.25Z"
+    }
+  ],
+  "pageInfo": {},
+  "dataStatus": {
+    "retryAfterSeconds": 42,
+    "state": "DATA_STATE_SETTLING"
+  }
+}

@@ -1,0 +1,40 @@
+# --project names another project than the one the key in .env.local is for:
+# that key isn't used, and the file is left alone. The agent runs with the
+# named project's key.
+[!exec:node] skip 'needs node to run the agent'
+
+exec lk agent start --project two
+stdout '^agent ws://two.test APItwo secrettwo$'
+stderr '^Not using the API key in .*[/\\]\.env\.local: it''s for ws://one.test, not project \[two\]$'
+cmp .env.local want-env
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+  - name: two
+    url: ws://two.test
+    api_key: APItwo
+    api_secret: secrettwo
+-- .env.local --
+LIVEKIT_URL=ws://one.test
+LIVEKIT_API_KEY=APIone
+LIVEKIT_API_SECRET=secretone
+-- want-env --
+LIVEKIT_URL=ws://one.test
+LIVEKIT_API_KEY=APIone
+LIVEKIT_API_SECRET=secretone
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --

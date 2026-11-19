@@ -203,6 +203,7 @@ func (e LivekitAudioMixing) Valid() bool {
 // Defines values for LivekitEncodedFileType.
 const (
 	DEFAULTFILETYPE LivekitEncodedFileType = "DEFAULT_FILETYPE"
+	MCAP            LivekitEncodedFileType = "MCAP"
 	MP3             LivekitEncodedFileType = "MP3"
 	MP4             LivekitEncodedFileType = "MP4"
 	OGG             LivekitEncodedFileType = "OGG"
@@ -212,6 +213,8 @@ const (
 func (e LivekitEncodedFileType) Valid() bool {
 	switch e {
 	case DEFAULTFILETYPE:
+		return true
+	case MCAP:
 		return true
 	case MP3:
 		return true
@@ -320,9 +323,499 @@ func (e LivekitJobRestartPolicy) Valid() bool {
 	}
 }
 
+// Defines values for LivekitPhoneNumberInboundStatus.
+const (
+	PHONENUMBERINSTATUSACTIVE      LivekitPhoneNumberInboundStatus = "PHONE_NUMBER_IN_STATUS_ACTIVE"
+	PHONENUMBERINSTATUSDETACHED    LivekitPhoneNumberInboundStatus = "PHONE_NUMBER_IN_STATUS_DETACHED"
+	PHONENUMBERINSTATUSUNAVAILABLE LivekitPhoneNumberInboundStatus = "PHONE_NUMBER_IN_STATUS_UNAVAILABLE"
+	PHONENUMBERINSTATUSUNSPECIFIED LivekitPhoneNumberInboundStatus = "PHONE_NUMBER_IN_STATUS_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPhoneNumberInboundStatus enum.
+func (e LivekitPhoneNumberInboundStatus) Valid() bool {
+	switch e {
+	case PHONENUMBERINSTATUSACTIVE:
+		return true
+	case PHONENUMBERINSTATUSDETACHED:
+		return true
+	case PHONENUMBERINSTATUSUNAVAILABLE:
+		return true
+	case PHONENUMBERINSTATUSUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPhoneNumberOutboundStatus.
+const (
+	PHONENUMBEROUTSTATUSACTIVE      LivekitPhoneNumberOutboundStatus = "PHONE_NUMBER_OUT_STATUS_ACTIVE"
+	PHONENUMBEROUTSTATUSUNAVAILABLE LivekitPhoneNumberOutboundStatus = "PHONE_NUMBER_OUT_STATUS_UNAVAILABLE"
+	PHONENUMBEROUTSTATUSUNSPECIFIED LivekitPhoneNumberOutboundStatus = "PHONE_NUMBER_OUT_STATUS_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPhoneNumberOutboundStatus enum.
+func (e LivekitPhoneNumberOutboundStatus) Valid() bool {
+	switch e {
+	case PHONENUMBEROUTSTATUSACTIVE:
+		return true
+	case PHONENUMBEROUTSTATUSUNAVAILABLE:
+		return true
+	case PHONENUMBEROUTSTATUSUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPhoneNumberStatus.
+const (
+	PHONENUMBERSTATUSACTIVE      LivekitPhoneNumberStatus = "PHONE_NUMBER_STATUS_ACTIVE"
+	PHONENUMBERSTATUSOFFLINE     LivekitPhoneNumberStatus = "PHONE_NUMBER_STATUS_OFFLINE"
+	PHONENUMBERSTATUSPENDING     LivekitPhoneNumberStatus = "PHONE_NUMBER_STATUS_PENDING"
+	PHONENUMBERSTATUSRELEASED    LivekitPhoneNumberStatus = "PHONE_NUMBER_STATUS_RELEASED"
+	PHONENUMBERSTATUSUNSPECIFIED LivekitPhoneNumberStatus = "PHONE_NUMBER_STATUS_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPhoneNumberStatus enum.
+func (e LivekitPhoneNumberStatus) Valid() bool {
+	switch e {
+	case PHONENUMBERSTATUSACTIVE:
+		return true
+	case PHONENUMBERSTATUSOFFLINE:
+		return true
+	case PHONENUMBERSTATUSPENDING:
+		return true
+	case PHONENUMBERSTATUSRELEASED:
+		return true
+	case PHONENUMBERSTATUSUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPhoneNumberType.
+const (
+	PHONENUMBERTYPELOCAL    LivekitPhoneNumberType = "PHONE_NUMBER_TYPE_LOCAL"
+	PHONENUMBERTYPEMOBILE   LivekitPhoneNumberType = "PHONE_NUMBER_TYPE_MOBILE"
+	PHONENUMBERTYPETOLLFREE LivekitPhoneNumberType = "PHONE_NUMBER_TYPE_TOLL_FREE"
+	PHONENUMBERTYPEUNKNOWN  LivekitPhoneNumberType = "PHONE_NUMBER_TYPE_UNKNOWN"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPhoneNumberType enum.
+func (e LivekitPhoneNumberType) Valid() bool {
+	switch e {
+	case PHONENUMBERTYPELOCAL:
+		return true
+	case PHONENUMBERTYPEMOBILE:
+		return true
+	case PHONENUMBERTYPETOLLFREE:
+		return true
+	case PHONENUMBERTYPEUNKNOWN:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitSIPDialtone.
+const (
+	SIPDIALTONEAU       LivekitSIPDialtone = "SIP_DIALTONE_AU"
+	SIPDIALTONEAUTO     LivekitSIPDialtone = "SIP_DIALTONE_AUTO"
+	SIPDIALTONEDISABLED LivekitSIPDialtone = "SIP_DIALTONE_DISABLED"
+	SIPDIALTONEETSI     LivekitSIPDialtone = "SIP_DIALTONE_ETSI"
+	SIPDIALTONEJP       LivekitSIPDialtone = "SIP_DIALTONE_JP"
+	SIPDIALTONEUK       LivekitSIPDialtone = "SIP_DIALTONE_UK"
+	SIPDIALTONEUS       LivekitSIPDialtone = "SIP_DIALTONE_US"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSIPDialtone enum.
+func (e LivekitSIPDialtone) Valid() bool {
+	switch e {
+	case SIPDIALTONEAU:
+		return true
+	case SIPDIALTONEAUTO:
+		return true
+	case SIPDIALTONEDISABLED:
+		return true
+	case SIPDIALTONEETSI:
+		return true
+	case SIPDIALTONEJP:
+		return true
+	case SIPDIALTONEUK:
+		return true
+	case SIPDIALTONEUS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitSIPHeaderOptions.
+const (
+	SIPALLHEADERS LivekitSIPHeaderOptions = "SIP_ALL_HEADERS"
+	SIPNOHEADERS  LivekitSIPHeaderOptions = "SIP_NO_HEADERS"
+	SIPXHEADERS   LivekitSIPHeaderOptions = "SIP_X_HEADERS"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSIPHeaderOptions enum.
+func (e LivekitSIPHeaderOptions) Valid() bool {
+	switch e {
+	case SIPALLHEADERS:
+		return true
+	case SIPNOHEADERS:
+		return true
+	case SIPXHEADERS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitSIPMediaEncryption.
+const (
+	SIPMEDIAENCRYPTALLOW   LivekitSIPMediaEncryption = "SIP_MEDIA_ENCRYPT_ALLOW"
+	SIPMEDIAENCRYPTDISABLE LivekitSIPMediaEncryption = "SIP_MEDIA_ENCRYPT_DISABLE"
+	SIPMEDIAENCRYPTREQUIRE LivekitSIPMediaEncryption = "SIP_MEDIA_ENCRYPT_REQUIRE"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSIPMediaEncryption enum.
+func (e LivekitSIPMediaEncryption) Valid() bool {
+	switch e {
+	case SIPMEDIAENCRYPTALLOW:
+		return true
+	case SIPMEDIAENCRYPTDISABLE:
+		return true
+	case SIPMEDIAENCRYPTREQUIRE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitSIPStatusCode.
+const (
+	SIPSTATUSACCEPTED                     LivekitSIPStatusCode = "SIP_STATUS_ACCEPTED"
+	SIPSTATUSADDRESSINCOMPLETE            LivekitSIPStatusCode = "SIP_STATUS_ADDRESS_INCOMPLETE"
+	SIPSTATUSALTERNATIVESERVICE           LivekitSIPStatusCode = "SIP_STATUS_ALTERNATIVE_SERVICE"
+	SIPSTATUSAMBIGUOUS                    LivekitSIPStatusCode = "SIP_STATUS_AMBIGUOUS"
+	SIPSTATUSANONYMITYDISALLOWED          LivekitSIPStatusCode = "SIP_STATUS_ANONYMITY_DISALLOWED"
+	SIPSTATUSBADALERTMESSAGE              LivekitSIPStatusCode = "SIP_STATUS_BAD_ALERT_MESSAGE"
+	SIPSTATUSBADEVENT                     LivekitSIPStatusCode = "SIP_STATUS_BAD_EVENT"
+	SIPSTATUSBADEXTENSION                 LivekitSIPStatusCode = "SIP_STATUS_BAD_EXTENSION"
+	SIPSTATUSBADGATEWAY                   LivekitSIPStatusCode = "SIP_STATUS_BAD_GATEWAY"
+	SIPSTATUSBADIDENTITYINFO              LivekitSIPStatusCode = "SIP_STATUS_BAD_IDENTITY_INFO"
+	SIPSTATUSBADINFOPACKAGE               LivekitSIPStatusCode = "SIP_STATUS_BAD_INFO_PACKAGE"
+	SIPSTATUSBADLOCATIONINFORMATION       LivekitSIPStatusCode = "SIP_STATUS_BAD_LOCATION_INFORMATION"
+	SIPSTATUSBADREQUEST                   LivekitSIPStatusCode = "SIP_STATUS_BAD_REQUEST"
+	SIPSTATUSBUSYHERE                     LivekitSIPStatusCode = "SIP_STATUS_BUSY_HERE"
+	SIPSTATUSCALLISFORWARDED              LivekitSIPStatusCode = "SIP_STATUS_CALL_IS_FORWARDED"
+	SIPSTATUSCALLTRANSACTIONDOESNOTEXISTS LivekitSIPStatusCode = "SIP_STATUS_CALL_TRANSACTION_DOES_NOT_EXISTS"
+	SIPSTATUSCONDITIONALREQUESTFAILED     LivekitSIPStatusCode = "SIP_STATUS_CONDITIONAL_REQUEST_FAILED"
+	SIPSTATUSCONFLICT                     LivekitSIPStatusCode = "SIP_STATUS_CONFLICT"
+	SIPSTATUSCONSENTNEEDED                LivekitSIPStatusCode = "SIP_STATUS_CONSENT_NEEDED"
+	SIPSTATUSEARLYDIALOGTERMINATED        LivekitSIPStatusCode = "SIP_STATUS_EARLY_DIALOG_TERMINATED"
+	SIPSTATUSEXTENSIONREQUIRED            LivekitSIPStatusCode = "SIP_STATUS_EXTENSION_REQUIRED"
+	SIPSTATUSFIRSTHOPLACKSOUTBOUNDSUPPORT LivekitSIPStatusCode = "SIP_STATUS_FIRST_HOP_LACKS_OUTBOUND_SUPPORT"
+	SIPSTATUSFLOWFAILED                   LivekitSIPStatusCode = "SIP_STATUS_FLOW_FAILED"
+	SIPSTATUSFORBIDDEN                    LivekitSIPStatusCode = "SIP_STATUS_FORBIDDEN"
+	SIPSTATUSGATEWAYTIMEOUT               LivekitSIPStatusCode = "SIP_STATUS_GATEWAY_TIMEOUT"
+	SIPSTATUSGLOBALBUSYEVERYWHERE         LivekitSIPStatusCode = "SIP_STATUS_GLOBAL_BUSY_EVERYWHERE"
+	SIPSTATUSGLOBALDECLINE                LivekitSIPStatusCode = "SIP_STATUS_GLOBAL_DECLINE"
+	SIPSTATUSGLOBALDOESNOTEXISTANYWHERE   LivekitSIPStatusCode = "SIP_STATUS_GLOBAL_DOES_NOT_EXIST_ANYWHERE"
+	SIPSTATUSGLOBALNOTACCEPTABLE          LivekitSIPStatusCode = "SIP_STATUS_GLOBAL_NOT_ACCEPTABLE"
+	SIPSTATUSGLOBALREJECTED               LivekitSIPStatusCode = "SIP_STATUS_GLOBAL_REJECTED"
+	SIPSTATUSGLOBALUNWANTED               LivekitSIPStatusCode = "SIP_STATUS_GLOBAL_UNWANTED"
+	SIPSTATUSGONE                         LivekitSIPStatusCode = "SIP_STATUS_GONE"
+	SIPSTATUSINTERNALSERVERERROR          LivekitSIPStatusCode = "SIP_STATUS_INTERNAL_SERVER_ERROR"
+	SIPSTATUSINTERVALTOOBRIEF             LivekitSIPStatusCode = "SIP_STATUS_INTERVAL_TOO_BRIEF"
+	SIPSTATUSINVALIDIDENTITYHEADER        LivekitSIPStatusCode = "SIP_STATUS_INVALID_IDENTITY_HEADER"
+	SIPSTATUSLENGTHREQUIRED               LivekitSIPStatusCode = "SIP_STATUS_LENGTH_REQUIRED"
+	SIPSTATUSLOOPDETECTED                 LivekitSIPStatusCode = "SIP_STATUS_LOOP_DETECTED"
+	SIPSTATUSMAXBREADTHEXCEEDED           LivekitSIPStatusCode = "SIP_STATUS_MAX_BREADTH_EXCEEDED"
+	SIPSTATUSMESSAGETOOLARGE              LivekitSIPStatusCode = "SIP_STATUS_MESSAGE_TOO_LARGE"
+	SIPSTATUSMETHODNOTALLOWED             LivekitSIPStatusCode = "SIP_STATUS_METHOD_NOT_ALLOWED"
+	SIPSTATUSMOVEDPERMANENTLY             LivekitSIPStatusCode = "SIP_STATUS_MOVED_PERMANENTLY"
+	SIPSTATUSMOVEDTEMPORARILY             LivekitSIPStatusCode = "SIP_STATUS_MOVED_TEMPORARILY"
+	SIPSTATUSMULTIPLECHOICES              LivekitSIPStatusCode = "SIP_STATUS_MULTIPLE_CHOICES"
+	SIPSTATUSNONOTIFICATION               LivekitSIPStatusCode = "SIP_STATUS_NO_NOTIFICATION"
+	SIPSTATUSNOTACCEPTABLE                LivekitSIPStatusCode = "SIP_STATUS_NOT_ACCEPTABLE"
+	SIPSTATUSNOTACCEPTABLEHERE            LivekitSIPStatusCode = "SIP_STATUS_NOT_ACCEPTABLE_HERE"
+	SIPSTATUSNOTFOUND                     LivekitSIPStatusCode = "SIP_STATUS_NOTFOUND"
+	SIPSTATUSNOTIMPLEMENTED               LivekitSIPStatusCode = "SIP_STATUS_NOT_IMPLEMENTED"
+	SIPSTATUSOK                           LivekitSIPStatusCode = "SIP_STATUS_OK"
+	SIPSTATUSPAYMENTREQUIRED              LivekitSIPStatusCode = "SIP_STATUS_PAYMENT_REQUIRED"
+	SIPSTATUSPROVIDEREFERRERIDENTITY      LivekitSIPStatusCode = "SIP_STATUS_PROVIDE_REFERRER_IDENTITY"
+	SIPSTATUSPROXYAUTHREQUIRED            LivekitSIPStatusCode = "SIP_STATUS_PROXY_AUTH_REQUIRED"
+	SIPSTATUSQUEUED                       LivekitSIPStatusCode = "SIP_STATUS_QUEUED"
+	SIPSTATUSREQUESTEDRANGENOTSATISFIABLE LivekitSIPStatusCode = "SIP_STATUS_REQUESTED_RANGE_NOT_SATISFIABLE"
+	SIPSTATUSREQUESTENTITYTOOLARGE        LivekitSIPStatusCode = "SIP_STATUS_REQUEST_ENTITY_TOO_LARGE"
+	SIPSTATUSREQUESTPENDING               LivekitSIPStatusCode = "SIP_STATUS_REQUEST_PENDING"
+	SIPSTATUSREQUESTTERMINATED            LivekitSIPStatusCode = "SIP_STATUS_REQUEST_TERMINATED"
+	SIPSTATUSREQUESTTIMEOUT               LivekitSIPStatusCode = "SIP_STATUS_REQUEST_TIMEOUT"
+	SIPSTATUSREQUESTURITOOLONG            LivekitSIPStatusCode = "SIP_STATUS_REQUEST_URI_TOO_LONG"
+	SIPSTATUSRINGING                      LivekitSIPStatusCode = "SIP_STATUS_RINGING"
+	SIPSTATUSSECURITYAGREEMENTREQUIRED    LivekitSIPStatusCode = "SIP_STATUS_SECURITY_AGREEMENT_REQUIRED"
+	SIPSTATUSSERVICEUNAVAILABLE           LivekitSIPStatusCode = "SIP_STATUS_SERVICE_UNAVAILABLE"
+	SIPSTATUSSESSIONINTERVALTOOSMALL      LivekitSIPStatusCode = "SIP_STATUS_SESSION_INTERVAL_TOO_SMALL"
+	SIPSTATUSSESSIONPROGRESS              LivekitSIPStatusCode = "SIP_STATUS_SESSION_PROGRESS"
+	SIPSTATUSTEMPORARILYUNAVAILABLE       LivekitSIPStatusCode = "SIP_STATUS_TEMPORARILY_UNAVAILABLE"
+	SIPSTATUSTOOMANYHOPS                  LivekitSIPStatusCode = "SIP_STATUS_TOO_MANY_HOPS"
+	SIPSTATUSTRYING                       LivekitSIPStatusCode = "SIP_STATUS_TRYING"
+	SIPSTATUSUNAUTHORIZED                 LivekitSIPStatusCode = "SIP_STATUS_UNAUTHORIZED"
+	SIPSTATUSUNDECIPHERABLE               LivekitSIPStatusCode = "SIP_STATUS_UNDECIPHERABLE"
+	SIPSTATUSUNKNOWN                      LivekitSIPStatusCode = "SIP_STATUS_UNKNOWN"
+	SIPSTATUSUNKNOWNRESOURCEPRIORITY      LivekitSIPStatusCode = "SIP_STATUS_UNKNOWN_RESOURCE_PRIORITY"
+	SIPSTATUSUNSUPPORTEDCERTIFICATE       LivekitSIPStatusCode = "SIP_STATUS_UNSUPPORTED_CERTIFICATE"
+	SIPSTATUSUNSUPPORTEDMEDIATYPE         LivekitSIPStatusCode = "SIP_STATUS_UNSUPPORTED_MEDIA_TYPE"
+	SIPSTATUSUSEIDENTITYHEADER            LivekitSIPStatusCode = "SIP_STATUS_USE_IDENTITY_HEADER"
+	SIPSTATUSUSEPROXY                     LivekitSIPStatusCode = "SIP_STATUS_USE_PROXY"
+	SIPSTATUSVERSIONNOTSUPPORTED          LivekitSIPStatusCode = "SIP_STATUS_VERSION_NOT_SUPPORTED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSIPStatusCode enum.
+func (e LivekitSIPStatusCode) Valid() bool {
+	switch e {
+	case SIPSTATUSACCEPTED:
+		return true
+	case SIPSTATUSADDRESSINCOMPLETE:
+		return true
+	case SIPSTATUSALTERNATIVESERVICE:
+		return true
+	case SIPSTATUSAMBIGUOUS:
+		return true
+	case SIPSTATUSANONYMITYDISALLOWED:
+		return true
+	case SIPSTATUSBADALERTMESSAGE:
+		return true
+	case SIPSTATUSBADEVENT:
+		return true
+	case SIPSTATUSBADEXTENSION:
+		return true
+	case SIPSTATUSBADGATEWAY:
+		return true
+	case SIPSTATUSBADIDENTITYINFO:
+		return true
+	case SIPSTATUSBADINFOPACKAGE:
+		return true
+	case SIPSTATUSBADLOCATIONINFORMATION:
+		return true
+	case SIPSTATUSBADREQUEST:
+		return true
+	case SIPSTATUSBUSYHERE:
+		return true
+	case SIPSTATUSCALLISFORWARDED:
+		return true
+	case SIPSTATUSCALLTRANSACTIONDOESNOTEXISTS:
+		return true
+	case SIPSTATUSCONDITIONALREQUESTFAILED:
+		return true
+	case SIPSTATUSCONFLICT:
+		return true
+	case SIPSTATUSCONSENTNEEDED:
+		return true
+	case SIPSTATUSEARLYDIALOGTERMINATED:
+		return true
+	case SIPSTATUSEXTENSIONREQUIRED:
+		return true
+	case SIPSTATUSFIRSTHOPLACKSOUTBOUNDSUPPORT:
+		return true
+	case SIPSTATUSFLOWFAILED:
+		return true
+	case SIPSTATUSFORBIDDEN:
+		return true
+	case SIPSTATUSGATEWAYTIMEOUT:
+		return true
+	case SIPSTATUSGLOBALBUSYEVERYWHERE:
+		return true
+	case SIPSTATUSGLOBALDECLINE:
+		return true
+	case SIPSTATUSGLOBALDOESNOTEXISTANYWHERE:
+		return true
+	case SIPSTATUSGLOBALNOTACCEPTABLE:
+		return true
+	case SIPSTATUSGLOBALREJECTED:
+		return true
+	case SIPSTATUSGLOBALUNWANTED:
+		return true
+	case SIPSTATUSGONE:
+		return true
+	case SIPSTATUSINTERNALSERVERERROR:
+		return true
+	case SIPSTATUSINTERVALTOOBRIEF:
+		return true
+	case SIPSTATUSINVALIDIDENTITYHEADER:
+		return true
+	case SIPSTATUSLENGTHREQUIRED:
+		return true
+	case SIPSTATUSLOOPDETECTED:
+		return true
+	case SIPSTATUSMAXBREADTHEXCEEDED:
+		return true
+	case SIPSTATUSMESSAGETOOLARGE:
+		return true
+	case SIPSTATUSMETHODNOTALLOWED:
+		return true
+	case SIPSTATUSMOVEDPERMANENTLY:
+		return true
+	case SIPSTATUSMOVEDTEMPORARILY:
+		return true
+	case SIPSTATUSMULTIPLECHOICES:
+		return true
+	case SIPSTATUSNONOTIFICATION:
+		return true
+	case SIPSTATUSNOTACCEPTABLE:
+		return true
+	case SIPSTATUSNOTACCEPTABLEHERE:
+		return true
+	case SIPSTATUSNOTFOUND:
+		return true
+	case SIPSTATUSNOTIMPLEMENTED:
+		return true
+	case SIPSTATUSOK:
+		return true
+	case SIPSTATUSPAYMENTREQUIRED:
+		return true
+	case SIPSTATUSPROVIDEREFERRERIDENTITY:
+		return true
+	case SIPSTATUSPROXYAUTHREQUIRED:
+		return true
+	case SIPSTATUSQUEUED:
+		return true
+	case SIPSTATUSREQUESTEDRANGENOTSATISFIABLE:
+		return true
+	case SIPSTATUSREQUESTENTITYTOOLARGE:
+		return true
+	case SIPSTATUSREQUESTPENDING:
+		return true
+	case SIPSTATUSREQUESTTERMINATED:
+		return true
+	case SIPSTATUSREQUESTTIMEOUT:
+		return true
+	case SIPSTATUSREQUESTURITOOLONG:
+		return true
+	case SIPSTATUSRINGING:
+		return true
+	case SIPSTATUSSECURITYAGREEMENTREQUIRED:
+		return true
+	case SIPSTATUSSERVICEUNAVAILABLE:
+		return true
+	case SIPSTATUSSESSIONINTERVALTOOSMALL:
+		return true
+	case SIPSTATUSSESSIONPROGRESS:
+		return true
+	case SIPSTATUSTEMPORARILYUNAVAILABLE:
+		return true
+	case SIPSTATUSTOOMANYHOPS:
+		return true
+	case SIPSTATUSTRYING:
+		return true
+	case SIPSTATUSUNAUTHORIZED:
+		return true
+	case SIPSTATUSUNDECIPHERABLE:
+		return true
+	case SIPSTATUSUNKNOWN:
+		return true
+	case SIPSTATUSUNKNOWNRESOURCEPRIORITY:
+		return true
+	case SIPSTATUSUNSUPPORTEDCERTIFICATE:
+		return true
+	case SIPSTATUSUNSUPPORTEDMEDIATYPE:
+		return true
+	case SIPSTATUSUSEIDENTITYHEADER:
+		return true
+	case SIPSTATUSUSEPROXY:
+		return true
+	case SIPSTATUSVERSIONNOTSUPPORTED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitSIPTransferReason.
+const (
+	STRCALLENDED              LivekitSIPTransferReason = "STR_CALL_ENDED"
+	STRCANCELED               LivekitSIPTransferReason = "STR_CANCELED"
+	STRCOMPLETED              LivekitSIPTransferReason = "STR_COMPLETED"
+	STRREJECTED               LivekitSIPTransferReason = "STR_REJECTED"
+	STRRINGINGTIMEOUT         LivekitSIPTransferReason = "STR_RINGING_TIMEOUT"
+	STRSUBSCRIPTIONTERMINATED LivekitSIPTransferReason = "STR_SUBSCRIPTION_TERMINATED"
+	STRUNSPECIFIED            LivekitSIPTransferReason = "STR_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSIPTransferReason enum.
+func (e LivekitSIPTransferReason) Valid() bool {
+	switch e {
+	case STRCALLENDED:
+		return true
+	case STRCANCELED:
+		return true
+	case STRCOMPLETED:
+		return true
+	case STRREJECTED:
+		return true
+	case STRRINGINGTIMEOUT:
+		return true
+	case STRSUBSCRIPTIONTERMINATED:
+		return true
+	case STRUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitSIPTransferStatus.
+const (
+	STSTRANSFERFAILED     LivekitSIPTransferStatus = "STS_TRANSFER_FAILED"
+	STSTRANSFERONGOING    LivekitSIPTransferStatus = "STS_TRANSFER_ONGOING"
+	STSTRANSFERSUCCESSFUL LivekitSIPTransferStatus = "STS_TRANSFER_SUCCESSFUL"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSIPTransferStatus enum.
+func (e LivekitSIPTransferStatus) Valid() bool {
+	switch e {
+	case STSTRANSFERFAILED:
+		return true
+	case STSTRANSFERONGOING:
+		return true
+	case STSTRANSFERSUCCESSFUL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitSIPTransport.
+const (
+	SIPTRANSPORTAUTO LivekitSIPTransport = "SIP_TRANSPORT_AUTO"
+	SIPTRANSPORTTCP  LivekitSIPTransport = "SIP_TRANSPORT_TCP"
+	SIPTRANSPORTTLS  LivekitSIPTransport = "SIP_TRANSPORT_TLS"
+	SIPTRANSPORTUDP  LivekitSIPTransport = "SIP_TRANSPORT_UDP"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSIPTransport enum.
+func (e LivekitSIPTransport) Valid() bool {
+	switch e {
+	case SIPTRANSPORTAUTO:
+		return true
+	case SIPTRANSPORTTCP:
+		return true
+	case SIPTRANSPORTTLS:
+		return true
+	case SIPTRANSPORTUDP:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LivekitSegmentedFileProtocol.
 const (
 	DEFAULTSEGMENTEDFILEPROTOCOL LivekitSegmentedFileProtocol = "DEFAULT_SEGMENTED_FILE_PROTOCOL"
+	HLSFMP4PROTOCOL              LivekitSegmentedFileProtocol = "HLS_FMP4_PROTOCOL"
 	HLSPROTOCOL                  LivekitSegmentedFileProtocol = "HLS_PROTOCOL"
 )
 
@@ -330,6 +823,8 @@ const (
 func (e LivekitSegmentedFileProtocol) Valid() bool {
 	switch e {
 	case DEFAULTSEGMENTEDFILEPROTOCOL:
+		return true
+	case HLSFMP4PROTOCOL:
 		return true
 	case HLSPROTOCOL:
 		return true
@@ -377,6 +872,24 @@ func (e LivekitSimulationMode) Valid() bool {
 	}
 }
 
+// Defines values for LivekitSimulationRunJobFailureReason.
+const (
+	FAILUREREASONAGENTJOINTIMEOUT LivekitSimulationRunJobFailureReason = "FAILURE_REASON_AGENT_JOIN_TIMEOUT"
+	FAILUREREASONUNSPECIFIED      LivekitSimulationRunJobFailureReason = "FAILURE_REASON_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSimulationRunJobFailureReason enum.
+func (e LivekitSimulationRunJobFailureReason) Valid() bool {
+	switch e {
+	case FAILUREREASONAGENTJOINTIMEOUT:
+		return true
+	case FAILUREREASONUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LivekitSimulationRunJobStatus.
 const (
 	LivekitSimulationRunJobStatusSTATUSCANCELLED LivekitSimulationRunJobStatus = "STATUS_CANCELLED"
@@ -398,6 +911,39 @@ func (e LivekitSimulationRunJobStatus) Valid() bool {
 	case LivekitSimulationRunJobStatusSTATUSPENDING:
 		return true
 	case LivekitSimulationRunJobStatusSTATUSRUNNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitSimulationRunJobMetricsEndReason.
+const (
+	ENDREASONAGENTENDED        LivekitSimulationRunJobMetricsEndReason = "END_REASON_AGENT_ENDED"
+	ENDREASONAGENTERROR        LivekitSimulationRunJobMetricsEndReason = "END_REASON_AGENT_ERROR"
+	ENDREASONEMPTYRESPONSE     LivekitSimulationRunJobMetricsEndReason = "END_REASON_EMPTY_RESPONSE"
+	ENDREASONINACTIVITY        LivekitSimulationRunJobMetricsEndReason = "END_REASON_INACTIVITY"
+	ENDREASONSCENARIOCOMPLETED LivekitSimulationRunJobMetricsEndReason = "END_REASON_SCENARIO_COMPLETED"
+	ENDREASONTURNLIMIT         LivekitSimulationRunJobMetricsEndReason = "END_REASON_TURN_LIMIT"
+	ENDREASONUNSPECIFIED       LivekitSimulationRunJobMetricsEndReason = "END_REASON_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitSimulationRunJobMetricsEndReason enum.
+func (e LivekitSimulationRunJobMetricsEndReason) Valid() bool {
+	switch e {
+	case ENDREASONAGENTENDED:
+		return true
+	case ENDREASONAGENTERROR:
+		return true
+	case ENDREASONEMPTYRESPONSE:
+		return true
+	case ENDREASONINACTIVITY:
+		return true
+	case ENDREASONSCENARIOCOMPLETED:
+		return true
+	case ENDREASONTURNLIMIT:
+		return true
+	case ENDREASONUNSPECIFIED:
 		return true
 	default:
 		return false
@@ -488,33 +1034,6 @@ func (e LivekitVideoCodec) Valid() bool {
 	}
 }
 
-// Defines values for LivekitAgentAgentTaskStatus.
-const (
-	CANCELED    LivekitAgentAgentTaskStatus = "CANCELED"
-	COMPLETED   LivekitAgentAgentTaskStatus = "COMPLETED"
-	FAILED      LivekitAgentAgentTaskStatus = "FAILED"
-	RUNNING     LivekitAgentAgentTaskStatus = "RUNNING"
-	UNSPECIFIED LivekitAgentAgentTaskStatus = "UNSPECIFIED"
-)
-
-// Valid indicates whether the value is a known member of the LivekitAgentAgentTaskStatus enum.
-func (e LivekitAgentAgentTaskStatus) Valid() bool {
-	switch e {
-	case CANCELED:
-		return true
-	case COMPLETED:
-		return true
-	case FAILED:
-		return true
-	case RUNNING:
-		return true
-	case UNSPECIFIED:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for LivekitAgentChatRole.
 const (
 	ASSISTANT LivekitAgentChatRole = "ASSISTANT"
@@ -533,6 +1052,258 @@ func (e LivekitAgentChatRole) Valid() bool {
 	case SYSTEM:
 		return true
 	case USER:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCityAmbienceOgg   LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "city-ambience.ogg"
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCrowdedRoomOgg    LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "crowded-room.ogg"
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioForestAmbienceOgg LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "forest-ambience.ogg"
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioNone              LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "none"
+	LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioOfficeAmbienceOgg LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio = "office-ambience.ogg"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCityAmbienceOgg:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioCrowdedRoomOgg:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioForestAmbienceOgg:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioNone:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudioOfficeAmbienceOgg:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode.
+const (
+	DataCollection     LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode = "data_collection"
+	PromptInstructions LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode = "prompt_instructions"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode) Valid() bool {
+	switch e {
+	case DataCollection:
+		return true
+	case PromptInstructions:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigModelMode.
+const (
+	Pipeline LivekitPublicapiAgentsV1BuilderAgentConfigModelMode = "pipeline"
+	Realtime LivekitPublicapiAgentsV1BuilderAgentConfigModelMode = "realtime"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigModelMode enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigModelMode) Valid() bool {
+	switch e {
+	case Pipeline:
+		return true
+	case Realtime:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvc          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-bvc"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvcTelephony LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-bvc-telephony"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispNc           LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "krisp-nc"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationNone              LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "none"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailL            LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-l"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfL          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-vf-l"
+	LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfS          LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation = "quail-vf-s"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvc:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispBvcTelephony:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationKrispNc:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationNone:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailL:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfL:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellationQuailVfS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType.
+const (
+	Custom  LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType = "custom"
+	Default LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType = "default"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType) Valid() bool {
+	switch e {
+	case Custom:
+		return true
+	case Default:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeBoolean LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "boolean"
+	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeNumber  LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "number"
+	LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeString  LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType = "string"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeBoolean:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeNumber:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsTypeString:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod.
+const (
+	DELETE LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "DELETE"
+	GET    LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "GET"
+	PATCH  LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "PATCH"
+	POST   LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "POST"
+	PUT    LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod = "PUT"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod) Valid() bool {
+	switch e {
+	case DELETE:
+		return true
+	case GET:
+		return true
+	case PATCH:
+		return true
+	case POST:
+		return true
+	case PUT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortHigh   LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "high"
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortLow    LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "low"
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortMedium LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "medium"
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortNone   LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "none"
+	LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortXhigh  LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort = "xhigh"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortHigh:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortLow:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortMedium:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortNone:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffortXhigh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType.
+const (
+	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeBoolean LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "boolean"
+	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeInteger LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "integer"
+	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeNumber  LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "number"
+	LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeString  LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType = "string"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType enum.
+func (e LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType) Valid() bool {
+	switch e {
+	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeBoolean:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeInteger:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeNumber:
+		return true
+	case LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterTypeString:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiAgentsV1DeploymentStatus.
+const (
+	DEPLOYMENTSTATUSBUILDFAILED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_BUILD_FAILED"
+	DEPLOYMENTSTATUSBUILDING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_BUILDING"
+	DEPLOYMENTSTATUSDELETING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_DELETING"
+	DEPLOYMENTSTATUSFAILED      LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_FAILED"
+	DEPLOYMENTSTATUSNOTDEPLOYED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_NOT_DEPLOYED"
+	DEPLOYMENTSTATUSRUNNING     LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_RUNNING"
+	DEPLOYMENTSTATUSSLEEPING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_SLEEPING"
+	DEPLOYMENTSTATUSSTARTING    LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_STARTING"
+	DEPLOYMENTSTATUSUNSPECIFIED LivekitPublicapiAgentsV1DeploymentStatus = "DEPLOYMENT_STATUS_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiAgentsV1DeploymentStatus enum.
+func (e LivekitPublicapiAgentsV1DeploymentStatus) Valid() bool {
+	switch e {
+	case DEPLOYMENTSTATUSBUILDFAILED:
+		return true
+	case DEPLOYMENTSTATUSBUILDING:
+		return true
+	case DEPLOYMENTSTATUSDELETING:
+		return true
+	case DEPLOYMENTSTATUSFAILED:
+		return true
+	case DEPLOYMENTSTATUSNOTDEPLOYED:
+		return true
+	case DEPLOYMENTSTATUSRUNNING:
+		return true
+	case DEPLOYMENTSTATUSSLEEPING:
+		return true
+	case DEPLOYMENTSTATUSSTARTING:
+		return true
+	case DEPLOYMENTSTATUSUNSPECIFIED:
 		return true
 	default:
 		return false
@@ -596,6 +1367,30 @@ func (e LivekitPublicapiCommonV1SortOrder) Valid() bool {
 	case SORTORDERDESC:
 		return true
 	case SORTORDERUNSPECIFIED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LivekitPublicapiObservabilityV1DataState.
+const (
+	DATASTATESESSIONACTIVE LivekitPublicapiObservabilityV1DataState = "DATA_STATE_SESSION_ACTIVE"
+	DATASTATESETTLED       LivekitPublicapiObservabilityV1DataState = "DATA_STATE_SETTLED"
+	DATASTATESETTLING      LivekitPublicapiObservabilityV1DataState = "DATA_STATE_SETTLING"
+	DATASTATEUNSPECIFIED   LivekitPublicapiObservabilityV1DataState = "DATA_STATE_UNSPECIFIED"
+)
+
+// Valid indicates whether the value is a known member of the LivekitPublicapiObservabilityV1DataState enum.
+func (e LivekitPublicapiObservabilityV1DataState) Valid() bool {
+	switch e {
+	case DATASTATESESSIONACTIVE:
+		return true
+	case DATASTATESETTLED:
+		return true
+	case DATASTATESETTLING:
+		return true
+	case DATASTATEUNSPECIFIED:
 		return true
 	default:
 		return false
@@ -761,19 +1556,14 @@ func (e LivekitPublicapiObservabilityV1SpanStatus) Valid() bool {
 	}
 }
 
-// CloudProtocolPIIRedactionCategory PIIRedactionCategory is the canonical taxonomy of PII entity types a project
+// CloudProtocolPIIRedactionCategory The types of personally identifiable information (PII) a project can redact.
 //
-//	may select for redaction. It is the shared contract across Cloud, backend,
-//	and the dashboard so none of them need to import the redaction library.
+//	Choose the categories with `piiRedactionCategories` on a project. When that
+//	list is empty and `enablePiiRedaction` is true, the project redacts a default
+//	set.
 //
-//	Each value's name maps 1:1 to the snake_case identifier the redaction model
-//	emits: strip the PII_REDACTION_CATEGORY_ prefix and lowercase (see
-//	PIIRedactionCategory.Canonical in Go). A guard test in cloud-observability
-//	asserts this set stays in sync with redact.KnownCategories.
-//
-//	Numbers are permanent and assigned in append order; never renumber or reuse
-//	one. Add a new category with the next free number, then classify it via
-//	PIIRedactionCategory.Class in Go.
+//	Each name maps to the identifier the redaction model emits: strip the
+//	`PII_REDACTION_CATEGORY_` prefix and lowercase the rest.
 type CloudProtocolPIIRedactionCategory string
 
 // GoogleProtobufAny Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
@@ -784,7 +1574,7 @@ type GoogleProtobufAny struct {
 }
 
 // GoogleProtobufDuration A span of time as protobuf JSON encodes it: seconds with an "s" suffix,
-// e.g. "86400s" for a day. Responses carry 0, 3, 6 or 9 fractional
+// for example "86400s" for a day. Responses carry 0, 3, 6 or 9 fractional
 // digits ("1.500s", "0.000000001s"); requests may use 1 to 9. At most
 // 315576000000 seconds either way. Not an ISO 8601 duration ("P1D" is
 // rejected).
@@ -830,15 +1620,6 @@ type GoogleRpcStatus struct {
 
 	// Message A developer-facing error message.
 	Message *string `json:"message,omitempty"`
-}
-
-// LivekitAgentDBAgentDatabase One database, as get and list both report it.
-type LivekitAgentDBAgentDatabase struct {
-	CreatedAt  *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	DatabaseId *string                  `json:"databaseId,omitempty"`
-	ExpiresAt  *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	Region     *string                  `json:"region,omitempty"`
-	Tip        *string                  `json:"tip,omitempty"`
 }
 
 // LivekitAliOSSUpload defines model for livekit.AliOSSUpload.
@@ -910,6 +1691,126 @@ type LivekitAzureBlobUpload struct {
 	AccountKey    *string `json:"accountKey,omitempty"`
 	AccountName   *string `json:"accountName,omitempty"`
 	ContainerName *string `json:"containerName,omitempty"`
+}
+
+// LivekitCreateSIPParticipantRequest A SIP Participant is a singular SIP session connected to a LiveKit room via
+//
+//	a SIP Trunk into a SIP DispatchRule
+type LivekitCreateSIPParticipantRequest struct {
+	Destination *LivekitDestination `json:"destination,omitempty"`
+
+	// Dialtone Optionally play dialtone in the room as an audible indicator for existing participants.
+	Dialtone *LivekitSIPDialtone `json:"dialtone,omitempty"`
+
+	// DisplayName Optional display name for the 'From' SIP header.
+	//
+	//  Cases:
+	//  1) Unspecified: Use legacy behavior - display name will be set to be the caller's number.
+	//  2) Empty string: Do not send a display name, which will result in a CNAM lookup downstream.
+	//  3) Non-empty: Use the specified value as the display name.
+	DisplayName *string `json:"displayName,omitempty"`
+
+	// Dtmf Optionally send following DTMF digits (extension codes) when making a call.
+	//  Character 'w' can be used to add a 0.5 sec delay.
+	Dtmf *string `json:"dtmf,omitempty"`
+
+	// Headers These headers are sent as-is and may help identify this call as coming from LiveKit for the other SIP endpoint.
+	Headers *map[string]string `json:"headers,omitempty"`
+
+	// HidePhoneNumber By default the From value (Phone number) is used for participant name/identity (if not set) and added to attributes.
+	//  If true, a random value for identity will be used and numbers will be omitted from attributes.
+	HidePhoneNumber *bool `json:"hidePhoneNumber,omitempty"`
+
+	// IncludeHeaders Map SIP headers from 200 OK to sip.h.* participant attributes automatically.
+	//
+	//  When the names of required headers is known, using headers_to_attributes is strongly recommended.
+	//
+	//  When mapping 200 OK headers to follow-up request headers with attributes_to_headers map,
+	//  lowercase header names should be used, for example: sip.h.x-custom-header.
+	IncludeHeaders *LivekitSIPHeaderOptions `json:"includeHeaders,omitempty"`
+
+	// KrispEnabled Enable voice isolation for the callee.
+	KrispEnabled *bool `json:"krispEnabled,omitempty"`
+
+	// MaxCallDuration Max call duration.
+	MaxCallDuration *GoogleProtobufDuration `json:"maxCallDuration,omitempty"`
+	Media           *LivekitSIPMediaConfig  `json:"media,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	MediaEncryption *LivekitSIPMediaEncryption `json:"mediaEncryption,omitempty"`
+
+	// ParticipantAttributes Optional user-defined attributes. Will be attached to a created Participant in the room.
+	ParticipantAttributes *map[string]string `json:"participantAttributes,omitempty"`
+
+	// ParticipantIdentity Optional identity of the participant in LiveKit room
+	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
+
+	// ParticipantMetadata Optional user-defined metadata. Will be attached to a created Participant in the room.
+	ParticipantMetadata *string `json:"participantMetadata,omitempty"`
+
+	// ParticipantName Optional name of the participant in LiveKit room
+	ParticipantName *string `json:"participantName,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	PlayDialtone *bool `json:"playDialtone,omitempty"`
+
+	// PlayRingtone Deprecated: use dialtone. Setting play_dialtone (or play_ringtone) is equivalent to SIP_DIALTONE_ETSI when dialtone is unset.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	PlayRingtone *bool `json:"playRingtone,omitempty"`
+
+	// RingingTimeout Max time for the callee to answer the call.
+	RingingTimeout *GoogleProtobufDuration `json:"ringingTimeout,omitempty"`
+
+	// RoomName What LiveKit room should this participant be connected too
+	RoomName *string `json:"roomName,omitempty"`
+
+	// SipCallTo What number should be dialed via SIP
+	SipCallTo *string `json:"sipCallTo,omitempty"`
+
+	// SipFromHeader From: "Name" <uri>
+	SipFromHeader *LivekitSIPNamedDest `json:"sipFromHeader,omitempty"`
+
+	// SipNumber Optional SIP From number to use. If empty, trunk number is used.
+	SipNumber *string `json:"sipNumber,omitempty"`
+
+	// SipRequestUri INVITE <uri>
+	SipRequestUri *LivekitSIPRequestDest `json:"sipRequestUri,omitempty"`
+
+	// SipSourceCallId cloud only
+	//  LiveKit SIP call ID (SCL_[...]) of a live inbound call in the same project.
+	//  This is the ID that LiveKit assigns to the call (sip_call_id on
+	//  SIPParticipantInfo), not the SIP Call-ID header from the provider. It is
+	//  used for forwarding an inbound call, while keeping the original caller's ID
+	//  as the caller ID of this new call.
+	//  If sip_from_header is set, its user must match the caller's number. If not,
+	//  the caller's number is used. NEXT ID: 30
+	SipSourceCallId *string `json:"sipSourceCallId,omitempty"`
+
+	// SipToHeader Currently not usable with CreateSIPParticipant: sip_call_to is required, and
+	//  the two cannot be combined. Use to_user_override to change the To header user. To:   "Name" <uri>
+	SipToHeader *LivekitSIPNamedDest `json:"sipToHeader,omitempty"`
+
+	// SipTrunkId What SIP Trunk should be used to dial the user
+	SipTrunkId *string `json:"sipTrunkId,omitempty"`
+
+	// ToUserOverride Replaces the user part of the To header, leaving its host, port and transport
+	//  as they would otherwise be. The request URI is not affected, so the call is
+	//  still placed to sip_call_to. Empty means no override.
+	//
+	//  Use this when the callee expects a To header that differs from the number
+	//  being dialed. Setting "To" in the headers map is not a valid alternative:
+	//  it adds a second To header rather than replacing the existing one, which
+	//  makes the INVITE malformed.
+	ToUserOverride *string                   `json:"toUserOverride,omitempty"`
+	Trunk          *LivekitSIPOutboundConfig `json:"trunk,omitempty"`
+
+	// WaitUntilAnswered Wait for the answer for the call before returning.
+	WaitUntilAnswered *bool `json:"waitUntilAnswered,omitempty"`
+}
+
+// LivekitDestination defines model for livekit.Destination.
+type LivekitDestination struct {
+	City    *string `json:"city,omitempty"`
+	Country *string `json:"country,omitempty"`
+	Region  *string `json:"region,omitempty"`
 }
 
 // LivekitEncodedFileOutput defines model for livekit.EncodedFileOutput.
@@ -1056,6 +1957,94 @@ type LivekitImageOutput3 struct {
 // LivekitJobRestartPolicy defines model for livekit.JobRestartPolicy.
 type LivekitJobRestartPolicy string
 
+// LivekitListUpdate ListUpdate is used for updated APIs where 'repeated string' field is modified.
+type LivekitListUpdate struct {
+	// Add append items to a list, avoiding duplicates
+	Add *[]string `json:"add,omitempty"`
+
+	// Clear sets the list to an empty list
+	Clear *bool `json:"clear,omitempty"`
+
+	// Remove delete items from a list
+	Remove *[]string `json:"remove,omitempty"`
+
+	// Set set the field to a new list
+	Set *[]string `json:"set,omitempty"`
+}
+
+// LivekitPhoneNumber PhoneNumber - Unified phone number type for inventory and purchased numbers
+type LivekitPhoneNumber struct {
+	// AreaCode Area code (e.g., "415")
+	AreaCode *string `json:"areaCode,omitempty"`
+
+	// AssignedAt Assignment timestamp
+	AssignedAt *GoogleProtobufTimestamp `json:"assignedAt,omitempty"`
+
+	// Capabilities Available capabilities (e.g., "voice", "sms")
+	Capabilities *[]string `json:"capabilities,omitempty"`
+
+	// CountryCode Country code (e.g., "US")
+	CountryCode *string `json:"countryCode,omitempty"`
+
+	// CreatedAt Creation timestamp
+	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// E164Format Phone number in E.164 format (e.g., "+14155552671")
+	E164Format *string `json:"e164Format,omitempty"`
+
+	// Id Unique identifier
+	Id *string `json:"id,omitempty"`
+
+	// InboundStatus Inbound calling status
+	InboundStatus *LivekitPhoneNumberInboundStatus `json:"inboundStatus,omitempty"`
+
+	// Locality City/locality (e.g., "San Francisco")
+	Locality *string `json:"locality,omitempty"`
+
+	// Name Human-readable name/label for the phone number
+	Name *string `json:"name,omitempty"`
+
+	// NumberType Number type (mobile, local, toll-free, unknown)
+	NumberType *LivekitPhoneNumberType `json:"numberType,omitempty"`
+
+	// OutboundStatus Outbound calling status
+	OutboundStatus *LivekitPhoneNumberOutboundStatus `json:"outboundStatus,omitempty"`
+
+	// Region State/region (e.g., "CA")
+	Region *string `json:"region,omitempty"`
+
+	// ReleasedAt Release timestamp (if applicable)
+	ReleasedAt *GoogleProtobufTimestamp `json:"releasedAt,omitempty"`
+
+	// SipDispatchRuleId Associated SIP dispatch rule ID (deprecated: use sip_dispatch_rule_ids instead)
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	SipDispatchRuleId *string `json:"sipDispatchRuleId,omitempty"`
+
+	// SipDispatchRuleIds Associated SIP dispatch rule IDs
+	SipDispatchRuleIds *[]string `json:"sipDispatchRuleIds,omitempty"`
+
+	// SpamScore Spam score for fraud detection
+	SpamScore *float64 `json:"spamScore,omitempty"`
+
+	// Status Current status
+	Status *LivekitPhoneNumberStatus `json:"status,omitempty"`
+
+	// UpdatedAt Last update timestamp
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+}
+
+// LivekitPhoneNumberInboundStatus defines model for livekit.PhoneNumberInboundStatus.
+type LivekitPhoneNumberInboundStatus string
+
+// LivekitPhoneNumberOutboundStatus defines model for livekit.PhoneNumberOutboundStatus.
+type LivekitPhoneNumberOutboundStatus string
+
+// LivekitPhoneNumberStatus Phone number status enumeration
+type LivekitPhoneNumberStatus string
+
+// LivekitPhoneNumberType Phone number type enumeration
+type LivekitPhoneNumberType string
+
 // LivekitPresignedPostRequest defines model for livekit.PresignedPostRequest.
 type LivekitPresignedPostRequest struct {
 	Url    *string            `json:"url,omitempty"`
@@ -1078,6 +2067,10 @@ type LivekitRoomAgentDispatch struct {
 
 	// RestartPolicy cloud only
 	RestartPolicy *LivekitJobRestartPolicy `json:"restartPolicy,omitempty"`
+
+	// ThreadId The agent thread (an AT_ id, see agent/livekit_agent_thread.proto) the dispatched job's
+	//  call reads and writes. Empty means the call keeps no durable thread.
+	ThreadId *string `json:"threadId,omitempty"`
 }
 
 // LivekitRoomCompositeEgressRequest defines model for livekit.RoomCompositeEgressRequest.
@@ -1189,6 +2182,392 @@ type LivekitS3Upload struct {
 	Tagging            *string             `json:"tagging,omitempty"`
 }
 
+// LivekitSIPCodec defines model for livekit.SIPCodec.
+type LivekitSIPCodec struct {
+	Name *string `json:"name,omitempty"`
+	Rate *int    `json:"rate,omitempty"`
+}
+
+// LivekitSIPDialtone Dial tone (ringback) played while a call is being placed or transferred.
+//
+//	Receivers treat unknown values as SIP_DIALTONE_ETSI.
+type LivekitSIPDialtone string
+
+// LivekitSIPDispatchRule defines model for livekit.SIPDispatchRule.
+type LivekitSIPDispatchRule struct {
+	union json.RawMessage
+}
+
+// LivekitSIPDispatchRule0 defines model for LivekitSIPDispatchRule.0.
+type LivekitSIPDispatchRule0 struct {
+	// DispatchRuleCallee SIPDispatchRuleCallee is a `SIP Dispatch Rule` that creates a new room for each callee.
+	DispatchRuleCallee *LivekitSIPDispatchRuleCallee `json:"dispatchRuleCallee,omitempty"`
+}
+
+// LivekitSIPDispatchRule1 defines model for LivekitSIPDispatchRule.1.
+type LivekitSIPDispatchRule1 struct {
+	// DispatchRuleDirect SIPDispatchRuleDirect is a `SIP Dispatch Rule` that puts a user directly into a room
+	//  This places users into an existing room. Optionally you can require a pin before a user can
+	//  enter the room
+	DispatchRuleDirect *LivekitSIPDispatchRuleDirect `json:"dispatchRuleDirect,omitempty"`
+}
+
+// LivekitSIPDispatchRule2 defines model for LivekitSIPDispatchRule.2.
+type LivekitSIPDispatchRule2 struct {
+	// DispatchRuleIndividual SIPDispatchRuleIndividual is a `SIP Dispatch Rule` that creates a new room for each caller.
+	DispatchRuleIndividual *LivekitSIPDispatchRuleIndividual `json:"dispatchRuleIndividual,omitempty"`
+}
+
+// LivekitSIPDispatchRuleCallee defines model for livekit.SIPDispatchRuleCallee.
+type LivekitSIPDispatchRuleCallee struct {
+	// Pin Optional pin required to enter room
+	Pin *string `json:"pin,omitempty"`
+
+	// Randomize Optionally append random suffix
+	Randomize *bool `json:"randomize,omitempty"`
+
+	// RoomPrefix Prefix used on new room name
+	RoomPrefix *string `json:"roomPrefix,omitempty"`
+}
+
+// LivekitSIPDispatchRuleDirect defines model for livekit.SIPDispatchRuleDirect.
+type LivekitSIPDispatchRuleDirect struct {
+	// Pin Optional pin required to enter room
+	Pin *string `json:"pin,omitempty"`
+
+	// RoomName What room should call be directed into
+	RoomName *string `json:"roomName,omitempty"`
+}
+
+// LivekitSIPDispatchRuleIndividual defines model for livekit.SIPDispatchRuleIndividual.
+type LivekitSIPDispatchRuleIndividual struct {
+	// NoRandomness Optionally append random suffix
+	NoRandomness *bool `json:"noRandomness,omitempty"`
+
+	// Pin Optional pin required to enter room
+	Pin *string `json:"pin,omitempty"`
+
+	// RoomPrefix Prefix used on new room name
+	RoomPrefix *string `json:"roomPrefix,omitempty"`
+}
+
+// LivekitSIPDispatchRuleInfo defines model for livekit.SIPDispatchRuleInfo.
+type LivekitSIPDispatchRuleInfo struct {
+	// Attributes User-defined attributes for the Dispatch Rule.
+	//  Participants created by this rule will inherit these attributes.
+	Attributes      *map[string]string       `json:"attributes,omitempty"`
+	CreatedAt       *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+	HidePhoneNumber *bool                    `json:"hidePhoneNumber,omitempty"`
+
+	// InboundNumbers Dispatch Rule will only accept a call made from these numbers (if set).
+	InboundNumbers *[]string              `json:"inboundNumbers,omitempty"`
+	KrispEnabled   *bool                  `json:"krispEnabled,omitempty"`
+	Media          *LivekitSIPMediaConfig `json:"media,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	MediaEncryption *LivekitSIPMediaEncryption `json:"mediaEncryption,omitempty"`
+
+	// Metadata User-defined metadata for the Dispatch Rule.
+	//  Participants created by this rule will inherit this metadata.
+	Metadata *string `json:"metadata,omitempty"`
+
+	// Name Human-readable name for the Dispatch Rule.
+	Name *string `json:"name,omitempty"`
+
+	// Numbers Dispatch Rule will only accept a call made to these numbers (if set).
+	Numbers *[]string `json:"numbers,omitempty"`
+
+	// RoomConfig RoomConfiguration to use if the participant initiates the room
+	RoomConfig *LivekitRoomConfiguration `json:"roomConfig,omitempty"`
+
+	// RoomPreset Cloud-only, config preset to use
+	RoomPreset        *string                  `json:"roomPreset,omitempty"`
+	Rule              *LivekitSIPDispatchRule  `json:"rule,omitempty"`
+	SipDispatchRuleId *string                  `json:"sipDispatchRuleId,omitempty"`
+	TrunkIds          *[]string                `json:"trunkIds,omitempty"`
+	UpdatedAt         *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+}
+
+// LivekitSIPDispatchRuleUpdate defines model for livekit.SIPDispatchRuleUpdate.
+type LivekitSIPDispatchRuleUpdate struct {
+	Attributes *map[string]string     `json:"attributes,omitempty"`
+	Media      *LivekitSIPMediaConfig `json:"media,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	MediaEncryption *LivekitSIPMediaEncryption `json:"mediaEncryption,omitempty"`
+	Metadata        *string                    `json:"metadata,omitempty"`
+	Name            *string                    `json:"name,omitempty"`
+	Rule            *LivekitSIPDispatchRule    `json:"rule,omitempty"`
+	TrunkIds        *LivekitListUpdate         `json:"trunkIds,omitempty"`
+}
+
+// LivekitSIPHeaderOptions defines model for livekit.SIPHeaderOptions.
+type LivekitSIPHeaderOptions string
+
+// LivekitSIPInboundTrunkInfo defines model for livekit.SIPInboundTrunkInfo.
+type LivekitSIPInboundTrunkInfo struct {
+	// AllowedAddresses CIDR or IPs that traffic is accepted from.
+	//  An empty list means all inbound traffic is accepted.
+	AllowedAddresses *[]string `json:"allowedAddresses,omitempty"`
+
+	// AllowedNumbers Numbers that are allowed to make calls to this Trunk.
+	//  An empty list means calls from any phone number is accepted.
+	AllowedNumbers *[]string `json:"allowedNumbers,omitempty"`
+
+	// AttributesToHeaders Map LiveKit attributes to SIP X-* headers when sending BYE or REFER requests.
+	//  Keys are the names of attributes and values are the names of X-* headers they will be mapped to.
+	AttributesToHeaders *map[string]string `json:"attributesToHeaders,omitempty"`
+	AuthPassword        *string            `json:"authPassword,omitempty"`
+	AuthRealm           *string            `json:"authRealm,omitempty"`
+
+	// AuthUsername Username and password used to authenticate inbound SIP invites.
+	//  May be empty to have no authentication.
+	AuthUsername *string                  `json:"authUsername,omitempty"`
+	CreatedAt    *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// Headers Include these SIP X-* headers in 200 OK responses.
+	Headers *map[string]string `json:"headers,omitempty"`
+
+	// HeadersToAttributes Map SIP X-* headers from INVITE to SIP participant attributes.
+	HeadersToAttributes *map[string]string `json:"headersToAttributes,omitempty"`
+
+	// IncludeHeaders Map SIP headers from INVITE to sip.h.* participant attributes automatically.
+	//
+	//  When the names of required headers is known, using headers_to_attributes is strongly recommended.
+	//
+	//  When mapping INVITE headers to response headers with attributes_to_headers map,
+	//  lowercase header names should be used, for example: sip.h.x-custom-header.
+	IncludeHeaders *LivekitSIPHeaderOptions `json:"includeHeaders,omitempty"`
+	KrispEnabled   *bool                    `json:"krispEnabled,omitempty"`
+
+	// MaxCallDuration Max call duration.
+	MaxCallDuration *GoogleProtobufDuration `json:"maxCallDuration,omitempty"`
+	Media           *LivekitSIPMediaConfig  `json:"media,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	MediaEncryption *LivekitSIPMediaEncryption `json:"mediaEncryption,omitempty"`
+
+	// Metadata User-defined metadata for the Trunk.
+	Metadata *string `json:"metadata,omitempty"`
+
+	// Name Human-readable name for the Trunk.
+	Name *string `json:"name,omitempty"`
+
+	// Numbers Numbers associated with LiveKit SIP. The Trunk will only accept calls made to these numbers.
+	//  Creating multiple Trunks with different phone numbers allows having different rules for a single provider.
+	Numbers *[]string `json:"numbers,omitempty"`
+
+	// RingingTimeout Max time for the caller to wait for track subscription.
+	RingingTimeout *GoogleProtobufDuration `json:"ringingTimeout,omitempty"`
+
+	// RingingTimeoutStatus SIP status code if ringing_timeout elapses. Unset means using system default.
+	RingingTimeoutStatus *LivekitSIPStatusCode    `json:"ringingTimeoutStatus,omitempty"`
+	SipTrunkId           *string                  `json:"sipTrunkId,omitempty"`
+	UpdatedAt            *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+}
+
+// LivekitSIPInboundTrunkUpdate defines model for livekit.SIPInboundTrunkUpdate.
+type LivekitSIPInboundTrunkUpdate struct {
+	AllowedAddresses *LivekitListUpdate     `json:"allowedAddresses,omitempty"`
+	AllowedNumbers   *LivekitListUpdate     `json:"allowedNumbers,omitempty"`
+	AuthPassword     *string                `json:"authPassword,omitempty"`
+	AuthRealm        *string                `json:"authRealm,omitempty"`
+	AuthUsername     *string                `json:"authUsername,omitempty"`
+	Media            *LivekitSIPMediaConfig `json:"media,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	MediaEncryption *LivekitSIPMediaEncryption `json:"mediaEncryption,omitempty"`
+	Metadata        *string                    `json:"metadata,omitempty"`
+	Name            *string                    `json:"name,omitempty"`
+	Numbers         *LivekitListUpdate         `json:"numbers,omitempty"`
+}
+
+// LivekitSIPMediaConfig defines model for livekit.SIPMediaConfig.
+type LivekitSIPMediaConfig struct {
+	// Codecs List of allowed codecs. If only_listed_codecs is not set, this list is added to default codecs.
+	Codecs *[]LivekitSIPCodec `json:"codecs,omitempty"`
+
+	// DropAudioDuringDtmf Stop sending audio RTP while outbound DTMF digits are sent.
+	//  Always on when the telephone-event clock rate differs from the audio codec's.
+	DropAudioDuringDtmf *bool                      `json:"dropAudioDuringDtmf,omitempty"`
+	Encryption          *LivekitSIPMediaEncryption `json:"encryption,omitempty"`
+
+	// MediaTimeout Use specific media timeout. If zero or not specified, will use default timeout.
+	MediaTimeout *GoogleProtobufDuration `json:"mediaTimeout,omitempty"`
+
+	// OnlyListedCodecs if set, ignore the default codecs and use the list below.
+	OnlyListedCodecs *bool `json:"onlyListedCodecs,omitempty"`
+}
+
+// LivekitSIPMediaEncryption defines model for livekit.SIPMediaEncryption.
+type LivekitSIPMediaEncryption string
+
+// LivekitSIPNamedDest defines model for livekit.SIPNamedDest.
+type LivekitSIPNamedDest struct {
+	DisplayName *string `json:"displayName,omitempty"`
+	union       json.RawMessage
+}
+
+// LivekitSIPNamedDest0 defines model for LivekitSIPNamedDest.0.
+type LivekitSIPNamedDest0 struct {
+	// Raw <sip:user@sip.example.com:5060;transport=tcp>
+	Raw *string `json:"raw,omitempty"`
+}
+
+// LivekitSIPNamedDest1 defines model for LivekitSIPNamedDest.1.
+type LivekitSIPNamedDest1 struct {
+	Values *LivekitSIPUri `json:"values,omitempty"`
+}
+
+// LivekitSIPOutboundConfig defines model for livekit.SIPOutboundConfig.
+type LivekitSIPOutboundConfig struct {
+	// AttributesToHeaders Map LiveKit attributes to SIP X-* headers when sending BYE or REFER requests.
+	//  Keys are the names of attributes and values are the names of X-* headers they will be mapped to.
+	AttributesToHeaders *map[string]string `json:"attributesToHeaders,omitempty"`
+	AuthPassword        *string            `json:"authPassword,omitempty"`
+
+	// AuthUsername Username and password used to authenticate with SIP server.
+	//  May be empty to have no authentication.
+	AuthUsername *string `json:"authUsername,omitempty"`
+
+	// DestinationCountry country where the call terminates as ISO 3166-1 alpha-2 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2). This will be used by the livekit infrastructure to route calls.
+	DestinationCountry *string `json:"destinationCountry,omitempty"`
+
+	// FromHost Optional custom hostname for the 'From' SIP header. When set, outbound calls use this host instead of the default project SIP domain.
+	FromHost *string `json:"fromHost,omitempty"`
+
+	// HeadersToAttributes Map SIP X-* headers from 200 OK to SIP participant attributes.
+	//  Keys are the names of X-* headers and values are the names of attributes they will be mapped to.
+	HeadersToAttributes *map[string]string `json:"headersToAttributes,omitempty"`
+
+	// Hostname SIP server address
+	Hostname *string `json:"hostname,omitempty"`
+
+	// Transport SIP Transport used for outbound call.
+	Transport *LivekitSIPTransport `json:"transport,omitempty"`
+}
+
+// LivekitSIPOutboundTrunkInfo defines model for livekit.SIPOutboundTrunkInfo.
+type LivekitSIPOutboundTrunkInfo struct {
+	// Address Hostname or IP that SIP INVITE is sent too.
+	//  Note that this is not a SIP URI and should not contain the 'sip:' protocol prefix.
+	Address *string `json:"address,omitempty"`
+
+	// AttributesToHeaders Map LiveKit attributes to SIP X-* headers when sending BYE or REFER requests.
+	//  Keys are the names of attributes and values are the names of X-* headers they will be mapped to.
+	AttributesToHeaders *map[string]string `json:"attributesToHeaders,omitempty"`
+	AuthPassword        *string            `json:"authPassword,omitempty"`
+
+	// AuthUsername Username and password used to authenticate with SIP server.
+	//  May be empty to have no authentication.
+	AuthUsername *string                  `json:"authUsername,omitempty"`
+	CreatedAt    *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// DestinationCountry country where the call terminates as ISO 3166-1 alpha-2 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2). This will be used by the livekit infrastructure to route calls.
+	DestinationCountry *string `json:"destinationCountry,omitempty"`
+
+	// FromHost Optional custom hostname for the 'From' SIP header in outbound INVITEs.
+	//  When set, outbound calls from this trunk will use this host instead of the default project SIP domain.
+	//  Enables originating calls from custom domains.
+	FromHost *string `json:"fromHost,omitempty"`
+
+	// Headers Include these SIP X-* headers in INVITE request.
+	//  These headers are sent as-is and may help identify this call as coming from LiveKit for the other SIP endpoint.
+	Headers *map[string]string `json:"headers,omitempty"`
+
+	// HeadersToAttributes Map SIP X-* headers from 200 OK to SIP participant attributes.
+	//  Keys are the names of X-* headers and values are the names of attributes they will be mapped to.
+	HeadersToAttributes *map[string]string `json:"headersToAttributes,omitempty"`
+
+	// IncludeHeaders Map SIP headers from 200 OK to sip.h.* participant attributes automatically.
+	//
+	//  When the names of required headers is known, using headers_to_attributes is strongly recommended.
+	//
+	//  When mapping 200 OK headers to follow-up request headers with attributes_to_headers map,
+	//  lowercase header names should be used, for example: sip.h.x-custom-header.
+	IncludeHeaders *LivekitSIPHeaderOptions `json:"includeHeaders,omitempty"`
+	Media          *LivekitSIPMediaConfig   `json:"media,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	MediaEncryption *LivekitSIPMediaEncryption `json:"mediaEncryption,omitempty"`
+
+	// Metadata User-defined metadata for the Trunk.
+	Metadata *string `json:"metadata,omitempty"`
+
+	// Name Human-readable name for the Trunk.
+	Name *string `json:"name,omitempty"`
+
+	// Numbers Numbers used to make the calls. Random one from this list will be selected.
+	Numbers    *[]string `json:"numbers,omitempty"`
+	SipTrunkId *string   `json:"sipTrunkId,omitempty"`
+
+	// Transport SIP Transport used for outbound call.
+	Transport *LivekitSIPTransport     `json:"transport,omitempty"`
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+}
+
+// LivekitSIPOutboundTrunkUpdate defines model for livekit.SIPOutboundTrunkUpdate.
+type LivekitSIPOutboundTrunkUpdate struct {
+	Address            *string                `json:"address,omitempty"`
+	AuthPassword       *string                `json:"authPassword,omitempty"`
+	AuthUsername       *string                `json:"authUsername,omitempty"`
+	DestinationCountry *string                `json:"destinationCountry,omitempty"`
+	FromHost           *string                `json:"fromHost,omitempty"`
+	Media              *LivekitSIPMediaConfig `json:"media,omitempty"`
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	MediaEncryption *LivekitSIPMediaEncryption `json:"mediaEncryption,omitempty"`
+	Metadata        *string                    `json:"metadata,omitempty"`
+	Name            *string                    `json:"name,omitempty"`
+	Numbers         *LivekitListUpdate         `json:"numbers,omitempty"`
+	Transport       *LivekitSIPTransport       `json:"transport,omitempty"`
+}
+
+// LivekitSIPParticipantInfo defines model for livekit.SIPParticipantInfo.
+type LivekitSIPParticipantInfo struct {
+	ParticipantId       *string `json:"participantId,omitempty"`
+	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
+	RoomName            *string `json:"roomName,omitempty"`
+	SipCallId           *string `json:"sipCallId,omitempty"`
+}
+
+// LivekitSIPRequestDest defines model for livekit.SIPRequestDest.
+type LivekitSIPRequestDest struct {
+	union json.RawMessage
+}
+
+// LivekitSIPRequestDest0 defines model for LivekitSIPRequestDest.0.
+type LivekitSIPRequestDest0 struct {
+	// Raw <sip:user@sip.example.com:5060;transport=tcp>
+	Raw *string `json:"raw,omitempty"`
+}
+
+// LivekitSIPRequestDest1 defines model for LivekitSIPRequestDest.1.
+type LivekitSIPRequestDest1 struct {
+	Values *LivekitSIPUri `json:"values,omitempty"`
+}
+
+// LivekitSIPStatus SIPStatus is returned as an error detail in CreateSIPParticipant.
+type LivekitSIPStatus struct {
+	Code   *LivekitSIPStatusCode `json:"code,omitempty"`
+	Status *string               `json:"status,omitempty"`
+}
+
+// LivekitSIPStatusCode defines model for livekit.SIPStatusCode.
+type LivekitSIPStatusCode string
+
+// LivekitSIPTransferReason defines model for livekit.SIPTransferReason.
+type LivekitSIPTransferReason string
+
+// LivekitSIPTransferStatus defines model for livekit.SIPTransferStatus.
+type LivekitSIPTransferStatus string
+
+// LivekitSIPTransport defines model for livekit.SIPTransport.
+type LivekitSIPTransport string
+
+// LivekitSIPUri defines model for livekit.SIPUri.
+type LivekitSIPUri struct {
+	Host      *string              `json:"host,omitempty"`
+	Ip        *string              `json:"ip,omitempty"`
+	Port      *int                 `json:"port,omitempty"`
+	Transport *LivekitSIPTransport `json:"transport,omitempty"`
+	User      *string              `json:"user,omitempty"`
+}
+
 // LivekitScenario A single scenario, mirroring one entry in a scenarios.yaml file. Scenarios
 //
 //	are no longer stored server-side; the yaml file is the source of truth.
@@ -1201,7 +2580,7 @@ type LivekitScenario struct {
 	Instructions *string `json:"instructions,omitempty"`
 	Label        *string `json:"label,omitempty"`
 
-	// Tags Set as participant attributes on the simulation participant's access token.
+	// Tags Surfaced to the agent under test as SimulationContext scenario tags.
 	Tags *map[string]string `json:"tags,omitempty"`
 
 	// Userdata Arbitrary JSON-encoded object, surfaced to the agent under test as
@@ -1268,6 +2647,13 @@ type LivekitSegmentedFileProtocol string
 
 // LivekitSegmentedFileSuffix defines model for livekit.SegmentedFileSuffix.
 type LivekitSegmentedFileSuffix string
+
+// LivekitSimulationImpairments What the simulated caller's audio went through before the agent heard it.
+type LivekitSimulationImpairments struct {
+	BackgroundNoise      *bool `json:"backgroundNoise,omitempty"`
+	LowQualityMicrophone *bool `json:"lowQualityMicrophone,omitempty"`
+	PacketLoss           *bool `json:"packetLoss,omitempty"`
+}
 
 // LivekitSimulationMode How the simulated user interacts with the agent under test.
 type LivekitSimulationMode string
@@ -1346,9 +2732,12 @@ type LivekitSimulationRunJob struct {
 	AgentExpectations *string                  `json:"agentExpectations,omitempty"`
 	EndedAt           *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 	Error             *string                  `json:"error,omitempty"`
-	Id                *string                  `json:"id,omitempty"`
-	Instructions      *string                  `json:"instructions,omitempty"`
-	Label             *string                  `json:"label,omitempty"`
+
+	// FailureReason Set on a failed job whose cause is known; error stays the detail.
+	FailureReason *LivekitSimulationRunJobFailureReason `json:"failureReason,omitempty"`
+	Id            *string                               `json:"id,omitempty"`
+	Instructions  *string                               `json:"instructions,omitempty"`
+	Label         *string                               `json:"label,omitempty"`
 
 	// Metrics Quality metrics for this job's call. Unset when the job produced none.
 	Metrics  *LivekitSimulationRunJobMetrics `json:"metrics,omitempty"`
@@ -1368,6 +2757,9 @@ type LivekitSimulationRunJob struct {
 	Usage      *LivekitSimulationRunJobUsage  `json:"usage,omitempty"`
 }
 
+// LivekitSimulationRunJobFailureReason defines model for livekit.SimulationRun.Job.FailureReason.
+type LivekitSimulationRunJobFailureReason string
+
 // LivekitSimulationRunJobStatus defines model for livekit.SimulationRun.Job.Status.
 type LivekitSimulationRunJobStatus string
 
@@ -1379,6 +2771,13 @@ type LivekitSimulationRunJobUsage struct {
 
 // LivekitSimulationRunJobMetrics defines model for livekit.SimulationRun.JobMetrics.
 type LivekitSimulationRunJobMetrics struct {
+	// CallerLanguage The simulated caller's language, as a language tag: what it spoke or wrote.
+	CallerLanguage *string `json:"callerLanguage,omitempty"`
+
+	// CallerListenLanguage Audio only: the language the caller transcribed the agent in; "" means
+	//  caller_language.
+	CallerListenLanguage *string `json:"callerListenLanguage,omitempty"`
+
 	// Conciseness Judged over the authored dialog (text and audio); needs the text judge. judged {0, 0.5, 1} per agent turn; job = mean
 	Conciseness  *float32                                    `json:"conciseness,omitempty"`
 	Conversation *LivekitSimulationRunJobMetricsConversation `json:"conversation,omitempty"`
@@ -1386,9 +2785,16 @@ type LivekitSimulationRunJobMetrics struct {
 	// ConversationProgression 0-1, derived from the flags above
 	ConversationProgression *float32 `json:"conversationProgression,omitempty"`
 
+	// EndReason How the call ended. A failing end also sets the job's error.
+	EndReason *LivekitSimulationRunJobMetricsEndReason `json:"endReason,omitempty"`
+
 	// HasRemoteSession false = waveform-only capture (e.g. SIP)
 	HasRemoteSession *bool `json:"hasRemoteSession,omitempty"`
-	InformationLoss  *bool `json:"informationLoss,omitempty"`
+
+	// Impairments Audio only: what the caller's audio went through before the agent heard
+	//  it. Absent for a clean call.
+	Impairments     *LivekitSimulationImpairments `json:"impairments,omitempty"`
+	InformationLoss *bool                         `json:"informationLoss,omitempty"`
 
 	// JudgeModel text judge for judged scores; "" if none ran
 	JudgeModel *string                            `json:"judgeModel,omitempty"`
@@ -1418,6 +2824,9 @@ type LivekitSimulationRunJobMetrics struct {
 type LivekitSimulationRunJobMetricsConversation struct {
 	// AwkwardSilenceCount gaps past the natural-pause threshold
 	AwkwardSilenceCount *int `json:"awkwardSilenceCount,omitempty"`
+
+	// BackchannelCount the caller's acknowledgements over the agent's speech
+	BackchannelCount *int `json:"backchannelCount,omitempty"`
 
 	// E2eLatencyMs needs the RemoteSession; the agent's own claim
 	E2eLatencyMs *int `json:"e2eLatencyMs,omitempty"`
@@ -1449,6 +2858,9 @@ type LivekitSimulationRunJobMetricsConversation struct {
 	// UnansweredTurns the simulated party spoke, the agent never responded
 	UnansweredTurns *int `json:"unansweredTurns,omitempty"`
 }
+
+// LivekitSimulationRunJobMetricsEndReason defines model for livekit.SimulationRun.JobMetrics.EndReason.
+type LivekitSimulationRunJobMetricsEndReason string
 
 // LivekitSimulationRunJobMetricsLLM defines model for livekit.SimulationRun.JobMetrics.LLM.
 type LivekitSimulationRunJobMetricsLLM struct {
@@ -1545,12 +2957,23 @@ type LivekitSimulationRunJobMetricsTurn struct {
 	E2eLatencyMs *int `json:"e2eLatencyMs,omitempty"`
 
 	// EndMs audio only
-	EndMs             *int   `json:"endMs,omitempty"`
-	EotMisprediction  *bool  `json:"eotMisprediction,omitempty"`
-	HeardE2eLatencyMs *int32 `json:"heardE2eLatencyMs,omitempty"`
+	EndMs *int `json:"endMs,omitempty"`
+
+	// Entities Audio only; needs the text judge. One per saying of a key entity in
+	//  this turn, in order, as the other side heard it. Matched over the whole
+	//  call's transcript, so a saying spanning turns sits on its first, and
+	//  which of an entity's repeated sayings was heard is the alignment's
+	//  best guess.
+	Entities          *[]LivekitSimulationRunJobMetricsTurnEntity `json:"entities,omitempty"`
+	EotMisprediction  *bool                                       `json:"eotMisprediction,omitempty"`
+	HeardE2eLatencyMs *int32                                      `json:"heardE2eLatencyMs,omitempty"`
 
 	// Index 1-based, conversation order
 	Index *int `json:"index,omitempty"`
+
+	// ItemId the agent's chat item id for the first message this turn holds, as its
+	//  stored transcript carries it; "" without a RemoteSession
+	ItemId *string `json:"itemId,omitempty"`
 
 	// LlmTps needs the RemoteSession
 	LlmTps *float32 `json:"llmTps,omitempty"`
@@ -1568,13 +2991,30 @@ type LivekitSimulationRunJobMetricsTurn struct {
 	StartMs *int `json:"startMs,omitempty"`
 
 	// SttDelayMs needs the RemoteSession
-	SttDelayMs    *int `json:"sttDelayMs,omitempty"`
-	TimeToYieldMs *int `json:"timeToYieldMs,omitempty"`
+	SttDelayMs *int `json:"sttDelayMs,omitempty"`
+
+	// Text The words the judges read for this turn: the speaker's own, or as the
+	//  other side heard them when those are unknown (the agent's, without a
+	//  RemoteSession).
+	Text          *string `json:"text,omitempty"`
+	TimeToYieldMs *int    `json:"timeToYieldMs,omitempty"`
 
 	// TtsTtfbMs needs the RemoteSession
 	TtsTtfbMs       *int     `json:"ttsTtfbMs,omitempty"`
 	TurnTakingScore *float32 `json:"turnTakingScore,omitempty"`
 	Unanswered      *bool    `json:"unanswered,omitempty"`
+}
+
+// LivekitSimulationRunJobMetricsTurnEntity defines model for livekit.SimulationRun.JobMetrics.Turn.Entity.
+type LivekitSimulationRunJobMetricsTurnEntity struct {
+	// Heard the listener's normalized words where it landed; "" if dropped
+	Heard *string `json:"heard,omitempty"`
+
+	// Recognized heard with no word errors
+	Recognized *bool `json:"recognized,omitempty"`
+
+	// Said the entity as the speaker said it
+	Said *string `json:"said,omitempty"`
 }
 
 // LivekitSimulationRunRunMetrics Aggregates over this run's jobs, so a run summary does not have to pull
@@ -1636,17 +3076,61 @@ type LivekitSimulationRunSummaryIssue struct {
 	Suggestion  *string `json:"suggestion,omitempty"`
 }
 
+// LivekitStreamDestination defines model for livekit.StreamDestination.
+type LivekitStreamDestination struct {
+	// Id required
+	Id *string `json:"id,omitempty"`
+
+	// Url required
+	Url *string `json:"url,omitempty"`
+}
+
 // LivekitStreamOutput defines model for livekit.StreamOutput.
 type LivekitStreamOutput struct {
+	// Destinations urls or destinations required
+	Destinations *[]LivekitStreamDestination `json:"destinations,omitempty"`
+
 	// Protocol required
 	Protocol *LivekitStreamProtocol `json:"protocol,omitempty"`
 
-	// Urls required
+	// Urls urls or destinations required
 	Urls *[]string `json:"urls,omitempty"`
 }
 
 // LivekitStreamProtocol defines model for livekit.StreamProtocol.
 type LivekitStreamProtocol string
+
+// LivekitTransferSIPParticipantRequest defines model for livekit.TransferSIPParticipantRequest.
+type LivekitTransferSIPParticipantRequest struct {
+	// Dialtone Optionally play dialtone to the SIP participant as an audible indicator of being transferred.
+	Dialtone *LivekitSIPDialtone `json:"dialtone,omitempty"`
+
+	// Headers Add the following headers to the REFER SIP request.
+	Headers             *map[string]string `json:"headers,omitempty"`
+	ParticipantIdentity *string            `json:"participantIdentity,omitempty"`
+
+	// PlayDialtone Deprecated: use dialtone. Setting play_dialtone is equivalent to SIP_DIALTONE_ETSI when dialtone is unset.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	PlayDialtone *bool `json:"playDialtone,omitempty"`
+
+	// RingingTimeout Max time for the transfer destination to answer the call.
+	RingingTimeout *GoogleProtobufDuration `json:"ringingTimeout,omitempty"`
+	RoomName       *string                 `json:"roomName,omitempty"`
+	TransferTo     *string                 `json:"transferTo,omitempty"`
+}
+
+// LivekitTransferSIPParticipantResponse Added in https://github.com/livekit/protocol/pull/1730. Not needed after all:
+//
+//	will be rolled back to an empty message once STR_CALL_ENDED is reported as an
+//	error like every other failed transfer.
+type LivekitTransferSIPParticipantResponse struct {
+	Reason *LivekitSIPTransferReason `json:"reason,omitempty"`
+
+	// SipStatus Set when the outcome was reported by a SIP response.
+	SipStatus  *LivekitSIPStatus         `json:"sipStatus,omitempty"`
+	Status     *LivekitSIPTransferStatus `json:"status,omitempty"`
+	TransferId *string                   `json:"transferId,omitempty"`
+}
 
 // LivekitVideoCodec defines model for livekit.VideoCodec.
 type LivekitVideoCodec string
@@ -1673,50 +3157,6 @@ type LivekitAgentAgentHandoff struct {
 	Id         *string                  `json:"id,omitempty"`
 	NewAgentId *string                  `json:"newAgentId,omitempty"`
 	OldAgentId *string                  `json:"oldAgentId,omitempty"`
-}
-
-// LivekitAgentAgentTaskStatus A task is never UNSPECIFIED.
-type LivekitAgentAgentTaskStatus string
-
-// LivekitAgentAgentTaskTask defines model for livekit.agent.AgentTask.Task.
-type LivekitAgentAgentTaskTask struct {
-	// Name The task's name, as the agent defines it.
-	Name      *string                      `json:"name,omitempty"`
-	Status    *LivekitAgentAgentTaskStatus `json:"status,omitempty"`
-	TaskId    *string                      `json:"taskId,omitempty"`
-	ThreadId  *string                      `json:"threadId,omitempty"`
-	UpdatedAt *GoogleProtobufTimestamp     `json:"updatedAt,omitempty"`
-}
-
-// LivekitAgentAgentThreadItem One chat item of an agent. Stored as the JSON of
-//
-//	ChatContext.ChatItem (items.payload in thread_schema_v1.sql).
-type LivekitAgentAgentThreadItem struct {
-	Agent *string                          `json:"agent,omitempty"`
-	Item  *LivekitAgentChatContextChatItem `json:"item,omitempty"`
-
-	// MessageId The A2A message the item came from.
-	MessageId *string `json:"messageId,omitempty"`
-
-	// Seq Position in the agent's history.
-	Seq *string `json:"seq,omitempty"`
-}
-
-// LivekitAgentAgentThreadThread defines model for livekit.agent.AgentThread.Thread.
-type LivekitAgentAgentThreadThread struct {
-	Attributes *map[string]string       `json:"attributes,omitempty"`
-	CreatedAt  *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-
-	// DatabaseId The thread's database ("DB_..."), created with the thread.
-	DatabaseId *string `json:"databaseId,omitempty"`
-
-	// ExpiresAt last_active + idle_ttl; every update pushes it out. The thread and its
-	//  database are deleted once it passes.
-	ExpiresAt  *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	IdleTtl    *GoogleProtobufDuration  `json:"idleTtl,omitempty"`
-	LastActive *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
-	Scope      *string                  `json:"scope,omitempty"`
-	ThreadId   *string                  `json:"threadId,omitempty"`
 }
 
 // LivekitAgentChatContext defines model for livekit.agent.ChatContext.
@@ -1784,8 +3224,13 @@ type LivekitAgentFunctionCall struct {
 	Arguments *string                  `json:"arguments,omitempty"`
 	CallId    *string                  `json:"callId,omitempty"`
 	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	Id        *string                  `json:"id,omitempty"`
-	Name      *string                  `json:"name,omitempty"`
+
+	// Extra Framework metadata recorded on the call, kept with the history. A delegating call records
+	//  where the request went: lk.delegation.task_id, lk.delegation.endpoint,
+	//  lk.delegation.transport and lk.delegation.profile.
+	Extra *map[string]string `json:"extra,omitempty"`
+	Id    *string            `json:"id,omitempty"`
+	Name  *string            `json:"name,omitempty"`
 }
 
 // LivekitAgentFunctionCallOutput defines model for livekit.agent.FunctionCallOutput.
@@ -1812,338 +3257,642 @@ type LivekitAgentMetricsReport struct {
 	TtsNodeTtfb              *float64                 `json:"ttsNodeTtfb,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1AgentAnalytics One agent's analytics over a time range. Common concerns are grouped so they
+// LivekitPublicapiAgentsV1BuilderAgent An agent made from a configuration.
+type LivekitPublicapiAgentsV1BuilderAgent struct {
+	// AgentId The ID of the agent on LiveKit Cloud, as other agent APIs and the `lk`
+	//  CLI show it.
+	AgentId *string `json:"agentId,omitempty"`
+
+	// Config The current configuration. `ListBuilderAgents` does not set it.
+	Config    *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+	CreatedAt *GoogleProtobufTimestamp                    `json:"createdAt,omitempty"`
+
+	// Deployment The deployment of the agent. Unset when the API cannot read the status.
+	Deployment *LivekitPublicapiAgentsV1Deployment `json:"deployment,omitempty"`
+	Id         *string                             `json:"id,omitempty"`
+
+	// Name The name the agent registers under. Dispatch this name to send the agent
+	//  to a room.
+	Name      *string                  `json:"name,omitempty"`
+	ProjectId *string                  `json:"projectId,omitempty"`
+	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
+
+	// VersionId The version that holds the current configuration.
+	VersionId *string `json:"versionId,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfig The configuration of a builder agent. LiveKit generates the agent's code
+// from it when you deploy the agent. Unset properties take their default.
 //
-//	read the same whether you fetch one agent or the whole roster: `sessions`,
-//	`performance`, and `usage` are always found under those names.
-type LivekitPublicapiAnalyticsV1AgentAnalytics struct {
-	AgentId     *string                                               `json:"agentId,omitempty"`
-	AgentName   *string                                               `json:"agentName,omitempty"`
-	Performance *LivekitPublicapiAnalyticsV1AgentAnalyticsPerformance `json:"performance,omitempty"`
-	Region      *string                                               `json:"region,omitempty"`
-	Sessions    *LivekitPublicapiAnalyticsV1AgentAnalyticsSessions    `json:"sessions,omitempty"`
-	Status      *string                                               `json:"status,omitempty"`
-	Usage       *LivekitPublicapiAnalyticsV1AgentAnalyticsUsage       `json:"usage,omitempty"`
+// In instructions, greetingInstructions and header values, a
+// {{metadata.<name>}} placeholder takes its value from the JSON metadata
+// of the agent dispatch. The server ignores unknown properties, and does
+// not store them.
+type LivekitPublicapiAgentsV1BuilderAgentConfig struct {
+	// AllowGreetingInterrupt If true, the user can interrupt the greeting.
+	AllowGreetingInterrupt *bool `json:"allowGreetingInterrupt,omitempty"`
+
+	// BackgroundAudio A sound that plays behind the agent's voice.
+	BackgroundAudio *LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio `json:"backgroundAudio,omitempty"`
+
+	// BuilderAgentMode prompt_instructions makes an agent that follows instructions in an
+	// open conversation. data_collection makes an agent that collects the
+	// data in dataCollectionFields, one task at a time.
+	BuilderAgentMode *LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode `json:"builderAgentMode,omitempty"`
+
+	// ClientTools Functions the agent can call on the user's frontend, through an RPC
+	// to the user's participant.
+	ClientTools *[]LivekitPublicapiAgentsV1BuilderAgentConfigClientTool `json:"clientTools,omitempty"`
+
+	// DataCollectionFields The data to collect, one task for each item, in order. Used only
+	// when builderAgentMode is data_collection.
+	DataCollectionFields *[]LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField `json:"dataCollectionFields,omitempty"`
+
+	// EndCallTool A tool the agent can use to end the call.
+	EndCallTool *LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool `json:"endCallTool,omitempty"`
+
+	// EndOfCall A report that the agent sends to your URL when a call ends. It
+	// contains a summary of the conversation, and for a data_collection
+	// agent, the collected data.
+	EndOfCall *LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall `json:"endOfCall,omitempty"`
+
+	// Expressive If true, the agent speaks with more expression, where the tts model supports it.
+	Expressive *bool `json:"expressive,omitempty"`
+
+	// GreetUser If true, the agent speaks first when a user joins.
+	GreetUser *bool `json:"greetUser,omitempty"`
+
+	// GreetingInstructions Instructions for the first thing the agent says. Used only when
+	// greetUser is true. Can contain {{metadata.<name>}} placeholders.
+	GreetingInstructions *string `json:"greetingInstructions,omitempty"`
+
+	// HttpTools HTTP requests the agent can make during the conversation.
+	HttpTools *[]LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool `json:"httpTools,omitempty"`
+
+	// Instructions The system prompt of the agent. Can contain {{metadata.<name>}}
+	// placeholders. Unset uses a general voice-assistant prompt.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// KeytermDetection If true, speech-to-text detects key terms in the speech.
+	KeytermDetection *bool `json:"keytermDetection,omitempty"`
+
+	// Keyterms A comma-separated list of words and phrases that speech-to-text
+	// must recognize, such as product names.
+	Keyterms *string `json:"keyterms,omitempty"`
+
+	// Llm The language model. Pipeline mode only.
+	Llm *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"llm,omitempty"`
+
+	// LlmReasoningEffort The reasoning effort of llm, for a model that supports it.
+	LlmReasoningEffort *LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort `json:"llmReasoningEffort,omitempty"`
+
+	// McpServers MCP servers whose tools the agent can use.
+	McpServers *[]LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer `json:"mcpServers,omitempty"`
+
+	// Metadata The placeholders that instructions, greetingInstructions and header
+	// values can use, by name. A default applies when the dispatch
+	// metadata does not set the value.
+	Metadata *map[string]LivekitPublicapiAgentsV1BuilderAgentConfigVariable `json:"metadata,omitempty"`
+
+	// ModelMode pipeline uses separate speech-to-text (stt), language (llm) and
+	// text-to-speech (tts) models. realtime uses one speech-to-speech
+	// model, set in tts.
+	ModelMode *LivekitPublicapiAgentsV1BuilderAgentConfigModelMode `json:"modelMode,omitempty"`
+
+	// NoiseCancellation The noise cancellation applied to the user's audio. Use
+	// krisp-bvc-telephony for phone calls. none turns it off.
+	NoiseCancellation *LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation `json:"noiseCancellation,omitempty"`
+
+	// Stt The speech-to-text model. Pipeline mode only.
+	Stt *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"stt,omitempty"`
+
+	// SttLanguage The language the user speaks. Pipeline mode only.
+	SttLanguage *LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode `json:"sttLanguage,omitempty"`
+
+	// Tts In pipeline mode, the text-to-speech model. In realtime mode, the
+	// speech-to-speech model, for example "openai/gpt-realtime-2.1".
+	Tts *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"tts,omitempty"`
+
+	// TtsLanguage The language the agent speaks.
+	TtsLanguage *LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode `json:"ttsLanguage,omitempty"`
+
+	// TtsVoice The voice of the tts model. Each model has its own voice IDs.
+	TtsVoice *string `json:"ttsVoice,omitempty"`
+
+	// TtsVoiceType custom if ttsVoice is a voice that you made with the tts provider.
+	TtsVoiceType *LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType `json:"ttsVoiceType,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1AgentAnalyticsPerformance defines model for livekit.publicapi.analytics.v1.AgentAnalytics.Performance.
-type LivekitPublicapiAnalyticsV1AgentAnalyticsPerformance struct {
-	// InterruptedRate Fraction 0..1 of turns the user interrupted the agent.
-	InterruptedRate *float64                                     `json:"interruptedRate,omitempty"`
-	JoinLatency     *LivekitPublicapiAnalyticsV1Percentiles      `json:"joinLatency,omitempty"`
-	Latency         *LivekitPublicapiAnalyticsV1LatencyBreakdown `json:"latency,omitempty"`
-	Turns           *string                                      `json:"turns,omitempty"`
+// LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio A sound that plays behind the agent's voice.
+type LivekitPublicapiAgentsV1BuilderAgentConfigBackgroundAudio string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode prompt_instructions makes an agent that follows instructions in an
+// open conversation. data_collection makes an agent that collects the
+// data in dataCollectionFields, one task at a time.
+type LivekitPublicapiAgentsV1BuilderAgentConfigBuilderAgentMode string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigModelMode pipeline uses separate speech-to-text (stt), language (llm) and
+// text-to-speech (tts) models. realtime uses one speech-to-speech
+// model, set in tts.
+type LivekitPublicapiAgentsV1BuilderAgentConfigModelMode string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation The noise cancellation applied to the user's audio. Use
+// krisp-bvc-telephony for phone calls. none turns it off.
+type LivekitPublicapiAgentsV1BuilderAgentConfigNoiseCancellation string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType custom if ttsVoice is a voice that you made with the tts provider.
+type LivekitPublicapiAgentsV1BuilderAgentConfigTtsVoiceType string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigClientTool defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ClientTool.
+type LivekitPublicapiAgentsV1BuilderAgentConfigClientTool struct {
+	// Description Tells the model when to use the tool.
+	Description string `json:"description"`
+
+	// Name The tool name the model sees, and the RPC method the agent calls
+	// on the frontend. Unique in the agent.
+	Name       LivekitPublicapiAgentsV1BuilderAgentConfigName             `json:"name"`
+	Parameters *[]LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter `json:"parameters,omitempty"`
+
+	// PreviewResponse A sample response, used when you preview the agent in the dashboard.
+	PreviewResponse *string `json:"previewResponse,omitempty"`
+
+	// Silent If true, the agent does not tell the user that it uses the tool.
+	Silent *bool `json:"silent,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1AgentAnalyticsSessions defines model for livekit.publicapi.analytics.v1.AgentAnalytics.Sessions.
-type LivekitPublicapiAnalyticsV1AgentAnalyticsSessions struct {
-	Active         *string `json:"active,omitempty"`
-	DispatchErrors *string `json:"dispatchErrors,omitempty"`
+// LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.DataCollectionField.
+type LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField struct {
+	// HasManyResults If true, the agent collects a list of results, until the user says the list is complete.
+	HasManyResults *bool `json:"hasManyResults,omitempty"`
 
-	// Estimate Set when `total` is an approximation; carries its tolerance.
-	Estimate *LivekitPublicapiAnalyticsV1Estimate `json:"estimate,omitempty"`
-	Total    *string                              `json:"total,omitempty"`
+	// Name The task name. Unique in the agent.
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigFieldName `json:"name"`
+
+	// ResultFields The values that one result contains.
+	ResultFields []struct {
+		Description string `json:"description"`
+
+		// Name Unique in the field.
+		Name     LivekitPublicapiAgentsV1BuilderAgentConfigFieldName                            `json:"name"`
+		Optional *bool                                                                          `json:"optional,omitempty"`
+		Type     *LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType `json:"type,omitempty"`
+	} `json:"resultFields"`
+
+	// TaskInstructions How the agent collects this data.
+	TaskInstructions string `json:"taskInstructions"`
 }
 
-// LivekitPublicapiAnalyticsV1AgentAnalyticsUsage defines model for livekit.publicapi.analytics.v1.AgentAnalytics.Usage.
-type LivekitPublicapiAnalyticsV1AgentAnalyticsUsage struct {
-	AvgTokensPerSession *string                                  `json:"avgTokensPerSession,omitempty"`
-	Models              *[]LivekitPublicapiAnalyticsV1ModelUsage `json:"models,omitempty"`
+// LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType defines model for LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionField.ResultFields.Type.
+type LivekitPublicapiAgentsV1BuilderAgentConfigDataCollectionFieldResultFieldsType string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool A tool the agent can use to end the call.
+type LivekitPublicapiAgentsV1BuilderAgentConfigEndCallTool struct {
+	// DeleteRoom If true, ending the call also closes the room for all participants.
+	DeleteRoom *bool `json:"deleteRoom,omitempty"`
+
+	// Description Tells the model when to end the call.
+	Description *string `json:"description,omitempty"`
+	Enabled     bool    `json:"enabled"`
+
+	// Instructions What the agent says before it ends the call.
+	Instructions *string `json:"instructions,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1AgentsGetResponse defines model for livekit.publicapi.analytics.v1.Agents.Get.Response.
-type LivekitPublicapiAnalyticsV1AgentsGetResponse struct {
-	Analytics *LivekitPublicapiAnalyticsV1AgentAnalytics `json:"analytics,omitempty"`
+// LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall A report that the agent sends to your URL when a call ends. It
+// contains a summary of the conversation, and for a data_collection
+// agent, the collected data.
+type LivekitPublicapiAgentsV1BuilderAgentConfigEndOfCall struct {
+	// Enabled If true, the agent writes a summary and sends the report. A
+	// data_collection agent sends the collected data to url even when
+	// this is false.
+	Enabled bool                                               `json:"enabled"`
+	Headers *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders `json:"headers,omitempty"`
+
+	// Llm The model that writes the summary.
+	Llm *LivekitPublicapiAgentsV1BuilderAgentConfigModelId `json:"llm,omitempty"`
+
+	// ReasoningEffort The reasoning effort of llm. Unset is low when enabled is true, and none when it is false.
+	ReasoningEffort *LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort `json:"reasoningEffort,omitempty"`
+
+	// SummaryInstructions Instructions for the summary, added to the default ones.
+	SummaryInstructions *string `json:"summaryInstructions,omitempty"`
+
+	// Url The URL that receives the report as an HTTP POST. Required when enabled is true.
+	Url *string `json:"url,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1AgentsListResponse defines model for livekit.publicapi.analytics.v1.Agents.List.Response.
-type LivekitPublicapiAnalyticsV1AgentsListResponse struct {
-	Items    *[]LivekitPublicapiAnalyticsV1AgentAnalytics `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo            `json:"pageInfo,omitempty"`
+// LivekitPublicapiAgentsV1BuilderAgentConfigFieldName Lowercase snake_case, for example customer_name. Not a Python keyword.
+type LivekitPublicapiAgentsV1BuilderAgentConfigFieldName = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigHeader defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.Header.
+type LivekitPublicapiAgentsV1BuilderAgentConfigHeader struct {
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+
+	// Value Can contain {{metadata.<name>}} placeholders.
+	Value string `json:"value"`
 }
 
-// LivekitPublicapiAnalyticsV1CountryCount A per-country connection count for the top-countries breakdown.
-type LivekitPublicapiAnalyticsV1CountryCount struct {
-	Count *string `json:"count,omitempty"`
-	Name  *string `json:"name,omitempty"`
+// LivekitPublicapiAgentsV1BuilderAgentConfigHeaders defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.Headers.
+type LivekitPublicapiAgentsV1BuilderAgentConfigHeaders = []LivekitPublicapiAgentsV1BuilderAgentConfigHeader
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.HttpTool.
+type LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool struct {
+	// Description Tells the model when to use the tool.
+	Description string                                                    `json:"description"`
+	Headers     *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders        `json:"headers,omitempty"`
+	Method      *LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod `json:"method,omitempty"`
+
+	// Name The tool name the model sees. Unique in the agent.
+	Name       LivekitPublicapiAgentsV1BuilderAgentConfigName             `json:"name"`
+	Parameters *[]LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter `json:"parameters,omitempty"`
+
+	// Silent If true, the agent does not tell the user that it uses the tool.
+	Silent *bool `json:"silent,omitempty"`
+
+	// Url The request URL. A path segment that starts with a colon
+	// (/users/:userId) takes the value of the parameter with that name.
+	Url LivekitPublicapiAgentsV1BuilderAgentConfigUrl `json:"url"`
 }
 
-// LivekitPublicapiAnalyticsV1DataPoint One point of a per-session time series (quality, bandwidth, fps).
+// LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod defines model for LivekitPublicapiAgentsV1BuilderAgentConfigHttpTool.Method.
+type LivekitPublicapiAgentsV1BuilderAgentConfigHttpToolMethod string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode A language code, for example "en".
+type LivekitPublicapiAgentsV1BuilderAgentConfigLanguageCode = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.McpServer.
+type LivekitPublicapiAgentsV1BuilderAgentConfigMcpServer struct {
+	Headers *LivekitPublicapiAgentsV1BuilderAgentConfigHeaders `json:"headers,omitempty"`
+
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+
+	// Url The URL of the MCP server.
+	Url LivekitPublicapiAgentsV1BuilderAgentConfigUrl `json:"url"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigModelId A LiveKit Inference model ID, as "<provider>/<model>".
+type LivekitPublicapiAgentsV1BuilderAgentConfigModelId = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigName Starts with a letter, then letters, digits, "_" and "-".
+type LivekitPublicapiAgentsV1BuilderAgentConfigName = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ReasoningEffort.
+type LivekitPublicapiAgentsV1BuilderAgentConfigReasoningEffort string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter defines model for livekit.publicapi.agents.v1.BuilderAgentConfig.ToolParameter.
+type LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter struct {
+	// Description Tells the model what value to give.
+	Description string `json:"description"`
+
+	// Name The parameter name. An HTTP tool sends a parameter that its url
+	// names as a path segment (":name") in the path, and all others in
+	// the query (GET) or the JSON body.
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+
+	// Required If false, the model can omit the parameter.
+	Required *bool                                                        `json:"required,omitempty"`
+	Type     *LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType `json:"type,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType defines model for LivekitPublicapiAgentsV1BuilderAgentConfigToolParameter.Type.
+type LivekitPublicapiAgentsV1BuilderAgentConfigToolParameterType string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigUrl An http or https URL.
+type LivekitPublicapiAgentsV1BuilderAgentConfigUrl = string
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigVariable A placeholder. type is string, number or boolean; with no type, the
+// type of default decides.
+type LivekitPublicapiAgentsV1BuilderAgentConfigVariable struct {
+	union json.RawMessage
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigVariable0 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.0.
+type LivekitPublicapiAgentsV1BuilderAgentConfigVariable0 struct {
+	Default *string `json:"default,omitempty"`
+
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Type interface{}                                    `json:"type"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigVariable1 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.1.
+type LivekitPublicapiAgentsV1BuilderAgentConfigVariable1 struct {
+	Default *float32 `json:"default,omitempty"`
+
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Type interface{}                                    `json:"type,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentConfigVariable2 defines model for LivekitPublicapiAgentsV1BuilderAgentConfigVariable.2.
+type LivekitPublicapiAgentsV1BuilderAgentConfigVariable2 struct {
+	Default *bool `json:"default,omitempty"`
+
+	// Name Starts with a letter, then letters, digits, "_" and "-".
+	Name LivekitPublicapiAgentsV1BuilderAgentConfigName `json:"name"`
+	Type interface{}                                    `json:"type,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsCreateResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Create.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsCreateResponse struct {
+	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Delete.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiAgentsV1BuilderAgentsDeployResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Deploy.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsDeployResponse struct {
+	// Status The deployment status, which is `DEPLOYMENT_STATUS_BUILDING`.
+	//  Call `GetBuilderAgent` to follow the deployment.
+	Status *LivekitPublicapiAgentsV1DeploymentStatus `json:"status,omitempty"`
+
+	// VersionId The version that the deployment builds.
+	VersionId *string `json:"versionId,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsGetResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Get.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsGetResponse struct {
+	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsListResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.List.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsListResponse struct {
+	Items    *[]LivekitPublicapiAgentsV1BuilderAgent `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo       `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse defines model for livekit.publicapi.agents.v1.BuilderAgents.Update.Response.
+type LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse struct {
+	BuilderAgent *LivekitPublicapiAgentsV1BuilderAgent `json:"builderAgent,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1Deployment What runs on LiveKit Cloud for a builder agent.
+type LivekitPublicapiAgentsV1Deployment struct {
+	// DeployedAt When the running agent was deployed.
+	DeployedAt *GoogleProtobufTimestamp                  `json:"deployedAt,omitempty"`
+	Status     *LivekitPublicapiAgentsV1DeploymentStatus `json:"status,omitempty"`
+
+	// VersionId The version that the running agent was built from. Empty when it is not
+	//  known, or when the agent is not deployed.
+	VersionId *string `json:"versionId,omitempty"`
+}
+
+// LivekitPublicapiAgentsV1DeploymentStatus The deployment state of a builder agent. When the agent runs in more
+//
+//	than one region, the status is the one that needs attention first.
+type LivekitPublicapiAgentsV1DeploymentStatus string
+
+// LivekitPublicapiAnalyticsV1DataPoint A point of a session time series, such as quality, bandwidth, or frame rate.
 type LivekitPublicapiAnalyticsV1DataPoint struct {
+	// Timestamp The start of the sample interval.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
-	Value     *float64                 `json:"value,omitempty"`
+
+	// Value The value over that interval.
+	Value *float64 `json:"value,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1Estimate Flags a value that is approximate over large windows, with its tolerance. A
-//
-//	consumer should not treat an estimated value as exact.
-type LivekitPublicapiAnalyticsV1Estimate struct {
-	// ErrorMargin Fractional tolerance (e.g. 0.01 for +/-1%). Zero when unknown.
-	ErrorMargin *float64 `json:"errorMargin,omitempty"`
-	IsEstimate  *bool    `json:"isEstimate,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1LatencyBreakdown Where an average agent reply's time goes, in milliseconds.
-type LivekitPublicapiAnalyticsV1LatencyBreakdown struct {
-	AvgReplyMs *float64 `json:"avgReplyMs,omitempty"`
-	EouMs      *float64 `json:"eouMs,omitempty"`
-	LlmTtftMs  *float64 `json:"llmTtftMs,omitempty"`
-	SttDelayMs *float64 `json:"sttDelayMs,omitempty"`
-	TtsTtfbMs  *float64 `json:"ttsTtfbMs,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ModelUsage Per-model usage over the window. `component` is the stage the model served
-//
-//	(llm, tts, realtime); latency is TTFT for llm/realtime rows and TTFB for tts
-//	rows.
-type LivekitPublicapiAnalyticsV1ModelUsage struct {
-	CachedTokens *string  `json:"cachedTokens,omitempty"`
-	Component    *string  `json:"component,omitempty"`
-	InTokens     *string  `json:"inTokens,omitempty"`
-	LatencyP50Ms *float64 `json:"latencyP50Ms,omitempty"`
-	LatencyP95Ms *float64 `json:"latencyP95Ms,omitempty"`
-	Model        *string  `json:"model,omitempty"`
-	OutTokens    *string  `json:"outTokens,omitempty"`
-	Provider     *string  `json:"provider,omitempty"`
-	Requests     *string  `json:"requests,omitempty"`
-	Sessions     *string  `json:"sessions,omitempty"`
-	TtsChars     *string  `json:"ttsChars,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ParticipantInfo One participant identity of a room session, as the dashboard's participants
-//
-//	table shows it.
+// LivekitPublicapiAnalyticsV1ParticipantInfo A participant identity of a room session.
 type LivekitPublicapiAnalyticsV1ParticipantInfo struct {
-	// JoinedAt First join across the identity's connections.
+	// JoinedAt The time of the first join across the connections of the identity.
 	JoinedAt *GoogleProtobufTimestamp `json:"joinedAt,omitempty"`
 
-	// LeftAt Last leave across the identity's connections; unset while no leave is
-	//  recorded, so a participant of an active session with no leftAt may still be
-	//  connected.
+	// LeftAt The time of the last leave across the connections of the identity. Unset
+	//  while no leave is recorded, so a participant of an active session with no
+	//  `leftAt` can still be connected.
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
-	// Location Country name, e.g. "United States"; "Unknown" when the rollup has none.
-	Location            *string `json:"location,omitempty"`
-	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
-	ParticipantName     *string `json:"participantName,omitempty"`
+	// Location The name of the country, for example `United States`. `Unknown` when the
+	//  country is not known.
+	Location *string `json:"location,omitempty"`
 
-	// PublishedSources Which track sources the participant published during the session.
+	// ParticipantIdentity The identity the participant connected with.
+	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
+
+	// ParticipantName The display name of the participant.
+	ParticipantName *string `json:"participantName,omitempty"`
+
+	// PublishedSources The track sources that the participant published during the session.
 	PublishedSources *LivekitPublicapiAnalyticsV1PublishedSources `json:"publishedSources,omitempty"`
 
-	// Region LiveKit region display name; "Unknown" when the region isn't recognized.
+	// Region The display name of the LiveKit region. `Unknown` when the region is not
+	//  recognized.
 	Region *string `json:"region,omitempty"`
 
-	// Sessions The participant's participant sessions, oldest join first: one per
-	//  connection, so each reconnect adds one. At most 50: a participant that
-	//  reconnected more often has its oldest 50 here. Empty when they couldn't be
-	//  read; the rest of the row still returns.
+	// Sessions The participant sessions of the participant, oldest join first. There is
+	//  one for each connection, so each reconnect adds one. The maximum is 50.
+	//  For a participant with more, this has the oldest 50. Empty when the
+	//  participant sessions cannot be read. The other fields still return.
 	Sessions *[]LivekitPublicapiAnalyticsV1ParticipantSession `json:"sessions,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantSession One participant session of a participant: one join-to-leave stretch,
+// LivekitPublicapiAnalyticsV1ParticipantSession A participant session: the time from one join of a participant to its
 //
-//	identified by its participant session id (PA_...), with the client it
-//	connected from. A participant that reconnects, from the same device or
-//	another, has several.
+//	leave, with the client that it connected from. A participant that
+//	reconnects, from the same device or a different one, has more than one.
 type LivekitPublicapiAnalyticsV1ParticipantSession struct {
-	// Browser Client browser, e.g. "chrome".
+	// Browser The browser of the client, for example `chrome`.
 	Browser *string `json:"browser,omitempty"`
 
-	// ConnectionTimeMs Milliseconds the client took to connect.
+	// ConnectionTimeMs The time that the client took to connect, in milliseconds.
 	ConnectionTimeMs *int32 `json:"connectionTimeMs,omitempty"`
 
-	// ConnectionType Transport the client connected over: "UDP", "TCP" or "TURN"; empty when
-	//  not reported.
+	// ConnectionType The transport that the client connected over: `UDP`, `TCP`, or `TURN`.
+	//  Empty when not reported.
 	ConnectionType *string `json:"connectionType,omitempty"`
 
-	// DeviceModel Client device model, e.g. "iPhone 15".
+	// DeviceModel The device model of the client, for example `iPhone 15`.
 	DeviceModel *string `json:"deviceModel,omitempty"`
 
-	// DurationSeconds Seconds from joinedAt to leftAt, as the dashboard counts them. While no
-	//  leave is recorded, to the session's end once it has one, else to now.
+	// DurationSeconds The number of seconds from `joinedAt` to `leftAt`. While no leave is
+	//  recorded, the count goes to the end of the room session, or to now when
+	//  the room session has no end.
 	DurationSeconds *string `json:"durationSeconds,omitempty"`
 
-	// JoinedAt When this participant session joined.
+	// JoinedAt The time the participant session joined.
 	JoinedAt *GoogleProtobufTimestamp `json:"joinedAt,omitempty"`
 
-	// LeftAt When it left; unset while no leave is recorded.
+	// LeftAt The time the participant session left. Unset while no leave is recorded.
 	LeftAt *GoogleProtobufTimestamp `json:"leftAt,omitempty"`
 
-	// Location Country name, e.g. "United States"; "Unknown" when the rollup has none.
+	// Location The name of the country, for example `United States`. `Unknown` when the
+	//  country is not known.
 	Location *string `json:"location,omitempty"`
 
-	// Os Client operating system: "ios", "android", "windows", "mac" or "linux";
-	//  empty when not reported.
+	// Os The operating system of the client: `ios`, `android`, `windows`, `mac`,
+	//  or `linux`. Empty when not reported.
 	Os *string `json:"os,omitempty"`
 
-	// ParticipantSessionId The participant session id (PA_...).
+	// ParticipantSessionId The ID of the participant session (`PA_...`).
 	ParticipantSessionId *string `json:"participantSessionId,omitempty"`
 
-	// Region LiveKit region display name; "Unknown" when the region isn't recognized.
+	// Region The display name of the LiveKit region. `Unknown` when the region is not
+	//  recognized.
 	Region *string `json:"region,omitempty"`
 
-	// SdkVersion LiveKit client SDK version, e.g. "2.6.1". The SDK's name isn't recorded.
+	// SdkVersion The version of the LiveKit client SDK, for example `2.6.1`. The name of
+	//  the SDK is not recorded.
 	SdkVersion *string `json:"sdkVersion,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1ParticipantSortField The column a participant listing is ordered by.
+// LivekitPublicapiAnalyticsV1ParticipantSortField The field that a participant list sorts by.
 type LivekitPublicapiAnalyticsV1ParticipantSortField string
 
-// LivekitPublicapiAnalyticsV1Percentiles A p50/p90/p99 triple in milliseconds.
-type LivekitPublicapiAnalyticsV1Percentiles struct {
-	P50Ms *float64 `json:"p50Ms,omitempty"`
-	P90Ms *float64 `json:"p90Ms,omitempty"`
-	P99Ms *float64 `json:"p99Ms,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1PlatformShare A per-platform share of connections (fraction 0..1).
-type LivekitPublicapiAnalyticsV1PlatformShare struct {
-	Name  *string  `json:"name,omitempty"`
-	Share *float64 `json:"share,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ProjectAnalytics The project overview over a time range, grouped the same way: `sessions` and
-//
-//	`participants`.
-type LivekitPublicapiAnalyticsV1ProjectAnalytics struct {
-	Participants *LivekitPublicapiAnalyticsV1ProjectAnalyticsParticipants `json:"participants,omitempty"`
-	Sessions     *LivekitPublicapiAnalyticsV1ProjectAnalyticsSessions     `json:"sessions,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ProjectAnalyticsParticipants defines model for livekit.publicapi.analytics.v1.ProjectAnalytics.Participants.
-type LivekitPublicapiAnalyticsV1ProjectAnalyticsParticipants struct {
-	Platforms    *[]LivekitPublicapiAnalyticsV1PlatformShare `json:"platforms,omitempty"`
-	TopCountries *[]LivekitPublicapiAnalyticsV1CountryCount  `json:"topCountries,omitempty"`
-	Total        *string                                     `json:"total,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ProjectAnalyticsSessions defines model for livekit.publicapi.analytics.v1.ProjectAnalytics.Sessions.
-type LivekitPublicapiAnalyticsV1ProjectAnalyticsSessions struct {
-	AgentMinutes       *string  `json:"agentMinutes,omitempty"`
-	AvgDurationSeconds *float64 `json:"avgDurationSeconds,omitempty"`
-	Served             *string  `json:"served,omitempty"`
-	WithAgents         *string  `json:"withAgents,omitempty"`
-	WithTelephony      *string  `json:"withTelephony,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse defines model for livekit.publicapi.analytics.v1.ProjectOverview.Get.Response.
-type LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse struct {
-	Analytics *LivekitPublicapiAnalyticsV1ProjectAnalytics `json:"analytics,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1PublishedSources Which track sources a participant published.
+// LivekitPublicapiAnalyticsV1PublishedSources The track sources that a participant published.
 type LivekitPublicapiAnalyticsV1PublishedSources struct {
-	CameraTrack      *bool `json:"cameraTrack,omitempty"`
-	MicrophoneTrack  *bool `json:"microphoneTrack,omitempty"`
+	// CameraTrack True when the participant published a camera track.
+	CameraTrack *bool `json:"cameraTrack,omitempty"`
+
+	// MicrophoneTrack True when the participant published a microphone track.
+	MicrophoneTrack *bool `json:"microphoneTrack,omitempty"`
+
+	// ScreenShareAudio True when the participant published screen share audio.
 	ScreenShareAudio *bool `json:"screenShareAudio,omitempty"`
+
+	// ScreenShareTrack True when the participant published a screen share track.
 	ScreenShareTrack *bool `json:"screenShareTrack,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1Session One room-session list row. Bandwidth and connection time are on GetSession's
+// LivekitPublicapiAnalyticsV1Session A room session, as `ListProjectSessions` returns it. Only the `detail` from
 //
-//	detail only.
+//	`GetSession` has bandwidth and connection time.
 type LivekitPublicapiAnalyticsV1Session struct {
-	// EndedAt When the session ended. A session that stopped reporting is given its last
-	//  report time, even while its status is still ACTIVE; unset while it is live.
+	// EndedAt The time the session ended. Unset while the session is live. For a session
+	//  that stopped reporting, this is the time of its last report, also when
+	//  its status is `ACTIVE`.
 	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
 
-	// HasDetailData False while the session's full detail (end time, participant counts,
-	//  duration) is still being finalized; the detail endpoints are complete once
-	//  it is true.
-	HasDetailData *bool                    `json:"hasDetailData,omitempty"`
-	LastActive    *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
+	// HasDetailData True when the full detail of the session is final. While false, LiveKit
+	//  still finalizes the end time, the participant counts, and the duration.
+	//  When true, the detail RPCs return complete data.
+	HasDetailData *bool `json:"hasDetailData,omitempty"`
 
-	// NumParticipants Distinct participants (by identity) connected for more than zero seconds
-	//  during the session. Not a live count: a closed session keeps its total.
-	NumParticipants *int32                   `json:"numParticipants,omitempty"`
-	RoomName        *string                  `json:"roomName,omitempty"`
-	SessionId       *string                  `json:"sessionId,omitempty"`
-	StartedAt       *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
+	// LastActive When the session last reported activity.
+	LastActive *GoogleProtobufTimestamp `json:"lastActive,omitempty"`
 
-	// Status ACTIVE until the session's close is recorded, so a session that stopped
-	//  reporting can be ACTIVE with an endedAt.
-	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
-	Tags   *[]string                                 `json:"tags,omitempty"`
-}
-
-// LivekitPublicapiAnalyticsV1SessionDetail The richer per-session view: a superset of Session with the room id, totals,
-//
-//	the first page of participants, and per-metric timelines. The timelines share
-//	one grid sized from the session's length, the dashboard's: one point per
-//	bucket, 0 where a bucket has no data.
-type LivekitPublicapiAnalyticsV1SessionDetail struct {
-	// BandwidthIn Bytes participants published, all track types.
-	BandwidthIn *string `json:"bandwidthIn,omitempty"`
-
-	// BandwidthOut Bytes participants subscribed to, all track types.
-	BandwidthOut *string `json:"bandwidthOut,omitempty"`
-
-	// ConnectionSeconds WebRTC connection time in seconds, summed over standard participants and
-	//  self-hosted agents (cloud agents excluded), as the dashboard counts it.
-	ConnectionSeconds *string                  `json:"connectionSeconds,omitempty"`
-	EndedAt           *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
-
-	// NumParticipants Same count as Session.numParticipants.
+	// NumParticipants The number of distinct participants, by identity, that connected for more
+	//  than zero seconds during the session. This is not a live count: a closed
+	//  session keeps its total.
 	NumParticipants *int32 `json:"numParticipants,omitempty"`
 
-	// Participants The first page of participants, newest join first (at most 50). When
-	//  participantsPage.hasMore, continue with ListSessionParticipants: pass
-	//  participantsPage.nextCursor as page.cursor, with sortBy and sortOrder unset
-	//  (or joinedAt descending, the same thing).
-	Participants *[]LivekitPublicapiAnalyticsV1ParticipantInfo `json:"participants,omitempty"`
+	// RoomName The name of the room the session ran in.
+	RoomName *string `json:"roomName,omitempty"`
 
-	// ParticipantsPage Paging state for participants. Unset when the first page couldn't be
-	//  read: the rest of the detail still returns, and ListSessionParticipants
-	//  lists the participants.
-	ParticipantsPage *LivekitPublicapiCommonV1PageInfo `json:"participantsPage,omitempty"`
+	// SessionId The room session ID (`RM_...`).
+	SessionId *string `json:"sessionId,omitempty"`
 
-	// PublishBps Published audio plus video bitrate, in bits per second.
-	PublishBps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"publishBps,omitempty"`
+	// StartedAt When the session started.
+	StartedAt *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
 
-	// PublishFps Published video frame rate.
-	PublishFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"publishFps,omitempty"`
+	// Status The status of the session. It is `ACTIVE` until LiveKit records that the
+	//  session closed, so a session that stopped reporting can be `ACTIVE` and
+	//  have an `endedAt`.
+	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
 
-	// Quality Average connection quality as a 0-1 fraction of the 0-5 track score.
-	Quality   *[]LivekitPublicapiAnalyticsV1DataPoint   `json:"quality,omitempty"`
-	RoomName  *string                                   `json:"roomName,omitempty"`
-	SessionId *string                                   `json:"sessionId,omitempty"`
-	StartedAt *GoogleProtobufTimestamp                  `json:"startedAt,omitempty"`
-	Status    *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
-
-	// SubscribeBps Subscribed audio plus video bitrate, in bits per second.
-	SubscribeBps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeBps,omitempty"`
-
-	// SubscribeFps Subscribed video frame rate.
-	SubscribeFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeFps,omitempty"`
-
-	// Tags The session's tags, as on Session.
+	// Tags The tags recorded on the session.
 	Tags *[]string `json:"tags,omitempty"`
 }
 
-// LivekitPublicapiAnalyticsV1SessionEvent One event of a room session, such as a participant joining or a track being
+// LivekitPublicapiAnalyticsV1SessionDetail The detail of a room session. It has the fields of `Session`, and also
 //
-//	published.
+//	totals, the first page of participants, and a timeline for each metric.
+//
+//	All timelines use the same time buckets, sized from the length of the
+//	session. Each timeline has one point for each bucket, with `0` where a
+//	bucket has no data.
+type LivekitPublicapiAnalyticsV1SessionDetail struct {
+	// BandwidthIn The number of bytes that participants published, for all track types.
+	BandwidthIn *string `json:"bandwidthIn,omitempty"`
+
+	// BandwidthOut The number of bytes that participants subscribed to, for all track types.
+	BandwidthOut *string `json:"bandwidthOut,omitempty"`
+
+	// ConnectionSeconds The total WebRTC connection time in seconds, of standard participants and
+	//  self-hosted agents. Cloud agents are not included.
+	ConnectionSeconds *string `json:"connectionSeconds,omitempty"`
+
+	// EndedAt When the session ended, as on Session.
+	EndedAt *GoogleProtobufTimestamp `json:"endedAt,omitempty"`
+
+	// NumParticipants The number of participants. This is the same count as `numParticipants`
+	//  in `Session`.
+	NumParticipants *int32 `json:"numParticipants,omitempty"`
+
+	// Participants The first page of participants, newest join first. The maximum is 50.
+	//  When `participantsPage.hasMore` is true, call `ListSessionParticipants` to
+	//  get the next page. Set `page.cursor` to `participantsPage.nextCursor`, and
+	//  leave `sortBy` and `sortOrder` unset, or set them to `joinedAt` and
+	//  descending.
+	Participants *[]LivekitPublicapiAnalyticsV1ParticipantInfo `json:"participants,omitempty"`
+
+	// ParticipantsPage The page info for `participants`. Unset when the first page cannot be
+	//  read. The other fields still return, and `ListSessionParticipants` lists
+	//  the participants.
+	ParticipantsPage *LivekitPublicapiCommonV1PageInfo `json:"participantsPage,omitempty"`
+
+	// PublishBps The published audio and video bitrate, in bits per second.
+	PublishBps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"publishBps,omitempty"`
+
+	// PublishFps The published video frame rate.
+	PublishFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"publishFps,omitempty"`
+
+	// Quality The average connection quality, as a fraction from 0 to 1 of the track
+	//  score, which goes from 0 to 5.
+	Quality *[]LivekitPublicapiAnalyticsV1DataPoint `json:"quality,omitempty"`
+
+	// RoomName The name of the room the session ran in.
+	RoomName *string `json:"roomName,omitempty"`
+
+	// SessionId The room session ID (`RM_...`).
+	SessionId *string `json:"sessionId,omitempty"`
+
+	// StartedAt When the session started.
+	StartedAt *GoogleProtobufTimestamp `json:"startedAt,omitempty"`
+
+	// Status The session status, as on Session.
+	Status *LivekitPublicapiAnalyticsV1SessionStatus `json:"status,omitempty"`
+
+	// SubscribeBps The subscribed audio and video bitrate, in bits per second.
+	SubscribeBps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeBps,omitempty"`
+
+	// SubscribeFps The subscribed video frame rate.
+	SubscribeFps *[]LivekitPublicapiAnalyticsV1DataPoint `json:"subscribeFps,omitempty"`
+
+	// Tags The tags of the session, the same as in `Session`.
+	Tags *[]string `json:"tags,omitempty"`
+}
+
+// LivekitPublicapiAnalyticsV1SessionEvent An event of a room session, such as a participant that joins or a track
+//
+//	that is published.
 type LivekitPublicapiAnalyticsV1SessionEvent struct {
-	// ParticipantIdentity The identity of the participant the event is about; empty for a room
-	//  event, or an API call that names no participant.
+	// ParticipantIdentity The identity of the participant that the event is about. Empty for a room
+	//  event, or for an API call that names no participant.
 	ParticipantIdentity *string `json:"participantIdentity,omitempty"`
 
-	// ParticipantSessionId The participant session (PA_...) the event is about; empty when
-	//  participantIdentity is.
+	// ParticipantSessionId The ID of the participant session (`PA_...`) that the event is about.
+	//  Empty when `participantIdentity` is empty.
 	ParticipantSessionId *string `json:"participantSessionId,omitempty"`
 
-	// Payload The event's fields from an allowlist, each present only when the event
-	//  has it:
-	//    - participant events: participantKind, disconnectReason,
-	//      reconnectReason, isMigration and connectionType;
-	//    - track events: trackId, trackType, trackSource, mimeType and muted;
-	//    - ROOM_ENDED: reason;
-	//    - API_CALL: service, method, status, twirpErrorCode and durationNs.
-	//  Every other field the event recorded is left out.
-	Payload   *GoogleProtobufStruct    `json:"payload,omitempty"`
+	// Payload The fields of the event. Each field is present only when the event has it.
+	//  The payload has only these fields:
+	//
+	//  - Participant events: `participantKind`, `disconnectReason`,
+	//    `reconnectReason`, `isMigration`, and `connectionType`.
+	//  - Track events: `trackId`, `trackType`, `trackSource`, `mimeType`, and
+	//    `muted`.
+	//  - `ROOM_ENDED`: `reason`.
+	//  - `API_CALL`: `service`, `method`, `status`, `twirpErrorCode`, and
+	//    `durationNs`.
+	Payload *GoogleProtobufStruct `json:"payload,omitempty"`
+
+	// Timestamp When the event was recorded.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 
-	// Type The event's type, an AnalyticsEventType name such as PARTICIPANT_JOINED.
+	// Type The type of the event, an `AnalyticsEventType` name such as
+	//  `PARTICIPANT_JOINED`.
 	Type *string `json:"type,omitempty"`
 }
 
@@ -2164,8 +3913,8 @@ type LivekitPublicapiAnalyticsV1SessionStatus string
 
 // LivekitPublicapiAnalyticsV1SessionsGetResponse defines model for livekit.publicapi.analytics.v1.Sessions.Get.Response.
 type LivekitPublicapiAnalyticsV1SessionsGetResponse struct {
-	// Detail Absent while the session's detail is still being finalized (see
-	//  Session.hasDetailData on the list row).
+	// Detail The detail of the session. Absent while LiveKit finalizes the
+	//  detail. See `hasDetailData` on `session`.
 	Detail  *LivekitPublicapiAnalyticsV1SessionDetail `json:"detail,omitempty"`
 	Session *LivekitPublicapiAnalyticsV1Session       `json:"session,omitempty"`
 }
@@ -2176,414 +3925,508 @@ type LivekitPublicapiAnalyticsV1SessionsListResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo     `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiCommonV1PageInfo The cursor-pagination metadata shared by every list response.
+// LivekitPublicapiCommonV1PageInfo The paging state of a list response.
 type LivekitPublicapiCommonV1PageInfo struct {
+	// HasMore True when another page follows this one.
 	HasMore *bool `json:"hasMore,omitempty"`
 
-	// NextCursor Pass as `cursor` on the next request to fetch the following page. Empty on
-	//  the last page.
+	// NextCursor The cursor of the next page. To get the next page, send it as `cursor` in
+	//  the next request. Empty on the last page.
 	NextCursor *string `json:"nextCursor,omitempty"`
 }
 
-// LivekitPublicapiCommonV1SortOrder The direction of a list request's sort. A list that lets the caller pick a
-//
-//	direction takes it as `sortOrder` and documents its default column and
-//	direction; one that can also sort on more than one column adds its own
-//	`<X>SortField sortBy`.
+// LivekitPublicapiCommonV1SortOrder The sort direction of a list.
 type LivekitPublicapiCommonV1SortOrder string
 
-// LivekitPublicapiDatabasesV1DatabasesCreateResponse defines model for livekit.publicapi.databases.v1.Databases.Create.Response.
-type LivekitPublicapiDatabasesV1DatabasesCreateResponse struct {
-	DatabaseId *string `json:"databaseId,omitempty"`
+// LivekitPublicapiObservabilityV1DataState A state of the session data: whether more of it can still arrive.
+type LivekitPublicapiObservabilityV1DataState string
 
-	// ExpiresAt Unset when the database never expires.
-	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-}
-
-// LivekitPublicapiDatabasesV1DatabasesDeleteResponse defines model for livekit.publicapi.databases.v1.Databases.Delete.Response.
-type LivekitPublicapiDatabasesV1DatabasesDeleteResponse = map[string]interface{}
-
-// LivekitPublicapiDatabasesV1DatabasesExportResponse defines model for livekit.publicapi.databases.v1.Databases.Export.Response.
-type LivekitPublicapiDatabasesV1DatabasesExportResponse struct {
-	// DownloadUrl Pre-authenticated object-storage URL.
-	DownloadUrl *string `json:"downloadUrl,omitempty"`
-
-	// ExpiresAt Of the URL, not the database.
-	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-
-	// Tip The commit sequence the export is consistent at.
-	Tip *string `json:"tip,omitempty"`
-}
-
-// LivekitPublicapiDatabasesV1DatabasesGetResponse defines model for livekit.publicapi.databases.v1.Databases.Get.Response.
-type LivekitPublicapiDatabasesV1DatabasesGetResponse struct {
-	Database *LivekitAgentDBAgentDatabase `json:"database,omitempty"`
-}
-
-// LivekitPublicapiDatabasesV1DatabasesListResponse defines model for livekit.publicapi.databases.v1.Databases.List.Response.
-type LivekitPublicapiDatabasesV1DatabasesListResponse struct {
-	Items    *[]LivekitAgentDBAgentDatabase    `json:"items,omitempty"`
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
-}
-
-// LivekitPublicapiObservabilityV1LogLevel A log record's level, as the dashboard's logs panel shows and filters it.
+// LivekitPublicapiObservabilityV1DataStatus The status of the session data: whether more of it can still arrive. A
 //
-//	Agents name levels differently by runtime, such as Python's CRITICAL and
-//	Node's FATAL, so a record's level comes from its OpenTelemetry severity
-//	number, or from its level name when it has none; a level means the same for
-//	Python and Node agents.
+//	read returns the data that exists when it runs, so a response can hold only
+//	part of the session data in every state.
+type LivekitPublicapiObservabilityV1DataStatus struct {
+	// RetryAfterSeconds The number of seconds to wait before you read again. Set only when
+	//  `state` is `DATA_STATE_SETTLING`, and 0 in every other state.
+	RetryAfterSeconds *int `json:"retryAfterSeconds,omitempty"`
+
+	// State The state of the session data: whether more of it can still arrive.
+	State *LivekitPublicapiObservabilityV1DataState `json:"state,omitempty"`
+}
+
+// LivekitPublicapiObservabilityV1LogLevel The level of a log record, as the logs panel on the dashboard shows and
+//
+//	filters it. Python and Node.js agents use different level names, such as
+//	`CRITICAL` in Python and `FATAL` in Node.js. Thus, the level of a record
+//	comes from its OpenTelemetry severity number, or from its level name when it
+//	has no severity number. Each level has the same meaning for Python and
+//	Node.js agents.
 type LivekitPublicapiObservabilityV1LogLevel string
 
-// LivekitPublicapiObservabilityV1LogRecord One log record a session's agent exported.
+// LivekitPublicapiObservabilityV1LogRecord A log record that an agent of a session exported.
 type LivekitPublicapiObservabilityV1LogRecord struct {
-	// Attributes The record's attributes, typed and nested as the agent recorded them,
-	//  with its resource's and scope's attributes merged in; the record's own
-	//  value wins. An integer beyond ±2^53 is its decimal string, and bytes are
+	// Attributes The attributes of the record, typed and nested as the agent recorded
+	//  them. They include its resource and scope attributes. When an
+	//  attribute has two values, the value of the record is used. An integer
+	//  larger than 2^53 or smaller than -2^53 is a decimal string. Bytes are
 	//  base64.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
-	// BodyFields A structured logger's body fields other than its message; empty for a
-	//  plain text body.
+	// BodyFields The fields of a structured log body, other than the message.
+	//  Empty for a plain text body.
 	BodyFields *map[string]*GoogleProtobufValue `json:"bodyFields,omitempty"`
 
-	// Id The record's id, the same on every read.
-	Id    *string                                  `json:"id,omitempty"`
+	// Id The ID of the record. It is the same on every read.
+	Id *string `json:"id,omitempty"`
+
+	// Level The level, mapped onto the LogLevel values.
 	Level *LivekitPublicapiObservabilityV1LogLevel `json:"level,omitempty"`
 
-	// Logger The logger that wrote the record (its logger.name attribute).
+	// Logger The logger that wrote the record (its `logger.name` attribute).
 	Logger *string `json:"logger,omitempty"`
 
-	// Message The record's text. A structured logger's body keeps it under its event,
-	//  message or msg field; a structured body with none of them is written
-	//  here whole, as JSON.
+	// Message The text of the record. A structured logger puts the text in the `event`,
+	//  `message`, or `msg` field of its body. When a structured body has none of
+	//  these fields, this field holds the full body as JSON.
 	Message *string `json:"message,omitempty"`
 
-	// SeverityText The level's name as the agent logged it, such as "WARN" or "CRITICAL".
-	SeverityText *string                  `json:"severityText,omitempty"`
-	SpanId       *string                  `json:"spanId,omitempty"`
-	Timestamp    *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
+	// SeverityText The name of the level, as the agent logged it, such as `WARN` or
+	//  `CRITICAL`.
+	SeverityText *string `json:"severityText,omitempty"`
 
-	// TraceId The trace and span the record was logged in, as lowercase hex; empty when
-	//  it was logged outside one. They link the record to its span in
-	//  GetSessionTraces.
+	// SpanId The ID of the span that the record was logged in, as lowercase hex. Empty
+	//  when the record was logged outside a span.
+	SpanId *string `json:"spanId,omitempty"`
+
+	// Timestamp When the record was logged.
+	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
+
+	// TraceId The ID of the trace that the record was logged in, as lowercase hex.
+	//  Empty when the record was logged outside a trace. With `spanId`, it links
+	//  the record to its span in `GetSessionTraces`.
 	TraceId *string `json:"traceId,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1LogsGetResponse defines model for livekit.publicapi.observability.v1.Logs.Get.Response.
 type LivekitPublicapiObservabilityV1LogsGetResponse struct {
-	PageInfo *LivekitPublicapiCommonV1PageInfo           `json:"pageInfo,omitempty"`
-	Records  *[]LivekitPublicapiObservabilityV1LogRecord `json:"records,omitempty"`
+	// DataStatus The data status of the session logs: whether more of them can still
+	//  arrive.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus  `json:"dataStatus,omitempty"`
+	Items      *[]LivekitPublicapiObservabilityV1LogRecord `json:"items,omitempty"`
+	PageInfo   *LivekitPublicapiCommonV1PageInfo           `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1MetricHistogram Summarizes the values a histogram point recorded.
+// LivekitPublicapiObservabilityV1MetricHistogram A summary of the values that a histogram point recorded.
 type LivekitPublicapiObservabilityV1MetricHistogram struct {
-	// BucketBounds A histogram's buckets, with one more count than bounds: bucketCounts[0]
-	//  counts the values up to bucketBounds[0], bucketCounts[i] those in
-	//  (bucketBounds[i-1], bucketBounds[i]], and the last count those above the
-	//  last bound. Both are empty for an exponential histogram.
+	// BucketBounds The upper bounds of the histogram buckets. `bucketCounts` has one
+	//  more count than `bucketBounds`. `bucketCounts[0]` counts the values up to
+	//  `bucketBounds[0]`. `bucketCounts[i]` counts the values in
+	//  `(bucketBounds[i-1], bucketBounds[i]]`. The last count counts the values
+	//  above the last bound. Empty for an exponential histogram.
 	BucketBounds *[]float64 `json:"bucketBounds,omitempty"`
-	BucketCounts *[]string  `json:"bucketCounts,omitempty"`
 
-	// Count How many values were recorded.
-	Count *string  `json:"count,omitempty"`
-	Max   *float64 `json:"max,omitempty"`
-	Min   *float64 `json:"min,omitempty"`
+	// BucketCounts The number of values in each histogram bucket. See `bucketBounds`.
+	//  Empty for an exponential histogram.
+	BucketCounts *[]string `json:"bucketCounts,omitempty"`
 
-	// Sum Their sum, minimum and maximum; unset when the agent didn't record them.
+	// Count The number of values recorded.
+	Count *string `json:"count,omitempty"`
+
+	// Max The maximum value. Unset when the agent did not record it.
+	Max *float64 `json:"max,omitempty"`
+
+	// Min The minimum value. Unset when the agent did not record it.
+	Min *float64 `json:"min,omitempty"`
+
+	// Sum The sum of the values. Unset when the agent did not record it.
 	Sum *float64 `json:"sum,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1MetricKind The OpenTelemetry data type a metric point was exported as.
+// LivekitPublicapiObservabilityV1MetricKind The OpenTelemetry data type of a metric point.
 type LivekitPublicapiObservabilityV1MetricKind string
 
-// LivekitPublicapiObservabilityV1MetricPoint One OpenTelemetry metric data point a session's agent exported. It is the raw
+// LivekitPublicapiObservabilityV1MetricPoint An OpenTelemetry metric data point that an agent of a session exported. It is
 //
-//	metric the agent emits, so it won't exactly match the dashboard's metrics
-//	panel, which derives its numbers from the transcript and traces. Only agents
-//	that export OpenTelemetry metrics to LiveKit Cloud produce points; an agent
-//	whose code installs its own MeterProvider exports none to LiveKit Cloud.
+//	the raw metric that the agent exports, so it does not exactly match the
+//	metrics panel on the dashboard, which calculates its values from the
+//	transcript and traces. Only an agent that exports OpenTelemetry metrics to
+//	LiveKit Cloud has points. An agent whose code installs its own
+//	`MeterProvider` exports no metrics to LiveKit Cloud.
 type LivekitPublicapiObservabilityV1MetricPoint struct {
-	// Attributes The point's attributes, typed and nested as the agent recorded them, with
-	//  its resource's and scope's attributes merged in, such as room_id, job_id,
-	//  lk.agent_name and the model's model_name; the point's own value wins. With
-	//  two agents in one session, the resource's can be the other agent's. An
-	//  integer beyond ±2^53 is its decimal string, and bytes are base64.
-	Attributes *map[string]*GoogleProtobufValue           `json:"attributes,omitempty"`
-	EndTime    *GoogleProtobufTimestamp                   `json:"endTime,omitempty"`
-	Kind       *LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
+	// Attributes The attributes of the point, typed and nested as the agent recorded them.
+	//  They include its resource and scope attributes, such as `room_id`,
+	//  `job_id`, `lk.agent_name`, and the `model_name` of the model. When an
+	//  attribute has two values, the value of the point is used. When a session
+	//  has two agents, the resource attributes can be those of the other agent.
+	//  An integer larger than 2^53 or smaller than -2^53 is a decimal string.
+	//  Bytes are base64.
+	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
-	// Name The metric's name, such as lk.agents.turn.e2e_latency or
-	//  gen_ai.client.token.usage. Several metrics that share their attributes
-	//  can come back under one name; see GetSessionMetrics.
+	// EndTime The end of the interval, and the moment a gauge was measured.
+	EndTime *GoogleProtobufTimestamp `json:"endTime,omitempty"`
+
+	// Kind Which kind of metric the point carries, and so which field of `data` is
+	//  set.
+	Kind *LivekitPublicapiObservabilityV1MetricKind `json:"kind,omitempty"`
+
+	// Name The name of the metric, such as `lk.agents.turn.e2e_latency` or
+	//  `gen_ai.client.token.usage`. Several metrics with the same attributes can
+	//  have one name. See `GetSessionMetrics`.
 	Name *string `json:"name,omitempty"`
 
-	// StartTime The interval the point covers. An agent exports every 30 seconds, so a sum
-	//  or histogram covers the time since its previous export; a gauge has no
-	//  startTime.
+	// StartTime The start of the interval that the point covers. An agent exports every
+	//  30 seconds, so a sum or histogram covers the time since its previous
+	//  export. Unset for a gauge.
 	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
 
-	// Unit The metric's unit as the agent declared it, such as "s" or "{token}";
-	//  empty when it declared none.
+	// Unit The unit of the metric, as the agent declared it, such as `s` or
+	//  `{token}`. Empty when the agent declared no unit.
 	Unit  *string `json:"unit,omitempty"`
 	union json.RawMessage
 }
 
 // LivekitPublicapiObservabilityV1MetricPoint0 defines model for LivekitPublicapiObservabilityV1MetricPoint.0.
 type LivekitPublicapiObservabilityV1MetricPoint0 struct {
-	// Histogram A histogram's or exponential histogram's summary.
+	// Histogram The summary of a histogram or exponential histogram. Set when `kind` is
+	//  `METRIC_KIND_HISTOGRAM` or `METRIC_KIND_EXPONENTIAL_HISTOGRAM`.
 	Histogram *LivekitPublicapiObservabilityV1MetricHistogram `json:"histogram,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricPoint1 defines model for LivekitPublicapiObservabilityV1MetricPoint.1.
 type LivekitPublicapiObservabilityV1MetricPoint1 struct {
-	// Value A gauge's or sum's value.
+	// Value The value of a gauge or sum. Set when `kind` is `METRIC_KIND_GAUGE` or
+	//  `METRIC_KIND_SUM`.
 	Value *float64 `json:"value,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1MetricsGetResponse defines model for livekit.publicapi.observability.v1.Metrics.Get.Response.
 type LivekitPublicapiObservabilityV1MetricsGetResponse struct {
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	// DataStatus The data status of the session metric points: whether more of them can
+	//  still arrive.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
 
-	// Points By end time, oldest first; points that end together are ordered by
-	//  start time, a point with none first, then by kind and a hash of what
-	//  they recorded, not by name. A page continues
-	//  after the previous page's last point, so on an ACTIVE session a point
-	//  exported mid-read with a later time comes on a later page, and one
-	//  with an earlier time is missed until a new read.
-	Points *[]LivekitPublicapiObservabilityV1MetricPoint `json:"points,omitempty"`
+	// Items The metric points, ordered by end time, oldest first. Points with the
+	//  same end time are ordered by start time, with a point that has no
+	//  start time first. Then they are ordered by kind and by a hash of their
+	//  values, not by name. A page starts after the last point of the
+	//  previous page. Thus, on an `ACTIVE` session, a point exported during
+	//  your read with a later time appears on a later page. A point exported
+	//  during your read with an earlier time appears only in a new read.
+	Items    *[]LivekitPublicapiObservabilityV1MetricPoint `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo             `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1RecordingGetURLResponse defines model for livekit.publicapi.observability.v1.Recording.GetURL.Response.
 type LivekitPublicapiObservabilityV1RecordingGetURLResponse struct {
-	// ExpiresAt When the URL stops working: the request's time plus the granted
-	//  expiry, after the 15-minute clamp.
+	// DataStatus The data status of the session recording: whether it can still arrive
+	//  or change. When `url` is empty, `expiresAt` is unset: read again after
+	//  `retryAfterSeconds`, or after the session ends.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
+
+	// ExpiresAt The time that the URL stops working: the time of the request plus the
+	//  granted expiry, after the 15-minute clamp.
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
-	// RecordingStartedAt When the recording started, as the agent reported it on upload. Line
-	//  the audio up with the transcript by it.
+	// RecordingStartedAt The time that the recording started, as the agent reported it when it
+	//  uploaded the recording. Use it to align the audio with the transcript.
 	RecordingStartedAt *GoogleProtobufTimestamp `json:"recordingStartedAt,omitempty"`
 
-	// Url A signed URL that downloads the recording straight from the object
-	//  store in the project's data region, without credentials, until
-	//  expiresAt. Audio is Ogg; chat history is JSON served with
-	//  Content-Encoding: gzip.
+	// Url A signed URL that downloads the recording from storage in the data
+	//  region of the project. The URL needs no credentials and is valid until
+	//  `expiresAt`. Audio is Ogg. Chat history is JSON, served with
+	//  `Content-Encoding: gzip`. Empty when the recording doesn't exist and
+	//  `dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+	//  `DATA_STATE_SETTLING`.
 	Url *string `json:"url,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1RecordingFileType The recording requested from GetSessionRecordingURL. The session's
+// LivekitPublicapiObservabilityV1RecordingFileType The type of recording that `GetSessionRecordingURL` returns. To get the
 //
-//	conversation as typed items comes from GetSessionTranscript, not from a
-//	recording.
+//	conversation of a session as typed items, use `GetSessionTranscript`.
 type LivekitPublicapiObservabilityV1RecordingFileType string
 
-// LivekitPublicapiObservabilityV1Role Who a transcript message is from.
+// LivekitPublicapiObservabilityV1Role The sender of a transcript message.
 type LivekitPublicapiObservabilityV1Role string
 
-// LivekitPublicapiObservabilityV1Span One unit of work in the session's trace, such as an agent turn or an LLM
+// LivekitPublicapiObservabilityV1Span A unit of work in the trace of a session, such as an agent turn or an LLM
 //
 //	request.
 type LivekitPublicapiObservabilityV1Span struct {
-	// Attributes The span's attributes, typed and nested as the agent recorded them, with
-	//  its resource's and scope's attributes merged in, such as lk.agent_name;
-	//  the span's own value wins. An integer beyond ±2^53 is its decimal string,
-	//  and bytes are base64.
-	Attributes *map[string]*GoogleProtobufValue            `json:"attributes,omitempty"`
-	EndTime    *GoogleProtobufTimestamp                    `json:"endTime,omitempty"`
-	Events     *[]LivekitPublicapiObservabilityV1SpanEvent `json:"events,omitempty"`
-	Kind       *LivekitPublicapiObservabilityV1SpanKind    `json:"kind,omitempty"`
-	Name       *string                                     `json:"name,omitempty"`
+	// Attributes The attributes of the span, typed and nested as the agent recorded them.
+	//  They include its resource and scope attributes, such as
+	//  `lk.agent_name`. When an attribute has two values, the value of the span
+	//  is used. An integer larger than 2^53 or smaller than -2^53 is a decimal
+	//  string. Bytes are base64.
+	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
 
-	// ParentSpanId Empty for a root span. A span whose parent isn't among the session's
-	//  spans is a root too, as the dashboard shows it.
+	// EndTime When the span ended.
+	EndTime *GoogleProtobufTimestamp `json:"endTime,omitempty"`
+
+	// Events The events the agent recorded on the span.
+	Events *[]LivekitPublicapiObservabilityV1SpanEvent `json:"events,omitempty"`
+
+	// Kind Where the span sits in the call: internal, server, client, producer, or
+	//  consumer.
+	Kind *LivekitPublicapiObservabilityV1SpanKind `json:"kind,omitempty"`
+
+	// Name The span name, as the agent recorded it.
+	Name *string `json:"name,omitempty"`
+
+	// ParentSpanId The ID of the parent span, as lowercase hex. Empty for a root span. The
+	//  dashboard also shows a span as a root when its parent is not one of the
+	//  spans of the session.
 	ParentSpanId *string `json:"parentSpanId,omitempty"`
 
-	// SpanId The span's ids, as lowercase hex.
-	SpanId        *string                                    `json:"spanId,omitempty"`
-	StartTime     *GoogleProtobufTimestamp                   `json:"startTime,omitempty"`
-	Status        *LivekitPublicapiObservabilityV1SpanStatus `json:"status,omitempty"`
-	StatusMessage *string                                    `json:"statusMessage,omitempty"`
-	TraceId       *string                                    `json:"traceId,omitempty"`
+	// SpanId The ID of the span, as lowercase hex.
+	SpanId *string `json:"spanId,omitempty"`
+
+	// StartTime When the span started.
+	StartTime *GoogleProtobufTimestamp `json:"startTime,omitempty"`
+
+	// Status Whether the span succeeded.
+	Status *LivekitPublicapiObservabilityV1SpanStatus `json:"status,omitempty"`
+
+	// StatusMessage Why the span failed; set when `status` is error.
+	StatusMessage *string `json:"statusMessage,omitempty"`
+
+	// TraceId The trace ID of the span, as lowercase hex.
+	TraceId *string `json:"traceId,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1SpanEvent A timestamped event recorded within a Span, such as an exception.
+// LivekitPublicapiObservabilityV1SpanEvent An event with a timestamp that a span recorded, such as an exception.
 type LivekitPublicapiObservabilityV1SpanEvent struct {
-	// Attributes The event's own attributes, typed and nested as the agent recorded them.
+	// Attributes The attributes of the event, typed and nested as the agent recorded
+	//  them.
 	Attributes *map[string]*GoogleProtobufValue `json:"attributes,omitempty"`
-	Name       *string                          `json:"name,omitempty"`
-	Timestamp  *GoogleProtobufTimestamp         `json:"timestamp,omitempty"`
+
+	// Name The event name, as the agent recorded it.
+	Name *string `json:"name,omitempty"`
+
+	// Timestamp When the event happened.
+	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1SpanKind A span's OpenTelemetry kind.
+// LivekitPublicapiObservabilityV1SpanKind The OpenTelemetry kind of a span.
 type LivekitPublicapiObservabilityV1SpanKind string
 
-// LivekitPublicapiObservabilityV1SpanStatus A span's OpenTelemetry status code.
+// LivekitPublicapiObservabilityV1SpanStatus The OpenTelemetry status code of a span.
 type LivekitPublicapiObservabilityV1SpanStatus string
 
 // LivekitPublicapiObservabilityV1TracesGetResponse defines model for livekit.publicapi.observability.v1.Traces.Get.Response.
 type LivekitPublicapiObservabilityV1TracesGetResponse struct {
-	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+	// DataStatus The data status of the session spans: whether more of them can still
+	//  arrive.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
 
-	// Spans By start time, oldest first. Spans that start together are ordered by
-	//  span id as it is stored: the id's 8 bytes read as a little-endian
-	//  unsigned integer, which isn't the order of its hex string. The pages
-	//  read the spans the first page found, so a span exported later waits for
-	//  a new read. On an ACTIVE session, a span exported mid-read can still
-	//  shift the later pages, which are read by offset, so a span can repeat
-	//  or be skipped: dedupe by spanId, and read again from the first page to
-	//  pick up a skipped span.
-	Spans *[]LivekitPublicapiObservabilityV1Span `json:"spans,omitempty"`
+	// Items The spans, ordered by start time, oldest first. Spans with the same
+	//  start time are ordered by span ID, read as a little-endian unsigned
+	//  64-bit integer. This is not the order of the hex strings. The later
+	//  pages read only the spans that the first page found, so a span
+	//  exported after the first page appears only in a new read. On an
+	//  `ACTIVE` session, a span exported during your read can move the later
+	//  pages, which the API reads by offset. Thus, a span can repeat, or a
+	//  page can skip a span. Remove duplicates by `spanId`. To get a skipped
+	//  span, read again from the first page.
+	Items    *[]LivekitPublicapiObservabilityV1Span `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo      `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptGetResponse defines model for livekit.publicapi.observability.v1.Transcript.Get.Response.
 type LivekitPublicapiObservabilityV1TranscriptGetResponse struct {
-	// Items Oldest first, in the order the agent recorded them.
+	// DataStatus The data status of the session transcript: whether more of it can still
+	//  arrive.
+	DataStatus *LivekitPublicapiObservabilityV1DataStatus `json:"dataStatus,omitempty"`
+
+	// Items The transcript items, oldest first, in the order that the agent
+	//  recorded them.
 	Items    *[]LivekitPublicapiObservabilityV1TranscriptItem `json:"items,omitempty"`
 	PageInfo *LivekitPublicapiCommonV1PageInfo                `json:"pageInfo,omitempty"`
 
-	// SkippedRecords How many of this page's records couldn't be read as transcript items
-	//  and were left out, such as an item kind newer than this server. Zero
-	//  when the page is complete.
+	// SkippedRecords The number of records in this page that the API cannot read as
+	//  transcript items, and does not return. For example, a record of an
+	//  item type that the API does not know. Zero when the page is complete.
 	SkippedRecords *int `json:"skippedRecords,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItem One ordered entry in a session's conversation. Exactly one of the `item`
+// LivekitPublicapiObservabilityV1TranscriptItem An entry in the conversation of a session. Exactly one of `message`,
 //
-//	variants is set.
+//	`toolCall`, `toolResult`, `agentHandoff`, and `configUpdate` is set.
 type LivekitPublicapiObservabilityV1TranscriptItem struct {
-	// Id The item's id, as the agent assigned it (item_...).
+	// Id The ID of the item, as the agent assigned it (`item_...`).
 	Id *string `json:"id,omitempty"`
 
-	// Timestamp When the item happened. For a message, when its speaker started speaking,
-	//  else when the agent created it; for any other item, when the agent
-	//  recorded it. Items are ordered by when the agent recorded them, so a
-	//  message's timestamp can be earlier than the item before it.
+	// Timestamp The time of the item. For a message, the time that its speaker started to
+	//  speak, or else the time that the agent created it. For other items, the
+	//  time that the agent recorded it. Items are ordered by the time that the
+	//  agent recorded them, so the timestamp of a message can be earlier than
+	//  the timestamp of the item before it.
 	Timestamp *GoogleProtobufTimestamp `json:"timestamp,omitempty"`
 	union     json.RawMessage
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem0 defines model for LivekitPublicapiObservabilityV1TranscriptItem.0.
 type LivekitPublicapiObservabilityV1TranscriptItem0 struct {
+	// AgentHandoff The session passing from one agent to another.
 	AgentHandoff *LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff `json:"agentHandoff,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem1 defines model for LivekitPublicapiObservabilityV1TranscriptItem.1.
 type LivekitPublicapiObservabilityV1TranscriptItem1 struct {
+	// ConfigUpdate A change to the agent's instructions or tools.
 	ConfigUpdate *LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate `json:"configUpdate,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem2 defines model for LivekitPublicapiObservabilityV1TranscriptItem.2.
 type LivekitPublicapiObservabilityV1TranscriptItem2 struct {
+	// Message Something said, or added to the conversation as text.
 	Message *LivekitPublicapiObservabilityV1TranscriptItemMessage `json:"message,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem3 defines model for LivekitPublicapiObservabilityV1TranscriptItem.3.
 type LivekitPublicapiObservabilityV1TranscriptItem3 struct {
+	// ToolCall The agent calling a tool.
 	ToolCall *LivekitPublicapiObservabilityV1TranscriptItemToolCall `json:"toolCall,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItem4 defines model for LivekitPublicapiObservabilityV1TranscriptItem.4.
 type LivekitPublicapiObservabilityV1TranscriptItem4 struct {
+	// ToolResult The output a tool returned.
 	ToolResult *LivekitPublicapiObservabilityV1TranscriptItemToolResult `json:"toolResult,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff The session passing from one agent to another.
 type LivekitPublicapiObservabilityV1TranscriptItemAgentHandoff struct {
-	// FromAgentId Unset for the session's first agent.
+	// FromAgentId The ID of the agent that hands off the session. Unset for the first
+	//  agent of the session.
 	FromAgentId *string `json:"fromAgentId,omitempty"`
-	ToAgentId   *string `json:"toAgentId,omitempty"`
+
+	// ToAgentId The agent taking over.
+	ToAgentId *string `json:"toAgentId,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate A change to the agent's instructions or tools during the session.
 type LivekitPublicapiObservabilityV1TranscriptItemConfigUpdate struct {
-	// Instructions The agent's new instructions; empty when they didn't change.
-	Instructions *string   `json:"instructions,omitempty"`
-	ToolsAdded   *[]string `json:"toolsAdded,omitempty"`
+	// Instructions The new agent instructions. Empty when the instructions did not
+	//  change.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// ToolsAdded The tools the agent gained.
+	ToolsAdded *[]string `json:"toolsAdded,omitempty"`
+
+	// ToolsRemoved The tools the agent lost.
 	ToolsRemoved *[]string `json:"toolsRemoved,omitempty"`
 }
 
-// LivekitPublicapiObservabilityV1TranscriptItemMessage Something said, or added to the conversation as text.
+// LivekitPublicapiObservabilityV1TranscriptItemMessage A message that a participant spoke, or text added to the conversation.
 type LivekitPublicapiObservabilityV1TranscriptItemMessage struct {
-	// E2eLatencyMs The turn's latencies in milliseconds, converted from the seconds the
-	//  agent recorded; unset when the agent didn't record one. An agent message
-	//  carries the first three, a user message the last three.
-	//
-	//  End-to-end latency: from when the user finished speaking to when the
-	//  agent began responding (the agent's e2e_latency).
+	// E2eLatencyMs The end-to-end latency in milliseconds, from the time that the user
+	//  stopped speaking to the time that the agent started to respond (the
+	//  agent's `e2e_latency`). Set on an agent message. Unset when the agent
+	//  did not record it.
 	E2eLatencyMs *float64 `json:"e2eLatencyMs,omitempty"`
 
-	// EndOfTurnDelayMs From the end of the user's speech to the agent deciding the turn ended
-	//  (end_of_turn_delay).
+	// EndOfTurnDelayMs The time in milliseconds from the end of the user's speech to the time
+	//  that the agent decided that the turn ended (`end_of_turn_delay`). Set
+	//  on a user message. Unset when the agent did not record it.
 	EndOfTurnDelayMs *float64 `json:"endOfTurnDelayMs,omitempty"`
 
-	// Interrupted Set on an agent message the user talked over before it finished.
+	// Interrupted When true, the user interrupted this agent message before it ended.
 	Interrupted *bool `json:"interrupted,omitempty"`
 
-	// LlmTtftMs LLM time to first token (llm_node_ttft).
+	// LlmTtftMs The LLM time to first token in milliseconds (`llm_node_ttft`). Set on
+	//  an agent message. Unset when the agent did not record it.
 	LlmTtftMs *float64 `json:"llmTtftMs,omitempty"`
 
-	// OnUserTurnCompletedDelayMs Time spent in the agent's on_user_turn_completed callback
-	//  (on_user_turn_completed_delay).
+	// OnUserTurnCompletedDelayMs The time in milliseconds that the agent spent in its
+	//  `on_user_turn_completed` callback (`on_user_turn_completed_delay`). Set
+	//  on a user message. Unset when the agent did not record it.
 	OnUserTurnCompletedDelayMs *float64 `json:"onUserTurnCompletedDelayMs,omitempty"`
 
-	// Redacted Set when the project's PII redaction rewrote the text.
-	Redacted *bool                                `json:"redacted,omitempty"`
-	Role     *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
+	// Redacted When true, PII redaction for the project changed the text.
+	Redacted *bool `json:"redacted,omitempty"`
 
-	// StartedSpeakingAt When the speaker started and stopped speaking; unset for a message
-	//  that wasn't spoken.
+	// Role Who the message came from.
+	Role *LivekitPublicapiObservabilityV1Role `json:"role,omitempty"`
+
+	// StartedSpeakingAt The time that the speaker started to speak. Unset for a message that
+	//  was not spoken.
 	StartedSpeakingAt *GoogleProtobufTimestamp `json:"startedSpeakingAt,omitempty"`
+
+	// StoppedSpeakingAt The time that the speaker stopped speaking. Unset for a message that
+	//  was not spoken.
 	StoppedSpeakingAt *GoogleProtobufTimestamp `json:"stoppedSpeakingAt,omitempty"`
 
-	// Text The message's text. Text the agent recorded in several parts is joined
-	//  with newlines. When redacted is set, PII in it is replaced with
-	//  <redaction type="..."/> markers.
+	// Text The text of the message. When the agent recorded the text in several
+	//  parts, newlines join the parts. When `redacted` is true,
+	//  `<redaction type="..."/>` markers replace the PII in the text.
 	Text *string `json:"text,omitempty"`
 
 	// TranscriptConfidence The speech-to-text confidence of a spoken user message, from 0 to 1.
 	TranscriptConfidence *float64 `json:"transcriptConfidence,omitempty"`
 
-	// TranscriptionDelayMs From the end of the user's speech to its final transcript
-	//  (transcription_delay).
+	// TranscriptionDelayMs The time in milliseconds from the end of the user's speech to its final
+	//  transcript (`transcription_delay`). Set on a user message. Unset when
+	//  the agent did not record it.
 	TranscriptionDelayMs *float64 `json:"transcriptionDelayMs,omitempty"`
 
-	// TtsTtfbMs TTS time to first byte of audio (tts_node_ttfb).
+	// TtsTtfbMs The TTS time to first byte of audio in milliseconds (`tts_node_ttfb`).
+	//  Set on an agent message. Unset when the agent did not record it.
 	TtsTtfbMs *float64 `json:"ttsTtfbMs,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemToolCall The agent calling a tool.
 type LivekitPublicapiObservabilityV1TranscriptItemToolCall struct {
-	// Arguments The call's arguments as a JSON string.
+	// Arguments The arguments of the call, as a JSON string.
 	Arguments *string `json:"arguments,omitempty"`
 
-	// CallId Pairs the call with its ToolResult.
+	// CallId The ID of the call. The `ToolResult` of the call has the same
+	//  `callId`.
 	CallId *string `json:"callId,omitempty"`
-	Name   *string `json:"name,omitempty"`
+
+	// Name The tool the agent called.
+	Name *string `json:"name,omitempty"`
 }
 
 // LivekitPublicapiObservabilityV1TranscriptItemToolResult The output a tool returned for a ToolCall.
 type LivekitPublicapiObservabilityV1TranscriptItemToolResult struct {
-	// CallId The callId of the ToolCall it answers.
+	// CallId The `callId` of the `ToolCall` that this result answers.
 	CallId *string `json:"callId,omitempty"`
 
-	// IsError Set when the tool failed; output then describes the error.
-	IsError *bool   `json:"isError,omitempty"`
-	Name    *string `json:"name,omitempty"`
-	Output  *string `json:"output,omitempty"`
+	// IsError When true, the tool failed, and `output` describes the error.
+	IsError *bool `json:"isError,omitempty"`
+
+	// Name The tool that returned the output.
+	Name *string `json:"name,omitempty"`
+
+	// Output What the tool returned.
+	Output *string `json:"output,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1AccessKey Project API-key metadata. The secret is never included on list RPCs; it is
+// LivekitPublicapiProjectsV1AccessKey The metadata of a project API key. A list never includes the secret. Only
 //
-//	returned only from GenerateKey.
+//	`GenerateKey` returns it.
 type LivekitPublicapiProjectsV1AccessKey struct {
-	// AgentId Set for programmatically-created cloud agent keys.
-	AgentId     *string                  `json:"agentId,omitempty"`
-	ApiKey      *string                  `json:"apiKey,omitempty"`
-	CreatedAt   *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	Description *string                  `json:"description,omitempty"`
-	OwnerEmail  *string                  `json:"ownerEmail,omitempty"`
+	// AgentId The cloud agent that the key belongs to. Set only for agent keys.
+	AgentId *string `json:"agentId,omitempty"`
 
-	// OwnerId Empty for service-account / legacy unowned keys.
-	OwnerId   *string                  `json:"ownerId,omitempty"`
+	// ApiKey The API key ID (`API...`). The secret is returned only when the key is
+	//  generated.
+	ApiKey *string `json:"apiKey,omitempty"`
+
+	// CreatedAt When the key was generated.
+	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// Description A label for the key.
+	Description *string `json:"description,omitempty"`
+
+	// OwnerEmail The email address of the owner. Empty for a key with no owner.
+	OwnerEmail *string `json:"ownerEmail,omitempty"`
+
+	// OwnerId The user who owns the key. Empty for a key with no owner, such as a
+	//  service account key.
+	OwnerId *string `json:"ownerId,omitempty"`
+
+	// UpdatedAt When the key was last changed.
 	UpdatedAt *GoogleProtobufTimestamp `json:"updatedAt,omitempty"`
 }
 
@@ -2594,76 +4437,139 @@ type LivekitPublicapiProjectsV1AddWorkspaceMembersToProjectResponse struct {
 
 // LivekitPublicapiProjectsV1AnswerInvitationResponse defines model for livekit.publicapi.projects.v1.AnswerInvitationResponse.
 type LivekitPublicapiProjectsV1AnswerInvitationResponse struct {
-	// Member set when accept=true
+	// Member The new membership. Set only when `accept` is `true`.
 	Member *LivekitPublicapiProjectsV1ProjectMember `json:"member,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1CreateProjectMember Grants a user access to a project at creation time.
+// LivekitPublicapiProjectsV1CreateProjectMember A user and the role that the user gets on a project.
 type LivekitPublicapiProjectsV1CreateProjectMember struct {
-	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
-	Role   *int32  `json:"role,omitempty"`
+	// Role The role of the user: `0` invited, `1` read, `2` write, `3` admin.
+	Role *int32 `json:"role,omitempty"`
+
+	// UserId The user to add. They must already be a member of the workspace.
 	UserId *string `json:"userId,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1CreateProjectRequest defines model for livekit.publicapi.projects.v1.CreateProjectRequest.
+// LivekitPublicapiProjectsV1CreateProjectRequest The project to create. An unset field keeps its default:
+//
+//	`enableAnalytics`, `enableAutoCreate`, and `disableTokenEndpoint` are true,
+//	and the other boolean fields are false.
 type LivekitPublicapiProjectsV1CreateProjectRequest struct {
-	// CustomDomain Project settings: everything UpdateProject can set. Unset fields keep the
-	//  new-project defaults (analytics, auto-create and a disabled token endpoint
-	//  on; the rest off), and values follow the same rules as on UpdateProject.
-	CustomDomain         *string `json:"customDomain,omitempty"`
-	DisableTokenEndpoint *bool   `json:"disableTokenEndpoint,omitempty"`
-	DiscoverableByDomain *bool   `json:"discoverableByDomain,omitempty"`
+	// CustomDomain A custom domain to add to the project.
+	CustomDomain *string `json:"customDomain,omitempty"`
 
-	// EgressClusterId set by LiveKit staff only
-	EgressClusterId           *string `json:"egressClusterId,omitempty"`
-	EnableAnalytics           *bool   `json:"enableAnalytics,omitempty"`
-	EnableAutoCreate          *bool   `json:"enableAutoCreate,omitempty"`
-	EnableEgressAutoRetry     *bool   `json:"enableEgressAutoRetry,omitempty"`
-	EnableEgressBackupStorage *bool   `json:"enableEgressBackupStorage,omitempty"`
+	// DisableTokenEndpoint True turns off the sandbox token endpoint for the project.
+	DisableTokenEndpoint *bool `json:"disableTokenEndpoint,omitempty"`
 
-	// EnableHostedAgents set by LiveKit staff only
-	EnableHostedAgents               *bool `json:"enableHostedAgents,omitempty"`
+	// DiscoverableByDomain When true, adds your email domain to the project.
+	DiscoverableByDomain *bool `json:"discoverableByDomain,omitempty"`
+
+	// EgressClusterId The egress cluster for the project. Only LiveKit staff can set it. For any
+	//  other caller, a non-default value returns `PermissionDenied`.
+	EgressClusterId *string `json:"egressClusterId,omitempty"`
+
+	// EnableAnalytics True turns on analytics for the project. Defaults to `true`.
+	EnableAnalytics *bool `json:"enableAnalytics,omitempty"`
+
+	// EnableAutoCreate True lets the first participant to join a room that does not yet exist
+	//  create it.
+	EnableAutoCreate *bool `json:"enableAutoCreate,omitempty"`
+
+	// EnableEgressAutoRetry True retries a failed egress automatically.
+	EnableEgressAutoRetry *bool `json:"enableEgressAutoRetry,omitempty"`
+
+	// EnableEgressBackupStorage True keeps an egress that fails to upload in LiveKit backup storage for 7
+	//  days.
+	EnableEgressBackupStorage *bool `json:"enableEgressBackupStorage,omitempty"`
+
+	// EnableHostedAgents True when hosted agents are enabled for the project. Only LiveKit staff can
+	//  set it. For any other caller, a non-default value returns
+	//  `PermissionDenied`.
+	EnableHostedAgents *bool `json:"enableHostedAgents,omitempty"`
+
+	// EnableInferenceRegionRestriction True restricts inference to the models in the same data region as the
+	//  project.
 	EnableInferenceRegionRestriction *bool `json:"enableInferenceRegionRestriction,omitempty"`
-	EnablePiiRedaction               *bool `json:"enablePiiRedaction,omitempty"`
-	EnableRemoteUnmute               *bool `json:"enableRemoteUnmute,omitempty"`
 
-	// EnableUserDataRecording Enables recording traces, transcripts, and audio for agent observability.
-	EnableUserDataRecording *bool              `json:"enableUserDataRecording,omitempty"`
-	EnableUserDataTraining  *bool              `json:"enableUserDataTraining,omitempty"`
-	EnabledCodecs           *[]string          `json:"enabledCodecs,omitempty"`
-	FeatureFlags            *map[string]string `json:"featureFlags,omitempty"`
+	// EnablePiiRedaction True redacts PII from the recorded session data.
+	EnablePiiRedaction *bool `json:"enablePiiRedaction,omitempty"`
 
-	// HideOnboarding Preferences (flat, as on UpdateProjectRequest). Enabling
-	//  discoverable_by_domain or joinable_by_domain adds the creator's email
-	//  domain to the project.
-	HideOnboarding       *bool `json:"hideOnboarding,omitempty"`
+	// EnableRemoteUnmute True lets an admin unmute the tracks of another participant.
+	EnableRemoteUnmute *bool `json:"enableRemoteUnmute,omitempty"`
+
+	// EnableUserDataRecording When true, the project records traces, transcripts, and audio from agent
+	//  sessions for agent observability. Defaults to false. While it is off, a
+	//  session read that finds no data returns `FailedPrecondition` with an
+	//  `ObservabilityDisabled` detail. This applies to a recording, and to the
+	//  first unfiltered page of a transcript, traces, logs, or metrics.
+	EnableUserDataRecording *bool `json:"enableUserDataRecording,omitempty"`
+
+	// EnableUserDataTraining True lets LiveKit use the observability data from this project to improve
+	//  models and services.
+	EnableUserDataTraining *bool `json:"enableUserDataTraining,omitempty"`
+
+	// EnabledCodecs The media codecs the project allows, by MIME type, such as `video/VP9`.
+	EnabledCodecs *[]string `json:"enabledCodecs,omitempty"`
+
+	// FeatureFlags The feature flags to set on the project, by name. The API ignores a flag
+	//  with an empty value.
+	FeatureFlags *map[string]string `json:"featureFlags,omitempty"`
+
+	// HideOnboarding True hides the onboarding instructions on the project dashboard.
+	HideOnboarding *bool `json:"hideOnboarding,omitempty"`
+
+	// HideSampleAppGallery True hides the sample app gallery on the project dashboard.
 	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
-	IsPrivate            *bool `json:"isPrivate,omitempty"`
-	JoinableByDomain     *bool `json:"joinableByDomain,omitempty"`
 
-	// Members private projects only
+	// IsPrivate True gives the project its own member list instead of the members of its
+	//  workspace.
+	IsPrivate *bool `json:"isPrivate,omitempty"`
+
+	// JoinableByDomain When true, adds your email domain to the project.
+	JoinableByDomain *bool `json:"joinableByDomain,omitempty"`
+
+	// Members The members of a private project. Ignored when `isPrivate` is false. Each
+	//  user must be a member of the workspace, or the request fails with
+	//  `NotFound`. A new workspace has only you as a member.
 	Members *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
-	Name    *string                                          `json:"name,omitempty"`
 
-	// PiiRedactionCategories Categories to redact. Empty with enable_pii_redaction applies the defaults.
+	// Name The project name.
+	Name *string `json:"name,omitempty"`
+
+	// PiiRedactionCategories The categories to redact. When empty and `enablePiiRedaction` is `true`,
+	//  the API applies the default categories.
 	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
 
-	// PinnedRegions SFU region pins. Empty leaves the project unpinned.
-	PinnedRegions           *[]string `json:"pinnedRegions,omitempty"`
-	RequireExplicitDispatch *bool     `json:"requireExplicitDispatch,omitempty"`
+	// PinnedRegions The SFU regions to pin the project to. When empty, the project has no
+	//  pinned regions.
+	PinnedRegions *[]string `json:"pinnedRegions,omitempty"`
 
-	// RoomConfigs Room configurations stored on the project preferences.
-	RoomConfigs   *[]LivekitRoomConfiguration `json:"roomConfigs,omitempty"`
-	SfuAllowPause *bool                       `json:"sfuAllowPause,omitempty"`
+	// RequireExplicitDispatch True rejects an agent server that registers without an explicit agent
+	//  name.
+	RequireExplicitDispatch *bool `json:"requireExplicitDispatch,omitempty"`
 
-	// Subdomain optional; generated from name when empty
-	Subdomain        *string `json:"subdomain,omitempty"`
+	// RoomConfigs The room configurations of the project.
+	RoomConfigs *[]LivekitRoomConfiguration `json:"roomConfigs,omitempty"`
+
+	// SfuAllowPause True lets the SFU pause video tracks when subscribers are congested.
+	SfuAllowPause *bool `json:"sfuAllowPause,omitempty"`
+
+	// Subdomain The project subdomain. When empty, one is generated from `name`.
+	Subdomain *string `json:"subdomain,omitempty"`
+
+	// TokenEndpointKey The API key that signs the tokens from the sandbox token endpoint of the
+	//  project.
 	TokenEndpointKey *string `json:"tokenEndpointKey,omitempty"`
 
-	// UserDataRegion create-only; empty keeps the deployment default
+	// UserDataRegion The region where the project stores session data. You can set it only
+	//  when you create the project. When empty, the project uses the default
+	//  region.
 	UserDataRegion *string `json:"userDataRegion,omitempty"`
 
-	// WorkspaceId optional; when empty a new workspace is created
+	// WorkspaceId The workspace to create the project in. When empty, a new workspace is
+	//  created for the project. On `POST /v0/workspaces/{workspaceId}/projects`,
+	//  the project goes in the workspace in the path, and this field must be
+	//  empty or match it.
 	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
@@ -2676,8 +4582,9 @@ type LivekitPublicapiProjectsV1CreateProjectResponse struct {
 type LivekitPublicapiProjectsV1CreateTokenResponse struct {
 	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
 
-	// Token Signed JWT, sent as `Authorization: Bearer` to the project's server APIs
-	//  or used to join a room, depending on the grants.
+	// Token The signed JWT. Depending on the grants, send it as
+	//  `Authorization: Bearer` to the server APIs of the project, or use it to
+	//  join a room.
 	Token *string `json:"token,omitempty"`
 }
 
@@ -2727,17 +4634,20 @@ type LivekitPublicapiProjectsV1InviteMemberResponse struct {
 
 // LivekitPublicapiProjectsV1ListInvitesResponse defines model for livekit.publicapi.projects.v1.ListInvitesResponse.
 type LivekitPublicapiProjectsV1ListInvitesResponse struct {
-	Items *[]LivekitPublicapiProjectsV1ProjectInvite `json:"items,omitempty"`
+	Items    *[]LivekitPublicapiProjectsV1ProjectInvite `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo          `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListKeysResponse defines model for livekit.publicapi.projects.v1.ListKeysResponse.
 type LivekitPublicapiProjectsV1ListKeysResponse struct {
-	Keys *[]LivekitPublicapiProjectsV1AccessKey `json:"keys,omitempty"`
+	Items    *[]LivekitPublicapiProjectsV1AccessKey `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo      `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListMembersResponse defines model for livekit.publicapi.projects.v1.ListMembersResponse.
 type LivekitPublicapiProjectsV1ListMembersResponse struct {
-	Items *[]LivekitPublicapiProjectsV1ProjectMember `json:"items,omitempty"`
+	Items    *[]LivekitPublicapiProjectsV1ProjectMember `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo          `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListProjectsResponse defines model for livekit.publicapi.projects.v1.ListProjectsResponse.
@@ -2746,27 +4656,29 @@ type LivekitPublicapiProjectsV1ListProjectsResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo    `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1ListScopedKeysResponse defines model for livekit.publicapi.projects.v1.ListScopedKeysResponse.
-type LivekitPublicapiProjectsV1ListScopedKeysResponse struct {
-	OtherKeys    *[]LivekitPublicapiProjectsV1AccessKey `json:"otherKeys,omitempty"`
-	PersonalKeys *[]LivekitPublicapiProjectsV1AccessKey `json:"personalKeys,omitempty"`
-}
-
 // LivekitPublicapiProjectsV1ListWebhookEventsResponse defines model for livekit.publicapi.projects.v1.ListWebhookEventsResponse.
 type LivekitPublicapiProjectsV1ListWebhookEventsResponse struct {
-	// Events Event names the project can receive, for filterParams and SendTestWebhook.
-	Events *[]string `json:"events,omitempty"`
+	// Items The names of the events that the project can receive. Use them in
+	//  `filterParams` and `SendTestWebhook`.
+	Items *[]string `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ListWebhooksResponse defines model for livekit.publicapi.projects.v1.ListWebhooksResponse.
 type LivekitPublicapiProjectsV1ListWebhooksResponse struct {
-	Webhooks *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
+	Items *[]LivekitPublicapiProjectsV1Webhook `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1PinnedRegions Wraps the region pin set so an explicit empty list can clear the pins, which
+// LivekitPublicapiProjectsV1PinnedRegions A set of SFU regions to pin a project to. A set message with an empty
 //
-//	a bare repeated field cannot express.
+//	`regions` list removes all pins.
 type LivekitPublicapiProjectsV1PinnedRegions struct {
+	// Regions The regions to pin the project traffic to. An empty list clears the pins.
 	Regions *[]string `json:"regions,omitempty"`
 }
 
@@ -2774,218 +4686,412 @@ type LivekitPublicapiProjectsV1PinnedRegions struct {
 //
 //	are not embedded here.
 type LivekitPublicapiProjectsV1Project struct {
-	AnalyticsAccessKey               *string                  `json:"analyticsAccessKey,omitempty"`
-	CreatedAt                        *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	CreatorId                        *string                  `json:"creatorId,omitempty"`
-	EgressClusterId                  *string                  `json:"egressClusterId,omitempty"`
-	EnableAnalytics                  *bool                    `json:"enableAnalytics,omitempty"`
-	EnableAutoCreate                 *bool                    `json:"enableAutoCreate,omitempty"`
-	EnableEnhancedNoiseCancellation  *bool                    `json:"enableEnhancedNoiseCancellation,omitempty"`
-	EnableHostedAgents               *bool                    `json:"enableHostedAgents,omitempty"`
-	EnableInferenceRegionRestriction *bool                    `json:"enableInferenceRegionRestriction,omitempty"`
-	EnablePiiRedaction               *bool                    `json:"enablePiiRedaction,omitempty"`
-	EnableRemoteUnmute               *bool                    `json:"enableRemoteUnmute,omitempty"`
-	EnableSafeMode                   *bool                    `json:"enableSafeMode,omitempty"`
-	EnableSipCustomDomain            *bool                    `json:"enableSipCustomDomain,omitempty"`
-	EnableUserDataRecording          *bool                    `json:"enableUserDataRecording,omitempty"`
-	EnableUserDataTraining           *bool                    `json:"enableUserDataTraining,omitempty"`
-	EnabledCodecs                    *[]string                `json:"enabledCodecs,omitempty"`
-	Id                               *string                  `json:"id,omitempty"`
-	IsPrivate                        *bool                    `json:"isPrivate,omitempty"`
-	Name                             *string                  `json:"name,omitempty"`
+	AnalyticsAccessKey *string `json:"analyticsAccessKey,omitempty"`
 
-	// PiiRedactionCategories Categories to redact when enablePiiRedaction is on. Empty on read means the
-	//  stored set, or the defaults applied when redaction was enabled. It never
-	//  means "redact nothing".
-	PiiRedactionCategories  *[]CloudProtocolPIIRedactionCategory          `json:"piiRedactionCategories,omitempty"`
-	PinnedRegions           *[]string                                     `json:"pinnedRegions,omitempty"`
-	Preferences             *LivekitPublicapiProjectsV1ProjectPreferences `json:"preferences,omitempty"`
-	RequireExplicitDispatch *bool                                         `json:"requireExplicitDispatch,omitempty"`
-	Subdomain               *string                                       `json:"subdomain,omitempty"`
+	// CreatedAt When the project was created.
+	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
 
-	// Url The project's LiveKit server URL (wss://), derived from its subdomain.
-	Url                  *string                              `json:"url,omitempty"`
-	UserDataLifetimeDays *int32                               `json:"userDataLifetimeDays,omitempty"`
-	UserDataRegion       *string                              `json:"userDataRegion,omitempty"`
-	Webhooks             *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
-	WorkspaceId          *string                              `json:"workspaceId,omitempty"`
+	// CreatorId The user who created the project.
+	CreatorId *string `json:"creatorId,omitempty"`
+
+	// EgressClusterId The egress cluster the project runs egress on.
+	EgressClusterId *string `json:"egressClusterId,omitempty"`
+	EnableAnalytics *bool   `json:"enableAnalytics,omitempty"`
+
+	// EnableAutoCreate True lets the first participant to join a room that does not yet exist
+	//  create it.
+	EnableAutoCreate *bool `json:"enableAutoCreate,omitempty"`
+
+	// EnableEnhancedNoiseCancellation True applies enhanced noise cancellation to inbound audio.
+	EnableEnhancedNoiseCancellation *bool `json:"enableEnhancedNoiseCancellation,omitempty"`
+
+	// EnableHostedAgents True lets the project run agents on LiveKit Cloud.
+	EnableHostedAgents *bool `json:"enableHostedAgents,omitempty"`
+
+	// EnableInferenceRegionRestriction True restricts inference to the models in the same data region as the
+	//  project.
+	EnableInferenceRegionRestriction *bool `json:"enableInferenceRegionRestriction,omitempty"`
+
+	// EnablePiiRedaction True redacts PII from the recorded session data.
+	EnablePiiRedaction *bool `json:"enablePiiRedaction,omitempty"`
+
+	// EnableRemoteUnmute True lets an admin unmute the tracks of another participant.
+	EnableRemoteUnmute    *bool `json:"enableRemoteUnmute,omitempty"`
+	EnableSafeMode        *bool `json:"enableSafeMode,omitempty"`
+	EnableSipCustomDomain *bool `json:"enableSipCustomDomain,omitempty"`
+
+	// EnableUserDataRecording True when the project records traces, transcripts, and audio from agent
+	//  sessions for agent observability.
+	EnableUserDataRecording *bool `json:"enableUserDataRecording,omitempty"`
+
+	// EnableUserDataTraining True lets LiveKit use the observability data from this project to improve
+	//  models and services.
+	EnableUserDataTraining *bool `json:"enableUserDataTraining,omitempty"`
+
+	// EnabledCodecs The media codecs the project allows, by MIME type, such as `video/VP9`.
+	EnabledCodecs *[]string `json:"enabledCodecs,omitempty"`
+
+	// Id The project ID (`p_...`).
+	Id *string `json:"id,omitempty"`
+
+	// IsPrivate True when the project keeps its own member list instead of taking the
+	//  members of its workspace.
+	IsPrivate *bool `json:"isPrivate,omitempty"`
+
+	// Name The project name.
+	Name *string `json:"name,omitempty"`
+
+	// PiiRedactionCategories The categories to redact when `enablePiiRedaction` is `true`. When empty,
+	//  the project uses its saved categories, or the default categories that
+	//  apply when you turn on redaction. An empty list never means that nothing
+	//  is redacted.
+	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
+
+	// PinnedRegions The regions the project pins its traffic to. Empty leaves it unpinned.
+	PinnedRegions *[]string `json:"pinnedRegions,omitempty"`
+
+	// Preferences The UI and feature settings for the project.
+	Preferences *LivekitPublicapiProjectsV1ProjectPreferences `json:"preferences,omitempty"`
+
+	// RequireExplicitDispatch True rejects an agent server that registers without an explicit agent
+	//  name, which keeps an accidental auto-dispatch server from connecting.
+	RequireExplicitDispatch *bool `json:"requireExplicitDispatch,omitempty"`
+
+	// Subdomain The project subdomain, which forms `url`.
+	Subdomain *string `json:"subdomain,omitempty"`
+
+	// Url The LiveKit server URL of the project (`wss://...`). The API derives it
+	//  from `subdomain`.
+	Url                  *string `json:"url,omitempty"`
+	UserDataLifetimeDays *int32  `json:"userDataLifetimeDays,omitempty"`
+
+	// UserDataRegion The region where the project stores and processes session analytics and
+	//  agent observability data. It is set when the project is created and cannot
+	//  be changed.
+	UserDataRegion *string `json:"userDataRegion,omitempty"`
+
+	// Webhooks The webhook destinations for the project.
+	Webhooks *[]LivekitPublicapiProjectsV1Webhook `json:"webhooks,omitempty"`
+
+	// WorkspaceId The workspace that holds the project (`wo_...`).
+	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ProjectInvite A pending email invite to a project. The recipient answers it with the token
 //
 //	the invite carries.
 type LivekitPublicapiProjectsV1ProjectInvite struct {
-	Email       *string                  `json:"email,omitempty"`
-	ExpiresAt   *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	InviteToken *string                  `json:"inviteToken,omitempty"`
-	ProjectId   *string                  `json:"projectId,omitempty"`
-	Role        *int32                   `json:"role,omitempty"`
+	// Email The email address the invite was sent to.
+	Email *string `json:"email,omitempty"`
+
+	// ExpiresAt When the invite stops working.
+	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+
+	// InviteToken The token that identifies the invite. The invitee answers with it.
+	//  Only `GetInvite` returns it, to the invitee who asks with it. `ListInvites`
+	//  and `UpdateInvite` leave it empty. `InviteMember` returns the token of the
+	//  invite that it creates.
+	InviteToken *string `json:"inviteToken,omitempty"`
+
+	// ProjectId The project the invite is to (`p_...`).
+	ProjectId *string `json:"projectId,omitempty"`
+
+	// Role Access level the invitee takes on the project: 0 invited, 1 read,
+	//  2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1ProjectMember A user's membership on a project.
 type LivekitPublicapiProjectsV1ProjectMember struct {
-	Email     *string `json:"email,omitempty"`
+	// Email The email address on the user account.
+	Email *string `json:"email,omitempty"`
+
+	// ProjectId The project the membership is on (`p_...`).
 	ProjectId *string `json:"projectId,omitempty"`
 
-	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
-	Role   *int32  `json:"role,omitempty"`
+	// Role The role of the user: `0` invited, `1` read, `2` write, `3` admin.
+	Role *int32 `json:"role,omitempty"`
+
+	// UserId The user who holds the membership.
 	UserId *string `json:"userId,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1ProjectPreferences Per-project UI and feature settings.
+// LivekitPublicapiProjectsV1ProjectPreferences The UI and feature settings of a project.
 type LivekitPublicapiProjectsV1ProjectPreferences struct {
-	DisableTokenEndpoint      *bool                                `json:"disableTokenEndpoint,omitempty"`
-	DiscoverableByDomain      *bool                                `json:"discoverableByDomain,omitempty"`
-	EnableEgressAutoRetry     *bool                                `json:"enableEgressAutoRetry,omitempty"`
-	EnableEgressBackupStorage *bool                                `json:"enableEgressBackupStorage,omitempty"`
-	FeatureFlags              *map[string]string                   `json:"featureFlags,omitempty"`
-	HideOnboarding            *bool                                `json:"hideOnboarding,omitempty"`
-	HideSampleAppGallery      *bool                                `json:"hideSampleAppGallery,omitempty"`
-	HipaaCompliant            *bool                                `json:"hipaaCompliant,omitempty"`
-	JoinableByDomain          *bool                                `json:"joinableByDomain,omitempty"`
-	RoomConfigurations        *map[string]LivekitRoomConfiguration `json:"roomConfigurations,omitempty"`
-	SfuAllowPause             *bool                                `json:"sfuAllowPause,omitempty"`
-	TokenEndpointKey          *string                              `json:"tokenEndpointKey,omitempty"`
+	// DisableTokenEndpoint True turns off the sandbox token endpoint for the project.
+	DisableTokenEndpoint *bool `json:"disableTokenEndpoint,omitempty"`
+
+	// DiscoverableByDomain True lets people with the same email domain as the project owner find the
+	//  project when they sign up.
+	DiscoverableByDomain  *bool `json:"discoverableByDomain,omitempty"`
+	EnableEgressAutoRetry *bool `json:"enableEgressAutoRetry,omitempty"`
+
+	// EnableEgressBackupStorage True keeps an egress that fails to upload in LiveKit backup storage for 7
+	//  days. The `egress_ended` webhook event carries the file location.
+	EnableEgressBackupStorage *bool              `json:"enableEgressBackupStorage,omitempty"`
+	FeatureFlags              *map[string]string `json:"featureFlags,omitempty"`
+
+	// HideOnboarding True hides the onboarding instructions on the project dashboard.
+	HideOnboarding *bool `json:"hideOnboarding,omitempty"`
+
+	// HideSampleAppGallery True hides the sample app gallery on the project dashboard.
+	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
+	HipaaCompliant       *bool `json:"hipaaCompliant,omitempty"`
+
+	// JoinableByDomain True lets people with the same email domain join the project.
+	JoinableByDomain *bool `json:"joinableByDomain,omitempty"`
+
+	// RoomConfigurations Room configurations saved on the project, by name.
+	RoomConfigurations *map[string]LivekitRoomConfiguration `json:"roomConfigurations,omitempty"`
+
+	// SfuAllowPause True lets the SFU pause video tracks when subscribers are congested.
+	SfuAllowPause    *bool   `json:"sfuAllowPause,omitempty"`
+	TokenEndpointKey *string `json:"tokenEndpointKey,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1RemoveMemberResponse defines model for livekit.publicapi.projects.v1.RemoveMemberResponse.
 type LivekitPublicapiProjectsV1RemoveMemberResponse struct {
-	// NumKeys Non-agent API keys the removal deleted.
+	// NumKeys The number of API keys that the removal deleted, not counting agent keys.
 	NumKeys *int `json:"numKeys,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1SendTestWebhookResponse Reports the receiver's answer to one delivery attempt. The test is not
+// LivekitPublicapiProjectsV1SendTestWebhookResponse The answer of the receiver to one test delivery. The API does not retry the
 //
-//	retried and redirects are not followed; a failed delivery is reported here,
-//	not as an RPC error.
+//	test and does not follow redirects. A failed delivery shows in this
+//	response, not as an RPC error.
 type LivekitPublicapiProjectsV1SendTestWebhookResponse struct {
-	// Error Why no response arrived, such as a timeout or refused connection. Empty
-	//  when statusCode is set.
+	// Error The reason that no response arrived, such as a timeout or a refused
+	//  connection. Empty when `statusCode` is set.
 	Error *string `json:"error,omitempty"`
 
-	// StatusCode HTTP status the receiver answered with; 0 when no response arrived.
+	// StatusCode The HTTP status of the response from the receiver. `0` when no response
+	//  arrived.
 	StatusCode *int32 `json:"statusCode,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrants The claims of a LiveKit access token. Field names match the token's JSON
+// LivekitPublicapiProjectsV1TokenGrants The claims of a LiveKit access token. The field names match the JSON claims
 //
-//	claims (protocol auth.ClaimGrants), so a token's claims JSON is a valid
-//	TokenGrants in JSON form.
+//	of the token, so the claims JSON of a token is a valid `TokenGrants`.
 type LivekitPublicapiProjectsV1TokenGrants struct {
-	Agent         *LivekitPublicapiProjectsV1TokenGrantsAgent         `json:"agent,omitempty"`
-	AgentEndpoint *LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint `json:"agentEndpoint,omitempty"`
-	AgentThread   *LivekitPublicapiProjectsV1TokenGrantsAgentThread   `json:"agentThread,omitempty"`
-	Attributes    *map[string]string                                  `json:"attributes,omitempty"`
+	// Agent Agent server API permissions.
+	Agent *LivekitPublicapiProjectsV1TokenGrantsAgent `json:"agent,omitempty"`
 
-	// Identity Participant identity (the token's subject).
-	Identity  *string                                         `json:"identity,omitempty"`
+	// AgentDatabase Agent database permissions.
+	AgentDatabase *LivekitPublicapiProjectsV1TokenGrantsAgentDatabase `json:"agentDatabase,omitempty"`
+
+	// AgentEndpoint Permission to call an agent's non-public HTTP endpoints.
+	AgentEndpoint *LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint `json:"agentEndpoint,omitempty"`
+
+	// AgentThread Agent thread permissions.
+	AgentThread *LivekitPublicapiProjectsV1TokenGrantsAgentThread `json:"agentThread,omitempty"`
+
+	// Attributes Attributes carried on the participant.
+	Attributes *map[string]string `json:"attributes,omitempty"`
+
+	// Identity The identity of the participant: the subject of the token.
+	Identity *string `json:"identity,omitempty"`
+
+	// Inference Inference permissions.
 	Inference *LivekitPublicapiProjectsV1TokenGrantsInference `json:"inference,omitempty"`
 
-	// Kind Participant kind: "standard", "ingress", "egress", "sip", or "agent".
+	// Kind The kind of participant: `standard`, `ingress`, `egress`, `sip`, or
+	//  `agent`.
 	Kind        *string   `json:"kind,omitempty"`
 	KindDetails *[]string `json:"kindDetails,omitempty"`
-	Metadata    *string   `json:"metadata,omitempty"`
 
-	// Name Participant display name.
-	Name          *string                                             `json:"name,omitempty"`
+	// Metadata Metadata carried on the participant.
+	Metadata *string `json:"metadata,omitempty"`
+
+	// Name The display name of the participant.
+	Name *string `json:"name,omitempty"`
+
+	// Observability Observability permissions.
 	Observability *LivekitPublicapiProjectsV1TokenGrantsObservability `json:"observability,omitempty"`
 
-	// RoomConfig Configuration for a room this participant creates on join, including
-	//  agent dispatches.
+	// RoomConfig The configuration of a room that this participant creates when it joins,
+	//  with its agent dispatches.
 	RoomConfig *LivekitRoomConfiguration `json:"roomConfig,omitempty"`
 
-	// RoomPreset Cloud room configuration preset; fields in roomConfig override it.
-	RoomPreset *string                                     `json:"roomPreset,omitempty"`
-	Sip        *LivekitPublicapiProjectsV1TokenGrantsSip   `json:"sip,omitempty"`
-	Video      *LivekitPublicapiProjectsV1TokenGrantsVideo `json:"video,omitempty"`
+	// RoomPreset The name of a LiveKit Cloud room configuration preset. The fields in
+	//  `roomConfig` override it.
+	RoomPreset *string `json:"roomPreset,omitempty"`
+
+	// Sip SIP server API permissions.
+	Sip *LivekitPublicapiProjectsV1TokenGrantsSip `json:"sip,omitempty"`
+
+	// Video Room and participant permissions.
+	Video *LivekitPublicapiProjectsV1TokenGrantsVideo `json:"video,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsAgent Agent server API permissions.
+// LivekitPublicapiProjectsV1TokenGrantsAgent The permissions for the agent server API.
 type LivekitPublicapiProjectsV1TokenGrantsAgent struct {
-	Admin           *bool `json:"admin,omitempty"`
-	DatabaseAdmin   *bool `json:"databaseAdmin,omitempty"`
-	DispatchAdmin   *bool `json:"dispatchAdmin,omitempty"`
+	// Admin Create, update, and delete cloud agents.
+	Admin *bool `json:"admin,omitempty"`
+
+	// DispatchAdmin Manage the agent dispatch queue of the project.
+	DispatchAdmin *bool `json:"dispatchAdmin,omitempty"`
+
+	// SimulationAdmin Manage the simulations and scenarios that evaluate an agent.
 	SimulationAdmin *bool `json:"simulationAdmin,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint Calling an agent's non-public HTTP endpoints.
-type LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint struct {
-	// AgentName One agent; empty for every agent of the project.
-	AgentName *string `json:"agentName,omitempty"`
-	Call      *bool   `json:"call,omitempty"`
+// LivekitPublicapiProjectsV1TokenGrantsAgentDatabase The permissions of a database token for standalone agent databases
+//
+//	(`DB_...`). `read`, `write` and `delete` apply to the databases in
+//	`databaseIds`; `create` and `list` apply to the project. A thread's own
+//	database is reached through the thread's grant.
+type LivekitPublicapiProjectsV1TokenGrantsAgentDatabase struct {
+	// Create Create databases in the project.
+	Create *bool `json:"create,omitempty"`
 
-	// Deployment One deployment; empty for every deployment.
+	// DatabaseIds The databases the read, write and delete permissions apply to
+	//  (`DB_...`).
+	DatabaseIds *[]string `json:"databaseIds,omitempty"`
+
+	// Delete Delete the databases in `databaseIds`.
+	Delete *bool `json:"delete,omitempty"`
+
+	// List List the project's databases.
+	List *bool `json:"list,omitempty"`
+
+	// Read Read the databases in `databaseIds`.
+	Read *bool `json:"read,omitempty"`
+
+	// Write Write the databases in `databaseIds`.
+	Write *bool `json:"write,omitempty"`
+}
+
+// LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint The permission to call the non-public HTTP endpoints of an agent.
+type LivekitPublicapiProjectsV1TokenGrantsAgentEndpoint struct {
+	// AgentName The name of one agent. When empty, the grant applies to every agent of
+	//  the project.
+	AgentName *string `json:"agentName,omitempty"`
+
+	// Call Call the endpoints.
+	Call *bool `json:"call,omitempty"`
+
+	// Deployment One deployment of the agent. When empty, the grant applies to every
+	//  deployment.
 	Deployment *string `json:"deployment,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsAgentThread A thread token: list and create in scope; read, write and delete the
+// LivekitPublicapiProjectsV1TokenGrantsAgentThread The permissions of a thread token. The token can list and create threads
 //
-//	threads in threadIds, e.g. for a frontend rendering one conversation. all
-//	extends it to every thread of the project; the action flags still apply.
+//	in `scope`. It can read, write, and delete the threads in `threadIds`, for
+//	example for a frontend that shows one conversation. When `all` is `true`,
+//	the token can act on every thread of the project. The action flags still
+//	apply. With `sql`, the token can open the database of each thread that it
+//	covers.
 type LivekitPublicapiProjectsV1TokenGrantsAgentThread struct {
-	All       *bool     `json:"all,omitempty"`
-	Create    *bool     `json:"create,omitempty"`
-	Delete    *bool     `json:"delete,omitempty"`
-	List      *bool     `json:"list,omitempty"`
-	Read      *bool     `json:"read,omitempty"`
-	Scope     *string   `json:"scope,omitempty"`
+	// All Extend the read, write, and delete permissions to every thread of the
+	//  project.
+	All *bool `json:"all,omitempty"`
+
+	// Create Create a thread in `scope`.
+	Create *bool `json:"create,omitempty"`
+
+	// Delete Delete the threads in `threadIds`.
+	Delete *bool `json:"delete,omitempty"`
+
+	// List List the threads in `scope`.
+	List *bool `json:"list,omitempty"`
+
+	// Read Read the threads in `threadIds`.
+	Read *bool `json:"read,omitempty"`
+
+	// Scope The scope the list and create permissions apply to.
+	Scope *string `json:"scope,omitempty"`
+
+	// Sql Open the database of each thread that the read, write, and delete
+	//  permissions apply to. The ID of the database of a thread is the thread
+	//  ID (`AT_...`).
+	Sql *bool `json:"sql,omitempty"`
+
+	// ThreadIds The threads the read, write, and delete permissions apply to.
 	ThreadIds *[]string `json:"threadIds,omitempty"`
-	Write     *bool     `json:"write,omitempty"`
+
+	// Write Write the threads in `threadIds`.
+	Write *bool `json:"write,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1TokenGrantsInference defines model for livekit.publicapi.projects.v1.TokenGrants.Inference.
 type LivekitPublicapiProjectsV1TokenGrantsInference struct {
+	// Perform Every inference feature: LLM, STT, and TTS.
 	Perform *bool `json:"perform,omitempty"`
 }
 
 // LivekitPublicapiProjectsV1TokenGrantsObservability defines model for livekit.publicapi.projects.v1.TokenGrants.Observability.
 type LivekitPublicapiProjectsV1TokenGrantsObservability struct {
+	// Write Publish observability data.
 	Write *bool `json:"write,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsSip SIP server API permissions.
+// LivekitPublicapiProjectsV1TokenGrantsSip The permissions for the SIP server API.
 type LivekitPublicapiProjectsV1TokenGrantsSip struct {
+	// Admin Every SIP feature.
 	Admin *bool `json:"admin,omitempty"`
-	Call  *bool `json:"call,omitempty"`
+
+	// Call Make outbound SIP calls.
+	Call *bool `json:"call,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1TokenGrantsVideo Room and participant permissions.
+// LivekitPublicapiProjectsV1TokenGrantsVideo The room and participant permissions.
 type LivekitPublicapiProjectsV1TokenGrantsVideo struct {
-	Agent                 *bool `json:"agent,omitempty"`
+	// Agent Register as an Agents framework worker.
+	Agent *bool `json:"agent,omitempty"`
+
+	// CanManageAgentSession Manage an agent session through RemoteSession.
 	CanManageAgentSession *bool `json:"canManageAgentSession,omitempty"`
 
-	// CanPublish Unset means allowed.
-	CanPublish     *bool `json:"canPublish,omitempty"`
+	// CanPublish When true, the participant can publish tracks. Unset means `true`.
+	CanPublish *bool `json:"canPublish,omitempty"`
+
+	// CanPublishData Publish data to the room. Unset means allowed.
 	CanPublishData *bool `json:"canPublishData,omitempty"`
 
-	// CanPublishSources Restrict publishing to these sources ("camera", "microphone", …).
-	CanPublishSources    *[]string `json:"canPublishSources,omitempty"`
-	CanSubscribe         *bool     `json:"canSubscribe,omitempty"`
-	CanSubscribeMetrics  *bool     `json:"canSubscribeMetrics,omitempty"`
-	CanUpdateOwnMetadata *bool     `json:"canUpdateOwnMetadata,omitempty"`
+	// CanPublishSources The sources that the participant can publish, such as `camera` and
+	//  `microphone`.
+	CanPublishSources *[]string `json:"canPublishSources,omitempty"`
 
-	// DestinationRoom Room to move or forward participants to.
+	// CanSubscribe Subscribe to tracks. Unset means allowed.
+	CanSubscribe *bool `json:"canSubscribe,omitempty"`
+
+	// CanSubscribeMetrics Subscribe to metrics.
+	CanSubscribeMetrics *bool `json:"canSubscribeMetrics,omitempty"`
+
+	// CanUpdateOwnMetadata Update the participant's own metadata. Unset means allowed.
+	CanUpdateOwnMetadata *bool `json:"canUpdateOwnMetadata,omitempty"`
+
+	// DestinationRoom The room to move or forward participants to.
 	DestinationRoom *string `json:"destinationRoom,omitempty"`
-	Hidden          *bool   `json:"hidden,omitempty"`
 
-	// IngressAdmin Server API: manage ingress.
-	IngressAdmin *bool   `json:"ingressAdmin,omitempty"`
-	Recorder     *bool   `json:"recorder,omitempty"`
-	Room         *string `json:"room,omitempty"`
+	// Hidden Hide the participant from the others in the room.
+	Hidden *bool `json:"hidden,omitempty"`
 
-	// RoomAdmin Server API: manage `room` (or any room when unset).
+	// IngressAdmin When true, the token can manage ingress with the server API.
+	IngressAdmin *bool `json:"ingressAdmin,omitempty"`
+
+	// Recorder Tell the room the participant is a recorder.
+	Recorder *bool `json:"recorder,omitempty"`
+
+	// Room The room the join and admin permissions apply to. Required when either
+	//  is set.
+	Room *string `json:"room,omitempty"`
+
+	// RoomAdmin When true, the token can manage `room` with the server API. When `room`
+	//  is empty, the token can manage every room.
 	RoomAdmin *bool `json:"roomAdmin,omitempty"`
 
-	// RoomCreate Server API: create rooms.
+	// RoomCreate When true, the token can create rooms with the server API.
 	RoomCreate *bool `json:"roomCreate,omitempty"`
 
-	// RoomJoin Join `room`.
+	// RoomJoin When true, the participant can join `room`.
 	RoomJoin *bool `json:"roomJoin,omitempty"`
 
-	// RoomList Server API: list rooms.
+	// RoomList When true, the token can list rooms with the server API.
 	RoomList *bool `json:"roomList,omitempty"`
 
-	// RoomRecord Server API: start and manage egress.
+	// RoomRecord When true, the token can start and manage egress with the server API.
 	RoomRecord *bool `json:"roomRecord,omitempty"`
 }
 
@@ -3009,13 +5115,24 @@ type LivekitPublicapiProjectsV1UpdateWebhookResponse struct {
 	Webhook *LivekitPublicapiProjectsV1Webhook `json:"webhook,omitempty"`
 }
 
-// LivekitPublicapiProjectsV1Webhook A project webhook destination.
+// LivekitPublicapiProjectsV1Webhook A webhook destination of a project.
 type LivekitPublicapiProjectsV1Webhook struct {
+	// FilterParams The events to send, named by `includeEvents` or `excludeEvents`. Read the
+	//  names from List webhook events.
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
-	Id           *string              `json:"id,omitempty"`
-	Name         *string              `json:"name,omitempty"`
-	SigningKey   *string              `json:"signingKey,omitempty"`
-	Url          *string              `json:"url,omitempty"`
+
+	// Id The webhook ID.
+	Id *string `json:"id,omitempty"`
+
+	// Name A label for the destination.
+	Name *string `json:"name,omitempty"`
+
+	// SigningKey The API key of this project whose secret signs each delivery. It is a key
+	//  ID, not a secret. Empty signs with the oldest key in the project.
+	SigningKey *string `json:"signingKey,omitempty"`
+
+	// Url The URL that receives the events.
+	Url *string `json:"url,omitempty"`
 }
 
 // LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse defines model for livekit.publicapi.simulations.v1.Scenarios.GenerateFromSession.Response.
@@ -3031,30 +5148,32 @@ type LivekitPublicapiSimulationsV1SimulationRunsConfirmSourceUploadResponse = ma
 
 // LivekitPublicapiSimulationsV1SimulationRunsCountsResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.Counts.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsCountsResponse struct {
-	// Buckets Buckets holding at least one run, ascending by bucketStart. Empty
-	//  buckets are omitted; each run lands in exactly one bucket, so the
-	//  counts sum to the number of runs in the window.
+	// Buckets The buckets that hold at least one run, in ascending order of
+	//  `bucketStart`. The response does not include empty buckets. Each run is
+	//  in exactly one bucket, so the sum of the counts is the number of runs
+	//  in the window.
 	Buckets *[]LivekitSimulationRunCountsBucket `json:"buckets,omitempty"`
 
-	// Interval The bucket width the service chose for the window (at most 60 buckets,
-	//  never narrower than one minute), so a client zero-fills the omitted
-	//  buckets on the grid the counts were built on.
+	// Interval The width of each bucket. The API chooses the width from the window:
+	//  the window has at most 60 buckets, and a bucket is at least one minute
+	//  wide. Use the width to add the empty buckets, with a count of 0.
 	Interval *GoogleProtobufDuration `json:"interval,omitempty"`
 }
 
 // LivekitPublicapiSimulationsV1SimulationRunsCreateResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.Create.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsCreateResponse struct {
-	// PresignedPostRequest Presigned POST for uploading the agent source archive that scenarios
-	//  are generated from; upload, then call ConfirmSimulationSourceUpload.
-	//  Unset when the run was created with a scenarioGroup.
+	// PresignedPostRequest The presigned POST to upload the agent source archive that the API
+	//  generates scenarios from. After the upload, call
+	//  `ConfirmSimulationSourceUpload`. Unset when the run has a
+	//  `scenarioGroup`.
 	PresignedPostRequest *LivekitPresignedPostRequest `json:"presignedPostRequest,omitempty"`
 	SimulationRunId      *string                      `json:"simulationRunId,omitempty"`
 }
 
 // LivekitPublicapiSimulationsV1SimulationRunsGetResponse defines model for livekit.publicapi.simulations.v1.SimulationRuns.Get.Response.
 type LivekitPublicapiSimulationsV1SimulationRunsGetResponse struct {
-	// Run The run. summaryZstd is always empty here; see
-	//  GetSimulationRunSummary.
+	// Run The run. `summaryZstd` is always empty. To get the summary, call
+	//  `GetSimulationRunSummary`.
 	Run *LivekitSimulationRun `json:"run,omitempty"`
 }
 
@@ -3070,40 +5189,124 @@ type LivekitPublicapiSimulationsV1SimulationRunsListResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiThreadsV1ThreadsCreateResponse defines model for livekit.publicapi.threads.v1.Threads.Create.Response.
-type LivekitPublicapiThreadsV1ThreadsCreateResponse struct {
-	Thread *LivekitAgentAgentThreadThread `json:"thread,omitempty"`
+// LivekitPublicapiTelephonyV1DispatchRulesCreateResponse defines model for livekit.publicapi.telephony.v1.DispatchRules.Create.Response.
+type LivekitPublicapiTelephonyV1DispatchRulesCreateResponse struct {
+	DispatchRule *LivekitSIPDispatchRuleInfo `json:"dispatchRule,omitempty"`
 }
 
-// LivekitPublicapiThreadsV1ThreadsDeleteResponse defines model for livekit.publicapi.threads.v1.Threads.Delete.Response.
-type LivekitPublicapiThreadsV1ThreadsDeleteResponse = map[string]interface{}
+// LivekitPublicapiTelephonyV1DispatchRulesDeleteResponse defines model for livekit.publicapi.telephony.v1.DispatchRules.Delete.Response.
+type LivekitPublicapiTelephonyV1DispatchRulesDeleteResponse = map[string]interface{}
 
-// LivekitPublicapiThreadsV1ThreadsGetResponse defines model for livekit.publicapi.threads.v1.Threads.Get.Response.
-type LivekitPublicapiThreadsV1ThreadsGetResponse struct {
-	Thread *LivekitAgentAgentThreadThread `json:"thread,omitempty"`
+// LivekitPublicapiTelephonyV1DispatchRulesGetResponse defines model for livekit.publicapi.telephony.v1.DispatchRules.Get.Response.
+type LivekitPublicapiTelephonyV1DispatchRulesGetResponse struct {
+	DispatchRule *LivekitSIPDispatchRuleInfo `json:"dispatchRule,omitempty"`
 }
 
-// LivekitPublicapiThreadsV1ThreadsItemsResponse defines model for livekit.publicapi.threads.v1.Threads.Items.Response.
-type LivekitPublicapiThreadsV1ThreadsItemsResponse struct {
-	Items    *[]LivekitAgentAgentThreadItem    `json:"items,omitempty"`
+// LivekitPublicapiTelephonyV1DispatchRulesListResponse defines model for livekit.publicapi.telephony.v1.DispatchRules.List.Response.
+type LivekitPublicapiTelephonyV1DispatchRulesListResponse struct {
+	Items *[]LivekitSIPDispatchRuleInfo `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiThreadsV1ThreadsListResponse defines model for livekit.publicapi.threads.v1.Threads.List.Response.
-type LivekitPublicapiThreadsV1ThreadsListResponse struct {
-	Items    *[]LivekitAgentAgentThreadThread  `json:"items,omitempty"`
+// LivekitPublicapiTelephonyV1DispatchRulesUpdateResponse defines model for livekit.publicapi.telephony.v1.DispatchRules.Update.Response.
+type LivekitPublicapiTelephonyV1DispatchRulesUpdateResponse struct {
+	DispatchRule *LivekitSIPDispatchRuleInfo `json:"dispatchRule,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1InboundTrunksCreateResponse defines model for livekit.publicapi.telephony.v1.InboundTrunks.Create.Response.
+type LivekitPublicapiTelephonyV1InboundTrunksCreateResponse struct {
+	Trunk *LivekitSIPInboundTrunkInfo `json:"trunk,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1InboundTrunksDeleteResponse defines model for livekit.publicapi.telephony.v1.InboundTrunks.Delete.Response.
+type LivekitPublicapiTelephonyV1InboundTrunksDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiTelephonyV1InboundTrunksGetResponse defines model for livekit.publicapi.telephony.v1.InboundTrunks.Get.Response.
+type LivekitPublicapiTelephonyV1InboundTrunksGetResponse struct {
+	Trunk *LivekitSIPInboundTrunkInfo `json:"trunk,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1InboundTrunksListResponse defines model for livekit.publicapi.telephony.v1.InboundTrunks.List.Response.
+type LivekitPublicapiTelephonyV1InboundTrunksListResponse struct {
+	Items *[]LivekitSIPInboundTrunkInfo `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiThreadsV1ThreadsTasksResponse defines model for livekit.publicapi.threads.v1.Threads.Tasks.Response.
-type LivekitPublicapiThreadsV1ThreadsTasksResponse struct {
-	Items    *[]LivekitAgentAgentTaskTask      `json:"items,omitempty"`
+// LivekitPublicapiTelephonyV1InboundTrunksUpdateResponse defines model for livekit.publicapi.telephony.v1.InboundTrunks.Update.Response.
+type LivekitPublicapiTelephonyV1InboundTrunksUpdateResponse struct {
+	Trunk *LivekitSIPInboundTrunkInfo `json:"trunk,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1OutboundTrunksCreateResponse defines model for livekit.publicapi.telephony.v1.OutboundTrunks.Create.Response.
+type LivekitPublicapiTelephonyV1OutboundTrunksCreateResponse struct {
+	Trunk *LivekitSIPOutboundTrunkInfo `json:"trunk,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1OutboundTrunksDeleteResponse defines model for livekit.publicapi.telephony.v1.OutboundTrunks.Delete.Response.
+type LivekitPublicapiTelephonyV1OutboundTrunksDeleteResponse = map[string]interface{}
+
+// LivekitPublicapiTelephonyV1OutboundTrunksGetResponse defines model for livekit.publicapi.telephony.v1.OutboundTrunks.Get.Response.
+type LivekitPublicapiTelephonyV1OutboundTrunksGetResponse struct {
+	Trunk *LivekitSIPOutboundTrunkInfo `json:"trunk,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1OutboundTrunksListResponse defines model for livekit.publicapi.telephony.v1.OutboundTrunks.List.Response.
+type LivekitPublicapiTelephonyV1OutboundTrunksListResponse struct {
+	Items *[]LivekitSIPOutboundTrunkInfo `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
-// LivekitPublicapiThreadsV1ThreadsUpdateResponse defines model for livekit.publicapi.threads.v1.Threads.Update.Response.
-type LivekitPublicapiThreadsV1ThreadsUpdateResponse struct {
-	Thread *LivekitAgentAgentThreadThread `json:"thread,omitempty"`
+// LivekitPublicapiTelephonyV1OutboundTrunksUpdateResponse defines model for livekit.publicapi.telephony.v1.OutboundTrunks.Update.Response.
+type LivekitPublicapiTelephonyV1OutboundTrunksUpdateResponse struct {
+	Trunk *LivekitSIPOutboundTrunkInfo `json:"trunk,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1PhoneNumbersGetResponse defines model for livekit.publicapi.telephony.v1.PhoneNumbers.Get.Response.
+type LivekitPublicapiTelephonyV1PhoneNumbersGetResponse struct {
+	PhoneNumber *LivekitPhoneNumber `json:"phoneNumber,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1PhoneNumbersListResponse defines model for livekit.publicapi.telephony.v1.PhoneNumbers.List.Response.
+type LivekitPublicapiTelephonyV1PhoneNumbersListResponse struct {
+	Items    *[]LivekitPhoneNumber             `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1PhoneNumbersPurchaseResponse defines model for livekit.publicapi.telephony.v1.PhoneNumbers.Purchase.Response.
+type LivekitPublicapiTelephonyV1PhoneNumbersPurchaseResponse struct {
+	PhoneNumber *LivekitPhoneNumber `json:"phoneNumber,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse defines model for livekit.publicapi.telephony.v1.PhoneNumbers.Release.Response.
+type LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse = map[string]interface{}
+
+// LivekitPublicapiTelephonyV1PhoneNumbersSearchResponse defines model for livekit.publicapi.telephony.v1.PhoneNumbers.Search.Response.
+type LivekitPublicapiTelephonyV1PhoneNumbersSearchResponse struct {
+	Items *[]LivekitPhoneNumber `json:"items,omitempty"`
+
+	// PageInfo `hasMore` is always `false`, and `nextCursor` is always empty.
+	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1PhoneNumbersUpdateResponse defines model for livekit.publicapi.telephony.v1.PhoneNumbers.Update.Response.
+type LivekitPublicapiTelephonyV1PhoneNumbersUpdateResponse struct {
+	PhoneNumber *LivekitPhoneNumber `json:"phoneNumber,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1SIPParticipantsCreateResponse defines model for livekit.publicapi.telephony.v1.SIPParticipants.Create.Response.
+type LivekitPublicapiTelephonyV1SIPParticipantsCreateResponse struct {
+	Participant *LivekitSIPParticipantInfo `json:"participant,omitempty"`
+}
+
+// LivekitPublicapiTelephonyV1SIPParticipantsTransferResponse defines model for livekit.publicapi.telephony.v1.SIPParticipants.Transfer.Response.
+type LivekitPublicapiTelephonyV1SIPParticipantsTransferResponse struct {
+	Transfer *LivekitTransferSIPParticipantResponse `json:"transfer,omitempty"`
 }
 
 // LivekitPublicapiUsersV1GetCurrentUserResponse defines model for livekit.publicapi.users.v1.GetCurrentUserResponse.
@@ -3122,31 +5325,44 @@ type LivekitPublicapiUsersV1ListUsersResponse struct {
 	PageInfo *LivekitPublicapiCommonV1PageInfo `json:"pageInfo,omitempty"`
 }
 
+// LivekitPublicapiUsersV1SessionTokenRevokeResponse defines model for livekit.publicapi.users.v1.SessionToken.Revoke.Response.
+type LivekitPublicapiUsersV1SessionTokenRevokeResponse = map[string]interface{}
+
 // LivekitPublicapiUsersV1User A LiveKit Cloud user.
 type LivekitPublicapiUsersV1User struct {
+	// CreatedAt When the account was created.
 	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
-	Email     *string                  `json:"email,omitempty"`
-	Id        *string                  `json:"id,omitempty"`
+
+	// Email The email address on the account.
+	Email *string `json:"email,omitempty"`
+
+	// Id The user ID, also the `userId` on project and workspace members.
+	Id *string `json:"id,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1AnswerInviteResponse defines model for livekit.publicapi.workspaces.v1.AnswerInviteResponse.
 type LivekitPublicapiWorkspacesV1AnswerInviteResponse struct {
-	// Member set when accept=true
+	// Member The new membership. Set only when `accept` is `true`.
 	Member *LivekitPublicapiWorkspacesV1WorkspaceMember `json:"member,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1CreateInviteResponse defines model for livekit.publicapi.workspaces.v1.CreateInviteResponse.
 type LivekitPublicapiWorkspacesV1CreateInviteResponse struct {
+	// InviteToken The token that identifies the invite. The invitee answers with it.
 	InviteToken *string `json:"inviteToken,omitempty"`
+
+	// WorkspaceId The workspace the invite is to (`wo_...`).
 	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
-// LivekitPublicapiWorkspacesV1CreateWorkspaceRequest defines model for livekit.publicapi.workspaces.v1.CreateWorkspaceRequest.
+// LivekitPublicapiWorkspacesV1CreateWorkspaceRequest The workspace to create. You cannot set workspace preferences here. LiveKit
+//
+//	staff set them, and they apply to every project in the workspace.
 type LivekitPublicapiWorkspacesV1CreateWorkspaceRequest struct {
+	// Name The workspace name.
 	Name *string `json:"name,omitempty"`
 
-	// OrganizationId Optional organization association. Workspace preferences are not settable here. They apply to every project in
-	//  the workspace and are set by LiveKit staff.
+	// OrganizationId The ID of an organization to associate the workspace with. Optional.
 	OrganizationId *string `json:"organizationId,omitempty"`
 }
 
@@ -3160,7 +5376,7 @@ type LivekitPublicapiWorkspacesV1DeleteInviteResponse = map[string]interface{}
 
 // LivekitPublicapiWorkspacesV1DeleteMemberResponse defines model for livekit.publicapi.workspaces.v1.DeleteMemberResponse.
 type LivekitPublicapiWorkspacesV1DeleteMemberResponse struct {
-	// NumKeys Non-agent API keys the removal deleted.
+	// NumKeys The number of API keys that the removal deleted, not counting agent keys.
 	NumKeys *int `json:"numKeys,omitempty"`
 }
 
@@ -3184,12 +5400,14 @@ type LivekitPublicapiWorkspacesV1GetWorkspaceResponse struct {
 
 // LivekitPublicapiWorkspacesV1ListInvitesResponse defines model for livekit.publicapi.workspaces.v1.ListInvitesResponse.
 type LivekitPublicapiWorkspacesV1ListInvitesResponse struct {
-	Items *[]LivekitPublicapiWorkspacesV1WorkspaceInvite `json:"items,omitempty"`
+	Items    *[]LivekitPublicapiWorkspacesV1WorkspaceInvite `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo              `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1ListMembersResponse defines model for livekit.publicapi.workspaces.v1.ListMembersResponse.
 type LivekitPublicapiWorkspacesV1ListMembersResponse struct {
-	Items *[]LivekitPublicapiWorkspacesV1WorkspaceMember `json:"items,omitempty"`
+	Items    *[]LivekitPublicapiWorkspacesV1WorkspaceMember `json:"items,omitempty"`
+	PageInfo *LivekitPublicapiCommonV1PageInfo              `json:"pageInfo,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1ListWorkspacesResponse defines model for livekit.publicapi.workspaces.v1.ListWorkspacesResponse.
@@ -3212,619 +5430,1001 @@ type LivekitPublicapiWorkspacesV1UpdateWorkspaceResponse struct {
 //
 //	and are not embedded here.
 type LivekitPublicapiWorkspacesV1Workspace struct {
-	CreatedAt      *GoogleProtobufTimestamp                          `json:"createdAt,omitempty"`
-	CreatorId      *string                                           `json:"creatorId,omitempty"`
-	Id             *string                                           `json:"id,omitempty"`
-	Name           *string                                           `json:"name,omitempty"`
-	OrganizationId *string                                           `json:"organizationId,omitempty"`
-	Preferences    *LivekitPublicapiWorkspacesV1WorkspacePreferences `json:"preferences,omitempty"`
+	// CreatedAt When the workspace was created.
+	CreatedAt *GoogleProtobufTimestamp `json:"createdAt,omitempty"`
+
+	// CreatorId The user who created the workspace.
+	CreatorId *string `json:"creatorId,omitempty"`
+
+	// Id The workspace ID (`wo_...`).
+	Id *string `json:"id,omitempty"`
+
+	// Name The workspace name.
+	Name *string `json:"name,omitempty"`
+
+	// OrganizationId The organization the workspace belongs to.
+	OrganizationId *string `json:"organizationId,omitempty"`
+
+	// Preferences The settings for the workspace.
+	Preferences *LivekitPublicapiWorkspacesV1WorkspacePreferences `json:"preferences,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1WorkspaceInvite A pending email invite to a workspace.
 type LivekitPublicapiWorkspacesV1WorkspaceInvite struct {
-	Email       *string                  `json:"email,omitempty"`
-	ExpiresAt   *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
-	InviteToken *string                  `json:"inviteToken,omitempty"`
-	Role        *int32                   `json:"role,omitempty"`
-	WorkspaceId *string                  `json:"workspaceId,omitempty"`
+	// Email The email address the invite was sent to.
+	Email *string `json:"email,omitempty"`
+
+	// ExpiresAt When the invite stops working.
+	ExpiresAt *GoogleProtobufTimestamp `json:"expiresAt,omitempty"`
+
+	// InviteToken The token that identifies the invite. The invitee answers with it.
+	//  Only `GetInvite` returns it, to the invitee who asks with it. `ListInvites`
+	//  leaves it empty. `CreateInvite` returns the token of the invite that it
+	//  creates.
+	InviteToken *string `json:"inviteToken,omitempty"`
+
+	// Role Access level the invitee takes on the workspace: 0 invited, 1 read,
+	//  2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
+
+	// WorkspaceId The workspace the invite is to (`wo_...`).
+	WorkspaceId *string `json:"workspaceId,omitempty"`
+}
+
+// LivekitPublicapiWorkspacesV1WorkspaceMcpPolicy What OAuth apps can do in a workspace over the MCP server. The policy limits
+//
+//	only the calls that act in the workspace or in its projects. A member can
+//	still connect an app, and use the app in other workspaces.
+type LivekitPublicapiWorkspacesV1WorkspaceMcpPolicy struct {
+	// AllowedClientIds The OAuth client IDs of the apps that can act in the workspace when
+	//  `clientAllowlistEnabled` is `true`: the metadata document URL of an app,
+	//  such as `https://claude.ai/oauth/mcp-oauth-client-metadata`, or the ID of
+	//  a static client, such as `cline`. At most 100 IDs, each at most 2048
+	//  characters.
+	AllowedClientIds *[]string `json:"allowedClientIds,omitempty"`
+
+	// ClientAllowlistEnabled When true, only the apps in `allowedClientIds` can act in the workspace.
+	//  The list stays when this is `false`. With an empty list, no app can act.
+	ClientAllowlistEnabled *bool `json:"clientAllowlistEnabled,omitempty"`
+
+	// Disabled When true, no app can act in the workspace over MCP.
+	Disabled *bool `json:"disabled,omitempty"`
 }
 
 // LivekitPublicapiWorkspacesV1WorkspaceMember A user's membership on a workspace.
 type LivekitPublicapiWorkspacesV1WorkspaceMember struct {
+	// Email The email address on the user account.
 	Email *string `json:"email,omitempty"`
 
-	// Role Access level: 0 invited, 1 read, 2 write, 3 admin.
-	Role        *int32  `json:"role,omitempty"`
-	UserId      *string `json:"userId,omitempty"`
+	// Role The role of the member: `0` invited, `1` read, `2` write, `3` admin.
+	Role *int32 `json:"role,omitempty"`
+
+	// UserId The user who holds the membership.
+	UserId *string `json:"userId,omitempty"`
+
+	// WorkspaceId The workspace the membership is on (`wo_...`).
 	WorkspaceId *string `json:"workspaceId,omitempty"`
 }
 
-// LivekitPublicapiWorkspacesV1WorkspacePreferences Per-workspace settings.
+// LivekitPublicapiWorkspacesV1WorkspacePreferences The settings of a workspace.
 type LivekitPublicapiWorkspacesV1WorkspacePreferences struct {
 	HipaaCompliant *bool `json:"hipaaCompliant,omitempty"`
+
+	// Mcp What OAuth apps can do in the workspace over the MCP server. Unset allows
+	//  every app.
+	Mcp *LivekitPublicapiWorkspacesV1WorkspaceMcpPolicy `json:"mcp,omitempty"`
 }
 
 // ProjectServiceAnswerInvitationJSONBody defines parameters for ProjectServiceAnswerInvitation.
 type ProjectServiceAnswerInvitationJSONBody struct {
+	// Accept True accepts the invite; false declines it.
 	Accept *bool `json:"accept,omitempty"`
 }
 
 // ProjectServiceListProjectsParams defines parameters for ProjectServiceListProjects.
 type ProjectServiceListProjectsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// WorkspaceId Mutually exclusive: only one of workspaceId or memberId can be set if
-	//  workspaceId is set, list projects for the workspace
+	// WorkspaceId The workspace to list projects from. Private projects that you are not a
+	//  member of are left out. When `workspaceId` and `memberId` are both empty,
+	//  the response lists the projects that you are a member of. If you set both,
+	//  the request fails with `InvalidArgument`.
 	WorkspaceId *string `form:"workspaceId,omitempty" json:"workspaceId,omitempty"`
 
-	// MemberId if memberId is set, list projects for the member
+	// MemberId The member to list projects for. It must be your own user ID. Another user
+	//  ID returns `PermissionDenied`.
 	MemberId *string `form:"memberId,omitempty" json:"memberId,omitempty"`
 }
 
 // ProjectServiceUpdateProjectJSONBody defines parameters for ProjectServiceUpdateProject.
 type ProjectServiceUpdateProjectJSONBody struct {
-	CustomDomain         *string `json:"customDomain,omitempty"`
-	DisableTokenEndpoint *bool   `json:"disableTokenEndpoint,omitempty"`
-	DiscoverableByDomain *bool   `json:"discoverableByDomain,omitempty"`
+	// CustomDomain A custom domain to add to the project.
+	CustomDomain *string `json:"customDomain,omitempty"`
 
-	// EgressClusterId set by LiveKit staff only
-	EgressClusterId           *string `json:"egressClusterId,omitempty"`
-	EnableAnalytics           *bool   `json:"enableAnalytics,omitempty"`
-	EnableAutoCreate          *bool   `json:"enableAutoCreate,omitempty"`
-	EnableEgressAutoRetry     *bool   `json:"enableEgressAutoRetry,omitempty"`
-	EnableEgressBackupStorage *bool   `json:"enableEgressBackupStorage,omitempty"`
+	// DisableTokenEndpoint True turns off the sandbox token endpoint for the project.
+	DisableTokenEndpoint *bool `json:"disableTokenEndpoint,omitempty"`
 
-	// EnableHostedAgents set by LiveKit staff only
-	EnableHostedAgents               *bool              `json:"enableHostedAgents,omitempty"`
-	EnableInferenceRegionRestriction *bool              `json:"enableInferenceRegionRestriction,omitempty"`
-	EnablePiiRedaction               *bool              `json:"enablePiiRedaction,omitempty"`
-	EnableRemoteUnmute               *bool              `json:"enableRemoteUnmute,omitempty"`
-	EnableUserDataRecording          *bool              `json:"enableUserDataRecording,omitempty"`
-	EnableUserDataTraining           *bool              `json:"enableUserDataTraining,omitempty"`
-	EnabledCodecs                    *[]string          `json:"enabledCodecs,omitempty"`
-	FeatureFlags                     *map[string]string `json:"featureFlags,omitempty"`
+	// DiscoverableByDomain When true, adds your email domain to the project.
+	DiscoverableByDomain *bool `json:"discoverableByDomain,omitempty"`
 
-	// HideOnboarding Project preferences, patched as flat fields.
-	HideOnboarding       *bool `json:"hideOnboarding,omitempty"`
+	// EgressClusterId The egress cluster for the project. Only LiveKit staff can change it. For
+	//  any other caller, a value that differs from the current one returns
+	//  `PermissionDenied`.
+	EgressClusterId *string `json:"egressClusterId,omitempty"`
+
+	// EnableAnalytics True turns on analytics for the project.
+	EnableAnalytics *bool `json:"enableAnalytics,omitempty"`
+
+	// EnableAutoCreate True lets the first participant to join a room that does not yet exist
+	//  create it.
+	EnableAutoCreate *bool `json:"enableAutoCreate,omitempty"`
+
+	// EnableEgressAutoRetry True retries a failed egress automatically.
+	EnableEgressAutoRetry *bool `json:"enableEgressAutoRetry,omitempty"`
+
+	// EnableEgressBackupStorage True keeps an egress that fails to upload in LiveKit backup storage for 7
+	//  days.
+	EnableEgressBackupStorage *bool `json:"enableEgressBackupStorage,omitempty"`
+
+	// EnableHostedAgents True when hosted agents are enabled for the project. Only LiveKit staff can
+	//  change it. For any other caller, a value that differs from the current one
+	//  returns `PermissionDenied`.
+	EnableHostedAgents *bool `json:"enableHostedAgents,omitempty"`
+
+	// EnableInferenceRegionRestriction True restricts inference to the models in the same data region as the
+	//  project.
+	EnableInferenceRegionRestriction *bool `json:"enableInferenceRegionRestriction,omitempty"`
+
+	// EnablePiiRedaction True redacts PII from the recorded session data.
+	EnablePiiRedaction *bool `json:"enablePiiRedaction,omitempty"`
+
+	// EnableRemoteUnmute True lets an admin unmute the tracks of another participant.
+	EnableRemoteUnmute *bool `json:"enableRemoteUnmute,omitempty"`
+
+	// EnableUserDataRecording When true, the project records traces, transcripts, and audio from agent
+	//  sessions for agent observability. Data recorded earlier stays readable.
+	EnableUserDataRecording *bool `json:"enableUserDataRecording,omitempty"`
+
+	// EnableUserDataTraining True lets LiveKit use the observability data from this project to improve
+	//  models and services.
+	EnableUserDataTraining *bool `json:"enableUserDataTraining,omitempty"`
+
+	// EnabledCodecs The media codecs the project allows, by MIME type, such as `video/VP9`.
+	EnabledCodecs *[]string `json:"enabledCodecs,omitempty"`
+
+	// FeatureFlags The feature flags to change, by name. The API sets each flag that you send,
+	//  and removes a flag that you send with an empty value. The flags that you do
+	//  not send do not change.
+	FeatureFlags *map[string]string `json:"featureFlags,omitempty"`
+
+	// HideOnboarding True hides the onboarding instructions on the project dashboard.
+	HideOnboarding *bool `json:"hideOnboarding,omitempty"`
+
+	// HideSampleAppGallery True hides the sample app gallery on the project dashboard.
 	HideSampleAppGallery *bool `json:"hideSampleAppGallery,omitempty"`
-	IsPrivate            *bool `json:"isPrivate,omitempty"`
-	JoinableByDomain     *bool `json:"joinableByDomain,omitempty"`
 
-	// Members The members to keep when the project becomes private. The caller keeps
-	//  the admin role.
+	// IsPrivate True gives the project its own member list instead of the members of its
+	//  workspace.
+	IsPrivate *bool `json:"isPrivate,omitempty"`
+
+	// JoinableByDomain When true, adds your email domain to the project.
+	JoinableByDomain *bool `json:"joinableByDomain,omitempty"`
+
+	// Members The members to keep when the project becomes private. You keep the admin
+	//  role.
 	Members *[]LivekitPublicapiProjectsV1CreateProjectMember `json:"members,omitempty"`
-	Name    *string                                          `json:"name,omitempty"`
 
-	// PiiRedactionCategories A non-empty list replaces the stored set. An empty list is ignored, so
-	//  the set cannot be cleared this way. Turning redaction on with nothing
-	//  stored applies the default categories.
+	// Name The project name.
+	Name *string `json:"name,omitempty"`
+
+	// PiiRedactionCategories The categories to redact. A non-empty list replaces the saved categories.
+	//  The API ignores an empty list, so you cannot clear the categories this
+	//  way. When you turn on redaction and the project has no saved categories,
+	//  the API applies the default categories.
 	PiiRedactionCategories *[]CloudProtocolPIIRedactionCategory `json:"piiRedactionCategories,omitempty"`
 
-	// PinnedRegions SFU region pins. Unset leaves them unchanged; a set message replaces the
-	//  stored set, so an empty regions list clears the pins. Distinct from
-	//  userDataRegion, which decides where session data is stored.
-	PinnedRegions           *LivekitPublicapiProjectsV1PinnedRegions `json:"pinnedRegions,omitempty"`
-	RequireExplicitDispatch *bool                                    `json:"requireExplicitDispatch,omitempty"`
-	RoomConfigsToDelete     *[]string                                `json:"roomConfigsToDelete,omitempty"`
+	// PinnedRegions The SFU regions to pin the project to. When unset, the pins do not
+	//  change. A set message replaces the pins, so an empty `regions` list
+	//  removes all pins. This field is different from `userDataRegion`, which
+	//  sets where the project keeps its session data.
+	PinnedRegions *LivekitPublicapiProjectsV1PinnedRegions `json:"pinnedRegions,omitempty"`
 
-	// RoomConfigsToUpsert RoomConfiguration management (stored on project preferences).
+	// RequireExplicitDispatch True rejects an agent server that registers without an explicit agent
+	//  name.
+	RequireExplicitDispatch *bool `json:"requireExplicitDispatch,omitempty"`
+
+	// RoomConfigsToDelete The names of the room configurations to remove from the project.
+	RoomConfigsToDelete *[]string `json:"roomConfigsToDelete,omitempty"`
+
+	// RoomConfigsToUpsert Room configurations to add to the project. A configuration replaces the
+	//  one with the same name. A configuration without a name is ignored.
 	RoomConfigsToUpsert *[]LivekitRoomConfiguration `json:"roomConfigsToUpsert,omitempty"`
-	SfuAllowPause       *bool                       `json:"sfuAllowPause,omitempty"`
-	Subdomain           *string                     `json:"subdomain,omitempty"`
-	TokenEndpointKey    *string                     `json:"tokenEndpointKey,omitempty"`
+
+	// SfuAllowPause True lets the SFU pause video tracks when subscribers are congested.
+	SfuAllowPause *bool `json:"sfuAllowPause,omitempty"`
+
+	// Subdomain The project subdomain, which forms the server URL.
+	Subdomain *string `json:"subdomain,omitempty"`
+
+	// TokenEndpointKey The API key that signs the tokens from the sandbox token endpoint of the
+	//  project.
+	TokenEndpointKey *string `json:"tokenEndpointKey,omitempty"`
 }
 
-// AnalyticsServiceGetProjectAnalyticsParams defines parameters for AnalyticsServiceGetProjectAnalytics.
-type AnalyticsServiceGetProjectAnalyticsParams struct {
-	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
-	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
-
-	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
-	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
-}
-
-// AnalyticsServiceListAgentAnalyticsParams defines parameters for AnalyticsServiceListAgentAnalytics.
-type AnalyticsServiceListAgentAnalyticsParams struct {
-	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
-	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
-
-	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
-	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
-
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+// BuilderAgentServiceListBuilderAgentsParams defines parameters for BuilderAgentServiceListBuilderAgents.
+type BuilderAgentServiceListBuilderAgentsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
-// AnalyticsServiceGetAgentAnalyticsParams defines parameters for AnalyticsServiceGetAgentAnalytics.
-type AnalyticsServiceGetAgentAnalyticsParams struct {
-	// RangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
-	RangeStartTime *time.Time `form:"range.startTime,omitempty" json:"range.startTime,omitempty"`
+// BuilderAgentServiceCreateBuilderAgentJSONBody defines parameters for BuilderAgentServiceCreateBuilderAgent.
+type BuilderAgentServiceCreateBuilderAgentJSONBody struct {
+	// Config The configuration. Unset uses the default configuration.
+	Config *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
 
-	// RangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
-	RangeEndTime *time.Time `form:"range.endTime,omitempty" json:"range.endTime,omitempty"`
+	// Name The agent name. The agent registers under this name, and you use it
+	//  to dispatch the agent to a room. It starts with a letter, and has only
+	//  letters, digits, `_`, and `-`. At most 128 characters. Must be unique
+	//  in the project.
+	Name *string `json:"name,omitempty"`
 }
 
-// DatabaseServiceListDatabasesParams defines parameters for DatabaseServiceListDatabases.
-type DatabaseServiceListDatabasesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+// BuilderAgentServiceUpdateBuilderAgentJSONBody defines parameters for BuilderAgentServiceUpdateBuilderAgent.
+type BuilderAgentServiceUpdateBuilderAgentJSONBody struct {
+	// Config The new configuration. It replaces the current one: unset properties
+	//  take their default, not their current value.
+	Config *LivekitPublicapiAgentsV1BuilderAgentConfig `json:"config,omitempty"`
+}
+
+// BuilderAgentServiceDeployBuilderAgentJSONBody defines parameters for BuilderAgentServiceDeployBuilderAgent.
+type BuilderAgentServiceDeployBuilderAgentJSONBody struct {
+	// VersionId The version to deploy. Empty deploys the current configuration.
+	VersionId *string `json:"versionId,omitempty"`
+}
+
+// ProjectServiceListInvitesParams defines parameters for ProjectServiceListInvites.
+type ProjectServiceListInvitesParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
-}
-
-// DatabaseServiceCreateDatabaseJSONBody defines parameters for DatabaseServiceCreateDatabase.
-type DatabaseServiceCreateDatabaseJSONBody struct {
-	// Ttl Unset: never expires. Otherwise clamped to the server cap, and never
-	//  extended.
-	Ttl *GoogleProtobufDuration `json:"ttl,omitempty"`
 }
 
 // ProjectServiceInviteMemberJSONBody defines parameters for ProjectServiceInviteMember.
 type ProjectServiceInviteMemberJSONBody struct {
+	// Email The email address to invite.
 	Email *string `json:"email,omitempty"`
-	Role  *int32  `json:"role,omitempty"`
+
+	// Role Access level to grant on the project: 1 read, 2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
 }
 
 // ProjectServiceUpdateInviteJSONBody defines parameters for ProjectServiceUpdateInvite.
 type ProjectServiceUpdateInviteJSONBody struct {
+	// Role Access level to set on the invite: 1 read, 2 write, 3 admin.
 	Role *int32 `json:"role,omitempty"`
 }
 
 // ProjectServiceListKeysParams defines parameters for ProjectServiceListKeys.
 type ProjectServiceListKeysParams struct {
-	// IncludeAgentKeys Agent keys are hidden by default.
+	// IncludeAgentKeys When true, the list includes the keys of cloud agents. By default, the
+	//  list does not include them.
 	IncludeAgentKeys *bool `form:"includeAgentKeys,omitempty" json:"includeAgentKeys,omitempty"`
+
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// OwnerId The ID of a user. Returns only the keys that this user owns. When empty,
+	//  returns the keys of every owner and the keys with no owner.
+	OwnerId *string `form:"ownerId,omitempty" json:"ownerId,omitempty"`
 }
 
 // ProjectServiceGenerateKeyJSONBody defines parameters for ProjectServiceGenerateKey.
 type ProjectServiceGenerateKeyJSONBody struct {
+	// Description A label for the key.
 	Description *string `json:"description,omitempty"`
 
-	// IsServiceAccount When true, the key is created without an owner (project-owned). It is not
-	//  listed as anyone's personal key and survives the generating user leaving.
+	// IsServiceAccount When true, the key has no owner, and it belongs to the project.
+	//  `ListKeys` with an `ownerId` does not return it, and it stays when the
+	//  user who created it leaves the project.
 	IsServiceAccount *bool `json:"isServiceAccount,omitempty"`
+}
+
+// ProjectServiceListMembersParams defines parameters for ProjectServiceListMembers.
+type ProjectServiceListMembersParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ProjectServiceRemoveMemberParams defines parameters for ProjectServiceRemoveMember.
 type ProjectServiceRemoveMemberParams struct {
-	// ConfirmedNumKeys Number of the member's API keys the caller agrees to delete. Call with 0;
-	//  if the member owns keys, the call fails with a MemberRemovalNotConfirmed
-	//  detail, so show its num_keys to the user and call again with it.
+	// ConfirmedNumKeys The number of the member's API keys that you agree to delete. Send `0`
+	//  first. When the member owns API keys, the call fails with
+	//  `FailedPrecondition` and a `MemberRemovalNotConfirmed` detail. Show its
+	//  `numKeys` to the user, then send the request again with that number.
 	ConfirmedNumKeys *int `form:"confirmedNumKeys,omitempty" json:"confirmedNumKeys,omitempty"`
 }
 
 // ProjectServiceUpdateMemberJSONBody defines parameters for ProjectServiceUpdateMember.
 type ProjectServiceUpdateMemberJSONBody struct {
+	// Role Access level to set: 1 read, 2 write, 3 admin.
 	Role *int32 `json:"role,omitempty"`
 }
 
 // ProjectServiceAddWorkspaceMembersToProjectJSONBody defines parameters for ProjectServiceAddWorkspaceMembersToProject.
 type ProjectServiceAddWorkspaceMembersToProjectJSONBody struct {
-	Role    *int32    `json:"role,omitempty"`
+	// Role Access level to grant each of them: 1 read, 2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
+
+	// UserIds The workspace members to add to the project.
 	UserIds *[]string `json:"userIds,omitempty"`
+}
+
+// TelephonyServiceListPhoneNumbersParams defines parameters for TelephonyServiceListPhoneNumbers.
+type TelephonyServiceListPhoneNumbersParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// Statuses Returns only the numbers in one of these statuses. When empty,
+	//  returns the active numbers.
+	Statuses *[]LivekitPhoneNumberStatus `form:"statuses,omitempty" json:"statuses,omitempty"`
+
+	// SipDispatchRuleId The ID of a dispatch rule (`SDR_...`). Returns only the numbers of
+	//  this rule.
+	SipDispatchRuleId *string `form:"sipDispatchRuleId,omitempty" json:"sipDispatchRuleId,omitempty"`
+}
+
+// TelephonyServicePurchasePhoneNumberJSONBody defines parameters for TelephonyServicePurchasePhoneNumber.
+type TelephonyServicePurchasePhoneNumberJSONBody struct {
+	// PhoneNumber The phone number to buy, in E.164 format, such as `+14155550100`,
+	//  from `SearchPhoneNumbers`. Required.
+	PhoneNumber *string `json:"phoneNumber,omitempty"`
+
+	// SipDispatchRuleId The ID of a dispatch rule (`SDR_...`). When set, the API adds the
+	//  number to this rule.
+	SipDispatchRuleId *string `json:"sipDispatchRuleId,omitempty"`
+}
+
+// TelephonyServiceUpdatePhoneNumberJSONBody defines parameters for TelephonyServiceUpdatePhoneNumber.
+type TelephonyServiceUpdatePhoneNumberJSONBody struct {
+	// Name The new name of the number. When unset, the name doesn't change.
+	Name *string `json:"name,omitempty"`
+
+	// SipDispatchRuleId The ID of a dispatch rule (`SDR_...`) to add the number to. When
+	//  unset, the rules of the number don't change.
+	SipDispatchRuleId *string `json:"sipDispatchRuleId,omitempty"`
+}
+
+// TelephonyServiceSearchPhoneNumbersParams defines parameters for TelephonyServiceSearchPhoneNumbers.
+type TelephonyServiceSearchPhoneNumbersParams struct {
+	// CountryCode The country, as an ISO 3166-1 alpha-2 code, such as `US`. Required.
+	CountryCode *string `form:"countryCode,omitempty" json:"countryCode,omitempty"`
+
+	// AreaCode The area code, such as `415`. When empty, returns numbers from any
+	//  area code.
+	AreaCode *string `form:"areaCode,omitempty" json:"areaCode,omitempty"`
+
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // SimulationServiceGenerateScenarioFromSessionJSONBody defines parameters for SimulationServiceGenerateScenarioFromSession.
 type SimulationServiceGenerateScenarioFromSessionJSONBody struct {
-	// Region Unused today: the session's recording is found by project and room.
+	// Region Ignored. The API finds the session recording by project and
+	//  room.
 	Region *string `json:"region,omitempty"`
 
-	// RoomId Room session (RM_...) to derive the scenario from.
+	// RoomId The ID of the room session (`RM_...`) to generate the scenario from.
 	RoomId *string `json:"roomId,omitempty"`
 }
 
 // AnalyticsServiceListProjectSessionsParams defines parameters for AnalyticsServiceListProjectSessions.
 type AnalyticsServiceListProjectSessionsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// FilterRangeStartTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// FilterRangeStartTime The start of the range, included. Unset means 24 hours before the end.
 	FilterRangeStartTime *time.Time `form:"filter.range.startTime,omitempty" json:"filter.range.startTime,omitempty"`
 
-	// FilterRangeEndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// FilterRangeEndTime The end of the range, excluded. Unset means now.
 	FilterRangeEndTime *time.Time `form:"filter.range.endTime,omitempty" json:"filter.range.endTime,omitempty"`
 
-	// FilterStatuses OR semantics; empty matches any status.
+	// FilterStatuses The statuses to match. A session matches when it has one of the statuses.
+	//  When empty, a session with any status matches.
 	FilterStatuses *[]LivekitPublicapiAnalyticsV1SessionStatus `form:"filter.statuses,omitempty" json:"filter.statuses,omitempty"`
 
-	// FilterRoomName Room-name prefix match (case-sensitive): returns sessions whose room name
-	//  starts with this value, e.g. `demo-` matches `demo-1` and `demo-lobby`.
+	// FilterRoomName A prefix of the room name. Returns only the sessions whose room name
+	//  starts with this value. The match is case-sensitive. For example, `demo-`
+	//  matches `demo-1` and `demo-lobby`.
 	FilterRoomName *string `form:"filter.roomName,omitempty" json:"filter.roomName,omitempty"`
 
-	// FilterSessionId Exact room-session id match (RM_...).
+	// FilterSessionId The ID of a room session (`RM_...`). Returns only the session with this
+	//  exact ID.
 	FilterSessionId *string `form:"filter.sessionId,omitempty" json:"filter.sessionId,omitempty"`
 
-	// FilterTags OR semantics.
+	// FilterTags The tags to match. A session matches when it has one of the tags.
 	FilterTags *[]string `form:"filter.tags,omitempty" json:"filter.tags,omitempty"`
 
-	// FilterAgentId Cloud agent id (CA_...) — return only sessions this agent served. Duration is not filterable in v1.
+	// FilterAgentId The ID of a cloud agent (`CA_...`). Returns only the sessions that this
+	//  agent served.
 	FilterAgentId *string `form:"filter.agentId,omitempty" json:"filter.agentId,omitempty"`
 
-	// SortOrder Direction of the startedAt ordering, the only column sessions sort on.
-	//  Defaults to descending (newest first) when unset.
+	// SortOrder The sort direction of `startedAt`. Sessions sort only on `startedAt`.
+	//  Defaults to descending (newest first).
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // AnalyticsServiceListSessionEventsParams defines parameters for AnalyticsServiceListSessionEvents.
 type AnalyticsServiceListSessionEventsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// Types Event types to return, by name, such as TRACK_PUBLISHED: the names of
-	//  LiveKit's AnalyticsEventType. Each matches exactly. Empty returns the
-	//  dashboard's seven defaults, or with participantSessionId its eleven
-	//  participant defaults, track events included (see ListSessionEvents). An
-	//  unknown name is InvalidArgument.
+	// Types The event types to return, by name, such as `TRACK_PUBLISHED`. The
+	//  names are the values of the LiveKit `AnalyticsEventType`. Each name
+	//  matches exactly. When empty, the list has the default types. See
+	//  `ListSessionEvents`. An unknown name returns `InvalidArgument`.
 	Types *[]string `form:"types,omitempty" json:"types,omitempty"`
 
-	// ParticipantSessionId Only the events of this participant session (PA_...), as the
-	//  participants list's ParticipantSession.participantSessionId names it.
-	//  Room events and API calls name no participant session, so they are left
-	//  out. Anything but a PA_ id is InvalidArgument.
+	// ParticipantSessionId The ID of a participant session (`PA_...`), as in
+	//  `participantSessionId` of a participant session from
+	//  `ListSessionParticipants`. Returns only the events of this participant
+	//  session. Room events and API calls have no participant session, so the
+	//  list does not include them. A value that is not a `PA_` ID returns
+	//  `InvalidArgument`.
 	ParticipantSessionId *string `form:"participantSessionId,omitempty" json:"participantSessionId,omitempty"`
 
-	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
-	//  first) when unset.
+	// SortOrder The sort direction of `timestamp`. Defaults to ascending (oldest
+	//  first).
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // ObservabilityServiceGetSessionLogsParams defines parameters for ObservabilityServiceGetSessionLogs.
 type ObservabilityServiceGetSessionLogsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// LogLevels Only records at these levels, as the dashboard's logs filter selects
-	//  them, for example only TRACE and FATAL. Empty returns every record,
-	//  including those with no level, such as a passed evaluation.
-	//  LOG_LEVEL_UNSPECIFIED is InvalidArgument.
+	// LogLevels The log levels to return, as the logs filter on the dashboard selects
+	//  them. For example, only `TRACE` and `FATAL`. Returns only the records
+	//  at these levels. When empty, returns all records, including records
+	//  with no level, such as a passed evaluation. `LOG_LEVEL_UNSPECIFIED`
+	//  returns `InvalidArgument`.
 	LogLevels *[]LivekitPublicapiObservabilityV1LogLevel `form:"logLevels,omitempty" json:"logLevels,omitempty"`
 
-	// SortOrder Direction of the timestamp ordering. Defaults to ascending (oldest
-	//  first) when unset.
+	// SortOrder The sort direction of the timestamps. Defaults to ascending (oldest
+	//  first).
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // ObservabilityServiceGetSessionMetricsParams defines parameters for ObservabilityServiceGetSessionMetrics.
 type ObservabilityServiceGetSessionMetricsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// Names Only the points of these metrics, matched exactly, such as
-	//  lk.agents.turn.e2e_latency. Empty returns every metric. At most 50
-	//  names, each 1 to 256 characters.
+	// Names The names of the metrics to return, such as
+	//  `lk.agents.turn.e2e_latency`. Returns only the points of these
+	//  metrics. Each name must match exactly. When empty, returns all
+	//  metrics. The maximum is 50 names, each 1 to 256 characters.
 	Names *[]string `form:"names,omitempty" json:"names,omitempty"`
 }
 
 // AnalyticsServiceListSessionParticipantsParams defines parameters for AnalyticsServiceListSessionParticipants.
 type AnalyticsServiceListSessionParticipantsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// SortBy Column to order by. Defaults to joinedAt when unset.
+	// SortBy The field to sort by. Defaults to `joinedAt`.
 	SortBy *LivekitPublicapiAnalyticsV1ParticipantSortField `form:"sortBy,omitempty" json:"sortBy,omitempty"`
 
-	// SortOrder Direction of sortBy. Defaults to descending (newest first) when unset.
+	// SortOrder The sort direction of `sortBy`. Defaults to descending (newest
+	//  first).
 	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 }
 
 // ObservabilityServiceGetSessionRecordingURLParams defines parameters for ObservabilityServiceGetSessionRecordingURL.
 type ObservabilityServiceGetSessionRecordingURLParams struct {
-	// FileType Which recording to sign a URL for. UNSPECIFIED is InvalidArgument.
+	// FileType The recording to sign a URL for. `RECORDING_FILE_TYPE_UNSPECIFIED`
+	//  returns `InvalidArgument`.
 	FileType *LivekitPublicapiObservabilityV1RecordingFileType `form:"fileType,omitempty" json:"fileType,omitempty"`
 
-	// ExpirySeconds How long the URL stays valid, in seconds. Unset or 0 is 900 (15
-	//  minutes), and anything longer is clamped to 900 without an error;
-	//  expiresAt says what was granted.
+	// ExpirySeconds The time that the URL stays valid, in seconds. Defaults to 900 (15
+	//  minutes) when unset or 0. The API clamps a larger value to 900, with
+	//  no error. `expiresAt` gives the expiry that the API granted.
 	ExpirySeconds *int `form:"expirySeconds,omitempty" json:"expirySeconds,omitempty"`
 }
 
 // ObservabilityServiceGetSessionTracesParams defines parameters for ObservabilityServiceGetSessionTraces.
 type ObservabilityServiceGetSessionTracesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ObservabilityServiceGetSessionTranscriptParams defines parameters for ObservabilityServiceGetSessionTranscript.
 type ObservabilityServiceGetSessionTranscriptParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // SimulationServiceListSimulationRunsParams defines parameters for SimulationServiceListSimulationRuns.
 type SimulationServiceListSimulationRunsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// Status Only runs in this status.
+	// Status A run status. Returns only the runs in this status.
 	Status *LivekitSimulationRunStatus `form:"status,omitempty" json:"status,omitempty"`
 
-	// AgentName Only runs of this agent (exact name).
+	// AgentName An agent name. Returns only the runs of the agent with this exact
+	//  name.
 	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
 
-	// StartTime Half-open window [startTime, endTime) on the run's creation time.
-	//  Either bound may be left unset.
+	// StartTime The start of the window on the creation time of the run, inclusive.
+	//  When unset, the window starts 45 days before `endTime`. The window can
+	//  be at most 45 days. A longer window returns `InvalidArgument`.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
-	// EndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// EndTime The end of the window on the creation time of the run, exclusive.
+	//  When unset, the window ends now.
 	EndTime *time.Time `form:"endTime,omitempty" json:"endTime,omitempty"`
 
-	// Mode Only runs in this conversation mode.
+	// Mode A conversation mode. Returns only the runs in this mode.
 	Mode *LivekitSimulationMode `form:"mode,omitempty" json:"mode,omitempty"`
 }
 
 // SimulationServiceCreateSimulationRunJSONBody defines parameters for SimulationServiceCreateSimulationRun.
 type SimulationServiceCreateSimulationRunJSONBody struct {
-	// AgentName Name the agent under test is registered under; every job dispatches it
-	//  into the simulation room, so it must already be deployed or running as
-	//  a worker. Empty uses the project's default agent. Recorded on the run
-	//  and usable as a ListSimulationRuns filter.
+	// AgentName The name of the agent under test. Each job dispatches this agent into
+	//  the simulation room, so the agent must be deployed or running as a
+	//  worker. When empty, the run uses the default agent of the project. The
+	//  run records the name, and `ListSimulationRuns` can filter on it.
 	AgentName *string `json:"agentName,omitempty"`
 
-	// BackgroundNoise Audio impairments applied to the simulated user; AUDIO mode only.
+	// BackgroundNoise When true, the simulated user has background noise. Applies only in
+	//  `AUDIO` mode.
 	BackgroundNoise *bool `json:"backgroundNoise,omitempty"`
 
-	// Ci The CI pipeline this run came from, so runs can be linked back to
-	//  commits.
+	// Ci The CI pipeline that started the run. Use it to link a run to its
+	//  commit.
 	Ci *LivekitSimulationRunCI `json:"ci,omitempty"`
 
-	// Concurrency Maximum jobs running in parallel, at most 20; above that the request is
-	//  InvalidArgument. The project's concurrency quota can run fewer at once.
-	//  Unset uses the server default.
-	Concurrency          *int32 `json:"concurrency,omitempty"`
-	LowQualityMicrophone *bool  `json:"lowQualityMicrophone,omitempty"`
+	// Concurrency The maximum number of jobs that run in parallel. The maximum value is
+	//  20. A larger value returns `InvalidArgument`. The concurrency quota of
+	//  the project can run fewer jobs at a time. When unset, the API uses its
+	//  default.
+	Concurrency *int32 `json:"concurrency,omitempty"`
 
-	// Mode Conversation mode for every job; unspecified means TEXT.
+	// LowQualityMicrophone When true, the simulated user has a low-quality microphone. Applies
+	//  only in `AUDIO` mode.
+	LowQualityMicrophone *bool `json:"lowQualityMicrophone,omitempty"`
+
+	// Mode The conversation mode of each job. Unset means `TEXT`.
 	Mode *LivekitSimulationMode `json:"mode,omitempty"`
 
-	// NumSimulations Number of scenarios to generate from the agent source when
-	//  scenarioGroup is unset.
+	// NumSimulations The number of scenarios to generate from the agent source when
+	//  `scenarioGroup` is unset.
 	NumSimulations *int32 `json:"numSimulations,omitempty"`
-	PacketLoss     *bool  `json:"packetLoss,omitempty"`
 
-	// Region Reserved: must be empty, and the service chooses where the run happens.
+	// PacketLoss When true, the audio of the simulated user has packet loss. Applies
+	//  only in `AUDIO` mode.
+	PacketLoss *bool `json:"packetLoss,omitempty"`
+
+	// Region Reserved. Must be empty. The API chooses where the run happens.
 	Region *string `json:"region,omitempty"`
 
-	// ScenarioGroup Run exactly these scenarios (the contents of a scenarios.yaml) instead
-	//  of generating numSimulations of them; the run then needs no source
-	//  upload and starts immediately.
+	// ScenarioGroup The scenarios to run, with the contents of a `scenarios.yaml` file.
+	//  When set, the run plays only these scenarios and does not generate
+	//  `numSimulations` scenarios. The run needs no source upload and starts
+	//  immediately.
 	ScenarioGroup *LivekitScenarioGroup `json:"scenarioGroup,omitempty"`
 }
 
 // SimulationServiceConfirmSimulationSourceUploadJSONBody defines parameters for SimulationServiceConfirmSimulationSourceUpload.
 type SimulationServiceConfirmSimulationSourceUploadJSONBody struct {
-	// CodeEntrypoint Entrypoint of the uploaded source, for example "agent.py".
+	// CodeEntrypoint The entrypoint of the uploaded source, for example `agent.py`.
 	CodeEntrypoint *string `json:"codeEntrypoint,omitempty"`
 }
 
 // SimulationServiceCountSimulationRunsParams defines parameters for SimulationServiceCountSimulationRuns.
 type SimulationServiceCountSimulationRunsParams struct {
-	// StartTime Half-open window [startTime, endTime) on the run's creation time. Both
-	//  are required and endTime must be after startTime.
+	// StartTime The start of the window on the creation time of the run, inclusive.
+	//  Required.
 	StartTime *time.Time `form:"startTime,omitempty" json:"startTime,omitempty"`
 
-	// EndTime A point in time in RFC 3339 format, with up to nanosecond precision. Output uses UTC (`Z`); input may use an offset from UTC.
+	// EndTime The end of the window on the creation time of the run, exclusive.
+	//  Required. Must be after `startTime`.
 	EndTime *time.Time `form:"endTime,omitempty" json:"endTime,omitempty"`
 
-	// Status Only runs in this status.
+	// Status A run status. Counts only the runs in this status.
 	Status *LivekitSimulationRunStatus `form:"status,omitempty" json:"status,omitempty"`
 
-	// AgentName Only runs of this agent (exact name).
+	// AgentName An agent name. Counts only the runs of the agent with this exact name.
 	AgentName *string `form:"agentName,omitempty" json:"agentName,omitempty"`
 
-	// Mode Only runs in this conversation mode.
+	// Mode A conversation mode. Counts only the runs in this mode.
 	Mode *LivekitSimulationMode `form:"mode,omitempty" json:"mode,omitempty"`
 }
 
-// ThreadServiceListThreadsParams defines parameters for ThreadServiceListThreads.
-type ThreadServiceListThreadsParams struct {
-	// Scope The scope query parameter.
-	Scope *string `form:"scope,omitempty" json:"scope,omitempty"`
-
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+// TelephonyServiceListDispatchRulesParams defines parameters for TelephonyServiceListDispatchRules.
+type TelephonyServiceListDispatchRulesParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// TrunkIds Trunk IDs (`ST_...`) or phone number IDs (`PN_...`). Returns only the
+	//  rules that apply to one of them, including the rules that apply to
+	//  every trunk.
+	TrunkIds *[]string `form:"trunkIds,omitempty" json:"trunkIds,omitempty"`
 }
 
-// ThreadServiceCreateThreadJSONBody defines parameters for ThreadServiceCreateThread.
-type ThreadServiceCreateThreadJSONBody struct {
-	Attributes *map[string]string `json:"attributes,omitempty"`
-
-	// IdleTtl Unset takes the server default.
-	IdleTtl *GoogleProtobufDuration `json:"idleTtl,omitempty"`
-
-	// Scope Optional scope grouping the thread (typically the user's identity),
-	//  at most 256 bytes.
-	Scope *string `json:"scope,omitempty"`
+// TelephonyServiceCreateDispatchRuleJSONBody defines parameters for TelephonyServiceCreateDispatchRule.
+type TelephonyServiceCreateDispatchRuleJSONBody struct {
+	// DispatchRule The dispatch rule to create. The API makes its ID, and ignores
+	//  `sipDispatchRuleId`.
+	DispatchRule *LivekitSIPDispatchRuleInfo `json:"dispatchRule,omitempty"`
 }
 
-// ThreadServiceUpdateThreadJSONBody defines parameters for ThreadServiceUpdateThread.
-type ThreadServiceUpdateThreadJSONBody struct {
-	Attributes *map[string]string      `json:"attributes,omitempty"`
-	IdleTtl    *GoogleProtobufDuration `json:"idleTtl,omitempty"`
+// TelephonyServiceUpdateDispatchRuleJSONBody defines parameters for TelephonyServiceUpdateDispatchRule.
+type TelephonyServiceUpdateDispatchRuleJSONBody struct {
+	union json.RawMessage
 }
 
-// ThreadServiceGetThreadItemsParams defines parameters for ThreadServiceGetThreadItems.
-type ThreadServiceGetThreadItemsParams struct {
-	// Agent One agent's items; empty for every agent's.
-	Agent *string `form:"agent,omitempty" json:"agent,omitempty"`
+// TelephonyServiceUpdateDispatchRuleJSONBody0 defines parameters for TelephonyServiceUpdateDispatchRule.
+type TelephonyServiceUpdateDispatchRuleJSONBody0 struct {
+	// Replace The rule that replaces the current one. Unset fields take their
+	//  default, not their current value.
+	Replace *LivekitSIPDispatchRuleInfo `json:"replace,omitempty"`
+}
 
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+// TelephonyServiceUpdateDispatchRuleJSONBody1 defines parameters for TelephonyServiceUpdateDispatchRule.
+type TelephonyServiceUpdateDispatchRuleJSONBody1 struct {
+	// Update The fields to change. Unset fields keep their current value.
+	Update *LivekitSIPDispatchRuleUpdate `json:"update,omitempty"`
+}
+
+// TelephonyServiceListInboundTrunksParams defines parameters for TelephonyServiceListInboundTrunks.
+type TelephonyServiceListInboundTrunksParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// SortOrder Direction of the item order. Defaults to ascending (oldest first) when
-	//  unset; descending starts from the latest item and pages back.
-	SortOrder *LivekitPublicapiCommonV1SortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
+	// Numbers Phone numbers in E.164 format. Returns only the trunks that accept a
+	//  call to one of these numbers, including the trunks that accept a call
+	//  to any number.
+	Numbers *[]string `form:"numbers,omitempty" json:"numbers,omitempty"`
 }
 
-// ThreadServiceGetThreadTasksParams defines parameters for ThreadServiceGetThreadTasks.
-type ThreadServiceGetThreadTasksParams struct {
-	// Status Only tasks in this status; unset for every status.
-	Status *LivekitAgentAgentTaskStatus `form:"status,omitempty" json:"status,omitempty"`
+// TelephonyServiceCreateInboundTrunkJSONBody defines parameters for TelephonyServiceCreateInboundTrunk.
+type TelephonyServiceCreateInboundTrunkJSONBody struct {
+	// Trunk The trunk to create. The API makes its ID, and ignores
+	//  `sipTrunkId`.
+	Trunk *LivekitSIPInboundTrunkInfo `json:"trunk,omitempty"`
+}
 
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+// TelephonyServiceUpdateInboundTrunkJSONBody defines parameters for TelephonyServiceUpdateInboundTrunk.
+type TelephonyServiceUpdateInboundTrunkJSONBody struct {
+	union json.RawMessage
+}
+
+// TelephonyServiceUpdateInboundTrunkJSONBody0 defines parameters for TelephonyServiceUpdateInboundTrunk.
+type TelephonyServiceUpdateInboundTrunkJSONBody0 struct {
+	// Replace The trunk that replaces the current one. Unset fields take their
+	//  default, not their current value.
+	Replace *LivekitSIPInboundTrunkInfo `json:"replace,omitempty"`
+}
+
+// TelephonyServiceUpdateInboundTrunkJSONBody1 defines parameters for TelephonyServiceUpdateInboundTrunk.
+type TelephonyServiceUpdateInboundTrunkJSONBody1 struct {
+	// Update The fields to change. Unset fields keep their current value.
+	Update *LivekitSIPInboundTrunkUpdate `json:"update,omitempty"`
+}
+
+// TelephonyServiceListOutboundTrunksParams defines parameters for TelephonyServiceListOutboundTrunks.
+type TelephonyServiceListOutboundTrunksParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+
+	// Numbers Phone numbers in E.164 format. Returns only the trunks that call
+	//  from one of these numbers.
+	Numbers *[]string `form:"numbers,omitempty" json:"numbers,omitempty"`
+}
+
+// TelephonyServiceCreateOutboundTrunkJSONBody defines parameters for TelephonyServiceCreateOutboundTrunk.
+type TelephonyServiceCreateOutboundTrunkJSONBody struct {
+	// Trunk The trunk to create. The API makes its ID, and ignores
+	//  `sipTrunkId`.
+	Trunk *LivekitSIPOutboundTrunkInfo `json:"trunk,omitempty"`
+}
+
+// TelephonyServiceUpdateOutboundTrunkJSONBody defines parameters for TelephonyServiceUpdateOutboundTrunk.
+type TelephonyServiceUpdateOutboundTrunkJSONBody struct {
+	union json.RawMessage
+}
+
+// TelephonyServiceUpdateOutboundTrunkJSONBody0 defines parameters for TelephonyServiceUpdateOutboundTrunk.
+type TelephonyServiceUpdateOutboundTrunkJSONBody0 struct {
+	// Replace The trunk that replaces the current one. Unset fields take their
+	//  default, not their current value.
+	Replace *LivekitSIPOutboundTrunkInfo `json:"replace,omitempty"`
+}
+
+// TelephonyServiceUpdateOutboundTrunkJSONBody1 defines parameters for TelephonyServiceUpdateOutboundTrunk.
+type TelephonyServiceUpdateOutboundTrunkJSONBody1 struct {
+	// Update The fields to change. Unset fields keep their current value.
+	Update *LivekitSIPOutboundTrunkUpdate `json:"update,omitempty"`
+}
+
+// TelephonyServiceCreateSIPParticipantJSONBody defines parameters for TelephonyServiceCreateSIPParticipant.
+type TelephonyServiceCreateSIPParticipantJSONBody struct {
+	Participant *LivekitCreateSIPParticipantRequest `json:"participant,omitempty"`
+}
+
+// TelephonyServiceTransferSIPParticipantJSONBody defines parameters for TelephonyServiceTransferSIPParticipant.
+type TelephonyServiceTransferSIPParticipantJSONBody struct {
+	Transfer *LivekitTransferSIPParticipantRequest `json:"transfer,omitempty"`
 }
 
 // ProjectServiceCreateTokenJSONBody defines parameters for ProjectServiceCreateToken.
 type ProjectServiceCreateTokenJSONBody struct {
-	// Grants The caller's project role must cover every grant requested.
+	// Grants The grants of the token. Your project role must cover every grant that
+	//  you request.
 	Grants *LivekitPublicapiProjectsV1TokenGrants `json:"grants,omitempty"`
 
-	// TtlSeconds Requested lifetime in seconds. 0 means the default (10 minutes); at most
-	//  86400 (24 hours).
+	// TtlSeconds The token lifetime, in seconds. `0` means the default, 10 minutes.
+	//  The maximum is 86400 (24 hours). A larger value returns
+	//  `InvalidArgument`.
 	TtlSeconds *int `json:"ttlSeconds,omitempty"`
+}
+
+// ProjectServiceListWebhookEventsParams defines parameters for ProjectServiceListWebhookEvents.
+type ProjectServiceListWebhookEventsParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
+}
+
+// ProjectServiceListWebhooksParams defines parameters for ProjectServiceListWebhooks.
+type ProjectServiceListWebhooksParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // ProjectServiceCreateWebhookJSONBody defines parameters for ProjectServiceCreateWebhook.
 type ProjectServiceCreateWebhookJSONBody struct {
-	// FilterParams Event names from ListWebhookEvents. Unset delivers every event.
+	// FilterParams The names of the events to deliver, from `ListWebhookEvents`. When unset,
+	//  the webhook gets every event.
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
-	Name         *string              `json:"name,omitempty"`
 
-	// SigningKey API key of this project whose secret signs deliveries. Optional: when
-	//  empty, the project's oldest key is chosen and stored on the webhook.
+	// Name A label for the destination.
+	Name *string `json:"name,omitempty"`
+
+	// SigningKey The API key of this project whose secret signs the deliveries. Optional.
+	//  When empty, the API uses the oldest API key of the project and saves it on
+	//  the webhook.
 	SigningKey *string `json:"signingKey,omitempty"`
 
-	// Url http(s) URL deliveries are POSTed to.
+	// Url The HTTP or HTTPS URL that receives the deliveries as POST requests.
 	Url *string `json:"url,omitempty"`
 }
 
 // ProjectServiceUpdateWebhookJSONBody defines parameters for ProjectServiceUpdateWebhook.
 type ProjectServiceUpdateWebhookJSONBody struct {
-	// FilterParams Replaces the whole filter; an empty filter delivers every event.
+	// FilterParams The names of the events to deliver. A set filter replaces the whole
+	//  filter. An empty filter delivers every event.
 	FilterParams *LivekitFilterParams `json:"filterParams,omitempty"`
-	Name         *string              `json:"name,omitempty"`
 
-	// SigningKey API key of this project whose secret signs deliveries. Unset or empty
-	//  leaves the signing key unchanged.
+	// Name A label for the destination.
+	Name *string `json:"name,omitempty"`
+
+	// SigningKey The API key of this project whose secret signs the deliveries. When unset
+	//  or empty, the signing key does not change.
 	SigningKey *string `json:"signingKey,omitempty"`
-	Url        *string `json:"url,omitempty"`
+
+	// Url The URL that receives the events.
+	Url *string `json:"url,omitempty"`
 }
 
 // ProjectServiceSendTestWebhookJSONBody defines parameters for ProjectServiceSendTestWebhook.
 type ProjectServiceSendTestWebhookJSONBody struct {
-	// Event One of ListWebhookEvents. Sent with sample data, regardless of the
-	//  webhook's filter.
+	// Event The event to send: one of the names from `ListWebhookEvents`. The API
+	//  sends it with sample data and ignores the webhook filter.
 	Event *string `json:"event,omitempty"`
 }
 
 // UserServiceListUsersParams defines parameters for UserServiceListUsers.
 type UserServiceListUsersParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 
-	// ProjectId At least one of projectId or workspaceId is required. If both are set,
-	//  projectId must belong to workspaceId; members are the project's members.
+	// ProjectId The ID of a project (`p_...`). Returns only the members of this project.
+	//  Set `projectId`, `workspaceId`, or both. When you set both, the project
+	//  must be in the workspace, and the list has the members of the project.
 	ProjectId *string `form:"projectId,omitempty" json:"projectId,omitempty"`
 
-	// WorkspaceId The workspaceId query parameter.
+	// WorkspaceId The ID of a workspace (`wo_...`). Returns only the members of this
+	//  workspace.
 	WorkspaceId *string `form:"workspaceId,omitempty" json:"workspaceId,omitempty"`
 }
 
 // WorkspaceServiceAnswerInviteJSONBody defines parameters for WorkspaceServiceAnswerInvite.
 type WorkspaceServiceAnswerInviteJSONBody struct {
+	// Accept True accepts the invite; false declines it.
 	Accept *bool `json:"accept,omitempty"`
 }
 
 // WorkspaceServiceListWorkspacesParams defines parameters for WorkspaceServiceListWorkspaces.
 type WorkspaceServiceListWorkspacesParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // WorkspaceServiceUpdateWorkspaceJSONBody defines parameters for WorkspaceServiceUpdateWorkspace.
 type WorkspaceServiceUpdateWorkspaceJSONBody struct {
+	// McpPolicy The MCP policy of the workspace. When set, it replaces the whole policy.
+	//  An OAuth app cannot set it: the API returns `PermissionDenied`.
+	McpPolicy *LivekitPublicapiWorkspacesV1WorkspaceMcpPolicy `json:"mcpPolicy,omitempty"`
+
+	// Name The workspace name.
 	Name *string `json:"name,omitempty"`
+}
+
+// WorkspaceServiceListInvitesParams defines parameters for WorkspaceServiceListInvites.
+type WorkspaceServiceListInvitesParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // WorkspaceServiceCreateInviteJSONBody defines parameters for WorkspaceServiceCreateInvite.
 type WorkspaceServiceCreateInviteJSONBody struct {
+	// Email The email address to invite.
 	Email *string `json:"email,omitempty"`
-	Role  *int32  `json:"role,omitempty"`
+
+	// Role Access level to grant: 1 read, 2 write, 3 admin.
+	Role *int32 `json:"role,omitempty"`
+}
+
+// WorkspaceServiceListMembersParams defines parameters for WorkspaceServiceListMembers.
+type WorkspaceServiceListMembersParams struct {
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
+	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
+
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
+	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
 // WorkspaceServiceDeleteMemberParams defines parameters for WorkspaceServiceDeleteMember.
 type WorkspaceServiceDeleteMemberParams struct {
-	// ConfirmedNumKeys Number of the member's API keys the caller agrees to delete. Call with 0;
-	//  if the member owns keys, the call fails with a MemberRemovalNotConfirmed
-	//  detail, so show its num_keys to the user and call again with it.
+	// ConfirmedNumKeys The number of the member's API keys that you agree to delete. Send `0`
+	//  first. When the member owns API keys, the call fails with
+	//  `FailedPrecondition` and a `MemberRemovalNotConfirmed` detail. Show its
+	//  `numKeys` to the user, then send the request again with that number.
 	ConfirmedNumKeys *int `form:"confirmedNumKeys,omitempty" json:"confirmedNumKeys,omitempty"`
 }
 
 // WorkspaceServiceUpdateMemberJSONBody defines parameters for WorkspaceServiceUpdateMember.
 type WorkspaceServiceUpdateMemberJSONBody struct {
+	// Role Access level to grant: 1 read, 2 write, 3 admin.
 	Role *int32 `json:"role,omitempty"`
 }
 
 // WorkspaceServiceListProjectsParams defines parameters for WorkspaceServiceListProjects.
 type WorkspaceServiceListProjectsParams struct {
-	// PageCursor Opaque cursor returned by a prior page (PageInfo.nextCursor). Empty starts
-	//  from the beginning.
+	// PageCursor The cursor of the page to return: the `nextCursor` of the previous page.
+	//  When empty, the list starts at the first item.
 	PageCursor *string `form:"page.cursor,omitempty" json:"page.cursor,omitempty"`
 
-	// PagePageSize Maximum items to return; 0 lets the server pick a default.
+	// PagePageSize The maximum number of items to return. When 0, the list uses its default
+	//  page size.
 	PagePageSize *int32 `form:"page.pageSize,omitempty" json:"page.pageSize,omitempty"`
 }
 
@@ -3840,8 +6440,14 @@ type ProjectServiceCreateProjectJSONRequestBody = LivekitPublicapiProjectsV1Crea
 // ProjectServiceUpdateProjectJSONRequestBody defines body for ProjectServiceUpdateProject for application/json ContentType.
 type ProjectServiceUpdateProjectJSONRequestBody ProjectServiceUpdateProjectJSONBody
 
-// DatabaseServiceCreateDatabaseJSONRequestBody defines body for DatabaseServiceCreateDatabase for application/json ContentType.
-type DatabaseServiceCreateDatabaseJSONRequestBody DatabaseServiceCreateDatabaseJSONBody
+// BuilderAgentServiceCreateBuilderAgentJSONRequestBody defines body for BuilderAgentServiceCreateBuilderAgent for application/json ContentType.
+type BuilderAgentServiceCreateBuilderAgentJSONRequestBody BuilderAgentServiceCreateBuilderAgentJSONBody
+
+// BuilderAgentServiceUpdateBuilderAgentJSONRequestBody defines body for BuilderAgentServiceUpdateBuilderAgent for application/json ContentType.
+type BuilderAgentServiceUpdateBuilderAgentJSONRequestBody BuilderAgentServiceUpdateBuilderAgentJSONBody
+
+// BuilderAgentServiceDeployBuilderAgentJSONRequestBody defines body for BuilderAgentServiceDeployBuilderAgent for application/json ContentType.
+type BuilderAgentServiceDeployBuilderAgentJSONRequestBody BuilderAgentServiceDeployBuilderAgentJSONBody
 
 // ProjectServiceInviteMemberJSONRequestBody defines body for ProjectServiceInviteMember for application/json ContentType.
 type ProjectServiceInviteMemberJSONRequestBody ProjectServiceInviteMemberJSONBody
@@ -3858,6 +6464,12 @@ type ProjectServiceUpdateMemberJSONRequestBody ProjectServiceUpdateMemberJSONBod
 // ProjectServiceAddWorkspaceMembersToProjectJSONRequestBody defines body for ProjectServiceAddWorkspaceMembersToProject for application/json ContentType.
 type ProjectServiceAddWorkspaceMembersToProjectJSONRequestBody ProjectServiceAddWorkspaceMembersToProjectJSONBody
 
+// TelephonyServicePurchasePhoneNumberJSONRequestBody defines body for TelephonyServicePurchasePhoneNumber for application/json ContentType.
+type TelephonyServicePurchasePhoneNumberJSONRequestBody TelephonyServicePurchasePhoneNumberJSONBody
+
+// TelephonyServiceUpdatePhoneNumberJSONRequestBody defines body for TelephonyServiceUpdatePhoneNumber for application/json ContentType.
+type TelephonyServiceUpdatePhoneNumberJSONRequestBody TelephonyServiceUpdatePhoneNumberJSONBody
+
 // SimulationServiceGenerateScenarioFromSessionJSONRequestBody defines body for SimulationServiceGenerateScenarioFromSession for application/json ContentType.
 type SimulationServiceGenerateScenarioFromSessionJSONRequestBody SimulationServiceGenerateScenarioFromSessionJSONBody
 
@@ -3867,11 +6479,29 @@ type SimulationServiceCreateSimulationRunJSONRequestBody SimulationServiceCreate
 // SimulationServiceConfirmSimulationSourceUploadJSONRequestBody defines body for SimulationServiceConfirmSimulationSourceUpload for application/json ContentType.
 type SimulationServiceConfirmSimulationSourceUploadJSONRequestBody SimulationServiceConfirmSimulationSourceUploadJSONBody
 
-// ThreadServiceCreateThreadJSONRequestBody defines body for ThreadServiceCreateThread for application/json ContentType.
-type ThreadServiceCreateThreadJSONRequestBody ThreadServiceCreateThreadJSONBody
+// TelephonyServiceCreateDispatchRuleJSONRequestBody defines body for TelephonyServiceCreateDispatchRule for application/json ContentType.
+type TelephonyServiceCreateDispatchRuleJSONRequestBody TelephonyServiceCreateDispatchRuleJSONBody
 
-// ThreadServiceUpdateThreadJSONRequestBody defines body for ThreadServiceUpdateThread for application/json ContentType.
-type ThreadServiceUpdateThreadJSONRequestBody ThreadServiceUpdateThreadJSONBody
+// TelephonyServiceUpdateDispatchRuleJSONRequestBody defines body for TelephonyServiceUpdateDispatchRule for application/json ContentType.
+type TelephonyServiceUpdateDispatchRuleJSONRequestBody TelephonyServiceUpdateDispatchRuleJSONBody
+
+// TelephonyServiceCreateInboundTrunkJSONRequestBody defines body for TelephonyServiceCreateInboundTrunk for application/json ContentType.
+type TelephonyServiceCreateInboundTrunkJSONRequestBody TelephonyServiceCreateInboundTrunkJSONBody
+
+// TelephonyServiceUpdateInboundTrunkJSONRequestBody defines body for TelephonyServiceUpdateInboundTrunk for application/json ContentType.
+type TelephonyServiceUpdateInboundTrunkJSONRequestBody TelephonyServiceUpdateInboundTrunkJSONBody
+
+// TelephonyServiceCreateOutboundTrunkJSONRequestBody defines body for TelephonyServiceCreateOutboundTrunk for application/json ContentType.
+type TelephonyServiceCreateOutboundTrunkJSONRequestBody TelephonyServiceCreateOutboundTrunkJSONBody
+
+// TelephonyServiceUpdateOutboundTrunkJSONRequestBody defines body for TelephonyServiceUpdateOutboundTrunk for application/json ContentType.
+type TelephonyServiceUpdateOutboundTrunkJSONRequestBody TelephonyServiceUpdateOutboundTrunkJSONBody
+
+// TelephonyServiceCreateSIPParticipantJSONRequestBody defines body for TelephonyServiceCreateSIPParticipant for application/json ContentType.
+type TelephonyServiceCreateSIPParticipantJSONRequestBody TelephonyServiceCreateSIPParticipantJSONBody
+
+// TelephonyServiceTransferSIPParticipantJSONRequestBody defines body for TelephonyServiceTransferSIPParticipant for application/json ContentType.
+type TelephonyServiceTransferSIPParticipantJSONRequestBody TelephonyServiceTransferSIPParticipantJSONBody
 
 // ProjectServiceCreateTokenJSONRequestBody defines body for ProjectServiceCreateToken for application/json ContentType.
 type ProjectServiceCreateTokenJSONRequestBody ProjectServiceCreateTokenJSONBody
@@ -5105,6 +7735,252 @@ func (t *LivekitRoomCompositeEgressRequest) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsLivekitSIPDispatchRule0 returns the union data inside the LivekitSIPDispatchRule as a LivekitSIPDispatchRule0
+func (t LivekitSIPDispatchRule) AsLivekitSIPDispatchRule0() (LivekitSIPDispatchRule0, error) {
+	var body LivekitSIPDispatchRule0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitSIPDispatchRule0 overwrites any union data inside the LivekitSIPDispatchRule as the provided LivekitSIPDispatchRule0
+func (t *LivekitSIPDispatchRule) FromLivekitSIPDispatchRule0(v LivekitSIPDispatchRule0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitSIPDispatchRule0 performs a merge with any union data inside the LivekitSIPDispatchRule, using the provided LivekitSIPDispatchRule0
+func (t *LivekitSIPDispatchRule) MergeLivekitSIPDispatchRule0(v LivekitSIPDispatchRule0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitSIPDispatchRule1 returns the union data inside the LivekitSIPDispatchRule as a LivekitSIPDispatchRule1
+func (t LivekitSIPDispatchRule) AsLivekitSIPDispatchRule1() (LivekitSIPDispatchRule1, error) {
+	var body LivekitSIPDispatchRule1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitSIPDispatchRule1 overwrites any union data inside the LivekitSIPDispatchRule as the provided LivekitSIPDispatchRule1
+func (t *LivekitSIPDispatchRule) FromLivekitSIPDispatchRule1(v LivekitSIPDispatchRule1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitSIPDispatchRule1 performs a merge with any union data inside the LivekitSIPDispatchRule, using the provided LivekitSIPDispatchRule1
+func (t *LivekitSIPDispatchRule) MergeLivekitSIPDispatchRule1(v LivekitSIPDispatchRule1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitSIPDispatchRule2 returns the union data inside the LivekitSIPDispatchRule as a LivekitSIPDispatchRule2
+func (t LivekitSIPDispatchRule) AsLivekitSIPDispatchRule2() (LivekitSIPDispatchRule2, error) {
+	var body LivekitSIPDispatchRule2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitSIPDispatchRule2 overwrites any union data inside the LivekitSIPDispatchRule as the provided LivekitSIPDispatchRule2
+func (t *LivekitSIPDispatchRule) FromLivekitSIPDispatchRule2(v LivekitSIPDispatchRule2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitSIPDispatchRule2 performs a merge with any union data inside the LivekitSIPDispatchRule, using the provided LivekitSIPDispatchRule2
+func (t *LivekitSIPDispatchRule) MergeLivekitSIPDispatchRule2(v LivekitSIPDispatchRule2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitSIPDispatchRule) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LivekitSIPDispatchRule) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsLivekitSIPNamedDest0 returns the union data inside the LivekitSIPNamedDest as a LivekitSIPNamedDest0
+func (t LivekitSIPNamedDest) AsLivekitSIPNamedDest0() (LivekitSIPNamedDest0, error) {
+	var body LivekitSIPNamedDest0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitSIPNamedDest0 overwrites any union data inside the LivekitSIPNamedDest as the provided LivekitSIPNamedDest0
+func (t *LivekitSIPNamedDest) FromLivekitSIPNamedDest0(v LivekitSIPNamedDest0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitSIPNamedDest0 performs a merge with any union data inside the LivekitSIPNamedDest, using the provided LivekitSIPNamedDest0
+func (t *LivekitSIPNamedDest) MergeLivekitSIPNamedDest0(v LivekitSIPNamedDest0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitSIPNamedDest1 returns the union data inside the LivekitSIPNamedDest as a LivekitSIPNamedDest1
+func (t LivekitSIPNamedDest) AsLivekitSIPNamedDest1() (LivekitSIPNamedDest1, error) {
+	var body LivekitSIPNamedDest1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitSIPNamedDest1 overwrites any union data inside the LivekitSIPNamedDest as the provided LivekitSIPNamedDest1
+func (t *LivekitSIPNamedDest) FromLivekitSIPNamedDest1(v LivekitSIPNamedDest1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitSIPNamedDest1 performs a merge with any union data inside the LivekitSIPNamedDest, using the provided LivekitSIPNamedDest1
+func (t *LivekitSIPNamedDest) MergeLivekitSIPNamedDest1(v LivekitSIPNamedDest1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitSIPNamedDest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.DisplayName != nil {
+		object["displayName"], err = json.Marshal(t.DisplayName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'displayName': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *LivekitSIPNamedDest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["displayName"]; found {
+		err = json.Unmarshal(raw, &t.DisplayName)
+		if err != nil {
+			return fmt.Errorf("error reading 'displayName': %w", err)
+		}
+	}
+
+	return err
+}
+
+// AsLivekitSIPRequestDest0 returns the union data inside the LivekitSIPRequestDest as a LivekitSIPRequestDest0
+func (t LivekitSIPRequestDest) AsLivekitSIPRequestDest0() (LivekitSIPRequestDest0, error) {
+	var body LivekitSIPRequestDest0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitSIPRequestDest0 overwrites any union data inside the LivekitSIPRequestDest as the provided LivekitSIPRequestDest0
+func (t *LivekitSIPRequestDest) FromLivekitSIPRequestDest0(v LivekitSIPRequestDest0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitSIPRequestDest0 performs a merge with any union data inside the LivekitSIPRequestDest, using the provided LivekitSIPRequestDest0
+func (t *LivekitSIPRequestDest) MergeLivekitSIPRequestDest0(v LivekitSIPRequestDest0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitSIPRequestDest1 returns the union data inside the LivekitSIPRequestDest as a LivekitSIPRequestDest1
+func (t LivekitSIPRequestDest) AsLivekitSIPRequestDest1() (LivekitSIPRequestDest1, error) {
+	var body LivekitSIPRequestDest1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitSIPRequestDest1 overwrites any union data inside the LivekitSIPRequestDest as the provided LivekitSIPRequestDest1
+func (t *LivekitSIPRequestDest) FromLivekitSIPRequestDest1(v LivekitSIPRequestDest1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitSIPRequestDest1 performs a merge with any union data inside the LivekitSIPRequestDest, using the provided LivekitSIPRequestDest1
+func (t *LivekitSIPRequestDest) MergeLivekitSIPRequestDest1(v LivekitSIPRequestDest1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitSIPRequestDest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LivekitSIPRequestDest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsLivekitSegmentedFileOutput0 returns the union data inside the LivekitSegmentedFileOutput as a LivekitSegmentedFileOutput0
 func (t LivekitSegmentedFileOutput) AsLivekitSegmentedFileOutput0() (LivekitSegmentedFileOutput0, error) {
 	var body LivekitSegmentedFileOutput0
@@ -5513,6 +8389,94 @@ func (t *LivekitAgentChatMessageChatContent) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable0() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable0, error) {
+	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable0(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable0 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable0
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable0(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable1() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable1, error) {
+	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable1(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable1 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable1
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable1(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 returns the union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as a LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) AsLivekitPublicapiAgentsV1BuilderAgentConfigVariable2() (LivekitPublicapiAgentsV1BuilderAgentConfigVariable2, error) {
+	var body LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 overwrites any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable as the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) FromLivekitPublicapiAgentsV1BuilderAgentConfigVariable2(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable2 performs a merge with any union data inside the LivekitPublicapiAgentsV1BuilderAgentConfigVariable, using the provided LivekitPublicapiAgentsV1BuilderAgentConfigVariable2
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MergeLivekitPublicapiAgentsV1BuilderAgentConfigVariable2(v LivekitPublicapiAgentsV1BuilderAgentConfigVariable2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t LivekitPublicapiAgentsV1BuilderAgentConfigVariable) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *LivekitPublicapiAgentsV1BuilderAgentConfigVariable) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsLivekitPublicapiObservabilityV1MetricPoint0 returns the union data inside the LivekitPublicapiObservabilityV1MetricPoint as a LivekitPublicapiObservabilityV1MetricPoint0
 func (t LivekitPublicapiObservabilityV1MetricPoint) AsLivekitPublicapiObservabilityV1MetricPoint0() (LivekitPublicapiObservabilityV1MetricPoint0, error) {
 	var body LivekitPublicapiObservabilityV1MetricPoint0
@@ -5867,6 +8831,192 @@ func (t *LivekitPublicapiObservabilityV1TranscriptItem) UnmarshalJSON(b []byte) 
 	return err
 }
 
+// AsTelephonyServiceUpdateDispatchRuleJSONBody0 returns the union data inside the TelephonyServiceUpdateDispatchRuleJSONBody as a TelephonyServiceUpdateDispatchRuleJSONBody0
+func (t TelephonyServiceUpdateDispatchRuleJSONBody) AsTelephonyServiceUpdateDispatchRuleJSONBody0() (TelephonyServiceUpdateDispatchRuleJSONBody0, error) {
+	var body TelephonyServiceUpdateDispatchRuleJSONBody0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTelephonyServiceUpdateDispatchRuleJSONBody0 overwrites any union data inside the TelephonyServiceUpdateDispatchRuleJSONBody as the provided TelephonyServiceUpdateDispatchRuleJSONBody0
+func (t *TelephonyServiceUpdateDispatchRuleJSONBody) FromTelephonyServiceUpdateDispatchRuleJSONBody0(v TelephonyServiceUpdateDispatchRuleJSONBody0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTelephonyServiceUpdateDispatchRuleJSONBody0 performs a merge with any union data inside the TelephonyServiceUpdateDispatchRuleJSONBody, using the provided TelephonyServiceUpdateDispatchRuleJSONBody0
+func (t *TelephonyServiceUpdateDispatchRuleJSONBody) MergeTelephonyServiceUpdateDispatchRuleJSONBody0(v TelephonyServiceUpdateDispatchRuleJSONBody0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTelephonyServiceUpdateDispatchRuleJSONBody1 returns the union data inside the TelephonyServiceUpdateDispatchRuleJSONBody as a TelephonyServiceUpdateDispatchRuleJSONBody1
+func (t TelephonyServiceUpdateDispatchRuleJSONBody) AsTelephonyServiceUpdateDispatchRuleJSONBody1() (TelephonyServiceUpdateDispatchRuleJSONBody1, error) {
+	var body TelephonyServiceUpdateDispatchRuleJSONBody1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTelephonyServiceUpdateDispatchRuleJSONBody1 overwrites any union data inside the TelephonyServiceUpdateDispatchRuleJSONBody as the provided TelephonyServiceUpdateDispatchRuleJSONBody1
+func (t *TelephonyServiceUpdateDispatchRuleJSONBody) FromTelephonyServiceUpdateDispatchRuleJSONBody1(v TelephonyServiceUpdateDispatchRuleJSONBody1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTelephonyServiceUpdateDispatchRuleJSONBody1 performs a merge with any union data inside the TelephonyServiceUpdateDispatchRuleJSONBody, using the provided TelephonyServiceUpdateDispatchRuleJSONBody1
+func (t *TelephonyServiceUpdateDispatchRuleJSONBody) MergeTelephonyServiceUpdateDispatchRuleJSONBody1(v TelephonyServiceUpdateDispatchRuleJSONBody1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t TelephonyServiceUpdateDispatchRuleJSONBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *TelephonyServiceUpdateDispatchRuleJSONBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsTelephonyServiceUpdateInboundTrunkJSONBody0 returns the union data inside the TelephonyServiceUpdateInboundTrunkJSONBody as a TelephonyServiceUpdateInboundTrunkJSONBody0
+func (t TelephonyServiceUpdateInboundTrunkJSONBody) AsTelephonyServiceUpdateInboundTrunkJSONBody0() (TelephonyServiceUpdateInboundTrunkJSONBody0, error) {
+	var body TelephonyServiceUpdateInboundTrunkJSONBody0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTelephonyServiceUpdateInboundTrunkJSONBody0 overwrites any union data inside the TelephonyServiceUpdateInboundTrunkJSONBody as the provided TelephonyServiceUpdateInboundTrunkJSONBody0
+func (t *TelephonyServiceUpdateInboundTrunkJSONBody) FromTelephonyServiceUpdateInboundTrunkJSONBody0(v TelephonyServiceUpdateInboundTrunkJSONBody0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTelephonyServiceUpdateInboundTrunkJSONBody0 performs a merge with any union data inside the TelephonyServiceUpdateInboundTrunkJSONBody, using the provided TelephonyServiceUpdateInboundTrunkJSONBody0
+func (t *TelephonyServiceUpdateInboundTrunkJSONBody) MergeTelephonyServiceUpdateInboundTrunkJSONBody0(v TelephonyServiceUpdateInboundTrunkJSONBody0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTelephonyServiceUpdateInboundTrunkJSONBody1 returns the union data inside the TelephonyServiceUpdateInboundTrunkJSONBody as a TelephonyServiceUpdateInboundTrunkJSONBody1
+func (t TelephonyServiceUpdateInboundTrunkJSONBody) AsTelephonyServiceUpdateInboundTrunkJSONBody1() (TelephonyServiceUpdateInboundTrunkJSONBody1, error) {
+	var body TelephonyServiceUpdateInboundTrunkJSONBody1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTelephonyServiceUpdateInboundTrunkJSONBody1 overwrites any union data inside the TelephonyServiceUpdateInboundTrunkJSONBody as the provided TelephonyServiceUpdateInboundTrunkJSONBody1
+func (t *TelephonyServiceUpdateInboundTrunkJSONBody) FromTelephonyServiceUpdateInboundTrunkJSONBody1(v TelephonyServiceUpdateInboundTrunkJSONBody1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTelephonyServiceUpdateInboundTrunkJSONBody1 performs a merge with any union data inside the TelephonyServiceUpdateInboundTrunkJSONBody, using the provided TelephonyServiceUpdateInboundTrunkJSONBody1
+func (t *TelephonyServiceUpdateInboundTrunkJSONBody) MergeTelephonyServiceUpdateInboundTrunkJSONBody1(v TelephonyServiceUpdateInboundTrunkJSONBody1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t TelephonyServiceUpdateInboundTrunkJSONBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *TelephonyServiceUpdateInboundTrunkJSONBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsTelephonyServiceUpdateOutboundTrunkJSONBody0 returns the union data inside the TelephonyServiceUpdateOutboundTrunkJSONBody as a TelephonyServiceUpdateOutboundTrunkJSONBody0
+func (t TelephonyServiceUpdateOutboundTrunkJSONBody) AsTelephonyServiceUpdateOutboundTrunkJSONBody0() (TelephonyServiceUpdateOutboundTrunkJSONBody0, error) {
+	var body TelephonyServiceUpdateOutboundTrunkJSONBody0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTelephonyServiceUpdateOutboundTrunkJSONBody0 overwrites any union data inside the TelephonyServiceUpdateOutboundTrunkJSONBody as the provided TelephonyServiceUpdateOutboundTrunkJSONBody0
+func (t *TelephonyServiceUpdateOutboundTrunkJSONBody) FromTelephonyServiceUpdateOutboundTrunkJSONBody0(v TelephonyServiceUpdateOutboundTrunkJSONBody0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTelephonyServiceUpdateOutboundTrunkJSONBody0 performs a merge with any union data inside the TelephonyServiceUpdateOutboundTrunkJSONBody, using the provided TelephonyServiceUpdateOutboundTrunkJSONBody0
+func (t *TelephonyServiceUpdateOutboundTrunkJSONBody) MergeTelephonyServiceUpdateOutboundTrunkJSONBody0(v TelephonyServiceUpdateOutboundTrunkJSONBody0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTelephonyServiceUpdateOutboundTrunkJSONBody1 returns the union data inside the TelephonyServiceUpdateOutboundTrunkJSONBody as a TelephonyServiceUpdateOutboundTrunkJSONBody1
+func (t TelephonyServiceUpdateOutboundTrunkJSONBody) AsTelephonyServiceUpdateOutboundTrunkJSONBody1() (TelephonyServiceUpdateOutboundTrunkJSONBody1, error) {
+	var body TelephonyServiceUpdateOutboundTrunkJSONBody1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTelephonyServiceUpdateOutboundTrunkJSONBody1 overwrites any union data inside the TelephonyServiceUpdateOutboundTrunkJSONBody as the provided TelephonyServiceUpdateOutboundTrunkJSONBody1
+func (t *TelephonyServiceUpdateOutboundTrunkJSONBody) FromTelephonyServiceUpdateOutboundTrunkJSONBody1(v TelephonyServiceUpdateOutboundTrunkJSONBody1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTelephonyServiceUpdateOutboundTrunkJSONBody1 performs a merge with any union data inside the TelephonyServiceUpdateOutboundTrunkJSONBody, using the provided TelephonyServiceUpdateOutboundTrunkJSONBody1
+func (t *TelephonyServiceUpdateOutboundTrunkJSONBody) MergeTelephonyServiceUpdateOutboundTrunkJSONBody1(v TelephonyServiceUpdateOutboundTrunkJSONBody1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t TelephonyServiceUpdateOutboundTrunkJSONBody) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *TelephonyServiceUpdateOutboundTrunkJSONBody) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -5943,10 +9093,25 @@ type ClientInterface interface {
 
 	// ProjectServiceGetInvite GetInvite
 	//
+	// Returns a project invite that was sent to you, found by its token. Use it to
+	//  show the invite before you answer it with `AnswerInvitation`. An invite that
+	//  was sent to a different email address returns `PermissionDenied`. An expired
+	//  invite returns `FailedPrecondition`. An unknown token returns `NotFound`.
+	//
 	// Corresponds with GET /v0/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
 	ProjectServiceGetInvite(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceAnswerInvitationWithBody AnswerInvitation
+	//
+	// Accepts or declines a project invite that was sent to you. When you accept,
+	//  you become a member of the project with the role of the invite. When the
+	//  project is in a workspace, you also become a member of the workspace and of
+	//  every project in it where `isPrivate` is `false`, with the same role. If you
+	//  are already a member, the role of the invite replaces your role. When you
+	//  decline, the API deletes the invite. After you answer, the token stops
+	//  working, so a retry returns `NotFound`. An invite that was sent to a
+	//  different email address returns `PermissionDenied`. An expired invite
+	//  returns `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5955,6 +9120,16 @@ type ClientInterface interface {
 
 	// ProjectServiceAnswerInvitation AnswerInvitation
 	//
+	// Accepts or declines a project invite that was sent to you. When you accept,
+	//  you become a member of the project with the role of the invite. When the
+	//  project is in a workspace, you also become a member of the workspace and of
+	//  every project in it where `isPrivate` is `false`, with the same role. If you
+	//  are already a member, the role of the invite replaces your role. When you
+	//  decline, the API deletes the invite. After you answer, the token stops
+	//  working, so a retry returns `NotFound`. An invite that was sent to a
+	//  different email address returns `PermissionDenied`. An expired invite
+	//  returns `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
@@ -5962,10 +9137,25 @@ type ClientInterface interface {
 
 	// ProjectServiceListProjects ListProjects
 	//
+	// Lists projects, ordered by project ID. When you set no filter, the list has
+	//  the projects that you are a member of. A pending invite does not make you a
+	//  member.
+	//
 	// Corresponds with GET /v0/projects (the `ProjectServiceListProjects` operationId).
 	ProjectServiceListProjects(ctx context.Context, params *ProjectServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateProjectWithBody CreateProject
+	//
+	// Creates a project. You become a member of the project with the admin role
+	//  (`3`), and the API creates an API key that you own. When `workspaceId` is
+	//  empty, the API also creates a workspace with the same name as the project,
+	//  and you are its only member. When `isPrivate` is `false` and you set
+	//  `workspaceId`, every member of the workspace becomes a member of the project,
+	//  with their workspace role. A `subdomain` that another project uses returns
+	//  `AlreadyExists`. When you reach the limit of free projects that you can
+	//  create, or the project limit of the workspace plan, the request fails with
+	//  `FailedPrecondition`. The call is not idempotent: when `subdomain` is empty,
+	//  a retry creates a second project.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5974,6 +9164,17 @@ type ClientInterface interface {
 
 	// ProjectServiceCreateProject CreateProject
 	//
+	// Creates a project. You become a member of the project with the admin role
+	//  (`3`), and the API creates an API key that you own. When `workspaceId` is
+	//  empty, the API also creates a workspace with the same name as the project,
+	//  and you are its only member. When `isPrivate` is `false` and you set
+	//  `workspaceId`, every member of the workspace becomes a member of the project,
+	//  with their workspace role. A `subdomain` that another project uses returns
+	//  `AlreadyExists`. When you reach the limit of free projects that you can
+	//  create, or the project limit of the workspace plan, the request fails with
+	//  `FailedPrecondition`. The call is not idempotent: when `subdomain` is empty,
+	//  a retry creates a second project.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
@@ -5981,15 +9182,32 @@ type ClientInterface interface {
 
 	// ProjectServiceDeleteProject DeleteProject
 	//
+	// Deletes a project, with its API keys, its webhooks, and its member list. You
+	//  cannot undo the delete. Another project can then use the subdomain. A retry
+	//  returns `NotFound`.
+	//
 	// Corresponds with DELETE /v0/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
 	ProjectServiceDeleteProject(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceGetProject GetProject
 	//
+	// Returns a project with its settings and its webhooks. A project that you
+	//  cannot see returns `NotFound`.
+	//
 	// Corresponds with GET /v0/projects/{projectId} (the `ProjectServiceGetProject` operationId).
 	ProjectServiceGetProject(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateProjectWithBody UpdateProject
+	//
+	// Updates the settings of a project, and returns the updated project. A field
+	//  that you do not set keeps its value. When you change `isPrivate` from
+	//  `false` to `true`, the API removes every member of the project except you
+	//  and the users in `members`, and you get the admin role (`3`). When you
+	//  change `isPrivate` from `true` to `false`, every member of the workspace
+	//  becomes a member of the project, with their workspace role. A user in
+	//  `members` who is not a member of the workspace
+	//  returns `NotFound`. A `subdomain` that another project uses returns
+	//  `AlreadyExists`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5998,86 +9216,142 @@ type ClientInterface interface {
 
 	// ProjectServiceUpdateProject UpdateProject
 	//
+	// Updates the settings of a project, and returns the updated project. A field
+	//  that you do not set keeps its value. When you change `isPrivate` from
+	//  `false` to `true`, the API removes every member of the project except you
+	//  and the users in `members`, and you get the admin role (`3`). When you
+	//  change `isPrivate` from `true` to `false`, every member of the workspace
+	//  becomes a member of the project, with their workspace role. A user in
+	//  `members` who is not a member of the workspace
+	//  returns `NotFound`. A `subdomain` that another project uses returns
+	//  `AlreadyExists`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProject(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
+	// BuilderAgentServiceListBuilderAgents ListBuilderAgents
 	//
-	// Returns the project overview over a time range.
+	// Lists the builder agents of a project by name, with the deployment status
+	//  of each. The list does not include configurations. To get the
+	//  configuration of an agent, call `GetBuilderAgent`.
 	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
-	AnalyticsServiceGetProjectAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
+	BuilderAgentServiceListBuilderAgents(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnalyticsServiceListAgentAnalytics ListAgentAnalytics
+	// BuilderAgentServiceCreateBuilderAgentWithBody CreateBuilderAgent
 	//
-	// Returns the same per-agent analytics for every agent in the project, one
-	//  AgentAnalytics row per agent — so a single agent and the whole roster share
-	//  one shape.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
-	AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AnalyticsServiceGetAgentAnalytics GetAgentAnalytics
-	//
-	// Returns the analytics for one agent over a time range.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
-	AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DatabaseServiceListDatabases ListDatabases
-	//
-	// Lists the project's databases, cursor-paginated.
-	//
-	// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
-	DatabaseServiceListDatabases(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DatabaseServiceCreateDatabaseWithBody CreateDatabase
-	//
-	// Creates an empty database. Not idempotent: a retried request creates a
-	//  second database.
+	// Creates a builder agent from a name and a configuration. The agent is not
+	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
+	//  properties take their default, and unknown properties are ignored. A
+	//  configuration that is not valid fails with `InvalidArgument` and a
+	//  `google.rpc.BadRequest` detail. It has a field violation for each
+	//  problem, up to 100, which names a field, such as
+	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
+	//  problems gets one last violation for `config` that says how many more.
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-	DatabaseServiceCreateDatabaseWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+	BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DatabaseServiceCreateDatabase CreateDatabase
+	// BuilderAgentServiceCreateBuilderAgent CreateBuilderAgent
 	//
-	// Creates an empty database. Not idempotent: a retried request creates a
-	//  second database.
+	// Creates a builder agent from a name and a configuration. The agent is not
+	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
+	//  properties take their default, and unknown properties are ignored. A
+	//  configuration that is not valid fails with `InvalidArgument` and a
+	//  `google.rpc.BadRequest` detail. It has a field violation for each
+	//  problem, up to 100, which names a field, such as
+	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
+	//  problems gets one last violation for `config` that says how many more.
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-	DatabaseServiceCreateDatabase(ctx context.Context, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+	BuilderAgentServiceCreateBuilderAgent(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DatabaseServiceDeleteDatabase DeleteDatabase
+	// BuilderAgentServiceDeleteBuilderAgent DeleteBuilderAgent
 	//
-	// Deletes the stored data, not just the metadata.
+	// Deletes a builder agent, its versions, and its deployment.
 	//
-	// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
-	DatabaseServiceDeleteDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
+	BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DatabaseServiceGetDatabase GetDatabase
+	// BuilderAgentServiceGetBuilderAgent GetBuilderAgent
 	//
-	// Corresponds with GET /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceGetDatabase` operationId).
-	DatabaseServiceGetDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Returns a builder agent with its current configuration and its deployment
+	//  status.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
+	BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DatabaseServiceExportDatabase ExportDatabase
+	// BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
 	//
-	// Exports a consistent SQLite file as a time-limited download URL.
+	// Replaces the configuration of a builder agent. Each update makes a new
+	//  version. The running agent does not change until you deploy again. A
+	//  configuration that is not valid fails as it does in
+	//  `CreateBuilderAgent`.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
-	DatabaseServiceExportDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+	BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
+	//
+	// Replaces the configuration of a builder agent. Each update makes a new
+	//  version. The running agent does not change until you deploy again. A
+	//  configuration that is not valid fails as it does in
+	//  `CreateBuilderAgent`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+	BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
+	//
+	// Starts a deployment of the current configuration of a builder agent, or of
+	//  an earlier version. The call returns when the build starts, with the
+	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
+	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+	BuilderAgentServiceDeployBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BuilderAgentServiceDeployBuilderAgent DeployBuilderAgent
+	//
+	// Starts a deployment of the current configuration of a builder agent, or of
+	//  an earlier version. The call returns when the build starts, with the
+	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
+	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+	BuilderAgentServiceDeployBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListInvites ListInvites
 	//
+	// Lists the unexpired invites of a project, ordered by email.
+	//
 	// Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
-	ProjectServiceListInvites(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceListInvites(ctx context.Context, projectId string, params *ProjectServiceListInvitesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceInviteMemberWithBody InviteMember
+	//
+	// Invites a person to a project by email, with a role. The API sends an email
+	//  with the invite link, and the response has the invite token. The invite
+	//  expires after 48 hours. When an invite for the email exists, the API
+	//  replaces its role, token, and expiry, and the earlier link stops working. A
+	//  retry replaces the invite and sends a new email. On a plan that allows only
+	//  the admin role (`3`), the roles `1` and `2` return `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6086,6 +9360,13 @@ type ClientInterface interface {
 
 	// ProjectServiceInviteMember InviteMember
 	//
+	// Invites a person to a project by email, with a role. The API sends an email
+	//  with the invite link, and the response has the invite token. The invite
+	//  expires after 48 hours. When an invite for the email exists, the API
+	//  replaces its role, token, and expiry, and the earlier link stops working. A
+	//  retry replaces the invite and sends a new email. On a plan that allows only
+	//  the admin role (`3`), the roles `1` and `2` return `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
@@ -6093,10 +9374,21 @@ type ClientInterface interface {
 
 	// ProjectServiceDeleteInvite DeleteInvite
 	//
+	// Deletes a pending project invite, so that its link stops working. When the
+	//  project is in a workspace, the API also deletes the workspace invite for the
+	//  same email. An invite that does not exist returns `NotFound`. An expired
+	//  invite returns `FailedPrecondition`.
+	//
 	// Corresponds with DELETE /v0/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
 	ProjectServiceDeleteInvite(ctx context.Context, projectId string, email string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateInviteWithBody UpdateInvite
+	//
+	// Changes the role of a pending project invite. The token and the expiry do not
+	//  change, and the API sends no email. An invite that does not exist returns
+	//  `NotFound`. An expired invite returns `FailedPrecondition`. On a plan that
+	//  allows only the admin role (`3`), the roles `1` and `2` return
+	//  `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6105,6 +9397,12 @@ type ClientInterface interface {
 
 	// ProjectServiceUpdateInvite UpdateInvite
 	//
+	// Changes the role of a pending project invite. The token and the expiry do not
+	//  change, and the API sends no email. An invite that does not exist returns
+	//  `NotFound`. An expired invite returns `FailedPrecondition`. On a plan that
+	//  allows only the admin role (`3`), the roles `1` and `2` return
+	//  `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
@@ -6112,13 +9410,16 @@ type ClientInterface interface {
 
 	// ProjectServiceListKeys ListKeys
 	//
+	// Lists the API keys of a project, oldest first. The list does not include
+	//  the secrets.
+	//
 	// Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
 	ProjectServiceListKeys(ctx context.Context, projectId string, params *ProjectServiceListKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceGenerateKeyWithBody GenerateKey
 	//
-	// Creates an API key and secret for the project. The secret is returned once,
-	//  in the response, and cannot be read again.
+	// Creates an API key and secret for the project. The response includes the
+	//  secret. You cannot read the secret again.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6127,8 +9428,8 @@ type ClientInterface interface {
 
 	// ProjectServiceGenerateKey GenerateKey
 	//
-	// Creates an API key and secret for the project. The secret is returned once,
-	//  in the response, and cannot be read again.
+	// Creates an API key and secret for the project. The response includes the
+	//  secret. You cannot read the secret again.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6137,27 +9438,51 @@ type ClientInterface interface {
 
 	// ProjectServiceDeleteKey DeleteKey
 	//
+	// Deletes an API key and its secret from a project. You cannot undo the
+	//  delete. A key that does not exist, or that belongs to another project,
+	//  returns `NotFound`, so a retry returns `NotFound`.
+	//
 	// Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 	ProjectServiceDeleteKey(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListMembers ListMembers
 	//
-	// Lists the project's members.
+	// Lists the project members, ordered by user ID.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
-	ProjectServiceListMembers(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceListMembers(ctx context.Context, projectId string, params *ProjectServiceListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceRemoveMember RemoveMember
+	//
+	// Removes a user from a project, and deletes the API keys that the user owns in
+	//  the project. Agent keys stay. When `isPrivate` is `false` on the project, the
+	//  API removes the user from the workspace and from every project in it, and
+	//  deletes the keys that the user owns in all of those projects. Send
+	//  `confirmedNumKeys` to confirm the number of keys to delete. A removal that
+	//  deletes the last API key of a project returns `FailedPrecondition` and
+	//  changes nothing. A user who is not a member returns `NotFound`. The response
+	//  has the number of keys that the removal deleted.
 	//
 	// Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
 	ProjectServiceRemoveMember(ctx context.Context, projectId string, userId string, params *ProjectServiceRemoveMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceGetMember GetMember
 	//
+	// Returns the membership of one user on a project, with the role of the user.
+	//  A user who is not a member of the project returns `NotFound`.
+	//
 	// Corresponds with GET /v0/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
 	ProjectServiceGetMember(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateMemberWithBody UpdateMember
+	//
+	// Changes the role of a member of a project. When `isPrivate` is `false` on the
+	//  project, the role is the workspace role of the user: the API changes it on
+	//  the workspace and on every project in the workspace where `isPrivate` is
+	//  `false`. When `isPrivate` is `true`, only this project changes, and the API
+	//  sends an email to the member about the new role. A user who is not a member
+	//  returns `NotFound`. On a plan that allows only the admin role (`3`), the
+	//  roles `1` and `2` return `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6166,12 +9491,29 @@ type ClientInterface interface {
 
 	// ProjectServiceUpdateMember UpdateMember
 	//
+	// Changes the role of a member of a project. When `isPrivate` is `false` on the
+	//  project, the role is the workspace role of the user: the API changes it on
+	//  the workspace and on every project in the workspace where `isPrivate` is
+	//  `false`. When `isPrivate` is `true`, only this project changes, and the API
+	//  sends an email to the member about the new role. A user who is not a member
+	//  returns `NotFound`. On a plan that allows only the admin role (`3`), the
+	//  roles `1` and `2` return `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 	ProjectServiceUpdateMember(ctx context.Context, projectId string, userId string, body ProjectServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceAddWorkspaceMembersToProjectWithBody AddWorkspaceMembersToProject
+	//
+	// Adds members of the workspace to a project where `isPrivate` is `true`, all
+	//  with one role. A user who is already a member of the project gets the new
+	//  role, so a retry gives the same result. The API sends an email to each user
+	//  that it adds, except you. A project where `isPrivate` is `false` returns
+	//  `InvalidArgument`. A user who is not a member of the workspace returns
+	//  `NotFound`, and the API adds no one. On a plan that allows only the admin
+	//  role (`3`), the roles `1` and `2` return `FailedPrecondition`. The response
+	//  lists the members in no specific order. An empty `userIds` changes nothing.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6180,18 +9522,104 @@ type ClientInterface interface {
 
 	// ProjectServiceAddWorkspaceMembersToProject AddWorkspaceMembersToProject
 	//
+	// Adds members of the workspace to a project where `isPrivate` is `true`, all
+	//  with one role. A user who is already a member of the project gets the new
+	//  role, so a retry gives the same result. The API sends an email to each user
+	//  that it adds, except you. A project where `isPrivate` is `false` returns
+	//  `InvalidArgument`. A user who is not a member of the workspace returns
+	//  `NotFound`, and the API adds no one. On a plan that allows only the admin
+	//  role (`3`), the roles `1` and `2` return `FailedPrecondition`. The response
+	//  lists the members in no specific order. An empty `userIds` changes nothing.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 	ProjectServiceAddWorkspaceMembersToProject(ctx context.Context, projectId string, body ProjectServiceAddWorkspaceMembersToProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// TelephonyServiceListPhoneNumbers ListPhoneNumbers
+	//
+	// Lists the phone numbers of the project, newest first.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/phone-numbers (the `TelephonyServiceListPhoneNumbers` operationId).
+	TelephonyServiceListPhoneNumbers(ctx context.Context, projectId string, params *TelephonyServiceListPhoneNumbersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServicePurchasePhoneNumberWithBody PurchasePhoneNumber
+	//
+	// Buys a phone number for the project. The number then appears in
+	//  `ListPhoneNumbers`. A number that someone else bought first fails with
+	//  `AlreadyExists`, and a project at its phone number limit fails with
+	//  `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/phone-numbers (the `TelephonyServicePurchasePhoneNumber` operationId).
+	TelephonyServicePurchasePhoneNumberWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServicePurchasePhoneNumber PurchasePhoneNumber
+	//
+	// Buys a phone number for the project. The number then appears in
+	//  `ListPhoneNumbers`. A number that someone else bought first fails with
+	//  `AlreadyExists`, and a project at its phone number limit fails with
+	//  `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/phone-numbers (the `TelephonyServicePurchasePhoneNumber` operationId).
+	TelephonyServicePurchasePhoneNumber(ctx context.Context, projectId string, body TelephonyServicePurchasePhoneNumberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceReleasePhoneNumber ReleasePhoneNumber
+	//
+	// Releases a phone number. The project loses the number, and the API
+	//  removes it from each dispatch rule.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceReleasePhoneNumber` operationId).
+	TelephonyServiceReleasePhoneNumber(ctx context.Context, projectId string, phoneNumberId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceGetPhoneNumber GetPhoneNumber
+	//
+	// Returns a phone number of the project.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceGetPhoneNumber` operationId).
+	TelephonyServiceGetPhoneNumber(ctx context.Context, projectId string, phoneNumberId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceUpdatePhoneNumberWithBody UpdatePhoneNumber
+	//
+	// Renames a phone number, or adds it to a dispatch rule. To remove a
+	//  number from a rule, remove its ID from the `trunkIds` of the rule with
+	//  `UpdateDispatchRule`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceUpdatePhoneNumber` operationId).
+	TelephonyServiceUpdatePhoneNumberWithBody(ctx context.Context, projectId string, phoneNumberId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceUpdatePhoneNumber UpdatePhoneNumber
+	//
+	// Renames a phone number, or adds it to a dispatch rule. To remove a
+	//  number from a rule, remove its ID from the `trunkIds` of the rule with
+	//  `UpdateDispatchRule`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceUpdatePhoneNumber` operationId).
+	TelephonyServiceUpdatePhoneNumber(ctx context.Context, projectId string, phoneNumberId string, body TelephonyServiceUpdatePhoneNumberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceSearchPhoneNumbers SearchPhoneNumbers
+	//
+	// Lists the phone numbers that are for sale in a country. The list is
+	//  always one page.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/phone-numbers:search (the `TelephonyServiceSearchPhoneNumbers` operationId).
+	TelephonyServiceSearchPhoneNumbers(ctx context.Context, projectId string, params *TelephonyServiceSearchPhoneNumbersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
 	//
-	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
-	//  stored; the returned scenario is the result. The session must have a
-	//  recorded chat history. Each call runs an LLM over it, so it counts against
-	//  the project's scenario-generation quota and can take up to about a minute.
+	// Generates a scenario (label, instructions, and expectations) from a
+	//  recorded room session. Use the scenario in the `scenarioGroup` of a later
+	//  run. The API does not save the scenario: the response is the only copy.
+	//  The session must have a recorded chat history. Each call runs an LLM on
+	//  the chat history, so it counts against the scenario-generation quota of
+	//  the project. A call can take up to about one minute.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6200,176 +9628,185 @@ type ClientInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSession GenerateScenarioFromSession
 	//
-	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
-	//  stored; the returned scenario is the result. The session must have a
-	//  recorded chat history. Each call runs an LLM over it, so it counts against
-	//  the project's scenario-generation quota and can take up to about a minute.
+	// Generates a scenario (label, instructions, and expectations) from a
+	//  recorded room session. Use the scenario in the `scenarioGroup` of a later
+	//  run. The API does not save the scenario: the response is the only copy.
+	//  The session must have a recorded chat history. Each call runs an LLM on
+	//  the chat history, so it counts against the scenario-generation quota of
+	//  the project. A call can take up to about one minute.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSession(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ProjectServiceListScopedKeys ListScopedKeys
-	//
-	// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
-	ProjectServiceListScopedKeys(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// AnalyticsServiceListProjectSessions ListProjectSessions
 	//
-	// Lists room sessions for a project, newest first, cursor-paginated.
+	// Lists the room sessions of a project, newest first.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 	AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceGetSession GetSession
 	//
-	// Returns one room session. The response carries both the list-row `session`
-	//  and the richer `detail` (participants, per-metric data points).
+	// Returns one room session. The response has the `session` that the list
+	//  returns, and a `detail` with the participants and the metric timelines.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnalyticsServiceListSessionEvents Lists one room session's events, oldest first by default, cursor-paginated
-	//  with no total. With no `types`, it returns the seven the dashboard's events
-	//  table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
-	//  PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
-	//  for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
-	//  participant session's events. With `participantSessionId` and no `types`,
-	//  it returns the eleven the dashboard's participant events table shows: that
-	//  participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-	//  PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
-	//  TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
-	//  TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
+	// AnalyticsServiceListSessionEvents Lists the events of a room session. Defaults to oldest first. The page info
+	//  has no total.
 	//
-	// Unlike the dashboard, on purpose: an unknown type or a malformed
-	//  participant session id is InvalidArgument rather than being searched for as
-	//  typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
-	//  TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
-	//  fields, leaving out participants' attributes and metadata and API calls'
-	//  request bodies. Each event and participant row still carries the
-	//  participant's identity, as the dashboard shows it to every member, and for
-	//  a SIP caller that can be a phone number.
+	// When `types` is empty, the list has these seven types:
+	//  `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`,
+	//  `PARTICIPANT_RESUMED`, `ROOM_CREATED`, `ROOM_ENDED`, and `API_CALL`. To get
+	//  other types, such as `TRACK_PUBLISHED`, set `types`. To get the events of
+	//  one participant session, set `participantSessionId`. When you set
+	//  `participantSessionId` and `types` is empty, the list has these eleven
+	//  types: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_RESUMED`,
+	//  `PARTICIPANT_ACTIVE`, `TRACK_MUTED`, `TRACK_UNMUTED`, `TRACK_PUBLISHED`,
+	//  `TRACK_UNPUBLISHED`, `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED`, and
+	//  `TRACK_SUBSCRIBE_FAILED`.
 	//
-	//  Events are kept for 60 days, which can be shorter than the session's other
-	//  data, so an older session can list no events. An ACTIVE session lists the
-	//  events recorded so far. An unknown session is NotFound.
+	//  Each type matches exactly, so `TRACK_PUBLISHED` does not also return
+	//  `TRACK_PUBLISHED_UPDATE`. The `payload` of an event has only a fixed set of
+	//  fields. It does not include participant attributes, participant metadata,
+	//  or the request bodies of API calls. Each event and participant item has the
+	//  identity of the participant. For a SIP caller, the identity can be a phone
+	//  number.
+	//
+	//  LiveKit keeps events for 60 days. This can be shorter than the other data
+	//  of the session, so an older session can have no events. An `ACTIVE` session
+	//  lists the events recorded until now.
+	//
+	//  Errors: an unknown type or a malformed participant session ID returns
+	//  `InvalidArgument`. An unknown session returns `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionLogs Returns the log records the session's agents exported, in time order: what
-	//  the dashboard's logs panel shows. Their chat history is left out, since
-	//  GetSessionTranscript reads it, and their evaluation results stay in. The
-	//  session's events, such as participants joining, come from
-	//  AnalyticsService's ListSessionEvents.
+	// ObservabilityServiceGetSessionLogs Returns the log records that the agents of a session exported, in time
+	//  order. These are the records that the logs panel on the dashboard shows.
+	//  The chat history is not included, because `GetSessionTranscript` returns
+	//  it. Evaluation results are included. To get the events of the session, such
+	//  as participants that join, use `AnalyticsService.ListSessionEvents`.
 	//
-	// An ACTIVE session returns what its agents have exported so far. A record
-	//  exported mid-read with a time this read has already paged past, earlier
-	//  than its cursor's when oldest first, is missed until a new read. An unknown
-	//  session is NotFound. A read filtered by logLevels can come back empty
-	//  because no record is at those levels, so only an unfiltered one is
-	//  ObservabilityDisabled.
+	// An `ACTIVE` session returns the records that its agents exported up to now.
+	//  While you page through the records, an agent can export a record with a
+	//  time that your pages already passed. For example, in oldest-first order, a
+	//  record with a time earlier than the cursor position. This read does not
+	//  return that record. A new read returns it. An unknown session returns
+	//  `NotFound`. A read filtered by `logLevels` can return no records because no
+	//  record has those levels. Thus, only a read with no filter returns the
+	//  `ObservabilityDisabled` error.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the session's agents exported, by
-	//  time, typed: turn latencies such as lk.agents.turn.e2e_latency and
-	//  lk.agents.turn.llm_ttft, token and duration usage such as
-	//  lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
-	//  any metrics the agent's own code recorded.
+	// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points that the agents of a session
+	//  exported, ordered by time. The points include turn latencies, such as
+	//  `lk.agents.turn.e2e_latency` and `lk.agents.turn.llm_ttft`, token and
+	//  duration usage, such as `lk.agents.usage.llm_input_tokens`, and the
+	//  `gen_ai.*` histograms. They also include the metrics that the agent's own
+	//  code recorded.
 	//
-	// These are the raw metrics agents emit, so they won't exactly match the
-	//  dashboard's metrics panel, which derives its numbers from the transcript
-	//  and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-	//  produce them: an agent whose code installs its own MeterProvider exports
-	//  none to LiveKit Cloud, and its sessions return no points.
+	// These are the raw metrics that agents export. They do not exactly match the
+	//  metrics panel on the dashboard, which calculates its values from the
+	//  transcript and traces. Only an agent that exports OpenTelemetry metrics to
+	//  LiveKit Cloud has points. An agent whose code installs its own
+	//  `MeterProvider` exports no metrics to LiveKit Cloud, and its sessions
+	//  return no points.
 	//
-	//  Some points aren't labeled as their agent exported them. LiveKit Cloud
-	//  groups a session's series by their attributes alone and names each group
-	//  after its first row, so: - several metrics can come back under one name,
-	//  such as an LLM's input, output and cached token counts, all named
-	//  lk.agents.usage.llm_input_tokens; - points of one series at the same time
-	//  that recorded equal values collapse into one point; - with two agents in
-	//  one session, a point can carry the other agent's resource attributes.
+	//  Some points do not have the labels that their agent exported. LiveKit Cloud
+	//  groups the series of a session by their attributes only, and gives each
+	//  group the name of its first point. This has these results. Several metrics
+	//  can have one name. For example, the input, output, and cached token counts
+	//  of an LLM all have the name `lk.agents.usage.llm_input_tokens`. Points of
+	//  one series with the same time and the same value become one point. When a
+	//  session has two agents, a point can have the resource attributes of the
+	//  other agent.
 	//
 	//  An agent exports its metrics every 30 seconds, and its turn latencies when
-	//  the session ends, so an ACTIVE session returns what it has exported so far.
-	//  An unknown session is NotFound. A read filtered by names can come back
-	//  empty because no metric has those names, so only an unfiltered one is
-	//  ObservabilityDisabled.
+	//  the session ends. Thus, an `ACTIVE` session returns the points that its
+	//  agents exported up to now. An unknown session returns `NotFound`. A read
+	//  filtered by `names` can return no points because no metric has those names.
+	//  Thus, only a read with no filter returns the `ObservabilityDisabled` error.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 	ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AnalyticsServiceListSessionParticipants ListSessionParticipants
 	//
-	// Lists the participants of one room session, one row per identity,
-	//  cursor-paginated; newest join first by default. Each row carries the
-	//  participant's participant sessions (PA_...), each with the client it
-	//  connected from.
+	// Lists the participants of a room session, one item for each identity.
+	//  Defaults to newest join first. Each item has the participant sessions of
+	//  the participant (`PA_...`), each with the client that it connected from.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 	AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 	//
-	// Returns a short-lived signed URL for one of the session's recordings: its
-	//  audio or its chat history. A session with no recording of that type is
-	//  NotFound. A new recording can be NotFound for up to a minute after the
-	//  session ends.
+	// Returns a short-lived signed URL for a session recording: its audio
+	//  or its chat history. When the recording doesn't exist and
+	//  `dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+	//  `DATA_STATE_SETTLING`, the response has an empty `url`, because the
+	//  agent can still upload the recording. In every other state, a session
+	//  with no recording of that type returns `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTraces Returns the spans the session's agents exported, by start time: what the
-	//  dashboard's trace view shows. Each span names its parent, so the pages
-	//  rebuild the span tree, and its attributes carry the turn and latency fields
-	//  the dashboard's turn view reads, such as lk.generation_id and
-	//  lk.response.ttft.
+	// ObservabilityServiceGetSessionTraces Returns the spans that the agents of a session exported, ordered by start
+	//  time. These are the spans that the trace view on the dashboard shows. Each
+	//  span names its parent, so you can build the span tree from the pages. The
+	//  attributes of a span hold the turn and latency fields that the turn view on
+	//  the dashboard uses, such as `lk.generation_id` and `lk.response.ttft`.
 	//
-	// An ACTIVE session returns what its agents have exported so far; a span
-	//  exported after the first page waits for a new read. The later pages are
-	//  read by offset, so a span exported mid-read can still shift them: a span
-	//  can repeat, or be skipped. Dedupe by spanId, and read again from the first
-	//  page to pick up a skipped span. An unknown session is NotFound.
+	// An `ACTIVE` session returns the spans that its agents exported up to now. A
+	//  span exported after the first page appears only in a new read. The API
+	//  reads the later pages by offset, so a span exported during your read can
+	//  move them. Thus, a span can repeat, or a page can skip a span. Remove
+	//  duplicates by `spanId`. To get a skipped span, read again from the first
+	//  page. An unknown session returns `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ObservabilityServiceGetSessionTranscript Returns the session's conversation as ordered transcript items: messages,
-	//  tool calls and results, agent handoffs and agent configuration changes. It
-	//  is the conversation the dashboard's transcript shows.
+	// ObservabilityServiceGetSessionTranscript Returns the conversation of a session as ordered transcript items. The
+	//  items are messages, tool calls and results, agent handoffs, and agent
+	//  configuration changes. It is the conversation that the transcript on the
+	//  dashboard shows.
 	//
-	// The agent exports its transcript when the session ends, and it can be read
-	//  a minute or two later; on a project with PII redaction, only once the
-	//  session's recording has been redacted. So a session that is still ACTIVE
-	//  returns what exists so far, usually nothing, without an error: read it
-	//  again after the session ends. An unknown session is NotFound.
+	// The agent exports its transcript when the session ends. There is a delay
+	//  before you can read it, and the length of the delay is not fixed. On a
+	//  project with PII redaction, you can read it only after LiveKit redacts the
+	//  session recording. Thus, an `ACTIVE` session returns the items that exist,
+	//  usually none, with no error. Read it again after the session ends. An
+	//  unknown session returns `NotFound`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 	ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceListSimulationRuns ListSimulationRuns
 	//
-	// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
-	//  by status, agent, conversation mode and a time window. Rows carry headline
-	//  counts (jobCount, passedCount, failedCount, issueCount) but neither
-	//  jobs nor the summary.
+	// Lists the runs of a project, newest first. You can filter the runs by
+	//  status, agent, conversation mode, and time window. Each run includes its
+	//  counts (`jobCount`, `passedCount`, `failedCount`, and `issueCount`), but
+	//  not its jobs or its summary.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 	SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCreateSimulationRunWithBody CreateSimulationRun
 	//
-	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
-	//  agent source that scenarios are generated from: upload it to the returned
-	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-	//  for an hour is failed. Creating a run is not idempotent: a retried request
-	//  starts a second run.
+	// Creates a simulation run. With a `scenarioGroup`, the run starts
+	//  immediately and the response has no upload target. Without a
+	//  `scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+	//  that the API generates scenarios from. Upload the source to the returned
+	//  presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+	//  pending for one hour fails. This RPC is not idempotent: a retry starts a
+	//  second run.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6378,12 +9815,13 @@ type ClientInterface interface {
 
 	// SimulationServiceCreateSimulationRun CreateSimulationRun
 	//
-	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
-	//  agent source that scenarios are generated from: upload it to the returned
-	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-	//  for an hour is failed. Creating a run is not idempotent: a retried request
-	//  starts a second run.
+	// Creates a simulation run. With a `scenarioGroup`, the run starts
+	//  immediately and the response has no upload target. Without a
+	//  `scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+	//  that the API generates scenarios from. Upload the source to the returned
+	//  presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+	//  pending for one hour fails. This RPC is not idempotent: a retry starts a
+	//  second run.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6392,36 +9830,38 @@ type ClientInterface interface {
 
 	// SimulationServiceGetSimulationRun GetSimulationRun
 	//
-	// Returns one run with its jobs and aggregate metrics. The compressed summary
-	//  blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
-	//  summary.
+	// Returns one run with its jobs and aggregate metrics. The response does not
+	//  include the compressed summary (`summaryZstd`). To get the summary, call
+	//  `GetSimulationRunSummary`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 	SimulationServiceGetSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceGetSimulationRunSummary GetSimulationRunSummary
 	//
-	// Returns the graded outcome of a finished run: pass/fail counts, what went
-	//  well, what to improve, flagged issues with suggestions, and the per-job
-	//  chat history. FailedPrecondition while the run is still going; NotFound if
-	//  the run finished without a summary.
+	// Returns the graded outcome of a finished run: the pass and fail counts,
+	//  what went well, what to improve, the flagged issues with suggestions, and
+	//  the chat history of each job. Returns `FailedPrecondition` while the run
+	//  is in progress. Returns `NotFound` when the run finished without a
+	//  summary.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 	SimulationServiceGetSimulationRunSummary(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceCancelSimulationRun CancelSimulationRun
 	//
-	// Stops a run that has not finished. Cancelling a run that already finished
-	//  succeeds without effect.
+	// Stops a run that has not finished. When the run is already finished, the
+	//  call succeeds and has no effect.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 	SimulationServiceCancelSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SimulationServiceConfirmSimulationSourceUploadWithBody ConfirmSimulationSourceUpload
 	//
-	// Marks the agent source as uploaded and starts scenario generation; the run
-	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is PENDING_UPLOAD, so a repeated call fails.
+	// Confirms that the agent source is uploaded and starts scenario
+	//  generation. The run goes to `GENERATING`, then to `RUNNING` when the
+	//  scenarios exist. The call is valid only while the run is
+	//  `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6430,9 +9870,10 @@ type ClientInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUpload ConfirmSimulationSourceUpload
 	//
-	// Marks the agent source as uploaded and starts scenario generation; the run
-	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is PENDING_UPLOAD, so a repeated call fails.
+	// Confirms that the agent source is uploaded and starts scenario
+	//  generation. The run goes to `GENERATING`, then to `RUNNING` when the
+	//  scenarios exist. The call is valid only while the run is
+	//  `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6441,90 +9882,267 @@ type ClientInterface interface {
 
 	// SimulationServiceCountSimulationRuns CountSimulationRuns
 	//
-	// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
-	//  into a histogram. It takes the same filters over the same window, so the
-	//  bars and the rows beneath them always describe one set. Both bounds are
-	//  required and endTime must be after startTime.
+	// Returns a histogram of the runs in the window [`startTime`, `endTime`). It
+	//  takes the same filters as `ListSimulationRuns`, so the histogram and the
+	//  list describe the same set of runs. Both bounds are required, and
+	//  `endTime` must be after `startTime`.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceListThreads ListThreads
+	// TelephonyServiceListDispatchRules ListDispatchRules
 	//
-	// Lists the threads of one scope, newest first.
+	// Lists the dispatch rules of the project, in ID order. The list is always
+	//  one page.
 	//
-	// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
-	ThreadServiceListThreads(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceListDispatchRules` operationId).
+	TelephonyServiceListDispatchRules(ctx context.Context, projectId string, params *TelephonyServiceListDispatchRulesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceCreateThreadWithBody CreateThread
+	// TelephonyServiceCreateDispatchRuleWithBody CreateDispatchRule
 	//
-	// Creates a thread and its database.
+	// Creates a dispatch rule. A rule applies to the trunks and the phone
+	//  numbers in its `trunkIds`, or to all of them when `trunkIds` is empty. To
+	//  send the calls to a phone number to a rule, add the ID of the number
+	//  (`PN_...`) to `trunkIds`. To stop, remove it. A rule that conflicts with
+	//  another rule of the project fails with `InvalidArgument`, and the message
+	//  names the other rule.
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-	ThreadServiceCreateThreadWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceCreateDispatchRule` operationId).
+	TelephonyServiceCreateDispatchRuleWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceCreateThread CreateThread
+	// TelephonyServiceCreateDispatchRule CreateDispatchRule
 	//
-	// Creates a thread and its database.
+	// Creates a dispatch rule. A rule applies to the trunks and the phone
+	//  numbers in its `trunkIds`, or to all of them when `trunkIds` is empty. To
+	//  send the calls to a phone number to a rule, add the ID of the number
+	//  (`PN_...`) to `trunkIds`. To stop, remove it. A rule that conflicts with
+	//  another rule of the project fails with `InvalidArgument`, and the message
+	//  names the other rule.
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-	ThreadServiceCreateThread(ctx context.Context, projectId string, body ThreadServiceCreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceCreateDispatchRule` operationId).
+	TelephonyServiceCreateDispatchRule(ctx context.Context, projectId string, body TelephonyServiceCreateDispatchRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceDeleteThread DeleteThread
+	// TelephonyServiceDeleteDispatchRule DeleteDispatchRule
 	//
-	// Deletes the thread and its database.
+	// Deletes a dispatch rule.
 	//
-	// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
-	ThreadServiceDeleteThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with DELETE /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceDeleteDispatchRule` operationId).
+	TelephonyServiceDeleteDispatchRule(ctx context.Context, projectId string, dispatchRuleId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceGetThread GetThread
+	// TelephonyServiceGetDispatchRule GetDispatchRule
 	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceGetThread` operationId).
-	ThreadServiceGetThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Returns a dispatch rule of the project.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceGetDispatchRule` operationId).
+	TelephonyServiceGetDispatchRule(ctx context.Context, projectId string, dispatchRuleId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceUpdateThreadWithBody UpdateThread
+	// TelephonyServiceUpdateDispatchRuleWithBody UpdateDispatchRule
 	//
-	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-	//  Every update counts as activity and pushes expiresAt out.
+	// Replaces a dispatch rule, or changes some of its fields.
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-	ThreadServiceUpdateThreadWithBody(ctx context.Context, projectId string, threadId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceUpdateDispatchRule` operationId).
+	TelephonyServiceUpdateDispatchRuleWithBody(ctx context.Context, projectId string, dispatchRuleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceUpdateThread UpdateThread
+	// TelephonyServiceUpdateDispatchRule UpdateDispatchRule
 	//
-	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-	//  Every update counts as activity and pushes expiresAt out.
+	// Replaces a dispatch rule, or changes some of its fields.
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-	ThreadServiceUpdateThread(ctx context.Context, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceUpdateDispatchRule` operationId).
+	TelephonyServiceUpdateDispatchRule(ctx context.Context, projectId string, dispatchRuleId string, body TelephonyServiceUpdateDispatchRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceGetThreadItems GetThreadItems
+	// TelephonyServiceListInboundTrunks ListInboundTrunks
 	//
-	// Returns the thread's chat items, oldest first.
+	// Lists the inbound trunks of the project, in ID order. The list is always
+	//  one page.
 	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
-	ThreadServiceGetThreadItems(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceListInboundTrunks` operationId).
+	TelephonyServiceListInboundTrunks(ctx context.Context, projectId string, params *TelephonyServiceListInboundTrunksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ThreadServiceGetThreadTasks GetThreadTasks
+	// TelephonyServiceCreateInboundTrunkWithBody CreateInboundTrunk
 	//
-	// Returns the thread's background tasks, oldest first.
+	// Creates an inbound trunk. A trunk that conflicts with another trunk of
+	//  the project, such as one that accepts the same number from the same
+	//  callers, fails with `InvalidArgument`, and the message names the other
+	//  trunk.
 	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
-	ThreadServiceGetThreadTasks(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceCreateInboundTrunk` operationId).
+	TelephonyServiceCreateInboundTrunkWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceCreateInboundTrunk CreateInboundTrunk
+	//
+	// Creates an inbound trunk. A trunk that conflicts with another trunk of
+	//  the project, such as one that accepts the same number from the same
+	//  callers, fails with `InvalidArgument`, and the message names the other
+	//  trunk.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceCreateInboundTrunk` operationId).
+	TelephonyServiceCreateInboundTrunk(ctx context.Context, projectId string, body TelephonyServiceCreateInboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceDeleteInboundTrunk DeleteInboundTrunk
+	//
+	// Deletes an inbound trunk.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceDeleteInboundTrunk` operationId).
+	TelephonyServiceDeleteInboundTrunk(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceGetInboundTrunk GetInboundTrunk
+	//
+	// Returns an inbound trunk of the project.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceGetInboundTrunk` operationId).
+	TelephonyServiceGetInboundTrunk(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceUpdateInboundTrunkWithBody UpdateInboundTrunk
+	//
+	// Replaces an inbound trunk, or changes some of its fields.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceUpdateInboundTrunk` operationId).
+	TelephonyServiceUpdateInboundTrunkWithBody(ctx context.Context, projectId string, trunkId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceUpdateInboundTrunk UpdateInboundTrunk
+	//
+	// Replaces an inbound trunk, or changes some of its fields.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceUpdateInboundTrunk` operationId).
+	TelephonyServiceUpdateInboundTrunk(ctx context.Context, projectId string, trunkId string, body TelephonyServiceUpdateInboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceListOutboundTrunks ListOutboundTrunks
+	//
+	// Lists the outbound trunks of the project, in ID order. The list is always
+	//  one page.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceListOutboundTrunks` operationId).
+	TelephonyServiceListOutboundTrunks(ctx context.Context, projectId string, params *TelephonyServiceListOutboundTrunksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceCreateOutboundTrunkWithBody CreateOutboundTrunk
+	//
+	// Creates an outbound trunk, which `CreateSIPParticipant` places calls
+	//  through.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceCreateOutboundTrunk` operationId).
+	TelephonyServiceCreateOutboundTrunkWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceCreateOutboundTrunk CreateOutboundTrunk
+	//
+	// Creates an outbound trunk, which `CreateSIPParticipant` places calls
+	//  through.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceCreateOutboundTrunk` operationId).
+	TelephonyServiceCreateOutboundTrunk(ctx context.Context, projectId string, body TelephonyServiceCreateOutboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceDeleteOutboundTrunk DeleteOutboundTrunk
+	//
+	// Deletes an outbound trunk.
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceDeleteOutboundTrunk` operationId).
+	TelephonyServiceDeleteOutboundTrunk(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceGetOutboundTrunk GetOutboundTrunk
+	//
+	// Returns an outbound trunk of the project.
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceGetOutboundTrunk` operationId).
+	TelephonyServiceGetOutboundTrunk(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceUpdateOutboundTrunkWithBody UpdateOutboundTrunk
+	//
+	// Replaces an outbound trunk, or changes some of its fields.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceUpdateOutboundTrunk` operationId).
+	TelephonyServiceUpdateOutboundTrunkWithBody(ctx context.Context, projectId string, trunkId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceUpdateOutboundTrunk UpdateOutboundTrunk
+	//
+	// Replaces an outbound trunk, or changes some of its fields.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceUpdateOutboundTrunk` operationId).
+	TelephonyServiceUpdateOutboundTrunk(ctx context.Context, projectId string, trunkId string, body TelephonyServiceUpdateOutboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceCreateSIPParticipantWithBody CreateSIPParticipant
+	//
+	// Calls a phone number or a SIP URI through an outbound trunk, and adds
+	//  the call to a room as a SIP participant. With `waitUntilAnswered`, the
+	//  call returns when the far end answers, up to `ringingTimeout`, which can
+	//  then be at most 75 seconds. When the
+	//  far end refuses the call, such as with 486 Busy Here, the call fails with
+	//  `FailedPrecondition`, and the error has its SIP status as a
+	//  `livekit.SIPStatus` detail.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/participants (the `TelephonyServiceCreateSIPParticipant` operationId).
+	TelephonyServiceCreateSIPParticipantWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceCreateSIPParticipant CreateSIPParticipant
+	//
+	// Calls a phone number or a SIP URI through an outbound trunk, and adds
+	//  the call to a room as a SIP participant. With `waitUntilAnswered`, the
+	//  call returns when the far end answers, up to `ringingTimeout`, which can
+	//  then be at most 75 seconds. When the
+	//  far end refuses the call, such as with 486 Busy Here, the call fails with
+	//  `FailedPrecondition`, and the error has its SIP status as a
+	//  `livekit.SIPStatus` detail.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/participants (the `TelephonyServiceCreateSIPParticipant` operationId).
+	TelephonyServiceCreateSIPParticipant(ctx context.Context, projectId string, body TelephonyServiceCreateSIPParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceTransferSIPParticipantWithBody TransferSIPParticipant
+	//
+	// Transfers the call of a SIP participant to another phone number or SIP
+	//  URI, and returns when the transfer ends. Its `ringingTimeout` can be at
+	//  most 75 seconds. A transfer that fails, such as
+	//  one that nobody answers, fails with `FailedPrecondition`, and the error
+	//  has a `livekit.SIPTransferError` detail with the reason.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/participants:transfer (the `TelephonyServiceTransferSIPParticipant` operationId).
+	TelephonyServiceTransferSIPParticipantWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TelephonyServiceTransferSIPParticipant TransferSIPParticipant
+	//
+	// Transfers the call of a SIP participant to another phone number or SIP
+	//  URI, and returns when the transfer ends. Its `ringingTimeout` can be at
+	//  most 75 seconds. A transfer that fails, such as
+	//  one that nobody answers, fails with `FailedPrecondition`, and the error
+	//  has a `livekit.SIPTransferError` detail with the reason.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/participants:transfer (the `TelephonyServiceTransferSIPParticipant` operationId).
+	TelephonyServiceTransferSIPParticipant(ctx context.Context, projectId string, body TelephonyServiceTransferSIPParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateTokenWithBody CreateToken
 	//
-	// Mints a short-lived LiveKit access token for the project, signed
-	//  server-side, so user-authenticated clients can call LiveKit server APIs
-	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Creates a short-lived LiveKit access token for the project. The API signs
+	//  the token, so a signed-in user can call the LiveKit server APIs, such as
+	//  rooms, SIP, and egress, or join a room without an API secret.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6533,9 +10151,9 @@ type ClientInterface interface {
 
 	// ProjectServiceCreateToken CreateToken
 	//
-	// Mints a short-lived LiveKit access token for the project, signed
-	//  server-side, so user-authenticated clients can call LiveKit server APIs
-	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Creates a short-lived LiveKit access token for the project. The API signs
+	//  the token, so a signed-in user can call the LiveKit server APIs, such as
+	//  rooms, SIP, and egress, or join a room without an API secret.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6544,17 +10162,29 @@ type ClientInterface interface {
 
 	// ProjectServiceListWebhookEvents ListWebhookEvents
 	//
+	// Lists the event names that the webhooks of a project can receive. The list
+	//  is always one page.
+	//
 	// Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
-	ProjectServiceListWebhookEvents(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceListWebhookEvents(ctx context.Context, projectId string, params *ProjectServiceListWebhookEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceListWebhooks ListWebhooks
 	//
-	// Lists the project's webhook destinations.
+	// Lists the webhook destinations for the project, in the order that they
+	//  were added. The list is always one page.
 	//
 	// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
-	ProjectServiceListWebhooks(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProjectServiceListWebhooks(ctx context.Context, projectId string, params *ProjectServiceListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceCreateWebhookWithBody CreateWebhook
+	//
+	// Creates a webhook destination for a project. A `url` that is not an absolute
+	//  HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
+	//  in `filterParams` that `ListWebhookEvents` does not return, or a
+	//  `signingKey` that is not an API key of the project, also returns
+	//  `InvalidArgument`. When `signingKey` is empty and the project has no API key,
+	//  the request fails with `FailedPrecondition`. The call is not idempotent: a
+	//  retry creates a second webhook.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6563,6 +10193,14 @@ type ClientInterface interface {
 
 	// ProjectServiceCreateWebhook CreateWebhook
 	//
+	// Creates a webhook destination for a project. A `url` that is not an absolute
+	//  HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
+	//  in `filterParams` that `ListWebhookEvents` does not return, or a
+	//  `signingKey` that is not an API key of the project, also returns
+	//  `InvalidArgument`. When `signingKey` is empty and the project has no API key,
+	//  the request fails with `FailedPrecondition`. The call is not idempotent: a
+	//  retry creates a second webhook.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
@@ -6570,10 +10208,20 @@ type ClientInterface interface {
 
 	// ProjectServiceDeleteWebhook DeleteWebhook
 	//
+	// Deletes a webhook destination from a project. The project stops sending
+	//  events to its URL. A webhook that does not exist returns `NotFound`, so a
+	//  retry returns `NotFound`.
+	//
 	// Corresponds with DELETE /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceDeleteWebhook` operationId).
 	ProjectServiceDeleteWebhook(ctx context.Context, projectId string, webhookId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceUpdateWebhookWithBody UpdateWebhook
+	//
+	// Updates a webhook destination of a project, and returns the updated webhook.
+	//  A field that you do not set keeps its value. A set `filterParams` replaces
+	//  the whole filter. The checks of `CreateWebhook` apply to the new values, and
+	//  a failed check returns `InvalidArgument`. A webhook that does not exist
+	//  returns `NotFound`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6582,12 +10230,27 @@ type ClientInterface interface {
 
 	// ProjectServiceUpdateWebhook UpdateWebhook
 	//
+	// Updates a webhook destination of a project, and returns the updated webhook.
+	//  A field that you do not set keeps its value. A set `filterParams` replaces
+	//  the whole filter. The checks of `CreateWebhook` apply to the new values, and
+	//  a failed check returns `InvalidArgument`. A webhook that does not exist
+	//  returns `NotFound`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
 	ProjectServiceUpdateWebhook(ctx context.Context, projectId string, webhookId string, body ProjectServiceUpdateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ProjectServiceSendTestWebhookWithBody SendTestWebhook
+	//
+	// Sends one sample event to a webhook destination, and returns the answer of
+	//  the receiver. The API sends only to this webhook, ignores the webhook filter,
+	//  and signs the request as it signs real deliveries. When the signing key of
+	//  the webhook is not an API key of the project, the API signs with the oldest
+	//  API key. The API makes one attempt and waits up to 10 seconds. A failed
+	//  delivery shows in the response, not as an error. An `event` that
+	//  `ListWebhookEvents` does not return gets `InvalidArgument`. A webhook that
+	//  does not exist returns `NotFound`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6596,6 +10259,15 @@ type ClientInterface interface {
 
 	// ProjectServiceSendTestWebhook SendTestWebhook
 	//
+	// Sends one sample event to a webhook destination, and returns the answer of
+	//  the receiver. The API sends only to this webhook, ignores the webhook filter,
+	//  and signs the request as it signs real deliveries. When the signing key of
+	//  the webhook is not an API key of the project, the API signs with the oldest
+	//  API key. The API makes one attempt and waits up to 10 seconds. A failed
+	//  delivery shows in the response, not as an error. An `event` that
+	//  `ListWebhookEvents` does not return gets `InvalidArgument`. A webhook that
+	//  does not exist returns `NotFound`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
@@ -6603,25 +10275,59 @@ type ClientInterface interface {
 
 	// UserServiceListUsers ListUsers
 	//
+	// Lists the members of a project or a workspace, ordered by user ID. The list
+	//  does not include pending invitees. Set `projectId`, `workspaceId`, or both.
+	//  When you set neither, the request fails with `InvalidArgument`.
+	//
 	// Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
 	UserServiceListUsers(ctx context.Context, params *UserServiceListUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UserServiceGetCurrentUser GetCurrentUser
 	//
+	// Returns the user that you are signed in as.
+	//
 	// Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 	UserServiceGetCurrentUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UserServiceRevokeSessionToken RevokeSessionToken
+	//
+	// Revokes the session token that you call with, and signs you out. After
+	//  this call, the token gets `Unauthenticated` on every call, a retry of this
+	//  call included. Your other session tokens stay valid. Access tokens that
+	//  `CreateToken` returned stay valid until they expire.
+	//
+	// Corresponds with DELETE /v0/users/me/session-token (the `UserServiceRevokeSessionToken` operationId).
+	UserServiceRevokeSessionToken(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UserServiceGetUser GetUser
+	//
+	// Returns a user by ID. You can get yourself, or a user who is a member of a
+	//  workspace or a project that you are a member of. Any other user returns
+	//  `NotFound`, the same as a user who does not exist.
 	//
 	// Corresponds with GET /v0/users/{userId} (the `UserServiceGetUser` operationId).
 	UserServiceGetUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetInvite GetInvite
 	//
+	// Returns a workspace invite that was sent to you, found by its token. Use it
+	//  to show the invite before you answer it with `AnswerInvite`. An invite that
+	//  was sent to a different email address returns `PermissionDenied`. An expired
+	//  invite returns `FailedPrecondition`. An unknown token returns `NotFound`.
+	//
 	// Corresponds with GET /v0/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
 	WorkspaceServiceGetInvite(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceAnswerInviteWithBody AnswerInvite
+	//
+	// Accepts or declines a workspace invite that was sent to you. When you accept,
+	//  you become a member of the workspace and of every project in it where
+	//  `isPrivate` is `false`, with the role of the invite. If you are already a
+	//  member, the role of the invite replaces your role. The API also deletes your
+	//  pending invites to those projects. When you decline, the API deletes the
+	//  invite. After you answer, the token stops working, so a retry returns
+	//  `NotFound`. An invite that was sent to a different email address returns
+	//  `PermissionDenied`. An expired invite returns `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6630,6 +10336,15 @@ type ClientInterface interface {
 
 	// WorkspaceServiceAnswerInvite AnswerInvite
 	//
+	// Accepts or declines a workspace invite that was sent to you. When you accept,
+	//  you become a member of the workspace and of every project in it where
+	//  `isPrivate` is `false`, with the role of the invite. If you are already a
+	//  member, the role of the invite replaces your role. The API also deletes your
+	//  pending invites to those projects. When you decline, the API deletes the
+	//  invite. After you answer, the token stops working, so a retry returns
+	//  `NotFound`. An invite that was sent to a different email address returns
+	//  `PermissionDenied`. An expired invite returns `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
@@ -6637,10 +10352,18 @@ type ClientInterface interface {
 
 	// WorkspaceServiceListWorkspaces ListWorkspaces
 	//
+	// Lists the workspaces that you are a member of, ordered by workspace ID. A
+	//  pending invite does not make you a member.
+	//
 	// Corresponds with GET /v0/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
 	WorkspaceServiceListWorkspaces(ctx context.Context, params *WorkspaceServiceListWorkspacesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateWorkspaceWithBody CreateWorkspace
+	//
+	// Creates a workspace. You become its only member, with the admin role (`3`).
+	//  The workspace has no projects: to add one, call `CreateProject`. An empty
+	//  `name` returns `InvalidArgument`. The call is not idempotent: a retry
+	//  creates a second workspace.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6649,6 +10372,11 @@ type ClientInterface interface {
 
 	// WorkspaceServiceCreateWorkspace CreateWorkspace
 	//
+	// Creates a workspace. You become its only member, with the admin role (`3`).
+	//  The workspace has no projects: to add one, call `CreateProject`. An empty
+	//  `name` returns `InvalidArgument`. The call is not idempotent: a retry
+	//  creates a second workspace.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
@@ -6656,15 +10384,25 @@ type ClientInterface interface {
 
 	// WorkspaceServiceDeleteWorkspace DeleteWorkspace
 	//
+	// Deletes a workspace, with its members and its pending invites. A workspace
+	//  that has projects returns `FailedPrecondition`: delete its projects first.
+	//  You cannot undo the delete. A retry returns `NotFound`.
+	//
 	// Corresponds with DELETE /v0/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
 	WorkspaceServiceDeleteWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetWorkspace GetWorkspace
 	//
+	// Returns a workspace. A workspace that you are not a member of returns
+	//  `NotFound`.
+	//
 	// Corresponds with GET /v0/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
 	WorkspaceServiceGetWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceUpdateWorkspaceWithBody UpdateWorkspace
+	//
+	// Changes the name or the MCP policy of a workspace, and returns the updated
+	//  workspace. A field that is unset does not change.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6673,6 +10411,9 @@ type ClientInterface interface {
 
 	// WorkspaceServiceUpdateWorkspace UpdateWorkspace
 	//
+	// Changes the name or the MCP policy of a workspace, and returns the updated
+	//  workspace. A field that is unset does not change.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
@@ -6680,10 +10421,19 @@ type ClientInterface interface {
 
 	// WorkspaceServiceListInvites ListInvites
 	//
+	// Lists the unexpired invites of a workspace, ordered by email.
+	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
-	WorkspaceServiceListInvites(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	WorkspaceServiceListInvites(ctx context.Context, workspaceId string, params *WorkspaceServiceListInvitesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateInviteWithBody CreateInvite
+	//
+	// Invites a person to a workspace by email, with a role. The API sends an email
+	//  with the invite link, and the response has the invite token. The invite
+	//  expires after 48 hours. When an unexpired invite for the email exists, the
+	//  API sends that invite again: its token, role, and expiry do not change. On
+	//  a plan that allows only the admin role (`3`), the roles `1` and `2` return
+	//  `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6692,6 +10442,13 @@ type ClientInterface interface {
 
 	// WorkspaceServiceCreateInvite CreateInvite
 	//
+	// Invites a person to a workspace by email, with a role. The API sends an email
+	//  with the invite link, and the response has the invite token. The invite
+	//  expires after 48 hours. When an unexpired invite for the email exists, the
+	//  API sends that invite again: its token, role, and expiry do not change. On
+	//  a plan that allows only the admin role (`3`), the roles `1` and `2` return
+	//  `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
@@ -6699,27 +10456,46 @@ type ClientInterface interface {
 
 	// WorkspaceServiceDeleteInvite DeleteInvite
 	//
+	// Deletes a pending workspace invite, so that its link stops working. When no
+	//  invite exists for the email, the call succeeds and changes nothing.
+	//
 	// Corresponds with DELETE /v0/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
 	WorkspaceServiceDeleteInvite(ctx context.Context, workspaceId string, email string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceListMembers ListMembers
 	//
-	// Lists the workspace's members.
+	// Lists the workspace members, ordered by user ID.
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
-	WorkspaceServiceListMembers(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	WorkspaceServiceListMembers(ctx context.Context, workspaceId string, params *WorkspaceServiceListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceDeleteMember DeleteMember
+	//
+	// Removes a user from a workspace and from every project in it, and deletes
+	//  the API keys that the user owns in those projects. Agent keys stay. Send
+	//  `confirmedNumKeys` to confirm the number of keys to delete. A removal that
+	//  deletes the last API key of a project returns `FailedPrecondition` and
+	//  changes nothing. A user who is not a member returns `NotFound`. The response
+	//  has the number of keys that the removal deleted.
 	//
 	// Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
 	WorkspaceServiceDeleteMember(ctx context.Context, workspaceId string, userId string, params *WorkspaceServiceDeleteMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetMember GetMember
 	//
+	// Returns the membership of one user on a workspace, with the role of the
+	//  user. A user who is not a member of the workspace returns `NotFound`.
+	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
 	WorkspaceServiceGetMember(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceUpdateMemberWithBody UpdateMember
+	//
+	// Changes the workspace role of a member. The API also changes the role of the
+	//  user on every project in the workspace where `isPrivate` is `false`. The
+	//  projects where `isPrivate` is `true` keep their roles. A user who is not a
+	//  member returns `NotFound`. On a plan that allows only the admin role (`3`),
+	//  the roles `1` and `2` return `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6728,6 +10504,12 @@ type ClientInterface interface {
 
 	// WorkspaceServiceUpdateMember UpdateMember
 	//
+	// Changes the workspace role of a member. The API also changes the role of the
+	//  user on every project in the workspace where `isPrivate` is `false`. The
+	//  projects where `isPrivate` is `true` keep their roles. A user who is not a
+	//  member returns `NotFound`. On a plan that allows only the admin role (`3`),
+	//  the roles `1` and `2` return `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
@@ -6735,13 +10517,21 @@ type ClientInterface interface {
 
 	// WorkspaceServiceListProjects ListProjects
 	//
-	// The projects in a workspace. These return the same Project message as
-	//  the project endpoints.
+	// Lists the projects in a workspace. The items are the same `Project`
+	//  message that `ProjectService` returns.
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 	WorkspaceServiceListProjects(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceCreateProjectWithBody CreateProject
+	//
+	// Creates a project in a workspace. Send the project as the request body. The
+	//  rules and errors of `ProjectService.CreateProject` apply. You become a
+	//  member of the project with the admin role (`3`), and the API creates an API
+	//  key that you own. When `isPrivate` is `false`, every member of the
+	//  workspace becomes a member of the project, with their workspace role. The
+	//  call is not idempotent: when `subdomain` is empty, a retry creates a second
+	//  project.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6750,6 +10540,14 @@ type ClientInterface interface {
 
 	// WorkspaceServiceCreateProject CreateProject
 	//
+	// Creates a project in a workspace. Send the project as the request body. The
+	//  rules and errors of `ProjectService.CreateProject` apply. You become a
+	//  member of the project with the admin role (`3`), and the API creates an API
+	//  key that you own. When `isPrivate` is `false`, every member of the
+	//  workspace becomes a member of the project, with their workspace role. The
+	//  call is not idempotent: when `subdomain` is empty, a retry creates a second
+	//  project.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
@@ -6757,16 +10555,30 @@ type ClientInterface interface {
 
 	// WorkspaceServiceDeleteProject DeleteProject
 	//
+	// Deletes a project in a workspace, with its API keys, its webhooks, and its
+	//  member list. You cannot undo the delete. A project that is not in the
+	//  workspace returns `NotFound`, and a retry returns `NotFound`.
+	//
 	// Corresponds with DELETE /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
 	WorkspaceServiceDeleteProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// WorkspaceServiceGetProject GetProject
+	//
+	// Returns a project in a workspace, with its settings and its webhooks. A
+	//  project that is not in the workspace, or that you cannot see, returns
+	//  `NotFound`.
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 	WorkspaceServiceGetProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ProjectServiceGetInvite GetInvite
+//
+// Returns a project invite that was sent to you, found by its token. Use it to
+//
+//	show the invite before you answer it with `AnswerInvitation`. An invite that
+//	was sent to a different email address returns `PermissionDenied`. An expired
+//	invite returns `FailedPrecondition`. An unknown token returns `NotFound`.
 //
 // Corresponds with GET /v0/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
 func (c *Client) ProjectServiceGetInvite(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6782,6 +10594,17 @@ func (c *Client) ProjectServiceGetInvite(ctx context.Context, inviteToken string
 }
 
 // ProjectServiceAnswerInvitationWithBody AnswerInvitation
+//
+// Accepts or declines a project invite that was sent to you. When you accept,
+//
+//	you become a member of the project with the role of the invite. When the
+//	project is in a workspace, you also become a member of the workspace and of
+//	every project in it where `isPrivate` is `false`, with the same role. If you
+//	are already a member, the role of the invite replaces your role. When you
+//	decline, the API deletes the invite. After you answer, the token stops
+//	working, so a retry returns `NotFound`. An invite that was sent to a
+//	different email address returns `PermissionDenied`. An expired invite
+//	returns `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -6800,6 +10623,17 @@ func (c *Client) ProjectServiceAnswerInvitationWithBody(ctx context.Context, inv
 
 // ProjectServiceAnswerInvitation AnswerInvitation
 //
+// Accepts or declines a project invite that was sent to you. When you accept,
+//
+//	you become a member of the project with the role of the invite. When the
+//	project is in a workspace, you also become a member of the workspace and of
+//	every project in it where `isPrivate` is `false`, with the same role. If you
+//	are already a member, the role of the invite replaces your role. When you
+//	decline, the API deletes the invite. After you answer, the token stops
+//	working, so a retry returns `NotFound`. An invite that was sent to a
+//	different email address returns `PermissionDenied`. An expired invite
+//	returns `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
@@ -6817,6 +10651,11 @@ func (c *Client) ProjectServiceAnswerInvitation(ctx context.Context, inviteToken
 
 // ProjectServiceListProjects ListProjects
 //
+// Lists projects, ordered by project ID. When you set no filter, the list has
+//
+//	the projects that you are a member of. A pending invite does not make you a
+//	member.
+//
 // Corresponds with GET /v0/projects (the `ProjectServiceListProjects` operationId).
 func (c *Client) ProjectServiceListProjects(ctx context.Context, params *ProjectServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceListProjectsRequest(c.Server, params)
@@ -6831,6 +10670,18 @@ func (c *Client) ProjectServiceListProjects(ctx context.Context, params *Project
 }
 
 // ProjectServiceCreateProjectWithBody CreateProject
+//
+// Creates a project. You become a member of the project with the admin role
+//
+//	(`3`), and the API creates an API key that you own. When `workspaceId` is
+//	empty, the API also creates a workspace with the same name as the project,
+//	and you are its only member. When `isPrivate` is `false` and you set
+//	`workspaceId`, every member of the workspace becomes a member of the project,
+//	with their workspace role. A `subdomain` that another project uses returns
+//	`AlreadyExists`. When you reach the limit of free projects that you can
+//	create, or the project limit of the workspace plan, the request fails with
+//	`FailedPrecondition`. The call is not idempotent: when `subdomain` is empty,
+//	a retry creates a second project.
 //
 // Takes any type of body and a specified content type.
 //
@@ -6849,6 +10700,18 @@ func (c *Client) ProjectServiceCreateProjectWithBody(ctx context.Context, conten
 
 // ProjectServiceCreateProject CreateProject
 //
+// Creates a project. You become a member of the project with the admin role
+//
+//	(`3`), and the API creates an API key that you own. When `workspaceId` is
+//	empty, the API also creates a workspace with the same name as the project,
+//	and you are its only member. When `isPrivate` is `false` and you set
+//	`workspaceId`, every member of the workspace becomes a member of the project,
+//	with their workspace role. A `subdomain` that another project uses returns
+//	`AlreadyExists`. When you reach the limit of free projects that you can
+//	create, or the project limit of the workspace plan, the request fails with
+//	`FailedPrecondition`. The call is not idempotent: when `subdomain` is empty,
+//	a retry creates a second project.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
@@ -6866,6 +10729,11 @@ func (c *Client) ProjectServiceCreateProject(ctx context.Context, body ProjectSe
 
 // ProjectServiceDeleteProject DeleteProject
 //
+// Deletes a project, with its API keys, its webhooks, and its member list. You
+//
+//	cannot undo the delete. Another project can then use the subdomain. A retry
+//	returns `NotFound`.
+//
 // Corresponds with DELETE /v0/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
 func (c *Client) ProjectServiceDeleteProject(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceDeleteProjectRequest(c.Server, projectId)
@@ -6881,6 +10749,10 @@ func (c *Client) ProjectServiceDeleteProject(ctx context.Context, projectId stri
 
 // ProjectServiceGetProject GetProject
 //
+// Returns a project with its settings and its webhooks. A project that you
+//
+//	cannot see returns `NotFound`.
+//
 // Corresponds with GET /v0/projects/{projectId} (the `ProjectServiceGetProject` operationId).
 func (c *Client) ProjectServiceGetProject(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceGetProjectRequest(c.Server, projectId)
@@ -6895,6 +10767,17 @@ func (c *Client) ProjectServiceGetProject(ctx context.Context, projectId string,
 }
 
 // ProjectServiceUpdateProjectWithBody UpdateProject
+//
+// Updates the settings of a project, and returns the updated project. A field
+//
+//	that you do not set keeps its value. When you change `isPrivate` from
+//	`false` to `true`, the API removes every member of the project except you
+//	and the users in `members`, and you get the admin role (`3`). When you
+//	change `isPrivate` from `true` to `false`, every member of the workspace
+//	becomes a member of the project, with their workspace role. A user in
+//	`members` who is not a member of the workspace
+//	returns `NotFound`. A `subdomain` that another project uses returns
+//	`AlreadyExists`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -6913,6 +10796,17 @@ func (c *Client) ProjectServiceUpdateProjectWithBody(ctx context.Context, projec
 
 // ProjectServiceUpdateProject UpdateProject
 //
+// Updates the settings of a project, and returns the updated project. A field
+//
+//	that you do not set keeps its value. When you change `isPrivate` from
+//	`false` to `true`, the API removes every member of the project except you
+//	and the users in `members`, and you get the admin role (`3`). When you
+//	change `isPrivate` from `true` to `false`, every member of the workspace
+//	becomes a member of the project, with their workspace role. A user in
+//	`members` who is not a member of the workspace
+//	returns `NotFound`. A `subdomain` that another project uses returns
+//	`AlreadyExists`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
@@ -6928,13 +10822,16 @@ func (c *Client) ProjectServiceUpdateProject(ctx context.Context, projectId stri
 	return c.Client.Do(req)
 }
 
-// AnalyticsServiceGetProjectAnalytics GetProjectAnalytics
+// BuilderAgentServiceListBuilderAgents ListBuilderAgents
 //
-// Returns the project overview over a time range.
+// Lists the builder agents of a project by name, with the deployment status
 //
-// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
-func (c *Client) AnalyticsServiceGetProjectAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAnalyticsServiceGetProjectAnalyticsRequest(c.Server, projectId, params)
+//	of each. The list does not include configurations. To get the
+//	configuration of an agent, call `GetBuilderAgent`.
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
+func (c *Client) BuilderAgentServiceListBuilderAgents(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceListBuilderAgentsRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6945,71 +10842,23 @@ func (c *Client) AnalyticsServiceGetProjectAnalytics(ctx context.Context, projec
 	return c.Client.Do(req)
 }
 
-// AnalyticsServiceListAgentAnalytics ListAgentAnalytics
+// BuilderAgentServiceCreateBuilderAgentWithBody CreateBuilderAgent
 //
-// Returns the same per-agent analytics for every agent in the project, one
+// Creates a builder agent from a name and a configuration. The agent is not
 //
-//	AgentAnalytics row per agent — so a single agent and the whole roster share
-//	one shape.
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
-func (c *Client) AnalyticsServiceListAgentAnalytics(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAnalyticsServiceListAgentAnalyticsRequest(c.Server, projectId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// AnalyticsServiceGetAgentAnalytics GetAgentAnalytics
-//
-// Returns the analytics for one agent over a time range.
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
-func (c *Client) AnalyticsServiceGetAgentAnalytics(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAnalyticsServiceGetAgentAnalyticsRequest(c.Server, projectId, agentId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DatabaseServiceListDatabases ListDatabases
-//
-// Lists the project's databases, cursor-paginated.
-//
-// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
-func (c *Client) DatabaseServiceListDatabases(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceListDatabasesRequest(c.Server, projectId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DatabaseServiceCreateDatabaseWithBody CreateDatabase
-//
-// Creates an empty database. Not idempotent: a retried request creates a
-//
-//	second database.
+//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
+//	properties take their default, and unknown properties are ignored. A
+//	configuration that is not valid fails with `InvalidArgument` and a
+//	`google.rpc.BadRequest` detail. It has a field violation for each
+//	problem, up to 100, which names a field, such as
+//	`config.httpTools[0].url`, and what is wrong with it. A config with more
+//	problems gets one last violation for `config` that says how many more.
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-func (c *Client) DatabaseServiceCreateDatabaseWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceCreateDatabaseRequestWithBody(c.Server, projectId, contentType, body)
+// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceCreateBuilderAgentWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7020,17 +10869,23 @@ func (c *Client) DatabaseServiceCreateDatabaseWithBody(ctx context.Context, proj
 	return c.Client.Do(req)
 }
 
-// DatabaseServiceCreateDatabase CreateDatabase
+// BuilderAgentServiceCreateBuilderAgent CreateBuilderAgent
 //
-// Creates an empty database. Not idempotent: a retried request creates a
+// Creates a builder agent from a name and a configuration. The agent is not
 //
-//	second database.
+//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
+//	properties take their default, and unknown properties are ignored. A
+//	configuration that is not valid fails with `InvalidArgument` and a
+//	`google.rpc.BadRequest` detail. It has a field violation for each
+//	problem, up to 100, which names a field, such as
+//	`config.httpTools[0].url`, and what is wrong with it. A config with more
+//	problems gets one last violation for `config` that says how many more.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-func (c *Client) DatabaseServiceCreateDatabase(ctx context.Context, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceCreateDatabaseRequest(c.Server, projectId, body)
+// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceCreateBuilderAgent(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceCreateBuilderAgentRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7041,13 +10896,13 @@ func (c *Client) DatabaseServiceCreateDatabase(ctx context.Context, projectId st
 	return c.Client.Do(req)
 }
 
-// DatabaseServiceDeleteDatabase DeleteDatabase
+// BuilderAgentServiceDeleteBuilderAgent DeleteBuilderAgent
 //
-// Deletes the stored data, not just the metadata.
+// Deletes a builder agent, its versions, and its deployment.
 //
-// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
-func (c *Client) DatabaseServiceDeleteDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceDeleteDatabaseRequest(c.Server, projectId, databaseId)
+// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceDeleteBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceDeleteBuilderAgentRequest(c.Server, projectId, builderAgentId)
 	if err != nil {
 		return nil, err
 	}
@@ -7058,11 +10913,15 @@ func (c *Client) DatabaseServiceDeleteDatabase(ctx context.Context, projectId st
 	return c.Client.Do(req)
 }
 
-// DatabaseServiceGetDatabase GetDatabase
+// BuilderAgentServiceGetBuilderAgent GetBuilderAgent
 //
-// Corresponds with GET /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceGetDatabase` operationId).
-func (c *Client) DatabaseServiceGetDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceGetDatabaseRequest(c.Server, projectId, databaseId)
+// Returns a builder agent with its current configuration and its deployment
+//
+//	status.
+//
+// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceGetBuilderAgent(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceGetBuilderAgentRequest(c.Server, projectId, builderAgentId)
 	if err != nil {
 		return nil, err
 	}
@@ -7073,13 +10932,90 @@ func (c *Client) DatabaseServiceGetDatabase(ctx context.Context, projectId strin
 	return c.Client.Do(req)
 }
 
-// DatabaseServiceExportDatabase ExportDatabase
+// BuilderAgentServiceUpdateBuilderAgentWithBody UpdateBuilderAgent
 //
-// Exports a consistent SQLite file as a time-limited download URL.
+// Replaces the configuration of a builder agent. Each update makes a new
 //
-// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
-func (c *Client) DatabaseServiceExportDatabase(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDatabaseServiceExportDatabaseRequest(c.Server, projectId, databaseId)
+//	version. The running agent does not change until you deploy again. A
+//	configuration that is not valid fails as it does in
+//	`CreateBuilderAgent`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceUpdateBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(c.Server, projectId, builderAgentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceUpdateBuilderAgent UpdateBuilderAgent
+//
+// Replaces the configuration of a builder agent. Each update makes a new
+//
+//	version. The running agent does not change until you deploy again. A
+//	configuration that is not valid fails as it does in
+//	`CreateBuilderAgent`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceUpdateBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceUpdateBuilderAgentRequest(c.Server, projectId, builderAgentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceDeployBuilderAgentWithBody DeployBuilderAgent
+//
+// Starts a deployment of the current configuration of a builder agent, or of
+//
+//	an earlier version. The call returns when the build starts, with the
+//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+//	returns. Call `GetBuilderAgent` to follow the deployment until its status
+//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceDeployBuilderAgentWithBody(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(c.Server, projectId, builderAgentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BuilderAgentServiceDeployBuilderAgent DeployBuilderAgent
+//
+// Starts a deployment of the current configuration of a builder agent, or of
+//
+//	an earlier version. The call returns when the build starts, with the
+//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+//	returns. Call `GetBuilderAgent` to follow the deployment until its status
+//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+func (c *Client) BuilderAgentServiceDeployBuilderAgent(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBuilderAgentServiceDeployBuilderAgentRequest(c.Server, projectId, builderAgentId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7092,9 +11028,11 @@ func (c *Client) DatabaseServiceExportDatabase(ctx context.Context, projectId st
 
 // ProjectServiceListInvites ListInvites
 //
+// Lists the unexpired invites of a project, ordered by email.
+//
 // Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
-func (c *Client) ProjectServiceListInvites(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListInvitesRequest(c.Server, projectId)
+func (c *Client) ProjectServiceListInvites(ctx context.Context, projectId string, params *ProjectServiceListInvitesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListInvitesRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7106,6 +11044,14 @@ func (c *Client) ProjectServiceListInvites(ctx context.Context, projectId string
 }
 
 // ProjectServiceInviteMemberWithBody InviteMember
+//
+// Invites a person to a project by email, with a role. The API sends an email
+//
+//	with the invite link, and the response has the invite token. The invite
+//	expires after 48 hours. When an invite for the email exists, the API
+//	replaces its role, token, and expiry, and the earlier link stops working. A
+//	retry replaces the invite and sends a new email. On a plan that allows only
+//	the admin role (`3`), the roles `1` and `2` return `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7124,6 +11070,14 @@ func (c *Client) ProjectServiceInviteMemberWithBody(ctx context.Context, project
 
 // ProjectServiceInviteMember InviteMember
 //
+// Invites a person to a project by email, with a role. The API sends an email
+//
+//	with the invite link, and the response has the invite token. The invite
+//	expires after 48 hours. When an invite for the email exists, the API
+//	replaces its role, token, and expiry, and the earlier link stops working. A
+//	retry replaces the invite and sends a new email. On a plan that allows only
+//	the admin role (`3`), the roles `1` and `2` return `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
@@ -7141,6 +11095,12 @@ func (c *Client) ProjectServiceInviteMember(ctx context.Context, projectId strin
 
 // ProjectServiceDeleteInvite DeleteInvite
 //
+// Deletes a pending project invite, so that its link stops working. When the
+//
+//	project is in a workspace, the API also deletes the workspace invite for the
+//	same email. An invite that does not exist returns `NotFound`. An expired
+//	invite returns `FailedPrecondition`.
+//
 // Corresponds with DELETE /v0/projects/{projectId}/invites/{email} (the `ProjectServiceDeleteInvite` operationId).
 func (c *Client) ProjectServiceDeleteInvite(ctx context.Context, projectId string, email string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceDeleteInviteRequest(c.Server, projectId, email)
@@ -7155,6 +11115,13 @@ func (c *Client) ProjectServiceDeleteInvite(ctx context.Context, projectId strin
 }
 
 // ProjectServiceUpdateInviteWithBody UpdateInvite
+//
+// Changes the role of a pending project invite. The token and the expiry do not
+//
+//	change, and the API sends no email. An invite that does not exist returns
+//	`NotFound`. An expired invite returns `FailedPrecondition`. On a plan that
+//	allows only the admin role (`3`), the roles `1` and `2` return
+//	`FailedPrecondition`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7173,6 +11140,13 @@ func (c *Client) ProjectServiceUpdateInviteWithBody(ctx context.Context, project
 
 // ProjectServiceUpdateInvite UpdateInvite
 //
+// Changes the role of a pending project invite. The token and the expiry do not
+//
+//	change, and the API sends no email. An invite that does not exist returns
+//	`NotFound`. An expired invite returns `FailedPrecondition`. On a plan that
+//	allows only the admin role (`3`), the roles `1` and `2` return
+//	`FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
@@ -7190,6 +11164,10 @@ func (c *Client) ProjectServiceUpdateInvite(ctx context.Context, projectId strin
 
 // ProjectServiceListKeys ListKeys
 //
+// Lists the API keys of a project, oldest first. The list does not include
+//
+//	the secrets.
+//
 // Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
 func (c *Client) ProjectServiceListKeys(ctx context.Context, projectId string, params *ProjectServiceListKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceListKeysRequest(c.Server, projectId, params)
@@ -7205,9 +11183,9 @@ func (c *Client) ProjectServiceListKeys(ctx context.Context, projectId string, p
 
 // ProjectServiceGenerateKeyWithBody GenerateKey
 //
-// Creates an API key and secret for the project. The secret is returned once,
+// Creates an API key and secret for the project. The response includes the
 //
-//	in the response, and cannot be read again.
+//	secret. You cannot read the secret again.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7226,9 +11204,9 @@ func (c *Client) ProjectServiceGenerateKeyWithBody(ctx context.Context, projectI
 
 // ProjectServiceGenerateKey GenerateKey
 //
-// Creates an API key and secret for the project. The secret is returned once,
+// Creates an API key and secret for the project. The response includes the
 //
-//	in the response, and cannot be read again.
+//	secret. You cannot read the secret again.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7247,6 +11225,11 @@ func (c *Client) ProjectServiceGenerateKey(ctx context.Context, projectId string
 
 // ProjectServiceDeleteKey DeleteKey
 //
+// Deletes an API key and its secret from a project. You cannot undo the
+//
+//	delete. A key that does not exist, or that belongs to another project,
+//	returns `NotFound`, so a retry returns `NotFound`.
+//
 // Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
 func (c *Client) ProjectServiceDeleteKey(ctx context.Context, projectId string, apiKey string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceDeleteKeyRequest(c.Server, projectId, apiKey)
@@ -7262,11 +11245,11 @@ func (c *Client) ProjectServiceDeleteKey(ctx context.Context, projectId string, 
 
 // ProjectServiceListMembers ListMembers
 //
-// Lists the project's members.
+// Lists the project members, ordered by user ID.
 //
 // Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
-func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListMembersRequest(c.Server, projectId)
+func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string, params *ProjectServiceListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListMembersRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7278,6 +11261,16 @@ func (c *Client) ProjectServiceListMembers(ctx context.Context, projectId string
 }
 
 // ProjectServiceRemoveMember RemoveMember
+//
+// Removes a user from a project, and deletes the API keys that the user owns in
+//
+//	the project. Agent keys stay. When `isPrivate` is `false` on the project, the
+//	API removes the user from the workspace and from every project in it, and
+//	deletes the keys that the user owns in all of those projects. Send
+//	`confirmedNumKeys` to confirm the number of keys to delete. A removal that
+//	deletes the last API key of a project returns `FailedPrecondition` and
+//	changes nothing. A user who is not a member returns `NotFound`. The response
+//	has the number of keys that the removal deleted.
 //
 // Corresponds with DELETE /v0/projects/{projectId}/members/{userId} (the `ProjectServiceRemoveMember` operationId).
 func (c *Client) ProjectServiceRemoveMember(ctx context.Context, projectId string, userId string, params *ProjectServiceRemoveMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7294,6 +11287,10 @@ func (c *Client) ProjectServiceRemoveMember(ctx context.Context, projectId strin
 
 // ProjectServiceGetMember GetMember
 //
+// Returns the membership of one user on a project, with the role of the user.
+//
+//	A user who is not a member of the project returns `NotFound`.
+//
 // Corresponds with GET /v0/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
 func (c *Client) ProjectServiceGetMember(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceGetMemberRequest(c.Server, projectId, userId)
@@ -7308,6 +11305,15 @@ func (c *Client) ProjectServiceGetMember(ctx context.Context, projectId string, 
 }
 
 // ProjectServiceUpdateMemberWithBody UpdateMember
+//
+// Changes the role of a member of a project. When `isPrivate` is `false` on the
+//
+//	project, the role is the workspace role of the user: the API changes it on
+//	the workspace and on every project in the workspace where `isPrivate` is
+//	`false`. When `isPrivate` is `true`, only this project changes, and the API
+//	sends an email to the member about the new role. A user who is not a member
+//	returns `NotFound`. On a plan that allows only the admin role (`3`), the
+//	roles `1` and `2` return `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7326,6 +11332,15 @@ func (c *Client) ProjectServiceUpdateMemberWithBody(ctx context.Context, project
 
 // ProjectServiceUpdateMember UpdateMember
 //
+// Changes the role of a member of a project. When `isPrivate` is `false` on the
+//
+//	project, the role is the workspace role of the user: the API changes it on
+//	the workspace and on every project in the workspace where `isPrivate` is
+//	`false`. When `isPrivate` is `true`, only this project changes, and the API
+//	sends an email to the member about the new role. A user who is not a member
+//	returns `NotFound`. On a plan that allows only the admin role (`3`), the
+//	roles `1` and `2` return `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
@@ -7342,6 +11357,16 @@ func (c *Client) ProjectServiceUpdateMember(ctx context.Context, projectId strin
 }
 
 // ProjectServiceAddWorkspaceMembersToProjectWithBody AddWorkspaceMembersToProject
+//
+// Adds members of the workspace to a project where `isPrivate` is `true`, all
+//
+//	with one role. A user who is already a member of the project gets the new
+//	role, so a retry gives the same result. The API sends an email to each user
+//	that it adds, except you. A project where `isPrivate` is `false` returns
+//	`InvalidArgument`. A user who is not a member of the workspace returns
+//	`NotFound`, and the API adds no one. On a plan that allows only the admin
+//	role (`3`), the roles `1` and `2` return `FailedPrecondition`. The response
+//	lists the members in no specific order. An empty `userIds` changes nothing.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7360,6 +11385,16 @@ func (c *Client) ProjectServiceAddWorkspaceMembersToProjectWithBody(ctx context.
 
 // ProjectServiceAddWorkspaceMembersToProject AddWorkspaceMembersToProject
 //
+// Adds members of the workspace to a project where `isPrivate` is `true`, all
+//
+//	with one role. A user who is already a member of the project gets the new
+//	role, so a retry gives the same result. The API sends an email to each user
+//	that it adds, except you. A project where `isPrivate` is `false` returns
+//	`InvalidArgument`. A user who is not a member of the workspace returns
+//	`NotFound`, and the API adds no one. On a plan that allows only the admin
+//	role (`3`), the roles `1` and `2` return `FailedPrecondition`. The response
+//	lists the members in no specific order. An empty `userIds` changes nothing.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
@@ -7375,14 +11410,177 @@ func (c *Client) ProjectServiceAddWorkspaceMembersToProject(ctx context.Context,
 	return c.Client.Do(req)
 }
 
+// TelephonyServiceListPhoneNumbers ListPhoneNumbers
+//
+// Lists the phone numbers of the project, newest first.
+//
+// Corresponds with GET /v0/projects/{projectId}/phone-numbers (the `TelephonyServiceListPhoneNumbers` operationId).
+func (c *Client) TelephonyServiceListPhoneNumbers(ctx context.Context, projectId string, params *TelephonyServiceListPhoneNumbersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceListPhoneNumbersRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServicePurchasePhoneNumberWithBody PurchasePhoneNumber
+//
+// Buys a phone number for the project. The number then appears in
+//
+//	`ListPhoneNumbers`. A number that someone else bought first fails with
+//	`AlreadyExists`, and a project at its phone number limit fails with
+//	`FailedPrecondition`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/phone-numbers (the `TelephonyServicePurchasePhoneNumber` operationId).
+func (c *Client) TelephonyServicePurchasePhoneNumberWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServicePurchasePhoneNumberRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServicePurchasePhoneNumber PurchasePhoneNumber
+//
+// Buys a phone number for the project. The number then appears in
+//
+//	`ListPhoneNumbers`. A number that someone else bought first fails with
+//	`AlreadyExists`, and a project at its phone number limit fails with
+//	`FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/phone-numbers (the `TelephonyServicePurchasePhoneNumber` operationId).
+func (c *Client) TelephonyServicePurchasePhoneNumber(ctx context.Context, projectId string, body TelephonyServicePurchasePhoneNumberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServicePurchasePhoneNumberRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceReleasePhoneNumber ReleasePhoneNumber
+//
+// Releases a phone number. The project loses the number, and the API
+//
+//	removes it from each dispatch rule.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceReleasePhoneNumber` operationId).
+func (c *Client) TelephonyServiceReleasePhoneNumber(ctx context.Context, projectId string, phoneNumberId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceReleasePhoneNumberRequest(c.Server, projectId, phoneNumberId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceGetPhoneNumber GetPhoneNumber
+//
+// Returns a phone number of the project.
+//
+// Corresponds with GET /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceGetPhoneNumber` operationId).
+func (c *Client) TelephonyServiceGetPhoneNumber(ctx context.Context, projectId string, phoneNumberId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceGetPhoneNumberRequest(c.Server, projectId, phoneNumberId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceUpdatePhoneNumberWithBody UpdatePhoneNumber
+//
+// Renames a phone number, or adds it to a dispatch rule. To remove a
+//
+//	number from a rule, remove its ID from the `trunkIds` of the rule with
+//	`UpdateDispatchRule`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceUpdatePhoneNumber` operationId).
+func (c *Client) TelephonyServiceUpdatePhoneNumberWithBody(ctx context.Context, projectId string, phoneNumberId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceUpdatePhoneNumberRequestWithBody(c.Server, projectId, phoneNumberId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceUpdatePhoneNumber UpdatePhoneNumber
+//
+// Renames a phone number, or adds it to a dispatch rule. To remove a
+//
+//	number from a rule, remove its ID from the `trunkIds` of the rule with
+//	`UpdateDispatchRule`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceUpdatePhoneNumber` operationId).
+func (c *Client) TelephonyServiceUpdatePhoneNumber(ctx context.Context, projectId string, phoneNumberId string, body TelephonyServiceUpdatePhoneNumberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceUpdatePhoneNumberRequest(c.Server, projectId, phoneNumberId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceSearchPhoneNumbers SearchPhoneNumbers
+//
+// Lists the phone numbers that are for sale in a country. The list is
+//
+//	always one page.
+//
+// Corresponds with GET /v0/projects/{projectId}/phone-numbers:search (the `TelephonyServiceSearchPhoneNumbers` operationId).
+func (c *Client) TelephonyServiceSearchPhoneNumbers(ctx context.Context, projectId string, params *TelephonyServiceSearchPhoneNumbersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceSearchPhoneNumbersRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // SimulationServiceGenerateScenarioFromSessionWithBody GenerateScenarioFromSession
 //
-// Derives a reusable scenario (label, instructions and expectations) from a
+// Generates a scenario (label, instructions, and expectations) from a
 //
-//	recorded room session, for use in a later run's scenarioGroup. Nothing is
-//	stored; the returned scenario is the result. The session must have a
-//	recorded chat history. Each call runs an LLM over it, so it counts against
-//	the project's scenario-generation quota and can take up to about a minute.
+//	recorded room session. Use the scenario in the `scenarioGroup` of a later
+//	run. The API does not save the scenario: the response is the only copy.
+//	The session must have a recorded chat history. Each call runs an LLM on
+//	the chat history, so it counts against the scenario-generation quota of
+//	the project. A call can take up to about one minute.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7401,12 +11599,13 @@ func (c *Client) SimulationServiceGenerateScenarioFromSessionWithBody(ctx contex
 
 // SimulationServiceGenerateScenarioFromSession GenerateScenarioFromSession
 //
-// Derives a reusable scenario (label, instructions and expectations) from a
+// Generates a scenario (label, instructions, and expectations) from a
 //
-//	recorded room session, for use in a later run's scenarioGroup. Nothing is
-//	stored; the returned scenario is the result. The session must have a
-//	recorded chat history. Each call runs an LLM over it, so it counts against
-//	the project's scenario-generation quota and can take up to about a minute.
+//	recorded room session. Use the scenario in the `scenarioGroup` of a later
+//	run. The API does not save the scenario: the response is the only copy.
+//	The session must have a recorded chat history. Each call runs an LLM on
+//	the chat history, so it counts against the scenario-generation quota of
+//	the project. A call can take up to about one minute.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7423,24 +11622,9 @@ func (c *Client) SimulationServiceGenerateScenarioFromSession(ctx context.Contex
 	return c.Client.Do(req)
 }
 
-// ProjectServiceListScopedKeys ListScopedKeys
-//
-// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
-func (c *Client) ProjectServiceListScopedKeys(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListScopedKeysRequest(c.Server, projectId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // AnalyticsServiceListProjectSessions ListProjectSessions
 //
-// Lists room sessions for a project, newest first, cursor-paginated.
+// Lists the room sessions of a project, newest first.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions (the `AnalyticsServiceListProjectSessions` operationId).
 func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projectId string, params *AnalyticsServiceListProjectSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7457,9 +11641,9 @@ func (c *Client) AnalyticsServiceListProjectSessions(ctx context.Context, projec
 
 // AnalyticsServiceGetSession GetSession
 //
-// Returns one room session. The response carries both the list-row `session`
+// Returns one room session. The response has the `session` that the list
 //
-//	and the richer `detail` (participants, per-metric data points).
+//	returns, and a `detail` with the participants and the metric timelines.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7474,32 +11658,35 @@ func (c *Client) AnalyticsServiceGetSession(ctx context.Context, projectId strin
 	return c.Client.Do(req)
 }
 
-// AnalyticsServiceListSessionEvents Lists one room session's events, oldest first by default, cursor-paginated
+// AnalyticsServiceListSessionEvents Lists the events of a room session. Defaults to oldest first. The page info
 //
-//	with no total. With no `types`, it returns the seven the dashboard's events
-//	table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
-//	PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
-//	for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
-//	participant session's events. With `participantSessionId` and no `types`,
-//	it returns the eleven the dashboard's participant events table shows: that
-//	participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-//	PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
-//	TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
-//	TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
+//	has no total.
 //
-// Unlike the dashboard, on purpose: an unknown type or a malformed
+// When `types` is empty, the list has these seven types:
 //
-//	participant session id is InvalidArgument rather than being searched for as
-//	typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
-//	TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
-//	fields, leaving out participants' attributes and metadata and API calls'
-//	request bodies. Each event and participant row still carries the
-//	participant's identity, as the dashboard shows it to every member, and for
-//	a SIP caller that can be a phone number.
+//	`PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`,
+//	`PARTICIPANT_RESUMED`, `ROOM_CREATED`, `ROOM_ENDED`, and `API_CALL`. To get
+//	other types, such as `TRACK_PUBLISHED`, set `types`. To get the events of
+//	one participant session, set `participantSessionId`. When you set
+//	`participantSessionId` and `types` is empty, the list has these eleven
+//	types: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_RESUMED`,
+//	`PARTICIPANT_ACTIVE`, `TRACK_MUTED`, `TRACK_UNMUTED`, `TRACK_PUBLISHED`,
+//	`TRACK_UNPUBLISHED`, `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED`, and
+//	`TRACK_SUBSCRIBE_FAILED`.
 //
-//	Events are kept for 60 days, which can be shorter than the session's other
-//	data, so an older session can list no events. An ACTIVE session lists the
-//	events recorded so far. An unknown session is NotFound.
+//	Each type matches exactly, so `TRACK_PUBLISHED` does not also return
+//	`TRACK_PUBLISHED_UPDATE`. The `payload` of an event has only a fixed set of
+//	fields. It does not include participant attributes, participant metadata,
+//	or the request bodies of API calls. Each event and participant item has the
+//	identity of the participant. For a SIP caller, the identity can be a phone
+//	number.
+//
+//	LiveKit keeps events for 60 days. This can be shorter than the other data
+//	of the session, so an older session can have no events. An `ACTIVE` session
+//	lists the events recorded until now.
+//
+//	Errors: an unknown type or a malformed participant session ID returns
+//	`InvalidArgument`. An unknown session returns `NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7514,20 +11701,22 @@ func (c *Client) AnalyticsServiceListSessionEvents(ctx context.Context, projectI
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionLogs Returns the log records the session's agents exported, in time order: what
+// ObservabilityServiceGetSessionLogs Returns the log records that the agents of a session exported, in time
 //
-//	the dashboard's logs panel shows. Their chat history is left out, since
-//	GetSessionTranscript reads it, and their evaluation results stay in. The
-//	session's events, such as participants joining, come from
-//	AnalyticsService's ListSessionEvents.
+//	order. These are the records that the logs panel on the dashboard shows.
+//	The chat history is not included, because `GetSessionTranscript` returns
+//	it. Evaluation results are included. To get the events of the session, such
+//	as participants that join, use `AnalyticsService.ListSessionEvents`.
 //
-// An ACTIVE session returns what its agents have exported so far. A record
+// An `ACTIVE` session returns the records that its agents exported up to now.
 //
-//	exported mid-read with a time this read has already paged past, earlier
-//	than its cursor's when oldest first, is missed until a new read. An unknown
-//	session is NotFound. A read filtered by logLevels can come back empty
-//	because no record is at those levels, so only an unfiltered one is
-//	ObservabilityDisabled.
+//	While you page through the records, an agent can export a record with a
+//	time that your pages already passed. For example, in oldest-first order, a
+//	record with a time earlier than the cursor position. This read does not
+//	return that record. A new read returns it. An unknown session returns
+//	`NotFound`. A read filtered by `logLevels` can return no records because no
+//	record has those levels. Thus, only a read with no filter returns the
+//	`ObservabilityDisabled` error.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7542,33 +11731,36 @@ func (c *Client) ObservabilityServiceGetSessionLogs(ctx context.Context, project
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points the session's agents exported, by
+// ObservabilityServiceGetSessionMetrics Returns the OpenTelemetry metric points that the agents of a session
 //
-//	time, typed: turn latencies such as lk.agents.turn.e2e_latency and
-//	lk.agents.turn.llm_ttft, token and duration usage such as
-//	lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
-//	any metrics the agent's own code recorded.
+//	exported, ordered by time. The points include turn latencies, such as
+//	`lk.agents.turn.e2e_latency` and `lk.agents.turn.llm_ttft`, token and
+//	duration usage, such as `lk.agents.usage.llm_input_tokens`, and the
+//	`gen_ai.*` histograms. They also include the metrics that the agent's own
+//	code recorded.
 //
-// These are the raw metrics agents emit, so they won't exactly match the
+// These are the raw metrics that agents export. They do not exactly match the
 //
-//	dashboard's metrics panel, which derives its numbers from the transcript
-//	and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-//	produce them: an agent whose code installs its own MeterProvider exports
-//	none to LiveKit Cloud, and its sessions return no points.
+//	metrics panel on the dashboard, which calculates its values from the
+//	transcript and traces. Only an agent that exports OpenTelemetry metrics to
+//	LiveKit Cloud has points. An agent whose code installs its own
+//	`MeterProvider` exports no metrics to LiveKit Cloud, and its sessions
+//	return no points.
 //
-//	Some points aren't labeled as their agent exported them. LiveKit Cloud
-//	groups a session's series by their attributes alone and names each group
-//	after its first row, so: - several metrics can come back under one name,
-//	such as an LLM's input, output and cached token counts, all named
-//	lk.agents.usage.llm_input_tokens; - points of one series at the same time
-//	that recorded equal values collapse into one point; - with two agents in
-//	one session, a point can carry the other agent's resource attributes.
+//	Some points do not have the labels that their agent exported. LiveKit Cloud
+//	groups the series of a session by their attributes only, and gives each
+//	group the name of its first point. This has these results. Several metrics
+//	can have one name. For example, the input, output, and cached token counts
+//	of an LLM all have the name `lk.agents.usage.llm_input_tokens`. Points of
+//	one series with the same time and the same value become one point. When a
+//	session has two agents, a point can have the resource attributes of the
+//	other agent.
 //
 //	An agent exports its metrics every 30 seconds, and its turn latencies when
-//	the session ends, so an ACTIVE session returns what it has exported so far.
-//	An unknown session is NotFound. A read filtered by names can come back
-//	empty because no metric has those names, so only an unfiltered one is
-//	ObservabilityDisabled.
+//	the session ends. Thus, an `ACTIVE` session returns the points that its
+//	agents exported up to now. An unknown session returns `NotFound`. A read
+//	filtered by `names` can return no points because no metric has those names.
+//	Thus, only a read with no filter returns the `ObservabilityDisabled` error.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/metrics (the `ObservabilityServiceGetSessionMetrics` operationId).
 func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionMetricsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7585,11 +11777,10 @@ func (c *Client) ObservabilityServiceGetSessionMetrics(ctx context.Context, proj
 
 // AnalyticsServiceListSessionParticipants ListSessionParticipants
 //
-// Lists the participants of one room session, one row per identity,
+// Lists the participants of a room session, one item for each identity.
 //
-//	cursor-paginated; newest join first by default. Each row carries the
-//	participant's participant sessions (PA_...), each with the client it
-//	connected from.
+//	Defaults to newest join first. Each item has the participant sessions of
+//	the participant (`PA_...`), each with the client that it connected from.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/participants (the `AnalyticsServiceListSessionParticipants` operationId).
 func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionParticipantsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7606,11 +11797,13 @@ func (c *Client) AnalyticsServiceListSessionParticipants(ctx context.Context, pr
 
 // ObservabilityServiceGetSessionRecordingURL GetSessionRecordingURL
 //
-// Returns a short-lived signed URL for one of the session's recordings: its
+// Returns a short-lived signed URL for a session recording: its audio
 //
-//	audio or its chat history. A session with no recording of that type is
-//	NotFound. A new recording can be NotFound for up to a minute after the
-//	session ends.
+//	or its chat history. When the recording doesn't exist and
+//	`dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+//	`DATA_STATE_SETTLING`, the response has an empty `url`, because the
+//	agent can still upload the recording. In every other state, a session
+//	with no recording of that type returns `NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7625,19 +11818,20 @@ func (c *Client) ObservabilityServiceGetSessionRecordingURL(ctx context.Context,
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTraces Returns the spans the session's agents exported, by start time: what the
+// ObservabilityServiceGetSessionTraces Returns the spans that the agents of a session exported, ordered by start
 //
-//	dashboard's trace view shows. Each span names its parent, so the pages
-//	rebuild the span tree, and its attributes carry the turn and latency fields
-//	the dashboard's turn view reads, such as lk.generation_id and
-//	lk.response.ttft.
+//	time. These are the spans that the trace view on the dashboard shows. Each
+//	span names its parent, so you can build the span tree from the pages. The
+//	attributes of a span hold the turn and latency fields that the turn view on
+//	the dashboard uses, such as `lk.generation_id` and `lk.response.ttft`.
 //
-// An ACTIVE session returns what its agents have exported so far; a span
+// An `ACTIVE` session returns the spans that its agents exported up to now. A
 //
-//	exported after the first page waits for a new read. The later pages are
-//	read by offset, so a span exported mid-read can still shift them: a span
-//	can repeat, or be skipped. Dedupe by spanId, and read again from the first
-//	page to pick up a skipped span. An unknown session is NotFound.
+//	span exported after the first page appears only in a new read. The API
+//	reads the later pages by offset, so a span exported during your read can
+//	move them. Thus, a span can repeat, or a page can skip a span. Remove
+//	duplicates by `spanId`. To get a skipped span, read again from the first
+//	page. An unknown session returns `NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7652,17 +11846,19 @@ func (c *Client) ObservabilityServiceGetSessionTraces(ctx context.Context, proje
 	return c.Client.Do(req)
 }
 
-// ObservabilityServiceGetSessionTranscript Returns the session's conversation as ordered transcript items: messages,
+// ObservabilityServiceGetSessionTranscript Returns the conversation of a session as ordered transcript items. The
 //
-//	tool calls and results, agent handoffs and agent configuration changes. It
-//	is the conversation the dashboard's transcript shows.
+//	items are messages, tool calls and results, agent handoffs, and agent
+//	configuration changes. It is the conversation that the transcript on the
+//	dashboard shows.
 //
-// The agent exports its transcript when the session ends, and it can be read
+// The agent exports its transcript when the session ends. There is a delay
 //
-//	a minute or two later; on a project with PII redaction, only once the
-//	session's recording has been redacted. So a session that is still ACTIVE
-//	returns what exists so far, usually nothing, without an error: read it
-//	again after the session ends. An unknown session is NotFound.
+//	before you can read it, and the length of the delay is not fixed. On a
+//	project with PII redaction, you can read it only after LiveKit redacts the
+//	session recording. Thus, an `ACTIVE` session returns the items that exist,
+//	usually none, with no error. Read it again after the session ends. An
+//	unknown session returns `NotFound`.
 //
 // Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/transcript (the `ObservabilityServiceGetSessionTranscript` operationId).
 func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7679,11 +11875,11 @@ func (c *Client) ObservabilityServiceGetSessionTranscript(ctx context.Context, p
 
 // SimulationServiceListSimulationRuns ListSimulationRuns
 //
-// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
+// Lists the runs of a project, newest first. You can filter the runs by
 //
-//	by status, agent, conversation mode and a time window. Rows carry headline
-//	counts (jobCount, passedCount, failedCount, issueCount) but neither
-//	jobs nor the summary.
+//	status, agent, conversation mode, and time window. Each run includes its
+//	counts (`jobCount`, `passedCount`, `failedCount`, and `issueCount`), but
+//	not its jobs or its summary.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs (the `SimulationServiceListSimulationRuns` operationId).
 func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceListSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7700,13 +11896,14 @@ func (c *Client) SimulationServiceListSimulationRuns(ctx context.Context, projec
 
 // SimulationServiceCreateSimulationRunWithBody CreateSimulationRun
 //
-// Registers a new run. With a scenarioGroup it starts right away and no
+// Creates a simulation run. With a `scenarioGroup`, the run starts
 //
-//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
-//	agent source that scenarios are generated from: upload it to the returned
-//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-//	for an hour is failed. Creating a run is not idempotent: a retried request
-//	starts a second run.
+//	immediately and the response has no upload target. Without a
+//	`scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+//	that the API generates scenarios from. Upload the source to the returned
+//	presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+//	pending for one hour fails. This RPC is not idempotent: a retry starts a
+//	second run.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7725,13 +11922,14 @@ func (c *Client) SimulationServiceCreateSimulationRunWithBody(ctx context.Contex
 
 // SimulationServiceCreateSimulationRun CreateSimulationRun
 //
-// Registers a new run. With a scenarioGroup it starts right away and no
+// Creates a simulation run. With a `scenarioGroup`, the run starts
 //
-//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
-//	agent source that scenarios are generated from: upload it to the returned
-//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-//	for an hour is failed. Creating a run is not idempotent: a retried request
-//	starts a second run.
+//	immediately and the response has no upload target. Without a
+//	`scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+//	that the API generates scenarios from. Upload the source to the returned
+//	presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+//	pending for one hour fails. This RPC is not idempotent: a retry starts a
+//	second run.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7750,10 +11948,10 @@ func (c *Client) SimulationServiceCreateSimulationRun(ctx context.Context, proje
 
 // SimulationServiceGetSimulationRun GetSimulationRun
 //
-// Returns one run with its jobs and aggregate metrics. The compressed summary
+// Returns one run with its jobs and aggregate metrics. The response does not
 //
-//	blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
-//	summary.
+//	include the compressed summary (`summaryZstd`). To get the summary, call
+//	`GetSimulationRunSummary`.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId} (the `SimulationServiceGetSimulationRun` operationId).
 func (c *Client) SimulationServiceGetSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7770,11 +11968,12 @@ func (c *Client) SimulationServiceGetSimulationRun(ctx context.Context, projectI
 
 // SimulationServiceGetSimulationRunSummary GetSimulationRunSummary
 //
-// Returns the graded outcome of a finished run: pass/fail counts, what went
+// Returns the graded outcome of a finished run: the pass and fail counts,
 //
-//	well, what to improve, flagged issues with suggestions, and the per-job
-//	chat history. FailedPrecondition while the run is still going; NotFound if
-//	the run finished without a summary.
+//	what went well, what to improve, the flagged issues with suggestions, and
+//	the chat history of each job. Returns `FailedPrecondition` while the run
+//	is in progress. Returns `NotFound` when the run finished without a
+//	summary.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs/{simulationRunId}/summary (the `SimulationServiceGetSimulationRunSummary` operationId).
 func (c *Client) SimulationServiceGetSimulationRunSummary(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7791,9 +11990,9 @@ func (c *Client) SimulationServiceGetSimulationRunSummary(ctx context.Context, p
 
 // SimulationServiceCancelSimulationRun CancelSimulationRun
 //
-// Stops a run that has not finished. Cancelling a run that already finished
+// Stops a run that has not finished. When the run is already finished, the
 //
-//	succeeds without effect.
+//	call succeeds and has no effect.
 //
 // Corresponds with POST /v0/projects/{projectId}/simulation-runs/{simulationRunId}:cancel (the `SimulationServiceCancelSimulationRun` operationId).
 func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, projectId string, simulationRunId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7810,10 +12009,11 @@ func (c *Client) SimulationServiceCancelSimulationRun(ctx context.Context, proje
 
 // SimulationServiceConfirmSimulationSourceUploadWithBody ConfirmSimulationSourceUpload
 //
-// Marks the agent source as uploaded and starts scenario generation; the run
+// Confirms that the agent source is uploaded and starts scenario
 //
-//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is PENDING_UPLOAD, so a repeated call fails.
+//	generation. The run goes to `GENERATING`, then to `RUNNING` when the
+//	scenarios exist. The call is valid only while the run is
+//	`PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7832,10 +12032,11 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUploadWithBody(ctx cont
 
 // SimulationServiceConfirmSimulationSourceUpload ConfirmSimulationSourceUpload
 //
-// Marks the agent source as uploaded and starts scenario generation; the run
+// Confirms that the agent source is uploaded and starts scenario
 //
-//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is PENDING_UPLOAD, so a repeated call fails.
+//	generation. The run goes to `GENERATING`, then to `RUNNING` when the
+//	scenarios exist. The call is valid only while the run is
+//	`PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7854,11 +12055,11 @@ func (c *Client) SimulationServiceConfirmSimulationSourceUpload(ctx context.Cont
 
 // SimulationServiceCountSimulationRuns CountSimulationRuns
 //
-// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
+// Returns a histogram of the runs in the window [`startTime`, `endTime`). It
 //
-//	into a histogram. It takes the same filters over the same window, so the
-//	bars and the rows beneath them always describe one set. Both bounds are
-//	required and endTime must be after startTime.
+//	takes the same filters as `ListSimulationRuns`, so the histogram and the
+//	list describe the same set of runs. Both bounds are required, and
+//	`endTime` must be after `startTime`.
 //
 // Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7873,13 +12074,15 @@ func (c *Client) SimulationServiceCountSimulationRuns(ctx context.Context, proje
 	return c.Client.Do(req)
 }
 
-// ThreadServiceListThreads ListThreads
+// TelephonyServiceListDispatchRules ListDispatchRules
 //
-// Lists the threads of one scope, newest first.
+// Lists the dispatch rules of the project, in ID order. The list is always
 //
-// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
-func (c *Client) ThreadServiceListThreads(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceListThreadsRequest(c.Server, projectId, params)
+//	one page.
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceListDispatchRules` operationId).
+func (c *Client) TelephonyServiceListDispatchRules(ctx context.Context, projectId string, params *TelephonyServiceListDispatchRulesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceListDispatchRulesRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7890,15 +12093,21 @@ func (c *Client) ThreadServiceListThreads(ctx context.Context, projectId string,
 	return c.Client.Do(req)
 }
 
-// ThreadServiceCreateThreadWithBody CreateThread
+// TelephonyServiceCreateDispatchRuleWithBody CreateDispatchRule
 //
-// Creates a thread and its database.
+// Creates a dispatch rule. A rule applies to the trunks and the phone
+//
+//	numbers in its `trunkIds`, or to all of them when `trunkIds` is empty. To
+//	send the calls to a phone number to a rule, add the ID of the number
+//	(`PN_...`) to `trunkIds`. To stop, remove it. A rule that conflicts with
+//	another rule of the project fails with `InvalidArgument`, and the message
+//	names the other rule.
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-func (c *Client) ThreadServiceCreateThreadWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceCreateThreadRequestWithBody(c.Server, projectId, contentType, body)
+// Corresponds with POST /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceCreateDispatchRule` operationId).
+func (c *Client) TelephonyServiceCreateDispatchRuleWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceCreateDispatchRuleRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7909,15 +12118,21 @@ func (c *Client) ThreadServiceCreateThreadWithBody(ctx context.Context, projectI
 	return c.Client.Do(req)
 }
 
-// ThreadServiceCreateThread CreateThread
+// TelephonyServiceCreateDispatchRule CreateDispatchRule
 //
-// Creates a thread and its database.
+// Creates a dispatch rule. A rule applies to the trunks and the phone
+//
+//	numbers in its `trunkIds`, or to all of them when `trunkIds` is empty. To
+//	send the calls to a phone number to a rule, add the ID of the number
+//	(`PN_...`) to `trunkIds`. To stop, remove it. A rule that conflicts with
+//	another rule of the project fails with `InvalidArgument`, and the message
+//	names the other rule.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-func (c *Client) ThreadServiceCreateThread(ctx context.Context, projectId string, body ThreadServiceCreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceCreateThreadRequest(c.Server, projectId, body)
+// Corresponds with POST /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceCreateDispatchRule` operationId).
+func (c *Client) TelephonyServiceCreateDispatchRule(ctx context.Context, projectId string, body TelephonyServiceCreateDispatchRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceCreateDispatchRuleRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7928,13 +12143,13 @@ func (c *Client) ThreadServiceCreateThread(ctx context.Context, projectId string
 	return c.Client.Do(req)
 }
 
-// ThreadServiceDeleteThread DeleteThread
+// TelephonyServiceDeleteDispatchRule DeleteDispatchRule
 //
-// Deletes the thread and its database.
+// Deletes a dispatch rule.
 //
-// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
-func (c *Client) ThreadServiceDeleteThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceDeleteThreadRequest(c.Server, projectId, threadId)
+// Corresponds with DELETE /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceDeleteDispatchRule` operationId).
+func (c *Client) TelephonyServiceDeleteDispatchRule(ctx context.Context, projectId string, dispatchRuleId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceDeleteDispatchRuleRequest(c.Server, projectId, dispatchRuleId)
 	if err != nil {
 		return nil, err
 	}
@@ -7945,11 +12160,13 @@ func (c *Client) ThreadServiceDeleteThread(ctx context.Context, projectId string
 	return c.Client.Do(req)
 }
 
-// ThreadServiceGetThread GetThread
+// TelephonyServiceGetDispatchRule GetDispatchRule
 //
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceGetThread` operationId).
-func (c *Client) ThreadServiceGetThread(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceGetThreadRequest(c.Server, projectId, threadId)
+// Returns a dispatch rule of the project.
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceGetDispatchRule` operationId).
+func (c *Client) TelephonyServiceGetDispatchRule(ctx context.Context, projectId string, dispatchRuleId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceGetDispatchRuleRequest(c.Server, projectId, dispatchRuleId)
 	if err != nil {
 		return nil, err
 	}
@@ -7960,17 +12177,15 @@ func (c *Client) ThreadServiceGetThread(ctx context.Context, projectId string, t
 	return c.Client.Do(req)
 }
 
-// ThreadServiceUpdateThreadWithBody UpdateThread
+// TelephonyServiceUpdateDispatchRuleWithBody UpdateDispatchRule
 //
-// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-//
-//	Every update counts as activity and pushes expiresAt out.
+// Replaces a dispatch rule, or changes some of its fields.
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-func (c *Client) ThreadServiceUpdateThreadWithBody(ctx context.Context, projectId string, threadId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceUpdateThreadRequestWithBody(c.Server, projectId, threadId, contentType, body)
+// Corresponds with PATCH /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceUpdateDispatchRule` operationId).
+func (c *Client) TelephonyServiceUpdateDispatchRuleWithBody(ctx context.Context, projectId string, dispatchRuleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceUpdateDispatchRuleRequestWithBody(c.Server, projectId, dispatchRuleId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7981,17 +12196,15 @@ func (c *Client) ThreadServiceUpdateThreadWithBody(ctx context.Context, projectI
 	return c.Client.Do(req)
 }
 
-// ThreadServiceUpdateThread UpdateThread
+// TelephonyServiceUpdateDispatchRule UpdateDispatchRule
 //
-// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-//
-//	Every update counts as activity and pushes expiresAt out.
+// Replaces a dispatch rule, or changes some of its fields.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-func (c *Client) ThreadServiceUpdateThread(ctx context.Context, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceUpdateThreadRequest(c.Server, projectId, threadId, body)
+// Corresponds with PATCH /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceUpdateDispatchRule` operationId).
+func (c *Client) TelephonyServiceUpdateDispatchRule(ctx context.Context, projectId string, dispatchRuleId string, body TelephonyServiceUpdateDispatchRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceUpdateDispatchRuleRequest(c.Server, projectId, dispatchRuleId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8002,13 +12215,15 @@ func (c *Client) ThreadServiceUpdateThread(ctx context.Context, projectId string
 	return c.Client.Do(req)
 }
 
-// ThreadServiceGetThreadItems GetThreadItems
+// TelephonyServiceListInboundTrunks ListInboundTrunks
 //
-// Returns the thread's chat items, oldest first.
+// Lists the inbound trunks of the project, in ID order. The list is always
 //
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
-func (c *Client) ThreadServiceGetThreadItems(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceGetThreadItemsRequest(c.Server, projectId, threadId, params)
+//	one page.
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceListInboundTrunks` operationId).
+func (c *Client) TelephonyServiceListInboundTrunks(ctx context.Context, projectId string, params *TelephonyServiceListInboundTrunksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceListInboundTrunksRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8019,13 +12234,347 @@ func (c *Client) ThreadServiceGetThreadItems(ctx context.Context, projectId stri
 	return c.Client.Do(req)
 }
 
-// ThreadServiceGetThreadTasks GetThreadTasks
+// TelephonyServiceCreateInboundTrunkWithBody CreateInboundTrunk
 //
-// Returns the thread's background tasks, oldest first.
+// Creates an inbound trunk. A trunk that conflicts with another trunk of
 //
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
-func (c *Client) ThreadServiceGetThreadTasks(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewThreadServiceGetThreadTasksRequest(c.Server, projectId, threadId, params)
+//	the project, such as one that accepts the same number from the same
+//	callers, fails with `InvalidArgument`, and the message names the other
+//	trunk.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceCreateInboundTrunk` operationId).
+func (c *Client) TelephonyServiceCreateInboundTrunkWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceCreateInboundTrunkRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceCreateInboundTrunk CreateInboundTrunk
+//
+// Creates an inbound trunk. A trunk that conflicts with another trunk of
+//
+//	the project, such as one that accepts the same number from the same
+//	callers, fails with `InvalidArgument`, and the message names the other
+//	trunk.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceCreateInboundTrunk` operationId).
+func (c *Client) TelephonyServiceCreateInboundTrunk(ctx context.Context, projectId string, body TelephonyServiceCreateInboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceCreateInboundTrunkRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceDeleteInboundTrunk DeleteInboundTrunk
+//
+// Deletes an inbound trunk.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceDeleteInboundTrunk` operationId).
+func (c *Client) TelephonyServiceDeleteInboundTrunk(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceDeleteInboundTrunkRequest(c.Server, projectId, trunkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceGetInboundTrunk GetInboundTrunk
+//
+// Returns an inbound trunk of the project.
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceGetInboundTrunk` operationId).
+func (c *Client) TelephonyServiceGetInboundTrunk(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceGetInboundTrunkRequest(c.Server, projectId, trunkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceUpdateInboundTrunkWithBody UpdateInboundTrunk
+//
+// Replaces an inbound trunk, or changes some of its fields.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceUpdateInboundTrunk` operationId).
+func (c *Client) TelephonyServiceUpdateInboundTrunkWithBody(ctx context.Context, projectId string, trunkId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceUpdateInboundTrunkRequestWithBody(c.Server, projectId, trunkId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceUpdateInboundTrunk UpdateInboundTrunk
+//
+// Replaces an inbound trunk, or changes some of its fields.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceUpdateInboundTrunk` operationId).
+func (c *Client) TelephonyServiceUpdateInboundTrunk(ctx context.Context, projectId string, trunkId string, body TelephonyServiceUpdateInboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceUpdateInboundTrunkRequest(c.Server, projectId, trunkId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceListOutboundTrunks ListOutboundTrunks
+//
+// Lists the outbound trunks of the project, in ID order. The list is always
+//
+//	one page.
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceListOutboundTrunks` operationId).
+func (c *Client) TelephonyServiceListOutboundTrunks(ctx context.Context, projectId string, params *TelephonyServiceListOutboundTrunksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceListOutboundTrunksRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceCreateOutboundTrunkWithBody CreateOutboundTrunk
+//
+// Creates an outbound trunk, which `CreateSIPParticipant` places calls
+//
+//	through.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceCreateOutboundTrunk` operationId).
+func (c *Client) TelephonyServiceCreateOutboundTrunkWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceCreateOutboundTrunkRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceCreateOutboundTrunk CreateOutboundTrunk
+//
+// Creates an outbound trunk, which `CreateSIPParticipant` places calls
+//
+//	through.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceCreateOutboundTrunk` operationId).
+func (c *Client) TelephonyServiceCreateOutboundTrunk(ctx context.Context, projectId string, body TelephonyServiceCreateOutboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceCreateOutboundTrunkRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceDeleteOutboundTrunk DeleteOutboundTrunk
+//
+// Deletes an outbound trunk.
+//
+// Corresponds with DELETE /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceDeleteOutboundTrunk` operationId).
+func (c *Client) TelephonyServiceDeleteOutboundTrunk(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceDeleteOutboundTrunkRequest(c.Server, projectId, trunkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceGetOutboundTrunk GetOutboundTrunk
+//
+// Returns an outbound trunk of the project.
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceGetOutboundTrunk` operationId).
+func (c *Client) TelephonyServiceGetOutboundTrunk(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceGetOutboundTrunkRequest(c.Server, projectId, trunkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceUpdateOutboundTrunkWithBody UpdateOutboundTrunk
+//
+// Replaces an outbound trunk, or changes some of its fields.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceUpdateOutboundTrunk` operationId).
+func (c *Client) TelephonyServiceUpdateOutboundTrunkWithBody(ctx context.Context, projectId string, trunkId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceUpdateOutboundTrunkRequestWithBody(c.Server, projectId, trunkId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceUpdateOutboundTrunk UpdateOutboundTrunk
+//
+// Replaces an outbound trunk, or changes some of its fields.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceUpdateOutboundTrunk` operationId).
+func (c *Client) TelephonyServiceUpdateOutboundTrunk(ctx context.Context, projectId string, trunkId string, body TelephonyServiceUpdateOutboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceUpdateOutboundTrunkRequest(c.Server, projectId, trunkId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceCreateSIPParticipantWithBody CreateSIPParticipant
+//
+// Calls a phone number or a SIP URI through an outbound trunk, and adds
+//
+//	the call to a room as a SIP participant. With `waitUntilAnswered`, the
+//	call returns when the far end answers, up to `ringingTimeout`, which can
+//	then be at most 75 seconds. When the
+//	far end refuses the call, such as with 486 Busy Here, the call fails with
+//	`FailedPrecondition`, and the error has its SIP status as a
+//	`livekit.SIPStatus` detail.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/participants (the `TelephonyServiceCreateSIPParticipant` operationId).
+func (c *Client) TelephonyServiceCreateSIPParticipantWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceCreateSIPParticipantRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceCreateSIPParticipant CreateSIPParticipant
+//
+// Calls a phone number or a SIP URI through an outbound trunk, and adds
+//
+//	the call to a room as a SIP participant. With `waitUntilAnswered`, the
+//	call returns when the far end answers, up to `ringingTimeout`, which can
+//	then be at most 75 seconds. When the
+//	far end refuses the call, such as with 486 Busy Here, the call fails with
+//	`FailedPrecondition`, and the error has its SIP status as a
+//	`livekit.SIPStatus` detail.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/participants (the `TelephonyServiceCreateSIPParticipant` operationId).
+func (c *Client) TelephonyServiceCreateSIPParticipant(ctx context.Context, projectId string, body TelephonyServiceCreateSIPParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceCreateSIPParticipantRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceTransferSIPParticipantWithBody TransferSIPParticipant
+//
+// Transfers the call of a SIP participant to another phone number or SIP
+//
+//	URI, and returns when the transfer ends. Its `ringingTimeout` can be at
+//	most 75 seconds. A transfer that fails, such as
+//	one that nobody answers, fails with `FailedPrecondition`, and the error
+//	has a `livekit.SIPTransferError` detail with the reason.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/participants:transfer (the `TelephonyServiceTransferSIPParticipant` operationId).
+func (c *Client) TelephonyServiceTransferSIPParticipantWithBody(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceTransferSIPParticipantRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TelephonyServiceTransferSIPParticipant TransferSIPParticipant
+//
+// Transfers the call of a SIP participant to another phone number or SIP
+//
+//	URI, and returns when the transfer ends. Its `ringingTimeout` can be at
+//	most 75 seconds. A transfer that fails, such as
+//	one that nobody answers, fails with `FailedPrecondition`, and the error
+//	has a `livekit.SIPTransferError` detail with the reason.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/participants:transfer (the `TelephonyServiceTransferSIPParticipant` operationId).
+func (c *Client) TelephonyServiceTransferSIPParticipant(ctx context.Context, projectId string, body TelephonyServiceTransferSIPParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTelephonyServiceTransferSIPParticipantRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8038,10 +12587,10 @@ func (c *Client) ThreadServiceGetThreadTasks(ctx context.Context, projectId stri
 
 // ProjectServiceCreateTokenWithBody CreateToken
 //
-// Mints a short-lived LiveKit access token for the project, signed
+// Creates a short-lived LiveKit access token for the project. The API signs
 //
-//	server-side, so user-authenticated clients can call LiveKit server APIs
-//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	the token, so a signed-in user can call the LiveKit server APIs, such as
+//	rooms, SIP, and egress, or join a room without an API secret.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8060,10 +12609,10 @@ func (c *Client) ProjectServiceCreateTokenWithBody(ctx context.Context, projectI
 
 // ProjectServiceCreateToken CreateToken
 //
-// Mints a short-lived LiveKit access token for the project, signed
+// Creates a short-lived LiveKit access token for the project. The API signs
 //
-//	server-side, so user-authenticated clients can call LiveKit server APIs
-//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	the token, so a signed-in user can call the LiveKit server APIs, such as
+//	rooms, SIP, and egress, or join a room without an API secret.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8082,9 +12631,13 @@ func (c *Client) ProjectServiceCreateToken(ctx context.Context, projectId string
 
 // ProjectServiceListWebhookEvents ListWebhookEvents
 //
+// Lists the event names that the webhooks of a project can receive. The list
+//
+//	is always one page.
+//
 // Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
-func (c *Client) ProjectServiceListWebhookEvents(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListWebhookEventsRequest(c.Server, projectId)
+func (c *Client) ProjectServiceListWebhookEvents(ctx context.Context, projectId string, params *ProjectServiceListWebhookEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListWebhookEventsRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8097,11 +12650,13 @@ func (c *Client) ProjectServiceListWebhookEvents(ctx context.Context, projectId 
 
 // ProjectServiceListWebhooks ListWebhooks
 //
-// Lists the project's webhook destinations.
+// Lists the webhook destinations for the project, in the order that they
+//
+//	were added. The list is always one page.
 //
 // Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
-func (c *Client) ProjectServiceListWebhooks(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewProjectServiceListWebhooksRequest(c.Server, projectId)
+func (c *Client) ProjectServiceListWebhooks(ctx context.Context, projectId string, params *ProjectServiceListWebhooksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewProjectServiceListWebhooksRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8113,6 +12668,15 @@ func (c *Client) ProjectServiceListWebhooks(ctx context.Context, projectId strin
 }
 
 // ProjectServiceCreateWebhookWithBody CreateWebhook
+//
+// Creates a webhook destination for a project. A `url` that is not an absolute
+//
+//	HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
+//	in `filterParams` that `ListWebhookEvents` does not return, or a
+//	`signingKey` that is not an API key of the project, also returns
+//	`InvalidArgument`. When `signingKey` is empty and the project has no API key,
+//	the request fails with `FailedPrecondition`. The call is not idempotent: a
+//	retry creates a second webhook.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8131,6 +12695,15 @@ func (c *Client) ProjectServiceCreateWebhookWithBody(ctx context.Context, projec
 
 // ProjectServiceCreateWebhook CreateWebhook
 //
+// Creates a webhook destination for a project. A `url` that is not an absolute
+//
+//	HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
+//	in `filterParams` that `ListWebhookEvents` does not return, or a
+//	`signingKey` that is not an API key of the project, also returns
+//	`InvalidArgument`. When `signingKey` is empty and the project has no API key,
+//	the request fails with `FailedPrecondition`. The call is not idempotent: a
+//	retry creates a second webhook.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
@@ -8148,6 +12721,11 @@ func (c *Client) ProjectServiceCreateWebhook(ctx context.Context, projectId stri
 
 // ProjectServiceDeleteWebhook DeleteWebhook
 //
+// Deletes a webhook destination from a project. The project stops sending
+//
+//	events to its URL. A webhook that does not exist returns `NotFound`, so a
+//	retry returns `NotFound`.
+//
 // Corresponds with DELETE /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceDeleteWebhook` operationId).
 func (c *Client) ProjectServiceDeleteWebhook(ctx context.Context, projectId string, webhookId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProjectServiceDeleteWebhookRequest(c.Server, projectId, webhookId)
@@ -8162,6 +12740,13 @@ func (c *Client) ProjectServiceDeleteWebhook(ctx context.Context, projectId stri
 }
 
 // ProjectServiceUpdateWebhookWithBody UpdateWebhook
+//
+// Updates a webhook destination of a project, and returns the updated webhook.
+//
+//	A field that you do not set keeps its value. A set `filterParams` replaces
+//	the whole filter. The checks of `CreateWebhook` apply to the new values, and
+//	a failed check returns `InvalidArgument`. A webhook that does not exist
+//	returns `NotFound`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8180,6 +12765,13 @@ func (c *Client) ProjectServiceUpdateWebhookWithBody(ctx context.Context, projec
 
 // ProjectServiceUpdateWebhook UpdateWebhook
 //
+// Updates a webhook destination of a project, and returns the updated webhook.
+//
+//	A field that you do not set keeps its value. A set `filterParams` replaces
+//	the whole filter. The checks of `CreateWebhook` apply to the new values, and
+//	a failed check returns `InvalidArgument`. A webhook that does not exist
+//	returns `NotFound`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
@@ -8196,6 +12788,16 @@ func (c *Client) ProjectServiceUpdateWebhook(ctx context.Context, projectId stri
 }
 
 // ProjectServiceSendTestWebhookWithBody SendTestWebhook
+//
+// Sends one sample event to a webhook destination, and returns the answer of
+//
+//	the receiver. The API sends only to this webhook, ignores the webhook filter,
+//	and signs the request as it signs real deliveries. When the signing key of
+//	the webhook is not an API key of the project, the API signs with the oldest
+//	API key. The API makes one attempt and waits up to 10 seconds. A failed
+//	delivery shows in the response, not as an error. An `event` that
+//	`ListWebhookEvents` does not return gets `InvalidArgument`. A webhook that
+//	does not exist returns `NotFound`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8214,6 +12816,16 @@ func (c *Client) ProjectServiceSendTestWebhookWithBody(ctx context.Context, proj
 
 // ProjectServiceSendTestWebhook SendTestWebhook
 //
+// Sends one sample event to a webhook destination, and returns the answer of
+//
+//	the receiver. The API sends only to this webhook, ignores the webhook filter,
+//	and signs the request as it signs real deliveries. When the signing key of
+//	the webhook is not an API key of the project, the API signs with the oldest
+//	API key. The API makes one attempt and waits up to 10 seconds. A failed
+//	delivery shows in the response, not as an error. An `event` that
+//	`ListWebhookEvents` does not return gets `InvalidArgument`. A webhook that
+//	does not exist returns `NotFound`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
@@ -8231,6 +12843,11 @@ func (c *Client) ProjectServiceSendTestWebhook(ctx context.Context, projectId st
 
 // UserServiceListUsers ListUsers
 //
+// Lists the members of a project or a workspace, ordered by user ID. The list
+//
+//	does not include pending invitees. Set `projectId`, `workspaceId`, or both.
+//	When you set neither, the request fails with `InvalidArgument`.
+//
 // Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
 func (c *Client) UserServiceListUsers(ctx context.Context, params *UserServiceListUsersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUserServiceListUsersRequest(c.Server, params)
@@ -8246,6 +12863,8 @@ func (c *Client) UserServiceListUsers(ctx context.Context, params *UserServiceLi
 
 // UserServiceGetCurrentUser GetCurrentUser
 //
+// Returns the user that you are signed in as.
+//
 // Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 func (c *Client) UserServiceGetCurrentUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUserServiceGetCurrentUserRequest(c.Server)
@@ -8259,7 +12878,33 @@ func (c *Client) UserServiceGetCurrentUser(ctx context.Context, reqEditors ...Re
 	return c.Client.Do(req)
 }
 
+// UserServiceRevokeSessionToken RevokeSessionToken
+//
+// Revokes the session token that you call with, and signs you out. After
+//
+//	this call, the token gets `Unauthenticated` on every call, a retry of this
+//	call included. Your other session tokens stay valid. Access tokens that
+//	`CreateToken` returned stay valid until they expire.
+//
+// Corresponds with DELETE /v0/users/me/session-token (the `UserServiceRevokeSessionToken` operationId).
+func (c *Client) UserServiceRevokeSessionToken(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUserServiceRevokeSessionTokenRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // UserServiceGetUser GetUser
+//
+// Returns a user by ID. You can get yourself, or a user who is a member of a
+//
+//	workspace or a project that you are a member of. Any other user returns
+//	`NotFound`, the same as a user who does not exist.
 //
 // Corresponds with GET /v0/users/{userId} (the `UserServiceGetUser` operationId).
 func (c *Client) UserServiceGetUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8276,6 +12921,12 @@ func (c *Client) UserServiceGetUser(ctx context.Context, userId string, reqEdito
 
 // WorkspaceServiceGetInvite GetInvite
 //
+// Returns a workspace invite that was sent to you, found by its token. Use it
+//
+//	to show the invite before you answer it with `AnswerInvite`. An invite that
+//	was sent to a different email address returns `PermissionDenied`. An expired
+//	invite returns `FailedPrecondition`. An unknown token returns `NotFound`.
+//
 // Corresponds with GET /v0/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
 func (c *Client) WorkspaceServiceGetInvite(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceGetInviteRequest(c.Server, inviteToken)
@@ -8290,6 +12941,16 @@ func (c *Client) WorkspaceServiceGetInvite(ctx context.Context, inviteToken stri
 }
 
 // WorkspaceServiceAnswerInviteWithBody AnswerInvite
+//
+// Accepts or declines a workspace invite that was sent to you. When you accept,
+//
+//	you become a member of the workspace and of every project in it where
+//	`isPrivate` is `false`, with the role of the invite. If you are already a
+//	member, the role of the invite replaces your role. The API also deletes your
+//	pending invites to those projects. When you decline, the API deletes the
+//	invite. After you answer, the token stops working, so a retry returns
+//	`NotFound`. An invite that was sent to a different email address returns
+//	`PermissionDenied`. An expired invite returns `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8308,6 +12969,16 @@ func (c *Client) WorkspaceServiceAnswerInviteWithBody(ctx context.Context, invit
 
 // WorkspaceServiceAnswerInvite AnswerInvite
 //
+// Accepts or declines a workspace invite that was sent to you. When you accept,
+//
+//	you become a member of the workspace and of every project in it where
+//	`isPrivate` is `false`, with the role of the invite. If you are already a
+//	member, the role of the invite replaces your role. The API also deletes your
+//	pending invites to those projects. When you decline, the API deletes the
+//	invite. After you answer, the token stops working, so a retry returns
+//	`NotFound`. An invite that was sent to a different email address returns
+//	`PermissionDenied`. An expired invite returns `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
@@ -8325,6 +12996,10 @@ func (c *Client) WorkspaceServiceAnswerInvite(ctx context.Context, inviteToken s
 
 // WorkspaceServiceListWorkspaces ListWorkspaces
 //
+// Lists the workspaces that you are a member of, ordered by workspace ID. A
+//
+//	pending invite does not make you a member.
+//
 // Corresponds with GET /v0/workspaces (the `WorkspaceServiceListWorkspaces` operationId).
 func (c *Client) WorkspaceServiceListWorkspaces(ctx context.Context, params *WorkspaceServiceListWorkspacesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceListWorkspacesRequest(c.Server, params)
@@ -8339,6 +13014,12 @@ func (c *Client) WorkspaceServiceListWorkspaces(ctx context.Context, params *Wor
 }
 
 // WorkspaceServiceCreateWorkspaceWithBody CreateWorkspace
+//
+// Creates a workspace. You become its only member, with the admin role (`3`).
+//
+//	The workspace has no projects: to add one, call `CreateProject`. An empty
+//	`name` returns `InvalidArgument`. The call is not idempotent: a retry
+//	creates a second workspace.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8357,6 +13038,12 @@ func (c *Client) WorkspaceServiceCreateWorkspaceWithBody(ctx context.Context, co
 
 // WorkspaceServiceCreateWorkspace CreateWorkspace
 //
+// Creates a workspace. You become its only member, with the admin role (`3`).
+//
+//	The workspace has no projects: to add one, call `CreateProject`. An empty
+//	`name` returns `InvalidArgument`. The call is not idempotent: a retry
+//	creates a second workspace.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
@@ -8374,6 +13061,11 @@ func (c *Client) WorkspaceServiceCreateWorkspace(ctx context.Context, body Works
 
 // WorkspaceServiceDeleteWorkspace DeleteWorkspace
 //
+// Deletes a workspace, with its members and its pending invites. A workspace
+//
+//	that has projects returns `FailedPrecondition`: delete its projects first.
+//	You cannot undo the delete. A retry returns `NotFound`.
+//
 // Corresponds with DELETE /v0/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
 func (c *Client) WorkspaceServiceDeleteWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceDeleteWorkspaceRequest(c.Server, workspaceId)
@@ -8389,6 +13081,10 @@ func (c *Client) WorkspaceServiceDeleteWorkspace(ctx context.Context, workspaceI
 
 // WorkspaceServiceGetWorkspace GetWorkspace
 //
+// Returns a workspace. A workspace that you are not a member of returns
+//
+//	`NotFound`.
+//
 // Corresponds with GET /v0/workspaces/{workspaceId} (the `WorkspaceServiceGetWorkspace` operationId).
 func (c *Client) WorkspaceServiceGetWorkspace(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceGetWorkspaceRequest(c.Server, workspaceId)
@@ -8403,6 +13099,10 @@ func (c *Client) WorkspaceServiceGetWorkspace(ctx context.Context, workspaceId s
 }
 
 // WorkspaceServiceUpdateWorkspaceWithBody UpdateWorkspace
+//
+// Changes the name or the MCP policy of a workspace, and returns the updated
+//
+//	workspace. A field that is unset does not change.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8421,6 +13121,10 @@ func (c *Client) WorkspaceServiceUpdateWorkspaceWithBody(ctx context.Context, wo
 
 // WorkspaceServiceUpdateWorkspace UpdateWorkspace
 //
+// Changes the name or the MCP policy of a workspace, and returns the updated
+//
+//	workspace. A field that is unset does not change.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
@@ -8438,9 +13142,11 @@ func (c *Client) WorkspaceServiceUpdateWorkspace(ctx context.Context, workspaceI
 
 // WorkspaceServiceListInvites ListInvites
 //
+// Lists the unexpired invites of a workspace, ordered by email.
+//
 // Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
-func (c *Client) WorkspaceServiceListInvites(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWorkspaceServiceListInvitesRequest(c.Server, workspaceId)
+func (c *Client) WorkspaceServiceListInvites(ctx context.Context, workspaceId string, params *WorkspaceServiceListInvitesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWorkspaceServiceListInvitesRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8452,6 +13158,14 @@ func (c *Client) WorkspaceServiceListInvites(ctx context.Context, workspaceId st
 }
 
 // WorkspaceServiceCreateInviteWithBody CreateInvite
+//
+// Invites a person to a workspace by email, with a role. The API sends an email
+//
+//	with the invite link, and the response has the invite token. The invite
+//	expires after 48 hours. When an unexpired invite for the email exists, the
+//	API sends that invite again: its token, role, and expiry do not change. On
+//	a plan that allows only the admin role (`3`), the roles `1` and `2` return
+//	`FailedPrecondition`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8470,6 +13184,14 @@ func (c *Client) WorkspaceServiceCreateInviteWithBody(ctx context.Context, works
 
 // WorkspaceServiceCreateInvite CreateInvite
 //
+// Invites a person to a workspace by email, with a role. The API sends an email
+//
+//	with the invite link, and the response has the invite token. The invite
+//	expires after 48 hours. When an unexpired invite for the email exists, the
+//	API sends that invite again: its token, role, and expiry do not change. On
+//	a plan that allows only the admin role (`3`), the roles `1` and `2` return
+//	`FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
@@ -8487,6 +13209,10 @@ func (c *Client) WorkspaceServiceCreateInvite(ctx context.Context, workspaceId s
 
 // WorkspaceServiceDeleteInvite DeleteInvite
 //
+// Deletes a pending workspace invite, so that its link stops working. When no
+//
+//	invite exists for the email, the call succeeds and changes nothing.
+//
 // Corresponds with DELETE /v0/workspaces/{workspaceId}/invites/{email} (the `WorkspaceServiceDeleteInvite` operationId).
 func (c *Client) WorkspaceServiceDeleteInvite(ctx context.Context, workspaceId string, email string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceDeleteInviteRequest(c.Server, workspaceId, email)
@@ -8502,11 +13228,11 @@ func (c *Client) WorkspaceServiceDeleteInvite(ctx context.Context, workspaceId s
 
 // WorkspaceServiceListMembers ListMembers
 //
-// Lists the workspace's members.
+// Lists the workspace members, ordered by user ID.
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
-func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewWorkspaceServiceListMembersRequest(c.Server, workspaceId)
+func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId string, params *WorkspaceServiceListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWorkspaceServiceListMembersRequest(c.Server, workspaceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8518,6 +13244,14 @@ func (c *Client) WorkspaceServiceListMembers(ctx context.Context, workspaceId st
 }
 
 // WorkspaceServiceDeleteMember DeleteMember
+//
+// Removes a user from a workspace and from every project in it, and deletes
+//
+//	the API keys that the user owns in those projects. Agent keys stay. Send
+//	`confirmedNumKeys` to confirm the number of keys to delete. A removal that
+//	deletes the last API key of a project returns `FailedPrecondition` and
+//	changes nothing. A user who is not a member returns `NotFound`. The response
+//	has the number of keys that the removal deleted.
 //
 // Corresponds with DELETE /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceDeleteMember` operationId).
 func (c *Client) WorkspaceServiceDeleteMember(ctx context.Context, workspaceId string, userId string, params *WorkspaceServiceDeleteMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8534,6 +13268,10 @@ func (c *Client) WorkspaceServiceDeleteMember(ctx context.Context, workspaceId s
 
 // WorkspaceServiceGetMember GetMember
 //
+// Returns the membership of one user on a workspace, with the role of the
+//
+//	user. A user who is not a member of the workspace returns `NotFound`.
+//
 // Corresponds with GET /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
 func (c *Client) WorkspaceServiceGetMember(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceGetMemberRequest(c.Server, workspaceId, userId)
@@ -8548,6 +13286,13 @@ func (c *Client) WorkspaceServiceGetMember(ctx context.Context, workspaceId stri
 }
 
 // WorkspaceServiceUpdateMemberWithBody UpdateMember
+//
+// Changes the workspace role of a member. The API also changes the role of the
+//
+//	user on every project in the workspace where `isPrivate` is `false`. The
+//	projects where `isPrivate` is `true` keep their roles. A user who is not a
+//	member returns `NotFound`. On a plan that allows only the admin role (`3`),
+//	the roles `1` and `2` return `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8566,6 +13311,13 @@ func (c *Client) WorkspaceServiceUpdateMemberWithBody(ctx context.Context, works
 
 // WorkspaceServiceUpdateMember UpdateMember
 //
+// Changes the workspace role of a member. The API also changes the role of the
+//
+//	user on every project in the workspace where `isPrivate` is `false`. The
+//	projects where `isPrivate` is `true` keep their roles. A user who is not a
+//	member returns `NotFound`. On a plan that allows only the admin role (`3`),
+//	the roles `1` and `2` return `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
@@ -8583,9 +13335,9 @@ func (c *Client) WorkspaceServiceUpdateMember(ctx context.Context, workspaceId s
 
 // WorkspaceServiceListProjects ListProjects
 //
-// The projects in a workspace. These return the same Project message as
+// Lists the projects in a workspace. The items are the same `Project`
 //
-//	the project endpoints.
+//	message that `ProjectService` returns.
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceListProjects` operationId).
 func (c *Client) WorkspaceServiceListProjects(ctx context.Context, workspaceId string, params *WorkspaceServiceListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8601,6 +13353,15 @@ func (c *Client) WorkspaceServiceListProjects(ctx context.Context, workspaceId s
 }
 
 // WorkspaceServiceCreateProjectWithBody CreateProject
+//
+// Creates a project in a workspace. Send the project as the request body. The
+//
+//	rules and errors of `ProjectService.CreateProject` apply. You become a
+//	member of the project with the admin role (`3`), and the API creates an API
+//	key that you own. When `isPrivate` is `false`, every member of the
+//	workspace becomes a member of the project, with their workspace role. The
+//	call is not idempotent: when `subdomain` is empty, a retry creates a second
+//	project.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8619,6 +13380,15 @@ func (c *Client) WorkspaceServiceCreateProjectWithBody(ctx context.Context, work
 
 // WorkspaceServiceCreateProject CreateProject
 //
+// Creates a project in a workspace. Send the project as the request body. The
+//
+//	rules and errors of `ProjectService.CreateProject` apply. You become a
+//	member of the project with the admin role (`3`), and the API creates an API
+//	key that you own. When `isPrivate` is `false`, every member of the
+//	workspace becomes a member of the project, with their workspace role. The
+//	call is not idempotent: when `subdomain` is empty, a retry creates a second
+//	project.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
@@ -8636,6 +13406,11 @@ func (c *Client) WorkspaceServiceCreateProject(ctx context.Context, workspaceId 
 
 // WorkspaceServiceDeleteProject DeleteProject
 //
+// Deletes a project in a workspace, with its API keys, its webhooks, and its
+//
+//	member list. You cannot undo the delete. A project that is not in the
+//	workspace returns `NotFound`, and a retry returns `NotFound`.
+//
 // Corresponds with DELETE /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
 func (c *Client) WorkspaceServiceDeleteProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewWorkspaceServiceDeleteProjectRequest(c.Server, workspaceId, projectId)
@@ -8650,6 +13425,11 @@ func (c *Client) WorkspaceServiceDeleteProject(ctx context.Context, workspaceId 
 }
 
 // WorkspaceServiceGetProject GetProject
+//
+// Returns a project in a workspace, with its settings and its webhooks. A
+//
+//	project that is not in the workspace, or that you cannot see, returns
+//	`NotFound`.
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceGetProject` operationId).
 func (c *Client) WorkspaceServiceGetProject(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8990,8 +13770,8 @@ func NewProjectServiceUpdateProjectRequestWithBody(server string, projectId stri
 	return req, nil
 }
 
-// NewAnalyticsServiceGetProjectAnalyticsRequest constructs an http.Request for the AnalyticsServiceGetProjectAnalytics method
-func NewAnalyticsServiceGetProjectAnalyticsRequest(server string, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams) (*http.Request, error) {
+// NewBuilderAgentServiceListBuilderAgentsRequest constructs an http.Request for the BuilderAgentServiceListBuilderAgents method
+func NewBuilderAgentServiceListBuilderAgentsRequest(server string, projectId string, params *BuilderAgentServiceListBuilderAgentsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9006,257 +13786,7 @@ func NewAnalyticsServiceGetProjectAnalyticsRequest(server string, projectId stri
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/analytics", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.RangeStartTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RangeEndTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAnalyticsServiceListAgentAnalyticsRequest constructs an http.Request for the AnalyticsServiceListAgentAnalytics method
-func NewAnalyticsServiceListAgentAnalyticsRequest(server string, projectId string, params *AnalyticsServiceListAgentAnalyticsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/analytics/agents", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.RangeStartTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RangeEndTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageCursor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PagePageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAnalyticsServiceGetAgentAnalyticsRequest constructs an http.Request for the AnalyticsServiceGetAgentAnalytics method
-func NewAnalyticsServiceGetAgentAnalyticsRequest(server string, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "agentId", agentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/analytics/agents/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.RangeStartTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.startTime", *params.RangeStartTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.RangeEndTime != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "range.endTime", *params.RangeEndTime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewDatabaseServiceListDatabasesRequest constructs an http.Request for the DatabaseServiceListDatabases method
-func NewDatabaseServiceListDatabasesRequest(server string, projectId string, params *DatabaseServiceListDatabasesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9313,19 +13843,19 @@ func NewDatabaseServiceListDatabasesRequest(server string, projectId string, par
 	return req, nil
 }
 
-// NewDatabaseServiceCreateDatabaseRequest calls the generic DatabaseServiceCreateDatabase builder with application/json body
-func NewDatabaseServiceCreateDatabaseRequest(server string, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody) (*http.Request, error) {
+// NewBuilderAgentServiceCreateBuilderAgentRequest calls the generic BuilderAgentServiceCreateBuilderAgent builder with application/json body
+func NewBuilderAgentServiceCreateBuilderAgentRequest(server string, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewDatabaseServiceCreateDatabaseRequestWithBody(server, projectId, "application/json", bodyReader)
+	return NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(server, projectId, "application/json", bodyReader)
 }
 
-// NewDatabaseServiceCreateDatabaseRequestWithBody constructs an http.Request for the DatabaseServiceCreateDatabase method, with any body, and a specified content type
-func NewDatabaseServiceCreateDatabaseRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewBuilderAgentServiceCreateBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceCreateBuilderAgent method, with any body, and a specified content type
+func NewBuilderAgentServiceCreateBuilderAgentRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9340,7 +13870,7 @@ func NewDatabaseServiceCreateDatabaseRequestWithBody(server string, projectId st
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9360,8 +13890,8 @@ func NewDatabaseServiceCreateDatabaseRequestWithBody(server string, projectId st
 	return req, nil
 }
 
-// NewDatabaseServiceDeleteDatabaseRequest constructs an http.Request for the DatabaseServiceDeleteDatabase method
-func NewDatabaseServiceDeleteDatabaseRequest(server string, projectId string, databaseId string) (*http.Request, error) {
+// NewBuilderAgentServiceDeleteBuilderAgentRequest constructs an http.Request for the BuilderAgentServiceDeleteBuilderAgent method
+func NewBuilderAgentServiceDeleteBuilderAgentRequest(server string, projectId string, builderAgentId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9373,7 +13903,7 @@ func NewDatabaseServiceDeleteDatabaseRequest(server string, projectId string, da
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "databaseId", databaseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -9383,7 +13913,7 @@ func NewDatabaseServiceDeleteDatabaseRequest(server string, projectId string, da
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9401,8 +13931,8 @@ func NewDatabaseServiceDeleteDatabaseRequest(server string, projectId string, da
 	return req, nil
 }
 
-// NewDatabaseServiceGetDatabaseRequest constructs an http.Request for the DatabaseServiceGetDatabase method
-func NewDatabaseServiceGetDatabaseRequest(server string, projectId string, databaseId string) (*http.Request, error) {
+// NewBuilderAgentServiceGetBuilderAgentRequest constructs an http.Request for the BuilderAgentServiceGetBuilderAgent method
+func NewBuilderAgentServiceGetBuilderAgentRequest(server string, projectId string, builderAgentId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9414,7 +13944,7 @@ func NewDatabaseServiceGetDatabaseRequest(server string, projectId string, datab
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "databaseId", databaseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -9424,7 +13954,7 @@ func NewDatabaseServiceGetDatabaseRequest(server string, projectId string, datab
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9442,8 +13972,19 @@ func NewDatabaseServiceGetDatabaseRequest(server string, projectId string, datab
 	return req, nil
 }
 
-// NewDatabaseServiceExportDatabaseRequest constructs an http.Request for the DatabaseServiceExportDatabase method
-func NewDatabaseServiceExportDatabaseRequest(server string, projectId string, databaseId string) (*http.Request, error) {
+// NewBuilderAgentServiceUpdateBuilderAgentRequest calls the generic BuilderAgentServiceUpdateBuilderAgent builder with application/json body
+func NewBuilderAgentServiceUpdateBuilderAgentRequest(server string, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server, projectId, builderAgentId, "application/json", bodyReader)
+}
+
+// NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceUpdateBuilderAgent method, with any body, and a specified content type
+func NewBuilderAgentServiceUpdateBuilderAgentRequestWithBody(server string, projectId string, builderAgentId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9455,7 +13996,7 @@ func NewDatabaseServiceExportDatabaseRequest(server string, projectId string, da
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "databaseId", databaseId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -9465,7 +14006,7 @@ func NewDatabaseServiceExportDatabaseRequest(server string, projectId string, da
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/databases/%s:export", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -9475,16 +14016,72 @@ func NewDatabaseServiceExportDatabaseRequest(server string, projectId string, da
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewBuilderAgentServiceDeployBuilderAgentRequest calls the generic BuilderAgentServiceDeployBuilderAgent builder with application/json body
+func NewBuilderAgentServiceDeployBuilderAgentRequest(server string, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server, projectId, builderAgentId, "application/json", bodyReader)
+}
+
+// NewBuilderAgentServiceDeployBuilderAgentRequestWithBody constructs an http.Request for the BuilderAgentServiceDeployBuilderAgent method, with any body, and a specified content type
+func NewBuilderAgentServiceDeployBuilderAgentRequestWithBody(server string, projectId string, builderAgentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "builderAgentId", builderAgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/agents/builder/%s:deploy", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
 
 // NewProjectServiceListInvitesRequest constructs an http.Request for the ProjectServiceListInvites method
-func NewProjectServiceListInvitesRequest(server string, projectId string) (*http.Request, error) {
+func NewProjectServiceListInvitesRequest(server string, projectId string, params *ProjectServiceListInvitesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9507,6 +14104,45 @@ func NewProjectServiceListInvitesRequest(server string, projectId string) (*http
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -9706,6 +14342,42 @@ func NewProjectServiceListKeysRequest(server string, projectId string, params *P
 
 		}
 
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OwnerId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "ownerId", *params.OwnerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -9809,7 +14481,7 @@ func NewProjectServiceDeleteKeyRequest(server string, projectId string, apiKey s
 }
 
 // NewProjectServiceListMembersRequest constructs an http.Request for the ProjectServiceListMembers method
-func NewProjectServiceListMembersRequest(server string, projectId string) (*http.Request, error) {
+func NewProjectServiceListMembersRequest(server string, projectId string, params *ProjectServiceListMembersParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9832,6 +14504,45 @@ func NewProjectServiceListMembersRequest(server string, projectId string) (*http
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -10052,6 +14763,383 @@ func NewProjectServiceAddWorkspaceMembersToProjectRequestWithBody(server string,
 	return req, nil
 }
 
+// NewTelephonyServiceListPhoneNumbersRequest constructs an http.Request for the TelephonyServiceListPhoneNumbers method
+func NewTelephonyServiceListPhoneNumbersRequest(server string, projectId string, params *TelephonyServiceListPhoneNumbersParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/phone-numbers", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Statuses != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "statuses", *params.Statuses, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SipDispatchRuleId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sipDispatchRuleId", *params.SipDispatchRuleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewTelephonyServicePurchasePhoneNumberRequest calls the generic TelephonyServicePurchasePhoneNumber builder with application/json body
+func NewTelephonyServicePurchasePhoneNumberRequest(server string, projectId string, body TelephonyServicePurchasePhoneNumberJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTelephonyServicePurchasePhoneNumberRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewTelephonyServicePurchasePhoneNumberRequestWithBody constructs an http.Request for the TelephonyServicePurchasePhoneNumber method, with any body, and a specified content type
+func NewTelephonyServicePurchasePhoneNumberRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/phone-numbers", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTelephonyServiceReleasePhoneNumberRequest constructs an http.Request for the TelephonyServiceReleasePhoneNumber method
+func NewTelephonyServiceReleasePhoneNumberRequest(server string, projectId string, phoneNumberId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "phoneNumberId", phoneNumberId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/phone-numbers/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewTelephonyServiceGetPhoneNumberRequest constructs an http.Request for the TelephonyServiceGetPhoneNumber method
+func NewTelephonyServiceGetPhoneNumberRequest(server string, projectId string, phoneNumberId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "phoneNumberId", phoneNumberId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/phone-numbers/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewTelephonyServiceUpdatePhoneNumberRequest calls the generic TelephonyServiceUpdatePhoneNumber builder with application/json body
+func NewTelephonyServiceUpdatePhoneNumberRequest(server string, projectId string, phoneNumberId string, body TelephonyServiceUpdatePhoneNumberJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTelephonyServiceUpdatePhoneNumberRequestWithBody(server, projectId, phoneNumberId, "application/json", bodyReader)
+}
+
+// NewTelephonyServiceUpdatePhoneNumberRequestWithBody constructs an http.Request for the TelephonyServiceUpdatePhoneNumber method, with any body, and a specified content type
+func NewTelephonyServiceUpdatePhoneNumberRequestWithBody(server string, projectId string, phoneNumberId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "phoneNumberId", phoneNumberId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/phone-numbers/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTelephonyServiceSearchPhoneNumbersRequest constructs an http.Request for the TelephonyServiceSearchPhoneNumbers method
+func NewTelephonyServiceSearchPhoneNumbersRequest(server string, projectId string, params *TelephonyServiceSearchPhoneNumbersParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/phone-numbers:search", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.CountryCode != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "countryCode", *params.CountryCode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AreaCode != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "areaCode", *params.AreaCode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewSimulationServiceGenerateScenarioFromSessionRequest calls the generic SimulationServiceGenerateScenarioFromSession builder with application/json body
 func NewSimulationServiceGenerateScenarioFromSessionRequest(server string, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -10095,40 +15183,6 @@ func NewSimulationServiceGenerateScenarioFromSessionRequestWithBody(server strin
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewProjectServiceListScopedKeysRequest constructs an http.Request for the ProjectServiceListScopedKeys method
-func NewProjectServiceListScopedKeysRequest(server string, projectId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v0/projects/%s/scoped-keys", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -11465,8 +16519,8 @@ func NewSimulationServiceCountSimulationRunsRequest(server string, projectId str
 	return req, nil
 }
 
-// NewThreadServiceListThreadsRequest constructs an http.Request for the ThreadServiceListThreads method
-func NewThreadServiceListThreadsRequest(server string, projectId string, params *ThreadServiceListThreadsParams) (*http.Request, error) {
+// NewTelephonyServiceListDispatchRulesRequest constructs an http.Request for the TelephonyServiceListDispatchRules method
+func NewTelephonyServiceListDispatchRulesRequest(server string, projectId string, params *TelephonyServiceListDispatchRulesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11481,7 +16535,7 @@ func NewThreadServiceListThreadsRequest(server string, projectId string, params 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/dispatch-rules", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11499,18 +16553,6 @@ func NewThreadServiceListThreadsRequest(server string, projectId string, params 
 		// styled parameters, preserving literal commas as delimiters
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
-
-		if params.Scope != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
 
 		if params.PageCursor != nil {
 
@@ -11536,6 +16578,18 @@ func NewThreadServiceListThreadsRequest(server string, projectId string, params 
 
 		}
 
+		if params.TrunkIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "trunkIds", *params.TrunkIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -11550,19 +16604,19 @@ func NewThreadServiceListThreadsRequest(server string, projectId string, params 
 	return req, nil
 }
 
-// NewThreadServiceCreateThreadRequest calls the generic ThreadServiceCreateThread builder with application/json body
-func NewThreadServiceCreateThreadRequest(server string, projectId string, body ThreadServiceCreateThreadJSONRequestBody) (*http.Request, error) {
+// NewTelephonyServiceCreateDispatchRuleRequest calls the generic TelephonyServiceCreateDispatchRule builder with application/json body
+func NewTelephonyServiceCreateDispatchRuleRequest(server string, projectId string, body TelephonyServiceCreateDispatchRuleJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewThreadServiceCreateThreadRequestWithBody(server, projectId, "application/json", bodyReader)
+	return NewTelephonyServiceCreateDispatchRuleRequestWithBody(server, projectId, "application/json", bodyReader)
 }
 
-// NewThreadServiceCreateThreadRequestWithBody constructs an http.Request for the ThreadServiceCreateThread method, with any body, and a specified content type
-func NewThreadServiceCreateThreadRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewTelephonyServiceCreateDispatchRuleRequestWithBody constructs an http.Request for the TelephonyServiceCreateDispatchRule method, with any body, and a specified content type
+func NewTelephonyServiceCreateDispatchRuleRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11577,7 +16631,7 @@ func NewThreadServiceCreateThreadRequestWithBody(server string, projectId string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads", pathParam0)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/dispatch-rules", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11597,8 +16651,8 @@ func NewThreadServiceCreateThreadRequestWithBody(server string, projectId string
 	return req, nil
 }
 
-// NewThreadServiceDeleteThreadRequest constructs an http.Request for the ThreadServiceDeleteThread method
-func NewThreadServiceDeleteThreadRequest(server string, projectId string, threadId string) (*http.Request, error) {
+// NewTelephonyServiceDeleteDispatchRuleRequest constructs an http.Request for the TelephonyServiceDeleteDispatchRule method
+func NewTelephonyServiceDeleteDispatchRuleRequest(server string, projectId string, dispatchRuleId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11610,7 +16664,7 @@ func NewThreadServiceDeleteThreadRequest(server string, projectId string, thread
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "dispatchRuleId", dispatchRuleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -11620,7 +16674,7 @@ func NewThreadServiceDeleteThreadRequest(server string, projectId string, thread
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/dispatch-rules/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11638,8 +16692,8 @@ func NewThreadServiceDeleteThreadRequest(server string, projectId string, thread
 	return req, nil
 }
 
-// NewThreadServiceGetThreadRequest constructs an http.Request for the ThreadServiceGetThread method
-func NewThreadServiceGetThreadRequest(server string, projectId string, threadId string) (*http.Request, error) {
+// NewTelephonyServiceGetDispatchRuleRequest constructs an http.Request for the TelephonyServiceGetDispatchRule method
+func NewTelephonyServiceGetDispatchRuleRequest(server string, projectId string, dispatchRuleId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11651,7 +16705,7 @@ func NewThreadServiceGetThreadRequest(server string, projectId string, threadId 
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "dispatchRuleId", dispatchRuleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -11661,7 +16715,7 @@ func NewThreadServiceGetThreadRequest(server string, projectId string, threadId 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/dispatch-rules/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11679,19 +16733,19 @@ func NewThreadServiceGetThreadRequest(server string, projectId string, threadId 
 	return req, nil
 }
 
-// NewThreadServiceUpdateThreadRequest calls the generic ThreadServiceUpdateThread builder with application/json body
-func NewThreadServiceUpdateThreadRequest(server string, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody) (*http.Request, error) {
+// NewTelephonyServiceUpdateDispatchRuleRequest calls the generic TelephonyServiceUpdateDispatchRule builder with application/json body
+func NewTelephonyServiceUpdateDispatchRuleRequest(server string, projectId string, dispatchRuleId string, body TelephonyServiceUpdateDispatchRuleJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewThreadServiceUpdateThreadRequestWithBody(server, projectId, threadId, "application/json", bodyReader)
+	return NewTelephonyServiceUpdateDispatchRuleRequestWithBody(server, projectId, dispatchRuleId, "application/json", bodyReader)
 }
 
-// NewThreadServiceUpdateThreadRequestWithBody constructs an http.Request for the ThreadServiceUpdateThread method, with any body, and a specified content type
-func NewThreadServiceUpdateThreadRequestWithBody(server string, projectId string, threadId string, contentType string, body io.Reader) (*http.Request, error) {
+// NewTelephonyServiceUpdateDispatchRuleRequestWithBody constructs an http.Request for the TelephonyServiceUpdateDispatchRule method, with any body, and a specified content type
+func NewTelephonyServiceUpdateDispatchRuleRequestWithBody(server string, projectId string, dispatchRuleId string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11703,7 +16757,7 @@ func NewThreadServiceUpdateThreadRequestWithBody(server string, projectId string
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "dispatchRuleId", dispatchRuleId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -11713,7 +16767,7 @@ func NewThreadServiceUpdateThreadRequestWithBody(server string, projectId string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/dispatch-rules/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11733,8 +16787,8 @@ func NewThreadServiceUpdateThreadRequestWithBody(server string, projectId string
 	return req, nil
 }
 
-// NewThreadServiceGetThreadItemsRequest constructs an http.Request for the ThreadServiceGetThreadItems method
-func NewThreadServiceGetThreadItemsRequest(server string, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams) (*http.Request, error) {
+// NewTelephonyServiceListInboundTrunksRequest constructs an http.Request for the TelephonyServiceListInboundTrunks method
+func NewTelephonyServiceListInboundTrunksRequest(server string, projectId string, params *TelephonyServiceListInboundTrunksParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11744,19 +16798,12 @@ func NewThreadServiceGetThreadItemsRequest(server string, projectId string, thre
 		return nil, err
 	}
 
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s/items", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/inbound-trunks", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11774,18 +16821,6 @@ func NewThreadServiceGetThreadItemsRequest(server string, projectId string, thre
 		// styled parameters, preserving literal commas as delimiters
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
-
-		if params.Agent != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent", *params.Agent, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
 
 		if params.PageCursor != nil {
 
@@ -11811,9 +16846,9 @@ func NewThreadServiceGetThreadItemsRequest(server string, projectId string, thre
 
 		}
 
-		if params.SortOrder != nil {
+		if params.Numbers != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sortOrder", *params.SortOrder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "numbers", *params.Numbers, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -11837,8 +16872,55 @@ func NewThreadServiceGetThreadItemsRequest(server string, projectId string, thre
 	return req, nil
 }
 
-// NewThreadServiceGetThreadTasksRequest constructs an http.Request for the ThreadServiceGetThreadTasks method
-func NewThreadServiceGetThreadTasksRequest(server string, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams) (*http.Request, error) {
+// NewTelephonyServiceCreateInboundTrunkRequest calls the generic TelephonyServiceCreateInboundTrunk builder with application/json body
+func NewTelephonyServiceCreateInboundTrunkRequest(server string, projectId string, body TelephonyServiceCreateInboundTrunkJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTelephonyServiceCreateInboundTrunkRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewTelephonyServiceCreateInboundTrunkRequestWithBody constructs an http.Request for the TelephonyServiceCreateInboundTrunk method, with any body, and a specified content type
+func NewTelephonyServiceCreateInboundTrunkRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/inbound-trunks", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTelephonyServiceDeleteInboundTrunkRequest constructs an http.Request for the TelephonyServiceDeleteInboundTrunk method
+func NewTelephonyServiceDeleteInboundTrunkRequest(server string, projectId string, trunkId string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11850,7 +16932,7 @@ func NewThreadServiceGetThreadTasksRequest(server string, projectId string, thre
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "threadId", threadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trunkId", trunkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -11860,7 +16942,136 @@ func NewThreadServiceGetThreadTasksRequest(server string, projectId string, thre
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v0/projects/%s/threads/%s/tasks", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/inbound-trunks/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewTelephonyServiceGetInboundTrunkRequest constructs an http.Request for the TelephonyServiceGetInboundTrunk method
+func NewTelephonyServiceGetInboundTrunkRequest(server string, projectId string, trunkId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trunkId", trunkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/inbound-trunks/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewTelephonyServiceUpdateInboundTrunkRequest calls the generic TelephonyServiceUpdateInboundTrunk builder with application/json body
+func NewTelephonyServiceUpdateInboundTrunkRequest(server string, projectId string, trunkId string, body TelephonyServiceUpdateInboundTrunkJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTelephonyServiceUpdateInboundTrunkRequestWithBody(server, projectId, trunkId, "application/json", bodyReader)
+}
+
+// NewTelephonyServiceUpdateInboundTrunkRequestWithBody constructs an http.Request for the TelephonyServiceUpdateInboundTrunk method, with any body, and a specified content type
+func NewTelephonyServiceUpdateInboundTrunkRequestWithBody(server string, projectId string, trunkId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trunkId", trunkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/inbound-trunks/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTelephonyServiceListOutboundTrunksRequest constructs an http.Request for the TelephonyServiceListOutboundTrunks method
+func NewTelephonyServiceListOutboundTrunksRequest(server string, projectId string, params *TelephonyServiceListOutboundTrunksParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/outbound-trunks", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11878,18 +17089,6 @@ func NewThreadServiceGetThreadTasksRequest(server string, projectId string, thre
 		// styled parameters, preserving literal commas as delimiters
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
 
 		if params.PageCursor != nil {
 
@@ -11915,6 +17114,18 @@ func NewThreadServiceGetThreadTasksRequest(server string, projectId string, thre
 
 		}
 
+		if params.Numbers != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "numbers", *params.Numbers, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -11925,6 +17136,283 @@ func NewThreadServiceGetThreadTasksRequest(server string, projectId string, thre
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewTelephonyServiceCreateOutboundTrunkRequest calls the generic TelephonyServiceCreateOutboundTrunk builder with application/json body
+func NewTelephonyServiceCreateOutboundTrunkRequest(server string, projectId string, body TelephonyServiceCreateOutboundTrunkJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTelephonyServiceCreateOutboundTrunkRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewTelephonyServiceCreateOutboundTrunkRequestWithBody constructs an http.Request for the TelephonyServiceCreateOutboundTrunk method, with any body, and a specified content type
+func NewTelephonyServiceCreateOutboundTrunkRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/outbound-trunks", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTelephonyServiceDeleteOutboundTrunkRequest constructs an http.Request for the TelephonyServiceDeleteOutboundTrunk method
+func NewTelephonyServiceDeleteOutboundTrunkRequest(server string, projectId string, trunkId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trunkId", trunkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/outbound-trunks/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewTelephonyServiceGetOutboundTrunkRequest constructs an http.Request for the TelephonyServiceGetOutboundTrunk method
+func NewTelephonyServiceGetOutboundTrunkRequest(server string, projectId string, trunkId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trunkId", trunkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/outbound-trunks/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewTelephonyServiceUpdateOutboundTrunkRequest calls the generic TelephonyServiceUpdateOutboundTrunk builder with application/json body
+func NewTelephonyServiceUpdateOutboundTrunkRequest(server string, projectId string, trunkId string, body TelephonyServiceUpdateOutboundTrunkJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTelephonyServiceUpdateOutboundTrunkRequestWithBody(server, projectId, trunkId, "application/json", bodyReader)
+}
+
+// NewTelephonyServiceUpdateOutboundTrunkRequestWithBody constructs an http.Request for the TelephonyServiceUpdateOutboundTrunk method, with any body, and a specified content type
+func NewTelephonyServiceUpdateOutboundTrunkRequestWithBody(server string, projectId string, trunkId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "trunkId", trunkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/outbound-trunks/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTelephonyServiceCreateSIPParticipantRequest calls the generic TelephonyServiceCreateSIPParticipant builder with application/json body
+func NewTelephonyServiceCreateSIPParticipantRequest(server string, projectId string, body TelephonyServiceCreateSIPParticipantJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTelephonyServiceCreateSIPParticipantRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewTelephonyServiceCreateSIPParticipantRequestWithBody constructs an http.Request for the TelephonyServiceCreateSIPParticipant method, with any body, and a specified content type
+func NewTelephonyServiceCreateSIPParticipantRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/participants", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTelephonyServiceTransferSIPParticipantRequest calls the generic TelephonyServiceTransferSIPParticipant builder with application/json body
+func NewTelephonyServiceTransferSIPParticipantRequest(server string, projectId string, body TelephonyServiceTransferSIPParticipantJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTelephonyServiceTransferSIPParticipantRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewTelephonyServiceTransferSIPParticipantRequestWithBody constructs an http.Request for the TelephonyServiceTransferSIPParticipant method, with any body, and a specified content type
+func NewTelephonyServiceTransferSIPParticipantRequestWithBody(server string, projectId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/projects/%s/sip/participants:transfer", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -11977,7 +17465,7 @@ func NewProjectServiceCreateTokenRequestWithBody(server string, projectId string
 }
 
 // NewProjectServiceListWebhookEventsRequest constructs an http.Request for the ProjectServiceListWebhookEvents method
-func NewProjectServiceListWebhookEventsRequest(server string, projectId string) (*http.Request, error) {
+func NewProjectServiceListWebhookEventsRequest(server string, projectId string, params *ProjectServiceListWebhookEventsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12002,6 +17490,45 @@ func NewProjectServiceListWebhookEventsRequest(server string, projectId string) 
 		return nil, err
 	}
 
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -12011,7 +17538,7 @@ func NewProjectServiceListWebhookEventsRequest(server string, projectId string) 
 }
 
 // NewProjectServiceListWebhooksRequest constructs an http.Request for the ProjectServiceListWebhooks method
-func NewProjectServiceListWebhooksRequest(server string, projectId string) (*http.Request, error) {
+func NewProjectServiceListWebhooksRequest(server string, projectId string, params *ProjectServiceListWebhooksParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12034,6 +17561,45 @@ func NewProjectServiceListWebhooksRequest(server string, projectId string) (*htt
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -12350,6 +17916,33 @@ func NewUserServiceGetCurrentUserRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUserServiceRevokeSessionTokenRequest constructs an http.Request for the UserServiceRevokeSessionToken method
+func NewUserServiceRevokeSessionTokenRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v0/users/me/session-token")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -12694,7 +18287,7 @@ func NewWorkspaceServiceUpdateWorkspaceRequestWithBody(server string, workspaceI
 }
 
 // NewWorkspaceServiceListInvitesRequest constructs an http.Request for the WorkspaceServiceListInvites method
-func NewWorkspaceServiceListInvitesRequest(server string, workspaceId string) (*http.Request, error) {
+func NewWorkspaceServiceListInvitesRequest(server string, workspaceId string, params *WorkspaceServiceListInvitesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12717,6 +18310,45 @@ func NewWorkspaceServiceListInvitesRequest(server string, workspaceId string) (*
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -12816,7 +18448,7 @@ func NewWorkspaceServiceDeleteInviteRequest(server string, workspaceId string, e
 }
 
 // NewWorkspaceServiceListMembersRequest constructs an http.Request for the WorkspaceServiceListMembers method
-func NewWorkspaceServiceListMembersRequest(server string, workspaceId string) (*http.Request, error) {
+func NewWorkspaceServiceListMembersRequest(server string, workspaceId string, params *WorkspaceServiceListMembersParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -12839,6 +18471,45 @@ func NewWorkspaceServiceListMembersRequest(server string, workspaceId string) (*
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PageCursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.cursor", *params.PageCursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PagePageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page.pageSize", *params.PagePageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -13260,12 +18931,27 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceGetInviteWithResponse GetInvite
 	//
+	// Returns a project invite that was sent to you, found by its token. Use it to
+	//  show the invite before you answer it with `AnswerInvitation`. An invite that
+	//  was sent to a different email address returns `PermissionDenied`. An expired
+	//  invite returns `FailedPrecondition`. An unknown token returns `NotFound`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
 	ProjectServiceGetInviteWithResponse(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*ProjectServiceGetInviteResponse, error)
 
 	// ProjectServiceAnswerInvitationWithBodyWithResponse AnswerInvitation
+	//
+	// Accepts or declines a project invite that was sent to you. When you accept,
+	//  you become a member of the project with the role of the invite. When the
+	//  project is in a workspace, you also become a member of the workspace and of
+	//  every project in it where `isPrivate` is `false`, with the same role. If you
+	//  are already a member, the role of the invite replaces your role. When you
+	//  decline, the API deletes the invite. After you answer, the token stops
+	//  working, so a retry returns `NotFound`. An invite that was sent to a
+	//  different email address returns `PermissionDenied`. An expired invite
+	//  returns `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13274,12 +18960,26 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceAnswerInvitationWithResponse AnswerInvitation
 	//
+	// Accepts or declines a project invite that was sent to you. When you accept,
+	//  you become a member of the project with the role of the invite. When the
+	//  project is in a workspace, you also become a member of the workspace and of
+	//  every project in it where `isPrivate` is `false`, with the same role. If you
+	//  are already a member, the role of the invite replaces your role. When you
+	//  decline, the API deletes the invite. After you answer, the token stops
+	//  working, so a retry returns `NotFound`. An invite that was sent to a
+	//  different email address returns `PermissionDenied`. An expired invite
+	//  returns `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
 	ProjectServiceAnswerInvitationWithResponse(ctx context.Context, inviteToken string, body ProjectServiceAnswerInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceAnswerInvitationResponse, error)
 
 	// ProjectServiceListProjectsWithResponse ListProjects
+	//
+	// Lists projects, ordered by project ID. When you set no filter, the list has
+	//  the projects that you are a member of. A pending invite does not make you a
+	//  member.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13288,12 +18988,34 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceCreateProjectWithBodyWithResponse CreateProject
 	//
+	// Creates a project. You become a member of the project with the admin role
+	//  (`3`), and the API creates an API key that you own. When `workspaceId` is
+	//  empty, the API also creates a workspace with the same name as the project,
+	//  and you are its only member. When `isPrivate` is `false` and you set
+	//  `workspaceId`, every member of the workspace becomes a member of the project,
+	//  with their workspace role. A `subdomain` that another project uses returns
+	//  `AlreadyExists`. When you reach the limit of free projects that you can
+	//  create, or the project limit of the workspace plan, the request fails with
+	//  `FailedPrecondition`. The call is not idempotent: when `subdomain` is empty,
+	//  a retry creates a second project.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
 	ProjectServiceCreateProjectWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceCreateProjectResponse, error)
 
 	// ProjectServiceCreateProjectWithResponse CreateProject
+	//
+	// Creates a project. You become a member of the project with the admin role
+	//  (`3`), and the API creates an API key that you own. When `workspaceId` is
+	//  empty, the API also creates a workspace with the same name as the project,
+	//  and you are its only member. When `isPrivate` is `false` and you set
+	//  `workspaceId`, every member of the workspace becomes a member of the project,
+	//  with their workspace role. A `subdomain` that another project uses returns
+	//  `AlreadyExists`. When you reach the limit of free projects that you can
+	//  create, or the project limit of the workspace plan, the request fails with
+	//  `FailedPrecondition`. The call is not idempotent: when `subdomain` is empty,
+	//  a retry creates a second project.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13302,12 +19024,19 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceDeleteProjectWithResponse DeleteProject
 	//
+	// Deletes a project, with its API keys, its webhooks, and its member list. You
+	//  cannot undo the delete. Another project can then use the subdomain. A retry
+	//  returns `NotFound`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v0/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
 	ProjectServiceDeleteProjectWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceDeleteProjectResponse, error)
 
 	// ProjectServiceGetProjectWithResponse GetProject
+	//
+	// Returns a project with its settings and its webhooks. A project that you
+	//  cannot see returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13316,6 +19045,16 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceUpdateProjectWithBodyWithResponse UpdateProject
 	//
+	// Updates the settings of a project, and returns the updated project. A field
+	//  that you do not set keeps its value. When you change `isPrivate` from
+	//  `false` to `true`, the API removes every member of the project except you
+	//  and the users in `members`, and you get the admin role (`3`). When you
+	//  change `isPrivate` from `true` to `false`, every member of the workspace
+	//  becomes a member of the project, with their workspace role. A user in
+	//  `members` who is not a member of the workspace
+	//  returns `NotFound`. A `subdomain` that another project uses returns
+	//  `AlreadyExists`.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
@@ -13323,102 +19062,150 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceUpdateProjectWithResponse UpdateProject
 	//
+	// Updates the settings of a project, and returns the updated project. A field
+	//  that you do not set keeps its value. When you change `isPrivate` from
+	//  `false` to `true`, the API removes every member of the project except you
+	//  and the users in `members`, and you get the admin role (`3`). When you
+	//  change `isPrivate` from `true` to `false`, every member of the workspace
+	//  becomes a member of the project, with their workspace role. A user in
+	//  `members` who is not a member of the workspace
+	//  returns `NotFound`. A `subdomain` that another project uses returns
+	//  `AlreadyExists`.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
 	ProjectServiceUpdateProjectWithResponse(ctx context.Context, projectId string, body ProjectServiceUpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateProjectResponse, error)
 
-	// AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
+	// BuilderAgentServiceListBuilderAgentsWithResponse ListBuilderAgents
 	//
-	// Returns the project overview over a time range.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
-	AnalyticsServiceGetProjectAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetProjectAnalyticsResponse, error)
-
-	// AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
-	//
-	// Returns the same per-agent analytics for every agent in the project, one
-	//  AgentAnalytics row per agent — so a single agent and the whole roster share
-	//  one shape.
+	// Lists the builder agents of a project by name, with the deployment status
+	//  of each. The list does not include configurations. To get the
+	//  configuration of an agent, call `GetBuilderAgent`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
-	AnalyticsServiceListAgentAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListAgentAnalyticsResponse, error)
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
+	BuilderAgentServiceListBuilderAgentsWithResponse(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceListBuilderAgentsResponse, error)
 
-	// AnalyticsServiceGetAgentAnalyticsWithResponse GetAgentAnalytics
+	// BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse CreateBuilderAgent
 	//
-	// Returns the analytics for one agent over a time range.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
-	AnalyticsServiceGetAgentAnalyticsWithResponse(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetAgentAnalyticsResponse, error)
-
-	// DatabaseServiceListDatabasesWithResponse ListDatabases
-	//
-	// Lists the project's databases, cursor-paginated.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
-	DatabaseServiceListDatabasesWithResponse(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*DatabaseServiceListDatabasesResponse, error)
-
-	// DatabaseServiceCreateDatabaseWithBodyWithResponse CreateDatabase
-	//
-	// Creates an empty database. Not idempotent: a retried request creates a
-	//  second database.
+	// Creates a builder agent from a name and a configuration. The agent is not
+	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
+	//  properties take their default, and unknown properties are ignored. A
+	//  configuration that is not valid fails with `InvalidArgument` and a
+	//  `google.rpc.BadRequest` detail. It has a field violation for each
+	//  problem, up to 100, which names a field, such as
+	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
+	//  problems gets one last violation for `config` that says how many more.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-	DatabaseServiceCreateDatabaseWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DatabaseServiceCreateDatabaseResponse, error)
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+	BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error)
 
-	// DatabaseServiceCreateDatabaseWithResponse CreateDatabase
+	// BuilderAgentServiceCreateBuilderAgentWithResponse CreateBuilderAgent
 	//
-	// Creates an empty database. Not idempotent: a retried request creates a
-	//  second database.
+	// Creates a builder agent from a name and a configuration. The agent is not
+	//  deployed: call `DeployBuilderAgent` to run it. Unset configuration
+	//  properties take their default, and unknown properties are ignored. A
+	//  configuration that is not valid fails with `InvalidArgument` and a
+	//  `google.rpc.BadRequest` detail. It has a field violation for each
+	//  problem, up to 100, which names a field, such as
+	//  `config.httpTools[0].url`, and what is wrong with it. A config with more
+	//  problems gets one last violation for `config` that says how many more.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-	DatabaseServiceCreateDatabaseWithResponse(ctx context.Context, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody, reqEditors ...RequestEditorFn) (*DatabaseServiceCreateDatabaseResponse, error)
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+	BuilderAgentServiceCreateBuilderAgentWithResponse(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error)
 
-	// DatabaseServiceDeleteDatabaseWithResponse DeleteDatabase
+	// BuilderAgentServiceDeleteBuilderAgentWithResponse DeleteBuilderAgent
 	//
-	// Deletes the stored data, not just the metadata.
+	// Deletes a builder agent, its versions, and its deployment.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
-	DatabaseServiceDeleteDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceDeleteDatabaseResponse, error)
+	// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
+	BuilderAgentServiceDeleteBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeleteBuilderAgentResponse, error)
 
-	// DatabaseServiceGetDatabaseWithResponse GetDatabase
+	// BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
+	//
+	// Returns a builder agent with its current configuration and its deployment
+	//  status.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceGetDatabase` operationId).
-	DatabaseServiceGetDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceGetDatabaseResponse, error)
+	// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
+	BuilderAgentServiceGetBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceGetBuilderAgentResponse, error)
 
-	// DatabaseServiceExportDatabaseWithResponse ExportDatabase
+	// BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
 	//
-	// Exports a consistent SQLite file as a time-limited download URL.
+	// Replaces the configuration of a builder agent. Each update makes a new
+	//  version. The running agent does not change until you deploy again. A
+	//  configuration that is not valid fails as it does in
+	//  `CreateBuilderAgent`.
 	//
-	// Returns a wrapper object for the known response body format(s).
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
-	DatabaseServiceExportDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceExportDatabaseResponse, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+	BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error)
+
+	// BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
+	//
+	// Replaces the configuration of a builder agent. Each update makes a new
+	//  version. The running agent does not change until you deploy again. A
+	//  configuration that is not valid fails as it does in
+	//  `CreateBuilderAgent`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+	BuilderAgentServiceUpdateBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error)
+
+	// BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
+	//
+	// Starts a deployment of the current configuration of a builder agent, or of
+	//  an earlier version. The call returns when the build starts, with the
+	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
+	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+	BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error)
+
+	// BuilderAgentServiceDeployBuilderAgentWithResponse DeployBuilderAgent
+	//
+	// Starts a deployment of the current configuration of a builder agent, or of
+	//  an earlier version. The call returns when the build starts, with the
+	//  status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+	//  returns. Call `GetBuilderAgent` to follow the deployment until its status
+	//  is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+	BuilderAgentServiceDeployBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error)
 
 	// ProjectServiceListInvitesWithResponse ListInvites
+	//
+	// Lists the unexpired invites of a project, ordered by email.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
-	ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error)
+	ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, params *ProjectServiceListInvitesParams, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error)
 
 	// ProjectServiceInviteMemberWithBodyWithResponse InviteMember
+	//
+	// Invites a person to a project by email, with a role. The API sends an email
+	//  with the invite link, and the response has the invite token. The invite
+	//  expires after 48 hours. When an invite for the email exists, the API
+	//  replaces its role, token, and expiry, and the earlier link stops working. A
+	//  retry replaces the invite and sends a new email. On a plan that allows only
+	//  the admin role (`3`), the roles `1` and `2` return `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13427,12 +19214,24 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceInviteMemberWithResponse InviteMember
 	//
+	// Invites a person to a project by email, with a role. The API sends an email
+	//  with the invite link, and the response has the invite token. The invite
+	//  expires after 48 hours. When an invite for the email exists, the API
+	//  replaces its role, token, and expiry, and the earlier link stops working. A
+	//  retry replaces the invite and sends a new email. On a plan that allows only
+	//  the admin role (`3`), the roles `1` and `2` return `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
 	ProjectServiceInviteMemberWithResponse(ctx context.Context, projectId string, body ProjectServiceInviteMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceInviteMemberResponse, error)
 
 	// ProjectServiceDeleteInviteWithResponse DeleteInvite
+	//
+	// Deletes a pending project invite, so that its link stops working. When the
+	//  project is in a workspace, the API also deletes the workspace invite for the
+	//  same email. An invite that does not exist returns `NotFound`. An expired
+	//  invite returns `FailedPrecondition`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13441,12 +19240,24 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceUpdateInviteWithBodyWithResponse UpdateInvite
 	//
+	// Changes the role of a pending project invite. The token and the expiry do not
+	//  change, and the API sends no email. An invite that does not exist returns
+	//  `NotFound`. An expired invite returns `FailedPrecondition`. On a plan that
+	//  allows only the admin role (`3`), the roles `1` and `2` return
+	//  `FailedPrecondition`.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
 	ProjectServiceUpdateInviteWithBodyWithResponse(ctx context.Context, projectId string, email string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateInviteResponse, error)
 
 	// ProjectServiceUpdateInviteWithResponse UpdateInvite
+	//
+	// Changes the role of a pending project invite. The token and the expiry do not
+	//  change, and the API sends no email. An invite that does not exist returns
+	//  `NotFound`. An expired invite returns `FailedPrecondition`. On a plan that
+	//  allows only the admin role (`3`), the roles `1` and `2` return
+	//  `FailedPrecondition`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13455,6 +19266,9 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListKeysWithResponse ListKeys
 	//
+	// Lists the API keys of a project, oldest first. The list does not include
+	//  the secrets.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
@@ -13462,8 +19276,8 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceGenerateKeyWithBodyWithResponse GenerateKey
 	//
-	// Creates an API key and secret for the project. The secret is returned once,
-	//  in the response, and cannot be read again.
+	// Creates an API key and secret for the project. The response includes the
+	//  secret. You cannot read the secret again.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13472,8 +19286,8 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceGenerateKeyWithResponse GenerateKey
 	//
-	// Creates an API key and secret for the project. The secret is returned once,
-	//  in the response, and cannot be read again.
+	// Creates an API key and secret for the project. The response includes the
+	//  secret. You cannot read the secret again.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13482,6 +19296,10 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceDeleteKeyWithResponse DeleteKey
 	//
+	// Deletes an API key and its secret from a project. You cannot undo the
+	//  delete. A key that does not exist, or that belongs to another project,
+	//  returns `NotFound`, so a retry returns `NotFound`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
@@ -13489,14 +19307,23 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListMembersWithResponse ListMembers
 	//
-	// Lists the project's members.
+	// Lists the project members, ordered by user ID.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
-	ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error)
+	ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, params *ProjectServiceListMembersParams, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error)
 
 	// ProjectServiceRemoveMemberWithResponse RemoveMember
+	//
+	// Removes a user from a project, and deletes the API keys that the user owns in
+	//  the project. Agent keys stay. When `isPrivate` is `false` on the project, the
+	//  API removes the user from the workspace and from every project in it, and
+	//  deletes the keys that the user owns in all of those projects. Send
+	//  `confirmedNumKeys` to confirm the number of keys to delete. A removal that
+	//  deletes the last API key of a project returns `FailedPrecondition` and
+	//  changes nothing. A user who is not a member returns `NotFound`. The response
+	//  has the number of keys that the removal deleted.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13505,12 +19332,23 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceGetMemberWithResponse GetMember
 	//
+	// Returns the membership of one user on a project, with the role of the user.
+	//  A user who is not a member of the project returns `NotFound`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
 	ProjectServiceGetMemberWithResponse(ctx context.Context, projectId string, userId string, reqEditors ...RequestEditorFn) (*ProjectServiceGetMemberResponse, error)
 
 	// ProjectServiceUpdateMemberWithBodyWithResponse UpdateMember
+	//
+	// Changes the role of a member of a project. When `isPrivate` is `false` on the
+	//  project, the role is the workspace role of the user: the API changes it on
+	//  the workspace and on every project in the workspace where `isPrivate` is
+	//  `false`. When `isPrivate` is `true`, only this project changes, and the API
+	//  sends an email to the member about the new role. A user who is not a member
+	//  returns `NotFound`. On a plan that allows only the admin role (`3`), the
+	//  roles `1` and `2` return `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13519,12 +19357,29 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceUpdateMemberWithResponse UpdateMember
 	//
+	// Changes the role of a member of a project. When `isPrivate` is `false` on the
+	//  project, the role is the workspace role of the user: the API changes it on
+	//  the workspace and on every project in the workspace where `isPrivate` is
+	//  `false`. When `isPrivate` is `true`, only this project changes, and the API
+	//  sends an email to the member about the new role. A user who is not a member
+	//  returns `NotFound`. On a plan that allows only the admin role (`3`), the
+	//  roles `1` and `2` return `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
 	ProjectServiceUpdateMemberWithResponse(ctx context.Context, projectId string, userId string, body ProjectServiceUpdateMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateMemberResponse, error)
 
 	// ProjectServiceAddWorkspaceMembersToProjectWithBodyWithResponse AddWorkspaceMembersToProject
+	//
+	// Adds members of the workspace to a project where `isPrivate` is `true`, all
+	//  with one role. A user who is already a member of the project gets the new
+	//  role, so a retry gives the same result. The API sends an email to each user
+	//  that it adds, except you. A project where `isPrivate` is `false` returns
+	//  `InvalidArgument`. A user who is not a member of the workspace returns
+	//  `NotFound`, and the API adds no one. On a plan that allows only the admin
+	//  role (`3`), the roles `1` and `2` return `FailedPrecondition`. The response
+	//  lists the members in no specific order. An empty `userIds` changes nothing.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13533,18 +19388,112 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceAddWorkspaceMembersToProjectWithResponse AddWorkspaceMembersToProject
 	//
+	// Adds members of the workspace to a project where `isPrivate` is `true`, all
+	//  with one role. A user who is already a member of the project gets the new
+	//  role, so a retry gives the same result. The API sends an email to each user
+	//  that it adds, except you. A project where `isPrivate` is `false` returns
+	//  `InvalidArgument`. A user who is not a member of the workspace returns
+	//  `NotFound`, and the API adds no one. On a plan that allows only the admin
+	//  role (`3`), the roles `1` and `2` return `FailedPrecondition`. The response
+	//  lists the members in no specific order. An empty `userIds` changes nothing.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
 	ProjectServiceAddWorkspaceMembersToProjectWithResponse(ctx context.Context, projectId string, body ProjectServiceAddWorkspaceMembersToProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceAddWorkspaceMembersToProjectResponse, error)
 
+	// TelephonyServiceListPhoneNumbersWithResponse ListPhoneNumbers
+	//
+	// Lists the phone numbers of the project, newest first.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/phone-numbers (the `TelephonyServiceListPhoneNumbers` operationId).
+	TelephonyServiceListPhoneNumbersWithResponse(ctx context.Context, projectId string, params *TelephonyServiceListPhoneNumbersParams, reqEditors ...RequestEditorFn) (*TelephonyServiceListPhoneNumbersResponse, error)
+
+	// TelephonyServicePurchasePhoneNumberWithBodyWithResponse PurchasePhoneNumber
+	//
+	// Buys a phone number for the project. The number then appears in
+	//  `ListPhoneNumbers`. A number that someone else bought first fails with
+	//  `AlreadyExists`, and a project at its phone number limit fails with
+	//  `FailedPrecondition`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/phone-numbers (the `TelephonyServicePurchasePhoneNumber` operationId).
+	TelephonyServicePurchasePhoneNumberWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServicePurchasePhoneNumberResponse, error)
+
+	// TelephonyServicePurchasePhoneNumberWithResponse PurchasePhoneNumber
+	//
+	// Buys a phone number for the project. The number then appears in
+	//  `ListPhoneNumbers`. A number that someone else bought first fails with
+	//  `AlreadyExists`, and a project at its phone number limit fails with
+	//  `FailedPrecondition`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/phone-numbers (the `TelephonyServicePurchasePhoneNumber` operationId).
+	TelephonyServicePurchasePhoneNumberWithResponse(ctx context.Context, projectId string, body TelephonyServicePurchasePhoneNumberJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServicePurchasePhoneNumberResponse, error)
+
+	// TelephonyServiceReleasePhoneNumberWithResponse ReleasePhoneNumber
+	//
+	// Releases a phone number. The project loses the number, and the API
+	//  removes it from each dispatch rule.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceReleasePhoneNumber` operationId).
+	TelephonyServiceReleasePhoneNumberWithResponse(ctx context.Context, projectId string, phoneNumberId string, reqEditors ...RequestEditorFn) (*TelephonyServiceReleasePhoneNumberResponse, error)
+
+	// TelephonyServiceGetPhoneNumberWithResponse GetPhoneNumber
+	//
+	// Returns a phone number of the project.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceGetPhoneNumber` operationId).
+	TelephonyServiceGetPhoneNumberWithResponse(ctx context.Context, projectId string, phoneNumberId string, reqEditors ...RequestEditorFn) (*TelephonyServiceGetPhoneNumberResponse, error)
+
+	// TelephonyServiceUpdatePhoneNumberWithBodyWithResponse UpdatePhoneNumber
+	//
+	// Renames a phone number, or adds it to a dispatch rule. To remove a
+	//  number from a rule, remove its ID from the `trunkIds` of the rule with
+	//  `UpdateDispatchRule`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceUpdatePhoneNumber` operationId).
+	TelephonyServiceUpdatePhoneNumberWithBodyWithResponse(ctx context.Context, projectId string, phoneNumberId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdatePhoneNumberResponse, error)
+
+	// TelephonyServiceUpdatePhoneNumberWithResponse UpdatePhoneNumber
+	//
+	// Renames a phone number, or adds it to a dispatch rule. To remove a
+	//  number from a rule, remove its ID from the `trunkIds` of the rule with
+	//  `UpdateDispatchRule`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceUpdatePhoneNumber` operationId).
+	TelephonyServiceUpdatePhoneNumberWithResponse(ctx context.Context, projectId string, phoneNumberId string, body TelephonyServiceUpdatePhoneNumberJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdatePhoneNumberResponse, error)
+
+	// TelephonyServiceSearchPhoneNumbersWithResponse SearchPhoneNumbers
+	//
+	// Lists the phone numbers that are for sale in a country. The list is
+	//  always one page.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/phone-numbers:search (the `TelephonyServiceSearchPhoneNumbers` operationId).
+	TelephonyServiceSearchPhoneNumbersWithResponse(ctx context.Context, projectId string, params *TelephonyServiceSearchPhoneNumbersParams, reqEditors ...RequestEditorFn) (*TelephonyServiceSearchPhoneNumbersResponse, error)
+
 	// SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
 	//
-	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
-	//  stored; the returned scenario is the result. The session must have a
-	//  recorded chat history. Each call runs an LLM over it, so it counts against
-	//  the project's scenario-generation quota and can take up to about a minute.
+	// Generates a scenario (label, instructions, and expectations) from a
+	//  recorded room session. Use the scenario in the `scenarioGroup` of a later
+	//  run. The API does not save the scenario: the response is the only copy.
+	//  The session must have a recorded chat history. Each call runs an LLM on
+	//  the chat history, so it counts against the scenario-generation quota of
+	//  the project. A call can take up to about one minute.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13553,27 +19502,21 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGenerateScenarioFromSessionWithResponse GenerateScenarioFromSession
 	//
-	// Derives a reusable scenario (label, instructions and expectations) from a
-	//  recorded room session, for use in a later run's scenarioGroup. Nothing is
-	//  stored; the returned scenario is the result. The session must have a
-	//  recorded chat history. Each call runs an LLM over it, so it counts against
-	//  the project's scenario-generation quota and can take up to about a minute.
+	// Generates a scenario (label, instructions, and expectations) from a
+	//  recorded room session. Use the scenario in the `scenarioGroup` of a later
+	//  run. The API does not save the scenario: the response is the only copy.
+	//  The session must have a recorded chat history. Each call runs an LLM on
+	//  the chat history, so it counts against the scenario-generation quota of
+	//  the project. A call can take up to about one minute.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/projects/{projectId}/scenarios:generateFromSession (the `SimulationServiceGenerateScenarioFromSession` operationId).
 	SimulationServiceGenerateScenarioFromSessionWithResponse(ctx context.Context, projectId string, body SimulationServiceGenerateScenarioFromSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*SimulationServiceGenerateScenarioFromSessionResponse, error)
 
-	// ProjectServiceListScopedKeysWithResponse ListScopedKeys
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
-	ProjectServiceListScopedKeysWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListScopedKeysResponse, error)
-
 	// AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 	//
-	// Lists room sessions for a project, newest first, cursor-paginated.
+	// Lists the room sessions of a project, newest first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13582,87 +19525,95 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceGetSessionWithResponse GetSession
 	//
-	// Returns one room session. The response carries both the list-row `session`
-	//  and the richer `detail` (participants, per-metric data points).
+	// Returns one room session. The response has the `session` that the list
+	//  returns, and a `detail` with the participants and the metric timelines.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId} (the `AnalyticsServiceGetSession` operationId).
 	AnalyticsServiceGetSessionWithResponse(ctx context.Context, projectId string, sessionId string, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetSessionResponse, error)
 
-	// AnalyticsServiceListSessionEventsWithResponse Lists one room session's events, oldest first by default, cursor-paginated
-	//  with no total. With no `types`, it returns the seven the dashboard's events
-	//  table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
-	//  PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
-	//  for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
-	//  participant session's events. With `participantSessionId` and no `types`,
-	//  it returns the eleven the dashboard's participant events table shows: that
-	//  participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-	//  PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
-	//  TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
-	//  TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
+	// AnalyticsServiceListSessionEventsWithResponse Lists the events of a room session. Defaults to oldest first. The page info
+	//  has no total.
 	//
-	// Unlike the dashboard, on purpose: an unknown type or a malformed
-	//  participant session id is InvalidArgument rather than being searched for as
-	//  typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
-	//  TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
-	//  fields, leaving out participants' attributes and metadata and API calls'
-	//  request bodies. Each event and participant row still carries the
-	//  participant's identity, as the dashboard shows it to every member, and for
-	//  a SIP caller that can be a phone number.
+	// When `types` is empty, the list has these seven types:
+	//  `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`,
+	//  `PARTICIPANT_RESUMED`, `ROOM_CREATED`, `ROOM_ENDED`, and `API_CALL`. To get
+	//  other types, such as `TRACK_PUBLISHED`, set `types`. To get the events of
+	//  one participant session, set `participantSessionId`. When you set
+	//  `participantSessionId` and `types` is empty, the list has these eleven
+	//  types: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_RESUMED`,
+	//  `PARTICIPANT_ACTIVE`, `TRACK_MUTED`, `TRACK_UNMUTED`, `TRACK_PUBLISHED`,
+	//  `TRACK_UNPUBLISHED`, `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED`, and
+	//  `TRACK_SUBSCRIBE_FAILED`.
 	//
-	//  Events are kept for 60 days, which can be shorter than the session's other
-	//  data, so an older session can list no events. An ACTIVE session lists the
-	//  events recorded so far. An unknown session is NotFound.
+	//  Each type matches exactly, so `TRACK_PUBLISHED` does not also return
+	//  `TRACK_PUBLISHED_UPDATE`. The `payload` of an event has only a fixed set of
+	//  fields. It does not include participant attributes, participant metadata,
+	//  or the request bodies of API calls. Each event and participant item has the
+	//  identity of the participant. For a SIP caller, the identity can be a phone
+	//  number.
+	//
+	//  LiveKit keeps events for 60 days. This can be shorter than the other data
+	//  of the session, so an older session can have no events. An `ACTIVE` session
+	//  lists the events recorded until now.
+	//
+	//  Errors: an unknown type or a malformed participant session ID returns
+	//  `InvalidArgument`. An unknown session returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/events (the `AnalyticsServiceListSessionEvents` operationId).
 	AnalyticsServiceListSessionEventsWithResponse(ctx context.Context, projectId string, sessionId string, params *AnalyticsServiceListSessionEventsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListSessionEventsResponse, error)
 
-	// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the session's agents exported, in time order: what
-	//  the dashboard's logs panel shows. Their chat history is left out, since
-	//  GetSessionTranscript reads it, and their evaluation results stay in. The
-	//  session's events, such as participants joining, come from
-	//  AnalyticsService's ListSessionEvents.
+	// ObservabilityServiceGetSessionLogsWithResponse Returns the log records that the agents of a session exported, in time
+	//  order. These are the records that the logs panel on the dashboard shows.
+	//  The chat history is not included, because `GetSessionTranscript` returns
+	//  it. Evaluation results are included. To get the events of the session, such
+	//  as participants that join, use `AnalyticsService.ListSessionEvents`.
 	//
-	// An ACTIVE session returns what its agents have exported so far. A record
-	//  exported mid-read with a time this read has already paged past, earlier
-	//  than its cursor's when oldest first, is missed until a new read. An unknown
-	//  session is NotFound. A read filtered by logLevels can come back empty
-	//  because no record is at those levels, so only an unfiltered one is
-	//  ObservabilityDisabled.
+	// An `ACTIVE` session returns the records that its agents exported up to now.
+	//  While you page through the records, an agent can export a record with a
+	//  time that your pages already passed. For example, in oldest-first order, a
+	//  record with a time earlier than the cursor position. This read does not
+	//  return that record. A new read returns it. An unknown session returns
+	//  `NotFound`. A read filtered by `logLevels` can return no records because no
+	//  record has those levels. Thus, only a read with no filter returns the
+	//  `ObservabilityDisabled` error.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/logs (the `ObservabilityServiceGetSessionLogs` operationId).
 	ObservabilityServiceGetSessionLogsWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionLogsParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionLogsResponse, error)
 
-	// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the session's agents exported, by
-	//  time, typed: turn latencies such as lk.agents.turn.e2e_latency and
-	//  lk.agents.turn.llm_ttft, token and duration usage such as
-	//  lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
-	//  any metrics the agent's own code recorded.
+	// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points that the agents of a session
+	//  exported, ordered by time. The points include turn latencies, such as
+	//  `lk.agents.turn.e2e_latency` and `lk.agents.turn.llm_ttft`, token and
+	//  duration usage, such as `lk.agents.usage.llm_input_tokens`, and the
+	//  `gen_ai.*` histograms. They also include the metrics that the agent's own
+	//  code recorded.
 	//
-	// These are the raw metrics agents emit, so they won't exactly match the
-	//  dashboard's metrics panel, which derives its numbers from the transcript
-	//  and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-	//  produce them: an agent whose code installs its own MeterProvider exports
-	//  none to LiveKit Cloud, and its sessions return no points.
+	// These are the raw metrics that agents export. They do not exactly match the
+	//  metrics panel on the dashboard, which calculates its values from the
+	//  transcript and traces. Only an agent that exports OpenTelemetry metrics to
+	//  LiveKit Cloud has points. An agent whose code installs its own
+	//  `MeterProvider` exports no metrics to LiveKit Cloud, and its sessions
+	//  return no points.
 	//
-	//  Some points aren't labeled as their agent exported them. LiveKit Cloud
-	//  groups a session's series by their attributes alone and names each group
-	//  after its first row, so: - several metrics can come back under one name,
-	//  such as an LLM's input, output and cached token counts, all named
-	//  lk.agents.usage.llm_input_tokens; - points of one series at the same time
-	//  that recorded equal values collapse into one point; - with two agents in
-	//  one session, a point can carry the other agent's resource attributes.
+	//  Some points do not have the labels that their agent exported. LiveKit Cloud
+	//  groups the series of a session by their attributes only, and gives each
+	//  group the name of its first point. This has these results. Several metrics
+	//  can have one name. For example, the input, output, and cached token counts
+	//  of an LLM all have the name `lk.agents.usage.llm_input_tokens`. Points of
+	//  one series with the same time and the same value become one point. When a
+	//  session has two agents, a point can have the resource attributes of the
+	//  other agent.
 	//
 	//  An agent exports its metrics every 30 seconds, and its turn latencies when
-	//  the session ends, so an ACTIVE session returns what it has exported so far.
-	//  An unknown session is NotFound. A read filtered by names can come back
-	//  empty because no metric has those names, so only an unfiltered one is
-	//  ObservabilityDisabled.
+	//  the session ends. Thus, an `ACTIVE` session returns the points that its
+	//  agents exported up to now. An unknown session returns `NotFound`. A read
+	//  filtered by `names` can return no points because no metric has those names.
+	//  Thus, only a read with no filter returns the `ObservabilityDisabled` error.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13671,10 +19622,9 @@ type ClientWithResponsesInterface interface {
 
 	// AnalyticsServiceListSessionParticipantsWithResponse ListSessionParticipants
 	//
-	// Lists the participants of one room session, one row per identity,
-	//  cursor-paginated; newest join first by default. Each row carries the
-	//  participant's participant sessions (PA_...), each with the client it
-	//  connected from.
+	// Lists the participants of a room session, one item for each identity.
+	//  Defaults to newest join first. Each item has the participant sessions of
+	//  the participant (`PA_...`), each with the client that it connected from.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13683,42 +19633,47 @@ type ClientWithResponsesInterface interface {
 
 	// ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 	//
-	// Returns a short-lived signed URL for one of the session's recordings: its
-	//  audio or its chat history. A session with no recording of that type is
-	//  NotFound. A new recording can be NotFound for up to a minute after the
-	//  session ends.
+	// Returns a short-lived signed URL for a session recording: its audio
+	//  or its chat history. When the recording doesn't exist and
+	//  `dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+	//  `DATA_STATE_SETTLING`, the response has an empty `url`, because the
+	//  agent can still upload the recording. In every other state, a session
+	//  with no recording of that type returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/recording-url (the `ObservabilityServiceGetSessionRecordingURL` operationId).
 	ObservabilityServiceGetSessionRecordingURLWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionRecordingURLParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionRecordingURLResponse, error)
 
-	// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the session's agents exported, by start time: what the
-	//  dashboard's trace view shows. Each span names its parent, so the pages
-	//  rebuild the span tree, and its attributes carry the turn and latency fields
-	//  the dashboard's turn view reads, such as lk.generation_id and
-	//  lk.response.ttft.
+	// ObservabilityServiceGetSessionTracesWithResponse Returns the spans that the agents of a session exported, ordered by start
+	//  time. These are the spans that the trace view on the dashboard shows. Each
+	//  span names its parent, so you can build the span tree from the pages. The
+	//  attributes of a span hold the turn and latency fields that the turn view on
+	//  the dashboard uses, such as `lk.generation_id` and `lk.response.ttft`.
 	//
-	// An ACTIVE session returns what its agents have exported so far; a span
-	//  exported after the first page waits for a new read. The later pages are
-	//  read by offset, so a span exported mid-read can still shift them: a span
-	//  can repeat, or be skipped. Dedupe by spanId, and read again from the first
-	//  page to pick up a skipped span. An unknown session is NotFound.
+	// An `ACTIVE` session returns the spans that its agents exported up to now. A
+	//  span exported after the first page appears only in a new read. The API
+	//  reads the later pages by offset, so a span exported during your read can
+	//  move them. Thus, a span can repeat, or a page can skip a span. Remove
+	//  duplicates by `spanId`. To get a skipped span, read again from the first
+	//  page. An unknown session returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/sessions/{sessionId}/traces (the `ObservabilityServiceGetSessionTraces` operationId).
 	ObservabilityServiceGetSessionTracesWithResponse(ctx context.Context, projectId string, sessionId string, params *ObservabilityServiceGetSessionTracesParams, reqEditors ...RequestEditorFn) (*ObservabilityServiceGetSessionTracesResponse, error)
 
-	// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session's conversation as ordered transcript items: messages,
-	//  tool calls and results, agent handoffs and agent configuration changes. It
-	//  is the conversation the dashboard's transcript shows.
+	// ObservabilityServiceGetSessionTranscriptWithResponse Returns the conversation of a session as ordered transcript items. The
+	//  items are messages, tool calls and results, agent handoffs, and agent
+	//  configuration changes. It is the conversation that the transcript on the
+	//  dashboard shows.
 	//
-	// The agent exports its transcript when the session ends, and it can be read
-	//  a minute or two later; on a project with PII redaction, only once the
-	//  session's recording has been redacted. So a session that is still ACTIVE
-	//  returns what exists so far, usually nothing, without an error: read it
-	//  again after the session ends. An unknown session is NotFound.
+	// The agent exports its transcript when the session ends. There is a delay
+	//  before you can read it, and the length of the delay is not fixed. On a
+	//  project with PII redaction, you can read it only after LiveKit redacts the
+	//  session recording. Thus, an `ACTIVE` session returns the items that exist,
+	//  usually none, with no error. Read it again after the session ends. An
+	//  unknown session returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13727,10 +19682,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
 	//
-	// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
-	//  by status, agent, conversation mode and a time window. Rows carry headline
-	//  counts (jobCount, passedCount, failedCount, issueCount) but neither
-	//  jobs nor the summary.
+	// Lists the runs of a project, newest first. You can filter the runs by
+	//  status, agent, conversation mode, and time window. Each run includes its
+	//  counts (`jobCount`, `passedCount`, `failedCount`, and `issueCount`), but
+	//  not its jobs or its summary.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13739,12 +19694,13 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCreateSimulationRunWithBodyWithResponse CreateSimulationRun
 	//
-	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
-	//  agent source that scenarios are generated from: upload it to the returned
-	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-	//  for an hour is failed. Creating a run is not idempotent: a retried request
-	//  starts a second run.
+	// Creates a simulation run. With a `scenarioGroup`, the run starts
+	//  immediately and the response has no upload target. Without a
+	//  `scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+	//  that the API generates scenarios from. Upload the source to the returned
+	//  presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+	//  pending for one hour fails. This RPC is not idempotent: a retry starts a
+	//  second run.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13753,12 +19709,13 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCreateSimulationRunWithResponse CreateSimulationRun
 	//
-	// Registers a new run. With a scenarioGroup it starts right away and no
-	//  upload target is returned. Without one it waits in PENDING_UPLOAD for the
-	//  agent source that scenarios are generated from: upload it to the returned
-	//  presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-	//  for an hour is failed. Creating a run is not idempotent: a retried request
-	//  starts a second run.
+	// Creates a simulation run. With a `scenarioGroup`, the run starts
+	//  immediately and the response has no upload target. Without a
+	//  `scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+	//  that the API generates scenarios from. Upload the source to the returned
+	//  presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+	//  pending for one hour fails. This RPC is not idempotent: a retry starts a
+	//  second run.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13767,9 +19724,9 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGetSimulationRunWithResponse GetSimulationRun
 	//
-	// Returns one run with its jobs and aggregate metrics. The compressed summary
-	//  blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
-	//  summary.
+	// Returns one run with its jobs and aggregate metrics. The response does not
+	//  include the compressed summary (`summaryZstd`). To get the summary, call
+	//  `GetSimulationRunSummary`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13778,10 +19735,11 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceGetSimulationRunSummaryWithResponse GetSimulationRunSummary
 	//
-	// Returns the graded outcome of a finished run: pass/fail counts, what went
-	//  well, what to improve, flagged issues with suggestions, and the per-job
-	//  chat history. FailedPrecondition while the run is still going; NotFound if
-	//  the run finished without a summary.
+	// Returns the graded outcome of a finished run: the pass and fail counts,
+	//  what went well, what to improve, the flagged issues with suggestions, and
+	//  the chat history of each job. Returns `FailedPrecondition` while the run
+	//  is in progress. Returns `NotFound` when the run finished without a
+	//  summary.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13790,8 +19748,8 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCancelSimulationRunWithResponse CancelSimulationRun
 	//
-	// Stops a run that has not finished. Cancelling a run that already finished
-	//  succeeds without effect.
+	// Stops a run that has not finished. When the run is already finished, the
+	//  call succeeds and has no effect.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13800,9 +19758,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse ConfirmSimulationSourceUpload
 	//
-	// Marks the agent source as uploaded and starts scenario generation; the run
-	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is PENDING_UPLOAD, so a repeated call fails.
+	// Confirms that the agent source is uploaded and starts scenario
+	//  generation. The run goes to `GENERATING`, then to `RUNNING` when the
+	//  scenarios exist. The call is valid only while the run is
+	//  `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13811,9 +19770,10 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceConfirmSimulationSourceUploadWithResponse ConfirmSimulationSourceUpload
 	//
-	// Marks the agent source as uploaded and starts scenario generation; the run
-	//  moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-	//  while the run is PENDING_UPLOAD, so a repeated call fails.
+	// Confirms that the agent source is uploaded and starts scenario
+	//  generation. The run goes to `GENERATING`, then to `RUNNING` when the
+	//  scenarios exist. The call is valid only while the run is
+	//  `PENDING_UPLOAD`, so a repeated call fails.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13822,102 +19782,287 @@ type ClientWithResponsesInterface interface {
 
 	// SimulationServiceCountSimulationRunsWithResponse CountSimulationRuns
 	//
-	// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
-	//  into a histogram. It takes the same filters over the same window, so the
-	//  bars and the rows beneath them always describe one set. Both bounds are
-	//  required and endTime must be after startTime.
+	// Returns a histogram of the runs in the window [`startTime`, `endTime`). It
+	//  takes the same filters as `ListSimulationRuns`, so the histogram and the
+	//  list describe the same set of runs. Both bounds are required, and
+	//  `endTime` must be after `startTime`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/simulation-runs:counts (the `SimulationServiceCountSimulationRuns` operationId).
 	SimulationServiceCountSimulationRunsWithResponse(ctx context.Context, projectId string, params *SimulationServiceCountSimulationRunsParams, reqEditors ...RequestEditorFn) (*SimulationServiceCountSimulationRunsResponse, error)
 
-	// ThreadServiceListThreadsWithResponse ListThreads
+	// TelephonyServiceListDispatchRulesWithResponse ListDispatchRules
 	//
-	// Lists the threads of one scope, newest first.
+	// Lists the dispatch rules of the project, in ID order. The list is always
+	//  one page.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
-	ThreadServiceListThreadsWithResponse(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*ThreadServiceListThreadsResponse, error)
+	// Corresponds with GET /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceListDispatchRules` operationId).
+	TelephonyServiceListDispatchRulesWithResponse(ctx context.Context, projectId string, params *TelephonyServiceListDispatchRulesParams, reqEditors ...RequestEditorFn) (*TelephonyServiceListDispatchRulesResponse, error)
 
-	// ThreadServiceCreateThreadWithBodyWithResponse CreateThread
+	// TelephonyServiceCreateDispatchRuleWithBodyWithResponse CreateDispatchRule
 	//
-	// Creates a thread and its database.
+	// Creates a dispatch rule. A rule applies to the trunks and the phone
+	//  numbers in its `trunkIds`, or to all of them when `trunkIds` is empty. To
+	//  send the calls to a phone number to a rule, add the ID of the number
+	//  (`PN_...`) to `trunkIds`. To stop, remove it. A rule that conflicts with
+	//  another rule of the project fails with `InvalidArgument`, and the message
+	//  names the other rule.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-	ThreadServiceCreateThreadWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ThreadServiceCreateThreadResponse, error)
+	// Corresponds with POST /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceCreateDispatchRule` operationId).
+	TelephonyServiceCreateDispatchRuleWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateDispatchRuleResponse, error)
 
-	// ThreadServiceCreateThreadWithResponse CreateThread
+	// TelephonyServiceCreateDispatchRuleWithResponse CreateDispatchRule
 	//
-	// Creates a thread and its database.
+	// Creates a dispatch rule. A rule applies to the trunks and the phone
+	//  numbers in its `trunkIds`, or to all of them when `trunkIds` is empty. To
+	//  send the calls to a phone number to a rule, add the ID of the number
+	//  (`PN_...`) to `trunkIds`. To stop, remove it. A rule that conflicts with
+	//  another rule of the project fails with `InvalidArgument`, and the message
+	//  names the other rule.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-	ThreadServiceCreateThreadWithResponse(ctx context.Context, projectId string, body ThreadServiceCreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*ThreadServiceCreateThreadResponse, error)
+	// Corresponds with POST /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceCreateDispatchRule` operationId).
+	TelephonyServiceCreateDispatchRuleWithResponse(ctx context.Context, projectId string, body TelephonyServiceCreateDispatchRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateDispatchRuleResponse, error)
 
-	// ThreadServiceDeleteThreadWithResponse DeleteThread
+	// TelephonyServiceDeleteDispatchRuleWithResponse DeleteDispatchRule
 	//
-	// Deletes the thread and its database.
+	// Deletes a dispatch rule.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
-	ThreadServiceDeleteThreadWithResponse(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*ThreadServiceDeleteThreadResponse, error)
+	// Corresponds with DELETE /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceDeleteDispatchRule` operationId).
+	TelephonyServiceDeleteDispatchRuleWithResponse(ctx context.Context, projectId string, dispatchRuleId string, reqEditors ...RequestEditorFn) (*TelephonyServiceDeleteDispatchRuleResponse, error)
 
-	// ThreadServiceGetThreadWithResponse GetThread
+	// TelephonyServiceGetDispatchRuleWithResponse GetDispatchRule
+	//
+	// Returns a dispatch rule of the project.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceGetThread` operationId).
-	ThreadServiceGetThreadWithResponse(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadResponse, error)
+	// Corresponds with GET /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceGetDispatchRule` operationId).
+	TelephonyServiceGetDispatchRuleWithResponse(ctx context.Context, projectId string, dispatchRuleId string, reqEditors ...RequestEditorFn) (*TelephonyServiceGetDispatchRuleResponse, error)
 
-	// ThreadServiceUpdateThreadWithBodyWithResponse UpdateThread
+	// TelephonyServiceUpdateDispatchRuleWithBodyWithResponse UpdateDispatchRule
 	//
-	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-	//  Every update counts as activity and pushes expiresAt out.
+	// Replaces a dispatch rule, or changes some of its fields.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-	ThreadServiceUpdateThreadWithBodyWithResponse(ctx context.Context, projectId string, threadId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ThreadServiceUpdateThreadResponse, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceUpdateDispatchRule` operationId).
+	TelephonyServiceUpdateDispatchRuleWithBodyWithResponse(ctx context.Context, projectId string, dispatchRuleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateDispatchRuleResponse, error)
 
-	// ThreadServiceUpdateThreadWithResponse UpdateThread
+	// TelephonyServiceUpdateDispatchRuleWithResponse UpdateDispatchRule
 	//
-	// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-	//  Every update counts as activity and pushes expiresAt out.
+	// Replaces a dispatch rule, or changes some of its fields.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-	ThreadServiceUpdateThreadWithResponse(ctx context.Context, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*ThreadServiceUpdateThreadResponse, error)
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceUpdateDispatchRule` operationId).
+	TelephonyServiceUpdateDispatchRuleWithResponse(ctx context.Context, projectId string, dispatchRuleId string, body TelephonyServiceUpdateDispatchRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateDispatchRuleResponse, error)
 
-	// ThreadServiceGetThreadItemsWithResponse GetThreadItems
+	// TelephonyServiceListInboundTrunksWithResponse ListInboundTrunks
 	//
-	// Returns the thread's chat items, oldest first.
+	// Lists the inbound trunks of the project, in ID order. The list is always
+	//  one page.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
-	ThreadServiceGetThreadItemsWithResponse(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadItemsResponse, error)
+	// Corresponds with GET /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceListInboundTrunks` operationId).
+	TelephonyServiceListInboundTrunksWithResponse(ctx context.Context, projectId string, params *TelephonyServiceListInboundTrunksParams, reqEditors ...RequestEditorFn) (*TelephonyServiceListInboundTrunksResponse, error)
 
-	// ThreadServiceGetThreadTasksWithResponse GetThreadTasks
+	// TelephonyServiceCreateInboundTrunkWithBodyWithResponse CreateInboundTrunk
 	//
-	// Returns the thread's background tasks, oldest first.
+	// Creates an inbound trunk. A trunk that conflicts with another trunk of
+	//  the project, such as one that accepts the same number from the same
+	//  callers, fails with `InvalidArgument`, and the message names the other
+	//  trunk.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceCreateInboundTrunk` operationId).
+	TelephonyServiceCreateInboundTrunkWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateInboundTrunkResponse, error)
+
+	// TelephonyServiceCreateInboundTrunkWithResponse CreateInboundTrunk
+	//
+	// Creates an inbound trunk. A trunk that conflicts with another trunk of
+	//  the project, such as one that accepts the same number from the same
+	//  callers, fails with `InvalidArgument`, and the message names the other
+	//  trunk.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceCreateInboundTrunk` operationId).
+	TelephonyServiceCreateInboundTrunkWithResponse(ctx context.Context, projectId string, body TelephonyServiceCreateInboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateInboundTrunkResponse, error)
+
+	// TelephonyServiceDeleteInboundTrunkWithResponse DeleteInboundTrunk
+	//
+	// Deletes an inbound trunk.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
-	ThreadServiceGetThreadTasksWithResponse(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadTasksResponse, error)
+	// Corresponds with DELETE /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceDeleteInboundTrunk` operationId).
+	TelephonyServiceDeleteInboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*TelephonyServiceDeleteInboundTrunkResponse, error)
+
+	// TelephonyServiceGetInboundTrunkWithResponse GetInboundTrunk
+	//
+	// Returns an inbound trunk of the project.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceGetInboundTrunk` operationId).
+	TelephonyServiceGetInboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*TelephonyServiceGetInboundTrunkResponse, error)
+
+	// TelephonyServiceUpdateInboundTrunkWithBodyWithResponse UpdateInboundTrunk
+	//
+	// Replaces an inbound trunk, or changes some of its fields.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceUpdateInboundTrunk` operationId).
+	TelephonyServiceUpdateInboundTrunkWithBodyWithResponse(ctx context.Context, projectId string, trunkId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateInboundTrunkResponse, error)
+
+	// TelephonyServiceUpdateInboundTrunkWithResponse UpdateInboundTrunk
+	//
+	// Replaces an inbound trunk, or changes some of its fields.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceUpdateInboundTrunk` operationId).
+	TelephonyServiceUpdateInboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, body TelephonyServiceUpdateInboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateInboundTrunkResponse, error)
+
+	// TelephonyServiceListOutboundTrunksWithResponse ListOutboundTrunks
+	//
+	// Lists the outbound trunks of the project, in ID order. The list is always
+	//  one page.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceListOutboundTrunks` operationId).
+	TelephonyServiceListOutboundTrunksWithResponse(ctx context.Context, projectId string, params *TelephonyServiceListOutboundTrunksParams, reqEditors ...RequestEditorFn) (*TelephonyServiceListOutboundTrunksResponse, error)
+
+	// TelephonyServiceCreateOutboundTrunkWithBodyWithResponse CreateOutboundTrunk
+	//
+	// Creates an outbound trunk, which `CreateSIPParticipant` places calls
+	//  through.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceCreateOutboundTrunk` operationId).
+	TelephonyServiceCreateOutboundTrunkWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateOutboundTrunkResponse, error)
+
+	// TelephonyServiceCreateOutboundTrunkWithResponse CreateOutboundTrunk
+	//
+	// Creates an outbound trunk, which `CreateSIPParticipant` places calls
+	//  through.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceCreateOutboundTrunk` operationId).
+	TelephonyServiceCreateOutboundTrunkWithResponse(ctx context.Context, projectId string, body TelephonyServiceCreateOutboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateOutboundTrunkResponse, error)
+
+	// TelephonyServiceDeleteOutboundTrunkWithResponse DeleteOutboundTrunk
+	//
+	// Deletes an outbound trunk.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceDeleteOutboundTrunk` operationId).
+	TelephonyServiceDeleteOutboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*TelephonyServiceDeleteOutboundTrunkResponse, error)
+
+	// TelephonyServiceGetOutboundTrunkWithResponse GetOutboundTrunk
+	//
+	// Returns an outbound trunk of the project.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceGetOutboundTrunk` operationId).
+	TelephonyServiceGetOutboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*TelephonyServiceGetOutboundTrunkResponse, error)
+
+	// TelephonyServiceUpdateOutboundTrunkWithBodyWithResponse UpdateOutboundTrunk
+	//
+	// Replaces an outbound trunk, or changes some of its fields.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceUpdateOutboundTrunk` operationId).
+	TelephonyServiceUpdateOutboundTrunkWithBodyWithResponse(ctx context.Context, projectId string, trunkId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateOutboundTrunkResponse, error)
+
+	// TelephonyServiceUpdateOutboundTrunkWithResponse UpdateOutboundTrunk
+	//
+	// Replaces an outbound trunk, or changes some of its fields.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceUpdateOutboundTrunk` operationId).
+	TelephonyServiceUpdateOutboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, body TelephonyServiceUpdateOutboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateOutboundTrunkResponse, error)
+
+	// TelephonyServiceCreateSIPParticipantWithBodyWithResponse CreateSIPParticipant
+	//
+	// Calls a phone number or a SIP URI through an outbound trunk, and adds
+	//  the call to a room as a SIP participant. With `waitUntilAnswered`, the
+	//  call returns when the far end answers, up to `ringingTimeout`, which can
+	//  then be at most 75 seconds. When the
+	//  far end refuses the call, such as with 486 Busy Here, the call fails with
+	//  `FailedPrecondition`, and the error has its SIP status as a
+	//  `livekit.SIPStatus` detail.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/participants (the `TelephonyServiceCreateSIPParticipant` operationId).
+	TelephonyServiceCreateSIPParticipantWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateSIPParticipantResponse, error)
+
+	// TelephonyServiceCreateSIPParticipantWithResponse CreateSIPParticipant
+	//
+	// Calls a phone number or a SIP URI through an outbound trunk, and adds
+	//  the call to a room as a SIP participant. With `waitUntilAnswered`, the
+	//  call returns when the far end answers, up to `ringingTimeout`, which can
+	//  then be at most 75 seconds. When the
+	//  far end refuses the call, such as with 486 Busy Here, the call fails with
+	//  `FailedPrecondition`, and the error has its SIP status as a
+	//  `livekit.SIPStatus` detail.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/participants (the `TelephonyServiceCreateSIPParticipant` operationId).
+	TelephonyServiceCreateSIPParticipantWithResponse(ctx context.Context, projectId string, body TelephonyServiceCreateSIPParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateSIPParticipantResponse, error)
+
+	// TelephonyServiceTransferSIPParticipantWithBodyWithResponse TransferSIPParticipant
+	//
+	// Transfers the call of a SIP participant to another phone number or SIP
+	//  URI, and returns when the transfer ends. Its `ringingTimeout` can be at
+	//  most 75 seconds. A transfer that fails, such as
+	//  one that nobody answers, fails with `FailedPrecondition`, and the error
+	//  has a `livekit.SIPTransferError` detail with the reason.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/participants:transfer (the `TelephonyServiceTransferSIPParticipant` operationId).
+	TelephonyServiceTransferSIPParticipantWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceTransferSIPParticipantResponse, error)
+
+	// TelephonyServiceTransferSIPParticipantWithResponse TransferSIPParticipant
+	//
+	// Transfers the call of a SIP participant to another phone number or SIP
+	//  URI, and returns when the transfer ends. Its `ringingTimeout` can be at
+	//  most 75 seconds. A transfer that fails, such as
+	//  one that nobody answers, fails with `FailedPrecondition`, and the error
+	//  has a `livekit.SIPTransferError` detail with the reason.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v0/projects/{projectId}/sip/participants:transfer (the `TelephonyServiceTransferSIPParticipant` operationId).
+	TelephonyServiceTransferSIPParticipantWithResponse(ctx context.Context, projectId string, body TelephonyServiceTransferSIPParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceTransferSIPParticipantResponse, error)
 
 	// ProjectServiceCreateTokenWithBodyWithResponse CreateToken
 	//
-	// Mints a short-lived LiveKit access token for the project, signed
-	//  server-side, so user-authenticated clients can call LiveKit server APIs
-	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Creates a short-lived LiveKit access token for the project. The API signs
+	//  the token, so a signed-in user can call the LiveKit server APIs, such as
+	//  rooms, SIP, and egress, or join a room without an API secret.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13926,9 +20071,9 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceCreateTokenWithResponse CreateToken
 	//
-	// Mints a short-lived LiveKit access token for the project, signed
-	//  server-side, so user-authenticated clients can call LiveKit server APIs
-	//  (rooms, SIP, egress, …) or join rooms without holding an API secret.
+	// Creates a short-lived LiveKit access token for the project. The API signs
+	//  the token, so a signed-in user can call the LiveKit server APIs, such as
+	//  rooms, SIP, and egress, or join a room without an API secret.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13937,21 +20082,33 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceListWebhookEventsWithResponse ListWebhookEvents
 	//
+	// Lists the event names that the webhooks of a project can receive. The list
+	//  is always one page.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
-	ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error)
+	ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, params *ProjectServiceListWebhookEventsParams, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error)
 
 	// ProjectServiceListWebhooksWithResponse ListWebhooks
 	//
-	// Lists the project's webhook destinations.
+	// Lists the webhook destinations for the project, in the order that they
+	//  were added. The list is always one page.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
-	ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error)
+	ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, params *ProjectServiceListWebhooksParams, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error)
 
 	// ProjectServiceCreateWebhookWithBodyWithResponse CreateWebhook
+	//
+	// Creates a webhook destination for a project. A `url` that is not an absolute
+	//  HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
+	//  in `filterParams` that `ListWebhookEvents` does not return, or a
+	//  `signingKey` that is not an API key of the project, also returns
+	//  `InvalidArgument`. When `signingKey` is empty and the project has no API key,
+	//  the request fails with `FailedPrecondition`. The call is not idempotent: a
+	//  retry creates a second webhook.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13960,12 +20117,24 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceCreateWebhookWithResponse CreateWebhook
 	//
+	// Creates a webhook destination for a project. A `url` that is not an absolute
+	//  HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
+	//  in `filterParams` that `ListWebhookEvents` does not return, or a
+	//  `signingKey` that is not an API key of the project, also returns
+	//  `InvalidArgument`. When `signingKey` is empty and the project has no API key,
+	//  the request fails with `FailedPrecondition`. The call is not idempotent: a
+	//  retry creates a second webhook.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
 	ProjectServiceCreateWebhookWithResponse(ctx context.Context, projectId string, body ProjectServiceCreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ProjectServiceCreateWebhookResponse, error)
 
 	// ProjectServiceDeleteWebhookWithResponse DeleteWebhook
+	//
+	// Deletes a webhook destination from a project. The project stops sending
+	//  events to its URL. A webhook that does not exist returns `NotFound`, so a
+	//  retry returns `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13974,12 +20143,24 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceUpdateWebhookWithBodyWithResponse UpdateWebhook
 	//
+	// Updates a webhook destination of a project, and returns the updated webhook.
+	//  A field that you do not set keeps its value. A set `filterParams` replaces
+	//  the whole filter. The checks of `CreateWebhook` apply to the new values, and
+	//  a failed check returns `InvalidArgument`. A webhook that does not exist
+	//  returns `NotFound`.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
 	ProjectServiceUpdateWebhookWithBodyWithResponse(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceUpdateWebhookResponse, error)
 
 	// ProjectServiceUpdateWebhookWithResponse UpdateWebhook
+	//
+	// Updates a webhook destination of a project, and returns the updated webhook.
+	//  A field that you do not set keeps its value. A set `filterParams` replaces
+	//  the whole filter. The checks of `CreateWebhook` apply to the new values, and
+	//  a failed check returns `InvalidArgument`. A webhook that does not exist
+	//  returns `NotFound`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13988,12 +20169,30 @@ type ClientWithResponsesInterface interface {
 
 	// ProjectServiceSendTestWebhookWithBodyWithResponse SendTestWebhook
 	//
+	// Sends one sample event to a webhook destination, and returns the answer of
+	//  the receiver. The API sends only to this webhook, ignores the webhook filter,
+	//  and signs the request as it signs real deliveries. When the signing key of
+	//  the webhook is not an API key of the project, the API signs with the oldest
+	//  API key. The API makes one attempt and waits up to 10 seconds. A failed
+	//  delivery shows in the response, not as an error. An `event` that
+	//  `ListWebhookEvents` does not return gets `InvalidArgument`. A webhook that
+	//  does not exist returns `NotFound`.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
 	ProjectServiceSendTestWebhookWithBodyWithResponse(ctx context.Context, projectId string, webhookId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProjectServiceSendTestWebhookResponse, error)
 
 	// ProjectServiceSendTestWebhookWithResponse SendTestWebhook
+	//
+	// Sends one sample event to a webhook destination, and returns the answer of
+	//  the receiver. The API sends only to this webhook, ignores the webhook filter,
+	//  and signs the request as it signs real deliveries. When the signing key of
+	//  the webhook is not an API key of the project, the API signs with the oldest
+	//  API key. The API makes one attempt and waits up to 10 seconds. A failed
+	//  delivery shows in the response, not as an error. An `event` that
+	//  `ListWebhookEvents` does not return gets `InvalidArgument`. A webhook that
+	//  does not exist returns `NotFound`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14002,6 +20201,10 @@ type ClientWithResponsesInterface interface {
 
 	// UserServiceListUsersWithResponse ListUsers
 	//
+	// Lists the members of a project or a workspace, ordered by user ID. The list
+	//  does not include pending invitees. Set `projectId`, `workspaceId`, or both.
+	//  When you set neither, the request fails with `InvalidArgument`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
@@ -14009,12 +20212,30 @@ type ClientWithResponsesInterface interface {
 
 	// UserServiceGetCurrentUserWithResponse GetCurrentUser
 	//
+	// Returns the user that you are signed in as.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
 	UserServiceGetCurrentUserWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UserServiceGetCurrentUserResponse, error)
 
+	// UserServiceRevokeSessionTokenWithResponse RevokeSessionToken
+	//
+	// Revokes the session token that you call with, and signs you out. After
+	//  this call, the token gets `Unauthenticated` on every call, a retry of this
+	//  call included. Your other session tokens stay valid. Access tokens that
+	//  `CreateToken` returned stay valid until they expire.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v0/users/me/session-token (the `UserServiceRevokeSessionToken` operationId).
+	UserServiceRevokeSessionTokenWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UserServiceRevokeSessionTokenResponse, error)
+
 	// UserServiceGetUserWithResponse GetUser
+	//
+	// Returns a user by ID. You can get yourself, or a user who is a member of a
+	//  workspace or a project that you are a member of. Any other user returns
+	//  `NotFound`, the same as a user who does not exist.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -14023,12 +20244,26 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceGetInviteWithResponse GetInvite
 	//
+	// Returns a workspace invite that was sent to you, found by its token. Use it
+	//  to show the invite before you answer it with `AnswerInvite`. An invite that
+	//  was sent to a different email address returns `PermissionDenied`. An expired
+	//  invite returns `FailedPrecondition`. An unknown token returns `NotFound`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
 	WorkspaceServiceGetInviteWithResponse(ctx context.Context, inviteToken string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetInviteResponse, error)
 
 	// WorkspaceServiceAnswerInviteWithBodyWithResponse AnswerInvite
+	//
+	// Accepts or declines a workspace invite that was sent to you. When you accept,
+	//  you become a member of the workspace and of every project in it where
+	//  `isPrivate` is `false`, with the role of the invite. If you are already a
+	//  member, the role of the invite replaces your role. The API also deletes your
+	//  pending invites to those projects. When you decline, the API deletes the
+	//  invite. After you answer, the token stops working, so a retry returns
+	//  `NotFound`. An invite that was sent to a different email address returns
+	//  `PermissionDenied`. An expired invite returns `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14037,12 +20272,24 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceAnswerInviteWithResponse AnswerInvite
 	//
+	// Accepts or declines a workspace invite that was sent to you. When you accept,
+	//  you become a member of the workspace and of every project in it where
+	//  `isPrivate` is `false`, with the role of the invite. If you are already a
+	//  member, the role of the invite replaces your role. The API also deletes your
+	//  pending invites to those projects. When you decline, the API deletes the
+	//  invite. After you answer, the token stops working, so a retry returns
+	//  `NotFound`. An invite that was sent to a different email address returns
+	//  `PermissionDenied`. An expired invite returns `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
 	WorkspaceServiceAnswerInviteWithResponse(ctx context.Context, inviteToken string, body WorkspaceServiceAnswerInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceAnswerInviteResponse, error)
 
 	// WorkspaceServiceListWorkspacesWithResponse ListWorkspaces
+	//
+	// Lists the workspaces that you are a member of, ordered by workspace ID. A
+	//  pending invite does not make you a member.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -14051,12 +20298,22 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceCreateWorkspaceWithBodyWithResponse CreateWorkspace
 	//
+	// Creates a workspace. You become its only member, with the admin role (`3`).
+	//  The workspace has no projects: to add one, call `CreateProject`. An empty
+	//  `name` returns `InvalidArgument`. The call is not idempotent: a retry
+	//  creates a second workspace.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
 	WorkspaceServiceCreateWorkspaceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateWorkspaceResponse, error)
 
 	// WorkspaceServiceCreateWorkspaceWithResponse CreateWorkspace
+	//
+	// Creates a workspace. You become its only member, with the admin role (`3`).
+	//  The workspace has no projects: to add one, call `CreateProject`. An empty
+	//  `name` returns `InvalidArgument`. The call is not idempotent: a retry
+	//  creates a second workspace.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14065,12 +20322,19 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceDeleteWorkspaceWithResponse DeleteWorkspace
 	//
+	// Deletes a workspace, with its members and its pending invites. A workspace
+	//  that has projects returns `FailedPrecondition`: delete its projects first.
+	//  You cannot undo the delete. A retry returns `NotFound`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v0/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
 	WorkspaceServiceDeleteWorkspaceWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteWorkspaceResponse, error)
 
 	// WorkspaceServiceGetWorkspaceWithResponse GetWorkspace
+	//
+	// Returns a workspace. A workspace that you are not a member of returns
+	//  `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -14079,12 +20343,18 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceUpdateWorkspaceWithBodyWithResponse UpdateWorkspace
 	//
+	// Changes the name or the MCP policy of a workspace, and returns the updated
+	//  workspace. A field that is unset does not change.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
 	WorkspaceServiceUpdateWorkspaceWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceUpdateWorkspaceResponse, error)
 
 	// WorkspaceServiceUpdateWorkspaceWithResponse UpdateWorkspace
+	//
+	// Changes the name or the MCP policy of a workspace, and returns the updated
+	//  workspace. A field that is unset does not change.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14093,12 +20363,21 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceListInvitesWithResponse ListInvites
 	//
+	// Lists the unexpired invites of a workspace, ordered by email.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
-	WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error)
+	WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListInvitesParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error)
 
 	// WorkspaceServiceCreateInviteWithBodyWithResponse CreateInvite
+	//
+	// Invites a person to a workspace by email, with a role. The API sends an email
+	//  with the invite link, and the response has the invite token. The invite
+	//  expires after 48 hours. When an unexpired invite for the email exists, the
+	//  API sends that invite again: its token, role, and expiry do not change. On
+	//  a plan that allows only the admin role (`3`), the roles `1` and `2` return
+	//  `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14107,12 +20386,22 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceCreateInviteWithResponse CreateInvite
 	//
+	// Invites a person to a workspace by email, with a role. The API sends an email
+	//  with the invite link, and the response has the invite token. The invite
+	//  expires after 48 hours. When an unexpired invite for the email exists, the
+	//  API sends that invite again: its token, role, and expiry do not change. On
+	//  a plan that allows only the admin role (`3`), the roles `1` and `2` return
+	//  `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
 	WorkspaceServiceCreateInviteWithResponse(ctx context.Context, workspaceId string, body WorkspaceServiceCreateInviteJSONRequestBody, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateInviteResponse, error)
 
 	// WorkspaceServiceDeleteInviteWithResponse DeleteInvite
+	//
+	// Deletes a pending workspace invite, so that its link stops working. When no
+	//  invite exists for the email, the call succeeds and changes nothing.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -14121,14 +20410,21 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceListMembersWithResponse ListMembers
 	//
-	// Lists the workspace's members.
+	// Lists the workspace members, ordered by user ID.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
-	WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error)
+	WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListMembersParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error)
 
 	// WorkspaceServiceDeleteMemberWithResponse DeleteMember
+	//
+	// Removes a user from a workspace and from every project in it, and deletes
+	//  the API keys that the user owns in those projects. Agent keys stay. Send
+	//  `confirmedNumKeys` to confirm the number of keys to delete. A removal that
+	//  deletes the last API key of a project returns `FailedPrecondition` and
+	//  changes nothing. A user who is not a member returns `NotFound`. The response
+	//  has the number of keys that the removal deleted.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -14137,12 +20433,21 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceGetMemberWithResponse GetMember
 	//
+	// Returns the membership of one user on a workspace, with the role of the
+	//  user. A user who is not a member of the workspace returns `NotFound`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
 	WorkspaceServiceGetMemberWithResponse(ctx context.Context, workspaceId string, userId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceGetMemberResponse, error)
 
 	// WorkspaceServiceUpdateMemberWithBodyWithResponse UpdateMember
+	//
+	// Changes the workspace role of a member. The API also changes the role of the
+	//  user on every project in the workspace where `isPrivate` is `false`. The
+	//  projects where `isPrivate` is `true` keep their roles. A user who is not a
+	//  member returns `NotFound`. On a plan that allows only the admin role (`3`),
+	//  the roles `1` and `2` return `FailedPrecondition`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14151,6 +20456,12 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceUpdateMemberWithResponse UpdateMember
 	//
+	// Changes the workspace role of a member. The API also changes the role of the
+	//  user on every project in the workspace where `isPrivate` is `false`. The
+	//  projects where `isPrivate` is `true` keep their roles. A user who is not a
+	//  member returns `NotFound`. On a plan that allows only the admin role (`3`),
+	//  the roles `1` and `2` return `FailedPrecondition`.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
@@ -14158,8 +20469,8 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceListProjectsWithResponse ListProjects
 	//
-	// The projects in a workspace. These return the same Project message as
-	//  the project endpoints.
+	// Lists the projects in a workspace. The items are the same `Project`
+	//  message that `ProjectService` returns.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -14168,12 +20479,28 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceCreateProjectWithBodyWithResponse CreateProject
 	//
+	// Creates a project in a workspace. Send the project as the request body. The
+	//  rules and errors of `ProjectService.CreateProject` apply. You become a
+	//  member of the project with the admin role (`3`), and the API creates an API
+	//  key that you own. When `isPrivate` is `false`, every member of the
+	//  workspace becomes a member of the project, with their workspace role. The
+	//  call is not idempotent: when `subdomain` is empty, a retry creates a second
+	//  project.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
 	WorkspaceServiceCreateProjectWithBodyWithResponse(ctx context.Context, workspaceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WorkspaceServiceCreateProjectResponse, error)
 
 	// WorkspaceServiceCreateProjectWithResponse CreateProject
+	//
+	// Creates a project in a workspace. Send the project as the request body. The
+	//  rules and errors of `ProjectService.CreateProject` apply. You become a
+	//  member of the project with the admin role (`3`), and the API creates an API
+	//  key that you own. When `isPrivate` is `false`, every member of the
+	//  workspace becomes a member of the project, with their workspace role. The
+	//  call is not idempotent: when `subdomain` is empty, a retry creates a second
+	//  project.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14182,12 +20509,20 @@ type ClientWithResponsesInterface interface {
 
 	// WorkspaceServiceDeleteProjectWithResponse DeleteProject
 	//
+	// Deletes a project in a workspace, with its API keys, its webhooks, and its
+	//  member list. You cannot undo the delete. A project that is not in the
+	//  workspace returns `NotFound`, and a retry returns `NotFound`.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
 	WorkspaceServiceDeleteProjectWithResponse(ctx context.Context, workspaceId string, projectId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceDeleteProjectResponse, error)
 
 	// WorkspaceServiceGetProjectWithResponse GetProject
+	//
+	// Returns a project in a workspace, with its settings and its webhooks. A
+	//  project that is not in the workspace, or that you cannot see, returns
+	//  `NotFound`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -14531,32 +20866,32 @@ func (r ProjectServiceUpdateProjectResponse) ContentType() string {
 	return ""
 }
 
-type AnalyticsServiceGetProjectAnalyticsResponse struct {
+type BuilderAgentServiceListBuilderAgentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsListResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r AnalyticsServiceGetProjectAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse {
+func (r BuilderAgentServiceListBuilderAgentsResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsListResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r AnalyticsServiceGetProjectAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r BuilderAgentServiceListBuilderAgentsResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r AnalyticsServiceGetProjectAnalyticsResponse) GetBody() []byte {
+func (r BuilderAgentServiceListBuilderAgentsResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r AnalyticsServiceGetProjectAnalyticsResponse) Status() string {
+func (r BuilderAgentServiceListBuilderAgentsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14564,7 +20899,7 @@ func (r AnalyticsServiceGetProjectAnalyticsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r AnalyticsServiceGetProjectAnalyticsResponse) StatusCode() int {
+func (r BuilderAgentServiceListBuilderAgentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14572,39 +20907,39 @@ func (r AnalyticsServiceGetProjectAnalyticsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AnalyticsServiceGetProjectAnalyticsResponse) ContentType() string {
+func (r BuilderAgentServiceListBuilderAgentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type AnalyticsServiceListAgentAnalyticsResponse struct {
+type BuilderAgentServiceCreateBuilderAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAnalyticsV1AgentsListResponse
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsCreateResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r AnalyticsServiceListAgentAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1AgentsListResponse {
+func (r BuilderAgentServiceCreateBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsCreateResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r AnalyticsServiceListAgentAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r BuilderAgentServiceCreateBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r AnalyticsServiceListAgentAnalyticsResponse) GetBody() []byte {
+func (r BuilderAgentServiceCreateBuilderAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r AnalyticsServiceListAgentAnalyticsResponse) Status() string {
+func (r BuilderAgentServiceCreateBuilderAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14612,7 +20947,7 @@ func (r AnalyticsServiceListAgentAnalyticsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r AnalyticsServiceListAgentAnalyticsResponse) StatusCode() int {
+func (r BuilderAgentServiceCreateBuilderAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14620,39 +20955,39 @@ func (r AnalyticsServiceListAgentAnalyticsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AnalyticsServiceListAgentAnalyticsResponse) ContentType() string {
+func (r BuilderAgentServiceCreateBuilderAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type AnalyticsServiceGetAgentAnalyticsResponse struct {
+type BuilderAgentServiceDeleteBuilderAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiAnalyticsV1AgentsGetResponse
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r AnalyticsServiceGetAgentAnalyticsResponse) GetJSON200() *LivekitPublicapiAnalyticsV1AgentsGetResponse {
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r AnalyticsServiceGetAgentAnalyticsResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r AnalyticsServiceGetAgentAnalyticsResponse) GetBody() []byte {
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r AnalyticsServiceGetAgentAnalyticsResponse) Status() string {
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14660,7 +20995,7 @@ func (r AnalyticsServiceGetAgentAnalyticsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r AnalyticsServiceGetAgentAnalyticsResponse) StatusCode() int {
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14668,39 +21003,39 @@ func (r AnalyticsServiceGetAgentAnalyticsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AnalyticsServiceGetAgentAnalyticsResponse) ContentType() string {
+func (r BuilderAgentServiceDeleteBuilderAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type DatabaseServiceListDatabasesResponse struct {
+type BuilderAgentServiceGetBuilderAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesListResponse
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsGetResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceListDatabasesResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesListResponse {
+func (r BuilderAgentServiceGetBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsGetResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceListDatabasesResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r BuilderAgentServiceGetBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r DatabaseServiceListDatabasesResponse) GetBody() []byte {
+func (r BuilderAgentServiceGetBuilderAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r DatabaseServiceListDatabasesResponse) Status() string {
+func (r BuilderAgentServiceGetBuilderAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14708,7 +21043,7 @@ func (r DatabaseServiceListDatabasesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceListDatabasesResponse) StatusCode() int {
+func (r BuilderAgentServiceGetBuilderAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14716,39 +21051,39 @@ func (r DatabaseServiceListDatabasesResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceListDatabasesResponse) ContentType() string {
+func (r BuilderAgentServiceGetBuilderAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type DatabaseServiceCreateDatabaseResponse struct {
+type BuilderAgentServiceUpdateBuilderAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesCreateResponse
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceCreateDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesCreateResponse {
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceCreateDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r DatabaseServiceCreateDatabaseResponse) GetBody() []byte {
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r DatabaseServiceCreateDatabaseResponse) Status() string {
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14756,7 +21091,7 @@ func (r DatabaseServiceCreateDatabaseResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceCreateDatabaseResponse) StatusCode() int {
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14764,39 +21099,39 @@ func (r DatabaseServiceCreateDatabaseResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceCreateDatabaseResponse) ContentType() string {
+func (r BuilderAgentServiceUpdateBuilderAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type DatabaseServiceDeleteDatabaseResponse struct {
+type BuilderAgentServiceDeployBuilderAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesDeleteResponse
+	JSON200 *LivekitPublicapiAgentsV1BuilderAgentsDeployResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceDeleteDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesDeleteResponse {
+func (r BuilderAgentServiceDeployBuilderAgentResponse) GetJSON200() *LivekitPublicapiAgentsV1BuilderAgentsDeployResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceDeleteDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r BuilderAgentServiceDeployBuilderAgentResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r DatabaseServiceDeleteDatabaseResponse) GetBody() []byte {
+func (r BuilderAgentServiceDeployBuilderAgentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r DatabaseServiceDeleteDatabaseResponse) Status() string {
+func (r BuilderAgentServiceDeployBuilderAgentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14804,7 +21139,7 @@ func (r DatabaseServiceDeleteDatabaseResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceDeleteDatabaseResponse) StatusCode() int {
+func (r BuilderAgentServiceDeployBuilderAgentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14812,103 +21147,7 @@ func (r DatabaseServiceDeleteDatabaseResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceDeleteDatabaseResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DatabaseServiceGetDatabaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesGetResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceGetDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesGetResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceGetDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DatabaseServiceGetDatabaseResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DatabaseServiceGetDatabaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceGetDatabaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceGetDatabaseResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DatabaseServiceExportDatabaseResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiDatabasesV1DatabasesExportResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DatabaseServiceExportDatabaseResponse) GetJSON200() *LivekitPublicapiDatabasesV1DatabasesExportResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DatabaseServiceExportDatabaseResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DatabaseServiceExportDatabaseResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DatabaseServiceExportDatabaseResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DatabaseServiceExportDatabaseResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DatabaseServiceExportDatabaseResponse) ContentType() string {
+func (r BuilderAgentServiceDeployBuilderAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -15491,6 +21730,294 @@ func (r ProjectServiceAddWorkspaceMembersToProjectResponse) ContentType() string
 	return ""
 }
 
+type TelephonyServiceListPhoneNumbersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1PhoneNumbersListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceListPhoneNumbersResponse) GetJSON200() *LivekitPublicapiTelephonyV1PhoneNumbersListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceListPhoneNumbersResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceListPhoneNumbersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceListPhoneNumbersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceListPhoneNumbersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceListPhoneNumbersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServicePurchasePhoneNumberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1PhoneNumbersPurchaseResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServicePurchasePhoneNumberResponse) GetJSON200() *LivekitPublicapiTelephonyV1PhoneNumbersPurchaseResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServicePurchasePhoneNumberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServicePurchasePhoneNumberResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServicePurchasePhoneNumberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServicePurchasePhoneNumberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServicePurchasePhoneNumberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceReleasePhoneNumberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceReleasePhoneNumberResponse) GetJSON200() *LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceReleasePhoneNumberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceReleasePhoneNumberResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceReleasePhoneNumberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceReleasePhoneNumberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceReleasePhoneNumberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceGetPhoneNumberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1PhoneNumbersGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceGetPhoneNumberResponse) GetJSON200() *LivekitPublicapiTelephonyV1PhoneNumbersGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceGetPhoneNumberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceGetPhoneNumberResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceGetPhoneNumberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceGetPhoneNumberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceGetPhoneNumberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceUpdatePhoneNumberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1PhoneNumbersUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceUpdatePhoneNumberResponse) GetJSON200() *LivekitPublicapiTelephonyV1PhoneNumbersUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceUpdatePhoneNumberResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceUpdatePhoneNumberResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceUpdatePhoneNumberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceUpdatePhoneNumberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceUpdatePhoneNumberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceSearchPhoneNumbersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1PhoneNumbersSearchResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceSearchPhoneNumbersResponse) GetJSON200() *LivekitPublicapiTelephonyV1PhoneNumbersSearchResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceSearchPhoneNumbersResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceSearchPhoneNumbersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceSearchPhoneNumbersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceSearchPhoneNumbersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceSearchPhoneNumbersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type SimulationServiceGenerateScenarioFromSessionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -15533,54 +22060,6 @@ func (r SimulationServiceGenerateScenarioFromSessionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SimulationServiceGenerateScenarioFromSessionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ProjectServiceListScopedKeysResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiProjectsV1ListScopedKeysResponse
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *GoogleRpcStatus
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ProjectServiceListScopedKeysResponse) GetJSON200() *LivekitPublicapiProjectsV1ListScopedKeysResponse {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ProjectServiceListScopedKeysResponse) GetJSONDefault() *GoogleRpcStatus {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ProjectServiceListScopedKeysResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ProjectServiceListScopedKeysResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ProjectServiceListScopedKeysResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ProjectServiceListScopedKeysResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16355,32 +22834,32 @@ func (r SimulationServiceCountSimulationRunsResponse) ContentType() string {
 	return ""
 }
 
-type ThreadServiceListThreadsResponse struct {
+type TelephonyServiceListDispatchRulesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsListResponse
+	JSON200 *LivekitPublicapiTelephonyV1DispatchRulesListResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceListThreadsResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsListResponse {
+func (r TelephonyServiceListDispatchRulesResponse) GetJSON200() *LivekitPublicapiTelephonyV1DispatchRulesListResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceListThreadsResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r TelephonyServiceListDispatchRulesResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ThreadServiceListThreadsResponse) GetBody() []byte {
+func (r TelephonyServiceListDispatchRulesResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ThreadServiceListThreadsResponse) Status() string {
+func (r TelephonyServiceListDispatchRulesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16388,7 +22867,7 @@ func (r ThreadServiceListThreadsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceListThreadsResponse) StatusCode() int {
+func (r TelephonyServiceListDispatchRulesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16396,39 +22875,39 @@ func (r ThreadServiceListThreadsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceListThreadsResponse) ContentType() string {
+func (r TelephonyServiceListDispatchRulesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ThreadServiceCreateThreadResponse struct {
+type TelephonyServiceCreateDispatchRuleResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsCreateResponse
+	JSON200 *LivekitPublicapiTelephonyV1DispatchRulesCreateResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceCreateThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsCreateResponse {
+func (r TelephonyServiceCreateDispatchRuleResponse) GetJSON200() *LivekitPublicapiTelephonyV1DispatchRulesCreateResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceCreateThreadResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r TelephonyServiceCreateDispatchRuleResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ThreadServiceCreateThreadResponse) GetBody() []byte {
+func (r TelephonyServiceCreateDispatchRuleResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ThreadServiceCreateThreadResponse) Status() string {
+func (r TelephonyServiceCreateDispatchRuleResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16436,7 +22915,7 @@ func (r ThreadServiceCreateThreadResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceCreateThreadResponse) StatusCode() int {
+func (r TelephonyServiceCreateDispatchRuleResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16444,39 +22923,39 @@ func (r ThreadServiceCreateThreadResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceCreateThreadResponse) ContentType() string {
+func (r TelephonyServiceCreateDispatchRuleResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ThreadServiceDeleteThreadResponse struct {
+type TelephonyServiceDeleteDispatchRuleResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsDeleteResponse
+	JSON200 *LivekitPublicapiTelephonyV1DispatchRulesDeleteResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceDeleteThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsDeleteResponse {
+func (r TelephonyServiceDeleteDispatchRuleResponse) GetJSON200() *LivekitPublicapiTelephonyV1DispatchRulesDeleteResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceDeleteThreadResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r TelephonyServiceDeleteDispatchRuleResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ThreadServiceDeleteThreadResponse) GetBody() []byte {
+func (r TelephonyServiceDeleteDispatchRuleResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ThreadServiceDeleteThreadResponse) Status() string {
+func (r TelephonyServiceDeleteDispatchRuleResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16484,7 +22963,7 @@ func (r ThreadServiceDeleteThreadResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceDeleteThreadResponse) StatusCode() int {
+func (r TelephonyServiceDeleteDispatchRuleResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16492,39 +22971,39 @@ func (r ThreadServiceDeleteThreadResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceDeleteThreadResponse) ContentType() string {
+func (r TelephonyServiceDeleteDispatchRuleResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ThreadServiceGetThreadResponse struct {
+type TelephonyServiceGetDispatchRuleResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsGetResponse
+	JSON200 *LivekitPublicapiTelephonyV1DispatchRulesGetResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceGetThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsGetResponse {
+func (r TelephonyServiceGetDispatchRuleResponse) GetJSON200() *LivekitPublicapiTelephonyV1DispatchRulesGetResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceGetThreadResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r TelephonyServiceGetDispatchRuleResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ThreadServiceGetThreadResponse) GetBody() []byte {
+func (r TelephonyServiceGetDispatchRuleResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ThreadServiceGetThreadResponse) Status() string {
+func (r TelephonyServiceGetDispatchRuleResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16532,7 +23011,7 @@ func (r ThreadServiceGetThreadResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceGetThreadResponse) StatusCode() int {
+func (r TelephonyServiceGetDispatchRuleResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16540,39 +23019,39 @@ func (r ThreadServiceGetThreadResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceGetThreadResponse) ContentType() string {
+func (r TelephonyServiceGetDispatchRuleResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ThreadServiceUpdateThreadResponse struct {
+type TelephonyServiceUpdateDispatchRuleResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsUpdateResponse
+	JSON200 *LivekitPublicapiTelephonyV1DispatchRulesUpdateResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceUpdateThreadResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsUpdateResponse {
+func (r TelephonyServiceUpdateDispatchRuleResponse) GetJSON200() *LivekitPublicapiTelephonyV1DispatchRulesUpdateResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceUpdateThreadResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r TelephonyServiceUpdateDispatchRuleResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ThreadServiceUpdateThreadResponse) GetBody() []byte {
+func (r TelephonyServiceUpdateDispatchRuleResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ThreadServiceUpdateThreadResponse) Status() string {
+func (r TelephonyServiceUpdateDispatchRuleResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16580,7 +23059,7 @@ func (r ThreadServiceUpdateThreadResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceUpdateThreadResponse) StatusCode() int {
+func (r TelephonyServiceUpdateDispatchRuleResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16588,39 +23067,39 @@ func (r ThreadServiceUpdateThreadResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceUpdateThreadResponse) ContentType() string {
+func (r TelephonyServiceUpdateDispatchRuleResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ThreadServiceGetThreadItemsResponse struct {
+type TelephonyServiceListInboundTrunksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsItemsResponse
+	JSON200 *LivekitPublicapiTelephonyV1InboundTrunksListResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceGetThreadItemsResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsItemsResponse {
+func (r TelephonyServiceListInboundTrunksResponse) GetJSON200() *LivekitPublicapiTelephonyV1InboundTrunksListResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceGetThreadItemsResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r TelephonyServiceListInboundTrunksResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ThreadServiceGetThreadItemsResponse) GetBody() []byte {
+func (r TelephonyServiceListInboundTrunksResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ThreadServiceGetThreadItemsResponse) Status() string {
+func (r TelephonyServiceListInboundTrunksResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16628,7 +23107,7 @@ func (r ThreadServiceGetThreadItemsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceGetThreadItemsResponse) StatusCode() int {
+func (r TelephonyServiceListInboundTrunksResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16636,39 +23115,39 @@ func (r ThreadServiceGetThreadItemsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceGetThreadItemsResponse) ContentType() string {
+func (r TelephonyServiceListInboundTrunksResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ThreadServiceGetThreadTasksResponse struct {
+type TelephonyServiceCreateInboundTrunkResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LivekitPublicapiThreadsV1ThreadsTasksResponse
+	JSON200 *LivekitPublicapiTelephonyV1InboundTrunksCreateResponse
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *GoogleRpcStatus
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ThreadServiceGetThreadTasksResponse) GetJSON200() *LivekitPublicapiThreadsV1ThreadsTasksResponse {
+func (r TelephonyServiceCreateInboundTrunkResponse) GetJSON200() *LivekitPublicapiTelephonyV1InboundTrunksCreateResponse {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ThreadServiceGetThreadTasksResponse) GetJSONDefault() *GoogleRpcStatus {
+func (r TelephonyServiceCreateInboundTrunkResponse) GetJSONDefault() *GoogleRpcStatus {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ThreadServiceGetThreadTasksResponse) GetBody() []byte {
+func (r TelephonyServiceCreateInboundTrunkResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ThreadServiceGetThreadTasksResponse) Status() string {
+func (r TelephonyServiceCreateInboundTrunkResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16676,7 +23155,7 @@ func (r ThreadServiceGetThreadTasksResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ThreadServiceGetThreadTasksResponse) StatusCode() int {
+func (r TelephonyServiceCreateInboundTrunkResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16684,7 +23163,487 @@ func (r ThreadServiceGetThreadTasksResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ThreadServiceGetThreadTasksResponse) ContentType() string {
+func (r TelephonyServiceCreateInboundTrunkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceDeleteInboundTrunkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1InboundTrunksDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceDeleteInboundTrunkResponse) GetJSON200() *LivekitPublicapiTelephonyV1InboundTrunksDeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceDeleteInboundTrunkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceDeleteInboundTrunkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceDeleteInboundTrunkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceDeleteInboundTrunkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceDeleteInboundTrunkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceGetInboundTrunkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1InboundTrunksGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceGetInboundTrunkResponse) GetJSON200() *LivekitPublicapiTelephonyV1InboundTrunksGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceGetInboundTrunkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceGetInboundTrunkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceGetInboundTrunkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceGetInboundTrunkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceGetInboundTrunkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceUpdateInboundTrunkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1InboundTrunksUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceUpdateInboundTrunkResponse) GetJSON200() *LivekitPublicapiTelephonyV1InboundTrunksUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceUpdateInboundTrunkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceUpdateInboundTrunkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceUpdateInboundTrunkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceUpdateInboundTrunkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceUpdateInboundTrunkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceListOutboundTrunksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1OutboundTrunksListResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceListOutboundTrunksResponse) GetJSON200() *LivekitPublicapiTelephonyV1OutboundTrunksListResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceListOutboundTrunksResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceListOutboundTrunksResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceListOutboundTrunksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceListOutboundTrunksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceListOutboundTrunksResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceCreateOutboundTrunkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1OutboundTrunksCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceCreateOutboundTrunkResponse) GetJSON200() *LivekitPublicapiTelephonyV1OutboundTrunksCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceCreateOutboundTrunkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceCreateOutboundTrunkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceCreateOutboundTrunkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceCreateOutboundTrunkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceCreateOutboundTrunkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceDeleteOutboundTrunkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1OutboundTrunksDeleteResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceDeleteOutboundTrunkResponse) GetJSON200() *LivekitPublicapiTelephonyV1OutboundTrunksDeleteResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceDeleteOutboundTrunkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceDeleteOutboundTrunkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceDeleteOutboundTrunkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceDeleteOutboundTrunkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceDeleteOutboundTrunkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceGetOutboundTrunkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1OutboundTrunksGetResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceGetOutboundTrunkResponse) GetJSON200() *LivekitPublicapiTelephonyV1OutboundTrunksGetResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceGetOutboundTrunkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceGetOutboundTrunkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceGetOutboundTrunkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceGetOutboundTrunkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceGetOutboundTrunkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceUpdateOutboundTrunkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1OutboundTrunksUpdateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceUpdateOutboundTrunkResponse) GetJSON200() *LivekitPublicapiTelephonyV1OutboundTrunksUpdateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceUpdateOutboundTrunkResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceUpdateOutboundTrunkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceUpdateOutboundTrunkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceUpdateOutboundTrunkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceUpdateOutboundTrunkResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceCreateSIPParticipantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1SIPParticipantsCreateResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceCreateSIPParticipantResponse) GetJSON200() *LivekitPublicapiTelephonyV1SIPParticipantsCreateResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceCreateSIPParticipantResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceCreateSIPParticipantResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceCreateSIPParticipantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceCreateSIPParticipantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceCreateSIPParticipantResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type TelephonyServiceTransferSIPParticipantResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiTelephonyV1SIPParticipantsTransferResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TelephonyServiceTransferSIPParticipantResponse) GetJSON200() *LivekitPublicapiTelephonyV1SIPParticipantsTransferResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r TelephonyServiceTransferSIPParticipantResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r TelephonyServiceTransferSIPParticipantResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TelephonyServiceTransferSIPParticipantResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TelephonyServiceTransferSIPParticipantResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TelephonyServiceTransferSIPParticipantResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -17117,6 +24076,54 @@ func (r UserServiceGetCurrentUserResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r UserServiceGetCurrentUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UserServiceRevokeSessionTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LivekitPublicapiUsersV1SessionTokenRevokeResponse
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *GoogleRpcStatus
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UserServiceRevokeSessionTokenResponse) GetJSON200() *LivekitPublicapiUsersV1SessionTokenRevokeResponse {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UserServiceRevokeSessionTokenResponse) GetJSONDefault() *GoogleRpcStatus {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UserServiceRevokeSessionTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UserServiceRevokeSessionTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UserServiceRevokeSessionTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UserServiceRevokeSessionTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18037,6 +25044,12 @@ func (r WorkspaceServiceGetProjectResponse) ContentType() string {
 
 // ProjectServiceGetInviteWithResponse GetInvite
 //
+// Returns a project invite that was sent to you, found by its token. Use it to
+//
+//	show the invite before you answer it with `AnswerInvitation`. An invite that
+//	was sent to a different email address returns `PermissionDenied`. An expired
+//	invite returns `FailedPrecondition`. An unknown token returns `NotFound`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/project-invites/{inviteToken} (the `ProjectServiceGetInvite` operationId).
@@ -18049,6 +25062,17 @@ func (c *ClientWithResponses) ProjectServiceGetInviteWithResponse(ctx context.Co
 }
 
 // ProjectServiceAnswerInvitationWithBodyWithResponse AnswerInvitation
+//
+// Accepts or declines a project invite that was sent to you. When you accept,
+//
+//	you become a member of the project with the role of the invite. When the
+//	project is in a workspace, you also become a member of the workspace and of
+//	every project in it where `isPrivate` is `false`, with the same role. If you
+//	are already a member, the role of the invite replaces your role. When you
+//	decline, the API deletes the invite. After you answer, the token stops
+//	working, so a retry returns `NotFound`. An invite that was sent to a
+//	different email address returns `PermissionDenied`. An expired invite
+//	returns `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18063,6 +25087,17 @@ func (c *ClientWithResponses) ProjectServiceAnswerInvitationWithBodyWithResponse
 
 // ProjectServiceAnswerInvitationWithResponse AnswerInvitation
 //
+// Accepts or declines a project invite that was sent to you. When you accept,
+//
+//	you become a member of the project with the role of the invite. When the
+//	project is in a workspace, you also become a member of the workspace and of
+//	every project in it where `isPrivate` is `false`, with the same role. If you
+//	are already a member, the role of the invite replaces your role. When you
+//	decline, the API deletes the invite. After you answer, the token stops
+//	working, so a retry returns `NotFound`. An invite that was sent to a
+//	different email address returns `PermissionDenied`. An expired invite
+//	returns `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/project-invites/{inviteToken}:answer (the `ProjectServiceAnswerInvitation` operationId).
@@ -18075,6 +25110,11 @@ func (c *ClientWithResponses) ProjectServiceAnswerInvitationWithResponse(ctx con
 }
 
 // ProjectServiceListProjectsWithResponse ListProjects
+//
+// Lists projects, ordered by project ID. When you set no filter, the list has
+//
+//	the projects that you are a member of. A pending invite does not make you a
+//	member.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18089,6 +25129,18 @@ func (c *ClientWithResponses) ProjectServiceListProjectsWithResponse(ctx context
 
 // ProjectServiceCreateProjectWithBodyWithResponse CreateProject
 //
+// Creates a project. You become a member of the project with the admin role
+//
+//	(`3`), and the API creates an API key that you own. When `workspaceId` is
+//	empty, the API also creates a workspace with the same name as the project,
+//	and you are its only member. When `isPrivate` is `false` and you set
+//	`workspaceId`, every member of the workspace becomes a member of the project,
+//	with their workspace role. A `subdomain` that another project uses returns
+//	`AlreadyExists`. When you reach the limit of free projects that you can
+//	create, or the project limit of the workspace plan, the request fails with
+//	`FailedPrecondition`. The call is not idempotent: when `subdomain` is empty,
+//	a retry creates a second project.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/projects (the `ProjectServiceCreateProject` operationId).
@@ -18101,6 +25153,18 @@ func (c *ClientWithResponses) ProjectServiceCreateProjectWithBodyWithResponse(ct
 }
 
 // ProjectServiceCreateProjectWithResponse CreateProject
+//
+// Creates a project. You become a member of the project with the admin role
+//
+//	(`3`), and the API creates an API key that you own. When `workspaceId` is
+//	empty, the API also creates a workspace with the same name as the project,
+//	and you are its only member. When `isPrivate` is `false` and you set
+//	`workspaceId`, every member of the workspace becomes a member of the project,
+//	with their workspace role. A `subdomain` that another project uses returns
+//	`AlreadyExists`. When you reach the limit of free projects that you can
+//	create, or the project limit of the workspace plan, the request fails with
+//	`FailedPrecondition`. The call is not idempotent: when `subdomain` is empty,
+//	a retry creates a second project.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18115,6 +25179,11 @@ func (c *ClientWithResponses) ProjectServiceCreateProjectWithResponse(ctx contex
 
 // ProjectServiceDeleteProjectWithResponse DeleteProject
 //
+// Deletes a project, with its API keys, its webhooks, and its member list. You
+//
+//	cannot undo the delete. Another project can then use the subdomain. A retry
+//	returns `NotFound`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /v0/projects/{projectId} (the `ProjectServiceDeleteProject` operationId).
@@ -18127,6 +25196,10 @@ func (c *ClientWithResponses) ProjectServiceDeleteProjectWithResponse(ctx contex
 }
 
 // ProjectServiceGetProjectWithResponse GetProject
+//
+// Returns a project with its settings and its webhooks. A project that you
+//
+//	cannot see returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18141,6 +25214,17 @@ func (c *ClientWithResponses) ProjectServiceGetProjectWithResponse(ctx context.C
 
 // ProjectServiceUpdateProjectWithBodyWithResponse UpdateProject
 //
+// Updates the settings of a project, and returns the updated project. A field
+//
+//	that you do not set keeps its value. When you change `isPrivate` from
+//	`false` to `true`, the API removes every member of the project except you
+//	and the users in `members`, and you get the admin role (`3`). When you
+//	change `isPrivate` from `true` to `false`, every member of the workspace
+//	becomes a member of the project, with their workspace role. A user in
+//	`members` who is not a member of the workspace
+//	returns `NotFound`. A `subdomain` that another project uses returns
+//	`AlreadyExists`.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
@@ -18154,6 +25238,17 @@ func (c *ClientWithResponses) ProjectServiceUpdateProjectWithBodyWithResponse(ct
 
 // ProjectServiceUpdateProjectWithResponse UpdateProject
 //
+// Updates the settings of a project, and returns the updated project. A field
+//
+//	that you do not set keeps its value. When you change `isPrivate` from
+//	`false` to `true`, the API removes every member of the project except you
+//	and the users in `members`, and you get the admin role (`3`). When you
+//	change `isPrivate` from `true` to `false`, every member of the workspace
+//	becomes a member of the project, with their workspace role. A user in
+//	`members` who is not a member of the workspace
+//	returns `NotFound`. A `subdomain` that another project uses returns
+//	`AlreadyExists`.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /v0/projects/{projectId} (the `ProjectServiceUpdateProject` operationId).
@@ -18165,153 +25260,189 @@ func (c *ClientWithResponses) ProjectServiceUpdateProjectWithResponse(ctx contex
 	return ParseProjectServiceUpdateProjectResponse(rsp)
 }
 
-// AnalyticsServiceGetProjectAnalyticsWithResponse GetProjectAnalytics
+// BuilderAgentServiceListBuilderAgentsWithResponse ListBuilderAgents
 //
-// Returns the project overview over a time range.
+// Lists the builder agents of a project by name, with the deployment status
 //
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics (the `AnalyticsServiceGetProjectAnalytics` operationId).
-func (c *ClientWithResponses) AnalyticsServiceGetProjectAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceGetProjectAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetProjectAnalyticsResponse, error) {
-	rsp, err := c.AnalyticsServiceGetProjectAnalytics(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAnalyticsServiceGetProjectAnalyticsResponse(rsp)
-}
-
-// AnalyticsServiceListAgentAnalyticsWithResponse ListAgentAnalytics
-//
-// Returns the same per-agent analytics for every agent in the project, one
-//
-//	AgentAnalytics row per agent — so a single agent and the whole roster share
-//	one shape.
+//	of each. The list does not include configurations. To get the
+//	configuration of an agent, call `GetBuilderAgent`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v0/projects/{projectId}/analytics/agents (the `AnalyticsServiceListAgentAnalytics` operationId).
-func (c *ClientWithResponses) AnalyticsServiceListAgentAnalyticsWithResponse(ctx context.Context, projectId string, params *AnalyticsServiceListAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceListAgentAnalyticsResponse, error) {
-	rsp, err := c.AnalyticsServiceListAgentAnalytics(ctx, projectId, params, reqEditors...)
+// Corresponds with GET /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceListBuilderAgents` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceListBuilderAgentsWithResponse(ctx context.Context, projectId string, params *BuilderAgentServiceListBuilderAgentsParams, reqEditors ...RequestEditorFn) (*BuilderAgentServiceListBuilderAgentsResponse, error) {
+	rsp, err := c.BuilderAgentServiceListBuilderAgents(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseAnalyticsServiceListAgentAnalyticsResponse(rsp)
+	return ParseBuilderAgentServiceListBuilderAgentsResponse(rsp)
 }
 
-// AnalyticsServiceGetAgentAnalyticsWithResponse GetAgentAnalytics
+// BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse CreateBuilderAgent
 //
-// Returns the analytics for one agent over a time range.
+// Creates a builder agent from a name and a configuration. The agent is not
 //
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/analytics/agents/{agentId} (the `AnalyticsServiceGetAgentAnalytics` operationId).
-func (c *ClientWithResponses) AnalyticsServiceGetAgentAnalyticsWithResponse(ctx context.Context, projectId string, agentId string, params *AnalyticsServiceGetAgentAnalyticsParams, reqEditors ...RequestEditorFn) (*AnalyticsServiceGetAgentAnalyticsResponse, error) {
-	rsp, err := c.AnalyticsServiceGetAgentAnalytics(ctx, projectId, agentId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAnalyticsServiceGetAgentAnalyticsResponse(rsp)
-}
-
-// DatabaseServiceListDatabasesWithResponse ListDatabases
-//
-// Lists the project's databases, cursor-paginated.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/databases (the `DatabaseServiceListDatabases` operationId).
-func (c *ClientWithResponses) DatabaseServiceListDatabasesWithResponse(ctx context.Context, projectId string, params *DatabaseServiceListDatabasesParams, reqEditors ...RequestEditorFn) (*DatabaseServiceListDatabasesResponse, error) {
-	rsp, err := c.DatabaseServiceListDatabases(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDatabaseServiceListDatabasesResponse(rsp)
-}
-
-// DatabaseServiceCreateDatabaseWithBodyWithResponse CreateDatabase
-//
-// Creates an empty database. Not idempotent: a retried request creates a
-//
-//	second database.
+//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
+//	properties take their default, and unknown properties are ignored. A
+//	configuration that is not valid fails with `InvalidArgument` and a
+//	`google.rpc.BadRequest` detail. It has a field violation for each
+//	problem, up to 100, which names a field, such as
+//	`config.httpTools[0].url`, and what is wrong with it. A config with more
+//	problems gets one last violation for `config` that says how many more.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceCreateDatabaseWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DatabaseServiceCreateDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceCreateDatabaseWithBody(ctx, projectId, contentType, body, reqEditors...)
+// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceCreateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceCreateBuilderAgentWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDatabaseServiceCreateDatabaseResponse(rsp)
+	return ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp)
 }
 
-// DatabaseServiceCreateDatabaseWithResponse CreateDatabase
+// BuilderAgentServiceCreateBuilderAgentWithResponse CreateBuilderAgent
 //
-// Creates an empty database. Not idempotent: a retried request creates a
+// Creates a builder agent from a name and a configuration. The agent is not
 //
-//	second database.
+//	deployed: call `DeployBuilderAgent` to run it. Unset configuration
+//	properties take their default, and unknown properties are ignored. A
+//	configuration that is not valid fails with `InvalidArgument` and a
+//	`google.rpc.BadRequest` detail. It has a field violation for each
+//	problem, up to 100, which names a field, such as
+//	`config.httpTools[0].url`, and what is wrong with it. A config with more
+//	problems gets one last violation for `config` that says how many more.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v0/projects/{projectId}/databases (the `DatabaseServiceCreateDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceCreateDatabaseWithResponse(ctx context.Context, projectId string, body DatabaseServiceCreateDatabaseJSONRequestBody, reqEditors ...RequestEditorFn) (*DatabaseServiceCreateDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceCreateDatabase(ctx, projectId, body, reqEditors...)
+// Corresponds with POST /v0/projects/{projectId}/agents/builder (the `BuilderAgentServiceCreateBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceCreateBuilderAgentWithResponse(ctx context.Context, projectId string, body BuilderAgentServiceCreateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceCreateBuilderAgent(ctx, projectId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDatabaseServiceCreateDatabaseResponse(rsp)
+	return ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp)
 }
 
-// DatabaseServiceDeleteDatabaseWithResponse DeleteDatabase
+// BuilderAgentServiceDeleteBuilderAgentWithResponse DeleteBuilderAgent
 //
-// Deletes the stored data, not just the metadata.
+// Deletes a builder agent, its versions, and its deployment.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceDeleteDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceDeleteDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceDeleteDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceDeleteDatabase(ctx, projectId, databaseId, reqEditors...)
+// Corresponds with DELETE /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceDeleteBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceDeleteBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeleteBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceDeleteBuilderAgent(ctx, projectId, builderAgentId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDatabaseServiceDeleteDatabaseResponse(rsp)
+	return ParseBuilderAgentServiceDeleteBuilderAgentResponse(rsp)
 }
 
-// DatabaseServiceGetDatabaseWithResponse GetDatabase
+// BuilderAgentServiceGetBuilderAgentWithResponse GetBuilderAgent
+//
+// Returns a builder agent with its current configuration and its deployment
+//
+//	status.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v0/projects/{projectId}/databases/{databaseId} (the `DatabaseServiceGetDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceGetDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceGetDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceGetDatabase(ctx, projectId, databaseId, reqEditors...)
+// Corresponds with GET /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceGetBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceGetBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, reqEditors ...RequestEditorFn) (*BuilderAgentServiceGetBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceGetBuilderAgent(ctx, projectId, builderAgentId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDatabaseServiceGetDatabaseResponse(rsp)
+	return ParseBuilderAgentServiceGetBuilderAgentResponse(rsp)
 }
 
-// DatabaseServiceExportDatabaseWithResponse ExportDatabase
+// BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse UpdateBuilderAgent
 //
-// Exports a consistent SQLite file as a time-limited download URL.
+// Replaces the configuration of a builder agent. Each update makes a new
 //
-// Returns a wrapper object for the known response body format(s).
+//	version. The running agent does not change until you deploy again. A
+//	configuration that is not valid fails as it does in
+//	`CreateBuilderAgent`.
 //
-// Corresponds with POST /v0/projects/{projectId}/databases/{databaseId}:export (the `DatabaseServiceExportDatabase` operationId).
-func (c *ClientWithResponses) DatabaseServiceExportDatabaseWithResponse(ctx context.Context, projectId string, databaseId string, reqEditors ...RequestEditorFn) (*DatabaseServiceExportDatabaseResponse, error) {
-	rsp, err := c.DatabaseServiceExportDatabase(ctx, projectId, databaseId, reqEditors...)
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceUpdateBuilderAgentWithBody(ctx, projectId, builderAgentId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDatabaseServiceExportDatabaseResponse(rsp)
+	return ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceUpdateBuilderAgentWithResponse UpdateBuilderAgent
+//
+// Replaces the configuration of a builder agent. Each update makes a new
+//
+//	version. The running agent does not change until you deploy again. A
+//	configuration that is not valid fails as it does in
+//	`CreateBuilderAgent`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/agents/builder/{builderAgentId} (the `BuilderAgentServiceUpdateBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceUpdateBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceUpdateBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceUpdateBuilderAgent(ctx, projectId, builderAgentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse DeployBuilderAgent
+//
+// Starts a deployment of the current configuration of a builder agent, or of
+//
+//	an earlier version. The call returns when the build starts, with the
+//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+//	returns. Call `GetBuilderAgent` to follow the deployment until its status
+//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceDeployBuilderAgentWithBodyWithResponse(ctx context.Context, projectId string, builderAgentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceDeployBuilderAgentWithBody(ctx, projectId, builderAgentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp)
+}
+
+// BuilderAgentServiceDeployBuilderAgentWithResponse DeployBuilderAgent
+//
+// Starts a deployment of the current configuration of a builder agent, or of
+//
+//	an earlier version. The call returns when the build starts, with the
+//	status `DEPLOYMENT_STATUS_BUILDING`. The build continues after the call
+//	returns. Call `GetBuilderAgent` to follow the deployment until its status
+//	is `DEPLOYMENT_STATUS_RUNNING` or `DEPLOYMENT_STATUS_BUILD_FAILED`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/agents/builder/{builderAgentId}:deploy (the `BuilderAgentServiceDeployBuilderAgent` operationId).
+func (c *ClientWithResponses) BuilderAgentServiceDeployBuilderAgentWithResponse(ctx context.Context, projectId string, builderAgentId string, body BuilderAgentServiceDeployBuilderAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
+	rsp, err := c.BuilderAgentServiceDeployBuilderAgent(ctx, projectId, builderAgentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp)
 }
 
 // ProjectServiceListInvitesWithResponse ListInvites
 //
+// Lists the unexpired invites of a project, ordered by email.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/invites (the `ProjectServiceListInvites` operationId).
-func (c *ClientWithResponses) ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error) {
-	rsp, err := c.ProjectServiceListInvites(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceListInvitesWithResponse(ctx context.Context, projectId string, params *ProjectServiceListInvitesParams, reqEditors ...RequestEditorFn) (*ProjectServiceListInvitesResponse, error) {
+	rsp, err := c.ProjectServiceListInvites(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18319,6 +25450,14 @@ func (c *ClientWithResponses) ProjectServiceListInvitesWithResponse(ctx context.
 }
 
 // ProjectServiceInviteMemberWithBodyWithResponse InviteMember
+//
+// Invites a person to a project by email, with a role. The API sends an email
+//
+//	with the invite link, and the response has the invite token. The invite
+//	expires after 48 hours. When an invite for the email exists, the API
+//	replaces its role, token, and expiry, and the earlier link stops working. A
+//	retry replaces the invite and sends a new email. On a plan that allows only
+//	the admin role (`3`), the roles `1` and `2` return `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18333,6 +25472,14 @@ func (c *ClientWithResponses) ProjectServiceInviteMemberWithBodyWithResponse(ctx
 
 // ProjectServiceInviteMemberWithResponse InviteMember
 //
+// Invites a person to a project by email, with a role. The API sends an email
+//
+//	with the invite link, and the response has the invite token. The invite
+//	expires after 48 hours. When an invite for the email exists, the API
+//	replaces its role, token, and expiry, and the earlier link stops working. A
+//	retry replaces the invite and sends a new email. On a plan that allows only
+//	the admin role (`3`), the roles `1` and `2` return `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/projects/{projectId}/invites (the `ProjectServiceInviteMember` operationId).
@@ -18345,6 +25492,12 @@ func (c *ClientWithResponses) ProjectServiceInviteMemberWithResponse(ctx context
 }
 
 // ProjectServiceDeleteInviteWithResponse DeleteInvite
+//
+// Deletes a pending project invite, so that its link stops working. When the
+//
+//	project is in a workspace, the API also deletes the workspace invite for the
+//	same email. An invite that does not exist returns `NotFound`. An expired
+//	invite returns `FailedPrecondition`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18359,6 +25512,13 @@ func (c *ClientWithResponses) ProjectServiceDeleteInviteWithResponse(ctx context
 
 // ProjectServiceUpdateInviteWithBodyWithResponse UpdateInvite
 //
+// Changes the role of a pending project invite. The token and the expiry do not
+//
+//	change, and the API sends no email. An invite that does not exist returns
+//	`NotFound`. An expired invite returns `FailedPrecondition`. On a plan that
+//	allows only the admin role (`3`), the roles `1` and `2` return
+//	`FailedPrecondition`.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /v0/projects/{projectId}/invites/{email} (the `ProjectServiceUpdateInvite` operationId).
@@ -18371,6 +25531,13 @@ func (c *ClientWithResponses) ProjectServiceUpdateInviteWithBodyWithResponse(ctx
 }
 
 // ProjectServiceUpdateInviteWithResponse UpdateInvite
+//
+// Changes the role of a pending project invite. The token and the expiry do not
+//
+//	change, and the API sends no email. An invite that does not exist returns
+//	`NotFound`. An expired invite returns `FailedPrecondition`. On a plan that
+//	allows only the admin role (`3`), the roles `1` and `2` return
+//	`FailedPrecondition`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18385,6 +25552,10 @@ func (c *ClientWithResponses) ProjectServiceUpdateInviteWithResponse(ctx context
 
 // ProjectServiceListKeysWithResponse ListKeys
 //
+// Lists the API keys of a project, oldest first. The list does not include
+//
+//	the secrets.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/keys (the `ProjectServiceListKeys` operationId).
@@ -18398,9 +25569,9 @@ func (c *ClientWithResponses) ProjectServiceListKeysWithResponse(ctx context.Con
 
 // ProjectServiceGenerateKeyWithBodyWithResponse GenerateKey
 //
-// Creates an API key and secret for the project. The secret is returned once,
+// Creates an API key and secret for the project. The response includes the
 //
-//	in the response, and cannot be read again.
+//	secret. You cannot read the secret again.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18415,9 +25586,9 @@ func (c *ClientWithResponses) ProjectServiceGenerateKeyWithBodyWithResponse(ctx 
 
 // ProjectServiceGenerateKeyWithResponse GenerateKey
 //
-// Creates an API key and secret for the project. The secret is returned once,
+// Creates an API key and secret for the project. The response includes the
 //
-//	in the response, and cannot be read again.
+//	secret. You cannot read the secret again.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18432,6 +25603,11 @@ func (c *ClientWithResponses) ProjectServiceGenerateKeyWithResponse(ctx context.
 
 // ProjectServiceDeleteKeyWithResponse DeleteKey
 //
+// Deletes an API key and its secret from a project. You cannot undo the
+//
+//	delete. A key that does not exist, or that belongs to another project,
+//	returns `NotFound`, so a retry returns `NotFound`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /v0/projects/{projectId}/keys/{apiKey} (the `ProjectServiceDeleteKey` operationId).
@@ -18445,13 +25621,13 @@ func (c *ClientWithResponses) ProjectServiceDeleteKeyWithResponse(ctx context.Co
 
 // ProjectServiceListMembersWithResponse ListMembers
 //
-// Lists the project's members.
+// Lists the project members, ordered by user ID.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/members (the `ProjectServiceListMembers` operationId).
-func (c *ClientWithResponses) ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error) {
-	rsp, err := c.ProjectServiceListMembers(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceListMembersWithResponse(ctx context.Context, projectId string, params *ProjectServiceListMembersParams, reqEditors ...RequestEditorFn) (*ProjectServiceListMembersResponse, error) {
+	rsp, err := c.ProjectServiceListMembers(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18459,6 +25635,16 @@ func (c *ClientWithResponses) ProjectServiceListMembersWithResponse(ctx context.
 }
 
 // ProjectServiceRemoveMemberWithResponse RemoveMember
+//
+// Removes a user from a project, and deletes the API keys that the user owns in
+//
+//	the project. Agent keys stay. When `isPrivate` is `false` on the project, the
+//	API removes the user from the workspace and from every project in it, and
+//	deletes the keys that the user owns in all of those projects. Send
+//	`confirmedNumKeys` to confirm the number of keys to delete. A removal that
+//	deletes the last API key of a project returns `FailedPrecondition` and
+//	changes nothing. A user who is not a member returns `NotFound`. The response
+//	has the number of keys that the removal deleted.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18473,6 +25659,10 @@ func (c *ClientWithResponses) ProjectServiceRemoveMemberWithResponse(ctx context
 
 // ProjectServiceGetMemberWithResponse GetMember
 //
+// Returns the membership of one user on a project, with the role of the user.
+//
+//	A user who is not a member of the project returns `NotFound`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/members/{userId} (the `ProjectServiceGetMember` operationId).
@@ -18485,6 +25675,15 @@ func (c *ClientWithResponses) ProjectServiceGetMemberWithResponse(ctx context.Co
 }
 
 // ProjectServiceUpdateMemberWithBodyWithResponse UpdateMember
+//
+// Changes the role of a member of a project. When `isPrivate` is `false` on the
+//
+//	project, the role is the workspace role of the user: the API changes it on
+//	the workspace and on every project in the workspace where `isPrivate` is
+//	`false`. When `isPrivate` is `true`, only this project changes, and the API
+//	sends an email to the member about the new role. A user who is not a member
+//	returns `NotFound`. On a plan that allows only the admin role (`3`), the
+//	roles `1` and `2` return `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18499,6 +25698,15 @@ func (c *ClientWithResponses) ProjectServiceUpdateMemberWithBodyWithResponse(ctx
 
 // ProjectServiceUpdateMemberWithResponse UpdateMember
 //
+// Changes the role of a member of a project. When `isPrivate` is `false` on the
+//
+//	project, the role is the workspace role of the user: the API changes it on
+//	the workspace and on every project in the workspace where `isPrivate` is
+//	`false`. When `isPrivate` is `true`, only this project changes, and the API
+//	sends an email to the member about the new role. A user who is not a member
+//	returns `NotFound`. On a plan that allows only the admin role (`3`), the
+//	roles `1` and `2` return `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /v0/projects/{projectId}/members/{userId} (the `ProjectServiceUpdateMember` operationId).
@@ -18511,6 +25719,16 @@ func (c *ClientWithResponses) ProjectServiceUpdateMemberWithResponse(ctx context
 }
 
 // ProjectServiceAddWorkspaceMembersToProjectWithBodyWithResponse AddWorkspaceMembersToProject
+//
+// Adds members of the workspace to a project where `isPrivate` is `true`, all
+//
+//	with one role. A user who is already a member of the project gets the new
+//	role, so a retry gives the same result. The API sends an email to each user
+//	that it adds, except you. A project where `isPrivate` is `false` returns
+//	`InvalidArgument`. A user who is not a member of the workspace returns
+//	`NotFound`, and the API adds no one. On a plan that allows only the admin
+//	role (`3`), the roles `1` and `2` return `FailedPrecondition`. The response
+//	lists the members in no specific order. An empty `userIds` changes nothing.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18525,6 +25743,16 @@ func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithBody
 
 // ProjectServiceAddWorkspaceMembersToProjectWithResponse AddWorkspaceMembersToProject
 //
+// Adds members of the workspace to a project where `isPrivate` is `true`, all
+//
+//	with one role. A user who is already a member of the project gets the new
+//	role, so a retry gives the same result. The API sends an email to each user
+//	that it adds, except you. A project where `isPrivate` is `false` returns
+//	`InvalidArgument`. A user who is not a member of the workspace returns
+//	`NotFound`, and the API adds no one. On a plan that allows only the admin
+//	role (`3`), the roles `1` and `2` return `FailedPrecondition`. The response
+//	lists the members in no specific order. An empty `userIds` changes nothing.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/projects/{projectId}/members:addWorkspaceMembers (the `ProjectServiceAddWorkspaceMembersToProject` operationId).
@@ -18536,14 +25764,153 @@ func (c *ClientWithResponses) ProjectServiceAddWorkspaceMembersToProjectWithResp
 	return ParseProjectServiceAddWorkspaceMembersToProjectResponse(rsp)
 }
 
+// TelephonyServiceListPhoneNumbersWithResponse ListPhoneNumbers
+//
+// Lists the phone numbers of the project, newest first.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/phone-numbers (the `TelephonyServiceListPhoneNumbers` operationId).
+func (c *ClientWithResponses) TelephonyServiceListPhoneNumbersWithResponse(ctx context.Context, projectId string, params *TelephonyServiceListPhoneNumbersParams, reqEditors ...RequestEditorFn) (*TelephonyServiceListPhoneNumbersResponse, error) {
+	rsp, err := c.TelephonyServiceListPhoneNumbers(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceListPhoneNumbersResponse(rsp)
+}
+
+// TelephonyServicePurchasePhoneNumberWithBodyWithResponse PurchasePhoneNumber
+//
+// Buys a phone number for the project. The number then appears in
+//
+//	`ListPhoneNumbers`. A number that someone else bought first fails with
+//	`AlreadyExists`, and a project at its phone number limit fails with
+//	`FailedPrecondition`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/phone-numbers (the `TelephonyServicePurchasePhoneNumber` operationId).
+func (c *ClientWithResponses) TelephonyServicePurchasePhoneNumberWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServicePurchasePhoneNumberResponse, error) {
+	rsp, err := c.TelephonyServicePurchasePhoneNumberWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServicePurchasePhoneNumberResponse(rsp)
+}
+
+// TelephonyServicePurchasePhoneNumberWithResponse PurchasePhoneNumber
+//
+// Buys a phone number for the project. The number then appears in
+//
+//	`ListPhoneNumbers`. A number that someone else bought first fails with
+//	`AlreadyExists`, and a project at its phone number limit fails with
+//	`FailedPrecondition`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/phone-numbers (the `TelephonyServicePurchasePhoneNumber` operationId).
+func (c *ClientWithResponses) TelephonyServicePurchasePhoneNumberWithResponse(ctx context.Context, projectId string, body TelephonyServicePurchasePhoneNumberJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServicePurchasePhoneNumberResponse, error) {
+	rsp, err := c.TelephonyServicePurchasePhoneNumber(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServicePurchasePhoneNumberResponse(rsp)
+}
+
+// TelephonyServiceReleasePhoneNumberWithResponse ReleasePhoneNumber
+//
+// Releases a phone number. The project loses the number, and the API
+//
+//	removes it from each dispatch rule.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceReleasePhoneNumber` operationId).
+func (c *ClientWithResponses) TelephonyServiceReleasePhoneNumberWithResponse(ctx context.Context, projectId string, phoneNumberId string, reqEditors ...RequestEditorFn) (*TelephonyServiceReleasePhoneNumberResponse, error) {
+	rsp, err := c.TelephonyServiceReleasePhoneNumber(ctx, projectId, phoneNumberId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceReleasePhoneNumberResponse(rsp)
+}
+
+// TelephonyServiceGetPhoneNumberWithResponse GetPhoneNumber
+//
+// Returns a phone number of the project.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceGetPhoneNumber` operationId).
+func (c *ClientWithResponses) TelephonyServiceGetPhoneNumberWithResponse(ctx context.Context, projectId string, phoneNumberId string, reqEditors ...RequestEditorFn) (*TelephonyServiceGetPhoneNumberResponse, error) {
+	rsp, err := c.TelephonyServiceGetPhoneNumber(ctx, projectId, phoneNumberId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceGetPhoneNumberResponse(rsp)
+}
+
+// TelephonyServiceUpdatePhoneNumberWithBodyWithResponse UpdatePhoneNumber
+//
+// Renames a phone number, or adds it to a dispatch rule. To remove a
+//
+//	number from a rule, remove its ID from the `trunkIds` of the rule with
+//	`UpdateDispatchRule`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceUpdatePhoneNumber` operationId).
+func (c *ClientWithResponses) TelephonyServiceUpdatePhoneNumberWithBodyWithResponse(ctx context.Context, projectId string, phoneNumberId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdatePhoneNumberResponse, error) {
+	rsp, err := c.TelephonyServiceUpdatePhoneNumberWithBody(ctx, projectId, phoneNumberId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceUpdatePhoneNumberResponse(rsp)
+}
+
+// TelephonyServiceUpdatePhoneNumberWithResponse UpdatePhoneNumber
+//
+// Renames a phone number, or adds it to a dispatch rule. To remove a
+//
+//	number from a rule, remove its ID from the `trunkIds` of the rule with
+//	`UpdateDispatchRule`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/phone-numbers/{phoneNumberId} (the `TelephonyServiceUpdatePhoneNumber` operationId).
+func (c *ClientWithResponses) TelephonyServiceUpdatePhoneNumberWithResponse(ctx context.Context, projectId string, phoneNumberId string, body TelephonyServiceUpdatePhoneNumberJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdatePhoneNumberResponse, error) {
+	rsp, err := c.TelephonyServiceUpdatePhoneNumber(ctx, projectId, phoneNumberId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceUpdatePhoneNumberResponse(rsp)
+}
+
+// TelephonyServiceSearchPhoneNumbersWithResponse SearchPhoneNumbers
+//
+// Lists the phone numbers that are for sale in a country. The list is
+//
+//	always one page.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/phone-numbers:search (the `TelephonyServiceSearchPhoneNumbers` operationId).
+func (c *ClientWithResponses) TelephonyServiceSearchPhoneNumbersWithResponse(ctx context.Context, projectId string, params *TelephonyServiceSearchPhoneNumbersParams, reqEditors ...RequestEditorFn) (*TelephonyServiceSearchPhoneNumbersResponse, error) {
+	rsp, err := c.TelephonyServiceSearchPhoneNumbers(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceSearchPhoneNumbersResponse(rsp)
+}
+
 // SimulationServiceGenerateScenarioFromSessionWithBodyWithResponse GenerateScenarioFromSession
 //
-// Derives a reusable scenario (label, instructions and expectations) from a
+// Generates a scenario (label, instructions, and expectations) from a
 //
-//	recorded room session, for use in a later run's scenarioGroup. Nothing is
-//	stored; the returned scenario is the result. The session must have a
-//	recorded chat history. Each call runs an LLM over it, so it counts against
-//	the project's scenario-generation quota and can take up to about a minute.
+//	recorded room session. Use the scenario in the `scenarioGroup` of a later
+//	run. The API does not save the scenario: the response is the only copy.
+//	The session must have a recorded chat history. Each call runs an LLM on
+//	the chat history, so it counts against the scenario-generation quota of
+//	the project. A call can take up to about one minute.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18558,12 +25925,13 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithBo
 
 // SimulationServiceGenerateScenarioFromSessionWithResponse GenerateScenarioFromSession
 //
-// Derives a reusable scenario (label, instructions and expectations) from a
+// Generates a scenario (label, instructions, and expectations) from a
 //
-//	recorded room session, for use in a later run's scenarioGroup. Nothing is
-//	stored; the returned scenario is the result. The session must have a
-//	recorded chat history. Each call runs an LLM over it, so it counts against
-//	the project's scenario-generation quota and can take up to about a minute.
+//	recorded room session. Use the scenario in the `scenarioGroup` of a later
+//	run. The API does not save the scenario: the response is the only copy.
+//	The session must have a recorded chat history. Each call runs an LLM on
+//	the chat history, so it counts against the scenario-generation quota of
+//	the project. A call can take up to about one minute.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18576,22 +25944,9 @@ func (c *ClientWithResponses) SimulationServiceGenerateScenarioFromSessionWithRe
 	return ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp)
 }
 
-// ProjectServiceListScopedKeysWithResponse ListScopedKeys
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /v0/projects/{projectId}/scoped-keys (the `ProjectServiceListScopedKeys` operationId).
-func (c *ClientWithResponses) ProjectServiceListScopedKeysWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListScopedKeysResponse, error) {
-	rsp, err := c.ProjectServiceListScopedKeys(ctx, projectId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseProjectServiceListScopedKeysResponse(rsp)
-}
-
 // AnalyticsServiceListProjectSessionsWithResponse ListProjectSessions
 //
-// Lists room sessions for a project, newest first, cursor-paginated.
+// Lists the room sessions of a project, newest first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18606,9 +25961,9 @@ func (c *ClientWithResponses) AnalyticsServiceListProjectSessionsWithResponse(ct
 
 // AnalyticsServiceGetSessionWithResponse GetSession
 //
-// Returns one room session. The response carries both the list-row `session`
+// Returns one room session. The response has the `session` that the list
 //
-//	and the richer `detail` (participants, per-metric data points).
+//	returns, and a `detail` with the participants and the metric timelines.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18621,32 +25976,35 @@ func (c *ClientWithResponses) AnalyticsServiceGetSessionWithResponse(ctx context
 	return ParseAnalyticsServiceGetSessionResponse(rsp)
 }
 
-// AnalyticsServiceListSessionEventsWithResponse Lists one room session's events, oldest first by default, cursor-paginated
+// AnalyticsServiceListSessionEventsWithResponse Lists the events of a room session. Defaults to oldest first. The page info
 //
-//	with no total. With no `types`, it returns the seven the dashboard's events
-//	table shows: PARTICIPANT_JOINED, PARTICIPANT_LEFT, PARTICIPANT_ACTIVE,
-//	PARTICIPANT_RESUMED, ROOM_CREATED, ROOM_ENDED and API_CALL. `types` asks
-//	for others, such as TRACK_PUBLISHED, and `participantSessionId` keeps one
-//	participant session's events. With `participantSessionId` and no `types`,
-//	it returns the eleven the dashboard's participant events table shows: that
-//	participant session's PARTICIPANT_JOINED, PARTICIPANT_LEFT,
-//	PARTICIPANT_RESUMED and PARTICIPANT_ACTIVE, and its TRACK_MUTED,
-//	TRACK_UNMUTED, TRACK_PUBLISHED, TRACK_UNPUBLISHED, TRACK_SUBSCRIBED,
-//	TRACK_SUBSCRIBE_REQUESTED and TRACK_SUBSCRIBE_FAILED.
+//	has no total.
 //
-// Unlike the dashboard, on purpose: an unknown type or a malformed
+// When `types` is empty, the list has these seven types:
 //
-//	participant session id is InvalidArgument rather than being searched for as
-//	typed, and types match exactly, so TRACK_PUBLISHED doesn't also return
-//	TRACK_PUBLISHED_UPDATE. Each event's payload keeps only an allowlist of
-//	fields, leaving out participants' attributes and metadata and API calls'
-//	request bodies. Each event and participant row still carries the
-//	participant's identity, as the dashboard shows it to every member, and for
-//	a SIP caller that can be a phone number.
+//	`PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_ACTIVE`,
+//	`PARTICIPANT_RESUMED`, `ROOM_CREATED`, `ROOM_ENDED`, and `API_CALL`. To get
+//	other types, such as `TRACK_PUBLISHED`, set `types`. To get the events of
+//	one participant session, set `participantSessionId`. When you set
+//	`participantSessionId` and `types` is empty, the list has these eleven
+//	types: `PARTICIPANT_JOINED`, `PARTICIPANT_LEFT`, `PARTICIPANT_RESUMED`,
+//	`PARTICIPANT_ACTIVE`, `TRACK_MUTED`, `TRACK_UNMUTED`, `TRACK_PUBLISHED`,
+//	`TRACK_UNPUBLISHED`, `TRACK_SUBSCRIBED`, `TRACK_SUBSCRIBE_REQUESTED`, and
+//	`TRACK_SUBSCRIBE_FAILED`.
 //
-//	Events are kept for 60 days, which can be shorter than the session's other
-//	data, so an older session can list no events. An ACTIVE session lists the
-//	events recorded so far. An unknown session is NotFound.
+//	Each type matches exactly, so `TRACK_PUBLISHED` does not also return
+//	`TRACK_PUBLISHED_UPDATE`. The `payload` of an event has only a fixed set of
+//	fields. It does not include participant attributes, participant metadata,
+//	or the request bodies of API calls. Each event and participant item has the
+//	identity of the participant. For a SIP caller, the identity can be a phone
+//	number.
+//
+//	LiveKit keeps events for 60 days. This can be shorter than the other data
+//	of the session, so an older session can have no events. An `ACTIVE` session
+//	lists the events recorded until now.
+//
+//	Errors: an unknown type or a malformed participant session ID returns
+//	`InvalidArgument`. An unknown session returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18659,20 +26017,22 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionEventsWithResponse(ctx 
 	return ParseAnalyticsServiceListSessionEventsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionLogsWithResponse Returns the log records the session's agents exported, in time order: what
+// ObservabilityServiceGetSessionLogsWithResponse Returns the log records that the agents of a session exported, in time
 //
-//	the dashboard's logs panel shows. Their chat history is left out, since
-//	GetSessionTranscript reads it, and their evaluation results stay in. The
-//	session's events, such as participants joining, come from
-//	AnalyticsService's ListSessionEvents.
+//	order. These are the records that the logs panel on the dashboard shows.
+//	The chat history is not included, because `GetSessionTranscript` returns
+//	it. Evaluation results are included. To get the events of the session, such
+//	as participants that join, use `AnalyticsService.ListSessionEvents`.
 //
-// An ACTIVE session returns what its agents have exported so far. A record
+// An `ACTIVE` session returns the records that its agents exported up to now.
 //
-//	exported mid-read with a time this read has already paged past, earlier
-//	than its cursor's when oldest first, is missed until a new read. An unknown
-//	session is NotFound. A read filtered by logLevels can come back empty
-//	because no record is at those levels, so only an unfiltered one is
-//	ObservabilityDisabled.
+//	While you page through the records, an agent can export a record with a
+//	time that your pages already passed. For example, in oldest-first order, a
+//	record with a time earlier than the cursor position. This read does not
+//	return that record. A new read returns it. An unknown session returns
+//	`NotFound`. A read filtered by `logLevels` can return no records because no
+//	record has those levels. Thus, only a read with no filter returns the
+//	`ObservabilityDisabled` error.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18685,33 +26045,36 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionLogsWithResponse(ctx
 	return ParseObservabilityServiceGetSessionLogsResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points the session's agents exported, by
+// ObservabilityServiceGetSessionMetricsWithResponse Returns the OpenTelemetry metric points that the agents of a session
 //
-//	time, typed: turn latencies such as lk.agents.turn.e2e_latency and
-//	lk.agents.turn.llm_ttft, token and duration usage such as
-//	lk.agents.usage.llm_input_tokens, and the gen_ai.* histograms, along with
-//	any metrics the agent's own code recorded.
+//	exported, ordered by time. The points include turn latencies, such as
+//	`lk.agents.turn.e2e_latency` and `lk.agents.turn.llm_ttft`, token and
+//	duration usage, such as `lk.agents.usage.llm_input_tokens`, and the
+//	`gen_ai.*` histograms. They also include the metrics that the agent's own
+//	code recorded.
 //
-// These are the raw metrics agents emit, so they won't exactly match the
+// These are the raw metrics that agents export. They do not exactly match the
 //
-//	dashboard's metrics panel, which derives its numbers from the transcript
-//	and traces. Only agents that export OpenTelemetry metrics to LiveKit Cloud
-//	produce them: an agent whose code installs its own MeterProvider exports
-//	none to LiveKit Cloud, and its sessions return no points.
+//	metrics panel on the dashboard, which calculates its values from the
+//	transcript and traces. Only an agent that exports OpenTelemetry metrics to
+//	LiveKit Cloud has points. An agent whose code installs its own
+//	`MeterProvider` exports no metrics to LiveKit Cloud, and its sessions
+//	return no points.
 //
-//	Some points aren't labeled as their agent exported them. LiveKit Cloud
-//	groups a session's series by their attributes alone and names each group
-//	after its first row, so: - several metrics can come back under one name,
-//	such as an LLM's input, output and cached token counts, all named
-//	lk.agents.usage.llm_input_tokens; - points of one series at the same time
-//	that recorded equal values collapse into one point; - with two agents in
-//	one session, a point can carry the other agent's resource attributes.
+//	Some points do not have the labels that their agent exported. LiveKit Cloud
+//	groups the series of a session by their attributes only, and gives each
+//	group the name of its first point. This has these results. Several metrics
+//	can have one name. For example, the input, output, and cached token counts
+//	of an LLM all have the name `lk.agents.usage.llm_input_tokens`. Points of
+//	one series with the same time and the same value become one point. When a
+//	session has two agents, a point can have the resource attributes of the
+//	other agent.
 //
 //	An agent exports its metrics every 30 seconds, and its turn latencies when
-//	the session ends, so an ACTIVE session returns what it has exported so far.
-//	An unknown session is NotFound. A read filtered by names can come back
-//	empty because no metric has those names, so only an unfiltered one is
-//	ObservabilityDisabled.
+//	the session ends. Thus, an `ACTIVE` session returns the points that its
+//	agents exported up to now. An unknown session returns `NotFound`. A read
+//	filtered by `names` can return no points because no metric has those names.
+//	Thus, only a read with no filter returns the `ObservabilityDisabled` error.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18726,11 +26089,10 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionMetricsWithResponse(
 
 // AnalyticsServiceListSessionParticipantsWithResponse ListSessionParticipants
 //
-// Lists the participants of one room session, one row per identity,
+// Lists the participants of a room session, one item for each identity.
 //
-//	cursor-paginated; newest join first by default. Each row carries the
-//	participant's participant sessions (PA_...), each with the client it
-//	connected from.
+//	Defaults to newest join first. Each item has the participant sessions of
+//	the participant (`PA_...`), each with the client that it connected from.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18745,11 +26107,13 @@ func (c *ClientWithResponses) AnalyticsServiceListSessionParticipantsWithRespons
 
 // ObservabilityServiceGetSessionRecordingURLWithResponse GetSessionRecordingURL
 //
-// Returns a short-lived signed URL for one of the session's recordings: its
+// Returns a short-lived signed URL for a session recording: its audio
 //
-//	audio or its chat history. A session with no recording of that type is
-//	NotFound. A new recording can be NotFound for up to a minute after the
-//	session ends.
+//	or its chat history. When the recording doesn't exist and
+//	`dataStatus.state` is `DATA_STATE_SESSION_ACTIVE` or
+//	`DATA_STATE_SETTLING`, the response has an empty `url`, because the
+//	agent can still upload the recording. In every other state, a session
+//	with no recording of that type returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18762,19 +26126,20 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionRecordingURLWithResp
 	return ParseObservabilityServiceGetSessionRecordingURLResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTracesWithResponse Returns the spans the session's agents exported, by start time: what the
+// ObservabilityServiceGetSessionTracesWithResponse Returns the spans that the agents of a session exported, ordered by start
 //
-//	dashboard's trace view shows. Each span names its parent, so the pages
-//	rebuild the span tree, and its attributes carry the turn and latency fields
-//	the dashboard's turn view reads, such as lk.generation_id and
-//	lk.response.ttft.
+//	time. These are the spans that the trace view on the dashboard shows. Each
+//	span names its parent, so you can build the span tree from the pages. The
+//	attributes of a span hold the turn and latency fields that the turn view on
+//	the dashboard uses, such as `lk.generation_id` and `lk.response.ttft`.
 //
-// An ACTIVE session returns what its agents have exported so far; a span
+// An `ACTIVE` session returns the spans that its agents exported up to now. A
 //
-//	exported after the first page waits for a new read. The later pages are
-//	read by offset, so a span exported mid-read can still shift them: a span
-//	can repeat, or be skipped. Dedupe by spanId, and read again from the first
-//	page to pick up a skipped span. An unknown session is NotFound.
+//	span exported after the first page appears only in a new read. The API
+//	reads the later pages by offset, so a span exported during your read can
+//	move them. Thus, a span can repeat, or a page can skip a span. Remove
+//	duplicates by `spanId`. To get a skipped span, read again from the first
+//	page. An unknown session returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18787,17 +26152,19 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTracesWithResponse(c
 	return ParseObservabilityServiceGetSessionTracesResponse(rsp)
 }
 
-// ObservabilityServiceGetSessionTranscriptWithResponse Returns the session's conversation as ordered transcript items: messages,
+// ObservabilityServiceGetSessionTranscriptWithResponse Returns the conversation of a session as ordered transcript items. The
 //
-//	tool calls and results, agent handoffs and agent configuration changes. It
-//	is the conversation the dashboard's transcript shows.
+//	items are messages, tool calls and results, agent handoffs, and agent
+//	configuration changes. It is the conversation that the transcript on the
+//	dashboard shows.
 //
-// The agent exports its transcript when the session ends, and it can be read
+// The agent exports its transcript when the session ends. There is a delay
 //
-//	a minute or two later; on a project with PII redaction, only once the
-//	session's recording has been redacted. So a session that is still ACTIVE
-//	returns what exists so far, usually nothing, without an error: read it
-//	again after the session ends. An unknown session is NotFound.
+//	before you can read it, and the length of the delay is not fixed. On a
+//	project with PII redaction, you can read it only after LiveKit redacts the
+//	session recording. Thus, an `ACTIVE` session returns the items that exist,
+//	usually none, with no error. Read it again after the session ends. An
+//	unknown session returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18812,11 +26179,11 @@ func (c *ClientWithResponses) ObservabilityServiceGetSessionTranscriptWithRespon
 
 // SimulationServiceListSimulationRunsWithResponse ListSimulationRuns
 //
-// Lists a project's runs, newest first, cursor-paginated, optionally narrowed
+// Lists the runs of a project, newest first. You can filter the runs by
 //
-//	by status, agent, conversation mode and a time window. Rows carry headline
-//	counts (jobCount, passedCount, failedCount, issueCount) but neither
-//	jobs nor the summary.
+//	status, agent, conversation mode, and time window. Each run includes its
+//	counts (`jobCount`, `passedCount`, `failedCount`, and `issueCount`), but
+//	not its jobs or its summary.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18831,13 +26198,14 @@ func (c *ClientWithResponses) SimulationServiceListSimulationRunsWithResponse(ct
 
 // SimulationServiceCreateSimulationRunWithBodyWithResponse CreateSimulationRun
 //
-// Registers a new run. With a scenarioGroup it starts right away and no
+// Creates a simulation run. With a `scenarioGroup`, the run starts
 //
-//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
-//	agent source that scenarios are generated from: upload it to the returned
-//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-//	for an hour is failed. Creating a run is not idempotent: a retried request
-//	starts a second run.
+//	immediately and the response has no upload target. Without a
+//	`scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+//	that the API generates scenarios from. Upload the source to the returned
+//	presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+//	pending for one hour fails. This RPC is not idempotent: a retry starts a
+//	second run.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18852,13 +26220,14 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithBodyWithRe
 
 // SimulationServiceCreateSimulationRunWithResponse CreateSimulationRun
 //
-// Registers a new run. With a scenarioGroup it starts right away and no
+// Creates a simulation run. With a `scenarioGroup`, the run starts
 //
-//	upload target is returned. Without one it waits in PENDING_UPLOAD for the
-//	agent source that scenarios are generated from: upload it to the returned
-//	presigned POST, then call ConfirmSimulationSourceUpload. A run left pending
-//	for an hour is failed. Creating a run is not idempotent: a retried request
-//	starts a second run.
+//	immediately and the response has no upload target. Without a
+//	`scenarioGroup`, the run waits in `PENDING_UPLOAD` for the agent source
+//	that the API generates scenarios from. Upload the source to the returned
+//	presigned POST, then call `ConfirmSimulationSourceUpload`. A run that stays
+//	pending for one hour fails. This RPC is not idempotent: a retry starts a
+//	second run.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18873,10 +26242,10 @@ func (c *ClientWithResponses) SimulationServiceCreateSimulationRunWithResponse(c
 
 // SimulationServiceGetSimulationRunWithResponse GetSimulationRun
 //
-// Returns one run with its jobs and aggregate metrics. The compressed summary
+// Returns one run with its jobs and aggregate metrics. The response does not
 //
-//	blob (summaryZstd) is omitted; use GetSimulationRunSummary for the decoded
-//	summary.
+//	include the compressed summary (`summaryZstd`). To get the summary, call
+//	`GetSimulationRunSummary`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18891,11 +26260,12 @@ func (c *ClientWithResponses) SimulationServiceGetSimulationRunWithResponse(ctx 
 
 // SimulationServiceGetSimulationRunSummaryWithResponse GetSimulationRunSummary
 //
-// Returns the graded outcome of a finished run: pass/fail counts, what went
+// Returns the graded outcome of a finished run: the pass and fail counts,
 //
-//	well, what to improve, flagged issues with suggestions, and the per-job
-//	chat history. FailedPrecondition while the run is still going; NotFound if
-//	the run finished without a summary.
+//	what went well, what to improve, the flagged issues with suggestions, and
+//	the chat history of each job. Returns `FailedPrecondition` while the run
+//	is in progress. Returns `NotFound` when the run finished without a
+//	summary.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18910,9 +26280,9 @@ func (c *ClientWithResponses) SimulationServiceGetSimulationRunSummaryWithRespon
 
 // SimulationServiceCancelSimulationRunWithResponse CancelSimulationRun
 //
-// Stops a run that has not finished. Cancelling a run that already finished
+// Stops a run that has not finished. When the run is already finished, the
 //
-//	succeeds without effect.
+//	call succeeds and has no effect.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18927,10 +26297,11 @@ func (c *ClientWithResponses) SimulationServiceCancelSimulationRunWithResponse(c
 
 // SimulationServiceConfirmSimulationSourceUploadWithBodyWithResponse ConfirmSimulationSourceUpload
 //
-// Marks the agent source as uploaded and starts scenario generation; the run
+// Confirms that the agent source is uploaded and starts scenario
 //
-//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is PENDING_UPLOAD, so a repeated call fails.
+//	generation. The run goes to `GENERATING`, then to `RUNNING` when the
+//	scenarios exist. The call is valid only while the run is
+//	`PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18945,10 +26316,11 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 
 // SimulationServiceConfirmSimulationSourceUploadWithResponse ConfirmSimulationSourceUpload
 //
-// Marks the agent source as uploaded and starts scenario generation; the run
+// Confirms that the agent source is uploaded and starts scenario
 //
-//	moves to GENERATING, then RUNNING once the scenarios exist. Only valid
-//	while the run is PENDING_UPLOAD, so a repeated call fails.
+//	generation. The run goes to `GENERATING`, then to `RUNNING` when the
+//	scenarios exist. The call is valid only while the run is
+//	`PENDING_UPLOAD`, so a repeated call fails.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18963,11 +26335,11 @@ func (c *ClientWithResponses) SimulationServiceConfirmSimulationSourceUploadWith
 
 // SimulationServiceCountSimulationRunsWithResponse CountSimulationRuns
 //
-// Buckets the runs ListSimulationRuns would return over [startTime, endTime)
+// Returns a histogram of the runs in the window [`startTime`, `endTime`). It
 //
-//	into a histogram. It takes the same filters over the same window, so the
-//	bars and the rows beneath them always describe one set. Both bounds are
-//	required and endTime must be after startTime.
+//	takes the same filters as `ListSimulationRuns`, so the histogram and the
+//	list describe the same set of runs. Both bounds are required, and
+//	`endTime` must be after `startTime`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18980,149 +26352,441 @@ func (c *ClientWithResponses) SimulationServiceCountSimulationRunsWithResponse(c
 	return ParseSimulationServiceCountSimulationRunsResponse(rsp)
 }
 
-// ThreadServiceListThreadsWithResponse ListThreads
+// TelephonyServiceListDispatchRulesWithResponse ListDispatchRules
 //
-// Lists the threads of one scope, newest first.
+// Lists the dispatch rules of the project, in ID order. The list is always
+//
+//	one page.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v0/projects/{projectId}/threads (the `ThreadServiceListThreads` operationId).
-func (c *ClientWithResponses) ThreadServiceListThreadsWithResponse(ctx context.Context, projectId string, params *ThreadServiceListThreadsParams, reqEditors ...RequestEditorFn) (*ThreadServiceListThreadsResponse, error) {
-	rsp, err := c.ThreadServiceListThreads(ctx, projectId, params, reqEditors...)
+// Corresponds with GET /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceListDispatchRules` operationId).
+func (c *ClientWithResponses) TelephonyServiceListDispatchRulesWithResponse(ctx context.Context, projectId string, params *TelephonyServiceListDispatchRulesParams, reqEditors ...RequestEditorFn) (*TelephonyServiceListDispatchRulesResponse, error) {
+	rsp, err := c.TelephonyServiceListDispatchRules(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceListThreadsResponse(rsp)
+	return ParseTelephonyServiceListDispatchRulesResponse(rsp)
 }
 
-// ThreadServiceCreateThreadWithBodyWithResponse CreateThread
+// TelephonyServiceCreateDispatchRuleWithBodyWithResponse CreateDispatchRule
 //
-// Creates a thread and its database.
+// Creates a dispatch rule. A rule applies to the trunks and the phone
+//
+//	numbers in its `trunkIds`, or to all of them when `trunkIds` is empty. To
+//	send the calls to a phone number to a rule, add the ID of the number
+//	(`PN_...`) to `trunkIds`. To stop, remove it. A rule that conflicts with
+//	another rule of the project fails with `InvalidArgument`, and the message
+//	names the other rule.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-func (c *ClientWithResponses) ThreadServiceCreateThreadWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ThreadServiceCreateThreadResponse, error) {
-	rsp, err := c.ThreadServiceCreateThreadWithBody(ctx, projectId, contentType, body, reqEditors...)
+// Corresponds with POST /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceCreateDispatchRule` operationId).
+func (c *ClientWithResponses) TelephonyServiceCreateDispatchRuleWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateDispatchRuleResponse, error) {
+	rsp, err := c.TelephonyServiceCreateDispatchRuleWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceCreateThreadResponse(rsp)
+	return ParseTelephonyServiceCreateDispatchRuleResponse(rsp)
 }
 
-// ThreadServiceCreateThreadWithResponse CreateThread
+// TelephonyServiceCreateDispatchRuleWithResponse CreateDispatchRule
 //
-// Creates a thread and its database.
+// Creates a dispatch rule. A rule applies to the trunks and the phone
+//
+//	numbers in its `trunkIds`, or to all of them when `trunkIds` is empty. To
+//	send the calls to a phone number to a rule, add the ID of the number
+//	(`PN_...`) to `trunkIds`. To stop, remove it. A rule that conflicts with
+//	another rule of the project fails with `InvalidArgument`, and the message
+//	names the other rule.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /v0/projects/{projectId}/threads (the `ThreadServiceCreateThread` operationId).
-func (c *ClientWithResponses) ThreadServiceCreateThreadWithResponse(ctx context.Context, projectId string, body ThreadServiceCreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*ThreadServiceCreateThreadResponse, error) {
-	rsp, err := c.ThreadServiceCreateThread(ctx, projectId, body, reqEditors...)
+// Corresponds with POST /v0/projects/{projectId}/sip/dispatch-rules (the `TelephonyServiceCreateDispatchRule` operationId).
+func (c *ClientWithResponses) TelephonyServiceCreateDispatchRuleWithResponse(ctx context.Context, projectId string, body TelephonyServiceCreateDispatchRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateDispatchRuleResponse, error) {
+	rsp, err := c.TelephonyServiceCreateDispatchRule(ctx, projectId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceCreateThreadResponse(rsp)
+	return ParseTelephonyServiceCreateDispatchRuleResponse(rsp)
 }
 
-// ThreadServiceDeleteThreadWithResponse DeleteThread
+// TelephonyServiceDeleteDispatchRuleWithResponse DeleteDispatchRule
 //
-// Deletes the thread and its database.
+// Deletes a dispatch rule.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceDeleteThread` operationId).
-func (c *ClientWithResponses) ThreadServiceDeleteThreadWithResponse(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*ThreadServiceDeleteThreadResponse, error) {
-	rsp, err := c.ThreadServiceDeleteThread(ctx, projectId, threadId, reqEditors...)
+// Corresponds with DELETE /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceDeleteDispatchRule` operationId).
+func (c *ClientWithResponses) TelephonyServiceDeleteDispatchRuleWithResponse(ctx context.Context, projectId string, dispatchRuleId string, reqEditors ...RequestEditorFn) (*TelephonyServiceDeleteDispatchRuleResponse, error) {
+	rsp, err := c.TelephonyServiceDeleteDispatchRule(ctx, projectId, dispatchRuleId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceDeleteThreadResponse(rsp)
+	return ParseTelephonyServiceDeleteDispatchRuleResponse(rsp)
 }
 
-// ThreadServiceGetThreadWithResponse GetThread
+// TelephonyServiceGetDispatchRuleWithResponse GetDispatchRule
+//
+// Returns a dispatch rule of the project.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceGetThread` operationId).
-func (c *ClientWithResponses) ThreadServiceGetThreadWithResponse(ctx context.Context, projectId string, threadId string, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadResponse, error) {
-	rsp, err := c.ThreadServiceGetThread(ctx, projectId, threadId, reqEditors...)
+// Corresponds with GET /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceGetDispatchRule` operationId).
+func (c *ClientWithResponses) TelephonyServiceGetDispatchRuleWithResponse(ctx context.Context, projectId string, dispatchRuleId string, reqEditors ...RequestEditorFn) (*TelephonyServiceGetDispatchRuleResponse, error) {
+	rsp, err := c.TelephonyServiceGetDispatchRule(ctx, projectId, dispatchRuleId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceGetThreadResponse(rsp)
+	return ParseTelephonyServiceGetDispatchRuleResponse(rsp)
 }
 
-// ThreadServiceUpdateThreadWithBodyWithResponse UpdateThread
+// TelephonyServiceUpdateDispatchRuleWithBodyWithResponse UpdateDispatchRule
 //
-// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-//
-//	Every update counts as activity and pushes expiresAt out.
+// Replaces a dispatch rule, or changes some of its fields.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-func (c *ClientWithResponses) ThreadServiceUpdateThreadWithBodyWithResponse(ctx context.Context, projectId string, threadId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ThreadServiceUpdateThreadResponse, error) {
-	rsp, err := c.ThreadServiceUpdateThreadWithBody(ctx, projectId, threadId, contentType, body, reqEditors...)
+// Corresponds with PATCH /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceUpdateDispatchRule` operationId).
+func (c *ClientWithResponses) TelephonyServiceUpdateDispatchRuleWithBodyWithResponse(ctx context.Context, projectId string, dispatchRuleId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateDispatchRuleResponse, error) {
+	rsp, err := c.TelephonyServiceUpdateDispatchRuleWithBody(ctx, projectId, dispatchRuleId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceUpdateThreadResponse(rsp)
+	return ParseTelephonyServiceUpdateDispatchRuleResponse(rsp)
 }
 
-// ThreadServiceUpdateThreadWithResponse UpdateThread
+// TelephonyServiceUpdateDispatchRuleWithResponse UpdateDispatchRule
 //
-// Merges attributes (an empty value deletes the entry) and sets the idle TTL.
-//
-//	Every update counts as activity and pushes expiresAt out.
+// Replaces a dispatch rule, or changes some of its fields.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PATCH /v0/projects/{projectId}/threads/{threadId} (the `ThreadServiceUpdateThread` operationId).
-func (c *ClientWithResponses) ThreadServiceUpdateThreadWithResponse(ctx context.Context, projectId string, threadId string, body ThreadServiceUpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*ThreadServiceUpdateThreadResponse, error) {
-	rsp, err := c.ThreadServiceUpdateThread(ctx, projectId, threadId, body, reqEditors...)
+// Corresponds with PATCH /v0/projects/{projectId}/sip/dispatch-rules/{dispatchRuleId} (the `TelephonyServiceUpdateDispatchRule` operationId).
+func (c *ClientWithResponses) TelephonyServiceUpdateDispatchRuleWithResponse(ctx context.Context, projectId string, dispatchRuleId string, body TelephonyServiceUpdateDispatchRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateDispatchRuleResponse, error) {
+	rsp, err := c.TelephonyServiceUpdateDispatchRule(ctx, projectId, dispatchRuleId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceUpdateThreadResponse(rsp)
+	return ParseTelephonyServiceUpdateDispatchRuleResponse(rsp)
 }
 
-// ThreadServiceGetThreadItemsWithResponse GetThreadItems
+// TelephonyServiceListInboundTrunksWithResponse ListInboundTrunks
 //
-// Returns the thread's chat items, oldest first.
+// Lists the inbound trunks of the project, in ID order. The list is always
+//
+//	one page.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/items (the `ThreadServiceGetThreadItems` operationId).
-func (c *ClientWithResponses) ThreadServiceGetThreadItemsWithResponse(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadItemsParams, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadItemsResponse, error) {
-	rsp, err := c.ThreadServiceGetThreadItems(ctx, projectId, threadId, params, reqEditors...)
+// Corresponds with GET /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceListInboundTrunks` operationId).
+func (c *ClientWithResponses) TelephonyServiceListInboundTrunksWithResponse(ctx context.Context, projectId string, params *TelephonyServiceListInboundTrunksParams, reqEditors ...RequestEditorFn) (*TelephonyServiceListInboundTrunksResponse, error) {
+	rsp, err := c.TelephonyServiceListInboundTrunks(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceGetThreadItemsResponse(rsp)
+	return ParseTelephonyServiceListInboundTrunksResponse(rsp)
 }
 
-// ThreadServiceGetThreadTasksWithResponse GetThreadTasks
+// TelephonyServiceCreateInboundTrunkWithBodyWithResponse CreateInboundTrunk
 //
-// Returns the thread's background tasks, oldest first.
+// Creates an inbound trunk. A trunk that conflicts with another trunk of
+//
+//	the project, such as one that accepts the same number from the same
+//	callers, fails with `InvalidArgument`, and the message names the other
+//	trunk.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceCreateInboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceCreateInboundTrunkWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateInboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceCreateInboundTrunkWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceCreateInboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceCreateInboundTrunkWithResponse CreateInboundTrunk
+//
+// Creates an inbound trunk. A trunk that conflicts with another trunk of
+//
+//	the project, such as one that accepts the same number from the same
+//	callers, fails with `InvalidArgument`, and the message names the other
+//	trunk.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/inbound-trunks (the `TelephonyServiceCreateInboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceCreateInboundTrunkWithResponse(ctx context.Context, projectId string, body TelephonyServiceCreateInboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateInboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceCreateInboundTrunk(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceCreateInboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceDeleteInboundTrunkWithResponse DeleteInboundTrunk
+//
+// Deletes an inbound trunk.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /v0/projects/{projectId}/threads/{threadId}/tasks (the `ThreadServiceGetThreadTasks` operationId).
-func (c *ClientWithResponses) ThreadServiceGetThreadTasksWithResponse(ctx context.Context, projectId string, threadId string, params *ThreadServiceGetThreadTasksParams, reqEditors ...RequestEditorFn) (*ThreadServiceGetThreadTasksResponse, error) {
-	rsp, err := c.ThreadServiceGetThreadTasks(ctx, projectId, threadId, params, reqEditors...)
+// Corresponds with DELETE /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceDeleteInboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceDeleteInboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*TelephonyServiceDeleteInboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceDeleteInboundTrunk(ctx, projectId, trunkId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseThreadServiceGetThreadTasksResponse(rsp)
+	return ParseTelephonyServiceDeleteInboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceGetInboundTrunkWithResponse GetInboundTrunk
+//
+// Returns an inbound trunk of the project.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceGetInboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceGetInboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*TelephonyServiceGetInboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceGetInboundTrunk(ctx, projectId, trunkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceGetInboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceUpdateInboundTrunkWithBodyWithResponse UpdateInboundTrunk
+//
+// Replaces an inbound trunk, or changes some of its fields.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceUpdateInboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceUpdateInboundTrunkWithBodyWithResponse(ctx context.Context, projectId string, trunkId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateInboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceUpdateInboundTrunkWithBody(ctx, projectId, trunkId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceUpdateInboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceUpdateInboundTrunkWithResponse UpdateInboundTrunk
+//
+// Replaces an inbound trunk, or changes some of its fields.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/sip/inbound-trunks/{trunkId} (the `TelephonyServiceUpdateInboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceUpdateInboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, body TelephonyServiceUpdateInboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateInboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceUpdateInboundTrunk(ctx, projectId, trunkId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceUpdateInboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceListOutboundTrunksWithResponse ListOutboundTrunks
+//
+// Lists the outbound trunks of the project, in ID order. The list is always
+//
+//	one page.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceListOutboundTrunks` operationId).
+func (c *ClientWithResponses) TelephonyServiceListOutboundTrunksWithResponse(ctx context.Context, projectId string, params *TelephonyServiceListOutboundTrunksParams, reqEditors ...RequestEditorFn) (*TelephonyServiceListOutboundTrunksResponse, error) {
+	rsp, err := c.TelephonyServiceListOutboundTrunks(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceListOutboundTrunksResponse(rsp)
+}
+
+// TelephonyServiceCreateOutboundTrunkWithBodyWithResponse CreateOutboundTrunk
+//
+// Creates an outbound trunk, which `CreateSIPParticipant` places calls
+//
+//	through.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceCreateOutboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceCreateOutboundTrunkWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateOutboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceCreateOutboundTrunkWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceCreateOutboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceCreateOutboundTrunkWithResponse CreateOutboundTrunk
+//
+// Creates an outbound trunk, which `CreateSIPParticipant` places calls
+//
+//	through.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/outbound-trunks (the `TelephonyServiceCreateOutboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceCreateOutboundTrunkWithResponse(ctx context.Context, projectId string, body TelephonyServiceCreateOutboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateOutboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceCreateOutboundTrunk(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceCreateOutboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceDeleteOutboundTrunkWithResponse DeleteOutboundTrunk
+//
+// Deletes an outbound trunk.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceDeleteOutboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceDeleteOutboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*TelephonyServiceDeleteOutboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceDeleteOutboundTrunk(ctx, projectId, trunkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceDeleteOutboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceGetOutboundTrunkWithResponse GetOutboundTrunk
+//
+// Returns an outbound trunk of the project.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceGetOutboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceGetOutboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, reqEditors ...RequestEditorFn) (*TelephonyServiceGetOutboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceGetOutboundTrunk(ctx, projectId, trunkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceGetOutboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceUpdateOutboundTrunkWithBodyWithResponse UpdateOutboundTrunk
+//
+// Replaces an outbound trunk, or changes some of its fields.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceUpdateOutboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceUpdateOutboundTrunkWithBodyWithResponse(ctx context.Context, projectId string, trunkId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateOutboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceUpdateOutboundTrunkWithBody(ctx, projectId, trunkId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceUpdateOutboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceUpdateOutboundTrunkWithResponse UpdateOutboundTrunk
+//
+// Replaces an outbound trunk, or changes some of its fields.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v0/projects/{projectId}/sip/outbound-trunks/{trunkId} (the `TelephonyServiceUpdateOutboundTrunk` operationId).
+func (c *ClientWithResponses) TelephonyServiceUpdateOutboundTrunkWithResponse(ctx context.Context, projectId string, trunkId string, body TelephonyServiceUpdateOutboundTrunkJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceUpdateOutboundTrunkResponse, error) {
+	rsp, err := c.TelephonyServiceUpdateOutboundTrunk(ctx, projectId, trunkId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceUpdateOutboundTrunkResponse(rsp)
+}
+
+// TelephonyServiceCreateSIPParticipantWithBodyWithResponse CreateSIPParticipant
+//
+// Calls a phone number or a SIP URI through an outbound trunk, and adds
+//
+//	the call to a room as a SIP participant. With `waitUntilAnswered`, the
+//	call returns when the far end answers, up to `ringingTimeout`, which can
+//	then be at most 75 seconds. When the
+//	far end refuses the call, such as with 486 Busy Here, the call fails with
+//	`FailedPrecondition`, and the error has its SIP status as a
+//	`livekit.SIPStatus` detail.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/participants (the `TelephonyServiceCreateSIPParticipant` operationId).
+func (c *ClientWithResponses) TelephonyServiceCreateSIPParticipantWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateSIPParticipantResponse, error) {
+	rsp, err := c.TelephonyServiceCreateSIPParticipantWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceCreateSIPParticipantResponse(rsp)
+}
+
+// TelephonyServiceCreateSIPParticipantWithResponse CreateSIPParticipant
+//
+// Calls a phone number or a SIP URI through an outbound trunk, and adds
+//
+//	the call to a room as a SIP participant. With `waitUntilAnswered`, the
+//	call returns when the far end answers, up to `ringingTimeout`, which can
+//	then be at most 75 seconds. When the
+//	far end refuses the call, such as with 486 Busy Here, the call fails with
+//	`FailedPrecondition`, and the error has its SIP status as a
+//	`livekit.SIPStatus` detail.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/participants (the `TelephonyServiceCreateSIPParticipant` operationId).
+func (c *ClientWithResponses) TelephonyServiceCreateSIPParticipantWithResponse(ctx context.Context, projectId string, body TelephonyServiceCreateSIPParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceCreateSIPParticipantResponse, error) {
+	rsp, err := c.TelephonyServiceCreateSIPParticipant(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceCreateSIPParticipantResponse(rsp)
+}
+
+// TelephonyServiceTransferSIPParticipantWithBodyWithResponse TransferSIPParticipant
+//
+// Transfers the call of a SIP participant to another phone number or SIP
+//
+//	URI, and returns when the transfer ends. Its `ringingTimeout` can be at
+//	most 75 seconds. A transfer that fails, such as
+//	one that nobody answers, fails with `FailedPrecondition`, and the error
+//	has a `livekit.SIPTransferError` detail with the reason.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/participants:transfer (the `TelephonyServiceTransferSIPParticipant` operationId).
+func (c *ClientWithResponses) TelephonyServiceTransferSIPParticipantWithBodyWithResponse(ctx context.Context, projectId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TelephonyServiceTransferSIPParticipantResponse, error) {
+	rsp, err := c.TelephonyServiceTransferSIPParticipantWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceTransferSIPParticipantResponse(rsp)
+}
+
+// TelephonyServiceTransferSIPParticipantWithResponse TransferSIPParticipant
+//
+// Transfers the call of a SIP participant to another phone number or SIP
+//
+//	URI, and returns when the transfer ends. Its `ringingTimeout` can be at
+//	most 75 seconds. A transfer that fails, such as
+//	one that nobody answers, fails with `FailedPrecondition`, and the error
+//	has a `livekit.SIPTransferError` detail with the reason.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v0/projects/{projectId}/sip/participants:transfer (the `TelephonyServiceTransferSIPParticipant` operationId).
+func (c *ClientWithResponses) TelephonyServiceTransferSIPParticipantWithResponse(ctx context.Context, projectId string, body TelephonyServiceTransferSIPParticipantJSONRequestBody, reqEditors ...RequestEditorFn) (*TelephonyServiceTransferSIPParticipantResponse, error) {
+	rsp, err := c.TelephonyServiceTransferSIPParticipant(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTelephonyServiceTransferSIPParticipantResponse(rsp)
 }
 
 // ProjectServiceCreateTokenWithBodyWithResponse CreateToken
 //
-// Mints a short-lived LiveKit access token for the project, signed
+// Creates a short-lived LiveKit access token for the project. The API signs
 //
-//	server-side, so user-authenticated clients can call LiveKit server APIs
-//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	the token, so a signed-in user can call the LiveKit server APIs, such as
+//	rooms, SIP, and egress, or join a room without an API secret.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19137,10 +26801,10 @@ func (c *ClientWithResponses) ProjectServiceCreateTokenWithBodyWithResponse(ctx 
 
 // ProjectServiceCreateTokenWithResponse CreateToken
 //
-// Mints a short-lived LiveKit access token for the project, signed
+// Creates a short-lived LiveKit access token for the project. The API signs
 //
-//	server-side, so user-authenticated clients can call LiveKit server APIs
-//	(rooms, SIP, egress, …) or join rooms without holding an API secret.
+//	the token, so a signed-in user can call the LiveKit server APIs, such as
+//	rooms, SIP, and egress, or join a room without an API secret.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19155,11 +26819,15 @@ func (c *ClientWithResponses) ProjectServiceCreateTokenWithResponse(ctx context.
 
 // ProjectServiceListWebhookEventsWithResponse ListWebhookEvents
 //
+// Lists the event names that the webhooks of a project can receive. The list
+//
+//	is always one page.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/webhook-events (the `ProjectServiceListWebhookEvents` operationId).
-func (c *ClientWithResponses) ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error) {
-	rsp, err := c.ProjectServiceListWebhookEvents(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceListWebhookEventsWithResponse(ctx context.Context, projectId string, params *ProjectServiceListWebhookEventsParams, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhookEventsResponse, error) {
+	rsp, err := c.ProjectServiceListWebhookEvents(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19168,13 +26836,15 @@ func (c *ClientWithResponses) ProjectServiceListWebhookEventsWithResponse(ctx co
 
 // ProjectServiceListWebhooksWithResponse ListWebhooks
 //
-// Lists the project's webhook destinations.
+// Lists the webhook destinations for the project, in the order that they
+//
+//	were added. The list is always one page.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/projects/{projectId}/webhooks (the `ProjectServiceListWebhooks` operationId).
-func (c *ClientWithResponses) ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error) {
-	rsp, err := c.ProjectServiceListWebhooks(ctx, projectId, reqEditors...)
+func (c *ClientWithResponses) ProjectServiceListWebhooksWithResponse(ctx context.Context, projectId string, params *ProjectServiceListWebhooksParams, reqEditors ...RequestEditorFn) (*ProjectServiceListWebhooksResponse, error) {
+	rsp, err := c.ProjectServiceListWebhooks(ctx, projectId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19182,6 +26852,15 @@ func (c *ClientWithResponses) ProjectServiceListWebhooksWithResponse(ctx context
 }
 
 // ProjectServiceCreateWebhookWithBodyWithResponse CreateWebhook
+//
+// Creates a webhook destination for a project. A `url` that is not an absolute
+//
+//	HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
+//	in `filterParams` that `ListWebhookEvents` does not return, or a
+//	`signingKey` that is not an API key of the project, also returns
+//	`InvalidArgument`. When `signingKey` is empty and the project has no API key,
+//	the request fails with `FailedPrecondition`. The call is not idempotent: a
+//	retry creates a second webhook.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19196,6 +26875,15 @@ func (c *ClientWithResponses) ProjectServiceCreateWebhookWithBodyWithResponse(ct
 
 // ProjectServiceCreateWebhookWithResponse CreateWebhook
 //
+// Creates a webhook destination for a project. A `url` that is not an absolute
+//
+//	HTTP or HTTPS URL with a public address returns `InvalidArgument`. An event
+//	in `filterParams` that `ListWebhookEvents` does not return, or a
+//	`signingKey` that is not an API key of the project, also returns
+//	`InvalidArgument`. When `signingKey` is empty and the project has no API key,
+//	the request fails with `FailedPrecondition`. The call is not idempotent: a
+//	retry creates a second webhook.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/projects/{projectId}/webhooks (the `ProjectServiceCreateWebhook` operationId).
@@ -19208,6 +26896,11 @@ func (c *ClientWithResponses) ProjectServiceCreateWebhookWithResponse(ctx contex
 }
 
 // ProjectServiceDeleteWebhookWithResponse DeleteWebhook
+//
+// Deletes a webhook destination from a project. The project stops sending
+//
+//	events to its URL. A webhook that does not exist returns `NotFound`, so a
+//	retry returns `NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19222,6 +26915,13 @@ func (c *ClientWithResponses) ProjectServiceDeleteWebhookWithResponse(ctx contex
 
 // ProjectServiceUpdateWebhookWithBodyWithResponse UpdateWebhook
 //
+// Updates a webhook destination of a project, and returns the updated webhook.
+//
+//	A field that you do not set keeps its value. A set `filterParams` replaces
+//	the whole filter. The checks of `CreateWebhook` apply to the new values, and
+//	a failed check returns `InvalidArgument`. A webhook that does not exist
+//	returns `NotFound`.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /v0/projects/{projectId}/webhooks/{webhookId} (the `ProjectServiceUpdateWebhook` operationId).
@@ -19234,6 +26934,13 @@ func (c *ClientWithResponses) ProjectServiceUpdateWebhookWithBodyWithResponse(ct
 }
 
 // ProjectServiceUpdateWebhookWithResponse UpdateWebhook
+//
+// Updates a webhook destination of a project, and returns the updated webhook.
+//
+//	A field that you do not set keeps its value. A set `filterParams` replaces
+//	the whole filter. The checks of `CreateWebhook` apply to the new values, and
+//	a failed check returns `InvalidArgument`. A webhook that does not exist
+//	returns `NotFound`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19248,6 +26955,16 @@ func (c *ClientWithResponses) ProjectServiceUpdateWebhookWithResponse(ctx contex
 
 // ProjectServiceSendTestWebhookWithBodyWithResponse SendTestWebhook
 //
+// Sends one sample event to a webhook destination, and returns the answer of
+//
+//	the receiver. The API sends only to this webhook, ignores the webhook filter,
+//	and signs the request as it signs real deliveries. When the signing key of
+//	the webhook is not an API key of the project, the API signs with the oldest
+//	API key. The API makes one attempt and waits up to 10 seconds. A failed
+//	delivery shows in the response, not as an error. An `event` that
+//	`ListWebhookEvents` does not return gets `InvalidArgument`. A webhook that
+//	does not exist returns `NotFound`.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/projects/{projectId}/webhooks/{webhookId}:test (the `ProjectServiceSendTestWebhook` operationId).
@@ -19260,6 +26977,16 @@ func (c *ClientWithResponses) ProjectServiceSendTestWebhookWithBodyWithResponse(
 }
 
 // ProjectServiceSendTestWebhookWithResponse SendTestWebhook
+//
+// Sends one sample event to a webhook destination, and returns the answer of
+//
+//	the receiver. The API sends only to this webhook, ignores the webhook filter,
+//	and signs the request as it signs real deliveries. When the signing key of
+//	the webhook is not an API key of the project, the API signs with the oldest
+//	API key. The API makes one attempt and waits up to 10 seconds. A failed
+//	delivery shows in the response, not as an error. An `event` that
+//	`ListWebhookEvents` does not return gets `InvalidArgument`. A webhook that
+//	does not exist returns `NotFound`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19274,6 +27001,11 @@ func (c *ClientWithResponses) ProjectServiceSendTestWebhookWithResponse(ctx cont
 
 // UserServiceListUsersWithResponse ListUsers
 //
+// Lists the members of a project or a workspace, ordered by user ID. The list
+//
+//	does not include pending invitees. Set `projectId`, `workspaceId`, or both.
+//	When you set neither, the request fails with `InvalidArgument`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/users (the `UserServiceListUsers` operationId).
@@ -19287,6 +27019,8 @@ func (c *ClientWithResponses) UserServiceListUsersWithResponse(ctx context.Conte
 
 // UserServiceGetCurrentUserWithResponse GetCurrentUser
 //
+// Returns the user that you are signed in as.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/users/me (the `UserServiceGetCurrentUser` operationId).
@@ -19298,7 +27032,31 @@ func (c *ClientWithResponses) UserServiceGetCurrentUserWithResponse(ctx context.
 	return ParseUserServiceGetCurrentUserResponse(rsp)
 }
 
+// UserServiceRevokeSessionTokenWithResponse RevokeSessionToken
+//
+// Revokes the session token that you call with, and signs you out. After
+//
+//	this call, the token gets `Unauthenticated` on every call, a retry of this
+//	call included. Your other session tokens stay valid. Access tokens that
+//	`CreateToken` returned stay valid until they expire.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v0/users/me/session-token (the `UserServiceRevokeSessionToken` operationId).
+func (c *ClientWithResponses) UserServiceRevokeSessionTokenWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UserServiceRevokeSessionTokenResponse, error) {
+	rsp, err := c.UserServiceRevokeSessionToken(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUserServiceRevokeSessionTokenResponse(rsp)
+}
+
 // UserServiceGetUserWithResponse GetUser
+//
+// Returns a user by ID. You can get yourself, or a user who is a member of a
+//
+//	workspace or a project that you are a member of. Any other user returns
+//	`NotFound`, the same as a user who does not exist.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19313,6 +27071,12 @@ func (c *ClientWithResponses) UserServiceGetUserWithResponse(ctx context.Context
 
 // WorkspaceServiceGetInviteWithResponse GetInvite
 //
+// Returns a workspace invite that was sent to you, found by its token. Use it
+//
+//	to show the invite before you answer it with `AnswerInvite`. An invite that
+//	was sent to a different email address returns `PermissionDenied`. An expired
+//	invite returns `FailedPrecondition`. An unknown token returns `NotFound`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/workspace-invites/{inviteToken} (the `WorkspaceServiceGetInvite` operationId).
@@ -19325,6 +27089,16 @@ func (c *ClientWithResponses) WorkspaceServiceGetInviteWithResponse(ctx context.
 }
 
 // WorkspaceServiceAnswerInviteWithBodyWithResponse AnswerInvite
+//
+// Accepts or declines a workspace invite that was sent to you. When you accept,
+//
+//	you become a member of the workspace and of every project in it where
+//	`isPrivate` is `false`, with the role of the invite. If you are already a
+//	member, the role of the invite replaces your role. The API also deletes your
+//	pending invites to those projects. When you decline, the API deletes the
+//	invite. After you answer, the token stops working, so a retry returns
+//	`NotFound`. An invite that was sent to a different email address returns
+//	`PermissionDenied`. An expired invite returns `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19339,6 +27113,16 @@ func (c *ClientWithResponses) WorkspaceServiceAnswerInviteWithBodyWithResponse(c
 
 // WorkspaceServiceAnswerInviteWithResponse AnswerInvite
 //
+// Accepts or declines a workspace invite that was sent to you. When you accept,
+//
+//	you become a member of the workspace and of every project in it where
+//	`isPrivate` is `false`, with the role of the invite. If you are already a
+//	member, the role of the invite replaces your role. The API also deletes your
+//	pending invites to those projects. When you decline, the API deletes the
+//	invite. After you answer, the token stops working, so a retry returns
+//	`NotFound`. An invite that was sent to a different email address returns
+//	`PermissionDenied`. An expired invite returns `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/workspace-invites/{inviteToken}:answer (the `WorkspaceServiceAnswerInvite` operationId).
@@ -19351,6 +27135,10 @@ func (c *ClientWithResponses) WorkspaceServiceAnswerInviteWithResponse(ctx conte
 }
 
 // WorkspaceServiceListWorkspacesWithResponse ListWorkspaces
+//
+// Lists the workspaces that you are a member of, ordered by workspace ID. A
+//
+//	pending invite does not make you a member.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19365,6 +27153,12 @@ func (c *ClientWithResponses) WorkspaceServiceListWorkspacesWithResponse(ctx con
 
 // WorkspaceServiceCreateWorkspaceWithBodyWithResponse CreateWorkspace
 //
+// Creates a workspace. You become its only member, with the admin role (`3`).
+//
+//	The workspace has no projects: to add one, call `CreateProject`. An empty
+//	`name` returns `InvalidArgument`. The call is not idempotent: a retry
+//	creates a second workspace.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/workspaces (the `WorkspaceServiceCreateWorkspace` operationId).
@@ -19377,6 +27171,12 @@ func (c *ClientWithResponses) WorkspaceServiceCreateWorkspaceWithBodyWithRespons
 }
 
 // WorkspaceServiceCreateWorkspaceWithResponse CreateWorkspace
+//
+// Creates a workspace. You become its only member, with the admin role (`3`).
+//
+//	The workspace has no projects: to add one, call `CreateProject`. An empty
+//	`name` returns `InvalidArgument`. The call is not idempotent: a retry
+//	creates a second workspace.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19391,6 +27191,11 @@ func (c *ClientWithResponses) WorkspaceServiceCreateWorkspaceWithResponse(ctx co
 
 // WorkspaceServiceDeleteWorkspaceWithResponse DeleteWorkspace
 //
+// Deletes a workspace, with its members and its pending invites. A workspace
+//
+//	that has projects returns `FailedPrecondition`: delete its projects first.
+//	You cannot undo the delete. A retry returns `NotFound`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /v0/workspaces/{workspaceId} (the `WorkspaceServiceDeleteWorkspace` operationId).
@@ -19403,6 +27208,10 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteWorkspaceWithResponse(ctx co
 }
 
 // WorkspaceServiceGetWorkspaceWithResponse GetWorkspace
+//
+// Returns a workspace. A workspace that you are not a member of returns
+//
+//	`NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19417,6 +27226,10 @@ func (c *ClientWithResponses) WorkspaceServiceGetWorkspaceWithResponse(ctx conte
 
 // WorkspaceServiceUpdateWorkspaceWithBodyWithResponse UpdateWorkspace
 //
+// Changes the name or the MCP policy of a workspace, and returns the updated
+//
+//	workspace. A field that is unset does not change.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /v0/workspaces/{workspaceId} (the `WorkspaceServiceUpdateWorkspace` operationId).
@@ -19429,6 +27242,10 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateWorkspaceWithBodyWithRespons
 }
 
 // WorkspaceServiceUpdateWorkspaceWithResponse UpdateWorkspace
+//
+// Changes the name or the MCP policy of a workspace, and returns the updated
+//
+//	workspace. A field that is unset does not change.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19443,11 +27260,13 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateWorkspaceWithResponse(ctx co
 
 // WorkspaceServiceListInvitesWithResponse ListInvites
 //
+// Lists the unexpired invites of a workspace, ordered by email.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceListInvites` operationId).
-func (c *ClientWithResponses) WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error) {
-	rsp, err := c.WorkspaceServiceListInvites(ctx, workspaceId, reqEditors...)
+func (c *ClientWithResponses) WorkspaceServiceListInvitesWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListInvitesParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListInvitesResponse, error) {
+	rsp, err := c.WorkspaceServiceListInvites(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19455,6 +27274,14 @@ func (c *ClientWithResponses) WorkspaceServiceListInvitesWithResponse(ctx contex
 }
 
 // WorkspaceServiceCreateInviteWithBodyWithResponse CreateInvite
+//
+// Invites a person to a workspace by email, with a role. The API sends an email
+//
+//	with the invite link, and the response has the invite token. The invite
+//	expires after 48 hours. When an unexpired invite for the email exists, the
+//	API sends that invite again: its token, role, and expiry do not change. On
+//	a plan that allows only the admin role (`3`), the roles `1` and `2` return
+//	`FailedPrecondition`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19469,6 +27296,14 @@ func (c *ClientWithResponses) WorkspaceServiceCreateInviteWithBodyWithResponse(c
 
 // WorkspaceServiceCreateInviteWithResponse CreateInvite
 //
+// Invites a person to a workspace by email, with a role. The API sends an email
+//
+//	with the invite link, and the response has the invite token. The invite
+//	expires after 48 hours. When an unexpired invite for the email exists, the
+//	API sends that invite again: its token, role, and expiry do not change. On
+//	a plan that allows only the admin role (`3`), the roles `1` and `2` return
+//	`FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/workspaces/{workspaceId}/invites (the `WorkspaceServiceCreateInvite` operationId).
@@ -19481,6 +27316,10 @@ func (c *ClientWithResponses) WorkspaceServiceCreateInviteWithResponse(ctx conte
 }
 
 // WorkspaceServiceDeleteInviteWithResponse DeleteInvite
+//
+// Deletes a pending workspace invite, so that its link stops working. When no
+//
+//	invite exists for the email, the call succeeds and changes nothing.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19495,13 +27334,13 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteInviteWithResponse(ctx conte
 
 // WorkspaceServiceListMembersWithResponse ListMembers
 //
-// Lists the workspace's members.
+// Lists the workspace members, ordered by user ID.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/members (the `WorkspaceServiceListMembers` operationId).
-func (c *ClientWithResponses) WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error) {
-	rsp, err := c.WorkspaceServiceListMembers(ctx, workspaceId, reqEditors...)
+func (c *ClientWithResponses) WorkspaceServiceListMembersWithResponse(ctx context.Context, workspaceId string, params *WorkspaceServiceListMembersParams, reqEditors ...RequestEditorFn) (*WorkspaceServiceListMembersResponse, error) {
+	rsp, err := c.WorkspaceServiceListMembers(ctx, workspaceId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19509,6 +27348,14 @@ func (c *ClientWithResponses) WorkspaceServiceListMembersWithResponse(ctx contex
 }
 
 // WorkspaceServiceDeleteMemberWithResponse DeleteMember
+//
+// Removes a user from a workspace and from every project in it, and deletes
+//
+//	the API keys that the user owns in those projects. Agent keys stay. Send
+//	`confirmedNumKeys` to confirm the number of keys to delete. A removal that
+//	deletes the last API key of a project returns `FailedPrecondition` and
+//	changes nothing. A user who is not a member returns `NotFound`. The response
+//	has the number of keys that the removal deleted.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19523,6 +27370,10 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteMemberWithResponse(ctx conte
 
 // WorkspaceServiceGetMemberWithResponse GetMember
 //
+// Returns the membership of one user on a workspace, with the role of the
+//
+//	user. A user who is not a member of the workspace returns `NotFound`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceGetMember` operationId).
@@ -19535,6 +27386,13 @@ func (c *ClientWithResponses) WorkspaceServiceGetMemberWithResponse(ctx context.
 }
 
 // WorkspaceServiceUpdateMemberWithBodyWithResponse UpdateMember
+//
+// Changes the workspace role of a member. The API also changes the role of the
+//
+//	user on every project in the workspace where `isPrivate` is `false`. The
+//	projects where `isPrivate` is `true` keep their roles. A user who is not a
+//	member returns `NotFound`. On a plan that allows only the admin role (`3`),
+//	the roles `1` and `2` return `FailedPrecondition`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19549,6 +27407,13 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateMemberWithBodyWithResponse(c
 
 // WorkspaceServiceUpdateMemberWithResponse UpdateMember
 //
+// Changes the workspace role of a member. The API also changes the role of the
+//
+//	user on every project in the workspace where `isPrivate` is `false`. The
+//	projects where `isPrivate` is `true` keep their roles. A user who is not a
+//	member returns `NotFound`. On a plan that allows only the admin role (`3`),
+//	the roles `1` and `2` return `FailedPrecondition`.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /v0/workspaces/{workspaceId}/members/{userId} (the `WorkspaceServiceUpdateMember` operationId).
@@ -19562,9 +27427,9 @@ func (c *ClientWithResponses) WorkspaceServiceUpdateMemberWithResponse(ctx conte
 
 // WorkspaceServiceListProjectsWithResponse ListProjects
 //
-// The projects in a workspace. These return the same Project message as
+// Lists the projects in a workspace. The items are the same `Project`
 //
-//	the project endpoints.
+//	message that `ProjectService` returns.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19579,6 +27444,15 @@ func (c *ClientWithResponses) WorkspaceServiceListProjectsWithResponse(ctx conte
 
 // WorkspaceServiceCreateProjectWithBodyWithResponse CreateProject
 //
+// Creates a project in a workspace. Send the project as the request body. The
+//
+//	rules and errors of `ProjectService.CreateProject` apply. You become a
+//	member of the project with the admin role (`3`), and the API creates an API
+//	key that you own. When `isPrivate` is `false`, every member of the
+//	workspace becomes a member of the project, with their workspace role. The
+//	call is not idempotent: when `subdomain` is empty, a retry creates a second
+//	project.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /v0/workspaces/{workspaceId}/projects (the `WorkspaceServiceCreateProject` operationId).
@@ -19591,6 +27465,15 @@ func (c *ClientWithResponses) WorkspaceServiceCreateProjectWithBodyWithResponse(
 }
 
 // WorkspaceServiceCreateProjectWithResponse CreateProject
+//
+// Creates a project in a workspace. Send the project as the request body. The
+//
+//	rules and errors of `ProjectService.CreateProject` apply. You become a
+//	member of the project with the admin role (`3`), and the API creates an API
+//	key that you own. When `isPrivate` is `false`, every member of the
+//	workspace becomes a member of the project, with their workspace role. The
+//	call is not idempotent: when `subdomain` is empty, a retry creates a second
+//	project.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19605,6 +27488,11 @@ func (c *ClientWithResponses) WorkspaceServiceCreateProjectWithResponse(ctx cont
 
 // WorkspaceServiceDeleteProjectWithResponse DeleteProject
 //
+// Deletes a project in a workspace, with its API keys, its webhooks, and its
+//
+//	member list. You cannot undo the delete. A project that is not in the
+//	workspace returns `NotFound`, and a retry returns `NotFound`.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /v0/workspaces/{workspaceId}/projects/{projectId} (the `WorkspaceServiceDeleteProject` operationId).
@@ -19617,6 +27505,11 @@ func (c *ClientWithResponses) WorkspaceServiceDeleteProjectWithResponse(ctx cont
 }
 
 // WorkspaceServiceGetProjectWithResponse GetProject
+//
+// Returns a project in a workspace, with its settings and its webhooks. A
+//
+//	project that is not in the workspace, or that you cannot see, returns
+//	`NotFound`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19860,22 +27753,22 @@ func ParseProjectServiceUpdateProjectResponse(rsp *http.Response) (*ProjectServi
 	return response, nil
 }
 
-// ParseAnalyticsServiceGetProjectAnalyticsResponse parses an HTTP response from a AnalyticsServiceGetProjectAnalyticsWithResponse call
-func ParseAnalyticsServiceGetProjectAnalyticsResponse(rsp *http.Response) (*AnalyticsServiceGetProjectAnalyticsResponse, error) {
+// ParseBuilderAgentServiceListBuilderAgentsResponse parses an HTTP response from a BuilderAgentServiceListBuilderAgentsWithResponse call
+func ParseBuilderAgentServiceListBuilderAgentsResponse(rsp *http.Response) (*BuilderAgentServiceListBuilderAgentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &AnalyticsServiceGetProjectAnalyticsResponse{
+	response := &BuilderAgentServiceListBuilderAgentsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAnalyticsV1ProjectOverviewGetResponse
+		var dest LivekitPublicapiAgentsV1BuilderAgentsListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -19893,22 +27786,22 @@ func ParseAnalyticsServiceGetProjectAnalyticsResponse(rsp *http.Response) (*Anal
 	return response, nil
 }
 
-// ParseAnalyticsServiceListAgentAnalyticsResponse parses an HTTP response from a AnalyticsServiceListAgentAnalyticsWithResponse call
-func ParseAnalyticsServiceListAgentAnalyticsResponse(rsp *http.Response) (*AnalyticsServiceListAgentAnalyticsResponse, error) {
+// ParseBuilderAgentServiceCreateBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceCreateBuilderAgentWithResponse call
+func ParseBuilderAgentServiceCreateBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceCreateBuilderAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &AnalyticsServiceListAgentAnalyticsResponse{
+	response := &BuilderAgentServiceCreateBuilderAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAnalyticsV1AgentsListResponse
+		var dest LivekitPublicapiAgentsV1BuilderAgentsCreateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -19926,22 +27819,22 @@ func ParseAnalyticsServiceListAgentAnalyticsResponse(rsp *http.Response) (*Analy
 	return response, nil
 }
 
-// ParseAnalyticsServiceGetAgentAnalyticsResponse parses an HTTP response from a AnalyticsServiceGetAgentAnalyticsWithResponse call
-func ParseAnalyticsServiceGetAgentAnalyticsResponse(rsp *http.Response) (*AnalyticsServiceGetAgentAnalyticsResponse, error) {
+// ParseBuilderAgentServiceDeleteBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceDeleteBuilderAgentWithResponse call
+func ParseBuilderAgentServiceDeleteBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceDeleteBuilderAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &AnalyticsServiceGetAgentAnalyticsResponse{
+	response := &BuilderAgentServiceDeleteBuilderAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiAnalyticsV1AgentsGetResponse
+		var dest LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -19959,22 +27852,22 @@ func ParseAnalyticsServiceGetAgentAnalyticsResponse(rsp *http.Response) (*Analyt
 	return response, nil
 }
 
-// ParseDatabaseServiceListDatabasesResponse parses an HTTP response from a DatabaseServiceListDatabasesWithResponse call
-func ParseDatabaseServiceListDatabasesResponse(rsp *http.Response) (*DatabaseServiceListDatabasesResponse, error) {
+// ParseBuilderAgentServiceGetBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceGetBuilderAgentWithResponse call
+func ParseBuilderAgentServiceGetBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceGetBuilderAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DatabaseServiceListDatabasesResponse{
+	response := &BuilderAgentServiceGetBuilderAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesListResponse
+		var dest LivekitPublicapiAgentsV1BuilderAgentsGetResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -19992,22 +27885,22 @@ func ParseDatabaseServiceListDatabasesResponse(rsp *http.Response) (*DatabaseSer
 	return response, nil
 }
 
-// ParseDatabaseServiceCreateDatabaseResponse parses an HTTP response from a DatabaseServiceCreateDatabaseWithResponse call
-func ParseDatabaseServiceCreateDatabaseResponse(rsp *http.Response) (*DatabaseServiceCreateDatabaseResponse, error) {
+// ParseBuilderAgentServiceUpdateBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceUpdateBuilderAgentWithResponse call
+func ParseBuilderAgentServiceUpdateBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceUpdateBuilderAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DatabaseServiceCreateDatabaseResponse{
+	response := &BuilderAgentServiceUpdateBuilderAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesCreateResponse
+		var dest LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20025,88 +27918,22 @@ func ParseDatabaseServiceCreateDatabaseResponse(rsp *http.Response) (*DatabaseSe
 	return response, nil
 }
 
-// ParseDatabaseServiceDeleteDatabaseResponse parses an HTTP response from a DatabaseServiceDeleteDatabaseWithResponse call
-func ParseDatabaseServiceDeleteDatabaseResponse(rsp *http.Response) (*DatabaseServiceDeleteDatabaseResponse, error) {
+// ParseBuilderAgentServiceDeployBuilderAgentResponse parses an HTTP response from a BuilderAgentServiceDeployBuilderAgentWithResponse call
+func ParseBuilderAgentServiceDeployBuilderAgentResponse(rsp *http.Response) (*BuilderAgentServiceDeployBuilderAgentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DatabaseServiceDeleteDatabaseResponse{
+	response := &BuilderAgentServiceDeployBuilderAgentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesDeleteResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDatabaseServiceGetDatabaseResponse parses an HTTP response from a DatabaseServiceGetDatabaseWithResponse call
-func ParseDatabaseServiceGetDatabaseResponse(rsp *http.Response) (*DatabaseServiceGetDatabaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DatabaseServiceGetDatabaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesGetResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest GoogleRpcStatus
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDatabaseServiceExportDatabaseResponse parses an HTTP response from a DatabaseServiceExportDatabaseWithResponse call
-func ParseDatabaseServiceExportDatabaseResponse(rsp *http.Response) (*DatabaseServiceExportDatabaseResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DatabaseServiceExportDatabaseResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiDatabasesV1DatabasesExportResponse
+		var dest LivekitPublicapiAgentsV1BuilderAgentsDeployResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20520,22 +28347,22 @@ func ParseProjectServiceAddWorkspaceMembersToProjectResponse(rsp *http.Response)
 	return response, nil
 }
 
-// ParseSimulationServiceGenerateScenarioFromSessionResponse parses an HTTP response from a SimulationServiceGenerateScenarioFromSessionWithResponse call
-func ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp *http.Response) (*SimulationServiceGenerateScenarioFromSessionResponse, error) {
+// ParseTelephonyServiceListPhoneNumbersResponse parses an HTTP response from a TelephonyServiceListPhoneNumbersWithResponse call
+func ParseTelephonyServiceListPhoneNumbersResponse(rsp *http.Response) (*TelephonyServiceListPhoneNumbersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SimulationServiceGenerateScenarioFromSessionResponse{
+	response := &TelephonyServiceListPhoneNumbersResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse
+		var dest LivekitPublicapiTelephonyV1PhoneNumbersListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20553,22 +28380,187 @@ func ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp *http.Respons
 	return response, nil
 }
 
-// ParseProjectServiceListScopedKeysResponse parses an HTTP response from a ProjectServiceListScopedKeysWithResponse call
-func ParseProjectServiceListScopedKeysResponse(rsp *http.Response) (*ProjectServiceListScopedKeysResponse, error) {
+// ParseTelephonyServicePurchasePhoneNumberResponse parses an HTTP response from a TelephonyServicePurchasePhoneNumberWithResponse call
+func ParseTelephonyServicePurchasePhoneNumberResponse(rsp *http.Response) (*TelephonyServicePurchasePhoneNumberResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ProjectServiceListScopedKeysResponse{
+	response := &TelephonyServicePurchasePhoneNumberResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiProjectsV1ListScopedKeysResponse
+		var dest LivekitPublicapiTelephonyV1PhoneNumbersPurchaseResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceReleasePhoneNumberResponse parses an HTTP response from a TelephonyServiceReleasePhoneNumberWithResponse call
+func ParseTelephonyServiceReleasePhoneNumberResponse(rsp *http.Response) (*TelephonyServiceReleasePhoneNumberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceReleasePhoneNumberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceGetPhoneNumberResponse parses an HTTP response from a TelephonyServiceGetPhoneNumberWithResponse call
+func ParseTelephonyServiceGetPhoneNumberResponse(rsp *http.Response) (*TelephonyServiceGetPhoneNumberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceGetPhoneNumberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1PhoneNumbersGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceUpdatePhoneNumberResponse parses an HTTP response from a TelephonyServiceUpdatePhoneNumberWithResponse call
+func ParseTelephonyServiceUpdatePhoneNumberResponse(rsp *http.Response) (*TelephonyServiceUpdatePhoneNumberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceUpdatePhoneNumberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1PhoneNumbersUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceSearchPhoneNumbersResponse parses an HTTP response from a TelephonyServiceSearchPhoneNumbersWithResponse call
+func ParseTelephonyServiceSearchPhoneNumbersResponse(rsp *http.Response) (*TelephonyServiceSearchPhoneNumbersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceSearchPhoneNumbersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1PhoneNumbersSearchResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSimulationServiceGenerateScenarioFromSessionResponse parses an HTTP response from a SimulationServiceGenerateScenarioFromSessionWithResponse call
+func ParseSimulationServiceGenerateScenarioFromSessionResponse(rsp *http.Response) (*SimulationServiceGenerateScenarioFromSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SimulationServiceGenerateScenarioFromSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiSimulationsV1ScenariosGenerateFromSessionResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21114,22 +29106,22 @@ func ParseSimulationServiceCountSimulationRunsResponse(rsp *http.Response) (*Sim
 	return response, nil
 }
 
-// ParseThreadServiceListThreadsResponse parses an HTTP response from a ThreadServiceListThreadsWithResponse call
-func ParseThreadServiceListThreadsResponse(rsp *http.Response) (*ThreadServiceListThreadsResponse, error) {
+// ParseTelephonyServiceListDispatchRulesResponse parses an HTTP response from a TelephonyServiceListDispatchRulesWithResponse call
+func ParseTelephonyServiceListDispatchRulesResponse(rsp *http.Response) (*TelephonyServiceListDispatchRulesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ThreadServiceListThreadsResponse{
+	response := &TelephonyServiceListDispatchRulesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsListResponse
+		var dest LivekitPublicapiTelephonyV1DispatchRulesListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21147,22 +29139,22 @@ func ParseThreadServiceListThreadsResponse(rsp *http.Response) (*ThreadServiceLi
 	return response, nil
 }
 
-// ParseThreadServiceCreateThreadResponse parses an HTTP response from a ThreadServiceCreateThreadWithResponse call
-func ParseThreadServiceCreateThreadResponse(rsp *http.Response) (*ThreadServiceCreateThreadResponse, error) {
+// ParseTelephonyServiceCreateDispatchRuleResponse parses an HTTP response from a TelephonyServiceCreateDispatchRuleWithResponse call
+func ParseTelephonyServiceCreateDispatchRuleResponse(rsp *http.Response) (*TelephonyServiceCreateDispatchRuleResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ThreadServiceCreateThreadResponse{
+	response := &TelephonyServiceCreateDispatchRuleResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsCreateResponse
+		var dest LivekitPublicapiTelephonyV1DispatchRulesCreateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21180,22 +29172,22 @@ func ParseThreadServiceCreateThreadResponse(rsp *http.Response) (*ThreadServiceC
 	return response, nil
 }
 
-// ParseThreadServiceDeleteThreadResponse parses an HTTP response from a ThreadServiceDeleteThreadWithResponse call
-func ParseThreadServiceDeleteThreadResponse(rsp *http.Response) (*ThreadServiceDeleteThreadResponse, error) {
+// ParseTelephonyServiceDeleteDispatchRuleResponse parses an HTTP response from a TelephonyServiceDeleteDispatchRuleWithResponse call
+func ParseTelephonyServiceDeleteDispatchRuleResponse(rsp *http.Response) (*TelephonyServiceDeleteDispatchRuleResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ThreadServiceDeleteThreadResponse{
+	response := &TelephonyServiceDeleteDispatchRuleResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsDeleteResponse
+		var dest LivekitPublicapiTelephonyV1DispatchRulesDeleteResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21213,22 +29205,22 @@ func ParseThreadServiceDeleteThreadResponse(rsp *http.Response) (*ThreadServiceD
 	return response, nil
 }
 
-// ParseThreadServiceGetThreadResponse parses an HTTP response from a ThreadServiceGetThreadWithResponse call
-func ParseThreadServiceGetThreadResponse(rsp *http.Response) (*ThreadServiceGetThreadResponse, error) {
+// ParseTelephonyServiceGetDispatchRuleResponse parses an HTTP response from a TelephonyServiceGetDispatchRuleWithResponse call
+func ParseTelephonyServiceGetDispatchRuleResponse(rsp *http.Response) (*TelephonyServiceGetDispatchRuleResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ThreadServiceGetThreadResponse{
+	response := &TelephonyServiceGetDispatchRuleResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsGetResponse
+		var dest LivekitPublicapiTelephonyV1DispatchRulesGetResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21246,22 +29238,22 @@ func ParseThreadServiceGetThreadResponse(rsp *http.Response) (*ThreadServiceGetT
 	return response, nil
 }
 
-// ParseThreadServiceUpdateThreadResponse parses an HTTP response from a ThreadServiceUpdateThreadWithResponse call
-func ParseThreadServiceUpdateThreadResponse(rsp *http.Response) (*ThreadServiceUpdateThreadResponse, error) {
+// ParseTelephonyServiceUpdateDispatchRuleResponse parses an HTTP response from a TelephonyServiceUpdateDispatchRuleWithResponse call
+func ParseTelephonyServiceUpdateDispatchRuleResponse(rsp *http.Response) (*TelephonyServiceUpdateDispatchRuleResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ThreadServiceUpdateThreadResponse{
+	response := &TelephonyServiceUpdateDispatchRuleResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsUpdateResponse
+		var dest LivekitPublicapiTelephonyV1DispatchRulesUpdateResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21279,22 +29271,22 @@ func ParseThreadServiceUpdateThreadResponse(rsp *http.Response) (*ThreadServiceU
 	return response, nil
 }
 
-// ParseThreadServiceGetThreadItemsResponse parses an HTTP response from a ThreadServiceGetThreadItemsWithResponse call
-func ParseThreadServiceGetThreadItemsResponse(rsp *http.Response) (*ThreadServiceGetThreadItemsResponse, error) {
+// ParseTelephonyServiceListInboundTrunksResponse parses an HTTP response from a TelephonyServiceListInboundTrunksWithResponse call
+func ParseTelephonyServiceListInboundTrunksResponse(rsp *http.Response) (*TelephonyServiceListInboundTrunksResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ThreadServiceGetThreadItemsResponse{
+	response := &TelephonyServiceListInboundTrunksResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsItemsResponse
+		var dest LivekitPublicapiTelephonyV1InboundTrunksListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21312,22 +29304,352 @@ func ParseThreadServiceGetThreadItemsResponse(rsp *http.Response) (*ThreadServic
 	return response, nil
 }
 
-// ParseThreadServiceGetThreadTasksResponse parses an HTTP response from a ThreadServiceGetThreadTasksWithResponse call
-func ParseThreadServiceGetThreadTasksResponse(rsp *http.Response) (*ThreadServiceGetThreadTasksResponse, error) {
+// ParseTelephonyServiceCreateInboundTrunkResponse parses an HTTP response from a TelephonyServiceCreateInboundTrunkWithResponse call
+func ParseTelephonyServiceCreateInboundTrunkResponse(rsp *http.Response) (*TelephonyServiceCreateInboundTrunkResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ThreadServiceGetThreadTasksResponse{
+	response := &TelephonyServiceCreateInboundTrunkResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LivekitPublicapiThreadsV1ThreadsTasksResponse
+		var dest LivekitPublicapiTelephonyV1InboundTrunksCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceDeleteInboundTrunkResponse parses an HTTP response from a TelephonyServiceDeleteInboundTrunkWithResponse call
+func ParseTelephonyServiceDeleteInboundTrunkResponse(rsp *http.Response) (*TelephonyServiceDeleteInboundTrunkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceDeleteInboundTrunkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1InboundTrunksDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceGetInboundTrunkResponse parses an HTTP response from a TelephonyServiceGetInboundTrunkWithResponse call
+func ParseTelephonyServiceGetInboundTrunkResponse(rsp *http.Response) (*TelephonyServiceGetInboundTrunkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceGetInboundTrunkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1InboundTrunksGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceUpdateInboundTrunkResponse parses an HTTP response from a TelephonyServiceUpdateInboundTrunkWithResponse call
+func ParseTelephonyServiceUpdateInboundTrunkResponse(rsp *http.Response) (*TelephonyServiceUpdateInboundTrunkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceUpdateInboundTrunkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1InboundTrunksUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceListOutboundTrunksResponse parses an HTTP response from a TelephonyServiceListOutboundTrunksWithResponse call
+func ParseTelephonyServiceListOutboundTrunksResponse(rsp *http.Response) (*TelephonyServiceListOutboundTrunksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceListOutboundTrunksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1OutboundTrunksListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceCreateOutboundTrunkResponse parses an HTTP response from a TelephonyServiceCreateOutboundTrunkWithResponse call
+func ParseTelephonyServiceCreateOutboundTrunkResponse(rsp *http.Response) (*TelephonyServiceCreateOutboundTrunkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceCreateOutboundTrunkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1OutboundTrunksCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceDeleteOutboundTrunkResponse parses an HTTP response from a TelephonyServiceDeleteOutboundTrunkWithResponse call
+func ParseTelephonyServiceDeleteOutboundTrunkResponse(rsp *http.Response) (*TelephonyServiceDeleteOutboundTrunkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceDeleteOutboundTrunkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1OutboundTrunksDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceGetOutboundTrunkResponse parses an HTTP response from a TelephonyServiceGetOutboundTrunkWithResponse call
+func ParseTelephonyServiceGetOutboundTrunkResponse(rsp *http.Response) (*TelephonyServiceGetOutboundTrunkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceGetOutboundTrunkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1OutboundTrunksGetResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceUpdateOutboundTrunkResponse parses an HTTP response from a TelephonyServiceUpdateOutboundTrunkWithResponse call
+func ParseTelephonyServiceUpdateOutboundTrunkResponse(rsp *http.Response) (*TelephonyServiceUpdateOutboundTrunkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceUpdateOutboundTrunkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1OutboundTrunksUpdateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceCreateSIPParticipantResponse parses an HTTP response from a TelephonyServiceCreateSIPParticipantWithResponse call
+func ParseTelephonyServiceCreateSIPParticipantResponse(rsp *http.Response) (*TelephonyServiceCreateSIPParticipantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceCreateSIPParticipantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1SIPParticipantsCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseTelephonyServiceTransferSIPParticipantResponse parses an HTTP response from a TelephonyServiceTransferSIPParticipantWithResponse call
+func ParseTelephonyServiceTransferSIPParticipantResponse(rsp *http.Response) (*TelephonyServiceTransferSIPParticipantResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TelephonyServiceTransferSIPParticipantResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiTelephonyV1SIPParticipantsTransferResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21625,6 +29947,39 @@ func ParseUserServiceGetCurrentUserResponse(rsp *http.Response) (*UserServiceGet
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LivekitPublicapiUsersV1GetCurrentUserResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest GoogleRpcStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUserServiceRevokeSessionTokenResponse parses an HTTP response from a UserServiceRevokeSessionTokenWithResponse call
+func ParseUserServiceRevokeSessionTokenResponse(rsp *http.Response) (*UserServiceRevokeSessionTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UserServiceRevokeSessionTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LivekitPublicapiUsersV1SessionTokenRevokeResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

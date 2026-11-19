@@ -29,7 +29,12 @@ import (
 // (livekit/web docs-cli-help workflow), so the reference always matches the
 // released help text. The output sits under a hand-written heading and
 // description, so it carries only the usage line, subcommands, and options.
+//
+// The user-auth beta is always documented: its commands and flags (and only
+// those, not other hidden ones) are revealed regardless of sign-in or flags,
+// so CI documents them without a config.
 func generateDocs(ctx context.Context, cmd *cli.Command) error {
+	setUserAuthHidden(cmd.Root(), false)
 	pruneHiddenCommands(cmd.Root())
 	path := cmd.Args().Slice()
 	target := cmd.Root()

@@ -1,0 +1,35 @@
+# The Public API refuses the session (revoked or expired) when lk tries to
+# create a key. Signing in again is the fix, so lk says that rather than ask
+# for a key or list ways to supply one.
+[!exec:node] skip 'needs node to run the agent'
+respond POST http://publicapi.test/v0/projects/p_1/keys 401 '{"error":{"code":"unauthenticated","message":"authentication required"}}'
+
+! exec lk --user-auth agent start
+! stdout .
+stderr 'lk cloud auth'
+! stderr 'no LiveKit API key'
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/keys bearer=st_1 project=p_1

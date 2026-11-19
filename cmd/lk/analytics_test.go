@@ -31,6 +31,7 @@ import (
 
 	"github.com/livekit/livekit-cli/v2/pkg/config"
 	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -96,11 +97,11 @@ func TestAnalyticsFailsWithoutExperimentalFlag(t *testing.T) {
 	// any action (and its network calls) runs.
 	err := runAnalytics("session", "list")
 	require.Error(t, err, "'analytics session list' must fail without --experimental")
-	assert.Contains(t, err.Error(), "--experimental is required")
+	assert.Contains(t, err.Error(), "--user-auth is required (or --experimental for the deprecated API-key path)")
 
 	err = runAnalytics("session", "get", "sess_123")
 	require.Error(t, err, "'analytics session get' must fail without --experimental")
-	assert.Contains(t, err.Error(), "--experimental is required")
+	assert.Contains(t, err.Error(), "--user-auth is required (or --experimental for the deprecated API-key path)")
 }
 
 func TestAnalyticsFailsWithExperimentalFlagDisabled(t *testing.T) {
@@ -116,7 +117,7 @@ func TestAnalyticsPassesFlagValidationWithExperimentalFlag(t *testing.T) {
 	// from the action itself (e.g. project resolution), not the flag check.
 	err := runAnalytics("--experimental", "session", "list")
 	if err != nil {
-		assert.NotContains(t, err.Error(), "--experimental is required")
+		assert.NotContains(t, err.Error(), "--user-auth is required")
 	}
 }
 
@@ -905,7 +906,7 @@ func TestFetchSessionRecordingNothingToDownload(t *testing.T) {
 			name:    "not recorded",
 			status:  http.StatusNotFound,
 			body:    `{"code":5,"message":"recording not found"}`,
-			wantErr: []string{"session RM_1 has no chat history", "recording not found", "wasn't recorded", "less than a minute ago", "or there is no such session in project p1"},
+			wantErr: []string{"session RM_1 has no chat history", "recording not found", "wasn't recorded", "hasn't been indexed yet", "or there is no such session in project p1"},
 		},
 		{
 			name:   "recording off",
@@ -953,6 +954,81 @@ func TestFetchSessionRecordingNothingToDownload(t *testing.T) {
 			entries, err := os.ReadDir(".")
 			require.NoError(t, err)
 			assert.Empty(t, entries)
+		})
+	}
+}
+
+// TestFetchSessionRecordingNotYetUploaded checks a recording the agent can
+// still upload fails, saying when to try again, without downloading anything
+// or saving a file, and that --json still prints the response first.
+func TestFetchSessionRecordingNotYetUploaded(t *testing.T) {
+	const body = `{"url":"","dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`
+	const wantErr = "session RM_1 has no audio recording yet: the session just ended, and its agent can still upload it — read again in 42s"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	client, err := public.New(srv.URL, "sekret")
+	require.NoError(t, err)
+
+	t.Run("exits 75", func(t *testing.T) {
+		_, _ = captureOut(t)
+		opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
+		err := fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false)
+		assert.Equal(t, exitTempFail, exitCode(err), "a script can retry on 75 and stop on 1")
+	})
+	t.Run("-o", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		stdout, _ := captureOut(t)
+		opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}, Output: "."}
+		require.EqualError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, false), wantErr)
+		assert.Empty(t, stdout.String())
+		entries, err := os.ReadDir(".")
+		require.NoError(t, err)
+		assert.Empty(t, entries, "nothing is saved")
+	})
+	t.Run("--json", func(t *testing.T) {
+		stdout, _ := captureOut(t)
+		opts := sessionRecordingOptions{RecordingURLOptions: public.RecordingURLOptions{Recording: "audio"}}
+		require.EqualError(t, fetchSessionRecording(context.Background(), client, "p1", "RM_1", opts, true), wantErr)
+		assert.JSONEq(t, body, stdout.String())
+	})
+}
+
+// TestRecordingNotYetError checks a recording that isn't there yet says why
+// and, while the session settles, when to read again; a missing URL with any
+// other status is a bad response.
+func TestRecordingNotYetError(t *testing.T) {
+	tests := []struct {
+		name   string
+		status *oapi.LivekitPublicapiObservabilityV1DataStatus
+		want   string
+	}{
+		{
+			name:   "settling",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptrTo(oapi.DATASTATESETTLING), RetryAfterSeconds: ptrTo(42)},
+			want:   "session RM_1 has no chat history yet: the session just ended, and its agent can still upload it — read again in 42s",
+		},
+		{
+			name:   "active",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptrTo(oapi.DATASTATESESSIONACTIVE), RetryAfterSeconds: ptrTo(0)},
+			want:   "session RM_1 has no chat history yet: the session is still active, and its agent uploads it after the session ends",
+		},
+		{
+			// The API sends no URL only while the agent can still upload.
+			name:   "settled",
+			status: &oapi.LivekitPublicapiObservabilityV1DataStatus{State: ptrTo(oapi.DATASTATESETTLED), RetryAfterSeconds: ptrTo(0)},
+			want:   "unexpected response from server: missing url",
+		},
+		{
+			name: "no status",
+			want: "unexpected response from server: missing url",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.EqualError(t, recordingNotYetError("RM_1", "chat-history", tt.status), tt.want)
 		})
 	}
 }
@@ -1199,12 +1275,14 @@ func TestReadPages(t *testing.T) {
 }
 
 // TestFetchSessionTranscriptPages checks the transcript reads every page into
-// one transcript, adding up the records each page left out.
+// one transcript, adding up the records each page left out, and keeps the
+// data status of the first page read, the least settled.
 func TestFetchSessionTranscriptPages(t *testing.T) {
 	pages := map[string]string{
 		"": `{"items":[{"id":"item_1","message":{"role":"ROLE_USER","text":"hi"}}],` +
-			`"skippedRecords":1,"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
-		"c2": `{"items":[{"id":"item_2","message":{"role":"ROLE_AGENT","text":"hello"}}],"skippedRecords":2}`,
+			`"skippedRecords":1,"pageInfo":{"nextCursor":"c2","hasMore":true},"dataStatus":{"state":"DATA_STATE_SESSION_ACTIVE"}}`,
+		"c2": `{"items":[{"id":"item_2","message":{"role":"ROLE_AGENT","text":"hello"}}],"skippedRecords":2,` +
+			`"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`,
 	}
 	var cursors []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1224,12 +1302,16 @@ func TestFetchSessionTranscriptPages(t *testing.T) {
 	assert.Contains(t, plain, "● Agent")
 	assert.Contains(t, stderr.String(), "3 records couldn't be read as transcript items")
 	assert.NotContains(t, stderr.String(), "More items available")
+	assert.Contains(t, stderr.String(), "More transcript items can still arrive: the session is still active")
+	assert.NotContains(t, stderr.String(), "read again")
 }
 
 // TestFetchSessionTranscript prints a page one line per item and, when the
 // first page is empty, says why: the session is still active, or it ended
-// without a transcript to read yet. A later empty page needs no lookup, and a
-// page with no items but skipped records or a next cursor isn't empty.
+// without a transcript to read yet. A page with a data status says which
+// itself, so it needs no lookup and prints no note beside its reason; nor does
+// a later empty page need a lookup. A page with no items but skipped records
+// or a next cursor isn't empty.
 func TestFetchSessionTranscript(t *testing.T) {
 	const page = `{"items":[` +
 		`{"id":"item_1","message":{"role":"ROLE_USER","text":"hi","endOfTurnDelayMs":320}},` +
@@ -1258,6 +1340,36 @@ func TestFetchSessionTranscript(t *testing.T) {
 			session:    `{"sessionId":"RM_1","status":"SESSION_STATUS_ACTIVE"}`,
 			wantStatus: []string{"Session RM_1 is still active", "appears after it ends"},
 			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript", "/v0/projects/p1/sessions/RM_1"},
+		},
+		{
+			name:       "active session, with a data status",
+			body:       `{"items":[],"dataStatus":{"state":"DATA_STATE_SESSION_ACTIVE","retryAfterSeconds":0}}`,
+			wantStatus: []string{"Session RM_1 is still active: its transcript appears after it ends\n"},
+			noStatus:   []string{"no transcript", "can still arrive"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
+		},
+		{
+			name:       "settling session",
+			body:       `{"items":[],"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`,
+			wantStatus: []string{"Session RM_1 has no transcript yet: the session just ended — read again in 42s\n"},
+			noStatus:   []string{"can still arrive"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
+		},
+		{
+			name: "settled session",
+			body: `{"items":[],"dataStatus":{"state":"DATA_STATE_SETTLED","retryAfterSeconds":0}}`,
+			wantStatus: []string{"Session RM_1 has no transcript to read. The agent exports it when the session ends " +
+				"(on a project with PII redaction, once the recording is redacted); a session without an agent has none\n"},
+			noStatus:  []string{"a minute or two", "can still arrive"},
+			wantPaths: []string{"/v0/projects/p1/sessions/RM_1/transcript"},
+		},
+		{
+			name:       "last page, settling",
+			body:       `{"items":[],"dataStatus":{"state":"DATA_STATE_SETTLING","retryAfterSeconds":42}}`,
+			opts:       public.PageOptions{Cursor: "c2"},
+			wantStatus: []string{"No more transcript items yet: the session just ended — read again in 42s\n"},
+			noStatus:   []string{"can still arrive"},
+			wantPaths:  []string{"/v0/projects/p1/sessions/RM_1/transcript"},
 		},
 		{
 			name:       "closed session",
@@ -1481,7 +1593,7 @@ func logsAPI(t *testing.T, status int, body string) (*public.Client, *url.Values
 // asked for and, when a page is empty, says why: no records at those levels,
 // none at all, or no more.
 func TestFetchSessionLogs(t *testing.T) {
-	const page = `{"records":[` +
+	const page = `{"items":[` +
 		`{"id":"log_1","level":"LOG_LEVEL_WARN","logger":"app","message":"slow tts"},` +
 		`{"id":"log_2","level":"LOG_LEVEL_ERROR","logger":"app","message":"tts failed"}],` +
 		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`
@@ -1503,7 +1615,7 @@ func TestFetchSessionLogs(t *testing.T) {
 		},
 		{
 			name:       "no records at those levels",
-			body:       `{"records":[]}`,
+			body:       `{"items":[]}`,
 			opts:       public.LogOptions{Levels: []string{"fatal"}},
 			wantQuery:  url.Values{"logLevels": {"LOG_LEVEL_FATAL"}},
 			wantStatus: []string{"Session RM_1 has no agent log records at the levels asked for (fatal)"},
@@ -1516,7 +1628,7 @@ func TestFetchSessionLogs(t *testing.T) {
 		},
 		{
 			name:       "last page",
-			body:       `{"records":[]}`,
+			body:       `{"items":[]}`,
 			opts:       public.LogOptions{PageOptions: public.PageOptions{Cursor: "c2"}},
 			wantQuery:  url.Values{"page.cursor": {"c2"}},
 			wantStatus: []string{"No more log records"},
@@ -1546,7 +1658,7 @@ func TestFetchSessionLogs(t *testing.T) {
 // TestFetchSessionLogsJSON checks --json prints the records and still
 // explains an empty page on stderr.
 func TestFetchSessionLogsJSON(t *testing.T) {
-	client, _ := logsAPI(t, http.StatusOK, `{"records":[]}`)
+	client, _ := logsAPI(t, http.StatusOK, `{"items":[]}`)
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionLogs(context.Background(), client, "p1", "RM_1", public.LogOptions{}, true))
@@ -1702,11 +1814,11 @@ func tracesAPI(t *testing.T, status int, pages map[string]string) (*public.Clien
 // tracePages is a session's trace across two pages, the second starting with
 // the children of a span on the first.
 var tracePages = map[string]string{
-	"": `{"spans":[` +
+	"": `{"items":[` +
 		`{"spanId":"a1","name":"agent_session"},` +
 		`{"spanId":"b2","parentSpanId":"a1","name":"agent_turn"}],` +
 		`"pageInfo":{"nextCursor":"c2","hasMore":true}}`,
-	"c2": `{"spans":[` +
+	"c2": `{"items":[` +
 		`{"spanId":"c3","parentSpanId":"b2","name":"llm_request"},` +
 		`{"spanId":"d4","parentSpanId":"b2","name":"tts_request"}]}`,
 }
@@ -1792,7 +1904,7 @@ func TestFetchSessionTracesEmpty(t *testing.T) {
 		{wantStatus: "Session RM_1 has no trace spans"},
 		{cursor: "c9", wantStatus: "No more spans"},
 	} {
-		client, _ := tracesAPI(t, http.StatusOK, map[string]string{"": `{}`, "c9": `{"spans":[]}`})
+		client, _ := tracesAPI(t, http.StatusOK, map[string]string{"": `{}`, "c9": `{"items":[]}`})
 		stdout, stderr := captureOut(t)
 
 		require.NoError(t, fetchSessionTraces(context.Background(), client, "p1", "RM_1", public.PageOptions{Limit: 10, Cursor: tt.cursor}, false))
@@ -1987,7 +2099,7 @@ func metricsAPI(t *testing.T, status int, body string) (*public.Client, *url.Val
 // asked for and, when a page is empty, says why: no points for those names,
 // none at all, or no more.
 func TestFetchSessionMetrics(t *testing.T) {
-	const page = `{"points":[` +
+	const page = `{"items":[` +
 		`{"name":"lk.agents.turn.e2e_latency","unit":"s","kind":"METRIC_KIND_HISTOGRAM","endTime":"2026-10-07T11:00:30Z",` +
 		`"histogram":{"count":"3","sum":2.4,"min":0.6,"max":1.1}},` +
 		`{"name":"lk.agents.usage.llm_input_tokens","unit":"{token}","kind":"METRIC_KIND_SUM","endTime":"2026-10-07T11:00:30Z","value":1520}],` +
@@ -2013,7 +2125,7 @@ func TestFetchSessionMetrics(t *testing.T) {
 		},
 		{
 			name:       "no points for those names",
-			body:       `{"points":[]}`,
+			body:       `{"items":[]}`,
 			opts:       public.MetricOptions{Names: []string{"lk.agents.nope"}},
 			wantQuery:  url.Values{"names": {"lk.agents.nope"}},
 			wantStatus: []string{"Session RM_1 has no points for the metrics asked for (lk.agents.nope)"},
@@ -2026,7 +2138,7 @@ func TestFetchSessionMetrics(t *testing.T) {
 		},
 		{
 			name:       "last page",
-			body:       `{"points":[]}`,
+			body:       `{"items":[]}`,
 			opts:       public.MetricOptions{PageOptions: public.PageOptions{Cursor: "c2"}},
 			wantQuery:  url.Values{"page.cursor": {"c2"}},
 			wantStatus: []string{"No more metric points"},
@@ -2056,7 +2168,7 @@ func TestFetchSessionMetrics(t *testing.T) {
 // TestFetchSessionMetricsJSON checks --json prints the points and still
 // explains an empty page on stderr.
 func TestFetchSessionMetricsJSON(t *testing.T) {
-	client, _ := metricsAPI(t, http.StatusOK, `{"points":[]}`)
+	client, _ := metricsAPI(t, http.StatusOK, `{"items":[]}`)
 	stdout, stderr := captureOut(t)
 
 	require.NoError(t, fetchSessionMetrics(context.Background(), client, "p1", "RM_1", public.MetricOptions{}, true))
@@ -2371,4 +2483,10 @@ func TestSessionAPIError(t *testing.T) {
 
 	signedOut := &public.APIError{Status: http.StatusUnauthorized, Message: "authentication required"}
 	assert.ErrorContains(t, sessionAPIError(signedOut, "transcript", projectAdminAccess), "lk cloud auth")
+}
+
+// TestExitCode checks only an exitError changes lk's exit code.
+func TestExitCode(t *testing.T) {
+	assert.Equal(t, 1, exitCode(errors.New("boom")))
+	assert.Equal(t, exitTempFail, exitCode(fmt.Errorf("wrapped: %w", exitError{errors.New("later"), exitTempFail})))
 }

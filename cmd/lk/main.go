@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -32,6 +33,7 @@ import (
 
 	livekitcli "github.com/livekit/livekit-cli/v2"
 	"github.com/livekit/livekit-cli/v2/pkg/config"
+	"github.com/livekit/livekit-cli/v2/pkg/public"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 )
 
@@ -138,6 +140,19 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 	app.Commands = append(app.Commands, UpdateCommands...)
 	app.CommandNotFound = commandNotFound
 	setCommandNotFound(app.Commands)
+	// Since urfave/cli v3.10, completing runs every Before in the command
+	// chain first. lk's Befores load a project, print notices and may prompt,
+	// so Tab would fail, hang or print to the terminal; skip them all, as
+	// urfave did before. Like urfave, treat a final
+	// --generate-shell-completion as a completion request.
+	completing := os.Args[len(os.Args)-1] == "--generate-shell-completion"
+	_ = app.Walk(func(c *cli.Command) error {
+		c.OnUsageError = onUsageError
+		if completing {
+			c.Before = nil
+		}
+		return nil
+	})
 
 	// Before Run, so help and shell completion (which can be served before
 	// the root Before) see the same tree. Categorize after, since it skips
@@ -176,8 +191,26 @@ Docs: https://docs.livekit.io/intro/basics/cli/`,
 		for line := range strings.SplitSeq(err.Error(), "\n") {
 			fmt.Fprintln(errOut, errStyle.Render(line))
 		}
-		os.Exit(1)
+		os.Exit(exitCode(err))
 	}
+}
+
+// onUsageError shows cmd's help for a usage error (an unknown flag, a missing
+// required flag, mutually exclusive flags) and leaves printing err to main.
+// Without it urfave/cli prints "Incorrect Usage: <err>" itself, so the error
+// would print twice. An unknown flag keeps urfave/cli's "Did you mean" hint.
+func onUsageError(_ context.Context, cmd *cli.Command, err error, _ bool) error {
+	if cmd.Root() == cmd {
+		_ = cli.ShowRootCommandHelp(cmd)
+	} else {
+		_ = cli.ShowSubcommandHelp(cmd)
+	}
+	if name, ok := strings.CutPrefix(err.Error(), "flag provided but not defined: -"); ok && cmd.Suggest {
+		if suggestion := cli.SuggestFlag(cmd.Flags, name, cmd.HideHelp); suggestion != "" {
+			return fmt.Errorf("%w\n\n"+cli.SuggestDidYouMeanTemplate, err, suggestion)
+		}
+	}
+	return err
 }
 
 func checkForLegacyName() {
@@ -225,6 +258,14 @@ func initLogger(ctx context.Context, cmd *cli.Command) (context.Context, error) 
 		}
 	}
 	util.DetectBackground()
+
+	if err := devUnderUserAuthGate(cmd); err != nil {
+		return nil, err
+	}
+
+	apiClientInfo.Command = commandName(cmd)
+	apiClientInfo.CodingAgent = public.DetectCodingAgent(os.Getenv)
+	apiClientInfo.Source = public.DetectSource(os.Getenv)
 
 	showBanner(ctx, cmd)
 
@@ -388,4 +429,26 @@ func rootHelpSections(root *cli.Command) []helpSection {
 		sections = append(sections, other)
 	}
 	return sections
+}
+
+// exitTempFail is sysexits' EX_TEMPFAIL: the command may succeed if run again
+// later, such as a recording its agent is still uploading.
+const exitTempFail = 75
+
+// exitError is an error that ends lk with code instead of 1. It has no
+// ExitCode method, so urfave/cli leaves it for main to print and exit with.
+type exitError struct {
+	error
+	code int
+}
+
+func (e exitError) Unwrap() error { return e.error }
+
+// exitCode is the code lk exits with for err: its exitError's, or 1.
+func exitCode(err error) int {
+	var e exitError
+	if errors.As(err, &e) {
+		return e.code
+	}
+	return 1
 }

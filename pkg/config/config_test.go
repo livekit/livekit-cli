@@ -15,10 +15,13 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public"
 )
@@ -65,7 +68,7 @@ func TestCLIConfigGetUser(t *testing.T) {
 }
 
 func TestCLIConfigGetUserScopedByAPIURL(t *testing.T) {
-	const staging = "https://beta-api.staging.livekit.cloud"
+	const staging = "https://api.staging.livekit.cloud"
 	c := &CLIConfig{
 		Users: []UserConfig{
 			// legacy entry without api_url: the default Public API
@@ -78,13 +81,44 @@ func TestCLIConfigGetUserScopedByAPIURL(t *testing.T) {
 	assert.Equal(t, "usr_prod", c.GetUser("alice@livekit.io", public.DefaultBaseURL).Id)
 	assert.Equal(t, "usr_stg", c.GetUser("alice@livekit.io", staging).Id)
 	// trailing slash and case are ignored
-	assert.Equal(t, "usr_stg", c.GetUser("alice@livekit.io", "HTTPS://beta-api.staging.livekit.cloud/").Id)
+	assert.Equal(t, "usr_stg", c.GetUser("alice@livekit.io", "HTTPS://api.staging.livekit.cloud/").Id)
 	// ids don't resolve across APIs
 	assert.Nil(t, c.GetUser("usr_prod", staging))
 	assert.Nil(t, c.GetUser("alice@livekit.io", "https://other.example"))
 
 	assert.Len(t, c.UsersForAPIURL(staging), 1)
 	assert.Empty(t, c.UsersForAPIURL("https://other.example"))
+}
+
+func TestSameAPIURLLegacyHosts(t *testing.T) {
+	assert.True(t, SameAPIURL("https://beta-api.livekit.cloud", public.DefaultBaseURL))
+	assert.True(t, SameAPIURL("https://beta-api.livekit.cloud", ""))
+	assert.True(t, SameAPIURL("HTTPS://beta-api.staging.livekit.cloud/", "https://api.staging.livekit.cloud"))
+	assert.False(t, SameAPIURL("https://beta-api.staging.livekit.cloud", public.DefaultBaseURL))
+}
+
+func TestLoadOrCreateMigratesLegacyAPIURLs(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir reads it on Windows
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".livekit"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".livekit", "cli-config.yaml"), []byte(`users:
+  - id: usr_prod
+    api_url: https://beta-api.livekit.cloud
+  - id: usr_stg
+    api_url: https://beta-api.staging.livekit.cloud/
+  - id: usr_default
+  - id: usr_local
+    api_url: http://localhost:8000
+`), 0o600))
+
+	c, err := LoadOrCreate()
+	require.NoError(t, err)
+	require.Len(t, c.Users, 4)
+	assert.Equal(t, public.DefaultBaseURL, c.Users[0].APIURL)
+	assert.Equal(t, "https://api.staging.livekit.cloud", c.Users[1].APIURL)
+	assert.Equal(t, "", c.Users[2].APIURL)
+	assert.Equal(t, "http://localhost:8000", c.Users[3].APIURL)
 }
 
 func TestUserConfigFindProject(t *testing.T) {
@@ -104,6 +138,40 @@ func TestUserConfigFindProject(t *testing.T) {
 	assert.Nil(t, u.FindProject("nope"))
 	assert.Nil(t, u.FindProject(""))
 	assert.Nil(t, (*UserConfig)(nil).FindProject("p_abc"))
+}
+
+func TestUserConfigFindProjectIDWinsOverAlias(t *testing.T) {
+	u := &UserConfig{
+		Projects: []UserProjectConfig{
+			{ProjectId: "p_1", Name: "one", Alias: "p_2"},
+			{ProjectId: "p_2", Name: "two", Alias: "two"},
+		},
+	}
+
+	// p_2 is p_1's alias, but it is p_2's ID.
+	assert.Equal(t, "p_2", u.FindProject("p_2").ProjectId)
+	// names and aliases still resolve as before
+	assert.Equal(t, "p_2", u.FindProject("two").ProjectId)
+	assert.Equal(t, "p_1", u.FindProject("one").ProjectId)
+}
+
+func TestUserConfigFindWorkspaceIDWinsOverAlias(t *testing.T) {
+	u := &UserConfig{
+		Workspaces: []UserWorkspaceConfig{
+			{WorkspaceId: "ws_1", Name: "one", Alias: "ws_2"},
+			{WorkspaceId: "ws_2", Name: "Two", Alias: "two"},
+		},
+	}
+
+	// ws_2 is ws_1's alias, but it is ws_2's ID.
+	assert.Equal(t, "ws_2", u.FindWorkspace("ws_2").WorkspaceId)
+	// names and aliases still resolve as before (case-insensitive)
+	assert.Equal(t, "ws_2", u.FindWorkspace("two").WorkspaceId)
+	assert.Equal(t, "ws_1", u.FindWorkspace("ONE").WorkspaceId)
+	// misses
+	assert.Nil(t, u.FindWorkspace("nope"))
+	assert.Nil(t, u.FindWorkspace(""))
+	assert.Nil(t, (*UserConfig)(nil).FindWorkspace("ws_1"))
 }
 
 func TestCLIConfigUpsertUser(t *testing.T) {
@@ -136,7 +204,7 @@ func TestCLIConfigUpsertUser(t *testing.T) {
 	assert.Len(t, c.Users, 2)
 
 	// The same person on a different Public API is stored separately.
-	const staging = "https://beta-api.staging.livekit.cloud"
+	const staging = "https://api.staging.livekit.cloud"
 	_, replaced = c.UpsertUser(UserConfig{Id: "usr_1_new", Email: "alice@livekit.io", SessionToken: "staging", APIURL: staging})
 	assert.False(t, replaced)
 	assert.Len(t, c.Users, 3)
@@ -151,4 +219,63 @@ func TestCLIConfigUpsertUser(t *testing.T) {
 	assert.Len(t, c.Users, 3)
 	assert.Equal(t, "prod2", c.Users[0].SessionToken)
 	assert.Equal(t, "staging2", c.Users[2].SessionToken)
+}
+
+func TestCLIConfigRemoveUser(t *testing.T) {
+	const staging = "https://api.staging.livekit.cloud"
+	alice := UserConfig{Id: "usr_1", Email: "alice@livekit.io", SessionToken: "prod"}
+	aliceStaging := UserConfig{Id: "usr_1", Email: "alice@livekit.io", SessionToken: "staging", APIURL: staging}
+	bob := UserConfig{Id: "usr_2", Email: "bob@livekit.io", SessionToken: "bob"}
+
+	// Removing the staging entry keeps the same person's production entry,
+	// and so the default user.
+	c := &CLIConfig{DefaultUser: "usr_1", Users: []UserConfig{alice, aliceStaging, bob}}
+	c.RemoveUser(aliceStaging)
+	assert.Equal(t, []UserConfig{alice, bob}, c.Users)
+	assert.Equal(t, "usr_1", c.DefaultUser)
+
+	// Removing their last entry clears the default user. A legacy entry with
+	// no api_url matches an explicit default URL.
+	c.RemoveUser(UserConfig{Id: "usr_1", Email: "alice@livekit.io", SessionToken: "prod", APIURL: public.DefaultBaseURL})
+	assert.Equal(t, []UserConfig{bob}, c.Users)
+	assert.Empty(t, c.DefaultUser)
+
+	// Removing another user keeps the default user.
+	c = &CLIConfig{DefaultUser: "bob@livekit.io", Users: []UserConfig{alice, bob}}
+	c.RemoveUser(alice)
+	assert.Equal(t, []UserConfig{bob}, c.Users)
+	assert.Equal(t, "bob@livekit.io", c.DefaultUser)
+
+	// Of two entries for the same person on one API, which only a
+	// hand-edited config has, only the one whose token was revoked goes: the
+	// other holds a token that is still valid.
+	bobAgain := UserConfig{Id: "usr_2", Email: "bob@livekit.io", SessionToken: "bob2"}
+	c = &CLIConfig{DefaultUser: "usr_2", Users: []UserConfig{bob, bobAgain}}
+	c.RemoveUser(bobAgain)
+	assert.Equal(t, []UserConfig{bob}, c.Users)
+	assert.Equal(t, "usr_2", c.DefaultUser)
+
+	// The same email under two ids on one API: revoking the second entry,
+	// as --user <its id> does, removes that entry and leaves the first with
+	// its token.
+	dev1 := UserConfig{Id: "usr_a", Email: "dev@livekit.io", SessionToken: "dev-a"}
+	dev2 := UserConfig{Id: "usr_b", Email: "dev@livekit.io", SessionToken: "dev-b"}
+	c = &CLIConfig{DefaultUser: "usr_a", Users: []UserConfig{dev1, dev2}}
+	c.RemoveUser(dev2)
+	assert.Equal(t, []UserConfig{dev1}, c.Users)
+	assert.Equal(t, "usr_a", c.DefaultUser)
+
+	// An entry with no token is removed only for the same person, so that
+	// another tokenless entry on the API stays.
+	carol := UserConfig{Id: "usr_3", Email: "carol@livekit.io"}
+	dave := UserConfig{Id: "usr_4", Email: "dave@livekit.io"}
+	c = &CLIConfig{Users: []UserConfig{carol, dave}}
+	c.RemoveUser(dave)
+	assert.Equal(t, []UserConfig{carol}, c.Users)
+
+	// Removing a user who isn't signed in changes nothing.
+	c = &CLIConfig{DefaultUser: "bob@livekit.io", Users: []UserConfig{bob}}
+	c.RemoveUser(UserConfig{Id: "usr_3", Email: "carol@livekit.io"})
+	assert.Equal(t, []UserConfig{bob}, c.Users)
+	assert.Equal(t, "bob@livekit.io", c.DefaultUser)
 }

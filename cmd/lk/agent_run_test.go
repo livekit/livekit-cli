@@ -365,6 +365,76 @@ func TestResolveCredentials_FullyExplicitSkipsProjectLookup(t *testing.T) {
 	}, env)
 }
 
+// TestResolveCredentials_DevWithCredentialsIsAnError checks that --dev with an
+// API key or secret fails, even when the URL, key and secret are all given and
+// no project lookup runs.
+func TestResolveCredentials_DevWithCredentialsIsAnError(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		env  map[string]string
+		args []string
+		want string
+	}{
+		{name: "complete env",
+			env:  map[string]string{"LIVEKIT_URL": "wss://env.livekit.cloud", "LIVEKIT_API_KEY": "envkey", "LIVEKIT_API_SECRET": "envsecret"},
+			want: "--dev can't be combined with API key credentials; unset LIVEKIT_API_KEY and LIVEKIT_API_SECRET or drop --dev"},
+		{name: "complete flags",
+			args: []string{"--url", "wss://flag.livekit.cloud", "--api-key", "flagkey", "--api-secret", "flagsecret"},
+			want: "--dev can't be combined with API key credentials; remove --api-key and --api-secret or drop --dev"},
+		{name: "env key only",
+			env:  map[string]string{"LIVEKIT_API_KEY": "envkey"},
+			want: "--dev can't be combined with API key credentials; unset LIVEKIT_API_KEY or drop --dev"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			clearLiveKitEnv(t)
+			for k, v := range tc.env {
+				t.Setenv(k, v)
+			}
+			var err error
+			app := &cli.Command{
+				Name:  "lk",
+				Flags: append(credentialFlags(), &cli.BoolFlag{Name: "dev"}, &cli.StringFlag{Name: "project"}, &cli.StringFlag{Name: "subdomain"}),
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					_, err = resolveCredentials(context.Background(), cmd, t.TempDir())
+					return nil
+				},
+			}
+			require.NoError(t, app.Run(context.Background(), append([]string{"lk", "--dev"}, tc.args...)))
+			assert.EqualError(t, err, tc.want)
+		})
+	}
+}
+
+// TestResolveCredentials_DevAlone checks that --dev, alone or with --url,
+// still hands the agent the dev credentials.
+func TestResolveCredentials_DevAlone(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{name: "dev", want: []string{"LIVEKIT_URL=" + localhostURL, "LIVEKIT_API_KEY=devkey", "LIVEKIT_API_SECRET=secret"}},
+		{name: "dev and url", args: []string{"--url", "ws://dev.example"},
+			want: []string{"LIVEKIT_URL=ws://dev.example", "LIVEKIT_API_KEY=devkey", "LIVEKIT_API_SECRET=secret"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			clearLiveKitEnv(t)
+			var env []string
+			app := &cli.Command{
+				Name:  "lk",
+				Flags: append(credentialFlags(), &cli.BoolFlag{Name: "dev"}, &cli.StringFlag{Name: "project"}, &cli.StringFlag{Name: "subdomain"}),
+				Action: func(_ context.Context, cmd *cli.Command) error {
+					var err error
+					env, err = resolveCredentials(context.Background(), cmd, t.TempDir())
+					return err
+				},
+			}
+			require.NoError(t, app.Run(context.Background(), append([]string{"lk", "--dev"}, tc.args...)))
+			assert.Equal(t, tc.want, env)
+		})
+	}
+}
+
 // --- cloud console link --------------------------------------------------------
 
 func TestCloudProject(t *testing.T) {

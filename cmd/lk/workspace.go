@@ -30,7 +30,9 @@ import (
 )
 
 // WorkspaceCommands are the Public-API-only workspace commands. The whole group
-// is Hidden and requires --user-auth (user-based auth). Top-level
+// is Hidden and requires --user-auth (user-based auth). Workspaces aren't
+// generally available yet, so the group stays out of help even after sign-in
+// (userAuthUnlisted). Top-level
 // commands take the workspace as a positional (id, name, or alias, resolved
 // against the per-user cache, with a picker when omitted); nested project/member/
 // invite commands take it via --workspace so the entity id stays positional.
@@ -39,7 +41,7 @@ var WorkspaceCommands = []*cli.Command{
 		Name:     "workspace",
 		Usage:    "Manage LiveKit Cloud workspaces (requires --user-auth)",
 		Hidden:   true,
-		Metadata: userAuthOnly,
+		Metadata: userAuthUnlisted,
 		Commands: []*cli.Command{
 			{
 				Name:      "list",

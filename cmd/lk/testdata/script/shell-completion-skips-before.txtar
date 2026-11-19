@@ -1,0 +1,26 @@
+# Tab completion lists a command's flags without running any command's
+# Before, so it neither loads a project nor prints notices: with no projects
+# it doesn't fail or prompt, and with one it doesn't say which it uses.
+exec lk room create -- --generate-shell-completion
+stdout '^--room-preset'
+stdout '^--empty-timeout'
+! stderr .
+
+env HOME=$WORK/configured
+env USERPROFILE=$WORK/configured
+chmod 600 configured/.livekit/cli-config.yaml
+exec lk room create -- --generate-shell-completion
+stdout '^--room-preset'
+! stderr .
+
+requests
+! stdout .
+
+-- configured/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone

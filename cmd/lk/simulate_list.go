@@ -24,7 +24,6 @@ import (
 	"github.com/livekit/livekit-cli/v2/pkg/public/render"
 	"github.com/livekit/livekit-cli/v2/pkg/util"
 	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 var simulateListCommand = &cli.Command{
@@ -77,7 +76,7 @@ func listSimulationRuns(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	pc := simulateProjectConfig
-	client := lksdk.NewAgentSimulationClient(serverURL, pc.APIKey, pc.APISecret)
+	client := newSimulationClient(pc)
 
 	limit := cmd.Int("limit")
 	var runs []*livekit.SimulationRun

@@ -85,7 +85,7 @@ func runSimulateTUI(config *simulateConfig) error {
 	if m.config.mode == modeView {
 		writeSimulationRunHints(out.StatusWriter(), m.config.viewModeRunID, true)
 	} else if m.runID != "" && !m.runFinished {
-		cancelSimulationRun(config.client, m.runID)
+		cancelSimulationRun(config.client, config.pc.ProjectId, m.runID)
 	} else if m.runID != "" {
 		writeSimulationRunHints(out.StatusWriter(), m.runID, false)
 	}
@@ -606,9 +606,9 @@ func (m *simulateModel) pollSimulation() tea.Cmd {
 }
 
 func (m *simulateModel) cancelRunCmd() tea.Cmd {
-	client, runID := m.config.client, m.runID
+	client, projectID, runID := m.config.client, m.config.pc.ProjectId, m.runID
 	return func() tea.Msg {
-		cancelSimulationRun(client, runID)
+		cancelSimulationRun(client, projectID, runID)
 		return nil
 	}
 }

@@ -502,7 +502,7 @@ lk agent debugger status                      # active agent, its tools, state, 
 lk agent debugger stop --chat-history         # closing summary, plus the whole conversation
 ```
 
-`start` takes an optional entrypoint (`lk agent debugger start src/my_agent.py`) when the project doesn't use the default `agent.py`/`src/agent.py` or `main.ts`/`src/main.ts`; arguments after `--` go to the interpreter.
+`start` takes an optional entrypoint (`lk agent debugger start src/my_agent.py`) when the project doesn't use the default `agent.py`/`main.py` or `main.ts`/`main.js` (at the root or under `src/`); arguments after `--` go to the interpreter.
 
 Useful options:
 

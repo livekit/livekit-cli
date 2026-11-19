@@ -287,10 +287,10 @@ type replayServiceClient struct {
 }
 
 func (c *replayServiceClient) withAuth(ctx context.Context) (context.Context, error) {
-	// The replay service only checks the token's project. The grant is for the
-	// Public API, which won't issue a session token without one; the session
-	// hook (withDefaultClientOpts) swaps this token for that one.
-	at := auth.NewAccessToken(c.apiKey, c.apiSecret).SetVideoGrant(&auth.VideoGrant{RoomAdmin: true})
+	// The replay service requires roomRecord. For a session project, the session
+	// hook (withDefaultClientOpts) swaps this token for one the Public API mints
+	// with the same grants.
+	at := auth.NewAccessToken(c.apiKey, c.apiSecret).SetVideoGrant(&auth.VideoGrant{RoomRecord: true})
 	token, err := at.ToJWT()
 	if err != nil {
 		return nil, err

@@ -1,0 +1,36 @@
+# In API-key mode an agent without a .env.local runs with the default
+# project's key. lk writes nothing into the agent's directory: no env file,
+# and no change to .gitignore.
+[!exec:node] skip 'needs node to run the agent'
+[!exec:git] skip 'needs git'
+exec git init -q .
+
+exec lk agent start
+stdout '^agent ws://one.test APIone secretone$'
+stderr '^Using project \[one\]$'
+! exists .env.local
+cmp .gitignore want-gitignore
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_project: one
+projects:
+  - name: one
+    project_id: p_1
+    url: ws://one.test
+    api_key: APIone
+    api_secret: secretone
+-- .gitignore --
+node_modules
+-- package.json --
+{"name":"agent","main":"src/main.js","dependencies":{"@livekit/agents":"1.6.0"}}
+-- src/main.js --
+console.log('agent', process.env.LIVEKIT_URL, process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
+-- node_modules/@livekit/agents/package.json --
+{"name":"@livekit/agents","version":"1.6.0","main":"index.js"}
+-- node_modules/@livekit/agents/index.js --
+-- want-requests --
+-- want-gitignore --
+node_modules

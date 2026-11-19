@@ -1,0 +1,27 @@
+# A user with more projects than fit on a page sees them all: lk passes each
+# page's cursor back until the Public API says there are no more.
+respond GET http://publicapi.test/v0/projects 200 '{"items":[{"id":"p_1","name":"one"}],"pageInfo":{"nextCursor":"c1","hasMore":true}}'
+respond GET http://publicapi.test/v0/projects?page.cursor=c1 200 '{"items":[{"id":"p_2","name":"two"}],"pageInfo":{"nextCursor":"","hasMore":false}}'
+exec lk --user-auth project list
+cmp stdout want-stdout
+
+requests
+cmp stdout want-requests
+
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+-- want-stdout --
+┌───────┬──────┬────────────┐
+│ Alias │ Name │ Project ID │
+├───────┼──────┼────────────┤
+│   one │ one  │ p_1        │
+│   two │ two  │ p_2        │
+└───────┴──────┴────────────┘
+-- want-requests --
+GET http://publicapi.test/v0/projects bearer=st_1
+GET http://publicapi.test/v0/projects bearer=st_1
