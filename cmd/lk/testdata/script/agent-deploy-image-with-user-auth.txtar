@@ -1,0 +1,29 @@
+# Under --user-auth, lk agent deploy --image-tar asks cloud-agents where to
+# push with a token the Public API creates for the session, not an API key.
+# TestDeployPrebuiltImageUnderUserAuth covers the push itself.
+mint st_1
+respond GET http://one.test/push-target 503 'unavailable'
+
+! exec lk --user-auth agent deploy --id CA_1 --image-tar image.tar
+! stdout .
+stderr 'push-target returned 503: unavailable$'
+
+requests
+cmp stdout want-requests
+
+-- image.tar --
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
+-- want-requests --
+POST http://publicapi.test/v0/projects/p_1/tokens bearer=st_1 project=p_1
+GET http://one.test/push-target apikey=APImint_p_1

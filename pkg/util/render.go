@@ -15,8 +15,12 @@
 package util
 
 import (
+	"encoding/json"
 	"strconv"
 	"time"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 // RenderList prints a list of items either as JSON (asJSON) or as a table whose
@@ -87,7 +91,11 @@ func RenderAction(p *Printer, asJSON bool, key, value, done, message string) err
 // nextCursor is non-empty, the command that reads the next page.
 func RenderPage[T any](p *Printer, asJSON bool, list []T, nextCursor, empty string, headers []string, row func(T) []string) error {
 	if asJSON {
-		return PrintJSONTo(p.ResultWriter(), NewPage(list, nextCursor))
+		items, err := jsonItems(list)
+		if err != nil {
+			return err
+		}
+		return PrintJSONTo(p.ResultWriter(), NewPage(items, nextCursor))
 	}
 	if err := RenderList(p, false, list, empty, headers, row); err != nil {
 		return err
@@ -148,4 +156,23 @@ func FormatTime(t *time.Time) string {
 		return "-"
 	}
 	return t.Local().Format("2006-01-02 15:04")
+}
+
+// jsonItems is list as --json prints it: a proto message as protojson, as
+// PrintJSON prints one, and any other item as itself.
+func jsonItems[T any](list []T) ([]any, error) {
+	out := make([]any, len(list))
+	for i, item := range list {
+		m, ok := any(item).(proto.Message)
+		if !ok {
+			out[i] = item
+			continue
+		}
+		b, err := protojson.Marshal(m)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = json.RawMessage(b)
+	}
+	return out, nil
 }

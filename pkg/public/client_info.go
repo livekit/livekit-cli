@@ -28,7 +28,15 @@ const (
 	HeaderClientVersion = "X-LiveKit-Client-Version"
 	HeaderCommand       = "X-LiveKit-Command"
 	HeaderCodingAgent   = "X-LiveKit-Coding-Agent"
+	HeaderSource        = "X-LiveKit-Source"
 )
+
+// EnvSource names where a coding agent learned to call the CLI, such as
+// "skills". Only LiveKit's skills and templates tell an agent to set it, so its
+// value on a request shows which of them the agent followed. It is an
+// environment variable rather than a flag so that a CLI too old to know it
+// ignores it instead of failing the command.
+const EnvSource = "LK_SOURCE"
 
 // ClientInfo tells the API which client made a request: the CLI or another
 // client, its version, the command that ran, and whether a coding agent was
@@ -39,6 +47,7 @@ type ClientInfo struct {
 	Version     string // the client's version, such as "2.19.3"
 	Command     string // the command, such as "analytics session list"
 	CodingAgent string // the coding agent running the client, such as "claude-code"; empty when none
+	Source      string // where the coding agent learned to call LiveKit, such as "skills"; empty when not set
 }
 
 // WithClientInfo sends info with every request: in the X-LiveKit-* headers,
@@ -54,11 +63,18 @@ func WithClientInfo(info ClientInfo) oapi.ClientOption {
 		set(HeaderClientVersion, info.Version)
 		set(HeaderCommand, info.Command)
 		set(HeaderCodingAgent, info.CodingAgent)
+		set(HeaderSource, info.Source)
 		if info.Version != "" {
 			req.Header.Set("User-Agent", "livekit-cli/"+info.Version)
 		}
 		return nil
 	})
+}
+
+// DetectSource returns the source set in EnvSource, cleaned like a coding
+// agent's name, or "" when it's unset. getenv is os.Getenv outside tests.
+func DetectSource(getenv func(string) string) string {
+	return cleanAgentName(getenv(EnvSource))
 }
 
 // DetectCodingAgent names the coding agent whose shell this process runs in,
@@ -67,7 +83,8 @@ func WithClientInfo(info ClientInfo) oapi.ClientOption {
 //
 // AI_AGENT is a convention shared across vendors; its value starts with the
 // agent's name, as in "claude-code_2-1-317_agent". The rest are set by one
-// agent each.
+// agent each: Codex sets CODEX_VERSION on every command it runs, and Cursor
+// sets CURSOR_AGENT in its agent's terminal (not in a terminal a person uses).
 func DetectCodingAgent(getenv func(string) string) string {
 	if v := getenv("AI_AGENT"); v != "" {
 		name, _, _ := strings.Cut(v, "_")
@@ -80,6 +97,10 @@ func DetectCodingAgent(getenv func(string) string) string {
 		return "claude-code"
 	case getenv("GEMINI_CLI") == "1":
 		return "gemini-cli"
+	case getenv("CODEX_VERSION") != "":
+		return "codex"
+	case getenv("CURSOR_AGENT") != "":
+		return "cursor"
 	}
 	return ""
 }
