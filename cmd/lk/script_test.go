@@ -358,6 +358,13 @@ var publicAPIRoutes = []struct {
 	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersGetResponse) }},
 	{http.MethodPatch, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersUpdateResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/phone-numbers/[^/]+$`), func() any { return new(oapi.LivekitPublicapiTelephonyV1PhoneNumbersReleaseResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsListResponse) }},
+	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsCreateResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/:]+$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsGetResponse) }},
+	{http.MethodPatch, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/:]+$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsUpdateResponse) }},
+	{http.MethodDelete, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/:]+$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsDeleteResponse) }},
+	{http.MethodPost, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/:]+:deploy$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentsDeployResponse) }},
+	{http.MethodGet, regexp.MustCompile(`^/v0/projects/[^/]+/agents/builder/[^/]+/versions$`), func() any { return new(oapi.LivekitPublicapiAgentsV1BuilderAgentVersionsListResponse) }},
 	{http.MethodGet, regexp.MustCompile(`^/v0/users/me$`), func() any { return new(oapi.LivekitPublicapiUsersV1GetCurrentUserResponse) }},
 	{http.MethodDelete, regexp.MustCompile(`^/v0/users/me/session-token$`), func() any { return new(oapi.LivekitPublicapiUsersV1SessionTokenRevokeResponse) }},
 }

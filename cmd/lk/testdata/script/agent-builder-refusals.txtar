@@ -1,0 +1,42 @@
+# The builder commands exist only under --user-auth: builder agents are a
+# LiveKit Cloud feature that no API key reaches.
+! exec lk agent builder list
+stderr 'only available under --user-auth'
+
+# lk checks the configuration file before it calls the API.
+! exec lk --user-auth agent builder create --name helper --config-file list.json
+stderr '^--config-file list.json: the configuration must be a JSON object$'
+! exec lk --user-auth agent builder create --name helper --config-file missing.json
+stderr 'missing.json: no such file or directory'
+
+# The API ignores properties it doesn't know, so a whole builder agent, such
+# as get --json prints, would reset the configuration. lk refuses it.
+! exec lk --user-auth agent builder update ab_1 --config-file agent.json
+stderr '^--config-file agent.json holds a builder agent, not a configuration: pass its "config" object$'
+
+! exec lk --user-auth agent builder update ab_1
+stderr '^nothing to update: pass --config-file, --name or both$'
+
+! exec lk --user-auth agent builder get
+stderr '^builder agent ID is required$'
+
+requests
+! stdout .
+
+-- list.json --
+[{"instructions": "Be brief."}]
+-- agent.json --
+{"id": "ab_1", "name": "greeter", "config": {"instructions": "Be brief."}}
+-- home/.livekit/cli-config.yaml --
+default_user: u_1
+users:
+  - id: u_1
+    email: dev@example.com
+    session_token: st_1
+    api_url: http://publicapi.test
+    default_project: p_1
+    projects:
+      - project_id: p_1
+        name: one
+        alias: one
+        url: ws://one.test
