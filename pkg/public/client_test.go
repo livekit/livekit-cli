@@ -85,6 +85,22 @@ func TestOkOrError(t *testing.T) {
 	assert.Equal(t, "nope", apiErr.Message)
 }
 
+func TestFieldViolations(t *testing.T) {
+	err := responseError(http.StatusBadRequest, []byte(`{"code":3,"message":"config is invalid","details":[`+
+		`{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"X"},`+
+		`{"@type":"type.googleapis.com/google.rpc.BadRequest","fieldViolations":[`+
+		`{"field":"config.httpTools[0].url","description":"must be a URL"},`+
+		`{"field":"name","description":"must start with a letter"}]}]}`))
+	assert.Equal(t, []FieldViolation{
+		{Field: "config.httpTools[0].url", Description: "must be a URL"},
+		{Field: "name", Description: "must start with a letter"},
+	}, FieldViolations(fmt.Errorf("wrapped: %w", err)))
+
+	assert.Nil(t, FieldViolations(responseError(http.StatusBadRequest, []byte(`{"message":"bad"}`))))
+	assert.Nil(t, FieldViolations(errors.New("plain")))
+	assert.Nil(t, FieldViolations(nil))
+}
+
 func TestIsUnauthenticated(t *testing.T) {
 	assert.True(t, IsUnauthenticated(&APIError{Status: http.StatusUnauthorized}))
 	// wrapped errors are unwrapped via errors.As
