@@ -6,6 +6,10 @@ stderr 'only available under --user-auth'
 # lk checks the configuration file before it calls the API.
 ! exec lk --user-auth agent builder create --name helper --config-file list.json
 stderr '^--config-file list.json: the configuration must be a JSON object$'
+! exec lk --user-auth agent builder create --name helper --config-file trailing-comma.json
+stderr '^--config-file trailing-comma.json: line 3, column 1: invalid character ''}'' looking for beginning of object key string$'
+! exec lk --user-auth agent builder create --name helper --config-file empty.json
+stderr '^--config-file empty.json: line 1, column 1: unexpected end of JSON input$'
 ! exec lk --user-auth agent builder create --name helper --config-file missing.json
 stderr 'missing.json: no such file or directory'
 
@@ -31,6 +35,11 @@ respond PATCH http://publicapi.test/v0/projects/p_1/agents/builder/ab_1 403 '{"c
 stderr '^this needs agent:manage on the project — your account doesn''t have access to this project or action$'
 ! stderr 'without'
 
+-- trailing-comma.json --
+{
+  "instructions": "Be brief.",
+}
+-- empty.json --
 -- list.json --
 [{"instructions": "Be brief."}]
 -- agent.json --

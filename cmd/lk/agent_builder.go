@@ -206,7 +206,14 @@ func readBuilderConfig(cmd *cli.Command) (json.RawMessage, error) {
 		return nil, err
 	}
 	var object map[string]json.RawMessage
-	if err := json.Unmarshal(data, &object); err != nil || object == nil {
+	err = json.Unmarshal(data, &object)
+	var syntaxErr *json.SyntaxError
+	if errors.As(err, &syntaxErr) {
+		line, col := lineAndColumn(data, syntaxErr.Offset)
+		return nil, fmt.Errorf("--config-file %s: line %d, column %d: %w", path, line, col, err)
+	}
+	// Any other error is valid JSON that isn't an object; so is null.
+	if err != nil || object == nil {
 		return nil, fmt.Errorf("--config-file %s: the configuration must be a JSON object", path)
 	}
 	// The API ignores properties it doesn't know, so a whole builder agent
@@ -215,6 +222,14 @@ func readBuilderConfig(cmd *cli.Command) (json.RawMessage, error) {
 		return nil, fmt.Errorf("--config-file %s holds a builder agent, not a configuration: pass its \"config\" object", path)
 	}
 	return bytes.TrimSpace(data), nil
+}
+
+// lineAndColumn is the 1-based line and column of the byte at offset in data,
+// where a json.SyntaxError's Offset points just past the bad byte.
+func lineAndColumn(data []byte, offset int64) (line, col int) {
+	before := data[:min(max(offset-1, 0), int64(len(data)))]
+	line = bytes.Count(before, []byte("\n")) + 1
+	return line, len(before) - bytes.LastIndexByte(before, '\n')
 }
 
 // warnHiddenHeaderValues says, when config holds ******** in place of a

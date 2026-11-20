@@ -161,3 +161,20 @@ func TestRequireEmptyDir(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "f"), nil, 0o600))
 	assert.EqualError(t, requireEmptyDir(dir), "--unzip "+dir+": the directory isn't empty")
 }
+
+func TestLineAndColumn(t *testing.T) {
+	data := []byte("{\n  \"a\": 1,\n}")
+	for _, tc := range []struct {
+		offset    int64
+		line, col int
+	}{
+		{1, 1, 1},
+		{3, 2, 1},
+		{int64(len(data)), 3, 1},
+		{0, 1, 1},
+		{100, 3, 2},
+	} {
+		line, col := lineAndColumn(data, tc.offset)
+		assert.Equal(t, []int{tc.line, tc.col}, []int{line, col}, "offset %d", tc.offset)
+	}
+}
