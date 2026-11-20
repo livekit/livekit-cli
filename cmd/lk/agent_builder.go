@@ -387,11 +387,12 @@ func deployAgentBuilderAgent(ctx context.Context, cmd *cli.Command) error {
 	}
 	// With --wait, read the agent first: a failure read later is this
 	// deployment's for sure only if the agent hadn't failed already. An
-	// agent that can't be read counts as failed, the cautious answer.
+	// agent that can't be read, or whose status is unknown, counts as
+	// failed, the cautious answer.
 	failedBefore := true
 	if cmd.Bool("wait") {
 		if before, err := client.GetAgentBuilderAgent(ctx, projectID, id); err == nil {
-			failedBefore = deploymentFailed(before.Deployment)
+			failedBefore = mayHaveFailed(before.Deployment)
 		}
 	}
 	res, err := client.DeployAgentBuilderAgent(ctx, projectID, id, cmd.String("version"))
@@ -434,18 +435,24 @@ type deployBaseline struct {
 	// that comparing a deployedAt with it doesn't depend on the local clock.
 	// The zero time turns that comparison off.
 	after time.Time
-	// failedBefore reports whether the agent's deployment read as failed
-	// before the deploy, or couldn't be read.
+	// failedBefore reports whether the agent's deployment may have failed
+	// before the deploy: it read as failed, its status was unknown, or the
+	// agent couldn't be read.
 	failedBefore bool
 }
 
-// deploymentFailed reports whether d's status is a failure.
-func deploymentFailed(d *oapi.LivekitPublicapiAgentbuilderV1Deployment) bool {
+// mayHaveFailed reports whether d may be a failed deployment: its status is a
+// failure, or unknown. The API leaves the deployment out when it can't read
+// the status, and an unknown status can't rule out a failure.
+func mayHaveFailed(d *oapi.LivekitPublicapiAgentbuilderV1Deployment) bool {
 	if d == nil {
-		return false
+		return true
 	}
-	status := util.Deref(d.Status)
-	return status == oapi.DEPLOYMENTSTATUSBUILDFAILED || status == oapi.DEPLOYMENTSTATUSFAILED
+	switch util.Deref(d.Status) {
+	case "", oapi.DEPLOYMENTSTATUSUNSPECIFIED, oapi.DEPLOYMENTSTATUSBUILDFAILED, oapi.DEPLOYMENTSTATUSFAILED:
+		return true
+	}
+	return false
 }
 
 // waitForBuilderDeployment reads an Agent Builder agent until a new deployment is up

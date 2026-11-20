@@ -36,6 +36,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/livekit/livekit-cli/v2/pkg/public"
+	"github.com/livekit/livekit-cli/v2/pkg/public/oapi"
 )
 
 // statusServer answers each Agent Builder agent get with the next of statuses,
@@ -117,6 +118,23 @@ func TestWaitForBuilderDeployment(t *testing.T) {
 			assert.Equal(t, "ab_1", *agent.Id)
 			assert.Equal(t, len(tc.statuses), reads(), "the wait ends on the last status")
 		})
+	}
+}
+
+func TestMayHaveFailed(t *testing.T) {
+	status := func(s oapi.LivekitPublicapiAgentbuilderV1DeploymentStatus) *oapi.LivekitPublicapiAgentbuilderV1Deployment {
+		return &oapi.LivekitPublicapiAgentbuilderV1Deployment{Status: &s}
+	}
+	assert.True(t, mayHaveFailed(nil), "the API leaves the deployment out when it can't read the status")
+	assert.True(t, mayHaveFailed(&oapi.LivekitPublicapiAgentbuilderV1Deployment{}))
+	assert.True(t, mayHaveFailed(status(oapi.DEPLOYMENTSTATUSUNSPECIFIED)))
+	assert.True(t, mayHaveFailed(status(oapi.DEPLOYMENTSTATUSBUILDFAILED)))
+	assert.True(t, mayHaveFailed(status(oapi.DEPLOYMENTSTATUSFAILED)))
+	for _, s := range []oapi.LivekitPublicapiAgentbuilderV1DeploymentStatus{
+		oapi.DEPLOYMENTSTATUSNOTDEPLOYED, oapi.DEPLOYMENTSTATUSBUILDING, oapi.DEPLOYMENTSTATUSSTARTING,
+		oapi.DEPLOYMENTSTATUSRUNNING, oapi.DEPLOYMENTSTATUSSLEEPING,
+	} {
+		assert.False(t, mayHaveFailed(status(s)), s)
 	}
 }
 
