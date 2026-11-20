@@ -535,27 +535,42 @@ func downloadBuilderAgentCode(ctx context.Context, cmd *cli.Command) error {
 		out.Statusf("Unpacked %d files of version %s of builder agent %s into %s", n, util.Accented(version), util.Accented(id), dir)
 		return nil
 	}
-	flags := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
-	if output == "" {
+	overwrite := output != ""
+	if !overwrite {
 		output = cmp.Or(filename, version+".zip")
-		flags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
 	}
-	f, err := os.OpenFile(output, flags, 0o600)
-	if err != nil {
+	if err := writePrivateFile(output, data, overwrite); err != nil {
 		if errors.Is(err, os.ErrExist) {
 			return fmt.Errorf("%s already exists; pass --output to choose the file", output)
 		}
+		return err
+	}
+	out.Statusf("Downloaded version %s of builder agent %s to %s", util.Accented(version), util.Accented(id), output)
+	return nil
+}
+
+// writePrivateFile writes data to name, readable only by the user, because
+// agent code holds header values. With overwrite, an existing file is
+// replaced and made 0600 too (OpenFile's mode applies only to a new file);
+// without it, an existing file is an os.ErrExist.
+func writePrivateFile(name string, data []byte, overwrite bool) error {
+	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
+	if overwrite {
+		flags = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
+	}
+	f, err := os.OpenFile(name, flags, 0o600)
+	if err != nil {
+		return err
+	}
+	if err := f.Chmod(0o600); err != nil {
+		f.Close()
 		return err
 	}
 	if _, err := f.Write(data); err != nil {
 		f.Close()
 		return err
 	}
-	if err := f.Close(); err != nil {
-		return err
-	}
-	out.Statusf("Downloaded version %s of builder agent %s to %s", util.Accented(version), util.Accented(id), output)
-	return nil
+	return f.Close()
 }
 
 // requireEmptyDir checks that dir is an empty directory or doesn't exist, so

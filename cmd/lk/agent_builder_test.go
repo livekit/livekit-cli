@@ -251,3 +251,19 @@ func TestLineAndColumn(t *testing.T) {
 		assert.Equal(t, []int{tc.line, tc.col}, []int{line, col}, "offset %d", tc.offset)
 	}
 }
+
+func TestWritePrivateFile(t *testing.T) {
+	name := filepath.Join(t.TempDir(), "agent.zip")
+	require.NoError(t, os.WriteFile(name, []byte("an older, longer zip"), 0o644))
+
+	assert.ErrorIs(t, writePrivateFile(name, []byte("zip"), false), fs.ErrExist)
+	require.NoError(t, writePrivateFile(name, []byte("zip"), true))
+	got, err := os.ReadFile(name)
+	require.NoError(t, err)
+	assert.Equal(t, "zip", string(got))
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(name)
+		require.NoError(t, err)
+		assert.Equal(t, fs.FileMode(0o600), info.Mode().Perm(), "an overwritten file is made private too")
+	}
+}
